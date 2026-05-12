@@ -55,6 +55,20 @@ Concrètement :
 
 ## Mode de travail attendu
 
+### Lecture obligatoire avant toute implémentation
+
+Avant toute tâche d'implémentation, lire dans cet ordre :
+
+1. `AGENTS.md` ;
+2. `docs/project/00_MASTER_PLAN.md` ;
+3. `docs/project/01_EXECUTION_BOARD.md` ;
+4. `docs/project/02_CODEX_WORKFLOW.md` ;
+5. `docs/project/03_HANDOFF_FOR_NEW_AGENT.md` ;
+6. `docs/project/04_LAST_STATE.md` ;
+7. le fichier de livraison/specification pertinent dans `docs/delivery/`.
+
+Si l'un de ces fichiers manque ou contredit le ticket demandé, arrêter l'implémentation et signaler le blocage.
+
 ### Pour toute tâche Codex
 
 1. lire la doc liée dans `docs/` ;
@@ -110,3 +124,18 @@ streamlit run src/sydel_doc_engine/app/streamlit_app.py
 - ne jamais « améliorer » le texte juridique sans ticket explicite ;
 - préférer l'identité stricte avec la source ;
 - si une ambiguïté existe, bloquer la génération et documenter la décision requise.
+
+## Mandatory project memory
+Before any implementation task, read:
+- docs/project/00_MASTER_PLAN.md
+- docs/project/01_EXECUTION_BOARD.md
+- docs/project/02_CODEX_WORKFLOW.md
+- docs/project/03_HANDOFF_FOR_NEW_AGENT.md
+- docs/project/04_LAST_STATE.md
+- the relevant delivery/spec file
+
+At the end of each task:
+- update docs/project/01_EXECUTION_BOARD.md
+- update docs/project/04_LAST_STATE.md
+- mention the next recommended step
+- do not rewrite legal wording unless the spec explicitly asks for it
