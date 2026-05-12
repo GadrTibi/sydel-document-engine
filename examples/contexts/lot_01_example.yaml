@@ -1,0 +1,30 @@
+structure: SELARL
+personne_signataire:
+  genre: feminin
+  civilite: Madame
+  prenom: Jeanne
+  nom: Martin
+  adresse_perso:
+    num_voie: "12"
+    voie: rue des Lilas
+    cp: "75008"
+    ville: Paris
+  date_naissance: 1985-03-14
+  nationalite: française
+  nom_pere: Martin
+  nom_mere: Dupont
+  fonction_dirigeant: Gérante
+societe:
+  forme_sociale: SELARL
+  denomination: Cabinet Martin
+  capital: "1000"
+  siege:
+    num_voie: "80"
+    voie: avenue Marceau
+    cp: "75008"
+    ville: Paris
+signature:
+  lieu: Paris
+  date: 2026-05-12
+domiciliation:
+  adresse_locaux_affichee: 80 avenue Marceau, 75008 Paris
