@@ -42,3 +42,6 @@ mypy_path = "src"
 warn_unused_configs = true
 strict = true
 packages = ["sydel_doc_engine"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/sydel_doc_engine"]

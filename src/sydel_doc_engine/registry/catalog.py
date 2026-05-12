@@ -3,7 +3,6 @@ from __future__ import annotations
 from sydel_doc_engine.domain.document import DocumentDefinition
 from sydel_doc_engine.domain.enums import DocumentCategory, WorkflowStatus
 
-
 ALL_STRUCTURES: list[str] = [
     "SELARL",
     "SELAS",
@@ -53,7 +52,8 @@ def build_seed_catalog() -> list[DocumentDefinition]:
             ),
             specification_path="docs/delivery/lot_01_analysis_and_specs_v1.md",
             notes=(
-                "Arbitrage métier encore requis sur la règle de rendu de l'adresse de domiciliation."
+                "Arbitrage métier encore requis sur la règle de rendu de l'adresse "
+                "de domiciliation."
             ),
         ),
         DocumentDefinition(
