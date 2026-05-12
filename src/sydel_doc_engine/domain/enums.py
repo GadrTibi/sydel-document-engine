@@ -1,21 +1,21 @@
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 
 
-class Gender(str, Enum):
+class Gender(StrEnum):
     MASCULIN = "masculin"
     FEMININ = "feminin"
 
 
-class DocumentCategory(str, Enum):
+class DocumentCategory(StrEnum):
     UNIVERSEL = "universel"
     MUTUALISABLE = "mutualisable"
     VARIANTE = "variante"
     SPECIFIQUE = "specifique"
 
 
-class WorkflowStatus(str, Enum):
+class WorkflowStatus(StrEnum):
     INVENTORIE = "inventorie"
     VALIDE = "valide"
     SOURCE_RECUE = "source_recue"

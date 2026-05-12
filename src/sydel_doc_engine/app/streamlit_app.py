@@ -5,7 +5,6 @@ import streamlit as st
 from sydel_doc_engine.registry.catalog import catalog_rows
 from sydel_doc_engine.registry.lot_status import count_by_status
 
-
 st.set_page_config(page_title="SYDEL Document Engine", layout="wide")
 
 st.title("SYDEL Document Engine — V1 bootstrap")
