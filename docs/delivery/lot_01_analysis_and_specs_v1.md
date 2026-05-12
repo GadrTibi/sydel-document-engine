@@ -54,7 +54,7 @@ Date : 2026-05-12
 - personne_signataire.nom_pere
 - personne_signataire.nom_mere
 - personne_signataire.fonction_dirigeant
-- domiciliation.adresse_locaux_affichee
+- domiciliation.adresse_domiciliation_affichee
 
 ---
 
@@ -185,7 +185,7 @@ Le modèle transformé contient des révisions. Le texte cible à retenir pour l
 Le modèle transformé n’expose pas une adresse complète des locaux : il montre une logique incomplète autour de `ville_siege / cp_siege / ville_siege`.
 
 ### Option de spec retenue en V1
-- prévoir un champ `domiciliation.adresse_locaux_affichee` en champ libre ;
+- prévoir un champ `domiciliation.adresse_domiciliation_affichee` en champ libre ;
 - ce champ pourra plus tard être mappé automatiquement au siège si SYDEL valide cette règle.
 
 ### Sortie attendue

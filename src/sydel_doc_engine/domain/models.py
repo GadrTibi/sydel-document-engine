@@ -42,7 +42,7 @@ class Signature(BaseModel):
 
 
 class Domiciliation(BaseModel):
-    adresse_locaux_affichee: str | None = None
+    adresse_domiciliation_affichee: str | None = None
 
 
 class DocumentGenerationContext(BaseModel):

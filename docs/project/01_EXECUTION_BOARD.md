@@ -15,7 +15,7 @@
 | PM-003 | DONE | Installer le kit de reprise nouveau ChatGPT / Codex | mémoire projet existante | handoff + last state + prompt nouveau chat |
 | DOC-001 | DONE | Implémenter la déclaration de non-condamnation | source doc + spec Lot 1 | générateur + tests + MAJ doc |
 | DOC-003 | DONE | Implémenter la procuration | source doc + spec Lot 1 | générateur + tests + MAJ doc |
-| DOC-002 | READY | Implémenter l'autorisation de domiciliation | source doc + spec Lot 1 + décision V1 adresse libre | générateur + tests + MAJ doc |
+| DOC-002 | DONE | Implémenter l'autorisation de domiciliation | source doc + spec Lot 1 + décision V1 adresse libre | générateur + tests + MAJ doc |
 | ORCH-001 | READY | Brancher l'orchestrateur Lot 1 | générateurs DOC-001/002/003 | service orchestrateur + tests |
 | UI-001 | READY | Brancher Streamlit V0 Lot 1 | orchestrateur Lot 1 | écran simple + test manuel |
 
@@ -37,8 +37,8 @@
 ### DOC-002
 - Objectif : générer l'autorisation de domiciliation après arbitrage V1 déjà posé.
 - Spec à lire : `docs/delivery/lot_01_analysis_and_specs_v1.md`.
-- Contrainte sensible : utiliser `domiciliation.adresse_locaux_affichee` comme champ libre V1.
-- Sortie attendue : générateur DOC-002, tests, mise à jour documentaire.
+- Contrainte sensible : utiliser `domiciliation.adresse_domiciliation_affichee` comme champ libre V1.
+- Sortie : générateur DOC-002 terminé, tests unitaires ciblés ajoutés, validations locales vertes.
 
 ### ORCH-001
 - Objectif : brancher les trois générateurs Lot 1 dans l'orchestrateur dossier.
@@ -59,12 +59,12 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - mettre à jour `docs/project/04_LAST_STATE.md`
 
 ## Prochaine étape prévue
-- prochain ticket : DOC-002
-- action : implémenter l'autorisation de domiciliation avec la décision V1 `domiciliation.adresse_locaux_affichee`
+- prochain ticket : ORCH-001
+- action : brancher les trois générateurs Lot 1 dans l'orchestrateur dossier
 
 ## Points ouverts
-- Aucun point bloquant identifié après DOC-003.
-- Ne pas démarrer DOC-002 sans respecter la décision V1 sur `domiciliation.adresse_locaux_affichee`.
+- Aucun point bloquant identifié après DOC-002.
+- Ne pas démarrer ORCH-001 sans vérifier que DOC-001, DOC-002 et DOC-003 restent verts localement.
 
 ## Journal court
 - 2026-05-12 : mémoire projet installée dans `docs/project/`.
@@ -73,3 +73,4 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - 2026-05-12 : DOC-001 implémenté en génération DOCX from-scratch avec tests unitaires ; validations locales vertes.
 - 2026-05-12 : DOC-001 corrigé pour rendre l'adresse personnelle dans l'ordre source `num voie + voie, ville cp`.
 - 2026-05-12 : DOC-003 implémenté en génération DOCX from-scratch avec tests unitaires ; validations locales vertes.
+- 2026-05-12 : DOC-002 implémenté en génération DOCX from-scratch avec champ libre `adresse_domiciliation_affichee` ; validations locales vertes.

@@ -26,7 +26,7 @@ L'arbre théorique abandonné n'est pas une source valide. Il n'existe pas de fi
 - Les documents marqués "à remplir à la main" restent hors automatisation initiale.
 - Aucun document ne doit être codé sans source reçue, analyse et spec écrite.
 - Les DOCX propres sont reconstruits de manière déterministe plutôt que nettoyés à la volée en production.
-- Pour DOC-002 en V1, l'adresse de domiciliation est un champ libre : `domiciliation.adresse_locaux_affichee`.
+- Pour DOC-002 en V1, l'adresse de domiciliation est un champ libre : `domiciliation.adresse_domiciliation_affichee`.
 
 ## Ce qui est déjà fait
 - Le dépôt de base existe.
