@@ -13,7 +13,7 @@
 | PM-001 | DONE | Installer la mémoire projet dans le repo | source de vérité + specs Lot 1 | docs/project/* |
 | PM-002 | DONE | Vérifier et compléter la mémoire projet opérationnelle | AGENTS.md + docs/project/* | docs/project complétés + artefact parasite traité |
 | PM-003 | DONE | Installer le kit de reprise nouveau ChatGPT / Codex | mémoire projet existante | handoff + last state + prompt nouveau chat |
-| DOC-001 | READY | Implémenter la déclaration de non-condamnation | source doc + spec Lot 1 | générateur + tests + MAJ doc |
+| DOC-001 | DONE | Implémenter la déclaration de non-condamnation | source doc + spec Lot 1 | générateur + tests + MAJ doc |
 | DOC-003 | READY | Implémenter la procuration | source doc + spec Lot 1 | générateur + tests + MAJ doc |
 | DOC-002 | READY | Implémenter l'autorisation de domiciliation | source doc + spec Lot 1 + décision V1 adresse libre | générateur + tests + MAJ doc |
 | ORCH-001 | READY | Brancher l'orchestrateur Lot 1 | générateurs DOC-001/002/003 | service orchestrateur + tests |
@@ -59,14 +59,16 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - mettre à jour `docs/project/04_LAST_STATE.md`
 
 ## Prochaine étape prévue
-- prochain ticket : DOC-001
-- action : implémenter la déclaration de non-condamnation avec source reçue, spec écrite et tests
+- prochain ticket : DOC-003
+- action : implémenter la procuration avec source reçue, spec écrite et tests
 
 ## Points ouverts
-- Aucun point bloquant pour démarrer DOC-001.
+- Aucun point bloquant identifié après DOC-001.
 - Ne pas démarrer DOC-002 sans respecter la décision V1 sur `domiciliation.adresse_locaux_affichee`.
 
 ## Journal court
 - 2026-05-12 : mémoire projet installée dans `docs/project/`.
 - 2026-05-12 : mémoire projet complétée pour servir de contexte opérationnel autonome ; artefact `tall -U pip` identifié comme fichier parasite à supprimer.
 - 2026-05-12 : kit de reprise ajouté pour nouveau ChatGPT / Codex avec handoff, dernier état et prompt de reprise.
+- 2026-05-12 : DOC-001 implémenté en génération DOCX from-scratch avec tests unitaires ; validations locales vertes.
+- 2026-05-12 : DOC-001 corrigé pour rendre l'adresse personnelle dans l'ordre source `num voie + voie, ville cp`.
