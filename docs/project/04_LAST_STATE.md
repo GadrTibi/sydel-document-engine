@@ -4,51 +4,55 @@
 2026-05-12
 
 ## Dernier ticket terminé
-DOC-001 : implémenter la déclaration sur l'honneur de non-condamnation.
+DOC-003 : implémenter la procuration.
 
 ## État courant du repo
-- DOC-001 dispose maintenant d'un générateur dédié :
-  - `src/sydel_doc_engine/generators/lot_01/declaration_non_condamnation.py`
+- DOC-001 dispose d'un générateur dédié déjà terminé et n'a pas été modifié dans ce ticket.
+- DOC-003 dispose maintenant d'un générateur dédié :
+  - `src/sydel_doc_engine/generators/lot_01/procuration.py` ;
   - génération DOCX from-scratch ;
-  - sortie déterministe `declaration_non_condamnation.docx` ;
+  - sortie déterministe `procuration.docx` ;
   - création du répertoire de sortie si nécessaire.
-- Les helpers existants sont utilisés pour :
-  - accords de genre : `sydel_doc_engine.utils.grammar` ;
-  - assemblage d'adresse personnelle : `sydel_doc_engine.utils.addresses`.
-- Des tests unitaires ciblés couvrent :
+- Des tests unitaires ciblés couvrent DOC-003 :
   - création du fichier DOCX ;
   - présence des textes essentiels ;
-  - accords féminins ;
-  - assemblage de l'adresse personnelle dans l'ordre source, sans rendu `cp ville`.
-- DOC-002, DOC-003, l'orchestrateur, Streamlit, PDF et ZIP n'ont pas été modifiés dans ce ticket.
+  - accord féminin `Je soussignée` ;
+  - assemblage de l'adresse personnelle dans l'ordre source `num voie, ville cp` ;
+  - assemblage de l'adresse du siège dans l'ordre source `num voie, ville cp` ;
+  - présence du bloc SYDEL exact ;
+  - absence de logique d'image de signature.
+- DOC-002, l'orchestrateur, Streamlit, PDF et ZIP n'ont pas été modifiés dans ce ticket.
 - Aucun commit, push ou PR n'a été fait.
 
 ## Décisions métier/techniques appliquées dans ce ticket
-- Génération DOCX from-scratch pour DOC-001.
+- Génération DOCX from-scratch pour DOC-003.
 - Pas de PDF ni ZIP dans ce ticket.
-- Adresse personnelle DOC-001 rendue au format source `num voie + voie, ville cp`.
-- Dates rendues au format `DD/MM/YYYY`.
-- Accords obligatoires appliqués :
-  - `Je soussigné` / `Je soussignée` ;
-  - `Né le` / `Née le` ;
-  - `fils de Monsieur` / `fille de Monsieur`.
-- Si `signature.image_optionnelle` est fournie, l'image est insérée ; sinon une zone de signature vide est laissée.
-- Le texte juridique source a été conservé autant que possible ; aucune réécriture juridique volontaire n'a été introduite.
+- Accord de genre limité à `Je soussigné` / `Je soussignée`.
+- Adresse personnelle rendue au format source `num voie + voie, ville cp`.
+- Adresse du siège rendue au format source `num voie + voie, ville cp`.
+- Bloc SYDEL fixe conservé :
+  - `SYDEL`
+  - `80 avenue Marceau, 75008 PARIS`
+  - `RCS PARIS 788 531 432`
+  - `0153814303`
+- Aucune image de signature n'est insérée pour DOC-003.
+- Les formulations de mandat ont été conservées, notamment la phrase :
+  - `De pour moi et en mon nom faire tous dépôts...`
 
 ## Prochain ticket à lancer
-DOC-003 : implémenter la procuration.
+DOC-002 : implémenter l'autorisation de domiciliation.
 
 ## Points ouverts
-- Aucun point bloquant identifié pour DOC-003.
-- DOC-002 doit toujours respecter la décision V1 : `domiciliation.adresse_locaux_affichee` est un champ libre.
+- Aucun point bloquant identifié après DOC-003.
+- DOC-002 doit respecter la décision V1 : `domiciliation.adresse_locaux_affichee` est un champ libre.
 - Toute ambiguïté de wording juridique doit bloquer l'implémentation concernée et être documentée.
 
 ## Validations connues
 - `.\.venv\Scripts\python.exe -m ruff check .` : OK.
-- `.\.venv\Scripts\python.exe -m pytest` : OK, 12 tests passés.
+- `.\.venv\Scripts\python.exe -m pytest` : OK, 20 tests passés.
 
 ## Recommandation immédiate suivante
-Lancer DOC-003 avec lecture préalable de :
+Lancer DOC-002 avec lecture préalable de :
 - `AGENTS.md`
 - `docs/project/00_MASTER_PLAN.md`
 - `docs/project/01_EXECUTION_BOARD.md`
