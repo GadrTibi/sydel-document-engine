@@ -16,7 +16,7 @@
 | DOC-001 | DONE | Implémenter la déclaration de non-condamnation | source doc + spec Lot 1 | générateur + tests + MAJ doc |
 | DOC-003 | DONE | Implémenter la procuration | source doc + spec Lot 1 | générateur + tests + MAJ doc |
 | DOC-002 | DONE | Implémenter l'autorisation de domiciliation | source doc + spec Lot 1 + décision V1 adresse libre | générateur + tests + MAJ doc |
-| ORCH-001 | READY | Brancher l'orchestrateur Lot 1 | générateurs DOC-001/002/003 | service orchestrateur + tests |
+| ORCH-001 | DONE | Brancher l'orchestrateur Lot 1 | générateurs DOC-001/002/003 | service orchestrateur + tests |
 | UI-001 | READY | Brancher Streamlit V0 Lot 1 | orchestrateur Lot 1 | écran simple + test manuel |
 
 ## Détail des prochains tickets
@@ -43,7 +43,7 @@
 ### ORCH-001
 - Objectif : brancher les trois générateurs Lot 1 dans l'orchestrateur dossier.
 - Prérequis : DOC-001, DOC-002 et DOC-003 terminés.
-- Sortie attendue : sélection des documents selon contexte dossier, tests d'orchestration.
+- Sortie : registre minimal DOC-001/DOC-002/DOC-003 branché, génération DOCX dossier selon `ctx.structure`, tests d'orchestration ajoutés.
 
 ### UI-001
 - Objectif : exposer une Streamlit simple pour générer le Lot 1.
@@ -59,12 +59,12 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - mettre à jour `docs/project/04_LAST_STATE.md`
 
 ## Prochaine étape prévue
-- prochain ticket : ORCH-001
-- action : brancher les trois générateurs Lot 1 dans l'orchestrateur dossier
+- prochain ticket : UI-001
+- action : brancher Streamlit V0 Lot 1 sur l'orchestrateur dossier
 
 ## Points ouverts
-- Aucun point bloquant identifié après DOC-002.
-- Ne pas démarrer ORCH-001 sans vérifier que DOC-001, DOC-002 et DOC-003 restent verts localement.
+- Aucun point bloquant identifié après ORCH-001.
+- PDF et ZIP restent hors ORCH-001 et devront être traités dans un ticket dédié.
 
 ## Journal court
 - 2026-05-12 : mémoire projet installée dans `docs/project/`.
@@ -74,3 +74,4 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - 2026-05-12 : DOC-001 corrigé pour rendre l'adresse personnelle dans l'ordre source `num voie + voie, ville cp`.
 - 2026-05-12 : DOC-003 implémenté en génération DOCX from-scratch avec tests unitaires ; validations locales vertes.
 - 2026-05-12 : DOC-002 implémenté en génération DOCX from-scratch avec champ libre `adresse_domiciliation_affichee` ; validations locales vertes.
+- 2026-05-12 : ORCH-001 branche les générateurs DOC-001, DOC-002 et DOC-003 dans l'orchestrateur dossier ; génération DOCX uniquement.

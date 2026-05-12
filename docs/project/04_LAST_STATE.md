@@ -4,52 +4,46 @@
 2026-05-12
 
 ## Dernier ticket terminé
-DOC-002 : implémenter l'autorisation de domiciliation.
+ORCH-001 : brancher les trois générateurs Lot 1 dans l'orchestrateur dossier.
 
 ## État courant du repo
-- DOC-001 dispose d'un générateur dédié déjà terminé et n'a pas été modifié dans ce ticket.
-- DOC-003 dispose d'un générateur dédié déjà terminé et n'a pas été modifié dans ce ticket.
-- DOC-002 dispose maintenant d'un générateur dédié :
-  - `src/sydel_doc_engine/generators/lot_01/autorisation_domiciliation.py` ;
-  - génération DOCX from-scratch ;
-  - sortie déterministe `autorisation_domiciliation.docx` ;
-  - création du répertoire de sortie si nécessaire.
-- Le modèle `Domiciliation` porte le champ libre `adresse_domiciliation_affichee`.
-- Des tests unitaires ciblés couvrent DOC-002 :
-  - création du fichier DOCX ;
-  - présence des textes essentiels ;
-  - accord féminin `Je soussignée` ;
-  - accord masculin `Je soussigné` ;
-  - reprise stricte de `adresse_domiciliation_affichee` ;
-  - absence de reconstruction automatique depuis l'adresse du siège ;
-  - absence de logique d'image de signature.
-- L'orchestrateur, Streamlit, PDF et ZIP n'ont pas été modifiés dans ce ticket.
+- DOC-001, DOC-002 et DOC-003 disposent chacun d'un générateur dédié déjà terminé.
+- L'orchestrateur dossier expose maintenant :
+  - un registre minimal des générateurs Lot 1 ;
+  - `select_documents(structure)` selon le catalogue ;
+  - `generate_documents(ctx, output_dir) -> list[Path]`.
+- `generate_documents` sélectionne les documents applicables via `ctx.structure`, conserve l'ordre du catalogue, crée les DOCX dans le répertoire de sortie et retourne les chemins produits.
+- Si un document sélectionné n'a pas de générateur enregistré, l'orchestrateur lève une erreur explicite.
+- Les tests unitaires d'orchestration couvrent :
+  - la sélection SELARL des trois documents universels Lot 1 ;
+  - la création de trois DOCX ;
+  - l'ordre de sortie conforme au catalogue ;
+  - l'erreur de générateur manquant.
+- Streamlit, PDF, ZIP et `rendering/bundle.py` n'ont pas été modifiés dans ce ticket.
 - Aucun commit, push ou PR n'a été fait.
 
 ## Décisions métier/techniques appliquées dans ce ticket
-- Génération DOCX from-scratch pour DOC-002.
-- Pas de PDF ni ZIP dans ce ticket.
-- Accord de genre limité à `Je soussigné` / `Je soussignée`.
-- Le texte cible a été codé directement dans le générateur Python.
-- L'adresse affichée est fournie par le champ libre `domiciliation.adresse_domiciliation_affichee`.
-- L'anomalie source `[ville_siege] [cp_siege] [ville_siege]` n'est pas reproduite.
-- Aucun mapping automatique depuis le siège social n'est appliqué.
-- Aucune image de signature n'est insérée pour DOC-002.
+- ORCH-001 génère uniquement des DOCX.
+- Aucun PDF, ZIP ou branchement Streamlit n'est inclus dans ORCH-001.
+- Les générateurs branchés sont uniquement DOC-001, DOC-002 et DOC-003.
+- L'ordre de génération est l'ordre du catalogue.
+- La sélection documentaire s'appuie sur `ctx.structure`.
+- Aucun wording juridique n'a été modifié.
 
 ## Prochain ticket à lancer
-ORCH-001 : brancher les trois générateurs Lot 1 dans l'orchestrateur dossier.
+UI-001 : brancher Streamlit V0 Lot 1 sur l'orchestrateur dossier.
 
 ## Points ouverts
-- Aucun point bloquant identifié après DOC-002.
-- La spec de livraison Lot 1 est alignée sur le champ `domiciliation.adresse_domiciliation_affichee`.
+- Aucun point bloquant identifié après ORCH-001.
+- PDF et ZIP restent à intégrer dans des tickets ultérieurs.
 - Toute ambiguïté de wording juridique doit bloquer l'implémentation concernée et être documentée.
 
 ## Validations connues
 - `.\.venv\Scripts\python.exe -m ruff check .` : OK.
-- `.\.venv\Scripts\python.exe -m pytest` : OK, 27 tests passés.
+- `.\.venv\Scripts\python.exe -m pytest` : OK, 31 tests passés.
 
 ## Recommandation immédiate suivante
-Lancer ORCH-001 avec lecture préalable de :
+Lancer UI-001 avec lecture préalable de :
 - `AGENTS.md`
 - `docs/project/00_MASTER_PLAN.md`
 - `docs/project/01_EXECUTION_BOARD.md`
@@ -57,4 +51,5 @@ Lancer ORCH-001 avec lecture préalable de :
 - `docs/project/03_HANDOFF_FOR_NEW_AGENT.md`
 - `docs/project/04_LAST_STATE.md`
 - `docs/delivery/lot_01_analysis_and_specs_v1.md`
-- ADR-0001, ADR-0002, ADR-0004 et ADR-0005
+- l'orchestrateur `src/sydel_doc_engine/orchestrator/service.py`
+- l'interface `src/sydel_doc_engine/app/streamlit_app.py`
