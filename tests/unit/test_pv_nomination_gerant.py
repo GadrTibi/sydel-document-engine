@@ -1,0 +1,227 @@
+from __future__ import annotations
+
+from datetime import date
+from pathlib import Path
+
+from docx import Document
+
+from sydel_doc_engine.domain.enums import Gender
+from sydel_doc_engine.domain.models import (
+    Address,
+    Associe,
+    BienImmobilier,
+    CapitalContext,
+    Company,
+    DecisionContext,
+    DirigeantNomine,
+    DocumentGenerationContext,
+    Emprunt,
+    Person,
+    ReunionContext,
+    Signature,
+)
+from sydel_doc_engine.generators.lot_02.pv_nomination_gerant import (
+    PvNominationGerantGenerator,
+)
+
+
+def _associes(count: int = 2) -> list[Associe]:
+    if count == 1:
+        return [
+            Associe(
+                genre=Gender.FEMININ,
+                civilite_affichage="Madame",
+                prenom="Alice",
+                nom="Durand",
+                nb_parts=1,
+            )
+        ]
+    return [
+        Associe(
+            genre=Gender.FEMININ,
+            civilite_affichage="Madame",
+            prenom="Alice",
+            nom="Durand",
+            nb_parts=60,
+        ),
+        Associe(
+            genre=Gender.MASCULIN,
+            civilite_affichage="Monsieur",
+            prenom="Bruno",
+            nom="Martin",
+            nb_parts=40,
+        ),
+    ]
+
+
+def _context(
+    *,
+    associes: list[Associe] | None = None,
+    emprunt_actif: bool = False,
+) -> DocumentGenerationContext:
+    associes = associes or _associes()
+    return DocumentGenerationContext(
+        personne_signataire=Person(
+            genre=Gender.MASCULIN,
+            civilite="Monsieur",
+            prenom="Jean",
+            nom="Signataire",
+        ),
+        societe=Company(
+            forme_sociale_affichage="Société civile immobilière",
+            forme_sociale_libelle_long="société civile immobilière",
+            denomination="SCI TEST",
+            capital_social="1 000",
+            capital_variable=True,
+            siege=Address(
+                num_voie="10",
+                voie="rue du Siège",
+                cp="75001",
+                ville="Paris",
+            ),
+            ville_rcs="Paris",
+        ),
+        decision=DecisionContext(date="13 mai 2026"),
+        reunion=ReunionContext(date_lettres="treize mai deux mille vingt-six", heure="10 heures"),
+        capital=CapitalContext(
+            nb_parts_total=sum(associe.nb_parts for associe in associes),
+            valeur_nominale_part="1",
+        ),
+        associes=associes,
+        dirigeant_nomine=DirigeantNomine(
+            genre=Gender.FEMININ,
+            civilite_affichage="Madame",
+            prenom="Claire",
+            nom="Bernard",
+            date_naissance=date(1985, 4, 3),
+            ville_naissance="Lyon",
+            departement_naissance="Rhône",
+            nationalite="française",
+            adresse_personnelle=Address(
+                num_voie="22",
+                voie="avenue des Fleurs",
+                cp="69002",
+                ville="Lyon",
+            ),
+            fonction_affichage="gérant",
+        ),
+        emprunt=Emprunt(
+            actif=emprunt_actif,
+            montant_max="250 000" if emprunt_actif else None,
+        ),
+        bien_immobilier=(
+            BienImmobilier(
+                adresse=Address(
+                    num_voie="5",
+                    voie="rue du Bien",
+                    cp="33000",
+                    ville="Bordeaux",
+                )
+            )
+            if emprunt_actif
+            else None
+        ),
+        signature=Signature(
+            lieu="Paris",
+            date=date(2026, 5, 13),
+            nombre_exemplaires="3",
+        ),
+    )
+
+
+def _generate(tmp_path: Path, ctx: DocumentGenerationContext | None = None) -> Path:
+    return PvNominationGerantGenerator().generate(ctx or _context(), tmp_path)
+
+
+def _docx_text(path: Path) -> str:
+    document = Document(path)
+    texts = [paragraph.text for paragraph in document.paragraphs]
+    for table in document.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                texts.extend(paragraph.text for paragraph in cell.paragraphs)
+    return "\n".join(text for text in texts if text)
+
+
+def _paragraphs(path: Path) -> list[str]:
+    return [paragraph.text for paragraph in Document(path).paragraphs if paragraph.text]
+
+
+def test_pv_nomination_gerant_creates_docx(tmp_path: Path) -> None:
+    output_path = _generate(tmp_path)
+
+    assert output_path == tmp_path / "pv_nomination_gerant.docx"
+    assert output_path.is_file()
+
+
+def test_pv_nomination_gerant_repeats_two_associes(tmp_path: Path) -> None:
+    text = _docx_text(_generate(tmp_path))
+    paragraphs = _paragraphs(_generate(tmp_path / "second"))
+
+    assert "Les associés de la société civile immobilière SCI TEST" in text
+    assert "Madame Alice Durand, représentant 60 parts," in text
+    assert "Monsieur Bruno Martin, représentant 40 parts," in text
+    assert "Les associés présents représentent 100 parts, soit la totalité du capital." in text
+    assert "Alice Durand" in paragraphs
+    assert "Bruno Martin" in paragraphs
+
+
+def test_pv_nomination_gerant_repeats_one_associe_with_singular_variants(
+    tmp_path: Path,
+) -> None:
+    ctx = _context(associes=_associes(1))
+    text = _docx_text(_generate(tmp_path, ctx))
+
+    assert "L’associé de la société civile immobilière SCI TEST" in text
+    assert "s’est réuni ce jour au siège de la société." in text
+    assert "Madame Alice Durand, représentant 1 part," in text
+    assert "L’associé présent représente 1 part, soit la totalité du capital." in text
+    assert (
+        "A l’issue de la signature des statuts, l’associé s’est réuni pour prendre "
+        "les décisions suivantes :"
+    ) in text
+
+
+def test_pv_nomination_gerant_without_emprunt_omits_borrowing_decision(
+    tmp_path: Path,
+) -> None:
+    text = _docx_text(_generate(tmp_path, _context(emprunt_actif=False)))
+
+    assert "Autorisation de  contracter un emprunt" not in text
+    assert "contracter un emprunt d’un montant maximum" not in text
+    assert "DEUXIEME DECISION" in text
+    assert "TROISIEME DECISION" not in text
+
+
+def test_pv_nomination_gerant_with_emprunt_writes_borrowing_decision(
+    tmp_path: Path,
+) -> None:
+    text = _docx_text(_generate(tmp_path, _context(emprunt_actif=True)))
+
+    assert (
+        "Autorisation de  contracter un emprunt pour l’achat d’un bien immobilier sis "
+        "5 rue du Bien, 33000 Bordeaux ;"
+    ) in text
+    assert (
+        "L’assemblée générale extraordinaire, décide de contracter un emprunt d’un montant "
+        "maximum de 250 000 euros pour l’acquisition d’un bien immobilier sis "
+        "5 rue du Bien, 33000 Bordeaux."
+    ) in text
+    assert "TROISIEME DECISION" in text
+
+
+def test_pv_nomination_gerant_uses_distinct_dirigeant_nomine(
+    tmp_path: Path,
+) -> None:
+    text = _docx_text(_generate(tmp_path))
+
+    assert "Madame Claire Bernard, née le 03/04/1985 à Lyon (Rhône)" in text
+    assert "Madame Alice Durand, née le" not in text
+    assert "Monsieur Bruno Martin, né le" not in text
+
+
+def test_pv_nomination_gerant_uses_feminine_birth_variant(tmp_path: Path) -> None:
+    text = _docx_text(_generate(tmp_path))
+
+    assert "née le 03/04/1985" in text
+    assert "né le 03/04/1985" not in text

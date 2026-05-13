@@ -24,7 +24,7 @@
 | PM-006 | DONE | Intégrer le cadrage métier PV nomination gérant V1 dans la mémoire projet | cadrage Lot 2 PV nomination gérant | board + dernier état mis à jour |
 | SPEC-PV-001 | DONE | Formaliser la spec canonique du PV nomination gérant à partir du cadrage V1 | cadrage Lot 2 + arbre documentaire V1 + dictionnaire canonique V1 + table de mapping V1 | spec canonique écrite, blocs conditionnels, mapping variables, règles `associes[]`, points ouverts |
 | SPEC-TEXTE-PV-001 | DONE | Stabiliser le texte canonique et les variantes du PV nomination gérant | spec canonique PV nomination gérant V1 + source Lot 2 | spec textuelle détaillée, variantes structurelles, wording à valider, critères avant code |
-| CODE-PV-001 | READY | Implémenter le générateur canonique PV nomination gérant | spec canonique V1 + spec texte V1 + source Lot 2 | générateur PV from-scratch + tests associes[]/genre/emprunt + MAJ doc |
+| CODE-PV-001 | DONE | Implémenter le générateur canonique PV nomination gérant | spec canonique V1 + spec texte V1 + source Lot 2 | générateur PV from-scratch + tests associes[]/genre/emprunt + MAJ doc |
 | UI-001 | BLOCKED | Brancher Streamlit V0 Lot 1 | orchestrateur Lot 1 + spec canonique PV nomination gérant validée | écran simple + test manuel |
 
 ## Référentiels moteur disponibles
@@ -94,10 +94,12 @@
 - Source à consulter : `project/source_documents/lot_02/PV nomination gérant - transforme.docx`.
 - Contraintes : générateur DOCX from-scratch, `associes[]` dynamique, `dirigeant_nomine` distinct, variantes `né/née`, branche `emprunt.actif`, renumérotation des décisions, aucun changement de wording juridique hors spec texte.
 - Sortie attendue : générateur dédié, tests unitaires ciblés, validation locale, mise à jour documentaire.
+- Statut : terminé ; générateur disponible dans `src/sydel_doc_engine/generators/lot_02/pv_nomination_gerant.py`, non branché à l'orchestrateur.
+- Smoke test réel : contexte exemple disponible dans `examples/contexts/lot_02_pv_nomination_gerant_example.yaml`, DOCX généré dans `artifacts/lot_02_pv_nomination_gerant_smoke_test/`.
 
 ### UI-001
 - Objectif : exposer une Streamlit simple pour générer le Lot 1.
-- Statut : en attente explicite ; ne pas lancer tant que le ticket documentaire/code suivant `CODE-PV-001` n'est pas traité ou explicitement dépriorisé.
+- Statut : en attente explicite ; ne pas lancer sans ticket explicite dédié.
 - Prérequis : orchestrateur Lot 1 fonctionnel et spec canonique `PV nomination gérant` validée.
 - Sortie attendue : écran simple, génération testable manuellement, aucun métier caché dans l'UI.
 
@@ -110,8 +112,8 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - mettre à jour `docs/project/04_LAST_STATE.md`
 
 ## Prochaine étape prévue
-- prochain ticket recommandé : CODE-PV-001
-- action : implémenter le générateur canonique PV nomination gérant à partir de la spec canonique V1 et de la spec texte V1.
+- prochaine action recommandée : revue humaine du rendu DOCX et du wording du PV nomination gérant généré.
+- action suivante après validation : créer un ticket explicite de branchement Lot 2/orchestrateur ou de reprise UI selon arbitrage projet.
 - UI-001 reste explicitement en attente.
 
 ## Points ouverts
@@ -119,7 +121,8 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - Les trois DOCX sont bien produits par l'orchestrateur dans `artifacts/lot_01_smoke_test/`, mais le rendu visuel et le wording juridique restent à relire humainement dans les fichiers générés.
 - PDF et ZIP restent hors ORCH-001 et devront être traités dans un ticket dédié.
 - Ecart temporaire non bloquant pour l'UI : la table V1 retient `domiciliation.adresse_affichee` comme nom canonique, tandis que le code Lot 1 existant conserve l'alias legacy `adresse_domiciliation_affichee` jusqu'à refactor dédié.
-- UI-001 reste en attente explicite : la prochaine priorité est `CODE-PV-001`, pas le branchement Streamlit.
+- CODE-PV-001 est terminé, mais le PV nomination gérant n'est pas encore branché dans l'orchestrateur.
+- UI-001 reste en attente explicite : ne pas lancer le branchement Streamlit sans nouveau ticket.
 - Points ouverts PV documentés dans la spec texte : périmètre SELAS, capital non variable, société déjà immatriculée, dirigeant non associé, ponctuation finale des associés, féminisation éventuelle de la fonction, règle `euro/euros`.
 
 ## Journal court
@@ -138,3 +141,5 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - 2026-05-13 : cadrage métier V1 de la famille `PV nomination gérant` intégré dans la mémoire projet ; SPEC-PV-001 ajouté en READY et UI-001 placé en attente tant que cette famille n'est pas spécifiée.
 - 2026-05-13 : spec canonique V1 de la famille `PV nomination gérant` intégrée dans la mémoire projet ; SPEC-PV-001 passé DONE, SPEC-TEXTE-PV-001 ajouté READY, UI-001 maintenu en attente explicite.
 - 2026-05-13 : spec texte V1 de la famille `PV nomination gérant` créée ; SPEC-TEXTE-PV-001 passé DONE, CODE-PV-001 ajouté READY, aucun code Python modifié.
+- 2026-05-13 : CODE-PV-001 implémente le générateur DOCX from-scratch du PV nomination gérant avec `associes[]`, `dirigeant_nomine`, branche `emprunt.actif`, variantes de genre/singulier-pluriel et tests ciblés ; ruff et pytest verts.
+- 2026-05-13 : smoke test réel CODE-PV-001 ajouté via `examples/contexts/lot_02_pv_nomination_gerant_example.yaml` ; DOCX généré dans `artifacts/lot_02_pv_nomination_gerant_smoke_test/` hors versionnement.

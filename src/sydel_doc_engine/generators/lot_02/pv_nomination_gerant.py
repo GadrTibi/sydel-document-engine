@@ -1,0 +1,513 @@
+from __future__ import annotations
+
+from datetime import date
+from pathlib import Path
+
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.oxml.ns import qn
+from docx.shared import Cm, Pt
+
+from sydel_doc_engine.domain.enums import Gender
+from sydel_doc_engine.domain.models import (
+    Address,
+    Associe,
+    BienImmobilier,
+    CapitalContext,
+    Company,
+    DirigeantNomine,
+    DocumentGenerationContext,
+    Emprunt,
+)
+from sydel_doc_engine.rendering.docx_builder import new_document
+
+OUTPUT_FILENAME = "pv_nomination_gerant.docx"
+DOCUMENT_CODE = "CODE-PV-001"
+
+VOTE_FORMULA = "Cette résolution, soumise au vote est adoptée à l’unanimité des voix présentes."
+POWERS_TEXT = (
+    "L’assemblée générale extraordinaire confère tous les pouvoirs au porteur d’un original à "
+    "l’effet de procéder aux formalités d’enregistrement au greffe du Tribunal de Commerce."
+)
+
+
+class PvNominationGerantGenerator:
+    """Générateur from-scratch du PV nomination gérant."""
+
+    def generate(self, ctx: DocumentGenerationContext, output_dir: Path) -> Path:
+        company = _required_company(ctx.societe)
+        capital = _required_capital(ctx.capital)
+        dirigeant = _required_dirigeant(ctx.dirigeant_nomine)
+        associes = _required_associes(ctx.associes)
+        represented_associes = _represented_associes(associes)
+        represented_parts = _validated_represented_parts(capital, represented_associes)
+        emprunt = ctx.emprunt or Emprunt(actif=False)
+        bien_immobilier = _required_bien_immobilier(ctx.bien_immobilier, emprunt)
+
+        document = new_document()
+        _configure_document(document)
+        _add_company_header(document, company)
+        _add_title_and_meeting(document, ctx)
+        _add_introduction(document, company, capital, associes)
+        _add_associes_block(document, represented_associes, represented_parts)
+        _add_order_of_business(document, associes, dirigeant, emprunt, bien_immobilier)
+        _add_nomination_decision(document, dirigeant)
+        _add_borrowing_decision(document, emprunt, bien_immobilier)
+        _add_powers_decision(document, emprunt)
+        _add_closing_and_signatures(document, ctx, associes, dirigeant)
+
+        output_dir.mkdir(parents=True, exist_ok=True)
+        output_path = output_dir / OUTPUT_FILENAME
+        document.save(output_path)
+        return output_path
+
+
+def _required_company(company: Company | None) -> Company:
+    if company is None:
+        raise ValueError(f"societe est obligatoire pour {DOCUMENT_CODE}.")
+    return company
+
+
+def _required_capital(capital: CapitalContext | None) -> CapitalContext:
+    if capital is None:
+        raise ValueError(f"capital est obligatoire pour {DOCUMENT_CODE}.")
+    return capital
+
+
+def _required_dirigeant(dirigeant: DirigeantNomine | None) -> DirigeantNomine:
+    if dirigeant is None:
+        raise ValueError(f"dirigeant_nomine est obligatoire pour {DOCUMENT_CODE}.")
+    return dirigeant
+
+
+def _required_associes(associes: list[Associe]) -> list[Associe]:
+    if not associes:
+        raise ValueError(f"associes[] doit contenir au moins un associé pour {DOCUMENT_CODE}.")
+    return associes
+
+
+def _represented_associes(associes: list[Associe]) -> list[Associe]:
+    represented = [associe for associe in associes if associe.est_present_ou_represente]
+    if not represented:
+        raise ValueError(
+            "associes[] doit contenir au moins un associé présent ou représenté "
+            f"pour {DOCUMENT_CODE}."
+        )
+    return represented
+
+
+def _required_bien_immobilier(
+    bien_immobilier: BienImmobilier | None,
+    emprunt: Emprunt,
+) -> BienImmobilier | None:
+    if not emprunt.actif:
+        return None
+    if bien_immobilier is None:
+        raise ValueError("bien_immobilier est obligatoire si emprunt.actif=true.")
+    return bien_immobilier
+
+
+def _required_text(value: str | None, field_name: str) -> str:
+    if value is None or not value.strip():
+        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+    return value.strip()
+
+
+def _required_positive_int(value: int | None, field_name: str) -> int:
+    if value is None:
+        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+    if value < 1:
+        raise ValueError(f"{field_name} doit être supérieur ou égal à 1 pour {DOCUMENT_CODE}.")
+    return value
+
+
+def _required_display_value(value: date | str | None, field_name: str) -> str:
+    if value is None:
+        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+    if isinstance(value, date):
+        return value.strftime("%d/%m/%Y")
+    return _required_text(value, field_name)
+
+
+def _required_address(address: Address | None, field_name: str) -> Address:
+    if address is None:
+        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+    _required_text(address.num_voie, f"{field_name}.num_voie")
+    _required_text(address.voie, f"{field_name}.voie")
+    _required_text(address.cp, f"{field_name}.cp")
+    _required_text(address.ville, f"{field_name}.ville")
+    return address
+
+
+def _address_inline(address: Address) -> str:
+    num_voie = _required_text(address.num_voie, "adresse.num_voie")
+    voie = _required_text(address.voie, "adresse.voie")
+    cp = _required_text(address.cp, "adresse.cp")
+    ville = _required_text(address.ville, "adresse.ville")
+    return f"{num_voie} {voie}, {cp} {ville}"
+
+
+def _address_no_comma(address: Address) -> str:
+    num_voie = _required_text(address.num_voie, "adresse.num_voie")
+    voie = _required_text(address.voie, "adresse.voie")
+    cp = _required_text(address.cp, "adresse.cp")
+    ville = _required_text(address.ville, "adresse.ville")
+    return f"{num_voie} {voie} {cp} {ville}"
+
+
+def _validated_represented_parts(
+    capital: CapitalContext,
+    represented_associes: list[Associe],
+) -> int:
+    nb_parts_total = _required_positive_int(capital.nb_parts_total, "capital.nb_parts_total")
+    represented_parts = sum(associe.nb_parts for associe in represented_associes)
+    if (
+        capital.nb_parts_representees is not None
+        and capital.nb_parts_representees != represented_parts
+    ):
+        raise ValueError(
+            "capital.nb_parts_representees doit correspondre à la somme des parts des associés "
+            f"présents ou représentés pour {DOCUMENT_CODE}."
+        )
+    if represented_parts != nb_parts_total:
+        raise ValueError(
+            "Les parts présentes ou représentées doivent correspondre à la totalité du capital "
+            f"pour {DOCUMENT_CODE}."
+        )
+    return represented_parts
+
+
+def _parts_label(nb_parts: int) -> str:
+    return "part" if nb_parts == 1 else "parts"
+
+
+def _ne_label(genre: Gender) -> str:
+    return "née" if genre == Gender.FEMININ else "né"
+
+
+def _capital_social(company: Company) -> str:
+    return _required_text(company.capital_social or company.capital, "societe.capital_social")
+
+
+def _forme_sociale_affichage(company: Company) -> str:
+    return _required_text(
+        company.forme_sociale_affichage or company.forme_sociale,
+        "societe.forme_sociale_affichage",
+    )
+
+
+def _capital_variable_mention(company: Company) -> str:
+    if company.capital_variable is False:
+        raise ValueError(
+            "societe.capital_variable=false n'est pas couvert par la spec texte V1 "
+            f"pour {DOCUMENT_CODE}."
+        )
+    return (
+        company.capital_variable_mention
+        if company.capital_variable_mention is not None
+        else " à capital variable"
+    )
+
+
+def _capital_variable_formule_intro(company: Company) -> str:
+    if company.capital_variable is False:
+        raise ValueError(
+            "societe.capital_variable=false n'est pas couvert par la spec texte V1 "
+            f"pour {DOCUMENT_CODE}."
+        )
+    return (
+        company.capital_variable_formule_intro
+        if company.capital_variable_formule_intro is not None
+        else "à capital variable"
+    )
+
+
+def _configure_document(document) -> None:
+    section = document.sections[0]
+    section.top_margin = Cm(2.5)
+    section.bottom_margin = Cm(2.5)
+    section.left_margin = Cm(2.5)
+    section.right_margin = Cm(2.5)
+
+    style = document.styles["Normal"]
+    style.font.name = "Roboto"
+    style.font.size = Pt(10)
+    r_fonts = style.element.rPr.rFonts
+    for font_attribute in ("w:ascii", "w:hAnsi", "w:eastAsia", "w:cs"):
+        r_fonts.set(qn(font_attribute), "Roboto")
+
+
+def _add_paragraph(
+    document,
+    text: str,
+    *,
+    alignment: WD_ALIGN_PARAGRAPH | None = None,
+    bold: bool = False,
+    space_after: int = 6,
+) -> None:
+    paragraph = document.add_paragraph()
+    paragraph.paragraph_format.space_after = Pt(space_after)
+    if alignment is not None:
+        paragraph.alignment = alignment
+    run = paragraph.add_run(text)
+    run.bold = bold
+
+
+def _add_company_header(document, company: Company) -> None:
+    siege = _required_address(company.siege, "societe.siege")
+    lines = [
+        _required_text(company.denomination, "societe.denomination"),
+        f"{_forme_sociale_affichage(company)}{_capital_variable_mention(company)}",
+        f"Au capital minimum et effectif de {_capital_social(company)} euros",
+        f"Siège social : {_address_no_comma(siege)}",
+        (
+            "En cours d’immatriculation au RCS de "
+            f"{_required_text(company.ville_rcs, 'societe.ville_rcs')}"
+        ),
+    ]
+    for line in lines:
+        _add_paragraph(document, line, alignment=WD_ALIGN_PARAGRAPH.CENTER, space_after=2)
+
+
+def _add_title_and_meeting(document, ctx: DocumentGenerationContext) -> None:
+    decision = ctx.decision
+    reunion = ctx.reunion
+    if decision is None:
+        raise ValueError(f"decision est obligatoire pour {DOCUMENT_CODE}.")
+    if reunion is None:
+        raise ValueError(f"reunion est obligatoire pour {DOCUMENT_CODE}.")
+
+    document.add_paragraph()
+    for line in (
+        "PROCES-VERBAL DES DECISIONS",
+        " DE L’ASSEMBLEE GENERALE EXTRAORDINAIRE",
+        f" DU {_required_display_value(decision.date, 'decision.date')}",
+    ):
+        _add_paragraph(
+            document,
+            line,
+            alignment=WD_ALIGN_PARAGRAPH.CENTER,
+            bold=True,
+            space_after=0,
+        )
+    document.add_paragraph()
+    _add_paragraph(
+        document,
+        (
+            f"Le {_required_text(reunion.date_lettres, 'reunion.date_lettres')} "
+            f"à {_required_text(reunion.heure, 'reunion.heure')}"
+        ),
+    )
+
+
+def _add_introduction(
+    document,
+    company: Company,
+    capital: CapitalContext,
+    associes: list[Associe],
+) -> None:
+    denomination = _required_text(company.denomination, "societe.denomination")
+    forme_longue = _required_text(
+        company.forme_sociale_libelle_long,
+        "societe.forme_sociale_libelle_long",
+    )
+    nb_parts_total = _required_positive_int(capital.nb_parts_total, "capital.nb_parts_total")
+    valeur_nominale = _required_text(
+        capital.valeur_nominale_part,
+        "capital.valeur_nominale_part",
+    )
+    common = (
+        f"de la {forme_longue} {denomination}, {_capital_variable_formule_intro(company)}, "
+        f"au capital minimum de {_capital_social(company)} euros, divisé en {nb_parts_total} "
+        f"parts de {valeur_nominale} euro chacune, "
+    )
+    if len(associes) == 1:
+        text = f"L’associé {common}s’est réuni ce jour au siège de la société."
+    else:
+        text = f"Les associés {common}se sont réunis ce jour au siège de la société."
+    _add_paragraph(document, text, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY)
+
+
+def _add_associes_block(
+    document,
+    associes: list[Associe],
+    represented_parts: int,
+) -> None:
+    _add_paragraph(document, "Associés présents ou représentés :")
+    for associe in associes:
+        _add_paragraph(
+            document,
+            (
+                f"{associe.civilite_affichage} {associe.prenom} {associe.nom}, "
+                f"représentant {associe.nb_parts} {_parts_label(associe.nb_parts)},"
+            ),
+        )
+    if len(associes) == 1:
+        text = (
+            f"L’associé présent représente {represented_parts} {_parts_label(represented_parts)}, "
+            "soit la totalité du capital."
+        )
+    else:
+        text = (
+            f"Les associés présents représentent {represented_parts} "
+            f"{_parts_label(represented_parts)}, soit la totalité du capital."
+        )
+    _add_paragraph(document, text)
+
+
+def _add_order_of_business(
+    document,
+    associes: list[Associe],
+    dirigeant: DirigeantNomine,
+    emprunt: Emprunt,
+    bien_immobilier: BienImmobilier | None,
+) -> None:
+    fonction_affichage = _required_text(
+        dirigeant.fonction_affichage,
+        "dirigeant_nomine.fonction_affichage",
+    )
+    if len(associes) == 1:
+        opening = (
+            "A l’issue de la signature des statuts, l’associé s’est réuni pour prendre "
+            "les décisions suivantes :"
+        )
+    else:
+        opening = (
+            "A l’issue de la signature des statuts, les associés se sont réunis pour prendre "
+            "les décisions suivantes :"
+        )
+    _add_paragraph(document, opening)
+    _add_paragraph(document, f"Nomination du {fonction_affichage} ;")
+    if emprunt.actif:
+        bien_adresse = _address_inline(
+            _required_address(
+                bien_immobilier.adresse if bien_immobilier else None,
+                "bien_immobilier.adresse",
+            )
+        )
+        _add_paragraph(
+            document,
+            (
+                "Autorisation de  contracter un emprunt pour l’achat d’un bien immobilier sis "
+                f"{bien_adresse} ;"
+            ),
+        )
+    _add_paragraph(document, "Pouvoir.")
+
+
+def _add_nomination_decision(document, dirigeant: DirigeantNomine) -> None:
+    fonction_affichage = _required_text(
+        dirigeant.fonction_affichage,
+        "dirigeant_nomine.fonction_affichage",
+    )
+    address = _required_address(
+        dirigeant.adresse_personnelle,
+        "dirigeant_nomine.adresse_personnelle",
+    )
+    birth_date = _required_display_value(
+        dirigeant.date_naissance,
+        "dirigeant_nomine.date_naissance",
+    )
+    birth_city = _required_text(
+        dirigeant.ville_naissance,
+        "dirigeant_nomine.ville_naissance",
+    )
+    birth_department = _required_text(
+        dirigeant.departement_naissance,
+        "dirigeant_nomine.departement_naissance",
+    )
+    nationality = _required_text(
+        dirigeant.nationalite,
+        "dirigeant_nomine.nationalite",
+    )
+    _add_paragraph(document, "PREMIERE DECISION", bold=True)
+    _add_paragraph(
+        document,
+        (
+            "L’assemblée générale extraordinaire décide de désigner en qualité de "
+            f"{fonction_affichage} pour une durée indéterminée :"
+        ),
+    )
+    _add_paragraph(
+        document,
+        (
+            f"{dirigeant.civilite_affichage} {dirigeant.prenom} {dirigeant.nom}, "
+            f"{_ne_label(dirigeant.genre)} le {birth_date} à {birth_city} "
+            f"({birth_department}), de nationalité {nationality}, "
+            f"demeurant {_address_inline(address)}."
+        ),
+    )
+    _add_paragraph(document, VOTE_FORMULA)
+
+
+def _add_borrowing_decision(
+    document,
+    emprunt: Emprunt,
+    bien_immobilier: BienImmobilier | None,
+) -> None:
+    if not emprunt.actif:
+        return
+    bien_adresse = _address_inline(
+        _required_address(
+            bien_immobilier.adresse if bien_immobilier else None,
+            "bien_immobilier.adresse",
+        )
+    )
+    montant = _required_text(emprunt.montant_max, "emprunt.montant_max")
+    _add_paragraph(document, "DEUXIEME DECISION", bold=True)
+    _add_paragraph(
+        document,
+        (
+            "L’assemblée générale extraordinaire, décide de contracter un emprunt d’un montant "
+            f"maximum de {montant} euros pour l’acquisition d’un bien immobilier sis "
+            f"{bien_adresse}."
+        ),
+    )
+    _add_paragraph(document, VOTE_FORMULA)
+
+
+def _add_powers_decision(document, emprunt: Emprunt) -> None:
+    title = "TROISIEME DECISION" if emprunt.actif else "DEUXIEME DECISION"
+    _add_paragraph(document, title, bold=True)
+    _add_paragraph(document, POWERS_TEXT)
+    _add_paragraph(document, VOTE_FORMULA)
+
+
+def _add_closing_and_signatures(
+    document,
+    ctx: DocumentGenerationContext,
+    associes: list[Associe],
+    dirigeant: DirigeantNomine,
+) -> None:
+    fonction_affichage = _required_text(
+        dirigeant.fonction_affichage,
+        "dirigeant_nomine.fonction_affichage",
+    )
+    lieu_signature = _required_text(ctx.signature.lieu, "signature.lieu")
+    nombre_exemplaires = _required_text(
+        ctx.signature.nombre_exemplaires,
+        "signature.nombre_exemplaires",
+    )
+    _add_paragraph(
+        document,
+        (
+            "De tout ce qui a été décidé, il a été dressé le présent procès-verbal qui a été "
+            "signé après lecture par les associés."
+        ),
+    )
+    _add_paragraph(
+        document,
+        (
+            "L’ordre du jour étant épuisé et personne ne demandant plus la parole, la séance "
+            "est levée."
+        ),
+    )
+    _add_paragraph(document, f"Fait à {lieu_signature} en {nombre_exemplaires} exemplaires")
+    for associe in associes:
+        _add_paragraph(document, f"{associe.prenom} {associe.nom}")
+    _add_paragraph(
+        document,
+        (
+            "Faire précéder la signature de la mention « Bon pour acceptation des fonctions de "
+            f"{fonction_affichage} »"
+        ),
+    )
