@@ -14,3 +14,5 @@ outputs/
 .generated/
 .DS_Store
 .streamlit/secrets.toml
+
+artifacts/
