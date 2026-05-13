@@ -25,6 +25,9 @@
 | SPEC-PV-001 | DONE | Formaliser la spec canonique du PV nomination gérant à partir du cadrage V1 | cadrage Lot 2 + arbre documentaire V1 + dictionnaire canonique V1 + table de mapping V1 | spec canonique écrite, blocs conditionnels, mapping variables, règles `associes[]`, points ouverts |
 | SPEC-TEXTE-PV-001 | DONE | Stabiliser le texte canonique et les variantes du PV nomination gérant | spec canonique PV nomination gérant V1 + source Lot 2 | spec textuelle détaillée, variantes structurelles, wording à valider, critères avant code |
 | CODE-PV-001 | DONE | Implémenter le générateur canonique PV nomination gérant | spec canonique V1 + spec texte V1 + source Lot 2 | générateur PV from-scratch + tests associes[]/genre/emprunt + MAJ doc |
+| REVIEW-PV-001 | DONE | Préparer la revue humaine du PV nomination gérant généré | contexte exemple Lot 2 + générateur PV existant | DOCX régénéré + aperçu texte + checklist de revue humaine |
+| SPEC-RENDER-001 | DONE | Spécifier une couche de rendu DOCX commune | générateurs DOC-001/002/003 + PV nomination gérant + specs existantes | spec technique render style system V1 |
+| RENDER-STYLE-001 | DONE | Implémenter la couche de rendu DOCX commune | spec render style system V1 + générateurs existants | helpers communs + générateurs migrés + tests + smoke DOCX |
 | UI-001 | BLOCKED | Brancher Streamlit V0 Lot 1 | orchestrateur Lot 1 + spec canonique PV nomination gérant validée | écran simple + test manuel |
 
 ## Référentiels moteur disponibles
@@ -34,6 +37,9 @@
 - Le cadrage métier de la famille `PV nomination gérant` est disponible : `docs/delivery/lot_02_pv_nomination_gerant_cadrage_v1.md`.
 - La spec canonique V1 de la famille `PV nomination gérant` est disponible : `docs/delivery/lot_02_pv_nomination_gerant_spec_canonique_v1.md`.
 - La spec texte V1 de la famille `PV nomination gérant` est disponible : `docs/delivery/lot_02_pv_nomination_gerant_spec_texte_v1.md`.
+- La spec technique V1 de couche de rendu DOCX commune est disponible : `docs/delivery/render_style_system_v1.md`.
+- Le pack de revue humaine du PV nomination gérant est disponible : `docs/review/lot_02_pv_nomination_gerant_review_v1.md`.
+- L'aperçu texte extrait du DOCX généré est disponible : `docs/review/lot_02_pv_nomination_gerant_preview_v1.txt`.
 - Ces référentiels cadrent les prochains tickets ; ils ne doivent pas être réinventés pendant l'implémentation.
 
 ## Ecart temporaire connu
@@ -97,6 +103,26 @@
 - Statut : terminé ; générateur disponible dans `src/sydel_doc_engine/generators/lot_02/pv_nomination_gerant.py`, non branché à l'orchestrateur.
 - Smoke test réel : contexte exemple disponible dans `examples/contexts/lot_02_pv_nomination_gerant_example.yaml`, DOCX généré dans `artifacts/lot_02_pv_nomination_gerant_smoke_test/`.
 
+### REVIEW-PV-001
+- Objectif : préparer la revue humaine du rendu DOCX et du wording du PV nomination gérant déjà codé, sans modifier le code métier.
+- Entrées : générateur PV existant, contexte exemple `examples/contexts/lot_02_pv_nomination_gerant_example.yaml`, specs Lot 2.
+- Sortie : DOCX régénéré dans `artifacts/lot_02_pv_nomination_gerant_smoke_test/pv_nomination_gerant.docx`, aperçu texte et checklist de revue dans `docs/review/`.
+- Statut : terminé ; le PV reste non branché à l'orchestrateur Lot 2 tant qu'une validation humaine explicite n'a pas été donnée.
+
+### SPEC-RENDER-001
+- Objectif : formaliser une couche de rendu DOCX commune avant refactor du code métier.
+- Spec à lire : `docs/delivery/render_style_system_v1.md`.
+- Contraintes : ne modifier aucun générateur, ne changer aucun wording juridique, documenter les styles communs, le titre encadré, les signatures simples/encadrées, le rappel légal et les surcharges documentaires.
+- Sortie : spec technique V1 créée ; documents impactés listés : DOC-001, DOC-002, DOC-003 et PV nomination gérant.
+- Statut : terminé ; le point d'écart explicite est que les encadrés de signature manquent aujourd'hui dans le rendu généré.
+
+### RENDER-STYLE-001
+- Objectif : implémenter la couche commune de rendu DOCX dans `src/sydel_doc_engine/rendering/docx_builder.py`.
+- Prérequis : `docs/delivery/render_style_system_v1.md`.
+- Contraintes : ticket technique uniquement, aucun changement de wording juridique, migration progressive, tests existants à conserver verts.
+- Sortie attendue : profil global de style, helpers de paragraphes/blocs, titre encadré, signature simple, signature encadrée disponible, rappel légal commun.
+- Statut : terminé ; couche commune implémentée et appliquée à DOC-001, DOC-002, DOC-003 et PV nomination gérant.
+
 ### UI-001
 - Objectif : exposer une Streamlit simple pour générer le Lot 1.
 - Statut : en attente explicite ; ne pas lancer sans ticket explicite dédié.
@@ -112,8 +138,9 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - mettre à jour `docs/project/04_LAST_STATE.md`
 
 ## Prochaine étape prévue
-- prochaine action recommandée : revue humaine du rendu DOCX et du wording du PV nomination gérant généré.
-- action suivante après validation : créer un ticket explicite de branchement Lot 2/orchestrateur ou de reprise UI selon arbitrage projet.
+- prochaine action recommandée : relire humainement les DOCX smoke générés après migration de rendu.
+- action suivante côté métier : faire relire humainement `docs/review/lot_02_pv_nomination_gerant_review_v1.md`, l'aperçu texte et le DOCX généré.
+- action suivante après validation PV : créer un ticket explicite de branchement Lot 2/orchestrateur ou de correction wording/rendu selon la revue.
 - UI-001 reste explicitement en attente.
 
 ## Points ouverts
@@ -122,6 +149,9 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - PDF et ZIP restent hors ORCH-001 et devront être traités dans un ticket dédié.
 - Ecart temporaire non bloquant pour l'UI : la table V1 retient `domiciliation.adresse_affichee` comme nom canonique, tandis que le code Lot 1 existant conserve l'alias legacy `adresse_domiciliation_affichee` jusqu'à refactor dédié.
 - CODE-PV-001 est terminé, mais le PV nomination gérant n'est pas encore branché dans l'orchestrateur.
+- REVIEW-PV-001 est terminé, mais la validation humaine du rendu DOCX et du wording reste à obtenir avant branchement.
+- RENDER-STYLE-001 est terminé ; les signatures encadrées sont disponibles dans la couche commune et appliquées aux signatures Lot 1.
+- Le PV nomination gérant conserve des signatures répétables simples ; toute signature encadrée dirigeant/associés séparée reste soumise à validation métier.
 - UI-001 reste en attente explicite : ne pas lancer le branchement Streamlit sans nouveau ticket.
 - Points ouverts PV documentés dans la spec texte : périmètre SELAS, capital non variable, société déjà immatriculée, dirigeant non associé, ponctuation finale des associés, féminisation éventuelle de la fonction, règle `euro/euros`.
 
@@ -143,3 +173,6 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - 2026-05-13 : spec texte V1 de la famille `PV nomination gérant` créée ; SPEC-TEXTE-PV-001 passé DONE, CODE-PV-001 ajouté READY, aucun code Python modifié.
 - 2026-05-13 : CODE-PV-001 implémente le générateur DOCX from-scratch du PV nomination gérant avec `associes[]`, `dirigeant_nomine`, branche `emprunt.actif`, variantes de genre/singulier-pluriel et tests ciblés ; ruff et pytest verts.
 - 2026-05-13 : smoke test réel CODE-PV-001 ajouté via `examples/contexts/lot_02_pv_nomination_gerant_example.yaml` ; DOCX généré dans `artifacts/lot_02_pv_nomination_gerant_smoke_test/` hors versionnement.
+- 2026-05-13 : REVIEW-PV-001 régénère le DOCX PV depuis le contexte exemple, extrait un aperçu texte et crée une checklist de revue humaine dans `docs/review/`, sans modification du code Python.
+- 2026-05-13 : SPEC-RENDER-001 crée la spec technique `docs/delivery/render_style_system_v1.md` pour une couche de rendu DOCX commune, sans modification de code Python.
+- 2026-05-13 : RENDER-STYLE-001 implémente la couche commune de rendu DOCX, migre DOC-001/DOC-002/DOC-003/PV nomination gérant, ajoute les tests de rendu et génère les smoke DOCX dans `artifacts/render_style_001_*`.

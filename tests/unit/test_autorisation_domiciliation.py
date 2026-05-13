@@ -4,6 +4,7 @@ from datetime import date
 from pathlib import Path
 
 from docx import Document
+from docx.oxml.ns import qn
 
 from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import (
@@ -82,6 +83,11 @@ def _docx_text(path: Path) -> str:
     return "\n".join(text for text in texts if text)
 
 
+def _table_has_explicit_borders(table) -> bool:
+    borders = table._tbl.tblPr.find(qn("w:tblBorders"))
+    return borders is not None and borders.find(qn("w:top")) is not None
+
+
 def test_autorisation_domiciliation_creates_docx(tmp_path: Path) -> None:
     output_dir = tmp_path / "nested"
 
@@ -143,3 +149,12 @@ def test_autorisation_domiciliation_does_not_use_signature_image(tmp_path: Path)
     output_path = _generate(tmp_path, image_optionnelle=missing_image)
 
     assert len(Document(output_path).inline_shapes) == 0
+
+
+def test_autorisation_domiciliation_uses_framed_signature_block(tmp_path: Path) -> None:
+    document = Document(_generate(tmp_path))
+
+    signature_table = document.tables[1]
+    assert signature_table.style.name == "Table Grid"
+    assert _table_has_explicit_borders(signature_table)
+    assert "Monsieur Jean Durand" in signature_table.cell(0, 0).text

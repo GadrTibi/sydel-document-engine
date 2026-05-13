@@ -4,8 +4,6 @@ from datetime import date
 from pathlib import Path
 
 from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.oxml.ns import qn
-from docx.shared import Cm, Pt
 
 from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import (
@@ -18,7 +16,12 @@ from sydel_doc_engine.domain.models import (
     DocumentGenerationContext,
     Emprunt,
 )
-from sydel_doc_engine.rendering.docx_builder import new_document
+from sydel_doc_engine.rendering.docx_builder import (
+    add_centered_block,
+    add_paragraph,
+    add_signature_lines,
+    new_document,
+)
 
 OUTPUT_FILENAME = "pv_nomination_gerant.docx"
 DOCUMENT_CODE = "CODE-PV-001"
@@ -44,7 +47,6 @@ class PvNominationGerantGenerator:
         bien_immobilier = _required_bien_immobilier(ctx.bien_immobilier, emprunt)
 
         document = new_document()
-        _configure_document(document)
         _add_company_header(document, company)
         _add_title_and_meeting(document, ctx)
         _add_introduction(document, company, capital, associes)
@@ -221,21 +223,6 @@ def _capital_variable_formule_intro(company: Company) -> str:
     )
 
 
-def _configure_document(document) -> None:
-    section = document.sections[0]
-    section.top_margin = Cm(2.5)
-    section.bottom_margin = Cm(2.5)
-    section.left_margin = Cm(2.5)
-    section.right_margin = Cm(2.5)
-
-    style = document.styles["Normal"]
-    style.font.name = "Roboto"
-    style.font.size = Pt(10)
-    r_fonts = style.element.rPr.rFonts
-    for font_attribute in ("w:ascii", "w:hAnsi", "w:eastAsia", "w:cs"):
-        r_fonts.set(qn(font_attribute), "Roboto")
-
-
 def _add_paragraph(
     document,
     text: str,
@@ -244,12 +231,13 @@ def _add_paragraph(
     bold: bool = False,
     space_after: int = 6,
 ) -> None:
-    paragraph = document.add_paragraph()
-    paragraph.paragraph_format.space_after = Pt(space_after)
-    if alignment is not None:
-        paragraph.alignment = alignment
-    run = paragraph.add_run(text)
-    run.bold = bold
+    add_paragraph(
+        document,
+        text,
+        alignment=alignment,
+        bold=bold,
+        space_after_pt=space_after,
+    )
 
 
 def _add_company_header(document, company: Company) -> None:
@@ -264,8 +252,7 @@ def _add_company_header(document, company: Company) -> None:
             f"{_required_text(company.ville_rcs, 'societe.ville_rcs')}"
         ),
     ]
-    for line in lines:
-        _add_paragraph(document, line, alignment=WD_ALIGN_PARAGRAPH.CENTER, space_after=2)
+    add_centered_block(document, lines, space_after_pt=2)
 
 
 def _add_title_and_meeting(document, ctx: DocumentGenerationContext) -> None:
@@ -502,8 +489,10 @@ def _add_closing_and_signatures(
         ),
     )
     _add_paragraph(document, f"Fait à {lieu_signature} en {nombre_exemplaires} exemplaires")
-    for associe in associes:
-        _add_paragraph(document, f"{associe.prenom} {associe.nom}")
+    add_signature_lines(
+        document,
+        [f"{associe.prenom} {associe.nom}" for associe in associes],
+    )
     _add_paragraph(
         document,
         (

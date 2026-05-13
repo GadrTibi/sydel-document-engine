@@ -5,6 +5,7 @@ from pathlib import Path
 
 from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.oxml.ns import qn
 from docx.shared import Pt
 
 from sydel_doc_engine.domain.enums import Gender
@@ -71,6 +72,11 @@ def _find_paragraph(document: Document, expected_text: str):
     raise AssertionError(f"Paragraphe introuvable : {expected_text}")
 
 
+def _table_has_explicit_borders(table) -> bool:
+    borders = table._tbl.tblPr.find(qn("w:tblBorders"))
+    return borders is not None and borders.find(qn("w:top")) is not None
+
+
 def test_declaration_non_condamnation_creates_docx(tmp_path: Path) -> None:
     output_path = _generate(tmp_path)
 
@@ -125,6 +131,12 @@ def test_declaration_non_condamnation_matches_source_visual_formatting(tmp_path:
     title_paragraph = title_table.cell(0, 0).paragraphs[0]
     assert title_paragraph.alignment == WD_ALIGN_PARAGRAPH.CENTER
     assert all(run.bold for run in title_paragraph.runs if run.text.strip())
+    assert _table_has_explicit_borders(title_table)
+
+    signature_table = document.tables[1]
+    assert signature_table.style.name == "Table Grid"
+    assert _table_has_explicit_borders(signature_table)
+    assert "Fait à Paris" in signature_table.cell(0, 0).text
 
     subject_paragraph = _find_paragraph(document, "Je soussigné Monsieur Jean Durand")
     assert all(run.bold for run in subject_paragraph.runs if run.text.strip())

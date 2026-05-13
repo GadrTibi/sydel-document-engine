@@ -3,13 +3,16 @@ from __future__ import annotations
 from datetime import date
 from pathlib import Path
 
-from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.oxml.ns import qn
-from docx.shared import Cm, Pt
 
 from sydel_doc_engine.domain.models import Address, DocumentGenerationContext
-from sydel_doc_engine.rendering.docx_builder import new_document
+from sydel_doc_engine.rendering.docx_builder import (
+    add_framed_title,
+    add_legal_reminder,
+    add_paragraph,
+    add_signature_block,
+    new_document,
+)
 from sydel_doc_engine.utils.grammar import birth_label, filiation_label, subject_line
 
 OUTPUT_FILENAME = "declaration_non_condamnation.docx"
@@ -57,7 +60,6 @@ class DeclarationNonCondamnationGenerator:
         adresse_perso = _compose_required_address(address)
 
         document = new_document()
-        _configure_document(document)
         _add_title(document)
         _add_identity_block(
             document,
@@ -113,38 +115,14 @@ def _format_date(value: date) -> str:
     return value.strftime("%d/%m/%Y")
 
 
-def _configure_document(document) -> None:
-    section = document.sections[0]
-    section.top_margin = Cm(2.5)
-    section.bottom_margin = Cm(2.5)
-    section.left_margin = Cm(2.5)
-    section.right_margin = Cm(2.5)
-
-    style = document.styles["Normal"]
-    style.font.name = "Roboto"
-    style.font.size = Pt(10)
-    r_fonts = style.element.rPr.rFonts
-    for font_attribute in ("w:ascii", "w:hAnsi", "w:eastAsia", "w:cs"):
-        r_fonts.set(qn(font_attribute), "Roboto")
-
-
 def _add_title(document) -> None:
-    table = document.add_table(rows=1, cols=1)
-    table.alignment = WD_TABLE_ALIGNMENT.CENTER
-    table.style = "Table Grid"
-    cell = table.cell(0, 0)
-    paragraph = cell.paragraphs[0]
-    paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
-
-    first = paragraph.add_run("DECLARATION DE NON CONDAMNATION")
-    first.bold = True
-    first.font.size = Pt(10)
-    paragraph.add_run("\n")
-    second = paragraph.add_run("EN APPLICATION DE L’ARTICLE A.123-51 du Code de Commerce")
-    second.bold = True
-    second.font.size = Pt(10)
-
-    document.add_paragraph()
+    add_framed_title(
+        document,
+        [
+            "DECLARATION DE NON CONDAMNATION",
+            "EN APPLICATION DE L’ARTICLE A.123-51 du Code de Commerce",
+        ],
+    )
 
 
 def _add_identity_block(
@@ -176,13 +154,13 @@ def _add_paragraph(
     bold: bool = False,
     alignment: WD_ALIGN_PARAGRAPH | None = None,
 ) -> None:
-    paragraph = document.add_paragraph()
-    paragraph.paragraph_format.space_before = Pt(space_before)
-    paragraph.paragraph_format.space_after = Pt(6)
-    if alignment is not None:
-        paragraph.alignment = alignment
-    run = paragraph.add_run(text)
-    run.bold = bold
+    add_paragraph(
+        document,
+        text,
+        space_before_pt=space_before,
+        bold=bold,
+        alignment=alignment,
+    )
 
 
 def _add_signature_block(
@@ -192,39 +170,18 @@ def _add_signature_block(
     date_signature: str,
     image_path: Path | None,
 ) -> None:
-    table = document.add_table(rows=1, cols=2)
-    table.alignment = WD_TABLE_ALIGNMENT.RIGHT
-    right_cell = table.cell(0, 1)
-    right_cell.width = Cm(7)
-
-    for text in (f"Fait à {lieu_signature}", f"Le {date_signature}"):
-        paragraph = right_cell.add_paragraph(text)
-        paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
-
-    signature_paragraph = right_cell.add_paragraph()
-    if image_path is not None:
-        if not image_path.exists():
-            raise ValueError(f"signature.image_optionnelle est introuvable : {image_path}")
-        signature_paragraph.add_run().add_picture(str(image_path), width=Cm(4))
-    else:
-        signature_paragraph.add_run("\n\n\n")
+    add_signature_block(
+        document,
+        [f"Fait à {lieu_signature}", f"Le {date_signature}"],
+        image_path=image_path,
+        framed=True,
+    )
 
 
 def _add_legal_reminder(document) -> None:
-    document.add_paragraph()
-
-    title = document.add_paragraph()
-    title.paragraph_format.space_after = Pt(3)
-    title.style = document.styles["Normal"]
-    reminder = title.add_run("Rappel")
-    reminder.italic = True
-    reminder.underline = True
-    suffix = title.add_run(RAPPEL_TITLE_SUFFIX)
-    suffix.italic = True
-
-    for text in (RAPPEL_PARAGRAPH_1, RAPPEL_PARAGRAPH_2):
-        paragraph = document.add_paragraph()
-        paragraph.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-        paragraph.paragraph_format.space_after = Pt(3)
-        run = paragraph.add_run(text)
-        run.italic = True
+    add_legal_reminder(
+        document,
+        title="Rappel",
+        title_suffix=RAPPEL_TITLE_SUFFIX,
+        paragraphs=[RAPPEL_PARAGRAPH_1, RAPPEL_PARAGRAPH_2],
+    )

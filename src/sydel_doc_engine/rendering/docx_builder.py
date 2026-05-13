@@ -1,11 +1,294 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+
 from docx import Document
+from docx.enum.table import WD_TABLE_ALIGNMENT
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
+from docx.shared import Cm, Pt
 
 
-def new_document() -> Document:
-    """Crée un document DOCX vide.
+@dataclass(frozen=True)
+class SydelDocxStyleProfile:
+    font_name: str = "Roboto"
+    font_size_pt: int = 10
+    margin_top_cm: float = 2.5
+    margin_bottom_cm: float = 2.5
+    margin_left_cm: float = 2.5
+    margin_right_cm: float = 2.5
+    standard_space_after_pt: int = 6
+    compact_space_after_pt: int = 2
+    legal_reminder_space_after_pt: int = 3
+    notable_space_before_pt: int = 10
+    signature_width_cm: float = 7.0
+    signature_image_width_cm: float = 4.0
 
-    Ce helper servira de point d'entrée commun lorsque les générateurs réels seront branchés.
-    """
-    return Document()
+
+DEFAULT_STYLE_PROFILE = SydelDocxStyleProfile()
+
+
+def new_document(
+    style_profile: SydelDocxStyleProfile = DEFAULT_STYLE_PROFILE,
+) -> Any:
+    """Create a clean DOCX document with the shared SYDEL style profile applied."""
+    document = Document()
+    apply_style_profile(document, style_profile)
+    return document
+
+
+def apply_style_profile(
+    document: Any,
+    style_profile: SydelDocxStyleProfile = DEFAULT_STYLE_PROFILE,
+) -> None:
+    section = document.sections[0]
+    section.top_margin = Cm(style_profile.margin_top_cm)
+    section.bottom_margin = Cm(style_profile.margin_bottom_cm)
+    section.left_margin = Cm(style_profile.margin_left_cm)
+    section.right_margin = Cm(style_profile.margin_right_cm)
+
+    style = document.styles["Normal"]
+    style.font.name = style_profile.font_name
+    style.font.size = Pt(style_profile.font_size_pt)
+    r_fonts = style.element.rPr.rFonts
+    for font_attribute in ("w:ascii", "w:hAnsi", "w:eastAsia", "w:cs"):
+        r_fonts.set(qn(font_attribute), style_profile.font_name)
+
+
+def add_paragraph(
+    document: Any,
+    text: str,
+    *,
+    alignment: WD_ALIGN_PARAGRAPH | None = None,
+    bold: bool = False,
+    italic: bool = False,
+    underline: bool = False,
+    space_before_pt: int = 0,
+    space_after_pt: int | None = None,
+    style_profile: SydelDocxStyleProfile = DEFAULT_STYLE_PROFILE,
+) -> Any:
+    paragraph = document.add_paragraph()
+    paragraph.paragraph_format.space_before = Pt(space_before_pt)
+    paragraph.paragraph_format.space_after = Pt(
+        style_profile.standard_space_after_pt if space_after_pt is None else space_after_pt
+    )
+    if alignment is not None:
+        paragraph.alignment = alignment
+    run = paragraph.add_run(text)
+    run.bold = bold
+    run.italic = italic
+    run.underline = underline
+    return paragraph
+
+
+def add_spacer(document: Any, *, space_after_pt: int = 0) -> Any:
+    paragraph = document.add_paragraph()
+    paragraph.paragraph_format.space_after = Pt(space_after_pt)
+    return paragraph
+
+
+def add_framed_title(
+    document: Any,
+    lines: Sequence[str],
+    *,
+    style_profile: SydelDocxStyleProfile = DEFAULT_STYLE_PROFILE,
+) -> Any:
+    table = document.add_table(rows=1, cols=1)
+    table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    table.style = "Table Grid"
+    _set_table_borders(table)
+
+    cell = table.cell(0, 0)
+    paragraph = cell.paragraphs[0]
+    paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    for index, line in enumerate(lines):
+        if index:
+            paragraph.add_run("\n")
+        run = paragraph.add_run(line)
+        run.bold = True
+        run.font.name = style_profile.font_name
+        run.font.size = Pt(style_profile.font_size_pt)
+
+    add_spacer(document)
+    return table
+
+
+def add_centered_block(
+    document: Any,
+    lines: Sequence[tuple[str, bool, bool] | str],
+    *,
+    space_after_pt: int | None = None,
+    style_profile: SydelDocxStyleProfile = DEFAULT_STYLE_PROFILE,
+) -> list[Any]:
+    paragraphs = []
+    for line in lines:
+        if isinstance(line, str):
+            text = line
+            bold = False
+            italic = False
+        else:
+            text, bold, italic = line
+        paragraphs.append(
+            add_paragraph(
+                document,
+                text,
+                alignment=WD_ALIGN_PARAGRAPH.CENTER,
+                bold=bold,
+                italic=italic,
+                space_after_pt=(
+                    style_profile.compact_space_after_pt
+                    if space_after_pt is None
+                    else space_after_pt
+                ),
+                style_profile=style_profile,
+            )
+        )
+    return paragraphs
+
+
+def add_signature_block(
+    document: Any,
+    lines: Sequence[str],
+    *,
+    image_path: Path | None = None,
+    framed: bool = False,
+    width_cm: float | None = None,
+    style_profile: SydelDocxStyleProfile = DEFAULT_STYLE_PROFILE,
+) -> Any:
+    if framed:
+        return add_framed_signature_block(
+            document,
+            lines,
+            image_path=image_path,
+            width_cm=width_cm,
+            style_profile=style_profile,
+        )
+    return add_simple_signature_block(
+        document,
+        lines,
+        image_path=image_path,
+        width_cm=width_cm,
+        style_profile=style_profile,
+    )
+
+
+def add_simple_signature_block(
+    document: Any,
+    lines: Sequence[str],
+    *,
+    image_path: Path | None = None,
+    width_cm: float | None = None,
+    style_profile: SydelDocxStyleProfile = DEFAULT_STYLE_PROFILE,
+) -> Any:
+    add_spacer(document)
+    table = document.add_table(rows=1, cols=2)
+    table.alignment = WD_TABLE_ALIGNMENT.RIGHT
+    right_cell = table.cell(0, 1)
+    right_cell.width = Cm(width_cm or style_profile.signature_width_cm)
+    _add_signature_cell_content(right_cell, lines, image_path, style_profile)
+    return table
+
+
+def add_framed_signature_block(
+    document: Any,
+    lines: Sequence[str],
+    *,
+    image_path: Path | None = None,
+    width_cm: float | None = None,
+    style_profile: SydelDocxStyleProfile = DEFAULT_STYLE_PROFILE,
+) -> Any:
+    add_spacer(document)
+    table = document.add_table(rows=1, cols=1)
+    table.alignment = WD_TABLE_ALIGNMENT.RIGHT
+    table.style = "Table Grid"
+    _set_table_borders(table)
+    cell = table.cell(0, 0)
+    cell.width = Cm(width_cm or style_profile.signature_width_cm)
+    _add_signature_cell_content(cell, lines, image_path, style_profile)
+    return table
+
+
+def add_signature_lines(
+    document: Any,
+    names: Sequence[str],
+    *,
+    style_profile: SydelDocxStyleProfile = DEFAULT_STYLE_PROFILE,
+) -> list[Any]:
+    return [add_paragraph(document, name, style_profile=style_profile) for name in names]
+
+
+def add_legal_reminder(
+    document: Any,
+    *,
+    title: str,
+    title_suffix: str,
+    paragraphs: Sequence[str],
+    style_profile: SydelDocxStyleProfile = DEFAULT_STYLE_PROFILE,
+) -> None:
+    add_spacer(document)
+
+    title_paragraph = document.add_paragraph()
+    title_paragraph.paragraph_format.space_after = Pt(style_profile.legal_reminder_space_after_pt)
+    title_paragraph.style = document.styles["Normal"]
+    reminder = title_paragraph.add_run(title)
+    reminder.italic = True
+    reminder.underline = True
+    suffix = title_paragraph.add_run(title_suffix)
+    suffix.italic = True
+
+    for text in paragraphs:
+        add_paragraph(
+            document,
+            text,
+            alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
+            italic=True,
+            space_after_pt=style_profile.legal_reminder_space_after_pt,
+            style_profile=style_profile,
+        )
+
+
+def _add_signature_cell_content(
+    cell: Any,
+    lines: Sequence[str],
+    image_path: Path | None,
+    style_profile: SydelDocxStyleProfile,
+) -> None:
+    first_paragraph = cell.paragraphs[0]
+    for index, text in enumerate(lines):
+        paragraph = first_paragraph if index == 0 else cell.add_paragraph()
+        paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
+        paragraph.paragraph_format.space_after = Pt(style_profile.compact_space_after_pt)
+        paragraph.add_run(text)
+
+    signature_paragraph = cell.add_paragraph()
+    signature_paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    if image_path is not None:
+        if not image_path.exists():
+            raise ValueError(f"signature.image_optionnelle est introuvable : {image_path}")
+        signature_paragraph.add_run().add_picture(
+            str(image_path),
+            width=Cm(style_profile.signature_image_width_cm),
+        )
+    else:
+        signature_paragraph.add_run("\n\n\n")
+
+
+def _set_table_borders(table: Any) -> None:
+    tbl_pr = table._tbl.tblPr
+    existing_borders = tbl_pr.first_child_found_in("w:tblBorders")
+    if existing_borders is not None:
+        tbl_pr.remove(existing_borders)
+
+    borders = OxmlElement("w:tblBorders")
+    for edge in ("top", "left", "bottom", "right", "insideH", "insideV"):
+        element = OxmlElement(f"w:{edge}")
+        element.set(qn("w:val"), "single")
+        element.set(qn("w:sz"), "4")
+        element.set(qn("w:space"), "0")
+        element.set(qn("w:color"), "000000")
+        borders.append(element)
+    tbl_pr.append(borders)
