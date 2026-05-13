@@ -29,6 +29,7 @@
 | SPEC-RENDER-001 | DONE | Spécifier une couche de rendu DOCX commune | générateurs DOC-001/002/003 + PV nomination gérant + specs existantes | spec technique render style system V1 |
 | RENDER-STYLE-001 | DONE | Implémenter la couche de rendu DOCX commune | spec render style system V1 + générateurs existants | helpers communs + générateurs migrés + tests + smoke DOCX |
 | ORCH-L2-PV-001 | DONE | Brancher le PV nomination gérant dans l'orchestrateur | générateur PV + specs Lot 2 + décisions de sélection | catalogue + registre orchestrateur + tests ciblés |
+| SMOKE-ORCH-L2-001 | DONE | Smoke test réel orchestrateur Lot 2 positif SCI / négatif SAS | contextes exemples Lot 2 + orchestrateur | DOCX générés, PV présent en SCI et absent en SAS, revue smoke |
 | UI-001 | BLOCKED | Brancher Streamlit V0 Lot 1 | orchestrateur Lot 1 + spec canonique PV nomination gérant validée | écran simple + test manuel |
 
 ## Référentiels moteur disponibles
@@ -41,6 +42,7 @@
 - La spec technique V1 de couche de rendu DOCX commune est disponible : `docs/delivery/render_style_system_v1.md`.
 - Le pack de revue humaine du PV nomination gérant est disponible : `docs/review/lot_02_pv_nomination_gerant_review_v1.md`.
 - L'aperçu texte extrait du DOCX généré est disponible : `docs/review/lot_02_pv_nomination_gerant_preview_v1.txt`.
+- La revue smoke orchestrateur Lot 2 est disponible : `docs/review/lot_02_orchestrator_smoke_review_v1.md`.
 - Ces référentiels cadrent les prochains tickets ; ils ne doivent pas être réinventés pendant l'implémentation.
 
 ## Ecart temporaire connu
@@ -130,6 +132,12 @@
 - Sortie : `DOC-004` ajouté au catalogue, générateur enregistré, sélection testée pour SELARL/SCI/SAS, génération orchestrée testée avec production du DOCX PV.
 - Statut : terminé ; aucune modification de wording juridique.
 
+### SMOKE-ORCH-L2-001
+- Objectif : vérifier en génération réelle l'orchestrateur Lot 2 avec un cas positif SCI et un cas négatif SAS.
+- Entrées : contextes `examples/contexts/lot_02_orchestrator_positive_example.yaml` et `examples/contexts/lot_02_orchestrator_negative_sas_example.yaml`.
+- Sortie : smoke DOCX dans `artifacts/lot_02_orchestrator_positive_smoke_test/` et `artifacts/lot_02_orchestrator_negative_sas_smoke_test/`, revue dans `docs/review/lot_02_orchestrator_smoke_review_v1.md`.
+- Statut : terminé ; le PV est généré pour SCI et absent pour SAS.
+
 ### UI-001
 - Objectif : exposer une Streamlit simple pour générer le Lot 1.
 - Statut : en attente explicite ; ne pas lancer sans ticket explicite dédié.
@@ -145,7 +153,7 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - mettre à jour `docs/project/04_LAST_STATE.md`
 
 ## Prochaine étape prévue
-- prochaine action recommandée : lancer un ticket dédié de smoke dossier Lot 2 via orchestrateur sur contexte réel, sans PDF/ZIP/UI.
+- prochaine action recommandée : lancer la revue humaine du rendu DOCX et du wording du PV nomination gérant, puis arbitrer les points ouverts avant d'élargir Lot 2.
 - action suivante côté métier : relire humainement `docs/review/lot_02_pv_nomination_gerant_review_v1.md`, l'aperçu texte et le DOCX généré.
 - UI-001 reste explicitement en attente.
 
@@ -155,6 +163,7 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - PDF et ZIP restent hors ORCH-001 et devront être traités dans un ticket dédié.
 - Ecart temporaire non bloquant pour l'UI : la table V1 retient `domiciliation.adresse_affichee` comme nom canonique, tandis que le code Lot 1 existant conserve l'alias legacy `adresse_domiciliation_affichee` jusqu'à refactor dédié.
 - ORCH-L2-PV-001 est terminé ; le PV nomination gérant est branché dans l'orchestrateur pour les structures concernées et exclu pour SAS.
+- SMOKE-ORCH-L2-001 est terminé ; le smoke réel confirme la génération du PV pour SCI et son absence pour SAS.
 - REVIEW-PV-001 est terminé, mais la validation humaine du rendu DOCX et du wording reste à obtenir pour la revue juridique fine.
 - RENDER-STYLE-001 est terminé ; les signatures encadrées sont disponibles dans la couche commune et appliquées aux signatures Lot 1.
 - Le PV nomination gérant conserve des signatures répétables simples ; toute signature encadrée dirigeant/associés séparée reste soumise à validation métier.
@@ -183,3 +192,4 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - 2026-05-13 : SPEC-RENDER-001 crée la spec technique `docs/delivery/render_style_system_v1.md` pour une couche de rendu DOCX commune, sans modification de code Python.
 - 2026-05-13 : RENDER-STYLE-001 implémente la couche commune de rendu DOCX, migre DOC-001/DOC-002/DOC-003/PV nomination gérant, ajoute les tests de rendu et génère les smoke DOCX dans `artifacts/render_style_001_*`.
 - 2026-05-13 : ORCH-L2-PV-001 branche le PV nomination gérant dans le catalogue et l'orchestrateur pour SELARL, SELAS, SPFPL cession, SPFPL apport, SCS, SCI et SCM ; SAS reste exclue ; ruff et pytest verts.
+- 2026-05-13 : SMOKE-ORCH-L2-001 ajoute deux contextes orchestrateur Lot 2, génère réellement le dossier SCI positif et le dossier SAS négatif, puis documente la présence/absence du PV dans `docs/review/lot_02_orchestrator_smoke_review_v1.md`.

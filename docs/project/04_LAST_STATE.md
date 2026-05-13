@@ -4,7 +4,7 @@
 2026-05-13
 
 ## Dernier ticket terminé
-ORCH-L2-PV-001 : branchement du PV nomination gérant dans le catalogue et l'orchestrateur.
+SMOKE-ORCH-L2-001 : smoke test réel orchestrateur Lot 2 avec cas positif SCI et cas négatif SAS.
 
 ## État courant du repo
 - DOC-001, DOC-002 et DOC-003 disposent chacun d'un générateur dédié déjà terminé.
@@ -42,12 +42,26 @@ ORCH-L2-PV-001 : branchement du PV nomination gérant dans le catalogue et l'orc
   - `bien_immobilier`.
 - Le PV nomination gérant est branché dans l'orchestrateur pour SELARL, SELAS, SPFPL cession, SPFPL apport, SCS, SCI et SCM.
 - Le PV nomination gérant est exclu de la sélection SAS.
+- Deux contextes exemples d'orchestration Lot 2 sont disponibles :
+  - `examples/contexts/lot_02_orchestrator_positive_example.yaml`
+  - `examples/contexts/lot_02_orchestrator_negative_sas_example.yaml`
+- Le smoke orchestrateur Lot 2 a généré les dossiers DOCX attendus :
+  - `artifacts/lot_02_orchestrator_positive_smoke_test/`
+  - `artifacts/lot_02_orchestrator_negative_sas_smoke_test/`
+- La revue smoke orchestrateur Lot 2 est disponible : `docs/review/lot_02_orchestrator_smoke_review_v1.md`.
 - `UI-001` reste explicitement en attente : ne pas brancher Streamlit maintenant.
 - Fichiers générés connus :
   - `artifacts/lot_01_smoke_test/autorisation_domiciliation.docx`
   - `artifacts/lot_01_smoke_test/declaration_non_condamnation.docx`
   - `artifacts/lot_01_smoke_test/procuration.docx`
   - `artifacts/lot_02_pv_nomination_gerant_smoke_test/pv_nomination_gerant.docx`
+  - `artifacts/lot_02_orchestrator_positive_smoke_test/declaration_non_condamnation.docx`
+  - `artifacts/lot_02_orchestrator_positive_smoke_test/autorisation_domiciliation.docx`
+  - `artifacts/lot_02_orchestrator_positive_smoke_test/procuration.docx`
+  - `artifacts/lot_02_orchestrator_positive_smoke_test/pv_nomination_gerant.docx`
+  - `artifacts/lot_02_orchestrator_negative_sas_smoke_test/declaration_non_condamnation.docx`
+  - `artifacts/lot_02_orchestrator_negative_sas_smoke_test/autorisation_domiciliation.docx`
+  - `artifacts/lot_02_orchestrator_negative_sas_smoke_test/procuration.docx`
 - Fichiers smoke RENDER-STYLE-001 générés :
   - `artifacts/render_style_001_lot_01_smoke_test/declaration_non_condamnation.docx`
   - `artifacts/render_style_001_lot_01_smoke_test/autorisation_domiciliation.docx`
@@ -55,7 +69,6 @@ ORCH-L2-PV-001 : branchement du PV nomination gérant dans le catalogue et l'orc
   - `artifacts/render_style_001_pv_nomination_gerant_smoke_test/pv_nomination_gerant.docx`
 - Streamlit, PDF, ZIP et `rendering/bundle.py` n'ont pas été modifiés dans ce ticket.
 - `artifacts/` reste hors versionnement via `.gitignore`.
-- Commit et push non effectués : `git add` est bloqué par un refus d'écriture sur `.git/index.lock` dans l'environnement Codex local.
 
 ## Décisions métier/techniques appliquées dans ce ticket
 - Le générateur PV est codé from-scratch dans un module Lot 2 dédié, sans utiliser le DOCX source comme gabarit d'exécution.
@@ -88,10 +101,12 @@ ORCH-L2-PV-001 : branchement du PV nomination gérant dans le catalogue et l'orc
 - ORCH-L2-PV-001 ajoute le PV nomination gérant au catalogue sous `DOC-004`.
 - ORCH-L2-PV-001 enregistre `PvNominationGerantGenerator` dans le registre par défaut de l'orchestrateur.
 - Les décisions de sélection appliquées sont : inclusion SELARL, SELAS, SPFPL cession, SPFPL apport, SCS, SCI et SCM ; exclusion SAS.
+- SMOKE-ORCH-L2-001 confirme en génération réelle que SCI produit les documents universels et `pv_nomination_gerant.docx`.
+- SMOKE-ORCH-L2-001 confirme en génération réelle que SAS produit seulement les documents universels et exclut `pv_nomination_gerant.docx`.
 - Aucun wording juridique, aucune UI, aucun PDF et aucun ZIP n'ont été modifiés.
 
 ## Prochain ticket à lancer
-Lancer un ticket dédié de smoke dossier Lot 2 via orchestrateur sur contexte réel, sans PDF/ZIP/UI.
+Lancer la revue humaine du rendu DOCX et du wording du PV nomination gérant, puis arbitrer les points ouverts avant d'élargir Lot 2.
 
 En parallèle métier, relire humainement le rendu DOCX et le wording à partir du pack `docs/review/`.
 
@@ -101,6 +116,7 @@ En parallèle métier, relire humainement le rendu DOCX et le wording à partir 
 - PDF et ZIP restent à intégrer dans des tickets ultérieurs.
 - Ecart temporaire non bloquant pour l'UI : la table V1 retient `domiciliation.adresse_affichee` comme nom canonique, tandis que le code Lot 1 existant conserve l'alias legacy `adresse_domiciliation_affichee` jusqu'à refactor dédié.
 - Le PV nomination gérant est codé, testé et branché dans l'orchestrateur pour les structures concernées.
+- Le smoke orchestrateur Lot 2 est vert sur SCI positif et SAS négatif.
 - Le pack REVIEW-PV-001 est prêt, mais il ne vaut pas validation juridique.
 - La couche commune de rendu DOCX est implémentée.
 - Les signatures encadrées sont disponibles et appliquées aux documents Lot 1 ; le PV conserve des lignes de signature simples sans décision métier supplémentaire.
@@ -127,7 +143,10 @@ En parallèle métier, relire humainement le rendu DOCX et le wording à partir 
 - RENDER-STYLE-001 : un premier smoke PV vers l'ancien dossier `artifacts/lot_02_pv_nomination_gerant_smoke_test/` a échoué avec `PermissionError` sur le DOCX existant, probablement verrouillé ; le smoke a été relancé avec succès dans un nouveau dossier d'artefacts.
 - ORCH-L2-PV-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
 - ORCH-L2-PV-001 : `.\.venv\Scripts\python.exe -m pytest` OK.
-- ORCH-L2-PV-001 : staging Git local bloqué par `fatal: Unable to create '.git/index.lock': Permission denied`.
+- SMOKE-ORCH-L2-001 : smoke SCI positif OK, `pv_nomination_gerant.docx` présent.
+- SMOKE-ORCH-L2-001 : smoke SAS négatif OK, `pv_nomination_gerant.docx` absent.
+- SMOKE-ORCH-L2-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
+- SMOKE-ORCH-L2-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 47 tests passés.
 
 ## Recommandation immédiate suivante
-Lancer un smoke dossier Lot 2 via orchestrateur sur contexte réel, puis relire humainement le DOCX PV et le pack `docs/review/lot_02_pv_nomination_gerant_review_v1.md`, notamment le rendu Word, la ponctuation finale des associés, la branche emprunt inactive, les accords singulier/pluriel, la fonction `gérant/gérante` et la signature si le dirigeant nommé n'est pas associé.
+Relire humainement le DOCX PV et le pack `docs/review/lot_02_pv_nomination_gerant_review_v1.md`, notamment le rendu Word, la ponctuation finale des associés, la branche emprunt inactive, les accords singulier/pluriel, la fonction `gérant/gérante` et la signature si le dirigeant nommé n'est pas associé.

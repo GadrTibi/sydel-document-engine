@@ -1,0 +1,74 @@
+structure: SCI
+personne_signataire:
+  genre: masculin
+  civilite: Monsieur
+  prenom: Jean
+  nom: Durand
+  adresse_perso:
+    num_voie: "12"
+    voie: rue des Lilas
+    cp: "75008"
+    ville: Paris
+  date_naissance: 1990-02-03
+  nationalite: francaise
+  nom_pere: Pierre Durand
+  nom_mere: Anne Martin
+  fonction_dirigeant: Gerant
+societe:
+  forme_sociale: SCI
+  forme_sociale_affichage: Societe civile immobiliere
+  forme_sociale_libelle_long: societe civile immobiliere
+  denomination: SCI ORCH POSITIVE
+  capital: "1 000"
+  capital_social: "1 000"
+  capital_variable: true
+  siege:
+    num_voie: "10"
+    voie: rue du Siege
+    cp: "75001"
+    ville: Paris
+  ville_rcs: Paris
+domiciliation:
+  adresse_domiciliation_affichee: 10 rue du Siege, 75001 Paris
+decision:
+  date: 13 mai 2026
+reunion:
+  date_lettres: treize mai deux mille vingt-six
+  heure: 10 heures
+capital:
+  nb_parts_total: 100
+  valeur_nominale_part: "10"
+associes:
+  - genre: feminin
+    civilite_affichage: Madame
+    prenom: Alice
+    nom: Durand
+    nb_parts: 60
+    est_present_ou_represente: true
+  - genre: masculin
+    civilite_affichage: Monsieur
+    prenom: Bruno
+    nom: Martin
+    nb_parts: 40
+    est_present_ou_represente: true
+dirigeant_nomine:
+  genre: feminin
+  civilite_affichage: Madame
+  prenom: Claire
+  nom: Bernard
+  date_naissance: 1985-04-03
+  ville_naissance: Lyon
+  departement_naissance: Rhone
+  nationalite: francaise
+  adresse_personnelle:
+    num_voie: "22"
+    voie: avenue des Fleurs
+    cp: "69002"
+    ville: Lyon
+  fonction_affichage: gerant
+emprunt:
+  actif: false
+signature:
+  lieu: Paris
+  date: 2026-05-13
+  nombre_exemplaires: "3"

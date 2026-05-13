@@ -1,0 +1,30 @@
+structure: SAS
+personne_signataire:
+  genre: feminin
+  civilite: Madame
+  prenom: Jeanne
+  nom: Martin
+  adresse_perso:
+    num_voie: "24"
+    voie: avenue Victor Hugo
+    cp: "75016"
+    ville: Paris
+  date_naissance: 1988-07-21
+  nationalite: francaise
+  nom_pere: Louis Martin
+  nom_mere: Claire Dupont
+  fonction_dirigeant: Presidente
+societe:
+  forme_sociale: SAS
+  denomination: SAS ORCH NEGATIVE
+  capital: "2 000"
+  siege:
+    num_voie: "80"
+    voie: avenue Marceau
+    cp: "75008"
+    ville: Paris
+domiciliation:
+  adresse_domiciliation_affichee: 80 avenue Marceau, 75008 Paris
+signature:
+  lieu: Paris
+  date: 2026-05-13
