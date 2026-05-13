@@ -28,6 +28,7 @@
 | REVIEW-PV-001 | DONE | Préparer la revue humaine du PV nomination gérant généré | contexte exemple Lot 2 + générateur PV existant | DOCX régénéré + aperçu texte + checklist de revue humaine |
 | SPEC-RENDER-001 | DONE | Spécifier une couche de rendu DOCX commune | générateurs DOC-001/002/003 + PV nomination gérant + specs existantes | spec technique render style system V1 |
 | RENDER-STYLE-001 | DONE | Implémenter la couche de rendu DOCX commune | spec render style system V1 + générateurs existants | helpers communs + générateurs migrés + tests + smoke DOCX |
+| ORCH-L2-PV-001 | DONE | Brancher le PV nomination gérant dans l'orchestrateur | générateur PV + specs Lot 2 + décisions de sélection | catalogue + registre orchestrateur + tests ciblés |
 | UI-001 | BLOCKED | Brancher Streamlit V0 Lot 1 | orchestrateur Lot 1 + spec canonique PV nomination gérant validée | écran simple + test manuel |
 
 ## Référentiels moteur disponibles
@@ -123,6 +124,12 @@
 - Sortie attendue : profil global de style, helpers de paragraphes/blocs, titre encadré, signature simple, signature encadrée disponible, rappel légal commun.
 - Statut : terminé ; couche commune implémentée et appliquée à DOC-001, DOC-002, DOC-003 et PV nomination gérant.
 
+### ORCH-L2-PV-001
+- Objectif : brancher le générateur PV nomination gérant dans le catalogue et l'orchestrateur, sans UI, PDF ni ZIP.
+- Prérequis : générateur PV existant, specs Lot 2, décisions de sélection SELARL/SELAS/SPFPL cession/SPFPL apport/SCS/SCI/SCM et exclusion SAS.
+- Sortie : `DOC-004` ajouté au catalogue, générateur enregistré, sélection testée pour SELARL/SCI/SAS, génération orchestrée testée avec production du DOCX PV.
+- Statut : terminé ; aucune modification de wording juridique.
+
 ### UI-001
 - Objectif : exposer une Streamlit simple pour générer le Lot 1.
 - Statut : en attente explicite ; ne pas lancer sans ticket explicite dédié.
@@ -138,9 +145,8 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - mettre à jour `docs/project/04_LAST_STATE.md`
 
 ## Prochaine étape prévue
-- prochaine action recommandée : relire humainement les DOCX smoke générés après migration de rendu.
-- action suivante côté métier : faire relire humainement `docs/review/lot_02_pv_nomination_gerant_review_v1.md`, l'aperçu texte et le DOCX généré.
-- action suivante après validation PV : créer un ticket explicite de branchement Lot 2/orchestrateur ou de correction wording/rendu selon la revue.
+- prochaine action recommandée : lancer un ticket dédié de smoke dossier Lot 2 via orchestrateur sur contexte réel, sans PDF/ZIP/UI.
+- action suivante côté métier : relire humainement `docs/review/lot_02_pv_nomination_gerant_review_v1.md`, l'aperçu texte et le DOCX généré.
 - UI-001 reste explicitement en attente.
 
 ## Points ouverts
@@ -148,8 +154,8 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - Les trois DOCX sont bien produits par l'orchestrateur dans `artifacts/lot_01_smoke_test/`, mais le rendu visuel et le wording juridique restent à relire humainement dans les fichiers générés.
 - PDF et ZIP restent hors ORCH-001 et devront être traités dans un ticket dédié.
 - Ecart temporaire non bloquant pour l'UI : la table V1 retient `domiciliation.adresse_affichee` comme nom canonique, tandis que le code Lot 1 existant conserve l'alias legacy `adresse_domiciliation_affichee` jusqu'à refactor dédié.
-- CODE-PV-001 est terminé, mais le PV nomination gérant n'est pas encore branché dans l'orchestrateur.
-- REVIEW-PV-001 est terminé, mais la validation humaine du rendu DOCX et du wording reste à obtenir avant branchement.
+- ORCH-L2-PV-001 est terminé ; le PV nomination gérant est branché dans l'orchestrateur pour les structures concernées et exclu pour SAS.
+- REVIEW-PV-001 est terminé, mais la validation humaine du rendu DOCX et du wording reste à obtenir pour la revue juridique fine.
 - RENDER-STYLE-001 est terminé ; les signatures encadrées sont disponibles dans la couche commune et appliquées aux signatures Lot 1.
 - Le PV nomination gérant conserve des signatures répétables simples ; toute signature encadrée dirigeant/associés séparée reste soumise à validation métier.
 - UI-001 reste en attente explicite : ne pas lancer le branchement Streamlit sans nouveau ticket.
@@ -176,3 +182,4 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - 2026-05-13 : REVIEW-PV-001 régénère le DOCX PV depuis le contexte exemple, extrait un aperçu texte et crée une checklist de revue humaine dans `docs/review/`, sans modification du code Python.
 - 2026-05-13 : SPEC-RENDER-001 crée la spec technique `docs/delivery/render_style_system_v1.md` pour une couche de rendu DOCX commune, sans modification de code Python.
 - 2026-05-13 : RENDER-STYLE-001 implémente la couche commune de rendu DOCX, migre DOC-001/DOC-002/DOC-003/PV nomination gérant, ajoute les tests de rendu et génère les smoke DOCX dans `artifacts/render_style_001_*`.
+- 2026-05-13 : ORCH-L2-PV-001 branche le PV nomination gérant dans le catalogue et l'orchestrateur pour SELARL, SELAS, SPFPL cession, SPFPL apport, SCS, SCI et SCM ; SAS reste exclue ; ruff et pytest verts.

@@ -13,6 +13,9 @@ from sydel_doc_engine.generators.lot_01.declaration_non_condamnation import (
     DeclarationNonCondamnationGenerator,
 )
 from sydel_doc_engine.generators.lot_01.procuration import ProcurationGenerator
+from sydel_doc_engine.generators.lot_02.pv_nomination_gerant import (
+    PvNominationGerantGenerator,
+)
 
 
 class MissingDocumentGeneratorError(RuntimeError):
@@ -24,6 +27,7 @@ def build_lot_01_generator_registry() -> dict[str, DocumentGenerator]:
         "DOC-001": DeclarationNonCondamnationGenerator(),
         "DOC-002": AutorisationDomiciliationGenerator(),
         "DOC-003": ProcurationGenerator(),
+        "DOC-004": PvNominationGerantGenerator(),
     }
 
 
