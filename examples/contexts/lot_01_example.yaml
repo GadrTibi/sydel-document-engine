@@ -27,4 +27,4 @@ signature:
   lieu: Paris
   date: 2026-05-12
 domiciliation:
-  adresse_locaux_affichee: 80 avenue Marceau, 75008 Paris
+  adresse_domiciliation_affichee: 80 avenue Marceau, 75008 Paris
