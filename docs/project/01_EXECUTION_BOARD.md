@@ -17,6 +17,7 @@
 | DOC-003 | DONE | Implémenter la procuration | source doc + spec Lot 1 | générateur + tests + MAJ doc |
 | DOC-002 | DONE | Implémenter l'autorisation de domiciliation | source doc + spec Lot 1 + décision V1 adresse libre | générateur + tests + MAJ doc |
 | ORCH-001 | DONE | Brancher l'orchestrateur Lot 1 | générateurs DOC-001/002/003 | service orchestrateur + tests |
+| PM-004 | DONE | Intégrer l'arbre moteur document-centré V1 dans la mémoire projet | arbre moteur document-centré V1 | board + dernier état mis à jour |
 | UI-001 | READY | Brancher Streamlit V0 Lot 1 | orchestrateur Lot 1 | écran simple + test manuel |
 
 ## Détail des prochains tickets
@@ -64,6 +65,7 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 
 ## Points ouverts
 - Aucun point bloquant identifié après ORCH-001.
+- L'arbre moteur document-centré V1 est formalisé dans `docs/project/07_ARBRE_MOTEUR_DOCUMENT_CENTRE_V1.md.md` ; le chemin demandé `docs/project/07_ARBRE_MOTEUR_DOCUMENT_CENTRE_V1.md` reste à normaliser si nécessaire.
 - PDF et ZIP restent hors ORCH-001 et devront être traités dans un ticket dédié.
 
 ## Journal court
@@ -75,3 +77,4 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - 2026-05-12 : DOC-003 implémenté en génération DOCX from-scratch avec tests unitaires ; validations locales vertes.
 - 2026-05-12 : DOC-002 implémenté en génération DOCX from-scratch avec champ libre `adresse_domiciliation_affichee` ; validations locales vertes.
 - 2026-05-12 : ORCH-001 branche les générateurs DOC-001, DOC-002 et DOC-003 dans l'orchestrateur dossier ; génération DOCX uniquement.
+- 2026-05-13 : logique documentaire du moteur formalisée par l'arbre document-centré V1 ; mémoire projet alignée sans réécriture de l'arbre.
