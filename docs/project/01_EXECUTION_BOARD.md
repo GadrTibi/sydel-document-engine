@@ -23,7 +23,8 @@
 | VAR-001 | DONE | Ajouter une table de mapping document -> variables canoniques | arbre documentaire V1 + dictionnaire canonique V1 + specs | table de mapping document -> variables canoniques |
 | PM-006 | DONE | Intégrer le cadrage métier PV nomination gérant V1 dans la mémoire projet | cadrage Lot 2 PV nomination gérant | board + dernier état mis à jour |
 | SPEC-PV-001 | DONE | Formaliser la spec canonique du PV nomination gérant à partir du cadrage V1 | cadrage Lot 2 + arbre documentaire V1 + dictionnaire canonique V1 + table de mapping V1 | spec canonique écrite, blocs conditionnels, mapping variables, règles `associes[]`, points ouverts |
-| SPEC-TEXTE-PV-001 | READY | Stabiliser le texte canonique et les variantes du PV nomination gérant | spec canonique PV nomination gérant V1 + source Lot 2 | spec textuelle détaillée, variantes structurelles, wording à valider, critères avant code |
+| SPEC-TEXTE-PV-001 | DONE | Stabiliser le texte canonique et les variantes du PV nomination gérant | spec canonique PV nomination gérant V1 + source Lot 2 | spec textuelle détaillée, variantes structurelles, wording à valider, critères avant code |
+| CODE-PV-001 | READY | Implémenter le générateur canonique PV nomination gérant | spec canonique V1 + spec texte V1 + source Lot 2 | générateur PV from-scratch + tests associes[]/genre/emprunt + MAJ doc |
 | UI-001 | BLOCKED | Brancher Streamlit V0 Lot 1 | orchestrateur Lot 1 + spec canonique PV nomination gérant validée | écran simple + test manuel |
 
 ## Référentiels moteur disponibles
@@ -32,6 +33,7 @@
 - Le moteur dispose désormais d'une table de mapping document -> variables canoniques V1 : `docs/project/09_TABLE_MAPPING_DOCUMENTS_VARIABLES_V1.md`.
 - Le cadrage métier de la famille `PV nomination gérant` est disponible : `docs/delivery/lot_02_pv_nomination_gerant_cadrage_v1.md`.
 - La spec canonique V1 de la famille `PV nomination gérant` est disponible : `docs/delivery/lot_02_pv_nomination_gerant_spec_canonique_v1.md`.
+- La spec texte V1 de la famille `PV nomination gérant` est disponible : `docs/delivery/lot_02_pv_nomination_gerant_spec_texte_v1.md`.
 - Ces référentiels cadrent les prochains tickets ; ils ne doivent pas être réinventés pendant l'implémentation.
 
 ## Ecart temporaire connu
@@ -84,10 +86,18 @@
 - Source à consulter : `project/source_documents/lot_02/PV nomination gérant - transforme.docx`.
 - Contraintes : ne pas refaire la spec canonique, ne pas coder de générateur, ne pas modifier implicitement le wording juridique ; signaler les formulations à validation.
 - Sortie attendue : spec textuelle détaillée du PV nomination gérant, variantes structurelles explicites, wording à valider, critères d'entrée avant code.
+- Statut : terminé ; spec texte V1 disponible dans `docs/delivery/lot_02_pv_nomination_gerant_spec_texte_v1.md`.
+
+### CODE-PV-001
+- Objectif : implémenter le générateur canonique `PV nomination gérant` à partir des specs V1, sans reprendre `personne_1` / `personne_2` comme vérité métier.
+- Specs à lire : `docs/delivery/lot_02_pv_nomination_gerant_spec_canonique_v1.md` et `docs/delivery/lot_02_pv_nomination_gerant_spec_texte_v1.md`.
+- Source à consulter : `project/source_documents/lot_02/PV nomination gérant - transforme.docx`.
+- Contraintes : générateur DOCX from-scratch, `associes[]` dynamique, `dirigeant_nomine` distinct, variantes `né/née`, branche `emprunt.actif`, renumérotation des décisions, aucun changement de wording juridique hors spec texte.
+- Sortie attendue : générateur dédié, tests unitaires ciblés, validation locale, mise à jour documentaire.
 
 ### UI-001
 - Objectif : exposer une Streamlit simple pour générer le Lot 1.
-- Statut : en attente explicite ; ne pas lancer tant que le ticket documentaire suivant `SPEC-TEXTE-PV-001` n'est pas traité.
+- Statut : en attente explicite ; ne pas lancer tant que le ticket documentaire/code suivant `CODE-PV-001` n'est pas traité ou explicitement dépriorisé.
 - Prérequis : orchestrateur Lot 1 fonctionnel et spec canonique `PV nomination gérant` validée.
 - Sortie attendue : écran simple, génération testable manuellement, aucun métier caché dans l'UI.
 
@@ -100,8 +110,8 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - mettre à jour `docs/project/04_LAST_STATE.md`
 
 ## Prochaine étape prévue
-- prochain ticket recommandé : SPEC-TEXTE-PV-001
-- action : stabiliser le texte canonique et les variantes du PV nomination gérant à partir de la spec canonique V1, sans coder et sans refaire la spec.
+- prochain ticket recommandé : CODE-PV-001
+- action : implémenter le générateur canonique PV nomination gérant à partir de la spec canonique V1 et de la spec texte V1.
 - UI-001 reste explicitement en attente.
 
 ## Points ouverts
@@ -109,8 +119,8 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - Les trois DOCX sont bien produits par l'orchestrateur dans `artifacts/lot_01_smoke_test/`, mais le rendu visuel et le wording juridique restent à relire humainement dans les fichiers générés.
 - PDF et ZIP restent hors ORCH-001 et devront être traités dans un ticket dédié.
 - Ecart temporaire non bloquant pour l'UI : la table V1 retient `domiciliation.adresse_affichee` comme nom canonique, tandis que le code Lot 1 existant conserve l'alias legacy `adresse_domiciliation_affichee` jusqu'à refactor dédié.
-- UI-001 reste en attente explicite : la prochaine priorité est `SPEC-TEXTE-PV-001`, pas le branchement Streamlit.
-- Points ouverts avant code PV : wording canonique de la tête selon les structures, bloc pouvoirs, acceptation finale, féminisation éventuelle de la fonction, périmètre SELAS et conditions exactes du bloc emprunt.
+- UI-001 reste en attente explicite : la prochaine priorité est `CODE-PV-001`, pas le branchement Streamlit.
+- Points ouverts PV documentés dans la spec texte : périmètre SELAS, capital non variable, société déjà immatriculée, dirigeant non associé, ponctuation finale des associés, féminisation éventuelle de la fonction, règle `euro/euros`.
 
 ## Journal court
 - 2026-05-12 : mémoire projet installée dans `docs/project/`.
@@ -127,3 +137,4 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - 2026-05-13 : table de mapping document -> variables canoniques V1 intégrée dans la mémoire projet sans réécriture ; écart temporaire `domiciliation.adresse_affichee` / `adresse_domiciliation_affichee` documenté.
 - 2026-05-13 : cadrage métier V1 de la famille `PV nomination gérant` intégré dans la mémoire projet ; SPEC-PV-001 ajouté en READY et UI-001 placé en attente tant que cette famille n'est pas spécifiée.
 - 2026-05-13 : spec canonique V1 de la famille `PV nomination gérant` intégrée dans la mémoire projet ; SPEC-PV-001 passé DONE, SPEC-TEXTE-PV-001 ajouté READY, UI-001 maintenu en attente explicite.
+- 2026-05-13 : spec texte V1 de la famille `PV nomination gérant` créée ; SPEC-TEXTE-PV-001 passé DONE, CODE-PV-001 ajouté READY, aucun code Python modifié.
