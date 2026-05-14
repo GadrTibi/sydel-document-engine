@@ -4,7 +4,7 @@
 2026-05-14
 
 ## Dernier ticket terminé
-CODE-ORDRE-001 : implémentation du générateur canonique from-scratch `Demande d'inscription à l'ordre` pour SELARL, SELAS, SPFPL cession, SPFPL apport et SCM, sans changement de wording juridique, sans UI, sans PDF et sans ZIP.
+SYNC-SPECS-001 : synchronisation dans `main` des specs parallèles RC, SPFPL, dérogations et cession/bail, avec pilotage aligné sur `CODE-RC-001` READY.
 
 ## État courant du repo
 - DOC-001, DOC-002 et DOC-003 disposent chacun d'un générateur dédié déjà terminé.
@@ -60,6 +60,12 @@ CODE-ORDRE-001 : implémentation du générateur canonique from-scratch `Demande
 - La spec canonique V1 de la demande d'inscription à l'ordre est disponible : `docs/delivery/lot_02_demande_inscription_ordre_spec_canonique_v1.md`.
 - La spec texte V1 de la demande d'inscription à l'ordre est disponible : `docs/delivery/lot_02_demande_inscription_ordre_spec_texte_v1.md`.
 - Le cadrage V1 du batch régime communautaire est disponible : `docs/delivery/lot_02_regime_communautaire_batch_cadrage_v1.md`.
+- La spec canonique V1 du batch régime communautaire est disponible : `docs/delivery/lot_02_regime_communautaire_batch_spec_canonique_v1.md`.
+- La spec texte V1 du batch régime communautaire est disponible : `docs/delivery/lot_02_regime_communautaire_batch_spec_texte_v1.md`.
+- La spec canonique V1 du batch SPFPL spécifique est disponible : `docs/delivery/lot_05_spfpl_spec_canonique_v1.md`.
+- La spec canonique V1 de la famille dérogations est disponible : `docs/delivery/lot_03_derogations_spec_canonique_v1.md`.
+- La spec canonique V1 `cession cabinets` est disponible : `docs/delivery/lot_03_cession_cabinets_spec_canonique_v1.md`.
+- La spec canonique V1 `bail / appel de fonds` est disponible : `docs/delivery/lot_03_bail_appel_fonds_spec_v1.md`.
 - Le manifest d'import sources V1 est disponible : `docs/project/10_SOURCE_IMPORT_MANIFEST_V1.md`.
 - Le rapport de doublons sources V1 est disponible : `docs/project/11_SOURCE_DUPLICATES_REPORT_V1.md`.
 - Le plan de placement sources V1 est disponible : `docs/project/12_SOURCE_PLACEMENT_PLAN_V1.md`.
@@ -71,7 +77,12 @@ CODE-ORDRE-001 : implémentation du générateur canonique from-scratch `Demande
 - `SPEC-ORDRE-001` est DONE.
 - `SPEC-TEXTE-ORDRE-001` est DONE.
 - `CODE-ORDRE-001` est DONE.
-- `SPEC-RC-001` est READY.
+- `SPEC-RC-001` est DONE.
+- `SPEC-SPFPL-001` est DONE.
+- `SPEC-DEROG-001` est DONE.
+- `SPEC-CESSION-BAIL-001` est DONE.
+- `SYNC-SPECS-001` est DONE.
+- `CODE-RC-001` est READY.
 - `UI-001` reste explicitement en attente : ne pas brancher Streamlit maintenant.
 - Fichiers générés connus :
   - `artifacts/lot_01_smoke_test/autorisation_domiciliation.docx`
@@ -131,8 +142,16 @@ CODE-ORDRE-001 : implémentation du générateur canonique from-scratch `Demande
 - ANALYSE-ORDRE-001 lit les trois sources Lot 2 en lecture seule et crée deux cadrages dans `docs/delivery/`.
 - Les chemins nommés dans le ticket pour les trois DOCX ne correspondent pas littéralement aux noms présents dans le dépôt ; les fichiers transformés correspondants ont été utilisés et l'écart est documenté dans les cadrages.
 - La demande d'inscription à l'ordre est considérée suffisamment cadrée pour ouvrir `SPEC-ORDRE-001`, mais pas pour coder.
-- Le batch régime communautaire est considéré suffisamment cadré pour ouvrir `SPEC-RC-001`, mais pas pour coder.
+- Le batch régime communautaire est désormais suffisamment spécifié pour ouvrir `CODE-RC-001`.
 - Pour le batch régime communautaire, la mutualisation réaliste porte surtout sur les variables, les rôles, les montants et les helpers de rendu ; deux documents canoniques distincts restent recommandés.
+- SPEC-RC-001 compare les variantes SELARL, SELAS et SPFPL du batch régime communautaire.
+- Le groupe source Lot 2 / SELAS / SPFPL est retenu comme canonique pour la renonciation ; la variante SELARL brute reste documentée comme écart à relire.
+- L'avertissement conserve un overlay limité pour la mention manuscrite SELARL (`à la Société ...`) contre SELAS/SPFPL (`à la [forme_sociale_abregee] ...`).
+- CODE-RC-001 devra produire deux documents canoniques distincts, uniquement pour SELARL, SELAS, SPFPL cession et SPFPL apport lorsque `dossier.options.regime_communautaire == true`.
+- SPEC-SPFPL-001 formalise le batch SPFPL spécifique sans code Python ; l'acte de cession d'actions reste bloqué faute de source DOCX confirmée.
+- SPEC-DEROG-001 formalise les dérogations sans automatiser les formulaires marqués ou traités comme manuels.
+- SPEC-CESSION-BAIL-001 formalise deux blocs distincts : `cession cabinets` et `bail / appel de fonds`, sans trancher les anomalies de wording avant code.
+- SYNC-SPECS-001 a cherry-pické les quatre specs parallèles dans `main`, puis limite le commit de synchronisation aux fichiers de pilotage.
 - ARBITRAGE-SOURCES-001 scanne 147 fichiers dans `project/source_import/raw_drive_dump/` et 11 fichiers dans `project/source_documents/`.
 - ARBITRAGE-SOURCES-001 identifie 18 groupes de doublons probables, dont 15 groupes de doublons exacts.
 - Les 4 cas HIGH documentés sont : DOC-001, DOC-002, DOC-003 et la source canonique `PV nomination gérant`.
@@ -152,7 +171,7 @@ CODE-ORDRE-001 : implémentation du générateur canonique from-scratch `Demande
 - Le bloc `Dérogation ?` n'est jamais rendu littéralement ; si `dossier_options.derogation=true`, une mention manuelle `ordre.derogation_mention_manuelle` est obligatoire.
 - Le mandataire est résolu depuis `mandataire.libelle_affiche` ou depuis les champs détaillés, sans constante SYDEL/Jordan ELBAZ codée dans le générateur.
 - Le smoke DOCX dédié a été généré dans `artifacts/lot_02_demande_inscription_ordre_smoke_test/demande_inscription_ordre.docx`, hors versionnement.
-- Les 2 cas MEDIUM régime communautaire restent bloqués : renonciation régime communautaire, avertissement régime communautaire.
+- Les 2 cas MEDIUM régime communautaire sont désormais spécifiés ; le code reste à faire dans `CODE-RC-001`.
 - Les 3 cas LOW restent bloqués : statuts, liste des souscripteurs / attestation sur le capital, documents sans source claire.
 - 16 documents sources sont explicitement hors périmètre moteur courant.
 - Aucun fichier de `project/source_import/raw_drive_dump/`, aucun fichier source documentaire et aucun artefact n'a été déplacé, supprimé ou renommé.
@@ -161,9 +180,9 @@ CODE-ORDRE-001 : implémentation du générateur canonique from-scratch `Demande
 - Le smoke DOCX dédié a été généré dans `artifacts/fix_pv_render_001_smoke_test_2/pv_nomination_gerant.docx`, hors versionnement.
 
 ## Prochain ticket à lancer
-Lancer `SPEC-RC-001`.
+Lancer `CODE-RC-001`.
 
-Le batch régime communautaire doit être spécifié avant tout code. Les cas LOW doivent rester bloqués tant que leurs variantes sources n'ont pas été comparées ou arbitrées.
+Le batch régime communautaire doit être implémenté strictement depuis les specs V1. Les cas LOW doivent rester bloqués tant que leurs variantes sources n'ont pas été comparées ou arbitrées.
 
 ## Points ouverts
 - Aucun point bloquant identifié après le smoke test réel Lot 1.
@@ -190,18 +209,30 @@ Le batch régime communautaire doit être spécifié avant tout code. Les cas LO
   - wording de dérogation non validé, donc bloc manuel obligatoire ou blocage conservé ;
   - valeurs ordinales fournies par contexte ou référentiel ;
   - mandataire SYDEL configurable, jamais imposé comme constante en dur.
-- Points ouverts régime communautaire :
-  - périmètre exact du fichier de renonciation nommé `SELAS` ;
-  - rôles canoniques `apporteur` et `conjoint` ;
-  - correspondance entre `[date_courrier]` et la lettre d'avertissement ;
-  - harmonisation des montants d'apport malgré les placeholders divergents ;
-  - formes sociales complète / affichée / abrégée ;
-  - accords `associé/associée/actionnaire`, `futur/future`, fonctions dirigeantes ;
-  - traitement de la mention manuscrite ;
-  - absence de prénom du conjoint dans la lettre d'avertissement.
+- Points ouverts régime communautaire après SPEC-RC-001 :
+  - revue humaine SELARL de la renonciation canonique, car la variante brute contient des valeurs fixes et `En 2exemplaires` ;
+  - féminisation éventuelle de `futur`, non activée automatiquement faute de source ;
+  - absence de variante `ma conjointe`, `mon conjoint` restant fixe en V1 ;
+  - apport limité à une somme en numéraire ;
+  - valeurs par défaut de régime matrimonial, qualité renoncée et formes sociales à fournir par contexte ou référentiel.
+- Points ouverts SPFPL après SPEC-SPFPL-001 :
+  - acte de cession d'actions sans source confirmée ;
+  - wording cession/apport des PV d'agrément et de la note d'information ;
+  - choix évaluateur / commissaire aux apports ;
+  - liste dynamique des souscripteurs.
+- Points ouverts dérogations après SPEC-DEROG-001 :
+  - sources Lot 03 à placer ou arbitrer ;
+  - formulaires préremplis avec zones vierges ou blocage complet à décider ;
+  - conversion du `.doc` legacy avant code ;
+  - champs narratifs sensibles à fournir explicitement.
+- Points ouverts cession/bail après SPEC-CESSION-BAIL-001 :
+  - acte et compromis à produire ensemble ou selon une étape dossier ;
+  - anomalies médical/dentaire et placeholders vendeur/acquéreur à arbitrer ;
+  - crédit-vendeur, clause SCM, salariés et exercices à cadrer avant code ;
+  - appel de fonds limité au wording dentaire source tant qu'aucune variante médicale n'est validée.
 - Points ouverts sources :
   - ne pas élargir la demande d'inscription à l'ordre hors specs V1 sans ticket dédié ;
-  - ne pas fusionner les variantes SELARL du régime communautaire avec les copies exactes SELAS/SPFPL sans arbitrage ;
+  - ne pas sortir du choix SPEC-RC-001 pour le régime communautaire sans nouveau ticket d'arbitrage ;
   - ne pas placer automatiquement la famille liste des souscripteurs / attestation sur le capital ;
   - ne pas dedupliquer les statuts entre familles, professions ou variantes.
 - Toute ambiguïté de wording juridique doit bloquer l'implémentation concernée et être documentée.
@@ -215,6 +246,13 @@ Le batch régime communautaire doit être spécifié avant tout code. Les cas LO
 - CODE-ORDRE-001 : smoke DOCX OK dans `artifacts/lot_02_demande_inscription_ordre_smoke_test/demande_inscription_ordre.docx`, sans placeholder `[` / `]` ni littéral résiduel `Dérogation ?`.
 - CODE-ORDRE-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
 - CODE-ORDRE-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 56 tests passés.
+- SPEC-RC-001 : source de vérité, sources Lot 2 et variantes raw dump SELARL / SELAS / SPFPL lues en lecture seule.
+- SPEC-RC-001 : specs créées dans `docs/delivery/lot_02_regime_communautaire_batch_spec_canonique_v1.md` et `docs/delivery/lot_02_regime_communautaire_batch_spec_texte_v1.md`.
+- SPEC-RC-001 : aucun code Python modifié ; validations limitées à la relecture documentaire et au contrôle du diff.
+- SYNC-SPECS-001 : `git fetch --all --prune` OK.
+- SYNC-SPECS-001 : branche `codex/spec-rc-001` créée et poussée avec les deux specs RC uniquement.
+- SYNC-SPECS-001 : commits SPFPL, dérogations, cession/bail et RC cherry-pickés dans `main` sans conflit.
+- SYNC-SPECS-001 : commit final de pilotage limité à `docs/project/01_EXECUTION_BOARD.md` et `docs/project/04_LAST_STATE.md`.
 - SPEC-TEXTE-ORDRE-001 : source de vérité, source Lot 2 et variantes raw dump SELARL / SELAS / SPFPL cession / SPFPL apport lues en lecture seule.
 - SPEC-TEXTE-ORDRE-001 : spec texte créée dans `docs/delivery/lot_02_demande_inscription_ordre_spec_texte_v1.md`.
 - SPEC-TEXTE-ORDRE-001 : aucun code Python modifié ; validations limitées à la relecture documentaire et au contrôle du diff.
@@ -249,4 +287,4 @@ Le batch régime communautaire doit être spécifié avant tout code. Les cas LO
 - SMOKE-ORCH-L2-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 47 tests passés.
 
 ## Recommandation immédiate suivante
-Lancer `SPEC-RC-001` après comparaison documentaire des variantes régime communautaire concernées.
+Lancer `CODE-RC-001` pour implémenter le batch régime communautaire V1 depuis les deux specs créées.
