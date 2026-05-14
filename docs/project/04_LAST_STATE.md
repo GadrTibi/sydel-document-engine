@@ -4,7 +4,7 @@
 2026-05-14
 
 ## Dernier ticket terminé
-SYNC-TEXTE-SPECS-001 : intégration dans `main` des quatre specs texte parallèles bail/appel, cession cabinets, dérogations et SPFPL, puis alignement du pilotage avec les prochains tickets READY.
+SYNC-ARBITRAGES-001 : intégration dans `main` des trois arbitrages parallèles cession cabinets, dérogations et SPFPL, puis alignement du pilotage avec les prochains tickets READY.
 
 ## État courant du repo
 - DOC-001, DOC-002 et DOC-003 disposent chacun d'un générateur dédié déjà terminé.
@@ -75,10 +75,13 @@ SYNC-TEXTE-SPECS-001 : intégration dans `main` des quatre specs texte parallèl
 - Un contexte exemple de smoke test est disponible : `examples/contexts/lot_02_regime_communautaire_example.yaml`.
 - La spec canonique V1 du batch SPFPL spécifique est disponible : `docs/delivery/lot_05_spfpl_spec_canonique_v1.md`.
 - La spec texte V1 du batch SPFPL spécifique est disponible : `docs/delivery/lot_05_spfpl_spec_texte_v1.md`.
+- Les arbitrages V1 du batch SPFPL spécifique sont disponibles : `docs/delivery/lot_05_spfpl_arbitrages_v1.md`.
 - La spec canonique V1 de la famille dérogations est disponible : `docs/delivery/lot_03_derogations_spec_canonique_v1.md`.
 - La spec texte V1 de la famille dérogations est disponible : `docs/delivery/lot_03_derogations_spec_texte_v1.md`.
+- Les arbitrages V1 de la famille dérogations sont disponibles : `docs/delivery/lot_03_derogations_arbitrages_v1.md`.
 - La spec canonique V1 `cession cabinets` est disponible : `docs/delivery/lot_03_cession_cabinets_spec_canonique_v1.md`.
 - La spec texte V1 `cession cabinets` est disponible : `docs/delivery/lot_03_cession_cabinets_spec_texte_v1.md`.
+- Les arbitrages V1 `cession cabinets` sont disponibles : `docs/delivery/lot_03_cession_cabinets_arbitrages_v1.md`.
 - La spec canonique V1 `bail / appel de fonds` est disponible : `docs/delivery/lot_03_bail_appel_fonds_spec_v1.md`.
 - La spec texte V1 `bail / appel de fonds` est disponible : `docs/delivery/lot_03_bail_appel_fonds_spec_texte_v1.md`.
 - Le manifest d'import sources V1 est disponible : `docs/project/10_SOURCE_IMPORT_MANIFEST_V1.md`.
@@ -103,10 +106,13 @@ SYNC-TEXTE-SPECS-001 : intégration dans `main` des quatre specs texte parallèl
 - `SPEC-TEXTE-DEROG-001` est DONE.
 - `SPEC-TEXTE-SPFPL-001` est DONE.
 - `SYNC-TEXTE-SPECS-001` est DONE.
+- `SYNC-ARBITRAGES-001` est DONE.
 - `CODE-BAIL-APP-001` est READY.
-- `ARBITRAGE-CESSION-001` est READY.
-- `ARBITRAGE-DEROG-001` est READY.
-- `ARBITRAGE-SPFPL-001` est READY.
+- `ARBITRAGE-CESSION-001` est DONE.
+- `ARBITRAGE-DEROG-001` est DONE.
+- `ARBITRAGE-SPFPL-001` est DONE.
+- `CODE-CESSION-CAB-001` est READY.
+- `CODE-SPFPL-001` est READY.
 - `UI-001` reste explicitement en attente : ne pas brancher Streamlit maintenant.
 - Fichiers générés connus :
   - `artifacts/lot_01_smoke_test/autorisation_domiciliation.docx`
@@ -186,7 +192,11 @@ SYNC-TEXTE-SPECS-001 : intégration dans `main` des quatre specs texte parallèl
 - Les specs texte intégrées sont bail/appel, cession cabinets, dérogations et SPFPL.
 - Le commit final de synchronisation texte est limité aux fichiers de pilotage `docs/project/01_EXECUTION_BOARD.md` et `docs/project/04_LAST_STATE.md`.
 - Aucun code Python, aucun fichier `project/source_import/raw_drive_dump/` et aucun fichier `artifacts/` n'a été modifié.
-- `CODE-BAIL-APP-001`, `ARBITRAGE-CESSION-001`, `ARBITRAGE-DEROG-001` et `ARBITRAGE-SPFPL-001` sont les prochains tickets READY.
+- SYNC-ARBITRAGES-001 a cherry-pické les trois arbitrages parallèles dans `main`.
+- Les arbitrages intégrés sont cession cabinets, dérogations et SPFPL.
+- Le commit final de synchronisation arbitrages est limité aux fichiers de pilotage `docs/project/01_EXECUTION_BOARD.md` et `docs/project/04_LAST_STATE.md`.
+- Aucun code Python, aucun fichier `project/source_import/raw_drive_dump/` et aucun fichier `artifacts/` n'a été modifié.
+- `CODE-BAIL-APP-001`, `CODE-CESSION-CAB-001` et `CODE-SPFPL-001` sont les prochains tickets READY les plus proches.
 - ARBITRAGE-SOURCES-001 scanne 147 fichiers dans `project/source_import/raw_drive_dump/` et 11 fichiers dans `project/source_documents/`.
 - ARBITRAGE-SOURCES-001 identifie 18 groupes de doublons probables, dont 15 groupes de doublons exacts.
 - Les 4 cas HIGH documentés sont : DOC-001, DOC-002, DOC-003 et la source canonique `PV nomination gérant`.
@@ -217,7 +227,7 @@ SYNC-TEXTE-SPECS-001 : intégration dans `main` des quatre specs texte parallèl
 ## Prochain ticket à lancer
 `CODE-BAIL-APP-001` : implémenter le mini-batch `bail / appel de fonds` à partir des specs canonique et texte V1.
 
-En parallèle ou avant les lots plus sensibles : lancer `ARBITRAGE-CESSION-001`, `ARBITRAGE-DEROG-001` ou `ARBITRAGE-SPFPL-001` selon la priorité métier. Les cas LOW doivent rester bloqués tant que leurs variantes sources n'ont pas été comparées ou arbitrées.
+Prochains tickets READY proches ensuite : `CODE-CESSION-CAB-001` puis `CODE-SPFPL-001`, selon priorité métier. La famille dérogations reste à préparer côté sources avant code : placement Lot 03 et conversion du `.doc` legacy si `cumul_salariee` est ciblé.
 
 ## Points ouverts
 - Aucun point bloquant identifié après le smoke test réel Lot 1.
@@ -251,21 +261,21 @@ En parallèle ou avant les lots plus sensibles : lancer `ARBITRAGE-CESSION-001`,
   - apport limité à une somme en numéraire ;
   - valeurs par défaut de régime matrimonial, qualité renoncée et formes sociales à fournir par contexte ou référentiel.
   - le smoke DOCX réel ne vaut pas validation juridique fine.
-- Points ouverts SPFPL après SPEC-TEXTE-SPFPL-001 :
-  - acte de cession d'actions sans source confirmée ;
-  - wording cession/apport des PV d'agrément et de la note d'information ;
-  - choix évaluateur / commissaire aux apports ;
-  - liste dynamique des souscripteurs.
-- Points ouverts dérogations après SPEC-TEXTE-DEROG-001 :
-  - sources Lot 03 à placer ou arbitrer ;
-  - formulaires préremplis avec zones vierges ou blocage complet à décider ;
-  - conversion du `.doc` legacy avant code ;
-  - rôles `signataire` / `representant_legal` / `associe_exercant` à arbitrer ;
-  - champs narratifs sensibles à fournir explicitement.
-- Points ouverts cession/bail après SPEC-TEXTE-CESSION-CAB-001 et SPEC-TEXTE-BAIL-APP-001 :
-  - acte et compromis à produire ensemble ou selon une étape dossier ;
-  - anomalies médical/dentaire et placeholders vendeur/acquéreur à arbitrer ;
-  - crédit-vendeur, clause SCM, salariés et exercices à cadrer avant code ;
+- Points ouverts SPFPL après ARBITRAGE-SPFPL-001 :
+  - acte de cession d'actions sans source DOCX confirmée, hors automatisation V1 ;
+  - multi-souscripteurs hors automatisation V1 ;
+  - commissaire aux apports et évaluateur fournis par contexte ou référentiel validé ;
+  - aucune double option `OU` ou cession/apport ne doit être rendue.
+- Points ouverts dérogations après ARBITRAGE-DEROG-001 :
+  - sources Lot 03 à placer dans `project/source_documents/lot_03/` avant code ;
+  - conversion ou remplacement DOCX propre du `.doc` legacy avant `cumul_salariee` ;
+  - mode de rendu `document finalisé` ou `formulaire à compléter` à porter explicitement dans le registre ou le nom de sortie ;
+  - champs narratifs sensibles toujours fournis explicitement ou laissés comme zones à compléter.
+- Points ouverts cession/bail après ARBITRAGE-CESSION-001 et SPEC-TEXTE-BAIL-APP-001 :
+  - anomalies médical/dentaire à bloquer ou traiter selon arbitrage V1 ;
+  - origine de propriété du compromis médical et titre anormal des compromis ;
+  - placeholders vendeur/acquéreur ambigus hors contexte clair ;
+  - crédit-vendeur, clause SCM, salariés et exercices à rendre avec blocages explicites ;
   - table de signatures de l'avenant de bail à arbitrer ;
   - appel de fonds limité au wording dentaire source tant qu'aucune variante médicale n'est validée.
 - Points ouverts sources :
@@ -298,6 +308,10 @@ En parallèle ou avant les lots plus sensibles : lancer `ARBITRAGE-CESSION-001`,
 - SYNC-TEXTE-SPECS-001 : commits `417870da6ee6717a79853547060d6fc0cbacfa9f`, `3672cd129c90e63f440a2316aec54d653b2d24a4`, `18c6614abc1dd3036e1c56565059650748c08883` et `f0424ddad7690d7973d16b00f37aa54b20796d04` cherry-pickés dans `main` sans conflit.
 - SYNC-TEXTE-SPECS-001 : relecture documentaire et contrôle du diff ; aucun test de code exécuté car aucun fichier Python n'a été modifié.
 - SYNC-TEXTE-SPECS-001 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifiés.
+- SYNC-ARBITRAGES-001 : `git fetch --all --prune` lancé avant synchronisation.
+- SYNC-ARBITRAGES-001 : commits `16a7472610c315fd67f701fa7d9f48d253d62e9c`, `0dda81373125e71ce7817a674322cdcf498a88b0` et `ab8b4c00ead28fcd9ead4ad62e19657f35efa397` cherry-pickés dans `main` sans conflit.
+- SYNC-ARBITRAGES-001 : relecture documentaire et contrôle du diff ; aucun test de code exécuté car aucun fichier Python n'a été modifié.
+- SYNC-ARBITRAGES-001 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifiés.
 - SPEC-TEXTE-ORDRE-001 : source de vérité, source Lot 2 et variantes raw dump SELARL / SELAS / SPFPL cession / SPFPL apport lues en lecture seule.
 - SPEC-TEXTE-ORDRE-001 : spec texte créée dans `docs/delivery/lot_02_demande_inscription_ordre_spec_texte_v1.md`.
 - SPEC-TEXTE-ORDRE-001 : aucun code Python modifié ; validations limitées à la relecture documentaire et au contrôle du diff.
@@ -332,4 +346,4 @@ En parallèle ou avant les lots plus sensibles : lancer `ARBITRAGE-CESSION-001`,
 - SMOKE-ORCH-L2-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 47 tests passés.
 
 ## Recommandation immédiate suivante
-Lancer `CODE-BAIL-APP-001` en premier, puis traiter les arbitrages READY selon priorité métier : `ARBITRAGE-CESSION-001`, `ARBITRAGE-DEROG-001`, `ARBITRAGE-SPFPL-001`.
+Lancer `CODE-BAIL-APP-001` en premier, puis `CODE-CESSION-CAB-001` ou `CODE-SPFPL-001` selon priorité métier.
