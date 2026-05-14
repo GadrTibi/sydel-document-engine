@@ -1,0 +1,47 @@
+structure: SELARL
+dossier_options:
+  derogation: true
+personne_signataire:
+  genre: masculin
+  civilite: Monsieur
+  prenom: Camille
+  nom: Martin
+  numero_inscription_ordre: ORD-123
+  qualification_principale: chirurgien-dentiste
+  contact:
+    telephone: 01 44 00 00 00
+    email: camille@example.test
+signature:
+  lieu: Paris
+  date: 2026-05-14
+societe:
+  denomination: SELARL CABINET MARTIN
+  siege:
+    adresse_affichee: 12 avenue des Ternes, 75017 Paris
+    cp: "75017"
+    ville: Paris
+  inscription_ordre:
+    departement: Paris
+    ville: Paris
+    numero: SEL-456
+derogation:
+  type: multi_sites_sel
+  mode_rendu: formulaire_a_completer
+  representant_legal:
+    prenom: Camille
+    nom: Martin
+    fonction: gerant
+    contact:
+      email: camille@example.test
+  associe_exercant:
+    prenom: Camille
+    nom: Martin
+    qualification_principale: chirurgien-dentiste
+  sites_existants_present: true
+site_declare:
+  adresse_affichee: 24 rue du Nouveau Site, 75016 Paris
+  date_debut_activite: 2026-09-01
+sites_existants:
+  - adresse_affichee: 12 avenue des Ternes, 75017 Paris
+    date_debut_activite: 2024-01-15
+    temps_hebdomadaire: 5 demi-journees

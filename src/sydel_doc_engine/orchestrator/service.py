@@ -38,6 +38,12 @@ from sydel_doc_engine.generators.lot_03.compromis_cession_cabinet_dentaire impor
 from sydel_doc_engine.generators.lot_03.compromis_cession_cabinet_medical import (
     CompromisCessionCabinetMedicalGenerator,
 )
+from sydel_doc_engine.generators.lot_03.demande_derogation_cumul_selarl_bnc import (
+    DemandeDerogationCumulSelarlBncGenerator,
+)
+from sydel_doc_engine.generators.lot_03.formulaire_derogation_sites_sel import (
+    FormulaireDerogationSitesSelGenerator,
+)
 
 REGIME_COMMUNAUTAIRE_DOCUMENT_IDS = {"DOC-005", "DOC-006"}
 BAIL_AVENANT_DOCUMENT_ID = "DOC-007"
@@ -47,6 +53,10 @@ CESSION_CABINET_DOCUMENT_IDS = {
     "DOC-010": ("compromis", "medical"),
     "DOC-011": ("acte", "dentaire"),
     "DOC-012": ("compromis", "dentaire"),
+}
+DEROGATION_DOCUMENT_TYPES = {
+    "DOC-013": "multi_sites_sel",
+    "DOC-014": "cumul_sel_bnc",
 }
 
 
@@ -68,6 +78,8 @@ def build_lot_01_generator_registry() -> dict[str, DocumentGenerator]:
         "DOC-010": CompromisCessionCabinetMedicalGenerator(),
         "DOC-011": ActeCessionCabinetDentaireGenerator(),
         "DOC-012": CompromisCessionCabinetDentaireGenerator(),
+        "DOC-013": FormulaireDerogationSitesSelGenerator(),
+        "DOC-014": DemandeDerogationCumulSelarlBncGenerator(),
     }
 
 
@@ -119,6 +131,8 @@ def _document_enabled_for_context(
             return _appel_fonds_enabled(ctx)
         if document.doc_id in CESSION_CABINET_DOCUMENT_IDS:
             return _cession_cabinet_enabled(document.doc_id, ctx)
+        if document.doc_id in DEROGATION_DOCUMENT_TYPES:
+            return _derogation_enabled(ctx, DEROGATION_DOCUMENT_TYPES[document.doc_id])
         return True
     return bool(ctx.dossier_options and ctx.dossier_options.regime_communautaire)
 
@@ -147,3 +161,11 @@ def _cession_cabinet_enabled(doc_id: str, ctx: DocumentGenerationContext) -> boo
         ctx.cession.etape.strip().lower() == expected_etape
         and ctx.cession.type_cabinet.strip().lower() == expected_type
     )
+
+
+def _derogation_enabled(ctx: DocumentGenerationContext, derogation_type: str) -> bool:
+    if ctx.dossier_options is None or not ctx.dossier_options.derogation:
+        return False
+    if ctx.derogation is None or ctx.derogation.type != derogation_type:
+        return False
+    return ctx.derogation.mode_rendu == "formulaire_a_completer"

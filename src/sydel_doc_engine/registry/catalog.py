@@ -45,6 +45,13 @@ CESSION_CABINET_STRUCTURES: list[str] = [
     "SELAS",
 ]
 
+
+DEROGATION_CORE_STRUCTURES: list[str] = [
+    "SELARL",
+    "SELAS",
+]
+
+
 def build_seed_catalog() -> list[DocumentDefinition]:
     return [
         DocumentDefinition(
@@ -293,6 +300,63 @@ def build_seed_catalog() -> list[DocumentDefinition]:
             ),
             specification_path="docs/delivery/lot_03_cession_cabinets_spec_texte_v1.md",
             notes="Taux fixe source conserve, sans variable nouvelle.",
+        ),
+        DocumentDefinition(
+            doc_id="DOC-013",
+            canonical_name=(
+                "Formulaire de derogation pour exercer sur plusieurs sites avec la SEL "
+                "- formulaire a completer"
+            ),
+            generator_name="generate_formulaire_derogation_sites_sel",
+            lot=3,
+            category=DocumentCategory.MUTUALISABLE,
+            structures=DEROGATION_CORE_STRUCTURES,
+            general_condition="dossier.options.derogation == true",
+            specific_conditions=[
+                "derogation.type == multi_sites_sel",
+                "derogation.mode_rendu == formulaire_a_completer",
+                "roles representant legal et associe exercant fournis explicitement",
+            ],
+            dynamic_associates=False,
+            grammar_variants=False,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path=(
+                "project/source_documents/lot_03/"
+                "Formulaire de deÌrogation pour exercer sur plusieurs sites avec la SEL.docx"
+            ),
+            specification_path="docs/delivery/lot_03_derogations_spec_texte_v1.md",
+            notes=(
+                "Pre-remplissage partiel uniquement ; zones narratives conservees comme "
+                "formulaire a completer."
+            ),
+        ),
+        DocumentDefinition(
+            doc_id="DOC-014",
+            canonical_name=(
+                "Demande de derogation cumul SELARL - BNC - formulaire a completer"
+            ),
+            generator_name="generate_demande_derogation_cumul_selarl_bnc",
+            lot=3,
+            category=DocumentCategory.MUTUALISABLE,
+            structures=["SELARL"],
+            general_condition="dossier.options.derogation == true",
+            specific_conditions=[
+                "derogation.type == cumul_sel_bnc",
+                "derogation.mode_rendu == formulaire_a_completer",
+                "zones de cumul et motifs conservees comme champs manuels",
+            ],
+            dynamic_associates=False,
+            grammar_variants=False,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path=(
+                "project/source_documents/lot_03/"
+                "Demande de deÌrogation cumul SELARL - BNC.docx"
+            ),
+            specification_path="docs/delivery/lot_03_derogations_spec_texte_v1.md",
+            notes=(
+                "Pre-remplissage partiel uniquement ; cumul salariee legacy reste hors "
+                "perimetre."
+            ),
         ),
     ]
 
