@@ -20,6 +20,8 @@ class Person(BaseModel):
     civilite: str
     prenom: str
     nom: str
+    titre_affichage: str | None = None
+    adresse_personnelle_affichee: str | None = None
     adresse_perso: Address | None = None
     date_naissance: date | None = None
     nationalite: str | None = None
@@ -51,6 +53,37 @@ class Signature(BaseModel):
 
 class Domiciliation(BaseModel):
     adresse_domiciliation_affichee: str | None = None
+
+
+class DossierOptions(BaseModel):
+    derogation: bool = False
+
+
+class OrdreAddress(BaseModel):
+    ligne_1: str | None = None
+    cp: str | None = None
+    ville: str | None = None
+
+
+class OrdreProfessionnel(BaseModel):
+    conseil_departemental_libelle: str | None = None
+    destinataire_appel: str | None = None
+    profession_signataire_affichee: str | None = None
+    profession_ligne_destinataire: str | None = None
+    profession_reglementee_pluriel: str | None = None
+    adresse_affichee: str | None = None
+    adresse_bloc_affiche: str | None = None
+    adresse: OrdreAddress | None = None
+    derogation_mention_manuelle: str | None = None
+
+
+class Mandataire(BaseModel):
+    civilite_affichage: str | None = None
+    prenom: str | None = None
+    nom: str | None = None
+    fonction: str | None = None
+    cabinet: str | None = None
+    libelle_affiche: str | None = None
 
 
 class Associe(BaseModel):
@@ -102,10 +135,13 @@ class BienImmobilier(BaseModel):
 
 class DocumentGenerationContext(BaseModel):
     structure: str | None = None
+    dossier_options: DossierOptions | None = None
     personne_signataire: Person
     signature: Signature
     societe: Company | None = None
     domiciliation: Domiciliation | None = None
+    ordre: OrdreProfessionnel | None = None
+    mandataire: Mandataire | None = None
     associes: list[Associe] = Field(default_factory=list)
     dirigeant_nomine: DirigeantNomine | None = None
     decision: DecisionContext | None = None

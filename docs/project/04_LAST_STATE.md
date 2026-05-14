@@ -4,7 +4,7 @@
 2026-05-14
 
 ## Dernier ticket terminé
-FIX-PV-RENDER-001 : amélioration du rendu from-scratch du PV nomination gérant pour restaurer les structures visuelles essentielles du document source, sans changement de wording juridique, sans UI, sans PDF et sans ZIP.
+CODE-ORDRE-001 : implémentation du générateur canonique from-scratch `Demande d'inscription à l'ordre` pour SELARL, SELAS, SPFPL cession, SPFPL apport et SCM, sans changement de wording juridique, sans UI, sans PDF et sans ZIP.
 
 ## État courant du repo
 - DOC-001, DOC-002 et DOC-003 disposent chacun d'un générateur dédié déjà terminé.
@@ -40,6 +40,12 @@ FIX-PV-RENDER-001 : amélioration du rendu from-scratch du PV nomination gérant
   - `capital` ;
   - `emprunt` ;
   - `bien_immobilier`.
+- Le modèle de données supporte désormais les rôles nécessaires à la demande d'inscription à l'ordre :
+  - `dossier_options.derogation` ;
+  - `personne_signataire.titre_affichage` ;
+  - `personne_signataire.adresse_personnelle_affichee` ;
+  - `ordre` ;
+  - `mandataire`.
 - Le PV nomination gérant est branché dans l'orchestrateur pour SELARL, SELAS, SPFPL cession, SPFPL apport, SCS, SCI et SCM.
 - Le PV nomination gérant est exclu de la sélection SAS.
 - FIX-PV-RENDER-001 est terminé : le PV dispose désormais d'un titre principal encadré, de listes à tirets pour les associés et les décisions, d'intertitres gras/soulignés, de formules de vote en italique et de signatures centrées.
@@ -64,7 +70,7 @@ FIX-PV-RENDER-001 : amélioration du rendu from-scratch du PV nomination gérant
 - `ANALYSE-ORDRE-001` est DONE.
 - `SPEC-ORDRE-001` est DONE.
 - `SPEC-TEXTE-ORDRE-001` est DONE.
-- `CODE-ORDRE-001` est READY.
+- `CODE-ORDRE-001` est DONE.
 - `SPEC-RC-001` est READY.
 - `UI-001` reste explicitement en attente : ne pas brancher Streamlit maintenant.
 - Fichiers générés connus :
@@ -79,12 +85,13 @@ FIX-PV-RENDER-001 : amélioration du rendu from-scratch du PV nomination gérant
   - `artifacts/lot_02_orchestrator_negative_sas_smoke_test/declaration_non_condamnation.docx`
   - `artifacts/lot_02_orchestrator_negative_sas_smoke_test/autorisation_domiciliation.docx`
   - `artifacts/lot_02_orchestrator_negative_sas_smoke_test/procuration.docx`
+  - `artifacts/lot_02_demande_inscription_ordre_smoke_test/demande_inscription_ordre.docx`
 - Fichiers smoke RENDER-STYLE-001 générés :
   - `artifacts/render_style_001_lot_01_smoke_test/declaration_non_condamnation.docx`
   - `artifacts/render_style_001_lot_01_smoke_test/autorisation_domiciliation.docx`
   - `artifacts/render_style_001_lot_01_smoke_test/procuration.docx`
   - `artifacts/render_style_001_pv_nomination_gerant_smoke_test/pv_nomination_gerant.docx`
-- Streamlit, PDF, ZIP et `rendering/bundle.py` n'ont pas été modifiés dans ce ticket.
+- Streamlit, l'orchestrateur, PDF, ZIP et `rendering/bundle.py` n'ont pas été modifiés dans ce ticket.
 - `artifacts/` reste hors versionnement via `.gitignore`.
 
 ## Décisions métier/techniques appliquées dans ce ticket
@@ -138,20 +145,25 @@ FIX-PV-RENDER-001 : amélioration du rendu from-scratch du PV nomination gérant
 - SPEC-TEXTE-ORDRE-001 retient un tronc commun texte fixe et trois overlays : SELARL/SELAS, SPFPL cession/apport et SCM.
 - La mention source `Dérogation ?` n'est pas un wording juridique automatique ; elle devient un bloc conditionnel manuel qui bloque si `dossier.options.derogation == true` sans mention fournie.
 - `Dr`, `Monsieur le Président`, la profession ordinale et l'adresse ordinale restent variables ou blocs variables.
-- Le mandataire SYDEL peut être préconfiguré, mais ne doit pas être codé en dur dans le futur générateur.
-- La demande d'inscription à l'ordre est prête pour `CODE-ORDRE-001`, sous réserve d'appliquer les règles de blocage de la spec texte.
+- Le mandataire SYDEL peut être préconfiguré, mais ne doit pas être codé en dur dans le générateur.
+- CODE-ORDRE-001 implémente le générateur `Demande d'inscription à l'ordre` dans `src/sydel_doc_engine/generators/lot_02/demande_inscription_ordre.py`.
+- Le générateur ordre couvre explicitement SELARL, SELAS, SPFPL cession, SPFPL apport et SCM.
+- Les overlays SELARL/SELAS, SPFPL et SCM pilotent le rendu de l'adresse ordinale, sans wording SCM spécifique ajouté.
+- Le bloc `Dérogation ?` n'est jamais rendu littéralement ; si `dossier_options.derogation=true`, une mention manuelle `ordre.derogation_mention_manuelle` est obligatoire.
+- Le mandataire est résolu depuis `mandataire.libelle_affiche` ou depuis les champs détaillés, sans constante SYDEL/Jordan ELBAZ codée dans le générateur.
+- Le smoke DOCX dédié a été généré dans `artifacts/lot_02_demande_inscription_ordre_smoke_test/demande_inscription_ordre.docx`, hors versionnement.
 - Les 2 cas MEDIUM régime communautaire restent bloqués : renonciation régime communautaire, avertissement régime communautaire.
 - Les 3 cas LOW restent bloqués : statuts, liste des souscripteurs / attestation sur le capital, documents sans source claire.
 - 16 documents sources sont explicitement hors périmètre moteur courant.
 - Aucun fichier de `project/source_import/raw_drive_dump/`, aucun fichier source documentaire et aucun artefact n'a été déplacé, supprimé ou renommé.
-- Aucun code Python, aucune UI, aucun PDF, aucun ZIP et aucun wording juridique source n'ont été modifiés.
+- Aucune UI, aucun PDF, aucun ZIP et aucun wording juridique source n'ont été modifiés.
 - FIX-PV-RENDER-001 conserve l'approche from-scratch et ne modifie pas le texte juridique ; les changements portent uniquement sur le rendu DOCX du PV et un helper commun de liste à tiret.
 - Le smoke DOCX dédié a été généré dans `artifacts/fix_pv_render_001_smoke_test_2/pv_nomination_gerant.docx`, hors versionnement.
 
 ## Prochain ticket à lancer
-Lancer `CODE-ORDRE-001`.
+Lancer `SPEC-RC-001`.
 
-Le code de `Demande d'inscription à l'ordre` doit rester strictement limité aux specs ordre V1. Les cas régime communautaire MEDIUM et les cas LOW doivent rester bloqués tant que leurs variantes sources n'ont pas été comparées ou arbitrées.
+Le batch régime communautaire doit être spécifié avant tout code. Les cas LOW doivent rester bloqués tant que leurs variantes sources n'ont pas été comparées ou arbitrées.
 
 ## Points ouverts
 - Aucun point bloquant identifié après le smoke test réel Lot 1.
@@ -173,9 +185,9 @@ Le code de `Demande d'inscription à l'ordre` doit rester strictement limité au
   - ponctuation de la dernière ligne `associes[]` ;
   - féminisation éventuelle de la fonction ;
   - règle `euro` / `euros`.
-- Points ouverts demande d'inscription à l'ordre non bloquants pour CODE-ORDRE-001 si la spec texte est respectée :
+- Points ouverts demande d'inscription à l'ordre après CODE-ORDRE-001 :
   - absence de variante SCM dédiée dans le raw dump, à compenser par une revue humaine du premier rendu SCM ;
-  - wording de dérogation non validé, donc bloc manuel obligatoire ou blocage ;
+  - wording de dérogation non validé, donc bloc manuel obligatoire ou blocage conservé ;
   - valeurs ordinales fournies par contexte ou référentiel ;
   - mandataire SYDEL configurable, jamais imposé comme constante en dur.
 - Points ouverts régime communautaire :
@@ -188,7 +200,7 @@ Le code de `Demande d'inscription à l'ordre` doit rester strictement limité au
   - traitement de la mention manuscrite ;
   - absence de prénom du conjoint dans la lettre d'avertissement.
 - Points ouverts sources :
-  - ne pas élargir la demande d'inscription à l'ordre hors specs V1 pendant CODE-ORDRE-001 ;
+  - ne pas élargir la demande d'inscription à l'ordre hors specs V1 sans ticket dédié ;
   - ne pas fusionner les variantes SELARL du régime communautaire avec les copies exactes SELAS/SPFPL sans arbitrage ;
   - ne pas placer automatiquement la famille liste des souscripteurs / attestation sur le capital ;
   - ne pas dedupliquer les statuts entre familles, professions ou variantes.
@@ -199,6 +211,10 @@ Le code de `Demande d'inscription à l'ordre` doit rester strictement limité au
 - FIX-PV-RENDER-001 : smoke DOCX OK dans `artifacts/fix_pv_render_001_smoke_test_2/pv_nomination_gerant.docx`.
 - FIX-PV-RENDER-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
 - FIX-PV-RENDER-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 49 tests passés.
+- CODE-ORDRE-001 : tests unitaires ciblés OK, 7 tests passés dans `tests/unit/test_demande_inscription_ordre.py`.
+- CODE-ORDRE-001 : smoke DOCX OK dans `artifacts/lot_02_demande_inscription_ordre_smoke_test/demande_inscription_ordre.docx`, sans placeholder `[` / `]` ni littéral résiduel `Dérogation ?`.
+- CODE-ORDRE-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
+- CODE-ORDRE-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 56 tests passés.
 - SPEC-TEXTE-ORDRE-001 : source de vérité, source Lot 2 et variantes raw dump SELARL / SELAS / SPFPL cession / SPFPL apport lues en lecture seule.
 - SPEC-TEXTE-ORDRE-001 : spec texte créée dans `docs/delivery/lot_02_demande_inscription_ordre_spec_texte_v1.md`.
 - SPEC-TEXTE-ORDRE-001 : aucun code Python modifié ; validations limitées à la relecture documentaire et au contrôle du diff.
@@ -233,4 +249,4 @@ Le code de `Demande d'inscription à l'ordre` doit rester strictement limité au
 - SMOKE-ORCH-L2-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 47 tests passés.
 
 ## Recommandation immédiate suivante
-Lancer `CODE-ORDRE-001`, puis traiter `SPEC-RC-001` après comparaison documentaire des variantes régime communautaire concernées.
+Lancer `SPEC-RC-001` après comparaison documentaire des variantes régime communautaire concernées.

@@ -1,0 +1,33 @@
+structure: SELARL
+dossier_options:
+  derogation: false
+personne_signataire:
+  genre: masculin
+  civilite: Monsieur
+  titre_affichage: Dr
+  prenom: Jean
+  nom: Durand
+  adresse_personnelle_affichee: |-
+    12 rue des Lilas
+    75008 Paris
+societe:
+  denomination: SEL EXEMPLE
+ordre:
+  conseil_departemental_libelle: Conseil départemental de l’Ordre
+  destinataire_appel: Monsieur le Président
+  profession_signataire_affichee: chirurgien-dentiste
+  profession_ligne_destinataire: chirurgiens-dentistes
+  profession_reglementee_pluriel: chirurgiens-dentistes
+  adresse:
+    ligne_1: 6 rue du Conseil
+    cp: "75001"
+    ville: Paris
+mandataire:
+  civilite_affichage: Madame
+  prenom: Sophie
+  nom: Martin
+  fonction: juriste
+  cabinet: DAAT
+signature:
+  lieu: Paris
+  date: 2026-05-14
