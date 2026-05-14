@@ -335,7 +335,28 @@ class OperationSpfpl(BaseModel):
     type: str | None = None
 
 
+class SpfplConjoint(BaseModel):
+    civilite_affichage: str | None = None
+    prenom: str | None = None
+    nom: str | None = None
+
+
+class SpfplOrdre(BaseModel):
+    professionnel: str | None = None
+    departement: str | None = None
+    numero: str | None = None
+    numero_rpps: str | None = None
+
+
 class SpfplDirigeant(BaseModel):
+    fonction: str | None = None
+
+
+class SpfplRepresentant(BaseModel):
+    civilite_affichage: str | None = None
+    civilite_courte: str | None = None
+    prenom: str | None = None
+    nom: str | None = None
     fonction: str | None = None
 
 
@@ -350,6 +371,7 @@ class SocieteSpfpl(BaseModel):
     numero_rcs: str | None = None
     siege: Address | None = None
     dirigeant: SpfplDirigeant | None = None
+    representant: SpfplRepresentant | None = None
 
 
 class SpfplPerson(BaseModel):
@@ -357,6 +379,18 @@ class SpfplPerson(BaseModel):
     prenom: str | None = None
     nom: str | None = None
     genre: Gender | None = None
+    profession: str | None = None
+    profession_reglementee: str | None = None
+    profession_reglementee_pluriel: str | None = None
+    date_naissance: date | str | None = None
+    ville_naissance: str | None = None
+    departement_naissance: str | None = None
+    nationalite: str | None = None
+    situation_maritale: str | None = None
+    conjoint: SpfplConjoint | None = None
+    adresse_personnelle: Address | None = None
+    adresse_personnelle_affichee: str | None = None
+    ordre: SpfplOrdre | None = None
 
 
 class SocieteCible(BaseModel):
@@ -369,6 +403,10 @@ class SocieteCible(BaseModel):
     capital_social_lettres: str | None = None
     nb_parts_total: int | None = None
     valeur_nominale_part: str | None = None
+    valeur_nominale_part_lettres: str | None = None
+    departement_inscription_ordre: str | None = None
+    president_ou_gerant: str | None = None
+    dirigeant: SpfplRepresentant | None = None
     siege: Address | None = None
     ville_rcs: str | None = None
     numero_rcs: str | None = None
@@ -392,10 +430,59 @@ class CessionParts(BaseModel):
     nb_parts: int | None = None
     nb_parts_lettres: str | None = None
     plage_parts: str | None = None
+    prix_unitaire: str | None = None
+    prix_unitaire_lettres: str | None = None
+    prix_total: str | None = None
+    prix_total_lettres: str | None = None
+    nombre_exemplaires_lettres: str | None = None
 
 
 class OperationTitres(BaseModel):
     nb_titres: int | None = None
+
+
+class ApportTitres(BaseModel):
+    nb_parts: int | None = None
+    nb_parts_lettres: str | None = None
+    nature_titres: str | None = None
+    plage_parts: str | None = None
+    valeur_par_titre: str | None = None
+    valeur_par_titre_lettres: str | None = None
+    valeur_globale: str | None = None
+    valeur_globale_lettres: str | None = None
+    nb_actions_attribuees: int | None = None
+    nb_actions_attribuees_lettres: str | None = None
+    valeur_nominale_action: str | None = None
+    valeur_nominale_action_lettres: str | None = None
+
+
+class ProfessionalEntity(BaseModel):
+    denomination: str | None = None
+    forme_sociale: str | None = None
+    capital_social: str | None = None
+    siege: Address | None = None
+    ville_rcs: str | None = None
+    numero_rcs: str | None = None
+    representant: SpfplRepresentant | None = None
+
+
+class CapitalSouscripteur(BaseModel):
+    civilite_affichage: str | None = None
+    prenom: str | None = None
+    nom: str | None = None
+    profession: str | None = None
+    adresse_personnelle_affichee: str | None = None
+    nb_actions: int | None = None
+    qualite: str | None = None
+
+
+class CapitalSouscription(BaseModel):
+    nb_actions_total: int | None = None
+    valeur_nominale_action: str | None = None
+    apports_nature_montant: str | None = None
+    apports_numeraire_montant: str | None = None
+    souscripteurs: list[CapitalSouscripteur] = Field(default_factory=list)
+    president: CapitalSouscripteur | None = None
 
 
 class DocumentSignataire(BaseModel):
@@ -548,5 +635,9 @@ class DocumentGenerationContext(BaseModel):
     associes_cible: list[AssocieCible] = Field(default_factory=list)
     cession_parts: CessionParts | None = None
     operation_titres: OperationTitres | None = None
+    apport_titres: ApportTitres | None = None
+    capital_souscription: CapitalSouscription | None = None
+    evaluateur_apport: ProfessionalEntity | None = None
+    commissaire_aux_apports: ProfessionalEntity | None = None
     document: DocumentContext | None = None
     metadata: dict[str, str] = Field(default_factory=dict)
