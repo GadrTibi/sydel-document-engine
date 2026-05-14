@@ -1,10 +1,10 @@
 # Dernier état projet
 
 ## Date de mise à jour
-2026-05-13
+2026-05-14
 
 ## Dernier ticket terminé
-SMOKE-ORCH-L2-001 : smoke test réel orchestrateur Lot 2 avec cas positif SCI et cas négatif SAS.
+PLACEMENT-HIGH-001 : confirmation du placement des 4 cas HIGH déjà présents dans `project/source_documents/`, avec journal d'exécution V1, sans code Python, sans nouvelle copie et sans modification des cas MEDIUM/LOW.
 
 ## État courant du repo
 - DOC-001, DOC-002 et DOC-003 disposent chacun d'un générateur dédié déjà terminé.
@@ -49,6 +49,18 @@ SMOKE-ORCH-L2-001 : smoke test réel orchestrateur Lot 2 avec cas positif SCI et
   - `artifacts/lot_02_orchestrator_positive_smoke_test/`
   - `artifacts/lot_02_orchestrator_negative_sas_smoke_test/`
 - La revue smoke orchestrateur Lot 2 est disponible : `docs/review/lot_02_orchestrator_smoke_review_v1.md`.
+- Le cadrage V1 de la demande d'inscription à l'ordre est disponible : `docs/delivery/lot_02_demande_inscription_ordre_cadrage_v1.md`.
+- Le cadrage V1 du batch régime communautaire est disponible : `docs/delivery/lot_02_regime_communautaire_batch_cadrage_v1.md`.
+- Le manifest d'import sources V1 est disponible : `docs/project/10_SOURCE_IMPORT_MANIFEST_V1.md`.
+- Le rapport de doublons sources V1 est disponible : `docs/project/11_SOURCE_DUPLICATES_REPORT_V1.md`.
+- Le plan de placement sources V1 est disponible : `docs/project/12_SOURCE_PLACEMENT_PLAN_V1.md`.
+- Les décisions d'arbitrage sources V1 sont disponibles : `docs/project/13_SOURCE_ARBITRATION_DECISIONS_V1.md`.
+- Le journal d'exécution du placement HIGH V1 est disponible : `docs/project/14_SOURCE_PLACEMENT_EXECUTION_V1.md`.
+- `ARBITRAGE-SOURCES-001` est DONE.
+- `PLACEMENT-HIGH-001` est DONE.
+- `ANALYSE-ORDRE-001` est DONE.
+- `SPEC-ORDRE-001` est READY.
+- `SPEC-RC-001` est READY.
 - `UI-001` reste explicitement en attente : ne pas brancher Streamlit maintenant.
 - Fichiers générés connus :
   - `artifacts/lot_01_smoke_test/autorisation_domiciliation.docx`
@@ -104,11 +116,27 @@ SMOKE-ORCH-L2-001 : smoke test réel orchestrateur Lot 2 avec cas positif SCI et
 - SMOKE-ORCH-L2-001 confirme en génération réelle que SCI produit les documents universels et `pv_nomination_gerant.docx`.
 - SMOKE-ORCH-L2-001 confirme en génération réelle que SAS produit seulement les documents universels et exclut `pv_nomination_gerant.docx`.
 - Aucun wording juridique, aucune UI, aucun PDF et aucun ZIP n'ont été modifiés.
+- ANALYSE-ORDRE-001 lit les trois sources Lot 2 en lecture seule et crée deux cadrages dans `docs/delivery/`.
+- Les chemins nommés dans le ticket pour les trois DOCX ne correspondent pas littéralement aux noms présents dans le dépôt ; les fichiers transformés correspondants ont été utilisés et l'écart est documenté dans les cadrages.
+- La demande d'inscription à l'ordre est considérée suffisamment cadrée pour ouvrir `SPEC-ORDRE-001`, mais pas pour coder.
+- Le batch régime communautaire est considéré suffisamment cadré pour ouvrir `SPEC-RC-001`, mais pas pour coder.
+- Pour le batch régime communautaire, la mutualisation réaliste porte surtout sur les variables, les rôles, les montants et les helpers de rendu ; deux documents canoniques distincts restent recommandés.
+- ARBITRAGE-SOURCES-001 scanne 147 fichiers dans `project/source_import/raw_drive_dump/` et 11 fichiers dans `project/source_documents/`.
+- ARBITRAGE-SOURCES-001 identifie 18 groupes de doublons probables, dont 15 groupes de doublons exacts.
+- Les 4 cas HIGH documentés sont : DOC-001, DOC-002, DOC-003 et la source canonique `PV nomination gérant`.
+- PLACEMENT-HIGH-001 confirme que les 4 cas HIGH sont déjà présents aux emplacements retenus dans `project/source_documents/`.
+- PLACEMENT-HIGH-001 n'a effectué aucune nouvelle copie, car chaque cible HIGH existait déjà.
+- PLACEMENT-HIGH-001 crée `docs/project/14_SOURCE_PLACEMENT_EXECUTION_V1.md`.
+- Les 3 cas MEDIUM restent bloqués : demande d'inscription à l'ordre, renonciation régime communautaire, avertissement régime communautaire.
+- Les 3 cas LOW restent bloqués : statuts, liste des souscripteurs / attestation sur le capital, documents sans source claire.
+- 16 documents sources sont explicitement hors périmètre moteur courant.
+- Aucun fichier de `project/source_import/raw_drive_dump/`, aucun fichier source documentaire et aucun artefact n'a été déplacé, supprimé ou renommé.
+- Aucun code Python, aucune UI, aucun PDF, aucun ZIP et aucun wording juridique source n'ont été modifiés.
 
 ## Prochain ticket à lancer
-Lancer la revue humaine du rendu DOCX et du wording du PV nomination gérant, puis arbitrer les points ouverts avant d'élargir Lot 2.
+Lancer `SPEC-ORDRE-001`.
 
-En parallèle métier, relire humainement le rendu DOCX et le wording à partir du pack `docs/review/`.
+Les cas MEDIUM/LOW doivent rester bloqués tant que les variantes sources n'ont pas été comparées ou arbitrées.
 
 ## Points ouverts
 - Aucun point bloquant identifié après le smoke test réel Lot 1.
@@ -129,9 +157,39 @@ En parallèle métier, relire humainement le rendu DOCX et le wording à partir 
   - ponctuation de la dernière ligne `associes[]` ;
   - féminisation éventuelle de la fonction ;
   - règle `euro` / `euros`.
+- Points ouverts demande d'inscription à l'ordre :
+  - traitement de la mention source `Dérogation ?` ;
+  - validation du wording `associé et praticien et exerçant` ;
+  - accords féminins éventuels ;
+  - règle de titre `Dr` ;
+  - règle de destinataire `Monsieur le Président` ;
+  - mapping canonique de `[profession]`, `[profession_reglementee]`, `[adresse_personnelle]` et `[adresse_ordre]`.
+- Points ouverts régime communautaire :
+  - périmètre exact du fichier de renonciation nommé `SELAS` ;
+  - rôles canoniques `apporteur` et `conjoint` ;
+  - correspondance entre `[date_courrier]` et la lettre d'avertissement ;
+  - harmonisation des montants d'apport malgré les placeholders divergents ;
+  - formes sociales complète / affichée / abrégée ;
+  - accords `associé/associée/actionnaire`, `futur/future`, fonctions dirigeantes ;
+  - traitement de la mention manuscrite ;
+  - absence de prénom du conjoint dans la lettre d'avertissement.
+- Points ouverts sources :
+  - ne pas choisir une source unique pour la demande d'inscription à l'ordre avant comparaison SELARL / SELAS / SPFPL ;
+  - ne pas fusionner les variantes SELARL du régime communautaire avec les copies exactes SELAS/SPFPL sans arbitrage ;
+  - ne pas placer automatiquement la famille liste des souscripteurs / attestation sur le capital ;
+  - ne pas dedupliquer les statuts entre familles, professions ou variantes.
 - Toute ambiguïté de wording juridique doit bloquer l'implémentation concernée et être documentée.
 
 ## Validations connues
+- PLACEMENT-HIGH-001 : les 4 fichiers HIGH cibles existent dans `project/source_documents/`.
+- PLACEMENT-HIGH-001 : les hashes cibles ont été comparés aux sources brutes correspondantes pour les cas HIGH ; aucune copie nouvelle nécessaire.
+- PLACEMENT-HIGH-001 : aucun test de code exécuté car aucun fichier Python n'a été modifié.
+- PLACEMENT-HIGH-001 : `git status --short` n'était pas propre avant intervention ; aucun commit ni push n'a été effectué.
+- ARBITRAGE-SOURCES-001 : scan documentaire en lecture seule ; aucun test de code exécuté car aucun fichier Python n'a été modifié.
+- ARBITRAGE-SOURCES-001 : relecture documentaire du diff requise avant toute reprise de placement physique.
+- ARBITRAGE-SOURCES-001 : `raw_drive_dump` n'a pas été versionné.
+- ANALYSE-ORDRE-001 : relecture documentaire uniquement ; aucun test de code exécuté car aucun fichier Python n'a été modifié.
+- ANALYSE-ORDRE-001 : `git status --short` consulté avant modifications ; le dépôt contenait déjà des fichiers non suivis hors périmètre du ticket.
 - Harnais temporaire de smoke test revue : OK, 1 test passé ; DOCX régénéré et aperçu texte extrait.
 - `.\.venv\Scripts\python.exe -m ruff check .` : OK.
 - `.\.venv\Scripts\python.exe -m pytest` : OK, 44 tests passés.
@@ -149,4 +207,4 @@ En parallèle métier, relire humainement le rendu DOCX et le wording à partir 
 - SMOKE-ORCH-L2-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 47 tests passés.
 
 ## Recommandation immédiate suivante
-Relire humainement le DOCX PV et le pack `docs/review/lot_02_pv_nomination_gerant_review_v1.md`, notamment le rendu Word, la ponctuation finale des associés, la branche emprunt inactive, les accords singulier/pluriel, la fonction `gérant/gérante` et la signature si le dirigeant nommé n'est pas associé.
+Lancer `SPEC-ORDRE-001`, puis `SPEC-RC-001` après comparaison documentaire des variantes concernées.

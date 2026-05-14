@@ -30,6 +30,11 @@
 | RENDER-STYLE-001 | DONE | Implémenter la couche de rendu DOCX commune | spec render style system V1 + générateurs existants | helpers communs + générateurs migrés + tests + smoke DOCX |
 | ORCH-L2-PV-001 | DONE | Brancher le PV nomination gérant dans l'orchestrateur | générateur PV + specs Lot 2 + décisions de sélection | catalogue + registre orchestrateur + tests ciblés |
 | SMOKE-ORCH-L2-001 | DONE | Smoke test réel orchestrateur Lot 2 positif SCI / négatif SAS | contextes exemples Lot 2 + orchestrateur | DOCX générés, PV présent en SCI et absent en SAS, revue smoke |
+| ANALYSE-ORDRE-001 | DONE | Cadrer Demande d'inscription à l'ordre et batch régime communautaire Lot 2 | sources Lot 2 ordre + régime communautaire + référentiels V1 | cadrages delivery + tickets SPEC-ORDRE-001/SPEC-RC-001 READY |
+| ARBITRAGE-SOURCES-001 | DONE | Réparer le manifest d'import sources et arbitrer les placements V1 | source truth + raw_drive_dump + source_documents + décisions métier | docs projet 10/11/12/13 + prochain ticket placement |
+| PLACEMENT-HIGH-001 | DONE | Déplacer physiquement dans source_documents uniquement les cas HIGH validés | plan de placement V1 + décisions d'arbitrage sources V1 | placement HIGH confirmé no-op + journal d'exécution |
+| SPEC-ORDRE-001 | READY | Formaliser la spec canonique Demande d'inscription à l'ordre | cadrage ordre V1 + source Lot 2 + référentiels V1 | spec canonique écrite, mapping variables, accords, points ouverts |
+| SPEC-RC-001 | READY | Formaliser la spec canonique batch régime communautaire | cadrage régime communautaire V1 + deux sources Lot 2 + référentiels V1 | spec canonique batch, mapping commun, règles de génération, points ouverts |
 | UI-001 | BLOCKED | Brancher Streamlit V0 Lot 1 | orchestrateur Lot 1 + spec canonique PV nomination gérant validée | écran simple + test manuel |
 
 ## Référentiels moteur disponibles
@@ -40,6 +45,13 @@
 - La spec canonique V1 de la famille `PV nomination gérant` est disponible : `docs/delivery/lot_02_pv_nomination_gerant_spec_canonique_v1.md`.
 - La spec texte V1 de la famille `PV nomination gérant` est disponible : `docs/delivery/lot_02_pv_nomination_gerant_spec_texte_v1.md`.
 - La spec technique V1 de couche de rendu DOCX commune est disponible : `docs/delivery/render_style_system_v1.md`.
+- Le cadrage V1 `Demande d'inscription à l'ordre` est disponible : `docs/delivery/lot_02_demande_inscription_ordre_cadrage_v1.md`.
+- Le cadrage V1 du batch `régime communautaire` est disponible : `docs/delivery/lot_02_regime_communautaire_batch_cadrage_v1.md`.
+- Le manifest d'import sources V1 est disponible : `docs/project/10_SOURCE_IMPORT_MANIFEST_V1.md`.
+- Le rapport de doublons sources V1 est disponible : `docs/project/11_SOURCE_DUPLICATES_REPORT_V1.md`.
+- Le plan de placement sources V1 est disponible : `docs/project/12_SOURCE_PLACEMENT_PLAN_V1.md`.
+- Les décisions d'arbitrage sources V1 sont disponibles : `docs/project/13_SOURCE_ARBITRATION_DECISIONS_V1.md`.
+- Le journal d'exécution du placement HIGH V1 est disponible : `docs/project/14_SOURCE_PLACEMENT_EXECUTION_V1.md`.
 - Le pack de revue humaine du PV nomination gérant est disponible : `docs/review/lot_02_pv_nomination_gerant_review_v1.md`.
 - L'aperçu texte extrait du DOCX généré est disponible : `docs/review/lot_02_pv_nomination_gerant_preview_v1.txt`.
 - La revue smoke orchestrateur Lot 2 est disponible : `docs/review/lot_02_orchestrator_smoke_review_v1.md`.
@@ -138,6 +150,38 @@
 - Sortie : smoke DOCX dans `artifacts/lot_02_orchestrator_positive_smoke_test/` et `artifacts/lot_02_orchestrator_negative_sas_smoke_test/`, revue dans `docs/review/lot_02_orchestrator_smoke_review_v1.md`.
 - Statut : terminé ; le PV est généré pour SCI et absent pour SAS.
 
+### ANALYSE-ORDRE-001
+- Objectif : préparer le prochain batch mutualisable Lot 2 sans coder, en analysant la demande d'inscription à l'ordre et les deux lettres de régime communautaire.
+- Entrées : référentiels projet V1 + trois sources Lot 2 présentes dans `project/source_documents/lot_02/`.
+- Sortie : `docs/delivery/lot_02_demande_inscription_ordre_cadrage_v1.md` et `docs/delivery/lot_02_regime_communautaire_batch_cadrage_v1.md`.
+- Statut : terminé ; aucun code Python modifié.
+
+### ARBITRAGE-SOURCES-001
+- Objectif : réparer les prérequis documentaires d'import sources puis arbitrer les placements possibles sans déplacer de fichier.
+- Entrées : `project/source_truth/Documents_a_generer_par_cas.docx`, `project/source_import/raw_drive_dump/`, `project/source_documents/`, décisions métier chef de projet.
+- Sortie : manifest import sources V1, rapport doublons V1, plan placement V1, décisions arbitrage V1.
+- Statut : terminé ; aucun code Python, aucun fichier source, aucun artefact modifié.
+
+### PLACEMENT-HIGH-001
+- Objectif : déplacer physiquement dans `source_documents` uniquement les cas HIGH validés par `docs/project/12_SOURCE_PLACEMENT_PLAN_V1.md`.
+- Entrées : plan de placement V1 + décisions d'arbitrage sources V1.
+- Contraintes : ne pas toucher aux cas MEDIUM/LOW, ne pas versionner `project/source_import/raw_drive_dump/`, documenter les no-op si les fichiers HIGH sont déjà présents.
+- Statut : terminé ; les 4 cas HIGH sont déjà présents aux emplacements cibles et ont été confirmés en no-op documenté. Aucun fichier MEDIUM/LOW ou hors périmètre n'a été modifié.
+
+### SPEC-ORDRE-001
+- Objectif : formaliser la spec canonique `Demande d'inscription à l'ordre` à partir du cadrage V1.
+- Cadrage à lire : `docs/delivery/lot_02_demande_inscription_ordre_cadrage_v1.md`.
+- Contraintes : ne pas coder, valider le traitement de `Dérogation ?`, les accords de genre, le titre `Dr`, le destinataire ordinal et le mapping des données ordinales.
+- Sortie attendue : spec canonique écrite dans `docs/delivery/`, avec structure, texte fixe, variables canoniques, règles de blocage et critères de recette.
+- Statut : READY.
+
+### SPEC-RC-001
+- Objectif : formaliser la spec canonique du batch `régime communautaire` pour la lettre de renonciation et la lettre d'avertissement.
+- Cadrage à lire : `docs/delivery/lot_02_regime_communautaire_batch_cadrage_v1.md`.
+- Contraintes : garder deux documents canoniques distincts, mutualiser le pack de variables, arbitrer les rôles `apporteur` / `conjoint`, les montants, les dates croisées, les formes sociales et la mention manuscrite.
+- Sortie attendue : spec canonique batch écrite dans `docs/delivery/`, avec mapping commun, règles document par document, règles de genre/nombre et critères de recette.
+- Statut : READY.
+
 ### UI-001
 - Objectif : exposer une Streamlit simple pour générer le Lot 1.
 - Statut : en attente explicite ; ne pas lancer sans ticket explicite dédié.
@@ -153,8 +197,8 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - mettre à jour `docs/project/04_LAST_STATE.md`
 
 ## Prochaine étape prévue
-- prochaine action recommandée : lancer la revue humaine du rendu DOCX et du wording du PV nomination gérant, puis arbitrer les points ouverts avant d'élargir Lot 2.
-- action suivante côté métier : relire humainement `docs/review/lot_02_pv_nomination_gerant_review_v1.md`, l'aperçu texte et le DOCX généré.
+- prochaine action recommandée : lancer `SPEC-ORDRE-001`.
+- action suivante côté métier : garder les cas MEDIUM/LOW bloqués tant que les variantes sources n'ont pas été comparées.
 - UI-001 reste explicitement en attente.
 
 ## Points ouverts
@@ -164,11 +208,17 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - Ecart temporaire non bloquant pour l'UI : la table V1 retient `domiciliation.adresse_affichee` comme nom canonique, tandis que le code Lot 1 existant conserve l'alias legacy `adresse_domiciliation_affichee` jusqu'à refactor dédié.
 - ORCH-L2-PV-001 est terminé ; le PV nomination gérant est branché dans l'orchestrateur pour les structures concernées et exclu pour SAS.
 - SMOKE-ORCH-L2-001 est terminé ; le smoke réel confirme la génération du PV pour SCI et son absence pour SAS.
+- ANALYSE-ORDRE-001 est terminé ; les cadrages V1 ordre et régime communautaire sont disponibles dans `docs/delivery/`.
+- ARBITRAGE-SOURCES-001 est terminé ; le scan a identifié 147 fichiers dans `raw_drive_dump`, 11 fichiers dans `source_documents`, 18 groupes de doublons probables, 6 documents sans source claire et 16 documents hors périmètre.
+- PLACEMENT-HIGH-001 est terminé ; les 4 cas HIGH documentés dans le plan de placement V1 ont été confirmés comme déjà présents, sans nouvelle copie.
+- SPEC-ORDRE-001 et SPEC-RC-001 sont READY ; aucun code ne doit être lancé avant ces specs.
 - REVIEW-PV-001 est terminé, mais la validation humaine du rendu DOCX et du wording reste à obtenir pour la revue juridique fine.
 - RENDER-STYLE-001 est terminé ; les signatures encadrées sont disponibles dans la couche commune et appliquées aux signatures Lot 1.
 - Le PV nomination gérant conserve des signatures répétables simples ; toute signature encadrée dirigeant/associés séparée reste soumise à validation métier.
 - UI-001 reste en attente explicite : ne pas lancer le branchement Streamlit sans nouveau ticket.
 - Points ouverts PV documentés dans la spec texte : périmètre SELAS, capital non variable, société déjà immatriculée, dirigeant non associé, ponctuation finale des associés, féminisation éventuelle de la fonction, règle `euro/euros`.
+- Points ouverts ordre : traitement de `Dérogation ?`, accords `associé/praticien/exerçant`, titre `Dr`, destinataire ordinal, mapping `profession` / `profession_reglementee`.
+- Points ouverts régime communautaire : rôles `apporteur` / `conjoint`, relation `date_courrier`, variantes de formes sociales, qualité `associé/associée/actionnaire`, mention manuscrite, périmètre du fichier source nommé `SELAS`.
 
 ## Journal court
 - 2026-05-12 : mémoire projet installée dans `docs/project/`.
@@ -193,3 +243,6 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - 2026-05-13 : RENDER-STYLE-001 implémente la couche commune de rendu DOCX, migre DOC-001/DOC-002/DOC-003/PV nomination gérant, ajoute les tests de rendu et génère les smoke DOCX dans `artifacts/render_style_001_*`.
 - 2026-05-13 : ORCH-L2-PV-001 branche le PV nomination gérant dans le catalogue et l'orchestrateur pour SELARL, SELAS, SPFPL cession, SPFPL apport, SCS, SCI et SCM ; SAS reste exclue ; ruff et pytest verts.
 - 2026-05-13 : SMOKE-ORCH-L2-001 ajoute deux contextes orchestrateur Lot 2, génère réellement le dossier SCI positif et le dossier SAS négatif, puis documente la présence/absence du PV dans `docs/review/lot_02_orchestrator_smoke_review_v1.md`.
+- 2026-05-13 : ANALYSE-ORDRE-001 crée les cadrages V1 pour `Demande d'inscription à l'ordre` et le batch `régime communautaire`, puis ajoute SPEC-ORDRE-001 et SPEC-RC-001 en READY, sans modification de code Python.
+- 2026-05-13 : ARBITRAGE-SOURCES-001 répare les docs projet 10/11/12, crée les décisions d'arbitrage sources V1, classe les cas HIGH/MEDIUM/LOW et ajoute PLACEMENT-HIGH-001 en READY, sans déplacer de fichier source.
+- 2026-05-14 : PLACEMENT-HIGH-001 confirme en no-op les 4 cas HIGH déjà présents dans `source_documents`, crée le journal d'exécution V1 et ne touche pas aux cas MEDIUM/LOW ni au raw dump.
