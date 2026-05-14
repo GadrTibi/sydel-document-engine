@@ -31,6 +31,15 @@ REGIME_COMMUNAUTAIRE_STRUCTURES: list[str] = [
     "SPFPL apport",
 ]
 
+BAIL_AVENANT_STRUCTURES: list[str] = [
+    "SELARL",
+    "SELAS",
+]
+
+APPEL_FONDS_SEL_STRUCTURES: list[str] = [
+    "SELARL",
+]
+
 
 def build_seed_catalog() -> list[DocumentDefinition]:
     return [
@@ -151,6 +160,46 @@ def build_seed_catalog() -> list[DocumentDefinition]:
                 "docs/delivery/lot_02_regime_communautaire_batch_spec_texte_v1.md"
             ),
             notes="Batch regime communautaire V1, DOCX from-scratch uniquement.",
+        ),
+        DocumentDefinition(
+            doc_id="DOC-007",
+            canonical_name="Avenant contrat de bail",
+            generator_name="generate_avenant_contrat_bail",
+            lot=3,
+            category=DocumentCategory.MUTUALISABLE,
+            structures=BAIL_AVENANT_STRUCTURES,
+            general_condition="dossier.options.cession == true",
+            specific_conditions=[
+                "SELARL et SELAS uniquement",
+                "societe en cours d'immatriculation confirmee",
+                "cabinet medical ou dentaire",
+            ],
+            dynamic_associates=False,
+            grammar_variants=False,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path="project/source_documents/lot_03/Avenant Contrat de bail.docx",
+            specification_path="docs/delivery/lot_03_bail_appel_fonds_spec_texte_v1.md",
+            notes="Table de signatures source reproduite strictement, doublon inclus.",
+        ),
+        DocumentDefinition(
+            doc_id="DOC-008",
+            canonical_name="Appel de fonds SEL",
+            generator_name="generate_appel_fond_sel",
+            lot=3,
+            category=DocumentCategory.MUTUALISABLE,
+            structures=APPEL_FONDS_SEL_STRUCTURES,
+            general_condition="dossier.options.cession == true",
+            specific_conditions=[
+                "SELARL uniquement",
+                "cabinet dentaire uniquement",
+                "montant de deblocage fourni manuellement",
+            ],
+            dynamic_associates=False,
+            grammar_variants=False,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path="project/source_documents/lot_03/appel de fond sel.docx",
+            specification_path="docs/delivery/lot_03_bail_appel_fonds_spec_texte_v1.md",
+            notes="Wording medical et SELAS bloques en V1.",
         ),
     ]
 

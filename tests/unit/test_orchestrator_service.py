@@ -15,6 +15,7 @@ from sydel_doc_engine.domain.models import (
     DirigeantNomine,
     DocumentGenerationContext,
     Domiciliation,
+    DossierOptions,
     Person,
     ReunionContext,
     Signature,
@@ -29,6 +30,7 @@ from sydel_doc_engine.registry.catalog import build_seed_catalog
 def _context(structure: str = "SELARL") -> DocumentGenerationContext:
     return DocumentGenerationContext(
         structure=structure,
+        dossier_options=DossierOptions(),
         personne_signataire=Person(
             genre=Gender.MASCULIN,
             civilite="Monsieur",
@@ -117,6 +119,8 @@ def test_select_documents_for_selarl_includes_pv_nomination_gerant() -> None:
         "DOC-004",
         "DOC-005",
         "DOC-006",
+        "DOC-007",
+        "DOC-008",
     ]
 
 

@@ -1,0 +1,63 @@
+structure: SELARL
+dossier_options:
+  cession: true
+personne_signataire:
+  genre: masculin
+  civilite: Monsieur
+  prenom: Camille
+  nom: Martin
+signature:
+  lieu: Paris
+  date: 2026-05-14
+societe:
+  denomination: SELARL CABINET MARTIN
+  ville_rcs: Paris
+  siege:
+    adresse_affichee: 12 avenue des Ternes, 75017 Paris
+bail:
+  date_avenant: 2026-05-14
+  date_signature_origine: 2021-09-01
+  societe_en_cours_immatriculation: true
+  bailleur_accepte_changement_locataire: true
+  bailleur:
+    civilite_affichage: Monsieur
+    prenom: Paul
+    nom: Leroy
+    profession: bailleur
+    date_naissance: 1970-01-05
+    ville_naissance: Lyon
+    nationalite: française
+    adresse_affichee: 8 rue Victor Hugo, 69002 Lyon
+  locataire:
+    civilite_affichage: Monsieur
+    civilite_courte: Docteur
+    prenom: Camille
+    nom: Martin
+    profession: chirurgien-dentiste
+    date_naissance: 1984-06-20
+    ville_naissance: Paris
+    nationalite: française
+    adresse_affichee: 4 rue du Bac, 75007 Paris
+cession:
+  type_cabinet: dentaire
+  financement:
+    banque:
+      nom: BANQUE EXEMPLE
+    destinataire:
+      civilite_affichage: Monsieur
+      prenom: Louis
+      nom: Bernard
+    montant_deblocage: 150 000
+  cabinet:
+    denomination_ou_adresse_affichee: Cabinet dentaire des Ternes
+  vendeur:
+    civilite_affichage: Monsieur
+    prenom: Camille
+    nom: Martin
+  acquereur:
+    denomination_societe: SELARL CABINET MARTIN
+document:
+  nombre_exemplaires_lettres: quatre
+  signataire:
+    prenom: Camille
+    nom: Martin

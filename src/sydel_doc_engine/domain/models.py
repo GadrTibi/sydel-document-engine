@@ -13,6 +13,7 @@ class Address(BaseModel):
     voie: str | None = None
     cp: str | None = None
     ville: str | None = None
+    adresse_affichee: str | None = None
 
 
 class Person(BaseModel):
@@ -60,6 +61,76 @@ class Domiciliation(BaseModel):
 class DossierOptions(BaseModel):
     derogation: bool = False
     regime_communautaire: bool = False
+    cession: bool = False
+
+
+class BailParty(BaseModel):
+    civilite_affichage: str | None = None
+    civilite_courte: str | None = None
+    prenom: str | None = None
+    nom: str | None = None
+    profession: str | None = None
+    date_naissance: date | str | None = None
+    ville_naissance: str | None = None
+    nationalite: str | None = None
+    adresse_affichee: str | None = None
+
+
+class BailContext(BaseModel):
+    bailleur: BailParty | None = None
+    locataire: BailParty | None = None
+    date_signature_origine: date | str | None = None
+    date_avenant: date | str | None = None
+    societe_en_cours_immatriculation: bool = False
+    bailleur_accepte_changement_locataire: bool = False
+
+
+class CessionBanque(BaseModel):
+    nom: str | None = None
+
+
+class CessionDestinataire(BaseModel):
+    civilite_affichage: str | None = None
+    prenom: str | None = None
+    nom: str | None = None
+
+
+class CessionFinancement(BaseModel):
+    banque: CessionBanque | None = None
+    destinataire: CessionDestinataire | None = None
+    montant_deblocage: str | None = None
+
+
+class CessionCabinet(BaseModel):
+    denomination_ou_adresse_affichee: str | None = None
+
+
+class CessionVendeur(BaseModel):
+    civilite_affichage: str | None = None
+    prenom: str | None = None
+    nom: str | None = None
+
+
+class CessionAcquereur(BaseModel):
+    denomination_societe: str | None = None
+
+
+class CessionContext(BaseModel):
+    type_cabinet: str | None = None
+    financement: CessionFinancement | None = None
+    cabinet: CessionCabinet | None = None
+    vendeur: CessionVendeur | None = None
+    acquereur: CessionAcquereur | None = None
+
+
+class DocumentSignataire(BaseModel):
+    prenom: str | None = None
+    nom: str | None = None
+
+
+class DocumentContext(BaseModel):
+    nombre_exemplaires_lettres: str | None = None
+    signataire: DocumentSignataire | None = None
 
 
 class Apport(BaseModel):
@@ -178,4 +249,7 @@ class DocumentGenerationContext(BaseModel):
     bien_immobilier: BienImmobilier | None = None
     apport: Apport | None = None
     regime_communautaire: RegimeCommunautaire | None = None
+    bail: BailContext | None = None
+    cession: CessionContext | None = None
+    document: DocumentContext | None = None
     metadata: dict[str, str] = Field(default_factory=dict)

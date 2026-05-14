@@ -22,8 +22,14 @@ from sydel_doc_engine.generators.lot_02.lettre_renonciation_associe import (
 from sydel_doc_engine.generators.lot_02.pv_nomination_gerant import (
     PvNominationGerantGenerator,
 )
+from sydel_doc_engine.generators.lot_03.appel_fond_sel import AppelFondSelGenerator
+from sydel_doc_engine.generators.lot_03.avenant_contrat_bail import (
+    AvenantContratBailGenerator,
+)
 
 REGIME_COMMUNAUTAIRE_DOCUMENT_IDS = {"DOC-005", "DOC-006"}
+BAIL_AVENANT_DOCUMENT_ID = "DOC-007"
+APPEL_FONDS_DOCUMENT_ID = "DOC-008"
 
 
 class MissingDocumentGeneratorError(RuntimeError):
@@ -38,6 +44,8 @@ def build_lot_01_generator_registry() -> dict[str, DocumentGenerator]:
         "DOC-004": PvNominationGerantGenerator(),
         "DOC-005": LettreRenonciationAssocieGenerator(),
         "DOC-006": LettreAvertissementConjointGenerator(),
+        "DOC-007": AvenantContratBailGenerator(),
+        "DOC-008": AppelFondSelGenerator(),
     }
 
 
@@ -83,5 +91,23 @@ def _document_enabled_for_context(
     ctx: DocumentGenerationContext,
 ) -> bool:
     if document.doc_id not in REGIME_COMMUNAUTAIRE_DOCUMENT_IDS:
+        if document.doc_id == BAIL_AVENANT_DOCUMENT_ID:
+            return _cession_bail_enabled(ctx)
+        if document.doc_id == APPEL_FONDS_DOCUMENT_ID:
+            return _appel_fonds_enabled(ctx)
         return True
     return bool(ctx.dossier_options and ctx.dossier_options.regime_communautaire)
+
+
+def _cession_bail_enabled(ctx: DocumentGenerationContext) -> bool:
+    return bool(ctx.dossier_options and ctx.dossier_options.cession)
+
+
+def _appel_fonds_enabled(ctx: DocumentGenerationContext) -> bool:
+    if not _cession_bail_enabled(ctx):
+        return False
+    if ctx.structure != "SELARL":
+        return False
+    if ctx.cession is None or ctx.cession.type_cabinet is None:
+        return False
+    return ctx.cession.type_cabinet.strip().lower() == "dentaire"
