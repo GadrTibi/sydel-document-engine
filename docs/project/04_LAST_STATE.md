@@ -4,7 +4,7 @@
 2026-05-14
 
 ## Dernier ticket terminé
-SYNC-WAVE-003 : absorption dans `main` des commits sources `b854821061b85ac66fe785c11cb3c6b0bac5a85b` (`codex/prep-statuts-001`) et `09cbad120d22910f05ba5e645971ade56fedb76d` (`codex/code-spfpl-core-001`), puis réalignement du pilotage.
+SYNC-STATUTS-SPECS-001 : absorption dans `main` des commits sources `00b7886ac431c8a47d9cdcca8bfed026a756cb69`, `b34c66e5e67f3261317035943e974536be27d6d3`, `9b25e09d08ec2161d757d1581c34073dcbbc594f` et `704eeb7301cf69460c16b2ed9fbc0ea22ca83c8c`, puis réalignement du pilotage.
 
 ## État courant du repo
 - DOC-001, DOC-002 et DOC-003 disposent chacun d'un générateur dédié déjà terminé.
@@ -129,6 +129,18 @@ SYNC-WAVE-003 : absorption dans `main` des commits sources `b854821061b85ac66fe7
 - Les décisions d'arbitrage sources V1 sont disponibles : `docs/project/13_SOURCE_ARBITRATION_DECISIONS_V1.md`.
 - Le journal d'exécution du placement HIGH V1 est disponible : `docs/project/14_SOURCE_PLACEMENT_EXECUTION_V1.md`.
 - La préparation V1 des sources statuts est disponible : `docs/delivery/lot_04_statuts_preparation_v1.md`.
+- Les specs V1 des statuts SAS sont disponibles :
+  - `docs/delivery/lot_04_statuts_sas_spec_canonique_v1.md` ;
+  - `docs/delivery/lot_04_statuts_sas_spec_texte_v1.md`.
+- Les specs V1 des statuts SPFPL sont disponibles :
+  - `docs/delivery/lot_04_statuts_spfpl_spec_canonique_v1.md` ;
+  - `docs/delivery/lot_04_statuts_spfpl_spec_texte_v1.md`.
+- Les specs V1 des statuts SEL d'exercice sont disponibles :
+  - `docs/delivery/lot_04_statuts_sel_exercice_spec_canonique_v1.md` ;
+  - `docs/delivery/lot_04_statuts_sel_exercice_spec_texte_v1.md`.
+- Les specs V1 des statuts civils sont disponibles :
+  - `docs/delivery/lot_04_statuts_civils_spec_canonique_v1.md` ;
+  - `docs/delivery/lot_04_statuts_civils_spec_texte_v1.md`.
 - `ARBITRAGE-SOURCES-001` est DONE.
 - `PLACEMENT-HIGH-001` est DONE.
 - `ANALYSE-ORDRE-001` est DONE.
@@ -158,10 +170,15 @@ SYNC-WAVE-003 : absorption dans `main` des commits sources `b854821061b85ac66fe7
 - `CODE-SPFPL-AGR-INFO-001` est DONE.
 - `CODE-SPFPL-CORE-001` est DONE.
 - `PREP-STATUTS-001` est DONE.
-- `SPEC-STATUTS-SEL-001` est READY.
-- `SPEC-STATUTS-SPFPL-001` est READY.
-- `SPEC-STATUTS-CIVILS-001` est READY.
-- `SPEC-STATUTS-SAS-001` est READY.
+- `SPEC-STATUTS-SEL-001` est DONE.
+- `SPEC-STATUTS-SPFPL-001` est DONE.
+- `SPEC-STATUTS-CIVILS-001` est DONE.
+- `SPEC-STATUTS-SAS-001` est DONE.
+- `SYNC-STATUTS-SPECS-001` est DONE.
+- `CODE-STATUTS-SAS-001` est READY.
+- `CODE-STATUTS-SPFPL-001` est READY.
+- `ARBITRAGE-STATUTS-SEL-001` est READY.
+- `ARBITRAGE-STATUTS-CIVILS-001` est READY.
 - `UI-001` reste explicitement en attente : ne pas brancher Streamlit maintenant.
 - Fichiers générés connus :
   - `artifacts/lot_01_smoke_test/autorisation_domiciliation.docx`
@@ -300,15 +317,16 @@ SYNC-WAVE-003 : absorption dans `main` des commits sources `b854821061b85ac66fe7
 
 ## Prochain ticket à lancer
 Tickets actifs/parallélisables :
-- `SPEC-STATUTS-SEL-001` est READY.
-- `SPEC-STATUTS-SPFPL-001` est READY.
-- `SPEC-STATUTS-CIVILS-001` est READY.
-- `SPEC-STATUTS-SAS-001` est READY.
+- `CODE-STATUTS-SAS-001` est READY.
+- `CODE-STATUTS-SPFPL-001` est READY.
+- `ARBITRAGE-STATUTS-SEL-001` est READY.
+- `ARBITRAGE-STATUTS-CIVILS-001` est READY.
 
 `CODE-BAIL-APP-001` est DONE dans `main`.
 `PREP-DEROG-001` et `CODE-SPFPL-AGR-INFO-001` sont DONE dans `main`.
 `CODE-CESSION-CAB-001` et `CODE-DEROG-CORE-001` sont DONE et absorbés dans `main`.
 `PREP-STATUTS-001` et `CODE-SPFPL-CORE-001` sont DONE et absorbés dans `main`.
+Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans `main`.
 
 ## Points ouverts
 - Aucun point bloquant identifié après le smoke test réel Lot 1.
@@ -366,7 +384,11 @@ Tickets actifs/parallélisables :
   - ne pas sortir du choix SPEC-RC-001 pour le régime communautaire sans nouveau ticket d'arbitrage ;
   - ne pas placer automatiquement la famille liste des souscripteurs / attestation sur le capital ;
   - ne pas dedupliquer les statuts entre familles, professions ou variantes.
-- Points ouverts statuts après PREP-STATUTS-001 : ne pas coder de générateur statuts sans spec canonique et spec texte ; ne pas dédupliquer SEL, SPFPL, SCI, SCI IRIS, SCM, SCS ou SAS sans comparaison documentée.
+- Points ouverts statuts après SYNC-STATUTS-SPECS-001 :
+  - SAS : modèle source inventorié sous `SAS` mais contenu SAS/SPFPL médecins, actionnaire unique et vocabulaire hétérogène à respecter ou bloquer ;
+  - SPFPL : conserver cession/apport comme overlays distincts, bloquer le multi-associés et les corrections d'anomalies non arbitrées ;
+  - SEL : arbitrer pluralité 1 à 6 associés, ligne `personne_2`, second lieu SELAS, féminisation dirigeant et signatures ;
+  - civils : arbitrer SCI/SCI IRIS, SCM, SCS, associés personnes morales, signatures dynamiques et lettre option IS hors statuts.
 - Toute ambiguïté de wording juridique doit bloquer l'implémentation concernée et être documentée.
 
 ## Validations connues
@@ -422,6 +444,10 @@ Tickets actifs/parallélisables :
 - SYNC-WAVE-003 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
 - SYNC-WAVE-003 : `.\.venv\Scripts\python.exe -m pytest` OK, 101 tests passés.
 - SYNC-WAVE-003 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifiés.
+- SYNC-STATUTS-SPECS-001 : `git fetch --all --prune` OK.
+- SYNC-STATUTS-SPECS-001 : commits sources `00b7886ac431c8a47d9cdcca8bfed026a756cb69`, `b34c66e5e67f3261317035943e974536be27d6d3`, `9b25e09d08ec2161d757d1581c34073dcbbc594f` et `704eeb7301cf69460c16b2ed9fbc0ea22ca83c8c` cherry-pickés dans `main` sans conflit.
+- SYNC-STATUTS-SPECS-001 : relecture documentaire et contrôle du diff ; aucun test de code exécuté car aucun fichier Python n'a été modifié.
+- SYNC-STATUTS-SPECS-001 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifiés.
 - SPEC-TEXTE-ORDRE-001 : source de vérité, source Lot 2 et variantes raw dump SELARL / SELAS / SPFPL cession / SPFPL apport lues en lecture seule.
 - SPEC-TEXTE-ORDRE-001 : spec texte créée dans `docs/delivery/lot_02_demande_inscription_ordre_spec_texte_v1.md`.
 - SPEC-TEXTE-ORDRE-001 : aucun code Python modifié ; validations limitées à la relecture documentaire et au contrôle du diff.
@@ -456,4 +482,4 @@ Tickets actifs/parallélisables :
 - SMOKE-ORCH-L2-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 47 tests passés.
 
 ## Recommandation immédiate suivante
-Lancer `SPEC-STATUTS-SEL-001`.
+Lancer `CODE-STATUTS-SAS-001` ou `CODE-STATUTS-SPFPL-001` si le ticket de code applique les blocages explicites, sinon lancer `ARBITRAGE-STATUTS-SEL-001` ou `ARBITRAGE-STATUTS-CIVILS-001`.
