@@ -7,6 +7,7 @@ from docx.shared import Cm, Pt
 from sydel_doc_engine.rendering.docx_builder import (
     add_framed_signature_block,
     add_framed_title,
+    add_hyphen_list_item,
     add_legal_reminder,
     add_paragraph,
     new_document,
@@ -55,6 +56,17 @@ def test_framed_signature_block_uses_explicit_borders() -> None:
     assert _table_has_explicit_borders(table)
     assert table.cell(0, 0).paragraphs[0].text == "Fait à Paris"
     assert table.cell(0, 0).paragraphs[1].text == "Le 12/05/2026"
+
+
+def test_hyphen_list_item_uses_visible_marker_and_hanging_indent() -> None:
+    document = new_document()
+
+    paragraph = add_hyphen_list_item(document, "Nomination du gérant ;")
+
+    assert paragraph.text == "- Nomination du gérant ;"
+    assert paragraph.paragraph_format.left_indent is not None
+    assert paragraph.paragraph_format.first_line_indent is not None
+    assert paragraph.paragraph_format.first_line_indent < 0
 
 
 def test_paragraph_and_legal_reminder_helpers_apply_text_styles() -> None:

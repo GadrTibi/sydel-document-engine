@@ -85,6 +85,33 @@ def add_paragraph(
     return paragraph
 
 
+def add_hyphen_list_item(
+    document: Any,
+    text: str,
+    *,
+    alignment: WD_ALIGN_PARAGRAPH | None = None,
+    bold: bool = False,
+    italic: bool = False,
+    space_after_pt: int | None = None,
+    left_indent_cm: float = 0.7,
+    hanging_indent_cm: float = 0.35,
+    style_profile: SydelDocxStyleProfile = DEFAULT_STYLE_PROFILE,
+) -> Any:
+    paragraph = document.add_paragraph()
+    paragraph.paragraph_format.left_indent = Cm(left_indent_cm)
+    paragraph.paragraph_format.first_line_indent = Cm(-hanging_indent_cm)
+    paragraph.paragraph_format.space_after = Pt(
+        style_profile.standard_space_after_pt if space_after_pt is None else space_after_pt
+    )
+    if alignment is not None:
+        paragraph.alignment = alignment
+    paragraph.add_run("- ")
+    run = paragraph.add_run(text)
+    run.bold = bold
+    run.italic = italic
+    return paragraph
+
+
 def add_spacer(document: Any, *, space_after_pt: int = 0) -> Any:
     paragraph = document.add_paragraph()
     paragraph.paragraph_format.space_after = Pt(space_after_pt)
@@ -216,9 +243,20 @@ def add_signature_lines(
     document: Any,
     names: Sequence[str],
     *,
+    alignment: WD_ALIGN_PARAGRAPH | None = None,
+    bold: bool = False,
     style_profile: SydelDocxStyleProfile = DEFAULT_STYLE_PROFILE,
 ) -> list[Any]:
-    return [add_paragraph(document, name, style_profile=style_profile) for name in names]
+    return [
+        add_paragraph(
+            document,
+            name,
+            alignment=alignment,
+            bold=bold,
+            style_profile=style_profile,
+        )
+        for name in names
+    ]
 
 
 def add_legal_reminder(

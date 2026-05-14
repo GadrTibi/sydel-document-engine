@@ -4,6 +4,7 @@ from datetime import date
 from pathlib import Path
 
 from docx import Document
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import (
@@ -21,6 +22,7 @@ from sydel_doc_engine.domain.models import (
     Signature,
 )
 from sydel_doc_engine.generators.lot_02.pv_nomination_gerant import (
+    VOTE_FORMULA,
     PvNominationGerantGenerator,
 )
 
@@ -147,6 +149,10 @@ def _paragraphs(path: Path) -> list[str]:
     return [paragraph.text for paragraph in Document(path).paragraphs if paragraph.text]
 
 
+def _find_paragraph(document: Document, text: str):
+    return next(paragraph for paragraph in document.paragraphs if paragraph.text == text)
+
+
 def test_pv_nomination_gerant_creates_docx(tmp_path: Path) -> None:
     output_path = _generate(tmp_path)
 
@@ -161,6 +167,8 @@ def test_pv_nomination_gerant_repeats_two_associes(tmp_path: Path) -> None:
     assert "Les associés de la société civile immobilière SCI TEST" in text
     assert "Madame Alice Durand, représentant 60 parts," in text
     assert "Monsieur Bruno Martin, représentant 40 parts," in text
+    assert "- Madame Alice Durand, représentant 60 parts," in paragraphs
+    assert "- Monsieur Bruno Martin, représentant 40 parts," in paragraphs
     assert "Les associés présents représentent 100 parts, soit la totalité du capital." in text
     assert "Alice Durand" in paragraphs
     assert "Bruno Martin" in paragraphs
@@ -180,6 +188,7 @@ def test_pv_nomination_gerant_repeats_one_associe_with_singular_variants(
         "A l’issue de la signature des statuts, l’associé s’est réuni pour prendre "
         "les décisions suivantes :"
     ) in text
+    assert "- Madame Alice Durand, représentant 1 part," in text
 
 
 def test_pv_nomination_gerant_without_emprunt_omits_borrowing_decision(
@@ -200,6 +209,10 @@ def test_pv_nomination_gerant_with_emprunt_writes_borrowing_decision(
 
     assert (
         "Autorisation de  contracter un emprunt pour l’achat d’un bien immobilier sis "
+        "5 rue du Bien, 33000 Bordeaux ;"
+    ) in text
+    assert (
+        "- Autorisation de  contracter un emprunt pour l’achat d’un bien immobilier sis "
         "5 rue du Bien, 33000 Bordeaux ;"
     ) in text
     assert (
@@ -225,3 +238,46 @@ def test_pv_nomination_gerant_uses_feminine_birth_variant(tmp_path: Path) -> Non
 
     assert "née le 03/04/1985" in text
     assert "né le 03/04/1985" not in text
+
+
+def test_pv_nomination_gerant_restores_essential_docx_structure(tmp_path: Path) -> None:
+    document = Document(_generate(tmp_path, _context(emprunt_actif=True)))
+
+    company_name = _find_paragraph(document, "SCI TEST")
+    assert company_name.alignment == WD_ALIGN_PARAGRAPH.CENTER
+    assert company_name.runs[0].bold is True
+
+    title_paragraph = document.tables[0].cell(0, 0).paragraphs[0]
+    assert title_paragraph.alignment == WD_ALIGN_PARAGRAPH.CENTER
+    assert title_paragraph.text == (
+        "PROCES-VERBAL DES DECISIONS\n"
+        " DE L’ASSEMBLEE GENERALE EXTRAORDINAIRE\n"
+        " DU 13 mai 2026"
+    )
+    assert all(run.bold for run in title_paragraph.runs if run.text.strip())
+
+    first_decision = _find_paragraph(document, "PREMIERE DECISION")
+    assert first_decision.runs[0].bold is True
+    assert first_decision.runs[0].underline is True
+    assert first_decision.paragraph_format.space_before is not None
+
+    vote_formula = _find_paragraph(document, VOTE_FORMULA)
+    assert vote_formula.runs[0].italic is True
+
+    decision_item = _find_paragraph(document, "- Nomination du gérant ;")
+    assert decision_item.paragraph_format.first_line_indent is not None
+    assert decision_item.paragraph_format.first_line_indent < 0
+
+    signature_name = _find_paragraph(document, "Alice Durand")
+    assert signature_name.alignment == WD_ALIGN_PARAGRAPH.CENTER
+    assert signature_name.runs[0].bold is True
+
+    acceptance = _find_paragraph(
+        document,
+        (
+            "Faire précéder la signature de la mention "
+            "« Bon pour acceptation des fonctions de gérant »"
+        ),
+    )
+    assert acceptance.alignment == WD_ALIGN_PARAGRAPH.CENTER
+    assert acceptance.runs[0].italic is True

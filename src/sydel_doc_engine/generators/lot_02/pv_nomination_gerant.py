@@ -18,8 +18,11 @@ from sydel_doc_engine.domain.models import (
 )
 from sydel_doc_engine.rendering.docx_builder import (
     add_centered_block,
+    add_framed_title,
+    add_hyphen_list_item,
     add_paragraph,
     add_signature_lines,
+    add_spacer,
     new_document,
 )
 
@@ -229,6 +232,9 @@ def _add_paragraph(
     *,
     alignment: WD_ALIGN_PARAGRAPH | None = None,
     bold: bool = False,
+    italic: bool = False,
+    underline: bool = False,
+    space_before: int = 0,
     space_after: int = 6,
 ) -> None:
     add_paragraph(
@@ -236,14 +242,36 @@ def _add_paragraph(
         text,
         alignment=alignment,
         bold=bold,
+        italic=italic,
+        underline=underline,
+        space_before_pt=space_before,
         space_after_pt=space_after,
     )
+
+
+def _add_list_item(document, text: str) -> None:
+    add_hyphen_list_item(document, text, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY)
+
+
+def _add_decision_title(document, title: str) -> None:
+    _add_paragraph(
+        document,
+        title,
+        bold=True,
+        underline=True,
+        space_before=10,
+        space_after=2,
+    )
+
+
+def _add_vote_formula(document) -> None:
+    _add_paragraph(document, VOTE_FORMULA, italic=True)
 
 
 def _add_company_header(document, company: Company) -> None:
     siege = _required_address(company.siege, "societe.siege")
     lines = [
-        _required_text(company.denomination, "societe.denomination"),
+        (_required_text(company.denomination, "societe.denomination"), True, False),
         f"{_forme_sociale_affichage(company)}{_capital_variable_mention(company)}",
         f"Au capital minimum et effectif de {_capital_social(company)} euros",
         f"Siège social : {_address_no_comma(siege)}",
@@ -263,20 +291,15 @@ def _add_title_and_meeting(document, ctx: DocumentGenerationContext) -> None:
     if reunion is None:
         raise ValueError(f"reunion est obligatoire pour {DOCUMENT_CODE}.")
 
-    document.add_paragraph()
-    for line in (
-        "PROCES-VERBAL DES DECISIONS",
-        " DE L’ASSEMBLEE GENERALE EXTRAORDINAIRE",
-        f" DU {_required_display_value(decision.date, 'decision.date')}",
-    ):
-        _add_paragraph(
-            document,
-            line,
-            alignment=WD_ALIGN_PARAGRAPH.CENTER,
-            bold=True,
-            space_after=0,
-        )
-    document.add_paragraph()
+    add_spacer(document)
+    add_framed_title(
+        document,
+        [
+            "PROCES-VERBAL DES DECISIONS",
+            " DE L’ASSEMBLEE GENERALE EXTRAORDINAIRE",
+            f" DU {_required_display_value(decision.date, 'decision.date')}",
+        ],
+    )
     _add_paragraph(
         document,
         (
@@ -321,7 +344,7 @@ def _add_associes_block(
 ) -> None:
     _add_paragraph(document, "Associés présents ou représentés :")
     for associe in associes:
-        _add_paragraph(
+        _add_list_item(
             document,
             (
                 f"{associe.civilite_affichage} {associe.prenom} {associe.nom}, "
@@ -338,7 +361,7 @@ def _add_associes_block(
             f"Les associés présents représentent {represented_parts} "
             f"{_parts_label(represented_parts)}, soit la totalité du capital."
         )
-    _add_paragraph(document, text)
+    _add_paragraph(document, text, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY)
 
 
 def _add_order_of_business(
@@ -362,8 +385,8 @@ def _add_order_of_business(
             "A l’issue de la signature des statuts, les associés se sont réunis pour prendre "
             "les décisions suivantes :"
         )
-    _add_paragraph(document, opening)
-    _add_paragraph(document, f"Nomination du {fonction_affichage} ;")
+    _add_paragraph(document, opening, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY)
+    _add_list_item(document, f"Nomination du {fonction_affichage} ;")
     if emprunt.actif:
         bien_adresse = _address_inline(
             _required_address(
@@ -371,14 +394,14 @@ def _add_order_of_business(
                 "bien_immobilier.adresse",
             )
         )
-        _add_paragraph(
+        _add_list_item(
             document,
             (
                 "Autorisation de  contracter un emprunt pour l’achat d’un bien immobilier sis "
                 f"{bien_adresse} ;"
             ),
         )
-    _add_paragraph(document, "Pouvoir.")
+    _add_list_item(document, "Pouvoir.")
 
 
 def _add_nomination_decision(document, dirigeant: DirigeantNomine) -> None:
@@ -406,7 +429,7 @@ def _add_nomination_decision(document, dirigeant: DirigeantNomine) -> None:
         dirigeant.nationalite,
         "dirigeant_nomine.nationalite",
     )
-    _add_paragraph(document, "PREMIERE DECISION", bold=True)
+    _add_decision_title(document, "PREMIERE DECISION")
     _add_paragraph(
         document,
         (
@@ -422,8 +445,9 @@ def _add_nomination_decision(document, dirigeant: DirigeantNomine) -> None:
             f"({birth_department}), de nationalité {nationality}, "
             f"demeurant {_address_inline(address)}."
         ),
+        alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
     )
-    _add_paragraph(document, VOTE_FORMULA)
+    _add_vote_formula(document)
 
 
 def _add_borrowing_decision(
@@ -440,7 +464,7 @@ def _add_borrowing_decision(
         )
     )
     montant = _required_text(emprunt.montant_max, "emprunt.montant_max")
-    _add_paragraph(document, "DEUXIEME DECISION", bold=True)
+    _add_decision_title(document, "DEUXIEME DECISION")
     _add_paragraph(
         document,
         (
@@ -448,15 +472,16 @@ def _add_borrowing_decision(
             f"maximum de {montant} euros pour l’acquisition d’un bien immobilier sis "
             f"{bien_adresse}."
         ),
+        alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
     )
-    _add_paragraph(document, VOTE_FORMULA)
+    _add_vote_formula(document)
 
 
 def _add_powers_decision(document, emprunt: Emprunt) -> None:
     title = "TROISIEME DECISION" if emprunt.actif else "DEUXIEME DECISION"
-    _add_paragraph(document, title, bold=True)
-    _add_paragraph(document, POWERS_TEXT)
-    _add_paragraph(document, VOTE_FORMULA)
+    _add_decision_title(document, title)
+    _add_paragraph(document, POWERS_TEXT, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY)
+    _add_vote_formula(document)
 
 
 def _add_closing_and_signatures(
@@ -480,6 +505,7 @@ def _add_closing_and_signatures(
             "De tout ce qui a été décidé, il a été dressé le présent procès-verbal qui a été "
             "signé après lecture par les associés."
         ),
+        alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
     )
     _add_paragraph(
         document,
@@ -487,11 +513,19 @@ def _add_closing_and_signatures(
             "L’ordre du jour étant épuisé et personne ne demandant plus la parole, la séance "
             "est levée."
         ),
+        alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
     )
-    _add_paragraph(document, f"Fait à {lieu_signature} en {nombre_exemplaires} exemplaires")
+    _add_paragraph(
+        document,
+        f"Fait à {lieu_signature} en {nombre_exemplaires} exemplaires",
+        alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
+    )
+    add_spacer(document)
     add_signature_lines(
         document,
         [f"{associe.prenom} {associe.nom}" for associe in associes],
+        alignment=WD_ALIGN_PARAGRAPH.CENTER,
+        bold=True,
     )
     _add_paragraph(
         document,
@@ -499,4 +533,6 @@ def _add_closing_and_signatures(
             "Faire précéder la signature de la mention « Bon pour acceptation des fonctions de "
             f"{fonction_affichage} »"
         ),
+        alignment=WD_ALIGN_PARAGRAPH.CENTER,
+        italic=True,
     )
