@@ -4,7 +4,7 @@
 2026-05-14
 
 ## Dernier ticket terminé
-SYNC-CODE-BAIL-APP-001 : intégration dans `main` du commit `557a013274aa9f7122c81d5e6e0b52c4043a540c` de la branche `codex/code-bail-app-001`, puis alignement du pilotage avec `CODE-BAIL-APP-001` DONE et les prochains tickets parallélisables READY.
+SYNC-WAVE-LOT03-05-001 : intégration dans `main` des commits `36828fbc45d6b8a37c2e76eb8227460df441ebde` et `958fce5d2a9d5d30df4d918cb098fec483f5140e`, puis alignement du pilotage avec `PREP-DEROG-001` et `CODE-SPFPL-AGR-INFO-001` DONE, `RESUME-CODE-CESSION-CAB-001` et `CODE-DEROG-CORE-001` READY.
 
 ## État courant du repo
 - DOC-001, DOC-002 et DOC-003 disposent chacun d'un générateur dédié déjà terminé.
@@ -83,9 +83,17 @@ SYNC-CODE-BAIL-APP-001 : intégration dans `main` du commit `557a013274aa9f7122c
 - La spec canonique V1 du batch SPFPL spécifique est disponible : `docs/delivery/lot_05_spfpl_spec_canonique_v1.md`.
 - La spec texte V1 du batch SPFPL spécifique est disponible : `docs/delivery/lot_05_spfpl_spec_texte_v1.md`.
 - Les arbitrages V1 du batch SPFPL spécifique sont disponibles : `docs/delivery/lot_05_spfpl_arbitrages_v1.md`.
+- Le sous-batch SPFPL agrément / note d'information est codé et testé :
+  - `src/sydel_doc_engine/generators/lot_05/note_information.py` ;
+  - `src/sydel_doc_engine/generators/lot_05/pv_agrement_cession_spfpl_associe_unique.py` ;
+  - `src/sydel_doc_engine/generators/lot_05/pv_agrement_cession_spfpl_plusieurs_associes.py`.
+- Un contexte exemple SPFPL agrément / note d'information est disponible : `examples/contexts/lot_05_spfpl_agrement_info_example.yaml`.
 - La spec canonique V1 de la famille dérogations est disponible : `docs/delivery/lot_03_derogations_spec_canonique_v1.md`.
 - La spec texte V1 de la famille dérogations est disponible : `docs/delivery/lot_03_derogations_spec_texte_v1.md`.
 - Les arbitrages V1 de la famille dérogations sont disponibles : `docs/delivery/lot_03_derogations_arbitrages_v1.md`.
+- La préparation sources dérogations V1 est disponible :
+  - `docs/delivery/lot_03_derogations_preparation_v1.md` ;
+  - `docs/delivery/lot_03_derogations_legacy_conversion_report_v1.md`.
 - La spec canonique V1 `cession cabinets` est disponible : `docs/delivery/lot_03_cession_cabinets_spec_canonique_v1.md`.
 - La spec texte V1 `cession cabinets` est disponible : `docs/delivery/lot_03_cession_cabinets_spec_texte_v1.md`.
 - Les arbitrages V1 `cession cabinets` sont disponibles : `docs/delivery/lot_03_cession_cabinets_arbitrages_v1.md`.
@@ -126,8 +134,10 @@ SYNC-CODE-BAIL-APP-001 : intégration dans `main` du commit `557a013274aa9f7122c
 - `ARBITRAGE-DEROG-001` est DONE.
 - `ARBITRAGE-SPFPL-001` est DONE.
 - `CODE-CESSION-CAB-001` est READY.
-- `PREP-DEROG-001` est READY.
-- `CODE-SPFPL-AGR-INFO-001` est READY.
+- `RESUME-CODE-CESSION-CAB-001` est READY.
+- `PREP-DEROG-001` est DONE.
+- `CODE-DEROG-CORE-001` est READY.
+- `CODE-SPFPL-AGR-INFO-001` est DONE.
 - `UI-001` reste explicitement en attente : ne pas brancher Streamlit maintenant.
 - Fichiers générés connus :
   - `artifacts/lot_01_smoke_test/autorisation_domiciliation.docx`
@@ -216,7 +226,11 @@ SYNC-CODE-BAIL-APP-001 : intégration dans `main` du commit `557a013274aa9f7122c
 - L'avenant au contrat de bail est sélectionné pour SELARL/SELAS lorsque `dossier_options.cession == true`.
 - L'appel de fonds SEL est sélectionné uniquement pour SELARL dentaire lorsque `dossier_options.cession == true`.
 - Les fichiers `project/source_import/raw_drive_dump/` et `artifacts/` n'ont pas été modifiés.
-- `CODE-CESSION-CAB-001`, `PREP-DEROG-001` et `CODE-SPFPL-AGR-INFO-001` sont les prochains tickets READY/parallélisables les plus proches.
+- SYNC-WAVE-LOT03-05-001 a cherry-pické dans `main` les commits `36828fbc45d6b8a37c2e76eb8227460df441ebde` de `codex/prep-derog-001` et `958fce5d2a9d5d30df4d918cb098fec483f5140e` de `codex/code-spfpl-agr-info-001`.
+- PREP-DEROG-001 place les deux sources Lot 03 préparées et ajoute les rapports de préparation / conversion legacy.
+- CODE-SPFPL-AGR-INFO-001 ajoute les générateurs SPFPL agrément et note d'information, les sources Lot 05 ciblées, le contexte exemple et les tests unitaires associés.
+- Les fichiers `project/source_import/raw_drive_dump/` et `artifacts/` n'ont pas été modifiés.
+- `RESUME-CODE-CESSION-CAB-001` et `CODE-DEROG-CORE-001` sont les tickets actifs confirmés.
 - ARBITRAGE-SOURCES-001 scanne 147 fichiers dans `project/source_import/raw_drive_dump/` et 11 fichiers dans `project/source_documents/`.
 - ARBITRAGE-SOURCES-001 identifie 18 groupes de doublons probables, dont 15 groupes de doublons exacts.
 - Les 4 cas HIGH documentés sont : DOC-001, DOC-002, DOC-003 et la source canonique `PV nomination gérant`.
@@ -246,11 +260,11 @@ SYNC-CODE-BAIL-APP-001 : intégration dans `main` du commit `557a013274aa9f7122c
 
 ## Prochain ticket à lancer
 Tickets actifs/parallélisables :
-- `CODE-CESSION-CAB-001` : implémenter la famille `cession cabinets` en respectant les arbitrages V1.
-- `PREP-DEROG-001` : préparer les sources dérogations avant tout code.
-- `CODE-SPFPL-AGR-INFO-001` : implémenter le sous-batch SPFPL agrément / note d'information.
+- `RESUME-CODE-CESSION-CAB-001` : reprendre proprement `CODE-CESSION-CAB-001` depuis `main` synchronisé.
+- `CODE-DEROG-CORE-001` : implémenter le cœur de la famille dérogations à partir des sources préparées.
 
 `CODE-BAIL-APP-001` est DONE dans `main`.
+`PREP-DEROG-001` et `CODE-SPFPL-AGR-INFO-001` sont DONE dans `main`.
 
 ## Points ouverts
 - Aucun point bloquant identifié après le smoke test réel Lot 1.
@@ -290,7 +304,7 @@ Tickets actifs/parallélisables :
   - commissaire aux apports et évaluateur fournis par contexte ou référentiel validé ;
   - aucune double option `OU` ou cession/apport ne doit être rendue.
 - Points ouverts dérogations après ARBITRAGE-DEROG-001 :
-  - sources Lot 03 à placer dans `project/source_documents/lot_03/` avant code ;
+  - les deux sources Lot 03 préparées sont placées dans `project/source_documents/lot_03/` ;
   - conversion ou remplacement DOCX propre du `.doc` legacy avant `cumul_salariee` ;
   - mode de rendu `document finalisé` ou `formulaire à compléter` à porter explicitement dans le registre ou le nom de sortie ;
   - champs narratifs sensibles toujours fournis explicitement ou laissés comme zones à compléter.
@@ -342,6 +356,11 @@ Tickets actifs/parallélisables :
 - SYNC-CODE-BAIL-APP-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
 - SYNC-CODE-BAIL-APP-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 75 tests passés.
 - SYNC-CODE-BAIL-APP-001 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifiés.
+- SYNC-WAVE-LOT03-05-001 : `git fetch --all --prune` OK.
+- SYNC-WAVE-LOT03-05-001 : commits `36828fbc45d6b8a37c2e76eb8227460df441ebde` et `958fce5d2a9d5d30df4d918cb098fec483f5140e` cherry-pickés dans `main` sans conflit.
+- SYNC-WAVE-LOT03-05-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
+- SYNC-WAVE-LOT03-05-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 80 tests passés après sauvegarde des fichiers cession non suivis hors ticket.
+- SYNC-WAVE-LOT03-05-001 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifiés.
 - SPEC-TEXTE-ORDRE-001 : source de vérité, source Lot 2 et variantes raw dump SELARL / SELAS / SPFPL cession / SPFPL apport lues en lecture seule.
 - SPEC-TEXTE-ORDRE-001 : spec texte créée dans `docs/delivery/lot_02_demande_inscription_ordre_spec_texte_v1.md`.
 - SPEC-TEXTE-ORDRE-001 : aucun code Python modifié ; validations limitées à la relecture documentaire et au contrôle du diff.
@@ -376,4 +395,4 @@ Tickets actifs/parallélisables :
 - SMOKE-ORCH-L2-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 47 tests passés.
 
 ## Recommandation immédiate suivante
-Lancer en parallèle selon disponibilité `CODE-CESSION-CAB-001`, `PREP-DEROG-001` et `CODE-SPFPL-AGR-INFO-001`.
+Lancer `RESUME-CODE-CESSION-CAB-001`, puis `CODE-DEROG-CORE-001` selon disponibilité.
