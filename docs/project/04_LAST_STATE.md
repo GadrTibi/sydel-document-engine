@@ -4,7 +4,7 @@
 2026-05-14
 
 ## Dernier ticket terminé
-SYNC-STATUTS-SPECS-001 : absorption dans `main` des commits sources `00b7886ac431c8a47d9cdcca8bfed026a756cb69`, `b34c66e5e67f3261317035943e974536be27d6d3`, `9b25e09d08ec2161d757d1581c34073dcbbc594f` et `704eeb7301cf69460c16b2ed9fbc0ea22ca83c8c`, puis réalignement du pilotage.
+SYNC-STATUTS-CODE-ARB-001 : absorption dans `main` des commits sources `82e67120ed714b791d5483108336a570ea520e59`, `a98939c649e4124e40f2cd69c9ed125d342acc31` et `1caafd7`, puis réalignement du pilotage.
 
 ## État courant du repo
 - DOC-001, DOC-002 et DOC-003 disposent chacun d'un générateur dédié déjà terminé.
@@ -141,6 +141,13 @@ SYNC-STATUTS-SPECS-001 : absorption dans `main` des commits sources `00b7886ac43
 - Les specs V1 des statuts civils sont disponibles :
   - `docs/delivery/lot_04_statuts_civils_spec_canonique_v1.md` ;
   - `docs/delivery/lot_04_statuts_civils_spec_texte_v1.md`.
+- Le générateur statuts SAS V1 est disponible dans `src/sydel_doc_engine/generators/lot_04/statuts_sas.py`.
+- Les générateurs statuts SPFPL V1 sont disponibles :
+  - `src/sydel_doc_engine/generators/lot_04/statuts_spfpl_cession.py` ;
+  - `src/sydel_doc_engine/generators/lot_04/statuts_spfpl_apport.py` ;
+  - `src/sydel_doc_engine/generators/lot_04/statuts_spfpl_common.py` ;
+  - `src/sydel_doc_engine/generators/lot_04/statuts_spfpl_templates.py`.
+- Les arbitrages V1 des statuts SEL d'exercice sont disponibles dans `docs/delivery/lot_04_statuts_sel_exercice_arbitrages_v1.md`.
 - `ARBITRAGE-SOURCES-001` est DONE.
 - `PLACEMENT-HIGH-001` est DONE.
 - `ANALYSE-ORDRE-001` est DONE.
@@ -175,10 +182,14 @@ SYNC-STATUTS-SPECS-001 : absorption dans `main` des commits sources `00b7886ac43
 - `SPEC-STATUTS-CIVILS-001` est DONE.
 - `SPEC-STATUTS-SAS-001` est DONE.
 - `SYNC-STATUTS-SPECS-001` est DONE.
-- `CODE-STATUTS-SAS-001` est READY.
-- `CODE-STATUTS-SPFPL-001` est READY.
-- `ARBITRAGE-STATUTS-SEL-001` est READY.
+- `CODE-STATUTS-SAS-001` est DONE.
+- `CODE-STATUTS-SPFPL-001` est DONE.
+- `ARBITRAGE-STATUTS-SEL-001` est DONE.
 - `ARBITRAGE-STATUTS-CIVILS-001` est READY.
+- `SYNC-STATUTS-CODE-ARB-001` est DONE.
+- `CODE-STATUTS-SEL-001` est READY.
+- `RESUME-ARBITRAGE-STATUTS-CIVILS-001` est READY.
+- `STYLE-ANALYSE-BATCH-001` est READY.
 - `UI-001` reste explicitement en attente : ne pas brancher Streamlit maintenant.
 - Fichiers générés connus :
   - `artifacts/lot_01_smoke_test/autorisation_domiciliation.docx`
@@ -285,6 +296,12 @@ SYNC-STATUTS-SPECS-001 : absorption dans `main` des commits sources `00b7886ac43
 - CODE-SPFPL-CORE-001 ajoute les générateurs SPFPL cœur, les sources Lot 05 ciblées, le contexte exemple et les tests unitaires associés.
 - Le commit final de synchronisation `SYNC-WAVE-003` est limité aux fichiers de pilotage `docs/project/01_EXECUTION_BOARD.md` et `docs/project/04_LAST_STATE.md`.
 - Les fichiers `project/source_import/raw_drive_dump/` et `artifacts/` n'ont pas été modifiés.
+- SYNC-STATUTS-CODE-ARB-001 a cherry-pické dans `main` les commits sources `82e67120ed714b791d5483108336a570ea520e59`, `a98939c649e4124e40f2cd69c9ed125d342acc31` et `1caafd7`.
+- Le conflit modèle entre les apports SAS et SPFPL a été résolu par fusion additive des champs de données nécessaires aux deux familles.
+- CODE-STATUTS-SAS-001 ajoute le générateur statuts SAS V1, son contexte exemple, son branchement catalogue/orchestrateur et ses tests ciblés.
+- CODE-STATUTS-SPFPL-001 ajoute les générateurs statuts SPFPL cession/apport V1, leur contexte exemple et leurs tests ciblés.
+- ARBITRAGE-STATUTS-SEL-001 ajoute les arbitrages V1 des statuts SEL d'exercice dans `docs/delivery/`.
+- Les fichiers `project/source_import/raw_drive_dump/` et `artifacts/` n'ont pas été modifiés.
 - CODE-DEROG-CORE-001 ajoute `DOC-013` formulaire multi-sites SEL et `DOC-014` demande cumul SELARL/BNC au catalogue et à l'orchestrateur.
 - Les deux documents dérogations cœur sont rendus uniquement en `formulaire_a_completer`, avec zones narratives sensibles laissées visibles et non générées par défaut.
 - `cumul_salariee` reste hors périmètre tant qu'un DOCX propre n'est pas fourni.
@@ -317,16 +334,16 @@ SYNC-STATUTS-SPECS-001 : absorption dans `main` des commits sources `00b7886ac43
 
 ## Prochain ticket à lancer
 Tickets actifs/parallélisables :
-- `CODE-STATUTS-SAS-001` est READY.
-- `CODE-STATUTS-SPFPL-001` est READY.
-- `ARBITRAGE-STATUTS-SEL-001` est READY.
-- `ARBITRAGE-STATUTS-CIVILS-001` est READY.
+- `CODE-STATUTS-SEL-001` est READY.
+- `RESUME-ARBITRAGE-STATUTS-CIVILS-001` est READY.
+- `STYLE-ANALYSE-BATCH-001` est READY.
 
 `CODE-BAIL-APP-001` est DONE dans `main`.
 `PREP-DEROG-001` et `CODE-SPFPL-AGR-INFO-001` sont DONE dans `main`.
 `CODE-CESSION-CAB-001` et `CODE-DEROG-CORE-001` sont DONE et absorbés dans `main`.
 `PREP-STATUTS-001` et `CODE-SPFPL-CORE-001` sont DONE et absorbés dans `main`.
 Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans `main`.
+`CODE-STATUTS-SAS-001`, `CODE-STATUTS-SPFPL-001` et `ARBITRAGE-STATUTS-SEL-001` sont DONE et absorbés dans `main`.
 
 ## Points ouverts
 - Aucun point bloquant identifié après le smoke test réel Lot 1.
@@ -385,9 +402,9 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
   - ne pas placer automatiquement la famille liste des souscripteurs / attestation sur le capital ;
   - ne pas dedupliquer les statuts entre familles, professions ou variantes.
 - Points ouverts statuts après SYNC-STATUTS-SPECS-001 :
-  - SAS : modèle source inventorié sous `SAS` mais contenu SAS/SPFPL médecins, actionnaire unique et vocabulaire hétérogène à respecter ou bloquer ;
-  - SPFPL : conserver cession/apport comme overlays distincts, bloquer le multi-associés et les corrections d'anomalies non arbitrées ;
-  - SEL : arbitrer pluralité 1 à 6 associés, ligne `personne_2`, second lieu SELAS, féminisation dirigeant et signatures ;
+  - SAS : générateur V1 intégré, modèle source inventorié sous `SAS` mais contenu SAS/SPFPL médecins, actionnaire unique et vocabulaire hétérogène à relire humainement ;
+  - SPFPL : générateurs V1 cession/apport intégrés, multi-associés bloqué et corrections d'anomalies non arbitrées toujours exclues ;
+  - SEL : arbitrages V1 disponibles, code à lancer via `CODE-STATUTS-SEL-001` ;
   - civils : arbitrer SCI/SCI IRIS, SCM, SCS, associés personnes morales, signatures dynamiques et lettre option IS hors statuts.
 - Toute ambiguïté de wording juridique doit bloquer l'implémentation concernée et être documentée.
 
@@ -448,6 +465,12 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
 - SYNC-STATUTS-SPECS-001 : commits sources `00b7886ac431c8a47d9cdcca8bfed026a756cb69`, `b34c66e5e67f3261317035943e974536be27d6d3`, `9b25e09d08ec2161d757d1581c34073dcbbc594f` et `704eeb7301cf69460c16b2ed9fbc0ea22ca83c8c` cherry-pickés dans `main` sans conflit.
 - SYNC-STATUTS-SPECS-001 : relecture documentaire et contrôle du diff ; aucun test de code exécuté car aucun fichier Python n'a été modifié.
 - SYNC-STATUTS-SPECS-001 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifiés.
+- SYNC-STATUTS-CODE-ARB-001 : `git fetch --all --prune` OK.
+- SYNC-STATUTS-CODE-ARB-001 : commits sources `82e67120ed714b791d5483108336a570ea520e59`, `a98939c649e4124e40f2cd69c9ed125d342acc31` et `1caafd7` cherry-pickés dans `main`.
+- SYNC-STATUTS-CODE-ARB-001 : conflit unique résolu dans `src/sydel_doc_engine/domain/models.py` par fusion additive SAS/SPFPL.
+- SYNC-STATUTS-CODE-ARB-001 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m ruff check .` OK.
+- SYNC-STATUTS-CODE-ARB-001 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m pytest` OK, 111 tests passés.
+- SYNC-STATUTS-CODE-ARB-001 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifiés.
 - SPEC-TEXTE-ORDRE-001 : source de vérité, source Lot 2 et variantes raw dump SELARL / SELAS / SPFPL cession / SPFPL apport lues en lecture seule.
 - SPEC-TEXTE-ORDRE-001 : spec texte créée dans `docs/delivery/lot_02_demande_inscription_ordre_spec_texte_v1.md`.
 - SPEC-TEXTE-ORDRE-001 : aucun code Python modifié ; validations limitées à la relecture documentaire et au contrôle du diff.
@@ -482,4 +505,4 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
 - SMOKE-ORCH-L2-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 47 tests passés.
 
 ## Recommandation immédiate suivante
-Lancer `CODE-STATUTS-SAS-001` ou `CODE-STATUTS-SPFPL-001` si le ticket de code applique les blocages explicites, sinon lancer `ARBITRAGE-STATUTS-SEL-001` ou `ARBITRAGE-STATUTS-CIVILS-001`.
+Lancer `CODE-STATUTS-SEL-001`, `RESUME-ARBITRAGE-STATUTS-CIVILS-001` ou `STYLE-ANALYSE-BATCH-001` selon la priorité métier.

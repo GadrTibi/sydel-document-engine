@@ -65,10 +65,14 @@
 | SPEC-STATUTS-CIVILS-001 | DONE | Spécifier les statuts civils | préparation statuts V1 + sources Lot 04 SCI/SCI IRIS/SCM/SCS | spec canonique + spec texte avant code |
 | SPEC-STATUTS-SAS-001 | DONE | Spécifier les statuts SAS | préparation statuts V1 + source Lot 04 SAS | spec canonique + spec texte avant code |
 | SYNC-STATUTS-SPECS-001 | DONE | Synchroniser les specs statuts parallèles dans main | branches statuts SAS/SPFPL/SEL/CIVILS | specs intégrées + pilotage aligné |
-| CODE-STATUTS-SAS-001 | READY | Implémenter les statuts SAS | specs statuts SAS V1 + blocages explicites | générateur DOCX + tests ciblés + MAJ doc |
-| CODE-STATUTS-SPFPL-001 | READY | Implémenter les statuts SPFPL cession/apport | specs statuts SPFPL V1 + blocages explicites | générateurs DOCX + tests ciblés + MAJ doc |
-| ARBITRAGE-STATUTS-SEL-001 | READY | Arbitrer les points bloquants statuts SEL avant code | specs statuts SEL V1 + points ouverts | décisions pluralité associés, SELAS et wording |
+| CODE-STATUTS-SAS-001 | DONE | Implémenter les statuts SAS | specs statuts SAS V1 + blocages explicites | générateur DOCX + tests ciblés + MAJ doc |
+| CODE-STATUTS-SPFPL-001 | DONE | Implémenter les statuts SPFPL cession/apport | specs statuts SPFPL V1 + blocages explicites | générateurs DOCX + tests ciblés + MAJ doc |
+| ARBITRAGE-STATUTS-SEL-001 | DONE | Arbitrer les points bloquants statuts SEL avant code | specs statuts SEL V1 + points ouverts | décisions pluralité associés, SELAS et wording |
 | ARBITRAGE-STATUTS-CIVILS-001 | READY | Arbitrer les points bloquants statuts civils avant code | specs statuts civils V1 + points ouverts | décisions SCI/SCI IRIS/SCM/SCS avant code |
+| SYNC-STATUTS-CODE-ARB-001 | DONE | Synchroniser code statuts SAS/SPFPL et arbitrage SEL dans main | branches code/arbitrage statuts | commits intégrés + pilotage réaligné |
+| CODE-STATUTS-SEL-001 | READY | Implémenter les statuts SEL d'exercice | specs statuts SEL V1 + arbitrages SEL V1 | générateur(s) DOCX + tests ciblés + MAJ doc |
+| RESUME-ARBITRAGE-STATUTS-CIVILS-001 | READY | Reprendre proprement l'arbitrage des statuts civils | specs statuts civils V1 + état main synchronisé | décisions SCI/SCI IRIS/SCM/SCS avant code |
+| STYLE-ANALYSE-BATCH-001 | READY | Analyser le style documentaire en batch avant harmonisation | générateurs/statuts disponibles + besoins de rendu | cadrage style batch + points d'arbitrage |
 | UI-001 | BLOCKED | Brancher Streamlit V0 Lot 1 | orchestrateur Lot 1 + spec canonique PV nomination gérant validée | écran simple + test manuel |
 
 ## Référentiels moteur disponibles
@@ -430,24 +434,48 @@
 - Objectif : implémenter les statuts SAS à partir des specs V1.
 - Specs à lire : `docs/delivery/lot_04_statuts_sas_spec_canonique_v1.md` et `docs/delivery/lot_04_statuts_sas_spec_texte_v1.md`.
 - Contraintes : limiter le périmètre au modèle SAS/SPFPL médecins source, bloquer les cas non arbitrés, ne pas corriger le wording juridique sans validation.
-- Statut : READY.
+- Statut : DONE ; générateur SAS V1 intégré dans `main` avec tests ciblés.
 
 ### CODE-STATUTS-SPFPL-001
 - Objectif : implémenter les statuts SPFPL cession/apport à partir des specs V1.
 - Specs à lire : `docs/delivery/lot_04_statuts_spfpl_spec_canonique_v1.md` et `docs/delivery/lot_04_statuts_spfpl_spec_texte_v1.md`.
 - Contraintes : conserver deux overlays cession/apport, bloquer le multi-associés non arbitré et les anomalies de wording non validées.
-- Statut : READY.
+- Statut : DONE ; générateurs SPFPL cession/apport V1 intégrés dans `main` avec tests ciblés.
 
 ### ARBITRAGE-STATUTS-SEL-001
 - Objectif : arbitrer les points bloquants des statuts SEL avant code.
 - Specs à lire : `docs/delivery/lot_04_statuts_sel_exercice_spec_canonique_v1.md` et `docs/delivery/lot_04_statuts_sel_exercice_spec_texte_v1.md`.
 - Contraintes : trancher pluralité des associés, ligne `personne_2`, second lieu SELAS, féminisation dirigeant et signatures.
-- Statut : READY.
+- Statut : DONE ; arbitrages disponibles dans `docs/delivery/lot_04_statuts_sel_exercice_arbitrages_v1.md`.
 
 ### ARBITRAGE-STATUTS-CIVILS-001
 - Objectif : arbitrer les points bloquants des statuts civils avant code.
 - Specs à lire : `docs/delivery/lot_04_statuts_civils_spec_canonique_v1.md` et `docs/delivery/lot_04_statuts_civils_spec_texte_v1.md`.
 - Contraintes : trancher SCI/SCI IRIS, SCM, SCS, associés personnes morales, signatures dynamiques et lettre option IS hors statuts.
+- Statut : READY.
+
+### SYNC-STATUTS-CODE-ARB-001
+- Objectif : absorber dans `main` les branches code statuts SAS/SPFPL et arbitrage statuts SEL.
+- Entrées : `codex/code-statuts-sas-001`, `codex/code-statuts-spfpl-001`, `codex/arbitrage-statuts-sel-001`.
+- Sortie : commits intégrés, tests relancés, pilotage aligné sur les tickets suivants.
+- Statut : DONE ; intégration effectuée sans modification de `project/source_import/raw_drive_dump/` ni de `artifacts/`.
+
+### CODE-STATUTS-SEL-001
+- Objectif : implémenter les statuts SEL d'exercice après arbitrages V1.
+- Specs à lire : `docs/delivery/lot_04_statuts_sel_exercice_spec_canonique_v1.md`, `docs/delivery/lot_04_statuts_sel_exercice_spec_texte_v1.md` et `docs/delivery/lot_04_statuts_sel_exercice_arbitrages_v1.md`.
+- Contraintes : appliquer strictement les arbitrages SEL, conserver les blocages explicites et ne pas corriger le wording juridique sans validation.
+- Statut : READY.
+
+### RESUME-ARBITRAGE-STATUTS-CIVILS-001
+- Objectif : reprendre proprement l'arbitrage des statuts civils depuis `main` synchronisé.
+- Specs à lire : `docs/delivery/lot_04_statuts_civils_spec_canonique_v1.md` et `docs/delivery/lot_04_statuts_civils_spec_texte_v1.md`.
+- Contraintes : arbitrer SCI/SCI IRIS, SCM, SCS, associés personnes morales, signatures dynamiques et lettre option IS hors statuts avant tout code.
+- Statut : READY.
+
+### STYLE-ANALYSE-BATCH-001
+- Objectif : cadrer l'analyse de style documentaire en batch avant harmonisation de rendu.
+- Entrées : générateurs existants, specs disponibles et rendus DOCX déjà produits hors versionnement.
+- Contraintes : analyse/cadrage uniquement, sans modification de wording juridique ni déplacement de sources.
 - Statut : READY.
 
 ### UI-001
@@ -465,8 +493,9 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - mettre à jour `docs/project/04_LAST_STATE.md`
 
 ## Prochaine étape prévue
-- prochaine action recommandée : lancer `CODE-STATUTS-SAS-001` ou `CODE-STATUTS-SPFPL-001` si le ticket cible un code avec blocages explicites ; sinon lancer `ARBITRAGE-STATUTS-SEL-001` ou `ARBITRAGE-STATUTS-CIVILS-001`.
-- tickets READY confirmés : `CODE-STATUTS-SAS-001`, `CODE-STATUTS-SPFPL-001`, `ARBITRAGE-STATUTS-SEL-001` et `ARBITRAGE-STATUTS-CIVILS-001`.
+- prochaine action recommandée : lancer `CODE-STATUTS-SEL-001`, `RESUME-ARBITRAGE-STATUTS-CIVILS-001` ou `STYLE-ANALYSE-BATCH-001` selon la priorité métier.
+- tickets READY confirmés : `CODE-STATUTS-SEL-001`, `RESUME-ARBITRAGE-STATUTS-CIVILS-001` et `STYLE-ANALYSE-BATCH-001`.
+- `CODE-STATUTS-SAS-001`, `CODE-STATUTS-SPFPL-001` et `ARBITRAGE-STATUTS-SEL-001` sont DONE et absorbés dans `main`.
 - `CODE-BAIL-APP-001` est DONE et absorbé dans `main`.
 - `PREP-DEROG-001` est DONE et absorbé dans `main`.
 - `CODE-SPFPL-AGR-INFO-001` est DONE et absorbé dans `main`.
@@ -550,3 +579,4 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - 2026-05-14 : SYNC-CODE-WAVE-002 absorbe dans `main` les commits sources `ea35d2af353ac5b8567e82091ab978cf24a27445` et `bee4c8bec27397198a170c4f9888b2470b24c67f`, confirme `CODE-CESSION-CAB-001` et `CODE-DEROG-CORE-001` en DONE, puis confirme `CODE-SPFPL-CORE-001` et `PREP-STATUTS-001` en READY, sans modification de `project/source_import/raw_drive_dump/` ni de `artifacts/`.
 - 2026-05-14 : SYNC-WAVE-003 absorbe dans `main` les commits sources `b854821061b85ac66fe785c11cb3c6b0bac5a85b` et `09cbad120d22910f05ba5e645971ade56fedb76d`, passe `PREP-STATUTS-001` et `CODE-SPFPL-CORE-001` en DONE, puis confirme `SPEC-STATUTS-SEL-001`, `SPEC-STATUTS-SPFPL-001`, `SPEC-STATUTS-CIVILS-001` et `SPEC-STATUTS-SAS-001` en READY, sans modification de `project/source_import/raw_drive_dump/` ni de `artifacts/`.
 - 2026-05-14 : SYNC-STATUTS-SPECS-001 absorbe dans `main` les commits sources `00b7886ac431c8a47d9cdcca8bfed026a756cb69`, `b34c66e5e67f3261317035943e974536be27d6d3`, `9b25e09d08ec2161d757d1581c34073dcbbc594f` et `704eeb7301cf69460c16b2ed9fbc0ea22ca83c8c`, passe les quatre specs statuts en DONE, puis confirme `CODE-STATUTS-SAS-001`, `CODE-STATUTS-SPFPL-001`, `ARBITRAGE-STATUTS-SEL-001` et `ARBITRAGE-STATUTS-CIVILS-001` en READY, sans modification de `project/source_import/raw_drive_dump/` ni de `artifacts/`.
+- 2026-05-14 : SYNC-STATUTS-CODE-ARB-001 absorbe dans `main` les commits sources `82e67120ed714b791d5483108336a570ea520e59`, `a98939c649e4124e40f2cd69c9ed125d342acc31` et `1caafd7`, passe `CODE-STATUTS-SAS-001`, `CODE-STATUTS-SPFPL-001` et `ARBITRAGE-STATUTS-SEL-001` en DONE, puis confirme `CODE-STATUTS-SEL-001`, `RESUME-ARBITRAGE-STATUTS-CIVILS-001` et `STYLE-ANALYSE-BATCH-001` en READY, sans modification de `project/source_import/raw_drive_dump/` ni de `artifacts/`.
