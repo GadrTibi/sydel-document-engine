@@ -4,7 +4,7 @@
 2026-05-14
 
 ## Dernier ticket terminé
-CODE-DEROG-CORE-001 : implémentation du cœur dérogations avec `DOC-013` formulaire multi-sites SEL et `DOC-014` demande cumul SELARL/BNC en formulaires à compléter, smoke DOCX réel et validations locales verts.
+SYNC-CODE-WAVE-002 : absorption dans `main` des commits sources `ea35d2af353ac5b8567e82091ab978cf24a27445` (`codex/code-cession-cab-001`) et `bee4c8bec27397198a170c4f9888b2470b24c67f` (`codex/code-derog-core-001`), puis réalignement du pilotage.
 
 ## État courant du repo
 - DOC-001, DOC-002 et DOC-003 disposent chacun d'un générateur dédié déjà terminé.
@@ -149,6 +149,8 @@ CODE-DEROG-CORE-001 : implémentation du cœur dérogations avec `DOC-013` formu
 - `PREP-DEROG-001` est DONE.
 - `CODE-DEROG-CORE-001` est DONE.
 - `CODE-SPFPL-AGR-INFO-001` est DONE.
+- `CODE-SPFPL-CORE-001` est READY.
+- `PREP-STATUTS-001` est READY.
 - `UI-001` reste explicitement en attente : ne pas brancher Streamlit maintenant.
 - Fichiers générés connus :
   - `artifacts/lot_01_smoke_test/autorisation_domiciliation.docx`
@@ -247,6 +249,9 @@ CODE-DEROG-CORE-001 : implémentation du cœur dérogations avec `DOC-013` formu
 - PREP-DEROG-001 place les deux sources Lot 03 préparées et ajoute les rapports de préparation / conversion legacy.
 - CODE-SPFPL-AGR-INFO-001 ajoute les générateurs SPFPL agrément et note d'information, les sources Lot 05 ciblées, le contexte exemple et les tests unitaires associés.
 - Les fichiers `project/source_import/raw_drive_dump/` et `artifacts/` n'ont pas été modifiés.
+- SYNC-CODE-WAVE-002 a cherry-pické dans `main` les commits sources `ea35d2af353ac5b8567e82091ab978cf24a27445` de `codex/code-cession-cab-001` et `bee4c8bec27397198a170c4f9888b2470b24c67f` de `codex/code-derog-core-001`.
+- Le commit final de synchronisation `SYNC-CODE-WAVE-002` est limité aux fichiers de pilotage `docs/project/01_EXECUTION_BOARD.md` et `docs/project/04_LAST_STATE.md`.
+- Les fichiers `project/source_import/raw_drive_dump/` et `artifacts/` n'ont pas été modifiés.
 - CODE-DEROG-CORE-001 ajoute `DOC-013` formulaire multi-sites SEL et `DOC-014` demande cumul SELARL/BNC au catalogue et à l'orchestrateur.
 - Les deux documents dérogations cœur sont rendus uniquement en `formulaire_a_completer`, avec zones narratives sensibles laissées visibles et non générées par défaut.
 - `cumul_salariee` reste hors périmètre tant qu'un DOCX propre n'est pas fourni.
@@ -279,10 +284,12 @@ CODE-DEROG-CORE-001 : implémentation du cœur dérogations avec `DOC-013` formu
 
 ## Prochain ticket à lancer
 Tickets actifs/parallélisables :
-- aucun nouveau ticket de code dérogations à lancer sans arbitrage explicite.
+- `CODE-SPFPL-CORE-001` est READY.
+- `PREP-STATUTS-001` est READY.
 
 `CODE-BAIL-APP-001` est DONE dans `main`.
 `PREP-DEROG-001` et `CODE-SPFPL-AGR-INFO-001` sont DONE dans `main`.
+`CODE-CESSION-CAB-001` et `CODE-DEROG-CORE-001` sont DONE et absorbés dans `main`.
 
 ## Points ouverts
 - Aucun point bloquant identifié après le smoke test réel Lot 1.
@@ -385,6 +392,11 @@ Tickets actifs/parallélisables :
 - CODE-DEROG-CORE-001 : smoke DOCX OK dans `artifacts/lot_03_derogations_core_smoke_test/`, deux formulaires à compléter produits sans placeholder `[` / `]`.
 - CODE-DEROG-CORE-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
 - CODE-DEROG-CORE-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 95 tests passés.
+- SYNC-CODE-WAVE-002 : `git fetch --all --prune` OK.
+- SYNC-CODE-WAVE-002 : commits sources `ea35d2af353ac5b8567e82091ab978cf24a27445` et `bee4c8bec27397198a170c4f9888b2470b24c67f` cherry-pickés dans `main` sans conflit.
+- SYNC-CODE-WAVE-002 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
+- SYNC-CODE-WAVE-002 : `.\.venv\Scripts\python.exe -m pytest` OK, 95 tests passés.
+- SYNC-CODE-WAVE-002 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifiés.
 - SPEC-TEXTE-ORDRE-001 : source de vérité, source Lot 2 et variantes raw dump SELARL / SELAS / SPFPL cession / SPFPL apport lues en lecture seule.
 - SPEC-TEXTE-ORDRE-001 : spec texte créée dans `docs/delivery/lot_02_demande_inscription_ordre_spec_texte_v1.md`.
 - SPEC-TEXTE-ORDRE-001 : aucun code Python modifié ; validations limitées à la relecture documentaire et au contrôle du diff.
@@ -419,4 +431,4 @@ Tickets actifs/parallélisables :
 - SMOKE-ORCH-L2-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 47 tests passés.
 
 ## Recommandation immédiate suivante
-Relire humainement les deux DOCX dérogations cœur générés, puis ouvrir un ticket dédié seulement si `cumul_salariee` doit être traité après conversion DOCX propre.
+Lancer `CODE-SPFPL-CORE-001` ou `PREP-STATUTS-001` selon la priorité métier.
