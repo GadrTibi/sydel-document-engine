@@ -4,7 +4,7 @@
 2026-05-14
 
 ## Dernier ticket terminé
-CODE-RC-001 : implémentation du batch `régime communautaire` V1 avec deux générateurs DOCX from-scratch, branchement catalogue/orchestrateur conditionné par `dossier_options.regime_communautaire`, tests ciblés et smoke DOCX réel.
+SYNC-TEXTE-SPECS-001 : intégration dans `main` des quatre specs texte parallèles bail/appel, cession cabinets, dérogations et SPFPL, puis alignement du pilotage avec les prochains tickets READY.
 
 ## État courant du repo
 - DOC-001, DOC-002 et DOC-003 disposent chacun d'un générateur dédié déjà terminé.
@@ -74,9 +74,13 @@ CODE-RC-001 : implémentation du batch `régime communautaire` V1 avec deux gén
   - `src/sydel_doc_engine/generators/lot_02/lettre_avertissement_conjoint.py`.
 - Un contexte exemple de smoke test est disponible : `examples/contexts/lot_02_regime_communautaire_example.yaml`.
 - La spec canonique V1 du batch SPFPL spécifique est disponible : `docs/delivery/lot_05_spfpl_spec_canonique_v1.md`.
+- La spec texte V1 du batch SPFPL spécifique est disponible : `docs/delivery/lot_05_spfpl_spec_texte_v1.md`.
 - La spec canonique V1 de la famille dérogations est disponible : `docs/delivery/lot_03_derogations_spec_canonique_v1.md`.
+- La spec texte V1 de la famille dérogations est disponible : `docs/delivery/lot_03_derogations_spec_texte_v1.md`.
 - La spec canonique V1 `cession cabinets` est disponible : `docs/delivery/lot_03_cession_cabinets_spec_canonique_v1.md`.
+- La spec texte V1 `cession cabinets` est disponible : `docs/delivery/lot_03_cession_cabinets_spec_texte_v1.md`.
 - La spec canonique V1 `bail / appel de fonds` est disponible : `docs/delivery/lot_03_bail_appel_fonds_spec_v1.md`.
+- La spec texte V1 `bail / appel de fonds` est disponible : `docs/delivery/lot_03_bail_appel_fonds_spec_texte_v1.md`.
 - Le manifest d'import sources V1 est disponible : `docs/project/10_SOURCE_IMPORT_MANIFEST_V1.md`.
 - Le rapport de doublons sources V1 est disponible : `docs/project/11_SOURCE_DUPLICATES_REPORT_V1.md`.
 - Le plan de placement sources V1 est disponible : `docs/project/12_SOURCE_PLACEMENT_PLAN_V1.md`.
@@ -94,6 +98,15 @@ CODE-RC-001 : implémentation du batch `régime communautaire` V1 avec deux gén
 - `SPEC-CESSION-BAIL-001` est DONE.
 - `SYNC-SPECS-001` est DONE.
 - `CODE-RC-001` est DONE.
+- `SPEC-TEXTE-BAIL-APP-001` est DONE.
+- `SPEC-TEXTE-CESSION-CAB-001` est DONE.
+- `SPEC-TEXTE-DEROG-001` est DONE.
+- `SPEC-TEXTE-SPFPL-001` est DONE.
+- `SYNC-TEXTE-SPECS-001` est DONE.
+- `CODE-BAIL-APP-001` est READY.
+- `ARBITRAGE-CESSION-001` est READY.
+- `ARBITRAGE-DEROG-001` est READY.
+- `ARBITRAGE-SPFPL-001` est READY.
 - `UI-001` reste explicitement en attente : ne pas brancher Streamlit maintenant.
 - Fichiers générés connus :
   - `artifacts/lot_01_smoke_test/autorisation_domiciliation.docx`
@@ -169,6 +182,11 @@ CODE-RC-001 : implémentation du batch `régime communautaire` V1 avec deux gén
 - SPEC-DEROG-001 formalise les dérogations sans automatiser les formulaires marqués ou traités comme manuels.
 - SPEC-CESSION-BAIL-001 formalise deux blocs distincts : `cession cabinets` et `bail / appel de fonds`, sans trancher les anomalies de wording avant code.
 - SYNC-SPECS-001 a cherry-pické les quatre specs parallèles dans `main`, puis limite le commit de synchronisation aux fichiers de pilotage.
+- SYNC-TEXTE-SPECS-001 a cherry-pické les quatre specs texte parallèles dans `main`.
+- Les specs texte intégrées sont bail/appel, cession cabinets, dérogations et SPFPL.
+- Le commit final de synchronisation texte est limité aux fichiers de pilotage `docs/project/01_EXECUTION_BOARD.md` et `docs/project/04_LAST_STATE.md`.
+- Aucun code Python, aucun fichier `project/source_import/raw_drive_dump/` et aucun fichier `artifacts/` n'a été modifié.
+- `CODE-BAIL-APP-001`, `ARBITRAGE-CESSION-001`, `ARBITRAGE-DEROG-001` et `ARBITRAGE-SPFPL-001` sont les prochains tickets READY.
 - ARBITRAGE-SOURCES-001 scanne 147 fichiers dans `project/source_import/raw_drive_dump/` et 11 fichiers dans `project/source_documents/`.
 - ARBITRAGE-SOURCES-001 identifie 18 groupes de doublons probables, dont 15 groupes de doublons exacts.
 - Les 4 cas HIGH documentés sont : DOC-001, DOC-002, DOC-003 et la source canonique `PV nomination gérant`.
@@ -197,9 +215,9 @@ CODE-RC-001 : implémentation du batch `régime communautaire` V1 avec deux gén
 - Le smoke DOCX dédié a été généré dans `artifacts/fix_pv_render_001_smoke_test_2/pv_nomination_gerant.docx`, hors versionnement.
 
 ## Prochain ticket à lancer
-Revue humaine du smoke DOCX `régime communautaire`, avec priorité au rendu SELARL de la renonciation canonique.
+`CODE-BAIL-APP-001` : implémenter le mini-batch `bail / appel de fonds` à partir des specs canonique et texte V1.
 
-Après revue, choisir le prochain batch à spécifier ou coder. Les cas LOW doivent rester bloqués tant que leurs variantes sources n'ont pas été comparées ou arbitrées.
+En parallèle ou avant les lots plus sensibles : lancer `ARBITRAGE-CESSION-001`, `ARBITRAGE-DEROG-001` ou `ARBITRAGE-SPFPL-001` selon la priorité métier. Les cas LOW doivent rester bloqués tant que leurs variantes sources n'ont pas été comparées ou arbitrées.
 
 ## Points ouverts
 - Aucun point bloquant identifié après le smoke test réel Lot 1.
@@ -233,20 +251,22 @@ Après revue, choisir le prochain batch à spécifier ou coder. Les cas LOW doiv
   - apport limité à une somme en numéraire ;
   - valeurs par défaut de régime matrimonial, qualité renoncée et formes sociales à fournir par contexte ou référentiel.
   - le smoke DOCX réel ne vaut pas validation juridique fine.
-- Points ouverts SPFPL après SPEC-SPFPL-001 :
+- Points ouverts SPFPL après SPEC-TEXTE-SPFPL-001 :
   - acte de cession d'actions sans source confirmée ;
   - wording cession/apport des PV d'agrément et de la note d'information ;
   - choix évaluateur / commissaire aux apports ;
   - liste dynamique des souscripteurs.
-- Points ouverts dérogations après SPEC-DEROG-001 :
+- Points ouverts dérogations après SPEC-TEXTE-DEROG-001 :
   - sources Lot 03 à placer ou arbitrer ;
   - formulaires préremplis avec zones vierges ou blocage complet à décider ;
   - conversion du `.doc` legacy avant code ;
+  - rôles `signataire` / `representant_legal` / `associe_exercant` à arbitrer ;
   - champs narratifs sensibles à fournir explicitement.
-- Points ouverts cession/bail après SPEC-CESSION-BAIL-001 :
+- Points ouverts cession/bail après SPEC-TEXTE-CESSION-CAB-001 et SPEC-TEXTE-BAIL-APP-001 :
   - acte et compromis à produire ensemble ou selon une étape dossier ;
   - anomalies médical/dentaire et placeholders vendeur/acquéreur à arbitrer ;
   - crédit-vendeur, clause SCM, salariés et exercices à cadrer avant code ;
+  - table de signatures de l'avenant de bail à arbitrer ;
   - appel de fonds limité au wording dentaire source tant qu'aucune variante médicale n'est validée.
 - Points ouverts sources :
   - ne pas élargir la demande d'inscription à l'ordre hors specs V1 sans ticket dédié ;
@@ -274,6 +294,10 @@ Après revue, choisir le prochain batch à spécifier ou coder. Les cas LOW doiv
 - SYNC-SPECS-001 : branche `codex/spec-rc-001` créée et poussée avec les deux specs RC uniquement.
 - SYNC-SPECS-001 : commits SPFPL, dérogations, cession/bail et RC cherry-pickés dans `main` sans conflit.
 - SYNC-SPECS-001 : commit final de pilotage limité à `docs/project/01_EXECUTION_BOARD.md` et `docs/project/04_LAST_STATE.md`.
+- SYNC-TEXTE-SPECS-001 : `git fetch --all --prune` lancé avant synchronisation.
+- SYNC-TEXTE-SPECS-001 : commits `417870da6ee6717a79853547060d6fc0cbacfa9f`, `3672cd129c90e63f440a2316aec54d653b2d24a4`, `18c6614abc1dd3036e1c56565059650748c08883` et `f0424ddad7690d7973d16b00f37aa54b20796d04` cherry-pickés dans `main` sans conflit.
+- SYNC-TEXTE-SPECS-001 : relecture documentaire et contrôle du diff ; aucun test de code exécuté car aucun fichier Python n'a été modifié.
+- SYNC-TEXTE-SPECS-001 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifiés.
 - SPEC-TEXTE-ORDRE-001 : source de vérité, source Lot 2 et variantes raw dump SELARL / SELAS / SPFPL cession / SPFPL apport lues en lecture seule.
 - SPEC-TEXTE-ORDRE-001 : spec texte créée dans `docs/delivery/lot_02_demande_inscription_ordre_spec_texte_v1.md`.
 - SPEC-TEXTE-ORDRE-001 : aucun code Python modifié ; validations limitées à la relecture documentaire et au contrôle du diff.
@@ -308,4 +332,4 @@ Après revue, choisir le prochain batch à spécifier ou coder. Les cas LOW doiv
 - SMOKE-ORCH-L2-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 47 tests passés.
 
 ## Recommandation immédiate suivante
-Relire humainement les deux DOCX du smoke `régime communautaire`, puis arbitrer le prochain batch à traiter.
+Lancer `CODE-BAIL-APP-001` en premier, puis traiter les arbitrages READY selon priorité métier : `ARBITRAGE-CESSION-001`, `ARBITRAGE-DEROG-001`, `ARBITRAGE-SPFPL-001`.
