@@ -3,14 +3,14 @@ from __future__ import annotations
 from sydel_doc_engine.registry.catalog import build_seed_catalog
 
 
-def test_seed_catalog_contains_fourteen_documents() -> None:
+def test_seed_catalog_contains_fifteen_documents() -> None:
     catalog = build_seed_catalog()
-    assert len(catalog) == 14
+    assert len(catalog) == 15
 
 
-def test_seed_catalog_contains_lot_one_lot_two_and_lot_three_entries() -> None:
+def test_seed_catalog_contains_lot_one_to_lot_four_entries() -> None:
     catalog = build_seed_catalog()
-    assert {document.lot for document in catalog} == {1, 2, 3}
+    assert {document.lot for document in catalog} == {1, 2, 3, 4}
 
 
 def test_seed_catalog_pv_nomination_gerant_scope_excludes_sas() -> None:
@@ -88,3 +88,14 @@ def test_seed_catalog_derogations_core_scope_is_explicitly_incomplete() -> None:
         for condition in multi_sites.specific_conditions
     )
     assert any("formulaire_a_completer" in condition for condition in cumul_bnc.specific_conditions)
+
+
+def test_seed_catalog_statuts_sas_scope_is_limited_to_sas_spfpl_medecins() -> None:
+    catalog = build_seed_catalog()
+
+    statuts = next(document for document in catalog if document.doc_id == "DOC-015")
+
+    assert set(statuts.structures) == {"SAS"}
+    assert statuts.general_condition == "dossier.structure == SAS"
+    assert "statuts_sas.type == spfpl_medecins" in statuts.specific_conditions
+    assert "statuts_sas.profession == medecin" in statuts.specific_conditions

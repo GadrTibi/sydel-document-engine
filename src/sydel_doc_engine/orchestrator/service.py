@@ -44,6 +44,7 @@ from sydel_doc_engine.generators.lot_03.demande_derogation_cumul_selarl_bnc impo
 from sydel_doc_engine.generators.lot_03.formulaire_derogation_sites_sel import (
     FormulaireDerogationSitesSelGenerator,
 )
+from sydel_doc_engine.generators.lot_04.statuts_sas import StatutsSasGenerator
 
 REGIME_COMMUNAUTAIRE_DOCUMENT_IDS = {"DOC-005", "DOC-006"}
 BAIL_AVENANT_DOCUMENT_ID = "DOC-007"
@@ -58,6 +59,7 @@ DEROGATION_DOCUMENT_TYPES = {
     "DOC-013": "multi_sites_sel",
     "DOC-014": "cumul_sel_bnc",
 }
+STATUTS_SAS_DOCUMENT_ID = "DOC-015"
 
 
 class MissingDocumentGeneratorError(RuntimeError):
@@ -80,6 +82,7 @@ def build_lot_01_generator_registry() -> dict[str, DocumentGenerator]:
         "DOC-012": CompromisCessionCabinetDentaireGenerator(),
         "DOC-013": FormulaireDerogationSitesSelGenerator(),
         "DOC-014": DemandeDerogationCumulSelarlBncGenerator(),
+        "DOC-015": StatutsSasGenerator(),
     }
 
 
@@ -133,6 +136,8 @@ def _document_enabled_for_context(
             return _cession_cabinet_enabled(document.doc_id, ctx)
         if document.doc_id in DEROGATION_DOCUMENT_TYPES:
             return _derogation_enabled(ctx, DEROGATION_DOCUMENT_TYPES[document.doc_id])
+        if document.doc_id == STATUTS_SAS_DOCUMENT_ID:
+            return _statuts_sas_enabled(ctx)
         return True
     return bool(ctx.dossier_options and ctx.dossier_options.regime_communautaire)
 
@@ -169,3 +174,14 @@ def _derogation_enabled(ctx: DocumentGenerationContext, derogation_type: str) ->
     if ctx.derogation is None or ctx.derogation.type != derogation_type:
         return False
     return ctx.derogation.mode_rendu == "formulaire_a_completer"
+
+
+def _statuts_sas_enabled(ctx: DocumentGenerationContext) -> bool:
+    if ctx.structure != "SAS" or ctx.statuts_sas is None:
+        return False
+    statuts_type = ctx.statuts_sas.type or ""
+    profession = ctx.statuts_sas.profession or ""
+    return statuts_type.lower() == "spfpl_medecins" and profession.lower() in {
+        "medecin",
+        "médecin",
+    }

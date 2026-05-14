@@ -148,7 +148,12 @@ def test_select_documents_for_sas_excludes_pv_nomination_gerant() -> None:
 
     selected = orchestrator.select_documents("SAS")
 
-    assert [document.doc_id for document in selected] == ["DOC-001", "DOC-002", "DOC-003"]
+    assert [document.doc_id for document in selected] == [
+        "DOC-001",
+        "DOC-002",
+        "DOC-003",
+        "DOC-015",
+    ]
 
 
 def test_generate_documents_creates_docx_for_selected_documents(tmp_path: Path) -> None:
