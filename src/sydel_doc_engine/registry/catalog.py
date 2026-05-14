@@ -40,6 +40,10 @@ APPEL_FONDS_SEL_STRUCTURES: list[str] = [
     "SELARL",
 ]
 
+CESSION_CABINET_STRUCTURES: list[str] = [
+    "SELARL",
+    "SELAS",
+]
 
 def build_seed_catalog() -> list[DocumentDefinition]:
     return [
@@ -200,6 +204,95 @@ def build_seed_catalog() -> list[DocumentDefinition]:
             source_path="project/source_documents/lot_03/appel de fond sel.docx",
             specification_path="docs/delivery/lot_03_bail_appel_fonds_spec_texte_v1.md",
             notes="Wording medical et SELAS bloques en V1.",
+        ),
+        DocumentDefinition(
+            doc_id="DOC-009",
+            canonical_name="Acte de cession d'un cabinet medical",
+            generator_name="generate_acte_cession_cabinet_medical",
+            lot=3,
+            category=DocumentCategory.MUTUALISABLE,
+            structures=CESSION_CABINET_STRUCTURES,
+            general_condition="dossier.options.cession == true",
+            specific_conditions=[
+                "dossier.cession.etape == acte",
+                "dossier.cession.type_cabinet == medical",
+                "arbitrages cession cabinets V1 explicitement valides",
+            ],
+            dynamic_associates=False,
+            grammar_variants=False,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path="project/source_documents/lot_03/Acte de cession d_un cabinet médical.docx",
+            specification_path="docs/delivery/lot_03_cession_cabinets_spec_texte_v1.md",
+            notes="Blocages explicites conserves pour les anomalies medicales arbitrees V1.",
+        ),
+        DocumentDefinition(
+            doc_id="DOC-010",
+            canonical_name="Compromis de cession d'un cabinet medical",
+            generator_name="generate_compromis_cession_cabinet_medical",
+            lot=3,
+            category=DocumentCategory.MUTUALISABLE,
+            structures=CESSION_CABINET_STRUCTURES,
+            general_condition="dossier.options.cession == true",
+            specific_conditions=[
+                "dossier.cession.etape == compromis",
+                "dossier.cession.type_cabinet == medical",
+                "arbitrages cession cabinets V1 explicitement valides",
+            ],
+            dynamic_associates=False,
+            grammar_variants=False,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path=(
+                "project/source_documents/lot_03/"
+                "Compromis de cession d_un cabinet médical.docx"
+            ),
+            specification_path="docs/delivery/lot_03_cession_cabinets_spec_texte_v1.md",
+            notes="Date de realisation et origine de propriete medicale bloquees sans validation.",
+        ),
+        DocumentDefinition(
+            doc_id="DOC-011",
+            canonical_name="Acte de cession d'un cabinet dentaire",
+            generator_name="generate_acte_cession_cabinet_dentaire",
+            lot=3,
+            category=DocumentCategory.MUTUALISABLE,
+            structures=CESSION_CABINET_STRUCTURES,
+            general_condition="dossier.options.cession == true",
+            specific_conditions=[
+                "dossier.cession.etape == acte",
+                "dossier.cession.type_cabinet == dentaire",
+                "deux salaries maximum source V1 si la clause est activee",
+            ],
+            dynamic_associates=False,
+            grammar_variants=False,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path=(
+                "project/source_documents/lot_03/"
+                "Acte de cession d'un cabinet dentaire.docx"
+            ),
+            specification_path="docs/delivery/lot_03_cession_cabinets_spec_texte_v1.md",
+            notes="Clauses accessibilite et conciliation limitees aux documents dentaires.",
+        ),
+        DocumentDefinition(
+            doc_id="DOC-012",
+            canonical_name="Compromis de cession d'un cabinet dentaire",
+            generator_name="generate_compromis_cession_cabinet_dentaire",
+            lot=3,
+            category=DocumentCategory.MUTUALISABLE,
+            structures=CESSION_CABINET_STRUCTURES,
+            general_condition="dossier.options.cession == true",
+            specific_conditions=[
+                "dossier.cession.etape == compromis",
+                "dossier.cession.type_cabinet == dentaire",
+                "taux de pret source fixe a 5 %",
+            ],
+            dynamic_associates=False,
+            grammar_variants=False,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path=(
+                "project/source_documents/lot_03/"
+                "Compromis de cession d_un cabinet dentaire.docx"
+            ),
+            specification_path="docs/delivery/lot_03_cession_cabinets_spec_texte_v1.md",
+            notes="Taux fixe source conserve, sans variable nouvelle.",
         ),
     ]
 

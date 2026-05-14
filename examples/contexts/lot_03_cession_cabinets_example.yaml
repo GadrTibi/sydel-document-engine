@@ -1,0 +1,116 @@
+structure: SELARL
+dossier_options:
+  cession: true
+personne_signataire:
+  genre: masculin
+  civilite: Monsieur
+  prenom: Camille
+  nom: Martin
+signature:
+  lieu: Paris
+  date: 2026-05-14
+cession:
+  type_cabinet: medical
+  etape: acte
+  vendeur:
+    civilite_affichage: Docteur
+    genre: masculin
+    prenom: Jean
+    nom: Durand
+    profession: medecin
+    date_naissance: 1975-03-10
+    ville_naissance: Lyon
+    departement_naissance: "69"
+    nationalite: francaise
+    adresse_affichee: 4 rue Victor Hugo, 69002 Lyon
+    adresse_exercice_affichee: 10 rue du Cabinet, 75008 Paris
+    numero_siren: 123 456 789
+    numero_ordre: ORD-123
+    numero_rpps: "10101010101"
+    ordre_departemental: Paris
+    situation_maritale: marie
+    regime_matrimonial: communaute reduite aux acquets
+    conjoint:
+      civilite_affichage: Madame
+      prenom: Claire
+      nom: Durand
+  acquereur:
+    denomination_societe: SELARL CABINET DURAND
+    forme_sociale: SELARL
+    capital_social: 10 000
+    siege:
+      adresse_affichee: 20 avenue de Wagram, 75017 Paris
+    rcs_ville: Paris
+    numero_rcs: 999 888 777
+    numero_siret: 999 888 777 00012
+    representant:
+      civilite_affichage: Docteur
+      genre: feminin
+      prenom: Alice
+      nom: Moreau
+      fonction: gerante
+  cabinet:
+    nature_fonds_liberal: medecin generaliste
+    adresse_affichee: 10 rue du Cabinet, 75008 Paris
+    adresse_locaux_affichee: 10 rue du Cabinet, 75008 Paris
+    telephone: 01 44 00 00 00
+    superficie_local: 80 m2
+    description_origine_propriete: Origine de propriete validee manuellement.
+    date_origine_propriete: 2020-01-01
+    annees_acquisition_patientele: "2020"
+    prix_origine_propriete: 120 000 euros
+    precedent_proprietaire:
+      civilite_affichage: Docteur
+      prenom: Paul
+      nom: Bernard
+  bail_professionnel:
+    date_bail: 2021-01-01
+    duree: six annees
+    date_debut: 2021-01-01
+    date_fin: 2027-01-01
+    loyer_mensuel: 2 000 euros
+    activite_autorisee_affichee: activite medicale et paramedicale
+  exercices:
+    - periode: "2023"
+      chiffre_affaires: 210 000
+      resultat: 80 000
+    - periode: "2024"
+      chiffre_affaires: 220 000
+      resultat: 85 000
+    - periode: "2025"
+      chiffre_affaires: 230 000
+      resultat: 90 000
+  prix:
+    total: 300 000
+    total_lettres: trois cent mille euros
+    elements_corporels: 50 000
+    elements_corporels_lettres: cinquante mille euros
+    elements_incorporels: 250 000
+    elements_incorporels_lettres: deux cent cinquante mille euros
+  financement:
+    pret:
+      montant: 240 000
+      taux: 4 %
+      duree: sept ans
+    credit_vendeur:
+      actif: true
+      montant: 60 000
+      duree: vingt-quatre mois
+      taux: 3 %
+      majoration_interet_retard: 2 points
+  scm:
+    actif: true
+    nb_parts_a_ceder: "10"
+  date_limite_realisation: 2026-09-30
+  validations:
+    mentions_bail_medical_validees: true
+    origine_compromis_medical_validee: true
+    date_realisation_compromis_validee: true
+    ligne_contrats_travail_medical_supprimee: true
+    salaries_dentaire_deux_valides: true
+document:
+  nombre_pages_lettres: vingt
+  nombre_exemplaires_lettres: quatre
+  annexes:
+    - ETAT DES ELEMENTS CORPORELS CEDES
+    - COPIE 2035 AMORTISSEMENTS

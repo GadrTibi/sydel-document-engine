@@ -4,14 +4,14 @@
 2026-05-14
 
 ## Dernier ticket terminé
-SYNC-WAVE-LOT03-05-001 : intégration dans `main` des commits `36828fbc45d6b8a37c2e76eb8227460df441ebde` et `958fce5d2a9d5d30df4d918cb098fec483f5140e`, puis alignement du pilotage avec `PREP-DEROG-001` et `CODE-SPFPL-AGR-INFO-001` DONE, `RESUME-CODE-CESSION-CAB-001` et `CODE-DEROG-CORE-001` READY.
+RESUME-CODE-CESSION-CAB-001 : reprise de `CODE-CESSION-CAB-001` depuis `main`, restauration du travail cession cabinets, branchement de `DOC-009` à `DOC-012`, smoke DOCX réel et validations locales verts.
 
 ## État courant du repo
 - DOC-001, DOC-002 et DOC-003 disposent chacun d'un générateur dédié déjà terminé.
 - L'orchestrateur dossier expose :
-  - un registre des générateurs DOC-001 à DOC-008 ;
+  - un registre des générateurs DOC-001 à DOC-012 ;
   - `select_documents(structure)` selon le catalogue ;
-  - `select_documents_for_context(ctx)` avec filtrage des batchs régime communautaire et bail/appel de fonds ;
+  - `select_documents_for_context(ctx)` avec filtrage des batchs régime communautaire, bail/appel de fonds et cession cabinets ;
   - `generate_documents(ctx, output_dir) -> list[Path]`.
 - `examples/contexts/lot_01_example.yaml` utilise encore le champ legacy Lot 1 `adresse_domiciliation_affichee`, en attente d'un refactor dédié vers `domiciliation.adresse_affichee`.
 - Un smoke test réel a généré les trois DOCX du Lot 1 dans `artifacts/lot_01_smoke_test/`.
@@ -106,6 +106,17 @@ SYNC-WAVE-LOT03-05-001 : intégration dans `main` des commits `36828fbc45d6b8a37
   - `DOC-007` : avenant au contrat de bail ;
   - `DOC-008` : appel de fonds SEL.
 - Un contexte exemple du mini-batch bail / appel de fonds est disponible : `examples/contexts/lot_03_bail_appel_fonds_example.yaml`.
+- Les générateurs cession cabinets sont disponibles :
+  - `src/sydel_doc_engine/generators/lot_03/acte_cession_cabinet_medical.py` ;
+  - `src/sydel_doc_engine/generators/lot_03/compromis_cession_cabinet_medical.py` ;
+  - `src/sydel_doc_engine/generators/lot_03/acte_cession_cabinet_dentaire.py` ;
+  - `src/sydel_doc_engine/generators/lot_03/compromis_cession_cabinet_dentaire.py`.
+- Le catalogue et l'orchestrateur exposent désormais :
+  - `DOC-009` : acte de cession d'un cabinet médical ;
+  - `DOC-010` : compromis de cession d'un cabinet médical ;
+  - `DOC-011` : acte de cession d'un cabinet dentaire ;
+  - `DOC-012` : compromis de cession d'un cabinet dentaire.
+- Un contexte exemple cession cabinets est disponible : `examples/contexts/lot_03_cession_cabinets_example.yaml`.
 - Le manifest d'import sources V1 est disponible : `docs/project/10_SOURCE_IMPORT_MANIFEST_V1.md`.
 - Le rapport de doublons sources V1 est disponible : `docs/project/11_SOURCE_DUPLICATES_REPORT_V1.md`.
 - Le plan de placement sources V1 est disponible : `docs/project/12_SOURCE_PLACEMENT_PLAN_V1.md`.
@@ -133,8 +144,8 @@ SYNC-WAVE-LOT03-05-001 : intégration dans `main` des commits `36828fbc45d6b8a37
 - `ARBITRAGE-CESSION-001` est DONE.
 - `ARBITRAGE-DEROG-001` est DONE.
 - `ARBITRAGE-SPFPL-001` est DONE.
-- `CODE-CESSION-CAB-001` est READY.
-- `RESUME-CODE-CESSION-CAB-001` est READY.
+- `CODE-CESSION-CAB-001` est DONE.
+- `RESUME-CODE-CESSION-CAB-001` est DONE.
 - `PREP-DEROG-001` est DONE.
 - `CODE-DEROG-CORE-001` est READY.
 - `CODE-SPFPL-AGR-INFO-001` est DONE.
@@ -154,6 +165,10 @@ SYNC-WAVE-LOT03-05-001 : intégration dans `main` des commits `36828fbc45d6b8a37
   - `artifacts/lot_02_demande_inscription_ordre_smoke_test/demande_inscription_ordre.docx`
   - `artifacts/lot_02_regime_communautaire_smoke_test/lettre_renonciation_associe.docx`
   - `artifacts/lot_02_regime_communautaire_smoke_test/lettre_avertissement_conjoint.docx`
+  - `artifacts/lot_03_cession_cabinets_smoke_test/acte_cession_cabinet_medical.docx`
+  - `artifacts/lot_03_cession_cabinets_smoke_test/compromis_cession_cabinet_medical.docx`
+  - `artifacts/lot_03_cession_cabinets_smoke_test/acte_cession_cabinet_dentaire.docx`
+  - `artifacts/lot_03_cession_cabinets_smoke_test/compromis_cession_cabinet_dentaire.docx`
 - Fichiers smoke RENDER-STYLE-001 générés :
   - `artifacts/render_style_001_lot_01_smoke_test/declaration_non_condamnation.docx`
   - `artifacts/render_style_001_lot_01_smoke_test/autorisation_domiciliation.docx`
@@ -230,7 +245,7 @@ SYNC-WAVE-LOT03-05-001 : intégration dans `main` des commits `36828fbc45d6b8a37
 - PREP-DEROG-001 place les deux sources Lot 03 préparées et ajoute les rapports de préparation / conversion legacy.
 - CODE-SPFPL-AGR-INFO-001 ajoute les générateurs SPFPL agrément et note d'information, les sources Lot 05 ciblées, le contexte exemple et les tests unitaires associés.
 - Les fichiers `project/source_import/raw_drive_dump/` et `artifacts/` n'ont pas été modifiés.
-- `RESUME-CODE-CESSION-CAB-001` et `CODE-DEROG-CORE-001` sont les tickets actifs confirmés.
+- `CODE-DEROG-CORE-001` est le ticket actif confirmé après reprise cession.
 - ARBITRAGE-SOURCES-001 scanne 147 fichiers dans `project/source_import/raw_drive_dump/` et 11 fichiers dans `project/source_documents/`.
 - ARBITRAGE-SOURCES-001 identifie 18 groupes de doublons probables, dont 15 groupes de doublons exacts.
 - Les 4 cas HIGH documentés sont : DOC-001, DOC-002, DOC-003 et la source canonique `PV nomination gérant`.
@@ -260,7 +275,6 @@ SYNC-WAVE-LOT03-05-001 : intégration dans `main` des commits `36828fbc45d6b8a37
 
 ## Prochain ticket à lancer
 Tickets actifs/parallélisables :
-- `RESUME-CODE-CESSION-CAB-001` : reprendre proprement `CODE-CESSION-CAB-001` depuis `main` synchronisé.
 - `CODE-DEROG-CORE-001` : implémenter le cœur de la famille dérogations à partir des sources préparées.
 
 `CODE-BAIL-APP-001` est DONE dans `main`.
@@ -312,11 +326,11 @@ Tickets actifs/parallélisables :
   - appel de fonds limité à SELARL dentaire ;
   - avenant limité SELARL/SELAS avec `dossier_options.cession=true` et société en cours d'immatriculation confirmée ;
   - revue humaine juridique/visuelle du premier rendu toujours nécessaire.
-- Points ouverts cession après ARBITRAGE-CESSION-001 :
-  - anomalies médical/dentaire à bloquer ou traiter selon arbitrage V1 ;
-  - origine de propriété du compromis médical et titre anormal des compromis ;
-  - placeholders vendeur/acquéreur ambigus hors contexte clair ;
-  - crédit-vendeur, clause SCM, salariés et exercices à rendre avec blocages explicites.
+- Points ouverts cession après CODE-CESSION-CAB-001 :
+  - revue humaine juridique/visuelle du premier rendu DOCX ;
+  - variantes SELAS sources non stabilisées au-delà du paramétrage V1 ;
+  - PDF et ZIP hors ticket ;
+  - les blocages explicites sur validations médicales, crédit-vendeur, SCM, salariés et exercices restent volontaires.
 - Points ouverts sources :
   - ne pas élargir la demande d'inscription à l'ordre hors specs V1 sans ticket dédié ;
   - ne pas sortir du choix SPEC-RC-001 pour le régime communautaire sans nouveau ticket d'arbitrage ;
@@ -361,6 +375,9 @@ Tickets actifs/parallélisables :
 - SYNC-WAVE-LOT03-05-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
 - SYNC-WAVE-LOT03-05-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 80 tests passés après sauvegarde des fichiers cession non suivis hors ticket.
 - SYNC-WAVE-LOT03-05-001 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifiés.
+- RESUME-CODE-CESSION-CAB-001 : smoke DOCX OK dans `artifacts/lot_03_cession_cabinets_smoke_test/`, quatre documents produits sans placeholder `[` / `]`.
+- RESUME-CODE-CESSION-CAB-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
+- RESUME-CODE-CESSION-CAB-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 89 tests passés.
 - SPEC-TEXTE-ORDRE-001 : source de vérité, source Lot 2 et variantes raw dump SELARL / SELAS / SPFPL cession / SPFPL apport lues en lecture seule.
 - SPEC-TEXTE-ORDRE-001 : spec texte créée dans `docs/delivery/lot_02_demande_inscription_ordre_spec_texte_v1.md`.
 - SPEC-TEXTE-ORDRE-001 : aucun code Python modifié ; validations limitées à la relecture documentaire et au contrôle du diff.
@@ -395,4 +412,4 @@ Tickets actifs/parallélisables :
 - SMOKE-ORCH-L2-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 47 tests passés.
 
 ## Recommandation immédiate suivante
-Lancer `RESUME-CODE-CESSION-CAB-001`, puis `CODE-DEROG-CORE-001` selon disponibilité.
+Poursuivre `CODE-DEROG-CORE-001`.

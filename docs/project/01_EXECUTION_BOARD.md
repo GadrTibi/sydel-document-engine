@@ -53,10 +53,10 @@
 | ARBITRAGE-CESSION-001 | DONE | Arbitrer les points bloquants cession cabinets avant code | spec texte cession cabinets V1 + points ouverts | décisions métier tracées pour acte/compromis, medical/dentaire et anomalies source |
 | ARBITRAGE-DEROG-001 | DONE | Arbitrer les points bloquants dérogations avant code | spec texte dérogations V1 + sources Lot 03 | décisions métier sur formulaires préremplis, rôles et sources legacy |
 | ARBITRAGE-SPFPL-001 | DONE | Arbitrer les points bloquants SPFPL avant code | spec texte SPFPL V1 + points ouverts | décisions métier cession/apport, commissaire, souscripteurs et sources |
-| CODE-CESSION-CAB-001 | READY | Implémenter la famille cession cabinets | specs canonique/texte cession cabinets V1 + arbitrage V1 | générateurs DOCX + blocages explicites + tests ciblés + MAJ doc |
-| RESUME-CODE-CESSION-CAB-001 | READY | Reprendre proprement CODE-CESSION-CAB-001 sur main synchronisé | main à jour Lot 03/Lot 05 + specs/arbitrages cession V1 | reprise cadrée de la famille cession cabinets |
+| CODE-CESSION-CAB-001 | DONE | Implémenter la famille cession cabinets | specs canonique/texte cession cabinets V1 + arbitrage V1 | générateurs DOCX + blocages explicites + tests ciblés + MAJ doc |
+| RESUME-CODE-CESSION-CAB-001 | DONE | Reprendre proprement CODE-CESSION-CAB-001 sur main synchronisé | main à jour Lot 03/Lot 05 + specs/arbitrages cession V1 | reprise cadrée de la famille cession cabinets |
 | PREP-DEROG-001 | DONE | Préparer les sources dérogations avant code | arbitrages dérogations V1 + raw dump + plan de placement | sources Lot 03 placées + rapport de préparation |
-| CODE-DEROG-CORE-001 | READY | Implémenter le cœur dérogations | specs/arbitrages dérogations V1 + PREP-DEROG-001 | générateurs DOCX dérogations cœur + blocages explicites + tests |
+| CODE-DEROG-CORE-001 | IN_PROGRESS | Implémenter le cœur dérogations | specs/arbitrages dérogations V1 + PREP-DEROG-001 | générateurs DOCX dérogations cœur + blocages explicites + tests |
 | CODE-SPFPL-AGR-INFO-001 | DONE | Implémenter le sous-batch SPFPL agrément / note d'information | specs canonique/texte SPFPL V1 + arbitrage V1 | générateurs DOCX ciblés + tests + sources Lot 05 placées |
 | UI-001 | BLOCKED | Brancher Streamlit V0 Lot 1 | orchestrateur Lot 1 + spec canonique PV nomination gérant validée | écran simple + test manuel |
 
@@ -342,13 +342,13 @@
 - Objectif : implémenter la famille `cession cabinets` en respectant les arbitrages V1.
 - Specs à lire : `docs/delivery/lot_03_cession_cabinets_spec_canonique_v1.md`, `docs/delivery/lot_03_cession_cabinets_spec_texte_v1.md` et `docs/delivery/lot_03_cession_cabinets_arbitrages_v1.md`.
 - Contraintes : quatre documents canoniques distincts, sélection par étape explicite, séparation médical/dentaire, blocages explicites sur les anomalies restantes, aucun wording corrigé silencieusement.
-- Statut : READY ; reprise à lancer via `RESUME-CODE-CESSION-CAB-001` après synchronisation Lot 03/Lot 05.
+- Statut : DONE ; quatre générateurs cession cabinets disponibles sous `DOC-009` à `DOC-012`, branchés au catalogue et à l'orchestrateur.
 
 ### RESUME-CODE-CESSION-CAB-001
 - Objectif : reprendre proprement `CODE-CESSION-CAB-001` depuis `main` après absorption de la préparation dérogations et du sous-batch SPFPL.
 - Entrées : `main` synchronisé, specs/arbitrages cession cabinets V1, état local CODE-CESSION non fusionné.
 - Contraintes : repartir d'un état Git propre, ne pas reprendre de fichiers non suivis sans revue, conserver les blocages explicites déjà arbitrés.
-- Statut : READY ; prochain ticket recommandé.
+- Statut : DONE ; branche reprise depuis `main`, travail cession restauré, validations locales et smoke DOCX verts.
 
 ### PREP-DEROG-001
 - Objectif : préparer les sources de la famille `dérogations` avant code.
@@ -383,8 +383,8 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - mettre à jour `docs/project/04_LAST_STATE.md`
 
 ## Prochaine étape prévue
-- prochaine action recommandée : lancer `RESUME-CODE-CESSION-CAB-001` pour reprendre `CODE-CESSION-CAB-001` depuis `main`.
-- tickets actifs confirmés : `RESUME-CODE-CESSION-CAB-001` et `CODE-DEROG-CORE-001`.
+- prochaine action recommandée : poursuivre `CODE-DEROG-CORE-001`.
+- tickets actifs confirmés : `CODE-DEROG-CORE-001`.
 - `CODE-BAIL-APP-001` est DONE et absorbé dans `main`.
 - `PREP-DEROG-001` est DONE et absorbé dans `main`.
 - `CODE-SPFPL-AGR-INFO-001` est DONE et absorbé dans `main`.
@@ -416,7 +416,7 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - Points ouverts dérogations après PREP-DEROG-001 : les deux sources Lot 03 préparées sont placées, le `.doc` legacy reste à convertir ou remplacer si `cumul_salariee` entre dans le périmètre, et le mode de rendu `document finalisé` ou `formulaire à compléter` doit être porté explicitement dans le registre ou le nom de sortie.
 - CODE-BAIL-APP-001 est terminé ; `DOC-007` avenant au contrat de bail et `DOC-008` appel de fonds SEL sont branchés dans le catalogue/orchestrateur.
 - Points ouverts bail/appel après CODE-BAIL-APP-001 : appel de fonds limité à SELARL dentaire, avenant limité SELARL/SELAS avec `dossier_options.cession=true`, revue humaine juridique/visuelle du premier rendu toujours nécessaire.
-- Points ouverts cession après ARBITRAGE-CESSION-001 : anomalies médical/dentaire, origine de propriété du compromis médical, titre anormal des compromis, placeholders ambigus hors contexte clair, clause salariés dentaire hors cardinalité source.
+- Points ouverts cession après CODE-CESSION-CAB-001 : revue humaine juridique/visuelle du premier rendu DOCX, sources SELAS non stabilisées au-delà du paramétrage V1, PDF/ZIP hors ticket.
 
 ## Journal court
 - 2026-05-12 : mémoire projet installée dans `docs/project/`.
@@ -455,3 +455,4 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - 2026-05-14 : SYNC-ARBITRAGES-001 absorbe dans `main` les arbitrages cession cabinets, dérogations et SPFPL, passe les trois tickets d'arbitrage en DONE et confirme `CODE-BAIL-APP-001`, `CODE-CESSION-CAB-001` et `CODE-SPFPL-001` en READY, sans modification de code Python.
 - 2026-05-14 : SYNC-CODE-BAIL-APP-001 absorbe dans `main` le commit `557a013274aa9f7122c81d5e6e0b52c4043a540c`, passe `CODE-BAIL-APP-001` en DONE et confirme `CODE-CESSION-CAB-001`, `PREP-DEROG-001` et `CODE-SPFPL-AGR-INFO-001` en READY/parallélisables, sans modification de `project/source_import/raw_drive_dump/` ni de `artifacts/`.
 - 2026-05-14 : SYNC-WAVE-LOT03-05-001 absorbe dans `main` les commits `36828fbc45d6b8a37c2e76eb8227460df441ebde` et `958fce5d2a9d5d30df4d918cb098fec483f5140e`, passe `PREP-DEROG-001` et `CODE-SPFPL-AGR-INFO-001` en DONE, puis confirme `RESUME-CODE-CESSION-CAB-001` et `CODE-DEROG-CORE-001` en READY, sans modification de `project/source_import/raw_drive_dump/` ni de `artifacts/`.
+- 2026-05-14 : RESUME-CODE-CESSION-CAB-001 reprend `CODE-CESSION-CAB-001` depuis `main`, restaure les générateurs cession cabinets, branche `DOC-009` à `DOC-012`, génère quatre DOCX de smoke test et valide `ruff` / `pytest`.

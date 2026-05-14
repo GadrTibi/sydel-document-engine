@@ -121,6 +121,10 @@ def test_select_documents_for_selarl_includes_pv_nomination_gerant() -> None:
         "DOC-006",
         "DOC-007",
         "DOC-008",
+        "DOC-009",
+        "DOC-010",
+        "DOC-011",
+        "DOC-012",
     ]
 
 
