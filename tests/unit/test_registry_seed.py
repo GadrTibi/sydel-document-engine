@@ -3,9 +3,9 @@ from __future__ import annotations
 from sydel_doc_engine.registry.catalog import build_seed_catalog
 
 
-def test_seed_catalog_contains_eight_documents() -> None:
+def test_seed_catalog_contains_twelve_documents() -> None:
     catalog = build_seed_catalog()
-    assert len(catalog) == 8
+    assert len(catalog) == 12
 
 
 def test_seed_catalog_contains_lot_one_lot_two_and_lot_three_entries() -> None:
@@ -56,3 +56,19 @@ def test_seed_catalog_bail_appel_fonds_scope_is_limited_to_cession_structures() 
     assert set(appel.structures) == {"SELARL"}
     assert avenant.general_condition == "dossier.options.cession == true"
     assert appel.general_condition == "dossier.options.cession == true"
+
+
+def test_seed_catalog_cession_cabinets_scope_is_limited_to_sel_structures() -> None:
+    catalog = build_seed_catalog()
+
+    cession_documents = [
+        document
+        for document in catalog
+        if document.doc_id in {"DOC-009", "DOC-010", "DOC-011", "DOC-012"}
+    ]
+
+    assert len(cession_documents) == 4
+    for document in cession_documents:
+        assert set(document.structures) == {"SELARL", "SELAS"}
+        assert document.general_condition == "dossier.options.cession == true"
+

@@ -97,32 +97,162 @@ class CessionDestinataire(BaseModel):
     nom: str | None = None
 
 
-class CessionFinancement(BaseModel):
-    banque: CessionBanque | None = None
-    destinataire: CessionDestinataire | None = None
-    montant_deblocage: str | None = None
+class CessionPret(BaseModel):
+    montant: str | None = None
+    taux: str | None = None
+    duree: str | None = None
 
 
-class CessionCabinet(BaseModel):
-    denomination_ou_adresse_affichee: str | None = None
+class CessionCreditVendeur(BaseModel):
+    actif: bool = False
+    montant: str | None = None
+    duree: str | None = None
+    taux: str | None = None
+    majoration_interet_retard: str | None = None
 
 
-class CessionVendeur(BaseModel):
+class CessionConjoint(BaseModel):
     civilite_affichage: str | None = None
     prenom: str | None = None
     nom: str | None = None
 
 
+class CessionRepresentant(BaseModel):
+    civilite_affichage: str | None = None
+    genre: Gender | None = None
+    prenom: str | None = None
+    nom: str | None = None
+    fonction: str | None = None
+
+
+class CessionPrecedentProprietaire(BaseModel):
+    civilite_affichage: str | None = None
+    prenom: str | None = None
+    nom: str | None = None
+
+
+class CessionBailProfessionnel(BaseModel):
+    date_bail: date | str | None = None
+    duree: str | None = None
+    date_debut: date | str | None = None
+    date_fin: date | str | None = None
+    date_reconduction_1: date | str | None = None
+    date_reconduction_2: date | str | None = None
+    loyer_mensuel: str | None = None
+    activite_autorisee_affichee: str | None = None
+
+
+class CessionExercice(BaseModel):
+    periode: str | None = None
+    chiffre_affaires: str | None = None
+    resultat: str | None = None
+
+
+class CessionPrix(BaseModel):
+    total: str | None = None
+    total_lettres: str | None = None
+    elements_corporels: str | None = None
+    elements_corporels_lettres: str | None = None
+    elements_incorporels: str | None = None
+    elements_incorporels_lettres: str | None = None
+
+
+class CessionScm(BaseModel):
+    actif: bool = False
+    nb_parts_a_ceder: str | None = None
+
+
+class CessionSalarie(BaseModel):
+    civilite_affichage: str | None = None
+    prenom: str | None = None
+    nom: str | None = None
+
+
+class CessionAccessibiliteCabinetDentaire(BaseModel):
+    information_requise: str | None = None
+
+
+class CessionValidations(BaseModel):
+    mentions_bail_medical_validees: bool = False
+    origine_compromis_medical_validee: bool = False
+    date_realisation_compromis_validee: bool = False
+    ligne_contrats_travail_medical_supprimee: bool = False
+    salaries_dentaire_deux_valides: bool = False
+
+
+class CessionFinancement(BaseModel):
+    banque: CessionBanque | None = None
+    destinataire: CessionDestinataire | None = None
+    montant_deblocage: str | None = None
+    pret: CessionPret | None = None
+    credit_vendeur: CessionCreditVendeur | None = None
+
+
+class CessionCabinet(BaseModel):
+    denomination_ou_adresse_affichee: str | None = None
+    nature_fonds_liberal: str | None = None
+    adresse_affichee: str | None = None
+    adresse_locaux_affichee: str | None = None
+    telephone: str | None = None
+    superficie_local: str | None = None
+    description_origine_propriete: str | None = None
+    date_origine_propriete: date | str | None = None
+    annees_acquisition_patientele: str | None = None
+    prix_origine_propriete: str | None = None
+    precedent_proprietaire: CessionPrecedentProprietaire | None = None
+
+
+class CessionVendeur(BaseModel):
+    civilite_affichage: str | None = None
+    genre: Gender | None = None
+    prenom: str | None = None
+    nom: str | None = None
+    profession: str | None = None
+    date_naissance: date | str | None = None
+    ville_naissance: str | None = None
+    departement_naissance: str | None = None
+    cp_naissance: str | None = None
+    pays_naissance: str | None = None
+    nationalite: str | None = None
+    adresse_affichee: str | None = None
+    adresse_exercice_affichee: str | None = None
+    numero_siren: str | None = None
+    numero_ordre: str | None = None
+    numero_rpps: str | None = None
+    ordre_departemental: str | None = None
+    situation_maritale: str | None = None
+    regime_matrimonial: str | None = None
+    conjoint: CessionConjoint | None = None
+
+
 class CessionAcquereur(BaseModel):
     denomination_societe: str | None = None
+    forme_sociale: str | None = None
+    capital_social: str | None = None
+    siege: Address | None = None
+    rcs_ville: str | None = None
+    numero_rcs: str | None = None
+    numero_siret: str | None = None
+    date_immatriculation: date | str | None = None
+    date_inscription_ordre: date | str | None = None
+    representant: CessionRepresentant | None = None
 
 
 class CessionContext(BaseModel):
     type_cabinet: str | None = None
+    etape: str | None = None
     financement: CessionFinancement | None = None
     cabinet: CessionCabinet | None = None
     vendeur: CessionVendeur | None = None
     acquereur: CessionAcquereur | None = None
+    bail_professionnel: CessionBailProfessionnel | None = None
+    exercices: list[CessionExercice] = Field(default_factory=list)
+    prix: CessionPrix | None = None
+    scm: CessionScm | None = None
+    salaries: list[CessionSalarie] = Field(default_factory=list)
+    accessibilite_cabinet_dentaire: CessionAccessibiliteCabinetDentaire | None = None
+    date_limite_realisation: date | str | None = None
+    validations: CessionValidations | None = None
 
 
 class OperationSpfpl(BaseModel):
@@ -198,7 +328,9 @@ class DocumentSignataire(BaseModel):
 
 
 class DocumentContext(BaseModel):
+    nombre_pages_lettres: str | None = None
     nombre_exemplaires_lettres: str | None = None
+    annexes: list[str] = Field(default_factory=list)
     signataire: DocumentSignataire | None = None
 
 

@@ -22,14 +22,32 @@ from sydel_doc_engine.generators.lot_02.lettre_renonciation_associe import (
 from sydel_doc_engine.generators.lot_02.pv_nomination_gerant import (
     PvNominationGerantGenerator,
 )
+from sydel_doc_engine.generators.lot_03.acte_cession_cabinet_dentaire import (
+    ActeCessionCabinetDentaireGenerator,
+)
+from sydel_doc_engine.generators.lot_03.acte_cession_cabinet_medical import (
+    ActeCessionCabinetMedicalGenerator,
+)
 from sydel_doc_engine.generators.lot_03.appel_fond_sel import AppelFondSelGenerator
 from sydel_doc_engine.generators.lot_03.avenant_contrat_bail import (
     AvenantContratBailGenerator,
+)
+from sydel_doc_engine.generators.lot_03.compromis_cession_cabinet_dentaire import (
+    CompromisCessionCabinetDentaireGenerator,
+)
+from sydel_doc_engine.generators.lot_03.compromis_cession_cabinet_medical import (
+    CompromisCessionCabinetMedicalGenerator,
 )
 
 REGIME_COMMUNAUTAIRE_DOCUMENT_IDS = {"DOC-005", "DOC-006"}
 BAIL_AVENANT_DOCUMENT_ID = "DOC-007"
 APPEL_FONDS_DOCUMENT_ID = "DOC-008"
+CESSION_CABINET_DOCUMENT_IDS = {
+    "DOC-009": ("acte", "medical"),
+    "DOC-010": ("compromis", "medical"),
+    "DOC-011": ("acte", "dentaire"),
+    "DOC-012": ("compromis", "dentaire"),
+}
 
 
 class MissingDocumentGeneratorError(RuntimeError):
@@ -46,6 +64,10 @@ def build_lot_01_generator_registry() -> dict[str, DocumentGenerator]:
         "DOC-006": LettreAvertissementConjointGenerator(),
         "DOC-007": AvenantContratBailGenerator(),
         "DOC-008": AppelFondSelGenerator(),
+        "DOC-009": ActeCessionCabinetMedicalGenerator(),
+        "DOC-010": CompromisCessionCabinetMedicalGenerator(),
+        "DOC-011": ActeCessionCabinetDentaireGenerator(),
+        "DOC-012": CompromisCessionCabinetDentaireGenerator(),
     }
 
 
@@ -95,6 +117,8 @@ def _document_enabled_for_context(
             return _cession_bail_enabled(ctx)
         if document.doc_id == APPEL_FONDS_DOCUMENT_ID:
             return _appel_fonds_enabled(ctx)
+        if document.doc_id in CESSION_CABINET_DOCUMENT_IDS:
+            return _cession_cabinet_enabled(document.doc_id, ctx)
         return True
     return bool(ctx.dossier_options and ctx.dossier_options.regime_communautaire)
 
@@ -111,3 +135,15 @@ def _appel_fonds_enabled(ctx: DocumentGenerationContext) -> bool:
     if ctx.cession is None or ctx.cession.type_cabinet is None:
         return False
     return ctx.cession.type_cabinet.strip().lower() == "dentaire"
+
+
+def _cession_cabinet_enabled(doc_id: str, ctx: DocumentGenerationContext) -> bool:
+    if not _cession_bail_enabled(ctx):
+        return False
+    if ctx.cession is None or ctx.cession.etape is None or ctx.cession.type_cabinet is None:
+        return False
+    expected_etape, expected_type = CESSION_CABINET_DOCUMENT_IDS[doc_id]
+    return (
+        ctx.cession.etape.strip().lower() == expected_etape
+        and ctx.cession.type_cabinet.strip().lower() == expected_type
+    )
