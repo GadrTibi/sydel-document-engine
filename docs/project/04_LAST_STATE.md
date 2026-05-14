@@ -4,7 +4,7 @@
 2026-05-14
 
 ## Dernier ticket terminé
-PLACEMENT-HIGH-001 : confirmation du placement des 4 cas HIGH déjà présents dans `project/source_documents/`, avec journal d'exécution V1, sans code Python, sans nouvelle copie et sans modification des cas MEDIUM/LOW.
+FIX-PV-RENDER-001 : amélioration du rendu from-scratch du PV nomination gérant pour restaurer les structures visuelles essentielles du document source, sans changement de wording juridique, sans UI, sans PDF et sans ZIP.
 
 ## État courant du repo
 - DOC-001, DOC-002 et DOC-003 disposent chacun d'un générateur dédié déjà terminé.
@@ -42,6 +42,7 @@ PLACEMENT-HIGH-001 : confirmation du placement des 4 cas HIGH déjà présents d
   - `bien_immobilier`.
 - Le PV nomination gérant est branché dans l'orchestrateur pour SELARL, SELAS, SPFPL cession, SPFPL apport, SCS, SCI et SCM.
 - Le PV nomination gérant est exclu de la sélection SAS.
+- FIX-PV-RENDER-001 est terminé : le PV dispose désormais d'un titre principal encadré, de listes à tirets pour les associés et les décisions, d'intertitres gras/soulignés, de formules de vote en italique et de signatures centrées.
 - Deux contextes exemples d'orchestration Lot 2 sont disponibles :
   - `examples/contexts/lot_02_orchestrator_positive_example.yaml`
   - `examples/contexts/lot_02_orchestrator_negative_sas_example.yaml`
@@ -50,6 +51,8 @@ PLACEMENT-HIGH-001 : confirmation du placement des 4 cas HIGH déjà présents d
   - `artifacts/lot_02_orchestrator_negative_sas_smoke_test/`
 - La revue smoke orchestrateur Lot 2 est disponible : `docs/review/lot_02_orchestrator_smoke_review_v1.md`.
 - Le cadrage V1 de la demande d'inscription à l'ordre est disponible : `docs/delivery/lot_02_demande_inscription_ordre_cadrage_v1.md`.
+- La spec canonique V1 de la demande d'inscription à l'ordre est disponible : `docs/delivery/lot_02_demande_inscription_ordre_spec_canonique_v1.md`.
+- La spec texte V1 de la demande d'inscription à l'ordre est disponible : `docs/delivery/lot_02_demande_inscription_ordre_spec_texte_v1.md`.
 - Le cadrage V1 du batch régime communautaire est disponible : `docs/delivery/lot_02_regime_communautaire_batch_cadrage_v1.md`.
 - Le manifest d'import sources V1 est disponible : `docs/project/10_SOURCE_IMPORT_MANIFEST_V1.md`.
 - Le rapport de doublons sources V1 est disponible : `docs/project/11_SOURCE_DUPLICATES_REPORT_V1.md`.
@@ -59,7 +62,9 @@ PLACEMENT-HIGH-001 : confirmation du placement des 4 cas HIGH déjà présents d
 - `ARBITRAGE-SOURCES-001` est DONE.
 - `PLACEMENT-HIGH-001` est DONE.
 - `ANALYSE-ORDRE-001` est DONE.
-- `SPEC-ORDRE-001` est READY.
+- `SPEC-ORDRE-001` est DONE.
+- `SPEC-TEXTE-ORDRE-001` est DONE.
+- `CODE-ORDRE-001` est READY.
 - `SPEC-RC-001` est READY.
 - `UI-001` reste explicitement en attente : ne pas brancher Streamlit maintenant.
 - Fichiers générés connus :
@@ -127,16 +132,26 @@ PLACEMENT-HIGH-001 : confirmation du placement des 4 cas HIGH déjà présents d
 - PLACEMENT-HIGH-001 confirme que les 4 cas HIGH sont déjà présents aux emplacements retenus dans `project/source_documents/`.
 - PLACEMENT-HIGH-001 n'a effectué aucune nouvelle copie, car chaque cible HIGH existait déjà.
 - PLACEMENT-HIGH-001 crée `docs/project/14_SOURCE_PLACEMENT_EXECUTION_V1.md`.
-- Les 3 cas MEDIUM restent bloqués : demande d'inscription à l'ordre, renonciation régime communautaire, avertissement régime communautaire.
+- SPEC-ORDRE-001 compare les variantes raw dump SELARL, SELAS et SPFPL de `Demande d'inscription à l'ordre`.
+- Pour cette famille, SELARL et SELAS ont un texte visible identique et plus paramétré ; le groupe SPFPL/source Lot 2 est une copie exacte incluant la mention résiduelle `Dérogation ?`.
+- Les structures retenues pour la famille ordre sont SELARL, SELAS, SPFPL cession, SPFPL apport et SCM ; aucune variante SCM dédiée n'a été retrouvée dans le raw dump.
+- SPEC-TEXTE-ORDRE-001 retient un tronc commun texte fixe et trois overlays : SELARL/SELAS, SPFPL cession/apport et SCM.
+- La mention source `Dérogation ?` n'est pas un wording juridique automatique ; elle devient un bloc conditionnel manuel qui bloque si `dossier.options.derogation == true` sans mention fournie.
+- `Dr`, `Monsieur le Président`, la profession ordinale et l'adresse ordinale restent variables ou blocs variables.
+- Le mandataire SYDEL peut être préconfiguré, mais ne doit pas être codé en dur dans le futur générateur.
+- La demande d'inscription à l'ordre est prête pour `CODE-ORDRE-001`, sous réserve d'appliquer les règles de blocage de la spec texte.
+- Les 2 cas MEDIUM régime communautaire restent bloqués : renonciation régime communautaire, avertissement régime communautaire.
 - Les 3 cas LOW restent bloqués : statuts, liste des souscripteurs / attestation sur le capital, documents sans source claire.
 - 16 documents sources sont explicitement hors périmètre moteur courant.
 - Aucun fichier de `project/source_import/raw_drive_dump/`, aucun fichier source documentaire et aucun artefact n'a été déplacé, supprimé ou renommé.
 - Aucun code Python, aucune UI, aucun PDF, aucun ZIP et aucun wording juridique source n'ont été modifiés.
+- FIX-PV-RENDER-001 conserve l'approche from-scratch et ne modifie pas le texte juridique ; les changements portent uniquement sur le rendu DOCX du PV et un helper commun de liste à tiret.
+- Le smoke DOCX dédié a été généré dans `artifacts/fix_pv_render_001_smoke_test_2/pv_nomination_gerant.docx`, hors versionnement.
 
 ## Prochain ticket à lancer
-Lancer `SPEC-ORDRE-001`.
+Lancer `CODE-ORDRE-001`.
 
-Les cas MEDIUM/LOW doivent rester bloqués tant que les variantes sources n'ont pas été comparées ou arbitrées.
+Le code de `Demande d'inscription à l'ordre` doit rester strictement limité aux specs ordre V1. Les cas régime communautaire MEDIUM et les cas LOW doivent rester bloqués tant que leurs variantes sources n'ont pas été comparées ou arbitrées.
 
 ## Points ouverts
 - Aucun point bloquant identifié après le smoke test réel Lot 1.
@@ -147,6 +162,7 @@ Les cas MEDIUM/LOW doivent rester bloqués tant que les variantes sources n'ont 
 - Le smoke orchestrateur Lot 2 est vert sur SCI positif et SAS négatif.
 - Le pack REVIEW-PV-001 est prêt, mais il ne vaut pas validation juridique.
 - La couche commune de rendu DOCX est implémentée.
+- Le rendu PV restauré par FIX-PV-RENDER-001 reste soumis à revue humaine visuelle/juridique fine ; le ticket ne vaut pas validation juridique.
 - Les signatures encadrées sont disponibles et appliquées aux documents Lot 1 ; le PV conserve des lignes de signature simples sans décision métier supplémentaire.
 - UI-001 reste en attente explicite : ne pas brancher Streamlit sans nouveau ticket.
 - Points ouverts PV documentés dans la spec texte :
@@ -157,13 +173,11 @@ Les cas MEDIUM/LOW doivent rester bloqués tant que les variantes sources n'ont 
   - ponctuation de la dernière ligne `associes[]` ;
   - féminisation éventuelle de la fonction ;
   - règle `euro` / `euros`.
-- Points ouverts demande d'inscription à l'ordre :
-  - traitement de la mention source `Dérogation ?` ;
-  - validation du wording `associé et praticien et exerçant` ;
-  - accords féminins éventuels ;
-  - règle de titre `Dr` ;
-  - règle de destinataire `Monsieur le Président` ;
-  - mapping canonique de `[profession]`, `[profession_reglementee]`, `[adresse_personnelle]` et `[adresse_ordre]`.
+- Points ouverts demande d'inscription à l'ordre non bloquants pour CODE-ORDRE-001 si la spec texte est respectée :
+  - absence de variante SCM dédiée dans le raw dump, à compenser par une revue humaine du premier rendu SCM ;
+  - wording de dérogation non validé, donc bloc manuel obligatoire ou blocage ;
+  - valeurs ordinales fournies par contexte ou référentiel ;
+  - mandataire SYDEL configurable, jamais imposé comme constante en dur.
 - Points ouverts régime communautaire :
   - périmètre exact du fichier de renonciation nommé `SELAS` ;
   - rôles canoniques `apporteur` et `conjoint` ;
@@ -174,13 +188,25 @@ Les cas MEDIUM/LOW doivent rester bloqués tant que les variantes sources n'ont 
   - traitement de la mention manuscrite ;
   - absence de prénom du conjoint dans la lettre d'avertissement.
 - Points ouverts sources :
-  - ne pas choisir une source unique pour la demande d'inscription à l'ordre avant comparaison SELARL / SELAS / SPFPL ;
+  - ne pas élargir la demande d'inscription à l'ordre hors specs V1 pendant CODE-ORDRE-001 ;
   - ne pas fusionner les variantes SELARL du régime communautaire avec les copies exactes SELAS/SPFPL sans arbitrage ;
   - ne pas placer automatiquement la famille liste des souscripteurs / attestation sur le capital ;
   - ne pas dedupliquer les statuts entre familles, professions ou variantes.
 - Toute ambiguïté de wording juridique doit bloquer l'implémentation concernée et être documentée.
 
 ## Validations connues
+- FIX-PV-RENDER-001 : source DOCX Lot 2 analysée côté structure/rendu ; en-tête société centré, listes Word, intertitres de décision gras/soulignés et formules de vote en italique identifiés.
+- FIX-PV-RENDER-001 : smoke DOCX OK dans `artifacts/fix_pv_render_001_smoke_test_2/pv_nomination_gerant.docx`.
+- FIX-PV-RENDER-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
+- FIX-PV-RENDER-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 49 tests passés.
+- SPEC-TEXTE-ORDRE-001 : source de vérité, source Lot 2 et variantes raw dump SELARL / SELAS / SPFPL cession / SPFPL apport lues en lecture seule.
+- SPEC-TEXTE-ORDRE-001 : spec texte créée dans `docs/delivery/lot_02_demande_inscription_ordre_spec_texte_v1.md`.
+- SPEC-TEXTE-ORDRE-001 : aucun code Python modifié ; validations limitées à la relecture documentaire et au contrôle du diff.
+- SPEC-TEXTE-ORDRE-001 : `git status --short --branch` n'était pas propre avant intervention ; aucun commit ni push n'a été effectué.
+- SPEC-ORDRE-001 : source de vérité, source Lot 2 et variantes raw dump SELARL / SELAS / SPFPL lues en lecture seule.
+- SPEC-ORDRE-001 : spec canonique créée dans `docs/delivery/lot_02_demande_inscription_ordre_spec_canonique_v1.md`.
+- SPEC-ORDRE-001 : aucun code Python modifié ; validations limitées à la relecture documentaire et au contrôle du diff.
+- SPEC-ORDRE-001 : `git status --short` n'était pas propre avant intervention ; aucun commit ni push n'a été effectué.
 - PLACEMENT-HIGH-001 : les 4 fichiers HIGH cibles existent dans `project/source_documents/`.
 - PLACEMENT-HIGH-001 : les hashes cibles ont été comparés aux sources brutes correspondantes pour les cas HIGH ; aucune copie nouvelle nécessaire.
 - PLACEMENT-HIGH-001 : aucun test de code exécuté car aucun fichier Python n'a été modifié.
@@ -207,4 +233,4 @@ Les cas MEDIUM/LOW doivent rester bloqués tant que les variantes sources n'ont 
 - SMOKE-ORCH-L2-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 47 tests passés.
 
 ## Recommandation immédiate suivante
-Lancer `SPEC-ORDRE-001`, puis `SPEC-RC-001` après comparaison documentaire des variantes concernées.
+Lancer `CODE-ORDRE-001`, puis traiter `SPEC-RC-001` après comparaison documentaire des variantes régime communautaire concernées.

@@ -30,10 +30,13 @@
 | RENDER-STYLE-001 | DONE | Implémenter la couche de rendu DOCX commune | spec render style system V1 + générateurs existants | helpers communs + générateurs migrés + tests + smoke DOCX |
 | ORCH-L2-PV-001 | DONE | Brancher le PV nomination gérant dans l'orchestrateur | générateur PV + specs Lot 2 + décisions de sélection | catalogue + registre orchestrateur + tests ciblés |
 | SMOKE-ORCH-L2-001 | DONE | Smoke test réel orchestrateur Lot 2 positif SCI / négatif SAS | contextes exemples Lot 2 + orchestrateur | DOCX générés, PV présent en SCI et absent en SAS, revue smoke |
+| FIX-PV-RENDER-001 | DONE | Restaurer la structure visuelle essentielle du PV nomination gérant | source Lot 2 + specs PV + render style system V1 | listes à tirets, titre, intertitres, italique votes, smoke DOCX |
 | ANALYSE-ORDRE-001 | DONE | Cadrer Demande d'inscription à l'ordre et batch régime communautaire Lot 2 | sources Lot 2 ordre + régime communautaire + référentiels V1 | cadrages delivery + tickets SPEC-ORDRE-001/SPEC-RC-001 READY |
 | ARBITRAGE-SOURCES-001 | DONE | Réparer le manifest d'import sources et arbitrer les placements V1 | source truth + raw_drive_dump + source_documents + décisions métier | docs projet 10/11/12/13 + prochain ticket placement |
 | PLACEMENT-HIGH-001 | DONE | Déplacer physiquement dans source_documents uniquement les cas HIGH validés | plan de placement V1 + décisions d'arbitrage sources V1 | placement HIGH confirmé no-op + journal d'exécution |
-| SPEC-ORDRE-001 | READY | Formaliser la spec canonique Demande d'inscription à l'ordre | cadrage ordre V1 + source Lot 2 + référentiels V1 | spec canonique écrite, mapping variables, accords, points ouverts |
+| SPEC-ORDRE-001 | DONE | Formaliser la spec canonique Demande d'inscription à l'ordre | cadrage ordre V1 + source Lot 2 + référentiels V1 + variantes raw dump | spec canonique écrite, variantes comparées, mapping variables, accords, points ouverts |
+| SPEC-TEXTE-ORDRE-001 | DONE | Stabiliser le texte canonique et les variantes de Demande d'inscription à l'ordre | spec canonique ordre V1 + variantes SELARL/SELAS/SPFPL/SPFPL apport/SCM | spec texte détaillée, tronc commun, overlays, blocs conditionnels/manuels, règles de blocage avant code |
+| CODE-ORDRE-001 | IN_PROGRESS | Implémenter le générateur canonique Demande d'inscription à l'ordre | spec canonique ordre V1 + spec texte ordre V1 + source Lot 2 + variantes raw dump | générateur ordre from-scratch + tests overlays/dérogation/mandataire + MAJ doc |
 | SPEC-RC-001 | READY | Formaliser la spec canonique batch régime communautaire | cadrage régime communautaire V1 + deux sources Lot 2 + référentiels V1 | spec canonique batch, mapping commun, règles de génération, points ouverts |
 | UI-001 | BLOCKED | Brancher Streamlit V0 Lot 1 | orchestrateur Lot 1 + spec canonique PV nomination gérant validée | écran simple + test manuel |
 
@@ -46,6 +49,8 @@
 - La spec texte V1 de la famille `PV nomination gérant` est disponible : `docs/delivery/lot_02_pv_nomination_gerant_spec_texte_v1.md`.
 - La spec technique V1 de couche de rendu DOCX commune est disponible : `docs/delivery/render_style_system_v1.md`.
 - Le cadrage V1 `Demande d'inscription à l'ordre` est disponible : `docs/delivery/lot_02_demande_inscription_ordre_cadrage_v1.md`.
+- La spec canonique V1 `Demande d'inscription à l'ordre` est disponible : `docs/delivery/lot_02_demande_inscription_ordre_spec_canonique_v1.md`.
+- La spec texte V1 `Demande d'inscription à l'ordre` est disponible : `docs/delivery/lot_02_demande_inscription_ordre_spec_texte_v1.md`.
 - Le cadrage V1 du batch `régime communautaire` est disponible : `docs/delivery/lot_02_regime_communautaire_batch_cadrage_v1.md`.
 - Le manifest d'import sources V1 est disponible : `docs/project/10_SOURCE_IMPORT_MANIFEST_V1.md`.
 - Le rapport de doublons sources V1 est disponible : `docs/project/11_SOURCE_DUPLICATES_REPORT_V1.md`.
@@ -150,6 +155,13 @@
 - Sortie : smoke DOCX dans `artifacts/lot_02_orchestrator_positive_smoke_test/` et `artifacts/lot_02_orchestrator_negative_sas_smoke_test/`, revue dans `docs/review/lot_02_orchestrator_smoke_review_v1.md`.
 - Statut : terminé ; le PV est généré pour SCI et absent pour SAS.
 
+### FIX-PV-RENDER-001
+- Objectif : améliorer le rendu from-scratch du PV nomination gérant sans chercher une copie parfaite du Word source.
+- Entrées : source Lot 2 `PV nomination gérant - transforme.docx`, specs PV V1 et spec `render_style_system_v1.md`.
+- Contraintes : ne pas modifier le wording juridique, ne pas toucher à l'UI, ne pas générer PDF/ZIP, ne pas versionner `artifacts/`.
+- Sortie : bloc société centré avec dénomination en gras, titre principal encadré, listes à tirets pour associés et décisions, intertitres de décision gras/soulignés, formules de vote en italique, signatures centrées, smoke DOCX.
+- Statut : terminé ; aucun changement de wording juridique volontaire.
+
 ### ANALYSE-ORDRE-001
 - Objectif : préparer le prochain batch mutualisable Lot 2 sans coder, en analysant la demande d'inscription à l'ordre et les deux lettres de régime communautaire.
 - Entrées : référentiels projet V1 + trois sources Lot 2 présentes dans `project/source_documents/lot_02/`.
@@ -171,8 +183,24 @@
 ### SPEC-ORDRE-001
 - Objectif : formaliser la spec canonique `Demande d'inscription à l'ordre` à partir du cadrage V1.
 - Cadrage à lire : `docs/delivery/lot_02_demande_inscription_ordre_cadrage_v1.md`.
-- Contraintes : ne pas coder, valider le traitement de `Dérogation ?`, les accords de genre, le titre `Dr`, le destinataire ordinal et le mapping des données ordinales.
-- Sortie attendue : spec canonique écrite dans `docs/delivery/`, avec structure, texte fixe, variables canoniques, règles de blocage et critères de recette.
+- Contraintes : ne pas coder, comparer les variantes SELARL / SELAS / SPFPL, identifier le traitement de `Dérogation ?`, les accords de genre, le titre `Dr`, le destinataire ordinal et le mapping des données ordinales.
+- Sortie : `docs/delivery/lot_02_demande_inscription_ordre_spec_canonique_v1.md`, avec périmètre structures, comparaison des variantes, noyau texte, variables canoniques, règles de blocage et points ouverts.
+- Statut : terminé ; aucun code Python modifié.
+
+### SPEC-TEXTE-ORDRE-001
+- Objectif : stabiliser le texte canonique et les variantes de `Demande d'inscription à l'ordre` avant tout codage.
+- Spec à lire : `docs/delivery/lot_02_demande_inscription_ordre_spec_canonique_v1.md`.
+- Sources à consulter : source Lot 2 + variantes raw dump SELARL, SELAS et SPFPL comparées dans la spec canonique.
+- Contraintes : ne pas coder, trancher le wording de `Dérogation ?`, la granularité des données ordinales, le mandataire, les accords et le destinataire ordinal.
+- Sortie attendue : spec texte détaillée, wording stabilisé ou points de blocage explicites, critères avant code.
+- Statut : terminé ; spec texte V1 disponible dans `docs/delivery/lot_02_demande_inscription_ordre_spec_texte_v1.md`.
+
+### CODE-ORDRE-001
+- Objectif : implémenter le générateur canonique `Demande d'inscription à l'ordre`.
+- Specs à lire : `docs/delivery/lot_02_demande_inscription_ordre_spec_canonique_v1.md` et `docs/delivery/lot_02_demande_inscription_ordre_spec_texte_v1.md`.
+- Sources à consulter : source Lot 2 + variantes raw dump SELARL, SELAS, SPFPL cession, SPFPL apport et absence de variante SCM dédiée documentée.
+- Contraintes : générateur DOCX from-scratch, overlays SELARL/SELAS, SPFPL cession/apport et SCM, bloc `Dérogation ?` manuel/conditionnel, mandataire configurable, aucune constante SYDEL en dur, aucun changement de wording juridique hors spec texte.
+- Sortie attendue : générateur dédié, tests unitaires ciblés, validation locale, mise à jour documentaire.
 - Statut : READY.
 
 ### SPEC-RC-001
@@ -197,8 +225,9 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - mettre à jour `docs/project/04_LAST_STATE.md`
 
 ## Prochaine étape prévue
-- prochaine action recommandée : lancer `SPEC-ORDRE-001`.
-- action suivante côté métier : garder les cas MEDIUM/LOW bloqués tant que les variantes sources n'ont pas été comparées.
+- prochaine action recommandée : lancer `CODE-ORDRE-001`.
+- action suivante côté métier : implémenter `Demande d'inscription à l'ordre` strictement depuis les specs V1.
+- les autres cas MEDIUM/LOW restent bloqués tant que leurs variantes sources n'ont pas été comparées.
 - UI-001 reste explicitement en attente.
 
 ## Points ouverts
@@ -208,16 +237,17 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - Ecart temporaire non bloquant pour l'UI : la table V1 retient `domiciliation.adresse_affichee` comme nom canonique, tandis que le code Lot 1 existant conserve l'alias legacy `adresse_domiciliation_affichee` jusqu'à refactor dédié.
 - ORCH-L2-PV-001 est terminé ; le PV nomination gérant est branché dans l'orchestrateur pour les structures concernées et exclu pour SAS.
 - SMOKE-ORCH-L2-001 est terminé ; le smoke réel confirme la génération du PV pour SCI et son absence pour SAS.
+- FIX-PV-RENDER-001 est terminé ; le PV from-scratch restaure les structures visuelles essentielles du document source sans UI, PDF ni ZIP.
 - ANALYSE-ORDRE-001 est terminé ; les cadrages V1 ordre et régime communautaire sont disponibles dans `docs/delivery/`.
 - ARBITRAGE-SOURCES-001 est terminé ; le scan a identifié 147 fichiers dans `raw_drive_dump`, 11 fichiers dans `source_documents`, 18 groupes de doublons probables, 6 documents sans source claire et 16 documents hors périmètre.
 - PLACEMENT-HIGH-001 est terminé ; les 4 cas HIGH documentés dans le plan de placement V1 ont été confirmés comme déjà présents, sans nouvelle copie.
-- SPEC-ORDRE-001 et SPEC-RC-001 sont READY ; aucun code ne doit être lancé avant ces specs.
+- SPEC-ORDRE-001 et SPEC-TEXTE-ORDRE-001 sont DONE ; CODE-ORDRE-001 et SPEC-RC-001 sont READY.
 - REVIEW-PV-001 est terminé, mais la validation humaine du rendu DOCX et du wording reste à obtenir pour la revue juridique fine.
 - RENDER-STYLE-001 est terminé ; les signatures encadrées sont disponibles dans la couche commune et appliquées aux signatures Lot 1.
 - Le PV nomination gérant conserve des signatures répétables simples ; toute signature encadrée dirigeant/associés séparée reste soumise à validation métier.
 - UI-001 reste en attente explicite : ne pas lancer le branchement Streamlit sans nouveau ticket.
 - Points ouverts PV documentés dans la spec texte : périmètre SELAS, capital non variable, société déjà immatriculée, dirigeant non associé, ponctuation finale des associés, féminisation éventuelle de la fonction, règle `euro/euros`.
-- Points ouverts ordre : traitement de `Dérogation ?`, accords `associé/praticien/exerçant`, titre `Dr`, destinataire ordinal, mapping `profession` / `profession_reglementee`.
+- Points ouverts ordre non bloquants pour CODE-ORDRE-001 si les règles de blocage de la spec texte sont appliquées : source SCM dédiée absente, mention de dérogation manuelle, valeurs ordinales fournies par contexte/référentiel, mandataire SYDEL configurable.
 - Points ouverts régime communautaire : rôles `apporteur` / `conjoint`, relation `date_courrier`, variantes de formes sociales, qualité `associé/associée/actionnaire`, mention manuscrite, périmètre du fichier source nommé `SELAS`.
 
 ## Journal court
@@ -246,3 +276,6 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - 2026-05-13 : ANALYSE-ORDRE-001 crée les cadrages V1 pour `Demande d'inscription à l'ordre` et le batch `régime communautaire`, puis ajoute SPEC-ORDRE-001 et SPEC-RC-001 en READY, sans modification de code Python.
 - 2026-05-13 : ARBITRAGE-SOURCES-001 répare les docs projet 10/11/12, crée les décisions d'arbitrage sources V1, classe les cas HIGH/MEDIUM/LOW et ajoute PLACEMENT-HIGH-001 en READY, sans déplacer de fichier source.
 - 2026-05-14 : PLACEMENT-HIGH-001 confirme en no-op les 4 cas HIGH déjà présents dans `source_documents`, crée le journal d'exécution V1 et ne touche pas aux cas MEDIUM/LOW ni au raw dump.
+- 2026-05-14 : SPEC-ORDRE-001 compare les variantes `Demande d'inscription à l'ordre` SELARL, SELAS et SPFPL, crée la spec canonique V1 et ajoute SPEC-TEXTE-ORDRE-001 en READY, sans modification de code Python.
+- 2026-05-14 : SPEC-TEXTE-ORDRE-001 crée la spec texte V1 `Demande d'inscription à l'ordre`, retient un tronc commun avec overlays SELARL/SELAS, SPFPL cession/apport et SCM, classe `Dérogation ?` en bloc manuel conditionnel, puis ajoute CODE-ORDRE-001 en READY, sans modification de code Python.
+- 2026-05-14 : FIX-PV-RENDER-001 améliore la structure visuelle du PV nomination gérant from-scratch : listes à tirets, titre encadré, intertitres visibles, formules de vote en italique et smoke DOCX dédié.
