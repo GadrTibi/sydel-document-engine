@@ -4,7 +4,7 @@
 2026-05-14
 
 ## Dernier ticket terminé
-SYNC-CODE-WAVE-002 : absorption dans `main` des commits sources `ea35d2af353ac5b8567e82091ab978cf24a27445` (`codex/code-cession-cab-001`) et `bee4c8bec27397198a170c4f9888b2470b24c67f` (`codex/code-derog-core-001`), puis réalignement du pilotage.
+SYNC-WAVE-003 : absorption dans `main` des commits sources `b854821061b85ac66fe785c11cb3c6b0bac5a85b` (`codex/prep-statuts-001`) et `09cbad120d22910f05ba5e645971ade56fedb76d` (`codex/code-spfpl-core-001`), puis réalignement du pilotage.
 
 ## État courant du repo
 - DOC-001, DOC-002 et DOC-003 disposent chacun d'un générateur dédié déjà terminé.
@@ -88,6 +88,12 @@ SYNC-CODE-WAVE-002 : absorption dans `main` des commits sources `ea35d2af353ac5b
   - `src/sydel_doc_engine/generators/lot_05/pv_agrement_cession_spfpl_associe_unique.py` ;
   - `src/sydel_doc_engine/generators/lot_05/pv_agrement_cession_spfpl_plusieurs_associes.py`.
 - Un contexte exemple SPFPL agrément / note d'information est disponible : `examples/contexts/lot_05_spfpl_agrement_info_example.yaml`.
+- Le cœur SPFPL restant est codé et testé :
+  - `src/sydel_doc_engine/generators/lot_05/acte_cession_parts_spfpl.py` ;
+  - `src/sydel_doc_engine/generators/lot_05/contrat_apport_spfpl.py` ;
+  - `src/sydel_doc_engine/generators/lot_05/attestation_capital_liste_souscripteurs.py` ;
+  - `src/sydel_doc_engine/generators/lot_05/attestation_commissaire_apports.py`.
+- Un contexte exemple SPFPL cœur est disponible : `examples/contexts/lot_05_spfpl_core_example.yaml`.
 - La spec canonique V1 de la famille dérogations est disponible : `docs/delivery/lot_03_derogations_spec_canonique_v1.md`.
 - La spec texte V1 de la famille dérogations est disponible : `docs/delivery/lot_03_derogations_spec_texte_v1.md`.
 - Les arbitrages V1 de la famille dérogations sont disponibles : `docs/delivery/lot_03_derogations_arbitrages_v1.md`.
@@ -122,6 +128,7 @@ SYNC-CODE-WAVE-002 : absorption dans `main` des commits sources `ea35d2af353ac5b
 - Le plan de placement sources V1 est disponible : `docs/project/12_SOURCE_PLACEMENT_PLAN_V1.md`.
 - Les décisions d'arbitrage sources V1 sont disponibles : `docs/project/13_SOURCE_ARBITRATION_DECISIONS_V1.md`.
 - Le journal d'exécution du placement HIGH V1 est disponible : `docs/project/14_SOURCE_PLACEMENT_EXECUTION_V1.md`.
+- La préparation V1 des sources statuts est disponible : `docs/delivery/lot_04_statuts_preparation_v1.md`.
 - `ARBITRAGE-SOURCES-001` est DONE.
 - `PLACEMENT-HIGH-001` est DONE.
 - `ANALYSE-ORDRE-001` est DONE.
@@ -149,8 +156,12 @@ SYNC-CODE-WAVE-002 : absorption dans `main` des commits sources `ea35d2af353ac5b
 - `PREP-DEROG-001` est DONE.
 - `CODE-DEROG-CORE-001` est DONE.
 - `CODE-SPFPL-AGR-INFO-001` est DONE.
-- `CODE-SPFPL-CORE-001` est READY.
-- `PREP-STATUTS-001` est READY.
+- `CODE-SPFPL-CORE-001` est DONE.
+- `PREP-STATUTS-001` est DONE.
+- `SPEC-STATUTS-SEL-001` est READY.
+- `SPEC-STATUTS-SPFPL-001` est READY.
+- `SPEC-STATUTS-CIVILS-001` est READY.
+- `SPEC-STATUTS-SAS-001` est READY.
 - `UI-001` reste explicitement en attente : ne pas brancher Streamlit maintenant.
 - Fichiers générés connus :
   - `artifacts/lot_01_smoke_test/autorisation_domiciliation.docx`
@@ -252,6 +263,11 @@ SYNC-CODE-WAVE-002 : absorption dans `main` des commits sources `ea35d2af353ac5b
 - SYNC-CODE-WAVE-002 a cherry-pické dans `main` les commits sources `ea35d2af353ac5b8567e82091ab978cf24a27445` de `codex/code-cession-cab-001` et `bee4c8bec27397198a170c4f9888b2470b24c67f` de `codex/code-derog-core-001`.
 - Le commit final de synchronisation `SYNC-CODE-WAVE-002` est limité aux fichiers de pilotage `docs/project/01_EXECUTION_BOARD.md` et `docs/project/04_LAST_STATE.md`.
 - Les fichiers `project/source_import/raw_drive_dump/` et `artifacts/` n'ont pas été modifiés.
+- SYNC-WAVE-003 a cherry-pické dans `main` les commits sources `b854821061b85ac66fe785c11cb3c6b0bac5a85b` de `codex/prep-statuts-001` et `09cbad120d22910f05ba5e645971ade56fedb76d` de `codex/code-spfpl-core-001`.
+- PREP-STATUTS-001 ajoute la préparation documentaire Lot 04 statuts et place les sources statuts retenues dans `project/source_documents/lot_04/`, sans déduplication ni harmonisation juridique.
+- CODE-SPFPL-CORE-001 ajoute les générateurs SPFPL cœur, les sources Lot 05 ciblées, le contexte exemple et les tests unitaires associés.
+- Le commit final de synchronisation `SYNC-WAVE-003` est limité aux fichiers de pilotage `docs/project/01_EXECUTION_BOARD.md` et `docs/project/04_LAST_STATE.md`.
+- Les fichiers `project/source_import/raw_drive_dump/` et `artifacts/` n'ont pas été modifiés.
 - CODE-DEROG-CORE-001 ajoute `DOC-013` formulaire multi-sites SEL et `DOC-014` demande cumul SELARL/BNC au catalogue et à l'orchestrateur.
 - Les deux documents dérogations cœur sont rendus uniquement en `formulaire_a_completer`, avec zones narratives sensibles laissées visibles et non générées par défaut.
 - `cumul_salariee` reste hors périmètre tant qu'un DOCX propre n'est pas fourni.
@@ -284,12 +300,15 @@ SYNC-CODE-WAVE-002 : absorption dans `main` des commits sources `ea35d2af353ac5b
 
 ## Prochain ticket à lancer
 Tickets actifs/parallélisables :
-- `CODE-SPFPL-CORE-001` est READY.
-- `PREP-STATUTS-001` est READY.
+- `SPEC-STATUTS-SEL-001` est READY.
+- `SPEC-STATUTS-SPFPL-001` est READY.
+- `SPEC-STATUTS-CIVILS-001` est READY.
+- `SPEC-STATUTS-SAS-001` est READY.
 
 `CODE-BAIL-APP-001` est DONE dans `main`.
 `PREP-DEROG-001` et `CODE-SPFPL-AGR-INFO-001` sont DONE dans `main`.
 `CODE-CESSION-CAB-001` et `CODE-DEROG-CORE-001` sont DONE et absorbés dans `main`.
+`PREP-STATUTS-001` et `CODE-SPFPL-CORE-001` sont DONE et absorbés dans `main`.
 
 ## Points ouverts
 - Aucun point bloquant identifié après le smoke test réel Lot 1.
@@ -347,6 +366,7 @@ Tickets actifs/parallélisables :
   - ne pas sortir du choix SPEC-RC-001 pour le régime communautaire sans nouveau ticket d'arbitrage ;
   - ne pas placer automatiquement la famille liste des souscripteurs / attestation sur le capital ;
   - ne pas dedupliquer les statuts entre familles, professions ou variantes.
+- Points ouverts statuts après PREP-STATUTS-001 : ne pas coder de générateur statuts sans spec canonique et spec texte ; ne pas dédupliquer SEL, SPFPL, SCI, SCI IRIS, SCM, SCS ou SAS sans comparaison documentée.
 - Toute ambiguïté de wording juridique doit bloquer l'implémentation concernée et être documentée.
 
 ## Validations connues
@@ -397,6 +417,11 @@ Tickets actifs/parallélisables :
 - SYNC-CODE-WAVE-002 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
 - SYNC-CODE-WAVE-002 : `.\.venv\Scripts\python.exe -m pytest` OK, 95 tests passés.
 - SYNC-CODE-WAVE-002 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifiés.
+- SYNC-WAVE-003 : `git fetch --all --prune` OK.
+- SYNC-WAVE-003 : commits sources `b854821061b85ac66fe785c11cb3c6b0bac5a85b` et `09cbad120d22910f05ba5e645971ade56fedb76d` cherry-pickés dans `main` sans conflit.
+- SYNC-WAVE-003 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
+- SYNC-WAVE-003 : `.\.venv\Scripts\python.exe -m pytest` OK, 101 tests passés.
+- SYNC-WAVE-003 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifiés.
 - SPEC-TEXTE-ORDRE-001 : source de vérité, source Lot 2 et variantes raw dump SELARL / SELAS / SPFPL cession / SPFPL apport lues en lecture seule.
 - SPEC-TEXTE-ORDRE-001 : spec texte créée dans `docs/delivery/lot_02_demande_inscription_ordre_spec_texte_v1.md`.
 - SPEC-TEXTE-ORDRE-001 : aucun code Python modifié ; validations limitées à la relecture documentaire et au contrôle du diff.
@@ -431,4 +456,4 @@ Tickets actifs/parallélisables :
 - SMOKE-ORCH-L2-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 47 tests passés.
 
 ## Recommandation immédiate suivante
-Lancer `CODE-SPFPL-CORE-001` ou `PREP-STATUTS-001` selon la priorité métier.
+Lancer `SPEC-STATUTS-SEL-001`.

@@ -58,8 +58,12 @@
 | PREP-DEROG-001 | DONE | Préparer les sources dérogations avant code | arbitrages dérogations V1 + raw dump + plan de placement | sources Lot 03 placées + rapport de préparation |
 | CODE-DEROG-CORE-001 | DONE | Implémenter le cœur dérogations | specs/arbitrages dérogations V1 + PREP-DEROG-001 | générateurs DOCX dérogations cœur + blocages explicites + tests |
 | CODE-SPFPL-AGR-INFO-001 | DONE | Implémenter le sous-batch SPFPL agrément / note d'information | specs canonique/texte SPFPL V1 + arbitrage V1 | générateurs DOCX ciblés + tests + sources Lot 05 placées |
-| CODE-SPFPL-CORE-001 | READY | Implémenter le cœur SPFPL restant | specs canonique/texte SPFPL V1 + arbitrage V1 + sources préparées | générateurs SPFPL ciblés + blocages explicites + tests |
-| PREP-STATUTS-001 | READY | Préparer les sources statuts avant spécification/code | source vérité + raw dump + plan de placement/arbitrage sources | sources statuts cadrées + écarts documentés |
+| CODE-SPFPL-CORE-001 | DONE | Implémenter le cœur SPFPL restant | specs canonique/texte SPFPL V1 + arbitrage V1 + sources préparées | générateurs SPFPL ciblés + blocages explicites + tests |
+| PREP-STATUTS-001 | DONE | Préparer les sources statuts avant spécification/code | source vérité + raw dump + plan de placement/arbitrage sources | sources statuts cadrées + écarts documentés |
+| SPEC-STATUTS-SEL-001 | READY | Spécifier les statuts SEL d'exercice | préparation statuts V1 + sources Lot 04 SELARL/SELAS | spec canonique + spec texte avant code |
+| SPEC-STATUTS-SPFPL-001 | READY | Spécifier les statuts SPFPL | préparation statuts V1 + sources Lot 04 SPFPL cession/apport | spec canonique + spec texte avant code |
+| SPEC-STATUTS-CIVILS-001 | READY | Spécifier les statuts civils | préparation statuts V1 + sources Lot 04 SCI/SCI IRIS/SCM/SCS | spec canonique + spec texte avant code |
+| SPEC-STATUTS-SAS-001 | READY | Spécifier les statuts SAS | préparation statuts V1 + source Lot 04 SAS | spec canonique + spec texte avant code |
 | UI-001 | BLOCKED | Brancher Streamlit V0 Lot 1 | orchestrateur Lot 1 + spec canonique PV nomination gérant validée | écran simple + test manuel |
 
 ## Référentiels moteur disponibles
@@ -78,6 +82,7 @@
 - La spec texte V1 du batch `régime communautaire` est disponible : `docs/delivery/lot_02_regime_communautaire_batch_spec_texte_v1.md`.
 - La spec canonique V1 du batch SPFPL spécifique est disponible : `docs/delivery/lot_05_spfpl_spec_canonique_v1.md`.
 - La spec texte V1 du batch SPFPL spécifique est disponible : `docs/delivery/lot_05_spfpl_spec_texte_v1.md`.
+- La préparation V1 des sources statuts est disponible : `docs/delivery/lot_04_statuts_preparation_v1.md`.
 - La spec canonique V1 de la famille `dérogations` est disponible : `docs/delivery/lot_03_derogations_spec_canonique_v1.md`.
 - La spec texte V1 de la famille `dérogations` est disponible : `docs/delivery/lot_03_derogations_spec_texte_v1.md`.
 - La spec canonique V1 `cession cabinets` est disponible : `docs/delivery/lot_03_cession_cabinets_spec_canonique_v1.md`.
@@ -374,13 +379,37 @@
 - Objectif : implémenter le cœur SPFPL restant dans le respect des specs et arbitrages V1.
 - Specs à lire : `docs/delivery/lot_05_spfpl_spec_canonique_v1.md`, `docs/delivery/lot_05_spfpl_spec_texte_v1.md` et `docs/delivery/lot_05_spfpl_arbitrages_v1.md`.
 - Contraintes : rester limité aux documents SPFPL sourcés/arbitrés, bloquer l'acte de cession d'actions sans source DOCX confirmée, bloquer les multi-souscripteurs hors V1 et ne pas corriger le wording juridique sans validation explicite.
-- Statut : READY ; prochain ticket code confirmé après synchronisation de `CODE-CESSION-CAB-001` et `CODE-DEROG-CORE-001`.
+- Statut : DONE ; commit source `09cbad120d22910f05ba5e645971ade56fedb76d` absorbé dans `main`, générateurs SPFPL cœur et tests ciblés intégrés.
 
 ### PREP-STATUTS-001
 - Objectif : préparer les sources statuts avant toute spécification ou implémentation.
 - Entrées : source de vérité, raw dump, référentiels projet et décisions de placement/arbitrage sources.
 - Contraintes : ne pas dédupliquer ni harmoniser les statuts sans comparaison documentée, ne pas coder de générateur, ne pas modifier le wording juridique source.
-- Statut : READY ; ticket de préparation documentaire confirmé après synchronisation de la vague code.
+- Statut : DONE ; commit source `b854821061b85ac66fe785c11cb3c6b0bac5a85b` absorbé dans `main`, sources Lot 04 cadrées et écarts documentés.
+
+### SPEC-STATUTS-SEL-001
+- Objectif : spécifier les statuts SEL d'exercice avant tout codage.
+- Specs/sources à lire : `docs/delivery/lot_04_statuts_preparation_v1.md` et sources Lot 04 SELARL chirurgien-dentiste, SELARL médecin, SELAS médecin.
+- Contraintes : comparer les variantes, extraire les variables, documenter les clauses sensibles, ne pas coder de générateur.
+- Statut : READY ; prochain ticket recommandé.
+
+### SPEC-STATUTS-SPFPL-001
+- Objectif : spécifier les statuts SPFPL cession/apport avant tout codage.
+- Specs/sources à lire : `docs/delivery/lot_04_statuts_preparation_v1.md` et sources Lot 04 SPFPL.
+- Contraintes : traiter cession et apport en comparaison, conserver les sorties distinctes tant que la fusion n'est pas prouvée, ne pas coder de générateur.
+- Statut : READY.
+
+### SPEC-STATUTS-CIVILS-001
+- Objectif : spécifier les statuts civils SCI, SCI IRIS, SCM et SCS avant tout codage.
+- Specs/sources à lire : `docs/delivery/lot_04_statuts_preparation_v1.md` et sources Lot 04 civiles.
+- Contraintes : ne pas dédupliquer SCI/SCI IRIS/SCM/SCS sans analyse documentée, identifier les variables capital, associés, siège, objet et options fiscales, ne pas coder de générateur.
+- Statut : READY.
+
+### SPEC-STATUTS-SAS-001
+- Objectif : spécifier les statuts SAS avant tout codage.
+- Specs/sources à lire : `docs/delivery/lot_04_statuts_preparation_v1.md` et source Lot 04 SAS.
+- Contraintes : vérifier le fichier source dont le nom contient aussi SPFPL, traiter séparément la liste des souscripteurs et l'attestation sur le capital si nécessaire, ne pas coder de générateur.
+- Statut : READY.
 
 ### UI-001
 - Objectif : exposer une Streamlit simple pour générer le Lot 1.
@@ -397,13 +426,15 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - mettre à jour `docs/project/04_LAST_STATE.md`
 
 ## Prochaine étape prévue
-- prochaine action recommandée : lancer `CODE-SPFPL-CORE-001` ou `PREP-STATUTS-001` selon la priorité métier.
-- tickets READY confirmés : `CODE-SPFPL-CORE-001` et `PREP-STATUTS-001`.
+- prochaine action recommandée : lancer `SPEC-STATUTS-SEL-001`.
+- tickets READY confirmés : `SPEC-STATUTS-SEL-001`, `SPEC-STATUTS-SPFPL-001`, `SPEC-STATUTS-CIVILS-001` et `SPEC-STATUTS-SAS-001`.
 - `CODE-BAIL-APP-001` est DONE et absorbé dans `main`.
 - `PREP-DEROG-001` est DONE et absorbé dans `main`.
 - `CODE-SPFPL-AGR-INFO-001` est DONE et absorbé dans `main`.
 - `CODE-CESSION-CAB-001` est DONE et absorbé dans `main`.
 - `CODE-DEROG-CORE-001` est DONE et absorbé dans `main`.
+- `PREP-STATUTS-001` est DONE et absorbé dans `main`.
+- `CODE-SPFPL-CORE-001` est DONE et absorbé dans `main`.
 - revue humaine toujours recommandée : smoke DOCX `régime communautaire`, notamment le rendu SELARL de la renonciation canonique.
 - les autres cas MEDIUM/LOW restent bloqués tant que leurs variantes sources n'ont pas été comparées.
 - UI-001 reste explicitement en attente.
@@ -476,3 +507,4 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - 2026-05-14 : RESUME-CODE-CESSION-CAB-001 reprend `CODE-CESSION-CAB-001` depuis `main`, restaure les générateurs cession cabinets, branche `DOC-009` à `DOC-012`, génère quatre DOCX de smoke test et valide `ruff` / `pytest`.
 - 2026-05-14 : CODE-DEROG-CORE-001 implémente les générateurs DOCX partiels `multi_sites_sel` et `cumul_sel_bnc`, les branche au catalogue/orchestrateur sous `DOC-013` et `DOC-014`, ajoute le contexte exemple et les tests ciblés, puis génère le smoke DOCX réel dans `artifacts/lot_03_derogations_core_smoke_test/`.
 - 2026-05-14 : SYNC-CODE-WAVE-002 absorbe dans `main` les commits sources `ea35d2af353ac5b8567e82091ab978cf24a27445` et `bee4c8bec27397198a170c4f9888b2470b24c67f`, confirme `CODE-CESSION-CAB-001` et `CODE-DEROG-CORE-001` en DONE, puis confirme `CODE-SPFPL-CORE-001` et `PREP-STATUTS-001` en READY, sans modification de `project/source_import/raw_drive_dump/` ni de `artifacts/`.
+- 2026-05-14 : SYNC-WAVE-003 absorbe dans `main` les commits sources `b854821061b85ac66fe785c11cb3c6b0bac5a85b` et `09cbad120d22910f05ba5e645971ade56fedb76d`, passe `PREP-STATUTS-001` et `CODE-SPFPL-CORE-001` en DONE, puis confirme `SPEC-STATUTS-SEL-001`, `SPEC-STATUTS-SPFPL-001`, `SPEC-STATUTS-CIVILS-001` et `SPEC-STATUTS-SAS-001` en READY, sans modification de `project/source_import/raw_drive_dump/` ni de `artifacts/`.
