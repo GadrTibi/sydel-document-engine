@@ -62,6 +62,8 @@ class DossierOptions(BaseModel):
     derogation: bool = False
     regime_communautaire: bool = False
     cession: bool = False
+    apport: bool = False
+    associe_unique: bool = False
 
 
 class BailParty(BaseModel):
@@ -121,6 +123,73 @@ class CessionContext(BaseModel):
     cabinet: CessionCabinet | None = None
     vendeur: CessionVendeur | None = None
     acquereur: CessionAcquereur | None = None
+
+
+class OperationSpfpl(BaseModel):
+    type: str | None = None
+
+
+class SpfplDirigeant(BaseModel):
+    fonction: str | None = None
+
+
+class SocieteSpfpl(BaseModel):
+    denomination: str | None = None
+    forme_sociale: str | None = None
+    forme_sociale_abregee: str | None = None
+    capital_social: str | None = None
+    activite: str | None = None
+    profession: str | None = None
+    ville_rcs: str | None = None
+    numero_rcs: str | None = None
+    siege: Address | None = None
+    dirigeant: SpfplDirigeant | None = None
+
+
+class SpfplPerson(BaseModel):
+    civilite_affichage: str | None = None
+    prenom: str | None = None
+    nom: str | None = None
+    genre: Gender | None = None
+
+
+class SocieteCible(BaseModel):
+    denomination: str | None = None
+    forme_sociale: str | None = None
+    forme_sociale_complete: str | None = None
+    profession_reglementee: str | None = None
+    profession_reglementee_pluriel: str | None = None
+    capital_social: str | None = None
+    capital_social_lettres: str | None = None
+    nb_parts_total: int | None = None
+    valeur_nominale_part: str | None = None
+    siege: Address | None = None
+    ville_rcs: str | None = None
+    numero_rcs: str | None = None
+
+
+class AssocieCible(BaseModel):
+    type: str = "personne_physique"
+    civilite_affichage: str | None = None
+    prenom: str | None = None
+    nom: str | None = None
+    denomination: str | None = None
+    nb_parts_avant: int | None = None
+    nb_parts_apres: int | None = None
+    plage_parts: str | None = None
+    numero_part_unique: str | None = None
+    qualite: str | None = None
+    est_present_ou_represente: bool = True
+
+
+class CessionParts(BaseModel):
+    nb_parts: int | None = None
+    nb_parts_lettres: str | None = None
+    plage_parts: str | None = None
+
+
+class OperationTitres(BaseModel):
+    nb_titres: int | None = None
 
 
 class DocumentSignataire(BaseModel):
@@ -210,9 +279,18 @@ class DecisionContext(BaseModel):
     date: date | str | None = None
 
 
+class ReunionPresident(BaseModel):
+    civilite_affichage: str | None = None
+    prenom: str | None = None
+    nom: str | None = None
+    qualite: str | None = None
+
+
 class ReunionContext(BaseModel):
+    annee_lettres: str | None = None
     date_lettres: str | None = None
     heure: str | None = None
+    president: ReunionPresident | None = None
 
 
 class CapitalContext(BaseModel):
@@ -251,5 +329,13 @@ class DocumentGenerationContext(BaseModel):
     regime_communautaire: RegimeCommunautaire | None = None
     bail: BailContext | None = None
     cession: CessionContext | None = None
+    operation_spfpl: OperationSpfpl | None = None
+    societe_spfpl: SocieteSpfpl | None = None
+    cedant: SpfplPerson | None = None
+    apporteur: SpfplPerson | None = None
+    societe_cible: SocieteCible | None = None
+    associes_cible: list[AssocieCible] = Field(default_factory=list)
+    cession_parts: CessionParts | None = None
+    operation_titres: OperationTitres | None = None
     document: DocumentContext | None = None
     metadata: dict[str, str] = Field(default_factory=dict)

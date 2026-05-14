@@ -1,0 +1,79 @@
+structure: SPFPL cession
+dossier_options:
+  cession: true
+  associe_unique: false
+personne_signataire:
+  genre: masculin
+  civilite: Monsieur
+  prenom: Camille
+  nom: Martin
+signature:
+  lieu: Paris
+  date: 2026-05-14
+operation_spfpl:
+  type: cession
+societe_spfpl:
+  denomination: SPFPL MARTIN
+  forme_sociale: SPFPL
+  capital_social: "1 000"
+  siege:
+    adresse_affichee: 10 rue de la Paix, 75002 Paris
+  dirigeant:
+    fonction: President
+cedant:
+  civilite_affichage: Docteur
+  prenom: Camille
+  nom: Martin
+  genre: masculin
+societe_cible:
+  denomination: SELARL CABINET MARTIN
+  forme_sociale: SELARL
+  profession_reglementee: chirurgiens-dentistes
+  capital_social: "10 000"
+  capital_social_lettres: dix mille euros
+  nb_parts_total: 100
+  valeur_nominale_part: "100"
+  siege:
+    num_voie: "12"
+    voie: avenue des Ternes
+    cp: "75017"
+    ville: Paris
+    adresse_affichee: 12 avenue des Ternes, 75017 Paris
+  ville_rcs: Paris
+  numero_rcs: 900 000 001
+cession_parts:
+  nb_parts: 60
+  nb_parts_lettres: soixante
+  plage_parts: 41 a 100
+operation_titres:
+  nb_titres: 60
+associes_cible:
+  - civilite_affichage: Docteur
+    prenom: Camille
+    nom: Martin
+    nb_parts_avant: 70
+    nb_parts_apres: 10
+    plage_parts: 1 a 10
+  - civilite_affichage: Docteur
+    prenom: Louise
+    nom: Bernard
+    nb_parts_avant: 30
+    nb_parts_apres: 30
+    plage_parts: 11 a 40
+  - type: personne_morale
+    denomination: SPFPL MARTIN
+    nb_parts_avant: 0
+    nb_parts_apres: 60
+    plage_parts: 41 a 100
+    est_present_ou_represente: false
+decision:
+  date: 14/05/2026
+reunion:
+  annee_lettres: deux mille vingt-six
+  date_lettres: quatorze mai deux mille vingt-six
+  heure: 10 heures
+  president:
+    civilite_affichage: Docteur
+    prenom: Camille
+    nom: Martin
+    qualite: gerant associe
