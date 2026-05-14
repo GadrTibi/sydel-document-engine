@@ -4,13 +4,14 @@
 2026-05-14
 
 ## Dernier ticket terminé
-SYNC-SPECS-001 : synchronisation dans `main` des specs parallèles RC, SPFPL, dérogations et cession/bail, avec pilotage aligné sur `CODE-RC-001` READY.
+CODE-RC-001 : implémentation du batch `régime communautaire` V1 avec deux générateurs DOCX from-scratch, branchement catalogue/orchestrateur conditionné par `dossier_options.regime_communautaire`, tests ciblés et smoke DOCX réel.
 
 ## État courant du repo
 - DOC-001, DOC-002 et DOC-003 disposent chacun d'un générateur dédié déjà terminé.
 - L'orchestrateur dossier expose :
-  - un registre des générateurs DOC-001, DOC-002, DOC-003 et DOC-004 ;
+  - un registre des générateurs DOC-001 à DOC-006 ;
   - `select_documents(structure)` selon le catalogue ;
+  - `select_documents_for_context(ctx)` avec filtrage du batch régime communautaire ;
   - `generate_documents(ctx, output_dir) -> list[Path]`.
 - `examples/contexts/lot_01_example.yaml` utilise encore le champ legacy Lot 1 `adresse_domiciliation_affichee`, en attente d'un refactor dédié vers `domiciliation.adresse_affichee`.
 - Un smoke test réel a généré les trois DOCX du Lot 1 dans `artifacts/lot_01_smoke_test/`.
@@ -46,6 +47,12 @@ SYNC-SPECS-001 : synchronisation dans `main` des specs parallèles RC, SPFPL, d�
   - `personne_signataire.adresse_personnelle_affichee` ;
   - `ordre` ;
   - `mandataire`.
+- Le modèle de données supporte désormais le batch régime communautaire :
+  - `dossier_options.regime_communautaire` ;
+  - `conjoint` ;
+  - `apport` ;
+  - `regime_communautaire.avertissement` ;
+  - `regime_communautaire.renonciation`.
 - Le PV nomination gérant est branché dans l'orchestrateur pour SELARL, SELAS, SPFPL cession, SPFPL apport, SCS, SCI et SCM.
 - Le PV nomination gérant est exclu de la sélection SAS.
 - FIX-PV-RENDER-001 est terminé : le PV dispose désormais d'un titre principal encadré, de listes à tirets pour les associés et les décisions, d'intertitres gras/soulignés, de formules de vote en italique et de signatures centrées.
@@ -62,6 +69,10 @@ SYNC-SPECS-001 : synchronisation dans `main` des specs parallèles RC, SPFPL, d�
 - Le cadrage V1 du batch régime communautaire est disponible : `docs/delivery/lot_02_regime_communautaire_batch_cadrage_v1.md`.
 - La spec canonique V1 du batch régime communautaire est disponible : `docs/delivery/lot_02_regime_communautaire_batch_spec_canonique_v1.md`.
 - La spec texte V1 du batch régime communautaire est disponible : `docs/delivery/lot_02_regime_communautaire_batch_spec_texte_v1.md`.
+- Les générateurs du batch régime communautaire sont disponibles :
+  - `src/sydel_doc_engine/generators/lot_02/lettre_renonciation_associe.py` ;
+  - `src/sydel_doc_engine/generators/lot_02/lettre_avertissement_conjoint.py`.
+- Un contexte exemple de smoke test est disponible : `examples/contexts/lot_02_regime_communautaire_example.yaml`.
 - La spec canonique V1 du batch SPFPL spécifique est disponible : `docs/delivery/lot_05_spfpl_spec_canonique_v1.md`.
 - La spec canonique V1 de la famille dérogations est disponible : `docs/delivery/lot_03_derogations_spec_canonique_v1.md`.
 - La spec canonique V1 `cession cabinets` est disponible : `docs/delivery/lot_03_cession_cabinets_spec_canonique_v1.md`.
@@ -82,7 +93,7 @@ SYNC-SPECS-001 : synchronisation dans `main` des specs parallèles RC, SPFPL, d�
 - `SPEC-DEROG-001` est DONE.
 - `SPEC-CESSION-BAIL-001` est DONE.
 - `SYNC-SPECS-001` est DONE.
-- `CODE-RC-001` est READY.
+- `CODE-RC-001` est DONE.
 - `UI-001` reste explicitement en attente : ne pas brancher Streamlit maintenant.
 - Fichiers générés connus :
   - `artifacts/lot_01_smoke_test/autorisation_domiciliation.docx`
@@ -97,12 +108,14 @@ SYNC-SPECS-001 : synchronisation dans `main` des specs parallèles RC, SPFPL, d�
   - `artifacts/lot_02_orchestrator_negative_sas_smoke_test/autorisation_domiciliation.docx`
   - `artifacts/lot_02_orchestrator_negative_sas_smoke_test/procuration.docx`
   - `artifacts/lot_02_demande_inscription_ordre_smoke_test/demande_inscription_ordre.docx`
+  - `artifacts/lot_02_regime_communautaire_smoke_test/lettre_renonciation_associe.docx`
+  - `artifacts/lot_02_regime_communautaire_smoke_test/lettre_avertissement_conjoint.docx`
 - Fichiers smoke RENDER-STYLE-001 générés :
   - `artifacts/render_style_001_lot_01_smoke_test/declaration_non_condamnation.docx`
   - `artifacts/render_style_001_lot_01_smoke_test/autorisation_domiciliation.docx`
   - `artifacts/render_style_001_lot_01_smoke_test/procuration.docx`
   - `artifacts/render_style_001_pv_nomination_gerant_smoke_test/pv_nomination_gerant.docx`
-- Streamlit, l'orchestrateur, PDF, ZIP et `rendering/bundle.py` n'ont pas été modifiés dans ce ticket.
+- Streamlit, PDF, ZIP et `rendering/bundle.py` n'ont pas été modifiés dans ce ticket.
 - `artifacts/` reste hors versionnement via `.gitignore`.
 
 ## Décisions métier/techniques appliquées dans ce ticket
@@ -147,7 +160,11 @@ SYNC-SPECS-001 : synchronisation dans `main` des specs parallèles RC, SPFPL, d�
 - SPEC-RC-001 compare les variantes SELARL, SELAS et SPFPL du batch régime communautaire.
 - Le groupe source Lot 2 / SELAS / SPFPL est retenu comme canonique pour la renonciation ; la variante SELARL brute reste documentée comme écart à relire.
 - L'avertissement conserve un overlay limité pour la mention manuscrite SELARL (`à la Société ...`) contre SELAS/SPFPL (`à la [forme_sociale_abregee] ...`).
-- CODE-RC-001 devra produire deux documents canoniques distincts, uniquement pour SELARL, SELAS, SPFPL cession et SPFPL apport lorsque `dossier.options.regime_communautaire == true`.
+- CODE-RC-001 produit deux documents canoniques distincts, uniquement pour SELARL, SELAS, SPFPL cession et SPFPL apport lorsque `dossier_options.regime_communautaire == true`.
+- CODE-RC-001 ajoute les entrées catalogue `DOC-005` et `DOC-006`, enregistrées dans l'orchestrateur.
+- Le filtrage contexte exclut `DOC-005` et `DOC-006` lorsque l'option régime communautaire est fausse.
+- La mention manuscrite de l'avertissement applique l'overlay SELARL `à la Société ...` et l'overlay SELAS/SPFPL `à la {forme_sociale_abregee} ...`.
+- La renonciation résout `date_courrier_avertissement` explicitement ou par repli sur la date de l'avertissement du batch.
 - SPEC-SPFPL-001 formalise le batch SPFPL spécifique sans code Python ; l'acte de cession d'actions reste bloqué faute de source DOCX confirmée.
 - SPEC-DEROG-001 formalise les dérogations sans automatiser les formulaires marqués ou traités comme manuels.
 - SPEC-CESSION-BAIL-001 formalise deux blocs distincts : `cession cabinets` et `bail / appel de fonds`, sans trancher les anomalies de wording avant code.
@@ -171,7 +188,7 @@ SYNC-SPECS-001 : synchronisation dans `main` des specs parallèles RC, SPFPL, d�
 - Le bloc `Dérogation ?` n'est jamais rendu littéralement ; si `dossier_options.derogation=true`, une mention manuelle `ordre.derogation_mention_manuelle` est obligatoire.
 - Le mandataire est résolu depuis `mandataire.libelle_affiche` ou depuis les champs détaillés, sans constante SYDEL/Jordan ELBAZ codée dans le générateur.
 - Le smoke DOCX dédié a été généré dans `artifacts/lot_02_demande_inscription_ordre_smoke_test/demande_inscription_ordre.docx`, hors versionnement.
-- Les 2 cas MEDIUM régime communautaire sont désormais spécifiés ; le code reste à faire dans `CODE-RC-001`.
+- Les 2 cas MEDIUM régime communautaire sont désormais spécifiés et codés dans `CODE-RC-001`.
 - Les 3 cas LOW restent bloqués : statuts, liste des souscripteurs / attestation sur le capital, documents sans source claire.
 - 16 documents sources sont explicitement hors périmètre moteur courant.
 - Aucun fichier de `project/source_import/raw_drive_dump/`, aucun fichier source documentaire et aucun artefact n'a été déplacé, supprimé ou renommé.
@@ -180,9 +197,9 @@ SYNC-SPECS-001 : synchronisation dans `main` des specs parallèles RC, SPFPL, d�
 - Le smoke DOCX dédié a été généré dans `artifacts/fix_pv_render_001_smoke_test_2/pv_nomination_gerant.docx`, hors versionnement.
 
 ## Prochain ticket à lancer
-Lancer `CODE-RC-001`.
+Revue humaine du smoke DOCX `régime communautaire`, avec priorité au rendu SELARL de la renonciation canonique.
 
-Le batch régime communautaire doit être implémenté strictement depuis les specs V1. Les cas LOW doivent rester bloqués tant que leurs variantes sources n'ont pas été comparées ou arbitrées.
+Après revue, choisir le prochain batch à spécifier ou coder. Les cas LOW doivent rester bloqués tant que leurs variantes sources n'ont pas été comparées ou arbitrées.
 
 ## Points ouverts
 - Aucun point bloquant identifié après le smoke test réel Lot 1.
@@ -209,12 +226,13 @@ Le batch régime communautaire doit être implémenté strictement depuis les sp
   - wording de dérogation non validé, donc bloc manuel obligatoire ou blocage conservé ;
   - valeurs ordinales fournies par contexte ou référentiel ;
   - mandataire SYDEL configurable, jamais imposé comme constante en dur.
-- Points ouverts régime communautaire après SPEC-RC-001 :
+- Points ouverts régime communautaire après CODE-RC-001 :
   - revue humaine SELARL de la renonciation canonique, car la variante brute contient des valeurs fixes et `En 2exemplaires` ;
   - féminisation éventuelle de `futur`, non activée automatiquement faute de source ;
   - absence de variante `ma conjointe`, `mon conjoint` restant fixe en V1 ;
   - apport limité à une somme en numéraire ;
   - valeurs par défaut de régime matrimonial, qualité renoncée et formes sociales à fournir par contexte ou référentiel.
+  - le smoke DOCX réel ne vaut pas validation juridique fine.
 - Points ouverts SPFPL après SPEC-SPFPL-001 :
   - acte de cession d'actions sans source confirmée ;
   - wording cession/apport des PV d'agrément et de la note d'information ;
@@ -249,6 +267,9 @@ Le batch régime communautaire doit être implémenté strictement depuis les sp
 - SPEC-RC-001 : source de vérité, sources Lot 2 et variantes raw dump SELARL / SELAS / SPFPL lues en lecture seule.
 - SPEC-RC-001 : specs créées dans `docs/delivery/lot_02_regime_communautaire_batch_spec_canonique_v1.md` et `docs/delivery/lot_02_regime_communautaire_batch_spec_texte_v1.md`.
 - SPEC-RC-001 : aucun code Python modifié ; validations limitées à la relecture documentaire et au contrôle du diff.
+- CODE-RC-001 : smoke DOCX OK dans `artifacts/lot_02_regime_communautaire_smoke_test/`, deux lettres produites sans placeholder `[` / `]`.
+- CODE-RC-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
+- CODE-RC-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 66 tests passés.
 - SYNC-SPECS-001 : `git fetch --all --prune` OK.
 - SYNC-SPECS-001 : branche `codex/spec-rc-001` créée et poussée avec les deux specs RC uniquement.
 - SYNC-SPECS-001 : commits SPFPL, dérogations, cession/bail et RC cherry-pickés dans `main` sans conflit.
@@ -287,4 +308,4 @@ Le batch régime communautaire doit être implémenté strictement depuis les sp
 - SMOKE-ORCH-L2-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 47 tests passés.
 
 ## Recommandation immédiate suivante
-Lancer `CODE-RC-001` pour implémenter le batch régime communautaire V1 depuis les deux specs créées.
+Relire humainement les deux DOCX du smoke `régime communautaire`, puis arbitrer le prochain batch à traiter.

@@ -24,6 +24,13 @@ PV_NOMINATION_GERANT_STRUCTURES: list[str] = [
     "SCM",
 ]
 
+REGIME_COMMUNAUTAIRE_STRUCTURES: list[str] = [
+    "SELARL",
+    "SELAS",
+    "SPFPL cession",
+    "SPFPL apport",
+]
+
 
 def build_seed_catalog() -> list[DocumentDefinition]:
     return [
@@ -95,6 +102,55 @@ def build_seed_catalog() -> list[DocumentDefinition]:
             source_path="project/source_documents/lot_02/PV nomination gérant - transforme.docx",
             specification_path="docs/delivery/lot_02_pv_nomination_gerant_spec_texte_v1.md",
             notes="Branché dans l'orchestrateur sans UI, PDF ni ZIP.",
+        ),
+        DocumentDefinition(
+            doc_id="DOC-005",
+            canonical_name="Lettre de renonciation a revendiquer la qualite d'associe",
+            generator_name="generate_lettre_renonciation_associe",
+            lot=2,
+            category=DocumentCategory.MUTUALISABLE,
+            structures=REGIME_COMMUNAUTAIRE_STRUCTURES,
+            general_condition="dossier.options.regime_communautaire == true",
+            specific_conditions=[
+                "SELARL, SELAS, SPFPL cession et SPFPL apport uniquement",
+                "date du courrier d'avertissement resolue explicitement ou via l'avertissement",
+            ],
+            dynamic_associates=False,
+            grammar_variants=False,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path=(
+                "project/source_documents/lot_02/"
+                "Lettre de renonciation a revendiquer la qualite d_associe - SELAS.docx"
+            ),
+            specification_path=(
+                "docs/delivery/lot_02_regime_communautaire_batch_spec_texte_v1.md"
+            ),
+            notes="Batch regime communautaire V1, sans overlay SELARL de renonciation.",
+        ),
+        DocumentDefinition(
+            doc_id="DOC-006",
+            canonical_name="Lettre d'avertissement au conjoint en cas d'apport d'un bien commun",
+            generator_name="generate_lettre_avertissement_conjoint",
+            lot=2,
+            category=DocumentCategory.MUTUALISABLE,
+            structures=REGIME_COMMUNAUTAIRE_STRUCTURES,
+            general_condition="dossier.options.regime_communautaire == true",
+            specific_conditions=[
+                "SELARL, SELAS, SPFPL cession et SPFPL apport uniquement",
+                "overlay de mention manuscrite SELARL vs SELAS/SPFPL",
+            ],
+            dynamic_associates=False,
+            grammar_variants=False,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path=(
+                "project/source_documents/lot_02/"
+                "Lettre d_avertissement au conjoint en cas d_apport d_un bien commun - "
+                "transforme.docx"
+            ),
+            specification_path=(
+                "docs/delivery/lot_02_regime_communautaire_batch_spec_texte_v1.md"
+            ),
+            notes="Batch regime communautaire V1, DOCX from-scratch uniquement.",
         ),
     ]
 

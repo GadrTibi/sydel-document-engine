@@ -34,6 +34,8 @@ class Company(BaseModel):
     forme_sociale: str | None = None
     forme_sociale_affichage: str | None = None
     forme_sociale_libelle_long: str | None = None
+    forme_sociale_complete: str | None = None
+    forme_sociale_abregee: str | None = None
     denomination: str | None = None
     capital: str | None = None
     capital_social: str | None = None
@@ -57,6 +59,30 @@ class Domiciliation(BaseModel):
 
 class DossierOptions(BaseModel):
     derogation: bool = False
+    regime_communautaire: bool = False
+
+
+class Apport(BaseModel):
+    montant: str | None = None
+    montant_lettres: str | None = None
+
+
+class RegimeCommunautaireAvertissement(BaseModel):
+    date_signature: date | str | None = None
+
+
+class RegimeCommunautaireRenonciation(BaseModel):
+    lieu_signature: str | None = None
+    date_signature: date | str | None = None
+    nombre_exemplaires_lettres: str | None = None
+
+
+class RegimeCommunautaire(BaseModel):
+    avertissement: RegimeCommunautaireAvertissement | None = None
+    renonciation: RegimeCommunautaireRenonciation | None = None
+    date_courrier_avertissement: date | str | None = None
+    regime_matrimonial: str | None = None
+    qualite_renoncee: str | None = None
 
 
 class OrdreAddress(BaseModel):
@@ -137,6 +163,7 @@ class DocumentGenerationContext(BaseModel):
     structure: str | None = None
     dossier_options: DossierOptions | None = None
     personne_signataire: Person
+    conjoint: Person | None = None
     signature: Signature
     societe: Company | None = None
     domiciliation: Domiciliation | None = None
@@ -149,4 +176,6 @@ class DocumentGenerationContext(BaseModel):
     capital: CapitalContext | None = None
     emprunt: Emprunt | None = None
     bien_immobilier: BienImmobilier | None = None
+    apport: Apport | None = None
+    regime_communautaire: RegimeCommunautaire | None = None
     metadata: dict[str, str] = Field(default_factory=dict)

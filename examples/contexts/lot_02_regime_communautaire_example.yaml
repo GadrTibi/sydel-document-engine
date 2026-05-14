@@ -1,0 +1,46 @@
+structure: SELAS
+dossier_options:
+  regime_communautaire: true
+personne_signataire:
+  genre: masculin
+  civilite: Monsieur
+  prenom: Jean
+  nom: Durand
+  fonction_dirigeant: président
+conjoint:
+  genre: feminin
+  civilite: Madame
+  prenom: Claire
+  nom: Durand
+  adresse_perso:
+    num_voie: "24"
+    voie: rue de la Paix
+    cp: "75002"
+    ville: Paris
+societe:
+  forme_sociale: SELAS
+  forme_sociale_complete: société d'exercice libéral par actions simplifiée
+  forme_sociale_abregee: SELAS
+  denomination: RC SANTE
+  capital_social: "1 000"
+  siege:
+    num_voie: "80"
+    voie: avenue Marceau
+    cp: "75008"
+    ville: Paris
+apport:
+  montant: "500"
+  montant_lettres: cinq cents
+regime_communautaire:
+  avertissement:
+    date_signature: 2026-05-14
+  renonciation:
+    lieu_signature: Paris
+    date_signature: 2026-05-15
+    nombre_exemplaires_lettres: deux
+  date_courrier_avertissement: 2026-05-14
+  regime_matrimonial: communauté
+  qualite_renoncee: actionnaire
+signature:
+  lieu: Paris
+  date: 2026-05-14

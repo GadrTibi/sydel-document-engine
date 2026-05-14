@@ -115,6 +115,8 @@ def test_select_documents_for_selarl_includes_pv_nomination_gerant() -> None:
         "DOC-002",
         "DOC-003",
         "DOC-004",
+        "DOC-005",
+        "DOC-006",
     ]
 
 
@@ -148,6 +150,8 @@ def test_generate_documents_creates_docx_for_selected_documents(tmp_path: Path) 
     assert all(path.suffix == ".docx" for path in output_paths)
     assert all(path.is_file() for path in output_paths)
     assert tmp_path / "pv_nomination_gerant.docx" in output_paths
+    assert tmp_path / "lettre_renonciation_associe.docx" not in output_paths
+    assert tmp_path / "lettre_avertissement_conjoint.docx" not in output_paths
 
 
 def test_generate_documents_outputs_follow_catalog_order(tmp_path: Path) -> None:

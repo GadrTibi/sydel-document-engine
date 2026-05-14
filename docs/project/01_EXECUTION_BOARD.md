@@ -38,7 +38,7 @@
 | SPEC-TEXTE-ORDRE-001 | DONE | Stabiliser le texte canonique et les variantes de Demande d'inscription à l'ordre | spec canonique ordre V1 + variantes SELARL/SELAS/SPFPL/SPFPL apport/SCM | spec texte détaillée, tronc commun, overlays, blocs conditionnels/manuels, règles de blocage avant code |
 | CODE-ORDRE-001 | DONE | Implémenter le générateur canonique Demande d'inscription à l'ordre | spec canonique ordre V1 + spec texte ordre V1 + source Lot 2 + variantes raw dump | générateur ordre from-scratch + tests overlays/dérogation/mandataire + MAJ doc |
 | SPEC-RC-001 | DONE | Formaliser la spec canonique batch régime communautaire | cadrage régime communautaire V1 + deux sources Lot 2 + référentiels V1 | spec canonique batch, spec texte batch, mapping commun, règles de génération, points ouverts |
-| CODE-RC-001 | READY | Implémenter le batch régime communautaire v1 | specs canonique et texte régime communautaire V1 + sources Lot 2 + variantes raw dump | deux générateurs DOCX from-scratch + sélection orchestrateur + tests ciblés + MAJ doc |
+| CODE-RC-001 | DONE | Implémenter le batch régime communautaire v1 | specs canonique et texte régime communautaire V1 + sources Lot 2 + variantes raw dump | deux générateurs DOCX from-scratch + sélection orchestrateur + tests ciblés + MAJ doc |
 | SPEC-SPFPL-001 | DONE | Formaliser le batch SPFPL spécifique | source vérité + raw dump SPFPL | spec canonique SPFPL V1 |
 | SPEC-DEROG-001 | DONE | Formaliser la famille dérogations | source vérité + raw dump dérogations | spec canonique dérogations V1 |
 | SPEC-CESSION-BAIL-001 | DONE | Formaliser les blocs cession cabinets et bail/appel de fonds | source vérité + raw dump cession | specs canoniques cession cabinets + bail/appel de fonds V1 |
@@ -227,7 +227,7 @@
 - Sources à consulter : sources Lot 2 placées + variantes raw dump SELARL, SELAS et SPFPL comparées dans SPEC-RC-001.
 - Contraintes : deux documents canoniques distincts, génération DOCX from-scratch, sélection uniquement si `dossier.options.regime_communautaire == true`, structures SELARL / SELAS / SPFPL cession / SPFPL apport, aucun changement de wording juridique hors variables et overlays documentés.
 - Sortie attendue : générateurs dédiés, branchement orchestrateur/catalogue si nécessaire, tests ciblés des quatre structures, de la mention manuscrite SELARL vs SELAS/SPFPL, des dates croisées et des blocages.
-- Statut : READY.
+- Statut : terminé ; générateurs `lettre_renonciation_associe` et `lettre_avertissement_conjoint` disponibles, catalogue/orchestrateur branchés, contexte exemple et smoke DOCX générés.
 
 ### SPEC-SPFPL-001
 - Objectif : formaliser le batch documentaire SPFPL spécifique sans coder.
@@ -271,8 +271,8 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - mettre à jour `docs/project/04_LAST_STATE.md`
 
 ## Prochaine étape prévue
-- prochaine action recommandée : lancer `CODE-RC-001`.
-- action suivante côté métier : implémenter le batch `régime communautaire` strictement depuis les specs V1.
+- prochaine action recommandée : revue humaine du smoke DOCX `régime communautaire`, notamment le rendu SELARL de la renonciation canonique.
+- action suivante côté métier : choisir le prochain batch à spécifier ou coder après revue du rendu RC.
 - les autres cas MEDIUM/LOW restent bloqués tant que leurs variantes sources n'ont pas été comparées.
 - UI-001 reste explicitement en attente.
 
@@ -287,7 +287,7 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - ANALYSE-ORDRE-001 est terminé ; les cadrages V1 ordre et régime communautaire sont disponibles dans `docs/delivery/`.
 - ARBITRAGE-SOURCES-001 est terminé ; le scan a identifié 147 fichiers dans `raw_drive_dump`, 11 fichiers dans `source_documents`, 18 groupes de doublons probables, 6 documents sans source claire et 16 documents hors périmètre.
 - PLACEMENT-HIGH-001 est terminé ; les 4 cas HIGH documentés dans le plan de placement V1 ont été confirmés comme déjà présents, sans nouvelle copie.
-- SPEC-ORDRE-001, SPEC-TEXTE-ORDRE-001, CODE-ORDRE-001, SPEC-RC-001, SPEC-SPFPL-001, SPEC-DEROG-001 et SPEC-CESSION-BAIL-001 sont DONE ; CODE-RC-001 est READY.
+- SPEC-ORDRE-001, SPEC-TEXTE-ORDRE-001, CODE-ORDRE-001, SPEC-RC-001, CODE-RC-001, SPEC-SPFPL-001, SPEC-DEROG-001 et SPEC-CESSION-BAIL-001 sont DONE.
 - REVIEW-PV-001 est terminé, mais la validation humaine du rendu DOCX et du wording reste à obtenir pour la revue juridique fine.
 - RENDER-STYLE-001 est terminé ; les signatures encadrées sont disponibles dans la couche commune et appliquées aux signatures Lot 1.
 - Le PV nomination gérant conserve des signatures répétables simples ; toute signature encadrée dirigeant/associés séparée reste soumise à validation métier.
@@ -295,6 +295,7 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - Points ouverts PV documentés dans la spec texte : périmètre SELAS, capital non variable, société déjà immatriculée, dirigeant non associé, ponctuation finale des associés, féminisation éventuelle de la fonction, règle `euro/euros`.
 - Points ouverts ordre post-CODE-ORDRE-001 : revue humaine du premier rendu SCM, mention de dérogation limitée au bloc manuel fourni, valeurs ordinales et mandataire toujours fournis par contexte/référentiel.
 - Points ouverts régime communautaire après SPEC-RC-001 : revue humaine SELARL de la renonciation canonique, féminisation éventuelle de `futur`, absence de variante `ma conjointe`, apport limité à une somme en numéraire, valeurs par défaut de régime matrimonial / qualité renoncée / formes sociales à fournir par contexte ou référentiel.
+- CODE-RC-001 est terminé ; le smoke DOCX réel confirme la production des deux lettres, mais ne vaut pas validation juridique fine.
 - Points ouverts SPFPL après SPEC-SPFPL-001 : acte de cession d'actions sans source confirmée, wording cession/apport des PV et de la note d'information, commissaire aux apports, liste dynamique des souscripteurs.
 - Points ouverts dérogations après SPEC-DEROG-001 : placement des sources Lot 03, statut des formulaires préremplis, conversion du `.doc` legacy, champs narratifs obligatoires à fournir ou à bloquer.
 - Points ouverts cession/bail après SPEC-CESSION-BAIL-001 : acte et compromis ensemble ou par étape, anomalies médical/dentaire, placeholders acquéreur/vendeur, crédit-vendeur, clause SCM, appel de fonds limité au wording dentaire source.
@@ -331,3 +332,4 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - 2026-05-14 : CODE-ORDRE-001 implémente le générateur DOCX from-scratch `Demande d'inscription à l'ordre`, couvre SELARL, SELAS, SPFPL cession, SPFPL apport et SCM, teste la dérogation manuelle et le mandataire configurable, puis génère un smoke DOCX dédié.
 - 2026-05-14 : SPEC-RC-001 crée les specs canonique et texte V1 du batch régime communautaire, compare les variantes SELARL / SELAS / SPFPL, retient deux documents canoniques distincts et ajoute CODE-RC-001 en READY, sans modification de code Python.
 - 2026-05-14 : SYNC-SPECS-001 absorbe dans `main` les specs parallèles RC, SPFPL, dérogations et cession/bail, puis aligne le pilotage sur `CODE-RC-001` READY, sans stage de code Python.
+- 2026-05-14 : CODE-RC-001 implémente le batch régime communautaire V1 avec deux générateurs DOCX from-scratch, champs modèle dédiés, catalogue/orchestrateur conditionnés par `dossier_options.regime_communautaire`, tests ciblés et smoke DOCX réel.
