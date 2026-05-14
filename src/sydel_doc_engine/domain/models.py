@@ -165,6 +165,11 @@ class BailContext(BaseModel):
 
 class CessionBanque(BaseModel):
     nom: str | None = None
+    adresse_affichee: str | None = None
+
+
+class DepotFonds(BaseModel):
+    banque: CessionBanque | None = None
 
 
 class CessionDestinataire(BaseModel):
@@ -344,6 +349,7 @@ class SpfplConjoint(BaseModel):
 class SpfplOrdre(BaseModel):
     professionnel: str | None = None
     departement: str | None = None
+    ville: str | None = None
     numero: str | None = None
     numero_rpps: str | None = None
 
@@ -365,6 +371,9 @@ class SocieteSpfpl(BaseModel):
     forme_sociale: str | None = None
     forme_sociale_abregee: str | None = None
     capital_social: str | None = None
+    capital_social_lettres: str | None = None
+    valeur_nominale_action: str | None = None
+    valeur_nominale_action_lettres: str | None = None
     activite: str | None = None
     profession: str | None = None
     ville_rcs: str | None = None
@@ -377,6 +386,7 @@ class SocieteSpfpl(BaseModel):
 class SpfplPerson(BaseModel):
     civilite_affichage: str | None = None
     prenom: str | None = None
+    prenoms: str | None = None
     nom: str | None = None
     genre: Gender | None = None
     profession: str | None = None
@@ -387,10 +397,17 @@ class SpfplPerson(BaseModel):
     departement_naissance: str | None = None
     nationalite: str | None = None
     situation_maritale: str | None = None
+    regime_matrimonial: str | None = None
     conjoint: SpfplConjoint | None = None
     adresse_personnelle: Address | None = None
     adresse_personnelle_affichee: str | None = None
     ordre: SpfplOrdre | None = None
+
+
+class ExerciceSocial(BaseModel):
+    debut: str | None = None
+    fin: str | None = None
+    date_cloture_premier_exercice: str | None = None
 
 
 class SocieteCible(BaseModel):
@@ -629,6 +646,9 @@ class DocumentGenerationContext(BaseModel):
     sites_existants: list[SiteExistant] = Field(default_factory=list)
     operation_spfpl: OperationSpfpl | None = None
     societe_spfpl: SocieteSpfpl | None = None
+    actionnaire_unique: SpfplPerson | None = None
+    depot_fonds: DepotFonds | None = None
+    exercice_social: ExerciceSocial | None = None
     cedant: SpfplPerson | None = None
     apporteur: SpfplPerson | None = None
     societe_cible: SocieteCible | None = None

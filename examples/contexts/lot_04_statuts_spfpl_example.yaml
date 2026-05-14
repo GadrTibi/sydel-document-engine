@@ -1,0 +1,89 @@
+structure: SPFPL cession
+dossier_options:
+  cession: true
+  associe_unique: true
+personne_signataire:
+  genre: masculin
+  civilite: Monsieur
+  prenom: Camille
+  nom: Martin
+signature:
+  lieu: Paris
+  date: 2026-05-14
+operation_spfpl:
+  type: cession
+societe_spfpl:
+  denomination: SPFPL MARTIN
+  forme_sociale: par actions simplifiee
+  capital_social: "60 000"
+  capital_social_lettres: soixante mille
+  valeur_nominale_action: "100"
+  valeur_nominale_action_lettres: cent
+  siege:
+    adresse_affichee: 10 rue de la Paix, 75002 Paris
+actionnaire_unique:
+  civilite_affichage: Docteur
+  prenom: Camille
+  prenoms: Camille Andre
+  nom: Martin
+  genre: masculin
+  profession: chirurgien-dentiste
+  profession_reglementee: chirurgiens-dentistes
+  date_naissance: 1980-01-02
+  ville_naissance: Paris
+  departement_naissance: "75"
+  nationalite: francaise
+  situation_maritale: marie
+  regime_matrimonial: la communaute legale
+  conjoint:
+    civilite_affichage: Madame
+    prenom: Alice
+    nom: Martin
+  adresse_personnelle:
+    adresse_affichee: 5 rue Royale, 75008 Paris
+  adresse_personnelle_affichee: 5 rue Royale, 75008 Paris
+  ordre:
+    professionnel: Ordre des chirurgiens-dentistes
+    departement: Paris
+    ville: Paris
+    numero: "12345"
+    numero_rpps: "10000000001"
+apport:
+  montant: "60 000"
+  montant_lettres: soixante mille euros
+depot_fonds:
+  banque:
+    nom: BANQUE EXEMPLE
+    adresse_affichee: 1 boulevard Haussmann, 75009 Paris
+apport_titres:
+  nb_parts: 60
+  nb_parts_lettres: soixante
+  plage_parts: 41 a 100
+  valeur_globale: "60 000"
+  valeur_nominale_action: "100"
+  valeur_nominale_action_lettres: cent
+societe_cible:
+  denomination: SELARL CABINET MARTIN
+  siege:
+    adresse_affichee: 12 avenue des Ternes, 75017 Paris
+  ville_rcs: Paris
+  numero_rcs: 900 000 001
+capital_souscription:
+  nb_actions_total: 600
+  valeur_nominale_action: "100"
+exercice_social:
+  debut: 1er janvier
+  fin: 31 decembre
+  date_cloture_premier_exercice: 31 decembre 2026
+commissaire_aux_apports:
+  denomination: CAA EXPERTISE
+  forme_sociale: SAS
+  capital_social: 1 000 euros
+  siege:
+    adresse_affichee: 1 rue Scheffer, 75016 Paris
+  ville_rcs: Paris
+  numero_rcs: 948 483 730
+  representant:
+    civilite_affichage: Monsieur
+    prenom: Nabil
+    nom: Saidi
