@@ -16,6 +16,12 @@ class Address(BaseModel):
     adresse_affichee: str | None = None
 
 
+class Contact(BaseModel):
+    telephone: str | None = None
+    telephone_mobile: str | None = None
+    email: str | None = None
+
+
 class Person(BaseModel):
     genre: Gender
     civilite: str
@@ -29,6 +35,15 @@ class Person(BaseModel):
     nom_pere: str | None = None
     nom_mere: str | None = None
     fonction_dirigeant: str | None = None
+    numero_inscription_ordre: str | None = None
+    qualification_principale: str | None = None
+    contact: Contact | None = None
+
+
+class CompanyInscriptionOrdre(BaseModel):
+    departement: str | None = None
+    ville: str | None = None
+    numero: str | None = None
 
 
 class Company(BaseModel):
@@ -45,6 +60,7 @@ class Company(BaseModel):
     capital_variable_formule_intro: str | None = None
     siege: Address | None = None
     ville_rcs: str | None = None
+    inscription_ordre: CompanyInscriptionOrdre | None = None
 
 
 class Signature(BaseModel):
@@ -60,10 +76,70 @@ class Domiciliation(BaseModel):
 
 class DossierOptions(BaseModel):
     derogation: bool = False
+    site_distinct: bool = False
     regime_communautaire: bool = False
     cession: bool = False
     apport: bool = False
     associe_unique: bool = False
+
+
+class DerogationRole(BaseModel):
+    prenom: str | None = None
+    nom: str | None = None
+    fonction: str | None = None
+    numero_inscription_ordre: str | None = None
+    qualification_principale: str | None = None
+    contact: Contact | None = None
+
+
+class SiteDeclare(BaseModel):
+    adresse_affichee: str | None = None
+    date_debut_activite: date | str | None = None
+    temps_hebdomadaire: str | None = None
+
+
+class SiteExistant(BaseModel):
+    adresse_affichee: str | None = None
+    date_debut_activite: date | str | None = None
+    temps_hebdomadaire: str | None = None
+    nature_activite: str | None = None
+
+
+class DerogationCumulActivity(BaseModel):
+    type: str | None = None
+    adresse_affichee: str | None = None
+    temps_hebdomadaire: str | None = None
+    adresse_residence_professionnelle: str | None = None
+
+
+class DerogationCumulMotifs(BaseModel):
+    regroupement_equipe: bool | None = None
+    equipement_soumis_autorisation: bool | None = None
+    equipement_usages_multiples: bool | None = None
+    explication: str | None = None
+
+
+class DerogationCumul(BaseModel):
+    activite_individuelle: DerogationCumulActivity | None = None
+    activite_sel: DerogationCumulActivity | None = None
+    activite_externe: DerogationCumulActivity | None = None
+    motifs: DerogationCumulMotifs | None = None
+
+
+class DerogationConditions(BaseModel):
+    continuite_soins: str | None = None
+    environnement_travail: str | None = None
+    reponse_urgences: str | None = None
+
+
+class DerogationContext(BaseModel):
+    type: str | None = None
+    mode_rendu: str | None = None
+    representant_legal: DerogationRole | None = None
+    associe_exercant: DerogationRole | None = None
+    sites_existants_present: bool | None = None
+    cumul: DerogationCumul | None = None
+    conditions: DerogationConditions | None = None
 
 
 class BailParty(BaseModel):
@@ -461,6 +537,9 @@ class DocumentGenerationContext(BaseModel):
     regime_communautaire: RegimeCommunautaire | None = None
     bail: BailContext | None = None
     cession: CessionContext | None = None
+    derogation: DerogationContext | None = None
+    site_declare: SiteDeclare | None = None
+    sites_existants: list[SiteExistant] = Field(default_factory=list)
     operation_spfpl: OperationSpfpl | None = None
     societe_spfpl: SocieteSpfpl | None = None
     cedant: SpfplPerson | None = None

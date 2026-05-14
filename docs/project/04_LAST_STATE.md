@@ -4,14 +4,14 @@
 2026-05-14
 
 ## Dernier ticket terminé
-RESUME-CODE-CESSION-CAB-001 : reprise de `CODE-CESSION-CAB-001` depuis `main`, restauration du travail cession cabinets, branchement de `DOC-009` à `DOC-012`, smoke DOCX réel et validations locales verts.
+CODE-DEROG-CORE-001 : implémentation du cœur dérogations avec `DOC-013` formulaire multi-sites SEL et `DOC-014` demande cumul SELARL/BNC en formulaires à compléter, smoke DOCX réel et validations locales verts.
 
 ## État courant du repo
 - DOC-001, DOC-002 et DOC-003 disposent chacun d'un générateur dédié déjà terminé.
 - L'orchestrateur dossier expose :
-  - un registre des générateurs DOC-001 à DOC-012 ;
+  - un registre des générateurs DOC-001 à DOC-014 ;
   - `select_documents(structure)` selon le catalogue ;
-  - `select_documents_for_context(ctx)` avec filtrage des batchs régime communautaire, bail/appel de fonds et cession cabinets ;
+  - `select_documents_for_context(ctx)` avec filtrage des batchs régime communautaire, bail/appel de fonds, cession cabinets et dérogations ;
   - `generate_documents(ctx, output_dir) -> list[Path]`.
 - `examples/contexts/lot_01_example.yaml` utilise encore le champ legacy Lot 1 `adresse_domiciliation_affichee`, en attente d'un refactor dédié vers `domiciliation.adresse_affichee`.
 - Un smoke test réel a généré les trois DOCX du Lot 1 dans `artifacts/lot_01_smoke_test/`.
@@ -147,7 +147,7 @@ RESUME-CODE-CESSION-CAB-001 : reprise de `CODE-CESSION-CAB-001` depuis `main`, r
 - `CODE-CESSION-CAB-001` est DONE.
 - `RESUME-CODE-CESSION-CAB-001` est DONE.
 - `PREP-DEROG-001` est DONE.
-- `CODE-DEROG-CORE-001` est READY.
+- `CODE-DEROG-CORE-001` est DONE.
 - `CODE-SPFPL-AGR-INFO-001` est DONE.
 - `UI-001` reste explicitement en attente : ne pas brancher Streamlit maintenant.
 - Fichiers générés connus :
@@ -169,6 +169,8 @@ RESUME-CODE-CESSION-CAB-001 : reprise de `CODE-CESSION-CAB-001` depuis `main`, r
   - `artifacts/lot_03_cession_cabinets_smoke_test/compromis_cession_cabinet_medical.docx`
   - `artifacts/lot_03_cession_cabinets_smoke_test/acte_cession_cabinet_dentaire.docx`
   - `artifacts/lot_03_cession_cabinets_smoke_test/compromis_cession_cabinet_dentaire.docx`
+  - `artifacts/lot_03_derogations_core_smoke_test/formulaire_derogation_sites_sel_formulaire_a_completer.docx`
+  - `artifacts/lot_03_derogations_core_smoke_test/demande_derogation_cumul_selarl_bnc_formulaire_a_completer.docx`
 - Fichiers smoke RENDER-STYLE-001 générés :
   - `artifacts/render_style_001_lot_01_smoke_test/declaration_non_condamnation.docx`
   - `artifacts/render_style_001_lot_01_smoke_test/autorisation_domiciliation.docx`
@@ -245,7 +247,9 @@ RESUME-CODE-CESSION-CAB-001 : reprise de `CODE-CESSION-CAB-001` depuis `main`, r
 - PREP-DEROG-001 place les deux sources Lot 03 préparées et ajoute les rapports de préparation / conversion legacy.
 - CODE-SPFPL-AGR-INFO-001 ajoute les générateurs SPFPL agrément et note d'information, les sources Lot 05 ciblées, le contexte exemple et les tests unitaires associés.
 - Les fichiers `project/source_import/raw_drive_dump/` et `artifacts/` n'ont pas été modifiés.
-- `CODE-DEROG-CORE-001` est le ticket actif confirmé après reprise cession.
+- CODE-DEROG-CORE-001 ajoute `DOC-013` formulaire multi-sites SEL et `DOC-014` demande cumul SELARL/BNC au catalogue et à l'orchestrateur.
+- Les deux documents dérogations cœur sont rendus uniquement en `formulaire_a_completer`, avec zones narratives sensibles laissées visibles et non générées par défaut.
+- `cumul_salariee` reste hors périmètre tant qu'un DOCX propre n'est pas fourni.
 - ARBITRAGE-SOURCES-001 scanne 147 fichiers dans `project/source_import/raw_drive_dump/` et 11 fichiers dans `project/source_documents/`.
 - ARBITRAGE-SOURCES-001 identifie 18 groupes de doublons probables, dont 15 groupes de doublons exacts.
 - Les 4 cas HIGH documentés sont : DOC-001, DOC-002, DOC-003 et la source canonique `PV nomination gérant`.
@@ -275,7 +279,7 @@ RESUME-CODE-CESSION-CAB-001 : reprise de `CODE-CESSION-CAB-001` depuis `main`, r
 
 ## Prochain ticket à lancer
 Tickets actifs/parallélisables :
-- `CODE-DEROG-CORE-001` : implémenter le cœur de la famille dérogations à partir des sources préparées.
+- aucun nouveau ticket de code dérogations à lancer sans arbitrage explicite.
 
 `CODE-BAIL-APP-001` est DONE dans `main`.
 `PREP-DEROG-001` et `CODE-SPFPL-AGR-INFO-001` sont DONE dans `main`.
@@ -317,10 +321,10 @@ Tickets actifs/parallélisables :
   - multi-souscripteurs hors automatisation V1 ;
   - commissaire aux apports et évaluateur fournis par contexte ou référentiel validé ;
   - aucune double option `OU` ou cession/apport ne doit être rendue.
-- Points ouverts dérogations après ARBITRAGE-DEROG-001 :
+- Points ouverts dérogations après CODE-DEROG-CORE-001 :
   - les deux sources Lot 03 préparées sont placées dans `project/source_documents/lot_03/` ;
   - conversion ou remplacement DOCX propre du `.doc` legacy avant `cumul_salariee` ;
-  - mode de rendu `document finalisé` ou `formulaire à compléter` à porter explicitement dans le registre ou le nom de sortie ;
+  - revue humaine juridique/visuelle du premier rendu `DOC-013` et `DOC-014` ;
   - champs narratifs sensibles toujours fournis explicitement ou laissés comme zones à compléter.
 - Points ouverts bail/appel après CODE-BAIL-APP-001 :
   - appel de fonds limité à SELARL dentaire ;
@@ -378,6 +382,9 @@ Tickets actifs/parallélisables :
 - RESUME-CODE-CESSION-CAB-001 : smoke DOCX OK dans `artifacts/lot_03_cession_cabinets_smoke_test/`, quatre documents produits sans placeholder `[` / `]`.
 - RESUME-CODE-CESSION-CAB-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
 - RESUME-CODE-CESSION-CAB-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 89 tests passés.
+- CODE-DEROG-CORE-001 : smoke DOCX OK dans `artifacts/lot_03_derogations_core_smoke_test/`, deux formulaires à compléter produits sans placeholder `[` / `]`.
+- CODE-DEROG-CORE-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
+- CODE-DEROG-CORE-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 95 tests passés.
 - SPEC-TEXTE-ORDRE-001 : source de vérité, source Lot 2 et variantes raw dump SELARL / SELAS / SPFPL cession / SPFPL apport lues en lecture seule.
 - SPEC-TEXTE-ORDRE-001 : spec texte créée dans `docs/delivery/lot_02_demande_inscription_ordre_spec_texte_v1.md`.
 - SPEC-TEXTE-ORDRE-001 : aucun code Python modifié ; validations limitées à la relecture documentaire et au contrôle du diff.
@@ -412,4 +419,4 @@ Tickets actifs/parallélisables :
 - SMOKE-ORCH-L2-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 47 tests passés.
 
 ## Recommandation immédiate suivante
-Poursuivre `CODE-DEROG-CORE-001`.
+Relire humainement les deux DOCX dérogations cœur générés, puis ouvrir un ticket dédié seulement si `cumul_salariee` doit être traité après conversion DOCX propre.

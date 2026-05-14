@@ -3,9 +3,9 @@ from __future__ import annotations
 from sydel_doc_engine.registry.catalog import build_seed_catalog
 
 
-def test_seed_catalog_contains_twelve_documents() -> None:
+def test_seed_catalog_contains_fourteen_documents() -> None:
     catalog = build_seed_catalog()
-    assert len(catalog) == 12
+    assert len(catalog) == 14
 
 
 def test_seed_catalog_contains_lot_one_lot_two_and_lot_three_entries() -> None:
@@ -72,3 +72,19 @@ def test_seed_catalog_cession_cabinets_scope_is_limited_to_sel_structures() -> N
         assert set(document.structures) == {"SELARL", "SELAS"}
         assert document.general_condition == "dossier.options.cession == true"
 
+
+def test_seed_catalog_derogations_core_scope_is_explicitly_incomplete() -> None:
+    catalog = build_seed_catalog()
+
+    multi_sites = next(document for document in catalog if document.doc_id == "DOC-013")
+    cumul_bnc = next(document for document in catalog if document.doc_id == "DOC-014")
+
+    assert set(multi_sites.structures) == {"SELARL", "SELAS"}
+    assert set(cumul_bnc.structures) == {"SELARL"}
+    assert multi_sites.general_condition == "dossier.options.derogation == true"
+    assert cumul_bnc.general_condition == "dossier.options.derogation == true"
+    assert any(
+        "formulaire_a_completer" in condition
+        for condition in multi_sites.specific_conditions
+    )
+    assert any("formulaire_a_completer" in condition for condition in cumul_bnc.specific_conditions)
