@@ -51,6 +51,10 @@ DEROGATION_CORE_STRUCTURES: list[str] = [
     "SELAS",
 ]
 
+STATUTS_SAS_STRUCTURES: list[str] = [
+    "SAS",
+]
+
 
 def build_seed_catalog() -> list[DocumentDefinition]:
     return [
@@ -357,6 +361,27 @@ def build_seed_catalog() -> list[DocumentDefinition]:
                 "Pre-remplissage partiel uniquement ; cumul salariee legacy reste hors "
                 "perimetre."
             ),
+        ),
+        DocumentDefinition(
+            doc_id="DOC-015",
+            canonical_name="Statuts SAS / SPFPL medecins",
+            generator_name="generate_statuts_sas_spfpl_medecins",
+            lot=4,
+            category=DocumentCategory.SPECIFIQUE,
+            structures=STATUTS_SAS_STRUCTURES,
+            general_condition="dossier.structure == SAS",
+            specific_conditions=[
+                "statuts_sas.type == spfpl_medecins",
+                "statuts_sas.profession == medecin",
+                "actionnaire unique uniquement",
+                "president rattache a actionnaire_unique",
+            ],
+            dynamic_associates=False,
+            grammar_variants=False,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path="project/source_documents/lot_04/STATUTS_SAS_SPFPL_medecins_modele.docx",
+            specification_path="docs/delivery/lot_04_statuts_sas_spec_texte_v1.md",
+            notes="Statuts SAS V1 limites a la source SPFPL medecins actionnaire unique.",
         ),
     ]
 

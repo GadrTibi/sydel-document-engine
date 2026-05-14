@@ -1,0 +1,75 @@
+structure: SAS
+dossier_options:
+  associe_unique: true
+personne_signataire:
+  genre: masculin
+  civilite: Monsieur
+  prenom: Camille
+  nom: Martin
+signature:
+  lieu: Paris
+  date: 2026-05-14
+statuts_sas:
+  type: spfpl_medecins
+  profession: medecin
+societe_spfpl:
+  denomination: SPFPL MARTIN
+  capital_social: "12 000"
+  capital_social_lettres: douze mille
+  nb_actions_total: 120
+  nb_actions_total_lettres: cent vingt
+  valeur_nominale_action: "100"
+  valeur_nominale_action_lettres: cent euros
+  profession: medecin
+  siege:
+    adresse_affichee: 10 rue de la Paix, 75002 Paris
+actionnaire_unique:
+  civilite_affichage: Docteur
+  prenom: Camille
+  nom: Martin
+  genre: masculin
+  profession: medecin
+  qualification_principale: Medecin cardiologue
+  date_naissance: 2 janvier 1980
+  ville_naissance: Paris
+  departement_naissance: "75"
+  nationalite: francaise
+  situation_maritale: Marie
+  regime_matrimonial: la communaute legale
+  conjoint:
+    civilite_affichage: Madame
+    prenom: Alice
+    nom: Martin
+  adresse_personnelle_affichee: 5 rue Royale, 75008 Paris
+  ordre:
+    departement: Paris
+    numero: "12345"
+    numero_rpps: "10000000001"
+  nb_actions: 120
+president:
+  ref_associe_index: 0
+  civilite_affichage: Docteur
+  prenom: Camille
+  nom: Martin
+  adresse_personnelle_affichee: 5 rue Royale, 75008 Paris
+  duree_mandat: illimitee
+depot_fonds:
+  banque:
+    nom: BANQUE EXEMPLE
+  montant: "12 000"
+exercice_social:
+  debut: 1er janvier
+  fin: 31 decembre
+  date_cloture_premier_exercice: 31 decembre 2026
+capital_souscription:
+  nb_actions_total: 120
+  valeur_nominale_action: "100"
+  apports_numeraire_montant: "12 000"
+  souscripteurs:
+    - civilite_affichage: Docteur
+      prenom: Camille
+      nom: Martin
+      profession: medecin
+      adresse_personnelle_affichee: 5 rue Royale, 75008 Paris
+      nb_actions: 120
+      qualite: actionnaire unique
