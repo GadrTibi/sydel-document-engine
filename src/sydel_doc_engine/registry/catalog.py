@@ -383,6 +383,75 @@ def build_seed_catalog() -> list[DocumentDefinition]:
             specification_path="docs/delivery/lot_04_statuts_sas_spec_texte_v1.md",
             notes="Statuts SAS V1 limites a la source SPFPL medecins actionnaire unique.",
         ),
+        DocumentDefinition(
+            doc_id="DOC-016",
+            canonical_name="Statuts SELARL chirurgien-dentiste",
+            generator_name="generate_statuts_selarl_chirurgien_dentiste",
+            lot=4,
+            category=DocumentCategory.SPECIFIQUE,
+            structures=["SELARL"],
+            general_condition="dossier.structure == SELARL",
+            specific_conditions=[
+                "statuts_sel.overlay == selarl_dentiste",
+                "associe unique uniquement en V1",
+                "pluralite associes bloquee sans wording valide",
+            ],
+            dynamic_associates=False,
+            grammar_variants=True,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path=(
+                "project/source_documents/lot_04/"
+                "Modele statuts SELARL chirurgien dentiste sans communaute.docx"
+            ),
+            specification_path=(
+                "docs/delivery/lot_04_statuts_sel_exercice_spec_texte_v1.md"
+            ),
+            notes="Statuts SEL d'exercice V1, overlay dentiste associe unique.",
+        ),
+        DocumentDefinition(
+            doc_id="DOC-017",
+            canonical_name="Statuts SELARL medecin",
+            generator_name="generate_statuts_selarl_medecin",
+            lot=4,
+            category=DocumentCategory.SPECIFIQUE,
+            structures=["SELARL"],
+            general_condition="dossier.structure == SELARL",
+            specific_conditions=[
+                "statuts_sel.overlay == selarl_medecin",
+                "associe unique uniquement en V1",
+                "ligne personne_2 source non canonique omise en V1",
+            ],
+            dynamic_associates=False,
+            grammar_variants=True,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path="project/source_documents/lot_04/ModeÌ€le statuts SELARL meÌdecins.docx",
+            specification_path=(
+                "docs/delivery/lot_04_statuts_sel_exercice_spec_texte_v1.md"
+            ),
+            notes="Statuts SEL d'exercice V1, overlay medecin associe unique.",
+        ),
+        DocumentDefinition(
+            doc_id="DOC-018",
+            canonical_name="Statuts SELAS medecin",
+            generator_name="generate_statuts_selas_medecin",
+            lot=4,
+            category=DocumentCategory.SPECIFIQUE,
+            structures=["SELAS"],
+            general_condition="dossier.structure == SELAS",
+            specific_conditions=[
+                "statuts_sel.overlay == selas_medecin",
+                "associe unique uniquement en V1",
+                "second lieu rendu seulement si nom et adresse sont fournis ensemble",
+            ],
+            dynamic_associates=False,
+            grammar_variants=True,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path="project/source_documents/lot_04/Statuts_SELAS_medecin.docx",
+            specification_path=(
+                "docs/delivery/lot_04_statuts_sel_exercice_spec_texte_v1.md"
+            ),
+            notes="Statuts SEL d'exercice V1, overlay SELAS medecin associe unique.",
+        ),
     ]
 
 

@@ -1,0 +1,232 @@
+contexts:
+  selarl_dentiste:
+    structure: SELARL
+    dossier_options:
+      associe_unique: true
+    personne_signataire:
+      genre: masculin
+      civilite: Monsieur
+      prenom: Camille
+      nom: Martin
+    signature:
+      lieu: Paris
+      date: 2026-05-14
+      prestataire_signature_electronique: Yousign
+    societe:
+      denomination: SELARL DENTAIRE MARTIN
+      forme_sociale_complete: Societe d'exercice liberal a responsabilite limitee
+      forme_sociale_abregee: SELARL
+      capital_social: "1 000"
+      capital_social_lettres: mille
+      duree: 99 ans
+      siege:
+        adresse_affichee: 10 rue de la Paix, 75002 Paris
+    statuts_sel:
+      overlay: selarl_dentiste
+      profession: chirurgien-dentiste
+    associes:
+      - genre: masculin
+        civilite_affichage: Docteur
+        prenom: Camille
+        nom: Martin
+        nb_parts: 1000
+        profession: chirurgien-dentiste
+        profession_reglementee: chirurgien-dentiste
+        profession_reglementee_pluriel: chirurgiens-dentistes
+        date_naissance: 1980-01-02
+        ville_naissance: Paris
+        departement_naissance: "75"
+        nationalite: francaise
+        situation_maritale: marie
+        regime_matrimonial: communaute legale
+        conjoint:
+          civilite_affichage: Madame
+          prenom: Alice
+          nom: Martin
+        adresse_personnelle_affichee: 5 rue Royale, 75008 Paris
+        ordre:
+          professionnel: Ordre des chirurgiens-dentistes
+          departement: Paris
+          ville: Paris
+          numero: "12345"
+          numero_rpps: "10000000001"
+        apport_numeraire: "1 000"
+        apport_numeraire_lettres: mille
+    capital:
+      montant: "1 000"
+      montant_lettres: mille
+      nombre_titres_total: 1000
+      valeur_nominale_titre: "1"
+      type_titre: parts_sociales
+    apport:
+      montant: "1 000"
+      montant_lettres: mille
+    depot_fonds:
+      banque:
+        nom: BANQUE EXEMPLE
+    exercice_social:
+      debut: 1er janvier
+      fin: 31 decembre
+      date_cloture_premier_exercice: 31 decembre 2026
+      lieux:
+        - adresse_affichee: 12 avenue de la Republique, 75011 Paris
+
+  selarl_medecin:
+    structure: SELARL
+    dossier_options:
+      associe_unique: true
+    personne_signataire:
+      genre: masculin
+      civilite: Monsieur
+      prenom: Camille
+      nom: Martin
+    signature:
+      lieu: Paris
+      date: 2026-05-14
+    societe:
+      denomination: SELARL MEDICALE MARTIN
+      forme_sociale_complete: Societe d'exercice liberal a responsabilite limitee
+      forme_sociale_abregee: SELARL
+      capital_social: "1 000"
+      capital_social_lettres: mille
+      siege:
+        adresse_affichee: 10 rue de la Paix, 75002 Paris
+    statuts_sel:
+      overlay: selarl_medecin
+      profession: medecin
+    associes:
+      - genre: masculin
+        civilite_affichage: Docteur
+        prenom: Camille
+        nom: Martin
+        nb_parts: 1000
+        profession: medecin
+        profession_reglementee: medecin
+        profession_reglementee_pluriel: medecins
+        date_naissance: 1980-01-02
+        ville_naissance: Paris
+        departement_naissance: "75"
+        nationalite: francaise
+        situation_maritale: marie
+        regime_matrimonial: communaute legale
+        adresse_personnelle_affichee: 5 rue Royale, 75008 Paris
+        ordre:
+          professionnel: Ordre des medecins
+          departement: Paris
+          ville: Paris
+          numero: "12345"
+          numero_rpps: "10000000001"
+        apport_numeraire: "1 000"
+        apport_numeraire_lettres: mille
+    capital:
+      montant: "1 000"
+      montant_lettres: mille
+      nombre_titres_total: 1000
+      valeur_nominale_titre: "1"
+      type_titre: parts_sociales
+    apport:
+      montant: "1 000"
+      montant_lettres: mille
+    depot_fonds:
+      banque:
+        nom: BANQUE EXEMPLE
+        adresse_affichee: 1 boulevard Haussmann, 75009 Paris
+    exercice_social:
+      date_cloture_premier_exercice: 31 decembre 2026
+      lieux:
+        - adresse_affichee: 10 rue de la Paix, 75002 Paris
+    gerance:
+      seuil_achat_materiel: 10 000 euros
+      seuil_emprunt: 50 000 euros
+    document:
+      nombre_exemplaires_lettres: trois
+      signataire:
+        prenom: Camille
+        nom: Martin
+
+  selas_medecin:
+    structure: SELAS
+    dossier_options:
+      associe_unique: true
+    personne_signataire:
+      genre: masculin
+      civilite: Monsieur
+      prenom: Camille
+      nom: Martin
+    signature:
+      lieu: Paris
+      date: 2026-05-14
+      prestataire_signature_electronique: Yousign
+    societe:
+      denomination: SELAS MEDICALE MARTIN
+      forme_sociale: societe d'exercice liberal par actions simplifiee
+      forme_sociale_complete: Societe d'exercice liberal par actions simplifiee
+      forme_sociale_abregee: SELAS
+      capital_social: "1 000"
+      capital_social_lettres: mille
+      duree: "99"
+      siege:
+        adresse_affichee: 10 rue de la Paix, 75002 Paris
+    statuts_sel:
+      overlay: selas_medecin
+      profession: medecin
+    associes:
+      - genre: masculin
+        civilite_affichage: Docteur
+        prenom: Camille
+        nom: Martin
+        nb_parts: 1000
+        profession: medecin
+        profession_reglementee: medecin
+        profession_reglementee_pluriel: medecins
+        qualification_principale: cardiologue
+        titre_professionnel: Docteur
+        qualite: associe unique
+        date_naissance: 1980-01-02
+        ville_naissance: Paris
+        departement_naissance: "75"
+        nationalite: francaise
+        situation_maritale: marie
+        regime_matrimonial: communaute legale
+        conjoint:
+          civilite_affichage: Madame
+          prenom: Alice
+          nom: Martin
+        adresse_personnelle_affichee: 5 rue Royale, 75008 Paris
+        ordre:
+          professionnel: Ordre des medecins
+          departement: Paris
+          ville: Paris
+          numero: "12345"
+          numero_rpps: "10000000001"
+        apport_numeraire: "1 000"
+        apport_numeraire_lettres: mille
+    dirigeant_nomine:
+      genre: masculin
+      civilite_affichage: Docteur
+      prenom: Camille
+      nom: Martin
+      fonction_affichage: President
+      ref_associe_index: 0
+      duree_mandat: illimitee
+    capital:
+      montant: "1 000"
+      montant_lettres: mille
+      nombre_titres_total: 1000
+      nombre_titres_total_lettres: mille
+      valeur_nominale_titre: "1"
+      valeur_nominale_titre_lettres: un euro
+      type_titre: actions
+    apport:
+      montant: "1 000"
+      montant_lettres: mille
+    depot_fonds:
+      banque:
+        nom: BANQUE EXEMPLE
+        adresse_affichee: 1 boulevard Haussmann, 75009 Paris
+    exercice_social:
+      debut: 1er janvier
+      fin: 31 decembre
+      date_cloture_premier_exercice: 31 decembre 2026
+      lieux:
+        - adresse_affichee: 12 avenue de la Republique, 75011 Paris

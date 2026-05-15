@@ -1,0 +1,289 @@
+from __future__ import annotations
+
+from datetime import date
+from pathlib import Path
+
+import pytest
+from docx import Document
+
+from sydel_doc_engine.domain.enums import Gender
+from sydel_doc_engine.domain.models import (
+    Address,
+    Apport,
+    Associe,
+    CapitalContext,
+    CessionBanque,
+    Company,
+    DepotFonds,
+    DirigeantNomine,
+    DocumentContext,
+    DocumentGenerationContext,
+    DocumentSignataire,
+    DossierOptions,
+    ExerciceLieu,
+    ExerciceSocial,
+    GeranceContext,
+    Person,
+    Signature,
+    SpfplConjoint,
+    SpfplOrdre,
+    StatutsSel,
+)
+from sydel_doc_engine.generators.lot_04.statuts_selarl_dentiste import (
+    StatutsSelarlDentisteGenerator,
+)
+from sydel_doc_engine.generators.lot_04.statuts_selarl_medecin import (
+    StatutsSelarlMedecinGenerator,
+)
+from sydel_doc_engine.generators.lot_04.statuts_selas_medecin import (
+    StatutsSelasMedecinGenerator,
+)
+from sydel_doc_engine.orchestrator.service import DocumentOrchestrator
+from sydel_doc_engine.registry.catalog import build_seed_catalog
+
+
+def _associate(*, gender: Gender = Gender.MASCULIN) -> Associe:
+    return Associe(
+        genre=gender,
+        civilite_affichage="Docteur",
+        prenom="Camille",
+        nom="Martin",
+        nb_parts=1000,
+        profession="medecin",
+        profession_reglementee="medecin",
+        profession_reglementee_pluriel="medecins",
+        qualification_principale="cardiologue",
+        titre_professionnel="Docteur",
+        qualite="associe unique",
+        date_naissance=date(1980, 1, 2),
+        ville_naissance="Paris",
+        departement_naissance="75",
+        nationalite="francaise",
+        situation_maritale="marie",
+        regime_matrimonial="communaute legale",
+        conjoint=SpfplConjoint(
+            civilite_affichage="Madame",
+            prenom="Alice",
+            nom="Martin",
+        ),
+        adresse_personnelle_affichee="5 rue Royale, 75008 Paris",
+        ordre=SpfplOrdre(
+            professionnel="Ordre des medecins",
+            departement="Paris",
+            ville="Paris",
+            numero="12345",
+            numero_rpps="10000000001",
+        ),
+        apport_numeraire="1 000",
+        apport_numeraire_lettres="mille",
+    )
+
+
+def _context(*, overlay: str, gender: Gender = Gender.MASCULIN) -> DocumentGenerationContext:
+    structure = "SELAS" if overlay == "selas_medecin" else "SELARL"
+    return DocumentGenerationContext(
+        structure=structure,
+        dossier_options=DossierOptions(associe_unique=True),
+        personne_signataire=Person(
+            genre=gender,
+            civilite="Monsieur" if gender == Gender.MASCULIN else "Madame",
+            prenom="Camille",
+            nom="Martin",
+        ),
+        signature=Signature(
+            lieu="Paris",
+            date=date(2026, 5, 14),
+            prestataire_signature_electronique="Yousign",
+        ),
+        societe=Company(
+            denomination="SEL MARTIN",
+            forme_sociale="societe d'exercice liberal par actions simplifiee",
+            forme_sociale_complete=(
+                "Societe d'exercice liberal par actions simplifiee"
+                if overlay == "selas_medecin"
+                else "Societe d'exercice liberal a responsabilite limitee"
+            ),
+            forme_sociale_abregee="SELAS",
+            capital_social="1 000",
+            capital_social_lettres="mille",
+            duree="99 ans",
+            siege=Address(adresse_affichee="10 rue de la Paix, 75002 Paris"),
+        ),
+        statuts_sel=StatutsSel(overlay=overlay, profession="medecin"),
+        associes=[_associate(gender=gender)],
+        dirigeant_nomine=DirigeantNomine(
+            genre=gender,
+            civilite_affichage="Docteur",
+            prenom="Camille",
+            nom="Martin",
+            fonction_affichage="President",
+            ref_associe_index=0,
+            duree_mandat="illimitee",
+        ),
+        capital=CapitalContext(
+            montant="1 000",
+            montant_lettres="mille",
+            nombre_titres_total=1000,
+            nombre_titres_total_lettres="mille",
+            valeur_nominale_titre="1",
+            valeur_nominale_titre_lettres="un euro",
+            type_titre="actions" if overlay == "selas_medecin" else "parts_sociales",
+        ),
+        apport=Apport(montant="1 000", montant_lettres="mille"),
+        depot_fonds=DepotFonds(
+            banque=CessionBanque(
+                nom="BANQUE EXEMPLE",
+                adresse_affichee="1 boulevard Haussmann, 75009 Paris",
+            )
+        ),
+        exercice_social=ExerciceSocial(
+            debut="1er janvier",
+            fin="31 decembre",
+            date_cloture_premier_exercice="31 decembre 2026",
+            lieux=[ExerciceLieu(adresse_affichee="12 avenue de la Republique, 75011 Paris")],
+        ),
+        gerance=GeranceContext(
+            seuil_achat_materiel="10 000 euros",
+            seuil_emprunt="50 000 euros",
+        ),
+        document=DocumentContext(
+            nombre_exemplaires_lettres="trois",
+            signataire=DocumentSignataire(prenom="Camille", nom="Martin"),
+        ),
+    )
+
+
+def _docx_text(path: Path) -> str:
+    document = Document(path)
+    return "\n".join(paragraph.text for paragraph in document.paragraphs if paragraph.text)
+
+
+def _assert_clean(text: str) -> None:
+    assert "[" not in text
+    assert "]" not in text
+
+
+def test_statuts_selarl_dentiste_generates_unique_associate_docx(tmp_path: Path) -> None:
+    ctx = _context(overlay="selarl_dentiste")
+    ctx.associes[0].profession = "chirurgien-dentiste"
+    ctx.associes[0].profession_reglementee = "chirurgien-dentiste"
+    ctx.associes[0].profession_reglementee_pluriel = "chirurgiens-dentistes"
+    ctx.associes[0].ordre.professionnel = "Ordre des chirurgiens-dentistes"
+
+    output_path = StatutsSelarlDentisteGenerator().generate(ctx, tmp_path)
+
+    text = _docx_text(output_path)
+
+    assert output_path.name == "statuts_selarl_chirurgien_dentiste.docx"
+    assert "SEL MARTIN" in text
+    assert "chirurgiens-dentistes" in text
+    assert "Yousign" in text
+    _assert_clean(text)
+
+
+def test_statuts_selarl_medecin_skips_personne_2_source_alias(tmp_path: Path) -> None:
+    output_path = StatutsSelarlMedecinGenerator().generate(
+        _context(overlay="selarl_medecin"),
+        tmp_path,
+    )
+
+    text = _docx_text(output_path)
+
+    assert output_path.name == "statuts_selarl_medecin.docx"
+    assert "Conseil" in text
+    assert "personne_2" not in text
+    assert "50 000 euros" in text
+    _assert_clean(text)
+
+
+def test_statuts_selas_medecin_generates_without_second_lieu_by_default(
+    tmp_path: Path,
+) -> None:
+    output_path = StatutsSelasMedecinGenerator().generate(
+        _context(overlay="selas_medecin"),
+        tmp_path,
+    )
+
+    text = _docx_text(output_path)
+
+    assert output_path.name == "statuts_selas_medecin.docx"
+    assert "Societe d'exercice liberal par actions simplifiee" in text
+    assert "President" in text
+    assert "nom_lieu_exercice_2" not in text
+    _assert_clean(text)
+
+
+def test_statuts_selas_medecin_renders_complete_second_lieu(tmp_path: Path) -> None:
+    ctx = _context(overlay="selas_medecin")
+    ctx.exercice_social.lieux.append(
+        ExerciceLieu(
+            nom="Cabinet secondaire",
+            adresse_affichee="20 rue Bleue, 75009 Paris",
+        )
+    )
+
+    output_path = StatutsSelasMedecinGenerator().generate(ctx, tmp_path)
+
+    text = _docx_text(output_path)
+
+    assert "Cabinet secondaire, 20 rue Bleue, 75009 Paris" in text
+    _assert_clean(text)
+
+
+def test_statuts_sel_blocks_multi_associes(tmp_path: Path) -> None:
+    ctx = _context(overlay="selarl_medecin")
+    ctx.associes.append(_associate())
+
+    with pytest.raises(ValueError, match="multi-associes"):
+        StatutsSelarlMedecinGenerator().generate(ctx, tmp_path)
+
+
+def test_statuts_selas_blocks_partial_second_lieu(tmp_path: Path) -> None:
+    ctx = _context(overlay="selas_medecin")
+    ctx.exercice_social.lieux.append(ExerciceLieu(nom="Cabinet secondaire"))
+
+    with pytest.raises(ValueError, match="doivent etre fournis ensemble"):
+        StatutsSelasMedecinGenerator().generate(ctx, tmp_path)
+
+
+def test_statuts_selas_blocks_dirigeant_non_associe_signature(tmp_path: Path) -> None:
+    ctx = _context(overlay="selas_medecin")
+    ctx.dirigeant_nomine.nom = "Bernard"
+    ctx.dirigeant_nomine.ref_associe_index = None
+
+    with pytest.raises(ValueError, match="dirigeant non associe"):
+        StatutsSelasMedecinGenerator().generate(ctx, tmp_path)
+
+
+def test_statuts_sel_applies_female_birth_agreement(tmp_path: Path) -> None:
+    ctx = _context(overlay="selas_medecin", gender=Gender.FEMININ)
+
+    output_path = StatutsSelasMedecinGenerator().generate(ctx, tmp_path)
+
+    text = _docx_text(output_path)
+
+    assert "nÃ©e le" in text or "née le" in text
+    _assert_clean(text)
+
+
+def test_statuts_sel_orchestrator_selects_only_requested_overlay() -> None:
+    orchestrator = DocumentOrchestrator(build_seed_catalog())
+
+    selected = orchestrator.select_documents_for_context(_context(overlay="selarl_medecin"))
+
+    selected_ids = {document.doc_id for document in selected}
+    assert "DOC-017" in selected_ids
+    assert "DOC-016" not in selected_ids
+    assert "DOC-018" not in selected_ids
+
+
+def test_statuts_sel_orchestrator_ignores_sel_statuts_without_overlay() -> None:
+    orchestrator = DocumentOrchestrator(build_seed_catalog())
+    ctx = _context(overlay="selarl_medecin")
+    ctx.statuts_sel = None
+
+    selected = orchestrator.select_documents_for_context(ctx)
+
+    assert {"DOC-016", "DOC-017", "DOC-018"}.isdisjoint(
+        {document.doc_id for document in selected}
+    )

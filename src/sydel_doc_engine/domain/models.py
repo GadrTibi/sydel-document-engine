@@ -55,9 +55,11 @@ class Company(BaseModel):
     denomination: str | None = None
     capital: str | None = None
     capital_social: str | None = None
+    capital_social_lettres: str | None = None
     capital_variable: bool | None = None
     capital_variable_mention: str | None = None
     capital_variable_formule_intro: str | None = None
+    duree: str | None = None
     siege: Address | None = None
     ville_rcs: str | None = None
     inscription_ordre: CompanyInscriptionOrdre | None = None
@@ -68,6 +70,7 @@ class Signature(BaseModel):
     date: date
     image_optionnelle: Path | None = None
     nombre_exemplaires: str | None = None
+    prestataire_signature_electronique: str | None = None
 
 
 class Domiciliation(BaseModel):
@@ -414,6 +417,11 @@ class StatutsSas(BaseModel):
     profession: str | None = None
 
 
+class StatutsSel(BaseModel):
+    overlay: str | None = None
+    profession: str | None = None
+
+
 class StatutsPresident(BaseModel):
     ref_associe_index: int | None = None
     civilite_affichage: str | None = None
@@ -427,6 +435,7 @@ class ExerciceSocial(BaseModel):
     debut: str | None = None
     fin: str | None = None
     date_cloture_premier_exercice: str | None = None
+    lieux: list[ExerciceLieu] = Field(default_factory=list)
 
 
 class SocieteCible(BaseModel):
@@ -590,6 +599,24 @@ class Associe(BaseModel):
     nom: str
     nb_parts: int
     est_present_ou_represente: bool = True
+    profession: str | None = None
+    profession_reglementee: str | None = None
+    profession_reglementee_pluriel: str | None = None
+    qualification_principale: str | None = None
+    titre_professionnel: str | None = None
+    qualite: str | None = None
+    date_naissance: date | str | None = None
+    ville_naissance: str | None = None
+    departement_naissance: str | None = None
+    nationalite: str | None = None
+    situation_maritale: str | None = None
+    regime_matrimonial: str | None = None
+    conjoint: SpfplConjoint | None = None
+    adresse_personnelle: Address | None = None
+    adresse_personnelle_affichee: str | None = None
+    ordre: SpfplOrdre | None = None
+    apport_numeraire: str | None = None
+    apport_numeraire_lettres: str | None = None
 
 
 class DirigeantNomine(BaseModel):
@@ -604,6 +631,7 @@ class DirigeantNomine(BaseModel):
     adresse_personnelle: Address | None = None
     fonction_affichage: str = "gérant"
     ref_associe_index: int | None = None
+    duree_mandat: str | None = None
 
 
 class DecisionContext(BaseModel):
@@ -628,6 +656,23 @@ class CapitalContext(BaseModel):
     nb_parts_total: int | None = None
     valeur_nominale_part: str | None = None
     nb_parts_representees: int | None = None
+    montant: str | None = None
+    montant_lettres: str | None = None
+    nombre_titres_total: int | None = None
+    nombre_titres_total_lettres: str | None = None
+    valeur_nominale_titre: str | None = None
+    valeur_nominale_titre_lettres: str | None = None
+    type_titre: str | None = None
+
+
+class ExerciceLieu(BaseModel):
+    nom: str | None = None
+    adresse_affichee: str | None = None
+
+
+class GeranceContext(BaseModel):
+    seuil_achat_materiel: str | None = None
+    seuil_emprunt: str | None = None
 
 
 class Emprunt(BaseModel):
@@ -654,6 +699,7 @@ class DocumentGenerationContext(BaseModel):
     decision: DecisionContext | None = None
     reunion: ReunionContext | None = None
     capital: CapitalContext | None = None
+    gerance: GeranceContext | None = None
     emprunt: Emprunt | None = None
     bien_immobilier: BienImmobilier | None = None
     apport: Apport | None = None
@@ -665,6 +711,7 @@ class DocumentGenerationContext(BaseModel):
     sites_existants: list[SiteExistant] = Field(default_factory=list)
     operation_spfpl: OperationSpfpl | None = None
     statuts_sas: StatutsSas | None = None
+    statuts_sel: StatutsSel | None = None
     societe_spfpl: SocieteSpfpl | None = None
     actionnaire_unique: SpfplPerson | None = None
     president: StatutsPresident | None = None
