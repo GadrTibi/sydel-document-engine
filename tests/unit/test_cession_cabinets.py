@@ -5,6 +5,8 @@ from pathlib import Path
 
 import pytest
 from docx import Document
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.oxml.ns import qn
 
 from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import (
@@ -196,6 +198,14 @@ def _assert_clean_docx_text(text: str) -> None:
     assert "De reprendre les contrats de travail de" not in text
 
 
+def _table_has_explicit_borders(table) -> bool:
+    borders = table._tbl.tblPr.find(qn("w:tblBorders"))
+    return borders is not None and all(
+        borders.find(qn(f"w:{edge}")) is not None
+        for edge in ("top", "left", "bottom", "right")
+    )
+
+
 @pytest.mark.parametrize(
     ("generator", "ctx", "filename", "expected_text"),
     [
@@ -245,6 +255,16 @@ def test_cession_cabinet_generators_render_docx(
     assert expected_text in text
     assert "SELARL CABINET DURAND" in text
     assert "CHIFFRES D'AFFAIRES ET RESULTATS" in text
+    document = Document(output_path)
+    assert any(
+        table.cell(0, 0).text.strip() == "CHIFFRES D'AFFAIRES ET RESULTATS"
+        and _table_has_explicit_borders(table)
+        for table in document.tables
+    )
+    party_marker = next(p for p in document.paragraphs if p.text == "De premiere part")
+    assert party_marker.alignment == WD_ALIGN_PARAGRAPH.RIGHT
+    assert party_marker.runs[0].bold is True
+    assert _table_has_explicit_borders(document.tables[-1])
     _assert_clean_docx_text(text)
 
 

@@ -29,10 +29,13 @@ from sydel_doc_engine.domain.models import (
     DocumentGenerationContext,
 )
 from sydel_doc_engine.rendering.docx_builder import (
+    add_bordered_data_table,
+    add_framed_section_title,
     add_framed_title,
     add_hyphen_list_item,
     add_paragraph,
-    add_signature_lines,
+    add_party_marker,
+    add_signature_table,
     new_document,
 )
 
@@ -369,8 +372,8 @@ def _add_parties(docx, data: _CessionData) -> None:
         _vendeur_full_line(data.vendeur),
         alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
     )
-    add_paragraph(docx, "Ci-apres designe le vendeur ou le soussigne de premiere part")
-    add_paragraph(docx, "De premiere part")
+    add_paragraph(docx, "Ci-apres designe le vendeur ou le soussigne de premiere part", bold=True, underline=True)
+    add_party_marker(docx, "De premiere part")
 
     add_paragraph(
         docx,
@@ -403,9 +406,9 @@ def _add_parties(docx, data: _CessionData) -> None:
             f"{_representant_label(data.representant)}, domicilie en cette qualite audit siege."
         ),
     )
-    add_paragraph(docx, "Ci-apres designe l'acquereur ou le soussigne de seconde part")
-    add_paragraph(docx, "De deuxieme part")
-    add_paragraph(docx, "Il a ete declare fait et convenu ce qui suit :")
+    add_paragraph(docx, "Ci-apres designe l'acquereur ou le soussigne de seconde part", bold=True, underline=True)
+    add_party_marker(docx, "De deuxieme part")
+    add_paragraph(docx, "Il a ete declare fait et convenu ce qui suit :", bold=True, underline=True)
 
 
 def _add_objet(docx, data: _CessionData, variant: CessionCabinetVariant) -> None:
@@ -564,19 +567,19 @@ def _add_bail(docx, data: _CessionData, variant: CessionCabinetVariant) -> None:
 
 def _add_exercices(docx, data: _CessionData) -> None:
     _add_section_title(docx, "CHIFFRES D'AFFAIRES ET RESULTATS")
-    table = docx.add_table(rows=1, cols=3)
-    table.style = "Table Grid"
     headers = ["Exercice", "Chiffre d'affaires", "Resultat"]
-    for index, header in enumerate(headers):
-        table.rows[0].cells[index].paragraphs[0].add_run(header).bold = True
-    for exercice in data.exercices:
-        cells = table.add_row().cells
-        cells[0].text = _required_text(exercice.periode, "cession.exercices[].periode")
-        cells[1].text = _required_text(
-            exercice.chiffre_affaires,
-            "cession.exercices[].chiffre_affaires",
-        )
-        cells[2].text = _required_text(exercice.resultat, "cession.exercices[].resultat")
+    rows = [
+        [
+            _required_text(exercice.periode, "cession.exercices[].periode"),
+            _required_text(
+                exercice.chiffre_affaires,
+                "cession.exercices[].chiffre_affaires",
+            ),
+            _required_text(exercice.resultat, "cession.exercices[].resultat"),
+        ]
+        for exercice in data.exercices
+    ]
+    add_bordered_data_table(docx, headers, rows)
 
 
 def _add_situation_generale(
@@ -796,14 +799,14 @@ def _add_signature(
     )
     if variant.type_cabinet == DENTAIRE and variant.etape == ACTE:
         add_paragraph(docx, "Lu et approuve", italic=True)
-    add_signature_lines(
+    add_signature_table(
         docx,
         [
-            f"Le vendeur : {_vendeur_label(data.vendeur)}",
-            f"L'acquereur : {_required_text(data.acquereur.denomination_societe, 'cession.acquereur.denomination_societe')}",
+            [
+                f"Le vendeur : {_vendeur_label(data.vendeur)}",
+                f"L'acquereur : {_required_text(data.acquereur.denomination_societe, 'cession.acquereur.denomination_societe')}",
+            ]
         ],
-        alignment=WD_ALIGN_PARAGRAPH.CENTER,
-        bold=True,
     )
 
 
@@ -829,7 +832,7 @@ def _section_label(title: str) -> str:
 
 
 def _add_section_title(docx, title: str) -> None:
-    add_paragraph(docx, _section_label(title), bold=True, underline=True, space_before_pt=10)
+    add_framed_section_title(docx, _section_label(title))
 
 
 def _vendeur_full_line(vendeur: CessionVendeur) -> str:

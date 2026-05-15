@@ -21,7 +21,14 @@ from sydel_doc_engine.generators.lot_03.bail_appel_common import (
     required_text,
     validate_appel_fonds_context,
 )
-from sydel_doc_engine.rendering.docx_builder import add_paragraph, new_document
+from sydel_doc_engine.rendering.docx_builder import (
+    add_centered_amount,
+    add_italic_instruction,
+    add_paragraph,
+    add_right_aligned_lines,
+    add_subject_heading,
+    new_document,
+)
 
 OUTPUT_FILENAME = "appel_fond_sel.docx"
 
@@ -63,11 +70,11 @@ class AppelFondSelGenerator:
                 f"{format_display_date(ctx.signature.date, 'signature.date')}"
             ),
         )
-        add_paragraph(
+        add_italic_instruction(
             docx,
             f"A l’attention de {destinataire_label}",
         )
-        add_paragraph(docx, "Objet : demande de déblocage des fonds")
+        add_subject_heading(docx, "Objet : demande de déblocage des fonds")
         add_paragraph(docx, "Cher Monsieur,")
         add_paragraph(
             docx,
@@ -77,14 +84,16 @@ class AppelFondSelGenerator:
             ),
             alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
         )
-        add_paragraph(
+        add_centered_amount(
             docx,
-            required_text(
-                financement.montant_deblocage,
-                "cession.financement.montant_deblocage",
-            ),
+            [
+                required_text(
+                    financement.montant_deblocage,
+                    "cession.financement.montant_deblocage",
+                ),
+                "€",
+            ],
         )
-        add_paragraph(docx, "€")
         add_paragraph(
             docx,
             (
@@ -97,12 +106,14 @@ class AppelFondSelGenerator:
             docx,
             "Nous vous prions d’agréer, Cher Monsieur, nos salutations distinguées.",
         )
-        add_paragraph(
+        add_right_aligned_lines(
             docx,
-            (
-                f"{required_text(signataire.prenom, 'document.signataire.prenom')} "
-                f"{required_text(signataire.nom, 'document.signataire.nom')}"
-            ),
+            [
+                (
+                    f"{required_text(signataire.prenom, 'document.signataire.prenom')} "
+                    f"{required_text(signataire.nom, 'document.signataire.nom')}"
+                )
+            ],
         )
 
         output_dir.mkdir(parents=True, exist_ok=True)

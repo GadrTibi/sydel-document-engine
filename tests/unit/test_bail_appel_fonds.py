@@ -5,6 +5,9 @@ from pathlib import Path
 
 import pytest
 from docx import Document
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.oxml.ns import qn
+from docx.shared import Cm
 
 from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import (
@@ -128,6 +131,14 @@ def _assert_no_source_placeholders(text: str) -> None:
     assert "]" not in text
 
 
+def _table_has_explicit_borders(table) -> bool:
+    borders = table._tbl.tblPr.find(qn("w:tblBorders"))
+    return borders is not None and all(
+        borders.find(qn(f"w:{edge}")) is not None
+        for edge in ("top", "left", "bottom", "right")
+    )
+
+
 def test_avenant_contrat_bail_generates_source_wording_and_signature_table(
     tmp_path: Path,
 ) -> None:
@@ -139,6 +150,16 @@ def test_avenant_contrat_bail_generates_source_wording_and_signature_table(
     assert "ARTICLE 1 : changement de locataire" in text
     assert "les démarches seront finies" in text
     assert text.count("Le nouveau locataire") == 2
+    document = Document(output_path)
+    assert abs(document.sections[0].top_margin - Cm(1.75)) < 300
+    assert abs(document.sections[0].bottom_margin - Cm(0.5)) < 300
+    party_marker = next(p for p in document.paragraphs if p.text.endswith("le Bailleur »"))
+    assert party_marker.alignment == WD_ALIGN_PARAGRAPH.RIGHT
+    assert party_marker.runs[0].bold is True
+    assert party_marker.runs[0].underline is True
+    article = next(p for p in document.paragraphs if p.text.startswith("ARTICLE 1"))
+    assert article.runs[0].underline is True
+    assert _table_has_explicit_borders(document.tables[-1])
     _assert_no_source_placeholders(text)
 
 
@@ -152,6 +173,14 @@ def test_appel_fond_sel_generates_dentaire_request(tmp_path: Path) -> None:
     assert "150 000" in text
     assert "cabinet dentaire exploité au Cabinet dentaire des Ternes" in text
     assert "Montant du fond" not in text
+    document = Document(output_path)
+    subject = next(p for p in document.paragraphs if p.text.startswith("Objet"))
+    assert subject.runs[0].bold is True
+    assert subject.runs[0].underline is True
+    amount = next(p for p in document.paragraphs if p.text == "150 000")
+    assert amount.alignment == WD_ALIGN_PARAGRAPH.CENTER
+    signature = next(p for p in document.paragraphs if p.text == "Camille Martin")
+    assert signature.alignment == WD_ALIGN_PARAGRAPH.RIGHT
     _assert_no_source_placeholders(text)
 
 

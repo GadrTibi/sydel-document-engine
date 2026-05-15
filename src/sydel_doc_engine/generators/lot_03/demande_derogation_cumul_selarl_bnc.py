@@ -16,7 +16,15 @@ from sydel_doc_engine.generators.lot_03.derogations_common import (
     require_structure,
     required_text,
 )
-from sydel_doc_engine.rendering.docx_builder import add_paragraph, new_document
+from sydel_doc_engine.rendering.docx_builder import (
+    DEROGATION_CUMUL_STYLE_PROFILE,
+    add_checkbox_line,
+    add_form_section_heading,
+    add_italic_instruction,
+    add_notice_box,
+    add_paragraph,
+    new_document,
+)
 
 OUTPUT_FILENAME = "demande_derogation_cumul_selarl_bnc_formulaire_a_completer.docx"
 
@@ -29,8 +37,9 @@ class DemandeDerogationCumulSelarlBncGenerator:
         require_derogation_context(ctx, CUMUL_SEL_BNC)
         company = require_company(ctx)
 
-        docx = new_document()
+        docx = new_document(style_profile=DEROGATION_CUMUL_STYLE_PROFILE)
         _add_header(docx)
+        _add_principle_notice(docx)
         _add_declarant(docx, ctx.personne_signataire, company)
         _add_company(docx, company)
         _add_lieux_exercice(docx, company)
@@ -68,7 +77,7 @@ def _add_declarant(docx, signataire: Person, company: Company) -> None:
         signataire.qualification_principale,
         "personne_signataire.qualification_principale",
     )
-    add_paragraph(docx, "Identification du declarant", bold=True, space_before_pt=10)
+    add_form_section_heading(docx, "Identification du declarant")
     add_paragraph(docx, "Demande formulee par le Docteur :")
     add_paragraph(docx, f"Nom : {required_text(signataire.nom, 'personne_signataire.nom')}")
     add_paragraph(
@@ -122,7 +131,7 @@ def _add_declarant(docx, signataire: Person, company: Company) -> None:
 
 def _add_company(docx, company: Company) -> None:
     inscription = require_company_inscription(company)
-    add_paragraph(docx, "Identification de la societe (SEL)", bold=True, space_before_pt=10)
+    add_form_section_heading(docx, "Identification de la societe (SEL)")
     add_paragraph(
         docx,
         f"Denomination sociale : {required_text(company.denomination, 'societe.denomination')}",
@@ -145,7 +154,7 @@ def _add_company(docx, company: Company) -> None:
 
 
 def _add_lieux_exercice(docx, company: Company) -> None:
-    add_paragraph(docx, "Lieux d'exercices", bold=True, space_before_pt=10)
+    add_form_section_heading(docx, "Lieux d'exercices")
     add_paragraph(docx, "Concernant votre exercice a titre individuel :")
     add_paragraph(docx, "Type d'activite :         Salariee        □ Liberale")
     add_paragraph(docx, f"Adresse : {MANUAL_BLANK}")
@@ -166,8 +175,8 @@ def _add_lieux_exercice(docx, company: Company) -> None:
         f"Temps hebdomadaire consacre (nombre de demi-journees) : {MANUAL_BLANK}",
     )
     add_paragraph(docx, "Autre(s) site(s) d'exercice deja declare(s) (activite(s) secondaire(s)) :")
-    add_paragraph(docx, "- Aucun")
-    add_paragraph(docx, f"□ - Oui - nombre de sites : {MANUAL_BLANK}")
+    add_checkbox_line(docx, "Aucun")
+    add_checkbox_line(docx, f"Oui - nombre de sites : {MANUAL_BLANK}")
     add_paragraph(docx, "1er site distinct :")
     add_paragraph(docx, f"Adresse du site : {MANUAL_BLANK}")
     add_paragraph(
@@ -201,32 +210,30 @@ def _add_lieux_exercice(docx, company: Company) -> None:
 
 
 def _add_motifs(docx) -> None:
-    add_paragraph(
+    add_form_section_heading(
         docx,
         "Critere(s) sur le(s)quel(s) est fondee la demande de cumul",
-        bold=True,
-        space_before_pt=10,
     )
-    add_paragraph(docx, "Toute case cochee doit etre accompagnee d'une explication :")
-    add_paragraph(
+    add_italic_instruction(docx, "Toute case cochee doit etre accompagnee d'une explication :")
+    add_checkbox_line(
         docx,
         (
-            "□ - L'exercice dans votre SEL est lie a des techniques medicales necessitant "
+            "L'exercice dans votre SEL est lie a des techniques medicales necessitant "
             "un regroupement ou un travail en equipe (motif non applicable dans le cadre "
             "d'une SEL unipersonnelle, si vous etes le seul associe)"
         ),
     )
-    add_paragraph(
+    add_checkbox_line(
         docx,
         (
-            "□ - L'exercice dans votre SEL est lie a l'acquisition d'equipements ou de "
+            "L'exercice dans votre SEL est lie a l'acquisition d'equipements ou de "
             "materiels lourds soumis a autorisation"
         ),
     )
-    add_paragraph(
+    add_checkbox_line(
         docx,
         (
-            "□ - L'exercice dans votre SEL necessite l'acquisition d'equipements ou de "
+            "L'exercice dans votre SEL necessite l'acquisition d'equipements ou de "
             "materiels qui justifient des utilisations multiples"
         ),
     )
@@ -244,7 +251,7 @@ def _add_certification(docx, ctx: DocumentGenerationContext) -> None:
             "communiquee au conseil departemental de ma residence professionnelle,"
         ),
     )
-    add_paragraph(
+    add_italic_instruction(
         docx,
         (
             "(Le Conseil departemental vous informe que toute declaration volontairement "
@@ -263,6 +270,31 @@ def _add_certification(docx, ctx: DocumentGenerationContext) -> None:
     add_paragraph(docx, f"Fait le {format_display_date(ctx.signature.date, 'signature.date')}")
     add_paragraph(docx, f"a {required_text(ctx.signature.lieu, 'signature.lieu')}")
     add_paragraph(docx, "Signature :")
+    add_notice_box(
+        docx,
+        [
+            "PIECES A JOINDRE AU PRESENT FORMULAIRE DE DECLARATION",
+            "Projet d'acte constitutif ou justificatif utile selon la demande.",
+        ],
+        style_profile=DEROGATION_CUMUL_STYLE_PROFILE,
+    )
+
+
+def _add_principle_notice(docx) -> None:
+    add_notice_box(
+        docx,
+        [
+            (
+                "En principe, lorsqu'un medecin decide d'exercer en SEL, il ne peut "
+                "cumuler cette activite avec un exercice a titre individuel."
+            ),
+            (
+                "Cependant, une derogation peut etre demandee dans les cas prevus par "
+                "les textes applicables."
+            ),
+        ],
+        style_profile=DEROGATION_CUMUL_STYLE_PROFILE,
+    )
 
 
 def _siege_address(company: Company) -> str:

@@ -21,7 +21,14 @@ from sydel_doc_engine.generators.lot_03.derogations_common import (
     require_structure,
     required_text,
 )
-from sydel_doc_engine.rendering.docx_builder import add_paragraph, new_document
+from sydel_doc_engine.rendering.docx_builder import (
+    DEROGATION_FORM_STYLE_PROFILE,
+    add_checkbox_line,
+    add_form_section_heading,
+    add_italic_instruction,
+    add_paragraph,
+    new_document,
+)
 
 OUTPUT_FILENAME = "formulaire_derogation_sites_sel_formulaire_a_completer.docx"
 
@@ -39,7 +46,7 @@ class FormulaireDerogationSitesSelGenerator:
         )
         associe = require_role(derogation.associe_exercant, "derogation.associe_exercant")
 
-        docx = new_document()
+        docx = new_document(style_profile=DEROGATION_FORM_STYLE_PROFILE)
         _add_header(docx)
         _add_identification(docx, company, representant, associe)
         _add_site_declare(docx, ctx)
@@ -64,7 +71,7 @@ def _add_header(docx) -> None:
         alignment=WD_ALIGN_PARAGRAPH.CENTER,
         bold=True,
     )
-    add_paragraph(
+    add_italic_instruction(
         docx,
         (
             "A adresser au conseil departemental du lieu ou se situe le site au plus tard "
@@ -86,7 +93,7 @@ def _add_identification(
     associe: DerogationRole,
 ) -> None:
     inscription = require_company_inscription(company)
-    add_paragraph(docx, "I - Identification du declarant", bold=True, space_before_pt=10)
+    add_form_section_heading(docx, "I - Identification du declarant")
     add_paragraph(docx, "Societe", bold=True)
     add_paragraph(
         docx,
@@ -167,18 +174,16 @@ def _add_identification(
 
 
 def _add_site_declare(docx, ctx: DocumentGenerationContext) -> None:
-    add_paragraph(
+    add_form_section_heading(
         docx,
         "II - Adresse complete du site pour lequel la declaration est faite :",
-        bold=True,
-        space_before_pt=10,
     )
     if ctx.site_declare and ctx.site_declare.adresse_affichee:
         add_paragraph(docx, ctx.site_declare.adresse_affichee)
     else:
         add_paragraph(docx, MANUAL_BLANK)
     add_paragraph(docx, f"Date previsionnelle de debut d'activite : {_site_declare_date(ctx)}")
-    add_paragraph(
+    add_italic_instruction(
         docx,
         (
             "(Attention dans le choix de la date, car le Conseil departemental dispose "
@@ -195,11 +200,9 @@ def _site_declare_date(ctx: DocumentGenerationContext) -> str:
 
 
 def _add_activity_sections(docx) -> None:
-    add_paragraph(
+    add_form_section_heading(
         docx,
         "III- Nature de l'activite envisagee sur le nouveau site :",
-        bold=True,
-        space_before_pt=10,
     )
     add_paragraph(docx, f"- consultations (decrire): {MANUAL_BLANK}")
     add_paragraph(docx, f"- actes medico techniques (decrire) : {MANUAL_BLANK}")
@@ -216,20 +219,18 @@ def _add_sites_existants(
     ctx: DocumentGenerationContext,
     derogation: DerogationContext,
 ) -> None:
-    add_paragraph(
+    add_form_section_heading(
         docx,
         (
             "IV - Renseignements sur l'activite au lieu de la residence professionnelle "
             "et le cas echeant, sur les autres sites deja autorises"
         ),
-        bold=True,
-        space_before_pt=10,
     )
     add_paragraph(docx, "Adresse de la residence professionnelle :")
     add_paragraph(docx, "Autres sites d'exercice :")
     present = _sites_existants_present(derogation)
-    add_paragraph(docx, f"{'☒' if not present else '☐'} NON")
-    add_paragraph(docx, f"{'☒' if present else '☐'} OUI")
+    add_checkbox_line(docx, "NON", checked=not present)
+    add_checkbox_line(docx, "OUI", checked=present)
     nombre_sites = str(len(ctx.sites_existants)) if present else MANUAL_BLANK
     add_paragraph(docx, f"Nombre de sites : {nombre_sites}")
     _add_first_site(docx, ctx, present)
@@ -275,7 +276,7 @@ def _add_first_site(docx, ctx: DocumentGenerationContext, present: bool) -> None
 
 
 def _add_conditions(docx) -> None:
-    add_paragraph(docx, "V- Conditions de l'exercice", bold=True, space_before_pt=10)
+    add_form_section_heading(docx, "V- Conditions de l'exercice")
     add_paragraph(docx, "Qualite et securite des soins")
     add_paragraph(docx, "Pour les consultations :")
     add_paragraph(docx, f"- moyens en personnel : {MANUAL_BLANK}")
@@ -290,7 +291,7 @@ def _add_conditions(docx) -> None:
         f"- materiels (decrire le type de materiel existant et/ou prevu) : {MANUAL_BLANK}",
     )
     add_paragraph(docx, "Continuite des soins")
-    add_paragraph(
+    add_italic_instruction(
         docx,
         (
             "- dispositions prises pour assurer la continuite des soins sur les differents "
