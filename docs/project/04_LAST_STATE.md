@@ -4,6 +4,8 @@
 2026-05-15
 
 ## Dernier ticket terminé
+SYNC-WAVE-008 : absorption dans `main` des branches acte actions, sources SCM cession, reviews Lot 03/Lot 04, audit restant, analyses style Lot 03/statuts et specs blocage cession SCM, puis réalignement du pilotage.
+
 SYNC-WAVE-007 : absorption dans `main` des branches SCM et acte actions, passage en DONE des tickets absorbés et réalignement du pilotage.
 
 SYNC-WAVE-006 : absorption dans `main` des branches tardives Lot 04 / Lot 05, passage en DONE des tickets absorbés et réalignement du pilotage.
@@ -17,7 +19,7 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
 ## État courant du repo
 - DOC-001, DOC-002 et DOC-003 disposent chacun d'un générateur dédié déjà terminé.
 - L'orchestrateur dossier expose :
-  - un registre des générateurs DOC-001 à DOC-028 ;
+  - un registre des générateurs DOC-001 à DOC-029 ;
   - `select_documents(structure)` selon le catalogue ;
   - `select_documents_for_context(ctx)` avec filtrage des batchs régime communautaire, bail/appel de fonds, cession cabinets, dérogations et statuts ;
   - `generate_documents(ctx, output_dir) -> list[Path]`.
@@ -191,6 +193,20 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
 - Les specs V1 de l'acte de cession d'actions sont disponibles :
   - `docs/delivery/lot_05_acte_cession_actions_spec_canonique_v1.md` ;
   - `docs/delivery/lot_05_acte_cession_actions_spec_texte_v1.md`.
+- Le générateur acte de cession d'actions SPFPL est disponible dans `src/sydel_doc_engine/generators/lot_05/acte_cession_actions_spfpl.py` et branché sous `DOC-029`.
+- Un contexte exemple acte de cession d'actions SPFPL est disponible dans `examples/contexts/lot_05_acte_cession_actions_example.yaml`.
+- La préparation V1 des sources cession SCM est disponible dans `docs/delivery/lot_05_scm_cession_sources_preparation_v1.md`.
+- Les sources cession SCM exploitables sont placées dans `project/source_documents/lot_05/`.
+- Les specs V1 du blocage cession SCM sont disponibles :
+  - `docs/delivery/lot_05_scm_cession_block_spec_canonique_v1.md` ;
+  - `docs/delivery/lot_05_scm_cession_block_spec_texte_v1.md`.
+- Les revues batch Lot 03 et Lot 04 sont disponibles :
+  - `docs/review/lot_03_batch_review_v1.md` ;
+  - `docs/review/lot_04_batch_review_v1.md`.
+- L'audit du périmètre restant V1 est disponible dans `docs/project/15_REMAINING_SCOPE_AUDIT_V1.md`.
+- Les blueprints style dédiés sont disponibles :
+  - `docs/delivery/render_style_blueprint_lot03_batch_v1.md` ;
+  - `docs/delivery/render_style_blueprint_statuts_batch_v1.md`.
 - `ARBITRAGE-SOURCES-001` est DONE.
 - `PLACEMENT-HIGH-001` est DONE.
 - `ANALYSE-ORDRE-001` est DONE.
@@ -250,13 +266,21 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
 - `PREP-SCM-LISTE-DEPENSES-CONVERT-001` est DONE.
 - `CODE-SCM-SAT-DOCX-001` est DONE.
 - `SPEC-ACTE-ACTIONS-001` est DONE.
+- `CODE-ACTE-ACTIONS-001` est DONE.
+- `PREP-SCM-CESSION-SOURCES-001` est DONE.
+- `REVIEW-BATCH-LOT03-001` est DONE.
+- `REVIEW-BATCH-LOT04-001` est DONE.
+- `AUDIT-REMAINING-SCOPE-001` est DONE.
+- `STYLE-ANALYSE-LOT03-BATCH-001` est DONE.
+- `STYLE-ANALYSE-STATUTS-BATCH-001` est DONE.
+- `SPEC-SCM-CESSION-BLOCK-001` est DONE.
+- `SYNC-WAVE-008` est DONE.
+- `CODE-SCM-CESSION-BLOCK-001` est READY.
 - `CODE-SCM-LISTE-DEPENSES-001` est READY.
-- `CODE-ACTE-ACTIONS-001` est READY.
 - `SPEC-DEROG-SALARIEE-MANUAL-001` est READY.
-- `SPEC-SCM-CESSION-BLOCK-001` est READY.
-- `STYLE-ANALYSE-STATUTS-BATCH-001` est READY.
-- `PREP-SCM-CESSION-SOURCES-001` est READY.
-- `REVIEW-STATUTS-BATCH-001` est READY.
+- `FIX-STYLE-LOT03-BATCH-001` est READY.
+- `FIX-STYLE-STATUTS-BATCH-001` est READY.
+- `REVIEW-BATCH-LOT05-001` est READY.
 - `RESUME-ARBITRAGE-STATUTS-CIVILS-001` est DONE, remplacé par l'arbitrage civils V1 absorbé.
 - `STYLE-ANALYSE-BATCH-001` est DONE.
 - `SYNC-STYLE-CIVILS-001` est DONE.
@@ -401,23 +425,24 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
 - Les 2 cas MEDIUM régime communautaire sont désormais spécifiés et codés dans `CODE-RC-001`.
 - Les 3 cas LOW restent bloqués : statuts, liste des souscripteurs / attestation sur le capital, documents sans source claire.
 - 16 documents sources sont explicitement hors périmètre moteur courant.
-- Aucun fichier de `project/source_import/raw_drive_dump/`, aucun fichier source documentaire et aucun artefact n'a été déplacé, supprimé ou renommé.
+- Aucun fichier de `project/source_import/raw_drive_dump/` ni de `artifacts/` n'a été modifié ; les seules sources ajoutées par la vague sont placées sous `project/source_documents/lot_05/`.
 - Aucune UI, aucun PDF, aucun ZIP et aucun wording juridique source n'ont été modifiés.
 - FIX-PV-RENDER-001 conserve l'approche from-scratch et ne modifie pas le texte juridique ; les changements portent uniquement sur le rendu DOCX du PV et un helper commun de liste à tiret.
 - Le smoke DOCX dédié a été généré dans `artifacts/fix_pv_render_001_smoke_test_2/pv_nomination_gerant.docx`, hors versionnement.
 
 ## Prochain ticket à lancer
 Tickets actifs/parallélisables :
+- `CODE-SCM-CESSION-BLOCK-001` est READY.
 - `CODE-SCM-LISTE-DEPENSES-001` est READY.
-- `CODE-ACTE-ACTIONS-001` est READY.
 - `SPEC-DEROG-SALARIEE-MANUAL-001` est READY.
-- `SPEC-SCM-CESSION-BLOCK-001` est READY.
-- `STYLE-ANALYSE-STATUTS-BATCH-001` est READY.
-- `PREP-SCM-CESSION-SOURCES-001` est READY.
+- `FIX-STYLE-LOT03-BATCH-001` est READY.
+- `FIX-STYLE-STATUTS-BATCH-001` est READY.
+- `REVIEW-BATCH-LOT05-001` est READY.
 
 `CODE-OPTION-IS-001`, `PREP-SCM-SAT-001`, `ARBITRAGE-STATUTS-SCM-001`, `SPEC-SAS-SATELLITES-001` et `PREP-ACTE-ACTIONS-001` sont DONE et absorbés dans `main`.
 `RESUME-FIX-STYLE-LETTERS-001`, `CODE-STATUTS-CIVILS-CORE-001`, `CODE-SAS-SATELLITES-001`, `CONVERT-DEROG-SALARIEE-001`, `CONVERT-ACTE-ACTIONS-001` et `SPEC-SCM-SATELLITES-001` sont DONE et absorbés dans `main` via SYNC-WAVE-006.
 `CODE-STATUTS-SCM-001`, `PREP-SCM-LISTE-DEPENSES-CONVERT-001`, `CODE-SCM-SAT-DOCX-001` et `SPEC-ACTE-ACTIONS-001` sont DONE et absorbés dans `main` via SYNC-WAVE-007.
+`CODE-ACTE-ACTIONS-001`, `PREP-SCM-CESSION-SOURCES-001`, `REVIEW-BATCH-LOT03-001`, `REVIEW-BATCH-LOT04-001`, `AUDIT-REMAINING-SCOPE-001`, `STYLE-ANALYSE-LOT03-BATCH-001`, `STYLE-ANALYSE-STATUTS-BATCH-001` et `SPEC-SCM-CESSION-BLOCK-001` sont DONE et absorbés dans `main` via SYNC-WAVE-008.
 `CONVERT-ACTE-ACTIONS-001` est DONE avec DOCX placé dans `project/source_documents/lot_05/` et préparation V1 documentée.
 `CONVERT-DEROG-SALARIEE-001` est DONE ; aucun DOCX exploitable n'a ete produit.
 `CODE-BAIL-APP-001` est DONE dans `main`.
@@ -595,6 +620,11 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
 - SYNC-WAVE-007 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m ruff check .` OK.
 - SYNC-WAVE-007 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m pytest` OK, 155 tests passés.
 - SYNC-WAVE-007 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifiés.
+- SYNC-WAVE-008 : `git fetch --all --prune` OK.
+- SYNC-WAVE-008 : commits sources `61a1c49353724bbf5b8f1bb8f039d5e96b877ecc`, `d3188c0b4a4a61d889a2ce9ccc37e84e1284adaa`, `939e1c2088892abcf4a8fdcbaa35911f4f8a2f9f`, `19468886f5e885f79b2b35e17e2ff2a097ea9c3a`, `d8747ef20aba478c575c5a491cdf0f634a9c26d3`, `00b4c955b372399bb8701f47a5686748539f061b`, `a181e069f756a1ea846fdcd1824b3f8c57cc11f5` et `518e46fbb8d8bee03a23ea203654b4199103fb7e` cherry-pickés dans `main` sans conflit.
+- SYNC-WAVE-008 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m ruff check .` OK.
+- SYNC-WAVE-008 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m pytest` OK, 161 tests passés.
+- SYNC-WAVE-008 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifiés.
 - SPEC-TEXTE-ORDRE-001 : source de vérité, source Lot 2 et variantes raw dump SELARL / SELAS / SPFPL cession / SPFPL apport lues en lecture seule.
 - SPEC-TEXTE-ORDRE-001 : spec texte créée dans `docs/delivery/lot_02_demande_inscription_ordre_spec_texte_v1.md`.
 - SPEC-TEXTE-ORDRE-001 : aucun code Python modifié ; validations limitées à la relecture documentaire et au contrôle du diff.
@@ -629,4 +659,4 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
 - SMOKE-ORCH-L2-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 47 tests passés.
 
 ## Recommandation immédiate suivante
-Lancer `CODE-SCM-LISTE-DEPENSES-001`.
+Lancer `CODE-SCM-CESSION-BLOCK-001`.

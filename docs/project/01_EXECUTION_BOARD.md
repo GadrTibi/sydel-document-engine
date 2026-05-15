@@ -86,6 +86,7 @@
 | SYNC-WAVE-005 | DONE | Synchroniser SCM, satellites SAS, option IS et préparation legacy dans main | branches CODE-OPTION-IS/PREP-SCM-SAT/ARBITRAGE-STATUTS-SCM/SPEC-SAS-SATELLITES/PREP-ACTE-ACTIONS | commits intégrés + pilotage réaligné |
 | SYNC-WAVE-006 | DONE | Synchroniser la vague tardive Lot 04 / Lot 05 dans main | branches style/civils/SAS satellites/conversions/spec SCM | commits intégrés + pilotage réaligné |
 | SYNC-WAVE-007 | DONE | Synchroniser la vague SCM et acte actions dans main | branches statuts SCM / liste dépenses / satellites SCM / spec acte actions | commits intégrés + pilotage réaligné |
+| SYNC-WAVE-008 | DONE | Synchroniser la vague SCM style review et acte actions dans main | branches acte actions / sources SCM cession / reviews / audits / style / spec SCM cession | commits intégrés + pilotage réaligné |
 | CODE-STATUTS-SCM-001 | DONE | Implémenter les statuts SCM | specs statuts civils V1 + arbitrages SCM V1 | générateur DOCX + tests ciblés |
 | CODE-SAS-SATELLITES-001 | DONE | Implémenter les satellites SAS | specs satellites SAS V1 + sources confirmées | générateurs DOCX + tests ciblés |
 | SPEC-SCM-SATELLITES-001 | DONE | Spécifier les satellites SCM | préparation SCM satellites V1 + sources confirmées | spec canonique + spec texte avant code |
@@ -94,13 +95,20 @@
 | PREP-SCM-LISTE-DEPENSES-CONVERT-001 | DONE | Convertir la source legacy liste dépenses communes SCM | source legacy Lot 05 SCM | DOCX exploitable + préparation documentée |
 | CODE-SCM-SAT-DOCX-001 | DONE | Implémenter les satellites SCM DOCX hors liste dépenses | specs satellites SCM V1 + sources DOCX confirmées | générateurs DOCX + tests ciblés |
 | SPEC-ACTE-ACTIONS-001 | DONE | Spécifier l'acte de cession d'actions SPFPL avant code | source DOCX convertie + préparation V1 | spec canonique + spec texte avant code |
+| CODE-ACTE-ACTIONS-001 | DONE | Implémenter l'acte de cession d'actions SPFPL | specs acte actions V1 + source DOCX convertie | générateur DOCX + tests ciblés |
+| PREP-SCM-CESSION-SOURCES-001 | DONE | Préparer les sources cession SCM | raw dump SCM cession + plan de placement | sources placées + préparation documentée |
+| REVIEW-BATCH-LOT03-001 | DONE | Revoir le batch Lot 03 généré | générateurs Lot 03 + smoke DOCX disponibles | revue humaine juridique/visuelle documentée |
+| REVIEW-BATCH-LOT04-001 | DONE | Revoir le batch Lot 04 généré | générateurs statuts + smoke DOCX disponibles | revue humaine juridique/visuelle documentée |
+| AUDIT-REMAINING-SCOPE-001 | DONE | Auditer le périmètre restant | board + specs + registre moteur | audit restant documenté |
+| STYLE-ANALYSE-LOT03-BATCH-001 | DONE | Analyser le style du batch Lot 03 avant harmonisation | générateurs Lot 03 intégrés + besoins de rendu | blueprint style Lot 03 |
+| STYLE-ANALYSE-STATUTS-BATCH-001 | DONE | Analyser le style du batch statuts avant harmonisation | générateurs statuts intégrés + besoins de rendu | blueprint style statuts |
+| SPEC-SCM-CESSION-BLOCK-001 | DONE | Spécifier le blocage cession SCM avant code | sources SCM cession disponibles + arbitrages SCM | spec canonique + spec texte de blocage |
+| CODE-SCM-CESSION-BLOCK-001 | READY | Implémenter le blocage cession SCM | specs SCM cession block V1 | blocage explicite + tests ciblés |
 | CODE-SCM-LISTE-DEPENSES-001 | READY | Implémenter la liste des dépenses communes SCM | source DOCX convertie + specs satellites SCM V1 | générateur DOCX + tests ciblés |
-| CODE-ACTE-ACTIONS-001 | READY | Implémenter l'acte de cession d'actions SPFPL | specs acte actions V1 + source DOCX convertie | générateur DOCX + tests ciblés |
 | SPEC-DEROG-SALARIEE-MANUAL-001 | READY | Spécifier le traitement manuel de la dérogation salariée legacy | blocage conversion dérogation salariée V1 | spec manuelle ou décision de blocage documentée |
-| SPEC-SCM-CESSION-BLOCK-001 | READY | Spécifier le blocage cession SCM avant code | sources SCM cession disponibles + arbitrages SCM | blocage documenté ou spec avant code |
-| STYLE-ANALYSE-STATUTS-BATCH-001 | READY | Analyser le style du batch statuts avant harmonisation | générateurs statuts intégrés + besoins de rendu | cadrage style statuts |
-| PREP-SCM-CESSION-SOURCES-001 | READY | Préparer les sources cession SCM | raw dump SCM cession + plan de placement | sources placées ou blocage documenté |
-| REVIEW-STATUTS-BATCH-001 | READY | Revoir le batch statuts généré | générateurs statuts intégrés + smoke DOCX | revue humaine juridique/visuelle documentée |
+| FIX-STYLE-LOT03-BATCH-001 | READY | Corriger les écarts de style prioritaires du batch Lot 03 | blueprint style Lot 03 | rendu Lot 03 harmonisé + tests ciblés |
+| FIX-STYLE-STATUTS-BATCH-001 | READY | Corriger les écarts de style prioritaires du batch statuts | blueprint style statuts | rendu statuts harmonisé + tests ciblés |
+| REVIEW-BATCH-LOT05-001 | READY | Revoir le batch Lot 05 généré | générateurs Lot 05 + smoke DOCX disponibles | revue humaine juridique/visuelle documentée |
 | UI-001 | BLOCKED | Brancher Streamlit V0 Lot 1 | orchestrateur Lot 1 + spec canonique PV nomination gérant validée | écran simple + test manuel |
 
 ## Référentiels moteur disponibles
@@ -138,14 +146,21 @@
 - Les specs V1 des satellites SAS sont disponibles : `docs/delivery/lot_05_sas_satellites_spec_canonique_v1.md` et `docs/delivery/lot_05_sas_satellites_spec_texte_v1.md`.
 - La spec V1 de la lettre option IS est disponible : `docs/delivery/lot_05_lettre_option_is_spec_v1.md`.
 - L'audit V1 de l'acte de cession d'actions est disponible : `docs/delivery/lot_05_acte_cession_actions_audit_v1.md`.
+- Les specs V1 de l'acte de cession d'actions sont disponibles : `docs/delivery/lot_05_acte_cession_actions_spec_canonique_v1.md` et `docs/delivery/lot_05_acte_cession_actions_spec_texte_v1.md`.
+- La préparation V1 des sources cession SCM est disponible : `docs/delivery/lot_05_scm_cession_sources_preparation_v1.md`.
+- Les specs V1 du blocage cession SCM sont disponibles : `docs/delivery/lot_05_scm_cession_block_spec_canonique_v1.md` et `docs/delivery/lot_05_scm_cession_block_spec_texte_v1.md`.
+- Le blueprint style Lot 03 est disponible : `docs/delivery/render_style_blueprint_lot03_batch_v1.md`.
+- Le blueprint style statuts est disponible : `docs/delivery/render_style_blueprint_statuts_batch_v1.md`.
 - Le manifest d'import sources V1 est disponible : `docs/project/10_SOURCE_IMPORT_MANIFEST_V1.md`.
 - Le rapport de doublons sources V1 est disponible : `docs/project/11_SOURCE_DUPLICATES_REPORT_V1.md`.
 - Le plan de placement sources V1 est disponible : `docs/project/12_SOURCE_PLACEMENT_PLAN_V1.md`.
 - Les décisions d'arbitrage sources V1 sont disponibles : `docs/project/13_SOURCE_ARBITRATION_DECISIONS_V1.md`.
 - Le journal d'exécution du placement HIGH V1 est disponible : `docs/project/14_SOURCE_PLACEMENT_EXECUTION_V1.md`.
+- L'audit du périmètre restant V1 est disponible : `docs/project/15_REMAINING_SCOPE_AUDIT_V1.md`.
 - Le pack de revue humaine du PV nomination gérant est disponible : `docs/review/lot_02_pv_nomination_gerant_review_v1.md`.
 - L'aperçu texte extrait du DOCX généré est disponible : `docs/review/lot_02_pv_nomination_gerant_preview_v1.txt`.
 - La revue smoke orchestrateur Lot 2 est disponible : `docs/review/lot_02_orchestrator_smoke_review_v1.md`.
+- Les revues batch Lot 03 et Lot 04 sont disponibles : `docs/review/lot_03_batch_review_v1.md` et `docs/review/lot_04_batch_review_v1.md`.
 - Ces référentiels cadrent les prochains tickets ; ils ne doivent pas être réinventés pendant l'implémentation.
 
 ## Ecart temporaire connu
@@ -623,30 +638,72 @@
 - Objectif : implémenter l'acte de cession d'actions SPFPL.
 - Specs à lire : specs acte actions V1 et préparation source.
 - Contraintes : ne pas modifier le wording juridique hors spec.
-- Statut : READY.
+- Statut : DONE ; générateur acte de cession d'actions SPFPL intégré et testé.
 
 ### SPEC-SCM-CESSION-BLOCK-001
 - Objectif : spécifier le blocage ou le périmètre de la cession SCM.
 - Specs à lire : arbitrages SCM et sources SCM cession disponibles.
 - Contraintes : pas de code avant décision documentée.
+- Statut : DONE ; specs canonique et texte disponibles dans `docs/delivery/`.
+
+### CODE-SCM-CESSION-BLOCK-001
+- Objectif : implémenter le blocage explicite de la cession SCM.
+- Specs à lire : `docs/delivery/lot_05_scm_cession_block_spec_canonique_v1.md` et `docs/delivery/lot_05_scm_cession_block_spec_texte_v1.md`.
+- Contraintes : ne pas générer de document cession SCM tant que le blocage V1 s'applique ; tests ciblés obligatoires.
 - Statut : READY.
+
+### REVIEW-BATCH-LOT03-001
+- Objectif : documenter la revue juridique/visuelle du batch Lot 03.
+- Specs à lire : specs et arbitrages Lot 03, smoke DOCX disponibles.
+- Contraintes : revue uniquement, sans modification de wording juridique.
+- Statut : DONE ; revue disponible dans `docs/review/lot_03_batch_review_v1.md`.
+
+### REVIEW-BATCH-LOT04-001
+- Objectif : documenter la revue juridique/visuelle du batch Lot 04.
+- Specs à lire : specs et arbitrages statuts Lot 04, smoke DOCX disponibles.
+- Contraintes : revue uniquement, sans modification de wording juridique.
+- Statut : DONE ; revue disponible dans `docs/review/lot_04_batch_review_v1.md`.
+
+### AUDIT-REMAINING-SCOPE-001
+- Objectif : auditer le périmètre restant après les vagues SCM, statuts et acte actions.
+- Specs à lire : board, dernier état, registre moteur et specs disponibles.
+- Contraintes : audit documentaire, sans code ni déplacement de sources.
+- Statut : DONE ; audit disponible dans `docs/project/15_REMAINING_SCOPE_AUDIT_V1.md`.
+
+### STYLE-ANALYSE-LOT03-BATCH-001
+- Objectif : analyser le style du batch Lot 03 avant harmonisation.
+- Specs à lire : générateurs Lot 03, specs texte et rendus disponibles.
+- Contraintes : analyse de rendu uniquement, sans modification de wording juridique.
+- Statut : DONE ; blueprint disponible dans `docs/delivery/render_style_blueprint_lot03_batch_v1.md`.
 
 ### STYLE-ANALYSE-STATUTS-BATCH-001
 - Objectif : analyser le style du batch statuts avant harmonisation.
 - Specs à lire : specs et générateurs statuts intégrés.
 - Contraintes : analyse et cadrage avant modification de rendu.
-- Statut : READY.
+- Statut : DONE ; blueprint disponible dans `docs/delivery/render_style_blueprint_statuts_batch_v1.md`.
 
 ### PREP-SCM-CESSION-SOURCES-001
 - Objectif : préparer les sources cession SCM.
 - Specs à lire : plan de placement sources et raw dump SCM cession.
 - Contraintes : ne pas toucher au raw dump ; documenter tout placement ou blocage.
+- Statut : DONE ; sources cession SCM placées dans `project/source_documents/lot_05/` et préparation documentée.
+
+### FIX-STYLE-LOT03-BATCH-001
+- Objectif : corriger les écarts de style prioritaires du batch Lot 03.
+- Specs à lire : `docs/delivery/render_style_blueprint_lot03_batch_v1.md`.
+- Contraintes : limiter les changements au rendu DOCX, sans dérive de wording juridique.
 - Statut : READY.
 
-### REVIEW-STATUTS-BATCH-001
-- Objectif : revoir le batch statuts déjà généré.
-- Specs à lire : specs statuts Lot 04, arbitrages statuts et smoke disponibles.
-- Contraintes : revue humaine juridique/visuelle, sans modifier le wording source.
+### FIX-STYLE-STATUTS-BATCH-001
+- Objectif : corriger les écarts de style prioritaires du batch statuts.
+- Specs à lire : `docs/delivery/render_style_blueprint_statuts_batch_v1.md`.
+- Contraintes : limiter les changements au rendu DOCX, sans dérive de wording juridique.
+- Statut : READY.
+
+### REVIEW-BATCH-LOT05-001
+- Objectif : documenter la revue juridique/visuelle du batch Lot 05.
+- Specs à lire : specs Lot 05, générateurs intégrés et smoke DOCX disponibles.
+- Contraintes : revue uniquement, sans modification de wording juridique.
 - Statut : READY.
 
 ### UI-001
@@ -664,10 +721,16 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - mettre à jour `docs/project/04_LAST_STATE.md`
 
 ## Prochaine étape prévue
-- prochaine action recommandée : lancer `CODE-SCM-LISTE-DEPENSES-001`.
-- tickets READY confirmés : `CODE-SCM-LISTE-DEPENSES-001`, `CODE-ACTE-ACTIONS-001`, `SPEC-DEROG-SALARIEE-MANUAL-001`, `SPEC-SCM-CESSION-BLOCK-001`, `STYLE-ANALYSE-STATUTS-BATCH-001` et `PREP-SCM-CESSION-SOURCES-001`.
+- prochaine action recommandée : lancer `CODE-SCM-CESSION-BLOCK-001`.
+- tickets READY confirmés : `CODE-SCM-CESSION-BLOCK-001`, `CODE-SCM-LISTE-DEPENSES-001`, `SPEC-DEROG-SALARIEE-MANUAL-001`, `FIX-STYLE-LOT03-BATCH-001`, `FIX-STYLE-STATUTS-BATCH-001` et `REVIEW-BATCH-LOT05-001`.
+- tickets absorbés par SYNC-WAVE-008 : `CODE-ACTE-ACTIONS-001`, `PREP-SCM-CESSION-SOURCES-001`, `REVIEW-BATCH-LOT03-001`, `REVIEW-BATCH-LOT04-001`, `AUDIT-REMAINING-SCOPE-001`, `STYLE-ANALYSE-LOT03-BATCH-001`, `STYLE-ANALYSE-STATUTS-BATCH-001` et `SPEC-SCM-CESSION-BLOCK-001`.
 - tickets absorbés par SYNC-WAVE-007 : `CODE-STATUTS-SCM-001`, `PREP-SCM-LISTE-DEPENSES-CONVERT-001`, `CODE-SCM-SAT-DOCX-001` et `SPEC-ACTE-ACTIONS-001`.
 - tickets absorbés par SYNC-WAVE-006 : `RESUME-FIX-STYLE-LETTERS-001`, `CODE-STATUTS-CIVILS-CORE-001`, `CODE-SAS-SATELLITES-001`, `CONVERT-DEROG-SALARIEE-001`, `CONVERT-ACTE-ACTIONS-001` et `SPEC-SCM-SATELLITES-001`.
+- `CODE-ACTE-ACTIONS-001` est DONE ; l'acte de cession d'actions SPFPL est intégré au catalogue/orchestrateur.
+- `PREP-SCM-CESSION-SOURCES-001` est DONE ; les sources cession SCM exploitables sont placées dans `project/source_documents/lot_05/`.
+- `SPEC-SCM-CESSION-BLOCK-001` est DONE ; les specs de blocage cession SCM V1 sont disponibles dans `docs/delivery/`.
+- `STYLE-ANALYSE-LOT03-BATCH-001` et `STYLE-ANALYSE-STATUTS-BATCH-001` sont DONE ; les blueprints style dédiés sont disponibles dans `docs/delivery/`.
+- `REVIEW-BATCH-LOT03-001`, `REVIEW-BATCH-LOT04-001` et `AUDIT-REMAINING-SCOPE-001` sont DONE.
 - `CODE-STATUTS-SCM-001` est DONE ; les statuts SCM sont branchés sous `DOC-025`.
 - `CODE-SCM-SAT-DOCX-001` est DONE ; les satellites SCM DOCX sont branchés sous `DOC-026`, `DOC-027` et `DOC-028`.
 - `PREP-SCM-LISTE-DEPENSES-CONVERT-001` est DONE ; le DOCX exploitable est placé dans `project/source_documents/lot_05/`.
@@ -774,3 +837,4 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - 2026-05-15 : CONVERT-ACTE-ACTIONS-001 convertit `Acte_cession_SPFPL_tiers_modele.doc` en DOCX via `Wordconv.exe`, place le résultat dans `project/source_documents/lot_05/` et documente l'origine/confiance dans `docs/delivery/lot_05_acte_cession_actions_preparation_v1.md`, sans modification de code Python.
 - 2026-05-15 : SYNC-WAVE-006 absorbe dans `main` les commits sources `557fc1920361a8c7831e6b023d70471c9c29e5ff` et `291da7b6db68b3de413fba50cf652dde98a8f6a8` par équivalence, puis cherry-picke `2c55a7ab5f8a44de5c29305cfbc280f930ee32ec`, `568336bed7ccb0a5901abe5d921fd9056573e32d`, `8f0c8ab13d6e8f1a9e50747f8a9d5b607bcb90d6` et `11dc0d8dda23f841d650586e0977e0202270a3b5`, passe la vague en DONE, puis confirme les prochains tickets READY, sans modification de `project/source_import/raw_drive_dump/` ni de `artifacts/`.
 - 2026-05-15 : SYNC-WAVE-007 absorbe dans `main` les commits sources `3c040774cdfe57c203b78776a9ea412ec3d14d94`, `6453b6f64665feda898a076f730cba9a6684825b`, `075af377f7c9d7475429f1e738b46483127d757f` et `c221681570782a1b1efc5afc72087cb903cd8a65`, passe les quatre tickets correspondants en DONE, puis confirme les prochains tickets READY, sans modification de `project/source_import/raw_drive_dump/` ni de `artifacts/`.
+- 2026-05-15 : SYNC-WAVE-008 absorbe dans `main` les commits sources `61a1c49353724bbf5b8f1bb8f039d5e96b877ecc`, `d3188c0b4a4a61d889a2ce9ccc37e84e1284adaa`, `939e1c2088892abcf4a8fdcbaa35911f4f8a2f9f`, `19468886f5e885f79b2b35e17e2ff2a097ea9c3a`, `d8747ef20aba478c575c5a491cdf0f634a9c26d3`, `00b4c955b372399bb8701f47a5686748539f061b`, `a181e069f756a1ea846fdcd1824b3f8c57cc11f5` et `518e46fbb8d8bee03a23ea203654b4199103fb7e`, passe les huit tickets correspondants en DONE, puis confirme les prochains tickets READY, sans modification de `project/source_import/raw_drive_dump/` ni de `artifacts/`.
