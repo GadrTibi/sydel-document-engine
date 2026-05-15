@@ -85,14 +85,21 @@
 | SYNC-STATUTS-SEL-CIVILS-001 | DONE | Synchroniser code statuts SEL et arbitrage civils dans main | branches code SEL/arbitrage civils | commits intégrés + pilotage réaligné |
 | SYNC-WAVE-005 | DONE | Synchroniser SCM, satellites SAS, option IS et préparation legacy dans main | branches CODE-OPTION-IS/PREP-SCM-SAT/ARBITRAGE-STATUTS-SCM/SPEC-SAS-SATELLITES/PREP-ACTE-ACTIONS | commits intégrés + pilotage réaligné |
 | SYNC-WAVE-006 | DONE | Synchroniser la vague tardive Lot 04 / Lot 05 dans main | branches style/civils/SAS satellites/conversions/spec SCM | commits intégrés + pilotage réaligné |
-| CODE-STATUTS-SCM-001 | READY | Implémenter les statuts SCM | specs statuts civils V1 + arbitrages SCM V1 | générateur DOCX + tests ciblés |
+| SYNC-WAVE-007 | DONE | Synchroniser la vague SCM et acte actions dans main | branches statuts SCM / liste dépenses / satellites SCM / spec acte actions | commits intégrés + pilotage réaligné |
+| CODE-STATUTS-SCM-001 | DONE | Implémenter les statuts SCM | specs statuts civils V1 + arbitrages SCM V1 | générateur DOCX + tests ciblés |
 | CODE-SAS-SATELLITES-001 | DONE | Implémenter les satellites SAS | specs satellites SAS V1 + sources confirmées | générateurs DOCX + tests ciblés |
 | SPEC-SCM-SATELLITES-001 | DONE | Spécifier les satellites SCM | préparation SCM satellites V1 + sources confirmées | spec canonique + spec texte avant code |
 | CONVERT-ACTE-ACTIONS-001 | DONE | Convertir ou remplacer la source acte de cession d'actions | audit source acte actions V1 | DOCX exploitable placé + préparation documentée |
 | CONVERT-DEROG-SALARIEE-001 | DONE | Convertir ou remplacer la source dérogation salariée legacy | préparation dérogations V1 + source legacy `.doc` | blocage conversion documenté |
-| SPEC-ACTE-ACTIONS-001 | READY | Spécifier l'acte de cession d'actions SPFPL avant code | source DOCX convertie + préparation V1 | spec canonique + spec texte avant code |
+| PREP-SCM-LISTE-DEPENSES-CONVERT-001 | DONE | Convertir la source legacy liste dépenses communes SCM | source legacy Lot 05 SCM | DOCX exploitable + préparation documentée |
+| CODE-SCM-SAT-DOCX-001 | DONE | Implémenter les satellites SCM DOCX hors liste dépenses | specs satellites SCM V1 + sources DOCX confirmées | générateurs DOCX + tests ciblés |
+| SPEC-ACTE-ACTIONS-001 | DONE | Spécifier l'acte de cession d'actions SPFPL avant code | source DOCX convertie + préparation V1 | spec canonique + spec texte avant code |
+| CODE-SCM-LISTE-DEPENSES-001 | READY | Implémenter la liste des dépenses communes SCM | source DOCX convertie + specs satellites SCM V1 | générateur DOCX + tests ciblés |
+| CODE-ACTE-ACTIONS-001 | READY | Implémenter l'acte de cession d'actions SPFPL | specs acte actions V1 + source DOCX convertie | générateur DOCX + tests ciblés |
 | SPEC-DEROG-SALARIEE-MANUAL-001 | READY | Spécifier le traitement manuel de la dérogation salariée legacy | blocage conversion dérogation salariée V1 | spec manuelle ou décision de blocage documentée |
-| PREP-SCM-LISTE-DEPENSES-CONVERT-001 | READY | Préparer la conversion de la liste de dépenses SCM | préparation SCM satellites V1 + sources disponibles | DOCX exploitable ou blocage documenté |
+| SPEC-SCM-CESSION-BLOCK-001 | READY | Spécifier le blocage cession SCM avant code | sources SCM cession disponibles + arbitrages SCM | blocage documenté ou spec avant code |
+| STYLE-ANALYSE-STATUTS-BATCH-001 | READY | Analyser le style du batch statuts avant harmonisation | générateurs statuts intégrés + besoins de rendu | cadrage style statuts |
+| PREP-SCM-CESSION-SOURCES-001 | READY | Préparer les sources cession SCM | raw dump SCM cession + plan de placement | sources placées ou blocage documenté |
 | REVIEW-STATUTS-BATCH-001 | READY | Revoir le batch statuts généré | générateurs statuts intégrés + smoke DOCX | revue humaine juridique/visuelle documentée |
 | UI-001 | BLOCKED | Brancher Streamlit V0 Lot 1 | orchestrateur Lot 1 + spec canonique PV nomination gérant validée | écran simple + test manuel |
 
@@ -556,7 +563,7 @@
 - Objectif : implémenter les statuts SCM.
 - Specs à lire : specs statuts civils V1 et arbitrages SCM V1.
 - Contraintes : respecter les arbitrages SCM, bloquer toute ambiguïté de wording, ajouter tests et branchement orchestrateur ciblés.
-- Statut : READY.
+- Statut : DONE ; générateur statuts SCM intégré sous `DOC-025` avec tests ciblés.
 
 ### CODE-SAS-SATELLITES-001
 - Objectif : implémenter les satellites SAS.
@@ -586,7 +593,7 @@
 - Objectif : spécifier l'acte de cession d'actions SPFPL avant tout code.
 - Specs à lire : audit et préparation acte de cession d'actions V1.
 - Contraintes : ne pas coder sans spec canonique et texte.
-- Statut : READY.
+- Statut : DONE ; specs canonique et texte disponibles dans `docs/delivery/`.
 
 ### SPEC-DEROG-SALARIEE-MANUAL-001
 - Objectif : spécifier le traitement manuel ou le blocage V1 de la dérogation salariée legacy.
@@ -598,6 +605,42 @@
 - Objectif : préparer une source exploitable pour la liste de dépenses SCM.
 - Specs à lire : préparation SCM satellites V1.
 - Contraintes : ne pas toucher au raw dump ; documenter tout blocage de conversion.
+- Statut : DONE ; DOCX exploitable placé dans `project/source_documents/lot_05/` et préparation documentée.
+
+### CODE-SCM-SAT-DOCX-001
+- Objectif : implémenter les satellites SCM DOCX hors liste dépenses.
+- Specs à lire : specs satellites SCM V1.
+- Contraintes : ne pas coder la liste dépenses dans ce ticket ; conserver le wording source des trois DOCX.
+- Statut : DONE ; générateurs `DOC-026`, `DOC-027` et `DOC-028` intégrés et testés.
+
+### CODE-SCM-LISTE-DEPENSES-001
+- Objectif : implémenter la liste des dépenses communes SCM.
+- Specs à lire : specs satellites SCM V1 et préparation conversion liste dépenses.
+- Contraintes : limiter le ticket à la liste dépenses communes SCM, avec tests ciblés.
+- Statut : READY.
+
+### CODE-ACTE-ACTIONS-001
+- Objectif : implémenter l'acte de cession d'actions SPFPL.
+- Specs à lire : specs acte actions V1 et préparation source.
+- Contraintes : ne pas modifier le wording juridique hors spec.
+- Statut : READY.
+
+### SPEC-SCM-CESSION-BLOCK-001
+- Objectif : spécifier le blocage ou le périmètre de la cession SCM.
+- Specs à lire : arbitrages SCM et sources SCM cession disponibles.
+- Contraintes : pas de code avant décision documentée.
+- Statut : READY.
+
+### STYLE-ANALYSE-STATUTS-BATCH-001
+- Objectif : analyser le style du batch statuts avant harmonisation.
+- Specs à lire : specs et générateurs statuts intégrés.
+- Contraintes : analyse et cadrage avant modification de rendu.
+- Statut : READY.
+
+### PREP-SCM-CESSION-SOURCES-001
+- Objectif : préparer les sources cession SCM.
+- Specs à lire : plan de placement sources et raw dump SCM cession.
+- Contraintes : ne pas toucher au raw dump ; documenter tout placement ou blocage.
 - Statut : READY.
 
 ### REVIEW-STATUTS-BATCH-001
@@ -621,9 +664,14 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - mettre à jour `docs/project/04_LAST_STATE.md`
 
 ## Prochaine étape prévue
-- prochaine action recommandée : lancer `CODE-STATUTS-SCM-001`.
-- tickets READY confirmés : `CODE-STATUTS-SCM-001`, `SPEC-ACTE-ACTIONS-001`, `SPEC-DEROG-SALARIEE-MANUAL-001`, `PREP-SCM-LISTE-DEPENSES-CONVERT-001` et `REVIEW-STATUTS-BATCH-001`.
+- prochaine action recommandée : lancer `CODE-SCM-LISTE-DEPENSES-001`.
+- tickets READY confirmés : `CODE-SCM-LISTE-DEPENSES-001`, `CODE-ACTE-ACTIONS-001`, `SPEC-DEROG-SALARIEE-MANUAL-001`, `SPEC-SCM-CESSION-BLOCK-001`, `STYLE-ANALYSE-STATUTS-BATCH-001` et `PREP-SCM-CESSION-SOURCES-001`.
+- tickets absorbés par SYNC-WAVE-007 : `CODE-STATUTS-SCM-001`, `PREP-SCM-LISTE-DEPENSES-CONVERT-001`, `CODE-SCM-SAT-DOCX-001` et `SPEC-ACTE-ACTIONS-001`.
 - tickets absorbés par SYNC-WAVE-006 : `RESUME-FIX-STYLE-LETTERS-001`, `CODE-STATUTS-CIVILS-CORE-001`, `CODE-SAS-SATELLITES-001`, `CONVERT-DEROG-SALARIEE-001`, `CONVERT-ACTE-ACTIONS-001` et `SPEC-SCM-SATELLITES-001`.
+- `CODE-STATUTS-SCM-001` est DONE ; les statuts SCM sont branchés sous `DOC-025`.
+- `CODE-SCM-SAT-DOCX-001` est DONE ; les satellites SCM DOCX sont branchés sous `DOC-026`, `DOC-027` et `DOC-028`.
+- `PREP-SCM-LISTE-DEPENSES-CONVERT-001` est DONE ; le DOCX exploitable est placé dans `project/source_documents/lot_05/`.
+- `SPEC-ACTE-ACTIONS-001` est DONE ; les specs acte actions V1 sont disponibles dans `docs/delivery/`.
 - `CONVERT-ACTE-ACTIONS-001` est DONE ; le DOCX exploitable est placé dans `project/source_documents/lot_05/`.
 - `CONVERT-DEROG-SALARIEE-001` est DONE ; la source salariee reste non convertie et `cumul_salariee` demeure bloque faute de DOCX propre.
 - `CODE-OPTION-IS-001`, `PREP-SCM-SAT-001`, `ARBITRAGE-STATUTS-SCM-001`, `SPEC-SAS-SATELLITES-001` et `PREP-ACTE-ACTIONS-001` sont DONE et absorbés dans `main`.
@@ -672,7 +720,7 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - CODE-BAIL-APP-001 est terminé ; `DOC-007` avenant au contrat de bail et `DOC-008` appel de fonds SEL sont branchés dans le catalogue/orchestrateur.
 - Points ouverts bail/appel après CODE-BAIL-APP-001 : appel de fonds limité à SELARL dentaire, avenant limité SELARL/SELAS avec `dossier_options.cession=true`, revue humaine juridique/visuelle du premier rendu toujours nécessaire.
 - Points ouverts cession après CODE-CESSION-CAB-001 : revue humaine juridique/visuelle du premier rendu DOCX, sources SELAS non stabilisées au-delà du paramétrage V1, PDF/ZIP hors ticket.
-- Points ouverts statuts après CODE-STATUTS-CIVILS-CORE-001 : SAS limité au modèle SAS/SPFPL médecins source ; SPFPL doit conserver cession/apport sans harmonisation ; SEL est prêt à coder ; SCM reste à cadrer/coder séparément à cause de l'anomalie source de parts et de la ligne fixe `510 euros`.
+- Points ouverts statuts après SYNC-WAVE-007 : SAS limité au modèle SAS/SPFPL médecins source ; SPFPL doit conserver cession/apport sans harmonisation ; SCM est codé en V1 mais reste soumis à revue humaine juridique/visuelle du premier rendu.
 
 ## Journal court
 - 2026-05-12 : mémoire projet installée dans `docs/project/`.
@@ -725,3 +773,4 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - 2026-05-15 : CONVERT-DEROG-SALARIEE-001 retente la conversion Word COM du `.doc` legacy salariee ; aucun DOCX exploitable n'est produit, le blocage est documente dans `docs/delivery/lot_03_derogation_salariee_conversion_blocker_v1.md`, sans modification de code Python.
 - 2026-05-15 : CONVERT-ACTE-ACTIONS-001 convertit `Acte_cession_SPFPL_tiers_modele.doc` en DOCX via `Wordconv.exe`, place le résultat dans `project/source_documents/lot_05/` et documente l'origine/confiance dans `docs/delivery/lot_05_acte_cession_actions_preparation_v1.md`, sans modification de code Python.
 - 2026-05-15 : SYNC-WAVE-006 absorbe dans `main` les commits sources `557fc1920361a8c7831e6b023d70471c9c29e5ff` et `291da7b6db68b3de413fba50cf652dde98a8f6a8` par équivalence, puis cherry-picke `2c55a7ab5f8a44de5c29305cfbc280f930ee32ec`, `568336bed7ccb0a5901abe5d921fd9056573e32d`, `8f0c8ab13d6e8f1a9e50747f8a9d5b607bcb90d6` et `11dc0d8dda23f841d650586e0977e0202270a3b5`, passe la vague en DONE, puis confirme les prochains tickets READY, sans modification de `project/source_import/raw_drive_dump/` ni de `artifacts/`.
+- 2026-05-15 : SYNC-WAVE-007 absorbe dans `main` les commits sources `3c040774cdfe57c203b78776a9ea412ec3d14d94`, `6453b6f64665feda898a076f730cba9a6684825b`, `075af377f7c9d7475429f1e738b46483127d757f` et `c221681570782a1b1efc5afc72087cb903cd8a65`, passe les quatre tickets correspondants en DONE, puis confirme les prochains tickets READY, sans modification de `project/source_import/raw_drive_dump/` ni de `artifacts/`.
