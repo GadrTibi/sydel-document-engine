@@ -4,6 +4,8 @@
 2026-05-15
 
 ## Dernier ticket terminé
+SYNC-WAVE-006 : absorption dans `main` des branches tardives Lot 04 / Lot 05, passage en DONE des tickets absorbés et réalignement du pilotage.
+
 CONVERT-ACTE-ACTIONS-001 : conversion du candidat legacy `Acte_cession_SPFPL_tiers_modele.doc` en DOCX exploitable, placement dans `project/source_documents/lot_05/` et documentation de préparation V1.
 
 CONVERT-DEROG-SALARIEE-001 : tentative de conversion Word COM du `.doc` legacy salariee, aucun DOCX exploitable produit, blocage documente.
@@ -224,12 +226,16 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
 - `CODE-OPTION-IS-001` est DONE.
 - `PREP-ACTE-ACTIONS-001` est DONE.
 - `SYNC-WAVE-005` est DONE.
+- `SYNC-WAVE-006` est DONE.
 - `CODE-STATUTS-SCM-001` est READY.
-- `CODE-SAS-SATELLITES-001` est READY.
-- `SPEC-SCM-SATELLITES-001` est READY.
+- `CODE-SAS-SATELLITES-001` est DONE.
+- `SPEC-SCM-SATELLITES-001` est DONE.
 - `CONVERT-DEROG-SALARIEE-001` est DONE.
 - `CONVERT-ACTE-ACTIONS-001` est DONE.
-- `CONVERT-DEROG-SALARIEE-001` est DONE.
+- `SPEC-ACTE-ACTIONS-001` est READY.
+- `SPEC-DEROG-SALARIEE-MANUAL-001` est READY.
+- `PREP-SCM-LISTE-DEPENSES-CONVERT-001` est READY.
+- `REVIEW-STATUTS-BATCH-001` est READY.
 - `RESUME-ARBITRAGE-STATUTS-CIVILS-001` est DONE, remplacé par l'arbitrage civils V1 absorbé.
 - `STYLE-ANALYSE-BATCH-001` est DONE.
 - `SYNC-STYLE-CIVILS-001` est DONE.
@@ -382,14 +388,13 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
 ## Prochain ticket à lancer
 Tickets actifs/parallélisables :
 - `CODE-STATUTS-SCM-001` est READY.
-- `CODE-SAS-SATELLITES-001` est READY.
-- `SPEC-SCM-SATELLITES-001` est READY.
 - `SPEC-ACTE-ACTIONS-001` est READY.
 - `SPEC-DEROG-SALARIEE-MANUAL-001` est READY.
 - `PREP-SCM-LISTE-DEPENSES-CONVERT-001` est READY.
 - `REVIEW-STATUTS-BATCH-001` est READY.
 
 `CODE-OPTION-IS-001`, `PREP-SCM-SAT-001`, `ARBITRAGE-STATUTS-SCM-001`, `SPEC-SAS-SATELLITES-001` et `PREP-ACTE-ACTIONS-001` sont DONE et absorbés dans `main`.
+`RESUME-FIX-STYLE-LETTERS-001`, `CODE-STATUTS-CIVILS-CORE-001`, `CODE-SAS-SATELLITES-001`, `CONVERT-DEROG-SALARIEE-001`, `CONVERT-ACTE-ACTIONS-001` et `SPEC-SCM-SATELLITES-001` sont DONE et absorbés dans `main` via SYNC-WAVE-006.
 `CONVERT-ACTE-ACTIONS-001` est DONE avec DOCX placé dans `project/source_documents/lot_05/` et préparation V1 documentée.
 `CONVERT-DEROG-SALARIEE-001` est DONE ; aucun DOCX exploitable n'a ete produit.
 `CODE-BAIL-APP-001` est DONE dans `main`.
@@ -555,6 +560,12 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
 - SYNC-WAVE-005 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m ruff check .` OK.
 - SYNC-WAVE-005 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m pytest` OK, 135 tests passés.
 - SYNC-WAVE-005 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifiés.
+- SYNC-WAVE-006 : `git fetch --all --prune` OK.
+- SYNC-WAVE-006 : commits sources `557fc1920361a8c7831e6b023d70471c9c29e5ff` et `291da7b6db68b3de413fba50cf652dde98a8f6a8` déjà présents par équivalence de contenu ; commits sources `2c55a7ab5f8a44de5c29305cfbc280f930ee32ec`, `568336bed7ccb0a5901abe5d921fd9056573e32d`, `8f0c8ab13d6e8f1a9e50747f8a9d5b607bcb90d6` et `11dc0d8dda23f841d650586e0977e0202270a3b5` cherry-pickés dans `main`.
+- SYNC-WAVE-006 : conflits de pilotage résolus dans `docs/project/01_EXECUTION_BOARD.md` et `docs/project/04_LAST_STATE.md` en conservant les états les plus récents.
+- SYNC-WAVE-006 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m ruff check .` OK.
+- SYNC-WAVE-006 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m pytest` OK, 143 tests passés.
+- SYNC-WAVE-006 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifiés.
 - SPEC-TEXTE-ORDRE-001 : source de vérité, source Lot 2 et variantes raw dump SELARL / SELAS / SPFPL cession / SPFPL apport lues en lecture seule.
 - SPEC-TEXTE-ORDRE-001 : spec texte créée dans `docs/delivery/lot_02_demande_inscription_ordre_spec_texte_v1.md`.
 - SPEC-TEXTE-ORDRE-001 : aucun code Python modifié ; validations limitées à la relecture documentaire et au contrôle du diff.
@@ -589,4 +600,4 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
 - SMOKE-ORCH-L2-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 47 tests passés.
 
 ## Recommandation immédiate suivante
-Lancer la spec canonique et texte de l'acte de cession d'actions SPFPL avant tout code documentaire.
+Lancer `CODE-STATUTS-SCM-001`.
