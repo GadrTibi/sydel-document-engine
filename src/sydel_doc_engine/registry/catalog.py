@@ -68,6 +68,10 @@ STATUTS_CIVILS_SCI_IRIS_STRUCTURES: list[str] = [
     "SCI IRIS",
 ]
 
+STATUTS_CIVILS_SCM_STRUCTURES: list[str] = [
+    "SCM",
+]
+
 OPTION_IS_STRUCTURES: list[str] = [
     "SCI",
     "SCI IRIS",
@@ -606,6 +610,27 @@ def build_seed_catalog() -> list[DocumentDefinition]:
                 "Satellite SAS V1 ; la duplication attestation/liste des souscripteurs "
                 "est rendue comme un seul document."
             ),
+        ),
+        DocumentDefinition(
+            doc_id="DOC-025",
+            canonical_name="Statuts SCM",
+            generator_name="generate_statuts_scm",
+            lot=4,
+            category=DocumentCategory.SPECIFIQUE,
+            structures=STATUTS_CIVILS_SCM_STRUCTURES,
+            general_condition="dossier.structure == SCM",
+            specific_conditions=[
+                "statuts_civils.type == scm",
+                "associes[] entre 1 et 6",
+                "apports et parts explicites par associe",
+                "documents satellites SCM hors generateur statuts",
+            ],
+            dynamic_associates=True,
+            grammar_variants=False,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path="project/source_documents/lot_04/Statuts SCM.docx",
+            specification_path="docs/delivery/lot_04_statuts_scm_arbitrages_v1.md",
+            notes="Statuts SCM V1 reconstruits depuis source DOCX, sans satellites SCM.",
         ),
     ]
 

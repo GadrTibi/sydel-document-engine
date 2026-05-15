@@ -3,9 +3,9 @@ from __future__ import annotations
 from sydel_doc_engine.registry.catalog import build_seed_catalog
 
 
-def test_seed_catalog_contains_twenty_four_documents() -> None:
+def test_seed_catalog_contains_twenty_five_documents() -> None:
     catalog = build_seed_catalog()
-    assert len(catalog) == 24
+    assert len(catalog) == 25
 
 
 def test_seed_catalog_contains_lot_one_to_lot_five_entries() -> None:
@@ -122,13 +122,16 @@ def test_seed_catalog_statuts_civils_core_scope_is_limited_to_civil_structures()
     scs = next(document for document in catalog if document.doc_id == "DOC-019")
     sci = next(document for document in catalog if document.doc_id == "DOC-020")
     sci_iris = next(document for document in catalog if document.doc_id == "DOC-021")
+    scm = next(document for document in catalog if document.doc_id == "DOC-025")
 
     assert set(scs.structures) == {"SCS"}
     assert set(sci.structures) == {"SCI"}
     assert set(sci_iris.structures) == {"SCI IRIS"}
+    assert set(scm.structures) == {"SCM"}
     assert "statuts_civils.type == scs" in scs.specific_conditions
     assert "statuts_civils.type == sci" in sci.specific_conditions
     assert "statuts_civils.type == sci_iris" in sci_iris.specific_conditions
+    assert "statuts_civils.type == scm" in scm.specific_conditions
 
 
 def test_seed_catalog_option_is_scope_is_limited_to_sci_structures() -> None:
