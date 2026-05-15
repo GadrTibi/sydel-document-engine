@@ -73,6 +73,10 @@ OPTION_IS_STRUCTURES: list[str] = [
     "SCI IRIS",
 ]
 
+SCM_SATELLITES_STRUCTURES: list[str] = [
+    "SCM",
+]
+
 
 def build_seed_catalog() -> list[DocumentDefinition]:
     return [
@@ -549,6 +553,70 @@ def build_seed_catalog() -> list[DocumentDefinition]:
             source_path="project/source_documents/lot_05/lettre option IS.docx",
             specification_path="docs/delivery/lot_05_lettre_option_is_spec_v1.md",
             notes="Document dedie, non injecte dans les statuts civils.",
+        ),
+        DocumentDefinition(
+            doc_id="DOC-023",
+            canonical_name="Pacte d'associes SCM",
+            generator_name="generate_pacte_associes_scm",
+            lot=5,
+            category=DocumentCategory.SPECIFIQUE,
+            structures=SCM_SATELLITES_STRUCTURES,
+            general_condition="dossier.structure == SCM et dossier.options.scm_satellites == true",
+            specific_conditions=[
+                "scm_satellites.pacte_associes == true",
+                "deux associes historiques exactement",
+                "source DOCX uniquement, liste depenses communes exclue",
+            ],
+            dynamic_associates=False,
+            grammar_variants=False,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path="project/source_documents/lot_05/Pacte d_associes SCM.docx",
+            specification_path="docs/delivery/lot_05_scm_satellites_spec_texte_v1.md",
+            notes="Sous-batch SCM satellites DOCX V1, sans source .doc.",
+        ),
+        DocumentDefinition(
+            doc_id="DOC-024",
+            canonical_name="Contrat d'exercice professionnel a frais communs",
+            generator_name="generate_contrat_frais_communs",
+            lot=5,
+            category=DocumentCategory.SPECIFIQUE,
+            structures=SCM_SATELLITES_STRUCTURES,
+            general_condition="dossier.structure == SCM et dossier.options.scm_satellites == true",
+            specific_conditions=[
+                "scm_satellites.contrat_frais_communs == true",
+                "deux parties exactement",
+                "locaux dentaires source conserves sans adaptation",
+            ],
+            dynamic_associates=False,
+            grammar_variants=False,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path="project/source_documents/lot_05/CONTRAT FRAIS COMMUNS.docx",
+            specification_path="docs/delivery/lot_05_scm_satellites_spec_texte_v1.md",
+            notes="Sous-batch SCM satellites DOCX V1, table source fixe.",
+        ),
+        DocumentDefinition(
+            doc_id="DOC-025",
+            canonical_name="Reglement interieur de la SCM",
+            generator_name="generate_reglement_interieur_scm",
+            lot=5,
+            category=DocumentCategory.SPECIFIQUE,
+            structures=SCM_SATELLITES_STRUCTURES,
+            general_condition="dossier.structure == SCM et dossier.options.scm_satellites == true",
+            specific_conditions=[
+                "scm_satellites.reglement_interieur == true",
+                "deux parties et deux praticiens exactement",
+                "formes juridiques des deux parties identiques",
+            ],
+            dynamic_associates=False,
+            grammar_variants=False,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path=(
+                "project/source_documents/lot_05/"
+                "REGLEMENT INTERIEUR DE LA SOCIETE CIVILE DE MOYENS - "
+                "SCM DES DOCTEURS XX.docx"
+            ),
+            specification_path="docs/delivery/lot_05_scm_satellites_spec_texte_v1.md",
+            notes="Sous-batch SCM satellites DOCX V1, quatre exemplaires source conserves.",
         ),
     ]
 

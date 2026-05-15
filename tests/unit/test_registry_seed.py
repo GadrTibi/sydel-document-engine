@@ -3,9 +3,9 @@ from __future__ import annotations
 from sydel_doc_engine.registry.catalog import build_seed_catalog
 
 
-def test_seed_catalog_contains_twenty_two_documents() -> None:
+def test_seed_catalog_contains_twenty_five_documents() -> None:
     catalog = build_seed_catalog()
-    assert len(catalog) == 22
+    assert len(catalog) == 25
 
 
 def test_seed_catalog_contains_lot_one_to_lot_five_entries() -> None:
@@ -139,3 +139,19 @@ def test_seed_catalog_option_is_scope_is_limited_to_sci_structures() -> None:
     assert set(option_is.structures) == {"SCI", "SCI IRIS"}
     assert option_is.general_condition == "dossier.options.option_is == true"
     assert option_is.source_path == "project/source_documents/lot_05/lettre option IS.docx"
+
+
+def test_seed_catalog_scm_satellites_scope_is_limited_to_scm_docx_batch() -> None:
+    catalog = build_seed_catalog()
+
+    scm_documents = [
+        document for document in catalog if document.doc_id in {"DOC-023", "DOC-024", "DOC-025"}
+    ]
+
+    assert len(scm_documents) == 3
+    for document in scm_documents:
+        assert set(document.structures) == {"SCM"}
+        assert document.general_condition == (
+            "dossier.structure == SCM et dossier.options.scm_satellites == true"
+        )
+        assert document.source_path.endswith(".docx")

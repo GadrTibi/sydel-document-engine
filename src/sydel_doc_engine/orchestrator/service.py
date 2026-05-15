@@ -57,7 +57,14 @@ from sydel_doc_engine.generators.lot_04.statuts_selarl_medecin import (
 from sydel_doc_engine.generators.lot_04.statuts_selas_medecin import (
     StatutsSelasMedecinGenerator,
 )
+from sydel_doc_engine.generators.lot_05.contrat_frais_communs import (
+    ContratFraisCommunsGenerator,
+)
 from sydel_doc_engine.generators.lot_05.lettre_option_is import LettreOptionIsGenerator
+from sydel_doc_engine.generators.lot_05.pacte_associes_scm import PacteAssociesScmGenerator
+from sydel_doc_engine.generators.lot_05.reglement_interieur_scm import (
+    ReglementInterieurScmGenerator,
+)
 
 REGIME_COMMUNAUTAIRE_DOCUMENT_IDS = {"DOC-005", "DOC-006"}
 BAIL_AVENANT_DOCUMENT_ID = "DOC-007"
@@ -84,6 +91,11 @@ STATUTS_CIVILS_DOCUMENT_TYPES = {
     "DOC-021": "sci_iris",
 }
 OPTION_IS_DOCUMENT_ID = "DOC-022"
+SCM_SATELLITES_DOCUMENT_IDS = {
+    "DOC-023": "pacte_associes",
+    "DOC-024": "contrat_frais_communs",
+    "DOC-025": "reglement_interieur",
+}
 
 
 class MissingDocumentGeneratorError(RuntimeError):
@@ -114,6 +126,9 @@ def build_lot_01_generator_registry() -> dict[str, DocumentGenerator]:
         "DOC-020": StatutsSciGenerator(),
         "DOC-021": StatutsSciIrisGenerator(),
         "DOC-022": LettreOptionIsGenerator(),
+        "DOC-023": PacteAssociesScmGenerator(),
+        "DOC-024": ContratFraisCommunsGenerator(),
+        "DOC-025": ReglementInterieurScmGenerator(),
     }
 
 
@@ -185,6 +200,8 @@ def _document_enabled_for_context(
             return _statuts_civils_enabled(ctx, STATUTS_CIVILS_DOCUMENT_TYPES[document.doc_id])
         if document.doc_id == OPTION_IS_DOCUMENT_ID:
             return _option_is_enabled(ctx)
+        if document.doc_id in SCM_SATELLITES_DOCUMENT_IDS:
+            return _scm_satellite_enabled(ctx, SCM_SATELLITES_DOCUMENT_IDS[document.doc_id])
         return True
     return bool(ctx.dossier_options and ctx.dossier_options.regime_communautaire)
 
@@ -242,3 +259,13 @@ def _statuts_civils_enabled(ctx: DocumentGenerationContext, statuts_type: str) -
 
 def _option_is_enabled(ctx: DocumentGenerationContext) -> bool:
     return bool(ctx.dossier_options and ctx.dossier_options.option_is)
+
+
+def _scm_satellite_enabled(ctx: DocumentGenerationContext, satellite_field: str) -> bool:
+    if ctx.structure != "SCM":
+        return False
+    if ctx.dossier_options is None or not ctx.dossier_options.scm_satellites:
+        return False
+    if ctx.scm_satellites is None:
+        return False
+    return bool(getattr(ctx.scm_satellites, satellite_field))
