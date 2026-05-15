@@ -3,14 +3,14 @@ from __future__ import annotations
 from sydel_doc_engine.registry.catalog import build_seed_catalog
 
 
-def test_seed_catalog_contains_twenty_one_documents() -> None:
+def test_seed_catalog_contains_twenty_two_documents() -> None:
     catalog = build_seed_catalog()
-    assert len(catalog) == 21
+    assert len(catalog) == 22
 
 
-def test_seed_catalog_contains_lot_one_to_lot_four_entries() -> None:
+def test_seed_catalog_contains_lot_one_to_lot_five_entries() -> None:
     catalog = build_seed_catalog()
-    assert {document.lot for document in catalog} == {1, 2, 3, 4}
+    assert {document.lot for document in catalog} == {1, 2, 3, 4, 5}
 
 
 def test_seed_catalog_pv_nomination_gerant_scope_excludes_sas() -> None:
@@ -129,3 +129,13 @@ def test_seed_catalog_statuts_civils_core_scope_is_limited_to_civil_structures()
     assert "statuts_civils.type == scs" in scs.specific_conditions
     assert "statuts_civils.type == sci" in sci.specific_conditions
     assert "statuts_civils.type == sci_iris" in sci_iris.specific_conditions
+
+
+def test_seed_catalog_option_is_scope_is_limited_to_sci_structures() -> None:
+    catalog = build_seed_catalog()
+
+    option_is = next(document for document in catalog if document.doc_id == "DOC-022")
+
+    assert set(option_is.structures) == {"SCI", "SCI IRIS"}
+    assert option_is.general_condition == "dossier.options.option_is == true"
+    assert option_is.source_path == "project/source_documents/lot_05/lettre option IS.docx"

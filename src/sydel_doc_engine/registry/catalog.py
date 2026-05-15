@@ -68,6 +68,11 @@ STATUTS_CIVILS_SCI_IRIS_STRUCTURES: list[str] = [
     "SCI IRIS",
 ]
 
+OPTION_IS_STRUCTURES: list[str] = [
+    "SCI",
+    "SCI IRIS",
+]
+
 
 def build_seed_catalog() -> list[DocumentDefinition]:
     return [
@@ -524,6 +529,26 @@ def build_seed_catalog() -> list[DocumentDefinition]:
             source_path="project/source_documents/lot_04/Modele statuts SCI IRIS.docx",
             specification_path="docs/delivery/lot_04_statuts_civils_arbitrages_v1.md",
             notes="Lettre option IS separee hors generateur statuts civils.",
+        ),
+        DocumentDefinition(
+            doc_id="DOC-022",
+            canonical_name="Lettre option IS",
+            generator_name="generate_lettre_option_is",
+            lot=5,
+            category=DocumentCategory.SPECIFIQUE,
+            structures=OPTION_IS_STRUCTURES,
+            general_condition="dossier.options.option_is == true",
+            specific_conditions=[
+                "SCI et SCI IRIS uniquement",
+                "statuts_civils.type coherent avec la structure",
+                "centre des impots fourni explicitement",
+            ],
+            dynamic_associates=True,
+            grammar_variants=False,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path="project/source_documents/lot_05/lettre option IS.docx",
+            specification_path="docs/delivery/lot_05_lettre_option_is_spec_v1.md",
+            notes="Document dedie, non injecte dans les statuts civils.",
         ),
     ]
 

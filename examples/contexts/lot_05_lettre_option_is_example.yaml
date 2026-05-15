@@ -1,0 +1,55 @@
+structure: SCI
+dossier_options:
+  option_is: true
+personne_signataire:
+  genre: masculin
+  civilite: Monsieur
+  prenom: Jean
+  nom: Durand
+signature:
+  lieu: Paris
+  date: 2026-05-15
+impots:
+  service: Service des impots des entreprises
+  centre: SIE Paris Centre
+  adresse_ligne_1: 6 rue Paganini
+  adresse_ligne_2: TSA 10000
+  cp: "75020"
+  ville: Paris
+societe:
+  denomination: SCI EXEMPLE
+  forme_sociale: SCI
+  capital_social: "1000"
+  siren: "123 456 789"
+  ville_rcs: Paris
+  siege:
+    num_voie: "12"
+    voie: avenue Victor Hugo
+    cp: "75016"
+    ville: Paris
+statuts_civils:
+  type: sci
+  capital_social: "1000"
+  nb_parts_total: 100
+  associes:
+    - type_personne: personne_physique
+      civilite_affichage: Monsieur
+      prenom: Jean
+      nom: Durand
+      adresse_personnelle:
+        num_voie: "1"
+        voie: rue Exemple
+        cp: "75000"
+        ville: Paris
+      parts:
+        nb: 40
+        qualite_associe: associe
+    - type_personne: personne_morale
+      denomination: SEL IRIS
+      siege:
+        num_voie: "2"
+        voie: rue Pro
+        cp: "75000"
+        ville: Paris
+      parts:
+        nb: 60
