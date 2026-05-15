@@ -3,9 +3,9 @@ from __future__ import annotations
 from sydel_doc_engine.registry.catalog import build_seed_catalog
 
 
-def test_seed_catalog_contains_twenty_nine_documents() -> None:
+def test_seed_catalog_contains_thirty_documents() -> None:
     catalog = build_seed_catalog()
-    assert len(catalog) == 29
+    assert len(catalog) == 30
 
 
 def test_seed_catalog_contains_lot_one_to_lot_five_entries() -> None:
@@ -160,16 +160,24 @@ def test_seed_catalog_scm_satellites_scope_is_limited_to_scm_docx_batch() -> Non
     catalog = build_seed_catalog()
 
     scm_documents = [
-        document for document in catalog if document.doc_id in {"DOC-026", "DOC-027", "DOC-028"}
+        document
+        for document in catalog
+        if document.doc_id in {"DOC-026", "DOC-027", "DOC-028", "DOC-030"}
     ]
 
-    assert len(scm_documents) == 3
+    assert len(scm_documents) == 4
     for document in scm_documents:
         assert set(document.structures) == {"SCM"}
         assert document.general_condition == (
             "dossier.structure == SCM et dossier.options.scm_satellites == true"
         )
         assert document.source_path.endswith(".docx")
+
+    liste_depenses = next(document for document in scm_documents if document.doc_id == "DOC-030")
+    assert any(
+        "liste_depenses_communes" in condition
+        for condition in liste_depenses.specific_conditions
+    )
 
 
 def test_seed_catalog_acte_cession_actions_scope_is_limited_to_spfpl_cession() -> None:

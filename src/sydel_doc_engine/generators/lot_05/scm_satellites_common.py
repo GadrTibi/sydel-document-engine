@@ -114,6 +114,25 @@ def pacte_associes_replacements(ctx: DocumentGenerationContext) -> dict[str, str
     return replacements
 
 
+def liste_depenses_communes_replacements(ctx: DocumentGenerationContext) -> dict[str, str]:
+    company = _required_company(ctx.societe)
+    associes = _required_two_associes(ctx.associes)
+    return {
+        "[denomination_societe]": _required_text(company.denomination, "societe.denomination"),
+        "[forme_sociale]": _company_forme_juridique(company),
+        "[capital_social]": _required_text(
+            company.capital_social or company.capital,
+            "societe.capital_social",
+        ),
+        "[adresse_siege]": _address_display(company.siege, "societe.siege"),
+        "[ville_rcs]": _required_text(company.ville_rcs, "societe.ville_rcs"),
+        "[prenom_personne_1]": associes[0].prenom,
+        "[nom_personne_1]": associes[0].nom,
+        "[prenom_personne_2]": associes[1].prenom,
+        "[nom_personne_2]": associes[1].nom,
+    }
+
+
 def contrat_frais_communs_replacements(ctx: DocumentGenerationContext) -> dict[str, str]:
     parties = required_two_parties(ctx)
     locals_context = required_locaux(ctx.locaux)

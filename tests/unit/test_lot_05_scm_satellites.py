@@ -28,6 +28,9 @@ from sydel_doc_engine.domain.models import (
 from sydel_doc_engine.generators.lot_05.contrat_frais_communs import (
     ContratFraisCommunsGenerator,
 )
+from sydel_doc_engine.generators.lot_05.liste_depenses_communes_scm import (
+    ListeDepensesCommunesScmGenerator,
+)
 from sydel_doc_engine.generators.lot_05.pacte_associes_scm import PacteAssociesScmGenerator
 from sydel_doc_engine.generators.lot_05.reglement_interieur_scm import (
     ReglementInterieurScmGenerator,
@@ -81,6 +84,7 @@ def _base_context() -> DocumentGenerationContext:
         dossier_options=DossierOptions(scm_satellites=True),
         scm_satellites=ScmSatellitesOptions(
             pacte_associes=True,
+            liste_depenses_communes=True,
             contrat_frais_communs=True,
             reglement_interieur=True,
         ),
@@ -138,6 +142,7 @@ def test_scm_satellite_generators_create_clean_docx(tmp_path: Path) -> None:
 
     outputs = [
         PacteAssociesScmGenerator().generate(ctx, tmp_path),
+        ListeDepensesCommunesScmGenerator().generate(ctx, tmp_path),
         ContratFraisCommunsGenerator().generate(ctx, tmp_path),
         ReglementInterieurScmGenerator().generate(ctx, tmp_path),
     ]
@@ -145,6 +150,7 @@ def test_scm_satellite_generators_create_clean_docx(tmp_path: Path) -> None:
 
     assert {path.name for path in outputs} == {
         "pacte_associes_scm.docx",
+        "liste_depenses_communes_scm.docx",
         "contrat_frais_communs.docx",
         "reglement_interieur_scm.docx",
     }
@@ -153,6 +159,9 @@ def test_scm_satellite_generators_create_clean_docx(tmp_path: Path) -> None:
     assert "Monsieur Jean Durand" in texts["pacte_associes_scm.docx"]
     assert "CONTRAT D'EXERCICE PROFESSIONNEL" in texts["contrat_frais_communs.docx"]
     assert "1er juin 2026" in texts["contrat_frais_communs.docx"]
+    assert "DENOMINATION DE LA DEPENSE" in texts["liste_depenses_communes_scm.docx"]
+    assert "Frais de prothèse" in texts["liste_depenses_communes_scm.docx"]
+    assert "Jean Durand" in texts["liste_depenses_communes_scm.docx"]
     assert "REGLEMENT INTERIEUR DE LA SOCIETE CIVILE DE MOYENS" in texts[
         "reglement_interieur_scm.docx"
     ]
@@ -185,6 +194,22 @@ def test_contrat_frais_communs_requires_satellite_flag(tmp_path: Path) -> None:
         ContratFraisCommunsGenerator().generate(ctx, tmp_path)
 
 
+def test_liste_depenses_communes_requires_two_associes(tmp_path: Path) -> None:
+    ctx = _base_context()
+    ctx.associes.pop()
+
+    with pytest.raises(ValueError, match="exactement deux associes"):
+        ListeDepensesCommunesScmGenerator().generate(ctx, tmp_path)
+
+
+def test_liste_depenses_communes_requires_satellite_flag(tmp_path: Path) -> None:
+    ctx = _base_context()
+    ctx.scm_satellites = ScmSatellitesOptions(liste_depenses_communes=False)
+
+    with pytest.raises(ValueError, match="liste_depenses_communes"):
+        ListeDepensesCommunesScmGenerator().generate(ctx, tmp_path)
+
+
 def test_reglement_interieur_rejects_different_party_forms(tmp_path: Path) -> None:
     ctx = _base_context()
     ctx.parties_frais_communs[1] = _party(2, forme_juridique="SELAS")
@@ -197,6 +222,7 @@ def test_orchestrator_selects_only_enabled_scm_satellites() -> None:
     ctx = _base_context()
     ctx.scm_satellites = ScmSatellitesOptions(
         pacte_associes=True,
+        liste_depenses_communes=True,
         contrat_frais_communs=False,
         reglement_interieur=True,
     )
@@ -208,3 +234,4 @@ def test_orchestrator_selects_only_enabled_scm_satellites() -> None:
     assert "DOC-026" in selected_ids
     assert "DOC-027" not in selected_ids
     assert "DOC-028" in selected_ids
+    assert "DOC-030" in selected_ids
