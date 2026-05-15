@@ -45,6 +45,15 @@ from sydel_doc_engine.generators.lot_03.formulaire_derogation_sites_sel import (
     FormulaireDerogationSitesSelGenerator,
 )
 from sydel_doc_engine.generators.lot_04.statuts_sas import StatutsSasGenerator
+from sydel_doc_engine.generators.lot_04.statuts_selarl_dentiste import (
+    StatutsSelarlDentisteGenerator,
+)
+from sydel_doc_engine.generators.lot_04.statuts_selarl_medecin import (
+    StatutsSelarlMedecinGenerator,
+)
+from sydel_doc_engine.generators.lot_04.statuts_selas_medecin import (
+    StatutsSelasMedecinGenerator,
+)
 
 REGIME_COMMUNAUTAIRE_DOCUMENT_IDS = {"DOC-005", "DOC-006"}
 BAIL_AVENANT_DOCUMENT_ID = "DOC-007"
@@ -60,6 +69,11 @@ DEROGATION_DOCUMENT_TYPES = {
     "DOC-014": "cumul_sel_bnc",
 }
 STATUTS_SAS_DOCUMENT_ID = "DOC-015"
+STATUTS_SEL_DOCUMENTS = {
+    "DOC-016": ("SELARL", "selarl_dentiste"),
+    "DOC-017": ("SELARL", "selarl_medecin"),
+    "DOC-018": ("SELAS", "selas_medecin"),
+}
 
 
 class MissingDocumentGeneratorError(RuntimeError):
@@ -83,7 +97,20 @@ def build_lot_01_generator_registry() -> dict[str, DocumentGenerator]:
         "DOC-013": FormulaireDerogationSitesSelGenerator(),
         "DOC-014": DemandeDerogationCumulSelarlBncGenerator(),
         "DOC-015": StatutsSasGenerator(),
+        "DOC-016": StatutsSelarlDentisteGenerator(),
+        "DOC-017": StatutsSelarlMedecinGenerator(),
+        "DOC-018": StatutsSelasMedecinGenerator(),
     }
+
+
+def _statuts_sel_enabled(
+    ctx: DocumentGenerationContext,
+    expected: tuple[str, str],
+) -> bool:
+    expected_structure, expected_overlay = expected
+    if ctx.structure != expected_structure or ctx.statuts_sel is None:
+        return False
+    return (ctx.statuts_sel.overlay or "").lower() == expected_overlay
 
 
 class DocumentOrchestrator:
@@ -138,6 +165,8 @@ def _document_enabled_for_context(
             return _derogation_enabled(ctx, DEROGATION_DOCUMENT_TYPES[document.doc_id])
         if document.doc_id == STATUTS_SAS_DOCUMENT_ID:
             return _statuts_sas_enabled(ctx)
+        if document.doc_id in STATUTS_SEL_DOCUMENTS:
+            return _statuts_sel_enabled(ctx, STATUTS_SEL_DOCUMENTS[document.doc_id])
         return True
     return bool(ctx.dossier_options and ctx.dossier_options.regime_communautaire)
 

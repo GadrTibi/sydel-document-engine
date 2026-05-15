@@ -3,9 +3,9 @@ from __future__ import annotations
 from sydel_doc_engine.registry.catalog import build_seed_catalog
 
 
-def test_seed_catalog_contains_fifteen_documents() -> None:
+def test_seed_catalog_contains_eighteen_documents() -> None:
     catalog = build_seed_catalog()
-    assert len(catalog) == 15
+    assert len(catalog) == 18
 
 
 def test_seed_catalog_contains_lot_one_to_lot_four_entries() -> None:
@@ -99,3 +99,18 @@ def test_seed_catalog_statuts_sas_scope_is_limited_to_sas_spfpl_medecins() -> No
     assert statuts.general_condition == "dossier.structure == SAS"
     assert "statuts_sas.type == spfpl_medecins" in statuts.specific_conditions
     assert "statuts_sas.profession == medecin" in statuts.specific_conditions
+
+
+def test_seed_catalog_statuts_sel_scope_is_split_by_overlay() -> None:
+    catalog = build_seed_catalog()
+
+    dentiste = next(document for document in catalog if document.doc_id == "DOC-016")
+    medecin = next(document for document in catalog if document.doc_id == "DOC-017")
+    selas = next(document for document in catalog if document.doc_id == "DOC-018")
+
+    assert set(dentiste.structures) == {"SELARL"}
+    assert set(medecin.structures) == {"SELARL"}
+    assert set(selas.structures) == {"SELAS"}
+    assert "statuts_sel.overlay == selarl_dentiste" in dentiste.specific_conditions
+    assert "statuts_sel.overlay == selarl_medecin" in medecin.specific_conditions
+    assert "statuts_sel.overlay == selas_medecin" in selas.specific_conditions
