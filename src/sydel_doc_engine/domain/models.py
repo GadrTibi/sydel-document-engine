@@ -47,6 +47,7 @@ class CompanyInscriptionOrdre(BaseModel):
 
 
 class Company(BaseModel):
+    forme_juridique: str | None = None
     forme_sociale: str | None = None
     forme_sociale_affichage: str | None = None
     forme_sociale_libelle_long: str | None = None
@@ -63,6 +64,8 @@ class Company(BaseModel):
     duree: str | None = None
     siege: Address | None = None
     ville_rcs: str | None = None
+    numero_rcs: str | None = None
+    nb_parts_total: int | str | None = None
     siren: str | None = None
     inscription_ordre: CompanyInscriptionOrdre | None = None
 
@@ -87,6 +90,7 @@ class DossierOptions(BaseModel):
     apport: bool = False
     associe_unique: bool = False
     option_is: bool = False
+    scm_satellites: bool = False
 
 
 class CentreImpots(BaseModel):
@@ -784,6 +788,60 @@ class GeranceContext(BaseModel):
     seuil_emprunt: str | None = None
 
 
+class ScmSatellitesOptions(BaseModel):
+    pacte_associes: bool = False
+    liste_depenses_communes: bool = False
+    contrat_frais_communs: bool = False
+    reglement_interieur: bool = False
+
+
+class PacteAssociesScmContext(BaseModel):
+    ville_tribunal: str | None = None
+
+
+class FraisCommunsContext(BaseModel):
+    date_effet_contrat: date | str | None = None
+
+
+class ReglementInterieurScmContext(BaseModel):
+    seuil_depense_commune: str | None = None
+    annee_reference_charges: str | None = None
+    date_fin_gestion_administrative: date | str | None = None
+    date_attribution_responsabilites: date | str | None = None
+
+
+class ScmSocietePartie(BaseModel):
+    denomination: str | None = None
+    forme_juridique: str | None = None
+    capital_social: str | None = None
+    siege: Address | None = None
+    ville_rcs: str | None = None
+    numero_rcs: str | None = None
+
+
+class ScmRepresentant(BaseModel):
+    civilite_affichage: str | None = None
+    prenom: str | None = None
+    nom: str | None = None
+    identite_affichee: str | None = None
+    titre_affichage: str | None = None
+    fonction: str | None = None
+
+
+class PartieFraisCommuns(BaseModel):
+    societe: ScmSocietePartie | None = None
+    representant: ScmRepresentant | None = None
+
+
+class PraticienScm(BaseModel):
+    identite_affichee: str | None = None
+    telephone: str | None = None
+
+
+class LocauxContext(BaseModel):
+    adresse_affichee: str | None = None
+
+
 class Emprunt(BaseModel):
     actif: bool = False
     montant_max: str | None = None
@@ -810,6 +868,13 @@ class DocumentGenerationContext(BaseModel):
     reunion: ReunionContext | None = None
     capital: CapitalContext | None = None
     gerance: GeranceContext | None = None
+    scm_satellites: ScmSatellitesOptions | None = None
+    pacte_associes: PacteAssociesScmContext | None = None
+    frais_communs: FraisCommunsContext | None = None
+    reglement_interieur: ReglementInterieurScmContext | None = None
+    parties_frais_communs: list[PartieFraisCommuns] = Field(default_factory=list)
+    praticiens: list[PraticienScm] = Field(default_factory=list)
+    locaux: LocauxContext | None = None
     emprunt: Emprunt | None = None
     bien_immobilier: BienImmobilier | None = None
     apport: Apport | None = None

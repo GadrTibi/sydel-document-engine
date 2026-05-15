@@ -376,6 +376,9 @@ def test_select_documents_for_scm_includes_dedicated_statuts() -> None:
         "DOC-003",
         "DOC-004",
         "DOC-025",
+        "DOC-026",
+        "DOC-027",
+        "DOC-028",
     ]
 
 

@@ -1,0 +1,83 @@
+structure: SCM
+dossier_options:
+  scm_satellites: true
+scm_satellites:
+  pacte_associes: true
+  liste_depenses_communes: false
+  contrat_frais_communs: true
+  reglement_interieur: true
+personne_signataire:
+  genre: masculin
+  civilite: Monsieur
+  prenom: Jean
+  nom: Durand
+signature:
+  lieu: Paris
+  date: 2026-05-15
+societe:
+  denomination: SCM SANTE PARIS
+  forme_juridique: SCM
+  capital_social: 2 000 euros
+  siege:
+    adresse_affichee: 10 avenue de la Sante, 75014 Paris
+  ville_rcs: Paris
+  numero_rcs: 900 111 222
+  nb_parts_total: 200
+associes:
+  - genre: masculin
+    civilite_affichage: Monsieur
+    prenom: Jean
+    nom: Durand
+    nb_parts: 100
+  - genre: feminin
+    civilite_affichage: Madame
+    prenom: Alice
+    nom: Martin
+    nb_parts: 100
+pacte_associes:
+  ville_tribunal: Paris
+frais_communs:
+  date_effet_contrat: 1er juin 2026
+reglement_interieur:
+  seuil_depense_commune: 1 500 euros
+  annee_reference_charges: "2026"
+  date_fin_gestion_administrative: 31 decembre 2026
+  date_attribution_responsabilites: 1er janvier
+parties_frais_communs:
+  - societe:
+      denomination: SEL DOCTEUR 1
+      forme_juridique: SELARL
+      capital_social: 1 000 euros
+      siege:
+        adresse_affichee: 1 rue des Soins, 75001 Paris
+      ville_rcs: Paris
+      numero_rcs: 900 000 001
+    representant:
+      civilite_affichage: Monsieur
+      prenom: Jean
+      nom: Durand
+      identite_affichee: Jean Durand
+      titre_affichage: Docteur
+      fonction: gerant
+  - societe:
+      denomination: SEL DOCTEUR 2
+      forme_juridique: SELARL
+      capital_social: 1 000 euros
+      siege:
+        adresse_affichee: 2 rue des Soins, 75002 Paris
+      ville_rcs: Paris
+      numero_rcs: 900 000 002
+    representant:
+      civilite_affichage: Madame
+      prenom: Alice
+      nom: Martin
+      identite_affichee: Alice Martin
+      titre_affichage: Docteur
+      fonction: gerant
+praticiens:
+  - identite_affichee: Jean Durand
+    telephone: 01 00 00 00 01
+  - identite_affichee: Alice Martin
+    telephone: 01 00 00 00 02
+locaux:
+  adresse_affichee: 10 avenue de la Sante, 75014 Paris

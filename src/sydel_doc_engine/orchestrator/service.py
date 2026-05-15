@@ -61,9 +61,16 @@ from sydel_doc_engine.generators.lot_04.statuts_selas_medecin import (
 from sydel_doc_engine.generators.lot_05.attestation_capital_liste_souscripteurs_sas import (
     AttestationCapitalListeSouscripteursSasGenerator,
 )
+from sydel_doc_engine.generators.lot_05.contrat_frais_communs import (
+    ContratFraisCommunsGenerator,
+)
 from sydel_doc_engine.generators.lot_05.lettre_option_is import LettreOptionIsGenerator
+from sydel_doc_engine.generators.lot_05.pacte_associes_scm import PacteAssociesScmGenerator
 from sydel_doc_engine.generators.lot_05.pv_remuneration_president import (
     PvRemunerationPresidentGenerator,
+)
+from sydel_doc_engine.generators.lot_05.reglement_interieur_scm import (
+    ReglementInterieurScmGenerator,
 )
 
 REGIME_COMMUNAUTAIRE_DOCUMENT_IDS = {"DOC-005", "DOC-006"}
@@ -94,6 +101,11 @@ STATUTS_CIVILS_DOCUMENT_TYPES = {
 OPTION_IS_DOCUMENT_ID = "DOC-022"
 SAS_PV_REMUNERATION_PRESIDENT_DOCUMENT_ID = "DOC-023"
 SAS_ATTESTATION_CAPITAL_DOCUMENT_ID = "DOC-024"
+SCM_SATELLITES_DOCUMENT_IDS = {
+    "DOC-026": "pacte_associes",
+    "DOC-027": "contrat_frais_communs",
+    "DOC-028": "reglement_interieur",
+}
 
 
 class MissingDocumentGeneratorError(RuntimeError):
@@ -127,6 +139,9 @@ def build_lot_01_generator_registry() -> dict[str, DocumentGenerator]:
         "DOC-023": PvRemunerationPresidentGenerator(),
         "DOC-024": AttestationCapitalListeSouscripteursSasGenerator(),
         "DOC-025": StatutsScmGenerator(),
+        "DOC-026": PacteAssociesScmGenerator(),
+        "DOC-027": ContratFraisCommunsGenerator(),
+        "DOC-028": ReglementInterieurScmGenerator(),
     }
 
 
@@ -202,6 +217,8 @@ def _document_enabled_for_context(
             return _sas_pv_remuneration_president_enabled(ctx)
         if document.doc_id == SAS_ATTESTATION_CAPITAL_DOCUMENT_ID:
             return _sas_attestation_capital_enabled(ctx)
+        if document.doc_id in SCM_SATELLITES_DOCUMENT_IDS:
+            return _scm_satellite_enabled(ctx, SCM_SATELLITES_DOCUMENT_IDS[document.doc_id])
         return True
     return bool(ctx.dossier_options and ctx.dossier_options.regime_communautaire)
 
@@ -291,3 +308,13 @@ def _sas_attestation_capital_enabled(ctx: DocumentGenerationContext) -> bool:
     if len(ctx.capital_souscription.souscripteurs) != 1:
         return False
     return bool(ctx.capital_souscription.apports_nature_montant)
+
+
+def _scm_satellite_enabled(ctx: DocumentGenerationContext, satellite_field: str) -> bool:
+    if ctx.structure != "SCM":
+        return False
+    if ctx.dossier_options is None or not ctx.dossier_options.scm_satellites:
+        return False
+    if ctx.scm_satellites is None:
+        return False
+    return bool(getattr(ctx.scm_satellites, satellite_field))

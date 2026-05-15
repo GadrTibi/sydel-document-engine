@@ -154,3 +154,19 @@ def test_seed_catalog_sas_satellites_scope_is_limited_to_sas() -> None:
     assert set(attestation.structures) == {"SAS"}
     assert "remuneration_president.type == absence_remuneration" in pv.specific_conditions
     assert "un seul souscripteur" in attestation.specific_conditions
+
+
+def test_seed_catalog_scm_satellites_scope_is_limited_to_scm_docx_batch() -> None:
+    catalog = build_seed_catalog()
+
+    scm_documents = [
+        document for document in catalog if document.doc_id in {"DOC-026", "DOC-027", "DOC-028"}
+    ]
+
+    assert len(scm_documents) == 3
+    for document in scm_documents:
+        assert set(document.structures) == {"SCM"}
+        assert document.general_condition == (
+            "dossier.structure == SCM et dossier.options.scm_satellites == true"
+        )
+        assert document.source_path.endswith(".docx")
