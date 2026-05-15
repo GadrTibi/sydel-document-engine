@@ -1,0 +1,262 @@
+scs:
+  structure: SCS
+  personne_signataire:
+    genre: masculin
+    civilite: Monsieur
+    prenom: Jean
+    nom: Durand
+  signature:
+    lieu: Paris
+    date: 2026-05-15
+  societe:
+    denomination: SCS EXEMPLE
+    forme_sociale: SCS
+    ville_rcs: Paris
+    siege:
+      num_voie: "10"
+      voie: rue de la Paix
+      cp: "75002"
+      ville: Paris
+      adresse_affichee: 10 rue de la Paix, 75002 Paris
+  statuts_civils:
+    type: scs
+    forme_sociale: Societe en commandite simple
+    capital_social: "1000"
+    capital_social_lettres: mille
+    capital_maximal: "10000"
+    capital_maximal_lettres: dix mille
+    nb_parts_total: 100
+    nb_parts_total_lettres: cent
+    valeur_nominale_part: "10"
+    valeur_nominale_part_lettres: dix
+    plage_parts_totale: 1 a 100
+    duree_societe: "99"
+    capital_depot:
+      banque_nom: BANQUE EXEMPLE
+      banque_adresse: 1 rue Banque, 75009 Paris
+    total_apports_commandites: "600"
+    date_cloture_premier_exercice: 31 decembre 2026
+    nombre_exemplaires_lettres: trois
+    denomination_cabinet_mandataire: DAAT
+    associes:
+      - type_personne: personne_physique
+        role_statutaire: commandite
+        genre: masculin
+        civilite_affichage: Monsieur
+        prenom: Jean
+        prenoms: Jean
+        nom: Durand
+        date_naissance: 1 janvier 1980
+        ville_naissance: Paris
+        departement_naissance: "75"
+        nationalite: francaise
+        situation_maritale: celibataire
+        adresse_personnelle_affichee: 1 rue Exemple, 75000 Paris
+        apport:
+          montant: "600"
+          montant_lettres: six cents
+        parts:
+          nb: 60
+          nb_lettres: soixante
+          plage_affichee: 1 a 60
+          debut: 1
+          fin: 60
+          qualite_associe: associe commandite
+      - type_personne: personne_physique
+        role_statutaire: commanditaire
+        genre: feminin
+        civilite_affichage: Madame
+        prenom: Alice
+        prenoms: Alice
+        nom: Martin
+        date_naissance: 2 fevrier 1982
+        ville_naissance: Lyon
+        departement_naissance: "69"
+        nationalite: francaise
+        situation_maritale: celibataire
+        adresse_personnelle_affichee: 2 rue Exemple, 69000 Lyon
+        apport:
+          montant: "400"
+          montant_lettres: quatre cents
+        parts:
+          nb: 40
+          nb_lettres: quarante
+          plage_affichee: 61 a 100
+          debut: 61
+          fin: 100
+          qualite_associe: associe commanditaire
+
+sci:
+  structure: SCI
+  personne_signataire:
+    genre: masculin
+    civilite: Monsieur
+    prenom: Jean
+    nom: Durand
+  signature:
+    lieu: Paris
+    date: 2026-05-15
+  societe:
+    denomination: SCI EXEMPLE
+    forme_sociale: SCI
+    ville_rcs: Paris
+    siege:
+      num_voie: "12"
+      voie: avenue Victor Hugo
+      cp: "75016"
+      ville: Paris
+      adresse_affichee: 12 avenue Victor Hugo, 75016 Paris
+  statuts_civils:
+    type: sci
+    forme_sociale: societe civile immobiliere
+    mention_capital_variable: a capital variable
+    capital_social: "1000"
+    capital_social_lettres: mille
+    capital_autorise: "10000"
+    capital_autorise_lettres: dix mille
+    nb_parts_total: 100
+    nb_parts_total_lettres: cent
+    valeur_nominale_part: "10"
+    capital_depot:
+      banque_nom: BANQUE EXEMPLE
+      banque_adresse: 1 rue Banque, 75009 Paris
+    date_cloture_premier_exercice: 31 decembre 2026
+    associes:
+      - type_personne: personne_physique
+        genre: masculin
+        civilite_affichage: Monsieur
+        prenom: Jean
+        prenoms: Jean
+        nom: Durand
+        date_naissance: 1 janvier 1980
+        ville_naissance: Paris
+        departement_naissance: "75"
+        nationalite: francaise
+        situation_maritale: celibataire
+        adresse_personnelle:
+          num_voie: "1"
+          voie: rue Exemple
+          cp: "75000"
+          ville: Paris
+        apport:
+          montant: "400"
+          montant_lettres: quatre cents
+        parts:
+          nb: 40
+          nb_lettres: quarante
+          debut: 1
+          fin: 40
+      - type_personne: personne_physique
+        genre: feminin
+        civilite_affichage: Madame
+        prenom: Alice
+        prenoms: Alice
+        nom: Martin
+        date_naissance: 2 fevrier 1982
+        ville_naissance: Lyon
+        departement_naissance: "69"
+        nationalite: francaise
+        situation_maritale: celibataire
+        adresse_personnelle:
+          num_voie: "2"
+          voie: rue Exemple
+          cp: "69000"
+          ville: Lyon
+        apport:
+          montant: "600"
+          montant_lettres: six cents
+        parts:
+          nb: 60
+          nb_lettres: soixante
+          debut: 41
+          fin: 100
+
+sci_iris:
+  structure: SCI IRIS
+  personne_signataire:
+    genre: masculin
+    civilite: Monsieur
+    prenom: Jean
+    nom: Durand
+  signature:
+    lieu: Paris
+    date: 2026-05-15
+  societe:
+    denomination: SCI IRIS EXEMPLE
+    forme_sociale: SCI IRIS
+    ville_rcs: Paris
+    siege:
+      num_voie: "14"
+      voie: rue Royale
+      cp: "75008"
+      ville: Paris
+      adresse_affichee: 14 rue Royale, 75008 Paris
+  statuts_civils:
+    type: sci_iris
+    forme_sociale: societe civile immobiliere
+    mention_capital_variable: a capital variable
+    capital_social: "1000"
+    capital_social_lettres: mille
+    capital_autorise: "10000"
+    capital_autorise_lettres: dix mille
+    nb_parts_total: 100
+    nb_parts_total_lettres: cent
+    valeur_nominale_part: "10"
+    capital_depot:
+      banque_nom: BANQUE EXEMPLE
+      banque_adresse: 1 rue Banque, 75009 Paris
+    date_cloture_premier_exercice: 31 decembre 2026
+    resultat_quote_part_exceptionnel_total: 100 %
+    resultat_groupes_parts:
+      - parts_debut: 1
+        parts_fin: 40
+        quote_part_resultat_exceptionnel: 40 %
+      - parts_debut: 41
+        parts_fin: 100
+        quote_part_resultat_exceptionnel: 60 %
+    associes:
+      - type_personne: personne_morale
+        denomination: SEL IRIS
+        forme_juridique: SELARL
+        capital_social: 1 000 euros
+        siege:
+          adresse_affichee: 2 rue Pro, 75000 Paris
+        numero_rcs: 900 000 001
+        ville_rcs: Paris
+        representant:
+          civilite_affichage: Monsieur
+          prenom: Jean
+          nom: Durand
+          fonction: gerant
+        apport:
+          montant: "400"
+          montant_lettres: quatre cents
+        parts:
+          nb: 40
+          nb_lettres: quarante
+          debut: 1
+          fin: 40
+      - type_personne: personne_physique
+        genre: feminin
+        civilite_affichage: Madame
+        prenom: Alice
+        prenoms: Alice
+        nom: Martin
+        date_naissance: 2 fevrier 1982
+        ville_naissance: Lyon
+        departement_naissance: "69"
+        nationalite: francaise
+        situation_maritale: celibataire
+        adresse_personnelle:
+          num_voie: "2"
+          voie: rue Exemple
+          cp: "69000"
+          ville: Lyon
+        apport:
+          montant: "600"
+          montant_lettres: six cents
+        parts:
+          nb: 60
+          nb_lettres: soixante
+          debut: 41
+          fin: 100

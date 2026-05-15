@@ -10,6 +10,7 @@ ALL_STRUCTURES: list[str] = [
     "SPFPL apport",
     "SCS",
     "SCI",
+    "SCI IRIS",
     "SCM",
     "SAS",
 ]
@@ -53,6 +54,18 @@ DEROGATION_CORE_STRUCTURES: list[str] = [
 
 STATUTS_SAS_STRUCTURES: list[str] = [
     "SAS",
+]
+
+STATUTS_CIVILS_SCS_STRUCTURES: list[str] = [
+    "SCS",
+]
+
+STATUTS_CIVILS_SCI_STRUCTURES: list[str] = [
+    "SCI",
+]
+
+STATUTS_CIVILS_SCI_IRIS_STRUCTURES: list[str] = [
+    "SCI IRIS",
 ]
 
 
@@ -451,6 +464,66 @@ def build_seed_catalog() -> list[DocumentDefinition]:
                 "docs/delivery/lot_04_statuts_sel_exercice_spec_texte_v1.md"
             ),
             notes="Statuts SEL d'exercice V1, overlay SELAS medecin associe unique.",
+        ),
+        DocumentDefinition(
+            doc_id="DOC-019",
+            canonical_name="Statuts SCS",
+            generator_name="generate_statuts_scs",
+            lot=4,
+            category=DocumentCategory.SPECIFIQUE,
+            structures=STATUTS_CIVILS_SCS_STRUCTURES,
+            general_condition="dossier.structure == SCS",
+            specific_conditions=[
+                "statuts_civils.type == scs",
+                "associes[] entre 1 et 6",
+                "roles commandite et commanditaire explicites",
+            ],
+            dynamic_associates=True,
+            grammar_variants=False,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path="project/source_documents/lot_04/Statuts_SCS_modele.docx",
+            specification_path="docs/delivery/lot_04_statuts_civils_arbitrages_v1.md",
+            notes="SCM exclu de ce ticket ; statuts SCS reconstruits depuis source DOCX.",
+        ),
+        DocumentDefinition(
+            doc_id="DOC-020",
+            canonical_name="Statuts SCI",
+            generator_name="generate_statuts_sci",
+            lot=4,
+            category=DocumentCategory.SPECIFIQUE,
+            structures=STATUTS_CIVILS_SCI_STRUCTURES,
+            general_condition="dossier.structure == SCI",
+            specific_conditions=[
+                "statuts_civils.type == sci",
+                "associes[] personnes physiques entre 1 et 6",
+                "option IS hors generateur statuts",
+            ],
+            dynamic_associates=True,
+            grammar_variants=False,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path="project/source_documents/lot_04/Modele statuts SCI.docx",
+            specification_path="docs/delivery/lot_04_statuts_civils_arbitrages_v1.md",
+            notes="Personnes morales SCI bloquees en V1 faute de source observee.",
+        ),
+        DocumentDefinition(
+            doc_id="DOC-021",
+            canonical_name="Statuts SCI IRIS",
+            generator_name="generate_statuts_sci_iris",
+            lot=4,
+            category=DocumentCategory.SPECIFIQUE,
+            structures=STATUTS_CIVILS_SCI_IRIS_STRUCTURES,
+            general_condition="dossier.structure == SCI IRIS",
+            specific_conditions=[
+                "statuts_civils.type == sci_iris",
+                "associe personne morale source requis",
+                "resultat.groupes_parts[] explicite",
+            ],
+            dynamic_associates=True,
+            grammar_variants=False,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path="project/source_documents/lot_04/Modele statuts SCI IRIS.docx",
+            specification_path="docs/delivery/lot_04_statuts_civils_arbitrages_v1.md",
+            notes="Lettre option IS separee hors generateur statuts civils.",
         ),
     ]
 

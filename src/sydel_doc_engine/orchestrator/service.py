@@ -45,6 +45,9 @@ from sydel_doc_engine.generators.lot_03.formulaire_derogation_sites_sel import (
     FormulaireDerogationSitesSelGenerator,
 )
 from sydel_doc_engine.generators.lot_04.statuts_sas import StatutsSasGenerator
+from sydel_doc_engine.generators.lot_04.statuts_sci import StatutsSciGenerator
+from sydel_doc_engine.generators.lot_04.statuts_sci_iris import StatutsSciIrisGenerator
+from sydel_doc_engine.generators.lot_04.statuts_scs import StatutsScsGenerator
 from sydel_doc_engine.generators.lot_04.statuts_selarl_dentiste import (
     StatutsSelarlDentisteGenerator,
 )
@@ -74,6 +77,11 @@ STATUTS_SEL_DOCUMENTS = {
     "DOC-017": ("SELARL", "selarl_medecin"),
     "DOC-018": ("SELAS", "selas_medecin"),
 }
+STATUTS_CIVILS_DOCUMENT_TYPES = {
+    "DOC-019": "scs",
+    "DOC-020": "sci",
+    "DOC-021": "sci_iris",
+}
 
 
 class MissingDocumentGeneratorError(RuntimeError):
@@ -100,6 +108,9 @@ def build_lot_01_generator_registry() -> dict[str, DocumentGenerator]:
         "DOC-016": StatutsSelarlDentisteGenerator(),
         "DOC-017": StatutsSelarlMedecinGenerator(),
         "DOC-018": StatutsSelasMedecinGenerator(),
+        "DOC-019": StatutsScsGenerator(),
+        "DOC-020": StatutsSciGenerator(),
+        "DOC-021": StatutsSciIrisGenerator(),
     }
 
 
@@ -167,6 +178,8 @@ def _document_enabled_for_context(
             return _statuts_sas_enabled(ctx)
         if document.doc_id in STATUTS_SEL_DOCUMENTS:
             return _statuts_sel_enabled(ctx, STATUTS_SEL_DOCUMENTS[document.doc_id])
+        if document.doc_id in STATUTS_CIVILS_DOCUMENT_TYPES:
+            return _statuts_civils_enabled(ctx, STATUTS_CIVILS_DOCUMENT_TYPES[document.doc_id])
         return True
     return bool(ctx.dossier_options and ctx.dossier_options.regime_communautaire)
 
@@ -214,3 +227,9 @@ def _statuts_sas_enabled(ctx: DocumentGenerationContext) -> bool:
         "medecin",
         "médecin",
     }
+
+
+def _statuts_civils_enabled(ctx: DocumentGenerationContext, statuts_type: str) -> bool:
+    if ctx.statuts_civils is None or ctx.statuts_civils.type is None:
+        return False
+    return ctx.statuts_civils.type.strip().lower() == statuts_type

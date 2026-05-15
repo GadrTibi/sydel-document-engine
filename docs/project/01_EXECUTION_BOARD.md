@@ -71,7 +71,7 @@
 | ARBITRAGE-STATUTS-CIVILS-001 | DONE | Arbitrer les points bloquants statuts civils avant code | specs statuts civils V1 + points ouverts | décisions SCI/SCI IRIS/SCM/SCS avant code |
 | SYNC-STATUTS-CODE-ARB-001 | DONE | Synchroniser code statuts SAS/SPFPL et arbitrage SEL dans main | branches code/arbitrage statuts | commits intégrés + pilotage réaligné |
 | CODE-STATUTS-SEL-001 | DONE | Implémenter les statuts SEL d'exercice | specs statuts SEL V1 + arbitrages SEL V1 | générateur(s) DOCX + tests ciblés + MAJ doc |
-| CODE-STATUTS-CIVILS-CORE-001 | READY | Implémenter le cœur des statuts civils | specs statuts civils V1 + arbitrages civils V1 | générateurs SCS/SCI/SCI IRIS/SCM + tests ciblés + MAJ doc |
+| CODE-STATUTS-CIVILS-CORE-001 | DONE | Implémenter le cœur des statuts civils | specs statuts civils V1 + arbitrages civils V1 | générateurs SCS/SCI/SCI IRIS + tests ciblés + MAJ doc |
 | FIX-STYLE-LETTERS-001 | READY | Corriger les écarts de style prioritaires des lettres | blueprint style batch V1 + générateurs existants | rendu lettres harmonisé + tests/smoke ciblés |
 | RESUME-FIX-STYLE-LETTERS-001 | READY | Reprendre proprement les corrections de style lettres | blueprint style batch V1 + état main synchronisé | reprise cadrée de FIX-STYLE-LETTERS-001 |
 | RESUME-ARBITRAGE-STATUTS-CIVILS-001 | DONE | Reprendre proprement l'arbitrage des statuts civils | specs statuts civils V1 + état main synchronisé | remplacé par l'arbitrage civils V1 absorbé |
@@ -474,8 +474,8 @@
 ### CODE-STATUTS-CIVILS-CORE-001
 - Objectif : implémenter le cœur des statuts civils après arbitrages V1.
 - Specs à lire : `docs/delivery/lot_04_statuts_civils_spec_canonique_v1.md`, `docs/delivery/lot_04_statuts_civils_spec_texte_v1.md` et `docs/delivery/lot_04_statuts_civils_arbitrages_v1.md`.
-- Contraintes : couvrir uniquement SCS, SCI, SCI IRIS et SCM en V1, utiliser `associes[]`, bloquer les données legacy insuffisantes et garder l'option IS hors générateur statuts.
-- Statut : READY.
+- Contraintes : couvrir uniquement SCS, SCI et SCI IRIS dans ce ticket, utiliser `associes[]`, bloquer les données legacy insuffisantes et garder l'option IS hors générateur statuts.
+- Statut : DONE ; SCM reste hors ticket à cause des ambiguïtés source documentées.
 
 ### RESUME-ARBITRAGE-STATUTS-CIVILS-001
 - Objectif : reprendre proprement l'arbitrage des statuts civils depuis `main` synchronisé.
@@ -516,9 +516,10 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - mettre à jour `docs/project/04_LAST_STATE.md`
 
 ## Prochaine étape prévue
-- prochaine action recommandée : lancer `RESUME-FIX-STYLE-LETTERS-001` ou `CODE-STATUTS-CIVILS-CORE-001` selon la priorité métier.
-- tickets READY confirmés : `RESUME-FIX-STYLE-LETTERS-001` et `CODE-STATUTS-CIVILS-CORE-001`.
+- prochaine action recommandée : lancer `RESUME-FIX-STYLE-LETTERS-001` ou cadrer `CODE-STATUTS-SCM-001` selon la priorité métier.
+- tickets READY confirmés : `RESUME-FIX-STYLE-LETTERS-001` et `FIX-STYLE-LETTERS-001`; `CODE-STATUTS-SCM-001` reste à créer si la SCM devient prioritaire.
 - `CODE-STATUTS-SEL-001` est DONE et absorbé dans `main`.
+- `CODE-STATUTS-CIVILS-CORE-001` est DONE pour SCS, SCI et SCI IRIS.
 - `STYLE-ANALYSE-BATCH-001` et `ARBITRAGE-STATUTS-CIVILS-001` sont DONE et absorbés dans `main`.
 - `CODE-STATUTS-SAS-001`, `CODE-STATUTS-SPFPL-001` et `ARBITRAGE-STATUTS-SEL-001` sont DONE et absorbés dans `main`.
 - `CODE-BAIL-APP-001` est DONE et absorbé dans `main`.
@@ -560,7 +561,7 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - CODE-BAIL-APP-001 est terminé ; `DOC-007` avenant au contrat de bail et `DOC-008` appel de fonds SEL sont branchés dans le catalogue/orchestrateur.
 - Points ouverts bail/appel après CODE-BAIL-APP-001 : appel de fonds limité à SELARL dentaire, avenant limité SELARL/SELAS avec `dossier_options.cession=true`, revue humaine juridique/visuelle du premier rendu toujours nécessaire.
 - Points ouverts cession après CODE-CESSION-CAB-001 : revue humaine juridique/visuelle du premier rendu DOCX, sources SELAS non stabilisées au-delà du paramétrage V1, PDF/ZIP hors ticket.
-- Points ouverts statuts après arbitrages V1 : SAS limité au modèle SAS/SPFPL médecins source ; SPFPL doit conserver cession/apport sans harmonisation ; SEL est prêt à coder ; civils est prêt à coder sur SCS, SCI, SCI IRIS et SCM.
+- Points ouverts statuts après CODE-STATUTS-CIVILS-CORE-001 : SAS limité au modèle SAS/SPFPL médecins source ; SPFPL doit conserver cession/apport sans harmonisation ; SEL est prêt à coder ; SCM reste à cadrer/coder séparément à cause de l'anomalie source de parts et de la ligne fixe `510 euros`.
 
 ## Journal court
 - 2026-05-12 : mémoire projet installée dans `docs/project/`.
@@ -607,3 +608,4 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - 2026-05-14 : SYNC-STATUTS-CODE-ARB-001 absorbe dans `main` les commits sources `82e67120ed714b791d5483108336a570ea520e59`, `a98939c649e4124e40f2cd69c9ed125d342acc31` et `1caafd7`, passe `CODE-STATUTS-SAS-001`, `CODE-STATUTS-SPFPL-001` et `ARBITRAGE-STATUTS-SEL-001` en DONE, puis confirme `CODE-STATUTS-SEL-001`, `RESUME-ARBITRAGE-STATUTS-CIVILS-001` et `STYLE-ANALYSE-BATCH-001` en READY, sans modification de `project/source_import/raw_drive_dump/` ni de `artifacts/`.
 - 2026-05-15 : SYNC-STYLE-CIVILS-001 absorbe dans `main` les commits sources `76dd139da65c233f0c6aecc76bc2ea5e929381ca` et `b21f1b0cc5b975049e4acc279b8303f1d739b60f`, passe `STYLE-ANALYSE-BATCH-001` et `ARBITRAGE-STATUTS-CIVILS-001` en DONE, puis confirme `CODE-STATUTS-SEL-001`, `CODE-STATUTS-CIVILS-CORE-001` et `FIX-STYLE-LETTERS-001` en READY, sans modification de `project/source_import/raw_drive_dump/` ni de `artifacts/`.
 - 2026-05-15 : SYNC-STATUTS-SEL-CIVILS-001 absorbe dans `main` le commit source `9a79560c4bae1ae3a98ec5305b4187f9f4ebd6a8`, confirme l'arbitrage civils V1 déjà présent avec un contenu identique au commit source `b21f1b0cc5b975049e4acc279b8303f1d739b60f`, passe `CODE-STATUTS-SEL-001` en DONE, puis confirme `RESUME-FIX-STYLE-LETTERS-001` et `CODE-STATUTS-CIVILS-CORE-001` en READY, sans modification de `project/source_import/raw_drive_dump/` ni de `artifacts/`.
+- 2026-05-15 : CODE-STATUTS-CIVILS-CORE-001 implémente les générateurs statuts SCS, SCI et SCI IRIS, ajoute le modèle `statuts_civils`, branche DOC-019 à DOC-021 au catalogue/orchestrateur, ajoute le contexte exemple et génère le smoke DOCX réel ; SCM reste hors ticket.

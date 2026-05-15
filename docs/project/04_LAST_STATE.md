@@ -4,14 +4,14 @@
 2026-05-15
 
 ## Dernier ticket terminé
-SYNC-STATUTS-SEL-CIVILS-001 : absorption dans `main` du commit source `9a79560c4bae1ae3a98ec5305b4187f9f4ebd6a8`, arbitrage civils V1 confirmé présent avec un contenu identique au commit source `b21f1b0cc5b975049e4acc279b8303f1d739b60f`, puis réalignement du pilotage.
+CODE-STATUTS-CIVILS-CORE-001 : implémentation des générateurs statuts civils SCS, SCI et SCI IRIS, avec modèle `statuts_civils`, tests ciblés et smoke DOCX réel.
 
 ## État courant du repo
 - DOC-001, DOC-002 et DOC-003 disposent chacun d'un générateur dédié déjà terminé.
 - L'orchestrateur dossier expose :
-  - un registre des générateurs DOC-001 à DOC-014 ;
+  - un registre des générateurs DOC-001 à DOC-021 ;
   - `select_documents(structure)` selon le catalogue ;
-  - `select_documents_for_context(ctx)` avec filtrage des batchs régime communautaire, bail/appel de fonds, cession cabinets et dérogations ;
+  - `select_documents_for_context(ctx)` avec filtrage des batchs régime communautaire, bail/appel de fonds, cession cabinets, dérogations et statuts ;
   - `generate_documents(ctx, output_dir) -> list[Path]`.
 - `examples/contexts/lot_01_example.yaml` utilise encore le champ legacy Lot 1 `adresse_domiciliation_affichee`, en attente d'un refactor dédié vers `domiciliation.adresse_affichee`.
 - Un smoke test réel a généré les trois DOCX du Lot 1 dans `artifacts/lot_01_smoke_test/`.
@@ -143,6 +143,11 @@ SYNC-STATUTS-SEL-CIVILS-001 : absorption dans `main` du commit source `9a79560c4
   - `docs/delivery/lot_04_statuts_civils_spec_canonique_v1.md` ;
   - `docs/delivery/lot_04_statuts_civils_spec_texte_v1.md`.
 - Le générateur statuts SAS V1 est disponible dans `src/sydel_doc_engine/generators/lot_04/statuts_sas.py`.
+- Les générateurs statuts civils V1 sont disponibles :
+  - `src/sydel_doc_engine/generators/lot_04/statuts_scs.py` ;
+  - `src/sydel_doc_engine/generators/lot_04/statuts_sci.py` ;
+  - `src/sydel_doc_engine/generators/lot_04/statuts_sci_iris.py`.
+- Le modèle de données supporte désormais `statuts_civils` pour SCS, SCI et SCI IRIS : associés dynamiques, apports, parts, dépôt de capital et groupes de résultat exceptionnel SCI IRIS.
 - Les générateurs statuts SPFPL V1 sont disponibles :
   - `src/sydel_doc_engine/generators/lot_04/statuts_spfpl_cession.py` ;
   - `src/sydel_doc_engine/generators/lot_04/statuts_spfpl_apport.py` ;
@@ -196,7 +201,7 @@ SYNC-STATUTS-SEL-CIVILS-001 : absorption dans `main` du commit source `9a79560c4
 - `ARBITRAGE-STATUTS-CIVILS-001` est DONE.
 - `SYNC-STATUTS-CODE-ARB-001` est DONE.
 - `CODE-STATUTS-SEL-001` est DONE.
-- `CODE-STATUTS-CIVILS-CORE-001` est READY.
+- `CODE-STATUTS-CIVILS-CORE-001` est DONE pour SCS, SCI et SCI IRIS ; SCM reste hors ticket.
 - `FIX-STYLE-LETTERS-001` est READY.
 - `RESUME-FIX-STYLE-LETTERS-001` est READY.
 - `RESUME-ARBITRAGE-STATUTS-CIVILS-001` est DONE, remplacé par l'arbitrage civils V1 absorbé.
@@ -225,6 +230,9 @@ SYNC-STATUTS-SEL-CIVILS-001 : absorption dans `main` du commit source `9a79560c4
   - `artifacts/lot_03_cession_cabinets_smoke_test/compromis_cession_cabinet_dentaire.docx`
   - `artifacts/lot_03_derogations_core_smoke_test/formulaire_derogation_sites_sel_formulaire_a_completer.docx`
   - `artifacts/lot_03_derogations_core_smoke_test/demande_derogation_cumul_selarl_bnc_formulaire_a_completer.docx`
+  - `artifacts/lot_04_statuts_civils_core_smoke_test/statuts_scs.docx`
+  - `artifacts/lot_04_statuts_civils_core_smoke_test/statuts_sci.docx`
+  - `artifacts/lot_04_statuts_civils_core_smoke_test/statuts_sci_iris.docx`
 - Fichiers smoke RENDER-STYLE-001 générés :
   - `artifacts/render_style_001_lot_01_smoke_test/declaration_non_condamnation.docx`
   - `artifacts/render_style_001_lot_01_smoke_test/autorisation_domiciliation.docx`
@@ -347,9 +355,9 @@ SYNC-STATUTS-SEL-CIVILS-001 : absorption dans `main` du commit source `9a79560c4
 
 ## Prochain ticket à lancer
 Tickets actifs/parallélisables :
-- `CODE-STATUTS-CIVILS-CORE-001` est READY.
 - `FIX-STYLE-LETTERS-001` est READY.
 - `RESUME-FIX-STYLE-LETTERS-001` est READY.
+- Créer/cadrer `CODE-STATUTS-SCM-001` si la SCM devient prioritaire.
 
 `CODE-BAIL-APP-001` est DONE dans `main`.
 `PREP-DEROG-001` et `CODE-SPFPL-AGR-INFO-001` sont DONE dans `main`.
@@ -420,7 +428,7 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
   - SAS : générateur V1 intégré, modèle source inventorié sous `SAS` mais contenu SAS/SPFPL médecins, actionnaire unique et vocabulaire hétérogène à relire humainement ;
   - SPFPL : générateurs V1 cession/apport intégrés, multi-associés bloqué et corrections d'anomalies non arbitrées toujours exclues ;
   - SEL : générateurs V1 intégrés, multi-associés et signature dirigeant non associé restent bloqués selon arbitrages ;
-  - civils : arbitrages V1 disponibles, code à lancer via `CODE-STATUTS-CIVILS-CORE-001`.
+  - civils : SCS, SCI et SCI IRIS codés ; SCM reste à traiter séparément à cause de l'anomalie source de parts et de la ligne fixe `510 euros`.
 - Toute ambiguïté de wording juridique doit bloquer l'implémentation concernée et être documentée.
 
 ## Validations connues
@@ -497,6 +505,10 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
 - SYNC-STATUTS-SEL-CIVILS-001 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m ruff check .` OK.
 - SYNC-STATUTS-SEL-CIVILS-001 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m pytest` OK, 122 tests passés.
 - SYNC-STATUTS-SEL-CIVILS-001 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifiés.
+- CODE-STATUTS-CIVILS-CORE-001 : smoke DOCX OK dans `artifacts/lot_04_statuts_civils_core_smoke_test/`, trois documents produits sans placeholder `[` / `]`.
+- CODE-STATUTS-CIVILS-CORE-001 : tests ciblés OK sur `tests/unit/test_lot_04_statuts_civils.py`, `tests/unit/test_registry_seed.py` et `tests/unit/test_orchestrator_service.py`, 21 tests passés.
+- CODE-STATUTS-CIVILS-CORE-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
+- CODE-STATUTS-CIVILS-CORE-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 129 tests passés.
 - SPEC-TEXTE-ORDRE-001 : source de vérité, source Lot 2 et variantes raw dump SELARL / SELAS / SPFPL cession / SPFPL apport lues en lecture seule.
 - SPEC-TEXTE-ORDRE-001 : spec texte créée dans `docs/delivery/lot_02_demande_inscription_ordre_spec_texte_v1.md`.
 - SPEC-TEXTE-ORDRE-001 : aucun code Python modifié ; validations limitées à la relecture documentaire et au contrôle du diff.
@@ -531,4 +543,4 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
 - SMOKE-ORCH-L2-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 47 tests passés.
 
 ## Recommandation immédiate suivante
-Lancer `RESUME-FIX-STYLE-LETTERS-001` ou `CODE-STATUTS-CIVILS-CORE-001` selon la priorité métier.
+Lancer `RESUME-FIX-STYLE-LETTERS-001`, cadrer `CODE-STATUTS-SCM-001` ou lancer `FIX-STYLE-LETTERS-001` selon la priorité métier.
