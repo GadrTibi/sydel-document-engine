@@ -547,6 +547,96 @@ class Apport(BaseModel):
     montant_lettres: str | None = None
 
 
+class StatutsCivilsApport(BaseModel):
+    montant: str | None = None
+    montant_lettres: str | None = None
+    montant_commanditaire: str | None = None
+    montant_commanditaire_lettres: str | None = None
+
+
+class StatutsCivilsParts(BaseModel):
+    nb: int | None = None
+    nb_lettres: str | None = None
+    plage_affichee: str | None = None
+    debut: int | None = None
+    fin: int | None = None
+    qualite_associe: str | None = None
+    quote_part_resultat_exceptionnel: str | None = None
+
+
+class StatutsCivilsRepresentant(BaseModel):
+    civilite_affichage: str | None = None
+    prenom: str | None = None
+    nom: str | None = None
+    fonction: str | None = None
+
+
+class StatutsCivilsAssocie(BaseModel):
+    type_personne: str = "personne_physique"
+    role_statutaire: str | None = None
+    genre: Gender | None = None
+    civilite_affichage: str | None = None
+    prenom: str | None = None
+    prenoms: str | None = None
+    nom: str | None = None
+    nom_naissance: str | None = None
+    date_naissance: date | str | None = None
+    ville_naissance: str | None = None
+    departement_naissance: str | None = None
+    nationalite: str | None = None
+    profession: str | None = None
+    situation_maritale: str | None = None
+    adresse_personnelle: Address | None = None
+    adresse_personnelle_affichee: str | None = None
+    denomination: str | None = None
+    forme_juridique: str | None = None
+    capital_social: str | None = None
+    siege: Address | None = None
+    numero_rcs: str | None = None
+    ville_rcs: str | None = None
+    representant: StatutsCivilsRepresentant | None = None
+    apport: StatutsCivilsApport | None = None
+    parts: StatutsCivilsParts | None = None
+    est_signataire: bool = True
+
+
+class StatutsCivilsCapitalDepot(BaseModel):
+    banque_nom: str | None = None
+    banque_adresse: str | None = None
+
+
+class StatutsCivilsGroupeParts(BaseModel):
+    parts_debut: int | None = None
+    parts_fin: int | None = None
+    quote_part_resultat_exceptionnel: str | None = None
+
+
+class StatutsCivilsContext(BaseModel):
+    type: str | None = None
+    forme_sociale: str | None = None
+    mention_capital_variable: str | None = None
+    capital_social: str | None = None
+    capital_social_lettres: str | None = None
+    capital_autorise: str | None = None
+    capital_autorise_lettres: str | None = None
+    capital_maximal: str | None = None
+    capital_maximal_lettres: str | None = None
+    nb_parts_total: int | None = None
+    nb_parts_total_lettres: str | None = None
+    valeur_nominale_part: str | None = None
+    valeur_nominale_part_lettres: str | None = None
+    plage_parts_totale: str | None = None
+    duree_societe: str | None = None
+    capital_depot: StatutsCivilsCapitalDepot | None = None
+    associes: list[StatutsCivilsAssocie] = Field(default_factory=list)
+    resultat_groupes_parts: list[StatutsCivilsGroupeParts] = Field(default_factory=list)
+    resultat_quote_part_exceptionnel_total: str | None = None
+    total_apports_commandites: str | None = None
+    date_cloture_premier_exercice: str | None = None
+    nombre_exemplaires_lettres: str | None = None
+    denomination_cabinet_mandataire: str | None = None
+
+
 class RegimeCommunautaireAvertissement(BaseModel):
     date_signature: date | str | None = None
 
@@ -728,4 +818,5 @@ class DocumentGenerationContext(BaseModel):
     evaluateur_apport: ProfessionalEntity | None = None
     commissaire_aux_apports: ProfessionalEntity | None = None
     document: DocumentContext | None = None
+    statuts_civils: StatutsCivilsContext | None = None
     metadata: dict[str, str] = Field(default_factory=dict)

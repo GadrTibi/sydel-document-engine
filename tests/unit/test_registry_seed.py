@@ -3,9 +3,9 @@ from __future__ import annotations
 from sydel_doc_engine.registry.catalog import build_seed_catalog
 
 
-def test_seed_catalog_contains_eighteen_documents() -> None:
+def test_seed_catalog_contains_twenty_one_documents() -> None:
     catalog = build_seed_catalog()
-    assert len(catalog) == 18
+    assert len(catalog) == 21
 
 
 def test_seed_catalog_contains_lot_one_to_lot_four_entries() -> None:
@@ -114,3 +114,18 @@ def test_seed_catalog_statuts_sel_scope_is_split_by_overlay() -> None:
     assert "statuts_sel.overlay == selarl_dentiste" in dentiste.specific_conditions
     assert "statuts_sel.overlay == selarl_medecin" in medecin.specific_conditions
     assert "statuts_sel.overlay == selas_medecin" in selas.specific_conditions
+
+
+def test_seed_catalog_statuts_civils_core_scope_is_limited_to_civil_structures() -> None:
+    catalog = build_seed_catalog()
+
+    scs = next(document for document in catalog if document.doc_id == "DOC-019")
+    sci = next(document for document in catalog if document.doc_id == "DOC-020")
+    sci_iris = next(document for document in catalog if document.doc_id == "DOC-021")
+
+    assert set(scs.structures) == {"SCS"}
+    assert set(sci.structures) == {"SCI"}
+    assert set(sci_iris.structures) == {"SCI IRIS"}
+    assert "statuts_civils.type == scs" in scs.specific_conditions
+    assert "statuts_civils.type == sci" in sci.specific_conditions
+    assert "statuts_civils.type == sci_iris" in sci_iris.specific_conditions

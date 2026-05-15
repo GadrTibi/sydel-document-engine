@@ -142,6 +142,7 @@ def test_select_documents_for_sci_includes_pv_nomination_gerant() -> None:
         "DOC-002",
         "DOC-003",
         "DOC-004",
+        "DOC-020",
     ]
 
 
@@ -155,6 +156,19 @@ def test_select_documents_for_sas_excludes_pv_nomination_gerant() -> None:
         "DOC-002",
         "DOC-003",
         "DOC-015",
+    ]
+
+
+def test_select_documents_for_sci_iris_includes_dedicated_statuts() -> None:
+    orchestrator = DocumentOrchestrator(build_seed_catalog())
+
+    selected = orchestrator.select_documents("SCI IRIS")
+
+    assert [document.doc_id for document in selected] == [
+        "DOC-001",
+        "DOC-002",
+        "DOC-003",
+        "DOC-021",
     ]
 
 
