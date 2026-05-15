@@ -4,7 +4,7 @@
 2026-05-15
 
 ## Dernier ticket terminé
-SYNC-STYLE-CIVILS-001 : absorption dans `main` des commits sources `76dd139da65c233f0c6aecc76bc2ea5e929381ca` et `b21f1b0cc5b975049e4acc279b8303f1d739b60f`, puis réalignement du pilotage.
+SYNC-STATUTS-SEL-CIVILS-001 : absorption dans `main` du commit source `9a79560c4bae1ae3a98ec5305b4187f9f4ebd6a8`, arbitrage civils V1 confirmé présent avec un contenu identique au commit source `b21f1b0cc5b975049e4acc279b8303f1d739b60f`, puis réalignement du pilotage.
 
 ## État courant du repo
 - DOC-001, DOC-002 et DOC-003 disposent chacun d'un générateur dédié déjà terminé.
@@ -148,6 +148,12 @@ SYNC-STYLE-CIVILS-001 : absorption dans `main` des commits sources `76dd139da65c
   - `src/sydel_doc_engine/generators/lot_04/statuts_spfpl_apport.py` ;
   - `src/sydel_doc_engine/generators/lot_04/statuts_spfpl_common.py` ;
   - `src/sydel_doc_engine/generators/lot_04/statuts_spfpl_templates.py`.
+- Les générateurs statuts SEL d'exercice V1 sont disponibles :
+  - `src/sydel_doc_engine/generators/lot_04/statuts_selarl_dentiste.py` ;
+  - `src/sydel_doc_engine/generators/lot_04/statuts_selarl_medecin.py` ;
+  - `src/sydel_doc_engine/generators/lot_04/statuts_selas_medecin.py` ;
+  - `src/sydel_doc_engine/generators/lot_04/statuts_sel_exercice_common.py` ;
+  - `src/sydel_doc_engine/generators/lot_04/statuts_sel_exercice_templates.py`.
 - Les arbitrages V1 des statuts SEL d'exercice sont disponibles dans `docs/delivery/lot_04_statuts_sel_exercice_arbitrages_v1.md`.
 - Les arbitrages V1 des statuts civils sont disponibles dans `docs/delivery/lot_04_statuts_civils_arbitrages_v1.md`.
 - `ARBITRAGE-SOURCES-001` est DONE.
@@ -189,12 +195,14 @@ SYNC-STYLE-CIVILS-001 : absorption dans `main` des commits sources `76dd139da65c
 - `ARBITRAGE-STATUTS-SEL-001` est DONE.
 - `ARBITRAGE-STATUTS-CIVILS-001` est DONE.
 - `SYNC-STATUTS-CODE-ARB-001` est DONE.
-- `CODE-STATUTS-SEL-001` est READY.
+- `CODE-STATUTS-SEL-001` est DONE.
 - `CODE-STATUTS-CIVILS-CORE-001` est READY.
 - `FIX-STYLE-LETTERS-001` est READY.
+- `RESUME-FIX-STYLE-LETTERS-001` est READY.
 - `RESUME-ARBITRAGE-STATUTS-CIVILS-001` est DONE, remplacé par l'arbitrage civils V1 absorbé.
 - `STYLE-ANALYSE-BATCH-001` est DONE.
 - `SYNC-STYLE-CIVILS-001` est DONE.
+- `SYNC-STATUTS-SEL-CIVILS-001` est DONE.
 - `UI-001` reste explicitement en attente : ne pas brancher Streamlit maintenant.
 - Fichiers générés connus :
   - `artifacts/lot_01_smoke_test/autorisation_domiciliation.docx`
@@ -339,9 +347,9 @@ SYNC-STYLE-CIVILS-001 : absorption dans `main` des commits sources `76dd139da65c
 
 ## Prochain ticket à lancer
 Tickets actifs/parallélisables :
-- `CODE-STATUTS-SEL-001` est READY.
 - `CODE-STATUTS-CIVILS-CORE-001` est READY.
 - `FIX-STYLE-LETTERS-001` est READY.
+- `RESUME-FIX-STYLE-LETTERS-001` est READY.
 
 `CODE-BAIL-APP-001` est DONE dans `main`.
 `PREP-DEROG-001` et `CODE-SPFPL-AGR-INFO-001` sont DONE dans `main`.
@@ -350,6 +358,7 @@ Tickets actifs/parallélisables :
 Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans `main`.
 `CODE-STATUTS-SAS-001`, `CODE-STATUTS-SPFPL-001` et `ARBITRAGE-STATUTS-SEL-001` sont DONE et absorbés dans `main`.
 `STYLE-ANALYSE-BATCH-001` et `ARBITRAGE-STATUTS-CIVILS-001` sont DONE et absorbés dans `main`.
+`CODE-STATUTS-SEL-001` est DONE et absorbé dans `main`.
 
 ## Points ouverts
 - Aucun point bloquant identifié après le smoke test réel Lot 1.
@@ -410,7 +419,7 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
 - Points ouverts statuts après arbitrages V1 :
   - SAS : générateur V1 intégré, modèle source inventorié sous `SAS` mais contenu SAS/SPFPL médecins, actionnaire unique et vocabulaire hétérogène à relire humainement ;
   - SPFPL : générateurs V1 cession/apport intégrés, multi-associés bloqué et corrections d'anomalies non arbitrées toujours exclues ;
-  - SEL : arbitrages V1 disponibles, code à lancer via `CODE-STATUTS-SEL-001` ;
+  - SEL : générateurs V1 intégrés, multi-associés et signature dirigeant non associé restent bloqués selon arbitrages ;
   - civils : arbitrages V1 disponibles, code à lancer via `CODE-STATUTS-CIVILS-CORE-001`.
 - Toute ambiguïté de wording juridique doit bloquer l'implémentation concernée et être documentée.
 
@@ -482,6 +491,12 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
 - SYNC-STYLE-CIVILS-001 : commit source `b21f1b0cc5b975049e4acc279b8303f1d739b60f` cherry-pické dans `main` sans conflit.
 - SYNC-STYLE-CIVILS-001 : relecture documentaire et contrôle du diff ; aucun test de code exécuté car aucun fichier Python n'a été modifié par le commit final de pilotage.
 - SYNC-STYLE-CIVILS-001 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifiés.
+- SYNC-STATUTS-SEL-CIVILS-001 : `git fetch --all --prune` OK.
+- SYNC-STATUTS-SEL-CIVILS-001 : commit source `9a79560c4bae1ae3a98ec5305b4187f9f4ebd6a8` cherry-pické dans `main` sans conflit.
+- SYNC-STATUTS-SEL-CIVILS-001 : arbitrage civils V1 confirmé présent dans `main`, contenu identique au commit source `b21f1b0cc5b975049e4acc279b8303f1d739b60f`.
+- SYNC-STATUTS-SEL-CIVILS-001 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m ruff check .` OK.
+- SYNC-STATUTS-SEL-CIVILS-001 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m pytest` OK, 122 tests passés.
+- SYNC-STATUTS-SEL-CIVILS-001 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifiés.
 - SPEC-TEXTE-ORDRE-001 : source de vérité, source Lot 2 et variantes raw dump SELARL / SELAS / SPFPL cession / SPFPL apport lues en lecture seule.
 - SPEC-TEXTE-ORDRE-001 : spec texte créée dans `docs/delivery/lot_02_demande_inscription_ordre_spec_texte_v1.md`.
 - SPEC-TEXTE-ORDRE-001 : aucun code Python modifié ; validations limitées à la relecture documentaire et au contrôle du diff.
@@ -516,4 +531,4 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
 - SMOKE-ORCH-L2-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 47 tests passés.
 
 ## Recommandation immédiate suivante
-Lancer `CODE-STATUTS-SEL-001`, `CODE-STATUTS-CIVILS-CORE-001` ou `FIX-STYLE-LETTERS-001` selon la priorité métier.
+Lancer `RESUME-FIX-STYLE-LETTERS-001` ou `CODE-STATUTS-CIVILS-CORE-001` selon la priorité métier.
