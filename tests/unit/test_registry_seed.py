@@ -3,9 +3,9 @@ from __future__ import annotations
 from sydel_doc_engine.registry.catalog import build_seed_catalog
 
 
-def test_seed_catalog_contains_twenty_eight_documents() -> None:
+def test_seed_catalog_contains_twenty_nine_documents() -> None:
     catalog = build_seed_catalog()
-    assert len(catalog) == 28
+    assert len(catalog) == 29
 
 
 def test_seed_catalog_contains_lot_one_to_lot_five_entries() -> None:
@@ -170,3 +170,15 @@ def test_seed_catalog_scm_satellites_scope_is_limited_to_scm_docx_batch() -> Non
             "dossier.structure == SCM et dossier.options.scm_satellites == true"
         )
         assert document.source_path.endswith(".docx")
+
+
+def test_seed_catalog_acte_cession_actions_scope_is_limited_to_spfpl_cession() -> None:
+    catalog = build_seed_catalog()
+
+    acte = next(document for document in catalog if document.doc_id == "DOC-029")
+
+    assert set(acte.structures) == {"SPFPL cession"}
+    assert "operation_spfpl.nature_titres == actions" in acte.specific_conditions
+    assert acte.source_path == (
+        "project/source_documents/lot_05/Acte_cession_SPFPL_tiers_modele.docx"
+    )
