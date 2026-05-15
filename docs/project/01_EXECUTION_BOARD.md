@@ -103,7 +103,7 @@
 | STYLE-ANALYSE-LOT03-BATCH-001 | DONE | Analyser le style du batch Lot 03 avant harmonisation | générateurs Lot 03 intégrés + besoins de rendu | blueprint style Lot 03 |
 | STYLE-ANALYSE-STATUTS-BATCH-001 | DONE | Analyser le style du batch statuts avant harmonisation | générateurs statuts intégrés + besoins de rendu | blueprint style statuts |
 | SPEC-SCM-CESSION-BLOCK-001 | DONE | Spécifier le blocage cession SCM avant code | sources SCM cession disponibles + arbitrages SCM | spec canonique + spec texte de blocage |
-| CODE-SCM-CESSION-BLOCK-001 | DONE | Implémenter le blocage cession SCM | specs SCM cession block V1 | blocage explicite + tests ciblés |
+| CODE-SCM-CESSION-BLOCK-001 | DONE | Implémenter le blocage cession SCM | specs SCM cession block V1 | blocage explicite historique + tests ciblés |
 | CODE-SCM-LISTE-DEPENSES-001 | DONE | Implémenter la liste des dépenses communes SCM | source DOCX convertie + specs satellites SCM V1 | générateur DOCX + tests ciblés |
 | SPEC-DEROG-SALARIEE-MANUAL-001 | DONE | Spécifier le traitement manuel de la dérogation salariée legacy | blocage conversion dérogation salariée V1 | spec manuelle ou décision de blocage documentée |
 | FIX-STYLE-LOT03-BATCH-001 | DONE | Corriger les écarts de style prioritaires du batch Lot 03 | blueprint style Lot 03 | rendu Lot 03 harmonisé + tests ciblés |
@@ -111,6 +111,7 @@
 | REVIEW-BATCH-LOT05-001 | DONE | Revoir le batch Lot 05 généré | générateurs Lot 05 + smoke DOCX disponibles | revue humaine juridique/visuelle documentée |
 | ARBITRAGE-SCM-CESSION-RESOLVE-001 | DONE | Arbitrer la résolution de la cession SCM | specs de blocage cession SCM + sources préparées + vague style/revue absorbée | décision de résolution avant code |
 | SYNC-WAVE-010 | DONE | Synchroniser la vague finale moteur SCM cession dans main | branches arbitrage/code SCM cession | commits intégrés + pilotage final moteur aligné |
+| FINAL-SCM-CESSION-WAVE-001 | DONE | Finaliser le bloc cession SCM et clôturer la vague moteur V1 | résolution SCM cession V1 + specs + six sources | DOC-031 à DOC-033 + tests + smoke + audit moteur |
 | UI-001 | BLOCKED | Brancher Streamlit V0 Lot 1 | orchestrateur Lot 1 + spec canonique PV nomination gérant validée | écran simple + test manuel |
 
 ## Référentiels moteur disponibles
@@ -151,6 +152,8 @@
 - Les specs V1 de l'acte de cession d'actions sont disponibles : `docs/delivery/lot_05_acte_cession_actions_spec_canonique_v1.md` et `docs/delivery/lot_05_acte_cession_actions_spec_texte_v1.md`.
 - La préparation V1 des sources cession SCM est disponible : `docs/delivery/lot_05_scm_cession_sources_preparation_v1.md`.
 - Les specs V1 du blocage cession SCM sont disponibles : `docs/delivery/lot_05_scm_cession_block_spec_canonique_v1.md` et `docs/delivery/lot_05_scm_cession_block_spec_texte_v1.md`.
+- La résolution V1 du bloc cession SCM est disponible : `docs/delivery/lot_05_scm_cession_block_resolution_v1.md`.
+- L'audit de clôture moteur V1 est disponible : `docs/project/16_MOTOR_COMPLETION_AUDIT_V1.md`.
 - Le blueprint style Lot 03 est disponible : `docs/delivery/render_style_blueprint_lot03_batch_v1.md`.
 - Le blueprint style statuts est disponible : `docs/delivery/render_style_blueprint_statuts_batch_v1.md`.
 - Le manifest d'import sources V1 est disponible : `docs/project/10_SOURCE_IMPORT_MANIFEST_V1.md`.
@@ -652,7 +655,7 @@
 - Objectif : implémenter le blocage explicite de la cession SCM.
 - Specs à lire : `docs/delivery/lot_05_scm_cession_block_spec_canonique_v1.md` et `docs/delivery/lot_05_scm_cession_block_spec_texte_v1.md`.
 - Contraintes : ne pas générer de document cession SCM tant que le blocage V1 s'applique ; tests ciblés obligatoires.
-- Statut : DONE ; blocage explicite cession SCM absorbé dans `main`.
+- Statut : DONE ; blocage explicite cession SCM historique, levé par `FINAL-SCM-CESSION-WAVE-001` selon résolution V1.
 
 ### REVIEW-BATCH-LOT03-001
 - Objectif : documenter la revue juridique/visuelle du batch Lot 03.
@@ -714,6 +717,12 @@
 - Contraintes : décision métier avant tout code documentaire de cession SCM.
 - Statut : DONE ; arbitrage absorbé dans `main`.
 
+### FINAL-SCM-CESSION-WAVE-001
+- Objectif : finaliser le bloc cession SCM V1 et clôturer la vague moteur documentaire.
+- Specs à lire : résolution V1 cession SCM, specs canonique/texte, six sources SCM cession et audit moteur.
+- Contraintes : DOCX uniquement, sans UI, PDF, ZIP, ni versionnement de `artifacts/`.
+- Statut : DONE ; `DOC-031`, `DOC-032` et `DOC-033` sont branchés, testés et couverts par smoke DOCX réel.
+
 ### UI-001
 - Objectif : exposer une Streamlit simple pour générer le Lot 1.
 - Statut : en attente explicite ; ne pas lancer sans ticket explicite dédié.
@@ -729,8 +738,10 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - mettre à jour `docs/project/04_LAST_STATE.md`
 
 ## Prochaine étape prévue
-- moteur documentaire V1 terminé, hors cas explicitement manuels ou legacy.
+- moteur documentaire V1 feature complete sur le périmètre DOCX déterministe validé, hors cas explicitement manuels ou legacy.
 - prochains chantiers recommandés : UI, PDF, ZIP, recette finale.
+- `FINAL-SCM-CESSION-WAVE-001` est DONE ; `DOC-031`, `DOC-032` et `DOC-033` cession SCM sont branchés au catalogue/orchestrateur et couverts par tests/smoke.
+- `docs/project/16_MOTOR_COMPLETION_AUDIT_V1.md` conclut la clôture moteur V1 et liste les exclusions restantes.
 - tickets absorbés par SYNC-WAVE-010 : `ARBITRAGE-SCM-CESSION-RESOLVE-001` et `CODE-SCM-CESSION-BLOCK-001`.
 - `ARBITRAGE-SCM-CESSION-RESOLVE-001` est DONE.
 - `CODE-SCM-CESSION-BLOCK-001` est DONE.
@@ -745,6 +756,7 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - `CODE-ACTE-ACTIONS-001` est DONE ; l'acte de cession d'actions SPFPL est intégré au catalogue/orchestrateur.
 - `PREP-SCM-CESSION-SOURCES-001` est DONE ; les sources cession SCM exploitables sont placées dans `project/source_documents/lot_05/`.
 - `SPEC-SCM-CESSION-BLOCK-001` est DONE ; les specs de blocage cession SCM V1 sont disponibles dans `docs/delivery/`.
+- `ARBITRAGE-SCM-CESSION-RESOLVE-001` est DONE ; la résolution V1 cession SCM est disponible dans `docs/delivery/`.
 - `STYLE-ANALYSE-LOT03-BATCH-001` et `STYLE-ANALYSE-STATUTS-BATCH-001` sont DONE ; les blueprints style dédiés sont disponibles dans `docs/delivery/`.
 - `REVIEW-BATCH-LOT03-001`, `REVIEW-BATCH-LOT04-001` et `AUDIT-REMAINING-SCOPE-001` sont DONE.
 - `CODE-STATUTS-SCM-001` est DONE ; les statuts SCM sont branchés sous `DOC-025`.
@@ -773,6 +785,8 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - UI-001 reste explicitement en attente.
 
 ## Points ouverts
+- Aucun point bloquant moteur DOCX identifié après `FINAL-SCM-CESSION-WAVE-001`.
+- Restent hors périmètre moteur : UI, PDF, ZIP, recette finale, revue humaine juridique/visuelle, documents explicitement manuels et sources legacy non converties.
 - Aucun point bloquant identifié après le smoke test réel Lot 1.
 - Les trois DOCX sont bien produits par l'orchestrateur dans `artifacts/lot_01_smoke_test/`, mais le rendu visuel et le wording juridique restent à relire humainement dans les fichiers générés.
 - PDF et ZIP restent hors ORCH-001 et devront être traités dans un ticket dédié.
@@ -854,3 +868,4 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - 2026-05-15 : SYNC-WAVE-006 absorbe dans `main` les commits sources `557fc1920361a8c7831e6b023d70471c9c29e5ff` et `291da7b6db68b3de413fba50cf652dde98a8f6a8` par équivalence, puis cherry-picke `2c55a7ab5f8a44de5c29305cfbc280f930ee32ec`, `568336bed7ccb0a5901abe5d921fd9056573e32d`, `8f0c8ab13d6e8f1a9e50747f8a9d5b607bcb90d6` et `11dc0d8dda23f841d650586e0977e0202270a3b5`, passe la vague en DONE, puis confirme les prochains tickets READY, sans modification de `project/source_import/raw_drive_dump/` ni de `artifacts/`.
 - 2026-05-15 : SYNC-WAVE-007 absorbe dans `main` les commits sources `3c040774cdfe57c203b78776a9ea412ec3d14d94`, `6453b6f64665feda898a076f730cba9a6684825b`, `075af377f7c9d7475429f1e738b46483127d757f` et `c221681570782a1b1efc5afc72087cb903cd8a65`, passe les quatre tickets correspondants en DONE, puis confirme les prochains tickets READY, sans modification de `project/source_import/raw_drive_dump/` ni de `artifacts/`.
 - 2026-05-15 : SYNC-WAVE-008 absorbe dans `main` les commits sources `61a1c49353724bbf5b8f1bb8f039d5e96b877ecc`, `d3188c0b4a4a61d889a2ce9ccc37e84e1284adaa`, `939e1c2088892abcf4a8fdcbaa35911f4f8a2f9f`, `19468886f5e885f79b2b35e17e2ff2a097ea9c3a`, `d8747ef20aba478c575c5a491cdf0f634a9c26d3`, `00b4c955b372399bb8701f47a5686748539f061b`, `a181e069f756a1ea846fdcd1824b3f8c57cc11f5` et `518e46fbb8d8bee03a23ea203654b4199103fb7e`, passe les huit tickets correspondants en DONE, puis confirme les prochains tickets READY, sans modification de `project/source_import/raw_drive_dump/` ni de `artifacts/`.
+- 2026-05-15 : FINAL-SCM-CESSION-WAVE-001 restaure la résolution V1 cession SCM, implémente `DOC-031` à `DOC-033`, génère le smoke DOCX réel, valide ruff/pytest et crée l'audit de clôture moteur V1.

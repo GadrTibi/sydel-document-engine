@@ -1,0 +1,159 @@
+structure: SELAS
+dossier_options:
+  scm_cession: true
+personne_signataire:
+  genre: masculin
+  civilite: Monsieur
+  prenom: Jean
+  nom: Dupont
+signature:
+  lieu: Paris
+  date: 2026-05-15
+  prestataire_signature_electronique: DocuSign
+scm_cession:
+  variante_structure: selas
+  scm_cedee:
+    denomination: SCM CABINET CENTRAL
+    forme_juridique: Societe Civile de Moyens
+    capital_social: "3 000"
+    siege:
+      adresse_affichee: 12 rue des Soins, 75008 Paris
+    ville_rcs: Paris
+    numero_rcs: "900 111 222"
+    nb_parts_total: 300
+    valeur_nominale_part: "10"
+    plage_parts_total: 1 a 300
+    cogerants:
+      - Monsieur Paul Bernard
+      - Monsieur Jean Dupont
+      - Madame Anne Martin
+  cessionnaire:
+    denomination: SELAS CABINET DUPONT
+    forme_juridique: SELAS
+    capital_social: "10 000"
+    siege:
+      adresse_affichee: 20 avenue des Praticiens, 75008 Paris
+    ville_rcs: Paris
+    representant:
+      civilite_affichage: Monsieur
+      civilite_courte: M.
+      prenom: Jean
+      nom: Dupont
+      fonction: president
+  cedant:
+    civilite_affichage: Monsieur
+    prenom: Jean
+    nom: Dupont
+    profession: chirurgien-dentiste
+    profession_reglementee_pluriel: chirurgiens-dentistes
+    date_naissance: 1er janvier 1980
+    ville_naissance: Paris
+    departement_naissance: "75"
+    nationalite: francaise
+    adresse_affichee: 1 rue du Cedant, 75008 Paris
+    situation_maritale: marie
+    ordre:
+      departemental: Paris
+      numero: "12345"
+    numero_rpps: "10000000001"
+    conjoint:
+      civilite_affichage: Madame
+      prenom: Claire
+      nom: Dupont
+  agrement:
+    date_pv: 15 mai 2026
+    date_pv_lettres: deux mille vingt-six, le quinze mai
+    delai_mois: "3"
+    date_limite: 15 aout 2026
+  associes_presents:
+    - civilite_affichage: Monsieur
+      prenom: Paul
+      nom: Bernard
+      parts:
+        nb: 100
+        plage: 1 a 100
+    - civilite_affichage: Monsieur
+      prenom: Jean
+      nom: Dupont
+      parts:
+        nb: 100
+        plage: 101 a 200
+    - civilite_affichage: Madame
+      prenom: Anne
+      nom: Martin
+      parts:
+        nb: 100
+        plage: 201 a 300
+  associes_avant_cession:
+    - civilite_affichage: Monsieur
+      prenom: Paul
+      nom: Bernard
+      parts:
+        nb: 100
+        plage: 1 a 100
+    - civilite_affichage: Monsieur
+      prenom: Jean
+      nom: Dupont
+      parts:
+        nb: 100
+        plage: 101 a 200
+    - civilite_affichage: Madame
+      prenom: Anne
+      nom: Martin
+      parts:
+        nb: 100
+        plage: 201 a 300
+  associes_apres_cession:
+    - civilite_affichage: Monsieur
+      prenom: Paul
+      nom: Bernard
+      parts:
+        nb: 100
+        plage: 1 a 100
+    - civilite_affichage: Monsieur
+      prenom: Jean
+      nom: Dupont
+      parts:
+        nb: 50
+        plage: 101 a 150
+    - type_personne: personne_morale
+      denomination: SELAS CABINET DUPONT
+      forme_juridique: SELAS
+      parts:
+        nb: 50
+        plage: 151 a 200
+    - civilite_affichage: Madame
+      prenom: Anne
+      nom: Martin
+      parts:
+        nb: 100
+        plage: 201 a 300
+  signataires_pv:
+    - M. Jean Dupont
+    - M. Paul Bernard
+    - Mme Anne Martin
+  parts_cedees:
+    nb: 50
+    plage: 151 a 200
+  prix:
+    unitaire: "100"
+    unitaire_lettres: cent
+    global: "5 000"
+    global_lettres: cinq mille
+  paiement_mode: pret_bancaire
+  credit_vendeur:
+    actif: false
+  enregistrement:
+    service: SERVICE DEPARTEMENTAL DE L'ENREGISTREMENT
+    centre_finances_publiques: Centre des finances publiques de Paris
+    adresse_service: 6 rue Paganini
+    cp_ville_service: 75020 Paris
+    nombre_exemplaires: "3"
+    montant_droits: "150"
+  signataire_sde:
+    prenom: Sarah
+    nom: Durand
+  nombre_exemplaires_lettres: trois
+  prestataire_signature_electronique: DocuSign
+  date_acte_affichee: 15 mai 2026
+  representant_cessionnaire_confirme: true

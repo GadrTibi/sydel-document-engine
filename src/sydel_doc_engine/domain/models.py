@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date
 from pathlib import Path
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from sydel_doc_engine.domain.enums import Gender
 
@@ -91,6 +91,7 @@ class DossierOptions(BaseModel):
     associe_unique: bool = False
     option_is: bool = False
     scm_satellites: bool = False
+    scm_cession: bool = False
 
 
 class CentreImpots(BaseModel):
@@ -823,6 +824,137 @@ class ScmSatellitesOptions(BaseModel):
     reglement_interieur: bool = False
 
 
+class ScmCessionPartsAttribution(BaseModel):
+    nb: int | None = None
+    plage: str | None = None
+
+
+class ScmCessionAssocie(BaseModel):
+    type_personne: str = "personne_physique"
+    civilite_affichage: str | None = None
+    prenom: str | None = None
+    nom: str | None = None
+    denomination: str | None = None
+    forme_juridique: str | None = None
+    parts: ScmCessionPartsAttribution | None = None
+    role_pv: str | None = None
+
+
+class ScmCessionAgrement(BaseModel):
+    date_pv: date | str | None = None
+    date_pv_lettres: str | None = None
+    delai_mois: str | None = None
+    date_limite: str | None = None
+
+
+class ScmCessionPartsCedees(BaseModel):
+    nb: int | None = None
+    plage: str | None = None
+
+
+class ScmCessionPrix(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    unitaire: str | None = None
+    unitaire_lettres: str | None = None
+    global_: str | None = Field(default=None, alias="global")
+    global_lettres: str | None = None
+
+
+class ScmCessionCreditVendeur(BaseModel):
+    actif: bool = False
+    montant: str | None = None
+    duree: str | None = None
+    taux: str | None = None
+    majoration_interet_retard: str | None = None
+
+
+class ScmCessionOrdre(BaseModel):
+    departemental: str | None = None
+    numero: str | None = None
+
+
+class ScmCessionConjoint(BaseModel):
+    civilite_affichage: str | None = None
+    prenom: str | None = None
+    nom: str | None = None
+
+
+class ScmCessionCedant(BaseModel):
+    civilite_affichage: str | None = None
+    prenom: str | None = None
+    nom: str | None = None
+    profession: str | None = None
+    profession_reglementee_pluriel: str | None = None
+    date_naissance: date | str | None = None
+    ville_naissance: str | None = None
+    departement_naissance: str | None = None
+    nationalite: str | None = None
+    adresse_affichee: str | None = None
+    situation_maritale: str | None = None
+    ordre: ScmCessionOrdre | None = None
+    numero_rpps: str | None = None
+    conjoint: ScmCessionConjoint | None = None
+
+
+class ScmCessionRepresentant(BaseModel):
+    civilite_affichage: str | None = None
+    civilite_courte: str | None = None
+    prenom: str | None = None
+    nom: str | None = None
+    fonction: str | None = None
+
+
+class ScmCessionSociete(BaseModel):
+    denomination: str | None = None
+    forme_juridique: str | None = None
+    capital_social: str | None = None
+    siege: Address | None = None
+    ville_rcs: str | None = None
+    numero_rcs: str | None = None
+    nb_parts_total: int | None = None
+    valeur_nominale_part: str | None = None
+    plage_parts_total: str | None = None
+    cogerants: list[str] = Field(default_factory=list)
+    representant: ScmCessionRepresentant | None = None
+
+
+class ScmCessionEnregistrement(BaseModel):
+    service: str | None = None
+    centre_finances_publiques: str | None = None
+    adresse_service: str | None = None
+    cp_ville_service: str | None = None
+    nombre_exemplaires: str | None = None
+    montant_droits: str | None = None
+
+
+class ScmCessionSignataire(BaseModel):
+    prenom: str | None = None
+    nom: str | None = None
+
+
+class ScmCessionContext(BaseModel):
+    variante_structure: str | None = None
+    scm_cedee: ScmCessionSociete | None = None
+    cessionnaire: ScmCessionSociete | None = None
+    cedant: ScmCessionCedant | None = None
+    agrement: ScmCessionAgrement | None = None
+    associes_presents: list[ScmCessionAssocie] = Field(default_factory=list)
+    associes_avant_cession: list[ScmCessionAssocie] = Field(default_factory=list)
+    associes_apres_cession: list[ScmCessionAssocie] = Field(default_factory=list)
+    signataires_pv: list[str] = Field(default_factory=list)
+    parts_cedees: ScmCessionPartsCedees | None = None
+    prix: ScmCessionPrix | None = None
+    paiement_mode: str | None = None
+    credit_vendeur: ScmCessionCreditVendeur | None = None
+    enregistrement: ScmCessionEnregistrement | None = None
+    signataire_sde: ScmCessionSignataire | None = None
+    nombre_exemplaires_lettres: str | None = None
+    prestataire_signature_electronique: str | None = None
+    date_acte_affichee: str | None = None
+    representant_cessionnaire_confirme: bool = False
+
+
 class PacteAssociesScmContext(BaseModel):
     ville_tribunal: str | None = None
 
@@ -897,6 +1029,7 @@ class DocumentGenerationContext(BaseModel):
     capital: CapitalContext | None = None
     gerance: GeranceContext | None = None
     scm_satellites: ScmSatellitesOptions | None = None
+    scm_cession: ScmCessionContext | None = None
     pacte_associes: PacteAssociesScmContext | None = None
     frais_communs: FraisCommunsContext | None = None
     reglement_interieur: ReglementInterieurScmContext | None = None

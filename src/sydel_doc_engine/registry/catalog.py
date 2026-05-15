@@ -81,6 +81,11 @@ SCM_SATELLITES_STRUCTURES: list[str] = [
     "SCM",
 ]
 
+SCM_CESSION_STRUCTURES: list[str] = [
+    "SELARL",
+    "SELAS",
+]
+
 
 def build_seed_catalog() -> list[DocumentDefinition]:
     return [
@@ -756,6 +761,87 @@ def build_seed_catalog() -> list[DocumentDefinition]:
             notes=(
                 "Satellite SCM V1 reconstruit depuis la source DOCX convertie, table fixe "
                 "et deux signatures source conservees."
+            ),
+        ),
+        DocumentDefinition(
+            doc_id="DOC-031",
+            canonical_name="PV AGE cession part SCM",
+            generator_name="generate_pv_age_cession_parts_scm",
+            lot=5,
+            category=DocumentCategory.SPECIFIQUE,
+            structures=SCM_CESSION_STRUCTURES,
+            general_condition=(
+                "dossier.structure in {SELARL, SELAS} et "
+                "dossier.options.scm_cession == true"
+            ),
+            specific_conditions=[
+                "overlay SELARL ou SELAS selon dossier.structure",
+                "trois associes presents et quatre lignes de repartition apres cession",
+                "parts apres cession totalisant scm_cedee.nb_parts_total",
+            ],
+            dynamic_associates=True,
+            grammar_variants=False,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path="project/source_documents/lot_05/PV AGE cession part SCM.docx",
+            specification_path=(
+                "docs/delivery/lot_05_scm_cession_block_resolution_v1.md"
+            ),
+            notes="Bloc cession SCM V1, overlay SELARL / SELAS sans correction de wording.",
+        ),
+        DocumentDefinition(
+            doc_id="DOC-032",
+            canonical_name="Courrier SDE cession SCM",
+            generator_name="generate_courrier_sde_cession_scm",
+            lot=5,
+            category=DocumentCategory.SPECIFIQUE,
+            structures=SCM_CESSION_STRUCTURES,
+            general_condition=(
+                "dossier.structure in {SELARL, SELAS} et "
+                "dossier.options.scm_cession == true"
+            ),
+            specific_conditions=[
+                "SELARL sans destinataire fiscal et avec 4 exemplaires fixes",
+                "SELAS avec destinataire fiscal et nombre d'exemplaires variable",
+                "montant des droits et signataire SDE fournis explicitement",
+            ],
+            dynamic_associates=False,
+            grammar_variants=False,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path="project/source_documents/lot_05/Courrier SDE.docx",
+            specification_path=(
+                "docs/delivery/lot_05_scm_cession_block_resolution_v1.md"
+            ),
+            notes="Bloc cession SCM V1, divergences SELARL / SELAS conservees.",
+        ),
+        DocumentDefinition(
+            doc_id="DOC-033",
+            canonical_name="Acte de cession des parts de la SCM vers SEL",
+            generator_name="generate_acte_cession_parts_scm",
+            lot=5,
+            category=DocumentCategory.SPECIFIQUE,
+            structures=SCM_CESSION_STRUCTURES,
+            general_condition=(
+                "dossier.structure in {SELARL, SELAS} et "
+                "dossier.options.scm_cession == true"
+            ),
+            specific_conditions=[
+                "representant de la SEL cessionnaire confirme",
+                "repartition avant cession totalisant scm_cedee.nb_parts_total",
+                "credit-vendeur conditionnel, jamais rendu comme instruction source",
+            ],
+            dynamic_associates=True,
+            grammar_variants=False,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path=(
+                "project/source_documents/lot_05/"
+                "Acte de cession des parts de la SCM à la SELARL - transforme.docx"
+            ),
+            specification_path=(
+                "docs/delivery/lot_05_scm_cession_block_resolution_v1.md"
+            ),
+            notes=(
+                "Acte cession parts SCM V1, source SELARL transformee et source SELAS "
+                "dediee conservees."
             ),
         ),
     ]

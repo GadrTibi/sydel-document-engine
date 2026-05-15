@@ -61,17 +61,26 @@ from sydel_doc_engine.generators.lot_04.statuts_selas_medecin import (
 from sydel_doc_engine.generators.lot_05.acte_cession_actions_spfpl import (
     ActeCessionActionsSpfplGenerator,
 )
+from sydel_doc_engine.generators.lot_05.acte_cession_parts_scm import (
+    ActeCessionPartsScmGenerator,
+)
 from sydel_doc_engine.generators.lot_05.attestation_capital_liste_souscripteurs_sas import (
     AttestationCapitalListeSouscripteursSasGenerator,
 )
 from sydel_doc_engine.generators.lot_05.contrat_frais_communs import (
     ContratFraisCommunsGenerator,
 )
+from sydel_doc_engine.generators.lot_05.courrier_sde_cession_scm import (
+    CourrierSdeCessionScmGenerator,
+)
 from sydel_doc_engine.generators.lot_05.lettre_option_is import LettreOptionIsGenerator
 from sydel_doc_engine.generators.lot_05.liste_depenses_communes_scm import (
     ListeDepensesCommunesScmGenerator,
 )
 from sydel_doc_engine.generators.lot_05.pacte_associes_scm import PacteAssociesScmGenerator
+from sydel_doc_engine.generators.lot_05.pv_age_cession_scm import (
+    PvAgeCessionScmGenerator,
+)
 from sydel_doc_engine.generators.lot_05.pv_remuneration_president import (
     PvRemunerationPresidentGenerator,
 )
@@ -114,6 +123,7 @@ SCM_SATELLITES_DOCUMENT_IDS = {
     "DOC-030": "liste_depenses_communes",
 }
 ACTE_CESSION_ACTIONS_DOCUMENT_ID = "DOC-029"
+SCM_CESSION_DOCUMENT_IDS = {"DOC-031", "DOC-032", "DOC-033"}
 
 
 class MissingDocumentGeneratorError(RuntimeError):
@@ -152,6 +162,9 @@ def build_lot_01_generator_registry() -> dict[str, DocumentGenerator]:
         "DOC-028": ReglementInterieurScmGenerator(),
         "DOC-029": ActeCessionActionsSpfplGenerator(),
         "DOC-030": ListeDepensesCommunesScmGenerator(),
+        "DOC-031": PvAgeCessionScmGenerator(),
+        "DOC-032": CourrierSdeCessionScmGenerator(),
+        "DOC-033": ActeCessionPartsScmGenerator(),
     }
 
 
@@ -231,6 +244,8 @@ def _document_enabled_for_context(
             return _scm_satellite_enabled(ctx, SCM_SATELLITES_DOCUMENT_IDS[document.doc_id])
         if document.doc_id == ACTE_CESSION_ACTIONS_DOCUMENT_ID:
             return _acte_cession_actions_enabled(ctx)
+        if document.doc_id in SCM_CESSION_DOCUMENT_IDS:
+            return _scm_cession_enabled(ctx)
         return True
     return bool(ctx.dossier_options and ctx.dossier_options.regime_communautaire)
 
@@ -345,3 +360,15 @@ def _acte_cession_actions_enabled(ctx: DocumentGenerationContext) -> bool:
         and (ctx.operation_spfpl.document_demande or "").strip().lower()
         == "acte_cession_actions"
     )
+
+
+def _scm_cession_enabled(ctx: DocumentGenerationContext) -> bool:
+    if ctx.structure not in {"SELARL", "SELAS"}:
+        return False
+    if ctx.dossier_options is None or not ctx.dossier_options.scm_cession:
+        return False
+    if ctx.scm_cession is None:
+        return False
+    if ctx.scm_cession.variante_structure is None:
+        return True
+    return ctx.scm_cession.variante_structure.strip().lower() == ctx.structure.lower()

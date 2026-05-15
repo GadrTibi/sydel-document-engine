@@ -3,9 +3,9 @@ from __future__ import annotations
 from sydel_doc_engine.registry.catalog import build_seed_catalog
 
 
-def test_seed_catalog_contains_thirty_documents() -> None:
+def test_seed_catalog_contains_thirty_three_documents() -> None:
     catalog = build_seed_catalog()
-    assert len(catalog) == 30
+    assert len(catalog) == 33
 
 
 def test_seed_catalog_contains_lot_one_to_lot_five_entries() -> None:
@@ -190,3 +190,21 @@ def test_seed_catalog_acte_cession_actions_scope_is_limited_to_spfpl_cession() -
     assert acte.source_path == (
         "project/source_documents/lot_05/Acte_cession_SPFPL_tiers_modele.docx"
     )
+
+
+def test_seed_catalog_scm_cession_scope_is_limited_to_sel_structures() -> None:
+    catalog = build_seed_catalog()
+
+    scm_cession_documents = [
+        document
+        for document in catalog
+        if document.doc_id in {"DOC-031", "DOC-032", "DOC-033"}
+    ]
+
+    assert len(scm_cession_documents) == 3
+    for document in scm_cession_documents:
+        assert set(document.structures) == {"SELARL", "SELAS"}
+        assert "dossier.options.scm_cession == true" in document.general_condition
+        assert document.specification_path == (
+            "docs/delivery/lot_05_scm_cession_block_resolution_v1.md"
+        )
