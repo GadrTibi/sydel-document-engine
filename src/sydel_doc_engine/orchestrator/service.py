@@ -68,6 +68,9 @@ from sydel_doc_engine.generators.lot_05.contrat_frais_communs import (
     ContratFraisCommunsGenerator,
 )
 from sydel_doc_engine.generators.lot_05.lettre_option_is import LettreOptionIsGenerator
+from sydel_doc_engine.generators.lot_05.liste_depenses_communes_scm import (
+    ListeDepensesCommunesScmGenerator,
+)
 from sydel_doc_engine.generators.lot_05.pacte_associes_scm import PacteAssociesScmGenerator
 from sydel_doc_engine.generators.lot_05.pv_remuneration_president import (
     PvRemunerationPresidentGenerator,
@@ -108,6 +111,7 @@ SCM_SATELLITES_DOCUMENT_IDS = {
     "DOC-026": "pacte_associes",
     "DOC-027": "contrat_frais_communs",
     "DOC-028": "reglement_interieur",
+    "DOC-030": "liste_depenses_communes",
 }
 ACTE_CESSION_ACTIONS_DOCUMENT_ID = "DOC-029"
 
@@ -147,6 +151,7 @@ def build_lot_01_generator_registry() -> dict[str, DocumentGenerator]:
         "DOC-027": ContratFraisCommunsGenerator(),
         "DOC-028": ReglementInterieurScmGenerator(),
         "DOC-029": ActeCessionActionsSpfplGenerator(),
+        "DOC-030": ListeDepensesCommunesScmGenerator(),
     }
 
 

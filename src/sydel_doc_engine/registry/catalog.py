@@ -734,6 +734,30 @@ def build_seed_catalog() -> list[DocumentDefinition]:
                 "transformes en blocages explicites."
             ),
         ),
+        DocumentDefinition(
+            doc_id="DOC-030",
+            canonical_name="Liste des depenses communes SCM",
+            generator_name="generate_liste_depenses_communes_scm",
+            lot=5,
+            category=DocumentCategory.SPECIFIQUE,
+            structures=SCM_SATELLITES_STRUCTURES,
+            general_condition="dossier.structure == SCM et dossier.options.scm_satellites == true",
+            specific_conditions=[
+                "scm_satellites.liste_depenses_communes == true",
+                "source DOCX convertie disponible",
+                "deux associes signataires exactement",
+                "table des depenses commune source fixe",
+            ],
+            dynamic_associates=False,
+            grammar_variants=False,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path="project/source_documents/lot_05/Liste dépenses communes SCM.docx",
+            specification_path="docs/delivery/lot_05_scm_satellites_spec_texte_v1.md",
+            notes=(
+                "Satellite SCM V1 reconstruit depuis la source DOCX convertie, table fixe "
+                "et deux signatures source conservees."
+            ),
+        ),
     ]
 
 

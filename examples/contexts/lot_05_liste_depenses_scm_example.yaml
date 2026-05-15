@@ -1,0 +1,31 @@
+structure: SCM
+dossier_options:
+  scm_satellites: true
+scm_satellites:
+  liste_depenses_communes: true
+personne_signataire:
+  genre: masculin
+  civilite: Monsieur
+  prenom: Jean
+  nom: Durand
+signature:
+  lieu: Paris
+  date: 2026-05-15
+societe:
+  denomination: SCM SANTE PARIS
+  forme_juridique: SCM
+  capital_social: 2 000 euros
+  siege:
+    adresse_affichee: 10 avenue de la Sante, 75014 Paris
+  ville_rcs: Paris
+associes:
+  - genre: masculin
+    civilite_affichage: Monsieur
+    prenom: Jean
+    nom: Durand
+    nb_parts: 100
+  - genre: feminin
+    civilite_affichage: Madame
+    prenom: Alice
+    nom: Martin
+    nb_parts: 100

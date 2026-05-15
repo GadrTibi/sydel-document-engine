@@ -1152,3 +1152,51 @@ REGLEMENT_INTERIEUR_SCM_BLOCKS: list[TemplateBlock] = [('table', [['REGLEMENT IN
  ('p', 'Le [titre_representant_societe_1] [identite_representant_societe_1]'),
  ('p', 'Pour la [denomination_societe_2]'),
  ('p', 'Le [titre_representant_societe_2] [identite_representant_societe_2]')]
+
+LISTE_DEPENSES_COMMUNES_SCM_BLOCKS: list[TemplateBlock] = [
+    ("p", "[denomination_societe]"),
+    ("p", "[forme_sociale] au capital de [capital_social]"),
+    ("p", "Siège social\xa0: [adresse_siege]"),
+    ("p", "En cours d’immatriculation au RCS de [ville_rcs]"),
+    (
+        "table",
+        [
+            [
+                "DENOMINATION DE LA DEPENSE",
+                "AU PRORATA DES PARTS DE SCM",
+                "AU PRORATA CHIFFRE D’AFFAIRES",
+            ],
+            ["Loyer et charges locatives d’eau, gaz, électricité", "X", ""],
+            ["Téléphone", "X", ""],
+            [
+                "Assurance de biens mobiliers, immobiliers et du personnel de l’association",
+                "X",
+                "",
+            ],
+            ["Frais d’entretien, de réparation des locaux", "X", ""],
+            ["Salaires et charges sociales du personnel de la SCM", "X", ""],
+            ["Frais d’honoraires versés par la SCM à des tiers (comptable)", "X", ""],
+            ["Frais de gestions comptables et fiscales", "X", ""],
+            [
+                "Frais afférents aux disposition obligatoires de fonctionnement\xa0: contrôle "
+                "installation radio, électriques, traitements des déchets, stérilisateur, "
+                "extincteur, osmoseur, climatisation, contrôle de l’amiante, compresseur…",
+                "X",
+                "",
+            ],
+            ["Frais d’entretien et de réparation du mobilier", "X", ""],
+            ["Produits consommables, fournitures de bureau, consommables clinique", "X", ""],
+            [
+                "Frais afférents au logiciel professionnel ou autres frais de maintenance et au "
+                "matériel informatique",
+                "X",
+                "",
+            ],
+            ["Frais de prothèse", "X", "X"],
+            ["Frais de cadeaux, réception, représentation au personnel", "X", ""],
+            ["Achat validé par la SCM", "", ""],
+            ["Pressing", "X", ""],
+        ],
+    ),
+    ("p", "[prenom_personne_1] [nom_personne_1]\t\t\t[prenom_personne_2] [nom_personne_2]"),
+]
