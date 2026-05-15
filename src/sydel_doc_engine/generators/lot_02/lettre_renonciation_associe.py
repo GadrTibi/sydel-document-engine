@@ -14,7 +14,14 @@ from sydel_doc_engine.generators.lot_02.regime_communautaire_common import (
     required_text,
     validate_batch_enabled,
 )
-from sydel_doc_engine.rendering.docx_builder import add_paragraph, new_document
+from sydel_doc_engine.rendering.docx_builder import (
+    LETTER_WIDE_STYLE_PROFILE,
+    add_paragraph,
+    add_right_aligned_lines,
+    add_spacer,
+    add_subject_heading,
+    new_document,
+)
 
 OUTPUT_FILENAME = "lettre_renonciation_associe.docx"
 
@@ -46,10 +53,18 @@ class LettreRenonciationAssocieGenerator:
             "regime_communautaire.renonciation.nombre_exemplaires_lettres",
         )
 
-        document = new_document()
-        add_paragraph(document, f"A {lieu_signature}")
-        add_paragraph(document, f"Le {date_signature}")
-        add_paragraph(document, "Objet : Lettre de renonciation à revendiquer la qualité d'associé")
+        document = new_document(style_profile=LETTER_WIDE_STYLE_PROFILE)
+        add_right_aligned_lines(
+            document,
+            [f"A {lieu_signature}", f"Le {date_signature}"],
+            space_after_pt=2,
+        )
+        add_spacer(document, space_after_pt=12)
+        add_subject_heading(
+            document,
+            "Objet : Lettre de renonciation à revendiquer la qualité d'associé",
+            space_after_pt=12,
+        )
         add_paragraph(document, _apporteur_appel(ctx))
         denomination = required_text(company.denomination, "societe.denomination")
         regime_matrimonial = required_text(
@@ -88,8 +103,8 @@ class LettreRenonciationAssocieGenerator:
             ),
             alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
         )
-        add_paragraph(document, f"En {nombre_exemplaires} exemplaires")
-        add_paragraph(document, _conjoint_signature(ctx))
+        add_paragraph(document, f"En {nombre_exemplaires} exemplaires", space_before_pt=5)
+        add_right_aligned_lines(document, [_conjoint_signature(ctx)], space_after_pt=0)
 
         output_dir.mkdir(parents=True, exist_ok=True)
         output_path = output_dir / OUTPUT_FILENAME

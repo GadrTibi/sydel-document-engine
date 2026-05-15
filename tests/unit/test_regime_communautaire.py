@@ -5,6 +5,8 @@ from pathlib import Path
 
 import pytest
 from docx import Document
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.shared import Cm
 
 from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import (
@@ -100,6 +102,17 @@ def _docx_text(path: Path) -> str:
     return "\n".join(text for text in texts if text)
 
 
+def _matching_paragraphs(path: Path, text: str):
+    return [paragraph for paragraph in Document(path).paragraphs if paragraph.text == text]
+
+
+def _first_paragraph_starting_with(path: Path, prefix: str):
+    for paragraph in Document(path).paragraphs:
+        if paragraph.text.startswith(prefix):
+            return paragraph
+    raise AssertionError(f"Paragraphe introuvable : {prefix}")
+
+
 def _assert_no_source_placeholders(text: str) -> None:
     assert "[" not in text
     assert "]" not in text
@@ -120,6 +133,46 @@ def test_regime_communautaire_selas_generates_both_documents(tmp_path: Path) -> 
     assert "personnellement actionnaire de cette société" in renonciation_text
     assert "à la SELAS RC SANTE" in avertissement_text
     assert "Le  14/05/2026" in avertissement_text
+    renonciation_section = Document(renonciation).sections[0]
+    assert abs(renonciation_section.left_margin - Cm(3.17)) < 300
+    assert abs(renonciation_section.right_margin - Cm(3.17)) < 300
+    assert _matching_paragraphs(renonciation, "A Paris")[0].alignment == (
+        WD_ALIGN_PARAGRAPH.RIGHT
+    )
+    renonciation_subject = _matching_paragraphs(
+        renonciation,
+        "Objet : Lettre de renonciation à revendiquer la qualité d'associé",
+    )[0]
+    assert renonciation_subject.runs[0].bold is True
+    assert renonciation_subject.runs[0].underline is True
+    assert _matching_paragraphs(renonciation, "Claire Durand")[0].alignment == (
+        WD_ALIGN_PARAGRAPH.RIGHT
+    )
+    avertissement_section = Document(avertissement).sections[0]
+    assert abs(avertissement_section.left_margin - Cm(3.17)) < 300
+    assert abs(avertissement_section.right_margin - Cm(3.17)) < 300
+    company_header = _matching_paragraphs(avertissement, "RC SANTE")[0]
+    assert company_header.alignment == WD_ALIGN_PARAGRAPH.CENTER
+    assert company_header.runs[0].bold is True
+    assert _matching_paragraphs(avertissement, "Madame Durand")[0].alignment == (
+        WD_ALIGN_PARAGRAPH.RIGHT
+    )
+    assert _matching_paragraphs(avertissement, "Le  14/05/2026")[0].alignment == (
+        WD_ALIGN_PARAGRAPH.RIGHT
+    )
+    avertissement_subject = _matching_paragraphs(
+        avertissement,
+        "Objet : Lettre d'avertissement au conjoint en cas d'apport d'un bien commun.",
+    )[0]
+    assert avertissement_subject.runs[0].bold is True
+    assert avertissement_subject.runs[0].underline is True
+    apporteur_quality = _matching_paragraphs(
+        avertissement,
+        "Agissant en qualité de futur président",
+    )[0]
+    assert apporteur_quality.runs[0].italic is True
+    instruction = _first_paragraph_starting_with(avertissement, "(Faire précéder")
+    assert instruction.runs[0].italic is True
     _assert_no_source_placeholders(renonciation_text)
     _assert_no_source_placeholders(avertissement_text)
 

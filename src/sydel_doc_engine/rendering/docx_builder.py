@@ -30,6 +30,10 @@ class SydelDocxStyleProfile:
 
 
 DEFAULT_STYLE_PROFILE = SydelDocxStyleProfile()
+LETTER_WIDE_STYLE_PROFILE = SydelDocxStyleProfile(
+    margin_left_cm=3.17,
+    margin_right_cm=3.17,
+)
 
 
 def new_document(
@@ -83,6 +87,132 @@ def add_paragraph(
     run.italic = italic
     run.underline = underline
     return paragraph
+
+
+def add_subject_heading(
+    document: Any,
+    text: str,
+    *,
+    alignment: WD_ALIGN_PARAGRAPH = WD_ALIGN_PARAGRAPH.LEFT,
+    space_before_pt: int = 0,
+    space_after_pt: int | None = None,
+    style_profile: SydelDocxStyleProfile = DEFAULT_STYLE_PROFILE,
+) -> Any:
+    return add_paragraph(
+        document,
+        text,
+        alignment=alignment,
+        bold=True,
+        underline=True,
+        space_before_pt=space_before_pt,
+        space_after_pt=space_after_pt,
+        style_profile=style_profile,
+    )
+
+
+def add_letter_place_date(
+    document: Any,
+    text: str,
+    *,
+    space_after_pt: int | None = None,
+    style_profile: SydelDocxStyleProfile = DEFAULT_STYLE_PROFILE,
+) -> Any:
+    return add_paragraph(
+        document,
+        text,
+        alignment=WD_ALIGN_PARAGRAPH.RIGHT,
+        space_after_pt=space_after_pt,
+        style_profile=style_profile,
+    )
+
+
+def add_right_aligned_lines(
+    document: Any,
+    lines: Sequence[str],
+    *,
+    space_after_pt: int | None = None,
+    style_profile: SydelDocxStyleProfile = DEFAULT_STYLE_PROFILE,
+) -> list[Any]:
+    return [
+        add_paragraph(
+            document,
+            line,
+            alignment=WD_ALIGN_PARAGRAPH.RIGHT,
+            space_after_pt=space_after_pt,
+            style_profile=style_profile,
+        )
+        for line in lines
+    ]
+
+
+def add_right_indented_block(
+    document: Any,
+    lines: Sequence[str],
+    *,
+    left_indent_cm: float = 8.5,
+    first_line_indent_cm: float | None = None,
+    space_after_pt: int | None = None,
+    style_profile: SydelDocxStyleProfile = DEFAULT_STYLE_PROFILE,
+) -> list[Any]:
+    paragraphs = []
+    for line in lines:
+        paragraph = add_paragraph(
+            document,
+            line,
+            space_after_pt=space_after_pt,
+            style_profile=style_profile,
+        )
+        paragraph.paragraph_format.left_indent = Cm(left_indent_cm)
+        if first_line_indent_cm is not None:
+            paragraph.paragraph_format.first_line_indent = Cm(first_line_indent_cm)
+        paragraphs.append(paragraph)
+    return paragraphs
+
+
+def add_company_identity_block(
+    document: Any,
+    lines: Sequence[str],
+    *,
+    first_line_bold: bool = True,
+    alignment: WD_ALIGN_PARAGRAPH = WD_ALIGN_PARAGRAPH.CENTER,
+    space_after_pt: int | None = None,
+    style_profile: SydelDocxStyleProfile = DEFAULT_STYLE_PROFILE,
+) -> list[Any]:
+    paragraphs = []
+    for index, line in enumerate(lines):
+        paragraphs.append(
+            add_paragraph(
+                document,
+                line,
+                alignment=alignment,
+                bold=first_line_bold and index == 0,
+                space_after_pt=(
+                    style_profile.compact_space_after_pt
+                    if space_after_pt is None
+                    else space_after_pt
+                ),
+                style_profile=style_profile,
+            )
+        )
+    return paragraphs
+
+
+def add_italic_instruction(
+    document: Any,
+    text: str,
+    *,
+    alignment: WD_ALIGN_PARAGRAPH | None = None,
+    space_after_pt: int | None = None,
+    style_profile: SydelDocxStyleProfile = DEFAULT_STYLE_PROFILE,
+) -> Any:
+    return add_paragraph(
+        document,
+        text,
+        alignment=alignment,
+        italic=True,
+        space_after_pt=space_after_pt,
+        style_profile=style_profile,
+    )
 
 
 def add_hyphen_list_item(
