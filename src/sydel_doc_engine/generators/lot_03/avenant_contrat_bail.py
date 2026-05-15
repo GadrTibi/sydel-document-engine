@@ -2,9 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.shared import Pt
 
 from sydel_doc_engine.domain.models import (
     BailContext,
@@ -20,8 +18,12 @@ from sydel_doc_engine.generators.lot_03.bail_appel_common import (
     validate_avenant_context,
 )
 from sydel_doc_engine.rendering.docx_builder import (
+    BAIL_COMPACT_STYLE_PROFILE,
+    add_article_heading,
     add_framed_title,
     add_paragraph,
+    add_party_marker,
+    add_signature_table,
     new_document,
 )
 
@@ -50,7 +52,7 @@ class AvenantContratBailGenerator:
                 f"{DOCUMENT_CODE}."
             )
 
-        docx = new_document()
+        docx = new_document(style_profile=BAIL_COMPACT_STYLE_PROFILE)
         add_framed_title(
             docx,
             [
@@ -59,6 +61,7 @@ class AvenantContratBailGenerator:
                     f"{format_display_date(bail.date_avenant, 'bail.date_avenant')}"
                 )
             ],
+            style_profile=BAIL_COMPACT_STYLE_PROFILE,
         )
         _add_parties(docx, bailleur, locataire)
         _add_article_1(docx, bail, locataire, company)
@@ -135,28 +138,6 @@ def _party_full_line(party: BailParty, field_name: str) -> str:
     )
 
 
-def _add_parties(docx, bailleur: BailParty, locataire: BailParty) -> None:
-    add_paragraph(docx, "Entre les soussignés :")
-    add_paragraph(
-        docx,
-        _party_full_line(bailleur, "bail.bailleur"),
-        alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
-    )
-    add_paragraph(docx, "Ci-après désigné « le Bailleur »")
-    add_paragraph(docx, "ET :")
-    add_paragraph(
-        docx,
-        _party_full_line(locataire, "bail.locataire"),
-        alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
-    )
-    add_paragraph(docx, "Ci-après désigné « le Locataire »")
-    add_paragraph(docx, "Les parties conviennent de ce qui suit :")
-
-
-def _add_article_title(docx, title: str) -> None:
-    add_paragraph(docx, title, bold=True, space_before_pt=10)
-
-
 def _add_article_1(
     docx,
     bail: BailContext,
@@ -225,17 +206,51 @@ def _add_article_3(docx) -> None:
     )
 
 
+def _add_parties(docx, bailleur: BailParty, locataire: BailParty) -> None:
+    add_paragraph(docx, "Entre les soussign\u00e9s :", style_profile=BAIL_COMPACT_STYLE_PROFILE)
+    add_paragraph(
+        docx,
+        _party_full_line(bailleur, "bail.bailleur"),
+        alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
+        bold=True,
+        style_profile=BAIL_COMPACT_STYLE_PROFILE,
+    )
+    add_party_marker(
+        docx,
+        "Ci-apr\u00e8s d\u00e9sign\u00e9 \u00ab le Bailleur \u00bb",
+        style_profile=BAIL_COMPACT_STYLE_PROFILE,
+    )
+    add_paragraph(docx, "ET :", bold=True, style_profile=BAIL_COMPACT_STYLE_PROFILE)
+    add_paragraph(
+        docx,
+        _party_full_line(locataire, "bail.locataire"),
+        alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
+        bold=True,
+        style_profile=BAIL_COMPACT_STYLE_PROFILE,
+    )
+    add_party_marker(
+        docx,
+        "Ci-apr\u00e8s d\u00e9sign\u00e9 \u00ab le Locataire \u00bb",
+        style_profile=BAIL_COMPACT_STYLE_PROFILE,
+    )
+    add_paragraph(
+        docx,
+        "Les parties conviennent de ce qui suit :",
+        alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
+        style_profile=BAIL_COMPACT_STYLE_PROFILE,
+    )
+
+
+def _add_article_title(docx, title: str) -> None:
+    add_article_heading(docx, title, style_profile=BAIL_COMPACT_STYLE_PROFILE)
+
+
 def _add_signature_table(docx) -> None:
-    table = docx.add_table(rows=2, cols=2)
-    table.alignment = WD_TABLE_ALIGNMENT.CENTER
-    table.style = "Table Grid"
-    labels = [
-        ["Le Bailleur", "L’ancien locataire"],
-        ["Le nouveau locataire", "Le nouveau locataire"],
-    ]
-    for row_index, row in enumerate(table.rows):
-        for cell_index, cell in enumerate(row.cells):
-            paragraph = cell.paragraphs[0]
-            paragraph.paragraph_format.space_after = Pt(0)
-            paragraph.add_run(labels[row_index][cell_index])
-            cell.add_paragraph("\n\n\n")
+    add_signature_table(
+        docx,
+        [
+            ["Le Bailleur", "L\u2019ancien locataire"],
+            ["Le nouveau locataire", "Le nouveau locataire"],
+        ],
+        style_profile=BAIL_COMPACT_STYLE_PROFILE,
+    )

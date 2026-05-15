@@ -5,17 +5,28 @@ from docx.oxml.ns import qn
 from docx.shared import Cm, Pt
 
 from sydel_doc_engine.rendering.docx_builder import (
+    BAIL_COMPACT_STYLE_PROFILE,
+    DEROGATION_CUMUL_STYLE_PROFILE,
     LETTER_WIDE_STYLE_PROFILE,
+    add_article_heading,
+    add_bordered_data_table,
+    add_centered_amount,
+    add_checkbox_line,
     add_company_identity_block,
+    add_form_section_heading,
+    add_framed_section_title,
     add_framed_signature_block,
     add_framed_title,
     add_hyphen_list_item,
     add_italic_instruction,
     add_legal_reminder,
     add_letter_place_date,
+    add_notice_box,
     add_paragraph,
+    add_party_marker,
     add_right_aligned_lines,
     add_right_indented_block,
+    add_signature_table,
     add_subject_heading,
     new_document,
 )
@@ -125,3 +136,39 @@ def test_letter_helpers_apply_structural_alignment_and_emphasis() -> None:
     assert company[0].alignment == WD_ALIGN_PARAGRAPH.CENTER
     assert company[0].runs[0].bold is True
     assert instruction.runs[0].italic is True
+
+
+def test_lot03_style_profiles_and_helpers_apply_structure() -> None:
+    document = new_document(style_profile=BAIL_COMPACT_STYLE_PROFILE)
+
+    party = add_party_marker(document, "De premiere part")
+    article = add_article_heading(document, "ARTICLE 1")
+    section = add_framed_section_title(document, "SECTION")
+    data_table = add_bordered_data_table(document, ["A", "B"], [["1", "2"]])
+    amount = add_centered_amount(document, ["150 000", "EUR"])
+    signatures = add_signature_table(document, [["Le vendeur", "L'acquereur"]])
+
+    assert abs(document.sections[0].top_margin - Cm(1.75)) < 300
+    assert abs(document.sections[0].bottom_margin - Cm(0.5)) < 300
+    assert party.alignment == WD_ALIGN_PARAGRAPH.RIGHT
+    assert party.runs[0].bold is True
+    assert party.runs[0].underline is True
+    assert article.runs[0].underline is True
+    assert _table_has_explicit_borders(section)
+    assert _table_has_explicit_borders(data_table)
+    assert amount[0].alignment == WD_ALIGN_PARAGRAPH.CENTER
+    assert _table_has_explicit_borders(signatures)
+
+
+def test_form_helpers_apply_checkbox_notice_and_cumul_profile() -> None:
+    document = new_document(style_profile=DEROGATION_CUMUL_STYLE_PROFILE)
+
+    heading = add_form_section_heading(document, "Identification")
+    checkbox = add_checkbox_line(document, "OUI", checked=True)
+    notice = add_notice_box(document, ["Rappel", "Piece a joindre"])
+
+    assert abs(document.sections[0].top_margin - Cm(3.25)) < 500
+    assert heading.runs[0].bold is True
+    assert heading.runs[0].underline is True
+    assert checkbox.text == "☒ OUI"
+    assert _table_has_explicit_borders(notice)

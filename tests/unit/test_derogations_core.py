@@ -5,6 +5,8 @@ from pathlib import Path
 
 import pytest
 from docx import Document
+from docx.oxml.ns import qn
+from docx.shared import Cm
 
 from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import (
@@ -103,6 +105,14 @@ def _assert_no_source_placeholders(text: str) -> None:
     assert "]" not in text
 
 
+def _table_has_explicit_borders(table) -> bool:
+    borders = table._tbl.tblPr.find(qn("w:tblBorders"))
+    return borders is not None and all(
+        borders.find(qn(f"w:{edge}")) is not None
+        for edge in ("top", "left", "bottom", "right")
+    )
+
+
 def test_formulaire_derogation_sites_sel_generates_prefilled_form(tmp_path: Path) -> None:
     output_path = FormulaireDerogationSitesSelGenerator().generate(_context(), tmp_path)
 
@@ -114,6 +124,10 @@ def test_formulaire_derogation_sites_sel_generates_prefilled_form(tmp_path: Path
     assert "Qualification : chirurgien-dentiste" in text
     assert "☒ OUI" in text
     assert "24 rue du Nouveau Site, 75016 Paris" in text
+    document = Document(output_path)
+    assert abs(document.sections[0].top_margin - Cm(2.0)) < 300
+    section = next(p for p in document.paragraphs if p.text == "I - Identification du declarant")
+    assert section.runs[0].underline is True
     _assert_no_source_placeholders(text)
 
 
@@ -144,6 +158,10 @@ def test_demande_derogation_cumul_selarl_bnc_generates_prefilled_form(
     assert "Denomination sociale : SELARL CABINET MARTIN" in text
     assert "Je soussigne(e) Dr Camille Martincertifie :" in text
     assert "Fait le 14/05/2026" in text
+    document = Document(output_path)
+    assert abs(document.sections[0].top_margin - Cm(3.25)) < 500
+    assert any("PIECES A JOINDRE" in table.cell(0, 0).text for table in document.tables)
+    assert all(_table_has_explicit_borders(table) for table in document.tables)
     _assert_no_source_placeholders(text)
 
 

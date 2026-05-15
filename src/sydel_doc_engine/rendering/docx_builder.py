@@ -47,6 +47,17 @@ STATUTS_CIVIL_COMPACT_STYLE_PROFILE = SydelDocxStyleProfile(
     margin_left_cm=2.35,
     margin_right_cm=2.2,
 )
+BAIL_COMPACT_STYLE_PROFILE = SydelDocxStyleProfile(
+    margin_top_cm=1.75,
+    margin_bottom_cm=0.5,
+)
+DEROGATION_FORM_STYLE_PROFILE = SydelDocxStyleProfile(
+    margin_top_cm=2.0,
+)
+DEROGATION_CUMUL_STYLE_PROFILE = SydelDocxStyleProfile(
+    margin_top_cm=3.25,
+    margin_bottom_cm=2.0,
+)
 
 
 def new_document(
@@ -123,6 +134,57 @@ def add_subject_heading(
     )
 
 
+def add_party_marker(
+    document: Any,
+    text: str,
+    *,
+    style_profile: SydelDocxStyleProfile = DEFAULT_STYLE_PROFILE,
+) -> Any:
+    return add_paragraph(
+        document,
+        text,
+        alignment=WD_ALIGN_PARAGRAPH.RIGHT,
+        bold=True,
+        underline=True,
+        style_profile=style_profile,
+    )
+
+
+def add_article_heading(
+    document: Any,
+    text: str,
+    *,
+    style_profile: SydelDocxStyleProfile = DEFAULT_STYLE_PROFILE,
+) -> Any:
+    return add_paragraph(
+        document,
+        text,
+        alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
+        bold=True,
+        underline=True,
+        space_before_pt=style_profile.notable_space_before_pt,
+        style_profile=style_profile,
+    )
+
+
+def add_form_section_heading(
+    document: Any,
+    text: str,
+    *,
+    alignment: WD_ALIGN_PARAGRAPH | None = None,
+    style_profile: SydelDocxStyleProfile = DEFAULT_STYLE_PROFILE,
+) -> Any:
+    return add_paragraph(
+        document,
+        text,
+        alignment=alignment,
+        bold=True,
+        underline=True,
+        space_before_pt=style_profile.notable_space_before_pt,
+        style_profile=style_profile,
+    )
+
+
 def add_letter_place_date(
     document: Any,
     text: str,
@@ -158,6 +220,61 @@ def add_right_aligned_lines(
     ]
 
 
+def add_form_field(
+    document: Any,
+    label: str,
+    value: str,
+    *,
+    underline_label: bool = False,
+    left_indent_cm: float = 0.0,
+    style_profile: SydelDocxStyleProfile = DEFAULT_STYLE_PROFILE,
+) -> Any:
+    paragraph = document.add_paragraph()
+    paragraph.paragraph_format.left_indent = Cm(left_indent_cm)
+    paragraph.paragraph_format.space_after = Pt(style_profile.compact_space_after_pt)
+    label_run = paragraph.add_run(f"{label} : ")
+    label_run.underline = underline_label
+    paragraph.add_run(value)
+    return paragraph
+
+
+def add_form_field_pair(
+    document: Any,
+    left_label: str,
+    left_value: str,
+    right_label: str,
+    right_value: str,
+    *,
+    style_profile: SydelDocxStyleProfile = DEFAULT_STYLE_PROFILE,
+) -> Any:
+    paragraph = document.add_paragraph()
+    paragraph.paragraph_format.space_after = Pt(style_profile.compact_space_after_pt)
+    paragraph.add_run(f"{left_label} : ")
+    paragraph.add_run(left_value)
+    paragraph.add_run("      ")
+    paragraph.add_run(f"{right_label} : ")
+    paragraph.add_run(right_value)
+    return paragraph
+
+
+def add_checkbox_line(
+    document: Any,
+    label: str,
+    *,
+    checked: bool = False,
+    left_indent_cm: float = 0.7,
+    hanging_indent_cm: float = 0.35,
+    style_profile: SydelDocxStyleProfile = DEFAULT_STYLE_PROFILE,
+) -> Any:
+    marker = "\u2612" if checked else "\u2610"
+    paragraph = document.add_paragraph()
+    paragraph.paragraph_format.left_indent = Cm(left_indent_cm)
+    paragraph.paragraph_format.first_line_indent = Cm(-hanging_indent_cm)
+    paragraph.paragraph_format.space_after = Pt(style_profile.compact_space_after_pt)
+    paragraph.add_run(f"{marker} {label}")
+    return paragraph
+
+
 def add_right_indented_block(
     document: Any,
     lines: Sequence[str],
@@ -180,6 +297,25 @@ def add_right_indented_block(
             paragraph.paragraph_format.first_line_indent = Cm(first_line_indent_cm)
         paragraphs.append(paragraph)
     return paragraphs
+
+
+def add_centered_amount(
+    document: Any,
+    lines: Sequence[str],
+    *,
+    style_profile: SydelDocxStyleProfile = DEFAULT_STYLE_PROFILE,
+) -> list[Any]:
+    return [
+        add_paragraph(
+            document,
+            line,
+            alignment=WD_ALIGN_PARAGRAPH.CENTER,
+            bold=True,
+            space_after_pt=style_profile.compact_space_after_pt,
+            style_profile=style_profile,
+        )
+        for line in lines
+    ]
 
 
 def add_company_identity_block(
@@ -524,6 +660,72 @@ def add_framed_title(
     return table
 
 
+def add_framed_section_title(
+    document: Any,
+    text: str,
+    *,
+    style_profile: SydelDocxStyleProfile = DEFAULT_STYLE_PROFILE,
+) -> Any:
+    table = document.add_table(rows=1, cols=1)
+    table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    table.style = "Table Grid"
+    _set_table_borders(table)
+
+    paragraph = table.cell(0, 0).paragraphs[0]
+    paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    paragraph.paragraph_format.space_after = Pt(style_profile.compact_space_after_pt)
+    run = paragraph.add_run(text)
+    run.bold = True
+    run.underline = True
+    run.font.name = style_profile.font_name
+    run.font.size = Pt(style_profile.font_size_pt)
+    add_spacer(document, space_after_pt=style_profile.compact_space_after_pt)
+    return table
+
+
+def add_notice_box(
+    document: Any,
+    lines: Sequence[str],
+    *,
+    style_profile: SydelDocxStyleProfile = DEFAULT_STYLE_PROFILE,
+) -> Any:
+    table = document.add_table(rows=1, cols=1)
+    table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    table.style = "Table Grid"
+    _set_table_borders(table)
+    cell = table.cell(0, 0)
+    for index, line in enumerate(lines):
+        paragraph = cell.paragraphs[0] if index == 0 else cell.add_paragraph()
+        paragraph.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+        paragraph.paragraph_format.space_after = Pt(style_profile.compact_space_after_pt)
+        paragraph.add_run(line)
+    add_spacer(document, space_after_pt=style_profile.compact_space_after_pt)
+    return table
+
+
+def add_bordered_data_table(
+    document: Any,
+    headers: Sequence[str],
+    rows: Sequence[Sequence[str]],
+    *,
+    style_profile: SydelDocxStyleProfile = DEFAULT_STYLE_PROFILE,
+) -> Any:
+    table = document.add_table(rows=1, cols=len(headers))
+    table.style = "Table Grid"
+    _set_table_borders(table)
+    for index, header in enumerate(headers):
+        paragraph = table.rows[0].cells[index].paragraphs[0]
+        paragraph.paragraph_format.space_after = Pt(style_profile.compact_space_after_pt)
+        paragraph.add_run(header).bold = True
+    for row in rows:
+        cells = table.add_row().cells
+        for index, value in enumerate(row):
+            paragraph = cells[index].paragraphs[0]
+            paragraph.paragraph_format.space_after = Pt(style_profile.compact_space_after_pt)
+            paragraph.add_run(value)
+    return table
+
+
 def add_centered_block(
     document: Any,
     lines: Sequence[tuple[str, bool, bool] | str],
@@ -637,6 +839,31 @@ def add_signature_lines(
         )
         for name in names
     ]
+
+
+def add_signature_table(
+    document: Any,
+    labels: Sequence[Sequence[str]],
+    *,
+    style_profile: SydelDocxStyleProfile = DEFAULT_STYLE_PROFILE,
+) -> Any:
+    if not labels or not labels[0]:
+        raise ValueError("labels doit contenir au moins une cellule de signature.")
+    column_count = len(labels[0])
+    table = document.add_table(rows=len(labels), cols=column_count)
+    table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    table.style = "Table Grid"
+    _set_table_borders(table)
+    for row_index, row in enumerate(labels):
+        if len(row) != column_count:
+            raise ValueError("Toutes les lignes de signature doivent avoir la meme largeur.")
+        for cell_index, label in enumerate(row):
+            cell = table.rows[row_index].cells[cell_index]
+            paragraph = cell.paragraphs[0]
+            paragraph.paragraph_format.space_after = Pt(style_profile.compact_space_after_pt)
+            paragraph.add_run(label)
+            cell.add_paragraph("\n\n\n")
+    return table
 
 
 def add_legal_reminder(
