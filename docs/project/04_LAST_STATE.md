@@ -4,6 +4,8 @@
 2026-05-15
 
 ## Dernier ticket terminé
+SYNC-WAVE-010 : absorption finale dans `main` des branches `codex/arbitrage-scm-cession-resolve-001` et `codex/code-scm-cession-block-001`, passage en DONE des tickets SCM cession finaux et réalignement du pilotage vers UI, PDF, ZIP et recette finale.
+
 SYNC-WAVE-009 : absorption dans `main` des commits sources `4288837648d099935d6c57307003f3b33d038d90`, `af1020a165d11e830428394e02a5baca4a110f5c`, `81f7a7e407002428d8fce1ce31d16f3a798bd2e5`, `fa3cb65ffd1055bbf16ba3a5352f4a7d5deb713a` et `bdf61166b0770c5ab8f3610f48d89e5cdcb3f582`, puis réalignement du pilotage.
 
 SYNC-WAVE-008 : absorption dans `main` des branches acte actions, sources SCM cession, reviews Lot 03/Lot 04, audit restant, analyses style Lot 03/statuts et specs blocage cession SCM, puis réalignement du pilotage.
@@ -21,10 +23,11 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
 ## État courant du repo
 - DOC-001, DOC-002 et DOC-003 disposent chacun d'un générateur dédié déjà terminé.
 - L'orchestrateur dossier expose :
-  - un registre des générateurs DOC-001 à DOC-029 ;
+  - un registre des générateurs DOC-001 à DOC-030 ;
   - `select_documents(structure)` selon le catalogue ;
   - `select_documents_for_context(ctx)` avec filtrage des batchs régime communautaire, bail/appel de fonds, cession cabinets, dérogations et statuts ;
   - `generate_documents(ctx, output_dir) -> list[Path]`.
+- Le moteur documentaire V1 est terminé, hors cas explicitement manuels ou legacy.
 - `examples/contexts/lot_01_example.yaml` utilise encore le champ legacy Lot 1 `adresse_domiciliation_affichee`, en attente d'un refactor dédié vers `domiciliation.adresse_affichee`.
 - Un smoke test réel a généré les trois DOCX du Lot 1 dans `artifacts/lot_01_smoke_test/`.
 - Le moteur dispose de trois référentiels de cadrage :
@@ -277,14 +280,15 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
 - `STYLE-ANALYSE-STATUTS-BATCH-001` est DONE.
 - `SPEC-SCM-CESSION-BLOCK-001` est DONE.
 - `SYNC-WAVE-008` est DONE.
-- `CODE-SCM-CESSION-BLOCK-001` est READY.
+- `CODE-SCM-CESSION-BLOCK-001` est DONE.
 - `CODE-SCM-LISTE-DEPENSES-001` est DONE.
 - `SPEC-DEROG-SALARIEE-MANUAL-001` est DONE.
 - `FIX-STYLE-LOT03-BATCH-001` est DONE.
 - `FIX-STYLE-STATUTS-BATCH-001` est DONE.
 - `REVIEW-BATCH-LOT05-001` est DONE.
 - `SYNC-WAVE-009` est DONE.
-- `ARBITRAGE-SCM-CESSION-RESOLVE-001` est READY.
+- `ARBITRAGE-SCM-CESSION-RESOLVE-001` est DONE.
+- `SYNC-WAVE-010` est DONE.
 - `RESUME-ARBITRAGE-STATUTS-CIVILS-001` est DONE, remplacé par l'arbitrage civils V1 absorbé.
 - `STYLE-ANALYSE-BATCH-001` est DONE.
 - `SYNC-STYLE-CIVILS-001` est DONE.
@@ -435,9 +439,13 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
 - Le smoke DOCX dédié a été généré dans `artifacts/fix_pv_render_001_smoke_test_2/pv_nomination_gerant.docx`, hors versionnement.
 
 ## Prochain ticket à lancer
-Tickets actifs/parallélisables :
-- `ARBITRAGE-SCM-CESSION-RESOLVE-001` est READY.
-- `CODE-SCM-CESSION-BLOCK-001` reste READY mais n'est plus la recommandation immédiate.
+Prochains chantiers recommandés :
+- UI ;
+- PDF ;
+- ZIP ;
+- recette finale.
+
+`ARBITRAGE-SCM-CESSION-RESOLVE-001` et `CODE-SCM-CESSION-BLOCK-001` sont DONE et absorbés dans `main` via SYNC-WAVE-010.
 
 `CODE-SCM-LISTE-DEPENSES-001`, `SPEC-DEROG-SALARIEE-MANUAL-001`, `REVIEW-BATCH-LOT05-001`, `FIX-STYLE-STATUTS-BATCH-001` et `FIX-STYLE-LOT03-BATCH-001` sont DONE et absorbés dans `main` via SYNC-WAVE-009.
 `CODE-OPTION-IS-001`, `PREP-SCM-SAT-001`, `ARBITRAGE-STATUTS-SCM-001`, `SPEC-SAS-SATELLITES-001` et `PREP-ACTE-ACTIONS-001` sont DONE et absorbés dans `main`.
@@ -520,6 +528,11 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
 - Toute ambiguïté de wording juridique doit bloquer l'implémentation concernée et être documentée.
 
 ## Validations connues
+- SYNC-WAVE-010 : `git fetch --all --prune` OK.
+- SYNC-WAVE-010 : `codex/arbitrage-scm-cession-resolve-001` confirmé au même commit que `main`, et `codex/code-scm-cession-block-001` confirmé ancêtre de `main`.
+- SYNC-WAVE-010 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m ruff check .` OK.
+- SYNC-WAVE-010 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m pytest` OK, 165 tests passés.
+- SYNC-WAVE-010 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifiés.
 - FIX-PV-RENDER-001 : source DOCX Lot 2 analysée côté structure/rendu ; en-tête société centré, listes Word, intertitres de décision gras/soulignés et formules de vote en italique identifiés.
 - FIX-PV-RENDER-001 : smoke DOCX OK dans `artifacts/fix_pv_render_001_smoke_test_2/pv_nomination_gerant.docx`.
 - FIX-PV-RENDER-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
@@ -660,4 +673,4 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
 - SMOKE-ORCH-L2-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 47 tests passés.
 
 ## Recommandation immédiate suivante
-Lancer `ARBITRAGE-SCM-CESSION-RESOLVE-001`.
+Lancer les chantiers de finition V1 dans cet ordre recommandé : UI, PDF, ZIP, recette finale.

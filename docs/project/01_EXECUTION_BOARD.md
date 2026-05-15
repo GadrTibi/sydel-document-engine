@@ -103,13 +103,14 @@
 | STYLE-ANALYSE-LOT03-BATCH-001 | DONE | Analyser le style du batch Lot 03 avant harmonisation | générateurs Lot 03 intégrés + besoins de rendu | blueprint style Lot 03 |
 | STYLE-ANALYSE-STATUTS-BATCH-001 | DONE | Analyser le style du batch statuts avant harmonisation | générateurs statuts intégrés + besoins de rendu | blueprint style statuts |
 | SPEC-SCM-CESSION-BLOCK-001 | DONE | Spécifier le blocage cession SCM avant code | sources SCM cession disponibles + arbitrages SCM | spec canonique + spec texte de blocage |
-| CODE-SCM-CESSION-BLOCK-001 | READY | Implémenter le blocage cession SCM | specs SCM cession block V1 | blocage explicite + tests ciblés |
+| CODE-SCM-CESSION-BLOCK-001 | DONE | Implémenter le blocage cession SCM | specs SCM cession block V1 | blocage explicite + tests ciblés |
 | CODE-SCM-LISTE-DEPENSES-001 | DONE | Implémenter la liste des dépenses communes SCM | source DOCX convertie + specs satellites SCM V1 | générateur DOCX + tests ciblés |
 | SPEC-DEROG-SALARIEE-MANUAL-001 | DONE | Spécifier le traitement manuel de la dérogation salariée legacy | blocage conversion dérogation salariée V1 | spec manuelle ou décision de blocage documentée |
 | FIX-STYLE-LOT03-BATCH-001 | DONE | Corriger les écarts de style prioritaires du batch Lot 03 | blueprint style Lot 03 | rendu Lot 03 harmonisé + tests ciblés |
 | FIX-STYLE-STATUTS-BATCH-001 | DONE | Corriger les écarts de style prioritaires du batch statuts | blueprint style statuts | rendu statuts harmonisé + tests ciblés |
 | REVIEW-BATCH-LOT05-001 | DONE | Revoir le batch Lot 05 généré | générateurs Lot 05 + smoke DOCX disponibles | revue humaine juridique/visuelle documentée |
-| ARBITRAGE-SCM-CESSION-RESOLVE-001 | READY | Arbitrer la résolution de la cession SCM | specs de blocage cession SCM + sources préparées + vague style/revue absorbée | décision de résolution avant code |
+| ARBITRAGE-SCM-CESSION-RESOLVE-001 | DONE | Arbitrer la résolution de la cession SCM | specs de blocage cession SCM + sources préparées + vague style/revue absorbée | décision de résolution avant code |
+| SYNC-WAVE-010 | DONE | Synchroniser la vague finale moteur SCM cession dans main | branches arbitrage/code SCM cession | commits intégrés + pilotage final moteur aligné |
 | UI-001 | BLOCKED | Brancher Streamlit V0 Lot 1 | orchestrateur Lot 1 + spec canonique PV nomination gérant validée | écran simple + test manuel |
 
 ## Référentiels moteur disponibles
@@ -651,7 +652,7 @@
 - Objectif : implémenter le blocage explicite de la cession SCM.
 - Specs à lire : `docs/delivery/lot_05_scm_cession_block_spec_canonique_v1.md` et `docs/delivery/lot_05_scm_cession_block_spec_texte_v1.md`.
 - Contraintes : ne pas générer de document cession SCM tant que le blocage V1 s'applique ; tests ciblés obligatoires.
-- Statut : READY.
+- Statut : DONE ; blocage explicite cession SCM absorbé dans `main`.
 
 ### REVIEW-BATCH-LOT03-001
 - Objectif : documenter la revue juridique/visuelle du batch Lot 03.
@@ -711,7 +712,7 @@
 - Objectif : arbitrer la résolution de la cession SCM après blocage V1 et vague style/revue.
 - Specs à lire : specs cession SCM, sources préparées et revues Lot 05.
 - Contraintes : décision métier avant tout code documentaire de cession SCM.
-- Statut : READY.
+- Statut : DONE ; arbitrage absorbé dans `main`.
 
 ### UI-001
 - Objectif : exposer une Streamlit simple pour générer le Lot 1.
@@ -728,8 +729,11 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - mettre à jour `docs/project/04_LAST_STATE.md`
 
 ## Prochaine étape prévue
-- prochaine action recommandée : lancer `ARBITRAGE-SCM-CESSION-RESOLVE-001`.
-- prochain ticket READY confirmé : `ARBITRAGE-SCM-CESSION-RESOLVE-001`.
+- moteur documentaire V1 terminé, hors cas explicitement manuels ou legacy.
+- prochains chantiers recommandés : UI, PDF, ZIP, recette finale.
+- tickets absorbés par SYNC-WAVE-010 : `ARBITRAGE-SCM-CESSION-RESOLVE-001` et `CODE-SCM-CESSION-BLOCK-001`.
+- `ARBITRAGE-SCM-CESSION-RESOLVE-001` est DONE.
+- `CODE-SCM-CESSION-BLOCK-001` est DONE.
 - tickets absorbés par SYNC-WAVE-009 : `CODE-SCM-LISTE-DEPENSES-001`, `SPEC-DEROG-SALARIEE-MANUAL-001`, `REVIEW-BATCH-LOT05-001`, `FIX-STYLE-STATUTS-BATCH-001` et `FIX-STYLE-LOT03-BATCH-001`.
 - tickets absorbés par SYNC-WAVE-008 : `CODE-ACTE-ACTIONS-001`, `PREP-SCM-CESSION-SOURCES-001`, `REVIEW-BATCH-LOT03-001`, `REVIEW-BATCH-LOT04-001`, `AUDIT-REMAINING-SCOPE-001`, `STYLE-ANALYSE-LOT03-BATCH-001`, `STYLE-ANALYSE-STATUTS-BATCH-001` et `SPEC-SCM-CESSION-BLOCK-001`.
 - tickets absorbés par SYNC-WAVE-007 : `CODE-STATUTS-SCM-001`, `PREP-SCM-LISTE-DEPENSES-CONVERT-001`, `CODE-SCM-SAT-DOCX-001` et `SPEC-ACTE-ACTIONS-001`.
