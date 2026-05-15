@@ -62,6 +62,7 @@ class Company(BaseModel):
     duree: str | None = None
     siege: Address | None = None
     ville_rcs: str | None = None
+    siren: str | None = None
     inscription_ordre: CompanyInscriptionOrdre | None = None
 
 
@@ -84,6 +85,16 @@ class DossierOptions(BaseModel):
     cession: bool = False
     apport: bool = False
     associe_unique: bool = False
+    option_is: bool = False
+
+
+class CentreImpots(BaseModel):
+    service: str | None = None
+    centre: str | None = None
+    adresse_ligne_1: str | None = None
+    adresse_ligne_2: str | None = None
+    cp: str | None = None
+    ville: str | None = None
 
 
 class DerogationRole(BaseModel):
@@ -783,6 +794,7 @@ class DocumentGenerationContext(BaseModel):
     societe: Company | None = None
     domiciliation: Domiciliation | None = None
     ordre: OrdreProfessionnel | None = None
+    impots: CentreImpots | None = None
     mandataire: Mandataire | None = None
     associes: list[Associe] = Field(default_factory=list)
     dirigeant_nomine: DirigeantNomine | None = None

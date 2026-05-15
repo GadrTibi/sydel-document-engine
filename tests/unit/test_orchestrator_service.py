@@ -143,6 +143,7 @@ def test_select_documents_for_sci_includes_pv_nomination_gerant() -> None:
         "DOC-003",
         "DOC-004",
         "DOC-020",
+        "DOC-022",
     ]
 
 
@@ -169,7 +170,21 @@ def test_select_documents_for_sci_iris_includes_dedicated_statuts() -> None:
         "DOC-002",
         "DOC-003",
         "DOC-021",
+        "DOC-022",
     ]
+
+
+def test_select_documents_for_sci_context_includes_option_is_only_when_enabled() -> None:
+    orchestrator = DocumentOrchestrator(build_seed_catalog())
+    ctx = _context("SCI")
+
+    selected_without_option = orchestrator.select_documents_for_context(ctx)
+    assert "DOC-022" not in [document.doc_id for document in selected_without_option]
+
+    ctx.dossier_options = DossierOptions(option_is=True)
+    selected_with_option = orchestrator.select_documents_for_context(ctx)
+
+    assert "DOC-022" in [document.doc_id for document in selected_with_option]
 
 
 def test_generate_documents_creates_docx_for_selected_documents(tmp_path: Path) -> None:

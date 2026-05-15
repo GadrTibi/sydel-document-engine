@@ -57,6 +57,7 @@ from sydel_doc_engine.generators.lot_04.statuts_selarl_medecin import (
 from sydel_doc_engine.generators.lot_04.statuts_selas_medecin import (
     StatutsSelasMedecinGenerator,
 )
+from sydel_doc_engine.generators.lot_05.lettre_option_is import LettreOptionIsGenerator
 
 REGIME_COMMUNAUTAIRE_DOCUMENT_IDS = {"DOC-005", "DOC-006"}
 BAIL_AVENANT_DOCUMENT_ID = "DOC-007"
@@ -82,6 +83,7 @@ STATUTS_CIVILS_DOCUMENT_TYPES = {
     "DOC-020": "sci",
     "DOC-021": "sci_iris",
 }
+OPTION_IS_DOCUMENT_ID = "DOC-022"
 
 
 class MissingDocumentGeneratorError(RuntimeError):
@@ -111,6 +113,7 @@ def build_lot_01_generator_registry() -> dict[str, DocumentGenerator]:
         "DOC-019": StatutsScsGenerator(),
         "DOC-020": StatutsSciGenerator(),
         "DOC-021": StatutsSciIrisGenerator(),
+        "DOC-022": LettreOptionIsGenerator(),
     }
 
 
@@ -180,6 +183,8 @@ def _document_enabled_for_context(
             return _statuts_sel_enabled(ctx, STATUTS_SEL_DOCUMENTS[document.doc_id])
         if document.doc_id in STATUTS_CIVILS_DOCUMENT_TYPES:
             return _statuts_civils_enabled(ctx, STATUTS_CIVILS_DOCUMENT_TYPES[document.doc_id])
+        if document.doc_id == OPTION_IS_DOCUMENT_ID:
+            return _option_is_enabled(ctx)
         return True
     return bool(ctx.dossier_options and ctx.dossier_options.regime_communautaire)
 
@@ -233,3 +238,7 @@ def _statuts_civils_enabled(ctx: DocumentGenerationContext, statuts_type: str) -
     if ctx.statuts_civils is None or ctx.statuts_civils.type is None:
         return False
     return ctx.statuts_civils.type.strip().lower() == statuts_type
+
+
+def _option_is_enabled(ctx: DocumentGenerationContext) -> bool:
+    return bool(ctx.dossier_options and ctx.dossier_options.option_is)
