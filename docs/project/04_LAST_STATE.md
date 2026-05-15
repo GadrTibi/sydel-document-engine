@@ -4,6 +4,8 @@
 2026-05-15
 
 ## Dernier ticket terminé
+SYNC-WAVE-009 : absorption dans `main` des commits sources `4288837648d099935d6c57307003f3b33d038d90`, `af1020a165d11e830428394e02a5baca4a110f5c`, `81f7a7e407002428d8fce1ce31d16f3a798bd2e5`, `fa3cb65ffd1055bbf16ba3a5352f4a7d5deb713a` et `bdf61166b0770c5ab8f3610f48d89e5cdcb3f582`, puis réalignement du pilotage.
+
 SYNC-WAVE-008 : absorption dans `main` des branches acte actions, sources SCM cession, reviews Lot 03/Lot 04, audit restant, analyses style Lot 03/statuts et specs blocage cession SCM, puis réalignement du pilotage.
 
 SYNC-WAVE-007 : absorption dans `main` des branches SCM et acte actions, passage en DONE des tickets absorbés et réalignement du pilotage.
@@ -276,11 +278,13 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
 - `SPEC-SCM-CESSION-BLOCK-001` est DONE.
 - `SYNC-WAVE-008` est DONE.
 - `CODE-SCM-CESSION-BLOCK-001` est READY.
-- `CODE-SCM-LISTE-DEPENSES-001` est READY.
-- `SPEC-DEROG-SALARIEE-MANUAL-001` est READY.
-- `FIX-STYLE-LOT03-BATCH-001` est READY.
-- `FIX-STYLE-STATUTS-BATCH-001` est READY.
-- `REVIEW-BATCH-LOT05-001` est READY.
+- `CODE-SCM-LISTE-DEPENSES-001` est DONE.
+- `SPEC-DEROG-SALARIEE-MANUAL-001` est DONE.
+- `FIX-STYLE-LOT03-BATCH-001` est DONE.
+- `FIX-STYLE-STATUTS-BATCH-001` est DONE.
+- `REVIEW-BATCH-LOT05-001` est DONE.
+- `SYNC-WAVE-009` est DONE.
+- `ARBITRAGE-SCM-CESSION-RESOLVE-001` est READY.
 - `RESUME-ARBITRAGE-STATUTS-CIVILS-001` est DONE, remplacé par l'arbitrage civils V1 absorbé.
 - `STYLE-ANALYSE-BATCH-001` est DONE.
 - `SYNC-STYLE-CIVILS-001` est DONE.
@@ -432,13 +436,10 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
 
 ## Prochain ticket à lancer
 Tickets actifs/parallélisables :
-- `CODE-SCM-CESSION-BLOCK-001` est READY.
-- `CODE-SCM-LISTE-DEPENSES-001` est READY.
-- `SPEC-DEROG-SALARIEE-MANUAL-001` est READY.
-- `FIX-STYLE-LOT03-BATCH-001` est READY.
-- `FIX-STYLE-STATUTS-BATCH-001` est READY.
-- `REVIEW-BATCH-LOT05-001` est READY.
+- `ARBITRAGE-SCM-CESSION-RESOLVE-001` est READY.
+- `CODE-SCM-CESSION-BLOCK-001` reste READY mais n'est plus la recommandation immédiate.
 
+`CODE-SCM-LISTE-DEPENSES-001`, `SPEC-DEROG-SALARIEE-MANUAL-001`, `REVIEW-BATCH-LOT05-001`, `FIX-STYLE-STATUTS-BATCH-001` et `FIX-STYLE-LOT03-BATCH-001` sont DONE et absorbés dans `main` via SYNC-WAVE-009.
 `CODE-OPTION-IS-001`, `PREP-SCM-SAT-001`, `ARBITRAGE-STATUTS-SCM-001`, `SPEC-SAS-SATELLITES-001` et `PREP-ACTE-ACTIONS-001` sont DONE et absorbés dans `main`.
 `RESUME-FIX-STYLE-LETTERS-001`, `CODE-STATUTS-CIVILS-CORE-001`, `CODE-SAS-SATELLITES-001`, `CONVERT-DEROG-SALARIEE-001`, `CONVERT-ACTE-ACTIONS-001` et `SPEC-SCM-SATELLITES-001` sont DONE et absorbés dans `main` via SYNC-WAVE-006.
 `CODE-STATUTS-SCM-001`, `PREP-SCM-LISTE-DEPENSES-CONVERT-001`, `CODE-SCM-SAT-DOCX-001` et `SPEC-ACTE-ACTIONS-001` sont DONE et absorbés dans `main` via SYNC-WAVE-007.
@@ -659,4 +660,4 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
 - SMOKE-ORCH-L2-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 47 tests passés.
 
 ## Recommandation immédiate suivante
-Lancer `CODE-SCM-CESSION-BLOCK-001`.
+Lancer `ARBITRAGE-SCM-CESSION-RESOLVE-001`.

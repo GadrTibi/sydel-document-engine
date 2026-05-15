@@ -104,11 +104,12 @@
 | STYLE-ANALYSE-STATUTS-BATCH-001 | DONE | Analyser le style du batch statuts avant harmonisation | générateurs statuts intégrés + besoins de rendu | blueprint style statuts |
 | SPEC-SCM-CESSION-BLOCK-001 | DONE | Spécifier le blocage cession SCM avant code | sources SCM cession disponibles + arbitrages SCM | spec canonique + spec texte de blocage |
 | CODE-SCM-CESSION-BLOCK-001 | READY | Implémenter le blocage cession SCM | specs SCM cession block V1 | blocage explicite + tests ciblés |
-| CODE-SCM-LISTE-DEPENSES-001 | READY | Implémenter la liste des dépenses communes SCM | source DOCX convertie + specs satellites SCM V1 | générateur DOCX + tests ciblés |
-| SPEC-DEROG-SALARIEE-MANUAL-001 | READY | Spécifier le traitement manuel de la dérogation salariée legacy | blocage conversion dérogation salariée V1 | spec manuelle ou décision de blocage documentée |
-| FIX-STYLE-LOT03-BATCH-001 | READY | Corriger les écarts de style prioritaires du batch Lot 03 | blueprint style Lot 03 | rendu Lot 03 harmonisé + tests ciblés |
-| FIX-STYLE-STATUTS-BATCH-001 | READY | Corriger les écarts de style prioritaires du batch statuts | blueprint style statuts | rendu statuts harmonisé + tests ciblés |
-| REVIEW-BATCH-LOT05-001 | READY | Revoir le batch Lot 05 généré | générateurs Lot 05 + smoke DOCX disponibles | revue humaine juridique/visuelle documentée |
+| CODE-SCM-LISTE-DEPENSES-001 | DONE | Implémenter la liste des dépenses communes SCM | source DOCX convertie + specs satellites SCM V1 | générateur DOCX + tests ciblés |
+| SPEC-DEROG-SALARIEE-MANUAL-001 | DONE | Spécifier le traitement manuel de la dérogation salariée legacy | blocage conversion dérogation salariée V1 | spec manuelle ou décision de blocage documentée |
+| FIX-STYLE-LOT03-BATCH-001 | DONE | Corriger les écarts de style prioritaires du batch Lot 03 | blueprint style Lot 03 | rendu Lot 03 harmonisé + tests ciblés |
+| FIX-STYLE-STATUTS-BATCH-001 | DONE | Corriger les écarts de style prioritaires du batch statuts | blueprint style statuts | rendu statuts harmonisé + tests ciblés |
+| REVIEW-BATCH-LOT05-001 | DONE | Revoir le batch Lot 05 généré | générateurs Lot 05 + smoke DOCX disponibles | revue humaine juridique/visuelle documentée |
+| ARBITRAGE-SCM-CESSION-RESOLVE-001 | READY | Arbitrer la résolution de la cession SCM | specs de blocage cession SCM + sources préparées + vague style/revue absorbée | décision de résolution avant code |
 | UI-001 | BLOCKED | Brancher Streamlit V0 Lot 1 | orchestrateur Lot 1 + spec canonique PV nomination gérant validée | écran simple + test manuel |
 
 ## Référentiels moteur disponibles
@@ -614,7 +615,7 @@
 - Objectif : spécifier le traitement manuel ou le blocage V1 de la dérogation salariée legacy.
 - Specs à lire : préparation dérogations V1 et blocage conversion salariée V1.
 - Contraintes : ne pas automatiser sans source DOCX exploitable.
-- Statut : READY.
+- Statut : DONE ; stratégie V1 documentée dans `docs/delivery/lot_03_derogation_salariee_v1_strategy.md`.
 
 ### PREP-SCM-LISTE-DEPENSES-CONVERT-001
 - Objectif : préparer une source exploitable pour la liste de dépenses SCM.
@@ -632,7 +633,7 @@
 - Objectif : implémenter la liste des dépenses communes SCM.
 - Specs à lire : specs satellites SCM V1 et préparation conversion liste dépenses.
 - Contraintes : limiter le ticket à la liste dépenses communes SCM, avec tests ciblés.
-- Statut : READY.
+- Statut : DONE ; générateur liste dépenses communes SCM intégré et testé.
 
 ### CODE-ACTE-ACTIONS-001
 - Objectif : implémenter l'acte de cession d'actions SPFPL.
@@ -692,18 +693,24 @@
 - Objectif : corriger les écarts de style prioritaires du batch Lot 03.
 - Specs à lire : `docs/delivery/render_style_blueprint_lot03_batch_v1.md`.
 - Contraintes : limiter les changements au rendu DOCX, sans dérive de wording juridique.
-- Statut : READY.
+- Statut : DONE ; rendu Lot 03 harmonisé avec tests ciblés.
 
 ### FIX-STYLE-STATUTS-BATCH-001
 - Objectif : corriger les écarts de style prioritaires du batch statuts.
 - Specs à lire : `docs/delivery/render_style_blueprint_statuts_batch_v1.md`.
 - Contraintes : limiter les changements au rendu DOCX, sans dérive de wording juridique.
-- Statut : READY.
+- Statut : DONE ; rendu statuts harmonisé avec tests ciblés.
 
 ### REVIEW-BATCH-LOT05-001
 - Objectif : documenter la revue juridique/visuelle du batch Lot 05.
 - Specs à lire : specs Lot 05, générateurs intégrés et smoke DOCX disponibles.
 - Contraintes : revue uniquement, sans modification de wording juridique.
+- Statut : DONE ; revue disponible dans `docs/review/lot_05_batch_review_v1.md`.
+
+### ARBITRAGE-SCM-CESSION-RESOLVE-001
+- Objectif : arbitrer la résolution de la cession SCM après blocage V1 et vague style/revue.
+- Specs à lire : specs cession SCM, sources préparées et revues Lot 05.
+- Contraintes : décision métier avant tout code documentaire de cession SCM.
 - Statut : READY.
 
 ### UI-001
@@ -721,11 +728,16 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - mettre à jour `docs/project/04_LAST_STATE.md`
 
 ## Prochaine étape prévue
-- prochaine action recommandée : lancer `CODE-SCM-CESSION-BLOCK-001`.
-- tickets READY confirmés : `CODE-SCM-CESSION-BLOCK-001`, `CODE-SCM-LISTE-DEPENSES-001`, `SPEC-DEROG-SALARIEE-MANUAL-001`, `FIX-STYLE-LOT03-BATCH-001`, `FIX-STYLE-STATUTS-BATCH-001` et `REVIEW-BATCH-LOT05-001`.
+- prochaine action recommandée : lancer `ARBITRAGE-SCM-CESSION-RESOLVE-001`.
+- prochain ticket READY confirmé : `ARBITRAGE-SCM-CESSION-RESOLVE-001`.
+- tickets absorbés par SYNC-WAVE-009 : `CODE-SCM-LISTE-DEPENSES-001`, `SPEC-DEROG-SALARIEE-MANUAL-001`, `REVIEW-BATCH-LOT05-001`, `FIX-STYLE-STATUTS-BATCH-001` et `FIX-STYLE-LOT03-BATCH-001`.
 - tickets absorbés par SYNC-WAVE-008 : `CODE-ACTE-ACTIONS-001`, `PREP-SCM-CESSION-SOURCES-001`, `REVIEW-BATCH-LOT03-001`, `REVIEW-BATCH-LOT04-001`, `AUDIT-REMAINING-SCOPE-001`, `STYLE-ANALYSE-LOT03-BATCH-001`, `STYLE-ANALYSE-STATUTS-BATCH-001` et `SPEC-SCM-CESSION-BLOCK-001`.
 - tickets absorbés par SYNC-WAVE-007 : `CODE-STATUTS-SCM-001`, `PREP-SCM-LISTE-DEPENSES-CONVERT-001`, `CODE-SCM-SAT-DOCX-001` et `SPEC-ACTE-ACTIONS-001`.
 - tickets absorbés par SYNC-WAVE-006 : `RESUME-FIX-STYLE-LETTERS-001`, `CODE-STATUTS-CIVILS-CORE-001`, `CODE-SAS-SATELLITES-001`, `CONVERT-DEROG-SALARIEE-001`, `CONVERT-ACTE-ACTIONS-001` et `SPEC-SCM-SATELLITES-001`.
+- `CODE-SCM-LISTE-DEPENSES-001` est DONE ; `DOC-030` liste des dépenses communes SCM est branché au catalogue/orchestrateur.
+- `SPEC-DEROG-SALARIEE-MANUAL-001` est DONE ; la stratégie V1 reste manuelle/faute de source DOCX exploitable.
+- `REVIEW-BATCH-LOT05-001` est DONE ; la revue Lot 05 est documentée.
+- `FIX-STYLE-STATUTS-BATCH-001` et `FIX-STYLE-LOT03-BATCH-001` sont DONE ; les corrections portent sur le rendu DOCX sans dérive volontaire de wording juridique.
 - `CODE-ACTE-ACTIONS-001` est DONE ; l'acte de cession d'actions SPFPL est intégré au catalogue/orchestrateur.
 - `PREP-SCM-CESSION-SOURCES-001` est DONE ; les sources cession SCM exploitables sont placées dans `project/source_documents/lot_05/`.
 - `SPEC-SCM-CESSION-BLOCK-001` est DONE ; les specs de blocage cession SCM V1 sont disponibles dans `docs/delivery/`.
