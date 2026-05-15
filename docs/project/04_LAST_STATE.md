@@ -4,7 +4,7 @@
 2026-05-15
 
 ## Dernier ticket terminé
-SYNC-WAVE-004 : absorption dans `main` des commits sources `557fc1920361a8c7831e6b023d70471c9c29e5ff` et `291da7b6db68b3de413fba50cf652dde98a8f6a8`, puis réalignement du pilotage.
+SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc98450b72ba6e602cb8f1a3b`, `1b3ba14d0bcc31fc7dcbf1752d6d3263645ae8b3`, `32059155c618b4e985893f42ef2817187599c281`, `74d41db53543b790e197082e8b9c713f7de92dc2` et `d1d649e11fdc638e6d7da0640c154d1f213739ee`, puis réalignement du pilotage.
 
 ## État courant du repo
 - DOC-001, DOC-002 et DOC-003 disposent chacun d'un générateur dédié déjà terminé.
@@ -161,6 +161,16 @@ SYNC-WAVE-004 : absorption dans `main` des commits sources `557fc1920361a8c7831e
   - `src/sydel_doc_engine/generators/lot_04/statuts_sel_exercice_templates.py`.
 - Les arbitrages V1 des statuts SEL d'exercice sont disponibles dans `docs/delivery/lot_04_statuts_sel_exercice_arbitrages_v1.md`.
 - Les arbitrages V1 des statuts civils sont disponibles dans `docs/delivery/lot_04_statuts_civils_arbitrages_v1.md`.
+- Les arbitrages V1 des statuts SCM sont disponibles dans `docs/delivery/lot_04_statuts_scm_arbitrages_v1.md`.
+- La préparation V1 des satellites SCM est disponible dans `docs/delivery/lot_05_scm_satellites_preparation_v1.md`.
+- Les specs V1 des satellites SAS sont disponibles :
+  - `docs/delivery/lot_05_sas_satellites_spec_canonique_v1.md` ;
+  - `docs/delivery/lot_05_sas_satellites_spec_texte_v1.md`.
+- La lettre option IS est codée et testée :
+  - `src/sydel_doc_engine/generators/lot_05/lettre_option_is.py` ;
+  - `tests/unit/test_lettre_option_is.py` ;
+  - `examples/contexts/lot_05_lettre_option_is_example.yaml`.
+- L'audit V1 de l'acte de cession d'actions est disponible dans `docs/delivery/lot_05_acte_cession_actions_audit_v1.md`.
 - `ARBITRAGE-SOURCES-001` est DONE.
 - `PLACEMENT-HIGH-001` est DONE.
 - `ANALYSE-ORDRE-001` est DONE.
@@ -204,11 +214,17 @@ SYNC-WAVE-004 : absorption dans `main` des commits sources `557fc1920361a8c7831e
 - `CODE-STATUTS-CIVILS-CORE-001` est DONE pour SCS, SCI et SCI IRIS ; SCM reste hors ticket.
 - `FIX-STYLE-LETTERS-001` est DONE.
 - `RESUME-FIX-STYLE-LETTERS-001` est DONE.
-- `ARBITRAGE-STATUTS-SCM-001` est READY.
-- `PREP-SCM-SAT-001` est READY.
-- `SPEC-SAS-SATELLITES-001` est READY.
-- `CODE-OPTION-IS-001` est READY.
-- `PREP-ACTE-ACTIONS-001` est READY.
+- `ARBITRAGE-STATUTS-SCM-001` est DONE.
+- `PREP-SCM-SAT-001` est DONE.
+- `SPEC-SAS-SATELLITES-001` est DONE.
+- `CODE-OPTION-IS-001` est DONE.
+- `PREP-ACTE-ACTIONS-001` est DONE.
+- `SYNC-WAVE-005` est DONE.
+- `CODE-STATUTS-SCM-001` est READY.
+- `CODE-SAS-SATELLITES-001` est READY.
+- `SPEC-SCM-SATELLITES-001` est READY.
+- `CONVERT-ACTE-ACTIONS-001` est READY.
+- `CONVERT-DEROG-SALARIEE-001` est READY.
 - `RESUME-ARBITRAGE-STATUTS-CIVILS-001` est DONE, remplacé par l'arbitrage civils V1 absorbé.
 - `STYLE-ANALYSE-BATCH-001` est DONE.
 - `SYNC-STYLE-CIVILS-001` est DONE.
@@ -360,12 +376,13 @@ SYNC-WAVE-004 : absorption dans `main` des commits sources `557fc1920361a8c7831e
 
 ## Prochain ticket à lancer
 Tickets actifs/parallélisables :
-- `ARBITRAGE-STATUTS-SCM-001` est READY.
-- `PREP-SCM-SAT-001` est READY.
-- `SPEC-SAS-SATELLITES-001` est READY.
-- `CODE-OPTION-IS-001` est READY.
-- `PREP-ACTE-ACTIONS-001` est READY.
+- `CODE-STATUTS-SCM-001` est READY.
+- `CODE-SAS-SATELLITES-001` est READY.
+- `SPEC-SCM-SATELLITES-001` est READY.
+- `CONVERT-ACTE-ACTIONS-001` est READY.
+- `CONVERT-DEROG-SALARIEE-001` est READY.
 
+`CODE-OPTION-IS-001`, `PREP-SCM-SAT-001`, `ARBITRAGE-STATUTS-SCM-001`, `SPEC-SAS-SATELLITES-001` et `PREP-ACTE-ACTIONS-001` sont DONE et absorbés dans `main`.
 `CODE-BAIL-APP-001` est DONE dans `main`.
 `PREP-DEROG-001` et `CODE-SPFPL-AGR-INFO-001` sont DONE dans `main`.
 `CODE-CESSION-CAB-001` et `CODE-DEROG-CORE-001` sont DONE et absorbés dans `main`.
@@ -522,6 +539,11 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
 - SYNC-WAVE-004 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m ruff check .` OK.
 - SYNC-WAVE-004 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m pytest` OK, 130 tests passés.
 - SYNC-WAVE-004 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifiés.
+- SYNC-WAVE-005 : `git fetch --all --prune` OK.
+- SYNC-WAVE-005 : commits sources `91436f0916fdecbcc98450b72ba6e602cb8f1a3b`, `1b3ba14d0bcc31fc7dcbf1752d6d3263645ae8b3`, `32059155c618b4e985893f42ef2817187599c281`, `74d41db53543b790e197082e8b9c713f7de92dc2` et `d1d649e11fdc638e6d7da0640c154d1f213739ee` cherry-pickés dans `main` sans conflit.
+- SYNC-WAVE-005 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m ruff check .` OK.
+- SYNC-WAVE-005 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m pytest` OK, 135 tests passés.
+- SYNC-WAVE-005 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifiés.
 - SPEC-TEXTE-ORDRE-001 : source de vérité, source Lot 2 et variantes raw dump SELARL / SELAS / SPFPL cession / SPFPL apport lues en lecture seule.
 - SPEC-TEXTE-ORDRE-001 : spec texte créée dans `docs/delivery/lot_02_demande_inscription_ordre_spec_texte_v1.md`.
 - SPEC-TEXTE-ORDRE-001 : aucun code Python modifié ; validations limitées à la relecture documentaire et au contrôle du diff.
@@ -556,4 +578,4 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
 - SMOKE-ORCH-L2-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 47 tests passés.
 
 ## Recommandation immédiate suivante
-Lancer `ARBITRAGE-STATUTS-SCM-001`.
+Lancer `CODE-STATUTS-SCM-001`.

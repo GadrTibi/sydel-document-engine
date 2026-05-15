@@ -74,15 +74,21 @@
 | CODE-STATUTS-CIVILS-CORE-001 | DONE | Implémenter le cœur des statuts civils | specs statuts civils V1 + arbitrages civils V1 | générateurs SCS/SCI/SCI IRIS + tests ciblés + MAJ doc |
 | FIX-STYLE-LETTERS-001 | DONE | Corriger les écarts de style prioritaires des lettres | blueprint style batch V1 + générateurs existants | rendu lettres harmonisé + tests/smoke ciblés |
 | RESUME-FIX-STYLE-LETTERS-001 | DONE | Reprendre proprement les corrections de style lettres | blueprint style batch V1 + état main synchronisé | reprise cadrée de FIX-STYLE-LETTERS-001 absorbée |
-| ARBITRAGE-STATUTS-SCM-001 | READY | Arbitrer les points bloquants statuts SCM avant code | specs statuts civils V1 + anomalies SCM documentées | décisions SCM avant spec/code |
-| PREP-SCM-SAT-001 | READY | Préparer le périmètre SCM et satellites | arbitrage SCM + sources disponibles | cadrage sources et périmètre exploitable |
-| SPEC-SAS-SATELLITES-001 | READY | Spécifier les satellites SAS | specs statuts SAS V1 + sources satellites | spec canonique + spec texte avant code |
-| CODE-OPTION-IS-001 | READY | Implémenter la lettre option IS | specs/arbitrages applicables + source reçue | générateur DOCX + tests ciblés |
-| PREP-ACTE-ACTIONS-001 | READY | Préparer les sources acte de cession d'actions | arbitrages SPFPL + sources disponibles | source confirmée ou blocage documenté |
+| ARBITRAGE-STATUTS-SCM-001 | DONE | Arbitrer les points bloquants statuts SCM avant code | specs statuts civils V1 + anomalies SCM documentées | décisions SCM avant spec/code |
+| PREP-SCM-SAT-001 | DONE | Préparer le périmètre SCM et satellites | arbitrage SCM + sources disponibles | cadrage sources et périmètre exploitable |
+| SPEC-SAS-SATELLITES-001 | DONE | Spécifier les satellites SAS | specs statuts SAS V1 + sources satellites | spec canonique + spec texte avant code |
+| CODE-OPTION-IS-001 | DONE | Implémenter la lettre option IS | specs/arbitrages applicables + source reçue | générateur DOCX + tests ciblés |
+| PREP-ACTE-ACTIONS-001 | DONE | Préparer les sources acte de cession d'actions | arbitrages SPFPL + sources disponibles | source confirmée ou blocage documenté |
 | RESUME-ARBITRAGE-STATUTS-CIVILS-001 | DONE | Reprendre proprement l'arbitrage des statuts civils | specs statuts civils V1 + état main synchronisé | remplacé par l'arbitrage civils V1 absorbé |
 | STYLE-ANALYSE-BATCH-001 | DONE | Analyser le style documentaire en batch avant harmonisation | générateurs/statuts disponibles + besoins de rendu | cadrage style batch + points d'arbitrage |
 | SYNC-STYLE-CIVILS-001 | DONE | Synchroniser style batch et arbitrage civils dans main | branches style/arbitrage civils | commits intégrés + pilotage réaligné |
 | SYNC-STATUTS-SEL-CIVILS-001 | DONE | Synchroniser code statuts SEL et arbitrage civils dans main | branches code SEL/arbitrage civils | commits intégrés + pilotage réaligné |
+| SYNC-WAVE-005 | DONE | Synchroniser SCM, satellites SAS, option IS et préparation legacy dans main | branches CODE-OPTION-IS/PREP-SCM-SAT/ARBITRAGE-STATUTS-SCM/SPEC-SAS-SATELLITES/PREP-ACTE-ACTIONS | commits intégrés + pilotage réaligné |
+| CODE-STATUTS-SCM-001 | READY | Implémenter les statuts SCM | specs statuts civils V1 + arbitrages SCM V1 | générateur DOCX + tests ciblés |
+| CODE-SAS-SATELLITES-001 | READY | Implémenter les satellites SAS | specs satellites SAS V1 + sources confirmées | générateurs DOCX + tests ciblés |
+| SPEC-SCM-SATELLITES-001 | READY | Spécifier les satellites SCM | préparation SCM satellites V1 + sources confirmées | spec canonique + spec texte avant code |
+| CONVERT-ACTE-ACTIONS-001 | READY | Convertir ou remplacer la source acte de cession d'actions | audit source acte actions V1 | DOCX exploitable ou blocage documenté |
+| CONVERT-DEROG-SALARIEE-001 | READY | Convertir ou remplacer la source dérogation salariée legacy | préparation dérogations V1 + source legacy `.doc` | DOCX exploitable ou blocage documenté |
 | UI-001 | BLOCKED | Brancher Streamlit V0 Lot 1 | orchestrateur Lot 1 + spec canonique PV nomination gérant validée | écran simple + test manuel |
 
 ## Référentiels moteur disponibles
@@ -115,6 +121,11 @@
 - Les specs V1 des statuts SPFPL sont disponibles : `docs/delivery/lot_04_statuts_spfpl_spec_canonique_v1.md` et `docs/delivery/lot_04_statuts_spfpl_spec_texte_v1.md`.
 - Les specs V1 des statuts civils sont disponibles : `docs/delivery/lot_04_statuts_civils_spec_canonique_v1.md` et `docs/delivery/lot_04_statuts_civils_spec_texte_v1.md`.
 - Les specs V1 des statuts SAS sont disponibles : `docs/delivery/lot_04_statuts_sas_spec_canonique_v1.md` et `docs/delivery/lot_04_statuts_sas_spec_texte_v1.md`.
+- Les arbitrages V1 des statuts SCM sont disponibles : `docs/delivery/lot_04_statuts_scm_arbitrages_v1.md`.
+- La préparation V1 des satellites SCM est disponible : `docs/delivery/lot_05_scm_satellites_preparation_v1.md`.
+- Les specs V1 des satellites SAS sont disponibles : `docs/delivery/lot_05_sas_satellites_spec_canonique_v1.md` et `docs/delivery/lot_05_sas_satellites_spec_texte_v1.md`.
+- La spec V1 de la lettre option IS est disponible : `docs/delivery/lot_05_lettre_option_is_spec_v1.md`.
+- L'audit V1 de l'acte de cession d'actions est disponible : `docs/delivery/lot_05_acte_cession_actions_audit_v1.md`.
 - Le manifest d'import sources V1 est disponible : `docs/project/10_SOURCE_IMPORT_MANIFEST_V1.md`.
 - Le rapport de doublons sources V1 est disponible : `docs/project/11_SOURCE_DUPLICATES_REPORT_V1.md`.
 - Le plan de placement sources V1 est disponible : `docs/project/12_SOURCE_PLACEMENT_PLAN_V1.md`.
@@ -510,30 +521,60 @@
 - Objectif : arbitrer les points bloquants statuts SCM avant toute implémentation.
 - Specs à lire : `docs/delivery/lot_04_statuts_civils_spec_canonique_v1.md`, `docs/delivery/lot_04_statuts_civils_spec_texte_v1.md` et `docs/delivery/lot_04_statuts_civils_arbitrages_v1.md`.
 - Contraintes : traiter l'anomalie source de parts et la ligne fixe `510 euros` avant code.
-- Statut : READY.
+- Statut : DONE ; arbitrages V1 disponibles dans `docs/delivery/lot_04_statuts_scm_arbitrages_v1.md`.
 
 ### PREP-SCM-SAT-001
 - Objectif : préparer le périmètre SCM et satellites avant spécification/code.
 - Specs à lire : specs statuts civils V1 et arbitrages SCM à venir.
 - Contraintes : ne pas déplacer de sources sans décision explicite et documenter tout blocage de source.
-- Statut : READY.
+- Statut : DONE ; préparation V1 disponible dans `docs/delivery/lot_05_scm_satellites_preparation_v1.md`.
 
 ### SPEC-SAS-SATELLITES-001
 - Objectif : spécifier les satellites SAS avant code.
 - Specs à lire : specs statuts SAS V1 et sources satellites à confirmer.
 - Contraintes : conserver le wording source et isoler les satellites du générateur statuts SAS existant.
-- Statut : READY.
+- Statut : DONE ; specs V1 disponibles dans `docs/delivery/lot_05_sas_satellites_spec_canonique_v1.md` et `docs/delivery/lot_05_sas_satellites_spec_texte_v1.md`.
 
 ### CODE-OPTION-IS-001
 - Objectif : implémenter la lettre option IS hors générateurs statuts.
 - Specs à lire : spec/arbitrage applicable avant code.
 - Contraintes : ne pas intégrer l'option IS dans les statuts civils ; générer un document dédié avec tests.
-- Statut : READY.
+- Statut : DONE ; générateur et tests intégrés dans `main`.
 
 ### PREP-ACTE-ACTIONS-001
 - Objectif : préparer les sources de l'acte de cession d'actions.
 - Specs à lire : specs/arbitrages SPFPL V1 et source documentaire à confirmer.
 - Contraintes : ne pas coder sans source DOCX confirmée.
+- Statut : DONE ; audit V1 disponible dans `docs/delivery/lot_05_acte_cession_actions_audit_v1.md`.
+
+### CODE-STATUTS-SCM-001
+- Objectif : implémenter les statuts SCM.
+- Specs à lire : specs statuts civils V1 et arbitrages SCM V1.
+- Contraintes : respecter les arbitrages SCM, bloquer toute ambiguïté de wording, ajouter tests et branchement orchestrateur ciblés.
+- Statut : READY.
+
+### CODE-SAS-SATELLITES-001
+- Objectif : implémenter les satellites SAS.
+- Specs à lire : specs satellites SAS V1.
+- Contraintes : isoler les satellites du générateur statuts SAS existant et conserver le wording source.
+- Statut : READY.
+
+### SPEC-SCM-SATELLITES-001
+- Objectif : spécifier les satellites SCM avant code.
+- Specs à lire : préparation SCM satellites V1 et sources Lot 05 confirmées.
+- Contraintes : ne pas coder les satellites SCM sans spec canonique et texte.
+- Statut : READY.
+
+### CONVERT-ACTE-ACTIONS-001
+- Objectif : convertir ou remplacer la source de l'acte de cession d'actions.
+- Specs à lire : audit acte de cession d'actions V1.
+- Contraintes : ne pas automatiser l'acte tant qu'une source DOCX propre n'est pas confirmée.
+- Statut : READY.
+
+### CONVERT-DEROG-SALARIEE-001
+- Objectif : convertir ou remplacer la source legacy de dérogation salariée.
+- Specs à lire : préparation dérogations V1 et arbitrages dérogations V1.
+- Contraintes : ne pas coder `cumul_salariee` sans source DOCX exploitable.
 - Statut : READY.
 
 ### UI-001
@@ -551,8 +592,9 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - mettre à jour `docs/project/04_LAST_STATE.md`
 
 ## Prochaine étape prévue
-- prochaine action recommandée : lancer `ARBITRAGE-STATUTS-SCM-001`.
-- tickets READY confirmés : `ARBITRAGE-STATUTS-SCM-001`, `PREP-SCM-SAT-001`, `SPEC-SAS-SATELLITES-001`, `CODE-OPTION-IS-001` et `PREP-ACTE-ACTIONS-001`.
+- prochaine action recommandée : lancer `CODE-STATUTS-SCM-001`.
+- tickets READY confirmés : `CODE-STATUTS-SCM-001`, `CODE-SAS-SATELLITES-001`, `SPEC-SCM-SATELLITES-001`, `CONVERT-ACTE-ACTIONS-001` et `CONVERT-DEROG-SALARIEE-001`.
+- `CODE-OPTION-IS-001`, `PREP-SCM-SAT-001`, `ARBITRAGE-STATUTS-SCM-001`, `SPEC-SAS-SATELLITES-001` et `PREP-ACTE-ACTIONS-001` sont DONE et absorbés dans `main`.
 - `RESUME-FIX-STYLE-LETTERS-001` est DONE et absorbé dans `main`.
 - `FIX-STYLE-LETTERS-001` est DONE et absorbé dans `main`.
 - `CODE-STATUTS-SEL-001` est DONE et absorbé dans `main`.
@@ -647,3 +689,4 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - 2026-05-15 : SYNC-STATUTS-SEL-CIVILS-001 absorbe dans `main` le commit source `9a79560c4bae1ae3a98ec5305b4187f9f4ebd6a8`, confirme l'arbitrage civils V1 déjà présent avec un contenu identique au commit source `b21f1b0cc5b975049e4acc279b8303f1d739b60f`, passe `CODE-STATUTS-SEL-001` en DONE, puis confirme `RESUME-FIX-STYLE-LETTERS-001` et `CODE-STATUTS-CIVILS-CORE-001` en READY, sans modification de `project/source_import/raw_drive_dump/` ni de `artifacts/`.
 - 2026-05-15 : CODE-STATUTS-CIVILS-CORE-001 implémente les générateurs statuts SCS, SCI et SCI IRIS, ajoute le modèle `statuts_civils`, branche DOC-019 à DOC-021 au catalogue/orchestrateur, ajoute le contexte exemple et génère le smoke DOCX réel ; SCM reste hors ticket.
 - 2026-05-15 : SYNC-WAVE-004 absorbe dans `main` les commits sources `557fc1920361a8c7831e6b023d70471c9c29e5ff` et `291da7b6db68b3de413fba50cf652dde98a8f6a8`, passe `RESUME-FIX-STYLE-LETTERS-001`, `FIX-STYLE-LETTERS-001` et `CODE-STATUTS-CIVILS-CORE-001` en DONE, puis confirme `ARBITRAGE-STATUTS-SCM-001`, `PREP-SCM-SAT-001`, `SPEC-SAS-SATELLITES-001`, `CODE-OPTION-IS-001` et `PREP-ACTE-ACTIONS-001` en READY, sans modification de `project/source_import/raw_drive_dump/` ni de `artifacts/`.
+- 2026-05-15 : SYNC-WAVE-005 absorbe dans `main` les commits sources `91436f0916fdecbcc98450b72ba6e602cb8f1a3b`, `1b3ba14d0bcc31fc7dcbf1752d6d3263645ae8b3`, `32059155c618b4e985893f42ef2817187599c281`, `74d41db53543b790e197082e8b9c713f7de92dc2` et `d1d649e11fdc638e6d7da0640c154d1f213739ee`, passe `CODE-OPTION-IS-001`, `PREP-SCM-SAT-001`, `ARBITRAGE-STATUTS-SCM-001`, `SPEC-SAS-SATELLITES-001` et `PREP-ACTE-ACTIONS-001` en DONE, puis confirme `CODE-STATUTS-SCM-001`, `CODE-SAS-SATELLITES-001`, `SPEC-SCM-SATELLITES-001`, `CONVERT-ACTE-ACTIONS-001` et `CONVERT-DEROG-SALARIEE-001` en READY, sans modification de `project/source_import/raw_drive_dump/` ni de `artifacts/`.
