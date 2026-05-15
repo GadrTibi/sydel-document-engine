@@ -88,7 +88,7 @@
 | CODE-SAS-SATELLITES-001 | READY | Implémenter les satellites SAS | specs satellites SAS V1 + sources confirmées | générateurs DOCX + tests ciblés |
 | SPEC-SCM-SATELLITES-001 | READY | Spécifier les satellites SCM | préparation SCM satellites V1 + sources confirmées | spec canonique + spec texte avant code |
 | CONVERT-ACTE-ACTIONS-001 | READY | Convertir ou remplacer la source acte de cession d'actions | audit source acte actions V1 | DOCX exploitable ou blocage documenté |
-| CONVERT-DEROG-SALARIEE-001 | READY | Convertir ou remplacer la source dérogation salariée legacy | préparation dérogations V1 + source legacy `.doc` | DOCX exploitable ou blocage documenté |
+| CONVERT-DEROG-SALARIEE-001 | DONE | Convertir ou remplacer la source dérogation salariée legacy | préparation dérogations V1 + source legacy `.doc` | blocage conversion documenté |
 | UI-001 | BLOCKED | Brancher Streamlit V0 Lot 1 | orchestrateur Lot 1 + spec canonique PV nomination gérant validée | écran simple + test manuel |
 
 ## Référentiels moteur disponibles
@@ -575,7 +575,7 @@
 - Objectif : convertir ou remplacer la source legacy de dérogation salariée.
 - Specs à lire : préparation dérogations V1 et arbitrages dérogations V1.
 - Contraintes : ne pas coder `cumul_salariee` sans source DOCX exploitable.
-- Statut : READY.
+- Statut : DONE ; tentative Word COM retentée, aucun DOCX produit, blocage documenté dans `docs/delivery/lot_03_derogation_salariee_conversion_blocker_v1.md`.
 
 ### UI-001
 - Objectif : exposer une Streamlit simple pour générer le Lot 1.
@@ -593,7 +593,8 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 
 ## Prochaine étape prévue
 - prochaine action recommandée : lancer `CODE-STATUTS-SCM-001`.
-- tickets READY confirmés : `CODE-STATUTS-SCM-001`, `CODE-SAS-SATELLITES-001`, `SPEC-SCM-SATELLITES-001`, `CONVERT-ACTE-ACTIONS-001` et `CONVERT-DEROG-SALARIEE-001`.
+- tickets READY confirmés : `CODE-STATUTS-SCM-001`, `CODE-SAS-SATELLITES-001`, `SPEC-SCM-SATELLITES-001` et `CONVERT-ACTE-ACTIONS-001`.
+- `CONVERT-DEROG-SALARIEE-001` est DONE ; la source salariee reste non convertie et `cumul_salariee` demeure bloque faute de DOCX propre.
 - `CODE-OPTION-IS-001`, `PREP-SCM-SAT-001`, `ARBITRAGE-STATUTS-SCM-001`, `SPEC-SAS-SATELLITES-001` et `PREP-ACTE-ACTIONS-001` sont DONE et absorbés dans `main`.
 - `RESUME-FIX-STYLE-LETTERS-001` est DONE et absorbé dans `main`.
 - `FIX-STYLE-LETTERS-001` est DONE et absorbé dans `main`.
@@ -636,7 +637,7 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - Points ouverts SPFPL après ARBITRAGE-SPFPL-001 : acte de cession d'actions hors automatisation faute de source DOCX confirmée, multi-souscripteurs hors V1, commissaire et évaluateur fournis par contexte ou référentiel validé.
 - Points ouverts dérogations après PREP-DEROG-001 : les deux sources Lot 03 préparées sont placées, le `.doc` legacy reste à convertir ou remplacer si `cumul_salariee` entre dans le périmètre, et le mode de rendu `document finalisé` ou `formulaire à compléter` doit être porté explicitement dans le registre ou le nom de sortie.
 - CODE-DEROG-CORE-001 est terminé ; `DOC-013` formulaire multi-sites SEL et `DOC-014` demande cumul SELARL/BNC sont branchés dans le catalogue/orchestrateur comme formulaires à compléter.
-- Points ouverts dérogations après CODE-DEROG-CORE-001 : revue humaine juridique/visuelle du premier rendu, `cumul_salariee` toujours bloqué faute de DOCX propre, zones narratives sensibles laissées à compléter.
+- Points ouverts dérogations après CONVERT-DEROG-SALARIEE-001 : revue humaine juridique/visuelle du premier rendu `DOC-013` et `DOC-014`, `cumul_salariee` toujours bloqué faute de DOCX propre apres erreur Word COM `0x800706BE`, zones narratives sensibles laissées à compléter.
 - CODE-BAIL-APP-001 est terminé ; `DOC-007` avenant au contrat de bail et `DOC-008` appel de fonds SEL sont branchés dans le catalogue/orchestrateur.
 - Points ouverts bail/appel après CODE-BAIL-APP-001 : appel de fonds limité à SELARL dentaire, avenant limité SELARL/SELAS avec `dossier_options.cession=true`, revue humaine juridique/visuelle du premier rendu toujours nécessaire.
 - Points ouverts cession après CODE-CESSION-CAB-001 : revue humaine juridique/visuelle du premier rendu DOCX, sources SELAS non stabilisées au-delà du paramétrage V1, PDF/ZIP hors ticket.
@@ -690,3 +691,4 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - 2026-05-15 : CODE-STATUTS-CIVILS-CORE-001 implémente les générateurs statuts SCS, SCI et SCI IRIS, ajoute le modèle `statuts_civils`, branche DOC-019 à DOC-021 au catalogue/orchestrateur, ajoute le contexte exemple et génère le smoke DOCX réel ; SCM reste hors ticket.
 - 2026-05-15 : SYNC-WAVE-004 absorbe dans `main` les commits sources `557fc1920361a8c7831e6b023d70471c9c29e5ff` et `291da7b6db68b3de413fba50cf652dde98a8f6a8`, passe `RESUME-FIX-STYLE-LETTERS-001`, `FIX-STYLE-LETTERS-001` et `CODE-STATUTS-CIVILS-CORE-001` en DONE, puis confirme `ARBITRAGE-STATUTS-SCM-001`, `PREP-SCM-SAT-001`, `SPEC-SAS-SATELLITES-001`, `CODE-OPTION-IS-001` et `PREP-ACTE-ACTIONS-001` en READY, sans modification de `project/source_import/raw_drive_dump/` ni de `artifacts/`.
 - 2026-05-15 : SYNC-WAVE-005 absorbe dans `main` les commits sources `91436f0916fdecbcc98450b72ba6e602cb8f1a3b`, `1b3ba14d0bcc31fc7dcbf1752d6d3263645ae8b3`, `32059155c618b4e985893f42ef2817187599c281`, `74d41db53543b790e197082e8b9c713f7de92dc2` et `d1d649e11fdc638e6d7da0640c154d1f213739ee`, passe `CODE-OPTION-IS-001`, `PREP-SCM-SAT-001`, `ARBITRAGE-STATUTS-SCM-001`, `SPEC-SAS-SATELLITES-001` et `PREP-ACTE-ACTIONS-001` en DONE, puis confirme `CODE-STATUTS-SCM-001`, `CODE-SAS-SATELLITES-001`, `SPEC-SCM-SATELLITES-001`, `CONVERT-ACTE-ACTIONS-001` et `CONVERT-DEROG-SALARIEE-001` en READY, sans modification de `project/source_import/raw_drive_dump/` ni de `artifacts/`.
+- 2026-05-15 : CONVERT-DEROG-SALARIEE-001 retente la conversion Word COM du `.doc` legacy salariee ; aucun DOCX exploitable n'est produit, le blocage est documente dans `docs/delivery/lot_03_derogation_salariee_conversion_blocker_v1.md`, sans modification de code Python.
