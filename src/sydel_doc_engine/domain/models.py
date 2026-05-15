@@ -358,6 +358,8 @@ class CessionContext(BaseModel):
 
 class OperationSpfpl(BaseModel):
     type: str | None = None
+    nature_titres: str | None = None
+    document_demande: str | None = None
 
 
 class SpfplConjoint(BaseModel):
@@ -400,6 +402,7 @@ class SocieteSpfpl(BaseModel):
     profession: str | None = None
     ville_rcs: str | None = None
     numero_rcs: str | None = None
+    departement_inscription_ordre: str | None = None
     siege: Address | None = None
     dirigeant: SpfplDirigeant | None = None
     representant: SpfplRepresentant | None = None
@@ -470,10 +473,14 @@ class SocieteCible(BaseModel):
     capital_social: str | None = None
     capital_social_lettres: str | None = None
     nb_parts_total: int | None = None
+    nb_actions_total: int | None = None
     valeur_nominale_part: str | None = None
     valeur_nominale_part_lettres: str | None = None
+    valeur_nominale_action: str | None = None
+    valeur_nominale_action_lettres: str | None = None
     departement_inscription_ordre: str | None = None
     president_ou_gerant: str | None = None
+    presentation_dirigeants: str | None = None
     dirigeant: SpfplRepresentant | None = None
     siege: Address | None = None
     ville_rcs: str | None = None
@@ -488,9 +495,14 @@ class AssocieCible(BaseModel):
     denomination: str | None = None
     nb_parts_avant: int | None = None
     nb_parts_apres: int | None = None
+    nb_actions_avant: int | None = None
+    nb_actions_avant_lettres: str | None = None
+    nb_actions_apres: int | None = None
     plage_parts: str | None = None
     numero_part_unique: str | None = None
     qualite: str | None = None
+    est_cedant: bool = False
+    ordre_affichage: int | None = None
     est_present_ou_represente: bool = True
 
 
@@ -503,6 +515,22 @@ class CessionParts(BaseModel):
     prix_total: str | None = None
     prix_total_lettres: str | None = None
     nombre_exemplaires_lettres: str | None = None
+
+
+class CessionActions(BaseModel):
+    nb_actions: int | None = None
+    nb_actions_lettres: str | None = None
+    prix_total: str | None = None
+    prix_total_lettres: str | None = None
+    prix_unitaire_action: str | None = None
+    prix_unitaire_action_lettres: str | None = None
+    modalites_paiement: str | None = None
+    nombre_exemplaires_lettres: str | None = None
+    agrement_unanime_confirme: bool = False
+    pv_agrement_coherent: bool = False
+    gap_applicable: bool = False
+    representant_cessionnaire_confirme: bool = False
+    titre_signature_cedant: str | None = None
 
 
 class OperationTitres(BaseModel):
@@ -898,6 +926,7 @@ class DocumentGenerationContext(BaseModel):
     societe_cible: SocieteCible | None = None
     associes_cible: list[AssocieCible] = Field(default_factory=list)
     cession_parts: CessionParts | None = None
+    cession_actions: CessionActions | None = None
     operation_titres: OperationTitres | None = None
     apport_titres: ApportTitres | None = None
     capital_souscription: CapitalSouscription | None = None

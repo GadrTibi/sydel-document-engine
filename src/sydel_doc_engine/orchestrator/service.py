@@ -58,6 +58,9 @@ from sydel_doc_engine.generators.lot_04.statuts_selarl_medecin import (
 from sydel_doc_engine.generators.lot_04.statuts_selas_medecin import (
     StatutsSelasMedecinGenerator,
 )
+from sydel_doc_engine.generators.lot_05.acte_cession_actions_spfpl import (
+    ActeCessionActionsSpfplGenerator,
+)
 from sydel_doc_engine.generators.lot_05.attestation_capital_liste_souscripteurs_sas import (
     AttestationCapitalListeSouscripteursSasGenerator,
 )
@@ -106,6 +109,7 @@ SCM_SATELLITES_DOCUMENT_IDS = {
     "DOC-027": "contrat_frais_communs",
     "DOC-028": "reglement_interieur",
 }
+ACTE_CESSION_ACTIONS_DOCUMENT_ID = "DOC-029"
 
 
 class MissingDocumentGeneratorError(RuntimeError):
@@ -142,6 +146,7 @@ def build_lot_01_generator_registry() -> dict[str, DocumentGenerator]:
         "DOC-026": PacteAssociesScmGenerator(),
         "DOC-027": ContratFraisCommunsGenerator(),
         "DOC-028": ReglementInterieurScmGenerator(),
+        "DOC-029": ActeCessionActionsSpfplGenerator(),
     }
 
 
@@ -219,6 +224,8 @@ def _document_enabled_for_context(
             return _sas_attestation_capital_enabled(ctx)
         if document.doc_id in SCM_SATELLITES_DOCUMENT_IDS:
             return _scm_satellite_enabled(ctx, SCM_SATELLITES_DOCUMENT_IDS[document.doc_id])
+        if document.doc_id == ACTE_CESSION_ACTIONS_DOCUMENT_ID:
+            return _acte_cession_actions_enabled(ctx)
         return True
     return bool(ctx.dossier_options and ctx.dossier_options.regime_communautaire)
 
@@ -318,3 +325,18 @@ def _scm_satellite_enabled(ctx: DocumentGenerationContext, satellite_field: str)
     if ctx.scm_satellites is None:
         return False
     return bool(getattr(ctx.scm_satellites, satellite_field))
+
+
+def _acte_cession_actions_enabled(ctx: DocumentGenerationContext) -> bool:
+    if ctx.structure != "SPFPL cession":
+        return False
+    if ctx.dossier_options is None or not ctx.dossier_options.cession:
+        return False
+    if ctx.operation_spfpl is None:
+        return False
+    return (
+        (ctx.operation_spfpl.type or "").strip().lower() == "cession"
+        and (ctx.operation_spfpl.nature_titres or "").strip().lower() == "actions"
+        and (ctx.operation_spfpl.document_demande or "").strip().lower()
+        == "acte_cession_actions"
+    )

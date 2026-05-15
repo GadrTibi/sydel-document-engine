@@ -700,6 +700,40 @@ def build_seed_catalog() -> list[DocumentDefinition]:
             specification_path="docs/delivery/lot_05_scm_satellites_spec_texte_v1.md",
             notes="Sous-batch SCM satellites DOCX V1, quatre exemplaires source conserves.",
         ),
+        DocumentDefinition(
+            doc_id="DOC-029",
+            canonical_name="Acte de cession d'actions SPFPL a un tiers",
+            generator_name="generate_acte_cession_actions_spfpl",
+            lot=5,
+            category=DocumentCategory.SPECIFIQUE,
+            structures=["SPFPL cession"],
+            general_condition=(
+                "dossier.structure == SPFPL cession et dossier.options.cession == true"
+            ),
+            specific_conditions=[
+                "operation_spfpl.type == cession",
+                "operation_spfpl.nature_titres == actions",
+                "operation_spfpl.document_demande == acte_cession_actions",
+                "societe cible limitee au wording source SELAS chirurgien-dentiste",
+                "paiement source credit bancaire comptant par cheque de banque confirme",
+                "GAP, agrement unanime et PV coherent explicitement confirmes",
+                "signature electronique Yousign",
+                "cedant masculin uniquement faute de variante source",
+            ],
+            dynamic_associates=True,
+            grammar_variants=False,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path=(
+                "project/source_documents/lot_05/Acte_cession_SPFPL_tiers_modele.docx"
+            ),
+            specification_path=(
+                "docs/delivery/lot_05_acte_cession_actions_spec_texte_v1.md"
+            ),
+            notes=(
+                "Acte actions SPFPL V1 reconstruit from-scratch ; points ouverts "
+                "transformes en blocages explicites."
+            ),
+        ),
     ]
 
 
