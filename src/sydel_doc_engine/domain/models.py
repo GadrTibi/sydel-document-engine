@@ -407,6 +407,7 @@ class SpfplPerson(BaseModel):
     nom: str | None = None
     genre: Gender | None = None
     profession: str | None = None
+    qualite_associe: str | None = None
     qualification_principale: str | None = None
     profession_reglementee: str | None = None
     profession_reglementee_pluriel: str | None = None
@@ -438,8 +439,14 @@ class StatutsPresident(BaseModel):
     civilite_affichage: str | None = None
     prenom: str | None = None
     nom: str | None = None
+    fonction: str | None = None
     adresse_personnelle_affichee: str | None = None
     duree_mandat: str | None = None
+
+
+class RemunerationPresident(BaseModel):
+    type: str | None = None
+    date_fin_non_remuneree: str | None = None
 
 
 class ExerciceSocial(BaseModel):
@@ -817,6 +824,7 @@ class DocumentGenerationContext(BaseModel):
     societe_spfpl: SocieteSpfpl | None = None
     actionnaire_unique: SpfplPerson | None = None
     president: StatutsPresident | None = None
+    remuneration_president: RemunerationPresident | None = None
     depot_fonds: DepotFonds | None = None
     exercice_social: ExerciceSocial | None = None
     cedant: SpfplPerson | None = None

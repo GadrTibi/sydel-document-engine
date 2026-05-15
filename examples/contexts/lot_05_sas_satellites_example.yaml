@@ -1,0 +1,76 @@
+structure: SAS
+dossier_options:
+  associe_unique: true
+  apport: true
+personne_signataire:
+  genre: masculin
+  civilite: Monsieur
+  prenom: Camille
+  nom: Martin
+signature:
+  lieu: Paris
+  date: 2026-05-15
+statuts_sas:
+  type: spfpl_medecins
+  profession: medecin
+societe_spfpl:
+  denomination: SPFPL MARTIN
+  forme_sociale: Société par actions simplifiée
+  capital_social: "60 000"
+  nb_actions_total: 600
+  valeur_nominale_action: "100"
+  profession: Médecins
+  ville_rcs: Paris
+  siege:
+    num_voie: "10"
+    voie: rue de la Paix
+    cp: "75002"
+    ville: Paris
+    adresse_affichee: 10 rue de la Paix, 75002 Paris
+actionnaire_unique:
+  civilite_affichage: Docteur
+  prenom: Camille
+  nom: Martin
+  genre: masculin
+  profession: médecin
+  qualite_associe: actionnaire unique
+  adresse_personnelle:
+    num_voie: "5"
+    voie: rue Royale
+    cp: "75008"
+    ville: Paris
+  adresse_personnelle_affichee: 5 rue Royale, 75008 Paris
+president:
+  ref_associe_index: 0
+  civilite_affichage: Docteur
+  prenom: Camille
+  nom: Martin
+  fonction: Président
+  adresse_personnelle_affichee: 5 rue Royale, 75008 Paris
+exercice_social:
+  date_cloture_premier_exercice: 31 décembre 2026
+remuneration_president:
+  type: absence_remuneration
+  date_fin_non_remuneree: 31 décembre 2026
+capital_souscription:
+  nb_actions_total: 600
+  valeur_nominale_action: "100"
+  apports_nature_montant: "50 000"
+  apports_numeraire_montant: "10 000"
+  souscripteurs:
+    - civilite_affichage: Docteur
+      prenom: Camille
+      nom: Martin
+      profession: médecin
+      adresse_personnelle_affichee: 5 rue Royale, 75008 Paris
+      nb_actions: 600
+      qualite: actionnaire unique
+apport_titres:
+  nb_parts: 50
+societe_cible:
+  denomination: SELARL CABINET MARTIN
+  forme_sociale: SELARL
+  siege:
+    adresse_affichee: 12 avenue des Ternes, 75017 Paris
+  ville_rcs: Paris
+  numero_rcs: 900 000 001

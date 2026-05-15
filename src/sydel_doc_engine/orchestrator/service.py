@@ -57,7 +57,13 @@ from sydel_doc_engine.generators.lot_04.statuts_selarl_medecin import (
 from sydel_doc_engine.generators.lot_04.statuts_selas_medecin import (
     StatutsSelasMedecinGenerator,
 )
+from sydel_doc_engine.generators.lot_05.attestation_capital_liste_souscripteurs_sas import (
+    AttestationCapitalListeSouscripteursSasGenerator,
+)
 from sydel_doc_engine.generators.lot_05.lettre_option_is import LettreOptionIsGenerator
+from sydel_doc_engine.generators.lot_05.pv_remuneration_president import (
+    PvRemunerationPresidentGenerator,
+)
 
 REGIME_COMMUNAUTAIRE_DOCUMENT_IDS = {"DOC-005", "DOC-006"}
 BAIL_AVENANT_DOCUMENT_ID = "DOC-007"
@@ -84,6 +90,8 @@ STATUTS_CIVILS_DOCUMENT_TYPES = {
     "DOC-021": "sci_iris",
 }
 OPTION_IS_DOCUMENT_ID = "DOC-022"
+SAS_PV_REMUNERATION_PRESIDENT_DOCUMENT_ID = "DOC-023"
+SAS_ATTESTATION_CAPITAL_DOCUMENT_ID = "DOC-024"
 
 
 class MissingDocumentGeneratorError(RuntimeError):
@@ -114,6 +122,8 @@ def build_lot_01_generator_registry() -> dict[str, DocumentGenerator]:
         "DOC-020": StatutsSciGenerator(),
         "DOC-021": StatutsSciIrisGenerator(),
         "DOC-022": LettreOptionIsGenerator(),
+        "DOC-023": PvRemunerationPresidentGenerator(),
+        "DOC-024": AttestationCapitalListeSouscripteursSasGenerator(),
     }
 
 
@@ -185,6 +195,10 @@ def _document_enabled_for_context(
             return _statuts_civils_enabled(ctx, STATUTS_CIVILS_DOCUMENT_TYPES[document.doc_id])
         if document.doc_id == OPTION_IS_DOCUMENT_ID:
             return _option_is_enabled(ctx)
+        if document.doc_id == SAS_PV_REMUNERATION_PRESIDENT_DOCUMENT_ID:
+            return _sas_pv_remuneration_president_enabled(ctx)
+        if document.doc_id == SAS_ATTESTATION_CAPITAL_DOCUMENT_ID:
+            return _sas_attestation_capital_enabled(ctx)
         return True
     return bool(ctx.dossier_options and ctx.dossier_options.regime_communautaire)
 
@@ -242,3 +256,35 @@ def _statuts_civils_enabled(ctx: DocumentGenerationContext, statuts_type: str) -
 
 def _option_is_enabled(ctx: DocumentGenerationContext) -> bool:
     return bool(ctx.dossier_options and ctx.dossier_options.option_is)
+
+
+def _sas_base_satellite_enabled(ctx: DocumentGenerationContext) -> bool:
+    if ctx.structure != "SAS":
+        return False
+    if ctx.dossier_options is None or not ctx.dossier_options.associe_unique:
+        return False
+    if not _statuts_sas_enabled(ctx):
+        return False
+    if ctx.actionnaire_unique is None or ctx.president is None:
+        return False
+    return ctx.president.ref_associe_index == 0
+
+
+def _sas_pv_remuneration_president_enabled(ctx: DocumentGenerationContext) -> bool:
+    if not _sas_base_satellite_enabled(ctx):
+        return False
+    if ctx.remuneration_president is None:
+        return False
+    return ctx.remuneration_president.type == "absence_remuneration"
+
+
+def _sas_attestation_capital_enabled(ctx: DocumentGenerationContext) -> bool:
+    if not _sas_base_satellite_enabled(ctx):
+        return False
+    if ctx.dossier_options is None or not ctx.dossier_options.apport:
+        return False
+    if ctx.capital_souscription is None:
+        return False
+    if len(ctx.capital_souscription.souscripteurs) != 1:
+        return False
+    return bool(ctx.capital_souscription.apports_nature_montant)
