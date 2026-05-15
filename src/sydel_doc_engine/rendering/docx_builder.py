@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from docx import Document
 from docx.enum.table import WD_TABLE_ALIGNMENT
@@ -33,6 +33,19 @@ DEFAULT_STYLE_PROFILE = SydelDocxStyleProfile()
 LETTER_WIDE_STYLE_PROFILE = SydelDocxStyleProfile(
     margin_left_cm=3.17,
     margin_right_cm=3.17,
+)
+STATUTS_STANDARD_STYLE_PROFILE = DEFAULT_STYLE_PROFILE
+STATUTS_SPFPL_COMPACT_STYLE_PROFILE = SydelDocxStyleProfile(
+    margin_top_cm=2.8,
+    margin_bottom_cm=1.6,
+    margin_left_cm=2.0,
+    margin_right_cm=2.0,
+)
+STATUTS_CIVIL_COMPACT_STYLE_PROFILE = SydelDocxStyleProfile(
+    margin_top_cm=2.8,
+    margin_bottom_cm=1.9,
+    margin_left_cm=2.35,
+    margin_right_cm=2.2,
 )
 
 
@@ -240,6 +253,243 @@ def add_hyphen_list_item(
     run.bold = bold
     run.italic = italic
     return paragraph
+
+
+def add_statuts_title_box(
+    document: Any,
+    text: str,
+    *,
+    bordered: bool = True,
+    style_profile: SydelDocxStyleProfile = DEFAULT_STYLE_PROFILE,
+) -> Any:
+    table = document.add_table(rows=1, cols=1)
+    table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    if bordered:
+        table.style = "Table Grid"
+        _set_table_borders(table)
+    else:
+        _clear_table_borders(table)
+
+    cell = table.cell(0, 0)
+    paragraph = cell.paragraphs[0]
+    paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    paragraph.paragraph_format.space_after = Pt(style_profile.compact_space_after_pt)
+    run = paragraph.add_run(text)
+    run.bold = True
+    run.font.name = style_profile.font_name
+    run.font.size = Pt(style_profile.font_size_pt)
+    add_spacer(document, space_after_pt=style_profile.standard_space_after_pt)
+    return table
+
+
+def add_statuts_article_heading(
+    document: Any,
+    text: str,
+    *,
+    underline: bool = True,
+    alignment: WD_ALIGN_PARAGRAPH | None = None,
+    left_indent_cm: float | None = None,
+    space_before_pt: int | None = None,
+    style_profile: SydelDocxStyleProfile = DEFAULT_STYLE_PROFILE,
+) -> Any:
+    paragraph = add_paragraph(
+        document,
+        text,
+        alignment=alignment,
+        bold=True,
+        underline=underline,
+        space_before_pt=(
+            style_profile.notable_space_before_pt
+            if space_before_pt is None
+            else space_before_pt
+        ),
+        style_profile=style_profile,
+    )
+    if left_indent_cm is not None:
+        paragraph.paragraph_format.left_indent = Cm(left_indent_cm)
+    return paragraph
+
+
+def add_statuts_part_heading(
+    document: Any,
+    text: str,
+    *,
+    mode: Literal["paragraph", "boxed"] = "paragraph",
+    style_profile: SydelDocxStyleProfile = DEFAULT_STYLE_PROFILE,
+) -> Any:
+    if mode == "boxed":
+        return add_statuts_title_box(document, text, bordered=True, style_profile=style_profile)
+    return add_paragraph(
+        document,
+        text,
+        alignment=WD_ALIGN_PARAGRAPH.CENTER,
+        bold=True,
+        space_before_pt=style_profile.notable_space_before_pt,
+        style_profile=style_profile,
+    )
+
+
+def add_statuts_body_paragraph(
+    document: Any,
+    text: str,
+    *,
+    alignment: WD_ALIGN_PARAGRAPH | None = WD_ALIGN_PARAGRAPH.JUSTIFY,
+    indent_profile: Literal["none", "left", "first_line", "hanging"] = "none",
+    style_profile: SydelDocxStyleProfile = DEFAULT_STYLE_PROFILE,
+) -> Any:
+    paragraph = add_paragraph(
+        document,
+        text,
+        alignment=alignment,
+        style_profile=style_profile,
+    )
+    if indent_profile == "left":
+        paragraph.paragraph_format.left_indent = Cm(0.5)
+    elif indent_profile == "first_line":
+        paragraph.paragraph_format.first_line_indent = Cm(0.5)
+    elif indent_profile == "hanging":
+        paragraph.paragraph_format.left_indent = Cm(0.7)
+        paragraph.paragraph_format.first_line_indent = Cm(-0.35)
+    return paragraph
+
+
+def add_statuts_hanging_list_item(
+    document: Any,
+    text: str,
+    *,
+    marker: str | None = "-",
+    style_profile: SydelDocxStyleProfile = DEFAULT_STYLE_PROFILE,
+) -> Any:
+    paragraph = document.add_paragraph()
+    paragraph.paragraph_format.left_indent = Cm(0.7)
+    paragraph.paragraph_format.first_line_indent = Cm(-0.35)
+    paragraph.paragraph_format.space_after = Pt(style_profile.standard_space_after_pt)
+    if marker:
+        paragraph.add_run(f"{marker} ")
+    paragraph.add_run(text)
+    return paragraph
+
+
+def add_statuts_signature_block(
+    document: Any,
+    lines: Sequence[str],
+    *,
+    mention_lines: Sequence[str] = (),
+    alignment: WD_ALIGN_PARAGRAPH = WD_ALIGN_PARAGRAPH.CENTER,
+    bold: bool = False,
+    underline: bool = False,
+    style_profile: SydelDocxStyleProfile = DEFAULT_STYLE_PROFILE,
+) -> list[Any]:
+    paragraphs = []
+    for line in lines:
+        paragraphs.append(
+            add_paragraph(
+                document,
+                line,
+                alignment=alignment,
+                bold=bold,
+                underline=underline,
+                space_after_pt=style_profile.compact_space_after_pt,
+                style_profile=style_profile,
+            )
+        )
+    for line in mention_lines:
+        paragraphs.append(
+            add_paragraph(
+                document,
+                line,
+                alignment=alignment,
+                italic=True,
+                space_after_pt=style_profile.compact_space_after_pt,
+                style_profile=style_profile,
+            )
+        )
+    return paragraphs
+
+
+def add_statuts_signature_grid(
+    document: Any,
+    signers: Sequence[str],
+    *,
+    mention: str | None = None,
+    columns: int = 2,
+    style_profile: SydelDocxStyleProfile = DEFAULT_STYLE_PROFILE,
+) -> Any:
+    if columns <= 0:
+        raise ValueError("columns doit etre strictement positif.")
+    rows = max(1, (len(signers) + columns - 1) // columns)
+    table = document.add_table(rows=rows, cols=columns)
+    table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    _set_table_borders(table)
+    for index, signer in enumerate(signers):
+        cell = table.cell(index // columns, index % columns)
+        paragraph = cell.paragraphs[0]
+        paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        if mention:
+            mention_run = paragraph.add_run(mention)
+            mention_run.italic = True
+            paragraph.add_run("\n")
+        name_run = paragraph.add_run(signer)
+        name_run.bold = True
+    add_spacer(document, space_after_pt=style_profile.standard_space_after_pt)
+    return table
+
+
+def add_statuts_annex_heading(
+    document: Any,
+    title: str,
+    subtitle: str | None = None,
+    *,
+    style_profile: SydelDocxStyleProfile = DEFAULT_STYLE_PROFILE,
+) -> list[Any]:
+    paragraphs = [
+        add_paragraph(
+            document,
+            title,
+            alignment=WD_ALIGN_PARAGRAPH.CENTER,
+            bold=True,
+            space_before_pt=style_profile.notable_space_before_pt,
+            style_profile=style_profile,
+        )
+    ]
+    if subtitle:
+        paragraphs.append(
+            add_paragraph(
+                document,
+                subtitle,
+                alignment=WD_ALIGN_PARAGRAPH.CENTER,
+                bold=True,
+                style_profile=style_profile,
+            )
+        )
+    return paragraphs
+
+
+def add_statuts_matrix_table(
+    document: Any,
+    headers: Sequence[str],
+    rows: Sequence[Sequence[str]],
+    *,
+    style_profile: SydelDocxStyleProfile = DEFAULT_STYLE_PROFILE,
+) -> Any:
+    table = document.add_table(rows=1, cols=len(headers))
+    table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    table.style = "Table Grid"
+    _set_table_borders(table)
+    for cell, header in zip(table.rows[0].cells, headers, strict=True):
+        paragraph = cell.paragraphs[0]
+        paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        run = paragraph.add_run(header)
+        run.bold = True
+    for row in rows:
+        cells = table.add_row().cells
+        for cell, value in zip(cells, row, strict=True):
+            paragraph = cell.paragraphs[0]
+            paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            paragraph.paragraph_format.space_after = Pt(style_profile.compact_space_after_pt)
+            paragraph.add_run(value)
+    add_spacer(document, space_after_pt=style_profile.standard_space_after_pt)
+    return table
 
 
 def add_spacer(document: Any, *, space_after_pt: int = 0) -> Any:
@@ -458,5 +708,22 @@ def _set_table_borders(table: Any) -> None:
         element.set(qn("w:sz"), "4")
         element.set(qn("w:space"), "0")
         element.set(qn("w:color"), "000000")
+        borders.append(element)
+    tbl_pr.append(borders)
+
+
+def _clear_table_borders(table: Any) -> None:
+    tbl_pr = table._tbl.tblPr
+    existing_borders = tbl_pr.first_child_found_in("w:tblBorders")
+    if existing_borders is not None:
+        tbl_pr.remove(existing_borders)
+
+    borders = OxmlElement("w:tblBorders")
+    for edge in ("top", "left", "bottom", "right", "insideH", "insideV"):
+        element = OxmlElement(f"w:{edge}")
+        element.set(qn("w:val"), "nil")
+        element.set(qn("w:sz"), "0")
+        element.set(qn("w:space"), "0")
+        element.set(qn("w:color"), "FFFFFF")
         borders.append(element)
     tbl_pr.append(borders)

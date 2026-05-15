@@ -13,7 +13,15 @@ from sydel_doc_engine.domain.models import (
     SocieteSpfpl,
     SpfplPerson,
 )
-from sydel_doc_engine.rendering.docx_builder import add_paragraph, new_document
+from sydel_doc_engine.rendering.docx_builder import (
+    add_paragraph,
+    add_statuts_article_heading,
+    add_statuts_body_paragraph,
+    add_statuts_hanging_list_item,
+    add_statuts_part_heading,
+    add_statuts_signature_block,
+    new_document,
+)
 
 DOCUMENT_CODE = "CODE-STATUTS-SPFPL-001"
 SPFPL_CESSION_STRUCTURE = "SPFPL cession"
@@ -147,14 +155,32 @@ def render_statuts_docx(
     output_path: Path,
 ) -> Path:
     docx = new_document()
-    for block in blocks:
+    index = 0
+    while index < len(blocks):
+        block = blocks[index]
         text = replace_placeholders(block, replacements)
         if text == "STATUTS" or _is_major_heading(text):
-            add_paragraph(docx, text, alignment=WD_ALIGN_PARAGRAPH.CENTER, bold=True)
+            if _is_major_heading(text):
+                add_statuts_part_heading(docx, text, mode="boxed")
+            else:
+                add_paragraph(docx, text, alignment=WD_ALIGN_PARAGRAPH.CENTER, bold=True)
         elif text.startswith("ARTICLE "):
-            add_paragraph(docx, text, bold=True, space_before_pt=10)
+            add_statuts_article_heading(docx, text, underline=False)
+        elif text.startswith("Fait à ") or text.startswith("Fait a "):
+            signature_lines, mention_lines, index = _collect_signature_lines(
+                blocks,
+                replacements,
+                index,
+            )
+            add_statuts_signature_block(docx, signature_lines, mention_lines=mention_lines)
+            continue
+        elif text.startswith("- "):
+            add_statuts_hanging_list_item(docx, text[2:])
+        elif _looks_like_numbered_list_item(text):
+            add_statuts_hanging_list_item(docx, text, marker=None)
         else:
-            add_paragraph(docx, text, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY)
+            add_statuts_body_paragraph(docx, text)
+        index += 1
 
     full_text = "\n".join(paragraph.text for paragraph in docx.paragraphs)
     if "[" in full_text or "]" in full_text:
@@ -220,3 +246,27 @@ def _is_major_heading(text: str) -> bool:
         "LA CONSTITUTION DE LA SOCIETE",
     }
     return text in headings
+
+
+def _collect_signature_lines(
+    blocks: tuple[str, ...],
+    replacements: dict[str, str],
+    start_index: int,
+) -> tuple[list[str], list[str], int]:
+    signature_lines: list[str] = []
+    mention_lines: list[str] = []
+    index = start_index
+    while index < len(blocks):
+        rendered = replace_placeholders(blocks[index], replacements)
+        if index > start_index and (rendered.startswith("ANNEXE") or _is_major_heading(rendered)):
+            break
+        if "Bon pour acceptation" in rendered:
+            mention_lines.append(rendered)
+        else:
+            signature_lines.append(rendered)
+        index += 1
+    return signature_lines, mention_lines, index
+
+
+def _looks_like_numbered_list_item(text: str) -> bool:
+    return len(text) > 2 and text[0].isdigit() and text[1] in {"°", "."}

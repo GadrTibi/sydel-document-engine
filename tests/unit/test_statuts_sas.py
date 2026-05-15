@@ -136,6 +136,11 @@ def test_statuts_sas_generates_spfpl_medecins_unique_shareholder_docx(
     output_path = StatutsSasGenerator().generate(_context(), tmp_path)
 
     text = _docx_text(output_path)
+    document = Document(output_path)
+    article_1 = next(p for p in document.paragraphs if p.text == "ARTICLE 1 - FORME")
+    acceptance = next(
+        p for p in document.paragraphs if "Bon pour acceptation des fonctions" in p.text
+    )
 
     assert output_path.name == "statuts_sas_spfpl_medecins.docx"
     assert "SPFPL MARTIN" in text
@@ -145,6 +150,8 @@ def test_statuts_sas_generates_spfpl_medecins_unique_shareholder_docx(
     assert "L’Associé Unique, Monsieur Camille Martin" in text
     assert "BANQUE EXEMPLE" in text
     assert "SPFPL MARTIN - Statuts constitutifs" in text
+    assert any(run.underline for run in article_1.runs)
+    assert any(run.italic for run in acceptance.runs)
     _assert_clean(text)
 
 

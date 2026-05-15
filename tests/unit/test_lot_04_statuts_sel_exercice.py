@@ -155,7 +155,12 @@ def _context(*, overlay: str, gender: Gender = Gender.MASCULIN) -> DocumentGener
 
 def _docx_text(path: Path) -> str:
     document = Document(path)
-    return "\n".join(paragraph.text for paragraph in document.paragraphs if paragraph.text)
+    texts = [paragraph.text for paragraph in document.paragraphs if paragraph.text]
+    for table in document.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                texts.extend(paragraph.text for paragraph in cell.paragraphs if paragraph.text)
+    return "\n".join(texts)
 
 
 def _assert_clean(text: str) -> None:
@@ -173,11 +178,22 @@ def test_statuts_selarl_dentiste_generates_unique_associate_docx(tmp_path: Path)
     output_path = StatutsSelarlDentisteGenerator().generate(ctx, tmp_path)
 
     text = _docx_text(output_path)
+    document = Document(output_path)
+    table_text = "\n".join(
+        paragraph.text
+        for table in document.tables
+        for row in table.rows
+        for cell in row.cells
+        for paragraph in cell.paragraphs
+    )
+    article_1 = next(p for p in document.paragraphs if p.text.startswith("ARTICLE 1"))
 
     assert output_path.name == "statuts_selarl_chirurgien_dentiste.docx"
     assert "SEL MARTIN" in text
     assert "chirurgiens-dentistes" in text
     assert "Yousign" in text
+    assert "STATUTS" in table_text
+    assert any(run.underline for run in article_1.runs)
     _assert_clean(text)
 
 

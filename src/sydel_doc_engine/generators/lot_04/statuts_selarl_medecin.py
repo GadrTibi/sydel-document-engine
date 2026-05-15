@@ -77,4 +77,5 @@ class StatutsSelarlMedecinGenerator:
             output_dir / OUTPUT_FILENAME,
             associate=associate,
             skip_personne_2_line=True,
+            title_box_bordered=False,
         )

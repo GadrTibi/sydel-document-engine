@@ -13,7 +13,15 @@ from sydel_doc_engine.domain.models import (
     StatutsCivilsAssocie,
     StatutsCivilsContext,
 )
-from sydel_doc_engine.rendering.docx_builder import add_paragraph, new_document
+from sydel_doc_engine.rendering.docx_builder import (
+    add_paragraph,
+    add_statuts_article_heading,
+    add_statuts_body_paragraph,
+    add_statuts_part_heading,
+    add_statuts_signature_block,
+    add_statuts_title_box,
+    new_document,
+)
 
 DOCUMENT_CODE = "CODE-STATUTS-SCM-001"
 MAX_ASSOCIES = 6
@@ -246,8 +254,11 @@ def _add_signature_block(document, data: _ResolvedStatutsScm) -> None:
     add_paragraph(document, f"Fait à {data.signature_lieu},")
     add_paragraph(document, f"Le {data.signature_date}")
     for associe in [a for a in data.associes if a.est_signataire]:
-        add_paragraph(document, _signature_label(associe), alignment=WD_ALIGN_PARAGRAPH.CENTER)
-        add_paragraph(document, "« Lu et approuvé »", alignment=WD_ALIGN_PARAGRAPH.CENTER)
+        add_statuts_signature_block(
+            document,
+            [_signature_label(associe)],
+            mention_lines=["« Lu et approuvé »"],
+        )
         add_paragraph(document, "", alignment=WD_ALIGN_PARAGRAPH.CENTER, space_after_pt=18)
 
 
@@ -490,12 +501,14 @@ def _amount_to_int(value: str | None) -> int:
 
 
 def _add_rendered_paragraph(document, text: str) -> None:
-    if text == "STATUTS" or text.startswith("TITRE "):
-        add_paragraph(document, text, alignment=WD_ALIGN_PARAGRAPH.CENTER, bold=True)
+    if text == "STATUTS":
+        add_statuts_title_box(document, text)
+    elif text.startswith("TITRE "):
+        add_statuts_part_heading(document, text)
     elif text.startswith("Article "):
-        add_paragraph(document, text, bold=True, space_before_pt=10)
+        add_statuts_article_heading(document, text, left_indent_cm=0.25)
     else:
-        add_paragraph(document, text, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY)
+        add_statuts_body_paragraph(document, text)
 
 
 def _replace_placeholders(text: str, replacements: dict[str, str]) -> str:

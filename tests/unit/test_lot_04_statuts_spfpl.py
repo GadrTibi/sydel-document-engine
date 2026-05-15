@@ -150,7 +150,12 @@ def _with_exercice(ctx: DocumentGenerationContext) -> DocumentGenerationContext:
 
 def _docx_text(path: Path) -> str:
     document = Document(path)
-    return "\n".join(paragraph.text for paragraph in document.paragraphs if paragraph.text)
+    texts = [paragraph.text for paragraph in document.paragraphs if paragraph.text]
+    for table in document.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                texts.extend(paragraph.text for paragraph in cell.paragraphs if paragraph.text)
+    return "\n".join(texts)
 
 
 def _assert_clean(text: str) -> None:
@@ -167,6 +172,17 @@ def test_statuts_spfpl_cession_generates_source_overlay_without_signature_date(
     )
 
     text = _docx_text(output_path)
+    document = Document(output_path)
+    table_text = "\n".join(
+        paragraph.text
+        for table in document.tables
+        for row in table.rows
+        for cell in row.cells
+        for paragraph in cell.paragraphs
+    )
+    acceptance = next(
+        p for p in document.paragraphs if "Bon pour acceptation des fonctions" in p.text
+    )
 
     assert output_path.name == "statuts_spfpl_cession.docx"
     assert "Société de Participations Financières de Profession Libérale" in text
@@ -174,6 +190,8 @@ def test_statuts_spfpl_cession_generates_source_overlay_without_signature_date(
     assert "Le\nDocteur Camille Martin" in text
     assert "Le 14/05/2026" not in text
     assert "Nomination d’un commissaire aux apports" not in text
+    assert "DECISIONS DES ACTIONNAIRES" in table_text
+    assert any(run.italic for run in acceptance.runs)
     _assert_clean(text)
 
 
