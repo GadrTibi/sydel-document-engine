@@ -4,7 +4,7 @@
 2026-05-15
 
 ## Dernier ticket terminé
-CODE-STATUTS-CIVILS-CORE-001 : implémentation des générateurs statuts civils SCS, SCI et SCI IRIS, avec modèle `statuts_civils`, tests ciblés et smoke DOCX réel.
+SYNC-WAVE-004 : absorption dans `main` des commits sources `557fc1920361a8c7831e6b023d70471c9c29e5ff` et `291da7b6db68b3de413fba50cf652dde98a8f6a8`, puis réalignement du pilotage.
 
 ## État courant du repo
 - DOC-001, DOC-002 et DOC-003 disposent chacun d'un générateur dédié déjà terminé.
@@ -202,8 +202,13 @@ CODE-STATUTS-CIVILS-CORE-001 : implémentation des générateurs statuts civils 
 - `SYNC-STATUTS-CODE-ARB-001` est DONE.
 - `CODE-STATUTS-SEL-001` est DONE.
 - `CODE-STATUTS-CIVILS-CORE-001` est DONE pour SCS, SCI et SCI IRIS ; SCM reste hors ticket.
-- `FIX-STYLE-LETTERS-001` est READY.
-- `RESUME-FIX-STYLE-LETTERS-001` est READY.
+- `FIX-STYLE-LETTERS-001` est DONE.
+- `RESUME-FIX-STYLE-LETTERS-001` est DONE.
+- `ARBITRAGE-STATUTS-SCM-001` est READY.
+- `PREP-SCM-SAT-001` est READY.
+- `SPEC-SAS-SATELLITES-001` est READY.
+- `CODE-OPTION-IS-001` est READY.
+- `PREP-ACTE-ACTIONS-001` est READY.
 - `RESUME-ARBITRAGE-STATUTS-CIVILS-001` est DONE, remplacé par l'arbitrage civils V1 absorbé.
 - `STYLE-ANALYSE-BATCH-001` est DONE.
 - `SYNC-STYLE-CIVILS-001` est DONE.
@@ -355,9 +360,11 @@ CODE-STATUTS-CIVILS-CORE-001 : implémentation des générateurs statuts civils 
 
 ## Prochain ticket à lancer
 Tickets actifs/parallélisables :
-- `FIX-STYLE-LETTERS-001` est READY.
-- `RESUME-FIX-STYLE-LETTERS-001` est READY.
-- Créer/cadrer `CODE-STATUTS-SCM-001` si la SCM devient prioritaire.
+- `ARBITRAGE-STATUTS-SCM-001` est READY.
+- `PREP-SCM-SAT-001` est READY.
+- `SPEC-SAS-SATELLITES-001` est READY.
+- `CODE-OPTION-IS-001` est READY.
+- `PREP-ACTE-ACTIONS-001` est READY.
 
 `CODE-BAIL-APP-001` est DONE dans `main`.
 `PREP-DEROG-001` et `CODE-SPFPL-AGR-INFO-001` sont DONE dans `main`.
@@ -367,6 +374,7 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
 `CODE-STATUTS-SAS-001`, `CODE-STATUTS-SPFPL-001` et `ARBITRAGE-STATUTS-SEL-001` sont DONE et absorbés dans `main`.
 `STYLE-ANALYSE-BATCH-001` et `ARBITRAGE-STATUTS-CIVILS-001` sont DONE et absorbés dans `main`.
 `CODE-STATUTS-SEL-001` est DONE et absorbé dans `main`.
+`RESUME-FIX-STYLE-LETTERS-001`, `FIX-STYLE-LETTERS-001` et `CODE-STATUTS-CIVILS-CORE-001` sont DONE et absorbés dans `main`.
 
 ## Points ouverts
 - Aucun point bloquant identifié après le smoke test réel Lot 1.
@@ -509,6 +517,11 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
 - CODE-STATUTS-CIVILS-CORE-001 : tests ciblés OK sur `tests/unit/test_lot_04_statuts_civils.py`, `tests/unit/test_registry_seed.py` et `tests/unit/test_orchestrator_service.py`, 21 tests passés.
 - CODE-STATUTS-CIVILS-CORE-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
 - CODE-STATUTS-CIVILS-CORE-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 129 tests passés.
+- SYNC-WAVE-004 : `git fetch --all --prune` OK.
+- SYNC-WAVE-004 : commits sources `557fc1920361a8c7831e6b023d70471c9c29e5ff` et `291da7b6db68b3de413fba50cf652dde98a8f6a8` cherry-pickés dans `main` sans conflit.
+- SYNC-WAVE-004 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m ruff check .` OK.
+- SYNC-WAVE-004 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m pytest` OK, 130 tests passés.
+- SYNC-WAVE-004 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifiés.
 - SPEC-TEXTE-ORDRE-001 : source de vérité, source Lot 2 et variantes raw dump SELARL / SELAS / SPFPL cession / SPFPL apport lues en lecture seule.
 - SPEC-TEXTE-ORDRE-001 : spec texte créée dans `docs/delivery/lot_02_demande_inscription_ordre_spec_texte_v1.md`.
 - SPEC-TEXTE-ORDRE-001 : aucun code Python modifié ; validations limitées à la relecture documentaire et au contrôle du diff.
@@ -543,4 +556,4 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
 - SMOKE-ORCH-L2-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 47 tests passés.
 
 ## Recommandation immédiate suivante
-Lancer `RESUME-FIX-STYLE-LETTERS-001`, cadrer `CODE-STATUTS-SCM-001` ou lancer `FIX-STYLE-LETTERS-001` selon la priorité métier.
+Lancer `ARBITRAGE-STATUTS-SCM-001`.

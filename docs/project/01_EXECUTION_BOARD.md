@@ -72,8 +72,13 @@
 | SYNC-STATUTS-CODE-ARB-001 | DONE | Synchroniser code statuts SAS/SPFPL et arbitrage SEL dans main | branches code/arbitrage statuts | commits intégrés + pilotage réaligné |
 | CODE-STATUTS-SEL-001 | DONE | Implémenter les statuts SEL d'exercice | specs statuts SEL V1 + arbitrages SEL V1 | générateur(s) DOCX + tests ciblés + MAJ doc |
 | CODE-STATUTS-CIVILS-CORE-001 | DONE | Implémenter le cœur des statuts civils | specs statuts civils V1 + arbitrages civils V1 | générateurs SCS/SCI/SCI IRIS + tests ciblés + MAJ doc |
-| FIX-STYLE-LETTERS-001 | READY | Corriger les écarts de style prioritaires des lettres | blueprint style batch V1 + générateurs existants | rendu lettres harmonisé + tests/smoke ciblés |
-| RESUME-FIX-STYLE-LETTERS-001 | READY | Reprendre proprement les corrections de style lettres | blueprint style batch V1 + état main synchronisé | reprise cadrée de FIX-STYLE-LETTERS-001 |
+| FIX-STYLE-LETTERS-001 | DONE | Corriger les écarts de style prioritaires des lettres | blueprint style batch V1 + générateurs existants | rendu lettres harmonisé + tests/smoke ciblés |
+| RESUME-FIX-STYLE-LETTERS-001 | DONE | Reprendre proprement les corrections de style lettres | blueprint style batch V1 + état main synchronisé | reprise cadrée de FIX-STYLE-LETTERS-001 absorbée |
+| ARBITRAGE-STATUTS-SCM-001 | READY | Arbitrer les points bloquants statuts SCM avant code | specs statuts civils V1 + anomalies SCM documentées | décisions SCM avant spec/code |
+| PREP-SCM-SAT-001 | READY | Préparer le périmètre SCM et satellites | arbitrage SCM + sources disponibles | cadrage sources et périmètre exploitable |
+| SPEC-SAS-SATELLITES-001 | READY | Spécifier les satellites SAS | specs statuts SAS V1 + sources satellites | spec canonique + spec texte avant code |
+| CODE-OPTION-IS-001 | READY | Implémenter la lettre option IS | specs/arbitrages applicables + source reçue | générateur DOCX + tests ciblés |
+| PREP-ACTE-ACTIONS-001 | READY | Préparer les sources acte de cession d'actions | arbitrages SPFPL + sources disponibles | source confirmée ou blocage documenté |
 | RESUME-ARBITRAGE-STATUTS-CIVILS-001 | DONE | Reprendre proprement l'arbitrage des statuts civils | specs statuts civils V1 + état main synchronisé | remplacé par l'arbitrage civils V1 absorbé |
 | STYLE-ANALYSE-BATCH-001 | DONE | Analyser le style documentaire en batch avant harmonisation | générateurs/statuts disponibles + besoins de rendu | cadrage style batch + points d'arbitrage |
 | SYNC-STYLE-CIVILS-001 | DONE | Synchroniser style batch et arbitrage civils dans main | branches style/arbitrage civils | commits intégrés + pilotage réaligné |
@@ -493,12 +498,42 @@
 - Objectif : corriger les écarts de style prioritaires des lettres à partir du blueprint batch V1.
 - Specs à lire : `docs/delivery/render_style_blueprint_batch_v1.md` et specs texte des lettres concernées.
 - Contraintes : ne pas modifier le wording juridique, limiter les changements au rendu DOCX, conserver les artefacts hors versionnement.
-- Statut : READY.
+- Statut : DONE ; rendu lettres harmonisé et absorbé dans `main` via `RESUME-FIX-STYLE-LETTERS-001`.
 
 ### RESUME-FIX-STYLE-LETTERS-001
 - Objectif : reprendre proprement la correction des écarts de style prioritaires des lettres depuis `main` synchronisé.
 - Specs à lire : `docs/delivery/render_style_blueprint_batch_v1.md` et specs texte des lettres concernées.
 - Contraintes : ne pas modifier le wording juridique, limiter les changements au rendu DOCX, conserver les artefacts hors versionnement.
+- Statut : DONE ; commit source `557fc1920361a8c7831e6b023d70471c9c29e5ff` absorbé dans `main`.
+
+### ARBITRAGE-STATUTS-SCM-001
+- Objectif : arbitrer les points bloquants statuts SCM avant toute implémentation.
+- Specs à lire : `docs/delivery/lot_04_statuts_civils_spec_canonique_v1.md`, `docs/delivery/lot_04_statuts_civils_spec_texte_v1.md` et `docs/delivery/lot_04_statuts_civils_arbitrages_v1.md`.
+- Contraintes : traiter l'anomalie source de parts et la ligne fixe `510 euros` avant code.
+- Statut : READY.
+
+### PREP-SCM-SAT-001
+- Objectif : préparer le périmètre SCM et satellites avant spécification/code.
+- Specs à lire : specs statuts civils V1 et arbitrages SCM à venir.
+- Contraintes : ne pas déplacer de sources sans décision explicite et documenter tout blocage de source.
+- Statut : READY.
+
+### SPEC-SAS-SATELLITES-001
+- Objectif : spécifier les satellites SAS avant code.
+- Specs à lire : specs statuts SAS V1 et sources satellites à confirmer.
+- Contraintes : conserver le wording source et isoler les satellites du générateur statuts SAS existant.
+- Statut : READY.
+
+### CODE-OPTION-IS-001
+- Objectif : implémenter la lettre option IS hors générateurs statuts.
+- Specs à lire : spec/arbitrage applicable avant code.
+- Contraintes : ne pas intégrer l'option IS dans les statuts civils ; générer un document dédié avec tests.
+- Statut : READY.
+
+### PREP-ACTE-ACTIONS-001
+- Objectif : préparer les sources de l'acte de cession d'actions.
+- Specs à lire : specs/arbitrages SPFPL V1 et source documentaire à confirmer.
+- Contraintes : ne pas coder sans source DOCX confirmée.
 - Statut : READY.
 
 ### UI-001
@@ -516,8 +551,10 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - mettre à jour `docs/project/04_LAST_STATE.md`
 
 ## Prochaine étape prévue
-- prochaine action recommandée : lancer `RESUME-FIX-STYLE-LETTERS-001` ou cadrer `CODE-STATUTS-SCM-001` selon la priorité métier.
-- tickets READY confirmés : `RESUME-FIX-STYLE-LETTERS-001` et `FIX-STYLE-LETTERS-001`; `CODE-STATUTS-SCM-001` reste à créer si la SCM devient prioritaire.
+- prochaine action recommandée : lancer `ARBITRAGE-STATUTS-SCM-001`.
+- tickets READY confirmés : `ARBITRAGE-STATUTS-SCM-001`, `PREP-SCM-SAT-001`, `SPEC-SAS-SATELLITES-001`, `CODE-OPTION-IS-001` et `PREP-ACTE-ACTIONS-001`.
+- `RESUME-FIX-STYLE-LETTERS-001` est DONE et absorbé dans `main`.
+- `FIX-STYLE-LETTERS-001` est DONE et absorbé dans `main`.
 - `CODE-STATUTS-SEL-001` est DONE et absorbé dans `main`.
 - `CODE-STATUTS-CIVILS-CORE-001` est DONE pour SCS, SCI et SCI IRIS.
 - `STYLE-ANALYSE-BATCH-001` et `ARBITRAGE-STATUTS-CIVILS-001` sont DONE et absorbés dans `main`.
@@ -609,3 +646,4 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - 2026-05-15 : SYNC-STYLE-CIVILS-001 absorbe dans `main` les commits sources `76dd139da65c233f0c6aecc76bc2ea5e929381ca` et `b21f1b0cc5b975049e4acc279b8303f1d739b60f`, passe `STYLE-ANALYSE-BATCH-001` et `ARBITRAGE-STATUTS-CIVILS-001` en DONE, puis confirme `CODE-STATUTS-SEL-001`, `CODE-STATUTS-CIVILS-CORE-001` et `FIX-STYLE-LETTERS-001` en READY, sans modification de `project/source_import/raw_drive_dump/` ni de `artifacts/`.
 - 2026-05-15 : SYNC-STATUTS-SEL-CIVILS-001 absorbe dans `main` le commit source `9a79560c4bae1ae3a98ec5305b4187f9f4ebd6a8`, confirme l'arbitrage civils V1 déjà présent avec un contenu identique au commit source `b21f1b0cc5b975049e4acc279b8303f1d739b60f`, passe `CODE-STATUTS-SEL-001` en DONE, puis confirme `RESUME-FIX-STYLE-LETTERS-001` et `CODE-STATUTS-CIVILS-CORE-001` en READY, sans modification de `project/source_import/raw_drive_dump/` ni de `artifacts/`.
 - 2026-05-15 : CODE-STATUTS-CIVILS-CORE-001 implémente les générateurs statuts SCS, SCI et SCI IRIS, ajoute le modèle `statuts_civils`, branche DOC-019 à DOC-021 au catalogue/orchestrateur, ajoute le contexte exemple et génère le smoke DOCX réel ; SCM reste hors ticket.
+- 2026-05-15 : SYNC-WAVE-004 absorbe dans `main` les commits sources `557fc1920361a8c7831e6b023d70471c9c29e5ff` et `291da7b6db68b3de413fba50cf652dde98a8f6a8`, passe `RESUME-FIX-STYLE-LETTERS-001`, `FIX-STYLE-LETTERS-001` et `CODE-STATUTS-CIVILS-CORE-001` en DONE, puis confirme `ARBITRAGE-STATUTS-SCM-001`, `PREP-SCM-SAT-001`, `SPEC-SAS-SATELLITES-001`, `CODE-OPTION-IS-001` et `PREP-ACTE-ACTIONS-001` en READY, sans modification de `project/source_import/raw_drive_dump/` ni de `artifacts/`.
