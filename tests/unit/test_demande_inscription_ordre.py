@@ -5,6 +5,8 @@ from pathlib import Path
 
 import pytest
 from docx import Document
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.shared import Cm
 
 from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import (
@@ -124,6 +126,10 @@ def _paragraphs(path: Path) -> list[str]:
     return [paragraph.text for paragraph in Document(path).paragraphs if paragraph.text]
 
 
+def _matching_paragraphs(path: Path, text: str):
+    return [paragraph for paragraph in Document(path).paragraphs if paragraph.text == text]
+
+
 def _assert_no_source_placeholders(text: str) -> None:
     assert "[" not in text
     assert "]" not in text
@@ -146,6 +152,20 @@ def test_demande_inscription_ordre_selarl_uses_structured_ordinal_address(
         "Je donne pouvoir à Madame Sophie Martin, juriste du cabinet DAAT pour effectuer "
         "les formalités."
     ) in text
+    assert _matching_paragraphs(output_path, "Paris, le 14/05/2026")[0].alignment == (
+        WD_ALIGN_PARAGRAPH.RIGHT
+    )
+    subject = _matching_paragraphs(
+        output_path,
+        "Objet : Demande d’inscription au tableau de l’Ordre",
+    )[0]
+    assert subject.runs[0].bold is True
+    assert subject.runs[0].underline is True
+    recipient = _matching_paragraphs(output_path, "Conseil départemental de l’Ordre")[0]
+    assert recipient.paragraph_format.left_indent > Cm(8)
+    assert _matching_paragraphs(output_path, "Dr Jean Durand")[-1].alignment == (
+        WD_ALIGN_PARAGRAPH.RIGHT
+    )
     _assert_no_source_placeholders(text)
 
 

@@ -14,7 +14,15 @@ from sydel_doc_engine.domain.models import (
     OrdreProfessionnel,
     Person,
 )
-from sydel_doc_engine.rendering.docx_builder import add_paragraph, new_document
+from sydel_doc_engine.rendering.docx_builder import (
+    add_letter_place_date,
+    add_paragraph,
+    add_right_aligned_lines,
+    add_right_indented_block,
+    add_spacer,
+    add_subject_heading,
+    new_document,
+)
 
 OUTPUT_FILENAME = "demande_inscription_ordre.docx"
 DOCUMENT_CODE = "CODE-ORDRE-001"
@@ -231,18 +239,35 @@ def _add_header(
 ) -> None:
     _add_lines(document, [signataire_name, profession_signataire])
     _add_lines(document, _split_display_lines(adresse_personnelle, "adresse_personnelle"))
-    document.add_paragraph()
-    _add_lines(document, [conseil_libelle, f"Des {profession_ligne_destinataire}"])
-    _add_lines(document, adresse_ordre_lines)
-    document.add_paragraph()
+    add_spacer(document, space_after_pt=10)
+    add_right_indented_block(
+        document,
+        [conseil_libelle, f"Des {profession_ligne_destinataire}"],
+        left_indent_cm=8.7,
+        first_line_indent_cm=1.2,
+        space_after_pt=2,
+    )
+    add_right_indented_block(
+        document,
+        adresse_ordre_lines,
+        left_indent_cm=9.7,
+        space_after_pt=2,
+    )
+    add_spacer(document, space_after_pt=12)
 
 
 def _add_signature_place_and_subject(document, ctx: DocumentGenerationContext) -> None:
     lieu_signature = _required_text(ctx.signature.lieu, "signature.lieu")
-    add_paragraph(document, f"{lieu_signature}, le {_format_date(ctx.signature.date)}")
-    document.add_paragraph()
-    add_paragraph(document, "Objet : Demande d’inscription au tableau de l’Ordre")
-    document.add_paragraph()
+    add_letter_place_date(
+        document,
+        f"{lieu_signature}, le {_format_date(ctx.signature.date)}",
+        space_after_pt=12,
+    )
+    add_subject_heading(
+        document,
+        "Objet : Demande d’inscription au tableau de l’Ordre",
+        space_after_pt=12,
+    )
 
 
 def _add_body(
@@ -285,8 +310,8 @@ def _add_body(
 
 
 def _add_final_signature(document, signataire_name: str) -> None:
-    document.add_paragraph()
-    add_paragraph(document, signataire_name)
+    add_spacer(document, space_after_pt=12)
+    add_right_aligned_lines(document, [signataire_name], space_after_pt=0)
 
 
 def _add_lines(document, lines: list[str]) -> None:

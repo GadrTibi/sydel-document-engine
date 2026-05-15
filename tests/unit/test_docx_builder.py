@@ -5,11 +5,18 @@ from docx.oxml.ns import qn
 from docx.shared import Cm, Pt
 
 from sydel_doc_engine.rendering.docx_builder import (
+    LETTER_WIDE_STYLE_PROFILE,
+    add_company_identity_block,
     add_framed_signature_block,
     add_framed_title,
     add_hyphen_list_item,
+    add_italic_instruction,
     add_legal_reminder,
+    add_letter_place_date,
     add_paragraph,
+    add_right_aligned_lines,
+    add_right_indented_block,
+    add_subject_heading,
     new_document,
 )
 
@@ -89,3 +96,32 @@ def test_paragraph_and_legal_reminder_helpers_apply_text_styles() -> None:
     reminder_text = document.paragraphs[3]
     assert reminder_text.alignment == WD_ALIGN_PARAGRAPH.JUSTIFY
     assert reminder_text.runs[0].italic is True
+
+
+def test_letter_helpers_apply_structural_alignment_and_emphasis() -> None:
+    document = new_document(style_profile=LETTER_WIDE_STYLE_PROFILE)
+
+    place_date = add_letter_place_date(document, "Paris, le 15/05/2026")
+    right_lines = add_right_aligned_lines(document, ["Signature"])
+    recipient = add_right_indented_block(
+        document,
+        ["Conseil departemental"],
+        left_indent_cm=8.7,
+        first_line_indent_cm=1.2,
+    )
+    subject = add_subject_heading(document, "Objet : test")
+    company = add_company_identity_block(document, ["SOCIETE", "SELAS"])
+    instruction = add_italic_instruction(document, "Mention manuscrite")
+
+    section = document.sections[0]
+    assert abs(section.left_margin - Cm(3.17)) < 300
+    assert abs(section.right_margin - Cm(3.17)) < 300
+    assert place_date.alignment == WD_ALIGN_PARAGRAPH.RIGHT
+    assert right_lines[0].alignment == WD_ALIGN_PARAGRAPH.RIGHT
+    assert abs(recipient[0].paragraph_format.left_indent - Cm(8.7)) < 300
+    assert abs(recipient[0].paragraph_format.first_line_indent - Cm(1.2)) < 300
+    assert subject.runs[0].bold is True
+    assert subject.runs[0].underline is True
+    assert company[0].alignment == WD_ALIGN_PARAGRAPH.CENTER
+    assert company[0].runs[0].bold is True
+    assert instruction.runs[0].italic is True
