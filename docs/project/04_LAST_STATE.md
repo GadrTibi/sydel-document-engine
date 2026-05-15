@@ -4,6 +4,8 @@
 2026-05-15
 
 ## Dernier ticket terminé
+SYNC-CLOSE-AUDIT-001 : absorption dans `main` du commit source `0139202b170531fd628f25811c55855a2512acc0` depuis `origin/codex/close-motor-audit-001`, confirmation de `docs/project/16_MOTOR_COMPLETION_AUDIT_V1.md` et conservation de la version finale plus récente déjà présente dans `main`, sans modification de code Python.
+
 FINAL-SCM-CESSION-WAVE-001 : restauration de la résolution V1 cession SCM depuis la branche d'arbitrage, implémentation du bloc cession SCM sous `DOC-031` à `DOC-033`, smoke DOCX réel, validations ruff/pytest et audit de clôture moteur V1.
 
 SYNC-WAVE-010 : absorption finale dans `main` des branches `codex/arbitrage-scm-cession-resolve-001` et `codex/code-scm-cession-block-001`, passage en DONE des tickets SCM cession finaux et réalignement du pilotage vers UI, PDF, ZIP et recette finale.
@@ -303,6 +305,7 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
 - `ARBITRAGE-SCM-CESSION-RESOLVE-001` est DONE.
 - `SYNC-WAVE-010` est DONE.
 - `FINAL-SCM-CESSION-WAVE-001` est DONE.
+- `SYNC-CLOSE-AUDIT-001` est DONE.
 - `RESUME-ARBITRAGE-STATUTS-CIVILS-001` est DONE, remplacé par l'arbitrage civils V1 absorbé.
 - `STYLE-ANALYSE-BATCH-001` est DONE.
 - `SYNC-STYLE-CIVILS-001` est DONE.
@@ -464,6 +467,8 @@ Prochains chantiers recommandés :
 
 `FINAL-SCM-CESSION-WAVE-001` est DONE : le bloc cession SCM est implémenté sous `DOC-031`, `DOC-032` et `DOC-033`, le moteur DOCX V1 est feature complete hors exclusions manuelles/legacy, et `docs/project/16_MOTOR_COMPLETION_AUDIT_V1.md` porte la conclusion de clôture.
 
+`SYNC-CLOSE-AUDIT-001` est DONE : le commit source `0139202b170531fd628f25811c55855a2512acc0` a été absorbé depuis `origin/codex/close-motor-audit-001` par merge de synchronisation ; l'audit présent sur `main` reste la version finale plus récente.
+
 `ARBITRAGE-SCM-CESSION-RESOLVE-001` et `CODE-SCM-CESSION-BLOCK-001` sont DONE et absorbés dans `main` via SYNC-WAVE-010.
 
 `CODE-SCM-LISTE-DEPENSES-001`, `SPEC-DEROG-SALARIEE-MANUAL-001`, `REVIEW-BATCH-LOT05-001`, `FIX-STYLE-STATUTS-BATCH-001` et `FIX-STYLE-LOT03-BATCH-001` sont DONE et absorbés dans `main` via SYNC-WAVE-009.
@@ -553,6 +558,9 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
 - FINAL-SCM-CESSION-WAVE-001 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m ruff check .` OK.
 - FINAL-SCM-CESSION-WAVE-001 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m pytest` OK, 172 tests passés.
 - FINAL-SCM-CESSION-WAVE-001 : `artifacts/` non versionné.
+- SYNC-CLOSE-AUDIT-001 : `git fetch --all --prune` OK.
+- SYNC-CLOSE-AUDIT-001 : `origin/codex/close-motor-audit-001` confirmé au commit `0139202b170531fd628f25811c55855a2512acc0`.
+- SYNC-CLOSE-AUDIT-001 : `docs/project/16_MOTOR_COMPLETION_AUDIT_V1.md` présent sur `main` ; relecture documentaire et contrôle du diff, aucun test de code exécuté car aucun fichier Python modifié.
 - SYNC-WAVE-010 : `git fetch --all --prune` OK.
 - SYNC-WAVE-010 : `codex/arbitrage-scm-cession-resolve-001` confirmé au même commit que `main`, et `codex/code-scm-cession-block-001` confirmé ancêtre de `main`.
 - SYNC-WAVE-010 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m ruff check .` OK.

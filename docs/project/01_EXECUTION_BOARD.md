@@ -112,6 +112,7 @@
 | ARBITRAGE-SCM-CESSION-RESOLVE-001 | DONE | Arbitrer la résolution de la cession SCM | specs de blocage cession SCM + sources préparées + vague style/revue absorbée | décision de résolution avant code |
 | SYNC-WAVE-010 | DONE | Synchroniser la vague finale moteur SCM cession dans main | branches arbitrage/code SCM cession | commits intégrés + pilotage final moteur aligné |
 | FINAL-SCM-CESSION-WAVE-001 | DONE | Finaliser le bloc cession SCM et clôturer la vague moteur V1 | résolution SCM cession V1 + specs + six sources | DOC-031 à DOC-033 + tests + smoke + audit moteur |
+| SYNC-CLOSE-AUDIT-001 | DONE | Synchroniser l'audit de clôture moteur V1 dans main | `origin/codex/close-motor-audit-001` @ `0139202b170531fd628f25811c55855a2512acc0` | merge de synchronisation + audit présent + pilotage aligné |
 | UI-001 | BLOCKED | Brancher Streamlit V0 Lot 1 | orchestrateur Lot 1 + spec canonique PV nomination gérant validée | écran simple + test manuel |
 
 ## Référentiels moteur disponibles
@@ -723,6 +724,11 @@
 - Contraintes : DOCX uniquement, sans UI, PDF, ZIP, ni versionnement de `artifacts/`.
 - Statut : DONE ; `DOC-031`, `DOC-032` et `DOC-033` sont branchés, testés et couverts par smoke DOCX réel.
 
+### SYNC-CLOSE-AUDIT-001
+- Objectif : absorber proprement le commit d'audit moteur `0139202b170531fd628f25811c55855a2512acc0` dans `main`.
+- Contraintes : conserver l'audit de clôture plus récent déjà présent dans `main`, sans modification de code Python.
+- Statut : DONE ; merge de synchronisation effectué, `docs/project/16_MOTOR_COMPLETION_AUDIT_V1.md` confirmé présent.
+
 ### UI-001
 - Objectif : exposer une Streamlit simple pour générer le Lot 1.
 - Statut : en attente explicite ; ne pas lancer sans ticket explicite dédié.
@@ -742,6 +748,7 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - prochains chantiers recommandés : UI, PDF, ZIP, recette finale.
 - `FINAL-SCM-CESSION-WAVE-001` est DONE ; `DOC-031`, `DOC-032` et `DOC-033` cession SCM sont branchés au catalogue/orchestrateur et couverts par tests/smoke.
 - `docs/project/16_MOTOR_COMPLETION_AUDIT_V1.md` conclut la clôture moteur V1 et liste les exclusions restantes.
+- `SYNC-CLOSE-AUDIT-001` est DONE ; le commit source `0139202b170531fd628f25811c55855a2512acc0` a été absorbé via merge de synchronisation en conservant la version finale plus récente de l'audit.
 - tickets absorbés par SYNC-WAVE-010 : `ARBITRAGE-SCM-CESSION-RESOLVE-001` et `CODE-SCM-CESSION-BLOCK-001`.
 - `ARBITRAGE-SCM-CESSION-RESOLVE-001` est DONE.
 - `CODE-SCM-CESSION-BLOCK-001` est DONE.
@@ -869,3 +876,4 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - 2026-05-15 : SYNC-WAVE-007 absorbe dans `main` les commits sources `3c040774cdfe57c203b78776a9ea412ec3d14d94`, `6453b6f64665feda898a076f730cba9a6684825b`, `075af377f7c9d7475429f1e738b46483127d757f` et `c221681570782a1b1efc5afc72087cb903cd8a65`, passe les quatre tickets correspondants en DONE, puis confirme les prochains tickets READY, sans modification de `project/source_import/raw_drive_dump/` ni de `artifacts/`.
 - 2026-05-15 : SYNC-WAVE-008 absorbe dans `main` les commits sources `61a1c49353724bbf5b8f1bb8f039d5e96b877ecc`, `d3188c0b4a4a61d889a2ce9ccc37e84e1284adaa`, `939e1c2088892abcf4a8fdcbaa35911f4f8a2f9f`, `19468886f5e885f79b2b35e17e2ff2a097ea9c3a`, `d8747ef20aba478c575c5a491cdf0f634a9c26d3`, `00b4c955b372399bb8701f47a5686748539f061b`, `a181e069f756a1ea846fdcd1824b3f8c57cc11f5` et `518e46fbb8d8bee03a23ea203654b4199103fb7e`, passe les huit tickets correspondants en DONE, puis confirme les prochains tickets READY, sans modification de `project/source_import/raw_drive_dump/` ni de `artifacts/`.
 - 2026-05-15 : FINAL-SCM-CESSION-WAVE-001 restaure la résolution V1 cession SCM, implémente `DOC-031` à `DOC-033`, génère le smoke DOCX réel, valide ruff/pytest et crée l'audit de clôture moteur V1.
+- 2026-05-15 : SYNC-CLOSE-AUDIT-001 absorbe le commit source `0139202b170531fd628f25811c55855a2512acc0` depuis `origin/codex/close-motor-audit-001`, confirme `docs/project/16_MOTOR_COMPLETION_AUDIT_V1.md` sur `main` et conserve la version finale plus récente, sans modification de code Python.

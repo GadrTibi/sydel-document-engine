@@ -6,6 +6,11 @@
 ## Ticket de clôture
 `FINAL-SCM-CESSION-WAVE-001`
 
+## Synchronisation
+Le commit source `0139202b170531fd628f25811c55855a2512acc0` de `origin/codex/close-motor-audit-001` a été absorbé dans `main` par `SYNC-CLOSE-AUDIT-001`.
+
+La présente version conserve la conclusion plus récente de `FINAL-SCM-CESSION-WAVE-001`.
+
 ## Conclusion
 Le moteur documentaire V1 est feature complete pour le périmètre de génération DOCX déterministe validé dans les specs et arbitrages disponibles.
 
