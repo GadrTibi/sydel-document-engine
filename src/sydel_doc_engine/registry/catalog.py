@@ -550,6 +550,63 @@ def build_seed_catalog() -> list[DocumentDefinition]:
             specification_path="docs/delivery/lot_05_lettre_option_is_spec_v1.md",
             notes="Document dedie, non injecte dans les statuts civils.",
         ),
+        DocumentDefinition(
+            doc_id="DOC-023",
+            canonical_name="PV remuneration president SAS",
+            generator_name="generate_pv_remuneration_president_sas",
+            lot=5,
+            category=DocumentCategory.SPECIFIQUE,
+            structures=STATUTS_SAS_STRUCTURES,
+            general_condition="dossier.structure == SAS",
+            specific_conditions=[
+                "statuts_sas.type == spfpl_medecins",
+                "statuts_sas.profession == medecin",
+                "dossier.options.associe_unique == true",
+                "president.ref_associe_index == 0",
+                "remuneration_president.type == absence_remuneration",
+            ],
+            dynamic_associates=False,
+            grammar_variants=False,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path=(
+                "project/source_import/raw_drive_dump/Creation SAS/"
+                "PV remuneration president - transforme.docx"
+            ),
+            specification_path="docs/delivery/lot_05_sas_satellites_spec_texte_v1.md",
+            notes=(
+                "Satellite SAS V1 limite au president masculin actionnaire unique et "
+                "a l'absence de remuneration jusqu'a la cloture du premier exercice."
+            ),
+        ),
+        DocumentDefinition(
+            doc_id="DOC-024",
+            canonical_name="Attestation capital / liste des souscripteurs SAS",
+            generator_name="generate_attestation_capital_liste_souscripteurs_sas",
+            lot=5,
+            category=DocumentCategory.SPECIFIQUE,
+            structures=STATUTS_SAS_STRUCTURES,
+            general_condition="dossier.structure == SAS",
+            specific_conditions=[
+                "statuts_sas.type == spfpl_medecins",
+                "statuts_sas.profession == medecin",
+                "dossier.options.associe_unique == true",
+                "dossier.options.apport == true",
+                "un seul souscripteur",
+                "apports en nature structures",
+            ],
+            dynamic_associates=False,
+            grammar_variants=False,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path=(
+                "project/source_documents/lot_05/"
+                "Attestation sur le capital - apport - liste des souscripteurs.docx"
+            ),
+            specification_path="docs/delivery/lot_05_sas_satellites_spec_texte_v1.md",
+            notes=(
+                "Satellite SAS V1 ; la duplication attestation/liste des souscripteurs "
+                "est rendue comme un seul document."
+            ),
+        ),
     ]
 
 

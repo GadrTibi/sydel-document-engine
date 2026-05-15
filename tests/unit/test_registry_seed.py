@@ -3,9 +3,9 @@ from __future__ import annotations
 from sydel_doc_engine.registry.catalog import build_seed_catalog
 
 
-def test_seed_catalog_contains_twenty_two_documents() -> None:
+def test_seed_catalog_contains_twenty_four_documents() -> None:
     catalog = build_seed_catalog()
-    assert len(catalog) == 22
+    assert len(catalog) == 24
 
 
 def test_seed_catalog_contains_lot_one_to_lot_five_entries() -> None:
@@ -139,3 +139,15 @@ def test_seed_catalog_option_is_scope_is_limited_to_sci_structures() -> None:
     assert set(option_is.structures) == {"SCI", "SCI IRIS"}
     assert option_is.general_condition == "dossier.options.option_is == true"
     assert option_is.source_path == "project/source_documents/lot_05/lettre option IS.docx"
+
+
+def test_seed_catalog_sas_satellites_scope_is_limited_to_sas() -> None:
+    catalog = build_seed_catalog()
+
+    pv = next(document for document in catalog if document.doc_id == "DOC-023")
+    attestation = next(document for document in catalog if document.doc_id == "DOC-024")
+
+    assert set(pv.structures) == {"SAS"}
+    assert set(attestation.structures) == {"SAS"}
+    assert "remuneration_president.type == absence_remuneration" in pv.specific_conditions
+    assert "un seul souscripteur" in attestation.specific_conditions
