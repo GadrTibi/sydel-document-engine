@@ -25,7 +25,12 @@ from sydel_doc_engine.generators.lot_04.statuts_scm import StatutsScmGenerator
 
 def _docx_text(path: Path) -> str:
     document = Document(path)
-    return "\n".join(paragraph.text for paragraph in document.paragraphs if paragraph.text)
+    texts = [paragraph.text for paragraph in document.paragraphs if paragraph.text]
+    for table in document.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                texts.extend(paragraph.text for paragraph in cell.paragraphs if paragraph.text)
+    return "\n".join(texts)
 
 
 def _assert_clean(text: str) -> None:
@@ -118,6 +123,15 @@ def test_statuts_scm_generates_dynamic_associates_apports_parts_and_signatures(
 ) -> None:
     output_path = StatutsScmGenerator().generate(_context(), tmp_path)
     text = _docx_text(output_path)
+    document = Document(output_path)
+    table_text = "\n".join(
+        paragraph.text
+        for table in document.tables
+        for row in table.rows
+        for cell in row.cells
+        for paragraph in cell.paragraphs
+    )
+    lu_approuve = next(p for p in document.paragraphs if "Lu et approuvé" in p.text)
 
     assert output_path.name == "statuts_scm.docx"
     assert "Article 4 ‐ Objet social" in text
@@ -126,6 +140,8 @@ def test_statuts_scm_generates_dynamic_associates_apports_parts_and_signatures(
     assert "ci- 500." in text
     assert "510" not in text
     assert "« Lu et approuvé »" in text
+    assert "STATUTS" in table_text
+    assert any(run.italic for run in lu_approuve.runs)
     _assert_clean(text)
 
 

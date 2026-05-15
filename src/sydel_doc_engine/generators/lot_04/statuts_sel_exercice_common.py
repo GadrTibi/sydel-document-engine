@@ -12,7 +12,16 @@ from sydel_doc_engine.domain.models import (
     Company,
     DocumentGenerationContext,
 )
-from sydel_doc_engine.rendering.docx_builder import add_paragraph, new_document
+from sydel_doc_engine.rendering.docx_builder import (
+    add_paragraph,
+    add_statuts_annex_heading,
+    add_statuts_article_heading,
+    add_statuts_body_paragraph,
+    add_statuts_hanging_list_item,
+    add_statuts_signature_block,
+    add_statuts_title_box,
+    new_document,
+)
 
 DOCUMENT_CODE = "CODE-STATUTS-SEL-001"
 STRUCTURE_SELARL = "SELARL"
@@ -260,21 +269,44 @@ def render_statuts_sel_docx(
     associate: Associe,
     skip_personne_2_line: bool = False,
     render_selas_second_lieu: bool = False,
+    title_box_bordered: bool = True,
 ) -> Path:
     docx = new_document()
-    for block in blocks:
+    signature_mode = False
+    for index, block in enumerate(blocks):
         if skip_personne_2_line and "[civilite_personne_2]" in block:
             continue
         if "[nom_lieu_exercice_2]" in block and not render_selas_second_lieu:
             continue
+        if index == 4:
+            add_statuts_title_box(docx, "STATUTS", bordered=title_box_bordered)
         text = replace_placeholders(block, replacements)
         text = apply_gender_variants(text, associate)
         if _is_heading(text):
-            add_paragraph(docx, text, alignment=WD_ALIGN_PARAGRAPH.CENTER, bold=True)
+            if text.startswith("ANNEXE"):
+                signature_mode = False
+            if text.startswith("ANNEXE"):
+                add_statuts_annex_heading(docx, text)
+            else:
+                add_paragraph(docx, text, alignment=WD_ALIGN_PARAGRAPH.CENTER, bold=True)
         elif text.startswith("ARTICLE "):
-            add_paragraph(docx, text, bold=True, space_before_pt=10)
+            add_statuts_article_heading(docx, text)
+        elif text.startswith("Fait à ") or text.startswith("Fait a "):
+            signature_mode = True
+            add_statuts_signature_block(docx, [text])
+        elif signature_mode and (
+            "Faire précéder" in text
+            or "Faire prÃ©cÃ©der" in text
+            or text.startswith("«")
+            or text.startswith("Â«")
+        ):
+            add_statuts_signature_block(docx, [], mention_lines=[text])
+        elif signature_mode:
+            add_statuts_signature_block(docx, [text])
+        elif text.startswith("-") or text.startswith("-\t"):
+            add_statuts_hanging_list_item(docx, text.lstrip("-\t "))
         else:
-            add_paragraph(docx, text, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY)
+            add_statuts_body_paragraph(docx, text)
 
     full_text = "\n".join(paragraph.text for paragraph in docx.paragraphs)
     if "[" in full_text or "]" in full_text:

@@ -18,6 +18,11 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_centered_block,
     add_hyphen_list_item,
     add_paragraph,
+    add_statuts_annex_heading,
+    add_statuts_article_heading,
+    add_statuts_body_paragraph,
+    add_statuts_hanging_list_item,
+    add_statuts_signature_block,
     new_document,
 )
 
@@ -470,38 +475,40 @@ def _fixed_articles_18_to_27(document) -> None:
 
 
 def _add_signature_and_annex(document, data: _ResolvedStatutsSas) -> None:
-    add_paragraph(document, f"Fait à {data.signature_lieu}")
-    add_paragraph(document, "Le")
-    add_paragraph(document, f"{data.president.prenom} {data.president.nom}")
-    add_paragraph(document, "Faire précéder de la mention")
-    add_paragraph(document, "« Bon pour acceptation des fonctions de Président »")
-    document.add_page_break()
-    add_paragraph(document, "ANNEXE", alignment=WD_ALIGN_PARAGRAPH.CENTER, bold=True)
-    add_paragraph(
+    add_statuts_signature_block(
         document,
-        "ETAT DES ENGAGEMENTS PRIS AVANT",
-        alignment=WD_ALIGN_PARAGRAPH.CENTER,
-        bold=True,
+        [
+            f"Fait à {data.signature_lieu}",
+            "Le",
+            f"{data.president.prenom} {data.president.nom}",
+        ],
+        mention_lines=[
+            "Faire précéder de la mention",
+            "« Bon pour acceptation des fonctions de Président »",
+        ],
     )
-    add_paragraph(
+    document.add_page_break()
+    add_statuts_annex_heading(
         document,
-        "LA CONSTITUTION DE LA SOCIETE",
-        alignment=WD_ALIGN_PARAGRAPH.CENTER,
-        bold=True,
+        "ANNEXE",
+        "ETAT DES ENGAGEMENTS PRIS AVANT\nLA CONSTITUTION DE LA SOCIETE",
     )
     add_paragraph(document, "Ouverture d'un compte bancaire auprès de la Banque.")
 
 
 def _article(document, title: str) -> None:
-    add_paragraph(document, title, bold=True, space_before_pt=10)
+    add_statuts_article_heading(document, title)
 
 
 def _paragraphs(document, paragraphs: list[str]) -> None:
     for paragraph in paragraphs:
+        if paragraph.startswith("- "):
+            add_statuts_hanging_list_item(document, paragraph[2:])
+            continue
         if paragraph.startswith("ARTICLE "):
             _article(document, paragraph)
         else:
-            add_paragraph(document, paragraph, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY)
+            add_statuts_body_paragraph(document, paragraph)
 
 
 def _validate_sas_scope(ctx: DocumentGenerationContext) -> None:

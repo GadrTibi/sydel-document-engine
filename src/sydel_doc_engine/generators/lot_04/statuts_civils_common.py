@@ -5,7 +5,6 @@ from datetime import date
 from pathlib import Path
 
 from docx import Document
-from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import (
@@ -14,7 +13,18 @@ from sydel_doc_engine.domain.models import (
     StatutsCivilsAssocie,
     StatutsCivilsContext,
 )
-from sydel_doc_engine.rendering.docx_builder import add_paragraph, new_document
+from sydel_doc_engine.rendering.docx_builder import (
+    add_paragraph,
+    add_statuts_article_heading,
+    add_statuts_body_paragraph,
+    add_statuts_hanging_list_item,
+    add_statuts_matrix_table,
+    add_statuts_part_heading,
+    add_statuts_signature_block,
+    add_statuts_signature_grid,
+    add_statuts_title_box,
+    new_document,
+)
 
 DOCUMENT_CODE = "CODE-STATUTS-CIVILS-CORE-001"
 MAX_ASSOCIES = 6
@@ -366,13 +376,21 @@ def _add_capital_block(document, data: _ResolvedStatutsCivil) -> None:
 def _add_signature_block(document, data: _ResolvedStatutsCivil) -> None:
     if data.template.signature_slice is not None:
         add_paragraph(document, f"A {data.signature_lieu}, le {data.signature_date}")
-    for associe in [a for a in data.associes if a.est_signataire]:
-        if data.template.expected_type == "scs":
-            add_paragraph(document, "Lu et approuve")
-        add_paragraph(document, _signature_label(associe), alignment=WD_ALIGN_PARAGRAPH.CENTER)
+    signers = [_signature_label(a) for a in data.associes if a.est_signataire]
+    if data.template.expected_type == "scs":
+        add_statuts_signature_grid(document, signers, mention="Lu et approuve")
+        return
+    for signer in signers:
+        add_statuts_signature_block(
+            document,
+            [signer],
+            bold=True,
+            underline=True,
+        )
 
 
 def _add_resultat_groupes_block(document, data: _ResolvedStatutsCivil) -> None:
+    rows = []
     for group in data.statuts.resultat_groupes_parts:
         parts_debut = _required_int(
             group.parts_debut,
@@ -386,15 +404,14 @@ def _add_resultat_groupes_block(document, data: _ResolvedStatutsCivil) -> None:
             group.quote_part_resultat_exceptionnel,
             "statuts_civils.resultat_groupes_parts[].quote_part_resultat_exceptionnel",
         )
-        add_paragraph(
-            document,
-            f"Parts {parts_debut} a {parts_fin} : {quote_part}",
-        )
+        rows.append((f"Parts {parts_debut} a {parts_fin}", quote_part))
     if data.statuts.resultat_quote_part_exceptionnel_total:
-        add_paragraph(
-            document,
-            f"Total : {data.statuts.resultat_quote_part_exceptionnel_total}",
-        )
+        rows.append(("Total", data.statuts.resultat_quote_part_exceptionnel_total))
+    add_statuts_matrix_table(
+        document,
+        ("Groupe de parts", "Quote-part de résultat exceptionnel"),
+        rows,
+    )
 
 
 def _add_apport_line(
@@ -585,12 +602,16 @@ def _source_path(template: StatutsCivilTemplate) -> Path:
 
 
 def _add_rendered_paragraph(document, text: str) -> None:
-    if text == "STATUTS" or text.startswith("TITRE "):
-        add_paragraph(document, text, alignment=WD_ALIGN_PARAGRAPH.CENTER, bold=True)
+    if text == "STATUTS":
+        add_statuts_title_box(document, text)
+    elif text.startswith("TITRE "):
+        add_statuts_part_heading(document, text)
     elif text.startswith("ARTICLE ") or text.startswith("Article "):
-        add_paragraph(document, text, bold=True, space_before_pt=10)
+        add_statuts_article_heading(document, text, left_indent_cm=0.25)
+    elif text.startswith("- "):
+        add_statuts_hanging_list_item(document, text[2:])
     else:
-        add_paragraph(document, text, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY)
+        add_statuts_body_paragraph(document, text)
 
 
 def _replace_placeholders(text: str, replacements: dict[str, str]) -> str:

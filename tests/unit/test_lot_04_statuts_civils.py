@@ -28,7 +28,12 @@ from sydel_doc_engine.generators.lot_04.statuts_scs import StatutsScsGenerator
 
 def _docx_text(path: Path) -> str:
     document = Document(path)
-    return "\n".join(paragraph.text for paragraph in document.paragraphs if paragraph.text)
+    texts = [paragraph.text for paragraph in document.paragraphs if paragraph.text]
+    for table in document.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                texts.extend(paragraph.text for paragraph in cell.paragraphs if paragraph.text)
+    return "\n".join(texts)
 
 
 def _assert_clean(text: str) -> None:
@@ -231,11 +236,21 @@ def test_statuts_scs_generates_roles_and_lu_approuve(tmp_path: Path) -> None:
 
     output_path = StatutsScsGenerator().generate(ctx, tmp_path)
     text = _docx_text(output_path)
+    document = Document(output_path)
+    signature_table_text = "\n".join(
+        paragraph.text
+        for table in document.tables
+        for row in table.rows
+        for cell in row.cells
+        for paragraph in cell.paragraphs
+    )
 
     assert output_path.name == "statuts_scs.docx"
     assert "Associes commandites" in text
     assert "Associes commanditaires" in text
     assert "Lu et approuve" in text
+    assert "Monsieur Jean Durand" in signature_table_text
+    assert "Monsieur Alice Martin" in signature_table_text
     _assert_clean(text)
 
 
@@ -278,10 +293,20 @@ def test_statuts_sci_iris_generates_morale_and_result_groups(tmp_path: Path) -> 
 
     output_path = StatutsSciIrisGenerator().generate(ctx, tmp_path)
     text = _docx_text(output_path)
+    document = Document(output_path)
+    matrix_table_text = "\n".join(
+        paragraph.text
+        for table in document.tables
+        for row in table.rows
+        for cell in row.cells
+        for paragraph in cell.paragraphs
+    )
 
     assert output_path.name == "statuts_sci_iris.docx"
     assert "SCI IRIS" in text
     assert "SEL IRIS, representee par Monsieur Jean Durand" in text
-    assert "Parts 1 a 40 : 40 %" in text
-    assert "Total : 100 %" in text
+    assert "Parts 1 a 40" in matrix_table_text
+    assert "40 %" in matrix_table_text
+    assert "Total" in matrix_table_text
+    assert "100 %" in matrix_table_text
     _assert_clean(text)
