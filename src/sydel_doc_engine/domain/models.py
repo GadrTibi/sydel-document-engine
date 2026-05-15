@@ -53,6 +53,7 @@ class Company(BaseModel):
     forme_sociale_complete: str | None = None
     forme_sociale_abregee: str | None = None
     denomination: str | None = None
+    denomination_courte: str | None = None
     capital: str | None = None
     capital_social: str | None = None
     capital_social_lettres: str | None = None

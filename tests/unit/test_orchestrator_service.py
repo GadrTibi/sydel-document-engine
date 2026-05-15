@@ -27,6 +27,12 @@ from sydel_doc_engine.domain.models import (
     SocieteCible,
     SocieteSpfpl,
     SpfplPerson,
+    StatutsCivilsApport,
+    StatutsCivilsAssocie,
+    StatutsCivilsCapitalDepot,
+    StatutsCivilsContext,
+    StatutsCivilsParts,
+    StatutsCivilsRepresentant,
     StatutsPresident,
     StatutsSas,
 )
@@ -193,6 +199,85 @@ def _sas_satellites_context() -> DocumentGenerationContext:
     )
 
 
+def _scm_context() -> DocumentGenerationContext:
+    return DocumentGenerationContext(
+        structure="SCM",
+        dossier_options=DossierOptions(),
+        personne_signataire=Person(
+            genre=Gender.MASCULIN,
+            civilite="Monsieur",
+            prenom="Jean",
+            nom="Durand",
+        ),
+        signature=Signature(lieu="Paris", date=date(2026, 5, 15)),
+        societe=Company(
+            denomination="SCM CABINET DURAND MARTIN",
+            denomination_courte="CABINET DURAND MARTIN",
+            forme_sociale="Societe civile de moyens",
+            siege=Address(
+                num_voie="10",
+                voie="rue de la Paix",
+                cp="75002",
+                ville="Paris",
+            ),
+        ),
+        statuts_civils=StatutsCivilsContext(
+            type="scm",
+            forme_sociale="Societe civile de moyens",
+            capital_social="1200",
+            capital_social_lettres="mille deux cents euros",
+            nb_parts_total=120,
+            valeur_nominale_part="10 euros",
+            capital_depot=StatutsCivilsCapitalDepot(
+                banque_nom="BANQUE EXEMPLE",
+                banque_adresse="1 rue Banque, 75009 Paris",
+            ),
+            associes=[
+                StatutsCivilsAssocie(
+                    type_personne="personne_morale",
+                    denomination="SELARL DURAND",
+                    forme_juridique="SELARL",
+                    profession="chirurgien-dentiste",
+                    capital_social="1 000 euros",
+                    siege=Address(adresse_affichee="5 rue Royale, 75008 Paris"),
+                    numero_rcs="900 000 001",
+                    ville_rcs="Paris",
+                    representant=StatutsCivilsRepresentant(
+                        civilite_affichage="Monsieur",
+                        prenom="Jean",
+                        nom="Durand",
+                        fonction="gerant",
+                    ),
+                    apport=StatutsCivilsApport(
+                        montant="700",
+                        montant_lettres="sept cents euros",
+                    ),
+                    parts=StatutsCivilsParts(nb=70),
+                ),
+                StatutsCivilsAssocie(
+                    type_personne="personne_physique",
+                    genre=Gender.FEMININ,
+                    civilite_affichage="Madame",
+                    prenom="Alice",
+                    prenoms="Alice",
+                    nom="Martin",
+                    profession="chirurgien-dentiste",
+                    date_naissance="2 fevrier 1982",
+                    ville_naissance="Lyon",
+                    nationalite="francaise",
+                    situation_maritale="celibataire",
+                    adresse_personnelle_affichee="2 rue Exemple, 69000 Lyon",
+                    apport=StatutsCivilsApport(
+                        montant="500",
+                        montant_lettres="cinq cents euros",
+                    ),
+                    parts=StatutsCivilsParts(nb=50),
+                ),
+            ],
+        ),
+    )
+
+
 def test_select_documents_for_selarl_includes_pv_nomination_gerant() -> None:
     orchestrator = DocumentOrchestrator(build_seed_catalog())
 
@@ -278,6 +363,28 @@ def test_select_documents_for_sci_iris_includes_dedicated_statuts() -> None:
         "DOC-021",
         "DOC-022",
     ]
+
+
+def test_select_documents_for_scm_includes_dedicated_statuts() -> None:
+    orchestrator = DocumentOrchestrator(build_seed_catalog())
+
+    selected = orchestrator.select_documents("SCM")
+
+    assert [document.doc_id for document in selected] == [
+        "DOC-001",
+        "DOC-002",
+        "DOC-003",
+        "DOC-004",
+        "DOC-025",
+    ]
+
+
+def test_select_documents_for_scm_context_includes_statuts_scm_when_enabled() -> None:
+    orchestrator = DocumentOrchestrator(build_seed_catalog())
+
+    selected = orchestrator.select_documents_for_context(_scm_context())
+
+    assert "DOC-025" in [document.doc_id for document in selected]
 
 
 def test_select_documents_for_sci_context_includes_option_is_only_when_enabled() -> None:

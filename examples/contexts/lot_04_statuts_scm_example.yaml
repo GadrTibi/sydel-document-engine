@@ -1,0 +1,66 @@
+structure: SCM
+dossier_options: {}
+personne_signataire:
+  genre: masculin
+  civilite: Monsieur
+  prenom: Jean
+  nom: Durand
+signature:
+  lieu: Paris
+  date: 2026-05-15
+societe:
+  denomination: SCM CABINET DURAND MARTIN
+  denomination_courte: CABINET DURAND MARTIN
+  forme_sociale: Societe civile de moyens
+  siege:
+    num_voie: "10"
+    voie: rue de la Paix
+    cp: "75002"
+    ville: Paris
+statuts_civils:
+  type: scm
+  forme_sociale: Societe civile de moyens
+  capital_social: "1200"
+  capital_social_lettres: mille deux cents euros
+  nb_parts_total: 120
+  valeur_nominale_part: 10 euros
+  capital_depot:
+    banque_nom: BANQUE EXEMPLE
+    banque_adresse: 1 rue Banque, 75009 Paris
+  associes:
+    - type_personne: personne_morale
+      denomination: SELARL DURAND
+      forme_juridique: SELARL
+      profession: chirurgien-dentiste
+      capital_social: 1 000 euros
+      siege:
+        adresse_affichee: 5 rue Royale, 75008 Paris
+      numero_rcs: 900 000 001
+      ville_rcs: Paris
+      representant:
+        civilite_affichage: Monsieur
+        prenom: Jean
+        nom: Durand
+        fonction: gerant
+      apport:
+        montant: "700"
+        montant_lettres: sept cents euros
+      parts:
+        nb: 70
+    - type_personne: personne_physique
+      genre: feminin
+      civilite_affichage: Madame
+      prenom: Alice
+      prenoms: Alice
+      nom: Martin
+      profession: chirurgien-dentiste
+      date_naissance: 2 fevrier 1982
+      ville_naissance: Lyon
+      nationalite: francaise
+      situation_maritale: celibataire
+      adresse_personnelle_affichee: 2 rue Exemple, 69000 Lyon
+      apport:
+        montant: "500"
+        montant_lettres: cinq cents euros
+      parts:
+        nb: 50

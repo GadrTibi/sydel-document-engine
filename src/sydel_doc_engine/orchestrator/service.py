@@ -47,6 +47,7 @@ from sydel_doc_engine.generators.lot_03.formulaire_derogation_sites_sel import (
 from sydel_doc_engine.generators.lot_04.statuts_sas import StatutsSasGenerator
 from sydel_doc_engine.generators.lot_04.statuts_sci import StatutsSciGenerator
 from sydel_doc_engine.generators.lot_04.statuts_sci_iris import StatutsSciIrisGenerator
+from sydel_doc_engine.generators.lot_04.statuts_scm import StatutsScmGenerator
 from sydel_doc_engine.generators.lot_04.statuts_scs import StatutsScsGenerator
 from sydel_doc_engine.generators.lot_04.statuts_selarl_dentiste import (
     StatutsSelarlDentisteGenerator,
@@ -88,6 +89,7 @@ STATUTS_CIVILS_DOCUMENT_TYPES = {
     "DOC-019": "scs",
     "DOC-020": "sci",
     "DOC-021": "sci_iris",
+    "DOC-025": "scm",
 }
 OPTION_IS_DOCUMENT_ID = "DOC-022"
 SAS_PV_REMUNERATION_PRESIDENT_DOCUMENT_ID = "DOC-023"
@@ -124,6 +126,7 @@ def build_lot_01_generator_registry() -> dict[str, DocumentGenerator]:
         "DOC-022": LettreOptionIsGenerator(),
         "DOC-023": PvRemunerationPresidentGenerator(),
         "DOC-024": AttestationCapitalListeSouscripteursSasGenerator(),
+        "DOC-025": StatutsScmGenerator(),
     }
 
 
