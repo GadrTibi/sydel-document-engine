@@ -4,6 +4,8 @@
 2026-05-15
 
 ## Dernier ticket terminé
+PREP-SCM-LISTE-DEPENSES-CONVERT-001 : conversion du legacy `Liste dépenses communes SCM.doc` en DOCX exploitable, placement dans `project/source_documents/lot_05/` et documentation de préparation V1.
+
 SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc98450b72ba6e602cb8f1a3b`, `1b3ba14d0bcc31fc7dcbf1752d6d3263645ae8b3`, `32059155c618b4e985893f42ef2817187599c281`, `74d41db53543b790e197082e8b9c713f7de92dc2` et `d1d649e11fdc638e6d7da0640c154d1f213739ee`, puis réalignement du pilotage.
 
 ## État courant du repo
@@ -223,6 +225,7 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
 - `CODE-STATUTS-SCM-001` est READY.
 - `CODE-SAS-SATELLITES-001` est READY.
 - `SPEC-SCM-SATELLITES-001` est READY.
+- `PREP-SCM-LISTE-DEPENSES-CONVERT-001` est DONE.
 - `CONVERT-ACTE-ACTIONS-001` est READY.
 - `CONVERT-DEROG-SALARIEE-001` est READY.
 - `RESUME-ARBITRAGE-STATUTS-CIVILS-001` est DONE, remplacé par l'arbitrage civils V1 absorbé.
@@ -379,10 +382,12 @@ Tickets actifs/parallélisables :
 - `CODE-STATUTS-SCM-001` est READY.
 - `CODE-SAS-SATELLITES-001` est READY.
 - `SPEC-SCM-SATELLITES-001` est READY.
+- `PREP-SCM-LISTE-DEPENSES-CONVERT-001` est DONE.
 - `CONVERT-ACTE-ACTIONS-001` est READY.
 - `CONVERT-DEROG-SALARIEE-001` est READY.
 
 `CODE-OPTION-IS-001`, `PREP-SCM-SAT-001`, `ARBITRAGE-STATUTS-SCM-001`, `SPEC-SAS-SATELLITES-001` et `PREP-ACTE-ACTIONS-001` sont DONE et absorbés dans `main`.
+`PREP-SCM-LISTE-DEPENSES-CONVERT-001` est DONE avec DOCX placé dans `project/source_documents/lot_05/` et préparation V1 documentée.
 `CODE-BAIL-APP-001` est DONE dans `main`.
 `PREP-DEROG-001` et `CODE-SPFPL-AGR-INFO-001` sont DONE dans `main`.
 `CODE-CESSION-CAB-001` et `CODE-DEROG-CORE-001` sont DONE et absorbés dans `main`.
@@ -544,6 +549,7 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
 - SYNC-WAVE-005 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m ruff check .` OK.
 - SYNC-WAVE-005 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m pytest` OK, 135 tests passés.
 - SYNC-WAVE-005 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifiés.
+- PREP-SCM-LISTE-DEPENSES-CONVERT-001 : conversion DOCX OK via `Wordconv.exe`; archive OpenXML lisible, `word/document.xml` présent, 21 entrées ZIP, texte extrait contenant les placeholders société, `DENOMINATION DE LA DEPENSE` et `SCM`.
 - SPEC-TEXTE-ORDRE-001 : source de vérité, source Lot 2 et variantes raw dump SELARL / SELAS / SPFPL cession / SPFPL apport lues en lecture seule.
 - SPEC-TEXTE-ORDRE-001 : spec texte créée dans `docs/delivery/lot_02_demande_inscription_ordre_spec_texte_v1.md`.
 - SPEC-TEXTE-ORDRE-001 : aucun code Python modifié ; validations limitées à la relecture documentaire et au contrôle du diff.
@@ -578,4 +584,4 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
 - SMOKE-ORCH-L2-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 47 tests passés.
 
 ## Recommandation immédiate suivante
-Lancer `CODE-STATUTS-SCM-001`.
+Lancer `SPEC-SCM-SATELLITES-001` pour spécifier les satellites SCM avant tout code documentaire.
