@@ -4,6 +4,8 @@
 2026-05-17
 
 ## Dernier ticket terminé
+SYNC-POST-MOTOR-UI-001 : absorption dans `main` des fondations UI/PDF/recette issues des branches `codex/ui-flow-001`, `codex/ui-occurrences-001`, `codex/ui-form-schema-001`, `codex/pdf-backend-001` et `codex/recipe-frame-001`, puis réalignement du pilotage vers `UI-CORE-001`, `RESUME-ZIP-BACKEND-001` et `REVIEW-FINAL-001`.
+
 PDF-BACKEND-001 : implementation d'un backend local d'export PDF depuis DOCX genere, avec priorite LibreOffice headless si disponible puis fallback Word COM Windows, erreurs explicites, tests ciblés, smoke réel DOCX vers PDF et aucune modification UI.
 
 RECONCILE-MOTOR-CLOSE-001 : reconciliation finale du moteur DOCX V1, exposition des generateurs ordre/SPFPL sous `DOC-034` a `DOC-043`, consolidation des referentiels `08/09`, integration des audits `17/18`, requalification de l'audit `16`, validations ruff/pytest et cloture moteur hors UI/PDF/ZIP/recette finale.
@@ -47,7 +49,11 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
 - Les audits/fondations finaux sont disponibles :
   - `docs/project/16_MOTOR_COMPLETION_AUDIT_V1.md` ;
   - `docs/project/17_FINAL_ENGINE_QUALITY_AUDIT_V1.md` ;
-  - `docs/project/18_NEXT_PHASE_FOUNDATION_V1.md`.
+  - `docs/project/18_NEXT_PHASE_FOUNDATION_V1.md` ;
+  - `docs/project/19_UI_FLOW_V1.md` ;
+  - `docs/project/20_UI_DOCUMENT_OCCURRENCES_V1.md` ;
+  - `docs/project/21_UI_FORM_SCHEMA_V1.md`.
+- Le framework de recette finale V1 est disponible dans `docs/review/final_recipe_framework_v1.md`.
 - Le cadrage métier de la famille `PV nomination gérant` est disponible dans `docs/delivery/lot_02_pv_nomination_gerant_cadrage_v1.md`.
 - La spec canonique V1 de la famille `PV nomination gérant` est disponible dans `docs/delivery/lot_02_pv_nomination_gerant_spec_canonique_v1.md`.
 - La spec texte V1 de la famille `PV nomination gérant` est disponible dans `docs/delivery/lot_02_pv_nomination_gerant_spec_texte_v1.md`.
@@ -476,7 +482,13 @@ Prochains chantiers recommandés :
 - ZIP ;
 - recette finale.
 
-`PDF-BACKEND-001` est DONE : le backend PDF local est disponible et le prochain ticket PDF recommande est `PDF-BATCH-001` pour convertir un dossier complet de DOCX en PDF et tracer les echecs document par document.
+`SYNC-POST-MOTOR-UI-001` est DONE : les commits UI/PDF/recette `d62670efe10481926437c0e1a5dabbe349fd5938`, `24a881b999371811d39a2403c0b51d9ae8ce0556`, `ef6252b3c15dc3fc39f1efdc05687c0f448f8fe1`, `2f76f61848469ddf2f7b29c3169e8893e83fd3a5` et `c2fc0db4d51485c7c5e721c5184028ae17c68cb3` sont absorbés dans `main`.
+
+`UI-FLOW-001`, `UI-OCCURRENCES-001`, `UI-FORM-SCHEMA-001`, `PDF-BACKEND-001` et `RECIPE-FRAME-001` sont DONE.
+
+`UI-CORE-001`, `RESUME-ZIP-BACKEND-001` et `REVIEW-FINAL-001` sont READY.
+
+`PDF-BACKEND-001` est DONE : le backend PDF local est disponible et intégré à la fondation absorbée, sans ticket PDF supplémentaire confirmé dans cette synchronisation.
 
 `RECONCILE-MOTOR-CLOSE-001` est DONE : le runtime expose `DOC-001` à `DOC-043`, les audits `16/17` concluent la couverture globale OK du moteur DOCX V1, et `docs/project/18_NEXT_PHASE_FOUNDATION_V1.md` cadre la suite UI/PDF/ZIP/recette finale.
 
@@ -506,6 +518,7 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
 - Restent hors périmètre moteur : UI, ZIP, recette finale, revue humaine juridique/visuelle, documents explicitement manuels et sources legacy non converties.
 - PDF-BACKEND-001 est terminé : export DOCX vers PDF disponible en backend local, sans intégration UI.
 - Points ouverts PDF après PDF-BACKEND-001 : LibreOffice absent localement, fallback Word COM validé sur smoke, conversion batch/orchestrateur et revue visuelle PDF restent à traiter séparément.
+- Fondation UI/PDF/recette synchronisée : `UI-CORE-001`, `RESUME-ZIP-BACKEND-001` et `REVIEW-FINAL-001` sont les prochains tickets READY confirmés.
 - Aucun point bloquant identifié après le smoke test réel Lot 1.
 - Le smoke test confirme la production de trois fichiers DOCX, mais ne remplace pas une revue humaine du rendu visuel ni une validation juridique fine du contenu généré.
 - PDF batch/orchestrateur et ZIP restent à intégrer dans des tickets ultérieurs.
@@ -727,6 +740,11 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
 - PDF-BACKEND-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
 - PDF-BACKEND-001 : `.\.venv\Scripts\python.exe -m pytest` OK.
 - PDF-BACKEND-001 : `artifacts/` non versionné ; aucun fichier UI modifié.
+- SYNC-POST-MOTOR-UI-001 : `git fetch --all --prune` OK.
+- SYNC-POST-MOTOR-UI-001 : commits sources `d62670efe10481926437c0e1a5dabbe349fd5938`, `24a881b999371811d39a2403c0b51d9ae8ce0556`, `ef6252b3c15dc3fc39f1efdc05687c0f448f8fe1`, `2f76f61848469ddf2f7b29c3169e8893e83fd3a5` et `c2fc0db4d51485c7c5e721c5184028ae17c68cb3` cherry-pickés dans `main` sans conflit.
+- SYNC-POST-MOTOR-UI-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
+- SYNC-POST-MOTOR-UI-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 182 tests passés.
+- SYNC-POST-MOTOR-UI-001 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifiés.
 
 ## Recommandation immédiate suivante
-Lancer `PDF-BATCH-001` pour convertir un dossier complet de DOCX en PDF et tracer les echecs document par document, puis reprendre ZIP et recette finale.
+Lancer `UI-CORE-001`, puis `RESUME-ZIP-BACKEND-001`, puis `REVIEW-FINAL-001`.
