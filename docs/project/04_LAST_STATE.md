@@ -4,6 +4,8 @@
 2026-05-17
 
 ## Dernier ticket terminé
+PDF-BACKEND-001 : implementation d'un backend local d'export PDF depuis DOCX genere, avec priorite LibreOffice headless si disponible puis fallback Word COM Windows, erreurs explicites, tests ciblés, smoke réel DOCX vers PDF et aucune modification UI.
+
 RECONCILE-MOTOR-CLOSE-001 : reconciliation finale du moteur DOCX V1, exposition des generateurs ordre/SPFPL sous `DOC-034` a `DOC-043`, consolidation des referentiels `08/09`, integration des audits `17/18`, requalification de l'audit `16`, validations ruff/pytest et cloture moteur hors UI/PDF/ZIP/recette finale.
 
 SYNC-CLOSE-AUDIT-001 : absorption dans `main` du commit source `0139202b170531fd628f25811c55855a2512acc0` depuis `origin/codex/close-motor-audit-001`, confirmation de `docs/project/16_MOTOR_COMPLETION_AUDIT_V1.md` et conservation de la version finale plus récente déjà présente dans `main`, sans modification de code Python.
@@ -34,6 +36,8 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
   - `select_documents_for_context(ctx)` avec filtrage des batchs regime communautaire, bail/appel de fonds, cession cabinets, derogations, statuts, SPFPL, SCM satellites et cession SCM ;
   - `generate_documents(ctx, output_dir) -> list[Path]`.
 - Le moteur documentaire DOCX V1 est feature complete et clos sur le perimetre deterministe valide, hors cas explicitement manuels ou legacy et hors UI/PDF/ZIP/recette finale.
+- Le backend PDF V1 est disponible dans `src/sydel_doc_engine/rendering/pdf_export.py` : export unitaire DOCX vers PDF, export batch de chemins DOCX, detection de backend, erreurs bloquantes si aucun convertisseur fiable n'est disponible.
+- Strategie PDF locale retenue apres smoke : LibreOffice headless prioritaire si present ; Word COM Windows utilise localement avec succes. LibreOffice n'est pas installe sur la machine de smoke.
 - `examples/contexts/lot_01_example.yaml` utilise encore le champ legacy Lot 1 `adresse_domiciliation_affichee`, en attente d'un refactor dédié vers `domiciliation.adresse_affichee`.
 - Un smoke test réel a généré les trois DOCX du Lot 1 dans `artifacts/lot_01_smoke_test/`.
 - Le moteur dispose de trois référentiels de cadrage :
@@ -468,9 +472,11 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
 ## Prochain ticket à lancer
 Prochains chantiers recommandés :
 - UI ;
-- PDF ;
+- PDF batch/orchestrateur ;
 - ZIP ;
 - recette finale.
+
+`PDF-BACKEND-001` est DONE : le backend PDF local est disponible et le prochain ticket PDF recommande est `PDF-BATCH-001` pour convertir un dossier complet de DOCX en PDF et tracer les echecs document par document.
 
 `RECONCILE-MOTOR-CLOSE-001` est DONE : le runtime expose `DOC-001` à `DOC-043`, les audits `16/17` concluent la couverture globale OK du moteur DOCX V1, et `docs/project/18_NEXT_PHASE_FOUNDATION_V1.md` cadre la suite UI/PDF/ZIP/recette finale.
 
@@ -497,10 +503,12 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
 
 ## Points ouverts
 - Aucun point bloquant moteur DOCX restant après `RECONCILE-MOTOR-CLOSE-001`.
-- Restent hors périmètre moteur : UI, PDF, ZIP, recette finale, revue humaine juridique/visuelle, documents explicitement manuels et sources legacy non converties.
+- Restent hors périmètre moteur : UI, ZIP, recette finale, revue humaine juridique/visuelle, documents explicitement manuels et sources legacy non converties.
+- PDF-BACKEND-001 est terminé : export DOCX vers PDF disponible en backend local, sans intégration UI.
+- Points ouverts PDF après PDF-BACKEND-001 : LibreOffice absent localement, fallback Word COM validé sur smoke, conversion batch/orchestrateur et revue visuelle PDF restent à traiter séparément.
 - Aucun point bloquant identifié après le smoke test réel Lot 1.
 - Le smoke test confirme la production de trois fichiers DOCX, mais ne remplace pas une revue humaine du rendu visuel ni une validation juridique fine du contenu généré.
-- PDF et ZIP restent à intégrer dans des tickets ultérieurs.
+- PDF batch/orchestrateur et ZIP restent à intégrer dans des tickets ultérieurs.
 - Ecart temporaire non bloquant pour l'UI : la table V1 retient `domiciliation.adresse_affichee` comme nom canonique, tandis que le code Lot 1 existant conserve l'alias legacy `adresse_domiciliation_affichee` jusqu'à refactor dédié.
 - Le PV nomination gérant est codé, testé et branché dans l'orchestrateur pour les structures concernées.
 - Le smoke orchestrateur Lot 2 est vert sur SCI positif et SAS négatif.
@@ -714,6 +722,11 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
 - RECONCILE-MOTOR-CLOSE-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
 - RECONCILE-MOTOR-CLOSE-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 176 tests passés.
 - RECONCILE-MOTOR-CLOSE-001 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifiés.
+- PDF-BACKEND-001 : tests ciblés `tests/unit/test_pdf_export.py` OK, 6 tests passés.
+- PDF-BACKEND-001 : smoke réel OK, `declaration_non_condamnation.docx` généré puis converti en PDF via `word-com` dans `artifacts/pdf_backend_001_smoke_test_2/`, hors versionnement.
+- PDF-BACKEND-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
+- PDF-BACKEND-001 : `.\.venv\Scripts\python.exe -m pytest` OK.
+- PDF-BACKEND-001 : `artifacts/` non versionné ; aucun fichier UI modifié.
 
 ## Recommandation immédiate suivante
-Lancer les chantiers de finition V1 dans cet ordre recommandé : UI, PDF, ZIP, recette finale.
+Lancer `PDF-BATCH-001` pour convertir un dossier complet de DOCX en PDF et tracer les echecs document par document, puis reprendre ZIP et recette finale.
