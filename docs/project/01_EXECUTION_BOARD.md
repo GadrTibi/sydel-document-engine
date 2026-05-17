@@ -120,9 +120,12 @@
 | UI-FORM-SCHEMA-001 | DONE | Cadrer le schéma formulaire UI V1 | flux UI + occurrences UI | schéma formulaire UI V1 |
 | RECIPE-FRAME-001 | DONE | Cadrer la recette finale V1 | moteur DOCX clos + fondations UI/PDF/ZIP | framework de recette finale V1 |
 | SYNC-POST-MOTOR-UI-001 | DONE | Synchroniser la fondation UI/PDF/recette dans main | branches UI/PDF/recette listées | commits intégrés + pilotage aligné |
-| UI-CORE-001 | READY | Implémenter le cœur UI Streamlit V1 | UI flow + occurrences + form schema + backend PDF | UI dossier V1 sans logique métier cachée |
-| RESUME-ZIP-BACKEND-001 | READY | Reprendre le backend ZIP V1 sur main synchronisé | moteur DOCX clos + backend PDF + fondation phase 18 | backend ZIP dossier documenté et testé |
+| UI-CORE-001 | DONE | Implémenter le cœur UI Streamlit V1 | UI flow + occurrences + form schema + backend PDF | superseded / remplacé par `UI-PDF-ZIP-INTEGRATION-001` |
+| RESUME-ZIP-BACKEND-001 | DONE | Reprendre le backend ZIP V1 sur main synchronisé | moteur DOCX clos + backend PDF + fondation phase 18 | backend ZIP dossier documenté et testé |
 | REVIEW-FINAL-001 | READY | Exécuter la revue finale V1 | moteur DOCX + UI/PDF/ZIP intégrés | revue finale documentée |
+| UI-PDF-ZIP-INTEGRATION-001 | DONE | Brancher PDF et ZIP dans l'UI Streamlit | UI core + backend PDF + backend ZIP | téléchargements DOCX/PDF/ZIP + smoke manuel + tests |
+| SYNC-FINAL-FOUNDATIONS-001 | DONE | Synchroniser les fondations finales UI/PDF/ZIP/clôture dans main | branches finales listées | main réaligné + pilotage final |
+| CLOSE-PROJECT-V1-001 | READY | Clore le projet V1 après revue finale | `REVIEW-FINAL-001` terminé | clôture V1 documentée |
 | UI-001 | BLOCKED | Brancher Streamlit V0 Lot 1 | orchestrateur Lot 1 + spec canonique PV nomination gérant validée | écran simple + test manuel |
 
 ## Référentiels moteur disponibles
@@ -787,16 +790,35 @@
 ### UI-CORE-001
 - Objectif : implémenter le cœur Streamlit V1 à partir des référentiels UI absorbés.
 - Prérequis : `docs/project/19_UI_FLOW_V1.md`, `docs/project/20_UI_DOCUMENT_OCCURRENCES_V1.md`, `docs/project/21_UI_FORM_SCHEMA_V1.md`, orchestrateur moteur clos et backend PDF disponible.
-- Statut : READY.
+- Statut : DONE par remplacement ; le périmètre est superseded / remplacé par `UI-PDF-ZIP-INTEGRATION-001`, qui livre directement le flux Streamlit dossier avec DOCX, PDF local optionnel et ZIP.
 
 ### RESUME-ZIP-BACKEND-001
 - Objectif : reprendre le backend ZIP V1 sur `main` synchronisé.
 - Prérequis : moteur DOCX clos, backend PDF intégré et fondation phase 18.
-- Statut : READY.
+- Statut : DONE ; le backend ZIP déterministe `src/sydel_doc_engine/rendering/zip_bundle.py` est présent, testé et utilisé par le runtime UI.
 
 ### REVIEW-FINAL-001
 - Objectif : exécuter la revue finale V1 après intégration UI/PDF/ZIP.
 - Prérequis : moteur DOCX clos, UI cœur, PDF et ZIP intégrés.
+- Statut : READY.
+
+### UI-PDF-ZIP-INTEGRATION-001
+- Objectif : brancher les sorties DOCX, PDF local optionnel et ZIP dossier dans l'UI Streamlit.
+- Prérequis : moteur DOCX clos, backend PDF `rendering/pdf_export.py`, backend ZIP disponible sous `rendering/zip_bundle.py`.
+- Statut : DONE ; l'UI charge un contexte YAML/JSON, affiche la sélection orchestrateur, génère les DOCX, propose les téléchargements DOCX, tente les PDF si un backend local est disponible et produit un ZIP déterministe avec manifeste.
+- Limitation : le PDF dépend de l'environnement local LibreOffice ou Word COM ; un échec PDF est affiché sans modifier les DOCX.
+- Smoke manuel : `docs/review/ui_pdf_zip_integration_001_smoke.md`.
+
+### SYNC-FINAL-FOUNDATIONS-001
+- Objectif : réaligner `main` avant revue/clôture avec les fondations UI, audits, PDF, ZIP et recette finale.
+- Entrées : `codex/ui-flow-001`, `codex/ui-occurrences-001`, `codex/ui-form-schema-001`, `codex/pdf-backend-001`, `codex/recipe-frame-001`, `codex/ui-pdf-zip-integration-001`, `codex/zip-backend-001`, `codex/close-motor-audit-001`, `codex/final-motor-audit-002`, `codex/next-phase-foundation-001`.
+- Contraintes : ne pas toucher à `project/source_import/raw_drive_dump/` ni à `artifacts/`.
+- Statut : DONE ; les fichiers critiques de cadrage/clôture sont présents sur `main`, l'UI intégrée et les backends PDF/ZIP sont présents, et le pilotage confirme uniquement `REVIEW-FINAL-001` et `CLOSE-PROJECT-V1-001` en READY.
+- Validation : `.\.venv\Scripts\python.exe -m ruff check .` OK ; `.\.venv\Scripts\python.exe -m pytest` OK, 191 tests passés.
+
+### CLOSE-PROJECT-V1-001
+- Objectif : clore le projet V1 après revue finale.
+- Prérequis : `REVIEW-FINAL-001` terminé.
 - Statut : READY.
 
 ### UI-001
@@ -814,10 +836,14 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - mettre à jour `docs/project/04_LAST_STATE.md`
 
 ## Prochaine étape prévue
+- `SYNC-FINAL-FOUNDATIONS-001` est DONE ; `main` contient les audits 16/17/18, les cadrages UI 19/20/21, le framework de recette finale, l'UI intégrée, le backend PDF et le backend ZIP déterministe.
+- `UI-PDF-ZIP-INTEGRATION-001` est DONE ; l'UI sait produire et telecharger DOCX, PDF local optionnel et ZIP dossier.
+- `UI-CORE-001` est superseded / remplacé par `UI-PDF-ZIP-INTEGRATION-001`.
+- `RESUME-ZIP-BACKEND-001` est DONE ; `rendering/zip_bundle.py` est intégré et testé.
 - `SYNC-POST-MOTOR-UI-001` est DONE ; les fondations UI/PDF/recette sont absorbées dans `main`.
-- prochains tickets READY confirmés : `UI-CORE-001`, `RESUME-ZIP-BACKEND-001` et `REVIEW-FINAL-001`.
+- prochains tickets READY confirmés uniquement : `REVIEW-FINAL-001` puis `CLOSE-PROJECT-V1-001`.
+- prochain ticket recommandé : `REVIEW-FINAL-001`, avec contrôle humain du flux UI -> DOCX -> PDF -> ZIP.
 - moteur documentaire DOCX V1 feature complete et clos après `RECONCILE-MOTOR-CLOSE-001`.
-- prochains chantiers recommandés : UI cœur, ZIP backend, puis revue finale.
 - tickets absorbés par `SYNC-POST-MOTOR-UI-001` : `UI-FLOW-001`, `UI-OCCURRENCES-001`, `UI-FORM-SCHEMA-001`, `PDF-BACKEND-001` et `RECIPE-FRAME-001`.
 - `RECONCILE-MOTOR-CLOSE-001` est DONE ; les générateurs ordre/SPFPL orphelins sont exposés sous `DOC-034` à `DOC-043`, `08/09/16/17/18` sont alignés et les références delivery Lot 2 manquantes sont présentes sur `main`.
 - `PDF-BACKEND-001` est DONE ; le backend PDF est intégré à la fondation absorbée, sans ticket PDF supplémentaire confirmé dans cette synchronisation.
@@ -957,3 +983,5 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - 2026-05-17 : RECONCILE-MOTOR-CLOSE-001 expose les générateurs ordre/SPFPL sous `DOC-034` à `DOC-043`, consolide `08/09`, intègre `17/18`, corrige l'audit `16` et clôt le moteur DOCX V1 hors UI/PDF/ZIP/recette finale.
 - 2026-05-17 : PDF-BACKEND-001 ajoute un backend d'export PDF best-effort avec priorité LibreOffice headless puis fallback Word COM Windows, tests ciblés et smoke réel DOCX vers PDF.
 - 2026-05-17 : SYNC-POST-MOTOR-UI-001 absorbe dans `main` les commits sources `d62670efe10481926437c0e1a5dabbe349fd5938`, `24a881b999371811d39a2403c0b51d9ae8ce0556`, `ef6252b3c15dc3fc39f1efdc05687c0f448f8fe1`, `2f76f61848469ddf2f7b29c3169e8893e83fd3a5` et `c2fc0db4d51485c7c5e721c5184028ae17c68cb3`, passe les fondations UI/PDF/recette en DONE et confirme `UI-CORE-001`, `RESUME-ZIP-BACKEND-001` et `REVIEW-FINAL-001` en READY.
+- 2026-05-17 : UI-PDF-ZIP-INTEGRATION-001 branche l'UI Streamlit sur la génération dossier DOCX, l'export PDF local optionnel et le ZIP de sortie, ajoute un smoke manuel documenté et conserve `artifacts/` hors versionnement.
+- 2026-05-17 : SYNC-FINAL-FOUNDATIONS-001 absorbe les compléments manquants `UI-PDF-ZIP-INTEGRATION-001` et `ZIP-BACKEND-001`, confirme les fondations/audits déjà présents sur `main`, remplace `UI-CORE-001` par `UI-PDF-ZIP-INTEGRATION-001`, valide ruff/pytest 191 tests et confirme uniquement `REVIEW-FINAL-001` puis `CLOSE-PROJECT-V1-001` en READY.

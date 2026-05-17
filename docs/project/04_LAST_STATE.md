@@ -3,7 +3,12 @@
 ## Date de mise à jour
 2026-05-17
 
+
 ## Dernier ticket terminé
+SYNC-FINAL-FOUNDATIONS-001 : synchronisation finale de `main` avant revue/cloture, absorption des complements UI/PDF/ZIP manquants, confirmation des audits/fondations presents, remplacement de `UI-CORE-001` par `UI-PDF-ZIP-INTEGRATION-001` et pilotage final limite a `REVIEW-FINAL-001` puis `CLOSE-PROJECT-V1-001`.
+
+UI-PDF-ZIP-INTEGRATION-001 : integration de l'UI Streamlit avec la generation dossier DOCX, l'export PDF local optionnel et le ZIP dossier, avec telechargements par fichier, smoke manuel documente et validations locales vertes.
+
 SYNC-POST-MOTOR-UI-001 : absorption dans `main` des fondations UI/PDF/recette issues des branches `codex/ui-flow-001`, `codex/ui-occurrences-001`, `codex/ui-form-schema-001`, `codex/pdf-backend-001` et `codex/recipe-frame-001`, puis réalignement du pilotage vers `UI-CORE-001`, `RESUME-ZIP-BACKEND-001` et `REVIEW-FINAL-001`.
 
 PDF-BACKEND-001 : implementation d'un backend local d'export PDF depuis DOCX genere, avec priorite LibreOffice headless si disponible puis fallback Word COM Windows, erreurs explicites, tests ciblés, smoke réel DOCX vers PDF et aucune modification UI.
@@ -39,7 +44,10 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
   - `generate_documents(ctx, output_dir) -> list[Path]`.
 - Le moteur documentaire DOCX V1 est feature complete et clos sur le perimetre deterministe valide, hors cas explicitement manuels ou legacy et hors UI/PDF/ZIP/recette finale.
 - Le backend PDF V1 est disponible dans `src/sydel_doc_engine/rendering/pdf_export.py` : export unitaire DOCX vers PDF, export batch de chemins DOCX, detection de backend, erreurs bloquantes si aucun convertisseur fiable n'est disponible.
+- Le backend ZIP V1 est disponible dans `src/sydel_doc_engine/rendering/zip_bundle.py` : ZIP deterministe DOCX/PDF, chemins relatifs, filtrage des fichiers temporaires et manifeste `manifest.json`.
 - Strategie PDF locale retenue apres smoke : LibreOffice headless prioritaire si present ; Word COM Windows utilise localement avec succes. LibreOffice n'est pas installe sur la machine de smoke.
+- L'UI Streamlit charge un contexte YAML/JSON, affiche la selection `select_documents_for_context`, genere les DOCX via `generate_documents`, propose les telechargements DOCX, lance les PDF si un backend local est disponible et cree un ZIP dossier via `rendering/zip_bundle.py`.
+- Le smoke manuel UI/PDF/ZIP est documente dans `docs/review/ui_pdf_zip_integration_001_smoke.md`.
 - `examples/contexts/lot_01_example.yaml` utilise encore le champ legacy Lot 1 `adresse_domiciliation_affichee`, en attente d'un refactor dédié vers `domiciliation.adresse_affichee`.
 - Un smoke test réel a généré les trois DOCX du Lot 1 dans `artifacts/lot_01_smoke_test/`.
 - Le moteur dispose de trois référentiels de cadrage :
@@ -54,6 +62,9 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
   - `docs/project/20_UI_DOCUMENT_OCCURRENCES_V1.md` ;
   - `docs/project/21_UI_FORM_SCHEMA_V1.md`.
 - Le framework de recette finale V1 est disponible dans `docs/review/final_recipe_framework_v1.md`.
+- `UI-CORE-001` est superseded / remplace par `UI-PDF-ZIP-INTEGRATION-001`.
+- `RESUME-ZIP-BACKEND-001` est DONE.
+- Tickets READY confirmes uniquement : `REVIEW-FINAL-001` et `CLOSE-PROJECT-V1-001`.
 - Le cadrage métier de la famille `PV nomination gérant` est disponible dans `docs/delivery/lot_02_pv_nomination_gerant_cadrage_v1.md`.
 - La spec canonique V1 de la famille `PV nomination gérant` est disponible dans `docs/delivery/lot_02_pv_nomination_gerant_spec_canonique_v1.md`.
 - La spec texte V1 de la famille `PV nomination gérant` est disponible dans `docs/delivery/lot_02_pv_nomination_gerant_spec_texte_v1.md`.
@@ -745,6 +756,15 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
 - SYNC-POST-MOTOR-UI-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
 - SYNC-POST-MOTOR-UI-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 182 tests passés.
 - SYNC-POST-MOTOR-UI-001 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifiés.
+- UI-PDF-ZIP-INTEGRATION-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
+- UI-PDF-ZIP-INTEGRATION-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 186 tests passés.
+- UI-PDF-ZIP-INTEGRATION-001 : smoke lancement Streamlit OK sur `http://localhost:8502`, page UI chargee.
+- UI-PDF-ZIP-INTEGRATION-001 : `artifacts/` non versionne ; le PDF reste dependant de LibreOffice ou Word COM local.
+
+- SYNC-FINAL-FOUNDATIONS-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
+- SYNC-FINAL-FOUNDATIONS-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 191 tests passes.
+- SYNC-FINAL-FOUNDATIONS-001 : fichiers critiques 16/17/18/19/20/21 et `docs/review/final_recipe_framework_v1.md` presents sur `main`.
+- SYNC-FINAL-FOUNDATIONS-001 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifies.
 
 ## Recommandation immédiate suivante
-Lancer `UI-CORE-001`, puis `RESUME-ZIP-BACKEND-001`, puis `REVIEW-FINAL-001`.
+Lancer `REVIEW-FINAL-001` pour controler le flux complet UI -> DOCX -> PDF -> ZIP avec revue humaine, puis `CLOSE-PROJECT-V1-001`.
