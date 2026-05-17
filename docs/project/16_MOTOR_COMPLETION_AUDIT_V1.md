@@ -1,75 +1,77 @@
-# Audit de clôture moteur V1
+# Audit de cloture moteur DOCX V1
 
 ## Date
-2026-05-15
+2026-05-17
 
-## Ticket de clôture
-`FINAL-SCM-CESSION-WAVE-001`
+## Ticket de cloture
+`RECONCILE-MOTOR-CLOSE-001`
 
-## Synchronisation
-Le commit source `0139202b170531fd628f25811c55855a2512acc0` de `origin/codex/close-motor-audit-001` a été absorbé dans `main` par `SYNC-CLOSE-AUDIT-001`.
+## Objet
 
-La présente version conserve la conclusion plus récente de `FINAL-SCM-CESSION-WAVE-001`.
+Ce document remplace la conclusion trop large de l'audit `16` precedent. Il
+integre les constats de `FINAL-MOTOR-AUDIT-002` et la reconciliation effectuee
+sur `main`.
 
-## Conclusion
-Le moteur documentaire V1 est feature complete pour le périmètre de génération DOCX déterministe validé dans les specs et arbitrages disponibles.
+## Corrections de reconciliation
 
-Cette conclusion couvre le moteur Python, le catalogue, l'orchestrateur, les générateurs DOCX et les tests unitaires associés. Elle ne vaut pas validation juridique fine, validation visuelle humaine, ni livraison UI/PDF/ZIP.
+Les quatre ecarts signales par l'audit final ont ete traites :
 
-## Dernier bloc levé
-Le bloc cession SCM était le dernier bloc moteur majeur non finalisé.
-
-La résolution V1 est disponible dans `docs/delivery/lot_05_scm_cession_block_resolution_v1.md`.
-
-Le bloc est désormais codé pour les variantes SELARL et SELAS validées :
-- `DOC-031` : PV AGE cession part SCM ;
-- `DOC-032` : courrier SDE cession SCM ;
-- `DOC-033` : acte de cession de parts SCM vers SEL.
-
-Les trois documents sont activés par l'orchestrateur pour `SELARL` et `SELAS` lorsque `dossier.options.scm_cession` vaut `true`.
+| Ecart | Decision |
+|---|---|
+| Generateurs orphelins hors catalogue/orchestrateur | Corrige : les 10 generateurs ordre/SPFPL sont exposes sous `DOC-034` a `DOC-043`. |
+| Variables tardives non consolidees dans `08/09` | Corrige : les packs tardifs sont indexes dans `08` et le mapping document -> packs couvre les 43 documents dans `09`. |
+| References delivery absentes de `main` | Corrige : les cadrages/specs Lot 2 manquants sont presents dans `docs/delivery/`. |
+| Audit `16` trop large | Corrige par la presente version, qui distingue moteur DOCX clos et chantiers post-moteur. |
 
 ## Couverture moteur
-Le registre moteur couvre désormais `DOC-001` à `DOC-033`.
 
-Les familles automatisées disponibles sont :
-- Lot 1 socle ;
-- PV nomination gérant ;
-- demande d'inscription à l'ordre ;
-- régime communautaire ;
-- bail / appel de fonds ;
-- cession cabinets ;
-- dérogations V1 automatisables ;
-- statuts SAS, SPFPL, SEL, SCS, SCI, SCI IRIS et SCM ;
-- satellites SAS et SCM ;
-- option IS ;
-- acte de cession d'actions SPFPL ;
-- liste des dépenses communes SCM ;
-- cession SCM.
+Le moteur DOCX V1 expose 43 documents dans le catalogue et le registre
+orchestrateur :
 
-## Exclusions restantes
-Les exclusions restantes sont explicites et ne remettent pas en cause la complétude moteur DOCX V1 :
-- UI Streamlit hors ticket final ;
-- génération PDF hors ticket final ;
-- génération ZIP dossier hors ticket final ;
-- recette finale métier hors ticket final ;
+- `DOC-001` a `DOC-004` : socle universel et PV nomination gerant ;
+- `DOC-034` : demande d'inscription a l'ordre ;
+- `DOC-005` a `DOC-014` : regime communautaire, bail/appel, cession cabinets et derogations coeur ;
+- `DOC-015`, `DOC-035`, `DOC-036`, `DOC-016` a `DOC-021`, `DOC-025` : statuts SAS, SPFPL, SEL, SCS, SCI, SCI IRIS et SCM ;
+- `DOC-022` a `DOC-024` : option IS et satellites SAS ;
+- `DOC-037` a `DOC-043` : documents SPFPL specifiques ;
+- `DOC-026` a `DOC-030` : satellites SCM et acte actions SPFPL ;
+- `DOC-031` a `DOC-033` : cession SCM.
+
+Le catalogue, l'orchestrateur et les classes de generateurs sont alignes :
+
+- 43 `DocumentDefinition` ;
+- 43 entrees dans le registre de generateurs ;
+- 43 classes documentaires `*Generator` hors modules communs/templates ;
+- aucun `doc_id` absent d'un cote catalogue/orchestrateur.
+
+## Conclusion
+
+Le moteur documentaire DOCX V1 est **feature complete** pour le perimetre
+deterministe valide par les sources, specs et arbitrages disponibles.
+
+Le moteur documentaire DOCX V1 est **clos** cote moteur Python, catalogue,
+orchestrateur, generateurs DOCX et tests unitaires.
+
+Cette cloture ne vaut pas validation juridique fine ni validation visuelle
+humaine des rendus.
+
+## Exclusions V1 assumees
+
+- UI Streamlit ;
+- generation PDF ;
+- constitution ZIP dossier ;
+- recette finale metier ;
 - revue humaine juridique et visuelle des rendus DOCX ;
-- documents marqués à remplir à la main ;
-- sources legacy non converties, notamment `cumul_salariee` ;
-- cas non arbitrés ou hors V1 dans les specs existantes ;
-- modifications de wording juridique non explicitement validées.
+- documents marques a remplir a la main ;
+- sources legacy non converties ou non specifiees, notamment `cumul_salariee` ;
+- cas non arbitres ou explicitement bloques dans les specs ;
+- modifications de wording juridique non validees.
 
-## Validations
-Smoke test réel cession SCM :
-- dossier : `artifacts/lot_05_scm_cession_block_smoke_test/` ;
-- fichiers produits : `pv_age_cession_parts_scm.docx`, `courrier_sde_cession_scm.docx`, `acte_cession_parts_scm.docx` ;
-- contrôle : aucun placeholder résiduel `[` / `]` et aucun littéral `Ajouter en cas de CV`.
+## Phase suivante
 
-Validation qualité :
-- `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m ruff check .` : OK ;
-- `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m pytest` : OK, 172 tests passés.
+La suite ne releve plus du moteur documentaire DOCX V1. Elle passe aux
+chantiers :
 
-## Suite recommandée
-La suite ne relève plus du moteur documentaire DOCX V1. Elle passe aux chantiers :
 - UI ;
 - PDF ;
 - ZIP ;

@@ -1,9 +1,11 @@
 # Dernier état projet
 
 ## Date de mise à jour
-2026-05-15
+2026-05-17
 
 ## Dernier ticket terminé
+RECONCILE-MOTOR-CLOSE-001 : reconciliation finale du moteur DOCX V1, exposition des generateurs ordre/SPFPL sous `DOC-034` a `DOC-043`, consolidation des referentiels `08/09`, integration des audits `17/18`, requalification de l'audit `16`, validations ruff/pytest et cloture moteur hors UI/PDF/ZIP/recette finale.
+
 SYNC-CLOSE-AUDIT-001 : absorption dans `main` du commit source `0139202b170531fd628f25811c55855a2512acc0` depuis `origin/codex/close-motor-audit-001`, confirmation de `docs/project/16_MOTOR_COMPLETION_AUDIT_V1.md` et conservation de la version finale plus récente déjà présente dans `main`, sans modification de code Python.
 
 FINAL-SCM-CESSION-WAVE-001 : restauration de la résolution V1 cession SCM depuis la branche d'arbitrage, implémentation du bloc cession SCM sous `DOC-031` à `DOC-033`, smoke DOCX réel, validations ruff/pytest et audit de clôture moteur V1.
@@ -27,17 +29,21 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
 ## État courant du repo
 - DOC-001, DOC-002 et DOC-003 disposent chacun d'un générateur dédié déjà terminé.
 - L'orchestrateur dossier expose :
-  - un registre des générateurs DOC-001 à DOC-033 ;
+  - un registre des générateurs DOC-001 à DOC-043 ;
   - `select_documents(structure)` selon le catalogue ;
-  - `select_documents_for_context(ctx)` avec filtrage des batchs régime communautaire, bail/appel de fonds, cession cabinets, dérogations, statuts et cession SCM ;
+  - `select_documents_for_context(ctx)` avec filtrage des batchs regime communautaire, bail/appel de fonds, cession cabinets, derogations, statuts, SPFPL, SCM satellites et cession SCM ;
   - `generate_documents(ctx, output_dir) -> list[Path]`.
-- Le moteur documentaire V1 est feature complete sur le périmètre DOCX déterministe validé, hors cas explicitement manuels ou legacy.
+- Le moteur documentaire DOCX V1 est feature complete et clos sur le perimetre deterministe valide, hors cas explicitement manuels ou legacy et hors UI/PDF/ZIP/recette finale.
 - `examples/contexts/lot_01_example.yaml` utilise encore le champ legacy Lot 1 `adresse_domiciliation_affichee`, en attente d'un refactor dédié vers `domiciliation.adresse_affichee`.
 - Un smoke test réel a généré les trois DOCX du Lot 1 dans `artifacts/lot_01_smoke_test/`.
 - Le moteur dispose de trois référentiels de cadrage :
   - arbre documentaire document-centré V1 : `docs/project/07_ARBRE_MOTEUR_DOCUMENT_CENTRE_V1.md` ;
   - dictionnaire canonique des variables V1 : `docs/project/08_DICTIONNAIRE_VARIABLES_CANONIQUES_V1.md` ;
   - table de mapping document -> variables canoniques V1 : `docs/project/09_TABLE_MAPPING_DOCUMENTS_VARIABLES_V1.md`.
+- Les audits/fondations finaux sont disponibles :
+  - `docs/project/16_MOTOR_COMPLETION_AUDIT_V1.md` ;
+  - `docs/project/17_FINAL_ENGINE_QUALITY_AUDIT_V1.md` ;
+  - `docs/project/18_NEXT_PHASE_FOUNDATION_V1.md`.
 - Le cadrage métier de la famille `PV nomination gérant` est disponible dans `docs/delivery/lot_02_pv_nomination_gerant_cadrage_v1.md`.
 - La spec canonique V1 de la famille `PV nomination gérant` est disponible dans `docs/delivery/lot_02_pv_nomination_gerant_spec_canonique_v1.md`.
 - La spec texte V1 de la famille `PV nomination gérant` est disponible dans `docs/delivery/lot_02_pv_nomination_gerant_spec_texte_v1.md`.
@@ -306,6 +312,7 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
 - `SYNC-WAVE-010` est DONE.
 - `FINAL-SCM-CESSION-WAVE-001` est DONE.
 - `SYNC-CLOSE-AUDIT-001` est DONE.
+- `RECONCILE-MOTOR-CLOSE-001` est DONE.
 - `RESUME-ARBITRAGE-STATUTS-CIVILS-001` est DONE, remplacé par l'arbitrage civils V1 absorbé.
 - `STYLE-ANALYSE-BATCH-001` est DONE.
 - `SYNC-STYLE-CIVILS-001` est DONE.
@@ -465,7 +472,7 @@ Prochains chantiers recommandés :
 - ZIP ;
 - recette finale.
 
-`FINAL-SCM-CESSION-WAVE-001` est DONE : le bloc cession SCM est implémenté sous `DOC-031`, `DOC-032` et `DOC-033`, le moteur DOCX V1 est feature complete hors exclusions manuelles/legacy, et `docs/project/16_MOTOR_COMPLETION_AUDIT_V1.md` porte la conclusion de clôture.
+`RECONCILE-MOTOR-CLOSE-001` est DONE : le runtime expose `DOC-001` à `DOC-043`, les audits `16/17` concluent la couverture globale OK du moteur DOCX V1, et `docs/project/18_NEXT_PHASE_FOUNDATION_V1.md` cadre la suite UI/PDF/ZIP/recette finale.
 
 `SYNC-CLOSE-AUDIT-001` est DONE : le commit source `0139202b170531fd628f25811c55855a2512acc0` a été absorbé depuis `origin/codex/close-motor-audit-001` par merge de synchronisation ; l'audit présent sur `main` reste la version finale plus récente.
 
@@ -489,7 +496,7 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
 `RESUME-FIX-STYLE-LETTERS-001`, `FIX-STYLE-LETTERS-001` et `CODE-STATUTS-CIVILS-CORE-001` sont DONE et absorbés dans `main`.
 
 ## Points ouverts
-- Aucun point bloquant moteur DOCX restant après `FINAL-SCM-CESSION-WAVE-001`.
+- Aucun point bloquant moteur DOCX restant après `RECONCILE-MOTOR-CLOSE-001`.
 - Restent hors périmètre moteur : UI, PDF, ZIP, recette finale, revue humaine juridique/visuelle, documents explicitement manuels et sources legacy non converties.
 - Aucun point bloquant identifié après le smoke test réel Lot 1.
 - Le smoke test confirme la production de trois fichiers DOCX, mais ne remplace pas une revue humaine du rendu visuel ni une validation juridique fine du contenu généré.
@@ -704,6 +711,9 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
 - SMOKE-ORCH-L2-001 : smoke SAS négatif OK, `pv_nomination_gerant.docx` absent.
 - SMOKE-ORCH-L2-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
 - SMOKE-ORCH-L2-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 47 tests passés.
+- RECONCILE-MOTOR-CLOSE-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
+- RECONCILE-MOTOR-CLOSE-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 176 tests passés.
+- RECONCILE-MOTOR-CLOSE-001 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifiés.
 
 ## Recommandation immédiate suivante
 Lancer les chantiers de finition V1 dans cet ordre recommandé : UI, PDF, ZIP, recette finale.

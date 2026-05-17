@@ -220,6 +220,70 @@ Ces données peuvent exister dans le dictionnaire, mais elles n'ont pas besoin d
 3. Réutiliser les mêmes packs de questions dans Streamlit.
 4. Gérer proprement les documents à associés dynamiques.
 
+## Consolidation finale moteur DOCX V1
+
+Ticket : `RECONCILE-MOTOR-CLOSE-001`
+
+Cette section consolide les packs apparus apres le socle Lot 1 / PV. Le detail
+champ par champ reste porte par `src/sydel_doc_engine/domain/models.py` et par
+les specs `docs/delivery/`; le role de ce dictionnaire est de figer les noms de
+packs canoniques qui alimentent le moteur expose par le catalogue.
+
+### Packs transverses ajoutes
+
+- `ordre` : donnees ordinales de la demande d'inscription a l'ordre.
+- `mandataire` : mandataire configurable, jamais constante juridique cachee.
+- `regime_communautaire` : avertissement, renonciation et donnees de courrier.
+- `bail` : bailleur, locataire, dates et acceptation de changement.
+- `cession` : cabinet, vendeur, acquereur, financement, prix, salaries et validations.
+- `derogation` : type, mode de rendu, roles, sites, cumul, motifs et conditions.
+- `document` : nombre d'exemplaires/pages, annexes et signataire documentaire.
+
+### Packs societes / statuts
+
+- `statuts_sas`
+- `statuts_sel`
+- `statuts_civils`
+- `capital_souscription`
+- `depot_fonds`
+- `exercice_social`
+- `president`
+- `remuneration_president`
+
+### Packs SPFPL
+
+- `operation_spfpl`
+- `societe_spfpl`
+- `societe_cible`
+- `associes_cible[]`
+- `cedant`
+- `apporteur`
+- `cession_parts`
+- `cession_actions`
+- `operation_titres`
+- `apport_titres`
+- `evaluateur_apport`
+- `commissaire_aux_apports`
+
+### Packs SCM
+
+- `scm_satellites`
+- `pacte_associes`
+- `frais_communs`
+- `reglement_interieur`
+- `parties_frais_communs[]`
+- `praticiens[]`
+- `locaux`
+- `scm_cession`
+
+### Decision de cloture variables
+
+Les variables tardives sont considerees consolidees pour le moteur DOCX V1 si
+elles appartiennent a l'un des packs ci-dessus et si leur usage document par
+document est trace dans `docs/project/09_TABLE_MAPPING_DOCUMENTS_VARIABLES_V1.md`.
+
+L'arbre UI exhaustif reste hors V1 moteur et passe dans la phase suivante.
+
 ## Ordre de travail recommandé après ce V1
 
 1. Intégrer ce dictionnaire dans le repo.

@@ -137,3 +137,24 @@ Ces couches viendront après validation de l'arbre documentaire.
 - **SPFPL cession — Acte de cession d'actions** : mentionné dans le référentiel, mais source exacte à confirmer.
 - **Liste des souscripteurs** : la règle générale la cite pour SPFPL / SELAS / SCS ; la place exacte dans l'arbre moteur devra être confirmée document par document.
 - certains éléments sont explicitement **à remplir à la main** et restent hors automatisation initiale.
+
+## Consolidation runtime RECONCILE-MOTOR-CLOSE-001
+
+L'arbre ci-dessus reste le graphe documentaire de lecture metier. La
+reconciliation finale du moteur ferme l'ecart runtime en exposant tous les
+generateurs documentaires disponibles dans le catalogue et l'orchestrateur.
+
+Etat runtime DOCX V1 apres reconciliation :
+
+- `DOC-001` a `DOC-004` : socle universel et PV nomination gerant.
+- `DOC-034` : demande d'inscription a l'ordre.
+- `DOC-005` a `DOC-014` : regime communautaire, bail/appel, cession cabinets et derogations coeur.
+- `DOC-015`, `DOC-035`, `DOC-036`, `DOC-016` a `DOC-021`, `DOC-025` : statuts SAS, SPFPL, SEL, SCS, SCI, SCI IRIS et SCM.
+- `DOC-022` a `DOC-024` : option IS et satellites SAS.
+- `DOC-037` a `DOC-043` : documents SPFPL specifiques restaures dans le runtime.
+- `DOC-026` a `DOC-030` : satellites SCM et acte actions SPFPL.
+- `DOC-031` a `DOC-033` : bloc cession SCM.
+
+Les exclusions V1 restent volontaires : UI, PDF, ZIP, recette finale, revue
+juridique/visuelle humaine, documents a remplir a la main et sources legacy non
+converties ou non specifiees.

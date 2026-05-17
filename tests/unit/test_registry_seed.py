@@ -3,9 +3,9 @@ from __future__ import annotations
 from sydel_doc_engine.registry.catalog import build_seed_catalog
 
 
-def test_seed_catalog_contains_thirty_three_documents() -> None:
+def test_seed_catalog_contains_forty_three_documents() -> None:
     catalog = build_seed_catalog()
-    assert len(catalog) == 33
+    assert len(catalog) == 43
 
 
 def test_seed_catalog_contains_lot_one_to_lot_five_entries() -> None:
@@ -154,6 +154,28 @@ def test_seed_catalog_sas_satellites_scope_is_limited_to_sas() -> None:
     assert set(attestation.structures) == {"SAS"}
     assert "remuneration_president.type == absence_remuneration" in pv.specific_conditions
     assert "un seul souscripteur" in attestation.specific_conditions
+
+
+def test_seed_catalog_reconciled_order_and_spfpl_generators_are_exposed() -> None:
+    catalog = build_seed_catalog()
+    documents = {document.doc_id: document for document in catalog}
+
+    assert set(documents["DOC-034"].structures) == {
+        "SELARL",
+        "SELAS",
+        "SPFPL cession",
+        "SPFPL apport",
+        "SCM",
+    }
+    assert set(documents["DOC-035"].structures) == {"SPFPL cession"}
+    assert set(documents["DOC-036"].structures) == {"SPFPL apport"}
+    assert set(documents["DOC-037"].structures) == {"SPFPL cession", "SPFPL apport"}
+    assert set(documents["DOC-038"].structures) == {"SPFPL cession"}
+    assert set(documents["DOC-039"].structures) == {"SPFPL cession"}
+    assert set(documents["DOC-040"].structures) == {"SPFPL cession"}
+    assert set(documents["DOC-041"].structures) == {"SPFPL apport"}
+    assert set(documents["DOC-042"].structures) == {"SPFPL apport"}
+    assert set(documents["DOC-043"].structures) == {"SPFPL apport"}
 
 
 def test_seed_catalog_scm_satellites_scope_is_limited_to_scm_docx_batch() -> None:

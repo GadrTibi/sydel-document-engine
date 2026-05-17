@@ -180,3 +180,66 @@ Donc :
 4. Une variable n’est globalisée que si elle est réutilisable ou structurante.
 5. Une information ponctuelle peut rester champ manuel, conformément au référentiel.
 6. Les prochains tickets doivent converger vers les noms canoniques et non créer de nouvelles variantes locales.
+
+---
+
+## D. Mapping runtime final moteur DOCX V1
+
+Ticket : `RECONCILE-MOTOR-CLOSE-001`
+
+Cette table ferme l'ecart signale par `FINAL-MOTOR-AUDIT-002` : tous les
+documents exposes par le catalogue/orchestrateur sont rattaches a des packs de
+variables canoniques. Elle ne remplace pas les specs texte/canoniques de
+`docs/delivery/`, qui restent la reference champ par champ.
+
+| Document | Packs canoniques principaux |
+|---|---|
+| `DOC-001` - Declaration non-condamnation | `signataire`, `signataire.adresse`, `signature` |
+| `DOC-002` - Autorisation domiciliation | `signataire`, `societe`, `domiciliation`, `signature` |
+| `DOC-003` - Procuration | `signataire`, `societe`, `societe.siege`, `signature` |
+| `DOC-004` - PV nomination gerant | `societe`, `associes[]`, `dirigeant_nomine`, `decision`, `reunion`, `capital`, `emprunt`, `bien_immobilier`, `signature` |
+| `DOC-034` - Demande inscription ordre | `signataire`, `societe`, `ordre`, `mandataire`, `signature`, `dossier.options.derogation` |
+| `DOC-005` - Lettre renonciation associe | `signataire`, `conjoint`, `societe`, `apport`, `regime_communautaire.renonciation`, `signature` |
+| `DOC-006` - Lettre avertissement conjoint | `signataire`, `conjoint`, `societe`, `apport`, `regime_communautaire.avertissement`, `signature` |
+| `DOC-007` - Avenant contrat de bail | `bail`, `societe`, `cession.cabinet`, `signature` |
+| `DOC-008` - Appel de fonds SEL | `societe`, `cession.financement`, `cession.vendeur`, `cession.acquereur`, `signature` |
+| `DOC-009` - Acte cession cabinet medical | `cession.cabinet`, `cession.vendeur`, `cession.acquereur`, `cession.financement`, `cession.prix`, `signature` |
+| `DOC-010` - Compromis cession cabinet medical | `cession.cabinet`, `cession.vendeur`, `cession.acquereur`, `cession.financement`, `cession.prix`, `signature` |
+| `DOC-011` - Acte cession cabinet dentaire | `cession.cabinet`, `cession.vendeur`, `cession.acquereur`, `cession.financement`, `cession.prix`, `cession.salaries[]`, `signature` |
+| `DOC-012` - Compromis cession cabinet dentaire | `cession.cabinet`, `cession.vendeur`, `cession.acquereur`, `cession.financement`, `cession.prix`, `cession.salaries[]`, `signature` |
+| `DOC-013` - Derogation multi-sites SEL | `derogation`, `site_declare`, `sites_existants[]`, `societe`, `signature` |
+| `DOC-014` - Derogation cumul SELARL-BNC | `derogation`, `societe`, `signature` |
+| `DOC-015` - Statuts SAS | `statuts_sas`, `societe_spfpl`, `actionnaire_unique`, `president`, `capital_souscription`, `apport_titres`, `societe_cible`, `signature` |
+| `DOC-035` - Statuts SPFPL cession | `operation_spfpl`, `societe_spfpl`, `actionnaire_unique`, `cedant`, `societe_cible`, `capital_souscription`, `depot_fonds`, `exercice_social`, `signature` |
+| `DOC-036` - Statuts SPFPL apport | `operation_spfpl`, `societe_spfpl`, `actionnaire_unique`, `apporteur`, `societe_cible`, `apport`, `apport_titres`, `capital_souscription`, `commissaire_aux_apports`, `signature` |
+| `DOC-016` - Statuts SELARL dentiste | `statuts_sel`, `societe`, `associes[]`, `dirigeant_nomine`, `signature` |
+| `DOC-017` - Statuts SELARL medecin | `statuts_sel`, `societe`, `associes[]`, `dirigeant_nomine`, `signature` |
+| `DOC-018` - Statuts SELAS medecin | `statuts_sel`, `societe`, `associes[]`, `dirigeant_nomine`, `signature` |
+| `DOC-019` - Statuts SCS | `statuts_civils`, `statuts_civils.associes[]`, `signature` |
+| `DOC-020` - Statuts SCI | `statuts_civils`, `statuts_civils.associes[]`, `signature` |
+| `DOC-021` - Statuts SCI IRIS | `statuts_civils`, `statuts_civils.associes[]`, `statuts_civils.resultat_groupes_parts[]`, `signature` |
+| `DOC-022` - Lettre option IS | `statuts_civils`, `impots`, `societe`, `signature` |
+| `DOC-023` - PV remuneration president SAS | `societe_spfpl`, `actionnaire_unique`, `president`, `remuneration_president`, `exercice_social`, `signature` |
+| `DOC-024` - Attestation capital / souscripteurs SAS | `societe_spfpl`, `actionnaire_unique`, `capital_souscription`, `apport_titres`, `societe_cible`, `signature` |
+| `DOC-037` - Note information SPFPL | `operation_spfpl`, `societe_spfpl`, `cedant` ou `apporteur`, `societe_cible`, `associes_cible[]`, `cession_parts`, `signature` |
+| `DOC-038` - PV agrement SPFPL associe unique | `societe_spfpl`, `societe_cible`, `cedant`, `associes_cible[]`, `cession_parts`, `decision`, `reunion`, `signature` |
+| `DOC-039` - PV agrement SPFPL plusieurs associes | `societe_spfpl`, `societe_cible`, `cedant`, `associes_cible[]`, `cession_parts`, `decision`, `reunion`, `signature` |
+| `DOC-040` - Acte cession parts SPFPL | `societe_spfpl`, `societe_cible`, `cedant`, `associes_cible[]`, `cession_parts`, `document`, `signature` |
+| `DOC-041` - Contrat apport SPFPL | `societe_spfpl`, `societe_cible`, `apporteur`, `apport_titres`, `evaluateur_apport`, `commissaire_aux_apports`, `document`, `signature` |
+| `DOC-042` - Attestation capital / souscripteurs SPFPL | `societe_spfpl`, `societe_cible`, `apporteur`, `apport_titres`, `capital_souscription`, `signature` |
+| `DOC-043` - Attestation commissaire aux apports | `societe_spfpl`, `societe_cible`, `apporteur`, `apport_titres`, `commissaire_aux_apports`, `signature` |
+| `DOC-025` - Statuts SCM | `statuts_civils`, `statuts_civils.associes[]`, `signature` |
+| `DOC-026` - Pacte associes SCM | `societe`, `pacte_associes`, `parties_frais_communs[]`, `praticiens[]`, `locaux`, `signature` |
+| `DOC-027` - Contrat frais communs SCM | `societe`, `frais_communs`, `parties_frais_communs[]`, `praticiens[]`, `locaux`, `signature` |
+| `DOC-028` - Reglement interieur SCM | `societe`, `reglement_interieur`, `parties_frais_communs[]`, `praticiens[]`, `locaux`, `signature` |
+| `DOC-029` - Acte cession actions SPFPL | `operation_spfpl`, `societe_spfpl`, `societe_cible`, `cedant`, `associes_cible[]`, `cession_actions`, `document`, `signature` |
+| `DOC-030` - Liste depenses communes SCM | `societe`, `parties_frais_communs[]`, `praticiens[]`, `locaux`, `signature` |
+| `DOC-031` - PV AGE cession parts SCM | `scm_cession`, `scm_cession.scm_cedee`, `scm_cession.cessionnaire`, `scm_cession.associes_*[]`, `signature` |
+| `DOC-032` - Courrier SDE cession SCM | `scm_cession`, `scm_cession.enregistrement`, `scm_cession.signataire_sde`, `signature` |
+| `DOC-033` - Acte cession parts SCM | `scm_cession`, `scm_cession.scm_cedee`, `scm_cession.cessionnaire`, `scm_cession.cedant`, `scm_cession.prix`, `signature` |
+
+### Decision de cloture mapping
+
+Le mapping V1 est aligne sur les 43 documents exposes par le moteur DOCX. Les
+documents manuels, legacy non convertis, UI, PDF, ZIP et recette finale restent
+hors mapping moteur.

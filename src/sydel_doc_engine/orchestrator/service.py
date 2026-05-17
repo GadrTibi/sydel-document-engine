@@ -13,6 +13,9 @@ from sydel_doc_engine.generators.lot_01.declaration_non_condamnation import (
     DeclarationNonCondamnationGenerator,
 )
 from sydel_doc_engine.generators.lot_01.procuration import ProcurationGenerator
+from sydel_doc_engine.generators.lot_02.demande_inscription_ordre import (
+    DemandeInscriptionOrdreGenerator,
+)
 from sydel_doc_engine.generators.lot_02.lettre_avertissement_conjoint import (
     LettreAvertissementConjointGenerator,
 )
@@ -58,14 +61,32 @@ from sydel_doc_engine.generators.lot_04.statuts_selarl_medecin import (
 from sydel_doc_engine.generators.lot_04.statuts_selas_medecin import (
     StatutsSelasMedecinGenerator,
 )
+from sydel_doc_engine.generators.lot_04.statuts_spfpl_apport import (
+    StatutsSpfplApportGenerator,
+)
+from sydel_doc_engine.generators.lot_04.statuts_spfpl_cession import (
+    StatutsSpfplCessionGenerator,
+)
 from sydel_doc_engine.generators.lot_05.acte_cession_actions_spfpl import (
     ActeCessionActionsSpfplGenerator,
 )
 from sydel_doc_engine.generators.lot_05.acte_cession_parts_scm import (
     ActeCessionPartsScmGenerator,
 )
+from sydel_doc_engine.generators.lot_05.acte_cession_parts_spfpl import (
+    ActeCessionPartsSpfplGenerator,
+)
+from sydel_doc_engine.generators.lot_05.attestation_capital_liste_souscripteurs import (
+    AttestationCapitalListeSouscripteursGenerator,
+)
 from sydel_doc_engine.generators.lot_05.attestation_capital_liste_souscripteurs_sas import (
     AttestationCapitalListeSouscripteursSasGenerator,
+)
+from sydel_doc_engine.generators.lot_05.attestation_commissaire_apports import (
+    AttestationCommissaireApportsGenerator,
+)
+from sydel_doc_engine.generators.lot_05.contrat_apport_spfpl import (
+    ContratApportSpfplGenerator,
 )
 from sydel_doc_engine.generators.lot_05.contrat_frais_communs import (
     ContratFraisCommunsGenerator,
@@ -77,9 +98,16 @@ from sydel_doc_engine.generators.lot_05.lettre_option_is import LettreOptionIsGe
 from sydel_doc_engine.generators.lot_05.liste_depenses_communes_scm import (
     ListeDepensesCommunesScmGenerator,
 )
+from sydel_doc_engine.generators.lot_05.note_information import NoteInformationGenerator
 from sydel_doc_engine.generators.lot_05.pacte_associes_scm import PacteAssociesScmGenerator
 from sydel_doc_engine.generators.lot_05.pv_age_cession_scm import (
     PvAgeCessionScmGenerator,
+)
+from sydel_doc_engine.generators.lot_05.pv_agrement_cession_spfpl_associe_unique import (
+    PvAgrementCessionSpfplAssocieUniqueGenerator,
+)
+from sydel_doc_engine.generators.lot_05.pv_agrement_cession_spfpl_plusieurs_associes import (
+    PvAgrementCessionSpfplPlusieursAssociesGenerator,
 )
 from sydel_doc_engine.generators.lot_05.pv_remuneration_president import (
     PvRemunerationPresidentGenerator,
@@ -89,6 +117,7 @@ from sydel_doc_engine.generators.lot_05.reglement_interieur_scm import (
 )
 
 REGIME_COMMUNAUTAIRE_DOCUMENT_IDS = {"DOC-005", "DOC-006"}
+DEMANDE_INSCRIPTION_ORDRE_DOCUMENT_ID = "DOC-034"
 BAIL_AVENANT_DOCUMENT_ID = "DOC-007"
 APPEL_FONDS_DOCUMENT_ID = "DOC-008"
 CESSION_CABINET_DOCUMENT_IDS = {
@@ -102,6 +131,10 @@ DEROGATION_DOCUMENT_TYPES = {
     "DOC-014": "cumul_sel_bnc",
 }
 STATUTS_SAS_DOCUMENT_ID = "DOC-015"
+STATUTS_SPFPL_DOCUMENT_TYPES = {
+    "DOC-035": ("SPFPL cession", "cession"),
+    "DOC-036": ("SPFPL apport", "apport"),
+}
 STATUTS_SEL_DOCUMENTS = {
     "DOC-016": ("SELARL", "selarl_dentiste"),
     "DOC-017": ("SELARL", "selarl_medecin"),
@@ -116,6 +149,13 @@ STATUTS_CIVILS_DOCUMENT_TYPES = {
 OPTION_IS_DOCUMENT_ID = "DOC-022"
 SAS_PV_REMUNERATION_PRESIDENT_DOCUMENT_ID = "DOC-023"
 SAS_ATTESTATION_CAPITAL_DOCUMENT_ID = "DOC-024"
+SPFPL_NOTE_INFORMATION_DOCUMENT_ID = "DOC-037"
+SPFPL_PV_AGREMENT_ASSOCIE_UNIQUE_DOCUMENT_ID = "DOC-038"
+SPFPL_PV_AGREMENT_PLUSIEURS_ASSOCIES_DOCUMENT_ID = "DOC-039"
+SPFPL_ACTE_CESSION_PARTS_DOCUMENT_ID = "DOC-040"
+SPFPL_CONTRAT_APPORT_DOCUMENT_ID = "DOC-041"
+SPFPL_ATTESTATION_CAPITAL_DOCUMENT_ID = "DOC-042"
+SPFPL_ATTESTATION_COMMISSAIRE_DOCUMENT_ID = "DOC-043"
 SCM_SATELLITES_DOCUMENT_IDS = {
     "DOC-026": "pacte_associes",
     "DOC-027": "contrat_frais_communs",
@@ -130,12 +170,13 @@ class MissingDocumentGeneratorError(RuntimeError):
     pass
 
 
-def build_lot_01_generator_registry() -> dict[str, DocumentGenerator]:
+def build_generator_registry() -> dict[str, DocumentGenerator]:
     return {
         "DOC-001": DeclarationNonCondamnationGenerator(),
         "DOC-002": AutorisationDomiciliationGenerator(),
         "DOC-003": ProcurationGenerator(),
         "DOC-004": PvNominationGerantGenerator(),
+        "DOC-034": DemandeInscriptionOrdreGenerator(),
         "DOC-005": LettreRenonciationAssocieGenerator(),
         "DOC-006": LettreAvertissementConjointGenerator(),
         "DOC-007": AvenantContratBailGenerator(),
@@ -147,6 +188,8 @@ def build_lot_01_generator_registry() -> dict[str, DocumentGenerator]:
         "DOC-013": FormulaireDerogationSitesSelGenerator(),
         "DOC-014": DemandeDerogationCumulSelarlBncGenerator(),
         "DOC-015": StatutsSasGenerator(),
+        "DOC-035": StatutsSpfplCessionGenerator(),
+        "DOC-036": StatutsSpfplApportGenerator(),
         "DOC-016": StatutsSelarlDentisteGenerator(),
         "DOC-017": StatutsSelarlMedecinGenerator(),
         "DOC-018": StatutsSelasMedecinGenerator(),
@@ -156,6 +199,13 @@ def build_lot_01_generator_registry() -> dict[str, DocumentGenerator]:
         "DOC-022": LettreOptionIsGenerator(),
         "DOC-023": PvRemunerationPresidentGenerator(),
         "DOC-024": AttestationCapitalListeSouscripteursSasGenerator(),
+        "DOC-037": NoteInformationGenerator(),
+        "DOC-038": PvAgrementCessionSpfplAssocieUniqueGenerator(),
+        "DOC-039": PvAgrementCessionSpfplPlusieursAssociesGenerator(),
+        "DOC-040": ActeCessionPartsSpfplGenerator(),
+        "DOC-041": ContratApportSpfplGenerator(),
+        "DOC-042": AttestationCapitalListeSouscripteursGenerator(),
+        "DOC-043": AttestationCommissaireApportsGenerator(),
         "DOC-025": StatutsScmGenerator(),
         "DOC-026": PacteAssociesScmGenerator(),
         "DOC-027": ContratFraisCommunsGenerator(),
@@ -166,6 +216,10 @@ def build_lot_01_generator_registry() -> dict[str, DocumentGenerator]:
         "DOC-032": CourrierSdeCessionScmGenerator(),
         "DOC-033": ActeCessionPartsScmGenerator(),
     }
+
+
+def build_lot_01_generator_registry() -> dict[str, DocumentGenerator]:
+    return build_generator_registry()
 
 
 def _statuts_sel_enabled(
@@ -186,7 +240,7 @@ class DocumentOrchestrator:
     ) -> None:
         self._catalog = list(catalog)
         self._generators = dict(
-            build_lot_01_generator_registry() if generators is None else generators
+            build_generator_registry() if generators is None else generators
         )
 
     def select_documents(self, structure: str | None = None) -> list[DocumentDefinition]:
@@ -220,6 +274,8 @@ def _document_enabled_for_context(
     ctx: DocumentGenerationContext,
 ) -> bool:
     if document.doc_id not in REGIME_COMMUNAUTAIRE_DOCUMENT_IDS:
+        if document.doc_id == DEMANDE_INSCRIPTION_ORDRE_DOCUMENT_ID:
+            return _demande_inscription_ordre_enabled(ctx)
         if document.doc_id == BAIL_AVENANT_DOCUMENT_ID:
             return _cession_bail_enabled(ctx)
         if document.doc_id == APPEL_FONDS_DOCUMENT_ID:
@@ -230,6 +286,8 @@ def _document_enabled_for_context(
             return _derogation_enabled(ctx, DEROGATION_DOCUMENT_TYPES[document.doc_id])
         if document.doc_id == STATUTS_SAS_DOCUMENT_ID:
             return _statuts_sas_enabled(ctx)
+        if document.doc_id in STATUTS_SPFPL_DOCUMENT_TYPES:
+            return _statuts_spfpl_enabled(ctx, STATUTS_SPFPL_DOCUMENT_TYPES[document.doc_id])
         if document.doc_id in STATUTS_SEL_DOCUMENTS:
             return _statuts_sel_enabled(ctx, STATUTS_SEL_DOCUMENTS[document.doc_id])
         if document.doc_id in STATUTS_CIVILS_DOCUMENT_TYPES:
@@ -240,6 +298,20 @@ def _document_enabled_for_context(
             return _sas_pv_remuneration_president_enabled(ctx)
         if document.doc_id == SAS_ATTESTATION_CAPITAL_DOCUMENT_ID:
             return _sas_attestation_capital_enabled(ctx)
+        if document.doc_id == SPFPL_NOTE_INFORMATION_DOCUMENT_ID:
+            return _spfpl_note_information_enabled(ctx)
+        if document.doc_id == SPFPL_PV_AGREMENT_ASSOCIE_UNIQUE_DOCUMENT_ID:
+            return _spfpl_pv_agrement_enabled(ctx, associe_unique=True)
+        if document.doc_id == SPFPL_PV_AGREMENT_PLUSIEURS_ASSOCIES_DOCUMENT_ID:
+            return _spfpl_pv_agrement_enabled(ctx, associe_unique=False)
+        if document.doc_id == SPFPL_ACTE_CESSION_PARTS_DOCUMENT_ID:
+            return _spfpl_acte_cession_parts_enabled(ctx)
+        if document.doc_id == SPFPL_CONTRAT_APPORT_DOCUMENT_ID:
+            return _spfpl_apport_document_enabled(ctx)
+        if document.doc_id == SPFPL_ATTESTATION_CAPITAL_DOCUMENT_ID:
+            return _spfpl_attestation_capital_enabled(ctx)
+        if document.doc_id == SPFPL_ATTESTATION_COMMISSAIRE_DOCUMENT_ID:
+            return _spfpl_apport_document_enabled(ctx)
         if document.doc_id in SCM_SATELLITES_DOCUMENT_IDS:
             return _scm_satellite_enabled(ctx, SCM_SATELLITES_DOCUMENT_IDS[document.doc_id])
         if document.doc_id == ACTE_CESSION_ACTIONS_DOCUMENT_ID:
@@ -248,6 +320,10 @@ def _document_enabled_for_context(
             return _scm_cession_enabled(ctx)
         return True
     return bool(ctx.dossier_options and ctx.dossier_options.regime_communautaire)
+
+
+def _demande_inscription_ordre_enabled(ctx: DocumentGenerationContext) -> bool:
+    return ctx.structure in {"SELARL", "SELAS", "SPFPL cession", "SPFPL apport", "SCM"}
 
 
 def _cession_bail_enabled(ctx: DocumentGenerationContext) -> bool:
@@ -295,6 +371,28 @@ def _statuts_sas_enabled(ctx: DocumentGenerationContext) -> bool:
     }
 
 
+def _operation_spfpl_is(ctx: DocumentGenerationContext, operation_type: str) -> bool:
+    if ctx.operation_spfpl is None or ctx.operation_spfpl.type is None:
+        return False
+    return ctx.operation_spfpl.type.strip().lower() == operation_type
+
+
+def _statuts_spfpl_enabled(
+    ctx: DocumentGenerationContext,
+    expected: tuple[str, str],
+) -> bool:
+    expected_structure, expected_operation = expected
+    if ctx.structure != expected_structure:
+        return False
+    if ctx.dossier_options is None:
+        return False
+    if expected_operation == "cession" and not ctx.dossier_options.cession:
+        return False
+    if expected_operation == "apport" and not ctx.dossier_options.apport:
+        return False
+    return _operation_spfpl_is(ctx, expected_operation)
+
+
 def _statuts_civils_enabled(ctx: DocumentGenerationContext, statuts_type: str) -> bool:
     if ctx.statuts_civils is None or ctx.statuts_civils.type is None:
         return False
@@ -335,6 +433,53 @@ def _sas_attestation_capital_enabled(ctx: DocumentGenerationContext) -> bool:
     if len(ctx.capital_souscription.souscripteurs) != 1:
         return False
     return bool(ctx.capital_souscription.apports_nature_montant)
+
+
+def _spfpl_note_information_enabled(ctx: DocumentGenerationContext) -> bool:
+    expected_operation = _expected_spfpl_operation(ctx)
+    if not expected_operation:
+        return False
+    return _statuts_spfpl_enabled(ctx, (ctx.structure or "", expected_operation))
+
+
+def _expected_spfpl_operation(ctx: DocumentGenerationContext) -> str:
+    if ctx.structure == "SPFPL cession":
+        return "cession"
+    if ctx.structure == "SPFPL apport":
+        return "apport"
+    return ""
+
+
+def _spfpl_pv_agrement_enabled(
+    ctx: DocumentGenerationContext,
+    *,
+    associe_unique: bool,
+) -> bool:
+    if not _statuts_spfpl_enabled(ctx, ("SPFPL cession", "cession")):
+        return False
+    return bool(ctx.dossier_options and ctx.dossier_options.associe_unique is associe_unique)
+
+
+def _spfpl_acte_cession_parts_enabled(ctx: DocumentGenerationContext) -> bool:
+    if not _statuts_spfpl_enabled(ctx, ("SPFPL cession", "cession")):
+        return False
+    if ctx.operation_spfpl is None:
+        return False
+    document_demande = (ctx.operation_spfpl.document_demande or "").strip().lower()
+    nature_titres = (ctx.operation_spfpl.nature_titres or "").strip().lower()
+    return document_demande != "acte_cession_actions" and nature_titres != "actions"
+
+
+def _spfpl_apport_document_enabled(ctx: DocumentGenerationContext) -> bool:
+    return _statuts_spfpl_enabled(ctx, ("SPFPL apport", "apport"))
+
+
+def _spfpl_attestation_capital_enabled(ctx: DocumentGenerationContext) -> bool:
+    if not _spfpl_apport_document_enabled(ctx):
+        return False
+    if ctx.capital_souscription is None:
+        return False
+    return len(ctx.capital_souscription.souscripteurs) == 1
 
 
 def _scm_satellite_enabled(ctx: DocumentGenerationContext, satellite_field: str) -> bool:

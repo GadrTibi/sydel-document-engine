@@ -20,6 +20,10 @@ from sydel_doc_engine.domain.models import (
     Domiciliation,
     DossierOptions,
     ExerciceSocial,
+    Mandataire,
+    OperationSpfpl,
+    OrdreAddress,
+    OrdreProfessionnel,
     Person,
     RemunerationPresident,
     ReunionContext,
@@ -39,6 +43,7 @@ from sydel_doc_engine.domain.models import (
 from sydel_doc_engine.orchestrator.service import (
     DocumentOrchestrator,
     MissingDocumentGeneratorError,
+    build_generator_registry,
 )
 from sydel_doc_engine.registry.catalog import build_seed_catalog
 
@@ -50,8 +55,10 @@ def _context(structure: str = "SELARL") -> DocumentGenerationContext:
         personne_signataire=Person(
             genre=Gender.MASCULIN,
             civilite="Monsieur",
+            titre_affichage="Dr",
             prenom="Jean",
             nom="Durand",
+            adresse_personnelle_affichee="12 rue des Lilas\n75008 Paris",
             adresse_perso=Address(
                 num_voie="12",
                 voie="rue des Lilas",
@@ -82,6 +89,25 @@ def _context(structure: str = "SELARL") -> DocumentGenerationContext:
         ),
         domiciliation=Domiciliation(
             adresse_domiciliation_affichee="15 rue du Libre, Lyon 69002",
+        ),
+        ordre=OrdreProfessionnel(
+            conseil_departemental_libelle="Conseil departemental de l'Ordre",
+            destinataire_appel="Monsieur le President",
+            profession_signataire_affichee="chirurgien-dentiste",
+            profession_ligne_destinataire="chirurgiens-dentistes",
+            profession_reglementee_pluriel="chirurgiens-dentistes",
+            adresse=OrdreAddress(
+                ligne_1="6 rue du Conseil",
+                cp="75001",
+                ville="Paris",
+            ),
+        ),
+        mandataire=Mandataire(
+            civilite_affichage="Madame",
+            prenom="Sophie",
+            nom="Martin",
+            fonction="juriste",
+            cabinet="DAAT",
         ),
         decision=DecisionContext(date="13 mai 2026"),
         reunion=ReunionContext(date_lettres="treize mai deux mille vingt-six", heure="10 heures"),
@@ -278,6 +304,39 @@ def _scm_context() -> DocumentGenerationContext:
     )
 
 
+def _spfpl_cession_selection_context(*, associe_unique: bool = True) -> DocumentGenerationContext:
+    return DocumentGenerationContext(
+        structure="SPFPL cession",
+        dossier_options=DossierOptions(cession=True, associe_unique=associe_unique),
+        personne_signataire=Person(
+            genre=Gender.MASCULIN,
+            civilite="Monsieur",
+            prenom="Jean",
+            nom="Durand",
+        ),
+        signature=Signature(lieu="Paris", date=date(2026, 5, 15)),
+        operation_spfpl=OperationSpfpl(type="cession"),
+    )
+
+
+def _spfpl_apport_selection_context() -> DocumentGenerationContext:
+    return DocumentGenerationContext(
+        structure="SPFPL apport",
+        dossier_options=DossierOptions(apport=True),
+        personne_signataire=Person(
+            genre=Gender.MASCULIN,
+            civilite="Monsieur",
+            prenom="Jean",
+            nom="Durand",
+        ),
+        signature=Signature(lieu="Paris", date=date(2026, 5, 15)),
+        operation_spfpl=OperationSpfpl(type="apport"),
+        capital_souscription=CapitalSouscription(
+            souscripteurs=[CapitalSouscripteur(prenom="Jean", nom="Durand")]
+        ),
+    )
+
+
 def test_select_documents_for_selarl_includes_pv_nomination_gerant() -> None:
     orchestrator = DocumentOrchestrator(build_seed_catalog())
 
@@ -288,6 +347,7 @@ def test_select_documents_for_selarl_includes_pv_nomination_gerant() -> None:
         "DOC-002",
         "DOC-003",
         "DOC-004",
+        "DOC-034",
         "DOC-005",
         "DOC-006",
         "DOC-007",
@@ -304,6 +364,13 @@ def test_select_documents_for_selarl_includes_pv_nomination_gerant() -> None:
         "DOC-032",
         "DOC-033",
     ]
+
+
+def test_catalog_and_generator_registry_have_same_doc_ids() -> None:
+    catalog_ids = {document.doc_id for document in build_seed_catalog()}
+    registry_ids = set(build_generator_registry())
+
+    assert catalog_ids == registry_ids
 
 
 def test_select_documents_for_sci_includes_pv_nomination_gerant() -> None:
@@ -354,6 +421,40 @@ def test_select_documents_for_sas_context_excludes_satellites_by_default() -> No
     assert "DOC-024" not in [document.doc_id for document in selected]
 
 
+def test_select_documents_for_spfpl_cession_context_includes_reconciled_generators() -> None:
+    orchestrator = DocumentOrchestrator(build_seed_catalog())
+
+    selected_ids = [
+        document.doc_id
+        for document in orchestrator.select_documents_for_context(
+            _spfpl_cession_selection_context()
+        )
+    ]
+
+    assert "DOC-034" in selected_ids
+    assert "DOC-035" in selected_ids
+    assert "DOC-037" in selected_ids
+    assert "DOC-038" in selected_ids
+    assert "DOC-039" not in selected_ids
+    assert "DOC-040" in selected_ids
+
+
+def test_select_documents_for_spfpl_apport_context_includes_reconciled_generators() -> None:
+    orchestrator = DocumentOrchestrator(build_seed_catalog())
+
+    selected_ids = [
+        document.doc_id
+        for document in orchestrator.select_documents_for_context(_spfpl_apport_selection_context())
+    ]
+
+    assert "DOC-034" in selected_ids
+    assert "DOC-036" in selected_ids
+    assert "DOC-037" in selected_ids
+    assert "DOC-041" in selected_ids
+    assert "DOC-042" in selected_ids
+    assert "DOC-043" in selected_ids
+
+
 def test_select_documents_for_sci_iris_includes_dedicated_statuts() -> None:
     orchestrator = DocumentOrchestrator(build_seed_catalog())
 
@@ -378,6 +479,7 @@ def test_select_documents_for_scm_includes_dedicated_statuts() -> None:
         "DOC-002",
         "DOC-003",
         "DOC-004",
+        "DOC-034",
         "DOC-025",
         "DOC-026",
         "DOC-027",
@@ -412,10 +514,11 @@ def test_generate_documents_creates_docx_for_selected_documents(tmp_path: Path) 
 
     output_paths = orchestrator.generate_documents(_context(), tmp_path)
 
-    assert len(output_paths) == 4
+    assert len(output_paths) == 5
     assert all(path.suffix == ".docx" for path in output_paths)
     assert all(path.is_file() for path in output_paths)
     assert tmp_path / "pv_nomination_gerant.docx" in output_paths
+    assert tmp_path / "demande_inscription_ordre.docx" in output_paths
     assert tmp_path / "lettre_renonciation_associe.docx" not in output_paths
     assert tmp_path / "lettre_avertissement_conjoint.docx" not in output_paths
 
@@ -430,6 +533,7 @@ def test_generate_documents_outputs_follow_catalog_order(tmp_path: Path) -> None
         "autorisation_domiciliation.docx",
         "procuration.docx",
         "pv_nomination_gerant.docx",
+        "demande_inscription_ordre.docx",
     ]
 
 

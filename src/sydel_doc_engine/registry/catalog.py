@@ -25,6 +25,14 @@ PV_NOMINATION_GERANT_STRUCTURES: list[str] = [
     "SCM",
 ]
 
+DEMANDE_INSCRIPTION_ORDRE_STRUCTURES: list[str] = [
+    "SELARL",
+    "SELAS",
+    "SPFPL cession",
+    "SPFPL apport",
+    "SCM",
+]
+
 REGIME_COMMUNAUTAIRE_STRUCTURES: list[str] = [
     "SELARL",
     "SELAS",
@@ -54,6 +62,14 @@ DEROGATION_CORE_STRUCTURES: list[str] = [
 
 STATUTS_SAS_STRUCTURES: list[str] = [
     "SAS",
+]
+
+STATUTS_SPFPL_CESSION_STRUCTURES: list[str] = [
+    "SPFPL cession",
+]
+
+STATUTS_SPFPL_APPORT_STRUCTURES: list[str] = [
+    "SPFPL apport",
 ]
 
 STATUTS_CIVILS_SCS_STRUCTURES: list[str] = [
@@ -157,6 +173,36 @@ def build_seed_catalog() -> list[DocumentDefinition]:
             source_path="project/source_documents/lot_02/PV nomination gérant - transforme.docx",
             specification_path="docs/delivery/lot_02_pv_nomination_gerant_spec_texte_v1.md",
             notes="Branché dans l'orchestrateur sans UI, PDF ni ZIP.",
+        ),
+        DocumentDefinition(
+            doc_id="DOC-034",
+            canonical_name="Demande d'inscription a l'ordre",
+            generator_name="generate_demande_inscription_ordre",
+            lot=2,
+            category=DocumentCategory.MUTUALISABLE,
+            structures=DEMANDE_INSCRIPTION_ORDRE_STRUCTURES,
+            general_condition=(
+                "dossier.structure in {SELARL, SELAS, SPFPL cession, SPFPL apport, SCM}"
+            ),
+            specific_conditions=[
+                "ordre et mandataire fournis explicitement",
+                "mention de derogation manuelle obligatoire si dossier.options.derogation == true",
+                "SCM accepte uniquement avec donnees ordinales explicites",
+            ],
+            dynamic_associates=False,
+            grammar_variants=False,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path=(
+                "project/source_documents/lot_02/"
+                "Demande d_inscription à l_ordre - transforme.docx"
+            ),
+            specification_path=(
+                "docs/delivery/lot_02_demande_inscription_ordre_spec_texte_v1.md"
+            ),
+            notes=(
+                "Exposition runtime ajoutee par reconciliation moteur ; aucun wording "
+                "juridique modifie."
+            ),
         ),
         DocumentDefinition(
             doc_id="DOC-005",
@@ -357,7 +403,7 @@ def build_seed_catalog() -> list[DocumentDefinition]:
             workflow_status=WorkflowStatus.TESTE,
             source_path=(
                 "project/source_documents/lot_03/"
-                "Formulaire de deÌrogation pour exercer sur plusieurs sites avec la SEL.docx"
+                "Formulaire de dérogation pour exercer sur plusieurs sites avec la SEL.docx"
             ),
             specification_path="docs/delivery/lot_03_derogations_spec_texte_v1.md",
             notes=(
@@ -385,7 +431,7 @@ def build_seed_catalog() -> list[DocumentDefinition]:
             workflow_status=WorkflowStatus.TESTE,
             source_path=(
                 "project/source_documents/lot_03/"
-                "Demande de deÌrogation cumul SELARL - BNC.docx"
+                "Demande de dérogation cumul SELARL - BNC.docx"
             ),
             specification_path="docs/delivery/lot_03_derogations_spec_texte_v1.md",
             notes=(
@@ -413,6 +459,46 @@ def build_seed_catalog() -> list[DocumentDefinition]:
             source_path="project/source_documents/lot_04/STATUTS_SAS_SPFPL_medecins_modele.docx",
             specification_path="docs/delivery/lot_04_statuts_sas_spec_texte_v1.md",
             notes="Statuts SAS V1 limites a la source SPFPL medecins actionnaire unique.",
+        ),
+        DocumentDefinition(
+            doc_id="DOC-035",
+            canonical_name="Statuts SPFPL cession",
+            generator_name="generate_statuts_spfpl_cession",
+            lot=4,
+            category=DocumentCategory.SPECIFIQUE,
+            structures=STATUTS_SPFPL_CESSION_STRUCTURES,
+            general_condition="dossier.structure == SPFPL cession",
+            specific_conditions=[
+                "operation_spfpl.type == cession",
+                "dossier.options.cession == true",
+                "associe unique uniquement en V1",
+            ],
+            dynamic_associates=False,
+            grammar_variants=False,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path="project/source_documents/lot_04/Statuts_SPFPLAS_dentistes_cession.docx",
+            specification_path="docs/delivery/lot_04_statuts_spfpl_spec_texte_v1.md",
+            notes="Statuts SPFPL cession V1 exposes par reconciliation moteur.",
+        ),
+        DocumentDefinition(
+            doc_id="DOC-036",
+            canonical_name="Statuts SPFPL apport",
+            generator_name="generate_statuts_spfpl_apport",
+            lot=4,
+            category=DocumentCategory.SPECIFIQUE,
+            structures=STATUTS_SPFPL_APPORT_STRUCTURES,
+            general_condition="dossier.structure == SPFPL apport",
+            specific_conditions=[
+                "operation_spfpl.type == apport",
+                "dossier.options.apport == true",
+                "associe unique uniquement en V1",
+            ],
+            dynamic_associates=False,
+            grammar_variants=False,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path="project/source_documents/lot_04/Statuts SPFPLAS dentistes - apport.docx",
+            specification_path="docs/delivery/lot_04_statuts_spfpl_spec_texte_v1.md",
+            notes="Statuts SPFPL apport V1 exposes par reconciliation moteur.",
         ),
         DocumentDefinition(
             doc_id="DOC-016",
@@ -455,7 +541,7 @@ def build_seed_catalog() -> list[DocumentDefinition]:
             dynamic_associates=False,
             grammar_variants=True,
             workflow_status=WorkflowStatus.TESTE,
-            source_path="project/source_documents/lot_04/ModeÌ€le statuts SELARL meÌdecins.docx",
+            source_path="project/source_documents/lot_04/Modèle statuts SELARL médecins.docx",
             specification_path=(
                 "docs/delivery/lot_04_statuts_sel_exercice_spec_texte_v1.md"
             ),
@@ -519,7 +605,7 @@ def build_seed_catalog() -> list[DocumentDefinition]:
             dynamic_associates=True,
             grammar_variants=False,
             workflow_status=WorkflowStatus.TESTE,
-            source_path="project/source_documents/lot_04/Modele statuts SCI.docx",
+            source_path="project/source_documents/lot_04/Modèle statuts SCI.docx",
             specification_path="docs/delivery/lot_04_statuts_civils_arbitrages_v1.md",
             notes="Personnes morales SCI bloquees en V1 faute de source observee.",
         ),
@@ -539,7 +625,7 @@ def build_seed_catalog() -> list[DocumentDefinition]:
             dynamic_associates=True,
             grammar_variants=False,
             workflow_status=WorkflowStatus.TESTE,
-            source_path="project/source_documents/lot_04/Modele statuts SCI IRIS.docx",
+            source_path="project/source_documents/lot_04/Modèle statuts SCI IRIS.docx",
             specification_path="docs/delivery/lot_04_statuts_civils_arbitrages_v1.md",
             notes="Lettre option IS separee hors generateur statuts civils.",
         ),
@@ -621,6 +707,160 @@ def build_seed_catalog() -> list[DocumentDefinition]:
             ),
         ),
         DocumentDefinition(
+            doc_id="DOC-037",
+            canonical_name="Note d'information SPFPL",
+            generator_name="generate_note_information_spfpl",
+            lot=5,
+            category=DocumentCategory.SPECIFIQUE,
+            structures=["SPFPL cession", "SPFPL apport"],
+            general_condition="operation_spfpl.type in {cession, apport}",
+            specific_conditions=[
+                "dossier.options.cession == true pour SPFPL cession",
+                "dossier.options.apport == true pour SPFPL apport",
+                "wording cession/apport tranche par operation_spfpl.type",
+            ],
+            dynamic_associates=True,
+            grammar_variants=False,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path="project/source_documents/lot_05/NOTE D'INFORMATION.docx",
+            specification_path="docs/delivery/lot_05_spfpl_spec_texte_v1.md",
+            notes="Generateur SPFPL deja teste, rendu atteignable par l'orchestrateur.",
+        ),
+        DocumentDefinition(
+            doc_id="DOC-038",
+            canonical_name="PV agrement cession SPFPL - associe unique",
+            generator_name="generate_pv_agrement_cession_spfpl_associe_unique",
+            lot=5,
+            category=DocumentCategory.SPECIFIQUE,
+            structures=STATUTS_SPFPL_CESSION_STRUCTURES,
+            general_condition=(
+                "dossier.structure == SPFPL cession et dossier.options.cession == true"
+            ),
+            specific_conditions=[
+                "operation_spfpl.type == cession",
+                "dossier.options.associe_unique == true",
+            ],
+            dynamic_associates=False,
+            grammar_variants=False,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path=(
+                "project/source_documents/lot_05/"
+                "PV SELARL agrément cession SPFPL - SELARL 1 associé - transforme.docx"
+            ),
+            specification_path="docs/delivery/lot_05_spfpl_spec_texte_v1.md",
+            notes="Wording cession conserve selon arbitrage V1, sans formule apport.",
+        ),
+        DocumentDefinition(
+            doc_id="DOC-039",
+            canonical_name="PV agrement cession SPFPL - plusieurs associes",
+            generator_name="generate_pv_agrement_cession_spfpl_plusieurs_associes",
+            lot=5,
+            category=DocumentCategory.SPECIFIQUE,
+            structures=STATUTS_SPFPL_CESSION_STRUCTURES,
+            general_condition=(
+                "dossier.structure == SPFPL cession et dossier.options.cession == true"
+            ),
+            specific_conditions=[
+                "operation_spfpl.type == cession",
+                "dossier.options.associe_unique == false",
+                "totalite des parts presente ou representee",
+            ],
+            dynamic_associates=True,
+            grammar_variants=False,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path=(
+                "project/source_documents/lot_05/"
+                "PV SELARL agrément cession SPFPL - SELARL plusieurs associés - transforme.docx"
+            ),
+            specification_path="docs/delivery/lot_05_spfpl_spec_texte_v1.md",
+            notes="Selection pluralite explicite par dossier.options.associe_unique == false.",
+        ),
+        DocumentDefinition(
+            doc_id="DOC-040",
+            canonical_name="Acte de cession de parts SPFPL",
+            generator_name="generate_acte_cession_parts_spfpl",
+            lot=5,
+            category=DocumentCategory.SPECIFIQUE,
+            structures=STATUTS_SPFPL_CESSION_STRUCTURES,
+            general_condition=(
+                "dossier.structure == SPFPL cession et dossier.options.cession == true"
+            ),
+            specific_conditions=[
+                "operation_spfpl.type == cession",
+                "operation_spfpl.nature_titres != actions",
+                "operation_spfpl.document_demande != acte_cession_actions",
+            ],
+            dynamic_associates=True,
+            grammar_variants=False,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path="project/source_documents/lot_05/Acte_cession_SPFPL_tiers_part_modele.docx",
+            specification_path="docs/delivery/lot_05_spfpl_spec_texte_v1.md",
+            notes="Document parts distinct de l'acte actions DOC-029.",
+        ),
+        DocumentDefinition(
+            doc_id="DOC-041",
+            canonical_name="Contrat d'apport SEL vers SPFPL",
+            generator_name="generate_contrat_apport_spfpl",
+            lot=5,
+            category=DocumentCategory.SPECIFIQUE,
+            structures=STATUTS_SPFPL_APPORT_STRUCTURES,
+            general_condition="dossier.structure == SPFPL apport et dossier.options.apport == true",
+            specific_conditions=[
+                "operation_spfpl.type == apport",
+                "evaluateur_apport et commissaire_aux_apports fournis explicitement",
+            ],
+            dynamic_associates=False,
+            grammar_variants=False,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path="project/source_documents/lot_05/Contrat d_apport SEL SPFPL.docx",
+            specification_path="docs/delivery/lot_05_spfpl_spec_texte_v1.md",
+            notes="Entites fixes source remplacees par contexte explicite selon tests V1.",
+        ),
+        DocumentDefinition(
+            doc_id="DOC-042",
+            canonical_name="Attestation capital / liste des souscripteurs SPFPL",
+            generator_name="generate_attestation_capital_liste_souscripteurs_spfpl",
+            lot=5,
+            category=DocumentCategory.SPECIFIQUE,
+            structures=STATUTS_SPFPL_APPORT_STRUCTURES,
+            general_condition="dossier.structure == SPFPL apport et dossier.options.apport == true",
+            specific_conditions=[
+                "operation_spfpl.type == apport",
+                "un seul souscripteur",
+            ],
+            dynamic_associates=False,
+            grammar_variants=False,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path=(
+                "project/source_documents/lot_05/"
+                "Attestation sur le capital - apport - liste des souscripteurs.docx"
+            ),
+            specification_path="docs/delivery/lot_05_spfpl_spec_texte_v1.md",
+            notes="Document SPFPL distinct du satellite SAS DOC-024.",
+        ),
+        DocumentDefinition(
+            doc_id="DOC-043",
+            canonical_name="Attestation nomination commissaire aux apports",
+            generator_name="generate_attestation_commissaire_apports",
+            lot=5,
+            category=DocumentCategory.SPECIFIQUE,
+            structures=STATUTS_SPFPL_APPORT_STRUCTURES,
+            general_condition="dossier.structure == SPFPL apport et dossier.options.apport == true",
+            specific_conditions=[
+                "operation_spfpl.type == apport",
+                "commissaire_aux_apports fourni explicitement",
+            ],
+            dynamic_associates=False,
+            grammar_variants=False,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path=(
+                "project/source_documents/lot_05/"
+                "attestation nomination commissaire aux apports - transforme.docx"
+            ),
+            specification_path="docs/delivery/lot_05_spfpl_spec_texte_v1.md",
+            notes="Libelle commissaire aux apports conserve selon source disponible.",
+        ),
+        DocumentDefinition(
             doc_id="DOC-025",
             canonical_name="Statuts SCM",
             generator_name="generate_statuts_scm",
@@ -657,7 +897,7 @@ def build_seed_catalog() -> list[DocumentDefinition]:
             dynamic_associates=False,
             grammar_variants=False,
             workflow_status=WorkflowStatus.TESTE,
-            source_path="project/source_documents/lot_05/Pacte d_associes SCM.docx",
+            source_path="project/source_documents/lot_05/Pacte d_associés SCM.docx",
             specification_path="docs/delivery/lot_05_scm_satellites_spec_texte_v1.md",
             notes="Sous-batch SCM satellites DOCX V1, sans source .doc.",
         ),

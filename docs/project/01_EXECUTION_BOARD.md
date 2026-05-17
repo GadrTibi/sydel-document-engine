@@ -113,6 +113,7 @@
 | SYNC-WAVE-010 | DONE | Synchroniser la vague finale moteur SCM cession dans main | branches arbitrage/code SCM cession | commits intégrés + pilotage final moteur aligné |
 | FINAL-SCM-CESSION-WAVE-001 | DONE | Finaliser le bloc cession SCM et clôturer la vague moteur V1 | résolution SCM cession V1 + specs + six sources | DOC-031 à DOC-033 + tests + smoke + audit moteur |
 | SYNC-CLOSE-AUDIT-001 | DONE | Synchroniser l'audit de clôture moteur V1 dans main | `origin/codex/close-motor-audit-001` @ `0139202b170531fd628f25811c55855a2512acc0` | merge de synchronisation + audit présent + pilotage aligné |
+| RECONCILE-MOTOR-CLOSE-001 | DONE | Réconcilier et clôturer le moteur DOCX V1 | audits 16/17 + fondation 18 + catalogue/orchestrateur | DOC-001 à DOC-043 alignés + audits conclusifs + tests |
 | UI-001 | BLOCKED | Brancher Streamlit V0 Lot 1 | orchestrateur Lot 1 + spec canonique PV nomination gérant validée | écran simple + test manuel |
 
 ## Référentiels moteur disponibles
@@ -155,6 +156,8 @@
 - Les specs V1 du blocage cession SCM sont disponibles : `docs/delivery/lot_05_scm_cession_block_spec_canonique_v1.md` et `docs/delivery/lot_05_scm_cession_block_spec_texte_v1.md`.
 - La résolution V1 du bloc cession SCM est disponible : `docs/delivery/lot_05_scm_cession_block_resolution_v1.md`.
 - L'audit de clôture moteur V1 est disponible : `docs/project/16_MOTOR_COMPLETION_AUDIT_V1.md`.
+- L'audit qualité final moteur V1 est disponible : `docs/project/17_FINAL_ENGINE_QUALITY_AUDIT_V1.md`.
+- Le plan de fondation post-moteur V1 est disponible : `docs/project/18_NEXT_PHASE_FOUNDATION_V1.md`.
 - Le blueprint style Lot 03 est disponible : `docs/delivery/render_style_blueprint_lot03_batch_v1.md`.
 - Le blueprint style statuts est disponible : `docs/delivery/render_style_blueprint_statuts_batch_v1.md`.
 - Le manifest d'import sources V1 est disponible : `docs/project/10_SOURCE_IMPORT_MANIFEST_V1.md`.
@@ -729,6 +732,12 @@
 - Contraintes : conserver l'audit de clôture plus récent déjà présent dans `main`, sans modification de code Python.
 - Statut : DONE ; merge de synchronisation effectué, `docs/project/16_MOTOR_COMPLETION_AUDIT_V1.md` confirmé présent.
 
+### RECONCILE-MOTOR-CLOSE-001
+- Objectif : lever les incohérences finales signalées par `FINAL-MOTOR-AUDIT-002` et clôturer le moteur DOCX V1.
+- Contraintes : correction minimale, aucun wording juridique modifié, aucun toucher à `project/source_import/raw_drive_dump/` ni `artifacts/`.
+- Statut : DONE ; runtime aligné sur 43 documents, audits `16/17/18` et référentiels `08/09` consolidés.
+- Validation : `.\.venv\Scripts\python.exe -m ruff check .` OK ; `.\.venv\Scripts\python.exe -m pytest` OK, 176 tests passés.
+
 ### UI-001
 - Objectif : exposer une Streamlit simple pour générer le Lot 1.
 - Statut : en attente explicite ; ne pas lancer sans ticket explicite dédié.
@@ -744,8 +753,9 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - mettre à jour `docs/project/04_LAST_STATE.md`
 
 ## Prochaine étape prévue
-- moteur documentaire V1 feature complete sur le périmètre DOCX déterministe validé, hors cas explicitement manuels ou legacy.
+- moteur documentaire DOCX V1 feature complete et clos après `RECONCILE-MOTOR-CLOSE-001`.
 - prochains chantiers recommandés : UI, PDF, ZIP, recette finale.
+- `RECONCILE-MOTOR-CLOSE-001` est DONE ; les générateurs ordre/SPFPL orphelins sont exposés sous `DOC-034` à `DOC-043`, `08/09/16/17/18` sont alignés et les références delivery Lot 2 manquantes sont présentes sur `main`.
 - `FINAL-SCM-CESSION-WAVE-001` est DONE ; `DOC-031`, `DOC-032` et `DOC-033` cession SCM sont branchés au catalogue/orchestrateur et couverts par tests/smoke.
 - `docs/project/16_MOTOR_COMPLETION_AUDIT_V1.md` conclut la clôture moteur V1 et liste les exclusions restantes.
 - `SYNC-CLOSE-AUDIT-001` est DONE ; le commit source `0139202b170531fd628f25811c55855a2512acc0` a été absorbé via merge de synchronisation en conservant la version finale plus récente de l'audit.
@@ -792,7 +802,7 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - UI-001 reste explicitement en attente.
 
 ## Points ouverts
-- Aucun point bloquant moteur DOCX identifié après `FINAL-SCM-CESSION-WAVE-001`.
+- Aucun point bloquant moteur DOCX identifié après `RECONCILE-MOTOR-CLOSE-001`.
 - Restent hors périmètre moteur : UI, PDF, ZIP, recette finale, revue humaine juridique/visuelle, documents explicitement manuels et sources legacy non converties.
 - Aucun point bloquant identifié après le smoke test réel Lot 1.
 - Les trois DOCX sont bien produits par l'orchestrateur dans `artifacts/lot_01_smoke_test/`, mais le rendu visuel et le wording juridique restent à relire humainement dans les fichiers générés.
@@ -877,3 +887,4 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - 2026-05-15 : SYNC-WAVE-008 absorbe dans `main` les commits sources `61a1c49353724bbf5b8f1bb8f039d5e96b877ecc`, `d3188c0b4a4a61d889a2ce9ccc37e84e1284adaa`, `939e1c2088892abcf4a8fdcbaa35911f4f8a2f9f`, `19468886f5e885f79b2b35e17e2ff2a097ea9c3a`, `d8747ef20aba478c575c5a491cdf0f634a9c26d3`, `00b4c955b372399bb8701f47a5686748539f061b`, `a181e069f756a1ea846fdcd1824b3f8c57cc11f5` et `518e46fbb8d8bee03a23ea203654b4199103fb7e`, passe les huit tickets correspondants en DONE, puis confirme les prochains tickets READY, sans modification de `project/source_import/raw_drive_dump/` ni de `artifacts/`.
 - 2026-05-15 : FINAL-SCM-CESSION-WAVE-001 restaure la résolution V1 cession SCM, implémente `DOC-031` à `DOC-033`, génère le smoke DOCX réel, valide ruff/pytest et crée l'audit de clôture moteur V1.
 - 2026-05-15 : SYNC-CLOSE-AUDIT-001 absorbe le commit source `0139202b170531fd628f25811c55855a2512acc0` depuis `origin/codex/close-motor-audit-001`, confirme `docs/project/16_MOTOR_COMPLETION_AUDIT_V1.md` sur `main` et conserve la version finale plus récente, sans modification de code Python.
+- 2026-05-17 : RECONCILE-MOTOR-CLOSE-001 expose les générateurs ordre/SPFPL sous `DOC-034` à `DOC-043`, consolide `08/09`, intègre `17/18`, corrige l'audit `16` et clôt le moteur DOCX V1 hors UI/PDF/ZIP/recette finale.
