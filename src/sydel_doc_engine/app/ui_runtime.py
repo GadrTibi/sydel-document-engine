@@ -1,0 +1,120 @@
+from __future__ import annotations
+
+import re
+from collections.abc import Mapping
+from dataclasses import dataclass
+from pathlib import Path
+
+import yaml
+from pydantic import ValidationError
+
+from sydel_doc_engine.domain.models import DocumentGenerationContext
+from sydel_doc_engine.orchestrator.service import DocumentOrchestrator
+from sydel_doc_engine.registry.catalog import build_seed_catalog
+from sydel_doc_engine.rendering.bundle import create_bundle
+from sydel_doc_engine.rendering.pdf_export import (
+    PdfExportError,
+    PdfExportResult,
+    export_docx_batch_to_pdf,
+)
+
+DEFAULT_ARTIFACTS_DIR = Path("artifacts") / "ui_pdf_zip_integration_001"
+DEFAULT_CONTEXTS_DIR = Path("examples") / "contexts"
+PDF_OUTPUT_DIR_NAME = "pdf"
+ZIP_FILE_NAME = "dossier_generation.zip"
+
+
+@dataclass(frozen=True)
+class GeneratedDossier:
+    output_dir: Path
+    docx_paths: list[Path]
+    pdf_results: list[PdfExportResult]
+    zip_path: Path
+    pdf_error: str | None = None
+
+    @property
+    def pdf_paths(self) -> list[Path]:
+        return [result.pdf_path for result in self.pdf_results]
+
+
+def list_context_examples(contexts_dir: Path = DEFAULT_CONTEXTS_DIR) -> list[Path]:
+    if not contexts_dir.is_dir():
+        return []
+    return sorted(
+        path
+        for path in contexts_dir.iterdir()
+        if path.is_file() and path.suffix.lower() in {".yaml", ".yml", ".json"}
+    )
+
+
+def load_context_payload(path: Path) -> str:
+    return path.read_text(encoding="utf-8")
+
+
+def parse_context_payload(payload: str) -> DocumentGenerationContext:
+    loaded = yaml.safe_load(payload)
+    if not isinstance(loaded, Mapping):
+        raise ValueError("Le contexte doit etre un objet YAML ou JSON.")
+    try:
+        return DocumentGenerationContext.model_validate(dict(loaded))
+    except ValidationError as exc:
+        raise ValueError(str(exc)) from exc
+
+
+def selected_document_rows(ctx: DocumentGenerationContext) -> list[dict[str, str]]:
+    orchestrator = DocumentOrchestrator(build_seed_catalog())
+    rows: list[dict[str, str]] = []
+    for document in orchestrator.select_documents_for_context(ctx):
+        rows.append(
+            {
+                "doc_id": document.doc_id,
+                "nom": document.canonical_name,
+                "lot": str(document.lot),
+                "condition": document.general_condition,
+            }
+        )
+    return rows
+
+
+def build_output_dir(
+    source_name: str,
+    base_dir: Path = DEFAULT_ARTIFACTS_DIR,
+) -> Path:
+    stem = Path(source_name).stem or "contexte"
+    slug = re.sub(r"[^A-Za-z0-9_.-]+", "_", stem).strip("._")
+    return base_dir / (slug or "contexte")
+
+
+def generate_dossier(
+    ctx: DocumentGenerationContext,
+    output_dir: Path,
+    *,
+    generate_pdf: bool,
+) -> GeneratedDossier:
+    orchestrator = DocumentOrchestrator(build_seed_catalog())
+    selected_documents = orchestrator.select_documents_for_context(ctx)
+    if not selected_documents:
+        raise RuntimeError("Aucun document selectionne par l'orchestrateur.")
+
+    docx_paths = orchestrator.generate_documents(ctx, output_dir)
+    pdf_results: list[PdfExportResult] = []
+    pdf_error: str | None = None
+
+    if generate_pdf:
+        try:
+            pdf_results = export_docx_batch_to_pdf(
+                docx_paths,
+                output_dir / PDF_OUTPUT_DIR_NAME,
+            )
+        except PdfExportError as exc:
+            pdf_error = str(exc)
+
+    bundle_files = [*docx_paths, *[result.pdf_path for result in pdf_results]]
+    zip_path = create_bundle(output_dir / ZIP_FILE_NAME, bundle_files)
+    return GeneratedDossier(
+        output_dir=output_dir,
+        docx_paths=docx_paths,
+        pdf_results=pdf_results,
+        zip_path=zip_path,
+        pdf_error=pdf_error,
+    )

@@ -123,6 +123,7 @@
 | UI-CORE-001 | READY | Implémenter le cœur UI Streamlit V1 | UI flow + occurrences + form schema + backend PDF | UI dossier V1 sans logique métier cachée |
 | RESUME-ZIP-BACKEND-001 | READY | Reprendre le backend ZIP V1 sur main synchronisé | moteur DOCX clos + backend PDF + fondation phase 18 | backend ZIP dossier documenté et testé |
 | REVIEW-FINAL-001 | READY | Exécuter la revue finale V1 | moteur DOCX + UI/PDF/ZIP intégrés | revue finale documentée |
+| UI-PDF-ZIP-INTEGRATION-001 | DONE | Brancher PDF et ZIP dans l'UI Streamlit | UI core + backend PDF + backend ZIP | téléchargements DOCX/PDF/ZIP + smoke manuel + tests |
 | UI-001 | BLOCKED | Brancher Streamlit V0 Lot 1 | orchestrateur Lot 1 + spec canonique PV nomination gérant validée | écran simple + test manuel |
 
 ## Référentiels moteur disponibles
@@ -799,6 +800,13 @@
 - Prérequis : moteur DOCX clos, UI cœur, PDF et ZIP intégrés.
 - Statut : READY.
 
+### UI-PDF-ZIP-INTEGRATION-001
+- Objectif : brancher les sorties DOCX, PDF local optionnel et ZIP dossier dans l'UI Streamlit.
+- Prérequis : moteur DOCX clos, backend PDF `rendering/pdf_export.py`, backend ZIP disponible sous `rendering/bundle.py`.
+- Statut : DONE ; l'UI charge un contexte YAML/JSON, affiche la sélection orchestrateur, génère les DOCX, propose les téléchargements DOCX, tente les PDF si un backend local est disponible et produit un ZIP avec les fichiers générés.
+- Limitation : le PDF dépend de l'environnement local LibreOffice ou Word COM ; un échec PDF est affiché sans modifier les DOCX.
+- Smoke manuel : `docs/review/ui_pdf_zip_integration_001_smoke.md`.
+
 ### UI-001
 - Objectif : exposer une Streamlit simple pour générer le Lot 1.
 - Statut : en attente explicite ; ne pas lancer sans ticket explicite dédié.
@@ -814,10 +822,10 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - mettre à jour `docs/project/04_LAST_STATE.md`
 
 ## Prochaine étape prévue
+- `UI-PDF-ZIP-INTEGRATION-001` est DONE ; l'UI sait produire et telecharger DOCX, PDF local optionnel et ZIP dossier.
 - `SYNC-POST-MOTOR-UI-001` est DONE ; les fondations UI/PDF/recette sont absorbées dans `main`.
-- prochains tickets READY confirmés : `UI-CORE-001`, `RESUME-ZIP-BACKEND-001` et `REVIEW-FINAL-001`.
+- prochain ticket recommandé : `REVIEW-FINAL-001`, avec contrôle humain du flux UI -> DOCX -> PDF -> ZIP.
 - moteur documentaire DOCX V1 feature complete et clos après `RECONCILE-MOTOR-CLOSE-001`.
-- prochains chantiers recommandés : UI cœur, ZIP backend, puis revue finale.
 - tickets absorbés par `SYNC-POST-MOTOR-UI-001` : `UI-FLOW-001`, `UI-OCCURRENCES-001`, `UI-FORM-SCHEMA-001`, `PDF-BACKEND-001` et `RECIPE-FRAME-001`.
 - `RECONCILE-MOTOR-CLOSE-001` est DONE ; les générateurs ordre/SPFPL orphelins sont exposés sous `DOC-034` à `DOC-043`, `08/09/16/17/18` sont alignés et les références delivery Lot 2 manquantes sont présentes sur `main`.
 - `PDF-BACKEND-001` est DONE ; le backend PDF est intégré à la fondation absorbée, sans ticket PDF supplémentaire confirmé dans cette synchronisation.
@@ -957,3 +965,4 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - 2026-05-17 : RECONCILE-MOTOR-CLOSE-001 expose les générateurs ordre/SPFPL sous `DOC-034` à `DOC-043`, consolide `08/09`, intègre `17/18`, corrige l'audit `16` et clôt le moteur DOCX V1 hors UI/PDF/ZIP/recette finale.
 - 2026-05-17 : PDF-BACKEND-001 ajoute un backend d'export PDF best-effort avec priorité LibreOffice headless puis fallback Word COM Windows, tests ciblés et smoke réel DOCX vers PDF.
 - 2026-05-17 : SYNC-POST-MOTOR-UI-001 absorbe dans `main` les commits sources `d62670efe10481926437c0e1a5dabbe349fd5938`, `24a881b999371811d39a2403c0b51d9ae8ce0556`, `ef6252b3c15dc3fc39f1efdc05687c0f448f8fe1`, `2f76f61848469ddf2f7b29c3169e8893e83fd3a5` et `c2fc0db4d51485c7c5e721c5184028ae17c68cb3`, passe les fondations UI/PDF/recette en DONE et confirme `UI-CORE-001`, `RESUME-ZIP-BACKEND-001` et `REVIEW-FINAL-001` en READY.
+- 2026-05-17 : UI-PDF-ZIP-INTEGRATION-001 branche l'UI Streamlit sur la génération dossier DOCX, l'export PDF local optionnel et le ZIP de sortie, ajoute un smoke manuel documenté et conserve `artifacts/` hors versionnement.
