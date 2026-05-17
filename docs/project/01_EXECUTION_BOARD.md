@@ -90,6 +90,7 @@
 | PREP-SCM-LISTE-DEPENSES-CONVERT-001 | DONE | Convertir la source legacy liste dépenses communes SCM | source legacy Lot 05 SCM | DOCX exploitable + préparation documentée |
 | CONVERT-ACTE-ACTIONS-001 | READY | Convertir ou remplacer la source acte de cession d'actions | audit source acte actions V1 | DOCX exploitable ou blocage documenté |
 | CONVERT-DEROG-SALARIEE-001 | READY | Convertir ou remplacer la source dérogation salariée legacy | préparation dérogations V1 + source legacy `.doc` | DOCX exploitable ou blocage documenté |
+| RESUME-ZIP-BACKEND-001 | DONE | Reprendre et finaliser le backend ZIP dossier | plan post-moteur V1 + orchestrateur + fichiers générés | `zip_bundle.py` + tests ciblés + smoke ZIP |
 | UI-001 | BLOCKED | Brancher Streamlit V0 Lot 1 | orchestrateur Lot 1 + spec canonique PV nomination gérant validée | écran simple + test manuel |
 
 ## Référentiels moteur disponibles
@@ -620,11 +621,13 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - revue humaine toujours recommandée : smoke DOCX `régime communautaire`, notamment le rendu SELARL de la renonciation canonique.
 - les autres cas MEDIUM/LOW restent bloqués tant que leurs variantes sources n'ont pas été comparées.
 - UI-001 reste explicitement en attente.
+- RESUME-ZIP-BACKEND-001 est terminé : le backend ZIP V1 peut créer une archive déterministe à partir de fichiers DOCX/PDF déjà générés, avec manifeste technique et tests ciblés.
 
 ## Points ouverts
 - Aucun point bloquant identifié après le smoke test réel Lot 1.
 - Les trois DOCX sont bien produits par l'orchestrateur dans `artifacts/lot_01_smoke_test/`, mais le rendu visuel et le wording juridique restent à relire humainement dans les fichiers générés.
 - PDF et ZIP restent hors ORCH-001 et devront être traités dans un ticket dédié.
+- Le backend ZIP V1 existe désormais dans `src/sydel_doc_engine/rendering/zip_bundle.py`, sans branchement UI ni automatisation PDF.
 - Ecart temporaire non bloquant pour l'UI : la table V1 retient `domiciliation.adresse_affichee` comme nom canonique, tandis que le code Lot 1 existant conserve l'alias legacy `adresse_domiciliation_affichee` jusqu'à refactor dédié.
 - ORCH-L2-PV-001 est terminé ; le PV nomination gérant est branché dans l'orchestrateur pour les structures concernées et exclu pour SAS.
 - SMOKE-ORCH-L2-001 est terminé ; le smoke réel confirme la génération du PV pour SCI et son absence pour SAS.
@@ -699,3 +702,4 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - 2026-05-15 : SYNC-WAVE-004 absorbe dans `main` les commits sources `557fc1920361a8c7831e6b023d70471c9c29e5ff` et `291da7b6db68b3de413fba50cf652dde98a8f6a8`, passe `RESUME-FIX-STYLE-LETTERS-001`, `FIX-STYLE-LETTERS-001` et `CODE-STATUTS-CIVILS-CORE-001` en DONE, puis confirme `ARBITRAGE-STATUTS-SCM-001`, `PREP-SCM-SAT-001`, `SPEC-SAS-SATELLITES-001`, `CODE-OPTION-IS-001` et `PREP-ACTE-ACTIONS-001` en READY, sans modification de `project/source_import/raw_drive_dump/` ni de `artifacts/`.
 - 2026-05-15 : SYNC-WAVE-005 absorbe dans `main` les commits sources `91436f0916fdecbcc98450b72ba6e602cb8f1a3b`, `1b3ba14d0bcc31fc7dcbf1752d6d3263645ae8b3`, `32059155c618b4e985893f42ef2817187599c281`, `74d41db53543b790e197082e8b9c713f7de92dc2` et `d1d649e11fdc638e6d7da0640c154d1f213739ee`, passe `CODE-OPTION-IS-001`, `PREP-SCM-SAT-001`, `ARBITRAGE-STATUTS-SCM-001`, `SPEC-SAS-SATELLITES-001` et `PREP-ACTE-ACTIONS-001` en DONE, puis confirme `CODE-STATUTS-SCM-001`, `CODE-SAS-SATELLITES-001`, `SPEC-SCM-SATELLITES-001`, `CONVERT-ACTE-ACTIONS-001` et `CONVERT-DEROG-SALARIEE-001` en READY, sans modification de `project/source_import/raw_drive_dump/` ni de `artifacts/`.
 - 2026-05-15 : PREP-SCM-LISTE-DEPENSES-CONVERT-001 convertit `Liste dépenses communes SCM.doc` en DOCX via `Wordconv.exe`, place le résultat dans `project/source_documents/lot_05/` et documente la préparation dans `docs/delivery/lot_05_scm_liste_depenses_preparation_v1.md`, sans modification de code Python.
+- 2026-05-17 : RESUME-ZIP-BACKEND-001 ajoute le backend ZIP V1 déterministe avec manifeste technique, tests unitaires ciblés et smoke ZIP sur fichiers générés en `tmp_path`, sans UI ni versionnement de `artifacts/`.

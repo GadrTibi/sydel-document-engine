@@ -1,9 +1,11 @@
 # Dernier état projet
 
 ## Date de mise à jour
-2026-05-15
+2026-05-17
 
 ## Dernier ticket terminé
+RESUME-ZIP-BACKEND-001 : reprise et finalisation du backend ZIP V1 dans `src/sydel_doc_engine/rendering/zip_bundle.py`, avec archive deterministe de fichiers DOCX/PDF deja generes, manifeste technique, tests cibles et smoke ZIP en `tmp_path`.
+
 PREP-SCM-LISTE-DEPENSES-CONVERT-001 : conversion du legacy `Liste dépenses communes SCM.doc` en DOCX exploitable, placement dans `project/source_documents/lot_05/` et documentation de préparation V1.
 
 SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc98450b72ba6e602cb8f1a3b`, `1b3ba14d0bcc31fc7dcbf1752d6d3263645ae8b3`, `32059155c618b4e985893f42ef2817187599c281`, `74d41db53543b790e197082e8b9c713f7de92dc2` et `d1d649e11fdc638e6d7da0640c154d1f213739ee`, puis réalignement du pilotage.
@@ -15,6 +17,7 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
   - `select_documents(structure)` selon le catalogue ;
   - `select_documents_for_context(ctx)` avec filtrage des batchs régime communautaire, bail/appel de fonds, cession cabinets, dérogations et statuts ;
   - `generate_documents(ctx, output_dir) -> list[Path]`.
+- Le backend ZIP V1 expose `create_zip_bundle(...)` dans `src/sydel_doc_engine/rendering/zip_bundle.py` pour emballer des DOCX/PDF deja generes, avec chemins ZIP stables, manifeste `manifest.json`, rejet des fichiers temporaires et erreurs explicites.
 - `examples/contexts/lot_01_example.yaml` utilise encore le champ legacy Lot 1 `adresse_domiciliation_affichee`, en attente d'un refactor dédié vers `domiciliation.adresse_affichee`.
 - Un smoke test réel a généré les trois DOCX du Lot 1 dans `artifacts/lot_01_smoke_test/`.
 - Le moteur dispose de trois référentiels de cadrage :
@@ -262,7 +265,8 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
   - `artifacts/render_style_001_lot_01_smoke_test/autorisation_domiciliation.docx`
   - `artifacts/render_style_001_lot_01_smoke_test/procuration.docx`
   - `artifacts/render_style_001_pv_nomination_gerant_smoke_test/pv_nomination_gerant.docx`
-- Streamlit, PDF, ZIP et `rendering/bundle.py` n'ont pas été modifiés dans ce ticket.
+- Streamlit et PDF ne sont pas branches dans ce ticket ; `rendering/bundle.py` n'a pas ete modifie.
+- Le backend ZIP V1 est disponible dans `src/sydel_doc_engine/rendering/zip_bundle.py`.
 - `artifacts/` reste hors versionnement via `.gitignore`.
 
 ## Décisions métier/techniques appliquées dans ce ticket
@@ -401,7 +405,7 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
 ## Points ouverts
 - Aucun point bloquant identifié après le smoke test réel Lot 1.
 - Le smoke test confirme la production de trois fichiers DOCX, mais ne remplace pas une revue humaine du rendu visuel ni une validation juridique fine du contenu généré.
-- PDF et ZIP restent à intégrer dans des tickets ultérieurs.
+- Le backend ZIP V1 est code et teste, mais son appel depuis un flux dossier complet reste a brancher apres stabilisation du flux final DOCX/PDF.
 - Ecart temporaire non bloquant pour l'UI : la table V1 retient `domiciliation.adresse_affichee` comme nom canonique, tandis que le code Lot 1 existant conserve l'alias legacy `adresse_domiciliation_affichee` jusqu'à refactor dédié.
 - Le PV nomination gérant est codé, testé et branché dans l'orchestrateur pour les structures concernées.
 - Le smoke orchestrateur Lot 2 est vert sur SCI positif et SAS négatif.
@@ -549,6 +553,10 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
 - SYNC-WAVE-005 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m ruff check .` OK.
 - SYNC-WAVE-005 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m pytest` OK, 135 tests passés.
 - SYNC-WAVE-005 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifiés.
+- RESUME-ZIP-BACKEND-001 : smoke ZIP cible OK via `tests/unit/test_zip_bundle.py`, 5 tests passes.
+- RESUME-ZIP-BACKEND-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
+- RESUME-ZIP-BACKEND-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 150 tests passes.
+- RESUME-ZIP-BACKEND-001 : `artifacts/` non versionne ; le smoke ZIP utilise `tmp_path`.
 - PREP-SCM-LISTE-DEPENSES-CONVERT-001 : conversion DOCX OK via `Wordconv.exe`; archive OpenXML lisible, `word/document.xml` présent, 21 entrées ZIP, texte extrait contenant les placeholders société, `DENOMINATION DE LA DEPENSE` et `SCM`.
 - SPEC-TEXTE-ORDRE-001 : source de vérité, source Lot 2 et variantes raw dump SELARL / SELAS / SPFPL cession / SPFPL apport lues en lecture seule.
 - SPEC-TEXTE-ORDRE-001 : spec texte créée dans `docs/delivery/lot_02_demande_inscription_ordre_spec_texte_v1.md`.
@@ -584,4 +592,4 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
 - SMOKE-ORCH-L2-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 47 tests passés.
 
 ## Recommandation immédiate suivante
-Lancer `SPEC-SCM-SATELLITES-001` pour spécifier les satellites SCM avant tout code documentaire.
+Brancher le backend ZIP dans un flux dossier complet lorsque les sorties finales DOCX/PDF sont stabilisees, sans toucher a l'UI hors ticket dedie.
