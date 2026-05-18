@@ -129,6 +129,7 @@
 | CLOSE-PROJECT-V1-001 | READY | Clore le projet V1 après revue finale | `REVIEW-FINAL-001` terminé | clôture V1 documentée |
 | UI-BUSINESS-WIZARD-001 | DONE | Lancer le wizard metier UI dossier-centre | `REVIEW-FINAL-001` + docs UI 19/20/21 + moteur DOCX/ZIP | UI metier guidee sans logique juridique cachee |
 | DEPLOY-STREAMLIT-CLOUD-FIX-001 | DONE | Corriger l'installation Poetry Streamlit Cloud | erreur cloud package `sydel-document-engine` + package source `src/sydel_doc_engine` | `pyproject.toml` package explicite + rapport de deploiement + validations locales |
+| CASE-CATALOG-001 | DONE | Créer la couche métier catalogue des cas depuis la source de vérité | `project/source_truth/Documents_a_generer_par_cas.docx` + registre DOC-001 à DOC-043 | service pur `get_expected_documents` + tests + rapport |
 | UI-001 | BLOCKED | Brancher Streamlit V0 Lot 1 | orchestrateur Lot 1 + spec canonique PV nomination gérant validée | écran simple + test manuel |
 
 ## Référentiels moteur disponibles
@@ -841,6 +842,15 @@
 - Rapport : `docs/review/ui_business_wizard_001_report_v1.md`.
 - Garde-fous : ne pas relancer l'ancien `UI-WIZARD-001`, ne pas dupliquer la selection documentaire hors orchestrateur, ne pas presenter la generation comme validation juridique.
 
+### CASE-CATALOG-001
+- Objectif : creer la couche metier `catalogue des cas` depuis la source de verite produit, sans modifier l'UI, le moteur DOCX/PDF/ZIP ni les generateurs.
+- Source analysee : `project/source_truth/Documents_a_generer_par_cas.docx` ; les chemins `docs/source_truth/*` demandes par le ticket ne sont pas presents dans ce workspace.
+- Statut : DONE.
+- Livraison : `src/sydel_doc_engine/domain/case_catalog.py` expose `CaseType`, `CaseCondition`, `DocumentOccurrence`, `DocumentAvailability`, `ExpectedDocument` et `get_expected_documents(...)`.
+- Couverture : 8 familles, 46 documents attendus uniques, 104 occurrences source, 43 documents mappes a `DOC-XXX`, 2 documents `MANUAL_ONLY`, 1 document `NOT_IMPLEMENTED`, 0 `NEEDS_MAPPING`.
+- Rapport : `docs/review/case_catalog_001_report_v1.md`.
+- Prochaine etape recommandee : arbitrer si ce service devient la source de selection produit du mode assistant metier, puis creer un ticket UI dedie si oui.
+
 ### UI-001
 - Objectif : exposer une Streamlit simple pour générer le Lot 1.
 - Statut : en attente explicite ; ne pas lancer sans ticket explicite dédié.
@@ -864,8 +874,9 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - `SYNC-POST-MOTOR-UI-001` est DONE ; les fondations UI/PDF/recette sont absorbées dans `main`.
 - `REVIEW-FINAL-001` est DONE ; rapport d'execution disponible dans `docs/review/review_final_001_execution_report_v1.md`.
 - `UI-BUSINESS-WIZARD-001` est DONE ; l'UI Streamlit dispose maintenant d'un mode assistant metier SCI V1 et conserve le mode technique YAML/JSON.
+- `CASE-CATALOG-001` est DONE ; le catalogue metier par cas couvre 46 documents attendus, dont 43 mappes au registre moteur et 3 non generables.
 - ticket READY confirmé : `CLOSE-PROJECT-V1-001`.
-- prochain ticket recommandé : recette manuelle du mode assistant SCI, puis `CLOSE-PROJECT-V1-001` si la recette confirme DOCX, ZIP manifest et telechargements.
+- prochain ticket recommandé : arbitrer l'integration du catalogue metier dans l'assistant UI, sans modifier les generateurs ni le moteur DOCX/PDF/ZIP.
 - moteur documentaire DOCX V1 feature complete et clos après `RECONCILE-MOTOR-CLOSE-001`.
 - tickets absorbés par `SYNC-POST-MOTOR-UI-001` : `UI-FLOW-001`, `UI-OCCURRENCES-001`, `UI-FORM-SCHEMA-001`, `PDF-BACKEND-001` et `RECIPE-FRAME-001`.
 - `RECONCILE-MOTOR-CLOSE-001` est DONE ; les générateurs ordre/SPFPL orphelins sont exposés sous `DOC-034` à `DOC-043`, `08/09/16/17/18` sont alignés et les références delivery Lot 2 manquantes sont présentes sur `main`.
@@ -1011,3 +1022,4 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - 2026-05-18 : WORKTREE-CLEANUP-AND-UI-STATUS-001 integre le pack `docs/review/final_review_pack_v1.md` depuis `codex/review-final-001`, cree `docs/project/23_WORKTREE_CLEANUP_AND_UI_STATUS_V1.md`, documente l'archivage local des worktrees et confirme que l'UI actuelle est une UI technique de pilotage par contexte, pas une UI produit finale.
 - 2026-05-18 : UI-BUSINESS-WIZARD-001 ajoute le mode Assistant metier Streamlit en deux modes, construit un contexte SCI simple pour `DOC-001` a `DOC-004`, conserve le mode technique YAML/JSON, separe les actions DOCX/ZIP/PDF et valide ruff + pytest 196 tests.
 - 2026-05-18 : DEPLOY-STREAMLIT-CLOUD-FIX-001 ajoute la declaration Poetry explicite du package `src/sydel_doc_engine`, documente la cause racine Streamlit Cloud et valide installation editable, ruff et pytest 196 tests ; Poetry local reste indisponible.
+- 2026-05-18 : CASE-CATALOG-001 cree le service pur `get_expected_documents(...)` et le catalogue metier par cas depuis la source Word canonique, couvre 46 documents attendus uniques dont 43 mappes a `DOC-XXX`, documente 2 manuels et 1 non implemente, ajoute les tests unitaires de selection et valide ruff + pytest 208 tests.
