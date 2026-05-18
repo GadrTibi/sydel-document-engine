@@ -5,6 +5,8 @@
 
 
 ## Dernier ticket terminé
+UI-CASE-WIZARD-002 : branchement du mode Assistant metier Streamlit sur `get_expected_documents(...)` et CASE-CATALOG-001, ajout des conditions UI pour les 8 familles, affichage des documents attendus avec statuts generable / manuel / non implemente / mapping / contexte incomplet V2, filtrage de la generation sur les seuls documents attendus generables avec `DOC-XXX` et contexte pret, mode Technique / diagnostic conserve, rapport `docs/review/ui_case_wizard_002_report_v1.md`, ruff OK et pytest OK avec 217 tests passes.
+
 CASE-CATALOG-001 : creation de la couche metier catalogue des cas depuis `project/source_truth/Documents_a_generer_par_cas.docx`, ajout de `src/sydel_doc_engine/domain/case_catalog.py` avec `get_expected_documents(...)`, 46 documents attendus uniques modelises dont 43 mappes au registre `DOC-001` a `DOC-043`, 2 documents manuels, 1 document non implemente, rapport `docs/review/case_catalog_001_report_v1.md`, ruff OK et pytest OK avec 208 tests passes.
 
 DEPLOY-STREAMLIT-CLOUD-FIX-001 : correction de packaging Streamlit Cloud depuis le dossier canonique `C:\Users\Gad\Desktop\Sydel\sydel-document-engine`, ajout de la declaration Poetry explicite `{ include = "sydel_doc_engine", from = "src" }` dans `pyproject.toml`, rapport `docs/review/deploy_streamlit_cloud_fix_001_report_v1.md`, installation editable OK, ruff OK et pytest OK avec 196 tests passes ; Poetry local indisponible, donc `poetry check` et `poetry install` non executes localement.
@@ -57,7 +59,7 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
 - Le backend ZIP V1 est disponible dans `src/sydel_doc_engine/rendering/zip_bundle.py` : ZIP deterministe DOCX/PDF, chemins relatifs, filtrage des fichiers temporaires et manifeste `manifest.json`.
 - Strategie PDF locale retenue apres smoke : LibreOffice headless prioritaire si present ; Word COM Windows utilise localement avec succes. LibreOffice n'est pas installe sur la machine de smoke.
 - L'UI Streamlit dispose maintenant de deux modes :
-  - `Assistant metier` : formulaire structure SCI V1, validation des champs manquants/incoherences, liste `DOC-001` a `DOC-004`, generation DOCX, ZIP avec manifest, PDF local optionnel et telechargements ;
+  - `Assistant metier` : selection documentaire pilotee par `get_expected_documents(...)`, conditions metier par famille CASE-CATALOG-001, tableau des documents attendus incluant manuels/non implementes, generation DOCX filtree sur les documents generables et prets, ZIP avec manifest, PDF local optionnel et telechargements ;
   - `Technique / diagnostic` : chargement YAML/JSON, selection `select_documents_for_context`, generation dossier DOCX/PDF optionnel/ZIP et telechargements existants.
 - La couche metier catalogue des cas est disponible dans `src/sydel_doc_engine/domain/case_catalog.py` : elle expose `CaseType`, `CaseCondition`, `DocumentOccurrence`, `DocumentAvailability`, `ExpectedDocument` et `get_expected_documents(...)`.
 - Le catalogue metier CASE-CATALOG-001 couvre 8 familles, 104 occurrences source et 46 documents attendus uniques : 43 generables et mappes au registre, 2 `MANUAL_ONLY`, 1 `NOT_IMPLEMENTED`, 0 `NEEDS_MAPPING`.
@@ -81,6 +83,7 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
 - Le rapport d'execution `UI-BUSINESS-WIZARD-001` est disponible dans `docs/review/ui_business_wizard_001_report_v1.md`.
 - Le rapport d'execution `DEPLOY-STREAMLIT-CLOUD-FIX-001` est disponible dans `docs/review/deploy_streamlit_cloud_fix_001_report_v1.md`.
 - Le rapport d'execution `CASE-CATALOG-001` est disponible dans `docs/review/case_catalog_001_report_v1.md`.
+- Le rapport d'execution `UI-CASE-WIZARD-002` est disponible dans `docs/review/ui_case_wizard_002_report_v1.md`.
 - `pyproject.toml` declare explicitement le package Poetry `sydel_doc_engine` depuis `src`, pour eviter l'erreur Streamlit Cloud `No file/folder found for package sydel-document-engine`.
 - Le rapport de cleanup local et statut UI est disponible dans `docs/project/23_WORKTREE_CLEANUP_AND_UI_STATUS_V1.md`.
 - Le dossier canonique final a utiliser est `C:\Users\Gad\Desktop\Sydel\sydel-document-engine`.
@@ -90,6 +93,7 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
 - `REVIEW-FINAL-001` est DONE avec decision GO avec reserves.
 - `UI-BUSINESS-WIZARD-001` est DONE avec perimetre assistant SCI simple.
 - `CASE-CATALOG-001` est DONE ; il n'a pas modifie l'UI, le moteur DOCX/PDF/ZIP ni les generateurs.
+- `UI-CASE-WIZARD-002` est DONE ; l'assistant metier est maintenant pilote par le catalogue des cas, avec generation partielle honnete et documents manuels/non implementes visibles.
 - Ticket READY confirme : `CLOSE-PROJECT-V1-001`.
 - Le cadrage métier de la famille `PV nomination gérant` est disponible dans `docs/delivery/lot_02_pv_nomination_gerant_cadrage_v1.md`.
 - La spec canonique V1 de la famille `PV nomination gérant` est disponible dans `docs/delivery/lot_02_pv_nomination_gerant_spec_canonique_v1.md`.
@@ -812,6 +816,8 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
 - DEPLOY-STREAMLIT-CLOUD-FIX-001 : Poetry non disponible localement (`poetry` absent du PATH et module `poetry` absent de la venv), donc `poetry check` et `poetry install` non executes localement.
 - CASE-CATALOG-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
 - CASE-CATALOG-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 208 tests passes.
+- UI-CASE-WIZARD-002 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
+- UI-CASE-WIZARD-002 : `.\.venv\Scripts\python.exe -m pytest` OK, 217 tests passes.
 
 ## Recommandation immédiate suivante
-Arbitrer si `get_expected_documents(...)` doit devenir la source de selection produit du mode Assistant metier ; si oui, creer un ticket UI dedie sans modifier les generateurs ni le moteur DOCX/PDF/ZIP.
+Creer `UI-CASE-WIZARD-003` pour enrichir progressivement les blocs formulaire qui permettront de passer certains documents de `Contexte incomplet pour generation V2` a `Generable`, par lot ou famille documentaire limitee.

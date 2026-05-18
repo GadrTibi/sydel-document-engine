@@ -22,7 +22,7 @@ from sydel_doc_engine.app.ui_runtime import (
     DEFAULT_ARTIFACTS_DIR,
     GeneratedDossier,
     build_output_dir,
-    generate_docx_files,
+    generate_docx_files_for_document_codes,
     generate_dossier,
     generate_pdf_files,
     generate_zip_file,
@@ -33,7 +33,7 @@ from sydel_doc_engine.app.ui_runtime import (
 )
 from sydel_doc_engine.rendering.pdf_export import is_pdf_export_available
 
-BUSINESS_ARTIFACTS_DIR = Path("artifacts") / "ui_business_wizard_001"
+BUSINESS_ARTIFACTS_DIR = Path("artifacts") / "ui_case_wizard_002"
 GENDER_OPTIONS = ("masculin", "feminin")
 
 
@@ -96,7 +96,7 @@ def _render_business_mode() -> None:
     data = _collect_business_input()
     validation = evaluate_business_wizard(data)
 
-    st.subheader("Etape 3 - Documents generables")
+    st.subheader("Etape 3 - Documents attendus")
     document_rows = business_document_table_rows(validation)
     if document_rows:
         st.table(document_rows)
@@ -105,8 +105,8 @@ def _render_business_mode() -> None:
 
     st.subheader("Etape 4 - Validation")
     col_generable, col_blocked = st.columns(2)
-    col_generable.metric("Documents generables", validation.generable_count)
-    col_blocked.metric("Documents bloques", validation.blocked_count)
+    col_generable.metric("Documents prets", validation.generable_count)
+    col_blocked.metric("Documents non prets ou exclus", validation.blocked_count)
     if validation.missing_fields:
         st.warning("Champs manquants : " + ", ".join(validation.missing_fields))
     if validation.inconsistencies:
@@ -145,7 +145,11 @@ def _render_business_mode() -> None:
             assert validation.context is not None
             with st.spinner("Generation DOCX en cours..."):
                 try:
-                    docx_paths = generate_docx_files(validation.context, output_dir)
+                    docx_paths = generate_docx_files_for_document_codes(
+                        validation.context,
+                        output_dir,
+                        validation.generatable_document_codes,
+                    )
                     st.session_state.business_docx_paths = docx_paths
                     st.session_state.business_pdf_results = []
                     st.session_state.business_pdf_error = None
@@ -198,6 +202,154 @@ def _render_business_mode() -> None:
         st.caption("Aucune sortie generee pour le moment.")
 
 
+def _collect_case_conditions(case_type: str) -> dict[str, object | None]:
+    conditions: dict[str, object | None] = {
+        "profession": None,
+        "sci_iris": None,
+        "option_is": None,
+        "site_distinct": None,
+        "scm": None,
+        "scm_cession": None,
+        "regime_communautaire": None,
+        "derogation": None,
+        "cession": None,
+        "cabinet_type": None,
+        "associe_unique": None,
+        "cession_actions": None,
+    }
+    with st.expander("Conditions metier de selection documentaire", expanded=True):
+        if case_type == "SCI":
+            variant = st.selectbox(
+                "SCI simple ou SCI IRIS",
+                ("", "SCI simple", "SCI IRIS"),
+                format_func=lambda value: value or "Choisir",
+            )
+            conditions["sci_iris"] = None if not variant else variant == "SCI IRIS"
+            conditions["option_is"] = _select_bool("Option IS", key="condition_option_is")
+        elif case_type == "SELARL":
+            conditions["profession"] = _select_choice(
+                "Profession",
+                {
+                    "medecin": "medecin",
+                    "chirurgien_dentiste": "chirurgien-dentiste",
+                },
+                key="condition_selarl_profession",
+            )
+            conditions["site_distinct"] = _select_bool(
+                "Site distinct",
+                key="condition_selarl_site_distinct",
+            )
+            conditions["scm_cession"] = _select_bool(
+                "SCM cession",
+                key="condition_selarl_scm_cession",
+            )
+            conditions["regime_communautaire"] = _select_bool(
+                "Regime communautaire",
+                key="condition_selarl_regime_communautaire",
+            )
+            conditions["derogation"] = _select_bool(
+                "Derogation",
+                key="condition_selarl_derogation",
+            )
+            conditions["cession"] = _select_bool("Cession", key="condition_selarl_cession")
+            if conditions["cession"] is True:
+                conditions["cabinet_type"] = _select_choice(
+                    "Si cession : type de cabinet",
+                    {
+                        "aucun": "aucun",
+                        "medical": "cabinet medical",
+                        "dentaire": "cabinet dentaire",
+                    },
+                    key="condition_selarl_cabinet_type",
+                )
+        elif case_type == "SELAS":
+            conditions["profession"] = _select_choice(
+                "Profession",
+                {"medecin": "medecin"},
+                key="condition_selas_profession",
+            )
+            conditions["scm"] = _select_bool("SCM", key="condition_selas_scm")
+            conditions["regime_communautaire"] = _select_bool(
+                "Regime communautaire",
+                key="condition_selas_regime_communautaire",
+            )
+            conditions["derogation"] = _select_bool(
+                "Derogation",
+                key="condition_selas_derogation",
+            )
+            conditions["cession"] = _select_bool("Cession", key="condition_selas_cession")
+            if conditions["cession"] is True:
+                conditions["cabinet_type"] = _select_choice(
+                    "Si cession : type de cabinet",
+                    {
+                        "aucun": "aucun",
+                        "medical": "cabinet medical",
+                        "dentaire": "cabinet dentaire",
+                    },
+                    key="condition_selas_cabinet_type",
+                )
+            if conditions["scm"] is True:
+                st.info(
+                    "Reserve SELAS + SCM : le catalogue expose DOC-031/DOC-032/DOC-033, "
+                    "mais la variante SELAS reste a confirmer avant generation."
+                )
+        elif case_type == "SPFPL cession":
+            conditions["regime_communautaire"] = _select_bool(
+                "Regime communautaire",
+                key="condition_spfpl_cession_regime_communautaire",
+            )
+            conditions["associe_unique"] = _select_bool(
+                "Associe unique",
+                key="condition_spfpl_cession_associe_unique",
+            )
+            cession_kind = st.selectbox(
+                "Cession de parts ou cession d'actions",
+                ("", "cession de parts", "cession d'actions"),
+                format_func=lambda value: value or "Choisir",
+            )
+            if cession_kind:
+                conditions["cession_actions"] = cession_kind == "cession d'actions"
+        elif case_type == "SPFPL apport":
+            conditions["regime_communautaire"] = _select_bool(
+                "Regime communautaire",
+                key="condition_spfpl_apport_regime_communautaire",
+            )
+        elif case_type == "SAS":
+            conditions["associe_unique"] = _select_bool(
+                "Associe unique",
+                key="condition_sas_associe_unique",
+            )
+            st.caption(
+                "Ce choix est collecte pour eviter une hypothese silencieuse ; "
+                "le catalogue V1 ne filtre pas encore SAS dessus."
+            )
+        else:
+            st.caption("Pas de condition metier specifique dans cette V1.")
+    return conditions
+
+
+def _select_bool(label: str, *, key: str) -> bool | None:
+    selected = st.selectbox(
+        label,
+        ("", "Oui", "Non"),
+        key=key,
+        format_func=lambda value: value or "Choisir",
+    )
+    if not selected:
+        return None
+    return selected == "Oui"
+
+
+def _select_choice(label: str, choices: dict[str, str], *, key: str) -> str | None:
+    selected = st.selectbox(
+        label,
+        ("", *choices.keys()),
+        key=key,
+        format_func=lambda value: choices.get(value, "Choisir"),
+    )
+    return selected or None
+
+
 def _collect_business_input() -> BusinessWizardInput:
     st.subheader("Etape 1 - Type de dossier")
     dossier_types = business_dossier_types()
@@ -207,6 +359,7 @@ def _collect_business_input() -> BusinessWizardInput:
         format_func=lambda item: item.label,
     )
     st.caption(selected_type.status)
+    conditions = _collect_case_conditions(selected_type.structure)
 
     st.subheader("Etape 2 - Informations du dossier")
     with st.expander("Societe", expanded=True):
@@ -333,6 +486,19 @@ def _collect_business_input() -> BusinessWizardInput:
 
     return BusinessWizardInput(
         structure=selected_type.structure,
+        profession=conditions["profession"],
+        sci_iris=conditions["sci_iris"],
+        option_is=conditions["option_is"],
+        site_distinct=conditions["site_distinct"],
+        scm=conditions["scm"],
+        scm_cession=conditions["scm_cession"],
+        regime_communautaire=conditions["regime_communautaire"],
+        derogation=conditions["derogation"],
+        cession=conditions["cession"],
+        cabinet_type=conditions["cabinet_type"],
+        associe_unique=conditions["associe_unique"],
+        cession_actions=conditions["cession_actions"],
+        nombre_associes=int(associe_count),
         personne_genre=personne_genre,
         personne_civilite=personne_civilite,
         personne_prenom=personne_prenom,

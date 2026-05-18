@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -122,6 +122,24 @@ def generate_docx_files(ctx: DocumentGenerationContext, output_dir: Path) -> lis
     selected_documents = orchestrator.select_documents_for_context(ctx)
     if not selected_documents:
         raise RuntimeError("Aucun document selectionne par l'orchestrateur.")
+    return orchestrator.generate_documents(ctx, output_dir)
+
+
+def generate_docx_files_for_document_codes(
+    ctx: DocumentGenerationContext,
+    output_dir: Path,
+    document_codes: Iterable[str],
+) -> list[Path]:
+    allowed_codes = set(document_codes)
+    if not allowed_codes:
+        raise RuntimeError("Aucun document generable pret dans l'assistant metier.")
+    filtered_catalog = [
+        document for document in build_seed_catalog() if document.doc_id in allowed_codes
+    ]
+    orchestrator = DocumentOrchestrator(filtered_catalog)
+    selected_documents = orchestrator.select_documents_for_context(ctx)
+    if not selected_documents:
+        raise RuntimeError("Aucun document pret selectionne par l'assistant metier.")
     return orchestrator.generate_documents(ctx, output_dir)
 
 

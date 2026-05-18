@@ -130,6 +130,7 @@
 | UI-BUSINESS-WIZARD-001 | DONE | Lancer le wizard metier UI dossier-centre | `REVIEW-FINAL-001` + docs UI 19/20/21 + moteur DOCX/ZIP | UI metier guidee sans logique juridique cachee |
 | DEPLOY-STREAMLIT-CLOUD-FIX-001 | DONE | Corriger l'installation Poetry Streamlit Cloud | erreur cloud package `sydel-document-engine` + package source `src/sydel_doc_engine` | `pyproject.toml` package explicite + rapport de deploiement + validations locales |
 | CASE-CATALOG-001 | DONE | Créer la couche métier catalogue des cas depuis la source de vérité | `project/source_truth/Documents_a_generer_par_cas.docx` + registre DOC-001 à DOC-043 | service pur `get_expected_documents` + tests + rapport |
+| UI-CASE-WIZARD-002 | DONE | Brancher l'assistant métier Streamlit sur le catalogue des cas | `CASE-CATALOG-001` + docs UI 19/20/21 + assistant existant | sélection documentaire via `get_expected_documents` + statuts honnêtes + tests + rapport |
 | UI-001 | BLOCKED | Brancher Streamlit V0 Lot 1 | orchestrateur Lot 1 + spec canonique PV nomination gérant validée | écran simple + test manuel |
 
 ## Référentiels moteur disponibles
@@ -849,7 +850,17 @@
 - Livraison : `src/sydel_doc_engine/domain/case_catalog.py` expose `CaseType`, `CaseCondition`, `DocumentOccurrence`, `DocumentAvailability`, `ExpectedDocument` et `get_expected_documents(...)`.
 - Couverture : 8 familles, 46 documents attendus uniques, 104 occurrences source, 43 documents mappes a `DOC-XXX`, 2 documents `MANUAL_ONLY`, 1 document `NOT_IMPLEMENTED`, 0 `NEEDS_MAPPING`.
 - Rapport : `docs/review/case_catalog_001_report_v1.md`.
-- Prochaine etape recommandee : arbitrer si ce service devient la source de selection produit du mode assistant metier, puis creer un ticket UI dedie si oui.
+- Prochaine etape realisee : `UI-CASE-WIZARD-002`.
+
+### UI-CASE-WIZARD-002
+- Objectif : brancher le mode `Assistant metier` Streamlit sur `get_expected_documents(...)` pour piloter l'affichage documentaire depuis CASE-CATALOG-001.
+- Prerequis : `CASE-CATALOG-001`, docs UI 19/20/21, assistant metier existant et mode technique YAML/JSON conserve.
+- Statut : DONE.
+- Livraison : conditions UI par famille, tableau des documents attendus avec statuts `Generable`, `A remplir manuellement`, `Non implemente`, `Mapping a confirmer`, blocages de champs et contexte incomplet V2.
+- Generation : filtree sur les documents attendus, `GENERATABLE`, avec `document_code`, et prets dans le contexte formulaire ; documents manuels/non implementes exclus.
+- Rapport : `docs/review/ui_case_wizard_002_report_v1.md`.
+- Tests : `.\.venv\Scripts\python.exe -m ruff check .` OK ; `.\.venv\Scripts\python.exe -m pytest` OK, 217 tests passes.
+- Prochaine etape recommandee : `UI-CASE-WIZARD-003`, enrichir les blocs formulaire pour rendre generables les documents aujourd'hui marques contexte incomplet V2, par famille ou lot limite.
 
 ### UI-001
 - Objectif : exposer une Streamlit simple pour générer le Lot 1.
@@ -875,8 +886,9 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - `REVIEW-FINAL-001` est DONE ; rapport d'execution disponible dans `docs/review/review_final_001_execution_report_v1.md`.
 - `UI-BUSINESS-WIZARD-001` est DONE ; l'UI Streamlit dispose maintenant d'un mode assistant metier SCI V1 et conserve le mode technique YAML/JSON.
 - `CASE-CATALOG-001` est DONE ; le catalogue metier par cas couvre 46 documents attendus, dont 43 mappes au registre moteur et 3 non generables.
+- `UI-CASE-WIZARD-002` est DONE ; l'assistant metier utilise maintenant `get_expected_documents(...)` pour afficher les documents attendus et exclut les documents manuels/non implementes de la generation.
 - ticket READY confirmé : `CLOSE-PROJECT-V1-001`.
-- prochain ticket recommandé : arbitrer l'integration du catalogue metier dans l'assistant UI, sans modifier les generateurs ni le moteur DOCX/PDF/ZIP.
+- prochain ticket recommandé : `UI-CASE-WIZARD-003`, enrichissement progressif des blocs formulaire par famille pour reduire les documents `Contexte incomplet pour generation V2`.
 - moteur documentaire DOCX V1 feature complete et clos après `RECONCILE-MOTOR-CLOSE-001`.
 - tickets absorbés par `SYNC-POST-MOTOR-UI-001` : `UI-FLOW-001`, `UI-OCCURRENCES-001`, `UI-FORM-SCHEMA-001`, `PDF-BACKEND-001` et `RECIPE-FRAME-001`.
 - `RECONCILE-MOTOR-CLOSE-001` est DONE ; les générateurs ordre/SPFPL orphelins sont exposés sous `DOC-034` à `DOC-043`, `08/09/16/17/18` sont alignés et les références delivery Lot 2 manquantes sont présentes sur `main`.

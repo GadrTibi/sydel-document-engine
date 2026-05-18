@@ -7,6 +7,13 @@ from typing import Final
 
 from pydantic import ValidationError
 
+from sydel_doc_engine.domain.case_catalog import (
+    CaseInput,
+    CaseType,
+    DocumentAvailability,
+    ExpectedDocument,
+    get_expected_documents,
+)
 from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import (
     Address,
@@ -27,16 +34,31 @@ from sydel_doc_engine.domain.models import (
 from sydel_doc_engine.orchestrator.service import DocumentOrchestrator
 from sydel_doc_engine.registry.catalog import ALL_STRUCTURES, build_seed_catalog
 
-BUSINESS_WIZARD_SUPPORTED_DOCUMENT_IDS: Final[tuple[str, ...]] = (
+BUSINESS_WIZARD_CONTEXT_READY_DOCUMENT_IDS: Final[tuple[str, ...]] = (
     "DOC-001",
     "DOC-002",
     "DOC-003",
     "DOC-004",
 )
-BUSINESS_WIZARD_GENERABLE_STRUCTURES: Final[tuple[str, ...]] = ("SCI",)
 PV_NOMINATION_STRUCTURES: Final[frozenset[str]] = frozenset(
     {"SELARL", "SELAS", "SPFPL cession", "SPFPL apport", "SCS", "SCI", "SCM"}
 )
+
+STATUS_GENERABLE: Final = "generable"
+STATUS_BLOCKED_MISSING: Final = "blocked_missing_fields"
+STATUS_CONTEXT_INCOMPLETE: Final = "context_incomplete_v2"
+STATUS_MANUAL_ONLY: Final = "manual_only"
+STATUS_NOT_IMPLEMENTED: Final = "not_implemented"
+STATUS_NEEDS_MAPPING: Final = "needs_mapping"
+
+STATUS_LABELS: Final[dict[str, str]] = {
+    STATUS_GENERABLE: "Générable",
+    STATUS_BLOCKED_MISSING: "Bloqué par champs manquants",
+    STATUS_CONTEXT_INCOMPLETE: "Contexte incomplet pour génération V2",
+    STATUS_MANUAL_ONLY: "À remplir manuellement",
+    STATUS_NOT_IMPLEMENTED: "Non implémenté",
+    STATUS_NEEDS_MAPPING: "Mapping à confirmer",
+}
 
 
 @dataclass(frozen=True)
@@ -45,6 +67,16 @@ class BusinessDossierType:
     label: str
     status: str
     generable_in_v1: bool
+
+
+@dataclass(frozen=True)
+class BusinessConditionSpec:
+    key: str
+    label: str
+    kind: str
+    required: bool = True
+    choices: tuple[tuple[str, str], ...] = ()
+    note: str | None = None
 
 
 @dataclass(frozen=True)
@@ -59,7 +91,20 @@ class BusinessAssociateInput:
 
 @dataclass(frozen=True)
 class BusinessWizardInput:
-    structure: str = "SCI"
+    structure: str = CaseType.SCI.value
+    profession: str | None = None
+    sci_iris: bool | None = None
+    option_is: bool | None = None
+    site_distinct: bool | None = None
+    scm: bool | None = None
+    scm_cession: bool | None = None
+    regime_communautaire: bool | None = None
+    derogation: bool | None = None
+    cession: bool | None = None
+    cabinet_type: str | None = None
+    associe_unique: bool | None = None
+    cession_actions: bool | None = None
+    nombre_associes: int | None = None
     personne_genre: str = Gender.MASCULIN.value
     personne_civilite: str = ""
     personne_prenom: str = ""
@@ -117,15 +162,23 @@ class BusinessWizardInput:
 
 @dataclass(frozen=True)
 class BusinessDocumentRow:
-    doc_id: str
-    name: str
+    document_key: str
+    document_code: str | None
+    document_label: str
     status: str
+    reasons: tuple[str, ...]
+    notes: tuple[str, ...] = ()
     missing_fields: tuple[str, ...] = ()
+
+    @property
+    def doc_id(self) -> str:
+        return self.document_code or self.document_key
 
 
 @dataclass(frozen=True)
 class BusinessWizardValidation:
     context: DocumentGenerationContext | None
+    expected_documents: tuple[ExpectedDocument, ...]
     document_rows: tuple[BusinessDocumentRow, ...]
     missing_fields: tuple[str, ...]
     inconsistencies: tuple[str, ...]
@@ -134,28 +187,134 @@ class BusinessWizardValidation:
 
     @property
     def generable_count(self) -> int:
-        return sum(1 for row in self.document_rows if row.status == "generable")
+        return sum(1 for row in self.document_rows if row.status == STATUS_GENERABLE)
 
     @property
     def blocked_count(self) -> int:
-        return sum(1 for row in self.document_rows if row.status != "generable")
+        return sum(1 for row in self.document_rows if row.status != STATUS_GENERABLE)
+
+    @property
+    def generatable_document_codes(self) -> tuple[str, ...]:
+        return tuple(
+            row.document_code
+            for row in self.document_rows
+            if row.status == STATUS_GENERABLE and row.document_code is not None
+        )
 
 
 def business_dossier_types() -> tuple[BusinessDossierType, ...]:
     return tuple(
         BusinessDossierType(
-            structure=structure,
-            label=_structure_label(structure),
-            status=_structure_status(structure),
-            generable_in_v1=structure in BUSINESS_WIZARD_GENERABLE_STRUCTURES,
+            structure=case_type.value,
+            label=_structure_label(case_type),
+            status=_structure_status(case_type),
+            generable_in_v1=True,
         )
-        for structure in ALL_STRUCTURES
+        for case_type in CaseType
     )
+
+
+def get_ui_conditions_for_case(case_type: CaseType | str) -> tuple[BusinessConditionSpec, ...]:
+    normalized_case_type = _normalize_case_type_value(case_type)
+    if normalized_case_type == CaseType.SCI:
+        return (
+            BusinessConditionSpec(
+                "sci_iris",
+                "SCI simple ou SCI IRIS",
+                "choice",
+                choices=(("false", "SCI simple"), ("true", "SCI IRIS")),
+            ),
+            BusinessConditionSpec("option_is", "Option IS", "bool"),
+        )
+    if normalized_case_type == CaseType.SELARL:
+        return (
+            BusinessConditionSpec(
+                "profession",
+                "Profession",
+                "choice",
+                choices=(
+                    ("medecin", "medecin"),
+                    ("chirurgien_dentiste", "chirurgien-dentiste"),
+                ),
+            ),
+            BusinessConditionSpec("site_distinct", "Site distinct", "bool"),
+            BusinessConditionSpec("scm_cession", "SCM cession", "bool"),
+            BusinessConditionSpec("regime_communautaire", "Regime communautaire", "bool"),
+            BusinessConditionSpec("derogation", "Derogation", "bool"),
+            BusinessConditionSpec("cession", "Cession", "bool"),
+            BusinessConditionSpec(
+                "cabinet_type",
+                "Type de cabinet si cession",
+                "choice",
+                required=False,
+                choices=(
+                    ("aucun", "aucun"),
+                    ("medical", "cabinet medical"),
+                    ("dentaire", "cabinet dentaire"),
+                ),
+            ),
+        )
+    if normalized_case_type == CaseType.SELAS:
+        return (
+            BusinessConditionSpec(
+                "profession",
+                "Profession",
+                "choice",
+                choices=(("medecin", "medecin"),),
+            ),
+            BusinessConditionSpec("scm", "SCM", "bool"),
+            BusinessConditionSpec("regime_communautaire", "Regime communautaire", "bool"),
+            BusinessConditionSpec("derogation", "Derogation", "bool"),
+            BusinessConditionSpec("cession", "Cession", "bool"),
+            BusinessConditionSpec(
+                "cabinet_type",
+                "Type de cabinet si cession",
+                "choice",
+                required=False,
+                choices=(
+                    ("aucun", "aucun"),
+                    ("medical", "cabinet medical"),
+                    ("dentaire", "cabinet dentaire"),
+                ),
+                note="Reserve: le bloc SCM SELAS pointe vers DOC-031/DOC-032/DOC-033.",
+            ),
+        )
+    if normalized_case_type == CaseType.SPFPL_CESSION:
+        return (
+            BusinessConditionSpec("regime_communautaire", "Regime communautaire", "bool"),
+            BusinessConditionSpec("associe_unique", "Associe unique", "bool"),
+            BusinessConditionSpec(
+                "cession_actions",
+                "Cession de parts ou cession d'actions",
+                "choice",
+                choices=(("false", "cession de parts"), ("true", "cession d'actions")),
+            ),
+        )
+    if normalized_case_type == CaseType.SPFPL_APPORT:
+        return (
+            BusinessConditionSpec("regime_communautaire", "Regime communautaire", "bool"),
+        )
+    if normalized_case_type == CaseType.SAS:
+        return (
+            BusinessConditionSpec(
+                "associe_unique",
+                "Associe unique ou plusieurs associes",
+                "bool",
+                note=(
+                    "Champ de vigilance UI V2 ; le catalogue CASE-CATALOG-001 "
+                    "ne filtre pas SAS dessus."
+                ),
+            ),
+        )
+    return ()
 
 
 def sample_business_wizard_input() -> BusinessWizardInput:
     return BusinessWizardInput(
-        structure="SCI",
+        structure=CaseType.SCI.value,
+        sci_iris=False,
+        option_is=False,
+        nombre_associes=2,
         personne_genre=Gender.MASCULIN.value,
         personne_civilite="Monsieur",
         personne_prenom="Jean",
@@ -222,14 +381,20 @@ def sample_business_wizard_input() -> BusinessWizardInput:
 
 
 def evaluate_business_wizard(data: BusinessWizardInput) -> BusinessWizardValidation:
-    missing_by_doc = _missing_fields_by_document(data)
+    expected_documents = tuple(get_expected_documents(_case_input(data)))
+    condition_missing_fields = _condition_missing_fields(data)
+    missing_by_doc = _missing_fields_by_document(data, expected_documents)
     missing_fields = _unique(
-        field_name
-        for doc_id in _target_document_ids(data.structure)
-        for field_name in missing_by_doc.get(doc_id, ())
+        [
+            *condition_missing_fields,
+            *(
+                field_name
+                for fields in missing_by_doc.values()
+                for field_name in fields
+            ),
+        ]
     )
-    inconsistencies = _validate_inconsistencies(data)
-    warnings = _business_warnings(data)
+    inconsistencies = _validate_inconsistencies(data, expected_documents)
     context = None
 
     if not missing_fields and not inconsistencies:
@@ -238,18 +403,23 @@ def evaluate_business_wizard(data: BusinessWizardInput) -> BusinessWizardValidat
         except (ValueError, ValidationError) as exc:
             inconsistencies = (*inconsistencies, f"contexte moteur invalide: {exc}")
 
-    document_rows = _document_rows(data, missing_by_doc, inconsistencies, context)
-    can_generate = (
-        context is not None
-        and data.structure in BUSINESS_WIZARD_GENERABLE_STRUCTURES
-        and all(row.status == "generable" for row in document_rows)
+    document_rows = _document_rows(
+        data,
+        expected_documents,
+        missing_by_doc,
+        inconsistencies,
+        context,
+    )
+    can_generate = context is not None and any(
+        row.status == STATUS_GENERABLE for row in document_rows
     )
     return BusinessWizardValidation(
         context=context,
+        expected_documents=expected_documents,
         document_rows=document_rows,
         missing_fields=missing_fields,
         inconsistencies=inconsistencies,
-        warnings=warnings,
+        warnings=_business_warnings(data, document_rows),
         can_generate_docx=can_generate,
     )
 
@@ -294,8 +464,8 @@ def build_business_context(data: BusinessWizardInput) -> DocumentGenerationConte
         ville_rcs=_required_text_value(data.societe_ville_rcs, "societe.ville_rcs"),
     )
     context = DocumentGenerationContext(
-        structure=_required_text_value(data.structure, "structure"),
-        dossier_options=DossierOptions(),
+        structure=_runtime_structure(data),
+        dossier_options=_build_dossier_options(data),
         personne_signataire=Person(
             genre=_required_gender(data.personne_genre, "personne_signataire.genre"),
             civilite=_required_text_value(data.personne_civilite, "personne_signataire.civilite"),
@@ -418,35 +588,48 @@ def business_document_table_rows(
 ) -> list[dict[str, str]]:
     return [
         {
-            "code document": row.doc_id,
-            "nom document": row.name,
-            "statut": row.status,
-            "champs manquants": ", ".join(row.missing_fields) if row.missing_fields else "",
+            "code document": row.document_code or "",
+            "libelle document": row.document_label,
+            "statut": STATUS_LABELS[row.status],
+            "raison de presence": " ; ".join(row.reasons),
+            "notes": " ; ".join([*row.notes, *row.missing_fields]),
         }
         for row in validation.document_rows
     ]
 
 
-def _structure_label(structure: str) -> str:
-    if structure == "SCI":
-        return "SCI - assistant metier V1"
-    return f"{structure} - diagnostic V1"
+def _structure_label(case_type: CaseType) -> str:
+    return f"{case_type.value} - catalogue metier"
 
 
-def _structure_status(structure: str) -> str:
-    if structure in BUSINESS_WIZARD_GENERABLE_STRUCTURES:
-        return "generation DOC-001 a DOC-004 recettable dans ce ticket"
-    return "structure connue du moteur, formulaire metier complet hors V1"
+def _structure_status(case_type: CaseType) -> str:
+    condition_count = len(get_ui_conditions_for_case(case_type))
+    if condition_count:
+        return "selection documentaire pilotee par CASE-CATALOG-001"
+    return "aucune condition metier specifique V1, selection catalogue directe"
 
 
-def _missing_fields_by_document(data: BusinessWizardInput) -> dict[str, tuple[str, ...]]:
-    missing: dict[str, list[str]] = {
-        doc_id: [] for doc_id in BUSINESS_WIZARD_SUPPORTED_DOCUMENT_IDS
+def _missing_fields_by_document(
+    data: BusinessWizardInput,
+    expected_documents: tuple[ExpectedDocument, ...],
+) -> dict[str, tuple[str, ...]]:
+    expected_codes = {
+        document.document_code
+        for document in expected_documents
+        if document.document_code is not None
     }
-    _validate_doc_001(data, missing["DOC-001"])
-    _validate_doc_002(data, missing["DOC-002"])
-    _validate_doc_003(data, missing["DOC-003"])
-    if data.structure in PV_NOMINATION_STRUCTURES:
+    missing: dict[str, list[str]] = {
+        doc_id: []
+        for doc_id in BUSINESS_WIZARD_CONTEXT_READY_DOCUMENT_IDS
+        if doc_id in expected_codes
+    }
+    if "DOC-001" in missing:
+        _validate_doc_001(data, missing["DOC-001"])
+    if "DOC-002" in missing:
+        _validate_doc_002(data, missing["DOC-002"])
+    if "DOC-003" in missing:
+        _validate_doc_003(data, missing["DOC-003"])
+    if "DOC-004" in missing:
         _validate_doc_004(data, missing["DOC-004"])
     return {doc_id: tuple(fields) for doc_id, fields in missing.items()}
 
@@ -536,12 +719,23 @@ def _validate_doc_004(data: BusinessWizardInput, missing: list[str]) -> None:
         _require_address(data, "bien", "bien_immobilier.adresse", missing)
 
 
-def _validate_inconsistencies(data: BusinessWizardInput) -> tuple[str, ...]:
+def _validate_inconsistencies(
+    data: BusinessWizardInput,
+    expected_documents: tuple[ExpectedDocument, ...],
+) -> tuple[str, ...]:
     issues: list[str] = []
-    if data.structure not in ALL_STRUCTURES:
+    if _runtime_structure(data) not in ALL_STRUCTURES:
         issues.append("structure inconnue du catalogue moteur")
-    if data.structure in PV_NOMINATION_STRUCTURES and not data.societe_capital_variable:
+    expected_codes = {
+        document.document_code
+        for document in expected_documents
+        if document.document_code is not None
+    }
+    if "DOC-004" in expected_codes and not data.societe_capital_variable:
         issues.append("societe.capital_variable=false bloque DOC-004 en V1")
+    if data.nombre_associes is not None and data.associes:
+        if data.nombre_associes != len(data.associes):
+            issues.append("nombre_associes doit correspondre aux cartes associes saisies")
     if data.capital_nb_parts_total is not None and data.capital_nb_parts_total > 0:
         represented_parts = sum(
             associe.nb_parts or 0
@@ -556,79 +750,228 @@ def _validate_inconsistencies(data: BusinessWizardInput) -> tuple[str, ...]:
     return tuple(issues)
 
 
-def _business_warnings(data: BusinessWizardInput) -> tuple[str, ...]:
+def _business_warnings(
+    data: BusinessWizardInput,
+    document_rows: tuple[BusinessDocumentRow, ...],
+) -> tuple[str, ...]:
     warnings: list[str] = [
         "La generation ne vaut pas validation juridique ni revue visuelle humaine.",
-        "Les documents non collectes par le formulaire V1 restent en mode technique.",
+        "La generation Assistant se limite aux documents attendus, generables, "
+        "codes en DOC-XXX et prets avec le contexte formulaire V2.",
     ]
-    if data.structure not in BUSINESS_WIZARD_GENERABLE_STRUCTURES:
+    if any(row.status == STATUS_CONTEXT_INCOMPLETE for row in document_rows):
         warnings.append(
-            "Le bouton de generation assistant est limite a la SCI simple pour cette V1."
+            "Certains documents sont attendus par le catalogue, mais le contexte "
+            "formulaire est incomplet pour generation dans cette V2."
+        )
+    if any(row.status == STATUS_MANUAL_ONLY for row in document_rows):
+        warnings.append("Les documents manuels restent visibles et exclus de la generation.")
+    if any(row.status == STATUS_NOT_IMPLEMENTED for row in document_rows):
+        warnings.append(
+            "Les documents non implementes restent visibles et exclus de la generation."
+        )
+    if _normalize_case_type(data) == CaseType.SELAS and data.scm is True:
+        warnings.append(
+            "Reserve SELAS + SCM : la source contient des fichiers specifiques SELAS, "
+            "mais le catalogue mappe le bloc SCM vers DOC-031/DOC-032/DOC-033."
+        )
+    if data.nombre_associes is not None:
+        warnings.append(
+            "Le nombre d'associes est collecte pour signaler les limites V2 ; "
+            "il ne resout pas encore toutes les generations variables."
         )
     return tuple(warnings)
 
 
 def _document_rows(
     data: BusinessWizardInput,
+    expected_documents: tuple[ExpectedDocument, ...],
     missing_by_doc: dict[str, tuple[str, ...]],
     inconsistencies: tuple[str, ...],
     context: DocumentGenerationContext | None,
 ) -> tuple[BusinessDocumentRow, ...]:
+    selected_ids = _selected_document_ids(context) if context is not None else ()
     rows: list[BusinessDocumentRow] = []
-    target_ids = (
-        _selected_document_ids(context)
-        if context is not None
-        else _target_document_ids(data.structure)
-    )
-    names = _catalog_names()
-    for doc_id in target_ids:
-        if doc_id not in BUSINESS_WIZARD_SUPPORTED_DOCUMENT_IDS:
-            rows.append(
-                BusinessDocumentRow(
-                    doc_id=doc_id,
-                    name=names.get(doc_id, doc_id),
-                    status="indisponible",
-                    missing_fields=("hors perimetre assistant metier V1",),
-                )
+    for document in expected_documents:
+        status = _row_status(document, missing_by_doc, inconsistencies, context, selected_ids)
+        missing_fields = _row_missing_fields(document, status, missing_by_doc, inconsistencies)
+        notes = _row_notes(data, document)
+        rows.append(
+            BusinessDocumentRow(
+                document_key=document.document_key,
+                document_code=document.document_code,
+                document_label=document.document_label,
+                status=status,
+                reasons=document.reasons,
+                notes=notes,
+                missing_fields=missing_fields,
             )
-            continue
-        missing_fields = missing_by_doc.get(doc_id, ())
-        if missing_fields or inconsistencies:
-            rows.append(
-                BusinessDocumentRow(
-                    doc_id=doc_id,
-                    name=names.get(doc_id, doc_id),
-                    status="incomplet",
-                    missing_fields=(*missing_fields, *inconsistencies),
-                )
-            )
-        else:
-            rows.append(
-                BusinessDocumentRow(
-                    doc_id=doc_id,
-                    name=names.get(doc_id, doc_id),
-                    status="generable",
-                )
-            )
+        )
     return tuple(rows)
 
 
-def _target_document_ids(structure: str | None) -> tuple[str, ...]:
-    if not structure:
+def _row_status(
+    document: ExpectedDocument,
+    missing_by_doc: dict[str, tuple[str, ...]],
+    inconsistencies: tuple[str, ...],
+    context: DocumentGenerationContext | None,
+    selected_ids: tuple[str, ...],
+) -> str:
+    if document.availability == DocumentAvailability.MANUAL_ONLY:
+        return STATUS_MANUAL_ONLY
+    if document.availability == DocumentAvailability.NOT_IMPLEMENTED:
+        return STATUS_NOT_IMPLEMENTED
+    if (
+        document.availability == DocumentAvailability.NEEDS_MAPPING
+        or document.document_code is None
+    ):
+        return STATUS_NEEDS_MAPPING
+    if document.document_code not in BUSINESS_WIZARD_CONTEXT_READY_DOCUMENT_IDS:
+        return STATUS_CONTEXT_INCOMPLETE
+    if missing_by_doc.get(document.document_code) or inconsistencies:
+        return STATUS_BLOCKED_MISSING
+    if context is None:
+        return STATUS_BLOCKED_MISSING
+    if document.document_code not in selected_ids:
+        return STATUS_CONTEXT_INCOMPLETE
+    return STATUS_GENERABLE
+
+
+def _row_missing_fields(
+    document: ExpectedDocument,
+    status: str,
+    missing_by_doc: dict[str, tuple[str, ...]],
+    inconsistencies: tuple[str, ...],
+) -> tuple[str, ...]:
+    if status == STATUS_MANUAL_ONLY:
+        return ("exclu de la generation automatique: document a remplir a la main",)
+    if status == STATUS_NOT_IMPLEMENTED:
+        return ("exclu de la generation automatique: document non implemente",)
+    if status == STATUS_NEEDS_MAPPING:
+        return ("exclu de la generation automatique: mapping DOC-XXX a confirmer",)
+    if status == STATUS_CONTEXT_INCOMPLETE:
+        return ("document attendu, mais contexte incomplet pour generation dans cette V2",)
+    if status == STATUS_BLOCKED_MISSING and document.document_code is not None:
+        return (*missing_by_doc.get(document.document_code, ()), *inconsistencies)
+    return ()
+
+
+def _row_notes(data: BusinessWizardInput, document: ExpectedDocument) -> tuple[str, ...]:
+    notes = list(document.notes)
+    if (
+        _normalize_case_type(data) == CaseType.SELAS
+        and data.scm is True
+        and document.document_code in {"DOC-031", "DOC-032", "DOC-033"}
+    ):
+        notes.append(
+            "Reserve SELAS + SCM: variante SELAS a confirmer cote moteur avant generation."
+        )
+    return tuple(notes)
+
+
+def _case_input(data: BusinessWizardInput) -> CaseInput:
+    return CaseInput(case_type=_normalize_case_type(data), conditions=_case_conditions(data))
+
+
+def _case_conditions(data: BusinessWizardInput) -> dict[str, object]:
+    case_type = _normalize_case_type(data)
+    conditions: dict[str, object] = {}
+    if case_type == CaseType.SCI:
+        _set_condition(conditions, "sci_iris", data.sci_iris)
+        _set_condition(conditions, "option_is", data.option_is)
+    elif case_type == CaseType.SELARL:
+        _set_condition(conditions, "profession", data.profession)
+        _set_condition(conditions, "site_distinct", data.site_distinct)
+        _set_condition(conditions, "scm_cession", data.scm_cession)
+        _set_condition(conditions, "regime_communautaire", data.regime_communautaire)
+        _set_condition(conditions, "derogation", data.derogation)
+        _set_condition(conditions, "cession", data.cession)
+        if data.cession is True and data.cabinet_type not in {None, "aucun"}:
+            _set_condition(conditions, "cabinet_type", data.cabinet_type)
+    elif case_type == CaseType.SELAS:
+        _set_condition(conditions, "profession", data.profession)
+        _set_condition(conditions, "scm", data.scm)
+        _set_condition(conditions, "regime_communautaire", data.regime_communautaire)
+        _set_condition(conditions, "derogation", data.derogation)
+        _set_condition(conditions, "cession", data.cession)
+        if data.cession is True and data.cabinet_type not in {None, "aucun"}:
+            _set_condition(conditions, "cabinet_type", data.cabinet_type)
+    elif case_type == CaseType.SPFPL_CESSION:
+        _set_condition(conditions, "regime_communautaire", data.regime_communautaire)
+        _set_condition(conditions, "associe_unique", data.associe_unique)
+        _set_condition(conditions, "cession_actions", data.cession_actions)
+    elif case_type == CaseType.SPFPL_APPORT:
+        _set_condition(conditions, "regime_communautaire", data.regime_communautaire)
+    elif case_type == CaseType.SAS:
+        _set_condition(conditions, "associe_unique", data.associe_unique)
+    return conditions
+
+
+def _condition_missing_fields(data: BusinessWizardInput) -> tuple[str, ...]:
+    case_type = _normalize_case_type(data)
+    missing: list[str] = []
+    for spec in get_ui_conditions_for_case(case_type):
+        if not spec.required or spec.key == "cabinet_type":
+            continue
+        if _condition_value(data, spec.key) is None:
+            missing.append(f"conditions.{spec.key}")
+    if case_type in {CaseType.SELARL, CaseType.SELAS} and data.cession is True:
+        if data.cabinet_type is None:
+            missing.append("conditions.cabinet_type")
+    return tuple(missing)
+
+
+def _condition_value(data: BusinessWizardInput, key: str) -> object | None:
+    return getattr(data, key)
+
+
+def _set_condition(conditions: dict[str, object], key: str, value: object | None) -> None:
+    if value is not None:
+        conditions[key] = value
+
+
+def _normalize_case_type(data: BusinessWizardInput) -> CaseType:
+    return _normalize_case_type_value(data.structure)
+
+
+def _normalize_case_type_value(case_type: CaseType | str) -> CaseType:
+    if isinstance(case_type, CaseType):
+        return case_type
+    if case_type == "SCI IRIS":
+        return CaseType.SCI
+    return CaseType(str(case_type))
+
+
+def _runtime_structure(data: BusinessWizardInput) -> str:
+    case_type = _normalize_case_type(data)
+    if case_type == CaseType.SCI and data.sci_iris is True:
+        return "SCI IRIS"
+    return case_type.value
+
+
+def _build_dossier_options(data: BusinessWizardInput) -> DossierOptions:
+    case_type = _normalize_case_type(data)
+    return DossierOptions(
+        derogation=_bool_value(data.derogation),
+        site_distinct=_bool_value(data.site_distinct),
+        regime_communautaire=_bool_value(data.regime_communautaire),
+        cession=_bool_value(data.cession) or case_type == CaseType.SPFPL_CESSION,
+        apport=case_type == CaseType.SPFPL_APPORT,
+        associe_unique=_bool_value(data.associe_unique),
+        option_is=_bool_value(data.option_is),
+        scm_cession=_bool_value(data.scm_cession) or _bool_value(data.scm),
+    )
+
+
+def _bool_value(value: bool | None) -> bool:
+    return bool(value)
+
+
+def _selected_document_ids(ctx: DocumentGenerationContext | None) -> tuple[str, ...]:
+    if ctx is None:
         return ()
-    if structure in BUSINESS_WIZARD_GENERABLE_STRUCTURES:
-        return BUSINESS_WIZARD_SUPPORTED_DOCUMENT_IDS
-    catalog = build_seed_catalog()
-    return tuple(document.doc_id for document in catalog if structure in document.structures)
-
-
-def _selected_document_ids(ctx: DocumentGenerationContext) -> tuple[str, ...]:
     orchestrator = DocumentOrchestrator(build_seed_catalog())
     return tuple(document.doc_id for document in orchestrator.select_documents_for_context(ctx))
-
-
-def _catalog_names() -> dict[str, str]:
-    return {document.doc_id: document.canonical_name for document in build_seed_catalog()}
 
 
 def _build_associe(data: BusinessAssociateInput) -> Associe:
