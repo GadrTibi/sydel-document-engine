@@ -5,6 +5,8 @@
 
 
 ## Dernier ticket terminé
+REVIEW-FINAL-001 : revue finale executee depuis le dossier canonique `C:\Users\Gad\Desktop\Sydel\sydel-document-engine`, rapport ajoute dans `docs/review/review_final_001_execution_report_v1.md`, ruff/pytest verts, smoke DOCX/ZIP OK sur `lot_02_orchestrator_positive_example.yaml`, backend PDF local indisponible pendant la revue et decision GO avec reserves pour `UI-BUSINESS-WIZARD-001`.
+
 WORKTREE-CLEANUP-AND-UI-STATUS-001 : consolidation du contenu restant de `codex/review-final-001` dans `main`, creation du rapport `docs/project/23_WORKTREE_CLEANUP_AND_UI_STATUS_V1.md`, clarification du dossier canonique final et archivage local prevu des anciens worktrees `sydel-document-engine-*`.
 
 SYNC-FINAL-FOUNDATIONS-001 : synchronisation finale de `main` avant revue/cloture, absorption des complements UI/PDF/ZIP manquants, confirmation des audits/fondations presents, remplacement de `UI-CORE-001` par `UI-PDF-ZIP-INTEGRATION-001` et pilotage final limite a `REVIEW-FINAL-001` puis `CLOSE-PROJECT-V1-001`.
@@ -65,12 +67,14 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
   - `docs/project/21_UI_FORM_SCHEMA_V1.md`.
 - Le framework de recette finale V1 est disponible dans `docs/review/final_recipe_framework_v1.md`.
 - Le pack de revue finale V1 est disponible dans `docs/review/final_review_pack_v1.md`.
+- Le rapport d'execution `REVIEW-FINAL-001` est disponible dans `docs/review/review_final_001_execution_report_v1.md`.
 - Le rapport de cleanup local et statut UI est disponible dans `docs/project/23_WORKTREE_CLEANUP_AND_UI_STATUS_V1.md`.
 - Le dossier canonique final a utiliser est `C:\Users\Gad\Desktop\Sydel\sydel-document-engine`.
 - Les anciens worktrees locaux sont archives sous `C:\Users\Gad\Desktop\Sydel\_codex_worktrees_archive`.
 - `UI-CORE-001` est superseded / remplace par `UI-PDF-ZIP-INTEGRATION-001`.
 - `RESUME-ZIP-BACKEND-001` est DONE.
-- Tickets READY confirmes uniquement : `REVIEW-FINAL-001` et `CLOSE-PROJECT-V1-001`.
+- `REVIEW-FINAL-001` est DONE avec decision GO avec reserves.
+- Tickets READY confirmes : `UI-BUSINESS-WIZARD-001` et `CLOSE-PROJECT-V1-001`.
 - Le cadrage métier de la famille `PV nomination gérant` est disponible dans `docs/delivery/lot_02_pv_nomination_gerant_cadrage_v1.md`.
 - La spec canonique V1 de la famille `PV nomination gérant` est disponible dans `docs/delivery/lot_02_pv_nomination_gerant_spec_canonique_v1.md`.
 - La spec texte V1 de la famille `PV nomination gérant` est disponible dans `docs/delivery/lot_02_pv_nomination_gerant_spec_texte_v1.md`.
@@ -774,6 +778,14 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
 - WORKTREE-CLEANUP-AND-UI-STATUS-001 : `codex/review-final-001` apporte uniquement `docs/review/final_review_pack_v1.md`, integre dans `main`.
 - WORKTREE-CLEANUP-AND-UI-STATUS-001 : l'UI actuelle est confirmee comme UI technique de pilotage par contexte YAML/JSON, DOCX, PDF local optionnel et ZIP ; elle n'est pas une UI produit finale ni un wizard metier.
 - WORKTREE-CLEANUP-AND-UI-STATUS-001 : les anciens worktrees locaux sont archives sans suppression definitive ; `project/source_import/raw_drive_dump/` n'est pas modifie dans le repo.
+- REVIEW-FINAL-001 : `git status --short --branch` OK sur `main...origin/main`, sans diff initial ; `git fetch --prune` bloque sur `.git/FETCH_HEAD` en permission denied, donc l'alignement distant est confirme seulement contre la ref locale `origin/main`.
+- REVIEW-FINAL-001 : catalogue et registre alignes sur 43 documents/generateurs, `DOC-001` a `DOC-043`, aucun generateur manquant.
+- REVIEW-FINAL-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
+- REVIEW-FINAL-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 191 tests passes.
+- REVIEW-FINAL-001 : tests cibles DOCX/orchestrateur/registre/PDF/ZIP/UI runtime OK, 54 tests passes.
+- REVIEW-FINAL-001 : smoke reel `examples/contexts/lot_02_orchestrator_positive_example.yaml` OK en DOCX/ZIP, 4 DOCX produits et ZIP avec manifeste dans `artifacts/review_final_001_smoke/20260518_114432/`.
+- REVIEW-FINAL-001 : backend PDF local indisponible pendant la revue ; LibreOffice introuvable et Word COM indisponible, avec un processus Word accroche puis arrete.
+- REVIEW-FINAL-001 : balayage des contextes exemples en DOCX/ZIP sans PDF ; seuls `lot_02_orchestrator_negative_sas_example.yaml` et `lot_02_orchestrator_positive_example.yaml` sont complets pour une generation dossier globale, les autres exemples restent des contextes de famille/generateur incomplets.
 
 ## Recommandation immédiate suivante
-Lancer `REVIEW-FINAL-001` depuis le dossier canonique `C:\Users\Gad\Desktop\Sydel\sydel-document-engine` pour controler le flux complet UI -> DOCX -> PDF -> ZIP avec revue humaine, puis `CLOSE-PROJECT-V1-001`.
+Lancer `UI-BUSINESS-WIZARD-001` depuis le dossier canonique `C:\Users\Gad\Desktop\Sydel\sydel-document-engine`, sans relancer l'ancien `UI-WIZARD-001`, en partant des specs UI `19/20/21` et des reserves `REVIEW-FINAL-001` sur PDF local, contextes exemples et distinction UI technique / UI produit.

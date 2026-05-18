@@ -122,11 +122,12 @@
 | SYNC-POST-MOTOR-UI-001 | DONE | Synchroniser la fondation UI/PDF/recette dans main | branches UI/PDF/recette listées | commits intégrés + pilotage aligné |
 | UI-CORE-001 | DONE | Implémenter le cœur UI Streamlit V1 | UI flow + occurrences + form schema + backend PDF | superseded / remplacé par `UI-PDF-ZIP-INTEGRATION-001` |
 | RESUME-ZIP-BACKEND-001 | DONE | Reprendre le backend ZIP V1 sur main synchronisé | moteur DOCX clos + backend PDF + fondation phase 18 | backend ZIP dossier documenté et testé |
-| REVIEW-FINAL-001 | READY | Exécuter la revue finale V1 | moteur DOCX + UI/PDF/ZIP intégrés | revue finale documentée |
+| REVIEW-FINAL-001 | DONE | Exécuter la revue finale V1 | moteur DOCX + UI/PDF/ZIP intégrés | rapport d'execution + decision GO avec reserves |
 | UI-PDF-ZIP-INTEGRATION-001 | DONE | Brancher PDF et ZIP dans l'UI Streamlit | UI core + backend PDF + backend ZIP | téléchargements DOCX/PDF/ZIP + smoke manuel + tests |
 | SYNC-FINAL-FOUNDATIONS-001 | DONE | Synchroniser les fondations finales UI/PDF/ZIP/clôture dans main | branches finales listées | main réaligné + pilotage final |
 | WORKTREE-CLEANUP-AND-UI-STATUS-001 | DONE | Consolider la revue finale, clarifier le statut UI et archiver les anciens worktrees locaux | `main` propre + audit branches/worktrees + `codex/review-final-001` | rapport 23 + pack de revue finale intégré + dossier canonique unique |
 | CLOSE-PROJECT-V1-001 | READY | Clore le projet V1 après revue finale | `REVIEW-FINAL-001` terminé | clôture V1 documentée |
+| UI-BUSINESS-WIZARD-001 | READY | Lancer le wizard metier UI dossier-centre | `REVIEW-FINAL-001` + docs UI 19/20/21 + moteur DOCX/ZIP | UI metier guidee sans logique juridique cachee |
 | UI-001 | BLOCKED | Brancher Streamlit V0 Lot 1 | orchestrateur Lot 1 + spec canonique PV nomination gérant validée | écran simple + test manuel |
 
 ## Référentiels moteur disponibles
@@ -801,7 +802,9 @@
 ### REVIEW-FINAL-001
 - Objectif : exécuter la revue finale V1 après intégration UI/PDF/ZIP.
 - Prérequis : moteur DOCX clos, UI cœur, PDF et ZIP intégrés.
-- Statut : READY.
+- Statut : DONE ; rapport d'execution disponible dans `docs/review/review_final_001_execution_report_v1.md`.
+- Decision : GO avec reserves pour lancer `UI-BUSINESS-WIZARD-001`.
+- Reserves : `git fetch --prune` bloque sur `.git/FETCH_HEAD`, backend PDF local indisponible pendant la revue, la detection Word COM peut accrocher un processus Word, et la majorite des contextes exemples sont des contextes de famille/generateur incomplets pour le flux dossier global.
 
 ### UI-PDF-ZIP-INTEGRATION-001
 - Objectif : brancher les sorties DOCX, PDF local optionnel et ZIP dossier dans l'UI Streamlit.
@@ -828,6 +831,12 @@
 - Prérequis : `REVIEW-FINAL-001` terminé.
 - Statut : READY.
 
+### UI-BUSINESS-WIZARD-001
+- Objectif : lancer le wizard metier dossier-centre a partir des specs UI `19_UI_FLOW_V1.md`, `20_UI_DOCUMENT_OCCURRENCES_V1.md` et `21_UI_FORM_SCHEMA_V1.md`.
+- Prérequis : `REVIEW-FINAL-001` termine, moteur DOCX/ZIP vert, reserves PDF et contextes exemples documentees.
+- Statut : READY.
+- Garde-fous : ne pas relancer l'ancien `UI-WIZARD-001`, ne pas dupliquer la selection documentaire hors orchestrateur, ne pas presenter la generation comme validation juridique.
+
 ### UI-001
 - Objectif : exposer une Streamlit simple pour générer le Lot 1.
 - Statut : en attente explicite ; ne pas lancer sans ticket explicite dédié.
@@ -849,8 +858,9 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - `UI-CORE-001` est superseded / remplacé par `UI-PDF-ZIP-INTEGRATION-001`.
 - `RESUME-ZIP-BACKEND-001` est DONE ; `rendering/zip_bundle.py` est intégré et testé.
 - `SYNC-POST-MOTOR-UI-001` est DONE ; les fondations UI/PDF/recette sont absorbées dans `main`.
-- prochains tickets READY confirmés uniquement : `REVIEW-FINAL-001` puis `CLOSE-PROJECT-V1-001`.
-- prochain ticket recommandé : `REVIEW-FINAL-001`, avec contrôle humain du flux UI -> DOCX -> PDF -> ZIP depuis le dossier canonique.
+- `REVIEW-FINAL-001` est DONE ; rapport d'execution disponible dans `docs/review/review_final_001_execution_report_v1.md`.
+- tickets READY confirmés : `UI-BUSINESS-WIZARD-001` et `CLOSE-PROJECT-V1-001`.
+- prochain ticket recommandé : `UI-BUSINESS-WIZARD-001`, avec reprise des reserves PDF, contextes exemples et UI technique vs UI produit.
 - moteur documentaire DOCX V1 feature complete et clos après `RECONCILE-MOTOR-CLOSE-001`.
 - tickets absorbés par `SYNC-POST-MOTOR-UI-001` : `UI-FLOW-001`, `UI-OCCURRENCES-001`, `UI-FORM-SCHEMA-001`, `PDF-BACKEND-001` et `RECIPE-FRAME-001`.
 - `RECONCILE-MOTOR-CLOSE-001` est DONE ; les générateurs ordre/SPFPL orphelins sont exposés sous `DOC-034` à `DOC-043`, `08/09/16/17/18` sont alignés et les références delivery Lot 2 manquantes sont présentes sur `main`.
