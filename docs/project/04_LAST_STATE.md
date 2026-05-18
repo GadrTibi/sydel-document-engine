@@ -1,10 +1,12 @@
 # Dernier état projet
 
 ## Date de mise à jour
-2026-05-17
+2026-05-18
 
 
 ## Dernier ticket terminé
+WORKTREE-CLEANUP-AND-UI-STATUS-001 : consolidation du contenu restant de `codex/review-final-001` dans `main`, creation du rapport `docs/project/23_WORKTREE_CLEANUP_AND_UI_STATUS_V1.md`, clarification du dossier canonique final et archivage local prevu des anciens worktrees `sydel-document-engine-*`.
+
 SYNC-FINAL-FOUNDATIONS-001 : synchronisation finale de `main` avant revue/cloture, absorption des complements UI/PDF/ZIP manquants, confirmation des audits/fondations presents, remplacement de `UI-CORE-001` par `UI-PDF-ZIP-INTEGRATION-001` et pilotage final limite a `REVIEW-FINAL-001` puis `CLOSE-PROJECT-V1-001`.
 
 UI-PDF-ZIP-INTEGRATION-001 : integration de l'UI Streamlit avec la generation dossier DOCX, l'export PDF local optionnel et le ZIP dossier, avec telechargements par fichier, smoke manuel documente et validations locales vertes.
@@ -62,6 +64,10 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
   - `docs/project/20_UI_DOCUMENT_OCCURRENCES_V1.md` ;
   - `docs/project/21_UI_FORM_SCHEMA_V1.md`.
 - Le framework de recette finale V1 est disponible dans `docs/review/final_recipe_framework_v1.md`.
+- Le pack de revue finale V1 est disponible dans `docs/review/final_review_pack_v1.md`.
+- Le rapport de cleanup local et statut UI est disponible dans `docs/project/23_WORKTREE_CLEANUP_AND_UI_STATUS_V1.md`.
+- Le dossier canonique final a utiliser est `C:\Users\Gad\Desktop\Sydel\sydel-document-engine`.
+- Les anciens worktrees locaux sont archives sous `C:\Users\Gad\Desktop\Sydel\_codex_worktrees_archive`.
 - `UI-CORE-001` est superseded / remplace par `UI-PDF-ZIP-INTEGRATION-001`.
 - `RESUME-ZIP-BACKEND-001` est DONE.
 - Tickets READY confirmes uniquement : `REVIEW-FINAL-001` et `CLOSE-PROJECT-V1-001`.
@@ -765,6 +771,9 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
 - SYNC-FINAL-FOUNDATIONS-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 191 tests passes.
 - SYNC-FINAL-FOUNDATIONS-001 : fichiers critiques 16/17/18/19/20/21 et `docs/review/final_recipe_framework_v1.md` presents sur `main`.
 - SYNC-FINAL-FOUNDATIONS-001 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifies.
+- WORKTREE-CLEANUP-AND-UI-STATUS-001 : `codex/review-final-001` apporte uniquement `docs/review/final_review_pack_v1.md`, integre dans `main`.
+- WORKTREE-CLEANUP-AND-UI-STATUS-001 : l'UI actuelle est confirmee comme UI technique de pilotage par contexte YAML/JSON, DOCX, PDF local optionnel et ZIP ; elle n'est pas une UI produit finale ni un wizard metier.
+- WORKTREE-CLEANUP-AND-UI-STATUS-001 : les anciens worktrees locaux sont archives sans suppression definitive ; `project/source_import/raw_drive_dump/` n'est pas modifie dans le repo.
 
 ## Recommandation immédiate suivante
-Lancer `REVIEW-FINAL-001` pour controler le flux complet UI -> DOCX -> PDF -> ZIP avec revue humaine, puis `CLOSE-PROJECT-V1-001`.
+Lancer `REVIEW-FINAL-001` depuis le dossier canonique `C:\Users\Gad\Desktop\Sydel\sydel-document-engine` pour controler le flux complet UI -> DOCX -> PDF -> ZIP avec revue humaine, puis `CLOSE-PROJECT-V1-001`.

@@ -125,6 +125,7 @@
 | REVIEW-FINAL-001 | READY | Exécuter la revue finale V1 | moteur DOCX + UI/PDF/ZIP intégrés | revue finale documentée |
 | UI-PDF-ZIP-INTEGRATION-001 | DONE | Brancher PDF et ZIP dans l'UI Streamlit | UI core + backend PDF + backend ZIP | téléchargements DOCX/PDF/ZIP + smoke manuel + tests |
 | SYNC-FINAL-FOUNDATIONS-001 | DONE | Synchroniser les fondations finales UI/PDF/ZIP/clôture dans main | branches finales listées | main réaligné + pilotage final |
+| WORKTREE-CLEANUP-AND-UI-STATUS-001 | DONE | Consolider la revue finale, clarifier le statut UI et archiver les anciens worktrees locaux | `main` propre + audit branches/worktrees + `codex/review-final-001` | rapport 23 + pack de revue finale intégré + dossier canonique unique |
 | CLOSE-PROJECT-V1-001 | READY | Clore le projet V1 après revue finale | `REVIEW-FINAL-001` terminé | clôture V1 documentée |
 | UI-001 | BLOCKED | Brancher Streamlit V0 Lot 1 | orchestrateur Lot 1 + spec canonique PV nomination gérant validée | écran simple + test manuel |
 
@@ -816,6 +817,12 @@
 - Statut : DONE ; les fichiers critiques de cadrage/clôture sont présents sur `main`, l'UI intégrée et les backends PDF/ZIP sont présents, et le pilotage confirme uniquement `REVIEW-FINAL-001` et `CLOSE-PROJECT-V1-001` en READY.
 - Validation : `.\.venv\Scripts\python.exe -m ruff check .` OK ; `.\.venv\Scripts\python.exe -m pytest` OK, 191 tests passés.
 
+### WORKTREE-CLEANUP-AND-UI-STATUS-001
+- Objectif : rendre le poste local lisible avec un seul dossier canonique, consolider le contenu restant de `codex/review-final-001` dans `main` et clarifier le statut reel de l'UI.
+- Entrées : worktree `main`, branches locales/distantes, dossier parent `C:\Users\Gad\Desktop\Sydel\`, branche `codex/review-final-001`.
+- Contraintes : archiver sans suppression definitive, ne pas toucher a `project/source_import/raw_drive_dump/`, ne pas inventer d'UI wizard non implementee.
+- Statut : DONE ; `docs/review/final_review_pack_v1.md` est integre dans `main`, `docs/project/23_WORKTREE_CLEANUP_AND_UI_STATUS_V1.md` documente l'etat local et l'UI actuelle est qualifiee comme UI technique de pilotage par contexte, pas UI produit finale.
+
 ### CLOSE-PROJECT-V1-001
 - Objectif : clore le projet V1 après revue finale.
 - Prérequis : `REVIEW-FINAL-001` terminé.
@@ -836,13 +843,14 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - mettre à jour `docs/project/04_LAST_STATE.md`
 
 ## Prochaine étape prévue
+- `WORKTREE-CLEANUP-AND-UI-STATUS-001` est DONE ; le pack `REVIEW-FINAL-001` est consolide dans `main`, le rapport 23 clarifie le dossier canonique et le statut UI, et les anciens worktrees locaux sont a considerer comme archives.
 - `SYNC-FINAL-FOUNDATIONS-001` est DONE ; `main` contient les audits 16/17/18, les cadrages UI 19/20/21, le framework de recette finale, l'UI intégrée, le backend PDF et le backend ZIP déterministe.
 - `UI-PDF-ZIP-INTEGRATION-001` est DONE ; l'UI sait produire et telecharger DOCX, PDF local optionnel et ZIP dossier.
 - `UI-CORE-001` est superseded / remplacé par `UI-PDF-ZIP-INTEGRATION-001`.
 - `RESUME-ZIP-BACKEND-001` est DONE ; `rendering/zip_bundle.py` est intégré et testé.
 - `SYNC-POST-MOTOR-UI-001` est DONE ; les fondations UI/PDF/recette sont absorbées dans `main`.
 - prochains tickets READY confirmés uniquement : `REVIEW-FINAL-001` puis `CLOSE-PROJECT-V1-001`.
-- prochain ticket recommandé : `REVIEW-FINAL-001`, avec contrôle humain du flux UI -> DOCX -> PDF -> ZIP.
+- prochain ticket recommandé : `REVIEW-FINAL-001`, avec contrôle humain du flux UI -> DOCX -> PDF -> ZIP depuis le dossier canonique.
 - moteur documentaire DOCX V1 feature complete et clos après `RECONCILE-MOTOR-CLOSE-001`.
 - tickets absorbés par `SYNC-POST-MOTOR-UI-001` : `UI-FLOW-001`, `UI-OCCURRENCES-001`, `UI-FORM-SCHEMA-001`, `PDF-BACKEND-001` et `RECIPE-FRAME-001`.
 - `RECONCILE-MOTOR-CLOSE-001` est DONE ; les générateurs ordre/SPFPL orphelins sont exposés sous `DOC-034` à `DOC-043`, `08/09/16/17/18` sont alignés et les références delivery Lot 2 manquantes sont présentes sur `main`.
@@ -985,3 +993,4 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - 2026-05-17 : SYNC-POST-MOTOR-UI-001 absorbe dans `main` les commits sources `d62670efe10481926437c0e1a5dabbe349fd5938`, `24a881b999371811d39a2403c0b51d9ae8ce0556`, `ef6252b3c15dc3fc39f1efdc05687c0f448f8fe1`, `2f76f61848469ddf2f7b29c3169e8893e83fd3a5` et `c2fc0db4d51485c7c5e721c5184028ae17c68cb3`, passe les fondations UI/PDF/recette en DONE et confirme `UI-CORE-001`, `RESUME-ZIP-BACKEND-001` et `REVIEW-FINAL-001` en READY.
 - 2026-05-17 : UI-PDF-ZIP-INTEGRATION-001 branche l'UI Streamlit sur la génération dossier DOCX, l'export PDF local optionnel et le ZIP de sortie, ajoute un smoke manuel documenté et conserve `artifacts/` hors versionnement.
 - 2026-05-17 : SYNC-FINAL-FOUNDATIONS-001 absorbe les compléments manquants `UI-PDF-ZIP-INTEGRATION-001` et `ZIP-BACKEND-001`, confirme les fondations/audits déjà présents sur `main`, remplace `UI-CORE-001` par `UI-PDF-ZIP-INTEGRATION-001`, valide ruff/pytest 191 tests et confirme uniquement `REVIEW-FINAL-001` puis `CLOSE-PROJECT-V1-001` en READY.
+- 2026-05-18 : WORKTREE-CLEANUP-AND-UI-STATUS-001 integre le pack `docs/review/final_review_pack_v1.md` depuis `codex/review-final-001`, cree `docs/project/23_WORKTREE_CLEANUP_AND_UI_STATUS_V1.md`, documente l'archivage local des worktrees et confirme que l'UI actuelle est une UI technique de pilotage par contexte, pas une UI produit finale.
