@@ -127,7 +127,7 @@
 | SYNC-FINAL-FOUNDATIONS-001 | DONE | Synchroniser les fondations finales UI/PDF/ZIP/clôture dans main | branches finales listées | main réaligné + pilotage final |
 | WORKTREE-CLEANUP-AND-UI-STATUS-001 | DONE | Consolider la revue finale, clarifier le statut UI et archiver les anciens worktrees locaux | `main` propre + audit branches/worktrees + `codex/review-final-001` | rapport 23 + pack de revue finale intégré + dossier canonique unique |
 | CLOSE-PROJECT-V1-001 | READY | Clore le projet V1 après revue finale | `REVIEW-FINAL-001` terminé | clôture V1 documentée |
-| UI-BUSINESS-WIZARD-001 | READY | Lancer le wizard metier UI dossier-centre | `REVIEW-FINAL-001` + docs UI 19/20/21 + moteur DOCX/ZIP | UI metier guidee sans logique juridique cachee |
+| UI-BUSINESS-WIZARD-001 | DONE | Lancer le wizard metier UI dossier-centre | `REVIEW-FINAL-001` + docs UI 19/20/21 + moteur DOCX/ZIP | UI metier guidee sans logique juridique cachee |
 | UI-001 | BLOCKED | Brancher Streamlit V0 Lot 1 | orchestrateur Lot 1 + spec canonique PV nomination gérant validée | écran simple + test manuel |
 
 ## Référentiels moteur disponibles
@@ -834,7 +834,10 @@
 ### UI-BUSINESS-WIZARD-001
 - Objectif : lancer le wizard metier dossier-centre a partir des specs UI `19_UI_FLOW_V1.md`, `20_UI_DOCUMENT_OCCURRENCES_V1.md` et `21_UI_FORM_SCHEMA_V1.md`.
 - Prérequis : `REVIEW-FINAL-001` termine, moteur DOCX/ZIP vert, reserves PDF et contextes exemples documentees.
-- Statut : READY.
+- Statut : DONE.
+- Livraison : mode `Assistant metier` ajoute dans Streamlit avec formulaire structure, validation, liste de documents, generation DOCX, ZIP et PDF optionnel ; mode `Technique / diagnostic` YAML/JSON conserve.
+- Perimetre V1 : generation assistant limitee au scenario SCI simple pour `DOC-001`, `DOC-002`, `DOC-003` et `DOC-004`.
+- Rapport : `docs/review/ui_business_wizard_001_report_v1.md`.
 - Garde-fous : ne pas relancer l'ancien `UI-WIZARD-001`, ne pas dupliquer la selection documentaire hors orchestrateur, ne pas presenter la generation comme validation juridique.
 
 ### UI-001
@@ -859,8 +862,9 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - `RESUME-ZIP-BACKEND-001` est DONE ; `rendering/zip_bundle.py` est intégré et testé.
 - `SYNC-POST-MOTOR-UI-001` est DONE ; les fondations UI/PDF/recette sont absorbées dans `main`.
 - `REVIEW-FINAL-001` est DONE ; rapport d'execution disponible dans `docs/review/review_final_001_execution_report_v1.md`.
-- tickets READY confirmés : `UI-BUSINESS-WIZARD-001` et `CLOSE-PROJECT-V1-001`.
-- prochain ticket recommandé : `UI-BUSINESS-WIZARD-001`, avec reprise des reserves PDF, contextes exemples et UI technique vs UI produit.
+- `UI-BUSINESS-WIZARD-001` est DONE ; l'UI Streamlit dispose maintenant d'un mode assistant metier SCI V1 et conserve le mode technique YAML/JSON.
+- ticket READY confirmé : `CLOSE-PROJECT-V1-001`.
+- prochain ticket recommandé : recette manuelle du mode assistant SCI, puis `CLOSE-PROJECT-V1-001` si la recette confirme DOCX, ZIP manifest et telechargements.
 - moteur documentaire DOCX V1 feature complete et clos après `RECONCILE-MOTOR-CLOSE-001`.
 - tickets absorbés par `SYNC-POST-MOTOR-UI-001` : `UI-FLOW-001`, `UI-OCCURRENCES-001`, `UI-FORM-SCHEMA-001`, `PDF-BACKEND-001` et `RECIPE-FRAME-001`.
 - `RECONCILE-MOTOR-CLOSE-001` est DONE ; les générateurs ordre/SPFPL orphelins sont exposés sous `DOC-034` à `DOC-043`, `08/09/16/17/18` sont alignés et les références delivery Lot 2 manquantes sont présentes sur `main`.
@@ -1004,3 +1008,4 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - 2026-05-17 : UI-PDF-ZIP-INTEGRATION-001 branche l'UI Streamlit sur la génération dossier DOCX, l'export PDF local optionnel et le ZIP de sortie, ajoute un smoke manuel documenté et conserve `artifacts/` hors versionnement.
 - 2026-05-17 : SYNC-FINAL-FOUNDATIONS-001 absorbe les compléments manquants `UI-PDF-ZIP-INTEGRATION-001` et `ZIP-BACKEND-001`, confirme les fondations/audits déjà présents sur `main`, remplace `UI-CORE-001` par `UI-PDF-ZIP-INTEGRATION-001`, valide ruff/pytest 191 tests et confirme uniquement `REVIEW-FINAL-001` puis `CLOSE-PROJECT-V1-001` en READY.
 - 2026-05-18 : WORKTREE-CLEANUP-AND-UI-STATUS-001 integre le pack `docs/review/final_review_pack_v1.md` depuis `codex/review-final-001`, cree `docs/project/23_WORKTREE_CLEANUP_AND_UI_STATUS_V1.md`, documente l'archivage local des worktrees et confirme que l'UI actuelle est une UI technique de pilotage par contexte, pas une UI produit finale.
+- 2026-05-18 : UI-BUSINESS-WIZARD-001 ajoute le mode Assistant metier Streamlit en deux modes, construit un contexte SCI simple pour `DOC-001` a `DOC-004`, conserve le mode technique YAML/JSON, separe les actions DOCX/ZIP/PDF et valide ruff + pytest 196 tests.

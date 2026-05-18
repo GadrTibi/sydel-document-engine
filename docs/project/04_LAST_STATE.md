@@ -5,6 +5,8 @@
 
 
 ## Dernier ticket terminé
+UI-BUSINESS-WIZARD-001 : mode Assistant metier Streamlit ajoute depuis le dossier canonique `C:\Users\Gad\Desktop\Sydel\sydel-document-engine`, formulaire SCI simple pour `DOC-001` a `DOC-004`, validation champs manquants/incoherences, boutons DOCX/ZIP/PDF, telechargements, mode technique YAML/JSON conserve et rapport `docs/review/ui_business_wizard_001_report_v1.md` ajoute.
+
 REVIEW-FINAL-001 : revue finale executee depuis le dossier canonique `C:\Users\Gad\Desktop\Sydel\sydel-document-engine`, rapport ajoute dans `docs/review/review_final_001_execution_report_v1.md`, ruff/pytest verts, smoke DOCX/ZIP OK sur `lot_02_orchestrator_positive_example.yaml`, backend PDF local indisponible pendant la revue et decision GO avec reserves pour `UI-BUSINESS-WIZARD-001`.
 
 WORKTREE-CLEANUP-AND-UI-STATUS-001 : consolidation du contenu restant de `codex/review-final-001` dans `main`, creation du rapport `docs/project/23_WORKTREE_CLEANUP_AND_UI_STATUS_V1.md`, clarification du dossier canonique final et archivage local prevu des anciens worktrees `sydel-document-engine-*`.
@@ -50,7 +52,9 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
 - Le backend PDF V1 est disponible dans `src/sydel_doc_engine/rendering/pdf_export.py` : export unitaire DOCX vers PDF, export batch de chemins DOCX, detection de backend, erreurs bloquantes si aucun convertisseur fiable n'est disponible.
 - Le backend ZIP V1 est disponible dans `src/sydel_doc_engine/rendering/zip_bundle.py` : ZIP deterministe DOCX/PDF, chemins relatifs, filtrage des fichiers temporaires et manifeste `manifest.json`.
 - Strategie PDF locale retenue apres smoke : LibreOffice headless prioritaire si present ; Word COM Windows utilise localement avec succes. LibreOffice n'est pas installe sur la machine de smoke.
-- L'UI Streamlit charge un contexte YAML/JSON, affiche la selection `select_documents_for_context`, genere les DOCX via `generate_documents`, propose les telechargements DOCX, lance les PDF si un backend local est disponible et cree un ZIP dossier via `rendering/zip_bundle.py`.
+- L'UI Streamlit dispose maintenant de deux modes :
+  - `Assistant metier` : formulaire structure SCI V1, validation des champs manquants/incoherences, liste `DOC-001` a `DOC-004`, generation DOCX, ZIP avec manifest, PDF local optionnel et telechargements ;
+  - `Technique / diagnostic` : chargement YAML/JSON, selection `select_documents_for_context`, generation dossier DOCX/PDF optionnel/ZIP et telechargements existants.
 - Le smoke manuel UI/PDF/ZIP est documente dans `docs/review/ui_pdf_zip_integration_001_smoke.md`.
 - `examples/contexts/lot_01_example.yaml` utilise encore le champ legacy Lot 1 `adresse_domiciliation_affichee`, en attente d'un refactor dédié vers `domiciliation.adresse_affichee`.
 - Un smoke test réel a généré les trois DOCX du Lot 1 dans `artifacts/lot_01_smoke_test/`.
@@ -68,13 +72,15 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
 - Le framework de recette finale V1 est disponible dans `docs/review/final_recipe_framework_v1.md`.
 - Le pack de revue finale V1 est disponible dans `docs/review/final_review_pack_v1.md`.
 - Le rapport d'execution `REVIEW-FINAL-001` est disponible dans `docs/review/review_final_001_execution_report_v1.md`.
+- Le rapport d'execution `UI-BUSINESS-WIZARD-001` est disponible dans `docs/review/ui_business_wizard_001_report_v1.md`.
 - Le rapport de cleanup local et statut UI est disponible dans `docs/project/23_WORKTREE_CLEANUP_AND_UI_STATUS_V1.md`.
 - Le dossier canonique final a utiliser est `C:\Users\Gad\Desktop\Sydel\sydel-document-engine`.
 - Les anciens worktrees locaux sont archives sous `C:\Users\Gad\Desktop\Sydel\_codex_worktrees_archive`.
 - `UI-CORE-001` est superseded / remplace par `UI-PDF-ZIP-INTEGRATION-001`.
 - `RESUME-ZIP-BACKEND-001` est DONE.
 - `REVIEW-FINAL-001` est DONE avec decision GO avec reserves.
-- Tickets READY confirmes : `UI-BUSINESS-WIZARD-001` et `CLOSE-PROJECT-V1-001`.
+- `UI-BUSINESS-WIZARD-001` est DONE avec perimetre assistant SCI simple.
+- Ticket READY confirme : `CLOSE-PROJECT-V1-001`.
 - Le cadrage métier de la famille `PV nomination gérant` est disponible dans `docs/delivery/lot_02_pv_nomination_gerant_cadrage_v1.md`.
 - La spec canonique V1 de la famille `PV nomination gérant` est disponible dans `docs/delivery/lot_02_pv_nomination_gerant_spec_canonique_v1.md`.
 - La spec texte V1 de la famille `PV nomination gérant` est disponible dans `docs/delivery/lot_02_pv_nomination_gerant_spec_texte_v1.md`.
@@ -786,6 +792,10 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
 - REVIEW-FINAL-001 : smoke reel `examples/contexts/lot_02_orchestrator_positive_example.yaml` OK en DOCX/ZIP, 4 DOCX produits et ZIP avec manifeste dans `artifacts/review_final_001_smoke/20260518_114432/`.
 - REVIEW-FINAL-001 : backend PDF local indisponible pendant la revue ; LibreOffice introuvable et Word COM indisponible, avec un processus Word accroche puis arrete.
 - REVIEW-FINAL-001 : balayage des contextes exemples en DOCX/ZIP sans PDF ; seuls `lot_02_orchestrator_negative_sas_example.yaml` et `lot_02_orchestrator_positive_example.yaml` sont complets pour une generation dossier globale, les autres exemples restent des contextes de famille/generateur incomplets.
+- UI-BUSINESS-WIZARD-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
+- UI-BUSINESS-WIZARD-001 : tests cibles UI runtime / orchestrateur / DOCX / ZIP OK, 37 tests passes.
+- UI-BUSINESS-WIZARD-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 196 tests passes.
+- UI-BUSINESS-WIZARD-001 : test metier reel via runtime OK, 4 DOCX `DOC-001` a `DOC-004` generes et ZIP avec `manifest.json`, sans crochet placeholder detecte.
 
 ## Recommandation immédiate suivante
-Lancer `UI-BUSINESS-WIZARD-001` depuis le dossier canonique `C:\Users\Gad\Desktop\Sydel\sydel-document-engine`, sans relancer l'ancien `UI-WIZARD-001`, en partant des specs UI `19/20/21` et des reserves `REVIEW-FINAL-001` sur PDF local, contextes exemples et distinction UI technique / UI produit.
+Effectuer une recette manuelle du mode Assistant metier Streamlit sur le scenario SCI simple, puis lancer `CLOSE-PROJECT-V1-001` si la recette confirme DOCX, ZIP avec manifest, PDF optionnel proprement desactive ou disponible, et telechargements.

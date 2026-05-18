@@ -37,6 +37,16 @@ class GeneratedDossier:
         return [result.pdf_path for result in self.pdf_results]
 
 
+@dataclass(frozen=True)
+class GeneratedPdfBatch:
+    pdf_results: list[PdfExportResult]
+    pdf_error: str | None = None
+
+    @property
+    def pdf_paths(self) -> list[Path]:
+        return [result.pdf_path for result in self.pdf_results]
+
+
 def list_context_examples(contexts_dir: Path = DEFAULT_CONTEXTS_DIR) -> list[Path]:
     if not contexts_dir.is_dir():
         return []
@@ -91,34 +101,50 @@ def generate_dossier(
     *,
     generate_pdf: bool,
 ) -> GeneratedDossier:
+    docx_paths = generate_docx_files(ctx, output_dir)
+    pdf_batch = (
+        generate_pdf_files(docx_paths, output_dir)
+        if generate_pdf
+        else GeneratedPdfBatch(pdf_results=[])
+    )
+    zip_path = generate_zip_file(output_dir, docx_paths, pdf_batch.pdf_paths)
+    return GeneratedDossier(
+        output_dir=output_dir,
+        docx_paths=docx_paths,
+        pdf_results=pdf_batch.pdf_results,
+        zip_path=zip_path,
+        pdf_error=pdf_batch.pdf_error,
+    )
+
+
+def generate_docx_files(ctx: DocumentGenerationContext, output_dir: Path) -> list[Path]:
     orchestrator = DocumentOrchestrator(build_seed_catalog())
     selected_documents = orchestrator.select_documents_for_context(ctx)
     if not selected_documents:
         raise RuntimeError("Aucun document selectionne par l'orchestrateur.")
+    return orchestrator.generate_documents(ctx, output_dir)
 
-    docx_paths = orchestrator.generate_documents(ctx, output_dir)
-    pdf_results: list[PdfExportResult] = []
-    pdf_error: str | None = None
 
-    if generate_pdf:
-        try:
-            pdf_results = export_docx_batch_to_pdf(
-                docx_paths,
-                output_dir / PDF_OUTPUT_DIR_NAME,
-            )
-        except PdfExportError as exc:
-            pdf_error = str(exc)
+def generate_pdf_files(docx_paths: list[Path], output_dir: Path) -> GeneratedPdfBatch:
+    try:
+        pdf_results = export_docx_batch_to_pdf(
+            docx_paths,
+            output_dir / PDF_OUTPUT_DIR_NAME,
+        )
+    except PdfExportError as exc:
+        return GeneratedPdfBatch(pdf_results=[], pdf_error=str(exc))
+    return GeneratedPdfBatch(pdf_results=pdf_results)
 
-    bundle_files = [*docx_paths, *[result.pdf_path for result in pdf_results]]
+
+def generate_zip_file(
+    output_dir: Path,
+    docx_paths: list[Path],
+    pdf_paths: list[Path] | None = None,
+) -> Path:
+    bundle_files = [*docx_paths, *(pdf_paths or [])]
     zip_result = create_zip_bundle(
         output_dir / ZIP_FILE_NAME,
         bundle_files,
         root_dir=output_dir,
     )
-    return GeneratedDossier(
-        output_dir=output_dir,
-        docx_paths=docx_paths,
-        pdf_results=pdf_results,
-        zip_path=zip_result.zip_path,
-        pdf_error=pdf_error,
-    )
+    return zip_result.zip_path
