@@ -5,6 +5,8 @@
 
 
 ## Dernier ticket terminé
+DEPLOY-STREAMLIT-CLOUD-FIX-001 : correction de packaging Streamlit Cloud depuis le dossier canonique `C:\Users\Gad\Desktop\Sydel\sydel-document-engine`, ajout de la declaration Poetry explicite `{ include = "sydel_doc_engine", from = "src" }` dans `pyproject.toml`, rapport `docs/review/deploy_streamlit_cloud_fix_001_report_v1.md`, installation editable OK, ruff OK et pytest OK avec 196 tests passes ; Poetry local indisponible, donc `poetry check` et `poetry install` non executes localement.
+
 UI-BUSINESS-WIZARD-001 : mode Assistant metier Streamlit ajoute depuis le dossier canonique `C:\Users\Gad\Desktop\Sydel\sydel-document-engine`, formulaire SCI simple pour `DOC-001` a `DOC-004`, validation champs manquants/incoherences, boutons DOCX/ZIP/PDF, telechargements, mode technique YAML/JSON conserve et rapport `docs/review/ui_business_wizard_001_report_v1.md` ajoute.
 
 REVIEW-FINAL-001 : revue finale executee depuis le dossier canonique `C:\Users\Gad\Desktop\Sydel\sydel-document-engine`, rapport ajoute dans `docs/review/review_final_001_execution_report_v1.md`, ruff/pytest verts, smoke DOCX/ZIP OK sur `lot_02_orchestrator_positive_example.yaml`, backend PDF local indisponible pendant la revue et decision GO avec reserves pour `UI-BUSINESS-WIZARD-001`.
@@ -73,6 +75,8 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
 - Le pack de revue finale V1 est disponible dans `docs/review/final_review_pack_v1.md`.
 - Le rapport d'execution `REVIEW-FINAL-001` est disponible dans `docs/review/review_final_001_execution_report_v1.md`.
 - Le rapport d'execution `UI-BUSINESS-WIZARD-001` est disponible dans `docs/review/ui_business_wizard_001_report_v1.md`.
+- Le rapport d'execution `DEPLOY-STREAMLIT-CLOUD-FIX-001` est disponible dans `docs/review/deploy_streamlit_cloud_fix_001_report_v1.md`.
+- `pyproject.toml` declare explicitement le package Poetry `sydel_doc_engine` depuis `src`, pour eviter l'erreur Streamlit Cloud `No file/folder found for package sydel-document-engine`.
 - Le rapport de cleanup local et statut UI est disponible dans `docs/project/23_WORKTREE_CLEANUP_AND_UI_STATUS_V1.md`.
 - Le dossier canonique final a utiliser est `C:\Users\Gad\Desktop\Sydel\sydel-document-engine`.
 - Les anciens worktrees locaux sont archives sous `C:\Users\Gad\Desktop\Sydel\_codex_worktrees_archive`.
@@ -796,6 +800,10 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
 - UI-BUSINESS-WIZARD-001 : tests cibles UI runtime / orchestrateur / DOCX / ZIP OK, 37 tests passes.
 - UI-BUSINESS-WIZARD-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 196 tests passes.
 - UI-BUSINESS-WIZARD-001 : test metier reel via runtime OK, 4 DOCX `DOC-001` a `DOC-004` generes et ZIP avec `manifest.json`, sans crochet placeholder detecte.
+- DEPLOY-STREAMLIT-CLOUD-FIX-001 : `.\.venv\Scripts\python.exe -m pip install -e .` OK.
+- DEPLOY-STREAMLIT-CLOUD-FIX-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
+- DEPLOY-STREAMLIT-CLOUD-FIX-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 196 tests passes.
+- DEPLOY-STREAMLIT-CLOUD-FIX-001 : Poetry non disponible localement (`poetry` absent du PATH et module `poetry` absent de la venv), donc `poetry check` et `poetry install` non executes localement.
 
 ## Recommandation immédiate suivante
-Effectuer une recette manuelle du mode Assistant metier Streamlit sur le scenario SCI simple, puis lancer `CLOSE-PROJECT-V1-001` si la recette confirme DOCX, ZIP avec manifest, PDF optionnel proprement desactive ou disponible, et telechargements.
+Pousser le commit `DEPLOY-STREAMLIT-CLOUD-FIX-001`, puis redemarrer / reboot Streamlit Cloud pour relancer l'installation Poetry ; reprendre ensuite la recette manuelle du mode Assistant metier Streamlit et `CLOSE-PROJECT-V1-001`.

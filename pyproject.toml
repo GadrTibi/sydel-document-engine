@@ -25,6 +25,11 @@ dev = [
   "ruff>=0.5,<1",
 ]
 
+[tool.poetry]
+packages = [
+  { include = "sydel_doc_engine", from = "src" },
+]
+
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
