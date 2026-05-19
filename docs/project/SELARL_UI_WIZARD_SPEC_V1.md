@@ -8,7 +8,7 @@ Décrire le parcours cible du pilote SELARL, écran par écran, sans modifier l'
 
 Le parcours doit aider un juriste à qualifier un dossier SELARL, comprendre les documents attendus et voir les champs manquants avant génération.
 
-## Écran 1 — Nouveau dossier SELARL
+## Écran 1 — Qualification
 
 Objectif : qualifier le dossier sans demander de détails documentaires.
 
@@ -29,30 +29,9 @@ Règles :
 - les documents attendus sont recalculés à chaque changement ;
 - les documents manuels sont visibles plus tard, mais jamais envoyés à la génération.
 
-## Écran 2 — Société
+## Écran 2 — Fiche Client / Praticien
 
-Objectif : saisir la SELARL en création ou cible du dossier.
-
-Blocs :
-
-- dénomination ;
-- forme sociale ;
-- capital ;
-- nombre total de parts ;
-- valeur nominale ;
-- ville RCS ;
-- siège social ;
-- adresse de domiciliation si différente ou si champ libre requis.
-
-Règles :
-
-- proposer `L'adresse de domiciliation est le siège social` ;
-- conserver un champ libre `Adresse de domiciliation affichée` pour respecter la décision V1 de `DOC-002` ;
-- ne pas afficher des champs de cession ou de SCM sur cet écran.
-
-## Écran 3 — Fiche Client
-
-Objectif : saisir le Praticien et éviter la double saisie gérant / signataire / associé.
+Objectif : saisir le Praticien avant la société et éviter la double saisie gérant / signataire / associé.
 
 Blocs :
 
@@ -61,25 +40,49 @@ Blocs :
 - nationalité ;
 - filiation si les documents communs la demandent ;
 - adresse personnelle ;
-- profession ;
+- profession exercée ;
 - ordre professionnel ;
 - RPPS / numéro d'ordre ;
+- conseil de l'ordre ;
+- lieu d'exercice si applicable ;
 - fonction cible : `Gérant` lorsque le Praticien exerce le mandat social.
 
 Règles :
 
-- proposer `Le gérant est le Praticien` ;
-- proposer `Le signataire est le Praticien` ;
-- ne pas utiliser le libellé `Dirigeant / pharmacien` ;
+- proposer `Le gérant est le Praticien` sans traiter les règles profondes de réutilisation dans ce ticket ;
+- proposer `Le signataire est le Praticien` seulement comme lien explicite ;
+- ne pas utiliser le libellé banni ;
 - tout champ d'adresse doit être qualifié.
 
-## Écran 4 — Associés
+## Écran 3 — Fiche Société
+
+Objectif : saisir la SELARL en création ou cible du dossier, après la Fiche Client.
+
+Blocs :
+
+- dénomination ;
+- forme sociale ;
+- capital social ;
+- ville RCS si utile ;
+- siège social ;
+- adresse de domiciliation si différente ou si champ libre requis.
+
+Règles :
+
+- proposer `L'adresse de domiciliation est le siège social` ;
+- conserver un champ libre `Adresse de domiciliation affichée` pour respecter la décision V1 de `DOC-002` ;
+- ne pas afficher des champs de cession ou de SCM sur cet écran ;
+- ne pas assimiler automatiquement siège social, cabinet, lieu d'exercice et domiciliation.
+
+## Écran 4 — Capital & Associés
 
 Objectif : saisir les associés et la répartition du capital utile aux statuts et au PV.
 
 Blocs :
 
 - nombre d'associés ;
+- nombre total de parts ;
+- valeur nominale ;
 - associé 1 ;
 - associé 2 si nécessaire ;
 - parts détenues ;
@@ -98,7 +101,7 @@ Mécanismes de déduplication :
 - `Copier depuis le Praticien` ;
 - `Choisir le gérant parmi les associés`.
 
-## Écran 5 — Conditions spécifiques
+## Écran 5 — Contexte & scénarios métier
 
 Objectif : collecter uniquement les blocs activés par l'écran 1.
 
@@ -116,9 +119,10 @@ Règles :
 
 - chaque bloc inactif est masqué et non bloquant ;
 - les documents de dérogation SELARL restent manuels dans le pilote vérifié : formulaire multi-sites non fourni en variables V2, `Dérogation SEL BNC` manuelle, `Dérogation cumul SELARL BNC` manuelle ;
-- l'emprunt PV reste une option du `DOC-004`, pas un document séparé.
+- l'emprunt PV reste une option du `DOC-004`, pas un document séparé ;
+- le mandataire reste un sujet de formalité si un document ou une variable l'exige, sans devenir l'axe UX central du parcours.
 
-## Écran 6 — Documents attendus
+## Écran 6 — Documents & génération
 
 Objectif : donner un contrôle métier avant génération.
 
@@ -138,19 +142,6 @@ Pour chaque document :
 - champs manquants ;
 - note de prudence si formulaire à compléter.
 
-Règles :
-
-- ne pas transformer cette liste en formulaires document par document ;
-- ne pas afficher `PV d'autorisation d'emprunt` comme document autonome ;
-- afficher le formulaire site distinct CD94 comme manuel ;
-- afficher le formulaire multi-sites SEL comme manuel / hors génération pilote si la vraie V2 ne fournit pas ses variables ;
-- afficher Dérogation SEL BNC comme manuel ;
-- afficher Dérogation cumul SELARL BNC comme manuel, même si `DOC-014` existe côté moteur.
-
-## Écran 7 — Génération
-
-Objectif : lancer la génération seulement quand le contexte est prêt.
-
 Actions :
 
 - générer DOCX ;
@@ -159,17 +150,26 @@ Actions :
 
 Règles :
 
+- ne pas transformer cette liste en formulaires document par document ;
+- ne pas afficher `PV d'autorisation d'emprunt` comme document autonome ;
+- afficher le formulaire site distinct CD94 comme manuel ;
+- afficher le formulaire multi-sites SEL comme manuel / hors génération pilote si la vraie V2 ne fournit pas ses variables ;
+- afficher Dérogation SEL BNC comme manuel ;
+- afficher Dérogation cumul SELARL BNC comme manuel, même si `DOC-014` existe côté moteur.
 - bouton génération actif uniquement s'il existe au moins un document générable prêt ;
 - ZIP inclut uniquement les sorties produites et le manifeste ;
 - PDF reste optionnel ;
 - documents manuels restent listés comme pièces attendues hors automatisation.
+
+Le rendu Streamlit déjà committé n'est pas encore validé produit et ne doit pas être poussé ou redéployé comme parcours cible tant que `SELARL-REUSE-RULES-REALIGN-001` puis `SELARL-UI-REALIGN-001` ne sont pas terminés.
 
 ## Écarts UI actuelle vs cible SELARL
 
 | Écart | Constat actuel | Cible SELARL |
 |---|---|---|
 | Logique de saisie | Le formulaire part des documents prêts `DOC-001` à `DOC-004`. | Le formulaire part du processus SELARL et de ses conditions. |
-| Libellé dirigeant | `Dirigeant / pharmacien` visible dans l'UI Streamlit. | `Fiche Client` pour l'écran personne et `Gérant` pour le rôle juridique SELARL. |
+| Ordre du parcours | Le commit UI technique peut encore afficher la société avant la Fiche Client tant que `SELARL-UI-REALIGN-001` n'est pas fait. | Qualification, Fiche Client / Praticien, Fiche Société, Capital & Associés, Contexte & scénarios métier, Documents & génération. |
+| Libellé personne | Corrigé par `SELARL-WORDING-REALIGN-001`. | `Fiche Client` pour l'écran personne et `Gérant` pour le rôle juridique SELARL. |
 | Double saisie | Signataire, dirigeant et associé peuvent être saisis séparément sans lien UX. | Cases de réutilisation et copie depuis source. |
 | Adresse ambiguë | Plusieurs champs courts `Numero`, `Voie`, `Code postal`, `Ville` sans toujours rappeler le contexte. | Labels qualifiés : siège, personnelle, cabinet, bailleur, banque, SCM, etc. |
 | Documents contextualisés | Documents attendus affichés, mais beaucoup restent `Contexte incomplet pour génération V2`. | Documents regroupés par blocs métier avec champs manquants lisibles. |

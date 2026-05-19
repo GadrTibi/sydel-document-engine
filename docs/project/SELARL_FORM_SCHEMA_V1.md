@@ -6,7 +6,7 @@ Ticket source : `SELARL-PILOT-PROTOCOL-001`
 
 Ce document transforme les variables SELARL en blocs de saisie compréhensibles pour un juriste. Il ne modifie pas l'UI actuelle : il définit la cible de saisie du pilote.
 
-Source : `project/source_truth/Documents_a_generer_par_cas_V2.docx` et référentiels existants `docs/project/08_DICTIONNAIRE_VARIABLES_CANONIQUES_V1.md`, `docs/project/09_TABLE_MAPPING_DOCUMENTS_VARIABLES_V1.md`, specs delivery des familles SELARL.
+Sources : arbitrages explicites de l'associé, `project/source_truth/notebooklm_selarl_10_prompts_v1.md`, `project/source_truth/Documents_a_generer_par_cas_V3.docx`, V2 historique et référentiels existants `docs/project/08_DICTIONNAIRE_VARIABLES_CANONIQUES_V1.md`, `docs/project/09_TABLE_MAPPING_DOCUMENTS_VARIABLES_V1.md`, specs delivery des familles SELARL.
 
 ## Principes
 
@@ -15,6 +15,19 @@ Source : `project/source_truth/Documents_a_generer_par_cas_V2.docx` et référen
 - Une donnée saisie une fois doit alimenter tous les documents qui en dépendent.
 - Les documents manuels restent visibles, mais ne déclenchent pas de génération.
 - Les champs conditionnels ne sont obligatoires que si leur bloc est actif.
+
+## Ordre conceptuel cible
+
+Le schéma SELARL exprime désormais l'ordre validé suivant :
+
+1. Qualification ;
+2. Fiche Client / Praticien ;
+3. Fiche Société ;
+4. Capital & Associés ;
+5. Contexte & scénarios métier ;
+6. Documents & génération.
+
+Cet ordre ne modifie pas les générateurs ni le moteur DOCX/PDF/ZIP. Les règles profondes de réutilisation, notamment `Dossier unipersonnel`, restent à traiter dans `SELARL-REUSE-RULES-REALIGN-001`.
 
 ## Blocs et champs
 
@@ -27,17 +40,6 @@ Source : `project/source_truth/Documents_a_generer_par_cas_V2.docx` et référen
 | Dérogation ordinale | `conditions.derogation`, `dossier_options.derogation` | Qualification du dossier | oui | Toujours | Affiche les pièces de dérogation attendues ; dans la vraie V2 du pilote elles restent hors génération automatique. | Non |
 | Cession de cabinet | `conditions.cession`, `dossier_options.cession` | Qualification du dossier | oui | Toujours | Active les blocs cession, bail et financement. | Oui |
 | Type de cabinet cédé | `conditions.cabinet_type`, `cession.cabinet.type` | Qualification du dossier | conditionnel | Si cession de cabinet = oui | Choisir `aucun` si la cession ne porte pas sur un cabinet médical ou dentaire. | Cabinet dentaire |
-| Dénomination de la SELARL | `societe.denomination` | Société | oui | Toujours | Nom de la société en création ou acquéreur dans le dossier. | SELARL DU CENTRE |
-| Forme sociale | `societe.forme_sociale`, `societe.forme_sociale_affichage`, `societe.forme_sociale_libelle_long` | Société | oui | Toujours | Valeur pilote : SELARL. Le libellé long alimente certains documents. | SELARL |
-| Capital social | `societe.capital`, `societe.capital_social` | Société | oui | Documents communs, PV, statuts, cession | Montant du capital de la SELARL. | 5 000 euros |
-| Nombre total de parts | `capital.nb_parts_total`, `statuts_sel.capital.nb_parts_total` | Société | conditionnel | Si PV/statuts actifs | Doit correspondre à la somme des parts des associés. | 500 |
-| Valeur nominale d'une part | `capital.valeur_nominale_part`, `statuts_sel.capital.valeur_nominale_part` | Société | conditionnel | Si PV/statuts actifs | Utilisé pour la répartition du capital. | 10 euros |
-| Ville du RCS | `societe.ville_rcs` | Société | oui | Statuts, PV, cession SCM | Greffe d'immatriculation de la SELARL. | Paris |
-| Adresse du siège social - numéro | `societe.siege.num_voie` | Siège social | oui | Toujours | Adresse juridique du siège, distincte de l'adresse personnelle et du cabinet cédé. | 12 |
-| Adresse du siège social - voie | `societe.siege.voie` | Siège social | oui | Toujours | Ne pas utiliser pour le cabinet cédé sauf si cela est explicitement le même lieu. | rue de la Paix |
-| Adresse du siège social - code postal | `societe.siege.cp` | Siège social | oui | Toujours | Code postal du siège. | 75002 |
-| Adresse du siège social - ville | `societe.siege.ville` | Siège social | oui | Toujours | Ville du siège. | Paris |
-| Adresse de domiciliation affichée | `domiciliation.adresse_affichee`, alias runtime `domiciliation.adresse_domiciliation_affichee` | Siège social | oui | Si `DOC-002` actif | Champ libre décidé V1 ; ne pas déduire automatiquement sans confirmation. | 12 rue de la Paix, 75002 Paris |
 | Civilité du Praticien | `signataire.civilite_affichage`, `dirigeant_nomine.civilite_affichage` si réutilisé | Fiche Client | oui | Toujours | Civilité affichée, distincte du genre grammatical. | Docteur |
 | Genre grammatical du Praticien | `signataire.genre`, `dirigeant_nomine.genre` si réutilisé | Fiche Client | oui | Toujours | Pilote les accords comme soussigné/soussignée. | masculin |
 | Prénom du Praticien | `signataire.prenom`, `dirigeant_nomine.prenom` si réutilisé | Fiche Client | oui | Toujours | Personne principale du dossier. | Camille |
@@ -56,12 +58,23 @@ Source : `project/source_truth/Documents_a_generer_par_cas_V2.docx` et référen
 | Conseil de l'ordre compétent | `ordre.conseil`, `ordre.ville_ordre`, V2 `[ville_ordre]` | Ordre professionnel | oui | Si `DOC-034` actif | Conseil départemental ou autorité compétente. | Conseil départemental de Paris |
 | Adresse du conseil de l'ordre | `ordre.adresse_conseil_ordre`, `ordre.cp_ordre`, `ordre.ville_ordre`, V2 `[adresse_conseil_ordre]`, `[cp_ordre]`, `[ville_ordre]` | Ordre professionnel | conditionnel | Si demande d'inscription à l'ordre active | Adresse du conseil de l'ordre, distincte de l'adresse personnelle, du siège et du cabinet. | 10 rue du Conseil, 75000 Paris |
 | Adresse du lieu d'exercice | `ordre.adresse_lieu_exercice`, V2 `[adresse_lieu_exercice]` | Ordre professionnel | conditionnel | Statuts chirurgien-dentiste actifs | Adresse professionnelle d'exercice demandée par la vraie V2. | 4 rue du Cabinet, 75015 Paris |
-| Signataire est le premier associé | `ui.reuse.signataire_associe_1`, mapping vers `associes[0]` | Associés | optionnel | Si au moins un associé | Evite de ressaisir l'identité du Praticien. | Oui |
-| Nombre d'associés | `associes[]` cardinalité | Associés | oui | PV/statuts actifs | V1 doit couvrir le cas simple et bloquer les cardinalités non arbitrées. | 1 |
-| Associé 1 - identité | `associes[0].civilite_affichage`, `associes[0].prenom`, `associes[0].nom`, `associes[0].genre` | Associés | oui | PV/statuts actifs | Peut être copié depuis le Praticien. | Dr Camille Martin |
-| Associé 1 - parts | `associes[0].nb_parts` | Associés | oui | PV/statuts actifs | Doit s'additionner au total de parts. | 500 |
-| Associé 2 - identité | `associes[1].*` | Associés | conditionnel | Si nombre d'associés >= 2 | Cas simple V1 seulement si la spec du document l'autorise. | Dr Alex Bernard |
-| Gérant choisi parmi les associés | `dirigeant_nomine.ref_associe_index` | Associés | optionnel | Si PV/statuts actifs | Masque les champs d'identité du gérant s'ils sont déjà portés par l'associé. | Associé 1 |
+| Dénomination de la SELARL | `societe.denomination` | Fiche Société | oui | Toujours | Nom de la société en création ou acquéreur dans le dossier. | SELARL DU CENTRE |
+| Forme sociale | `societe.forme_sociale`, `societe.forme_sociale_affichage`, `societe.forme_sociale_libelle_long` | Fiche Société | oui | Toujours | Valeur pilote : SELARL. Le libellé long alimente certains documents. | SELARL |
+| Capital social | `societe.capital`, `societe.capital_social` | Fiche Société | oui | Documents communs, PV, statuts, cession | Montant du capital de la SELARL. | 5 000 euros |
+| Ville du RCS | `societe.ville_rcs` | Fiche Société | oui | Statuts, PV, cession SCM | Greffe d'immatriculation de la SELARL. | Paris |
+| Adresse du siège social - numéro | `societe.siege.num_voie` | Siège social | oui | Toujours | Adresse juridique du siège, distincte de l'adresse personnelle et du cabinet cédé. | 12 |
+| Adresse du siège social - voie | `societe.siege.voie` | Siège social | oui | Toujours | Ne pas utiliser pour le cabinet cédé sauf si cela est explicitement le même lieu. | rue de la Paix |
+| Adresse du siège social - code postal | `societe.siege.cp` | Siège social | oui | Toujours | Code postal du siège. | 75002 |
+| Adresse du siège social - ville | `societe.siege.ville` | Siège social | oui | Toujours | Ville du siège. | Paris |
+| Adresse de domiciliation affichée | `domiciliation.adresse_affichee`, alias runtime `domiciliation.adresse_domiciliation_affichee` | Siège social | oui | Si `DOC-002` actif | Champ libre décidé V1 ; ne pas déduire automatiquement sans confirmation. | 12 rue de la Paix, 75002 Paris |
+| Nombre total de parts | `capital.nb_parts_total`, `statuts_sel.capital.nb_parts_total` | Capital & Associés | conditionnel | Si PV/statuts actifs | Doit correspondre à la somme des parts des associés. | 500 |
+| Valeur nominale d'une part | `capital.valeur_nominale_part`, `statuts_sel.capital.valeur_nominale_part` | Capital & Associés | conditionnel | Si PV/statuts actifs | Utilisé pour la répartition du capital. | 10 euros |
+| Signataire est le premier associé | `ui.reuse.signataire_associe_1`, mapping vers `associes[0]` | Capital & Associés | optionnel | Si au moins un associé | Evite de ressaisir l'identité du Praticien. | Oui |
+| Nombre d'associés | `associes[]` cardinalité | Capital & Associés | oui | PV/statuts actifs | V1 doit couvrir le cas simple et bloquer les cardinalités non arbitrées. | 1 |
+| Associé 1 - identité | `associes[0].civilite_affichage`, `associes[0].prenom`, `associes[0].nom`, `associes[0].genre` | Capital & Associés | oui | PV/statuts actifs | Peut être copié depuis le Praticien. | Dr Camille Martin |
+| Associé 1 - parts | `associes[0].nb_parts` | Capital & Associés | oui | PV/statuts actifs | Doit s'additionner au total de parts. | 500 |
+| Associé 2 - identité | `associes[1].*` | Capital & Associés | conditionnel | Si nombre d'associés >= 2 | Cas simple V1 seulement si la spec du document l'autorise. | Dr Alex Bernard |
+| Gérant choisi parmi les associés | `dirigeant_nomine.ref_associe_index` | Capital & Associés | optionnel | Si PV/statuts actifs | Masque les champs d'identité du gérant s'ils sont déjà portés par l'associé. | Associé 1 |
 | Mandataire est le signataire | `mandataire.*` depuis `signataire.*` | Mandataire / signataire | optionnel | Si demande d'inscription à l'ordre active | Evite une double saisie du mandataire. | Oui |
 | Identité du mandataire | `mandataire.civilite`, `mandataire.prenom`, `mandataire.nom`, `mandataire.fonction` | Mandataire / signataire | conditionnel | Si mandataire distinct | Personne ou cabinet qui signe ou dépose la demande. | Me Dupont |
 | Identité du conjoint | `conjoint.civilite`, `conjoint.prenom`, `conjoint.nom`, `conjoint.genre` | Régime matrimonial / conjoint | conditionnel | Si régime communautaire = oui | Alimente les lettres conjoint. | Mme Sophie Martin |
@@ -194,14 +207,14 @@ Vérification `SELARL-PILOT-SOURCE-VERIFY-001` : la vraie V2 contient une liste 
 | Famille de variables V2 | Bloc UI cible | Règle de saisie |
 |---|---|---|
 | Identité signataire : `[civilite]`, `[prenom]`, `[nom]`, `[date_naissance]`, `[nationalite]`, `[nom_pere]`, `[nom_mere]` | Fiche Client ; Mandataire / signataire | Saisie une fois, réutilisable pour associé 1, gérant, signataire et représentant si les cases de réutilisation sont cochées. |
-| Adresses personnelles : `[num_voie_perso]`, `[voie_perso]`, `[cp_perso]`, `[ville_perso]`, `[adresse_personnelle]`, `[adresse_perso_personne_1]`, `[adresse_perso_personne_2]` | Fiche Client ; Associés | Chaque adresse doit indiquer la personne concernée ; aucun champ `adresse` nu. |
-| Société SELARL : `[denomination_societe]`, `[forme_sociale]`, `[forme_sociale_complete]`, `[capital_social]`, `[capital_lettres]`, `[ville_rcs]`, `[numero_rcs]` | Société | Source unique pour la SELARL ; peut alimenter acquéreur ou cessionnaire si l'utilisateur l'autorise. |
+| Adresses personnelles : `[num_voie_perso]`, `[voie_perso]`, `[cp_perso]`, `[ville_perso]`, `[adresse_personnelle]`, `[adresse_perso_personne_1]`, `[adresse_perso_personne_2]` | Fiche Client ; Capital & Associés | Chaque adresse doit indiquer la personne concernée ; aucun champ `adresse` nu. |
+| Société SELARL : `[denomination_societe]`, `[forme_sociale]`, `[forme_sociale_complete]`, `[capital_social]`, `[capital_lettres]`, `[ville_rcs]`, `[numero_rcs]` | Fiche Société | Source unique pour la SELARL ; peut alimenter acquéreur ou cessionnaire si l'utilisateur l'autorise. |
 | Siège : `[num_voie_siege]`, `[voie_siege]`, `[cp_siege]`, `[ville_siege]`, `[adresse_siege]`, `[adresse_siege_acquereur]`, `[adresse_siege_cessionnaire]` | Siège social ; Cession de cabinet ; SCM | Adresse du siège SELARL réutilisable seulement via règle explicite. |
 | Ordre : `[profession_reglementee]`, `[profession_reglementee_pluriel]`, `[ordre_departemental]`, `[adresse_conseil_ordre]`, `[cp_ordre]`, `[ville_ordre]`, `[numero_ordre]`, `[numero_rpps]` | Ordre professionnel | Bloc obligatoire si demande d'inscription, statuts professionnels ou cession avec vendeur réglementé. |
-| Associés et gérant : `[nb_parts]`, `[nb_parts_total]`, `[valeur_nominale_part]`, `[civilite_personne_1]`, `[prenom_personne_1]`, `[nom_personne_1]`, `[civilite_personne_2]`, `[prenom_personne_2]`, `[nom_personne_2]` | Associés ; Fiche Client | Listes et parts contrôlées ; copier depuis le Praticien possible. |
+| Associés et gérant : `[nb_parts]`, `[nb_parts_total]`, `[valeur_nominale_part]`, `[civilite_personne_1]`, `[prenom_personne_1]`, `[nom_personne_1]`, `[civilite_personne_2]`, `[prenom_personne_2]`, `[nom_personne_2]` | Capital & Associés ; Fiche Client | Listes et parts contrôlées ; copier depuis le Praticien possible. |
 | Régime communautaire : `[apport_personne_1]`, `[apport_lettres_personne_1]`, `[prenom_conjoint]`, `[nom_conjoint]` | Régime matrimonial / conjoint | Bloc activé seulement si régime communautaire = oui. |
 | SCM cession : variables cédant, cessionnaire, société cédée, associés SCM, parts, prix, crédit vendeur et enregistrement | SCM | Bloc distinct de la cession de cabinet ; SELARL réutilisable comme cessionnaire. |
 | Bail : bailleur, locataire, bail, locaux, dates, superficie, loyer | Bail | Bloc activé par cession et documents de bail/cession qui consomment ces champs. |
 | Cession cabinet : vendeur, acquéreur, cabinet, locaux, exercices, prix, prêt, crédit vendeur, salariés, signatures | Cession de cabinet ; Banque / financement ; Bail ; Signature | Champs spécialisés par type médical/dentaire et acte/compromis ; ne pas généraliser aux autres cas. |
-| Dérogation | Conditions spécifiques | La vraie V2 ne fournit pas les variables du formulaire multi-sites et marque `Dérogation SEL BNC` et `Dérogation cumul SELARL BNC` à remplir à la main ; ces documents restent hors génération pilote. |
+| Dérogation | Contexte & scénarios métier | La vraie V2 ne fournit pas les variables du formulaire multi-sites et marque `Dérogation SEL BNC` et `Dérogation cumul SELARL BNC` à remplir à la main ; ces documents restent hors génération pilote. |
 | Lettre d'avertissement conjoint | Régime matrimonial / conjoint | La vraie V2 indique que le document ne figure pas parmi les sources fournies ; tout affichage générable doit porter cette réserve. |

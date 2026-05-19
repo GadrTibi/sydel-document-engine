@@ -49,6 +49,14 @@ class FormBlock:
 
 
 @dataclass(frozen=True)
+class FormStep:
+    key: str
+    label: str
+    description: str
+    block_keys: tuple[str, ...]
+
+
+@dataclass(frozen=True)
 class FormField:
     key: str
     label: str
@@ -94,26 +102,77 @@ class VariableCoverage:
 
 SELARL_BLOCKS: Final[tuple[FormBlock, ...]] = (
     FormBlock("qualification", "Qualification du dossier", "Choix qui pilotent le flux SELARL."),
-    FormBlock("societe", "Société", "Données de la SELARL en création."),
-    FormBlock("siege_social", "Siège social", "Adresse juridique et domiciliation."),
     FormBlock(
         "professionnel_gerant",
         "Fiche Client",
-        "Identité du praticien et du gérant.",
+        "Identité du Praticien et du gérant.",
     ),
-    FormBlock("ordre_professionnel", "Ordre professionnel", "Données ordinales et RPPS."),
-    FormBlock("associes", "Associés", "Associés et répartition du capital."),
-    FormBlock("mandataire_signataire", "Mandataire / signataire", "Signataire et mandataire."),
+    FormBlock(
+        "ordre_professionnel",
+        "Ordre professionnel",
+        "Données ordinales et RPPS du Praticien.",
+    ),
+    FormBlock("societe", "Fiche Société", "Données de la SELARL en création."),
+    FormBlock("siege_social", "Siège social", "Adresse juridique et domiciliation."),
+    FormBlock("associes", "Capital & Associés", "Associés et répartition du capital."),
     FormBlock(
         "regime_conjoint",
         "Régime matrimonial / conjoint",
         "Conjoint et apport commun.",
     ),
+    FormBlock("scm", "SCM", "Cession de parts de SCM vers la SELARL."),
     FormBlock("cession_cabinet", "Cession de cabinet", "Vendeur, acquéreur et cabinet cédé."),
     FormBlock("bail", "Bail", "Bailleur, locataire et locaux loués."),
-    FormBlock("scm", "SCM", "Cession de parts de SCM vers la SELARL."),
     FormBlock("banque_financement", "Banque / financement", "Banque, prêt et crédit vendeur."),
+    FormBlock("mandataire_signataire", "Mandataire / signataire", "Signataire et mandataire."),
     FormBlock("signature", "Signature", "Lieu, date et exemplaires de signature."),
+)
+
+SELARL_FLOW_STEPS: Final[tuple[FormStep, ...]] = (
+    FormStep(
+        "qualification",
+        "Qualification",
+        "Entrée du parcours et conditions qui pilotent les documents.",
+        ("qualification",),
+    ),
+    FormStep(
+        "fiche_client",
+        "Fiche Client / Praticien",
+        "Source de vérité personne avant la société.",
+        ("professionnel_gerant", "ordre_professionnel"),
+    ),
+    FormStep(
+        "fiche_societe",
+        "Fiche Société",
+        "SELARL en création, siège social et domiciliation.",
+        ("societe", "siege_social"),
+    ),
+    FormStep(
+        "capital_associes",
+        "Capital & Associés",
+        "Nombre d'associés, parts et choix du gérant parmi les associés.",
+        ("associes",),
+    ),
+    FormStep(
+        "contexte_scenarios",
+        "Contexte & scénarios métier",
+        "Blocs conditionnels, formalités, signatures et options de dossier.",
+        (
+            "regime_conjoint",
+            "scm",
+            "cession_cabinet",
+            "bail",
+            "banque_financement",
+            "mandataire_signataire",
+            "signature",
+        ),
+    ),
+    FormStep(
+        "documents_generation",
+        "Documents & génération",
+        "Synthèse finale des documents attendus, réserves et génération.",
+        (),
+    ),
 )
 
 SELARL_FIELDS: Final[tuple[FormField, ...]] = (
@@ -220,7 +279,7 @@ SELARL_FIELDS: Final[tuple[FormField, ...]] = (
     FormField(
         "societe.parts",
         "Capital de la SELARL - parts sociales",
-        "societe",
+        "associes",
         ("nb_parts", "nb_parts_total", "valeur_nominale_part"),
         FieldRequirement.CONDITIONAL,
         "PV nomination gérant ou statuts actifs",
@@ -1713,6 +1772,18 @@ def selarl_blocks() -> tuple[FormBlock, ...]:
     return SELARL_BLOCKS
 
 
+def selarl_flow_steps() -> tuple[FormStep, ...]:
+    return SELARL_FLOW_STEPS
+
+
+def selarl_blocks_by_step() -> dict[str, tuple[FormBlock, ...]]:
+    blocks_by_key = {block.key: block for block in SELARL_BLOCKS}
+    return {
+        step.key: tuple(blocks_by_key[block_key] for block_key in step.block_keys)
+        for step in SELARL_FLOW_STEPS
+    }
+
+
 def selarl_fields() -> tuple[FormField, ...]:
     return SELARL_FIELDS
 
@@ -1807,6 +1878,9 @@ def selarl_variable_coverage() -> tuple[VariableCoverage, ...]:
 def validate_selarl_schema() -> tuple[str, ...]:
     issues: list[str] = []
     block_keys = {block.key for block in SELARL_BLOCKS}
+    flow_block_keys = tuple(
+        block_key for step in SELARL_FLOW_STEPS for block_key in step.block_keys
+    )
     required_blocks = {
         "qualification",
         "societe",
@@ -1825,6 +1899,35 @@ def validate_selarl_schema() -> tuple[str, ...]:
     missing_blocks = sorted(required_blocks - block_keys)
     if missing_blocks:
         issues.append(f"Blocs SELARL manquants: {', '.join(missing_blocks)}")
+
+    unknown_flow_blocks = sorted(set(flow_block_keys) - block_keys)
+    if unknown_flow_blocks:
+        issues.append(
+            "Blocs SELARL inconnus dans le flow: " + ", ".join(unknown_flow_blocks)
+        )
+    missing_flow_blocks = sorted(block_keys - set(flow_block_keys))
+    if missing_flow_blocks:
+        issues.append(
+            "Blocs SELARL absents du flow: " + ", ".join(missing_flow_blocks)
+        )
+    duplicate_flow_blocks = sorted(
+        {block_key for block_key in flow_block_keys if flow_block_keys.count(block_key) > 1}
+    )
+    if duplicate_flow_blocks:
+        issues.append(
+            "Blocs SELARL dupliques dans le flow: " + ", ".join(duplicate_flow_blocks)
+        )
+    expected_flow_labels = (
+        "Qualification",
+        "Fiche Client / Praticien",
+        "Fiche Société",
+        "Capital & Associés",
+        "Contexte & scénarios métier",
+        "Documents & génération",
+    )
+    actual_flow_labels = tuple(step.label for step in SELARL_FLOW_STEPS)
+    if actual_flow_labels != expected_flow_labels:
+        issues.append("Ordre du flow SELARL non conforme a l'arbitrage metier.")
 
     for field in SELARL_FIELDS:
         if field.block_key not in block_keys:

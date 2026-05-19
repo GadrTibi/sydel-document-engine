@@ -5,6 +5,8 @@
 
 
 ## Dernier ticket terminé
+SELARL-FLOW-REALIGN-001 : réalignement de l'ordre conceptuel SELARL dans le schéma et les projections métier. Le flow cible est désormais explicite : Qualification, Fiche Client / Praticien, Fiche Société, Capital & Associés, Contexte & scénarios métier, Documents & génération. `src/sydel_doc_engine/app/selarl_form_schema.py` expose `FormStep`, `SELARL_FLOW_STEPS` et `selarl_blocks_by_step()`, `src/sydel_doc_engine/app/business_wizard.py` expose les projections par étape, les specs actives sont mises à jour in-place et le rapport est `docs/review/selarl_flow_realign_001_report_v1.md`. Aucun générateur, moteur DOCX/PDF/ZIP, `case_catalog.py`, mode SCI ou wording juridique n'a été modifié. `streamlit_app.py` n'a pas été touché ; l'UI visible reste non validée produit et ne doit pas être poussée ou redéployée avant les tickets REUSE puis UI. Ruff OK et pytest OK avec 245 tests passés.
+
 SELARL-WORDING-REALIGN-001 : réalignement du vocabulaire visible SELARL sur les arbitrages associé. L'écran personne visible devient `Fiche Client`, le terme pivot devient `Praticien`, les rôles `Gérant`, `Associé`, `Signataire` et `Mandataire` restent conservés selon contexte, et les specs actives sont mises à jour in-place. Aucun générateur, moteur DOCX/PDF/ZIP, `case_catalog.py`, ordre d'écran ou règle de réutilisation fonctionnelle n'a été modifié. Rapport : `docs/review/selarl_wording_realign_001_report_v1.md`. Ruff OK et pytest OK avec 241 tests passés.
 
 SELARL-PLAN-CORRECTION-001 : correction documentaire de la planification SELARL selon les arbitrages explicites de l'associé. La hiérarchie de sources place désormais les arbitrages associé avant NotebookLM, puis V3, templates/registre et code existant. Le rapport de réconciliation et le backlog ont été resserrés autour de `Fiche Client`, `Praticien` et `Dossier unipersonnel`, avec retrait du mode Projet / filigrane V1, retrait de la couche statut documentaire lourde et sortie du mandataire des priorités UX hors variables ou documents liés. Aucun fichier Python, générateur, moteur DOCX/PDF/ZIP ou UI n'a été modifié ; aucun test code lancé car les modifications sont documentaires.
@@ -85,7 +87,8 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
 - Le rapport d'écarts NotebookLM / V3 / code corrigé est disponible dans `docs/review/selarl_notebooklm_reconciliation_001_report_v1.md`.
 - Le backlog de reconstruction contrôlée SELARL V2 corrigé est disponible dans `docs/project/SELARL_REBUILD_BACKLOG_V2.md`.
 - `SELARL-DOCS-GENERATION-SMOKE-001` est bloqué et remplacé par `SELARL-SMOKE-REALISTIC-001` après réalignement wording / flow / règles de réutilisation / UI.
-- `SELARL-WORDING-REALIGN-001` est DONE ; le prochain ticket SELARL recommandé est `SELARL-FLOW-REALIGN-001`.
+- `SELARL-WORDING-REALIGN-001` est DONE.
+- `SELARL-FLOW-REALIGN-001` est DONE ; le prochain ticket SELARL recommandé est `SELARL-REUSE-RULES-REALIGN-001`.
 - Le protocole réplicable de construction de processus est disponible dans `docs/project/PROCESS_BUILD_PROTOCOL_V1.md`.
 - Les specs SELARL pilote sont disponibles :
   - `docs/project/SELARL_PROCESS_SPEC_V1.md` ;
@@ -136,7 +139,8 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
 - `SELARL-UI-WIZARD-IMPL-001` est DONE techniquement ; il n'a pas modifié les générateurs ni le moteur DOCX/PDF/ZIP et conserve SCI ainsi que le mode Technique / diagnostic, mais il n'est pas validé produit.
 - `SELARL-PLAN-CORRECTION-001` est DONE ; la séquence SELARL cible est `WORDING -> FLOW -> REUSE -> UI -> SMOKE -> JURIST`.
 - `SELARL-WORDING-REALIGN-001` est DONE ; le vocabulaire visible est réaligné, sans changement de flow ni de génération.
-- Tickets READY confirmés : `CLOSE-PROJECT-V1-001`, `SELARL-FLOW-REALIGN-001`.
+- `SELARL-FLOW-REALIGN-001` est DONE ; le flow conceptuel est réaligné dans le schéma et les projections métier, sans refonte Streamlit visible.
+- Tickets READY confirmés : `CLOSE-PROJECT-V1-001`, `SELARL-REUSE-RULES-REALIGN-001`.
 - Le cadrage métier de la famille `PV nomination gérant` est disponible dans `docs/delivery/lot_02_pv_nomination_gerant_cadrage_v1.md`.
 - La spec canonique V1 de la famille `PV nomination gérant` est disponible dans `docs/delivery/lot_02_pv_nomination_gerant_spec_canonique_v1.md`.
 - La spec texte V1 de la famille `PV nomination gérant` est disponible dans `docs/delivery/lot_02_pv_nomination_gerant_spec_texte_v1.md`.
@@ -868,6 +872,8 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
 - SELARL-FORM-SCHEMA-IMPL-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 231 tests passés.
 - SELARL-UI-WIZARD-IMPL-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
 - SELARL-UI-WIZARD-IMPL-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 239 tests passés.
+- SELARL-FLOW-REALIGN-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
+- SELARL-FLOW-REALIGN-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 245 tests passés.
 
 ## Recommandation immédiate suivante
-Ouvrir `SELARL-FLOW-REALIGN-001` pour réaligner l'ordre du formulaire SELARL, sans toucher aux générateurs ni au moteur DOCX/PDF/ZIP. Ne pas pousser ni redéployer l'UI SELARL actuelle avant la fin du réalignement produit.
+Ouvrir `SELARL-REUSE-RULES-REALIGN-001` pour traiter `Dossier unipersonnel` et les réutilisations contrôlées SELARL, sans toucher aux générateurs ni au moteur DOCX/PDF/ZIP. Ne pas pousser ni redéployer l'UI SELARL actuelle avant la fin du réalignement produit.

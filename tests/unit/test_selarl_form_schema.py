@@ -8,9 +8,11 @@ from sydel_doc_engine.app.selarl_form_schema import (
     VariableCoverageStatus,
     all_selarl_v2_variables,
     selarl_blocks,
+    selarl_blocks_by_step,
     selarl_document_specs,
     selarl_expected_documents,
     selarl_fields,
+    selarl_flow_steps,
     selarl_generable_document_codes,
     selarl_required_conditions,
     selarl_reuse_rules,
@@ -22,6 +24,42 @@ from sydel_doc_engine.domain.case_catalog import DocumentAvailability
 
 def test_selarl_schema_validation_has_no_internal_issue() -> None:
     assert validate_selarl_schema() == ()
+
+
+def test_selarl_flow_steps_follow_business_order() -> None:
+    assert [step.label for step in selarl_flow_steps()] == [
+        "Qualification",
+        "Fiche Client / Praticien",
+        "Fiche Société",
+        "Capital & Associés",
+        "Contexte & scénarios métier",
+        "Documents & génération",
+    ]
+
+    step_keys = [step.key for step in selarl_flow_steps()]
+    assert step_keys.index("fiche_client") < step_keys.index("fiche_societe")
+    assert step_keys.index("capital_associes") < step_keys.index("contexte_scenarios")
+    assert step_keys[-1] == "documents_generation"
+
+
+def test_selarl_flow_steps_group_existing_blocks_once() -> None:
+    blocks_by_step = selarl_blocks_by_step()
+
+    assert [block.key for block in blocks_by_step["fiche_client"]] == [
+        "professionnel_gerant",
+        "ordre_professionnel",
+    ]
+    assert [block.key for block in blocks_by_step["fiche_societe"]] == [
+        "societe",
+        "siege_social",
+    ]
+    assert [block.key for block in blocks_by_step["capital_associes"]] == ["associes"]
+    assert blocks_by_step["documents_generation"] == ()
+
+    grouped_block_keys = [
+        block.key for blocks in blocks_by_step.values() for block in blocks
+    ]
+    assert grouped_block_keys == [block.key for block in selarl_blocks()]
 
 
 def test_required_business_blocks_exist() -> None:

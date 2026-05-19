@@ -21,7 +21,9 @@ from sydel_doc_engine.app.business_wizard import (
     selarl_ui_block_visibility,
     selarl_ui_condition_specs,
     selarl_ui_document_specs,
+    selarl_ui_flow_steps,
     selarl_ui_reuse_rules,
+    selarl_ui_visible_fields_by_step,
 )
 from sydel_doc_engine.app.ui_runtime import (
     generate_docx_files_for_document_codes,
@@ -272,6 +274,49 @@ def test_streamlit_selarl_path_uses_business_wording() -> None:
     assert banned not in app_source.casefold()
     assert "Ecran 3 - Fiche Client" in app_source
     assert "Praticien" in app_source
+
+
+def test_selarl_ui_flow_steps_follow_business_order() -> None:
+    labels = [step.label for step in selarl_ui_flow_steps()]
+
+    assert labels == [
+        "Qualification",
+        "Fiche Client / Praticien",
+        "Fiche Société",
+        "Capital & Associés",
+        "Contexte & scénarios métier",
+        "Documents & génération",
+    ]
+    assert labels.index("Fiche Client / Praticien") < labels.index("Fiche Société")
+    assert labels.index("Capital & Associés") < labels.index(
+        "Contexte & scénarios métier"
+    )
+    assert labels[-1] == "Documents & génération"
+
+
+def test_selarl_ui_visible_fields_by_step_groups_business_blocks() -> None:
+    data = _case_data(
+        "SELARL",
+        profession="medecin",
+        site_distinct=False,
+        scm_cession=True,
+        regime_communautaire=True,
+        derogation=False,
+        cession=True,
+        cabinet_type="medical",
+    )
+
+    fields_by_step = selarl_ui_visible_fields_by_step(data)
+
+    assert fields_by_step["fiche_client"][0].key.startswith("professionnel.")
+    assert any(field.block_key == "ordre_professionnel" for field in fields_by_step["fiche_client"])
+    assert fields_by_step["fiche_societe"][0].key.startswith("societe.")
+    assert any(field.block_key == "siege_social" for field in fields_by_step["fiche_societe"])
+    assert all(
+        field.block_key == "associes" for field in fields_by_step["capital_associes"]
+    )
+    assert fields_by_step["contexte_scenarios"]
+    assert fields_by_step["documents_generation"] == ()
 
 
 def test_selarl_ui_address_labels_are_qualified() -> None:

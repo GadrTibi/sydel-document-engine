@@ -9,12 +9,14 @@ from pydantic import ValidationError
 
 from sydel_doc_engine.app.selarl_form_schema import (
     FormField,
+    FormStep,
     ReuseRule,
     SelarlDocumentSpec,
     selarl_blocks,
     selarl_document_specs,
     selarl_fields,
     selarl_fields_by_block,
+    selarl_flow_steps,
     selarl_reuse_rules,
 )
 from sydel_doc_engine.domain.case_catalog import (
@@ -72,10 +74,10 @@ STATUS_LABELS: Final[dict[str, str]] = {
 
 SELARL_ALWAYS_VISIBLE_BLOCK_KEYS: Final[tuple[str, ...]] = (
     "qualification",
-    "societe",
-    "siege_social",
     "professionnel_gerant",
     "ordre_professionnel",
+    "societe",
+    "siege_social",
     "associes",
     "mandataire_signataire",
     "signature",
@@ -391,6 +393,24 @@ def selarl_ui_visible_fields_by_block(
         block_key: fields
         for block_key, fields in fields_by_block.items()
         if visibility.get(block_key, False)
+    }
+
+
+def selarl_ui_flow_steps() -> tuple[FormStep, ...]:
+    return selarl_flow_steps()
+
+
+def selarl_ui_visible_fields_by_step(
+    data: BusinessWizardInput,
+) -> dict[str, tuple[FormField, ...]]:
+    fields_by_block = selarl_ui_visible_fields_by_block(data)
+    return {
+        step.key: tuple(
+            field
+            for block_key in step.block_keys
+            for field in fields_by_block.get(block_key, ())
+        )
+        for step in selarl_flow_steps()
     }
 
 
