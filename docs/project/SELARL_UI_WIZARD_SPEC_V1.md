@@ -164,27 +164,27 @@ Règles :
 - PDF reste optionnel ;
 - documents manuels restent listés comme pièces attendues hors automatisation.
 
-Le rendu Streamlit déjà committé n'est pas encore validé produit et ne doit pas être poussé ou redéployé comme parcours cible tant que `SELARL-REUSE-RULES-REALIGN-001` puis `SELARL-UI-REALIGN-001` ne sont pas terminés.
+Le rendu Streamlit SELARL a été réaligné par `SELARL-UI-REALIGN-001`. Il consomme désormais les titres d'écrans, champs visibles et projections de réutilisation issus du schéma et de `business_wizard.py`. Il ne doit toutefois pas être poussé ou redéployé avant `SELARL-SMOKE-REALISTIC-001`.
 
 ## Écarts UI actuelle vs cible SELARL
 
 | Écart | Constat actuel | Cible SELARL |
 |---|---|---|
 | Logique de saisie | Le formulaire part des documents prêts `DOC-001` à `DOC-004`. | Le formulaire part du processus SELARL et de ses conditions. |
-| Ordre du parcours | Le commit UI technique peut encore afficher la société avant la Fiche Client tant que `SELARL-UI-REALIGN-001` n'est pas fait. | Qualification, Fiche Client / Praticien, Fiche Société, Capital & Associés, Contexte & scénarios métier, Documents & génération. |
+| Ordre du parcours | Corrigé par `SELARL-UI-REALIGN-001` : la Fiche Client précède la Fiche Société. | Qualification, Fiche Client / Praticien, Fiche Société, Capital & Associés, Contexte & scénarios métier, Documents & génération. |
 | Libellé personne | Corrigé par `SELARL-WORDING-REALIGN-001`. | `Fiche Client` pour l'écran personne et `Gérant` pour le rôle juridique SELARL. |
-| Double saisie | Signataire, dirigeant et associé peuvent être saisis séparément sans lien UX. | `Dossier unipersonnel` pour le cas pivot, puis options explicites de copie hors défaut. |
+| Double saisie | Corrigé par `SELARL-UI-REALIGN-001` : `Dossier unipersonnel` est exposé dans la qualification et verrouille le cas pivot. | `Dossier unipersonnel` pour le cas pivot, puis options explicites de copie hors défaut. |
 | Adresse ambiguë | Plusieurs champs courts `Numero`, `Voie`, `Code postal`, `Ville` sans toujours rappeler le contexte. | Labels qualifiés : siège, personnelle, cabinet, bailleur, banque, SCM, etc. |
 | Documents contextualisés | Documents attendus affichés, mais beaucoup restent `Contexte incomplet pour génération V2`. | Documents regroupés par blocs métier avec champs manquants lisibles. |
-| PV emprunt | Checkbox UI `PV avec autorisation d'emprunt` peut être interprétée comme un document. | Option conditionnelle du PV nomination gérant seulement. |
-| Cession SELARL | Le formulaire ne collecte pas encore les champs cession, bail, banque et cabinet. | Bloc cession complet conditionné par `cession = oui`. |
-| SCM cession | Le formulaire ne collecte pas encore les champs SCM cession. | Bloc SCM distinct de la cession de cabinet. |
-| Régime communautaire | Champs conjoint/apport absents du pilote assistant. | Bloc régime matrimonial / conjoint. |
+| PV emprunt | Corrigé : l'emprunt est affiché comme option du `DOC-004`, pas comme document autonome. | Option conditionnelle du PV nomination gérant seulement. |
+| Cession SELARL | Le bloc cession, bail et banque est conditionné par `cession = oui`. | Bloc cession complet conditionné par `cession = oui`. |
+| SCM cession | Le bloc SCM reste distinct et la SELARL cessionnaire est une option explicite. | Bloc SCM distinct de la cession de cabinet. |
+| Régime communautaire | Le bloc conjoint/apport est conditionné par régime communautaire. | Bloc régime matrimonial / conjoint. |
 | Dérogation | Le catalogue V1 exposait `DOC-013` et `DOC-014` comme formulaires à compléter. | Dans le pilote SELARL vérifié, le formulaire multi-sites est hors génération faute de variables V2 et `Dérogation cumul SELARL BNC` est manuel. |
 | Lettre d'avertissement conjoint | Le moteur expose `DOC-006` comme générable. | L'écran doit afficher une réserve source V2 : le document ne figure pas parmi les sources fournies. |
 | Documents à retirer du pilote | Aucun document autonome d'autorisation d'emprunt ne doit être ajouté. | Ne montrer que les documents SELARL attendus par la V2. |
 
-## Critères d'acceptation UI futur
+## Critères d'acceptation UI réaligné
 
 - L'écran 1 permet de reproduire la sélection SELARL du catalogue.
 - Aucun champ UI ne s'appelle seulement `adresse`.

@@ -5,6 +5,8 @@
 
 
 ## Dernier ticket terminé
+SELARL-UI-REALIGN-001 : réalignement du parcours Streamlit visible SELARL sur le wording, le flow et les règles de réutilisation corrigés. Le parcours affiche désormais : Écran 1 — Qualification, Écran 2 — Fiche Client, Écran 3 — Fiche Société, Écran 4 — Capital & Associés, Écran 5 — Contexte & scénarios métier, Écran 6 — Documents & génération. `Dossier unipersonnel` est exposé en qualification et verrouille le cas Praticien = associé unique = gérant = signataire. Le mandataire est relégué dans un bloc secondaire replié et n'est pas assimilé au signataire par défaut. `DOC-006` garde sa réserve, `DOC-013` et `DOC-014` restent visibles mais non générables, et l'emprunt reste une option du `DOC-004`. Aucun générateur, moteur DOCX/PDF/ZIP, `case_catalog.py`, parcours SCI ou mode `Technique / diagnostic` n'a été modifié. Rapport : `docs/review/selarl_ui_realign_001_report_v1.md`. Ruff OK et pytest OK avec 257 tests passés.
+
 SELARL-REUSE-RULES-REALIGN-001 : réalignement des règles de réutilisation SELARL dans le schéma et les projections métier. `Dossier unipersonnel` est désormais la règle pivot : quand l'option est active, le Praticien alimente l'associé unique, le gérant et le signataire ; quand elle est inactive, aucune dérivation n'est imposée. Les options SELARL acquéreur, SELARL cessionnaire SCM et domiciliation = siège restent explicites. Le mandataire ne dérive plus du signataire par défaut, les relations vendeur / locataire, siège / lieu d'exercice / cabinet, vendeur / Praticien et cédant SCM / Praticien sont documentées comme non automatiques. Rapport : `docs/review/selarl_reuse_rules_realign_001_report_v1.md`. Aucun générateur, moteur DOCX/PDF/ZIP, `case_catalog.py` ou `streamlit_app.py` n'a été modifié. Ruff OK et pytest OK avec 252 tests passés.
 
 SELARL-FLOW-REALIGN-001 : réalignement de l'ordre conceptuel SELARL dans le schéma et les projections métier. Le flow cible est désormais explicite : Qualification, Fiche Client / Praticien, Fiche Société, Capital & Associés, Contexte & scénarios métier, Documents & génération. `src/sydel_doc_engine/app/selarl_form_schema.py` expose `FormStep`, `SELARL_FLOW_STEPS` et `selarl_blocks_by_step()`, `src/sydel_doc_engine/app/business_wizard.py` expose les projections par étape, les specs actives sont mises à jour in-place et le rapport est `docs/review/selarl_flow_realign_001_report_v1.md`. Aucun générateur, moteur DOCX/PDF/ZIP, `case_catalog.py`, mode SCI ou wording juridique n'a été modifié. `streamlit_app.py` n'a pas été touché ; l'UI visible reste non validée produit et ne doit pas être poussée ou redéployée avant le ticket UI dédié. Ruff OK et pytest OK avec 245 tests passés.
@@ -91,7 +93,8 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
 - `SELARL-DOCS-GENERATION-SMOKE-001` est bloqué et remplacé par `SELARL-SMOKE-REALISTIC-001` après réalignement wording / flow / règles de réutilisation / UI.
 - `SELARL-WORDING-REALIGN-001` est DONE.
 - `SELARL-FLOW-REALIGN-001` est DONE.
-- `SELARL-REUSE-RULES-REALIGN-001` est DONE ; le prochain ticket SELARL recommandé est `SELARL-UI-REALIGN-001`.
+- `SELARL-REUSE-RULES-REALIGN-001` est DONE.
+- `SELARL-UI-REALIGN-001` est DONE ; le prochain ticket SELARL recommandé est `SELARL-SMOKE-REALISTIC-001`.
 - Le protocole réplicable de construction de processus est disponible dans `docs/project/PROCESS_BUILD_PROTOCOL_V1.md`.
 - Les specs SELARL pilote sont disponibles :
   - `docs/project/SELARL_PROCESS_SPEC_V1.md` ;
@@ -144,7 +147,8 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
 - `SELARL-WORDING-REALIGN-001` est DONE ; le vocabulaire visible est réaligné, sans changement de flow ni de génération.
 - `SELARL-FLOW-REALIGN-001` est DONE ; le flow conceptuel est réaligné dans le schéma et les projections métier, sans refonte Streamlit visible.
 - `SELARL-REUSE-RULES-REALIGN-001` est DONE ; `Dossier unipersonnel` et les options explicites sont dans le schéma et les projections métier, sans refonte Streamlit visible.
-- Tickets READY confirmés : `CLOSE-PROJECT-V1-001`, `SELARL-UI-REALIGN-001`.
+- `SELARL-UI-REALIGN-001` est DONE ; le rendu Streamlit SELARL visible suit le flow, expose `Dossier unipersonnel` et conserve le mandataire secondaire.
+- Tickets READY confirmés : `CLOSE-PROJECT-V1-001`, `SELARL-SMOKE-REALISTIC-001`.
 - Le cadrage métier de la famille `PV nomination gérant` est disponible dans `docs/delivery/lot_02_pv_nomination_gerant_cadrage_v1.md`.
 - La spec canonique V1 de la famille `PV nomination gérant` est disponible dans `docs/delivery/lot_02_pv_nomination_gerant_spec_canonique_v1.md`.
 - La spec texte V1 de la famille `PV nomination gérant` est disponible dans `docs/delivery/lot_02_pv_nomination_gerant_spec_texte_v1.md`.
@@ -881,6 +885,9 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
 - SELARL-REUSE-RULES-REALIGN-001 : `.\.venv\Scripts\python.exe -m pytest tests/unit/test_selarl_form_schema.py tests/unit/test_business_wizard.py` OK, 48 tests passés.
 - SELARL-REUSE-RULES-REALIGN-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
 - SELARL-REUSE-RULES-REALIGN-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 252 tests passés.
+- SELARL-UI-REALIGN-001 : `.\.venv\Scripts\python.exe -m pytest tests/unit/test_business_wizard.py` OK, 34 tests passés.
+- SELARL-UI-REALIGN-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
+- SELARL-UI-REALIGN-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 257 tests passés.
 
 ## Recommandation immédiate suivante
-Ouvrir `SELARL-UI-REALIGN-001` pour réaligner le parcours Streamlit visible sur `Fiche Client`, `Praticien`, le flow en six étapes et `Dossier unipersonnel`, sans toucher aux générateurs ni au moteur DOCX/PDF/ZIP. Ne pas pousser ni redéployer l'UI SELARL actuelle avant la fin du réalignement UI puis smoke réaliste.
+Ouvrir `SELARL-SMOKE-REALISTIC-001` pour smoke tester le parcours SELARL réaligné avec des données réalistes, sans toucher aux générateurs ni au moteur DOCX/PDF/ZIP. Ne pas pousser ni redéployer l'UI SELARL actuelle avant ce smoke réaliste.

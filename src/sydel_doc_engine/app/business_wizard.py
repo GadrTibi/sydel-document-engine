@@ -414,6 +414,20 @@ def selarl_ui_flow_steps() -> tuple[FormStep, ...]:
     return selarl_flow_steps()
 
 
+def selarl_ui_visible_screen_title(step_key: str) -> str:
+    for index, step in enumerate(selarl_ui_flow_steps(), start=1):
+        if step.key == step_key:
+            visible_label = "Fiche Client" if step.key == "fiche_client" else step.label
+            return f"Écran {index} — {visible_label}"
+    raise KeyError(f"Étape SELARL inconnue: {step_key}")
+
+
+def selarl_ui_visible_screen_titles() -> tuple[str, ...]:
+    return tuple(
+        selarl_ui_visible_screen_title(step.key) for step in selarl_ui_flow_steps()
+    )
+
+
 def selarl_ui_visible_fields_by_step(
     data: BusinessWizardInput,
 ) -> dict[str, tuple[FormField, ...]]:

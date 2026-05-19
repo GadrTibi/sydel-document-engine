@@ -21,11 +21,13 @@ from sydel_doc_engine.app.business_wizard import (
     selarl_ui_block_visibility,
     selarl_ui_condition_specs,
     selarl_ui_document_specs,
+    selarl_ui_field,
     selarl_ui_flow_steps,
     selarl_ui_non_automatic_reuse_relations,
     selarl_ui_reuse_projection,
     selarl_ui_reuse_rules,
     selarl_ui_visible_fields_by_step,
+    selarl_ui_visible_screen_titles,
 )
 from sydel_doc_engine.app.ui_runtime import (
     generate_docx_files_for_document_codes,
@@ -274,8 +276,60 @@ def test_streamlit_selarl_path_uses_business_wording() -> None:
 
     assert "Dirigeant / pharmacien" not in app_source
     assert banned not in app_source.casefold()
-    assert "Ecran 3 - Fiche Client" in app_source
+    assert "Écran 3 — Fiche Client" not in app_source
+    assert "selarl_ui_visible_screen_title(\"fiche_client\")" in app_source
     assert "Praticien" in app_source
+
+
+def test_selarl_visible_screen_titles_follow_business_order() -> None:
+    assert selarl_ui_visible_screen_titles() == (
+        "Écran 1 — Qualification",
+        "Écran 2 — Fiche Client",
+        "Écran 3 — Fiche Société",
+        "Écran 4 — Capital & Associés",
+        "Écran 5 — Contexte & scénarios métier",
+        "Écran 6 — Documents & génération",
+    )
+
+
+def test_streamlit_selarl_path_consumes_schema_and_reuse_projections() -> None:
+    app_source = Path("src/sydel_doc_engine/app/streamlit_app.py").read_text(encoding="utf-8")
+
+    assert "selarl_ui_visible_screen_title(" in app_source
+    assert "selarl_ui_visible_fields_by_step(" in app_source
+    assert "selarl_ui_reuse_projection(" in app_source
+    assert "selarl_ui_reuse_rules()" in app_source
+    assert "selarl_ui_document_specs()" in app_source
+
+
+def test_streamlit_selarl_path_exposes_dossier_unipersonnel() -> None:
+    app_source = Path("src/sydel_doc_engine/app/streamlit_app.py").read_text(encoding="utf-8")
+
+    assert "qualification.dossier_unipersonnel" in app_source
+    assert selarl_ui_field("qualification.dossier_unipersonnel").label == (
+        "Dossier unipersonnel"
+    )
+    assert "Le Praticien est l’associé unique, le gérant et le signataire" in app_source
+    assert "selarl_dossier_unipersonnel=selarl_dossier_unipersonnel" in app_source
+
+
+def test_streamlit_selarl_mandataire_is_secondary_and_not_default() -> None:
+    app_source = Path("src/sydel_doc_engine/app/streamlit_app.py").read_text(encoding="utf-8")
+
+    assert "Mandataire (DOC-034 / formalité)" in app_source
+    assert "expanded=False" in app_source
+    assert "Le mandataire n’est pas assimilé au signataire par défaut." in app_source
+    assert 'value=reuse_rules["mandataire_is_signataire"].default_enabled' in app_source
+
+
+def test_streamlit_selarl_documents_and_generation_share_screen_six() -> None:
+    app_source = Path("src/sydel_doc_engine/app/streamlit_app.py").read_text(encoding="utf-8")
+
+    assert 'selarl_ui_visible_screen_title("documents_generation")' in app_source
+    assert "Ecran 7" not in app_source
+    assert "Écran 7" not in app_source
+    assert "PV d'autorisation d'emprunt" not in app_source
+    assert "Emprunt autorise dans le PV nomination gerant (DOC-004)" in app_source
 
 
 def test_selarl_ui_flow_steps_follow_business_order() -> None:
