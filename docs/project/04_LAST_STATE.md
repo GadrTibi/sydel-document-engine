@@ -5,6 +5,8 @@
 
 
 ## Dernier ticket terminé
+SELARL-NOTEBOOKLM-RECONCILIATION-001 : réconciliation documentaire du pilote SELARL avec la nouvelle hiérarchie NotebookLM / V3 / templates / code. Les sources validées par l'utilisateur ont été normalisées et committées sous `project/source_truth/notebooklm_selarl_10_prompts_v1.md` et `project/source_truth/Documents_a_generer_par_cas_V3.docx` dans le commit source `f1da08b`. Le ticket crée `docs/project/SELARL_SOURCE_HIERARCHY_V2.md`, `docs/review/selarl_notebooklm_reconciliation_001_report_v1.md` et `docs/project/SELARL_REBUILD_BACKLOG_V2.md`, puis bloque le smoke SELARL prématuré au profit d'une reconstruction contrôlée : wording, flow, réutilisations, statuts documentaires, réparation UI, smoke réaliste, revue juriste. Aucun fichier Python, générateur, moteur DOCX/PDF/ZIP ou UI n'a été modifié ; aucun test code lancé car les modifications finales sont documentaires.
+
 SELARL-UI-WIZARD-IMPL-001 : branchement du mode `Assistant metier` Streamlit sur le schema machine-readable SELARL, ajout d'un parcours pilote en ecrans qualification / societe / professionnel principal et gerant / associes / conditions specifiques / documents attendus / generation, consommation des labels, blocs, regles de reutilisation et documents issus de `src/sydel_doc_engine/app/selarl_form_schema.py` via `business_wizard.py`, conservation du mode SCI et du mode `Technique / diagnostic`, affichage de `DOC-006` avec reserve source V2, `DOC-013` et `DOC-014` visibles mais `MANUAL_ONLY` et exclus de la generation, rapport `docs/review/selarl_ui_wizard_impl_001_report_v1.md`, ruff OK et pytest OK avec 239 tests passes.
 
 SELARL-FORM-SCHEMA-IMPL-001 : implémentation du schéma de données SELARL côté Assistant métier depuis la vraie source V2 `project/source_truth/Documents_a_generer_par_cas_V2.docx`, ajout de `src/sydel_doc_engine/app/selarl_form_schema.py`, couverture machine-readable des blocs métier, champs qualifiés, règles de réutilisation, documents attendus et variables V2, ajout de la réserve source V2 exploitable sur `DOC-006`, clarification finale de `DOC-013` / `DOC-014` comme `MANUAL_ONLY` hors génération pilote, rapport `docs/review/selarl_form_schema_impl_001_report_v1.md`, ruff OK et pytest OK avec 231 tests passés.
@@ -72,6 +74,14 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
 - La couche metier catalogue des cas est disponible dans `src/sydel_doc_engine/domain/case_catalog.py` : elle expose `CaseType`, `CaseCondition`, `DocumentOccurrence`, `DocumentAvailability`, `ExpectedDocument` et `get_expected_documents(...)`.
 - Le catalogue metier couvre 8 familles, 104 occurrences source et 46 documents attendus uniques : 43 documents restent mappes a un `DOC-XXX`, mais après vérification de la vraie V2 SELARL seuls 41 sont `GENERATABLE`, 4 sont `MANUAL_ONLY`, 1 est `NOT_IMPLEMENTED`, 0 `NEEDS_MAPPING`.
 - La vraie source V2 du cadrage produit SELARL est disponible dans `project/source_truth/Documents_a_generer_par_cas_V2.docx` avec hash SHA-256 `2E9843AA1EC05A01D82DF5FCE12516A8EF49EA2B3842547D186204218C90B23F`.
+- Les nouvelles sources SELARL validées pour la réconciliation NotebookLM sont disponibles :
+  - `project/source_truth/notebooklm_selarl_10_prompts_v1.md` ;
+  - `project/source_truth/Documents_a_generer_par_cas_V3.docx`.
+- La hiérarchie de sources SELARL V2 est disponible dans `docs/project/SELARL_SOURCE_HIERARCHY_V2.md`.
+- Le rapport d'écarts NotebookLM / V3 / code est disponible dans `docs/review/selarl_notebooklm_reconciliation_001_report_v1.md`.
+- Le backlog de reconstruction contrôlée SELARL V2 est disponible dans `docs/project/SELARL_REBUILD_BACKLOG_V2.md`.
+- `SELARL-DOCS-GENERATION-SMOKE-001` est bloqué : le smoke réaliste doit attendre le réalignement wording / flow / règles de réutilisation / statuts documentaires.
+- `SELARL-WORDING-REALIGN-001` est le prochain ticket SELARL recommandé.
 - Le protocole réplicable de construction de processus est disponible dans `docs/project/PROCESS_BUILD_PROTOCOL_V1.md`.
 - Les specs SELARL pilote sont disponibles :
   - `docs/project/SELARL_PROCESS_SPEC_V1.md` ;
@@ -120,7 +130,7 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
 - `SELARL-PILOT-SOURCE-VERIFY-001` est DONE ; il n'a pas modifié l'UI, le moteur DOCX/PDF/ZIP ni les générateurs, mais il a aligné le catalogue produit SELARL sur la vraie V2.
 - `SELARL-FORM-SCHEMA-IMPL-001` est DONE ; il n'a pas modifié l'UI visible, le moteur DOCX/PDF/ZIP ni les générateurs.
 - `SELARL-UI-WIZARD-IMPL-001` est DONE ; il n'a pas modifié les générateurs ni le moteur DOCX/PDF/ZIP et conserve SCI ainsi que le mode Technique / diagnostic.
-- Tickets READY confirmés : `CLOSE-PROJECT-V1-001`, `SELARL-DOCS-GENERATION-SMOKE-001`.
+- Tickets READY confirmés : `CLOSE-PROJECT-V1-001`, `SELARL-WORDING-REALIGN-001`.
 - Le cadrage métier de la famille `PV nomination gérant` est disponible dans `docs/delivery/lot_02_pv_nomination_gerant_cadrage_v1.md`.
 - La spec canonique V1 de la famille `PV nomination gérant` est disponible dans `docs/delivery/lot_02_pv_nomination_gerant_spec_canonique_v1.md`.
 - La spec texte V1 de la famille `PV nomination gérant` est disponible dans `docs/delivery/lot_02_pv_nomination_gerant_spec_texte_v1.md`.
@@ -854,4 +864,4 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
 - SELARL-UI-WIZARD-IMPL-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 239 tests passés.
 
 ## Recommandation immédiate suivante
-Ouvrir `SELARL-DOCS-GENERATION-SMOKE-001` pour tester le parcours SELARL avec des données réalistes, confirmer les documents réellement générés, vérifier que `DOC-013` et `DOC-014` restent exclus, et documenter les champs encore `Contexte incomplet pour génération V2`.
+Ouvrir `SELARL-WORDING-REALIGN-001` pour remplacer les libellés visibles `professionnel principal` par `Praticien` / `Fiche Client` / rôles juridiques exacts, puis poursuivre la reconstruction contrôlée avant tout smoke SELARL réaliste.

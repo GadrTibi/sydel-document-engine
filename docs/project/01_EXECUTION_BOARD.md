@@ -135,7 +135,15 @@
 | SELARL-PILOT-SOURCE-VERIFY-001 | DONE | Réconcilier les specs SELARL avec la vraie source V2 | vraie V2 `project/source_truth/Documents_a_generer_par_cas_V2.docx` + specs SELARL + catalogue | matrice d'écarts + statuts dérogation corrigés + specs alignées + tests |
 | SELARL-FORM-SCHEMA-IMPL-001 | DONE | Implémenter le schéma de données SELARL côté Assistant métier | vraie V2 + specs SELARL + catalogue corrigé | module `selarl_form_schema.py` + réserve DOC-006 + couverture variables V2 + tests + rapport |
 | SELARL-UI-WIZARD-IMPL-001 | DONE | Brancher l'UI Assistant métier sur le schéma SELARL | `selarl_form_schema.py` + spec UI SELARL | parcours SELARL visible, documents manuels visibles mais exclus de la génération + tests + rapport |
-| SELARL-DOCS-GENERATION-SMOKE-001 | READY | Smoke tester la génération SELARL depuis le parcours Assistant métier | parcours SELARL + catalogue + schema + contextes réalistes | rapport de smoke documents prêts / incomplets, DOC-013/DOC-014 exclus, revue des champs manquants |
+| SELARL-NOTEBOOKLM-RECONCILIATION-001 | DONE | Réconcilier le pilote SELARL avec NotebookLM et la V3 | NotebookLM + V3 + V2 + code/specs SELARL | hiérarchie source V2 + rapport d'écarts + backlog de reconstruction contrôlée |
+| SELARL-WORDING-REALIGN-001 | READY | Réaligner le vocabulaire visible SELARL | rapport NotebookLM reconciliation + backlog V2 | labels Praticien/Fiche Client/rôles + tests anti-régression |
+| SELARL-FORM-FLOW-REALIGN-001 | BLOCKED | Réaligner l'ordre du formulaire SELARL | `SELARL-WORDING-REALIGN-001` | ordre Qualification / Fiche Client / Société / Capital / Scénarios / Documents |
+| SELARL-REUSE-RULES-REALIGN-001 | BLOCKED | Corriger les règles de réutilisation SELARL | `SELARL-FORM-FLOW-REALIGN-001` | praticien source, mandataire Sydel par défaut, dérivations explicites |
+| SELARL-DOCUMENT-STATUS-REALIGN-001 | BLOCKED | Distinguer statut technique et statut produit SELARL | `SELARL-REUSE-RULES-REALIGN-001` | Projet / brouillon à relire / manuel / pièces requises |
+| SELARL-UI-REPAIR-001 | BLOCKED | Réparer le parcours UI SELARL après réalignement | schéma SELARL réaligné | Streamlit SELARL réparé sans toucher aux générateurs ni aux autres cas |
+| SELARL-SMOKE-REALISTIC-001 | BLOCKED | Smoke tester SELARL avec données réalistes après réparation | `SELARL-UI-REPAIR-001` | rapport de smoke réaliste, documents manuels exclus, statuts vérifiés |
+| SELARL-JURIST-REVIEW-001 | BLOCKED | Faire valider le parcours SELARL réaligné par un juriste | `SELARL-SMOKE-REALISTIC-001` | revue juriste, réserves et arbitrages documentés |
+| SELARL-DOCS-GENERATION-SMOKE-001 | BLOCKED | Smoke tester la génération SELARL depuis le parcours Assistant métier | parcours SELARL réaligné + catalogue + schema + contextes réalistes | bloqué par la réconciliation NotebookLM ; remplacer par `SELARL-SMOKE-REALISTIC-001` après réparation |
 | UI-001 | BLOCKED | Brancher Streamlit V0 Lot 1 | orchestrateur Lot 1 + spec canonique PV nomination gérant validée | écran simple + test manuel |
 
 ## Référentiels moteur disponibles
@@ -907,6 +915,16 @@
 - Tests : `.\.venv\Scripts\python.exe -m ruff check .` OK ; `.\.venv\Scripts\python.exe -m pytest` OK, 239 tests passés.
 - Prochaine étape recommandée : `SELARL-DOCS-GENERATION-SMOKE-001`.
 
+### SELARL-NOTEBOOKLM-RECONCILIATION-001
+- Objectif : reprendre le cadrage SELARL avec la hiérarchie NotebookLM / V3 / templates / code, sans coder ni modifier l'UI ou les générateurs.
+- Statut : DONE.
+- Sources ajoutées : `project/source_truth/notebooklm_selarl_10_prompts_v1.md` et `project/source_truth/Documents_a_generer_par_cas_V3.docx`, commit source `f1da08b`.
+- Livraison : `docs/project/SELARL_SOURCE_HIERARCHY_V2.md`, `docs/review/selarl_notebooklm_reconciliation_001_report_v1.md`, `docs/project/SELARL_REBUILD_BACKLOG_V2.md`.
+- Diagnostic : le cadrage documentaire V2/V3 est conservable, mais le wording, l'ordre du formulaire, les réutilisations et les statuts `Projet` / brouillon doivent être corrigés avant smoke.
+- Garde-fous : aucun fichier Python, générateur, moteur DOCX/PDF/ZIP ou UI modifié.
+- Tests : non lancés ; ticket documentaire Markdown uniquement.
+- Prochaine étape recommandée : `SELARL-WORDING-REALIGN-001`.
+
 ### UI-001
 - Objectif : exposer une Streamlit simple pour générer le Lot 1.
 - Statut : en attente explicite ; ne pas lancer sans ticket explicite dédié.
@@ -936,8 +954,9 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - `SELARL-PILOT-SOURCE-VERIFY-001` est DONE ; la vraie V2 est au chemin canonique, les dérogations SELARL sont réconciliées en manuel et les variables V2 brutes sont reprises dans les specs.
 - `SELARL-FORM-SCHEMA-IMPL-001` est DONE ; le schéma machine-readable SELARL existe, `DOC-006` porte une réserve V2 exploitable, `DOC-013` / `DOC-014` restent manuels et la couverture des variables V2 est testée.
 - `SELARL-UI-WIZARD-IMPL-001` est DONE ; l'Assistant métier expose le parcours SELARL pilote depuis le schéma, conserve SCI et Technique / diagnostic, et garde `DOC-013` / `DOC-014` hors génération.
-- tickets READY confirmés : `CLOSE-PROJECT-V1-001`, `SELARL-DOCS-GENERATION-SMOKE-001`.
-- prochain ticket recommandé : `SELARL-DOCS-GENERATION-SMOKE-001`, smoke test du parcours SELARL avec données réalistes et revue des champs encore incomplets.
+- tickets READY confirmés : `CLOSE-PROJECT-V1-001`, `SELARL-WORDING-REALIGN-001`.
+- ticket SELARL smoke précédent bloqué : `SELARL-DOCS-GENERATION-SMOKE-001`, remplacé par la séquence de reconstruction contrôlée avant smoke réaliste.
+- prochain ticket recommandé : `SELARL-WORDING-REALIGN-001`, réalignement du vocabulaire visible SELARL sur NotebookLM.
 - moteur documentaire DOCX V1 feature complete et clos après `RECONCILE-MOTOR-CLOSE-001`.
 - tickets absorbés par `SYNC-POST-MOTOR-UI-001` : `UI-FLOW-001`, `UI-OCCURRENCES-001`, `UI-FORM-SCHEMA-001`, `PDF-BACKEND-001` et `RECIPE-FRAME-001`.
 - `RECONCILE-MOTOR-CLOSE-001` est DONE ; les générateurs ordre/SPFPL orphelins sont exposés sous `DOC-034` à `DOC-043`, `08/09/16/17/18` sont alignés et les références delivery Lot 2 manquantes sont présentes sur `main`.
@@ -1088,3 +1107,4 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - 2026-05-19 : SELARL-PILOT-SOURCE-VERIFY-001 lit la vraie source V2, remplace le fichier canonique provisoire, corrige les statuts SELARL `DOC-013` / `DOC-014` en manuel, complète les variables V2 dans les specs et crée la matrice d'écarts source.
 - 2026-05-19 : SELARL-FORM-SCHEMA-IMPL-001 ajoute le module `selarl_form_schema.py`, verrouille la réserve source V2 sur `DOC-006`, confirme `DOC-013` / `DOC-014` hors génération pilote et teste la couverture des variables V2 ; ruff OK et pytest 231 tests passés.
 - 2026-05-19 : SELARL-UI-WIZARD-IMPL-001 branche l'Assistant métier Streamlit sur le schéma SELARL, ajoute le parcours pilote visible, conserve SCI et Technique / diagnostic, affiche les documents manuels/réservés et valide ruff + pytest 239 tests.
+- 2026-05-19 : SELARL-NOTEBOOKLM-RECONCILIATION-001 ajoute les sources NotebookLM/V3, crée la hiérarchie source SELARL V2, le rapport d'écarts et le backlog de reconstruction ; aucun code Python modifié, smoke SELARL bloqué jusqu'au réalignement wording / flow / réutilisations / statuts.
