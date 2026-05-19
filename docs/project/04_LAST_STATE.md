@@ -5,6 +5,8 @@
 
 
 ## Dernier ticket terminé
+SELARL-SMOKE-REALISTIC-001 : smoke réaliste du pilote SELARL après réalignement wording / flow / réutilisations / UI. Trois scénarios ont été exécutés : médecin unipersonnelle simple, chirurgien-dentiste avec régime communautaire et site distinct, médecin avec cession de cabinet médical / bail / financement. Chaque scénario génère uniquement `DOC-001`, `DOC-002`, `DOC-003`, `DOC-004` et un ZIP avec manifeste ; les documents manuels `DOC-013` / `DOC-014` restent visibles mais exclus, `DOC-006` garde sa réserve, les documents non prêts restent en contexte incomplet V2, et le PV d'autorisation d'emprunt reste une option de `DOC-004`. Aucun fichier Python, générateur, moteur DOCX/PDF/ZIP, catalogue ou UI n'a été modifié. Artefacts : `artifacts/selarl_smoke_realistic_001/20260519_185045/`. Rapport : `docs/review/selarl_smoke_realistic_001_report_v1.md`. Backend PDF local indisponible pendant le smoke. Ruff OK et pytest OK avec 257 tests passés.
+
 SELARL-UI-REALIGN-001 : réalignement du parcours Streamlit visible SELARL sur le wording, le flow et les règles de réutilisation corrigés. Le parcours affiche désormais : Écran 1 — Qualification, Écran 2 — Fiche Client, Écran 3 — Fiche Société, Écran 4 — Capital & Associés, Écran 5 — Contexte & scénarios métier, Écran 6 — Documents & génération. `Dossier unipersonnel` est exposé en qualification et verrouille le cas Praticien = associé unique = gérant = signataire. Le mandataire est relégué dans un bloc secondaire replié et n'est pas assimilé au signataire par défaut. `DOC-006` garde sa réserve, `DOC-013` et `DOC-014` restent visibles mais non générables, et l'emprunt reste une option du `DOC-004`. Aucun générateur, moteur DOCX/PDF/ZIP, `case_catalog.py`, parcours SCI ou mode `Technique / diagnostic` n'a été modifié. Rapport : `docs/review/selarl_ui_realign_001_report_v1.md`. Ruff OK et pytest OK avec 257 tests passés.
 
 SELARL-REUSE-RULES-REALIGN-001 : réalignement des règles de réutilisation SELARL dans le schéma et les projections métier. `Dossier unipersonnel` est désormais la règle pivot : quand l'option est active, le Praticien alimente l'associé unique, le gérant et le signataire ; quand elle est inactive, aucune dérivation n'est imposée. Les options SELARL acquéreur, SELARL cessionnaire SCM et domiciliation = siège restent explicites. Le mandataire ne dérive plus du signataire par défaut, les relations vendeur / locataire, siège / lieu d'exercice / cabinet, vendeur / Praticien et cédant SCM / Praticien sont documentées comme non automatiques. Rapport : `docs/review/selarl_reuse_rules_realign_001_report_v1.md`. Aucun générateur, moteur DOCX/PDF/ZIP, `case_catalog.py` ou `streamlit_app.py` n'a été modifié. Ruff OK et pytest OK avec 252 tests passés.
@@ -94,7 +96,8 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
 - `SELARL-WORDING-REALIGN-001` est DONE.
 - `SELARL-FLOW-REALIGN-001` est DONE.
 - `SELARL-REUSE-RULES-REALIGN-001` est DONE.
-- `SELARL-UI-REALIGN-001` est DONE ; le prochain ticket SELARL recommandé est `SELARL-SMOKE-REALISTIC-001`.
+- `SELARL-UI-REALIGN-001` est DONE.
+- `SELARL-SMOKE-REALISTIC-001` est DONE ; le prochain ticket SELARL recommandé est `SELARL-JURIST-REVIEW-001`.
 - Le protocole réplicable de construction de processus est disponible dans `docs/project/PROCESS_BUILD_PROTOCOL_V1.md`.
 - Les specs SELARL pilote sont disponibles :
   - `docs/project/SELARL_PROCESS_SPEC_V1.md` ;
@@ -148,7 +151,7 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
 - `SELARL-FLOW-REALIGN-001` est DONE ; le flow conceptuel est réaligné dans le schéma et les projections métier, sans refonte Streamlit visible.
 - `SELARL-REUSE-RULES-REALIGN-001` est DONE ; `Dossier unipersonnel` et les options explicites sont dans le schéma et les projections métier, sans refonte Streamlit visible.
 - `SELARL-UI-REALIGN-001` est DONE ; le rendu Streamlit SELARL visible suit le flow, expose `Dossier unipersonnel` et conserve le mandataire secondaire.
-- Tickets READY confirmés : `CLOSE-PROJECT-V1-001`, `SELARL-SMOKE-REALISTIC-001`.
+- Tickets READY confirmés : `CLOSE-PROJECT-V1-001`, `SELARL-JURIST-REVIEW-001`.
 - Le cadrage métier de la famille `PV nomination gérant` est disponible dans `docs/delivery/lot_02_pv_nomination_gerant_cadrage_v1.md`.
 - La spec canonique V1 de la famille `PV nomination gérant` est disponible dans `docs/delivery/lot_02_pv_nomination_gerant_spec_canonique_v1.md`.
 - La spec texte V1 de la famille `PV nomination gérant` est disponible dans `docs/delivery/lot_02_pv_nomination_gerant_spec_texte_v1.md`.
@@ -888,6 +891,8 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
 - SELARL-UI-REALIGN-001 : `.\.venv\Scripts\python.exe -m pytest tests/unit/test_business_wizard.py` OK, 34 tests passés.
 - SELARL-UI-REALIGN-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
 - SELARL-UI-REALIGN-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 257 tests passés.
+- SELARL-SMOKE-REALISTIC-001 : smoke DOCX/ZIP OK sur trois scénarios réalistes, 4 DOCX et 1 ZIP produits par scénario ; backend PDF local indisponible.
+- SELARL-SMOKE-REALISTIC-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK ; `.\.venv\Scripts\python.exe -m pytest` OK, 257 tests passés.
 
 ## Recommandation immédiate suivante
-Ouvrir `SELARL-SMOKE-REALISTIC-001` pour smoke tester le parcours SELARL réaligné avec des données réalistes, sans toucher aux générateurs ni au moteur DOCX/PDF/ZIP. Ne pas pousser ni redéployer l'UI SELARL actuelle avant ce smoke réaliste.
+Ouvrir `SELARL-JURIST-REVIEW-001` pour faire valider le parcours SELARL réaligné par un associé / juriste, sur la base du smoke réaliste. Ne pas pousser ni redéployer l'UI SELARL actuelle sans décision explicite après cette revue.
