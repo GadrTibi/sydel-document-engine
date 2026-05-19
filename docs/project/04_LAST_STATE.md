@@ -5,9 +5,11 @@
 
 
 ## Dernier ticket terminé
-SELARL-NOTEBOOKLM-RECONCILIATION-001 : réconciliation documentaire du pilote SELARL avec la nouvelle hiérarchie NotebookLM / V3 / templates / code. Les sources validées par l'utilisateur ont été normalisées et committées sous `project/source_truth/notebooklm_selarl_10_prompts_v1.md` et `project/source_truth/Documents_a_generer_par_cas_V3.docx` dans le commit source `f1da08b`. Le ticket crée `docs/project/SELARL_SOURCE_HIERARCHY_V2.md`, `docs/review/selarl_notebooklm_reconciliation_001_report_v1.md` et `docs/project/SELARL_REBUILD_BACKLOG_V2.md`, puis bloque le smoke SELARL prématuré au profit d'une reconstruction contrôlée : wording, flow, réutilisations, statuts documentaires, réparation UI, smoke réaliste, revue juriste. Aucun fichier Python, générateur, moteur DOCX/PDF/ZIP ou UI n'a été modifié ; aucun test code lancé car les modifications finales sont documentaires.
+SELARL-PLAN-CORRECTION-001 : correction documentaire de la planification SELARL selon les arbitrages explicites de l'associé. La hiérarchie de sources place désormais les arbitrages associé avant NotebookLM, puis V3, templates/registre et code existant. Le rapport de réconciliation et le backlog ont été resserrés autour de `Fiche Client`, `Praticien` et `Dossier unipersonnel`, avec retrait du mode Projet / filigrane V1, retrait de la couche statut documentaire lourde et sortie du mandataire des priorités UX hors variables ou documents liés. Aucun fichier Python, générateur, moteur DOCX/PDF/ZIP ou UI n'a été modifié ; aucun test code lancé car les modifications sont documentaires.
 
-SELARL-UI-WIZARD-IMPL-001 : branchement du mode `Assistant metier` Streamlit sur le schema machine-readable SELARL, ajout d'un parcours pilote en ecrans qualification / societe / professionnel principal et gerant / associes / conditions specifiques / documents attendus / generation, consommation des labels, blocs, regles de reutilisation et documents issus de `src/sydel_doc_engine/app/selarl_form_schema.py` via `business_wizard.py`, conservation du mode SCI et du mode `Technique / diagnostic`, affichage de `DOC-006` avec reserve source V2, `DOC-013` et `DOC-014` visibles mais `MANUAL_ONLY` et exclus de la generation, rapport `docs/review/selarl_ui_wizard_impl_001_report_v1.md`, ruff OK et pytest OK avec 239 tests passes.
+SELARL-NOTEBOOKLM-RECONCILIATION-001 : réconciliation documentaire du pilote SELARL avec la nouvelle hiérarchie NotebookLM / V3 / templates / code. Les sources validées par l'utilisateur ont été normalisées et committées sous `project/source_truth/notebooklm_selarl_10_prompts_v1.md` et `project/source_truth/Documents_a_generer_par_cas_V3.docx` dans le commit source `f1da08b`. Le ticket crée `docs/project/SELARL_SOURCE_HIERARCHY_V2.md`, `docs/review/selarl_notebooklm_reconciliation_001_report_v1.md` et `docs/project/SELARL_REBUILD_BACKLOG_V2.md`, puis bloque le smoke SELARL prématuré au profit d'une reconstruction contrôlée. Cette reconstruction a été corrigée par `SELARL-PLAN-CORRECTION-001` : wording, flow, réutilisations, UI, smoke réaliste, revue juriste.
+
+SELARL-UI-WIZARD-IMPL-001 : branchement du mode `Assistant metier` Streamlit sur le schema machine-readable SELARL, ajout d'un parcours pilote en ecrans qualification / societe / personne et gerant / associes / conditions specifiques / documents attendus / generation, consommation des labels, blocs, regles de reutilisation et documents issus de `src/sydel_doc_engine/app/selarl_form_schema.py` via `business_wizard.py`, conservation du mode SCI et du mode `Technique / diagnostic`, affichage de `DOC-006` avec reserve source V2, `DOC-013` et `DOC-014` visibles mais `MANUAL_ONLY` et exclus de la generation, rapport `docs/review/selarl_ui_wizard_impl_001_report_v1.md`, ruff OK et pytest OK avec 239 tests passes. Ce parcours est techniquement committe, mais pas valide produit.
 
 SELARL-FORM-SCHEMA-IMPL-001 : implémentation du schéma de données SELARL côté Assistant métier depuis la vraie source V2 `project/source_truth/Documents_a_generer_par_cas_V2.docx`, ajout de `src/sydel_doc_engine/app/selarl_form_schema.py`, couverture machine-readable des blocs métier, champs qualifiés, règles de réutilisation, documents attendus et variables V2, ajout de la réserve source V2 exploitable sur `DOC-006`, clarification finale de `DOC-013` / `DOC-014` comme `MANUAL_ONLY` hors génération pilote, rapport `docs/review/selarl_form_schema_impl_001_report_v1.md`, ruff OK et pytest OK avec 231 tests passés.
 
@@ -77,10 +79,10 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
 - Les nouvelles sources SELARL validées pour la réconciliation NotebookLM sont disponibles :
   - `project/source_truth/notebooklm_selarl_10_prompts_v1.md` ;
   - `project/source_truth/Documents_a_generer_par_cas_V3.docx`.
-- La hiérarchie de sources SELARL V2 est disponible dans `docs/project/SELARL_SOURCE_HIERARCHY_V2.md`.
-- Le rapport d'écarts NotebookLM / V3 / code est disponible dans `docs/review/selarl_notebooklm_reconciliation_001_report_v1.md`.
-- Le backlog de reconstruction contrôlée SELARL V2 est disponible dans `docs/project/SELARL_REBUILD_BACKLOG_V2.md`.
-- `SELARL-DOCS-GENERATION-SMOKE-001` est bloqué : le smoke réaliste doit attendre le réalignement wording / flow / règles de réutilisation / statuts documentaires.
+- La hiérarchie de sources SELARL V2 corrigée est disponible dans `docs/project/SELARL_SOURCE_HIERARCHY_V2.md` : arbitrages associé, NotebookLM, V3, templates/registre, code existant.
+- Le rapport d'écarts NotebookLM / V3 / code corrigé est disponible dans `docs/review/selarl_notebooklm_reconciliation_001_report_v1.md`.
+- Le backlog de reconstruction contrôlée SELARL V2 corrigé est disponible dans `docs/project/SELARL_REBUILD_BACKLOG_V2.md`.
+- `SELARL-DOCS-GENERATION-SMOKE-001` est bloqué et remplacé par `SELARL-SMOKE-REALISTIC-001` après réalignement wording / flow / règles de réutilisation / UI.
 - `SELARL-WORDING-REALIGN-001` est le prochain ticket SELARL recommandé.
 - Le protocole réplicable de construction de processus est disponible dans `docs/project/PROCESS_BUILD_PROTOCOL_V1.md`.
 - Les specs SELARL pilote sont disponibles :
@@ -89,7 +91,7 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
   - `docs/project/SELARL_UI_WIZARD_SPEC_V1.md` ;
   - `docs/project/SELARL_IMPLEMENTATION_PLAN_V1.md`.
 - Le schéma de données SELARL côté Assistant métier est disponible dans `src/sydel_doc_engine/app/selarl_form_schema.py` : blocs métier, champs UI qualifiés, règles de réutilisation, documents attendus, codes générables et couverture des variables V2.
-- Le parcours UI SELARL pilote est disponible dans `src/sydel_doc_engine/app/streamlit_app.py` et consomme le schema via `src/sydel_doc_engine/app/business_wizard.py` : ecrans de qualification, societe, professionnel/gerant, associes, conditions specifiques, documents attendus et generation.
+- Le parcours UI SELARL pilote est disponible dans `src/sydel_doc_engine/app/streamlit_app.py` et consomme le schema via `src/sydel_doc_engine/app/business_wizard.py`, mais il n'est pas encore validé produit ; ne pas pousser ni redéployer avant réalignement wording / flow / réutilisation / UI.
 - `DOC-006` porte désormais une réserve source V2 exploitable depuis `case_catalog.py`; `DOC-013` et `DOC-014` restent visibles mais `MANUAL_ONLY` et exclus des codes générables SELARL.
 - Le smoke manuel UI/PDF/ZIP est documente dans `docs/review/ui_pdf_zip_integration_001_smoke.md`.
 - `examples/contexts/lot_01_example.yaml` utilise encore le champ legacy Lot 1 `adresse_domiciliation_affichee`, en attente d'un refactor dédié vers `domiciliation.adresse_affichee`.
@@ -129,7 +131,8 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
 - `SELARL-PILOT-PROTOCOL-001` est DONE ; il n'a pas modifié l'UI, le moteur DOCX/PDF/ZIP ni les générateurs.
 - `SELARL-PILOT-SOURCE-VERIFY-001` est DONE ; il n'a pas modifié l'UI, le moteur DOCX/PDF/ZIP ni les générateurs, mais il a aligné le catalogue produit SELARL sur la vraie V2.
 - `SELARL-FORM-SCHEMA-IMPL-001` est DONE ; il n'a pas modifié l'UI visible, le moteur DOCX/PDF/ZIP ni les générateurs.
-- `SELARL-UI-WIZARD-IMPL-001` est DONE ; il n'a pas modifié les générateurs ni le moteur DOCX/PDF/ZIP et conserve SCI ainsi que le mode Technique / diagnostic.
+- `SELARL-UI-WIZARD-IMPL-001` est DONE techniquement ; il n'a pas modifié les générateurs ni le moteur DOCX/PDF/ZIP et conserve SCI ainsi que le mode Technique / diagnostic, mais il n'est pas validé produit.
+- `SELARL-PLAN-CORRECTION-001` est DONE ; la séquence SELARL cible est `WORDING -> FLOW -> REUSE -> UI -> SMOKE -> JURIST`.
 - Tickets READY confirmés : `CLOSE-PROJECT-V1-001`, `SELARL-WORDING-REALIGN-001`.
 - Le cadrage métier de la famille `PV nomination gérant` est disponible dans `docs/delivery/lot_02_pv_nomination_gerant_cadrage_v1.md`.
 - La spec canonique V1 de la famille `PV nomination gérant` est disponible dans `docs/delivery/lot_02_pv_nomination_gerant_spec_canonique_v1.md`.
@@ -864,4 +867,4 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
 - SELARL-UI-WIZARD-IMPL-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 239 tests passés.
 
 ## Recommandation immédiate suivante
-Ouvrir `SELARL-WORDING-REALIGN-001` pour remplacer les libellés visibles `professionnel principal` par `Praticien` / `Fiche Client` / rôles juridiques exacts, puis poursuivre la reconstruction contrôlée avant tout smoke SELARL réaliste.
+Ouvrir `SELARL-WORDING-REALIGN-001` pour aligner les libellés visibles sur `Fiche Client`, `Praticien` et les rôles juridiques exacts, puis poursuivre `SELARL-FLOW-REALIGN-001`, `SELARL-REUSE-RULES-REALIGN-001` et `SELARL-UI-REALIGN-001` avant tout smoke SELARL réaliste. Ne pas pousser ni redéployer l'UI SELARL actuelle avant ce réalignement produit.

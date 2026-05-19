@@ -1,8 +1,10 @@
 # Rapport SELARL-NOTEBOOKLM-RECONCILIATION-001
 
-## Périmètre
+## Perimetre
 
-Objectif : reprendre le cadrage SELARL à partir de la hiérarchie de sources NotebookLM -> V3 -> templates / registre -> code, sans modifier l'UI, les générateurs, le moteur DOCX/PDF/ZIP ni la structure existante.
+Objectif initial : reprendre le cadrage SELARL a partir de la hierarchie de sources NotebookLM -> V3 -> templates / registre -> code, sans modifier l'UI, les generateurs, le moteur DOCX/PDF/ZIP ni la structure existante.
+
+Correction `SELARL-PLAN-CORRECTION-001` : integrer les arbitrages explicites de l'associe comme source prioritaire. Les corrections ci-dessous ne changent ni le code applicatif, ni l'UI, ni les generateurs.
 
 Sources lues :
 
@@ -20,222 +22,239 @@ Sources lues :
 - `tests/unit/test_selarl_form_schema.py` ;
 - `tests/unit/test_business_wizard.py`.
 
-## Etat Git au démarrage repris
+## Etat Git au demarrage repris
 
-Après validation utilisateur des deux fichiers sources et normalisation des noms, un commit source séparé a été créé :
+Apres validation utilisateur des deux fichiers sources et normalisation des noms, un commit source separe a ete cree :
 
 - `f1da08b docs: add selarl notebooklm and v3 sources`.
 
-Etat demandé :
+Etat demande lors de la reconciliation :
 
 - branche : `main` ;
-- `main` est ahead de `origin/main` par 1 commit au moment de l'audit ;
-- commit UI SELARL présent : `9993a81 feat: add selarl business wizard ui v1` ;
-- le ticket UI SELARL est donc committé, pas seulement en working tree ;
-- `git diff --name-status` vide après le commit source ;
-- fichier non suivi hors périmètre : `docs/docssource_truth/`.
+- commit UI SELARL present : `9993a81 feat: add selarl business wizard ui v1` ;
+- le ticket UI SELARL est donc committe, pas seulement en working tree ;
+- fichier non suivi hors perimetre : `docs/docssource_truth/`.
 
 Recommandation de sauvegarde :
 
 - ne pas pousser automatiquement ;
 - conserver `f1da08b` comme commit source atomique ;
-- ne pas inclure `docs/docssource_truth/` sans audit dédié, car il ressemble à un doublon hors ticket.
+- ne pas inclure `docs/docssource_truth/` sans audit dedie, car il ressemble a un doublon hors ticket ;
+- ne pas pousser ni redeployer l'UI SELARL tant que le realignement wording / flow / reutilisation / UI n'est pas termine et valide produit.
 
-## Diagnostic principal
+## Arbitrages explicites de l'associe
 
-Le cadrage SELARL V1 est solide côté inventaire documentaire V2/V3, mais il est trop orienté variables et générateurs. NotebookLM impose une correction produit : vocabulaire juriste, ordre de saisie, rôles, réutilisations et statut `Projet` doivent être réalignés avant un smoke réaliste.
+Ces arbitrages corrigent la lecture NotebookLM et priment dans la planification :
 
-L'UI actuelle peut être réparée, mais pas par simples retouches de labels. Elle nécessite une refonte partielle contrôlée du parcours SELARL : ordre des écrans, vocabulaire, règles de réutilisation et statuts documentaires.
+- ecran personne : `Fiche Client` ;
+- terme pivot : `Praticien` ;
+- abandon du libelle `professionnel principal` dans les labels visibles et les tickets futurs ;
+- ajout d'une logique `Dossier unipersonnel` ;
+- mandataire sorti des priorites UX si aucune variable ou document ne le rend central ;
+- pas de mode Projet ni filigrane dans la V1 ;
+- pas de nouvelle couche produit lourde de statut documentaire sans validation explicite ;
+- perimetre SELARL inchange.
 
-## Points conservés
+## Diagnostic principal corrige
 
-- La sélection documentaire SELARL par conditions est globalement cohérente avec V2/V3.
+Le cadrage SELARL V1 est solide cote inventaire documentaire V2/V3, mais il reste trop oriente variables et generateurs. NotebookLM apporte un correctif metier utile : vocabulaire juriste, ordre de saisie, roles et reutilisations.
+
+La correction produit prioritaire n'est pas une nouvelle couche documentaire lourde. Elle consiste a realigner le vocabulaire, l'ordre du parcours, la logique `Dossier unipersonnel` et les points UX vraiment necessaires avant un smoke realiste.
+
+L'UI actuelle peut etre reparee, mais elle n'est pas encore validee produit. Le commit `9993a81` ne doit pas etre pousse/redeploie comme version SELARL validee tant que le realignement n'est pas fait.
+
+## Points conserves
+
+- La selection documentaire SELARL par conditions est globalement coherente avec V2/V3.
 - Les documents communs `DOC-001`, `DOC-002`, `DOC-003` restent attendus.
-- Le PV nomination gérant `DOC-004`, la demande d'inscription à l'ordre `DOC-034` et les statuts `DOC-016` / `DOC-017` restent au coeur du flux.
-- `DOC-013` et `DOC-014` sont correctement exclus de la génération pilote et visibles comme manuels.
-- `DOC-006` porte correctement une réserve source.
-- Les adresses sont déjà mieux qualifiées que dans le premier cadrage.
-- Les blocs conditionnels cession, SCM, bail, banque, régime communautaire et signature existent dans le schéma.
-- Les tests protègent déjà certains garde-fous utiles : pas de label exact `adresse`, documents manuels exclus, mode technique conservé.
+- Le PV nomination gerant `DOC-004`, la demande d'inscription a l'ordre `DOC-034` et les statuts `DOC-016` / `DOC-017` restent au coeur du flux.
+- `DOC-013` et `DOC-014` sont correctement exclus de la generation pilote et visibles comme manuels.
+- `DOC-006` porte correctement une reserve source.
+- Les blocs conditionnels cession, SCM, bail, banque, regime communautaire et signature existent dans le schema.
+- Les statuts techniques existants du catalogue restent suffisants pour la V1 tant qu'aucun arbitrage produit contraire n'est donne.
+- Les tests protegent deja certains garde-fous utiles : pas de label exact `adresse`, documents manuels exclus, mode technique conserve.
 
-## Points à modifier
+## Points a modifier
 
 ### A. Vocabulaire
 
-NotebookLM indique que `professionnel principal` n'est pas un terme source et doit être évité dans les labels visibles. Le terme global recommandé est `Praticien`.
+NotebookLM et l'associe convergent sur un point : le terme global recommande est `Praticien`, et l'ecran personne doit etre `Fiche Client`.
 
 Constats actuels :
 
-- `selarl_form_schema.py` utilise `Professionnel / gérant`, `Identité du professionnel principal`, `Fonction du professionnel principal`.
-- `streamlit_app.py` affiche `Ecran 3 - Professionnel principal / gerant` et plusieurs labels `professionnel principal`.
-- `tests/unit/test_business_wizard.py` valide explicitement `Gerant / professionnel principal`.
+- `selarl_form_schema.py` utilise encore des formulations centrees sur une personne principale et le gerant ;
+- `streamlit_app.py` affiche un ecran personne/gérant qui doit etre renomme ;
+- `tests/unit/test_business_wizard.py` valide encore un wording obsolete.
 
 Correction conceptuelle :
 
-- utiliser `Praticien` pour l'identité globale ;
-- utiliser `Gérant` seulement pour le mandat social ;
-- utiliser `Associé` pour le capital ;
+- utiliser `Fiche Client` comme titre d'ecran personne ;
+- utiliser `Praticien` pour l'identite globale ;
+- utiliser `Gerant` seulement pour le mandat social ;
+- utiliser `Associe` pour le capital ;
 - utiliser `Signataire` pour la signature ;
-- utiliser `Mandataire` pour les formalités ;
-- bannir `CELAR` de toute UI et documentation projet hors citation de transcription ;
-- évaluer `Fiche Client` comme titre d'écran recommandé, `Fiche de création` comme nom métier de la donnée source.
+- utiliser `Mandataire` seulement quand les formalites ou variables le justifient ;
+- bannir `CELAR` de toute UI et documentation projet hors citation de transcription.
 
-### B. Ordre des écrans
+### B. Ordre des ecrans
 
-Ordre NotebookLM :
+Ordre cible confirme :
 
-1. Qualification & type d'opération ;
+1. Qualification & type d'operation ;
 2. Fiche Client / Praticien ;
-3. Fiche Société ;
-4. Capital & Associés ;
-5. Contexte & scénarios métier ;
-6. Documents & génération.
+3. Fiche Societe ;
+4. Capital & Associes ;
+5. Contexte & scenarios metier ;
+6. Documents & generation.
 
 Ordre actuel SELARL :
 
-1. conditions métier de sélection documentaire ;
-2. Société ;
-3. Professionnel principal / gérant ;
-4. Associés ;
-5. Conditions spécifiques ;
+1. conditions metier de selection documentaire ;
+2. Societe ;
+3. personne/gérant ;
+4. Associes ;
+5. Conditions specifiques ;
 6. Documents attendus ;
-7. Génération.
+7. Generation.
 
-Ecart principal : la société est saisie avant le praticien, alors que NotebookLM fait de la Fiche Client / Fiche de création la source de vérité initiale. La qualification actuelle ne contient pas explicitement `type d'opération` au sens création / cession / transformation.
+Ecart principal : la societe est saisie avant la `Fiche Client`, alors que NotebookLM et l'arbitrage associe font de la personne cliente la source de verite initiale du parcours.
 
-### C. Règles de réutilisation
+### C. Regles de reutilisation
 
-Règles NotebookLM à intégrer :
+Regle pivot a integrer :
 
-- Praticien = associé unique = gérant = signataire dans les dossiers unipersonnels ;
-- Mandataire distinct du signataire par défaut ;
-- Mandataire = membre Sydel par défaut ;
-- SELARL = acquéreur / cessionnaire selon cession ou SCM ;
-- Siège social = lieu d'exercice / cabinet seulement si confirmé ;
-- Vendeur = locataire actuel seulement si confirmé.
+- `Dossier unipersonnel` : Praticien = associe unique = gerant = signataire lorsque l'option est active.
 
-Constats actuels :
+Regles a garder explicites :
 
-- `mandataire_is_signataire` existe et est coché par défaut dans l'UI : c'est contraire au cadrage NotebookLM.
-- `signataire_is_associe_1` copie le signataire vers l'associé 1, alors que la source métier devrait être le praticien.
-- `gerant_is_professional` va dans la bonne direction, mais le wording doit devenir `Le gérant est le praticien`.
-- `selarl_is_acquirer` et `selarl_is_scm_transferee` sont cohérents, sous réserve d'un choix explicite.
-- aucune règle dédiée ne couvre `vendeur = locataire actuel`.
-- aucune règle dédiée ne couvre `siège = lieu d'exercice / cabinet` sans automatisme.
+- mandataire distinct du signataire par defaut ;
+- SELARL = acquereur / cessionnaire selon cession ou SCM uniquement via option utile ;
+- siege social = lieu d'exercice / cabinet seulement si confirme ;
+- vendeur = locataire actuel seulement si confirme.
+
+Correction par rapport a la premiere reconciliation :
+
+- le mandataire ne doit plus etre un axe UX majeur ;
+- aucun critere central `mandataire Sydel par defaut` ne doit piloter le backlog ;
+- le mandataire reste un champ de formalite si V3 ou un template consomme ses variables.
 
 ### D. Documents et statuts
 
-V3 classe de nombreux documents comme documentés par variables, mais NotebookLM demande de ne pas les présenter comme définitifs.
+V3 classe les documents et variables. NotebookLM signale des risques de presentation trop definitive pour certains actes complexes, mais l'associe a arbitre contre une nouvelle couche produit lourde en V1.
 
-Statuts à affiner :
+Statut cible V1 :
 
-- documents 100 % générables simples : `DOC-001`, `DOC-002`, `DOC-003` sous réserve des champs ;
-- documents générables en mode projet / brouillon à relire : statuts, PV, demande d'ordre, cession, bail, SCM ;
-- documents manuels : site distinct CD94, `DOC-013`, `DOC-014`, pièces de dérogation SEL/BNC ;
-- documents nécessitant pièces ou justification : plans/devis pour l'Ordre, dérogation de lieu, origine de propriété du fonds, bail d'origine ;
-- documents avec réserve source : `DOC-006`.
+- conserver les statuts techniques existants : generable, manuel, non implemente, reserve, contexte incomplet si deja present ;
+- ne pas presenter un document manuel comme generable ;
+- ne pas creer de mode Projet ni filigrane ;
+- ne pas ajouter une couche `brouillon/projet` sans validation produit explicite ;
+- documenter les reserves si un document depend de pieces ou d'une revue humaine.
 
-Le statut actuel `Générable` est trop binaire. Il doit distinguer `Projet`, `Brouillon à relire`, `Manuel`, `Pièces requises`, `Contexte incomplet`.
+La correction se limite donc a la clarte du parcours et des messages existants, pas a un nouveau systeme de statuts.
 
 ### E. Champs et formulaires
 
 Champs actuels utiles :
 
-- profession, site distinct, SCM cession, régime communautaire, dérogation, cession, type de cabinet ;
-- société, capital, parts, RCS, siège, domiciliation ;
-- identité, naissance, nationalité, filiation, adresse personnelle ;
+- profession, site distinct, SCM cession, regime communautaire, derogation, cession, type de cabinet ;
+- societe, capital, parts, RCS, siege, domiciliation ;
+- identite, naissance, nationalite, filiation, adresse personnelle ;
 - ordre, RPPS, conseil de l'ordre ;
-- associés, mandataire, signataire ;
-- régime/conjoint, cession, bail, SCM, banque/financement, signature.
+- associes, mandataire, signataire ;
+- regime/conjoint, cession, bail, SCM, banque/financement, signature.
 
-Champs ou notions manquants depuis NotebookLM :
+Notions a ajouter ou deplacer :
 
-- titre d'écran `Fiche Client` ;
-- type d'opération : création, cession de parts, transformation ;
-- numéro de sécurité sociale ;
-- téléphone professionnel ;
-- statut `mode Projet` / filigrane ;
-- distinction banque de dépôt vs banque d'exploitation ;
-- membre Sydel mandataire par défaut ;
-- checklist pièces Ordre : plans, devis, justificatifs ;
-- source Fiche de création comme donnée validée par le client ;
-- vendeur = locataire actuel en règle optionnelle ;
-- siège = lieu d'exercice / cabinet en règle optionnelle.
+- titre d'ecran `Fiche Client` ;
+- terme pivot `Praticien` ;
+- type d'operation : creation, cession de parts, transformation si le parcours SELARL le justifie ;
+- logique `Dossier unipersonnel` ;
+- source Fiche de creation comme donnee client, sans renommer l'ecran ;
+- pieces Ordre en checklist ou information si necessaire, sans inventer un mode produit non arbitre.
 
-Champs demandés trop tôt ou au mauvais endroit :
+Champs demandes trop tot ou au mauvais endroit :
 
-- Société avant Fiche Client ;
-- Ordre professionnel toujours visible dans l'écran praticien alors que certains détails peuvent dépendre du type d'opération et du document activé ;
-- Mandataire dans l'écran praticien/gérant avec un défaut signataire, alors qu'il relève des formalités.
+- Societe avant Fiche Client ;
+- details Ordre visibles sans lien clair avec le document active ;
+- mandataire dans le flux personne si aucune variable ou formalite active ne l'exige.
 
-## Points à abandonner
+## Points a abandonner
 
-- Utiliser `professionnel principal` comme libellé visible.
-- Traiter `Mandataire = signataire` comme défaut.
-- Lancer `SELARL-DOCS-GENERATION-SMOKE-001` comme prochaine étape immédiate sans réalignement.
-- Présenter tous les documents techniquement générables comme prêts juridiquement.
-- Assimiler automatiquement siège, lieu d'exercice, cabinet et domiciliation.
+- Utiliser le libelle banni dans l'UI ou les tickets futurs.
+- Traiter `Mandataire = signataire` comme defaut.
+- Faire du mandataire Sydel par defaut une exigence centrale du backlog.
+- Lancer `SELARL-DOCS-GENERATION-SMOKE-001` comme prochaine etape immediate sans realignement.
+- Ajouter un mode Projet ou un filigrane en V1.
+- Ajouter une couche produit documentaire lourde non arbitree.
+- Presenter tous les documents techniquement generables comme juridiquement finalises.
+- Assimiler automatiquement siege, lieu d'exercice, cabinet et domiciliation.
 - Assimiler automatiquement vendeur, praticien et locataire.
-- Construire le flux SELARL depuis le code existant plutôt que depuis la hiérarchie NotebookLM/V3.
+- Construire le flux SELARL depuis le code existant plutot que depuis la hierarchie corrigee.
 
-## Contradictions NotebookLM vs V3
+## Contradictions NotebookLM vs V3 et arbitrages
 
-| Sujet | NotebookLM | V3 | Arbitrage recommandé |
+| Sujet | NotebookLM | V3 | Arbitrage retenu |
 |---|---|---|---|
-| Vocabulaire praticien | `Praticien`, `Fiche Client`, rôles précis | questions parfois formulées `praticien ou dirigeant principal` | NotebookLM pour les labels visibles ; V3 pour variables. |
-| Documents cession / bail / SCM | complexes, souvent brouillons à relire ou dépendants de pièces | variables listées, documents présents | garder générables techniquement, mais afficher `brouillon à relire` / `Projet`. |
-| Dérogations | justification métier, pièces, manuel | `DOC-013`/`DOC-014` non fournis ou à remplir à la main | manuel / hors génération pilote. |
-| Appel de fonds | peut désigner acompte back-office déclenché par fiche de création | `appel de fond sel.docx` en bloc cession | ne pas fusionner sans arbitrage métier. |
-| Ordre de saisie | Fiche Client avant société | V3 est organisé par documents et variables | NotebookLM pilote l'ordre UI. |
-| Mode Projet | indispensable pour banque et Ordre | absent comme variable documentaire générale | créer un ticket transversal UI/statut avant smoke. |
+| Vocabulaire praticien | `Praticien`, `Fiche Client`, roles precis | questions parfois formulees autour du praticien ou dirigeant | Associe + NotebookLM pour les labels visibles ; V3 pour variables. |
+| Documents cession / bail / SCM | complexes, souvent a relire ou dependants de pieces | variables listees, documents presents | garder la logique documentaire V3 ; pas de nouveau statut produit V1 sans validation. |
+| Derogations | justification metier, pieces, manuel | `DOC-013`/`DOC-014` non fournis ou a remplir a la main | manuel / hors generation pilote. |
+| Appel de fonds | peut designer acompte back-office declenche par fiche de creation | `appel de fond sel.docx` en bloc cession | ne pas fusionner sans arbitrage metier. |
+| Ordre de saisie | Fiche Client avant societe | V3 est organise par documents et variables | Associe + NotebookLM pilotent l'ordre UI. |
+| Mode Projet / filigrane | piste NotebookLM pour banque et Ordre | absent comme variable documentaire generale | non retenu en V1 par arbitrage associe. |
+| Mandataire | role distinct a ne pas confondre | variables presentes sur certains documents | traiter si necessaire par variables, sans en faire un sujet UX majeur. |
 
 ## Impact par fichier
 
 ### `case_catalog.py`
 
-- Ajouter une trace de source SELARL V3 / NotebookLM dans la documentation ou les notes de catalogue.
-- Ne pas changer les générateurs dans ce ticket.
-- Prévoir un statut produit au-dessus de `DocumentAvailability` pour distinguer générable technique et brouillon/projet à relire.
-- Vérifier l'effet de la source V3 sur `DOC-006`, `DOC-007`, `DOC-009` à `DOC-012`, `DOC-031` à `DOC-033`.
+- Ne pas changer les generateurs dans ce ticket.
+- Ne pas ajouter de couche statut produit lourde.
+- Conserver les statuts techniques existants et les reserves deja presentes.
+- Verifier plus tard l'effet de V3 sur `DOC-006`, `DOC-007`, `DOC-009` a `DOC-012`, `DOC-031` a `DOC-033` seulement dans un ticket dedie.
 
 ### `selarl_form_schema.py`
 
-- Renommer les labels visibles `professionnel principal` vers `Praticien`.
-- Réordonner les blocs : qualification, Fiche Client / Praticien, société, capital/associés, scénarios, documents.
-- Corriger les règles de réutilisation : praticien source, mandataire Sydel par défaut, signataire séparé.
-- Ajouter les champs manquants NotebookLM : type d'opération, n° sécurité sociale, téléphone pro, mode Projet, pièces Ordre.
+- Renommer les labels visibles vers `Praticien` et `Fiche Client`.
+- Reordonner les blocs : qualification, Fiche Client / Praticien, societe, capital/associes, scenarios, documents.
+- Ajouter ou clarifier la logique `Dossier unipersonnel`.
+- Garder le mandataire hors priorite UX s'il n'est pas requis par le document actif.
+- Ne pas ajouter de mode Projet ni filigrane.
 
 ### `business_wizard.py`
 
-- Modifier les règles de visibilité pour que le bloc société ne précède plus la Fiche Client.
-- Remplacer le défaut `mandataire_is_signataire` par un mandataire Sydel par défaut.
-- Ajouter un statut documentaire produit distinct de `STATUS_GENERABLE`.
-- Bloquer ou alerter si une réutilisation implicite n'a pas été confirmée.
+- Modifier les projections de parcours pour que le bloc societe ne precede plus la Fiche Client.
+- Supprimer les defaults trompeurs entre mandataire et signataire.
+- Porter la logique `Dossier unipersonnel` si elle releve des projections de formulaire.
+- Ne pas creer de nouveau statut produit global.
 
 ### `streamlit_app.py`
 
-- Réparer le parcours SELARL actuel par refonte partielle : titres d'écrans, ordre, defaults et labels.
+- Reparer le parcours SELARL actuel par realignement controle : titres d'ecrans, ordre, defaults et labels.
 - Ne pas modifier dans ce ticket.
 - Le mode `Technique / diagnostic` et le parcours SCI doivent rester intacts.
+- Le commit UI SELARL existant n'est pas une validation produit ; ne pas pousser ni redeployer avant realignement.
 
 ### Tests
 
-- Ajouter des tests anti-régression sur l'absence de `professionnel principal` dans les labels visibles SELARL.
-- Mettre à jour le test qui exige `Gerant / professionnel principal`.
+- Ajouter des tests anti-regression sur l'absence du libelle banni dans les labels visibles SELARL.
+- Mettre a jour le test qui valide l'ancien titre de bloc personne.
 - Tester l'ordre logique des blocs SELARL.
-- Tester que `mandataire_is_signataire` n'est pas la valeur par défaut.
-- Tester que le mode `Projet` ou statut brouillon est exposé.
+- Tester la logique `Dossier unipersonnel`.
+- Tester que `mandataire_is_signataire` n'est pas la valeur par defaut.
 - Tester que `CELAR` est absent hors source NotebookLM.
+- Ne pas ajouter de tests exigeant mode Projet, filigrane ou couche statut produit lourde.
 
 ## Risques si on continue sans corriger
 
-- Les juristes verront un langage non métier et risquent de rejeter l'Assistant.
-- Les rôles signataire / mandataire / gérant / associé peuvent être inversés.
-- Des documents complexes seront interprétés comme finalisables alors qu'ils doivent être relus.
-- Le smoke SELARL produira un résultat techniquement vert mais produit faux.
-- Les adresses peuvent être réutilisées au mauvais endroit.
-- La future correction coûtera plus cher si elle est faite après avoir ajouté les mappings de génération complexes.
+- Les juristes verront un langage non metier et risquent de rejeter l'Assistant.
+- Les roles signataire / mandataire / gerant / associe peuvent etre inverses.
+- Le smoke SELARL produira un resultat techniquement vert mais produit faux.
+- Les adresses peuvent etre reutilisees au mauvais endroit.
+- L'UI SELARL actuelle pourrait etre poussee ou redeployee comme validee alors qu'elle ne l'est pas.
+- La future correction coutera plus cher si elle est faite apres ajout de mappings complexes.
 
 ## Conclusion
 
-L'UI actuelle est réparable, mais elle doit être partiellement refondue avant tout smoke réaliste. La bonne séquence est : wording, ordre de formulaire, règles de réutilisation, statuts documentaires, puis seulement réparation UI et smoke.
+L'UI actuelle est reparable, mais elle doit etre partiellement realignee avant tout smoke realiste. La bonne sequence corrigee est : wording, flow, regles de reutilisation centrees sur `Dossier unipersonnel`, realignement UI, smoke realiste, revue juriste.
+
+Le commit UI SELARL existant n'est pas encore valide produit. Il ne faut pas le pousser ni le redeployer comme parcours SELARL cible tant que ce realignement n'est pas termine.
