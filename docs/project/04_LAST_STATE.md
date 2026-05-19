@@ -1,10 +1,12 @@
 # Dernier état projet
 
 ## Date de mise à jour
-2026-05-18
+2026-05-19
 
 
 ## Dernier ticket terminé
+SELARL-PILOT-PROTOCOL-001 : cadrage produit du pilote SELARL depuis `project/source_truth/Documents_a_generer_par_cas_V2.docx`, création du protocole réplicable de construction de processus, des specs SELARL processus/formulaire/wizard, du plan d'implémentation et du rapport `docs/review/selarl_pilot_protocol_001_report_v1.md`, sans modification de l'UI, du moteur DOCX/PDF/ZIP ni des générateurs ; ruff OK et pytest OK avec 217 tests passés.
+
 UI-CASE-WIZARD-002 : branchement du mode Assistant metier Streamlit sur `get_expected_documents(...)` et CASE-CATALOG-001, ajout des conditions UI pour les 8 familles, affichage des documents attendus avec statuts generable / manuel / non implemente / mapping / contexte incomplet V2, filtrage de la generation sur les seuls documents attendus generables avec `DOC-XXX` et contexte pret, mode Technique / diagnostic conserve, rapport `docs/review/ui_case_wizard_002_report_v1.md`, ruff OK et pytest OK avec 217 tests passes.
 
 CASE-CATALOG-001 : creation de la couche metier catalogue des cas depuis `project/source_truth/Documents_a_generer_par_cas.docx`, ajout de `src/sydel_doc_engine/domain/case_catalog.py` avec `get_expected_documents(...)`, 46 documents attendus uniques modelises dont 43 mappes au registre `DOC-001` a `DOC-043`, 2 documents manuels, 1 document non implemente, rapport `docs/review/case_catalog_001_report_v1.md`, ruff OK et pytest OK avec 208 tests passes.
@@ -63,6 +65,13 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
   - `Technique / diagnostic` : chargement YAML/JSON, selection `select_documents_for_context`, generation dossier DOCX/PDF optionnel/ZIP et telechargements existants.
 - La couche metier catalogue des cas est disponible dans `src/sydel_doc_engine/domain/case_catalog.py` : elle expose `CaseType`, `CaseCondition`, `DocumentOccurrence`, `DocumentAvailability`, `ExpectedDocument` et `get_expected_documents(...)`.
 - Le catalogue metier CASE-CATALOG-001 couvre 8 familles, 104 occurrences source et 46 documents attendus uniques : 43 generables et mappes au registre, 2 `MANUAL_ONLY`, 1 `NOT_IMPLEMENTED`, 0 `NEEDS_MAPPING`.
+- La source V2 du cadrage produit SELARL est disponible dans `project/source_truth/Documents_a_generer_par_cas_V2.docx`.
+- Le protocole réplicable de construction de processus est disponible dans `docs/project/PROCESS_BUILD_PROTOCOL_V1.md`.
+- Les specs SELARL pilote sont disponibles :
+  - `docs/project/SELARL_PROCESS_SPEC_V1.md` ;
+  - `docs/project/SELARL_FORM_SCHEMA_V1.md` ;
+  - `docs/project/SELARL_UI_WIZARD_SPEC_V1.md` ;
+  - `docs/project/SELARL_IMPLEMENTATION_PLAN_V1.md`.
 - Le smoke manuel UI/PDF/ZIP est documente dans `docs/review/ui_pdf_zip_integration_001_smoke.md`.
 - `examples/contexts/lot_01_example.yaml` utilise encore le champ legacy Lot 1 `adresse_domiciliation_affichee`, en attente d'un refactor dédié vers `domiciliation.adresse_affichee`.
 - Un smoke test réel a généré les trois DOCX du Lot 1 dans `artifacts/lot_01_smoke_test/`.
@@ -84,6 +93,7 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
 - Le rapport d'execution `DEPLOY-STREAMLIT-CLOUD-FIX-001` est disponible dans `docs/review/deploy_streamlit_cloud_fix_001_report_v1.md`.
 - Le rapport d'execution `CASE-CATALOG-001` est disponible dans `docs/review/case_catalog_001_report_v1.md`.
 - Le rapport d'execution `UI-CASE-WIZARD-002` est disponible dans `docs/review/ui_case_wizard_002_report_v1.md`.
+- Le rapport d'execution `SELARL-PILOT-PROTOCOL-001` est disponible dans `docs/review/selarl_pilot_protocol_001_report_v1.md`.
 - `pyproject.toml` declare explicitement le package Poetry `sydel_doc_engine` depuis `src`, pour eviter l'erreur Streamlit Cloud `No file/folder found for package sydel-document-engine`.
 - Le rapport de cleanup local et statut UI est disponible dans `docs/project/23_WORKTREE_CLEANUP_AND_UI_STATUS_V1.md`.
 - Le dossier canonique final a utiliser est `C:\Users\Gad\Desktop\Sydel\sydel-document-engine`.
@@ -94,6 +104,7 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
 - `UI-BUSINESS-WIZARD-001` est DONE avec perimetre assistant SCI simple.
 - `CASE-CATALOG-001` est DONE ; il n'a pas modifie l'UI, le moteur DOCX/PDF/ZIP ni les generateurs.
 - `UI-CASE-WIZARD-002` est DONE ; l'assistant metier est maintenant pilote par le catalogue des cas, avec generation partielle honnete et documents manuels/non implementes visibles.
+- `SELARL-PILOT-PROTOCOL-001` est DONE ; il n'a pas modifié l'UI, le moteur DOCX/PDF/ZIP ni les générateurs.
 - Ticket READY confirme : `CLOSE-PROJECT-V1-001`.
 - Le cadrage métier de la famille `PV nomination gérant` est disponible dans `docs/delivery/lot_02_pv_nomination_gerant_cadrage_v1.md`.
 - La spec canonique V1 de la famille `PV nomination gérant` est disponible dans `docs/delivery/lot_02_pv_nomination_gerant_spec_canonique_v1.md`.
@@ -818,6 +829,8 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
 - CASE-CATALOG-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 208 tests passes.
 - UI-CASE-WIZARD-002 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
 - UI-CASE-WIZARD-002 : `.\.venv\Scripts\python.exe -m pytest` OK, 217 tests passes.
+- SELARL-PILOT-PROTOCOL-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
+- SELARL-PILOT-PROTOCOL-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 217 tests passes.
 
 ## Recommandation immédiate suivante
-Creer `UI-CASE-WIZARD-003` pour enrichir progressivement les blocs formulaire qui permettront de passer certains documents de `Contexte incomplet pour generation V2` a `Generable`, par lot ou famille documentaire limitee.
+Créer `SELARL-FORM-SCHEMA-IMPL-001` pour implémenter le schéma de formulaire SELARL dans l'Assistant métier, en conservant le scope hors générateurs et hors moteur DOCX/PDF/ZIP.

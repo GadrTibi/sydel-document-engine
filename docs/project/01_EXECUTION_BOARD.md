@@ -131,6 +131,7 @@
 | DEPLOY-STREAMLIT-CLOUD-FIX-001 | DONE | Corriger l'installation Poetry Streamlit Cloud | erreur cloud package `sydel-document-engine` + package source `src/sydel_doc_engine` | `pyproject.toml` package explicite + rapport de deploiement + validations locales |
 | CASE-CATALOG-001 | DONE | Créer la couche métier catalogue des cas depuis la source de vérité | `project/source_truth/Documents_a_generer_par_cas.docx` + registre DOC-001 à DOC-043 | service pur `get_expected_documents` + tests + rapport |
 | UI-CASE-WIZARD-002 | DONE | Brancher l'assistant métier Streamlit sur le catalogue des cas | `CASE-CATALOG-001` + docs UI 19/20/21 + assistant existant | sélection documentaire via `get_expected_documents` + statuts honnêtes + tests + rapport |
+| SELARL-PILOT-PROTOCOL-001 | DONE | Cadrer le protocole produit SELARL pilote depuis la source V2 | `Documents_a_generer_par_cas_V2.docx` + CASE-CATALOG-001 + UI actuelle | protocole réplicable + specs SELARL + plan d'implémentation + rapport |
 | UI-001 | BLOCKED | Brancher Streamlit V0 Lot 1 | orchestrateur Lot 1 + spec canonique PV nomination gérant validée | écran simple + test manuel |
 
 ## Référentiels moteur disponibles
@@ -862,6 +863,16 @@
 - Tests : `.\.venv\Scripts\python.exe -m ruff check .` OK ; `.\.venv\Scripts\python.exe -m pytest` OK, 217 tests passes.
 - Prochaine etape recommandee : `UI-CASE-WIZARD-003`, enrichir les blocs formulaire pour rendre generables les documents aujourd'hui marques contexte incomplet V2, par famille ou lot limite.
 
+### SELARL-PILOT-PROTOCOL-001
+- Objectif : reprendre le cadrage produit de l'Assistant metier a partir du processus pilote SELARL et de la source V2 fournie par l'associe.
+- Source V2 : `project/source_truth/Documents_a_generer_par_cas_V2.docx`, copie du fichier non suivi initial `docs/docssource_truth/Documents à générer par cas.docx`.
+- Statut : DONE.
+- Livraison : `docs/project/PROCESS_BUILD_PROTOCOL_V1.md`, `docs/project/SELARL_PROCESS_SPEC_V1.md`, `docs/project/SELARL_FORM_SCHEMA_V1.md`, `docs/project/SELARL_UI_WIZARD_SPEC_V1.md`, `docs/project/SELARL_IMPLEMENTATION_PLAN_V1.md`.
+- Rapport : `docs/review/selarl_pilot_protocol_001_report_v1.md`.
+- Decisions : pas de modification UI/moteur/generateurs ; `PV d'autorisation d'emprunt` traite comme branche conditionnelle du `DOC-004` ; wording cible SELARL `Gerant / professionnel principal`.
+- Tests : `.\.venv\Scripts\python.exe -m ruff check .` OK ; `.\.venv\Scripts\python.exe -m pytest` OK, 217 tests passes.
+- Prochaine etape recommandee : `SELARL-FORM-SCHEMA-IMPL-001`.
+
 ### UI-001
 - Objectif : exposer une Streamlit simple pour générer le Lot 1.
 - Statut : en attente explicite ; ne pas lancer sans ticket explicite dédié.
@@ -887,8 +898,9 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - `UI-BUSINESS-WIZARD-001` est DONE ; l'UI Streamlit dispose maintenant d'un mode assistant metier SCI V1 et conserve le mode technique YAML/JSON.
 - `CASE-CATALOG-001` est DONE ; le catalogue metier par cas couvre 46 documents attendus, dont 43 mappes au registre moteur et 3 non generables.
 - `UI-CASE-WIZARD-002` est DONE ; l'assistant metier utilise maintenant `get_expected_documents(...)` pour afficher les documents attendus et exclut les documents manuels/non implementes de la generation.
+- `SELARL-PILOT-PROTOCOL-001` est DONE ; le pilote SELARL dispose d'un protocole réplicable, d'une spec processus, d'une spec formulaire, d'une spec wizard et d'un plan d'implémentation.
 - ticket READY confirmé : `CLOSE-PROJECT-V1-001`.
-- prochain ticket recommandé : `UI-CASE-WIZARD-003`, enrichissement progressif des blocs formulaire par famille pour reduire les documents `Contexte incomplet pour generation V2`.
+- prochain ticket recommandé : `SELARL-FORM-SCHEMA-IMPL-001`, implémentation limitée du schéma de formulaire SELARL sans toucher aux générateurs ni au moteur DOCX/PDF/ZIP.
 - moteur documentaire DOCX V1 feature complete et clos après `RECONCILE-MOTOR-CLOSE-001`.
 - tickets absorbés par `SYNC-POST-MOTOR-UI-001` : `UI-FLOW-001`, `UI-OCCURRENCES-001`, `UI-FORM-SCHEMA-001`, `PDF-BACKEND-001` et `RECIPE-FRAME-001`.
 - `RECONCILE-MOTOR-CLOSE-001` est DONE ; les générateurs ordre/SPFPL orphelins sont exposés sous `DOC-034` à `DOC-043`, `08/09/16/17/18` sont alignés et les références delivery Lot 2 manquantes sont présentes sur `main`.
@@ -1035,3 +1047,4 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - 2026-05-18 : UI-BUSINESS-WIZARD-001 ajoute le mode Assistant metier Streamlit en deux modes, construit un contexte SCI simple pour `DOC-001` a `DOC-004`, conserve le mode technique YAML/JSON, separe les actions DOCX/ZIP/PDF et valide ruff + pytest 196 tests.
 - 2026-05-18 : DEPLOY-STREAMLIT-CLOUD-FIX-001 ajoute la declaration Poetry explicite du package `src/sydel_doc_engine`, documente la cause racine Streamlit Cloud et valide installation editable, ruff et pytest 196 tests ; Poetry local reste indisponible.
 - 2026-05-18 : CASE-CATALOG-001 cree le service pur `get_expected_documents(...)` et le catalogue metier par cas depuis la source Word canonique, couvre 46 documents attendus uniques dont 43 mappes a `DOC-XXX`, documente 2 manuels et 1 non implemente, ajoute les tests unitaires de selection et valide ruff + pytest 208 tests.
+- 2026-05-19 : SELARL-PILOT-PROTOCOL-001 ajoute la source V2 cible, cree le protocole de construction de processus, les specs produit/formulaire/wizard SELARL et le plan d'implementation, puis valide ruff + pytest 217 tests sans modifier l'UI, le moteur ni les generateurs.
