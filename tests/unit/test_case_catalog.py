@@ -126,10 +126,18 @@ def test_manual_or_not_implemented_documents_are_not_generatable() -> None:
     assert blocked_documents["site_distinct_cd94_sel"].availability == (
         DocumentAvailability.MANUAL_ONLY
     )
+    assert blocked_documents["formulaire_derogation_sites_sel"].availability == (
+        DocumentAvailability.MANUAL_ONLY
+    )
     assert blocked_documents["derogation_sel_bnc"].availability == (
+        DocumentAvailability.MANUAL_ONLY
+    )
+    assert blocked_documents["derogation_cumul_selarl_bnc"].availability == (
         DocumentAvailability.MANUAL_ONLY
     )
     assert blocked_documents["derogation_cumul_selarl_salariee"].availability == (
         DocumentAvailability.NOT_IMPLEMENTED
     )
-    assert all(document.document_code is None for document in blocked_documents.values())
+    assert blocked_documents["site_distinct_cd94_sel"].document_code is None
+    assert blocked_documents["derogation_sel_bnc"].document_code is None
+    assert blocked_documents["derogation_cumul_selarl_salariee"].document_code is None

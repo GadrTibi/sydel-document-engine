@@ -178,8 +178,11 @@ CATALOG_DOCUMENTS: tuple[CatalogDocument, ...] = (
         "Formulaire de derogation pour exercer sur plusieurs sites avec la SEL",
         "Formulaire de derogation pour exercer sur plusieurs sites avec la SEL.docx",
         "DOC-013",
-        DocumentAvailability.GENERATABLE,
-        "Document genere comme formulaire a completer dans le registre moteur.",
+        DocumentAvailability.MANUAL_ONLY,
+        (
+            "Source V2 SELARL: le document est mentionne, mais indique comme "
+            "non fourni dans les sources de variables; hors generation pilote."
+        ),
     ),
     CatalogDocument(
         "derogation_sel_bnc",
@@ -194,8 +197,8 @@ CATALOG_DOCUMENTS: tuple[CatalogDocument, ...] = (
         "Demande de derogation cumul SELARL BNC",
         "Demande de derogation cumul SELARL - BNC.docx",
         "DOC-014",
-        DocumentAvailability.GENERATABLE,
-        "Document genere comme formulaire a completer dans le registre moteur.",
+        DocumentAvailability.MANUAL_ONLY,
+        "Source V2 SELARL: document indique comme a remplir a la main.",
     ),
     CatalogDocument(
         "avenant_contrat_bail",

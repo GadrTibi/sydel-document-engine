@@ -106,7 +106,7 @@ Blocs conditionnels :
 
 - régime communautaire : conjoint, régime, apport concerné, date et signature ;
 - SCM cession : SCM cédée, cédant, cessionnaire, associés SCM, prix, enregistrement ;
-- dérogation : type de dérogation, sites, zones narratives manuelles ;
+- dérogation : documents attendus, mais pas de saisie générative pilote pour `DOC-013` / `DOC-014` tant que la vraie V2 ne fournit pas les variables ou marque le document à remplir à la main ;
 - cession : vendeur, acquéreur, cabinet, prix, financement ;
 - cabinet médical / dentaire : champs propres au type de cabinet ;
 - bail : bailleur, locaux, dates, acceptation ;
@@ -115,7 +115,7 @@ Blocs conditionnels :
 Règles :
 
 - chaque bloc inactif est masqué et non bloquant ;
-- les zones narratives sensibles de dérogation restent manuelles ou bloquantes selon le statut du document ;
+- les documents de dérogation SELARL restent manuels dans le pilote vérifié : formulaire multi-sites non fourni en variables V2, `Dérogation SEL BNC` manuelle, `Dérogation cumul SELARL BNC` manuelle ;
 - l'emprunt PV reste une option du `DOC-004`, pas un document séparé.
 
 ## Écran 6 — Documents attendus
@@ -143,7 +143,9 @@ Règles :
 - ne pas transformer cette liste en formulaires document par document ;
 - ne pas afficher `PV d'autorisation d'emprunt` comme document autonome ;
 - afficher le formulaire site distinct CD94 comme manuel ;
-- afficher Dérogation SEL BNC comme manuel.
+- afficher le formulaire multi-sites SEL comme manuel / hors génération pilote si la vraie V2 ne fournit pas ses variables ;
+- afficher Dérogation SEL BNC comme manuel ;
+- afficher Dérogation cumul SELARL BNC comme manuel, même si `DOC-014` existe côté moteur.
 
 ## Écran 7 — Génération
 
@@ -175,7 +177,8 @@ Règles :
 | Cession SELARL | Le formulaire ne collecte pas encore les champs cession, bail, banque et cabinet. | Bloc cession complet conditionné par `cession = oui`. |
 | SCM cession | Le formulaire ne collecte pas encore les champs SCM cession. | Bloc SCM distinct de la cession de cabinet. |
 | Régime communautaire | Champs conjoint/apport absents du pilote assistant. | Bloc régime matrimonial / conjoint. |
-| Dérogation | Zones narratives sensibles absentes ou non contextualisées. | Bloc dérogation avec statut manuel ou formulaire à compléter. |
+| Dérogation | Le catalogue V1 exposait `DOC-013` et `DOC-014` comme formulaires à compléter. | Dans le pilote SELARL vérifié, le formulaire multi-sites est hors génération faute de variables V2 et `Dérogation cumul SELARL BNC` est manuel. |
+| Lettre d'avertissement conjoint | Le moteur expose `DOC-006` comme générable. | L'écran doit afficher une réserve source V2 : le document ne figure pas parmi les sources fournies. |
 | Documents à retirer du pilote | Aucun document autonome d'autorisation d'emprunt ne doit être ajouté. | Ne montrer que les documents SELARL attendus par la V2. |
 
 ## Critères d'acceptation UI futur
@@ -184,5 +187,6 @@ Règles :
 - Aucun champ UI ne s'appelle seulement `adresse`.
 - Le signataire, le gérant et l'associé 1 peuvent être liés sans double saisie.
 - Les documents manuels sont visibles mais exclus de la génération.
+- `DOC-013` et `DOC-014` ne sont pas envoyés à la génération dans le pilote SELARL vérifié sans arbitrage juriste.
 - Les champs manquants sont regroupés par bloc métier.
 - Aucun document hors flux SELARL pilote n'est affiché.

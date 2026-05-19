@@ -24,6 +24,7 @@ Risques :
 - introduire des champs qui n'alimentent aucun document ;
 - casser le mode SCI déjà existant ;
 - mélanger SELARL et SELAS.
+- réactiver par erreur `DOC-013` ou `DOC-014` comme générables alors que la vraie V2 les exclut du pilote automatisé.
 
 Tests attendus :
 
@@ -31,12 +32,15 @@ Tests attendus :
 - sélection SELARL chirurgien-dentiste ;
 - conditions `site_distinct`, `scm_cession`, `regime_communautaire`, `derogation`, `cession` ;
 - déduplication signataire / associé 1 / gérant.
+- vérification que les documents de dérogation SELARL sont affichés comme manuels / hors génération pilote.
 
 Critères d'acceptation :
 
 - aucun générateur modifié ;
 - aucun wording juridique modifié ;
 - tous les champs SELARL ont un label qualifié ;
+- la réserve source V2 sur la lettre d'avertissement conjoint est visible dans les documents attendus ;
+- `DOC-013` et `DOC-014` sont exclus des codes générables du pilote SELARL ;
 - ruff et pytest OK.
 
 ## SELARL-UI-WIZARD-IMPL-001
@@ -61,6 +65,7 @@ Tests attendus :
 - absence du libellé `Dirigeant / pharmacien` pour SELARL ;
 - absence de champ nommé seulement `adresse` dans les labels SELARL ;
 - documents attendus recalculés à partir de `get_expected_documents(...)`.
+- affichage manuel de `Formulaire de dérogation pour exercer sur plusieurs sites avec la SEL`, `Dérogation SEL BNC` et `Dérogation cumul SELARL BNC`.
 
 Critères d'acceptation :
 
@@ -94,6 +99,7 @@ Tests attendus :
 - SELARL avec cession cabinet dentaire ;
 - SELARL avec SCM cession ;
 - vérification que les documents manuels ne sont pas générés.
+- SELARL avec dérogation : vérifier que les documents de dérogation restent listés mais exclus de la génération.
 
 Critères d'acceptation :
 
@@ -101,6 +107,7 @@ Critères d'acceptation :
 - ZIP dossier produit ;
 - PDF optionnel documenté selon disponibilité locale ;
 - rapport listant les documents restés incomplets.
+- aucun DOCX `DOC-013` ou `DOC-014` produit par le smoke SELARL tant que la V2 reste dans cet état.
 
 ## SELARL-JURIST-REVIEW-001
 

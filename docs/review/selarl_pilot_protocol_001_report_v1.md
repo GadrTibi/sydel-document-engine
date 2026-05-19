@@ -5,6 +5,7 @@
 - Source V2 cible ajoutée : `project/source_truth/Documents_a_generer_par_cas_V2.docx`.
 - Provenance locale utilisée : `docs/docssource_truth/Documents à générer par cas.docx`, fichier non suivi présent avant intervention.
 - Hash SHA-256 V2 : `47860BBDD3997B1D35AC3F4833D6D5B650E35BCF2EA4C2B40952919FF6D4ABA5`.
+- Correction postérieure : `SELARL-PILOT-SOURCE-VERIFY-001` a remplacé ce fichier provisoire par la vraie V2 fournie par l'associé, hash SHA-256 `2E9843AA1EC05A01D82DF5FCE12516A8EF49EA2B3842547D186204218C90B23F`.
 - Source V1 de comparaison : `project/source_truth/Documents_a_generer_par_cas.docx`.
 - Fichiers projet lus : `case_catalog.py`, rapport `CASE-CATALOG-001`, `business_wizard.py`, docs UI `19/20/21`, specs delivery liées à SELARL.
 
@@ -40,7 +41,7 @@
 
 - La source V2 contient une ambiguïté de libellé autour de la ligne statuts médecin ; le fichier source vise le modèle médecins, mais la validation juriste reste recommandée.
 - Le formulaire site distinct CD94 est manuel dans le catalogue ; une future phase devra décider s'il devient préremplissable.
-- `DOC-013` et `DOC-014` sont générables comme formulaires à compléter, pas comme documents juridiques finalisés.
+- Point corrigé par `SELARL-PILOT-SOURCE-VERIFY-001` : dans la vraie V2, `DOC-013` ne fournit pas de variables exploitables pour le pilote et `DOC-014` est indiqué à remplir à la main ; ils ne doivent donc pas être générés dans le flux SELARL pilote sans arbitrage.
 - L'appel de fonds SEL est présent dans le bloc cession ; son périmètre exact doit rester aligné avec les arbitrages déjà documentés.
 
 ## Retours utilisateur intégrés

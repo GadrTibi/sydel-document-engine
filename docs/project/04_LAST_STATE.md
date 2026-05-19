@@ -5,6 +5,8 @@
 
 
 ## Dernier ticket terminé
+SELARL-PILOT-SOURCE-VERIFY-001 : vérification des livrables SELARL contre la vraie source V2 de l'associé `project/source_truth/Documents_a_generer_par_cas_V2.docx` hash SHA-256 `2E9843AA1EC05A01D82DF5FCE12516A8EF49EA2B3842547D186204218C90B23F`, remplacement du fichier V2 canonique provisoire, création du rapport `docs/review/selarl_source_verify_001_report_v1.md`, correction des statuts de dérogation SELARL dans le catalogue (`DOC-013` et `DOC-014` hors génération pilote), enrichissement des specs SELARL avec les variables V2 brutes et réserves source ; ruff OK et pytest OK avec 217 tests passés.
+
 SELARL-PILOT-PROTOCOL-001 : cadrage produit du pilote SELARL depuis `project/source_truth/Documents_a_generer_par_cas_V2.docx`, création du protocole réplicable de construction de processus, des specs SELARL processus/formulaire/wizard, du plan d'implémentation et du rapport `docs/review/selarl_pilot_protocol_001_report_v1.md`, sans modification de l'UI, du moteur DOCX/PDF/ZIP ni des générateurs ; ruff OK et pytest OK avec 217 tests passés.
 
 UI-CASE-WIZARD-002 : branchement du mode Assistant metier Streamlit sur `get_expected_documents(...)` et CASE-CATALOG-001, ajout des conditions UI pour les 8 familles, affichage des documents attendus avec statuts generable / manuel / non implemente / mapping / contexte incomplet V2, filtrage de la generation sur les seuls documents attendus generables avec `DOC-XXX` et contexte pret, mode Technique / diagnostic conserve, rapport `docs/review/ui_case_wizard_002_report_v1.md`, ruff OK et pytest OK avec 217 tests passes.
@@ -64,8 +66,8 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
   - `Assistant metier` : selection documentaire pilotee par `get_expected_documents(...)`, conditions metier par famille CASE-CATALOG-001, tableau des documents attendus incluant manuels/non implementes, generation DOCX filtree sur les documents generables et prets, ZIP avec manifest, PDF local optionnel et telechargements ;
   - `Technique / diagnostic` : chargement YAML/JSON, selection `select_documents_for_context`, generation dossier DOCX/PDF optionnel/ZIP et telechargements existants.
 - La couche metier catalogue des cas est disponible dans `src/sydel_doc_engine/domain/case_catalog.py` : elle expose `CaseType`, `CaseCondition`, `DocumentOccurrence`, `DocumentAvailability`, `ExpectedDocument` et `get_expected_documents(...)`.
-- Le catalogue metier CASE-CATALOG-001 couvre 8 familles, 104 occurrences source et 46 documents attendus uniques : 43 generables et mappes au registre, 2 `MANUAL_ONLY`, 1 `NOT_IMPLEMENTED`, 0 `NEEDS_MAPPING`.
-- La source V2 du cadrage produit SELARL est disponible dans `project/source_truth/Documents_a_generer_par_cas_V2.docx`.
+- Le catalogue metier couvre 8 familles, 104 occurrences source et 46 documents attendus uniques : 43 documents restent mappes a un `DOC-XXX`, mais après vérification de la vraie V2 SELARL seuls 41 sont `GENERATABLE`, 4 sont `MANUAL_ONLY`, 1 est `NOT_IMPLEMENTED`, 0 `NEEDS_MAPPING`.
+- La vraie source V2 du cadrage produit SELARL est disponible dans `project/source_truth/Documents_a_generer_par_cas_V2.docx` avec hash SHA-256 `2E9843AA1EC05A01D82DF5FCE12516A8EF49EA2B3842547D186204218C90B23F`.
 - Le protocole réplicable de construction de processus est disponible dans `docs/project/PROCESS_BUILD_PROTOCOL_V1.md`.
 - Les specs SELARL pilote sont disponibles :
   - `docs/project/SELARL_PROCESS_SPEC_V1.md` ;
@@ -94,6 +96,7 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
 - Le rapport d'execution `CASE-CATALOG-001` est disponible dans `docs/review/case_catalog_001_report_v1.md`.
 - Le rapport d'execution `UI-CASE-WIZARD-002` est disponible dans `docs/review/ui_case_wizard_002_report_v1.md`.
 - Le rapport d'execution `SELARL-PILOT-PROTOCOL-001` est disponible dans `docs/review/selarl_pilot_protocol_001_report_v1.md`.
+- Le rapport d'execution `SELARL-PILOT-SOURCE-VERIFY-001` est disponible dans `docs/review/selarl_source_verify_001_report_v1.md`.
 - `pyproject.toml` declare explicitement le package Poetry `sydel_doc_engine` depuis `src`, pour eviter l'erreur Streamlit Cloud `No file/folder found for package sydel-document-engine`.
 - Le rapport de cleanup local et statut UI est disponible dans `docs/project/23_WORKTREE_CLEANUP_AND_UI_STATUS_V1.md`.
 - Le dossier canonique final a utiliser est `C:\Users\Gad\Desktop\Sydel\sydel-document-engine`.
@@ -105,6 +108,7 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
 - `CASE-CATALOG-001` est DONE ; il n'a pas modifie l'UI, le moteur DOCX/PDF/ZIP ni les generateurs.
 - `UI-CASE-WIZARD-002` est DONE ; l'assistant metier est maintenant pilote par le catalogue des cas, avec generation partielle honnete et documents manuels/non implementes visibles.
 - `SELARL-PILOT-PROTOCOL-001` est DONE ; il n'a pas modifié l'UI, le moteur DOCX/PDF/ZIP ni les générateurs.
+- `SELARL-PILOT-SOURCE-VERIFY-001` est DONE ; il n'a pas modifié l'UI, le moteur DOCX/PDF/ZIP ni les générateurs, mais il a aligné le catalogue produit SELARL sur la vraie V2.
 - Ticket READY confirme : `CLOSE-PROJECT-V1-001`.
 - Le cadrage métier de la famille `PV nomination gérant` est disponible dans `docs/delivery/lot_02_pv_nomination_gerant_cadrage_v1.md`.
 - La spec canonique V1 de la famille `PV nomination gérant` est disponible dans `docs/delivery/lot_02_pv_nomination_gerant_spec_canonique_v1.md`.
@@ -831,6 +835,8 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
 - UI-CASE-WIZARD-002 : `.\.venv\Scripts\python.exe -m pytest` OK, 217 tests passes.
 - SELARL-PILOT-PROTOCOL-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
 - SELARL-PILOT-PROTOCOL-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 217 tests passes.
+- SELARL-PILOT-SOURCE-VERIFY-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
+- SELARL-PILOT-SOURCE-VERIFY-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 217 tests passés.
 
 ## Recommandation immédiate suivante
 Créer `SELARL-FORM-SCHEMA-IMPL-001` pour implémenter le schéma de formulaire SELARL dans l'Assistant métier, en conservant le scope hors générateurs et hors moteur DOCX/PDF/ZIP.

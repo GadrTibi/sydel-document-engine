@@ -132,6 +132,7 @@
 | CASE-CATALOG-001 | DONE | Créer la couche métier catalogue des cas depuis la source de vérité | `project/source_truth/Documents_a_generer_par_cas.docx` + registre DOC-001 à DOC-043 | service pur `get_expected_documents` + tests + rapport |
 | UI-CASE-WIZARD-002 | DONE | Brancher l'assistant métier Streamlit sur le catalogue des cas | `CASE-CATALOG-001` + docs UI 19/20/21 + assistant existant | sélection documentaire via `get_expected_documents` + statuts honnêtes + tests + rapport |
 | SELARL-PILOT-PROTOCOL-001 | DONE | Cadrer le protocole produit SELARL pilote depuis la source V2 | `Documents_a_generer_par_cas_V2.docx` + CASE-CATALOG-001 + UI actuelle | protocole réplicable + specs SELARL + plan d'implémentation + rapport |
+| SELARL-PILOT-SOURCE-VERIFY-001 | DONE | Réconcilier les specs SELARL avec la vraie source V2 | vraie V2 `project/source_truth/Documents_a_generer_par_cas_V2.docx` + specs SELARL + catalogue | matrice d'écarts + statuts dérogation corrigés + specs alignées + tests |
 | UI-001 | BLOCKED | Brancher Streamlit V0 Lot 1 | orchestrateur Lot 1 + spec canonique PV nomination gérant validée | écran simple + test manuel |
 
 ## Référentiels moteur disponibles
@@ -849,7 +850,7 @@
 - Source analysee : `project/source_truth/Documents_a_generer_par_cas.docx` ; les chemins `docs/source_truth/*` demandes par le ticket ne sont pas presents dans ce workspace.
 - Statut : DONE.
 - Livraison : `src/sydel_doc_engine/domain/case_catalog.py` expose `CaseType`, `CaseCondition`, `DocumentOccurrence`, `DocumentAvailability`, `ExpectedDocument` et `get_expected_documents(...)`.
-- Couverture : 8 familles, 46 documents attendus uniques, 104 occurrences source, 43 documents mappes a `DOC-XXX`, 2 documents `MANUAL_ONLY`, 1 document `NOT_IMPLEMENTED`, 0 `NEEDS_MAPPING`.
+- Couverture courante après `SELARL-PILOT-SOURCE-VERIFY-001` : 8 familles, 46 documents attendus uniques, 104 occurrences source, 43 documents mappes a `DOC-XXX`, 41 documents `GENERATABLE`, 4 documents `MANUAL_ONLY`, 1 document `NOT_IMPLEMENTED`, 0 `NEEDS_MAPPING`.
 - Rapport : `docs/review/case_catalog_001_report_v1.md`.
 - Prochaine etape realisee : `UI-CASE-WIZARD-002`.
 
@@ -872,6 +873,15 @@
 - Decisions : pas de modification UI/moteur/generateurs ; `PV d'autorisation d'emprunt` traite comme branche conditionnelle du `DOC-004` ; wording cible SELARL `Gerant / professionnel principal`.
 - Tests : `.\.venv\Scripts\python.exe -m ruff check .` OK ; `.\.venv\Scripts\python.exe -m pytest` OK, 217 tests passes.
 - Prochaine etape recommandee : `SELARL-FORM-SCHEMA-IMPL-001`.
+
+### SELARL-PILOT-SOURCE-VERIFY-001
+- Objectif : vérifier les livrables SELARL contre la vraie source V2 fournie par l'associé, puis corriger uniquement les écarts.
+- Source V2 vérifiée : `project/source_truth/Documents_a_generer_par_cas_V2.docx`, hash SHA-256 `2E9843AA1EC05A01D82DF5FCE12516A8EF49EA2B3842547D186204218C90B23F`.
+- Statut : DONE.
+- Livraison : `docs/review/selarl_source_verify_001_report_v1.md`, source V2 canonique remplacée, specs SELARL réconciliées, `case_catalog.py` aligné sur les statuts dérogation V2.
+- Décisions : `DOC-013` et `DOC-014` restent connus côté moteur mais sont `MANUAL_ONLY` dans le catalogue produit ; `DOC-006` garde une réserve source V2.
+- Tests : `.\.venv\Scripts\python.exe -m ruff check .` OK ; `.\.venv\Scripts\python.exe -m pytest` OK, 217 tests passés.
+- Prochaine étape recommandée : `SELARL-FORM-SCHEMA-IMPL-001`.
 
 ### UI-001
 - Objectif : exposer une Streamlit simple pour générer le Lot 1.
@@ -899,6 +909,7 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - `CASE-CATALOG-001` est DONE ; le catalogue metier par cas couvre 46 documents attendus, dont 43 mappes au registre moteur et 3 non generables.
 - `UI-CASE-WIZARD-002` est DONE ; l'assistant metier utilise maintenant `get_expected_documents(...)` pour afficher les documents attendus et exclut les documents manuels/non implementes de la generation.
 - `SELARL-PILOT-PROTOCOL-001` est DONE ; le pilote SELARL dispose d'un protocole réplicable, d'une spec processus, d'une spec formulaire, d'une spec wizard et d'un plan d'implémentation.
+- `SELARL-PILOT-SOURCE-VERIFY-001` est DONE ; la vraie V2 est au chemin canonique, les dérogations SELARL sont réconciliées en manuel et les variables V2 brutes sont reprises dans les specs.
 - ticket READY confirmé : `CLOSE-PROJECT-V1-001`.
 - prochain ticket recommandé : `SELARL-FORM-SCHEMA-IMPL-001`, implémentation limitée du schéma de formulaire SELARL sans toucher aux générateurs ni au moteur DOCX/PDF/ZIP.
 - moteur documentaire DOCX V1 feature complete et clos après `RECONCILE-MOTOR-CLOSE-001`.
@@ -1048,3 +1059,4 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - 2026-05-18 : DEPLOY-STREAMLIT-CLOUD-FIX-001 ajoute la declaration Poetry explicite du package `src/sydel_doc_engine`, documente la cause racine Streamlit Cloud et valide installation editable, ruff et pytest 196 tests ; Poetry local reste indisponible.
 - 2026-05-18 : CASE-CATALOG-001 cree le service pur `get_expected_documents(...)` et le catalogue metier par cas depuis la source Word canonique, couvre 46 documents attendus uniques dont 43 mappes a `DOC-XXX`, documente 2 manuels et 1 non implemente, ajoute les tests unitaires de selection et valide ruff + pytest 208 tests.
 - 2026-05-19 : SELARL-PILOT-PROTOCOL-001 ajoute la source V2 cible, cree le protocole de construction de processus, les specs produit/formulaire/wizard SELARL et le plan d'implementation, puis valide ruff + pytest 217 tests sans modifier l'UI, le moteur ni les generateurs.
+- 2026-05-19 : SELARL-PILOT-SOURCE-VERIFY-001 lit la vraie source V2, remplace le fichier canonique provisoire, corrige les statuts SELARL `DOC-013` / `DOC-014` en manuel, complète les variables V2 dans les specs et crée la matrice d'écarts source.
