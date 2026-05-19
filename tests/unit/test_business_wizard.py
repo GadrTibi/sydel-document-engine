@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import unicodedata
 from dataclasses import replace
 from pathlib import Path
 from zipfile import ZipFile
@@ -16,6 +17,11 @@ from sydel_doc_engine.app.business_wizard import (
     business_document_table_rows,
     evaluate_business_wizard,
     sample_business_wizard_input,
+    selarl_ui_address_labels,
+    selarl_ui_block_visibility,
+    selarl_ui_condition_specs,
+    selarl_ui_document_specs,
+    selarl_ui_reuse_rules,
 )
 from sydel_doc_engine.app.ui_runtime import (
     generate_docx_files_for_document_codes,
@@ -240,6 +246,117 @@ def test_streamlit_technical_mode_remains_accessible() -> None:
     assert "Assistant metier" in app_source
 
 
+def test_streamlit_business_mode_exposes_sci_and_selarl() -> None:
+    dossier_types = {item.structure for item in business_wizard.business_dossier_types()}
+
+    assert {"SCI", "SELARL"}.issubset(dossier_types)
+
+
+def test_selarl_ui_conditions_are_available() -> None:
+    assert {spec.key for spec in selarl_ui_condition_specs()} == {
+        "profession",
+        "site_distinct",
+        "scm_cession",
+        "regime_communautaire",
+        "derogation",
+        "cession",
+        "cabinet_type",
+    }
+
+
+def test_streamlit_selarl_path_does_not_use_pharmacien_wording() -> None:
+    app_source = Path("src/sydel_doc_engine/app/streamlit_app.py").read_text(encoding="utf-8")
+
+    assert "Dirigeant / pharmacien" not in app_source
+    assert "Gerant / professionnel principal" in app_source
+
+
+def test_selarl_ui_address_labels_are_qualified() -> None:
+    ambiguous_labels = {"adresse", "numero", "voie", "ville", "code postal"}
+    labels = selarl_ui_address_labels()
+
+    assert labels
+    assert all(label.casefold().strip() not in ambiguous_labels for label in labels)
+    assert any("adresse personnelle du professionnel" in label.casefold() for label in labels)
+    assert any("adresse du siege social" in _plain(label) for label in labels)
+    assert any("adresse de la banque" in label.casefold() for label in labels)
+
+
+def test_selarl_docs_006_013_014_have_required_ui_statuses() -> None:
+    validation = evaluate_business_wizard(
+        _case_data(
+            "SELARL",
+            profession="medecin",
+            site_distinct=False,
+            scm_cession=False,
+            regime_communautaire=True,
+            derogation=True,
+            cession=False,
+        )
+    )
+
+    assert any("vraie V2" in note for note in _row_by_code(validation, "DOC-006").notes)
+    assert _row_by_code(validation, "DOC-013").status == STATUS_MANUAL_ONLY
+    assert _row_by_code(validation, "DOC-014").status == STATUS_MANUAL_ONLY
+    assert "DOC-013" not in validation.generatable_document_codes
+    assert "DOC-014" not in validation.generatable_document_codes
+
+
+def test_selarl_ui_reuse_rules_cover_main_deduplications() -> None:
+    rule_keys = {rule.key for rule in selarl_ui_reuse_rules()}
+
+    assert {
+        "signataire_is_associe_1",
+        "gerant_is_professional",
+        "signataire_is_professional",
+        "mandataire_is_signataire",
+        "selarl_is_acquirer",
+        "selarl_is_scm_transferee",
+        "domiciliation_is_registered_office",
+    }.issubset(rule_keys)
+
+
+def test_selarl_ui_document_specs_stay_aligned_with_catalog_statuses() -> None:
+    spec_codes = {document.document_code for document in selarl_ui_document_specs()}
+    validation = evaluate_business_wizard(
+        _case_data(
+            "SELARL",
+            profession="medecin",
+            site_distinct=True,
+            scm_cession=True,
+            regime_communautaire=True,
+            derogation=True,
+            cession=True,
+            cabinet_type="medical",
+        )
+    )
+    row_codes = {row.document_code for row in validation.document_rows}
+
+    assert {"DOC-006", "DOC-013", "DOC-014"}.issubset(spec_codes)
+    assert {"DOC-006", "DOC-013", "DOC-014"}.issubset(row_codes)
+
+
+def test_selarl_ui_block_visibility_masks_inactive_specific_blocks() -> None:
+    data = _case_data(
+        "SELARL",
+        profession="medecin",
+        site_distinct=False,
+        scm_cession=False,
+        regime_communautaire=False,
+        derogation=False,
+        cession=False,
+    )
+
+    visibility = selarl_ui_block_visibility(data)
+
+    assert visibility["societe"] is True
+    assert visibility["regime_conjoint"] is False
+    assert visibility["scm"] is False
+    assert visibility["cession_cabinet"] is False
+    assert visibility["bail"] is False
+    assert visibility["banque_financement"] is False
+
+
 def test_business_wizard_generates_docx_and_zip_without_residual_placeholders(
     tmp_path: Path,
 ) -> None:
@@ -274,6 +391,15 @@ def _row_codes(validation) -> list[str]:
 
 def _row_by_code(validation, code: str):
     return next(row for row in validation.document_rows if row.document_code == code)
+
+
+def _plain(value: str) -> str:
+    return (
+        unicodedata.normalize("NFKD", value)
+        .encode("ascii", "ignore")
+        .decode("ascii")
+        .casefold()
+    )
 
 
 def _docx_text(path: Path) -> str:

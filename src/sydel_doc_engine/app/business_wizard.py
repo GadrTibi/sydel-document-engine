@@ -7,6 +7,16 @@ from typing import Final
 
 from pydantic import ValidationError
 
+from sydel_doc_engine.app.selarl_form_schema import (
+    FormField,
+    ReuseRule,
+    SelarlDocumentSpec,
+    selarl_blocks,
+    selarl_document_specs,
+    selarl_fields,
+    selarl_fields_by_block,
+    selarl_reuse_rules,
+)
 from sydel_doc_engine.domain.case_catalog import (
     CaseInput,
     CaseType,
@@ -59,6 +69,17 @@ STATUS_LABELS: Final[dict[str, str]] = {
     STATUS_NOT_IMPLEMENTED: "Non implémenté",
     STATUS_NEEDS_MAPPING: "Mapping à confirmer",
 }
+
+SELARL_ALWAYS_VISIBLE_BLOCK_KEYS: Final[tuple[str, ...]] = (
+    "qualification",
+    "societe",
+    "siege_social",
+    "professionnel_gerant",
+    "ordre_professionnel",
+    "associes",
+    "mandataire_signataire",
+    "signature",
+)
 
 
 @dataclass(frozen=True)
@@ -158,6 +179,13 @@ class BusinessWizardInput:
     bien_adresse_voie: str = ""
     bien_adresse_cp: str = ""
     bien_adresse_ville: str = ""
+    selarl_signataire_is_associe_1: bool = False
+    selarl_gerant_is_professional: bool = False
+    selarl_signataire_is_professional: bool = False
+    selarl_mandataire_is_signataire: bool = False
+    selarl_company_is_acquirer: bool = False
+    selarl_company_is_scm_transferee: bool = False
+    selarl_domiciliation_is_registered_office: bool = False
 
 
 @dataclass(frozen=True)
@@ -227,33 +255,7 @@ def get_ui_conditions_for_case(case_type: CaseType | str) -> tuple[BusinessCondi
             BusinessConditionSpec("option_is", "Option IS", "bool"),
         )
     if normalized_case_type == CaseType.SELARL:
-        return (
-            BusinessConditionSpec(
-                "profession",
-                "Profession",
-                "choice",
-                choices=(
-                    ("medecin", "medecin"),
-                    ("chirurgien_dentiste", "chirurgien-dentiste"),
-                ),
-            ),
-            BusinessConditionSpec("site_distinct", "Site distinct", "bool"),
-            BusinessConditionSpec("scm_cession", "SCM cession", "bool"),
-            BusinessConditionSpec("regime_communautaire", "Regime communautaire", "bool"),
-            BusinessConditionSpec("derogation", "Derogation", "bool"),
-            BusinessConditionSpec("cession", "Cession", "bool"),
-            BusinessConditionSpec(
-                "cabinet_type",
-                "Type de cabinet si cession",
-                "choice",
-                required=False,
-                choices=(
-                    ("aucun", "aucun"),
-                    ("medical", "cabinet medical"),
-                    ("dentaire", "cabinet dentaire"),
-                ),
-            ),
-        )
+        return selarl_ui_condition_specs()
     if normalized_case_type == CaseType.SELAS:
         return (
             BusinessConditionSpec(
@@ -307,6 +309,115 @@ def get_ui_conditions_for_case(case_type: CaseType | str) -> tuple[BusinessCondi
             ),
         )
     return ()
+
+
+def selarl_ui_condition_specs() -> tuple[BusinessConditionSpec, ...]:
+    fields = _selarl_field_index()
+    return (
+        BusinessConditionSpec(
+            "profession",
+            fields["qualification.profession"].label,
+            "choice",
+            choices=(
+                ("medecin", "medecin"),
+                ("chirurgien_dentiste", "chirurgien-dentiste"),
+            ),
+            note=fields["qualification.profession"].help_text,
+        ),
+        BusinessConditionSpec(
+            "site_distinct",
+            fields["qualification.site_distinct"].label,
+            "bool",
+            note=fields["qualification.site_distinct"].help_text,
+        ),
+        BusinessConditionSpec(
+            "scm_cession",
+            fields["qualification.scm_cession"].label,
+            "bool",
+            note=fields["qualification.scm_cession"].help_text,
+        ),
+        BusinessConditionSpec(
+            "regime_communautaire",
+            fields["qualification.regime_communautaire"].label,
+            "bool",
+            note=fields["qualification.regime_communautaire"].help_text,
+        ),
+        BusinessConditionSpec(
+            "derogation",
+            fields["qualification.derogation"].label,
+            "bool",
+            note=fields["qualification.derogation"].help_text,
+        ),
+        BusinessConditionSpec(
+            "cession",
+            fields["qualification.cession"].label,
+            "bool",
+            note=fields["qualification.cession"].help_text,
+        ),
+        BusinessConditionSpec(
+            "cabinet_type",
+            fields["qualification.cabinet_type"].label,
+            "choice",
+            required=False,
+            choices=(
+                ("aucun", "aucun"),
+                ("medical", "cabinet medical"),
+                ("dentaire", "cabinet dentaire"),
+            ),
+            note=fields["qualification.cabinet_type"].help_text,
+        ),
+    )
+
+
+def selarl_ui_block_visibility(data: BusinessWizardInput) -> dict[str, bool]:
+    visibility = {
+        block.key: block.key in SELARL_ALWAYS_VISIBLE_BLOCK_KEYS
+        for block in selarl_blocks()
+    }
+    visibility["regime_conjoint"] = data.regime_communautaire is True
+    visibility["scm"] = data.scm_cession is True
+    visibility["cession_cabinet"] = data.cession is True
+    visibility["bail"] = data.cession is True
+    visibility["banque_financement"] = data.cession is True or data.emprunt_actif
+    return visibility
+
+
+def selarl_ui_visible_fields_by_block(
+    data: BusinessWizardInput,
+) -> dict[str, tuple[FormField, ...]]:
+    visibility = selarl_ui_block_visibility(data)
+    fields_by_block = selarl_fields_by_block()
+    return {
+        block_key: fields
+        for block_key, fields in fields_by_block.items()
+        if visibility.get(block_key, False)
+    }
+
+
+def selarl_ui_field(key: str) -> FormField:
+    return _selarl_field_index()[key]
+
+
+def selarl_ui_reuse_rules() -> tuple[ReuseRule, ...]:
+    return selarl_reuse_rules()
+
+
+def selarl_ui_document_specs() -> tuple[SelarlDocumentSpec, ...]:
+    return selarl_document_specs()
+
+
+def selarl_ui_field_labels() -> tuple[str, ...]:
+    return tuple(field.label for field in selarl_fields())
+
+
+def selarl_ui_address_labels() -> tuple[str, ...]:
+    return tuple(
+        field.label for field in selarl_fields() if "adresse" in field.label.casefold()
+    )
+
+
+def _selarl_field_index() -> dict[str, FormField]:
+    return {field.key: field for field in selarl_fields()}
 
 
 def sample_business_wizard_input() -> BusinessWizardInput:

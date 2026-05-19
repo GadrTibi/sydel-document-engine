@@ -5,6 +5,8 @@
 
 
 ## Dernier ticket terminé
+SELARL-UI-WIZARD-IMPL-001 : branchement du mode `Assistant metier` Streamlit sur le schema machine-readable SELARL, ajout d'un parcours pilote en ecrans qualification / societe / professionnel principal et gerant / associes / conditions specifiques / documents attendus / generation, consommation des labels, blocs, regles de reutilisation et documents issus de `src/sydel_doc_engine/app/selarl_form_schema.py` via `business_wizard.py`, conservation du mode SCI et du mode `Technique / diagnostic`, affichage de `DOC-006` avec reserve source V2, `DOC-013` et `DOC-014` visibles mais `MANUAL_ONLY` et exclus de la generation, rapport `docs/review/selarl_ui_wizard_impl_001_report_v1.md`, ruff OK et pytest OK avec 239 tests passes.
+
 SELARL-FORM-SCHEMA-IMPL-001 : implémentation du schéma de données SELARL côté Assistant métier depuis la vraie source V2 `project/source_truth/Documents_a_generer_par_cas_V2.docx`, ajout de `src/sydel_doc_engine/app/selarl_form_schema.py`, couverture machine-readable des blocs métier, champs qualifiés, règles de réutilisation, documents attendus et variables V2, ajout de la réserve source V2 exploitable sur `DOC-006`, clarification finale de `DOC-013` / `DOC-014` comme `MANUAL_ONLY` hors génération pilote, rapport `docs/review/selarl_form_schema_impl_001_report_v1.md`, ruff OK et pytest OK avec 231 tests passés.
 
 SELARL-PILOT-SOURCE-VERIFY-001 : vérification des livrables SELARL contre la vraie source V2 de l'associé `project/source_truth/Documents_a_generer_par_cas_V2.docx` hash SHA-256 `2E9843AA1EC05A01D82DF5FCE12516A8EF49EA2B3842547D186204218C90B23F`, remplacement du fichier V2 canonique provisoire, création du rapport `docs/review/selarl_source_verify_001_report_v1.md`, correction des statuts de dérogation SELARL dans le catalogue (`DOC-013` et `DOC-014` hors génération pilote), enrichissement des specs SELARL avec les variables V2 brutes et réserves source ; ruff OK et pytest OK avec 217 tests passés.
@@ -65,7 +67,7 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
 - Le backend ZIP V1 est disponible dans `src/sydel_doc_engine/rendering/zip_bundle.py` : ZIP deterministe DOCX/PDF, chemins relatifs, filtrage des fichiers temporaires et manifeste `manifest.json`.
 - Strategie PDF locale retenue apres smoke : LibreOffice headless prioritaire si present ; Word COM Windows utilise localement avec succes. LibreOffice n'est pas installe sur la machine de smoke.
 - L'UI Streamlit dispose maintenant de deux modes :
-  - `Assistant metier` : selection documentaire pilotee par `get_expected_documents(...)`, conditions metier par famille CASE-CATALOG-001, tableau des documents attendus incluant manuels/non implementes, generation DOCX filtree sur les documents generables et prets, ZIP avec manifest, PDF local optionnel et telechargements ;
+  - `Assistant metier` : selection documentaire pilotee par `get_expected_documents(...)`, conditions metier par famille CASE-CATALOG-001, parcours SELARL pilote branche sur le schema `selarl_form_schema.py`, tableau des documents attendus incluant manuels/non implementes/reserves, generation DOCX filtree sur les documents generables et prets, ZIP avec manifest, PDF local optionnel et telechargements ;
   - `Technique / diagnostic` : chargement YAML/JSON, selection `select_documents_for_context`, generation dossier DOCX/PDF optionnel/ZIP et telechargements existants.
 - La couche metier catalogue des cas est disponible dans `src/sydel_doc_engine/domain/case_catalog.py` : elle expose `CaseType`, `CaseCondition`, `DocumentOccurrence`, `DocumentAvailability`, `ExpectedDocument` et `get_expected_documents(...)`.
 - Le catalogue metier couvre 8 familles, 104 occurrences source et 46 documents attendus uniques : 43 documents restent mappes a un `DOC-XXX`, mais après vérification de la vraie V2 SELARL seuls 41 sont `GENERATABLE`, 4 sont `MANUAL_ONLY`, 1 est `NOT_IMPLEMENTED`, 0 `NEEDS_MAPPING`.
@@ -77,6 +79,7 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
   - `docs/project/SELARL_UI_WIZARD_SPEC_V1.md` ;
   - `docs/project/SELARL_IMPLEMENTATION_PLAN_V1.md`.
 - Le schéma de données SELARL côté Assistant métier est disponible dans `src/sydel_doc_engine/app/selarl_form_schema.py` : blocs métier, champs UI qualifiés, règles de réutilisation, documents attendus, codes générables et couverture des variables V2.
+- Le parcours UI SELARL pilote est disponible dans `src/sydel_doc_engine/app/streamlit_app.py` et consomme le schema via `src/sydel_doc_engine/app/business_wizard.py` : ecrans de qualification, societe, professionnel/gerant, associes, conditions specifiques, documents attendus et generation.
 - `DOC-006` porte désormais une réserve source V2 exploitable depuis `case_catalog.py`; `DOC-013` et `DOC-014` restent visibles mais `MANUAL_ONLY` et exclus des codes générables SELARL.
 - Le smoke manuel UI/PDF/ZIP est documente dans `docs/review/ui_pdf_zip_integration_001_smoke.md`.
 - `examples/contexts/lot_01_example.yaml` utilise encore le champ legacy Lot 1 `adresse_domiciliation_affichee`, en attente d'un refactor dédié vers `domiciliation.adresse_affichee`.
@@ -102,6 +105,7 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
 - Le rapport d'execution `SELARL-PILOT-PROTOCOL-001` est disponible dans `docs/review/selarl_pilot_protocol_001_report_v1.md`.
 - Le rapport d'execution `SELARL-PILOT-SOURCE-VERIFY-001` est disponible dans `docs/review/selarl_source_verify_001_report_v1.md`.
 - Le rapport d'execution `SELARL-FORM-SCHEMA-IMPL-001` est disponible dans `docs/review/selarl_form_schema_impl_001_report_v1.md`.
+- Le rapport d'execution `SELARL-UI-WIZARD-IMPL-001` est disponible dans `docs/review/selarl_ui_wizard_impl_001_report_v1.md`.
 - `pyproject.toml` declare explicitement le package Poetry `sydel_doc_engine` depuis `src`, pour eviter l'erreur Streamlit Cloud `No file/folder found for package sydel-document-engine`.
 - Le rapport de cleanup local et statut UI est disponible dans `docs/project/23_WORKTREE_CLEANUP_AND_UI_STATUS_V1.md`.
 - Le dossier canonique final a utiliser est `C:\Users\Gad\Desktop\Sydel\sydel-document-engine`.
@@ -115,7 +119,8 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
 - `SELARL-PILOT-PROTOCOL-001` est DONE ; il n'a pas modifié l'UI, le moteur DOCX/PDF/ZIP ni les générateurs.
 - `SELARL-PILOT-SOURCE-VERIFY-001` est DONE ; il n'a pas modifié l'UI, le moteur DOCX/PDF/ZIP ni les générateurs, mais il a aligné le catalogue produit SELARL sur la vraie V2.
 - `SELARL-FORM-SCHEMA-IMPL-001` est DONE ; il n'a pas modifié l'UI visible, le moteur DOCX/PDF/ZIP ni les générateurs.
-- Tickets READY confirmés : `CLOSE-PROJECT-V1-001`, `SELARL-UI-WIZARD-IMPL-001`.
+- `SELARL-UI-WIZARD-IMPL-001` est DONE ; il n'a pas modifié les générateurs ni le moteur DOCX/PDF/ZIP et conserve SCI ainsi que le mode Technique / diagnostic.
+- Tickets READY confirmés : `CLOSE-PROJECT-V1-001`, `SELARL-DOCS-GENERATION-SMOKE-001`.
 - Le cadrage métier de la famille `PV nomination gérant` est disponible dans `docs/delivery/lot_02_pv_nomination_gerant_cadrage_v1.md`.
 - La spec canonique V1 de la famille `PV nomination gérant` est disponible dans `docs/delivery/lot_02_pv_nomination_gerant_spec_canonique_v1.md`.
 - La spec texte V1 de la famille `PV nomination gérant` est disponible dans `docs/delivery/lot_02_pv_nomination_gerant_spec_texte_v1.md`.
@@ -845,6 +850,8 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
 - SELARL-PILOT-SOURCE-VERIFY-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 217 tests passés.
 - SELARL-FORM-SCHEMA-IMPL-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
 - SELARL-FORM-SCHEMA-IMPL-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 231 tests passés.
+- SELARL-UI-WIZARD-IMPL-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
+- SELARL-UI-WIZARD-IMPL-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 239 tests passés.
 
 ## Recommandation immédiate suivante
-Ouvrir `SELARL-UI-WIZARD-IMPL-001` pour brancher l'Assistant métier visible sur `src/sydel_doc_engine/app/selarl_form_schema.py`, en conservant le mode SCI existant, le mode Technique / diagnostic, et l'exclusion des documents SELARL manuels (`DOC-013`, `DOC-014`) de la génération.
+Ouvrir `SELARL-DOCS-GENERATION-SMOKE-001` pour tester le parcours SELARL avec des données réalistes, confirmer les documents réellement générés, vérifier que `DOC-013` et `DOC-014` restent exclus, et documenter les champs encore `Contexte incomplet pour génération V2`.
