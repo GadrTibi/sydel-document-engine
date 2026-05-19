@@ -679,66 +679,66 @@ def _collect_selarl_business_input(conditions: dict[str, object | None]) -> Busi
         if selarl_domiciliation_is_registered_office:
             st.caption("Donnee derivee depuis l'adresse du siege social.")
 
-    st.subheader("Ecran 3 - Professionnel principal / gerant")
-    with st.expander("Professionnel principal / gerant", expanded=True):
+    st.subheader("Ecran 3 - Fiche Client")
+    with st.expander("Fiche Client - Praticien et gerant", expanded=True):
         personne_genre = st.selectbox(
-            "Genre grammatical du professionnel principal",
+            "Genre grammatical du Praticien",
             GENDER_OPTIONS,
             key="selarl_personne_genre",
         )
         personne_civilite = st.selectbox(
-            "Civilite du professionnel principal",
+            "Civilite du Praticien",
             ("", "Monsieur", "Madame", "Docteur"),
             key="selarl_personne_civilite",
         )
         person_cols = st.columns(2)
-        personne_prenom = person_cols[0].text_input("Prenom du professionnel principal")
-        personne_nom = person_cols[1].text_input("Nom du professionnel principal")
+        personne_prenom = person_cols[0].text_input("Prenom du Praticien")
+        personne_nom = person_cols[1].text_input("Nom du Praticien")
         personne_date_naissance = st.text_input(
-            "Date de naissance du professionnel principal (AAAA-MM-JJ)"
+            "Date de naissance du Praticien (AAAA-MM-JJ)"
         )
         naissance_cols = st.columns(2)
         dirigeant_ville_naissance = naissance_cols[0].text_input(
-            "Ville de naissance du professionnel principal"
+            "Ville de naissance du Praticien"
         )
         dirigeant_departement_naissance = naissance_cols[1].text_input(
-            "Departement de naissance du professionnel principal"
+            "Departement de naissance du Praticien"
         )
-        personne_nationalite = st.text_input("Nationalite du professionnel principal")
-        personne_nom_pere = st.text_input("Nom du pere du professionnel principal")
-        personne_nom_mere = st.text_input("Nom de la mere du professionnel principal")
+        personne_nationalite = st.text_input("Nationalite du Praticien")
+        personne_nom_pere = st.text_input("Nom du pere du Praticien")
+        personne_nom_mere = st.text_input("Nom de la mere du Praticien")
         personne_fonction_dirigeant = st.text_input(
-            "Fonction du professionnel principal",
-            value="Gerant / professionnel principal",
+            "Fonction du Praticien",
+            value="Gerant",
             help=selarl_ui_field("professionnel.fonction").help_text,
         )
-        st.markdown("Adresse personnelle du professionnel principal")
+        st.markdown("Adresse personnelle du Praticien")
         personne_addr_cols = st.columns(4)
         personne_adresse_num_voie = personne_addr_cols[0].text_input(
-            "Adresse personnelle du professionnel - numero",
+            "Adresse personnelle du Praticien - numero",
             key="selarl_personne_num",
         )
         personne_adresse_voie = personne_addr_cols[1].text_input(
-            "Adresse personnelle du professionnel - voie",
+            "Adresse personnelle du Praticien - voie",
             key="selarl_personne_voie",
         )
         personne_adresse_cp = personne_addr_cols[2].text_input(
-            "Adresse personnelle du professionnel - code postal",
+            "Adresse personnelle du Praticien - code postal",
             key="selarl_personne_cp",
         )
         personne_adresse_ville = personne_addr_cols[3].text_input(
-            "Adresse personnelle du professionnel - ville",
+            "Adresse personnelle du Praticien - ville",
             key="selarl_personne_ville",
         )
         st.markdown("Ordre professionnel")
         ordre_cols = st.columns(2)
         ordre_cols[0].text_input(
-            "Numero RPPS du professionnel",
+            "Numero RPPS du Praticien",
             key="selarl_numero_rpps",
             help=selarl_ui_field("ordre.numeros").help_text,
         )
         ordre_cols[1].text_input(
-            "Numero ordinal du professionnel",
+            "Numero ordinal du Praticien",
             key="selarl_numero_ordre",
             help=selarl_ui_field("ordre.numeros").help_text,
         )
@@ -768,7 +768,7 @@ def _collect_selarl_business_input(conditions: dict[str, object | None]) -> Busi
             help=reuse_rules["mandataire_is_signataire"].effect,
         )
         if selarl_gerant_is_professional:
-            st.caption("Gerant derive depuis le professionnel principal.")
+            st.caption("Gerant derive depuis le Praticien.")
             dirigeant_genre = personne_genre
             dirigeant_civilite_affichage = personne_civilite
             dirigeant_prenom = personne_prenom
@@ -781,7 +781,7 @@ def _collect_selarl_business_input(conditions: dict[str, object | None]) -> Busi
             dirigeant_adresse_cp = personne_adresse_cp
             dirigeant_adresse_ville = personne_adresse_ville
         else:
-            st.markdown("Gerant distinct du professionnel principal")
+            st.markdown("Gerant distinct du Praticien")
             dirigeant_genre = st.selectbox(
                 "Genre grammatical du gerant distinct",
                 GENDER_OPTIONS,
@@ -830,7 +830,7 @@ def _collect_selarl_business_input(conditions: dict[str, object | None]) -> Busi
             help=reuse_rules["signataire_is_associe_1"].effect,
         )
         copy_associe_1_from_professional = st.checkbox(
-            "Copier depuis professionnel principal",
+            "Copier depuis le Praticien",
             value=True,
         )
         associes = _collect_selarl_associes(
@@ -1094,7 +1094,7 @@ def _collect_selarl_associes(
             key=f"selarl_associe_present_{index}",
         )
         if derived:
-            st.caption(f"Associe {index + 1} derive depuis le professionnel principal.")
+            st.caption(f"Associe {index + 1} derive depuis le Praticien.")
         associes.append(
             BusinessAssociateInput(
                 genre=genre,

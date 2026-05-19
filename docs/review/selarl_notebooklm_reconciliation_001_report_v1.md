@@ -48,7 +48,7 @@ Ces arbitrages corrigent la lecture NotebookLM et priment dans la planification 
 
 - ecran personne : `Fiche Client` ;
 - terme pivot : `Praticien` ;
-- abandon du libelle `professionnel principal` dans les labels visibles et les tickets futurs ;
+- abandon de l'ancien libelle personne dans les labels visibles et les tickets futurs ;
 - ajout d'une logique `Dossier unipersonnel` ;
 - mandataire sorti des priorites UX si aucune variable ou document ne le rend central ;
 - pas de mode Projet ni filigrane dans la V1 ;
@@ -94,7 +94,7 @@ Correction conceptuelle :
 - utiliser `Associe` pour le capital ;
 - utiliser `Signataire` pour la signature ;
 - utiliser `Mandataire` seulement quand les formalites ou variables le justifient ;
-- bannir `CELAR` de toute UI et documentation projet hors citation de transcription.
+- bannir la transcription erronée de SELARL de toute UI et documentation projet hors citation source.
 
 ### B. Ordre des ecrans
 
@@ -241,7 +241,7 @@ Champs demandes trop tot ou au mauvais endroit :
 - Tester l'ordre logique des blocs SELARL.
 - Tester la logique `Dossier unipersonnel`.
 - Tester que `mandataire_is_signataire` n'est pas la valeur par defaut.
-- Tester que `CELAR` est absent hors source NotebookLM.
+- Tester que la transcription erronée de SELARL est absente hors source NotebookLM.
 - Ne pas ajouter de tests exigeant mode Projet, filigrane ou couche statut produit lourde.
 
 ## Risques si on continue sans corriger

@@ -70,7 +70,7 @@ Transformer la liste brute en blocs compréhensibles :
 - Qualification du dossier ;
 - Société ;
 - Siège social ;
-- Professionnel principal / gérant ;
+- Fiche Client / Praticien ;
 - Associés ;
 - Mandataire / signataire ;
 - Ordre professionnel ;

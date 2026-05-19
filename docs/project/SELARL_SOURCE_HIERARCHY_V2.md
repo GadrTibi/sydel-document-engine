@@ -16,7 +16,7 @@ Ces arbitrages sont prioritaires pour la planification SELARL :
 
 - l'ecran personne s'appelle `Fiche Client` ;
 - le terme pivot est `Praticien` ;
-- le libelle `professionnel principal` est banni des labels visibles et des tickets futurs ;
+- l'ancien libelle personne est banni des labels visibles et des tickets futurs ;
 - une logique `Dossier unipersonnel` doit etre ajoutee ;
 - le mandataire ne doit pas devenir un sujet UX majeur s'il n'y a pas de variables ou documents qui l'exigent ;
 - aucun mode Projet ni filigrane n'est a implementer en V1 ;

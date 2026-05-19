@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+import subprocess
+from pathlib import Path
+
 from sydel_doc_engine.app.selarl_form_schema import (
     FieldRequirement,
     VariableCoverageStatus,
     all_selarl_v2_variables,
+    selarl_blocks,
     selarl_document_specs,
     selarl_expected_documents,
     selarl_fields,
@@ -54,7 +58,7 @@ def test_address_fields_have_qualified_labels() -> None:
 
     assert address_labels
     expected_qualified_fragments = {
-        "adresse personnelle du professionnel",
+        "adresse personnelle du praticien",
         "adresse du siège social",
         "adresse de domiciliation",
         "adresse du conseil de l'ordre",
@@ -75,6 +79,40 @@ def test_address_fields_have_qualified_labels() -> None:
 
     for fragment in expected_qualified_fragments:
         assert any(fragment in label for label in address_labels), fragment
+
+
+def test_selarl_visible_wording_uses_business_terms() -> None:
+    visible_text = "\n".join(_visible_selarl_schema_texts())
+    visible_text_folded = visible_text.casefold()
+    banned = "professionnel " + "principal"
+
+    assert banned not in visible_text_folded
+    assert "Fiche Client" in visible_text
+    assert "Praticien" in visible_text
+    assert "gérant" in visible_text_folded
+    assert "associé" in visible_text_folded
+    assert "signataire" in visible_text_folded
+    assert "mandataire" in visible_text_folded
+
+
+def test_transcription_error_term_is_absent_outside_notebooklm_source() -> None:
+    banned = b"CE" + b"LAR"
+    allowed_path = Path("project/source_truth/notebooklm_selarl_10_prompts_v1.md")
+    tracked_files = subprocess.run(
+        ["git", "ls-files", "-z"],
+        check=True,
+        capture_output=True,
+    ).stdout.split(b"\0")
+
+    violations = [
+        str(path)
+        for raw_path in tracked_files
+        if raw_path
+        for path in [Path(raw_path.decode("utf-8", errors="surrogateescape"))]
+        if path != allowed_path and banned in path.read_bytes()
+    ]
+
+    assert violations == []
 
 
 def test_reuse_rules_cover_required_selarl_deduplications() -> None:
@@ -220,3 +258,19 @@ def test_critical_v2_variables_are_mapped_or_derived() -> None:
         in {VariableCoverageStatus.UI_FIELD, VariableCoverageStatus.REUSE_RULE}
         for variable in critical_variables
     )
+
+
+def _visible_selarl_schema_texts() -> tuple[str, ...]:
+    texts: list[str] = []
+    for block in selarl_blocks():
+        texts.extend((block.label, block.description))
+    for field in selarl_fields():
+        texts.append(field.label)
+        texts.append(field.help_text)
+        if field.display_condition:
+            texts.append(field.display_condition)
+        if field.example:
+            texts.append(field.example)
+    for rule in selarl_reuse_rules():
+        texts.extend((rule.label, rule.effect, rule.activation_condition))
+    return tuple(texts)

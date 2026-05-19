@@ -38,27 +38,27 @@ Source : `project/source_truth/Documents_a_generer_par_cas_V2.docx` et référen
 | Adresse du siège social - code postal | `societe.siege.cp` | Siège social | oui | Toujours | Code postal du siège. | 75002 |
 | Adresse du siège social - ville | `societe.siege.ville` | Siège social | oui | Toujours | Ville du siège. | Paris |
 | Adresse de domiciliation affichée | `domiciliation.adresse_affichee`, alias runtime `domiciliation.adresse_domiciliation_affichee` | Siège social | oui | Si `DOC-002` actif | Champ libre décidé V1 ; ne pas déduire automatiquement sans confirmation. | 12 rue de la Paix, 75002 Paris |
-| Civilité du professionnel principal | `signataire.civilite_affichage`, `dirigeant_nomine.civilite_affichage` si réutilisé | Professionnel / gérant | oui | Toujours | Civilité affichée, distincte du genre grammatical. | Docteur |
-| Genre grammatical du professionnel principal | `signataire.genre`, `dirigeant_nomine.genre` si réutilisé | Professionnel / gérant | oui | Toujours | Pilote les accords comme soussigné/soussignée. | masculin |
-| Prénom du professionnel principal | `signataire.prenom`, `dirigeant_nomine.prenom` si réutilisé | Professionnel / gérant | oui | Toujours | Personne principale du dossier. | Camille |
-| Nom du professionnel principal | `signataire.nom`, `dirigeant_nomine.nom` si réutilisé | Professionnel / gérant | oui | Toujours | Nom de naissance ou nom usuel selon source validée. | Martin |
-| Date de naissance du professionnel principal | `signataire.date_naissance`, `dirigeant_nomine.date_naissance` si réutilisé | Professionnel / gérant | oui | Documents communs, PV | Date au format JJ/MM/AAAA côté UI, export ISO possible côté moteur. | 03/04/1985 |
-| Ville de naissance du professionnel principal | `dirigeant_nomine.ville_naissance` | Professionnel / gérant | conditionnel | PV/statuts actifs | Requise pour le PV nomination gérant. | Lyon |
-| Département de naissance du professionnel principal | `dirigeant_nomine.departement_naissance` | Professionnel / gérant | conditionnel | PV/statuts actifs | Requis pour le PV nomination gérant. | Rhône |
-| Nationalité du professionnel principal | `signataire.nationalite`, `dirigeant_nomine.nationalite` si réutilisé | Professionnel / gérant | oui | Documents communs, PV | Ne pas déduire depuis le lieu de naissance. | française |
-| Adresse personnelle du professionnel - numéro | `signataire.adresse_personnelle.num_voie`, `dirigeant_nomine.adresse_personnelle.num_voie` si réutilisé | Professionnel / gérant | oui | Documents communs, PV | Adresse personnelle, pas siège ni cabinet. | 8 |
-| Adresse personnelle du professionnel - voie | `signataire.adresse_personnelle.voie`, `dirigeant_nomine.adresse_personnelle.voie` si réutilisé | Professionnel / gérant | oui | Documents communs, PV | Adresse personnelle complète. | avenue Victor Hugo |
-| Adresse personnelle du professionnel - code postal | `signataire.adresse_personnelle.cp`, `dirigeant_nomine.adresse_personnelle.cp` si réutilisé | Professionnel / gérant | oui | Documents communs, PV | Code postal personnel. | 69002 |
-| Adresse personnelle du professionnel - ville | `signataire.adresse_personnelle.ville`, `dirigeant_nomine.adresse_personnelle.ville` si réutilisé | Professionnel / gérant | oui | Documents communs, PV | Ville personnelle. | Lyon |
-| Fonction du professionnel principal | `signataire.fonction_dirigeant`, `dirigeant_nomine.fonction_affichage` | Professionnel / gérant | oui | Toujours | Pour SELARL pilote : utiliser `Gérant / professionnel principal`. | Gérant |
+| Civilité du Praticien | `signataire.civilite_affichage`, `dirigeant_nomine.civilite_affichage` si réutilisé | Fiche Client | oui | Toujours | Civilité affichée, distincte du genre grammatical. | Docteur |
+| Genre grammatical du Praticien | `signataire.genre`, `dirigeant_nomine.genre` si réutilisé | Fiche Client | oui | Toujours | Pilote les accords comme soussigné/soussignée. | masculin |
+| Prénom du Praticien | `signataire.prenom`, `dirigeant_nomine.prenom` si réutilisé | Fiche Client | oui | Toujours | Personne principale du dossier. | Camille |
+| Nom du Praticien | `signataire.nom`, `dirigeant_nomine.nom` si réutilisé | Fiche Client | oui | Toujours | Nom de naissance ou nom usuel selon source validée. | Martin |
+| Date de naissance du Praticien | `signataire.date_naissance`, `dirigeant_nomine.date_naissance` si réutilisé | Fiche Client | oui | Documents communs, PV | Date au format JJ/MM/AAAA côté UI, export ISO possible côté moteur. | 03/04/1985 |
+| Ville de naissance du Praticien | `dirigeant_nomine.ville_naissance` | Fiche Client | conditionnel | PV/statuts actifs | Requise pour le PV nomination gérant. | Lyon |
+| Département de naissance du Praticien | `dirigeant_nomine.departement_naissance` | Fiche Client | conditionnel | PV/statuts actifs | Requis pour le PV nomination gérant. | Rhône |
+| Nationalité du Praticien | `signataire.nationalite`, `dirigeant_nomine.nationalite` si réutilisé | Fiche Client | oui | Documents communs, PV | Ne pas déduire depuis le lieu de naissance. | française |
+| Adresse personnelle du Praticien - numéro | `signataire.adresse_personnelle.num_voie`, `dirigeant_nomine.adresse_personnelle.num_voie` si réutilisé | Fiche Client | oui | Documents communs, PV | Adresse personnelle, pas siège ni cabinet. | 8 |
+| Adresse personnelle du Praticien - voie | `signataire.adresse_personnelle.voie`, `dirigeant_nomine.adresse_personnelle.voie` si réutilisé | Fiche Client | oui | Documents communs, PV | Adresse personnelle complète. | avenue Victor Hugo |
+| Adresse personnelle du Praticien - code postal | `signataire.adresse_personnelle.cp`, `dirigeant_nomine.adresse_personnelle.cp` si réutilisé | Fiche Client | oui | Documents communs, PV | Code postal personnel. | 69002 |
+| Adresse personnelle du Praticien - ville | `signataire.adresse_personnelle.ville`, `dirigeant_nomine.adresse_personnelle.ville` si réutilisé | Fiche Client | oui | Documents communs, PV | Ville personnelle. | Lyon |
+| Fonction du Praticien | `signataire.fonction_dirigeant`, `dirigeant_nomine.fonction_affichage` | Fiche Client | oui | Toujours | Pour SELARL pilote : utiliser `Gérant` si le Praticien exerce le mandat social. | Gérant |
 | Numéro RPPS | `ordre.numero_rpps` | Ordre professionnel | conditionnel | Demande d'inscription / dérogation | Numéro professionnel si disponible. | 10101234567 |
 | Numéro ordinal | `ordre.numero_ordre` | Ordre professionnel | conditionnel | Demande d'inscription / dérogation | Numéro d'inscription à l'ordre. | 75-12345 |
 | Conseil de l'ordre compétent | `ordre.conseil`, `ordre.ville_ordre`, V2 `[ville_ordre]` | Ordre professionnel | oui | Si `DOC-034` actif | Conseil départemental ou autorité compétente. | Conseil départemental de Paris |
 | Adresse du conseil de l'ordre | `ordre.adresse_conseil_ordre`, `ordre.cp_ordre`, `ordre.ville_ordre`, V2 `[adresse_conseil_ordre]`, `[cp_ordre]`, `[ville_ordre]` | Ordre professionnel | conditionnel | Si demande d'inscription à l'ordre active | Adresse du conseil de l'ordre, distincte de l'adresse personnelle, du siège et du cabinet. | 10 rue du Conseil, 75000 Paris |
 | Adresse du lieu d'exercice | `ordre.adresse_lieu_exercice`, V2 `[adresse_lieu_exercice]` | Ordre professionnel | conditionnel | Statuts chirurgien-dentiste actifs | Adresse professionnelle d'exercice demandée par la vraie V2. | 4 rue du Cabinet, 75015 Paris |
-| Signataire est le premier associé | `ui.reuse.signataire_associe_1`, mapping vers `associes[0]` | Associés | optionnel | Si au moins un associé | Evite de ressaisir l'identité du professionnel. | Oui |
+| Signataire est le premier associé | `ui.reuse.signataire_associe_1`, mapping vers `associes[0]` | Associés | optionnel | Si au moins un associé | Evite de ressaisir l'identité du Praticien. | Oui |
 | Nombre d'associés | `associes[]` cardinalité | Associés | oui | PV/statuts actifs | V1 doit couvrir le cas simple et bloquer les cardinalités non arbitrées. | 1 |
-| Associé 1 - identité | `associes[0].civilite_affichage`, `associes[0].prenom`, `associes[0].nom`, `associes[0].genre` | Associés | oui | PV/statuts actifs | Peut être copié depuis le professionnel principal. | Dr Camille Martin |
+| Associé 1 - identité | `associes[0].civilite_affichage`, `associes[0].prenom`, `associes[0].nom`, `associes[0].genre` | Associés | oui | PV/statuts actifs | Peut être copié depuis le Praticien. | Dr Camille Martin |
 | Associé 1 - parts | `associes[0].nb_parts` | Associés | oui | PV/statuts actifs | Doit s'additionner au total de parts. | 500 |
 | Associé 2 - identité | `associes[1].*` | Associés | conditionnel | Si nombre d'associés >= 2 | Cas simple V1 seulement si la spec du document l'autorise. | Dr Alex Bernard |
 | Gérant choisi parmi les associés | `dirigeant_nomine.ref_associe_index` | Associés | optionnel | Si PV/statuts actifs | Masque les champs d'identité du gérant s'ils sont déjà portés par l'associé. | Associé 1 |
@@ -77,7 +77,7 @@ Source : `project/source_truth/Documents_a_generer_par_cas_V2.docx` et référen
 | Identifiants vendeur | `cession.vendeur.numero_siren`, `cession.vendeur.numero_ordre`, `cession.vendeur.numero_rpps`, V2 `[numero_siren_vendeur]`, `[ordre_departemental_vendeur]`, `[numero_ordre_vendeur]`, `[numero_rpps_vendeur]` | Cession de cabinet | conditionnel | Si cession = oui | Identifiants professionnels du vendeur. | SIREN 123 456 789 |
 | Acquéreur du cabinet | `cession.acquereur.*`, souvent `societe` | Cession de cabinet | conditionnel | Si cession = oui | Peut être la SELARL en création. | SELARL DU CENTRE |
 | Adresse du siège de l'acquéreur | `cession.acquereur.siege.*`, V2 `[adresse_siege_acquereur]` | Cession de cabinet | conditionnel | Si acquéreur distinct ou document cession actif | Peut être dérivée du siège SELARL si `La SELARL en création est l'acquéreur` est coché. | 12 rue du Siège, 75002 Paris |
-| Représentant de l'acquéreur | `cession.acquereur.representant.*`, V2 `[fonction_acquereur_representant]`, `[civilite_acquereur_representant]`, `[prenom_acquereur_representant]`, `[nom_acquereur_representant]` | Cession de cabinet | conditionnel | Si cession = oui | Représentant légal de l'acquéreur ; peut être le gérant/professionnel principal. | Dr Camille Martin, gérant |
+| Représentant de l'acquéreur | `cession.acquereur.representant.*`, V2 `[fonction_acquereur_representant]`, `[civilite_acquereur_representant]`, `[prenom_acquereur_representant]`, `[nom_acquereur_representant]` | Cession de cabinet | conditionnel | Si cession = oui | Représentant légal de l'acquéreur ; peut être le gérant/Praticien. | Dr Camille Martin, gérant |
 | Prix de cession | `cession.prix.*` | Cession de cabinet | conditionnel | Si cession = oui | Montant et modalités selon acte ou compromis. | 120 000 euros |
 | Décomposition du prix | `cession.prix.elements_corporels`, `cession.prix.elements_incorporels`, V2 `[prix_elements_corporels]`, `[prix_elements_corporels_lettres]`, `[prix_elements_incorporels]`, `[prix_elements_incorporels_lettres]` | Cession de cabinet | conditionnel | Si cession = oui | Détail du prix par catégories prévues dans les actes. | 20 000 euros corporels, 100 000 euros incorporels |
 | Historique et activité du cabinet | `cession.cabinet.historique`, `cession.cabinet.exercices[]`, V2 `[date_origine_propriete]`, `[annees_acquisition_patientele]`, `[description_origine_propriete]`, `[exercice_1]`, `[chiffre_affaires_1]`, `[resultat_1]`, `[exercice_2]`, `[chiffre_affaires_2]`, `[resultat_2]`, `[exercice_3]`, `[chiffre_affaires_3]`, `[resultat_3]` | Cession de cabinet | conditionnel | Si cession = oui | Données économiques du cabinet sur les exercices demandés par la vraie V2. | CA 2025 : 250 000 euros |
@@ -110,10 +110,10 @@ Source : `project/source_truth/Documents_a_generer_par_cas_V2.docx` et référen
 ## Règles de réutilisation des données
 
 - Le signataire peut être le premier associé : proposer `Le signataire est le premier associé`.
-- Le gérant peut être le professionnel principal : proposer `Le gérant est le professionnel principal`.
+- Le gérant peut être le Praticien : proposer `Le gérant est le Praticien`.
 - Le gérant peut être choisi parmi les associés : afficher un sélecteur `Choisir parmi les associés`.
 - L'adresse du siège social peut alimenter l'autorisation de domiciliation seulement si l'utilisateur coche `L'adresse de domiciliation est le siège social`.
-- L'adresse personnelle du professionnel alimente `signataire.adresse_personnelle.*` et peut alimenter `dirigeant_nomine.adresse_personnelle.*` si le gérant est ce professionnel.
+- L'adresse personnelle du Praticien alimente `signataire.adresse_personnelle.*` et peut alimenter `dirigeant_nomine.adresse_personnelle.*` si le gérant est ce Praticien.
 - La société acquéreur peut être la SELARL en création dans les cas de cession : proposer `La SELARL en création est l'acquéreur`.
 - La société cessionnaire peut être la SELARL en création dans les cas de SCM cession : proposer `La SELARL en création est la cessionnaire des parts SCM`.
 - Le mandataire peut être le signataire ou une personne distincte : proposer un choix explicite.
@@ -122,7 +122,7 @@ Source : `project/source_truth/Documents_a_generer_par_cas_V2.docx` et référen
 Mécanismes UI recommandés :
 
 - case à cocher : `Le signataire est le premier associé` ;
-- case à cocher : `Le gérant est le professionnel principal` ;
+- case à cocher : `Le gérant est le Praticien` ;
 - bouton : `Copier depuis associé 1` ;
 - bouton : `Utiliser la SELARL comme acquéreur` ;
 - champ source unique avec aperçu des variables alimentées ;
@@ -148,7 +148,7 @@ Règle cible :
 - SELAS / SAS : `Président` ;
 - générique : `Représentant légal`.
 
-Pour le pilote SELARL, utiliser `Gérant / professionnel principal`. Cette formulation rappelle le rôle juridique et le rôle métier sans imposer que le gérant soit toujours une personne distincte.
+Pour le pilote SELARL, utiliser `Fiche Client` pour l'écran personne et `Gérant` lorsque le rôle juridique est affiché.
 
 ### C. Champ `adresse` ambigu
 
@@ -158,7 +158,7 @@ Règle : aucun champ ne doit s'appeler seulement `adresse`.
 
 Adresses qualifiées dans le pilote :
 
-- adresse personnelle du professionnel ;
+- adresse personnelle du Praticien ;
 - adresse du siège social ;
 - adresse de domiciliation ;
 - adresse du conseil de l'ordre ;
@@ -193,12 +193,12 @@ Vérification `SELARL-PILOT-SOURCE-VERIFY-001` : la vraie V2 contient une liste 
 
 | Famille de variables V2 | Bloc UI cible | Règle de saisie |
 |---|---|---|
-| Identité signataire : `[civilite]`, `[prenom]`, `[nom]`, `[date_naissance]`, `[nationalite]`, `[nom_pere]`, `[nom_mere]` | Professionnel / gérant ; Mandataire / signataire | Saisie une fois, réutilisable pour associé 1, gérant, signataire et représentant si les cases de réutilisation sont cochées. |
-| Adresses personnelles : `[num_voie_perso]`, `[voie_perso]`, `[cp_perso]`, `[ville_perso]`, `[adresse_personnelle]`, `[adresse_perso_personne_1]`, `[adresse_perso_personne_2]` | Professionnel / gérant ; Associés | Chaque adresse doit indiquer la personne concernée ; aucun champ `adresse` nu. |
+| Identité signataire : `[civilite]`, `[prenom]`, `[nom]`, `[date_naissance]`, `[nationalite]`, `[nom_pere]`, `[nom_mere]` | Fiche Client ; Mandataire / signataire | Saisie une fois, réutilisable pour associé 1, gérant, signataire et représentant si les cases de réutilisation sont cochées. |
+| Adresses personnelles : `[num_voie_perso]`, `[voie_perso]`, `[cp_perso]`, `[ville_perso]`, `[adresse_personnelle]`, `[adresse_perso_personne_1]`, `[adresse_perso_personne_2]` | Fiche Client ; Associés | Chaque adresse doit indiquer la personne concernée ; aucun champ `adresse` nu. |
 | Société SELARL : `[denomination_societe]`, `[forme_sociale]`, `[forme_sociale_complete]`, `[capital_social]`, `[capital_lettres]`, `[ville_rcs]`, `[numero_rcs]` | Société | Source unique pour la SELARL ; peut alimenter acquéreur ou cessionnaire si l'utilisateur l'autorise. |
 | Siège : `[num_voie_siege]`, `[voie_siege]`, `[cp_siege]`, `[ville_siege]`, `[adresse_siege]`, `[adresse_siege_acquereur]`, `[adresse_siege_cessionnaire]` | Siège social ; Cession de cabinet ; SCM | Adresse du siège SELARL réutilisable seulement via règle explicite. |
 | Ordre : `[profession_reglementee]`, `[profession_reglementee_pluriel]`, `[ordre_departemental]`, `[adresse_conseil_ordre]`, `[cp_ordre]`, `[ville_ordre]`, `[numero_ordre]`, `[numero_rpps]` | Ordre professionnel | Bloc obligatoire si demande d'inscription, statuts professionnels ou cession avec vendeur réglementé. |
-| Associés et gérant : `[nb_parts]`, `[nb_parts_total]`, `[valeur_nominale_part]`, `[civilite_personne_1]`, `[prenom_personne_1]`, `[nom_personne_1]`, `[civilite_personne_2]`, `[prenom_personne_2]`, `[nom_personne_2]` | Associés ; Professionnel / gérant | Listes et parts contrôlées ; copier depuis professionnel principal possible. |
+| Associés et gérant : `[nb_parts]`, `[nb_parts_total]`, `[valeur_nominale_part]`, `[civilite_personne_1]`, `[prenom_personne_1]`, `[nom_personne_1]`, `[civilite_personne_2]`, `[prenom_personne_2]`, `[nom_personne_2]` | Associés ; Fiche Client | Listes et parts contrôlées ; copier depuis le Praticien possible. |
 | Régime communautaire : `[apport_personne_1]`, `[apport_lettres_personne_1]`, `[prenom_conjoint]`, `[nom_conjoint]` | Régime matrimonial / conjoint | Bloc activé seulement si régime communautaire = oui. |
 | SCM cession : variables cédant, cessionnaire, société cédée, associés SCM, parts, prix, crédit vendeur et enregistrement | SCM | Bloc distinct de la cession de cabinet ; SELARL réutilisable comme cessionnaire. |
 | Bail : bailleur, locataire, bail, locaux, dates, superficie, loyer | Bail | Bloc activé par cession et documents de bail/cession qui consomment ces champs. |

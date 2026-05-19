@@ -264,11 +264,14 @@ def test_selarl_ui_conditions_are_available() -> None:
     }
 
 
-def test_streamlit_selarl_path_does_not_use_pharmacien_wording() -> None:
+def test_streamlit_selarl_path_uses_business_wording() -> None:
     app_source = Path("src/sydel_doc_engine/app/streamlit_app.py").read_text(encoding="utf-8")
+    banned = "professionnel " + "principal"
 
     assert "Dirigeant / pharmacien" not in app_source
-    assert "Gerant / professionnel principal" in app_source
+    assert banned not in app_source.casefold()
+    assert "Ecran 3 - Fiche Client" in app_source
+    assert "Praticien" in app_source
 
 
 def test_selarl_ui_address_labels_are_qualified() -> None:
@@ -277,7 +280,7 @@ def test_selarl_ui_address_labels_are_qualified() -> None:
 
     assert labels
     assert all(label.casefold().strip() not in ambiguous_labels for label in labels)
-    assert any("adresse personnelle du professionnel" in label.casefold() for label in labels)
+    assert any("adresse personnelle du praticien" in label.casefold() for label in labels)
     assert any("adresse du siege social" in _plain(label) for label in labels)
     assert any("adresse de la banque" in label.casefold() for label in labels)
 

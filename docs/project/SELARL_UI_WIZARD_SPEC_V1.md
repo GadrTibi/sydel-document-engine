@@ -50,9 +50,9 @@ Règles :
 - conserver un champ libre `Adresse de domiciliation affichée` pour respecter la décision V1 de `DOC-002` ;
 - ne pas afficher des champs de cession ou de SCM sur cet écran.
 
-## Écran 3 — Professionnel principal / gérant
+## Écran 3 — Fiche Client
 
-Objectif : saisir la personne principale et éviter la double saisie gérant / signataire / associé.
+Objectif : saisir le Praticien et éviter la double saisie gérant / signataire / associé.
 
 Blocs :
 
@@ -64,12 +64,12 @@ Blocs :
 - profession ;
 - ordre professionnel ;
 - RPPS / numéro d'ordre ;
-- fonction cible : `Gérant / professionnel principal`.
+- fonction cible : `Gérant` lorsque le Praticien exerce le mandat social.
 
 Règles :
 
-- proposer `Le gérant est le professionnel principal` ;
-- proposer `Le signataire est le professionnel principal` ;
+- proposer `Le gérant est le Praticien` ;
+- proposer `Le signataire est le Praticien` ;
 - ne pas utiliser le libellé `Dirigeant / pharmacien` ;
 - tout champ d'adresse doit être qualifié.
 
@@ -95,7 +95,7 @@ Cas simples V1 :
 Mécanismes de déduplication :
 
 - `Le signataire est le premier associé` ;
-- `Copier depuis professionnel principal` ;
+- `Copier depuis le Praticien` ;
 - `Choisir le gérant parmi les associés`.
 
 ## Écran 5 — Conditions spécifiques
@@ -169,7 +169,7 @@ Règles :
 | Écart | Constat actuel | Cible SELARL |
 |---|---|---|
 | Logique de saisie | Le formulaire part des documents prêts `DOC-001` à `DOC-004`. | Le formulaire part du processus SELARL et de ses conditions. |
-| Libellé dirigeant | `Dirigeant / pharmacien` visible dans l'UI Streamlit. | `Gérant / professionnel principal` pour SELARL. |
+| Libellé dirigeant | `Dirigeant / pharmacien` visible dans l'UI Streamlit. | `Fiche Client` pour l'écran personne et `Gérant` pour le rôle juridique SELARL. |
 | Double saisie | Signataire, dirigeant et associé peuvent être saisis séparément sans lien UX. | Cases de réutilisation et copie depuis source. |
 | Adresse ambiguë | Plusieurs champs courts `Numero`, `Voie`, `Code postal`, `Ville` sans toujours rappeler le contexte. | Labels qualifiés : siège, personnelle, cabinet, bailleur, banque, SCM, etc. |
 | Documents contextualisés | Documents attendus affichés, mais beaucoup restent `Contexte incomplet pour génération V2`. | Documents regroupés par blocs métier avec champs manquants lisibles. |

@@ -45,7 +45,7 @@ Tests attendus :
 
 - test absence du libelle banni dans les labels SELARL visibles ;
 - test presence de `Praticien`, `Fiche Client`, `Gerant`, `Associe`, `Signataire`, `Mandataire` selon contexte ;
-- test absence de `CELAR` hors source NotebookLM.
+- test absence de la transcription erronée de SELARL hors source NotebookLM.
 
 Criteres d'acceptation :
 
