@@ -27,7 +27,7 @@ Le schéma SELARL exprime désormais l'ordre validé suivant :
 5. Contexte & scénarios métier ;
 6. Documents & génération.
 
-Cet ordre ne modifie pas les générateurs ni le moteur DOCX/PDF/ZIP. Les règles profondes de réutilisation, notamment `Dossier unipersonnel`, restent à traiter dans `SELARL-REUSE-RULES-REALIGN-001`.
+Cet ordre ne modifie pas les générateurs ni le moteur DOCX/PDF/ZIP. Les règles de réutilisation sont portées par le schéma et les projections métier, sans dérivation automatique dangereuse.
 
 ## Blocs et champs
 
@@ -40,6 +40,7 @@ Cet ordre ne modifie pas les générateurs ni le moteur DOCX/PDF/ZIP. Les règle
 | Dérogation ordinale | `conditions.derogation`, `dossier_options.derogation` | Qualification du dossier | oui | Toujours | Affiche les pièces de dérogation attendues ; dans la vraie V2 du pilote elles restent hors génération automatique. | Non |
 | Cession de cabinet | `conditions.cession`, `dossier_options.cession` | Qualification du dossier | oui | Toujours | Active les blocs cession, bail et financement. | Oui |
 | Type de cabinet cédé | `conditions.cabinet_type`, `cession.cabinet.type` | Qualification du dossier | conditionnel | Si cession de cabinet = oui | Choisir `aucun` si la cession ne porte pas sur un cabinet médical ou dentaire. | Cabinet dentaire |
+| Dossier unipersonnel | `conditions.dossier_unipersonnel`, `ui.reuse.dossier_unipersonnel` | Qualification du dossier | optionnel | Toujours | Option explicite : le Praticien est l'associé unique, le gérant et le signataire. | Oui |
 | Civilité du Praticien | `signataire.civilite_affichage`, `dirigeant_nomine.civilite_affichage` si réutilisé | Fiche Client | oui | Toujours | Civilité affichée, distincte du genre grammatical. | Docteur |
 | Genre grammatical du Praticien | `signataire.genre`, `dirigeant_nomine.genre` si réutilisé | Fiche Client | oui | Toujours | Pilote les accords comme soussigné/soussignée. | masculin |
 | Prénom du Praticien | `signataire.prenom`, `dirigeant_nomine.prenom` si réutilisé | Fiche Client | oui | Toujours | Personne principale du dossier. | Camille |
@@ -75,7 +76,7 @@ Cet ordre ne modifie pas les générateurs ni le moteur DOCX/PDF/ZIP. Les règle
 | Associé 1 - parts | `associes[0].nb_parts` | Capital & Associés | oui | PV/statuts actifs | Doit s'additionner au total de parts. | 500 |
 | Associé 2 - identité | `associes[1].*` | Capital & Associés | conditionnel | Si nombre d'associés >= 2 | Cas simple V1 seulement si la spec du document l'autorise. | Dr Alex Bernard |
 | Gérant choisi parmi les associés | `dirigeant_nomine.ref_associe_index` | Capital & Associés | optionnel | Si PV/statuts actifs | Masque les champs d'identité du gérant s'ils sont déjà portés par l'associé. | Associé 1 |
-| Mandataire est le signataire | `mandataire.*` depuis `signataire.*` | Mandataire / signataire | optionnel | Si demande d'inscription à l'ordre active | Evite une double saisie du mandataire. | Oui |
+| Copier le signataire vers le mandataire | `mandataire.*` depuis `signataire.*` | Mandataire / signataire | optionnel | Si demande d'inscription à l'ordre active et option cochée | Option de confort DOC-034 ; jamais activée par défaut. | Oui |
 | Identité du mandataire | `mandataire.civilite`, `mandataire.prenom`, `mandataire.nom`, `mandataire.fonction` | Mandataire / signataire | conditionnel | Si mandataire distinct | Personne ou cabinet qui signe ou dépose la demande. | Me Dupont |
 | Identité du conjoint | `conjoint.civilite`, `conjoint.prenom`, `conjoint.nom`, `conjoint.genre` | Régime matrimonial / conjoint | conditionnel | Si régime communautaire = oui | Alimente les lettres conjoint. | Mme Sophie Martin |
 | Régime matrimonial | `apport.regime_matrimonial`, `regime_communautaire.*` | Régime matrimonial / conjoint | conditionnel | Si régime communautaire = oui | Ne pas déduire sans preuve dossier. | communauté légale |
@@ -122,22 +123,47 @@ Cet ordre ne modifie pas les générateurs ni le moteur DOCX/PDF/ZIP. Les règle
 
 ## Règles de réutilisation des données
 
-- Le signataire peut être le premier associé : proposer `Le signataire est le premier associé`.
-- Le gérant peut être le Praticien : proposer `Le gérant est le Praticien`.
-- Le gérant peut être choisi parmi les associés : afficher un sélecteur `Choisir parmi les associés`.
-- L'adresse du siège social peut alimenter l'autorisation de domiciliation seulement si l'utilisateur coche `L'adresse de domiciliation est le siège social`.
-- L'adresse personnelle du Praticien alimente `signataire.adresse_personnelle.*` et peut alimenter `dirigeant_nomine.adresse_personnelle.*` si le gérant est ce Praticien.
-- La société acquéreur peut être la SELARL en création dans les cas de cession : proposer `La SELARL en création est l'acquéreur`.
-- La société cessionnaire peut être la SELARL en création dans les cas de SCM cession : proposer `La SELARL en création est la cessionnaire des parts SCM`.
-- Le mandataire peut être le signataire ou une personne distincte : proposer un choix explicite.
-- Les champs dérivés doivent devenir en lecture seule lorsque la source est cochée, avec un lien de retour vers la donnée source.
+La règle pivot du pilote est `Dossier unipersonnel`.
+
+Quand `Dossier unipersonnel` est actif :
+
+- le Praticien alimente l'associé unique ;
+- le Praticien alimente le gérant ;
+- le Praticien alimente le signataire ;
+- les champs dérivés doivent être préremplis et verrouillés avec indication de leur source.
+
+Quand `Dossier unipersonnel` est inactif :
+
+- aucune dérivation Praticien / associé / gérant / signataire n'est imposée ;
+- les champs associés, gérant et signataire restent saisissables ou confirmables séparément.
+
+Réutilisations conservées seulement comme options explicites :
+
+- la SELARL en création peut alimenter l'acquéreur si `La SELARL en création est l'acquéreur` est cochée ;
+- la SELARL en création peut alimenter le cessionnaire des parts SCM si `La SELARL en création est la cessionnaire des parts SCM` est cochée ;
+- l'adresse de domiciliation peut alimenter le siège social si `L'adresse de domiciliation est le siège social` est cochée.
+
+Réutilisations de confort conservées hors défaut :
+
+- `Le signataire est le premier associé`, `Le gérant est le Praticien` et `Le signataire est le Praticien` peuvent rester disponibles comme options de compatibilité si le dossier n'est pas unipersonnel ;
+- `Copier le signataire vers le mandataire` peut rester disponible pour `DOC-034`, mais le mandataire ne doit pas devenir un sujet UX central et ne doit jamais être déduit par défaut.
+
+Relations à ne pas automatiser sans confirmation explicite :
+
+- vendeur = locataire actuel ;
+- siège social = lieu d'exercice ;
+- siège social = cabinet cédé ;
+- cabinet cédé = lieu d'exercice ;
+- vendeur = Praticien ;
+- cédant SCM = Praticien.
 
 Mécanismes UI recommandés :
 
-- case à cocher : `Le signataire est le premier associé` ;
-- case à cocher : `Le gérant est le Praticien` ;
-- bouton : `Copier depuis associé 1` ;
+- case à cocher pivot : `Dossier unipersonnel` ;
+- options de copie explicites pour les liens hors dossier unipersonnel ;
 - bouton : `Utiliser la SELARL comme acquéreur` ;
+- bouton : `Utiliser la SELARL comme cessionnaire SCM` ;
+- case à cocher : `L'adresse de domiciliation est le siège social` ;
 - champ source unique avec aperçu des variables alimentées ;
 - champs dérivés verrouillés tant que la réutilisation est active.
 

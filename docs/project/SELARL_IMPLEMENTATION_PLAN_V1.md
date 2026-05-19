@@ -8,6 +8,8 @@ Découper la suite du pilote SELARL en tickets petits, traçables et testables.
 
 Ce plan ne lance aucune implémentation dans le ticket courant.
 
+Correction de reconstruction contrôlée : les tickets de réalignement NotebookLM ont resserré ce plan autour de `Fiche Client`, `Praticien`, du flow en six étapes et de `Dossier unipersonnel`. Les règles de réutilisation SELARL doivent rester explicites : aucune déduction mandataire / vendeur / locataire / siège / cabinet / lieu d'exercice ne doit devenir un défaut. Aucun mode Projet / filigrane et aucune couche produit documentaire lourde ne sont prévus en V1.
+
 ## SELARL-FORM-SCHEMA-IMPL-001
 
 Objectif : implémenter le schéma de données UI SELARL côté Assistant métier, sans génération de nouveaux documents.
@@ -31,7 +33,8 @@ Tests attendus :
 - sélection SELARL médecin ;
 - sélection SELARL chirurgien-dentiste ;
 - conditions `site_distinct`, `scm_cession`, `regime_communautaire`, `derogation`, `cession` ;
-- déduplication signataire / associé 1 / gérant.
+- `Dossier unipersonnel` : Praticien = associé unique = gérant = signataire seulement si l'option est active ;
+- options explicites SELARL acquéreur, SELARL cessionnaire SCM et domiciliation = siège.
 - vérification que les documents de dérogation SELARL sont affichés comme manuels / hors génération pilote.
 
 Critères d'acceptation :
@@ -39,6 +42,7 @@ Critères d'acceptation :
 - aucun générateur modifié ;
 - aucun wording juridique modifié ;
 - tous les champs SELARL ont un label qualifié ;
+- aucune réutilisation sensible n'est activée par défaut ;
 - la réserve source V2 sur la lettre d'avertissement conjoint est visible dans les documents attendus ;
 - `DOC-013` et `DOC-014` sont exclus des codes générables du pilote SELARL ;
 - ruff et pytest OK.

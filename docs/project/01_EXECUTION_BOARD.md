@@ -139,8 +139,8 @@
 | SELARL-PLAN-CORRECTION-001 | DONE | Resserrer le plan SELARL selon arbitrages associé | rapport NotebookLM + backlog V2 | hiérarchie source corrigée, backlog simplifié, UI SELARL non validée produit |
 | SELARL-WORDING-REALIGN-001 | DONE | Réaligner le vocabulaire visible SELARL | rapport NotebookLM corrigé + backlog V2 corrigé | labels Praticien/Fiche Client/rôles + tests anti-régression |
 | SELARL-FLOW-REALIGN-001 | DONE | Réaligner l'ordre du formulaire SELARL | `SELARL-WORDING-REALIGN-001` | flow schema/projections Qualification / Fiche Client / Société / Capital / Scénarios / Documents + tests |
-| SELARL-REUSE-RULES-REALIGN-001 | READY | Corriger les règles de réutilisation SELARL | `SELARL-FLOW-REALIGN-001` | Dossier unipersonnel, Praticien source, dérivations explicites |
-| SELARL-UI-REALIGN-001 | BLOCKED | Réaligner le parcours UI SELARL après schéma corrigé | `SELARL-REUSE-RULES-REALIGN-001` | Streamlit SELARL réaligné sans push/redéploiement prématuré |
+| SELARL-REUSE-RULES-REALIGN-001 | DONE | Corriger les règles de réutilisation SELARL | `SELARL-FLOW-REALIGN-001` | Dossier unipersonnel, Praticien source, dérivations explicites |
+| SELARL-UI-REALIGN-001 | READY | Réaligner le parcours UI SELARL après schéma corrigé | `SELARL-REUSE-RULES-REALIGN-001` | Streamlit SELARL réaligné sans push/redéploiement prématuré |
 | SELARL-SMOKE-REALISTIC-001 | BLOCKED | Smoke tester SELARL avec données réalistes après réalignement | `SELARL-UI-REALIGN-001` | rapport de smoke réaliste, documents manuels exclus, catalogue existant respecté |
 | SELARL-JURIST-REVIEW-001 | BLOCKED | Faire valider le parcours SELARL réaligné par un juriste | `SELARL-SMOKE-REALISTIC-001` | revue juriste, réserves et arbitrages documentés |
 | SELARL-DOCS-GENERATION-SMOKE-001 | BLOCKED | Smoke tester la génération SELARL depuis le parcours Assistant métier | parcours SELARL réaligné + catalogue + schema + contextes réalistes | bloqué par la réconciliation NotebookLM ; remplacé par `SELARL-SMOKE-REALISTIC-001` après réalignement |
@@ -951,6 +951,17 @@
 - Tests : `.\.venv\Scripts\python.exe -m pytest tests/unit/test_selarl_form_schema.py tests/unit/test_business_wizard.py` OK, 41 tests passés ; `.\.venv\Scripts\python.exe -m ruff check .` OK ; `.\.venv\Scripts\python.exe -m pytest` OK, 245 tests passés.
 - Prochaine étape recommandée : `SELARL-REUSE-RULES-REALIGN-001`.
 
+### SELARL-REUSE-RULES-REALIGN-001
+- Objectif : réaligner les règles de réutilisation SELARL, sans générateurs ni moteur DOCX/PDF/ZIP.
+- Statut : DONE.
+- Livraison : `Dossier unipersonnel` ajouté comme règle pivot dans `selarl_form_schema.py` et projeté dans `business_wizard.py`.
+- Règles : Praticien = associé unique = gérant = signataire seulement si `Dossier unipersonnel` est actif ; SELARL acquéreur, SELARL cessionnaire SCM et domiciliation = siège restent des options explicites ; mandataire / signataire n'est pas un défaut.
+- Relations non automatiques : vendeur / locataire, siège / lieu d'exercice / cabinet, vendeur / Praticien et cédant SCM / Praticien.
+- Garde-fous : `streamlit_app.py` non modifié ; documents attendus SELARL inchangés ; `DOC-013` et `DOC-014` restent exclus de la génération ; `DOC-006` conserve sa réserve.
+- Rapport : `docs/review/selarl_reuse_rules_realign_001_report_v1.md`.
+- Tests : `.\.venv\Scripts\python.exe -m pytest tests/unit/test_selarl_form_schema.py tests/unit/test_business_wizard.py` OK, 48 tests passés ; `.\.venv\Scripts\python.exe -m ruff check .` OK ; `.\.venv\Scripts\python.exe -m pytest` OK, 252 tests passés.
+- Prochaine étape recommandée : `SELARL-UI-REALIGN-001`.
+
 ### UI-001
 - Objectif : exposer une Streamlit simple pour générer le Lot 1.
 - Statut : en attente explicite ; ne pas lancer sans ticket explicite dédié.
@@ -982,9 +993,10 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - `SELARL-UI-WIZARD-IMPL-001` est DONE techniquement ; l'Assistant métier expose le parcours SELARL pilote depuis le schéma, conserve SCI et Technique / diagnostic, et garde `DOC-013` / `DOC-014` hors génération, mais il n'est pas encore validé produit.
 - `SELARL-PLAN-CORRECTION-001` est DONE ; les arbitrages associé priment désormais sur NotebookLM pour `Fiche Client`, `Praticien`, `Dossier unipersonnel`, l'absence de mode Projet / filigrane V1 et l'absence de couche statut produit lourde.
 - `SELARL-FLOW-REALIGN-001` est DONE ; le schéma et les projections métier expriment Qualification, Fiche Client / Praticien, Fiche Société, Capital & Associés, Contexte & scénarios métier, Documents & génération.
-- tickets READY confirmés : `CLOSE-PROJECT-V1-001`, `SELARL-REUSE-RULES-REALIGN-001`.
+- `SELARL-REUSE-RULES-REALIGN-001` est DONE ; `Dossier unipersonnel` pilote les liens Praticien / associé unique / gérant / signataire, les autres réutilisations restent opt-in et les relations sensibles sont non automatiques.
+- tickets READY confirmés : `CLOSE-PROJECT-V1-001`, `SELARL-UI-REALIGN-001`.
 - ticket SELARL smoke précédent bloqué : `SELARL-DOCS-GENERATION-SMOKE-001`, remplacé par la séquence `WORDING -> FLOW -> REUSE -> UI -> SMOKE -> JURIST`.
-- prochain ticket recommandé : `SELARL-REUSE-RULES-REALIGN-001`, logique `Dossier unipersonnel` et réutilisations contrôlées sans toucher aux générateurs.
+- prochain ticket recommandé : `SELARL-UI-REALIGN-001`, réalignement visible Streamlit sur le schéma corrigé sans push ni redéploiement.
 - ne pas pousser ni redéployer l'UI SELARL actuelle avant réalignement produit.
 - moteur documentaire DOCX V1 feature complete et clos après `RECONCILE-MOTOR-CLOSE-001`.
 - tickets absorbés par `SYNC-POST-MOTOR-UI-001` : `UI-FLOW-001`, `UI-OCCURRENCES-001`, `UI-FORM-SCHEMA-001`, `PDF-BACKEND-001` et `RECIPE-FRAME-001`.
@@ -1140,3 +1152,4 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - 2026-05-19 : SELARL-PLAN-CORRECTION-001 corrige la planification selon les arbitrages associé (`Fiche Client`, `Praticien`, `Dossier unipersonnel`), retire le ticket statut documentaire lourd, exclut mode Projet / filigrane V1 et confirme que l'UI SELARL ne doit pas être poussée/redéployée avant réalignement produit.
 - 2026-05-19 : SELARL-WORDING-REALIGN-001 remplace le vocabulaire visible SELARL par `Fiche Client` / `Praticien` / rôles juridiques exacts, conserve l'ordre et la logique, ajoute les tests anti-régression wording et valide ruff + pytest 241 tests.
 - 2026-05-19 : SELARL-FLOW-REALIGN-001 ajoute le flow conceptuel SELARL en six étapes dans le schéma et les projections métier, met à jour les specs actives, laisse `streamlit_app.py` intact pour le ticket UI dédié et valide les tests ciblés schema/wizard.
+- 2026-05-19 : SELARL-REUSE-RULES-REALIGN-001 ajoute `Dossier unipersonnel` comme règle pivot, conserve les réutilisations utiles en opt-in, sort le mandataire du défaut UX, documente les relations non automatiques et valide ruff + pytest 252 tests.

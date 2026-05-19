@@ -22,6 +22,8 @@ from sydel_doc_engine.app.business_wizard import (
     selarl_ui_condition_specs,
     selarl_ui_document_specs,
     selarl_ui_flow_steps,
+    selarl_ui_non_automatic_reuse_relations,
+    selarl_ui_reuse_projection,
     selarl_ui_reuse_rules,
     selarl_ui_visible_fields_by_step,
 )
@@ -351,9 +353,10 @@ def test_selarl_docs_006_013_014_have_required_ui_statuses() -> None:
 
 
 def test_selarl_ui_reuse_rules_cover_main_deduplications() -> None:
-    rule_keys = {rule.key for rule in selarl_ui_reuse_rules()}
+    rules_by_key = {rule.key: rule for rule in selarl_ui_reuse_rules()}
 
     assert {
+        "dossier_unipersonnel",
         "signataire_is_associe_1",
         "gerant_is_professional",
         "signataire_is_professional",
@@ -361,7 +364,111 @@ def test_selarl_ui_reuse_rules_cover_main_deduplications() -> None:
         "selarl_is_acquirer",
         "selarl_is_scm_transferee",
         "domiciliation_is_registered_office",
-    }.issubset(rule_keys)
+    }.issubset(rules_by_key)
+    assert all(rule.default_enabled is False for rule in rules_by_key.values())
+
+
+def test_selarl_dossier_unipersonnel_projection_links_praticien_roles() -> None:
+    data = _case_data(
+        "SELARL",
+        profession="medecin",
+        site_distinct=False,
+        scm_cession=False,
+        regime_communautaire=False,
+        derogation=False,
+        cession=False,
+        selarl_dossier_unipersonnel=True,
+    )
+
+    projection = selarl_ui_reuse_projection(data)
+    validation = evaluate_business_wizard(data)
+
+    assert projection.active_rule_keys == ("dossier_unipersonnel",)
+    assert projection.praticien_is_associe_unique is True
+    assert projection.praticien_is_gerant is True
+    assert projection.praticien_is_signataire is True
+    assert projection.mandataire_is_signataire is False
+    assert {
+        "associes.associe_unique",
+        "dirigeant_nomine",
+        "mandataire_signataire.signataire",
+    }.issubset(set(projection.locked_targets))
+    assert validation.context is not None
+    assert validation.context.dossier_options.associe_unique is True
+
+
+def test_selarl_reuse_projection_inactive_imposes_no_praticien_derivation() -> None:
+    projection = selarl_ui_reuse_projection(_case_data("SELARL"))
+
+    assert projection.active_rule_keys == ()
+    assert projection.locked_targets == ()
+    assert projection.praticien_is_associe_unique is False
+    assert projection.praticien_is_gerant is False
+    assert projection.praticien_is_signataire is False
+    assert projection.mandataire_is_signataire is False
+
+
+def test_selarl_explicit_reuse_options_remain_available_without_defaults() -> None:
+    projection = selarl_ui_reuse_projection(
+        _case_data(
+            "SELARL",
+            selarl_company_is_acquirer=True,
+            selarl_company_is_scm_transferee=True,
+            selarl_domiciliation_is_registered_office=True,
+        )
+    )
+
+    assert {
+        "selarl_is_acquirer",
+        "selarl_is_scm_transferee",
+        "domiciliation_is_registered_office",
+    }.issubset(set(projection.active_rule_keys))
+    assert {
+        "cession_cabinet.acquereur",
+        "scm.cessionnaire",
+        "siege_social.domiciliation",
+    }.issubset(set(projection.locked_targets))
+
+
+def test_selarl_sensitive_relations_are_not_automatic_reuse_rules() -> None:
+    relation_keys = {relation.key for relation in selarl_ui_non_automatic_reuse_relations()}
+    rule_keys = {rule.key for rule in selarl_ui_reuse_rules()}
+    projection = selarl_ui_reuse_projection(_case_data("SELARL"))
+
+    assert {
+        "seller_is_current_tenant",
+        "registered_office_is_practice_location",
+        "registered_office_is_transferred_cabinet",
+        "transferred_cabinet_is_practice_location",
+        "seller_is_praticien",
+        "scm_transferor_is_praticien",
+    } == relation_keys
+    assert relation_keys.isdisjoint(rule_keys)
+    assert set(projection.non_automatic_relation_keys) == relation_keys
+
+
+def test_selarl_documents_are_unchanged_by_dossier_unipersonnel() -> None:
+    base_data = _case_data(
+        "SELARL",
+        profession="medecin",
+        site_distinct=True,
+        scm_cession=True,
+        regime_communautaire=True,
+        derogation=True,
+        cession=True,
+        cabinet_type="medical",
+    )
+    unipersonnel_data = replace(base_data, selarl_dossier_unipersonnel=True)
+
+    base_validation = evaluate_business_wizard(base_data)
+    unipersonnel_validation = evaluate_business_wizard(unipersonnel_data)
+
+    assert _row_codes(unipersonnel_validation) == _row_codes(base_validation)
+    assert "DOC-013" not in unipersonnel_validation.generatable_document_codes
+    assert "DOC-014" not in unipersonnel_validation.generatable_document_codes
+    assert any(
+        "vraie V2" in note for note in _row_by_code(unipersonnel_validation, "DOC-006").notes
+    )
 
 
 def test_selarl_ui_document_specs_stay_aligned_with_catalog_statuses() -> None:

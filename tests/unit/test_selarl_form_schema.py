@@ -14,6 +14,7 @@ from sydel_doc_engine.app.selarl_form_schema import (
     selarl_fields,
     selarl_flow_steps,
     selarl_generable_document_codes,
+    selarl_non_automatic_reuse_relations,
     selarl_required_conditions,
     selarl_reuse_rules,
     selarl_variable_coverage,
@@ -154,9 +155,10 @@ def test_transcription_error_term_is_absent_outside_notebooklm_source() -> None:
 
 
 def test_reuse_rules_cover_required_selarl_deduplications() -> None:
-    rule_keys = {rule.key for rule in selarl_reuse_rules()}
+    rules_by_key = {rule.key: rule for rule in selarl_reuse_rules()}
 
     assert {
+        "dossier_unipersonnel",
         "signataire_is_associe_1",
         "gerant_is_professional",
         "signataire_is_professional",
@@ -164,7 +166,38 @@ def test_reuse_rules_cover_required_selarl_deduplications() -> None:
         "selarl_is_acquirer",
         "selarl_is_scm_transferee",
         "domiciliation_is_registered_office",
-    }.issubset(rule_keys)
+    }.issubset(rules_by_key)
+    assert all(rule.default_enabled is False for rule in rules_by_key.values())
+    assert all(rule.behavior_if_inactive for rule in rules_by_key.values())
+
+
+def test_dossier_unipersonnel_reuse_rule_is_the_selarl_pivot() -> None:
+    rules_by_key = {rule.key: rule for rule in selarl_reuse_rules()}
+    rule = rules_by_key["dossier_unipersonnel"]
+
+    assert rule.source == "professionnel_gerant"
+    assert "associes.associe_unique" in rule.target
+    assert "dirigeant_nomine" in rule.target
+    assert "mandataire_signataire.signataire" in rule.target
+    assert "prenom_personne_1" in rule.fields
+    assert "prenom_signataire" in rule.fields
+    assert rule.default_enabled is False
+    assert "n'est imposée" in rule.behavior_if_inactive
+
+
+def test_sensitive_reuse_relations_are_documented_as_non_automatic() -> None:
+    relation_keys = {relation.key for relation in selarl_non_automatic_reuse_relations()}
+    rule_keys = {rule.key for rule in selarl_reuse_rules()}
+
+    assert {
+        "seller_is_current_tenant",
+        "registered_office_is_practice_location",
+        "registered_office_is_transferred_cabinet",
+        "transferred_cabinet_is_practice_location",
+        "seller_is_praticien",
+        "scm_transferor_is_praticien",
+    } == relation_keys
+    assert relation_keys.isdisjoint(rule_keys)
 
 
 def test_doc_013_and_doc_014_are_visible_manual_and_not_generable() -> None:

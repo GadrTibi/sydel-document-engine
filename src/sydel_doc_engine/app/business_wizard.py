@@ -10,6 +10,7 @@ from pydantic import ValidationError
 from sydel_doc_engine.app.selarl_form_schema import (
     FormField,
     FormStep,
+    NonAutomaticReuseRelation,
     ReuseRule,
     SelarlDocumentSpec,
     selarl_blocks,
@@ -17,6 +18,7 @@ from sydel_doc_engine.app.selarl_form_schema import (
     selarl_fields,
     selarl_fields_by_block,
     selarl_flow_steps,
+    selarl_non_automatic_reuse_relations,
     selarl_reuse_rules,
 )
 from sydel_doc_engine.domain.case_catalog import (
@@ -182,6 +184,7 @@ class BusinessWizardInput:
     bien_adresse_cp: str = ""
     bien_adresse_ville: str = ""
     selarl_signataire_is_associe_1: bool = False
+    selarl_dossier_unipersonnel: bool = False
     selarl_gerant_is_professional: bool = False
     selarl_signataire_is_professional: bool = False
     selarl_mandataire_is_signataire: bool = False
@@ -230,6 +233,17 @@ class BusinessWizardValidation:
             for row in self.document_rows
             if row.status == STATUS_GENERABLE and row.document_code is not None
         )
+
+
+@dataclass(frozen=True)
+class SelarlReuseProjection:
+    active_rule_keys: tuple[str, ...]
+    locked_targets: tuple[str, ...]
+    non_automatic_relation_keys: tuple[str, ...]
+    praticien_is_associe_unique: bool = False
+    praticien_is_gerant: bool = False
+    praticien_is_signataire: bool = False
+    mandataire_is_signataire: bool = False
 
 
 def business_dossier_types() -> tuple[BusinessDossierType, ...]:
@@ -414,12 +428,70 @@ def selarl_ui_visible_fields_by_step(
     }
 
 
+def selarl_ui_reuse_projection(data: BusinessWizardInput) -> SelarlReuseProjection:
+    active_rule_keys: list[str] = []
+    locked_targets: list[str] = []
+
+    if data.selarl_dossier_unipersonnel:
+        active_rule_keys.append("dossier_unipersonnel")
+        locked_targets.extend(
+            (
+                "associes.associe_unique",
+                "dirigeant_nomine",
+                "mandataire_signataire.signataire",
+            )
+        )
+    else:
+        if data.selarl_signataire_is_associe_1:
+            active_rule_keys.append("signataire_is_associe_1")
+            locked_targets.append("associes.associe_1")
+        if data.selarl_gerant_is_professional:
+            active_rule_keys.append("gerant_is_professional")
+            locked_targets.append("dirigeant_nomine")
+        if data.selarl_signataire_is_professional:
+            active_rule_keys.append("signataire_is_professional")
+            locked_targets.append("mandataire_signataire.signataire")
+
+    if data.selarl_mandataire_is_signataire:
+        active_rule_keys.append("mandataire_is_signataire")
+        locked_targets.append("mandataire_signataire.mandataire")
+    if data.selarl_company_is_acquirer:
+        active_rule_keys.append("selarl_is_acquirer")
+        locked_targets.append("cession_cabinet.acquereur")
+    if data.selarl_company_is_scm_transferee:
+        active_rule_keys.append("selarl_is_scm_transferee")
+        locked_targets.append("scm.cessionnaire")
+    if data.selarl_domiciliation_is_registered_office:
+        active_rule_keys.append("domiciliation_is_registered_office")
+        locked_targets.append("siege_social.domiciliation")
+
+    return SelarlReuseProjection(
+        active_rule_keys=tuple(dict.fromkeys(active_rule_keys)),
+        locked_targets=tuple(dict.fromkeys(locked_targets)),
+        non_automatic_relation_keys=tuple(
+            relation.key for relation in selarl_non_automatic_reuse_relations()
+        ),
+        praticien_is_associe_unique=data.selarl_dossier_unipersonnel,
+        praticien_is_gerant=(
+            data.selarl_dossier_unipersonnel or data.selarl_gerant_is_professional
+        ),
+        praticien_is_signataire=(
+            data.selarl_dossier_unipersonnel or data.selarl_signataire_is_professional
+        ),
+        mandataire_is_signataire=data.selarl_mandataire_is_signataire,
+    )
+
+
 def selarl_ui_field(key: str) -> FormField:
     return _selarl_field_index()[key]
 
 
 def selarl_ui_reuse_rules() -> tuple[ReuseRule, ...]:
     return selarl_reuse_rules()
+
+
+def selarl_ui_non_automatic_reuse_relations() -> tuple[NonAutomaticReuseRelation, ...]:
+    return selarl_non_automatic_reuse_relations()
 
 
 def selarl_ui_document_specs() -> tuple[SelarlDocumentSpec, ...]:
@@ -1017,6 +1089,11 @@ def _case_conditions(data: BusinessWizardInput) -> dict[str, object]:
         _set_condition(conditions, "regime_communautaire", data.regime_communautaire)
         _set_condition(conditions, "derogation", data.derogation)
         _set_condition(conditions, "cession", data.cession)
+        _set_condition(
+            conditions,
+            "dossier_unipersonnel",
+            data.selarl_dossier_unipersonnel,
+        )
         if data.cession is True and data.cabinet_type not in {None, "aucun"}:
             _set_condition(conditions, "cabinet_type", data.cabinet_type)
     elif case_type == CaseType.SELAS:
@@ -1088,7 +1165,8 @@ def _build_dossier_options(data: BusinessWizardInput) -> DossierOptions:
         regime_communautaire=_bool_value(data.regime_communautaire),
         cession=_bool_value(data.cession) or case_type == CaseType.SPFPL_CESSION,
         apport=case_type == CaseType.SPFPL_APPORT,
-        associe_unique=_bool_value(data.associe_unique),
+        associe_unique=_bool_value(data.associe_unique)
+        or (case_type == CaseType.SELARL and data.selarl_dossier_unipersonnel),
         option_is=_bool_value(data.option_is),
         scm_cession=_bool_value(data.scm_cession) or _bool_value(data.scm),
     )

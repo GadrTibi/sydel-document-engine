@@ -77,6 +77,18 @@ class ReuseRule:
     effect: str
     fields: tuple[str, ...]
     activation_condition: str
+    default_enabled: bool = False
+    behavior_if_inactive: str = (
+        "Aucune dérivation automatique ; les champs cibles restent à saisir "
+        "ou confirmer séparément."
+    )
+
+
+@dataclass(frozen=True)
+class NonAutomaticReuseRelation:
+    key: str
+    label: str
+    reason: str
 
 
 @dataclass(frozen=True)
@@ -245,6 +257,19 @@ SELARL_FIELDS: Final[tuple[FormField, ...]] = (
         "cession = oui",
         "Choisir médical, dentaire ou aucun si la cession ne porte pas sur un cabinet.",
         "cabinet dentaire",
+    ),
+    FormField(
+        "qualification.dossier_unipersonnel",
+        "Dossier unipersonnel",
+        "qualification",
+        ("conditions.dossier_unipersonnel", "ui.reuse.dossier_unipersonnel"),
+        FieldRequirement.OPTIONAL,
+        None,
+        (
+            "Option explicite : le Praticien est l'associé unique, le gérant "
+            "et le signataire."
+        ),
+        "oui",
     ),
     FormField(
         "societe.denomination",
@@ -915,6 +940,33 @@ SELARL_FIELDS: Final[tuple[FormField, ...]] = (
 
 SELARL_REUSE_RULES: Final[tuple[ReuseRule, ...]] = (
     ReuseRule(
+        "dossier_unipersonnel",
+        "Dossier unipersonnel",
+        "professionnel_gerant",
+        "associes.associe_unique, dirigeant_nomine, mandataire_signataire.signataire",
+        (
+            "Préremplit l'associé unique, le gérant et le signataire depuis "
+            "le Praticien, puis verrouille les champs dérivés."
+        ),
+        (
+            "civilite_personne_1",
+            "prenom_personne_1",
+            "nom_personne_1",
+            "profession_personne_1",
+            "date_naissance_personne_1",
+            "ville_naissance_personne_1",
+            "adresse_perso_personne_1",
+            "nationalite_personne_1",
+            "prenom_signataire",
+            "nom_signataire",
+        ),
+        "option Dossier unipersonnel cochée",
+        behavior_if_inactive=(
+            "Aucune relation Praticien = associé unique = gérant = signataire "
+            "n'est imposée."
+        ),
+    ),
+    ReuseRule(
         "signataire_is_associe_1",
         "Le signataire est le premier associé",
         "mandataire_signataire.signataire",
@@ -928,7 +980,11 @@ SELARL_REUSE_RULES: Final[tuple[ReuseRule, ...]] = (
             "adresse_perso_personne_1",
             "nationalite_personne_1",
         ),
-        "au moins un associé et case cochée",
+        "au moins un associé et option explicite cochée",
+        behavior_if_inactive=(
+            "L'associé 1 reste distinct et doit être saisi ou copié "
+            "explicitement."
+        ),
     ),
     ReuseRule(
         "gerant_is_professional",
@@ -944,7 +1000,8 @@ SELARL_REUSE_RULES: Final[tuple[ReuseRule, ...]] = (
             "ville_naissance_personne_1",
             "adresse_perso_personne_1",
         ),
-        "PV nomination gérant ou statuts actifs",
+        "option explicite cochée hors Dossier unipersonnel",
+        behavior_if_inactive="Le gérant reste saisissable comme rôle distinct.",
     ),
     ReuseRule(
         "signataire_is_professional",
@@ -953,16 +1010,21 @@ SELARL_REUSE_RULES: Final[tuple[ReuseRule, ...]] = (
         "mandataire_signataire.signataire",
         "Alimente le signataire depuis le Praticien.",
         ("prenom_signataire", "nom_signataire", "civilite"),
-        "case cochée ou valeur par défaut SELARL simple",
+        "option explicite cochée hors Dossier unipersonnel",
+        behavior_if_inactive="Le signataire reste distinct du Praticien.",
     ),
     ReuseRule(
         "mandataire_is_signataire",
-        "Le mandataire est le signataire",
+        "Copier le signataire vers le mandataire",
         "mandataire_signataire.signataire",
         "mandataire_signataire.mandataire",
-        "Copie l'identité du signataire vers le mandataire.",
+        "Option de confort pour DOC-034 ; jamais activée par défaut.",
         ("civilite_mandataire", "prenom_mandataire", "nom_mandataire"),
-        "DOC-034 actif et mandataire non distinct",
+        "DOC-034 actif et option explicite cochée",
+        behavior_if_inactive=(
+            "Le mandataire reste distinct du signataire ou hors saisie "
+            "prioritaire."
+        ),
     ),
     ReuseRule(
         "selarl_is_acquirer",
@@ -979,6 +1041,7 @@ SELARL_REUSE_RULES: Final[tuple[ReuseRule, ...]] = (
             "numero_rcs_acquereur",
         ),
         "cession = oui et case cochée",
+        behavior_if_inactive="L'acquéreur reste une personne ou société distincte.",
     ),
     ReuseRule(
         "selarl_is_scm_transferee",
@@ -993,6 +1056,7 @@ SELARL_REUSE_RULES: Final[tuple[ReuseRule, ...]] = (
             "ville_rcs_cessionnaire",
         ),
         "SCM cession = oui et case cochée",
+        behavior_if_inactive="Le cessionnaire SCM reste distinct de la SELARL.",
     ),
     ReuseRule(
         "domiciliation_is_registered_office",
@@ -1002,6 +1066,44 @@ SELARL_REUSE_RULES: Final[tuple[ReuseRule, ...]] = (
         "Construit l'adresse de domiciliation affichée depuis le siège social.",
         ("domiciliation.adresse_affichee",),
         "DOC-002 actif et case cochée",
+        behavior_if_inactive=(
+            "L'adresse de domiciliation reste un champ libre distinct du siège."
+        ),
+    ),
+)
+
+SELARL_NON_AUTOMATIC_REUSE_RELATIONS: Final[
+    tuple[NonAutomaticReuseRelation, ...]
+] = (
+    NonAutomaticReuseRelation(
+        "seller_is_current_tenant",
+        "Vendeur = locataire actuel",
+        "Vrai dans certains dossiers de cession, mais jamais déduit sans confirmation.",
+    ),
+    NonAutomaticReuseRelation(
+        "registered_office_is_practice_location",
+        "Siège social = lieu d'exercice",
+        "Les adresses ordinales et Kbis peuvent diverger.",
+    ),
+    NonAutomaticReuseRelation(
+        "registered_office_is_transferred_cabinet",
+        "Siège social = cabinet cédé",
+        "Le siège peut être au domicile, au cabinet ou ailleurs selon le dossier.",
+    ),
+    NonAutomaticReuseRelation(
+        "transferred_cabinet_is_practice_location",
+        "Cabinet cédé = lieu d'exercice",
+        "Les cessions et lieux d'exercice multiples exigent une confirmation.",
+    ),
+    NonAutomaticReuseRelation(
+        "seller_is_praticien",
+        "Vendeur = Praticien",
+        "Le vendeur peut être une autre personne ou une société.",
+    ),
+    NonAutomaticReuseRelation(
+        "scm_transferor_is_praticien",
+        "Cédant SCM = Praticien",
+        "Le cédant des parts SCM doit être confirmé dans le bloc SCM.",
     ),
 )
 
@@ -1799,6 +1901,10 @@ def selarl_reuse_rules() -> tuple[ReuseRule, ...]:
     return SELARL_REUSE_RULES
 
 
+def selarl_non_automatic_reuse_relations() -> tuple[NonAutomaticReuseRelation, ...]:
+    return SELARL_NON_AUTOMATIC_REUSE_RELATIONS
+
+
 def selarl_document_specs() -> tuple[SelarlDocumentSpec, ...]:
     return SELARL_DOCUMENTS
 
@@ -1928,6 +2034,22 @@ def validate_selarl_schema() -> tuple[str, ...]:
     actual_flow_labels = tuple(step.label for step in SELARL_FLOW_STEPS)
     if actual_flow_labels != expected_flow_labels:
         issues.append("Ordre du flow SELARL non conforme a l'arbitrage metier.")
+
+    rule_keys = {rule.key for rule in SELARL_REUSE_RULES}
+    if "dossier_unipersonnel" not in rule_keys:
+        issues.append("Regle Dossier unipersonnel absente.")
+    default_rules = sorted(rule.key for rule in SELARL_REUSE_RULES if rule.default_enabled)
+    if default_rules:
+        issues.append(
+            "Regles de reutilisation activees par defaut: " + ", ".join(default_rules)
+        )
+    non_automatic_keys = {relation.key for relation in SELARL_NON_AUTOMATIC_REUSE_RELATIONS}
+    overlap = sorted(rule_keys & non_automatic_keys)
+    if overlap:
+        issues.append(
+            "Relations non automatiques exposees comme regles actives: "
+            + ", ".join(overlap)
+        )
 
     for field in SELARL_FIELDS:
         if field.block_key not in block_keys:

@@ -49,8 +49,9 @@ Blocs :
 
 Règles :
 
-- proposer `Le gérant est le Praticien` sans traiter les règles profondes de réutilisation dans ce ticket ;
-- proposer `Le signataire est le Praticien` seulement comme lien explicite ;
+- proposer l'option pivot `Dossier unipersonnel` pour les dossiers où le Praticien est aussi associé unique, gérant et signataire ;
+- ne dériver aucun rôle depuis le Praticien quand `Dossier unipersonnel` est inactif ;
+- garder les liens individuels gérant / signataire comme options explicites si le dossier n'est pas unipersonnel ;
 - ne pas utiliser le libellé banni ;
 - tout champ d'adresse doit être qualifié.
 
@@ -97,8 +98,8 @@ Cas simples V1 :
 
 Mécanismes de déduplication :
 
-- `Le signataire est le premier associé` ;
-- `Copier depuis le Praticien` ;
+- `Dossier unipersonnel` comme raccourci contrôlé : Praticien = associé unique = gérant = signataire ;
+- options individuelles explicites hors dossier unipersonnel, sans activation par défaut ;
 - `Choisir le gérant parmi les associés`.
 
 ## Écran 5 — Contexte & scénarios métier
@@ -120,7 +121,9 @@ Règles :
 - chaque bloc inactif est masqué et non bloquant ;
 - les documents de dérogation SELARL restent manuels dans le pilote vérifié : formulaire multi-sites non fourni en variables V2, `Dérogation SEL BNC` manuelle, `Dérogation cumul SELARL BNC` manuelle ;
 - l'emprunt PV reste une option du `DOC-004`, pas un document séparé ;
-- le mandataire reste un sujet de formalité si un document ou une variable l'exige, sans devenir l'axe UX central du parcours.
+- le mandataire reste un sujet de formalité si un document ou une variable l'exige, sans devenir l'axe UX central du parcours ;
+- ne pas activer `mandataire = signataire` par défaut ;
+- ne pas déduire automatiquement vendeur / locataire, siège / lieu d'exercice / cabinet, vendeur / Praticien ou cédant SCM / Praticien.
 
 ## Écran 6 — Documents & génération
 
@@ -170,7 +173,7 @@ Le rendu Streamlit déjà committé n'est pas encore validé produit et ne doit 
 | Logique de saisie | Le formulaire part des documents prêts `DOC-001` à `DOC-004`. | Le formulaire part du processus SELARL et de ses conditions. |
 | Ordre du parcours | Le commit UI technique peut encore afficher la société avant la Fiche Client tant que `SELARL-UI-REALIGN-001` n'est pas fait. | Qualification, Fiche Client / Praticien, Fiche Société, Capital & Associés, Contexte & scénarios métier, Documents & génération. |
 | Libellé personne | Corrigé par `SELARL-WORDING-REALIGN-001`. | `Fiche Client` pour l'écran personne et `Gérant` pour le rôle juridique SELARL. |
-| Double saisie | Signataire, dirigeant et associé peuvent être saisis séparément sans lien UX. | Cases de réutilisation et copie depuis source. |
+| Double saisie | Signataire, dirigeant et associé peuvent être saisis séparément sans lien UX. | `Dossier unipersonnel` pour le cas pivot, puis options explicites de copie hors défaut. |
 | Adresse ambiguë | Plusieurs champs courts `Numero`, `Voie`, `Code postal`, `Ville` sans toujours rappeler le contexte. | Labels qualifiés : siège, personnelle, cabinet, bailleur, banque, SCM, etc. |
 | Documents contextualisés | Documents attendus affichés, mais beaucoup restent `Contexte incomplet pour génération V2`. | Documents regroupés par blocs métier avec champs manquants lisibles. |
 | PV emprunt | Checkbox UI `PV avec autorisation d'emprunt` peut être interprétée comme un document. | Option conditionnelle du PV nomination gérant seulement. |
@@ -185,7 +188,8 @@ Le rendu Streamlit déjà committé n'est pas encore validé produit et ne doit 
 
 - L'écran 1 permet de reproduire la sélection SELARL du catalogue.
 - Aucun champ UI ne s'appelle seulement `adresse`.
-- Le signataire, le gérant et l'associé 1 peuvent être liés sans double saisie.
+- `Dossier unipersonnel` permet de lier Praticien, associé unique, gérant et signataire sans double saisie.
+- Quand `Dossier unipersonnel` est inactif, aucun lien Praticien / associé / gérant / signataire n'est imposé.
 - Les documents manuels sont visibles mais exclus de la génération.
 - `DOC-013` et `DOC-014` ne sont pas envoyés à la génération dans le pilote SELARL vérifié sans arbitrage juriste.
 - Les champs manquants sont regroupés par bloc métier.
