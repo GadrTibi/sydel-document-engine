@@ -133,6 +133,8 @@
 | UI-CASE-WIZARD-002 | DONE | Brancher l'assistant métier Streamlit sur le catalogue des cas | `CASE-CATALOG-001` + docs UI 19/20/21 + assistant existant | sélection documentaire via `get_expected_documents` + statuts honnêtes + tests + rapport |
 | SELARL-PILOT-PROTOCOL-001 | DONE | Cadrer le protocole produit SELARL pilote depuis la source V2 | `Documents_a_generer_par_cas_V2.docx` + CASE-CATALOG-001 + UI actuelle | protocole réplicable + specs SELARL + plan d'implémentation + rapport |
 | SELARL-PILOT-SOURCE-VERIFY-001 | DONE | Réconcilier les specs SELARL avec la vraie source V2 | vraie V2 `project/source_truth/Documents_a_generer_par_cas_V2.docx` + specs SELARL + catalogue | matrice d'écarts + statuts dérogation corrigés + specs alignées + tests |
+| SELARL-FORM-SCHEMA-IMPL-001 | DONE | Implémenter le schéma de données SELARL côté Assistant métier | vraie V2 + specs SELARL + catalogue corrigé | module `selarl_form_schema.py` + réserve DOC-006 + couverture variables V2 + tests + rapport |
+| SELARL-UI-WIZARD-IMPL-001 | READY | Brancher l'UI Assistant métier sur le schéma SELARL | `selarl_form_schema.py` + spec UI SELARL | parcours SELARL visible, documents manuels visibles mais exclus de la génération |
 | UI-001 | BLOCKED | Brancher Streamlit V0 Lot 1 | orchestrateur Lot 1 + spec canonique PV nomination gérant validée | écran simple + test manuel |
 
 ## Référentiels moteur disponibles
@@ -883,6 +885,17 @@
 - Tests : `.\.venv\Scripts\python.exe -m ruff check .` OK ; `.\.venv\Scripts\python.exe -m pytest` OK, 217 tests passés.
 - Prochaine étape recommandée : `SELARL-FORM-SCHEMA-IMPL-001`.
 
+### SELARL-FORM-SCHEMA-IMPL-001
+- Objectif : implémenter le schéma de données SELARL côté Assistant métier, sans refaire l'UI visible et sans modifier les générateurs ni le moteur DOCX/PDF/ZIP.
+- Source V2 utilisée : `project/source_truth/Documents_a_generer_par_cas_V2.docx`, hash SHA-256 `2E9843AA1EC05A01D82DF5FCE12516A8EF49EA2B3842547D186204218C90B23F`.
+- Statut : DONE.
+- Livraison : `src/sydel_doc_engine/app/selarl_form_schema.py` expose blocs métier, champs qualifiés, règles de réutilisation, documents attendus SELARL, codes générables et couverture des variables V2.
+- Corrections QA : `DOC-006` porte une réserve source V2 exploitable dans le catalogue ; le rapport source V2 clarifie que `DOC-013` et `DOC-014` sont finaux `MANUAL_ONLY`.
+- Garde-fous : `DOC-013` et `DOC-014` restent visibles mais exclus des codes générables SELARL ; aucun changement Streamlit, moteur DOCX/PDF/ZIP ou générateur.
+- Rapport : `docs/review/selarl_form_schema_impl_001_report_v1.md`.
+- Tests : `.\.venv\Scripts\python.exe -m ruff check .` OK ; `.\.venv\Scripts\python.exe -m pytest` OK, 231 tests passés.
+- Prochaine étape recommandée : `SELARL-UI-WIZARD-IMPL-001`.
+
 ### UI-001
 - Objectif : exposer une Streamlit simple pour générer le Lot 1.
 - Statut : en attente explicite ; ne pas lancer sans ticket explicite dédié.
@@ -910,8 +923,9 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - `UI-CASE-WIZARD-002` est DONE ; l'assistant metier utilise maintenant `get_expected_documents(...)` pour afficher les documents attendus et exclut les documents manuels/non implementes de la generation.
 - `SELARL-PILOT-PROTOCOL-001` est DONE ; le pilote SELARL dispose d'un protocole réplicable, d'une spec processus, d'une spec formulaire, d'une spec wizard et d'un plan d'implémentation.
 - `SELARL-PILOT-SOURCE-VERIFY-001` est DONE ; la vraie V2 est au chemin canonique, les dérogations SELARL sont réconciliées en manuel et les variables V2 brutes sont reprises dans les specs.
-- ticket READY confirmé : `CLOSE-PROJECT-V1-001`.
-- prochain ticket recommandé : `SELARL-FORM-SCHEMA-IMPL-001`, implémentation limitée du schéma de formulaire SELARL sans toucher aux générateurs ni au moteur DOCX/PDF/ZIP.
+- `SELARL-FORM-SCHEMA-IMPL-001` est DONE ; le schéma machine-readable SELARL existe, `DOC-006` porte une réserve V2 exploitable, `DOC-013` / `DOC-014` restent manuels et la couverture des variables V2 est testée.
+- tickets READY confirmés : `CLOSE-PROJECT-V1-001`, `SELARL-UI-WIZARD-IMPL-001`.
+- prochain ticket recommandé : `SELARL-UI-WIZARD-IMPL-001`, branchement visible de l'Assistant métier sur le schéma SELARL sans réactiver les documents manuels.
 - moteur documentaire DOCX V1 feature complete et clos après `RECONCILE-MOTOR-CLOSE-001`.
 - tickets absorbés par `SYNC-POST-MOTOR-UI-001` : `UI-FLOW-001`, `UI-OCCURRENCES-001`, `UI-FORM-SCHEMA-001`, `PDF-BACKEND-001` et `RECIPE-FRAME-001`.
 - `RECONCILE-MOTOR-CLOSE-001` est DONE ; les générateurs ordre/SPFPL orphelins sont exposés sous `DOC-034` à `DOC-043`, `08/09/16/17/18` sont alignés et les références delivery Lot 2 manquantes sont présentes sur `main`.
@@ -1060,3 +1074,4 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - 2026-05-18 : CASE-CATALOG-001 cree le service pur `get_expected_documents(...)` et le catalogue metier par cas depuis la source Word canonique, couvre 46 documents attendus uniques dont 43 mappes a `DOC-XXX`, documente 2 manuels et 1 non implemente, ajoute les tests unitaires de selection et valide ruff + pytest 208 tests.
 - 2026-05-19 : SELARL-PILOT-PROTOCOL-001 ajoute la source V2 cible, cree le protocole de construction de processus, les specs produit/formulaire/wizard SELARL et le plan d'implementation, puis valide ruff + pytest 217 tests sans modifier l'UI, le moteur ni les generateurs.
 - 2026-05-19 : SELARL-PILOT-SOURCE-VERIFY-001 lit la vraie source V2, remplace le fichier canonique provisoire, corrige les statuts SELARL `DOC-013` / `DOC-014` en manuel, complète les variables V2 dans les specs et crée la matrice d'écarts source.
+- 2026-05-19 : SELARL-FORM-SCHEMA-IMPL-001 ajoute le module `selarl_form_schema.py`, verrouille la réserve source V2 sur `DOC-006`, confirme `DOC-013` / `DOC-014` hors génération pilote et teste la couverture des variables V2 ; ruff OK et pytest 231 tests passés.

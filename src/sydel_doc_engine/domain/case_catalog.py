@@ -172,6 +172,11 @@ CATALOG_DOCUMENTS: tuple[CatalogDocument, ...] = (
         "Lettre d'avertissement au conjoint en cas d'apport d'un bien commun.docx",
         "DOC-006",
         DocumentAvailability.GENERATABLE,
+        (
+            "La vraie V2 indique que ce document ne figure pas parmi les sources "
+            "fournies ; generation moteur existante a afficher avec reserve dans "
+            "le pilote SELARL."
+        ),
     ),
     CatalogDocument(
         "formulaire_derogation_sites_sel",
