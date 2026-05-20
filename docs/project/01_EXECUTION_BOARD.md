@@ -146,7 +146,7 @@
 | DOCUMENT-UNITAIRE-001 | DONE | Ajouter le mode Streamlit Document unitaire | Streamlit + catalogue cas + schéma SELARL | choix document, champs limités, DOCX unique, ZIP/PDF optionnels, rapport |
 | ASSISTANT-METIER-PREFILL-001 | DONE | Ajouter des scénarios fictifs déterministes de préremplissage dans Assistant métier | Assistant métier SELARL/SCI + specs UI/SELARL | module presets + boutons Préremplir/Réinitialiser + tests + rapport |
 | GLOBAL-VARIABLE-INVENTORY-001 | DONE | Construire l'inventaire global brut des variables documentaires | référentiels V1 + source truth V1/V2/V3 + templates + specs + registre | CSV global brut + rapport exécutif + pilotage |
-| GLOBAL-CANONICAL-CANDIDATES-V2-001 | READY | Préparer la matrice de candidats variables canoniques V2 | `GLOBAL_VARIABLE_RAW_INVENTORY_V1.csv` + rapport global | matrice candidats V2, groupes suspects, arbitrages à valider |
+| GLOBAL-VARIABLE-IDENTITY-AUDIT-001 | DONE | Auditer l'identité sémantique globale des variables avant rebuild front | `GLOBAL_VARIABLE_RAW_INVENTORY_V1.csv` + référentiels V1 + templates + specs | matrice identité V2 + registre canonique global V2 + questions humaines + rapport |
 | SELARL-JURIST-REVIEW-001 | READY | Faire valider le parcours SELARL réaligné par un juriste | `SELARL-SMOKE-REALISTIC-001` | revue juriste, réserves et arbitrages documentés |
 | SELARL-DOCS-GENERATION-SMOKE-001 | BLOCKED | Smoke tester la génération SELARL depuis le parcours Assistant métier | parcours SELARL réaligné + catalogue + schema + contextes réalistes | bloqué par la réconciliation NotebookLM ; remplacé par `SELARL-SMOKE-REALISTIC-001` après réalignement |
 | UI-001 | BLOCKED | Brancher Streamlit V0 Lot 1 | orchestrateur Lot 1 + spec canonique PV nomination gérant validée | écran simple + test manuel |
@@ -1029,7 +1029,16 @@
 - Sources : dictionnaire canonique V1, mapping documents/variables V1, arbre moteur, registre `catalog.py`, source truth V1/V2/V3, templates `project/source_documents/`, specs `docs/delivery/`, `case_catalog.py` en aide uniquement.
 - Garde-fous : aucun générateur, moteur DOCX/PDF/ZIP, UI ou wording juridique modifié ; les groupes suspects sont signalés sans fusion canonique définitive.
 - Validations : contrôle CSV/report, absence de lignes `UNMAPPED`, couverture complète `DOC-001` à `DOC-043`; aucun test Python requis car aucun fichier Python modifié.
-- Prochaine étape recommandée : `GLOBAL-CANONICAL-CANDIDATES-V2-001`, matrice candidats V2 `variable_canonique -> raw_variables -> documents -> source_origin` avant rebuild front.
+- Prochaine étape réalisée : `GLOBAL-VARIABLE-IDENTITY-AUDIT-001`, audit d'identité sémantique et registre canonique global V2.
+
+### GLOBAL-VARIABLE-IDENTITY-AUDIT-001
+- Objectif : auditer l'identité sémantique globale des variables de tous les documents afin de minimiser le futur front sans fusionner des informations distinctes.
+- Statut : DONE.
+- Livrables : `docs/project/GLOBAL_VARIABLE_IDENTITY_MATRIX_V1.csv`, `docs/project/GLOBAL_CANONICAL_FIELD_REGISTRY_V2.md`, `docs/project/GLOBAL_VARIABLE_OPEN_QUESTIONS_V1.md` et `docs/review/global_variable_identity_audit_001_report_v1.md`.
+- Couverture : 1 334 slugs normalisés distincts audités, 43 documents `DOC-001` à `DOC-043`, 15 familles, 49 champs canoniques V2 proposés, 142 rapprochements représentatifs, 10 questions humaines groupées.
+- Décision : pas de fusion silencieuse ; les relations sont classées en `SAME_FIELD`, `SAME_DATA_DIFFERENT_SHAPE`, `EXPLICIT_REUSE_ONLY`, `DISTINCT_FIELDS` ou `UNCERTAIN_REQUIRES_HUMAN_DECISION`.
+- Garde-fous : aucun générateur, moteur DOCX/PDF/ZIP, UI ou wording juridique modifié ; aucun test Python requis car aucun fichier Python modifié.
+- Prochaine étape recommandée : `GLOBAL-CANONICAL-V2-ARBITRATION-001`, répondre aux questions Q-001 à Q-010 puis geler un registre V2.1 avant ticket de rebuild front global.
 
 ### UI-001
 - Objectif : exposer une Streamlit simple pour générer le Lot 1.
@@ -1046,8 +1055,8 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - mettre à jour `docs/project/04_LAST_STATE.md`
 
 ## Prochaine étape prévue
-- `GLOBAL-VARIABLE-INVENTORY-001` est DONE ; l'inventaire global brut couvre `DOC-001` à `DOC-043`, les sources V1/V2/V3, les templates présents, les specs delivery et les mappings V1 sans toucher au moteur ni à l'UI.
-- prochain ticket recommandé pour le rebuild front global : `GLOBAL-CANONICAL-CANDIDATES-V2-001`, afin de transformer l'inventaire brut en matrice de candidats canoniques V2 sans fusion définitive non validée.
+- `GLOBAL-VARIABLE-IDENTITY-AUDIT-001` est DONE ; la matrice d'identité, le registre canonique global V2, les questions humaines et le rapport exécutif sont disponibles sans toucher au moteur ni à l'UI.
+- Prochain ticket recommandé pour le rebuild front global : `GLOBAL-CANONICAL-V2-ARBITRATION-001`, répondre aux 10 questions humaines et figer le registre V2.1 ; ouvrir ensuite le ticket de rebuild front sur ce registre arbitré.
 - `WORKTREE-CLEANUP-AND-UI-STATUS-001` est DONE ; le pack `REVIEW-FINAL-001` est consolide dans `main`, le rapport 23 clarifie le dossier canonique et le statut UI, et les anciens worktrees locaux sont a considerer comme archives.
 - `SYNC-FINAL-FOUNDATIONS-001` est DONE ; `main` contient les audits 16/17/18, les cadrages UI 19/20/21, le framework de recette finale, l'UI intégrée, le backend PDF et le backend ZIP déterministe.
 - `UI-PDF-ZIP-INTEGRATION-001` est DONE ; l'UI sait produire et telecharger DOCX, PDF local optionnel et ZIP dossier.
@@ -1231,3 +1240,4 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - 2026-05-20 : DOCUMENT-UNITAIRE-001 ajoute le mode Streamlit `Document unitaire`, limite la V1 à `DOC-001` à `DOC-004`, affiche honnêtement les documents manuels ou non encore supportés et valide ruff + pytest 266 tests.
 - 2026-05-20 : ASSISTANT-METIER-PREFILL-001 ajoute des scénarios de test déterministes dans l'Assistant métier, avec sélecteur, préremplissage, réinitialisation, indication visible, synchronisation `session_state` des champs dérivés SELARL/domiciliation et non-régression SCI/Document unitaire/Technique ; aucun générateur, moteur DOCX/PDF/ZIP ni wording juridique modifié.
 - 2026-05-20 : GLOBAL-VARIABLE-INVENTORY-001 crée l'inventaire global brut `docs/project/GLOBAL_VARIABLE_RAW_INVENTORY_V1.csv` et le rapport `docs/review/global_variable_inventory_001_report_v1.md` : 12 443 lignes, 43 documents `DOC-001` à `DOC-043`, 15 familles, aucun générateur/moteur/UI/wording juridique modifié.
+- 2026-05-20 : GLOBAL-VARIABLE-IDENTITY-AUDIT-001 crée la matrice d'identité V2, le registre canonique global V2, la liste de 10 questions humaines et le rapport exécutif : 1 334 slugs distincts audités, 49 champs proposés, 142 rapprochements classés, aucun générateur/moteur/UI/wording juridique modifié.
