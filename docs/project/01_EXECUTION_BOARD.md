@@ -144,6 +144,7 @@
 | SELARL-SMOKE-REALISTIC-001 | DONE | Smoke tester SELARL avec données réalistes après réalignement | `SELARL-UI-REALIGN-001` | rapport de smoke réaliste, documents manuels exclus, catalogue existant respecté |
 | SELARL-CLOUD-GENERATION-BUG-001 | DONE | Corriger le blocage de génération SELARL visible | test utilisateur Cloud + parcours Streamlit SELARL | session state dérivé corrigé, génération visible restaurée, test AppTest |
 | DOCUMENT-UNITAIRE-001 | DONE | Ajouter le mode Streamlit Document unitaire | Streamlit + catalogue cas + schéma SELARL | choix document, champs limités, DOCX unique, ZIP/PDF optionnels, rapport |
+| ASSISTANT-METIER-PREFILL-001 | DONE | Ajouter des scénarios fictifs déterministes de préremplissage dans Assistant métier | Assistant métier SELARL/SCI + specs UI/SELARL | module presets + boutons Préremplir/Réinitialiser + tests + rapport |
 | SELARL-JURIST-REVIEW-001 | READY | Faire valider le parcours SELARL réaligné par un juriste | `SELARL-SMOKE-REALISTIC-001` | revue juriste, réserves et arbitrages documentés |
 | SELARL-DOCS-GENERATION-SMOKE-001 | BLOCKED | Smoke tester la génération SELARL depuis le parcours Assistant métier | parcours SELARL réaligné + catalogue + schema + contextes réalistes | bloqué par la réconciliation NotebookLM ; remplacé par `SELARL-SMOKE-REALISTIC-001` après réalignement |
 | UI-001 | BLOCKED | Brancher Streamlit V0 Lot 1 | orchestrateur Lot 1 + spec canonique PV nomination gérant validée | écran simple + test manuel |
@@ -1008,6 +1009,16 @@
 - Tests : `.\.venv\Scripts\python.exe -m ruff check .` OK ; `.\.venv\Scripts\python.exe -m pytest` OK, 266 tests passés.
 - Prochaine étape recommandée : revue utilisateur sur les quatre documents supportés, puis extension incrémentale document par document si les champs sont couverts.
 
+### ASSISTANT-METIER-PREFILL-001
+- Objectif : ajouter un préremplissage de test déterministe dans le seul mode `Assistant metier`.
+- Statut : DONE.
+- Implémentation : module dédié `src/sydel_doc_engine/app/test_prefill_presets.py`, sélecteur `Scénario de test`, boutons `Préremplir` et `Réinitialiser`, indication visible des données fictives chargées.
+- Scénarios : `SELARL médecin unipersonnelle simple`, `SELARL chirurgien-dentiste + régime communautaire + site distinct`, `SELARL médecin + cession cabinet médical + bail + financement`, `SCI simple`.
+- Garde-fous : générateurs, moteur DOCX/PDF/ZIP, wording juridique, mode `Technique / diagnostic` et mode `Document unitaire` non modifiés.
+- Rapport : `docs/review/assistant_metier_prefill_001_report_v1.md`.
+- Tests : `.\.venv\Scripts\python.exe -m pytest tests\unit\test_business_wizard.py -q` OK, 41 tests passés ; `.\.venv\Scripts\python.exe -m pytest tests\unit\test_single_document_mode.py tests\unit\test_ui_runtime.py -q` OK, 12 tests passés ; `.\.venv\Scripts\python.exe -m ruff check .` OK ; `.\.venv\Scripts\python.exe -m pytest` OK, 272 tests passés.
+- Prochaine étape recommandée : revue manuelle Streamlit des quatre scénarios de test, puis `SELARL-JURIST-REVIEW-001`.
+
 ### UI-001
 - Objectif : exposer une Streamlit simple pour générer le Lot 1.
 - Statut : en attente explicite ; ne pas lancer sans ticket explicite dédié.
@@ -1204,3 +1215,4 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - 2026-05-19 : SELARL-SMOKE-REALISTIC-001 exécute trois scénarios SELARL réalistes, génère `DOC-001` à `DOC-004` et un ZIP par scénario, confirme l'exclusion des documents manuels `DOC-013` / `DOC-014`, la réserve `DOC-006`, le blocage contexte incomplet V2 des documents non prêts et prépare la revue associé / juriste.
 - 2026-05-20 : SELARL-CLOUD-GENERATION-BUG-001 reproduit le blocage de génération visible quand les réutilisations SELARL sont cochées avant saisie, corrige le `session_state` des champs dérivés associé/domiciliation, ajoute un test AppTest de génération réelle et valide ruff + pytest 266 tests ; commit local bloqué par refus d'écriture dans `.git`.
 - 2026-05-20 : DOCUMENT-UNITAIRE-001 ajoute le mode Streamlit `Document unitaire`, limite la V1 à `DOC-001` à `DOC-004`, affiche honnêtement les documents manuels ou non encore supportés et valide ruff + pytest 266 tests.
+- 2026-05-20 : ASSISTANT-METIER-PREFILL-001 ajoute des scénarios de test déterministes dans l'Assistant métier, avec sélecteur, préremplissage, réinitialisation, indication visible, synchronisation `session_state` des champs dérivés SELARL/domiciliation et non-régression SCI/Document unitaire/Technique ; aucun générateur, moteur DOCX/PDF/ZIP ni wording juridique modifié.

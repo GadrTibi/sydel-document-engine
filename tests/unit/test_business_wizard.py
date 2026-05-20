@@ -30,6 +30,10 @@ from sydel_doc_engine.app.business_wizard import (
     selarl_ui_visible_fields_by_step,
     selarl_ui_visible_screen_titles,
 )
+from sydel_doc_engine.app.test_prefill_presets import (
+    business_test_prefill_by_label,
+    business_test_prefill_labels,
+)
 from sydel_doc_engine.app.ui_runtime import (
     generate_docx_files_for_document_codes,
     generate_zip_file,
@@ -257,6 +261,100 @@ def test_streamlit_business_mode_exposes_sci_and_selarl() -> None:
     dossier_types = {item.structure for item in business_wizard.business_dossier_types()}
 
     assert {"SCI", "SELARL"}.issubset(dossier_types)
+
+
+def test_business_prefill_presets_are_available() -> None:
+    assert business_test_prefill_labels() == (
+        "SELARL médecin unipersonnelle simple",
+        "SELARL chirurgien-dentiste + régime communautaire + site distinct",
+        "SELARL médecin + cession cabinet médical + bail + financement",
+        "SCI simple",
+    )
+
+
+def test_streamlit_business_prefill_controls_are_business_only() -> None:
+    app = AppTest.from_file("src/sydel_doc_engine/app/streamlit_app.py").run(timeout=120)
+
+    assert _has_selectbox(app, "Scénario de test")
+    assert _has_button(app, "Préremplir")
+    assert _has_button(app, "Réinitialiser")
+
+    app.radio[0].set_value("Technique / diagnostic")
+    app.run(timeout=120)
+
+    assert not _has_selectbox(app, "Scénario de test")
+    assert not _has_button(app, "Préremplir")
+    assert not _has_button(app, "Réinitialiser")
+
+    app.radio[0].set_value("Document unitaire")
+    app.run(timeout=120)
+
+    assert not _has_selectbox(app, "Scénario de test")
+    assert not _has_button(app, "Préremplir")
+    assert not _has_button(app, "Réinitialiser")
+
+
+def test_business_prefill_selarl_simple_enables_generation() -> None:
+    app = AppTest.from_file("src/sydel_doc_engine/app/streamlit_app.py").run(timeout=120)
+
+    _apply_business_prefill(app, "SELARL médecin unipersonnelle simple")
+
+    assert app.session_state.business_prefill_loaded is True
+    assert app.session_state.condition_selarl_dossier_unipersonnel is True
+    assert app.session_state.selarl_associe_genre_0 == "masculin"
+    assert app.session_state.selarl_associe_prenom_0 == "Camille"
+    assert app.session_state.selarl_domiciliation_adresse_affichee == (
+        "14 rue de Lisbonne, 75008 Paris"
+    )
+    assert any("Mode test" in message.value for message in app.info)
+    assert _button_by_label(app, "Generer les DOCX").disabled is False
+
+
+def test_business_prefill_complex_selarl_scenarios_show_expected_blocks() -> None:
+    app = AppTest.from_file("src/sydel_doc_engine/app/streamlit_app.py").run(timeout=120)
+
+    _apply_business_prefill(
+        app,
+        "SELARL chirurgien-dentiste + régime communautaire + site distinct",
+    )
+
+    assert _has_text_input(app, "Identité du conjoint")
+    assert any("DOC-006" in item.value for item in app.markdown)
+    assert any("DOC-013" in item.value and "DOC-014" in item.value for item in app.markdown)
+
+    _apply_business_prefill(
+        app,
+        "SELARL médecin + cession cabinet médical + bail + financement",
+    )
+
+    assert _has_text_input(app, "Vendeur du cabinet")
+    assert _has_text_input(app, "Bailleur des locaux")
+    assert _has_text_input(app, "Banque de financement")
+    assert app.session_state.selarl_emprunt_actif is True
+    assert _has_text_input(app, "Montant maximum de l'emprunt DOC-004")
+
+
+def test_business_prefill_reset_clears_assistant_state() -> None:
+    app = AppTest.from_file("src/sydel_doc_engine/app/streamlit_app.py").run(timeout=120)
+
+    _apply_business_prefill(app, "SELARL médecin unipersonnelle simple")
+    _button_by_label(app, "Réinitialiser").click()
+    app.run(timeout=120)
+
+    assert app.session_state.business_prefill_loaded is False
+    assert not any("Mode test" in message.value for message in app.info)
+    assert _button_by_label(app, "Generer les DOCX").disabled is True
+
+
+def test_business_prefill_sci_simple_is_non_regression() -> None:
+    app = AppTest.from_file("src/sydel_doc_engine/app/streamlit_app.py").run(timeout=120)
+
+    _apply_business_prefill(app, "SCI simple")
+
+    assert app.session_state.business_structure_type.structure == "SCI"
+    assert app.session_state.condition_sci_variant == "SCI simple"
+    assert app.session_state.business_societe_denomination == "SCI DES TILLEULS"
+    assert _button_by_label(app, "Generer les DOCX").disabled is False
 
 
 def test_selarl_ui_conditions_are_available() -> None:
@@ -603,10 +701,10 @@ def test_streamlit_selarl_unipersonnel_can_generate_after_late_entry() -> None:
     _fill_selarl_simple_generation_fields(app)
     app.run(timeout=120)
 
-    assert app.button[0].label == "Generer les DOCX"
-    assert app.button[0].disabled is False
+    generate_button = _button_by_label(app, "Generer les DOCX")
+    assert generate_button.disabled is False
 
-    app.button[0].click().run(timeout=120)
+    generate_button.click().run(timeout=120)
 
     assert any("4 DOCX generes." in message.value for message in app.success)
     generated_paths = [Path(path) for path in app.session_state.business_docx_paths]
@@ -678,6 +776,13 @@ def _fill_selarl_simple_generation_fields(app: AppTest) -> None:
     _set_number_input(app, "associe 1 - nombre de parts", 500)
 
 
+def _apply_business_prefill(app: AppTest, label: str) -> None:
+    business_test_prefill_by_label(label)
+    app.selectbox(key="business_prefill_scenario").set_value(label)
+    _button_by_label(app, "Préremplir").click()
+    app.run(timeout=120)
+
+
 def _set_selectbox(app: AppTest, key: str, value: str) -> None:
     app.selectbox(key=key).set_value(value)
 
@@ -699,6 +804,24 @@ def _set_number_input(app: AppTest, label: str, value: int) -> None:
     matching = [widget for widget in app.number_input if _plain(widget.label) == label]
     assert len(matching) == 1
     matching[0].set_value(value)
+
+
+def _button_by_label(app: AppTest, label: str):
+    matching = [widget for widget in app.button if _plain(widget.label) == _plain(label)]
+    assert len(matching) == 1
+    return matching[0]
+
+
+def _has_button(app: AppTest, label: str) -> bool:
+    return any(_plain(widget.label) == _plain(label) for widget in app.button)
+
+
+def _has_selectbox(app: AppTest, label: str) -> bool:
+    return any(_plain(widget.label) == _plain(label) for widget in app.selectbox)
+
+
+def _has_text_input(app: AppTest, label: str) -> bool:
+    return any(_plain(widget.label) == _plain(label) for widget in app.text_input)
 
 
 def _plain(value: str) -> str:

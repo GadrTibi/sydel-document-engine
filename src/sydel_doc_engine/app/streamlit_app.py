@@ -47,6 +47,11 @@ from sydel_doc_engine.app.single_document_mode import (
     single_document_table_rows,
     validate_single_document_input,
 )
+from sydel_doc_engine.app.test_prefill_presets import (
+    business_test_prefill_by_label,
+    business_test_prefill_labels,
+    business_test_prefill_widget_keys,
+)
 from sydel_doc_engine.app.ui_runtime import (
     DEFAULT_ARTIFACTS_DIR,
     GeneratedDossier,
@@ -65,6 +70,8 @@ from sydel_doc_engine.rendering.pdf_export import is_pdf_export_available
 BUSINESS_ARTIFACTS_DIR = Path("artifacts") / "ui_case_wizard_002"
 SINGLE_DOCUMENT_ARTIFACTS_DIR = Path("artifacts") / "document_unitaire_001"
 GENDER_OPTIONS = ("masculin", "feminin")
+BUSINESS_STRUCTURE_OVERRIDE_KEY = "business_structure_override"
+BUSINESS_STRUCTURE_WIDGET_KEY = "business_structure_type"
 
 
 @st.cache_data(show_spinner=False)
@@ -95,6 +102,57 @@ def _render_downloads(result: GeneratedDossier) -> None:
     )
 
 
+def _render_business_prefill_controls() -> None:
+    labels = business_test_prefill_labels()
+    selected_label = st.selectbox(
+        "Scénario de test",
+        labels,
+        key="business_prefill_scenario",
+        help="Charge uniquement des données fictives déterministes pour tester l'Assistant métier.",
+    )
+    preset = business_test_prefill_by_label(selected_label)
+    st.caption(preset.description)
+    col_prefill, col_reset = st.columns(2)
+    with col_prefill:
+        if st.button("Préremplir", key="business_prefill_apply"):
+            _clear_business_assistant_state()
+            st.session_state[BUSINESS_STRUCTURE_OVERRIDE_KEY] = preset.case_type
+            for key, value in preset.widget_values.items():
+                st.session_state[key] = value
+            st.session_state.business_prefill_loaded = True
+            st.session_state.business_prefill_label = preset.label
+    with col_reset:
+        if st.button("Réinitialiser", key="business_prefill_reset"):
+            _clear_business_assistant_state()
+            st.session_state.business_prefill_loaded = False
+            st.session_state.business_prefill_label = ""
+
+    if st.session_state.get("business_prefill_loaded"):
+        label = st.session_state.get("business_prefill_label", selected_label)
+        st.info(f"Mode test — données fictives préremplies : {label}")
+
+
+def _clear_business_assistant_state() -> None:
+    for key in (
+        BUSINESS_STRUCTURE_WIDGET_KEY,
+        BUSINESS_STRUCTURE_OVERRIDE_KEY,
+        *business_test_prefill_widget_keys(),
+    ):
+        st.session_state.pop(key, None)
+    _clear_business_generated_outputs()
+
+
+def _clear_business_generated_outputs() -> None:
+    for key in (
+        "business_docx_paths",
+        "business_pdf_results",
+        "business_pdf_error",
+        "business_zip_path",
+        "business_output_dir",
+    ):
+        st.session_state.pop(key, None)
+
+
 def _render_docx_downloads(docx_paths: list[Path], *, key_prefix: str) -> None:
     if not docx_paths:
         return
@@ -123,6 +181,7 @@ def _render_pdf_downloads(pdf_paths: list[Path], *, key_prefix: str) -> None:
 
 def _render_business_mode() -> None:
     st.subheader("Mode Assistant metier")
+    _render_business_prefill_controls()
     data = _collect_business_input()
     validation = evaluate_business_wizard(data)
 
@@ -628,6 +687,7 @@ def _collect_case_conditions(case_type: str) -> dict[str, object | None]:
             variant = st.selectbox(
                 "SCI simple ou SCI IRIS",
                 ("", "SCI simple", "SCI IRIS"),
+                key="condition_sci_variant",
                 format_func=lambda value: value or "Choisir",
             )
             conditions["sci_iris"] = None if not variant else variant == "SCI IRIS"
@@ -768,10 +828,12 @@ def _select_choice(label: str, choices: dict[str, str], *, key: str) -> str | No
 def _collect_business_input() -> BusinessWizardInput:
     st.subheader("Type de dossier")
     dossier_types = business_dossier_types()
+    _apply_business_structure_override(dossier_types)
     selected_type = st.selectbox(
         "Type de dossier metier",
         dossier_types,
         format_func=lambda item: item.label,
+        key=BUSINESS_STRUCTURE_WIDGET_KEY,
     )
     st.caption(selected_type.status)
     if selected_type.structure == "SELARL":
@@ -785,98 +847,181 @@ def _collect_business_input() -> BusinessWizardInput:
 
     st.subheader("Etape 2 - Informations du dossier")
     with st.expander("Societe", expanded=True):
-        societe_forme_sociale = st.text_input("Forme sociale", value=selected_type.structure)
+        societe_forme_sociale = st.text_input(
+            "Forme sociale",
+            value=selected_type.structure,
+            key="business_societe_forme_sociale",
+        )
         societe_forme_sociale_affichage = st.text_input(
             "Forme sociale affichee",
             value=_default_forme_affichage(selected_type.structure),
+            key="business_societe_forme_sociale_affichage",
         )
         societe_forme_sociale_libelle_long = st.text_input(
             "Libelle long de forme sociale",
             value=_default_forme_longue(selected_type.structure),
+            key="business_societe_forme_sociale_libelle_long",
         )
-        societe_denomination = st.text_input("Denomination")
-        societe_capital_social = st.text_input("Capital social")
-        societe_capital_variable = st.checkbox("Capital variable", value=True)
-        societe_ville_rcs = st.text_input("Ville RCS")
+        societe_denomination = st.text_input(
+            "Denomination",
+            key="business_societe_denomination",
+        )
+        societe_capital_social = st.text_input(
+            "Capital social",
+            key="business_societe_capital_social",
+        )
+        societe_capital_variable = st.checkbox(
+            "Capital variable",
+            value=True,
+            key="business_societe_capital_variable",
+        )
+        societe_ville_rcs = st.text_input("Ville RCS", key="business_societe_ville_rcs")
         st.markdown("Adresse du siege")
         siege_cols = st.columns(4)
-        societe_siege_num_voie = siege_cols[0].text_input("Numero", key="societe_num")
-        societe_siege_voie = siege_cols[1].text_input("Voie", key="societe_voie")
-        societe_siege_cp = siege_cols[2].text_input("Code postal", key="societe_cp")
-        societe_siege_ville = siege_cols[3].text_input("Ville", key="societe_ville")
+        societe_siege_num_voie = siege_cols[0].text_input(
+            "Numero",
+            key="business_societe_num",
+        )
+        societe_siege_voie = siege_cols[1].text_input(
+            "Voie",
+            key="business_societe_voie",
+        )
+        societe_siege_cp = siege_cols[2].text_input(
+            "Code postal",
+            key="business_societe_cp",
+        )
+        societe_siege_ville = siege_cols[3].text_input(
+            "Ville",
+            key="business_societe_ville",
+        )
 
     with st.expander("Associes / personnes physiques", expanded=True):
-        personne_genre = st.selectbox("Genre du signataire", GENDER_OPTIONS)
-        personne_civilite = st.selectbox("Civilite du signataire", ("", "Monsieur", "Madame"))
+        personne_genre = st.selectbox(
+            "Genre du signataire",
+            GENDER_OPTIONS,
+            key="business_personne_genre",
+        )
+        personne_civilite = st.selectbox(
+            "Civilite du signataire",
+            ("", "Monsieur", "Madame"),
+            key="business_personne_civilite",
+        )
         person_cols = st.columns(2)
-        personne_prenom = person_cols[0].text_input("Prenom du signataire")
-        personne_nom = person_cols[1].text_input("Nom du signataire")
-        personne_date_naissance = st.text_input("Date de naissance signataire (AAAA-MM-JJ)")
-        personne_nationalite = st.text_input("Nationalite du signataire")
-        personne_nom_pere = st.text_input("Nom du pere")
-        personne_nom_mere = st.text_input("Nom de la mere")
-        personne_fonction_dirigeant = st.text_input("Fonction du signataire")
+        personne_prenom = person_cols[0].text_input(
+            "Prenom du signataire",
+            key="business_personne_prenom",
+        )
+        personne_nom = person_cols[1].text_input(
+            "Nom du signataire",
+            key="business_personne_nom",
+        )
+        personne_date_naissance = st.text_input(
+            "Date de naissance signataire (AAAA-MM-JJ)",
+            key="business_personne_date_naissance",
+        )
+        personne_nationalite = st.text_input(
+            "Nationalite du signataire",
+            key="business_personne_nationalite",
+        )
+        personne_nom_pere = st.text_input("Nom du pere", key="business_personne_nom_pere")
+        personne_nom_mere = st.text_input("Nom de la mere", key="business_personne_nom_mere")
+        personne_fonction_dirigeant = st.text_input(
+            "Fonction du signataire",
+            key="business_personne_fonction",
+        )
         st.markdown("Adresse personnelle du signataire")
         personne_addr_cols = st.columns(4)
         personne_adresse_num_voie = personne_addr_cols[0].text_input(
             "Numero",
-            key="personne_num",
+            key="business_personne_num",
         )
         personne_adresse_voie = personne_addr_cols[1].text_input(
             "Voie",
-            key="personne_voie",
+            key="business_personne_voie",
         )
         personne_adresse_cp = personne_addr_cols[2].text_input(
             "Code postal",
-            key="personne_cp",
+            key="business_personne_cp",
         )
         personne_adresse_ville = personne_addr_cols[3].text_input(
             "Ville",
-            key="personne_ville",
+            key="business_personne_ville",
         )
 
-        associe_count = st.number_input("Nombre d'associes", min_value=1, max_value=4, value=2)
+        associe_count = st.number_input(
+            "Nombre d'associes",
+            min_value=1,
+            max_value=4,
+            value=2,
+            key="business_associe_count",
+        )
         associes = _collect_associes(int(associe_count))
 
     with st.expander("Representant legal", expanded=True):
-        dirigeant_genre = st.selectbox("Genre du representant legal", GENDER_OPTIONS)
+        dirigeant_genre = st.selectbox(
+            "Genre du representant legal",
+            GENDER_OPTIONS,
+            key="business_dirigeant_genre",
+        )
         dirigeant_civilite_affichage = st.selectbox(
             "Civilite du representant legal",
             ("", "Monsieur", "Madame"),
+            key="business_dirigeant_civilite",
         )
         dirigeant_cols = st.columns(2)
-        dirigeant_prenom = dirigeant_cols[0].text_input("Prenom du representant legal")
-        dirigeant_nom = dirigeant_cols[1].text_input("Nom du representant legal")
+        dirigeant_prenom = dirigeant_cols[0].text_input(
+            "Prenom du representant legal",
+            key="business_dirigeant_prenom",
+        )
+        dirigeant_nom = dirigeant_cols[1].text_input(
+            "Nom du representant legal",
+            key="business_dirigeant_nom",
+        )
         dirigeant_date_naissance = st.text_input(
-            "Date de naissance du representant legal (AAAA-MM-JJ)"
+            "Date de naissance du representant legal (AAAA-MM-JJ)",
+            key="business_dirigeant_date_naissance",
         )
-        dirigeant_ville_naissance = st.text_input("Ville de naissance du representant legal")
+        dirigeant_ville_naissance = st.text_input(
+            "Ville de naissance du representant legal",
+            key="business_dirigeant_ville_naissance",
+        )
         dirigeant_departement_naissance = st.text_input(
-            "Departement de naissance du representant legal"
+            "Departement de naissance du representant legal",
+            key="business_dirigeant_departement_naissance",
         )
-        dirigeant_nationalite = st.text_input("Nationalite du representant legal")
-        dirigeant_fonction_affichage = st.text_input("Fonction nommee", value="gerant")
+        dirigeant_nationalite = st.text_input(
+            "Nationalite du representant legal",
+            key="business_dirigeant_nationalite",
+        )
+        dirigeant_fonction_affichage = st.text_input(
+            "Fonction nommee",
+            value="gerant",
+            key="business_dirigeant_fonction",
+        )
         st.markdown("Adresse personnelle du representant legal")
         dirigeant_addr_cols = st.columns(4)
         dirigeant_adresse_num_voie = dirigeant_addr_cols[0].text_input(
             "Numero",
-            key="dirigeant_num",
+            key="business_dirigeant_num",
         )
         dirigeant_adresse_voie = dirigeant_addr_cols[1].text_input(
             "Voie",
-            key="dirigeant_voie",
+            key="business_dirigeant_voie",
         )
         dirigeant_adresse_cp = dirigeant_addr_cols[2].text_input(
             "Code postal",
-            key="dirigeant_cp",
+            key="business_dirigeant_cp",
         )
         dirigeant_adresse_ville = dirigeant_addr_cols[3].text_input(
             "Ville",
-            key="dirigeant_ville",
+            key="business_dirigeant_ville",
         )
 
     with st.expander("Adresse de domiciliation", expanded=True):
-        domiciliation_adresse_affichee = st.text_input("Adresse de domiciliation affichee")
+        domiciliation_adresse_affichee = st.text_input(
+            "Adresse de domiciliation affichee",
+            key="business_domiciliation_adresse_affichee",
+        )
 
     with st.expander("Capital / parts", expanded=True):
         capital_cols = st.columns(2)
@@ -884,31 +1029,63 @@ def _collect_business_input() -> BusinessWizardInput:
             "Nombre total de parts",
             min_value=0,
             value=0,
+            key="business_capital_nb_parts_total",
         )
-        capital_valeur_nominale_part = capital_cols[1].text_input("Valeur nominale par part")
+        capital_valeur_nominale_part = capital_cols[1].text_input(
+            "Valeur nominale par part",
+            key="business_capital_valeur_nominale_part",
+        )
 
     with st.expander("Dates", expanded=True):
-        decision_date = st.text_input("Date de decision (AAAA-MM-JJ ou libelle)")
-        reunion_date_lettres = st.text_input("Date de reunion en lettres")
-        reunion_heure = st.text_input("Heure de reunion")
-        signature_lieu = st.text_input("Lieu de signature")
-        signature_date = st.text_input("Date de signature (AAAA-MM-JJ)")
-        signature_nombre_exemplaires = st.text_input("Nombre d'exemplaires")
+        decision_date = st.text_input(
+            "Date de decision (AAAA-MM-JJ ou libelle)",
+            key="business_decision_date",
+        )
+        reunion_date_lettres = st.text_input(
+            "Date de reunion en lettres",
+            key="business_reunion_date_lettres",
+        )
+        reunion_heure = st.text_input("Heure de reunion", key="business_reunion_heure")
+        signature_lieu = st.text_input("Lieu de signature", key="business_signature_lieu")
+        signature_date = st.text_input(
+            "Date de signature (AAAA-MM-JJ)",
+            key="business_signature_date",
+        )
+        signature_nombre_exemplaires = st.text_input(
+            "Nombre d'exemplaires",
+            key="business_signature_nombre_exemplaires",
+        )
 
     with st.expander("Options documentaires", expanded=False):
-        emprunt_actif = st.checkbox("PV avec autorisation d'emprunt", value=False)
+        emprunt_actif = st.checkbox(
+            "PV avec autorisation d'emprunt",
+            value=False,
+            key="business_emprunt_actif",
+        )
         emprunt_montant_max = ""
         bien_adresse_num_voie = ""
         bien_adresse_voie = ""
         bien_adresse_cp = ""
         bien_adresse_ville = ""
         if emprunt_actif:
-            emprunt_montant_max = st.text_input("Montant maximum de l'emprunt")
+            emprunt_montant_max = st.text_input(
+                "Montant maximum de l'emprunt",
+                key="business_emprunt_montant_max",
+            )
             bien_cols = st.columns(4)
-            bien_adresse_num_voie = bien_cols[0].text_input("Numero", key="bien_num")
-            bien_adresse_voie = bien_cols[1].text_input("Voie", key="bien_voie")
-            bien_adresse_cp = bien_cols[2].text_input("Code postal", key="bien_cp")
-            bien_adresse_ville = bien_cols[3].text_input("Ville", key="bien_ville")
+            bien_adresse_num_voie = bien_cols[0].text_input(
+                "Numero",
+                key="business_bien_num",
+            )
+            bien_adresse_voie = bien_cols[1].text_input("Voie", key="business_bien_voie")
+            bien_adresse_cp = bien_cols[2].text_input(
+                "Code postal",
+                key="business_bien_cp",
+            )
+            bien_adresse_ville = bien_cols[3].text_input(
+                "Ville",
+                key="business_bien_ville",
+            )
 
     return BusinessWizardInput(
         structure=selected_type.structure,
@@ -983,6 +1160,16 @@ def _collect_business_input() -> BusinessWizardInput:
     )
 
 
+def _apply_business_structure_override(dossier_types: tuple[object, ...]) -> None:
+    requested_structure = st.session_state.pop(BUSINESS_STRUCTURE_OVERRIDE_KEY, None)
+    if requested_structure is None:
+        return
+    for dossier_type in dossier_types:
+        if getattr(dossier_type, "structure", None) == requested_structure:
+            st.session_state[BUSINESS_STRUCTURE_WIDGET_KEY] = dossier_type
+            return
+
+
 def _collect_selarl_business_input(conditions: dict[str, object | None]) -> BusinessWizardInput:
     reuse_rules = {rule.key: rule for rule in selarl_ui_reuse_rules()}
     selarl_dossier_unipersonnel = conditions["dossier_unipersonnel"] is True
@@ -1002,20 +1189,43 @@ def _collect_selarl_business_input(conditions: dict[str, object | None]) -> Busi
             key="selarl_personne_civilite",
         )
         person_cols = st.columns(2)
-        personne_prenom = person_cols[0].text_input("Prenom du Praticien")
-        personne_nom = person_cols[1].text_input("Nom du Praticien")
-        personne_date_naissance = st.text_input("Date de naissance du Praticien (AAAA-MM-JJ)")
-        naissance_cols = st.columns(2)
-        dirigeant_ville_naissance = naissance_cols[0].text_input("Ville de naissance du Praticien")
-        dirigeant_departement_naissance = naissance_cols[1].text_input(
-            "Departement de naissance du Praticien"
+        personne_prenom = person_cols[0].text_input(
+            "Prenom du Praticien",
+            key="selarl_personne_prenom",
         )
-        personne_nationalite = st.text_input("Nationalite du Praticien")
-        personne_nom_pere = st.text_input("Nom du pere du Praticien")
-        personne_nom_mere = st.text_input("Nom de la mere du Praticien")
+        personne_nom = person_cols[1].text_input(
+            "Nom du Praticien",
+            key="selarl_personne_nom",
+        )
+        personne_date_naissance = st.text_input(
+            "Date de naissance du Praticien (AAAA-MM-JJ)",
+            key="selarl_personne_date_naissance",
+        )
+        naissance_cols = st.columns(2)
+        dirigeant_ville_naissance = naissance_cols[0].text_input(
+            "Ville de naissance du Praticien",
+            key="selarl_personne_ville_naissance",
+        )
+        dirigeant_departement_naissance = naissance_cols[1].text_input(
+            "Departement de naissance du Praticien",
+            key="selarl_personne_departement_naissance",
+        )
+        personne_nationalite = st.text_input(
+            "Nationalite du Praticien",
+            key="selarl_personne_nationalite",
+        )
+        personne_nom_pere = st.text_input(
+            "Nom du pere du Praticien",
+            key="selarl_personne_nom_pere",
+        )
+        personne_nom_mere = st.text_input(
+            "Nom de la mere du Praticien",
+            key="selarl_personne_nom_mere",
+        )
         personne_fonction_dirigeant = st.text_input(
             "Fonction du Praticien",
             value="Gerant",
+            key="selarl_personne_fonction",
             help=selarl_ui_field("professionnel.fonction").help_text,
         )
         st.markdown("Adresse personnelle du Praticien")
@@ -1066,11 +1276,13 @@ def _collect_selarl_business_input(conditions: dict[str, object | None]) -> Busi
             selarl_gerant_is_professional = st.checkbox(
                 reuse_rules["gerant_is_professional"].label,
                 value=reuse_rules["gerant_is_professional"].default_enabled,
+                key="selarl_gerant_is_professional",
                 help=reuse_rules["gerant_is_professional"].effect,
             )
             selarl_signataire_is_professional = st.checkbox(
                 reuse_rules["signataire_is_professional"].label,
                 value=reuse_rules["signataire_is_professional"].default_enabled,
+                key="selarl_signataire_is_professional",
                 help=reuse_rules["signataire_is_professional"].effect,
             )
 
@@ -1108,52 +1320,75 @@ def _collect_selarl_business_input(conditions: dict[str, object | None]) -> Busi
                 key="selarl_dirigeant_civilite",
             )
             dirigeant_cols = st.columns(2)
-            dirigeant_prenom = dirigeant_cols[0].text_input("Prénom du gérant distinct")
-            dirigeant_nom = dirigeant_cols[1].text_input("Nom du gérant distinct")
-            dirigeant_date_naissance = st.text_input(
-                "Date de naissance du gérant distinct (AAAA-MM-JJ)"
+            dirigeant_prenom = dirigeant_cols[0].text_input(
+                "Prénom du gérant distinct",
+                key="selarl_dirigeant_prenom",
             )
-            dirigeant_nationalite = st.text_input("Nationalité du gérant distinct")
+            dirigeant_nom = dirigeant_cols[1].text_input(
+                "Nom du gérant distinct",
+                key="selarl_dirigeant_nom",
+            )
+            dirigeant_date_naissance = st.text_input(
+                "Date de naissance du gérant distinct (AAAA-MM-JJ)",
+                key="selarl_dirigeant_date_naissance",
+            )
+            dirigeant_nationalite = st.text_input(
+                "Nationalité du gérant distinct",
+                key="selarl_dirigeant_nationalite",
+            )
             dirigeant_fonction_affichage = st.text_input(
                 "Fonction du gérant distinct",
                 value="gerant",
+                key="selarl_dirigeant_fonction",
             )
             dirigeant_adresse_num_voie = st.text_input(
-                "Adresse personnelle du gérant distinct - numéro"
+                "Adresse personnelle du gérant distinct - numéro",
+                key="selarl_dirigeant_num",
             )
-            dirigeant_adresse_voie = st.text_input("Adresse personnelle du gérant distinct - voie")
+            dirigeant_adresse_voie = st.text_input(
+                "Adresse personnelle du gérant distinct - voie",
+                key="selarl_dirigeant_voie",
+            )
             dirigeant_adresse_cp = st.text_input(
-                "Adresse personnelle du gérant distinct - code postal"
+                "Adresse personnelle du gérant distinct - code postal",
+                key="selarl_dirigeant_cp",
             )
             dirigeant_adresse_ville = st.text_input(
-                "Adresse personnelle du gérant distinct - ville"
+                "Adresse personnelle du gérant distinct - ville",
+                key="selarl_dirigeant_ville",
             )
 
     st.subheader(selarl_ui_visible_screen_title("fiche_societe"))
     with st.expander("Fiche Société - SELARL, siège et domiciliation", expanded=True):
         societe_denomination = st.text_input(
             selarl_ui_field("societe.denomination").label,
+            key="selarl_societe_denomination",
             help=selarl_ui_field("societe.denomination").help_text,
         )
         societe_forme_sociale = st.text_input(
             selarl_ui_field("societe.forme_sociale").label,
             value="SELARL",
+            key="selarl_societe_forme_sociale",
             help=selarl_ui_field("societe.forme_sociale").help_text,
         )
         societe_forme_sociale_affichage = st.text_input(
             "Forme sociale affichée de la SELARL",
             value="Société d'exercice libéral à responsabilité limitée",
+            key="selarl_societe_forme_sociale_affichage",
         )
         societe_forme_sociale_libelle_long = st.text_input(
             "Libellé long de forme sociale de la SELARL",
             value="société d'exercice libéral à responsabilité limitée",
+            key="selarl_societe_forme_sociale_libelle_long",
         )
         societe_capital_social = st.text_input(
             selarl_ui_field("societe.capital_social").label,
+            key="selarl_societe_capital_social",
             help=selarl_ui_field("societe.capital_social").help_text,
         )
         societe_ville_rcs = st.text_input(
             "Ville du RCS de la SELARL",
+            key="selarl_societe_ville_rcs",
             help=selarl_ui_field("societe.rcs").help_text,
         )
         st.markdown("Adresse du siège social")
@@ -1177,6 +1412,7 @@ def _collect_selarl_business_input(conditions: dict[str, object | None]) -> Busi
         selarl_domiciliation_is_registered_office = st.checkbox(
             reuse_rules["domiciliation_is_registered_office"].label,
             value=reuse_rules["domiciliation_is_registered_office"].default_enabled,
+            key="selarl_domiciliation_is_registered_office",
             help=reuse_rules["domiciliation_is_registered_office"].effect,
         )
         derived_domiciliation = _format_address(
@@ -1206,15 +1442,18 @@ def _collect_selarl_business_input(conditions: dict[str, object | None]) -> Busi
             "Nombre total de parts de la SELARL",
             min_value=0,
             value=0,
+            key="selarl_capital_nb_parts_total",
         )
         capital_valeur_nominale_part = parts_cols[1].text_input(
-            "Valeur nominale d'une part de la SELARL"
+            "Valeur nominale d'une part de la SELARL",
+            key="selarl_capital_valeur_nominale_part",
         )
         associe_count_input = st.number_input(
             "Nombre d'associés de la SELARL",
             min_value=1,
             max_value=2,
             value=1,
+            key="selarl_associe_count",
             disabled=selarl_dossier_unipersonnel,
         )
         associe_count = 1 if selarl_dossier_unipersonnel else int(associe_count_input)
@@ -1226,11 +1465,13 @@ def _collect_selarl_business_input(conditions: dict[str, object | None]) -> Busi
             selarl_signataire_is_associe_1 = st.checkbox(
                 reuse_rules["signataire_is_associe_1"].label,
                 value=reuse_rules["signataire_is_associe_1"].default_enabled,
+                key="selarl_signataire_is_associe_1",
                 help=reuse_rules["signataire_is_associe_1"].effect,
             )
             copy_associe_1_from_professional = st.checkbox(
                 "Copier l'associé 1 depuis le Praticien",
                 value=False,
+                key="selarl_copy_associe_1_from_professional",
             )
         associes = _collect_selarl_associes(
             associe_count,
@@ -1243,6 +1484,7 @@ def _collect_selarl_business_input(conditions: dict[str, object | None]) -> Busi
         gerant_choice = st.selectbox(
             "Choix du gérant parmi les associés",
             tuple(f"Associé {index + 1}" for index in range(associe_count)),
+            key="selarl_gerant_choice",
             disabled=selarl_dossier_unipersonnel,
         )
         if selarl_dossier_unipersonnel:
@@ -1278,6 +1520,7 @@ def _collect_selarl_business_input(conditions: dict[str, object | None]) -> Busi
             selarl_company_is_scm_transferee = st.checkbox(
                 reuse_rules["selarl_is_scm_transferee"].label,
                 value=reuse_rules["selarl_is_scm_transferee"].default_enabled,
+                key="selarl_company_is_scm_transferee",
                 help=reuse_rules["selarl_is_scm_transferee"].effect,
             )
             if selarl_company_is_scm_transferee:
@@ -1288,6 +1531,7 @@ def _collect_selarl_business_input(conditions: dict[str, object | None]) -> Busi
             selarl_company_is_acquirer = st.checkbox(
                 reuse_rules["selarl_is_acquirer"].label,
                 value=reuse_rules["selarl_is_acquirer"].default_enabled,
+                key="selarl_company_is_acquirer",
                 help=reuse_rules["selarl_is_acquirer"].effect,
             )
             if selarl_company_is_acquirer:
@@ -1326,15 +1570,28 @@ def _collect_selarl_business_input(conditions: dict[str, object | None]) -> Busi
             st.caption("Signataire alimenté depuis le Praticien.")
         else:
             st.caption("Le signataire reste distinct sauf option explicite.")
-        decision_date = st.text_input("Date de décision du PV nomination gérant")
-        reunion_date_lettres = st.text_input("Date de réunion en lettres")
-        reunion_heure = st.text_input("Heure de réunion")
-        signature_lieu = st.text_input("Lieu de signature")
-        signature_date = st.text_input("Date de signature (AAAA-MM-JJ)")
-        signature_nombre_exemplaires = st.text_input("Nombre d'exemplaires")
+        decision_date = st.text_input(
+            "Date de décision du PV nomination gérant",
+            key="selarl_decision_date",
+        )
+        reunion_date_lettres = st.text_input(
+            "Date de réunion en lettres",
+            key="selarl_reunion_date_lettres",
+        )
+        reunion_heure = st.text_input("Heure de réunion", key="selarl_reunion_heure")
+        signature_lieu = st.text_input("Lieu de signature", key="selarl_signature_lieu")
+        signature_date = st.text_input(
+            "Date de signature (AAAA-MM-JJ)",
+            key="selarl_signature_date",
+        )
+        signature_nombre_exemplaires = st.text_input(
+            "Nombre d'exemplaires",
+            key="selarl_signature_nombre_exemplaires",
+        )
         emprunt_actif = st.checkbox(
             "Emprunt autorise dans le PV nomination gerant (DOC-004)",
             value=False,
+            key="selarl_emprunt_actif",
             help=selarl_ui_field("banque.emprunt_pv").help_text,
         )
         emprunt_montant_max = ""
@@ -1343,7 +1600,10 @@ def _collect_selarl_business_input(conditions: dict[str, object | None]) -> Busi
         bien_adresse_cp = ""
         bien_adresse_ville = ""
         if emprunt_actif:
-            emprunt_montant_max = st.text_input("Montant maximum de l'emprunt DOC-004")
+            emprunt_montant_max = st.text_input(
+                "Montant maximum de l'emprunt DOC-004",
+                key="selarl_emprunt_montant_max",
+            )
             bien_cols = st.columns(4)
             bien_adresse_num_voie = bien_cols[0].text_input(
                 "Adresse du bien finance - numero",
@@ -1367,6 +1627,7 @@ def _collect_selarl_business_input(conditions: dict[str, object | None]) -> Busi
         selarl_mandataire_is_signataire = st.checkbox(
             reuse_rules["mandataire_is_signataire"].label,
             value=reuse_rules["mandataire_is_signataire"].default_enabled,
+            key="selarl_mandataire_is_signataire",
             help=(
                 reuse_rules["mandataire_is_signataire"].effect
                 + " "
