@@ -1,10 +1,14 @@
 # Dernier état projet
 
 ## Date de mise à jour
-2026-05-19
+2026-05-20
 
 
 ## Dernier ticket terminé
+DOCUMENT-UNITAIRE-001 : ajout du mode Streamlit `Document unitaire` aux côtés de `Assistant metier` et `Technique / diagnostic`. Le mode permet de choisir un document par code/libellé après sélection du cas, affiche uniquement les champs utiles, propose un préremplissage d'exemple, valide les champs manquants et génère un DOCX unique avec téléchargement, ZIP optionnel et PDF optionnel si le backend local est disponible. Le périmètre V1 est limité à `DOC-001`, `DOC-002`, `DOC-003` et `DOC-004`; les documents manuels restent visibles mais non générables, et les autres documents affichent une limite claire de non-support dans ce mode. Aucun générateur, moteur DOCX/PDF/ZIP, catalogue métier, parcours Assistant métier ou mode `Technique / diagnostic` n'a été modifié. Rapport : `docs/review/document_unitaire_001_report_v1.md`. Ruff OK et pytest OK avec 266 tests passés.
+
+SELARL-CLOUD-GENERATION-BUG-001 : bug de génération SELARL visible reproduit avec `streamlit.testing.v1.AppTest`. Le parcours bloquait quand l'utilisateur cochait `Dossier unipersonnel` ou `L'adresse de domiciliation est le siège social` avant de remplir les champs source : les widgets Streamlit dérivés et désactivés conservaient des valeurs vides en `session_state`, `can_generate_docx` restait faux, `generatable_document_codes` restait vide côté UI et le bouton `Generer les DOCX` restait désactivé. Correction minimale dans `streamlit_app.py` : synchronisation explicite du `session_state` pour l'associé unique dérivé et l'adresse de domiciliation dérivée. Aucun générateur, moteur DOCX/PDF/ZIP, catalogue, parcours SCI ou mode `Technique / diagnostic` n'a été modifié. Rapport : `docs/review/selarl_cloud_generation_bug_001_report_v1.md`. Ruff OK et pytest OK avec 266 tests passés. Commit local tenté mais bloqué par refus d'écriture dans `.git/index.lock` / `.git/objects` dans l'environnement Codex.
+
 SELARL-SMOKE-REALISTIC-001 : smoke réaliste du pilote SELARL après réalignement wording / flow / réutilisations / UI. Trois scénarios ont été exécutés : médecin unipersonnelle simple, chirurgien-dentiste avec régime communautaire et site distinct, médecin avec cession de cabinet médical / bail / financement. Chaque scénario génère uniquement `DOC-001`, `DOC-002`, `DOC-003`, `DOC-004` et un ZIP avec manifeste ; les documents manuels `DOC-013` / `DOC-014` restent visibles mais exclus, `DOC-006` garde sa réserve, les documents non prêts restent en contexte incomplet V2, et le PV d'autorisation d'emprunt reste une option de `DOC-004`. Aucun fichier Python, générateur, moteur DOCX/PDF/ZIP, catalogue ou UI n'a été modifié. Artefacts : `artifacts/selarl_smoke_realistic_001/20260519_185045/`. Rapport : `docs/review/selarl_smoke_realistic_001_report_v1.md`. Backend PDF local indisponible pendant le smoke. Ruff OK et pytest OK avec 257 tests passés.
 
 SELARL-UI-REALIGN-001 : réalignement du parcours Streamlit visible SELARL sur le wording, le flow et les règles de réutilisation corrigés. Le parcours affiche désormais : Écran 1 — Qualification, Écran 2 — Fiche Client, Écran 3 — Fiche Société, Écran 4 — Capital & Associés, Écran 5 — Contexte & scénarios métier, Écran 6 — Documents & génération. `Dossier unipersonnel` est exposé en qualification et verrouille le cas Praticien = associé unique = gérant = signataire. Le mandataire est relégué dans un bloc secondaire replié et n'est pas assimilé au signataire par défaut. `DOC-006` garde sa réserve, `DOC-013` et `DOC-014` restent visibles mais non générables, et l'emprunt reste une option du `DOC-004`. Aucun générateur, moteur DOCX/PDF/ZIP, `case_catalog.py`, parcours SCI ou mode `Technique / diagnostic` n'a été modifié. Rapport : `docs/review/selarl_ui_realign_001_report_v1.md`. Ruff OK et pytest OK avec 257 tests passés.
@@ -98,6 +102,7 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
 - `SELARL-REUSE-RULES-REALIGN-001` est DONE.
 - `SELARL-UI-REALIGN-001` est DONE.
 - `SELARL-SMOKE-REALISTIC-001` est DONE ; le prochain ticket SELARL recommandé est `SELARL-JURIST-REVIEW-001`.
+- `SELARL-CLOUD-GENERATION-BUG-001` est DONE ; le parcours visible SELARL resynchronise désormais les champs dérivés de l'associé unique et de la domiciliation avant génération.
 - Le protocole réplicable de construction de processus est disponible dans `docs/project/PROCESS_BUILD_PROTOCOL_V1.md`.
 - Les specs SELARL pilote sont disponibles :
   - `docs/project/SELARL_PROCESS_SPEC_V1.md` ;
@@ -893,6 +898,10 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
 - SELARL-UI-REALIGN-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 257 tests passés.
 - SELARL-SMOKE-REALISTIC-001 : smoke DOCX/ZIP OK sur trois scénarios réalistes, 4 DOCX et 1 ZIP produits par scénario ; backend PDF local indisponible.
 - SELARL-SMOKE-REALISTIC-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK ; `.\.venv\Scripts\python.exe -m pytest` OK, 257 tests passés.
+- SELARL-CLOUD-GENERATION-BUG-001 : bug reproduit via AppTest sur le parcours visible ; avant correction `Documents prets = 0` et `Generer les DOCX` désactivé après saisie tardive des champs source.
+- SELARL-CLOUD-GENERATION-BUG-001 : `.\.venv\Scripts\python.exe -m pytest tests/unit/test_business_wizard.py -q` OK, 35 tests passés.
+- SELARL-CLOUD-GENERATION-BUG-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
+- SELARL-CLOUD-GENERATION-BUG-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 266 tests passés.
 
 ## Recommandation immédiate suivante
-Ouvrir `SELARL-JURIST-REVIEW-001` pour faire valider le parcours SELARL réaligné par un associé / juriste, sur la base du smoke réaliste. Ne pas pousser ni redéployer l'UI SELARL actuelle sans décision explicite après cette revue.
+Créer un commit propre pour `DOCUMENT-UNITAIRE-001` après clarification des changements Git déjà présents dans l'index, puis faire une revue utilisateur du mode `Document unitaire` sur `DOC-001` à `DOC-004`.

@@ -6,6 +6,7 @@ from pathlib import Path
 from zipfile import ZipFile
 
 from docx import Document
+from streamlit.testing.v1 import AppTest
 
 from sydel_doc_engine.app import business_wizard
 from sydel_doc_engine.app.business_wizard import (
@@ -590,6 +591,34 @@ def test_business_wizard_generates_docx_and_zip_without_residual_placeholders(
     assert "declaration_non_condamnation.docx" in names
 
 
+def test_streamlit_selarl_unipersonnel_can_generate_after_late_entry() -> None:
+    app = AppTest.from_file("src/sydel_doc_engine/app/streamlit_app.py").run(timeout=120)
+    _select_selarl_simple_qualification(app)
+    app.checkbox(key="condition_selarl_dossier_unipersonnel").set_value(True)
+    app.run(timeout=120)
+
+    _set_checkbox_containing(app, "domiciliation", True)
+    app.run(timeout=120)
+
+    _fill_selarl_simple_generation_fields(app)
+    app.run(timeout=120)
+
+    assert app.button[0].label == "Generer les DOCX"
+    assert app.button[0].disabled is False
+
+    app.button[0].click().run(timeout=120)
+
+    assert any("4 DOCX generes." in message.value for message in app.success)
+    generated_paths = [Path(path) for path in app.session_state.business_docx_paths]
+    assert {path.name for path in generated_paths} == {
+        "declaration_non_condamnation.docx",
+        "autorisation_domiciliation.docx",
+        "procuration.docx",
+        "pv_nomination_gerant.docx",
+    }
+    assert all(path.is_file() for path in generated_paths)
+
+
 def _case_data(structure: str, **conditions: object) -> BusinessWizardInput:
     return replace(sample_business_wizard_input(), structure=structure, **conditions)
 
@@ -600,6 +629,76 @@ def _row_codes(validation) -> list[str]:
 
 def _row_by_code(validation, code: str):
     return next(row for row in validation.document_rows if row.document_code == code)
+
+
+def _select_selarl_simple_qualification(app: AppTest) -> None:
+    _set_selectbox(app, "condition_selarl_profession", "medecin")
+    for key in (
+        "condition_selarl_site_distinct",
+        "condition_selarl_scm_cession",
+        "condition_selarl_regime_communautaire",
+        "condition_selarl_derogation",
+        "condition_selarl_cession",
+    ):
+        _set_selectbox(app, key, "Non")
+
+
+def _fill_selarl_simple_generation_fields(app: AppTest) -> None:
+    _set_selectbox(app, "selarl_personne_civilite", "Docteur")
+    for label, value in (
+        ("prenom du praticien", "Camille"),
+        ("nom du praticien", "Martin"),
+        ("date de naissance du praticien (aaaa-mm-jj)", "1985-04-03"),
+        ("ville de naissance du praticien", "Lyon"),
+        ("departement de naissance du praticien", "Rhone"),
+        ("nationalite du praticien", "francaise"),
+        ("nom du pere du praticien", "Paul Martin"),
+        ("nom de la mere du praticien", "Anne Bernard"),
+        ("adresse personnelle du praticien - numero", "8"),
+        ("adresse personnelle du praticien - voie", "avenue Victor Hugo"),
+        ("adresse personnelle du praticien - code postal", "69002"),
+        ("adresse personnelle du praticien - ville", "Lyon"),
+        ("denomination de la selarl", "SELARL DU CENTRE"),
+        ("capital social de la selarl", "5 000 euros"),
+        ("ville du rcs de la selarl", "Paris"),
+        ("adresse du siege social - numero", "12"),
+        ("adresse du siege social - voie", "rue de la Paix"),
+        ("adresse du siege social - code postal", "75002"),
+        ("adresse du siege social - ville", "Paris"),
+        ("valeur nominale d'une part de la selarl", "10 euros"),
+        ("date de decision du pv nomination gerant", "2026-05-19"),
+        ("date de reunion en lettres", "dix-neuf mai deux mille vingt-six"),
+        ("heure de reunion", "10 heures"),
+        ("lieu de signature", "Paris"),
+        ("date de signature (aaaa-mm-jj)", "2026-05-19"),
+        ("nombre d'exemplaires", "3"),
+    ):
+        _set_text_input(app, label, value)
+    _set_number_input(app, "nombre total de parts de la selarl", 500)
+    _set_number_input(app, "associe 1 - nombre de parts", 500)
+
+
+def _set_selectbox(app: AppTest, key: str, value: str) -> None:
+    app.selectbox(key=key).set_value(value)
+
+
+def _set_checkbox_containing(app: AppTest, label_fragment: str, value: bool) -> None:
+    fragment = _plain(label_fragment)
+    matching = [widget for widget in app.checkbox if fragment in _plain(widget.label)]
+    assert len(matching) == 1
+    matching[0].set_value(value)
+
+
+def _set_text_input(app: AppTest, label: str, value: str) -> None:
+    matching = [widget for widget in app.text_input if _plain(widget.label) == label]
+    assert len(matching) == 1
+    matching[0].set_value(value)
+
+
+def _set_number_input(app: AppTest, label: str, value: int) -> None:
+    matching = [widget for widget in app.number_input if _plain(widget.label) == label]
+    assert len(matching) == 1
+    matching[0].set_value(value)
 
 
 def _plain(value: str) -> str:

@@ -142,6 +142,8 @@
 | SELARL-REUSE-RULES-REALIGN-001 | DONE | Corriger les règles de réutilisation SELARL | `SELARL-FLOW-REALIGN-001` | Dossier unipersonnel, Praticien source, dérivations explicites |
 | SELARL-UI-REALIGN-001 | DONE | Réaligner le parcours UI SELARL après schéma corrigé | `SELARL-REUSE-RULES-REALIGN-001` | Streamlit SELARL réaligné sans push/redéploiement prématuré |
 | SELARL-SMOKE-REALISTIC-001 | DONE | Smoke tester SELARL avec données réalistes après réalignement | `SELARL-UI-REALIGN-001` | rapport de smoke réaliste, documents manuels exclus, catalogue existant respecté |
+| SELARL-CLOUD-GENERATION-BUG-001 | DONE | Corriger le blocage de génération SELARL visible | test utilisateur Cloud + parcours Streamlit SELARL | session state dérivé corrigé, génération visible restaurée, test AppTest |
+| DOCUMENT-UNITAIRE-001 | DONE | Ajouter le mode Streamlit Document unitaire | Streamlit + catalogue cas + schéma SELARL | choix document, champs limités, DOCX unique, ZIP/PDF optionnels, rapport |
 | SELARL-JURIST-REVIEW-001 | READY | Faire valider le parcours SELARL réaligné par un juriste | `SELARL-SMOKE-REALISTIC-001` | revue juriste, réserves et arbitrages documentés |
 | SELARL-DOCS-GENERATION-SMOKE-001 | BLOCKED | Smoke tester la génération SELARL depuis le parcours Assistant métier | parcours SELARL réaligné + catalogue + schema + contextes réalistes | bloqué par la réconciliation NotebookLM ; remplacé par `SELARL-SMOKE-REALISTIC-001` après réalignement |
 | UI-001 | BLOCKED | Brancher Streamlit V0 Lot 1 | orchestrateur Lot 1 + spec canonique PV nomination gérant validée | écran simple + test manuel |
@@ -986,6 +988,26 @@
 - Tests : `.\.venv\Scripts\python.exe -m ruff check .` OK ; `.\.venv\Scripts\python.exe -m pytest` OK, 257 tests passés.
 - Prochaine étape recommandée : `SELARL-JURIST-REVIEW-001`.
 
+### SELARL-CLOUD-GENERATION-BUG-001
+- Objectif : diagnostiquer le blocage utilisateur où le parcours SELARL visible ne permettait pas de générer, malgré le smoke local.
+- Statut : DONE.
+- Cause racine : état Streamlit de widgets dérivés désactivés conservé à vide lorsque `Dossier unipersonnel` ou la domiciliation par siège était coché avant la saisie des champs source.
+- Correction : synchronisation explicite du `session_state` pour l'associé unique dérivé et l'adresse de domiciliation dérivée dans `streamlit_app.py`.
+- Garde-fous : générateurs, moteur DOCX/PDF/ZIP, `case_catalog.py`, SCI et `Technique / diagnostic` non modifiés.
+- Rapport : `docs/review/selarl_cloud_generation_bug_001_report_v1.md`.
+- Tests : `.\.venv\Scripts\python.exe -m pytest tests/unit/test_business_wizard.py -q` OK, 35 tests passés ; `.\.venv\Scripts\python.exe -m ruff check .` OK ; `.\.venv\Scripts\python.exe -m pytest` OK, 266 tests passés.
+- Prochaine étape recommandée : rétablir les permissions Git locales, créer le commit de correction, push manuel puis redéploiement Streamlit Cloud et retest utilisateur SELARL.
+
+### DOCUMENT-UNITAIRE-001
+- Objectif : ajouter un mode Streamlit `Document unitaire` pour tester un seul document sans saisir tout un dossier.
+- Statut : DONE.
+- Implémentation : nouveau module UI pur `single_document_mode.py`, branchement dans `streamlit_app.py`, sélection par code/libellé et génération d'un DOCX unique via les services existants.
+- Périmètre V1 : `DOC-001`, `DOC-002`, `DOC-003`, `DOC-004`; documents manuels affichés mais non générés ; documents hors périmètre marqués comme pas encore supportés dans ce mode.
+- Garde-fous : générateurs, moteur DOCX/PDF/ZIP, catalogue métier, Assistant métier et mode `Technique / diagnostic` conservés.
+- Rapport : `docs/review/document_unitaire_001_report_v1.md`.
+- Tests : `.\.venv\Scripts\python.exe -m ruff check .` OK ; `.\.venv\Scripts\python.exe -m pytest` OK, 266 tests passés.
+- Prochaine étape recommandée : revue utilisateur sur les quatre documents supportés, puis extension incrémentale document par document si les champs sont couverts.
+
 ### UI-001
 - Objectif : exposer une Streamlit simple pour générer le Lot 1.
 - Statut : en attente explicite ; ne pas lancer sans ticket explicite dédié.
@@ -1180,3 +1202,5 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - 2026-05-19 : SELARL-REUSE-RULES-REALIGN-001 ajoute `Dossier unipersonnel` comme règle pivot, conserve les réutilisations utiles en opt-in, sort le mandataire du défaut UX, documente les relations non automatiques et valide ruff + pytest 252 tests.
 - 2026-05-19 : SELARL-UI-REALIGN-001 réaligne le parcours Streamlit visible SELARL en six écrans, expose `Dossier unipersonnel`, rend le mandataire secondaire, conserve SCI et Technique / diagnostic, puis valide ruff + pytest 257 tests.
 - 2026-05-19 : SELARL-SMOKE-REALISTIC-001 exécute trois scénarios SELARL réalistes, génère `DOC-001` à `DOC-004` et un ZIP par scénario, confirme l'exclusion des documents manuels `DOC-013` / `DOC-014`, la réserve `DOC-006`, le blocage contexte incomplet V2 des documents non prêts et prépare la revue associé / juriste.
+- 2026-05-20 : SELARL-CLOUD-GENERATION-BUG-001 reproduit le blocage de génération visible quand les réutilisations SELARL sont cochées avant saisie, corrige le `session_state` des champs dérivés associé/domiciliation, ajoute un test AppTest de génération réelle et valide ruff + pytest 266 tests ; commit local bloqué par refus d'écriture dans `.git`.
+- 2026-05-20 : DOCUMENT-UNITAIRE-001 ajoute le mode Streamlit `Document unitaire`, limite la V1 à `DOC-001` à `DOC-004`, affiche honnêtement les documents manuels ou non encore supportés et valide ruff + pytest 266 tests.

@@ -10,7 +10,8 @@ Le smoke vérifie que le parcours SELARL réel :
 - garde `Dossier unipersonnel` comme règle pivot ;
 - affiche les documents attendus mais ne génère que les documents prêts ;
 - exclut les documents manuels de la génération ;
-- ne réintroduit pas `professionnel principal` ni `CELAR` dans les sorties contrôlées.
+- ne réintroduit pas `professionnel principal` ni le terme de transcription erroné
+  issu de NotebookLM dans les sorties contrôlées.
 
 ## Sources lues
 
@@ -291,7 +292,7 @@ Bugs trouvés : aucun.
 | `Fiche Client` apparaît comme étape visible | OK |
 | `Écran 2 — Fiche Client` avant `Écran 3 — Fiche Société` | OK |
 | `professionnel principal` absent des DOCX générés | OK |
-| `CELAR` absent des DOCX générés | OK |
+| Terme de transcription erroné issu de NotebookLM absent des DOCX générés | OK |
 | Aucun placeholder `[` / `]` dans les DOCX générés | OK |
 | `Dossier unipersonnel` verrouille associé unique / gérant / signataire si actif | OK |
 | Si `Dossier unipersonnel` inactif, pas de dérivation associé unique imposée | OK |

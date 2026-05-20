@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys
+from datetime import date
 from pathlib import Path
 
 SRC_ROOT = Path(__file__).resolve().parents[2]
@@ -28,6 +29,24 @@ from sydel_doc_engine.app.business_wizard import (
     selarl_ui_visible_fields_by_step,
     selarl_ui_visible_screen_title,
 )
+from sydel_doc_engine.app.single_document_mode import (
+    UNIT_STATUS_MANUAL_ONLY,
+    UNIT_STATUS_NEEDS_MAPPING,
+    UNIT_STATUS_NOT_IMPLEMENTED,
+    UNIT_STATUS_NOT_SUPPORTED,
+    UNIT_STATUS_SUPPORTED,
+    SingleDocumentAssociateInput,
+    SingleDocumentChoice,
+    SingleDocumentFieldSpec,
+    SingleDocumentInput,
+    build_single_document_context,
+    emprunt_field_specs_for_doc_004,
+    field_specs_for_document,
+    sample_single_document_input,
+    single_document_choices,
+    single_document_table_rows,
+    validate_single_document_input,
+)
 from sydel_doc_engine.app.ui_runtime import (
     DEFAULT_ARTIFACTS_DIR,
     GeneratedDossier,
@@ -44,6 +63,7 @@ from sydel_doc_engine.app.ui_runtime import (
 from sydel_doc_engine.rendering.pdf_export import is_pdf_export_available
 
 BUSINESS_ARTIFACTS_DIR = Path("artifacts") / "ui_case_wizard_002"
+SINGLE_DOCUMENT_ARTIFACTS_DIR = Path("artifacts") / "document_unitaire_001"
 GENDER_OPTIONS = ("masculin", "feminin")
 
 
@@ -118,9 +138,7 @@ def _render_business_mode() -> None:
     if data.structure == "SELARL":
         _render_selarl_document_summary(validation)
 
-    st.subheader(
-        "Etape 4 - Validation" if data.structure != "SELARL" else "Validation"
-    )
+    st.subheader("Etape 4 - Validation" if data.structure != "SELARL" else "Validation")
     col_generable, col_blocked = st.columns(2)
     col_generable.metric("Documents prets", validation.generable_count)
     col_blocked.metric("Documents non prets ou exclus", validation.blocked_count)
@@ -217,6 +235,349 @@ def _render_business_mode() -> None:
         )
     if not docx_paths and zip_path is None:
         st.caption("Aucune sortie generee pour le moment.")
+
+
+def _render_single_document_mode() -> None:
+    st.subheader("Mode Document unitaire")
+    st.caption(
+        "Mode de test limite : il selectionne un document attendu par le catalogue "
+        "et ne genere que les documents explicitement couverts par le formulaire V1."
+    )
+
+    dossier_types = business_dossier_types()
+    selected_type = st.selectbox(
+        "Structure / cas de test",
+        dossier_types,
+        format_func=lambda item: item.label,
+        key="single_document_structure",
+    )
+    st.caption(
+        "La structure sert a lister les documents attendus et a appliquer les "
+        "conditions de selection documentaire."
+    )
+    conditions = _collect_case_conditions(selected_type.structure)
+    choices = single_document_choices(selected_type.structure, conditions)
+
+    if choices:
+        st.subheader("Documents disponibles pour ce cas")
+        st.table(single_document_table_rows(choices))
+    else:
+        st.warning("Aucun document cible pour ce cas.")
+        return
+
+    selected_choice = st.selectbox(
+        "Document a tester",
+        choices,
+        format_func=lambda choice: choice.display_label,
+        key="single_document_choice",
+    )
+    _render_single_document_choice_status(selected_choice)
+    if selected_choice.status != UNIT_STATUS_SUPPORTED or selected_choice.document_code is None:
+        return
+
+    selection_key = (selected_type.structure, selected_choice.identifier)
+    _ensure_single_document_session_defaults(selection_key)
+
+    use_examples = st.checkbox(
+        "Pre-remplir avec des donnees d'exemple",
+        value=False,
+        key=f"single_document_examples_{selected_choice.identifier}",
+    )
+    data = _collect_single_document_input(
+        selected_choice.document_code,
+        selected_type.structure,
+        use_examples,
+    )
+    missing_fields = validate_single_document_input(data)
+    if missing_fields:
+        st.warning("Champs manquants : " + ", ".join(missing_fields))
+    else:
+        st.success("Champs requis du document completés.")
+
+    output_dir = build_output_dir(
+        f"document_unitaire_{selected_choice.document_code}.yaml",
+        SINGLE_DOCUMENT_ARTIFACTS_DIR,
+    )
+    st.text_input("Dossier de sortie", value=str(output_dir), disabled=True)
+
+    pdf_available = _pdf_backend_available()
+    if pdf_available:
+        st.info("Backend PDF local disponible. La conversion reste dependante du poste.")
+    else:
+        st.warning("PDF local indisponible : DOCX et ZIP restent disponibles.")
+
+    docx_paths = _single_document_docx_paths()
+    pdf_paths = _single_document_pdf_paths()
+    zip_path = _single_document_zip_path()
+
+    docx_col, zip_col, pdf_col = st.columns(3)
+    with docx_col:
+        if st.button(
+            "Generer le DOCX",
+            type="primary",
+            disabled=bool(missing_fields),
+        ):
+            with st.spinner("Generation DOCX en cours..."):
+                try:
+                    ctx = build_single_document_context(data)
+                    docx_paths = generate_docx_files_for_document_codes(
+                        ctx,
+                        output_dir,
+                        (selected_choice.document_code,),
+                    )
+                    st.session_state.single_document_docx_paths = docx_paths
+                    st.session_state.single_document_pdf_results = []
+                    st.session_state.single_document_pdf_error = None
+                    st.session_state.single_document_zip_path = None
+                    st.session_state.single_document_output_dir = output_dir
+                    st.success(f"{len(docx_paths)} DOCX genere.")
+                except Exception as exc:  # noqa: BLE001 - Streamlit displays the failure.
+                    st.error(f"Generation DOCX bloquee : {exc}")
+    with zip_col:
+        if st.button("Generer le ZIP", disabled=not docx_paths):
+            with st.spinner("Creation du ZIP en cours..."):
+                try:
+                    active_output_dir = _single_document_output_dir(output_dir)
+                    zip_path = generate_zip_file(active_output_dir, docx_paths, pdf_paths)
+                    st.session_state.single_document_zip_path = zip_path
+                    st.success("ZIP document genere avec manifest.")
+                except Exception as exc:  # noqa: BLE001 - Streamlit displays the failure.
+                    st.error(f"Generation ZIP bloquee : {exc}")
+    with pdf_col:
+        if st.button(
+            "Generer le PDF",
+            disabled=not (pdf_available and docx_paths),
+        ):
+            with st.spinner("Conversion PDF en cours..."):
+                active_output_dir = _single_document_output_dir(output_dir)
+                pdf_batch = generate_pdf_files(docx_paths, active_output_dir)
+                st.session_state.single_document_pdf_results = pdf_batch.pdf_results
+                st.session_state.single_document_pdf_error = pdf_batch.pdf_error
+                if pdf_batch.pdf_error:
+                    st.warning(f"PDF non produit : {pdf_batch.pdf_error}")
+                else:
+                    st.success(f"{len(pdf_batch.pdf_paths)} PDF genere.")
+
+    st.subheader("Telechargement")
+    docx_paths = _single_document_docx_paths()
+    pdf_paths = _single_document_pdf_paths()
+    zip_path = _single_document_zip_path()
+    if docx_paths:
+        _render_docx_downloads(docx_paths, key_prefix="single-document")
+    if pdf_paths:
+        _render_pdf_downloads(pdf_paths, key_prefix="single-document")
+    if zip_path is not None:
+        _download_file(
+            zip_path,
+            label="Telecharger le ZIP document",
+            mime="application/zip",
+            key=f"download-single-document-zip-{zip_path.name}",
+        )
+    if not docx_paths and zip_path is None:
+        st.caption("Aucune sortie generee pour le moment.")
+
+
+def _render_single_document_choice_status(choice: SingleDocumentChoice) -> None:
+    if choice.status == UNIT_STATUS_SUPPORTED:
+        st.success("Document supporte dans ce mode : seuls ses champs requis sont affiches.")
+        return
+    if choice.status == UNIT_STATUS_MANUAL_ONLY:
+        st.warning(
+            "Document affiche par le catalogue, mais a remplir manuellement : "
+            "aucune generation automatique dans ce mode."
+        )
+        return
+    if choice.status == UNIT_STATUS_NOT_IMPLEMENTED:
+        st.warning("Document non implemente dans le moteur : generation impossible.")
+        return
+    if choice.status == UNIT_STATUS_NEEDS_MAPPING:
+        st.warning("Document sans mapping DOC-XXX confirme : generation impossible.")
+        return
+    if choice.status == UNIT_STATUS_NOT_SUPPORTED:
+        st.info("Document pas encore supporte dans ce mode unitaire.")
+
+
+def _collect_single_document_input(
+    document_code: str,
+    structure: str,
+    use_examples: bool,
+) -> SingleDocumentInput:
+    sample = sample_single_document_input(document_code, structure=structure)
+    values: dict[str, object] = {
+        "structure": structure,
+        "document_code": document_code,
+    }
+    for group, specs in _single_document_field_groups(
+        field_specs_for_document(document_code)
+    ).items():
+        with st.expander(group, expanded=True):
+            for spec in specs:
+                values[spec.key] = _render_single_document_field(
+                    spec,
+                    sample,
+                    document_code,
+                    use_examples,
+                )
+
+    associes: tuple[SingleDocumentAssociateInput, ...] = ()
+    if document_code == "DOC-004":
+        with st.expander("Associes", expanded=True):
+            associe_count = st.number_input(
+                "Nombre d'associes",
+                min_value=1,
+                max_value=4,
+                value=len(sample.associes) if use_examples else 1,
+                key="single_document_doc_004_associe_count",
+            )
+            associes = _collect_single_document_associes(
+                int(associe_count),
+                sample,
+                use_examples,
+            )
+        if bool(values.get("emprunt_actif")):
+            with st.expander("Bien finance", expanded=True):
+                for spec in emprunt_field_specs_for_doc_004():
+                    values[spec.key] = _render_single_document_field(
+                        spec,
+                        sample,
+                        document_code,
+                        use_examples,
+                    )
+
+    return SingleDocumentInput(**values, associes=associes)
+
+
+def _single_document_field_groups(
+    fields: tuple[SingleDocumentFieldSpec, ...],
+) -> dict[str, tuple[SingleDocumentFieldSpec, ...]]:
+    grouped: dict[str, list[SingleDocumentFieldSpec]] = {}
+    for field in fields:
+        grouped.setdefault(field.group, []).append(field)
+    return {group: tuple(items) for group, items in grouped.items()}
+
+
+def _render_single_document_field(
+    spec: SingleDocumentFieldSpec,
+    sample: SingleDocumentInput,
+    document_code: str,
+    use_examples: bool,
+) -> object:
+    key = f"single_document_{document_code}_{spec.key}"
+    initial = getattr(sample, spec.key) if use_examples else _empty_unit_value(spec)
+    if spec.kind == "choice":
+        options = ("", *spec.choices)
+        initial_value = str(initial) if initial else ""
+        return st.selectbox(
+            spec.label,
+            options,
+            index=_selectbox_index(options, initial_value),
+            format_func=lambda value: value or "Choisir",
+            key=key,
+            help=spec.help_text or None,
+        )
+    if spec.kind == "bool":
+        return st.checkbox(
+            spec.label,
+            value=bool(initial),
+            key=key,
+            help=spec.help_text or None,
+        )
+    if spec.kind == "int":
+        int_value = int(initial) if isinstance(initial, int) and initial > 0 else 0
+        value = st.number_input(
+            spec.label,
+            min_value=0,
+            value=int_value,
+            key=key,
+            help=spec.help_text or None,
+        )
+        return int(value) if value > 0 else None
+    return st.text_input(
+        spec.label,
+        value=_display_unit_value(initial),
+        key=key,
+        help=spec.help_text or None,
+    )
+
+
+def _collect_single_document_associes(
+    count: int,
+    sample: SingleDocumentInput,
+    use_examples: bool,
+) -> tuple[SingleDocumentAssociateInput, ...]:
+    associes: list[SingleDocumentAssociateInput] = []
+    for index in range(count):
+        example = sample.associes[index] if use_examples and index < len(sample.associes) else None
+        st.markdown(f"Associe {index + 1}")
+        cols = st.columns(5)
+        genre = cols[0].selectbox(
+            f"Associe {index + 1} - genre grammatical",
+            GENDER_OPTIONS,
+            index=_selectbox_index(GENDER_OPTIONS, example.genre if example else GENDER_OPTIONS[0]),
+            key=f"single_document_associe_genre_{index}",
+        )
+        civilite = cols[1].selectbox(
+            f"Associe {index + 1} - civilite",
+            ("", "Monsieur", "Madame"),
+            index=_selectbox_index(
+                ("", "Monsieur", "Madame"),
+                example.civilite_affichage if example else "",
+            ),
+            key=f"single_document_associe_civilite_{index}",
+            format_func=lambda value: value or "Choisir",
+        )
+        prenom = cols[2].text_input(
+            f"Associe {index + 1} - prenom",
+            value=example.prenom if example else "",
+            key=f"single_document_associe_prenom_{index}",
+        )
+        nom = cols[3].text_input(
+            f"Associe {index + 1} - nom",
+            value=example.nom if example else "",
+            key=f"single_document_associe_nom_{index}",
+        )
+        nb_parts_input = cols[4].number_input(
+            f"Associe {index + 1} - parts",
+            min_value=0,
+            value=example.nb_parts if example and example.nb_parts else 0,
+            key=f"single_document_associe_parts_{index}",
+        )
+        present = st.checkbox(
+            f"Associe {index + 1} present ou represente",
+            value=example.est_present_ou_represente if example else True,
+            key=f"single_document_associe_present_{index}",
+        )
+        associes.append(
+            SingleDocumentAssociateInput(
+                genre=genre,
+                civilite_affichage=civilite,
+                prenom=prenom,
+                nom=nom,
+                nb_parts=int(nb_parts_input) if nb_parts_input > 0 else None,
+                est_present_ou_represente=present,
+            )
+        )
+    return tuple(associes)
+
+
+def _empty_unit_value(spec: SingleDocumentFieldSpec) -> object:
+    if spec.kind == "bool":
+        return False
+    if spec.kind == "int":
+        return 0
+    if spec.kind == "choice":
+        return ""
+    return ""
+
+
+def _display_unit_value(value: object) -> str:
+    if isinstance(value, date):
+        return value.isoformat()
+    return "" if value is None else str(value)
+
+
+def _selectbox_index(options: tuple[str, ...], value: str) -> int:
+    return options.index(value) if value in options else 0
 
 
 def _render_selarl_document_summary(validation: BusinessWizardValidation) -> None:
@@ -643,13 +1004,9 @@ def _collect_selarl_business_input(conditions: dict[str, object | None]) -> Busi
         person_cols = st.columns(2)
         personne_prenom = person_cols[0].text_input("Prenom du Praticien")
         personne_nom = person_cols[1].text_input("Nom du Praticien")
-        personne_date_naissance = st.text_input(
-            "Date de naissance du Praticien (AAAA-MM-JJ)"
-        )
+        personne_date_naissance = st.text_input("Date de naissance du Praticien (AAAA-MM-JJ)")
         naissance_cols = st.columns(2)
-        dirigeant_ville_naissance = naissance_cols[0].text_input(
-            "Ville de naissance du Praticien"
-        )
+        dirigeant_ville_naissance = naissance_cols[0].text_input("Ville de naissance du Praticien")
         dirigeant_departement_naissance = naissance_cols[1].text_input(
             "Departement de naissance du Praticien"
         )
@@ -764,9 +1121,7 @@ def _collect_selarl_business_input(conditions: dict[str, object | None]) -> Busi
             dirigeant_adresse_num_voie = st.text_input(
                 "Adresse personnelle du gérant distinct - numéro"
             )
-            dirigeant_adresse_voie = st.text_input(
-                "Adresse personnelle du gérant distinct - voie"
-            )
+            dirigeant_adresse_voie = st.text_input("Adresse personnelle du gérant distinct - voie")
             dirigeant_adresse_cp = st.text_input(
                 "Adresse personnelle du gérant distinct - code postal"
             )
@@ -830,12 +1185,17 @@ def _collect_selarl_business_input(conditions: dict[str, object | None]) -> Busi
             societe_siege_cp,
             societe_siege_ville,
         )
+        domiciliation_key = "selarl_domiciliation_adresse_affichee"
+        if selarl_domiciliation_is_registered_office:
+            st.session_state[domiciliation_key] = derived_domiciliation
         domiciliation_adresse_affichee = st.text_input(
             selarl_ui_field("siege_social.domiciliation").label,
-            value=derived_domiciliation if selarl_domiciliation_is_registered_office else "",
+            key=domiciliation_key,
             disabled=selarl_domiciliation_is_registered_office,
             help=selarl_ui_field("siege_social.domiciliation").help_text,
         )
+        if selarl_domiciliation_is_registered_office:
+            domiciliation_adresse_affichee = derived_domiciliation
         if selarl_domiciliation_is_registered_office:
             st.caption("Donnée dérivée depuis l'adresse du siège social.")
 
@@ -874,8 +1234,7 @@ def _collect_selarl_business_input(conditions: dict[str, object | None]) -> Busi
             )
         associes = _collect_selarl_associes(
             associe_count,
-            copy_associe_1=selarl_signataire_is_associe_1
-            or copy_associe_1_from_professional,
+            copy_associe_1=selarl_signataire_is_associe_1 or copy_associe_1_from_professional,
             personne_genre=personne_genre,
             personne_civilite=personne_civilite,
             personne_prenom=personne_prenom,
@@ -959,9 +1318,7 @@ def _collect_selarl_business_input(conditions: dict[str, object | None]) -> Busi
             selarl_signataire_is_associe_1=selarl_signataire_is_associe_1,
             selarl_company_is_acquirer=selarl_company_is_acquirer,
             selarl_company_is_scm_transferee=selarl_company_is_scm_transferee,
-            selarl_domiciliation_is_registered_office=(
-                selarl_domiciliation_is_registered_office
-            ),
+            selarl_domiciliation_is_registered_office=(selarl_domiciliation_is_registered_office),
         )
     )
     with st.expander("Signataire, signature et option DOC-004", expanded=True):
@@ -1089,9 +1446,7 @@ def _collect_selarl_business_input(conditions: dict[str, object | None]) -> Busi
         selarl_mandataire_is_signataire=selarl_mandataire_is_signataire,
         selarl_company_is_acquirer=selarl_company_is_acquirer,
         selarl_company_is_scm_transferee=selarl_company_is_scm_transferee,
-        selarl_domiciliation_is_registered_office=(
-            selarl_domiciliation_is_registered_office
-        ),
+        selarl_domiciliation_is_registered_office=(selarl_domiciliation_is_registered_office),
     )
 
 
@@ -1131,33 +1486,36 @@ def _collect_selarl_associes(
     for index in range(count):
         st.markdown(f"Associé {index + 1}")
         derived = index == 0 and copy_associe_1
+        genre_key = f"selarl_associe_genre_{index}"
+        civilite_key = f"selarl_associe_civilite_{index}"
+        prenom_key = f"selarl_associe_prenom_{index}"
+        nom_key = f"selarl_associe_nom_{index}"
+        if derived:
+            st.session_state[genre_key] = personne_genre
+            st.session_state[civilite_key] = personne_civilite
+            st.session_state[prenom_key] = personne_prenom
+            st.session_state[nom_key] = personne_nom
         cols = st.columns(5)
         genre = cols[0].selectbox(
             f"Associé {index + 1} - genre grammatical",
             GENDER_OPTIONS,
-            index=GENDER_OPTIONS.index(personne_genre) if derived else 0,
-            key=f"selarl_associe_genre_{index}",
+            key=genre_key,
             disabled=derived,
         )
         civilite = cols[1].selectbox(
             f"Associé {index + 1} - civilité",
             ("", "Monsieur", "Madame", "Docteur"),
-            index=_selectbox_index(("", "Monsieur", "Madame", "Docteur"), personne_civilite)
-            if derived
-            else 0,
-            key=f"selarl_associe_civilite_{index}",
+            key=civilite_key,
             disabled=derived,
         )
         prenom = cols[2].text_input(
             f"Associé {index + 1} - prénom",
-            value=personne_prenom if derived else "",
-            key=f"selarl_associe_prenom_{index}",
+            key=prenom_key,
             disabled=derived,
         )
         nom = cols[3].text_input(
             f"Associé {index + 1} - nom",
-            value=personne_nom if derived else "",
-            key=f"selarl_associe_nom_{index}",
+            key=nom_key,
             disabled=derived,
         )
         nb_parts_input = cols[4].number_input(
@@ -1184,10 +1542,6 @@ def _collect_selarl_associes(
             )
         )
     return tuple(associes)
-
-
-def _selectbox_index(options: tuple[str, ...], value: str) -> int:
-    return options.index(value) if value in options else 0
 
 
 def _format_address(num_voie: str, voie: str, cp: str, ville: str) -> str:
@@ -1324,8 +1678,7 @@ def _render_technical_mode() -> None:
     result = st.session_state.generated_dossier
     if isinstance(result, GeneratedDossier):
         st.success(
-            f"Dossier genere : {len(result.docx_paths)} DOCX, "
-            f"{len(result.pdf_paths)} PDF, 1 ZIP."
+            f"Dossier genere : {len(result.docx_paths)} DOCX, {len(result.pdf_paths)} PDF, 1 ZIP."
         )
         if result.pdf_error:
             st.warning(
@@ -1365,6 +1718,34 @@ def _business_output_dir(default: Path) -> Path:
     return output_dir if isinstance(output_dir, Path) else default
 
 
+def _ensure_single_document_session_defaults(selection_key: tuple[str, str]) -> None:
+    if st.session_state.get("single_document_selection_key") == selection_key:
+        return
+    st.session_state.single_document_selection_key = selection_key
+    st.session_state.single_document_docx_paths = []
+    st.session_state.single_document_pdf_results = []
+    st.session_state.single_document_pdf_error = None
+    st.session_state.single_document_zip_path = None
+    st.session_state.single_document_output_dir = None
+
+
+def _single_document_docx_paths() -> list[Path]:
+    return list(st.session_state.get("single_document_docx_paths", []))
+
+
+def _single_document_pdf_paths() -> list[Path]:
+    return [result.pdf_path for result in st.session_state.get("single_document_pdf_results", [])]
+
+
+def _single_document_zip_path() -> Path | None:
+    return st.session_state.get("single_document_zip_path")
+
+
+def _single_document_output_dir(default: Path) -> Path:
+    output_dir = st.session_state.get("single_document_output_dir")
+    return output_dir if isinstance(output_dir, Path) else default
+
+
 def _default_forme_affichage(structure: str) -> str:
     defaults = {
         "SCI": "Societe civile immobiliere",
@@ -1390,12 +1771,14 @@ st.caption("Generation dossier DOCX, PDF local optionnel et ZIP.")
 
 mode = st.radio(
     "Mode d'utilisation",
-    ("Assistant metier", "Technique / diagnostic"),
+    ("Assistant metier", "Document unitaire", "Technique / diagnostic"),
     horizontal=True,
 )
 
 if mode == "Assistant metier":
     _render_business_mode()
+elif mode == "Document unitaire":
+    _render_single_document_mode()
 else:
     _render_technical_mode()
 
