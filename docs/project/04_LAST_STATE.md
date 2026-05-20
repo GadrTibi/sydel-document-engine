@@ -5,6 +5,8 @@
 
 
 ## Dernier ticket terminé
+GLOBAL-VARIABLE-INVENTORY-001 : inventaire global brut des variables documentaires construit sur tout le périmètre moteur. Livrables : `docs/project/GLOBAL_VARIABLE_RAW_INVENTORY_V1.csv` et `docs/review/global_variable_inventory_001_report_v1.md`. Le CSV contient 12 443 lignes, 1 334 slugs normalisés distincts sur documents `DOC-XXX`, couvre les 43 documents `DOC-001` à `DOC-043` et 15 familles documentaires. Sources lues/exploitées : dictionnaire canonique V1, mapping documents/variables V1, arbre moteur, `src/sydel_doc_engine/registry/catalog.py`, source truth V1/V2/V3, templates présents dans `project/source_documents/`, specs `docs/delivery/` et `case_catalog.py` en aide. Aucun générateur, moteur DOCX/PDF/ZIP, UI ou wording juridique n'a été modifié. Aucun test Python requis car aucun fichier Python modifié ; validations documentaires : couverture complète, absence de lignes `UNMAPPED`, contrôle CSV/report.
+
 ASSISTANT-METIER-PREFILL-001 : ajout d'un mécanisme de préremplissage de test déterministe dans le seul mode `Assistant metier`. L'UI expose un sélecteur `Scénario de test`, un bouton `Préremplir`, un bouton `Réinitialiser` et une indication visible `Mode test — données fictives préremplies`. Les presets couvrent `SELARL médecin unipersonnelle simple`, `SELARL chirurgien-dentiste + régime communautaire + site distinct`, `SELARL médecin + cession cabinet médical + bail + financement` et `SCI simple`. Le `session_state` Streamlit est synchronisé pour les champs visibles et dérivés, notamment `Dossier unipersonnel`, l'associé unique et la domiciliation = siège. Aucun générateur, moteur DOCX/PDF/ZIP, wording juridique, mode `Technique / diagnostic` ou mode `Document unitaire` n'a été modifié. Rapport : `docs/review/assistant_metier_prefill_001_report_v1.md`. Ruff OK et pytest OK avec 272 tests passés.
 
 DOCUMENT-UNITAIRE-001 : ajout du mode Streamlit `Document unitaire` aux côtés de `Assistant metier` et `Technique / diagnostic`. Le mode permet de choisir un document par code/libellé après sélection du cas, affiche uniquement les champs utiles, propose un préremplissage d'exemple, valide les champs manquants et génère un DOCX unique avec téléchargement, ZIP optionnel et PDF optionnel si le backend local est disponible. Le périmètre V1 est limité à `DOC-001`, `DOC-002`, `DOC-003` et `DOC-004`; les documents manuels restent visibles mais non générables, et les autres documents affichent une limite claire de non-support dans ce mode. Aucun générateur, moteur DOCX/PDF/ZIP, catalogue métier, parcours Assistant métier ou mode `Technique / diagnostic` n'a été modifié. Rapport : `docs/review/document_unitaire_001_report_v1.md`. Ruff OK et pytest OK avec 266 tests passés.
@@ -76,6 +78,7 @@ CONVERT-DEROG-SALARIEE-001 : tentative de conversion Word COM du `.doc` legacy s
 SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc98450b72ba6e602cb8f1a3b`, `1b3ba14d0bcc31fc7dcbf1752d6d3263645ae8b3`, `32059155c618b4e985893f42ef2817187599c281`, `74d41db53543b790e197082e8b9c713f7de92dc2` et `d1d649e11fdc638e6d7da0640c154d1f213739ee`, puis réalignement du pilotage.
 
 ## État courant du repo
+- L'inventaire global brut des variables documentaires V1 est disponible dans `docs/project/GLOBAL_VARIABLE_RAW_INVENTORY_V1.csv` avec son rapport exécutif dans `docs/review/global_variable_inventory_001_report_v1.md`; il prépare un audit sémantique V2 avant reconstruction globale du front.
 - DOC-001, DOC-002 et DOC-003 disposent chacun d'un générateur dédié déjà terminé.
 - L'orchestrateur dossier expose :
   - un registre des générateurs DOC-001 à DOC-043 ;
@@ -911,4 +914,4 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
 - ASSISTANT-METIER-PREFILL-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 272 tests passés.
 
 ## Recommandation immédiate suivante
-Faire une revue manuelle Streamlit des quatre scénarios de test `Assistant metier`, puis poursuivre avec `SELARL-JURIST-REVIEW-001` pour la validation métier/juridique du parcours SELARL.
+Lancer `GLOBAL-CANONICAL-CANDIDATES-V2-001` : construire une matrice de candidats canoniques V2 à partir de `GLOBAL_VARIABLE_RAW_INVENTORY_V1.csv`, sans fusion définitive avant arbitrage. En parallèle, `SELARL-JURIST-REVIEW-001` reste recommandé pour la validation métier/juridique du parcours SELARL existant.

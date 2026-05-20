@@ -145,6 +145,8 @@
 | SELARL-CLOUD-GENERATION-BUG-001 | DONE | Corriger le blocage de génération SELARL visible | test utilisateur Cloud + parcours Streamlit SELARL | session state dérivé corrigé, génération visible restaurée, test AppTest |
 | DOCUMENT-UNITAIRE-001 | DONE | Ajouter le mode Streamlit Document unitaire | Streamlit + catalogue cas + schéma SELARL | choix document, champs limités, DOCX unique, ZIP/PDF optionnels, rapport |
 | ASSISTANT-METIER-PREFILL-001 | DONE | Ajouter des scénarios fictifs déterministes de préremplissage dans Assistant métier | Assistant métier SELARL/SCI + specs UI/SELARL | module presets + boutons Préremplir/Réinitialiser + tests + rapport |
+| GLOBAL-VARIABLE-INVENTORY-001 | DONE | Construire l'inventaire global brut des variables documentaires | référentiels V1 + source truth V1/V2/V3 + templates + specs + registre | CSV global brut + rapport exécutif + pilotage |
+| GLOBAL-CANONICAL-CANDIDATES-V2-001 | READY | Préparer la matrice de candidats variables canoniques V2 | `GLOBAL_VARIABLE_RAW_INVENTORY_V1.csv` + rapport global | matrice candidats V2, groupes suspects, arbitrages à valider |
 | SELARL-JURIST-REVIEW-001 | READY | Faire valider le parcours SELARL réaligné par un juriste | `SELARL-SMOKE-REALISTIC-001` | revue juriste, réserves et arbitrages documentés |
 | SELARL-DOCS-GENERATION-SMOKE-001 | BLOCKED | Smoke tester la génération SELARL depuis le parcours Assistant métier | parcours SELARL réaligné + catalogue + schema + contextes réalistes | bloqué par la réconciliation NotebookLM ; remplacé par `SELARL-SMOKE-REALISTIC-001` après réalignement |
 | UI-001 | BLOCKED | Brancher Streamlit V0 Lot 1 | orchestrateur Lot 1 + spec canonique PV nomination gérant validée | écran simple + test manuel |
@@ -1019,6 +1021,16 @@
 - Tests : `.\.venv\Scripts\python.exe -m pytest tests\unit\test_business_wizard.py -q` OK, 41 tests passés ; `.\.venv\Scripts\python.exe -m pytest tests\unit\test_single_document_mode.py tests\unit\test_ui_runtime.py -q` OK, 12 tests passés ; `.\.venv\Scripts\python.exe -m ruff check .` OK ; `.\.venv\Scripts\python.exe -m pytest` OK, 272 tests passés.
 - Prochaine étape recommandée : revue manuelle Streamlit des quatre scénarios de test, puis `SELARL-JURIST-REVIEW-001`.
 
+### GLOBAL-VARIABLE-INVENTORY-001
+- Objectif : construire un inventaire global brut des variables documentaires sur tout le périmètre moteur, sans décider les fusions.
+- Statut : DONE.
+- Livrables : `docs/project/GLOBAL_VARIABLE_RAW_INVENTORY_V1.csv` et `docs/review/global_variable_inventory_001_report_v1.md`.
+- Couverture : 12 443 lignes de variables brutes, 1 334 slugs normalisés distincts sur documents `DOC-XXX`, 43 documents `DOC-001` à `DOC-043` couverts, 15 familles couvertes.
+- Sources : dictionnaire canonique V1, mapping documents/variables V1, arbre moteur, registre `catalog.py`, source truth V1/V2/V3, templates `project/source_documents/`, specs `docs/delivery/`, `case_catalog.py` en aide uniquement.
+- Garde-fous : aucun générateur, moteur DOCX/PDF/ZIP, UI ou wording juridique modifié ; les groupes suspects sont signalés sans fusion canonique définitive.
+- Validations : contrôle CSV/report, absence de lignes `UNMAPPED`, couverture complète `DOC-001` à `DOC-043`; aucun test Python requis car aucun fichier Python modifié.
+- Prochaine étape recommandée : `GLOBAL-CANONICAL-CANDIDATES-V2-001`, matrice candidats V2 `variable_canonique -> raw_variables -> documents -> source_origin` avant rebuild front.
+
 ### UI-001
 - Objectif : exposer une Streamlit simple pour générer le Lot 1.
 - Statut : en attente explicite ; ne pas lancer sans ticket explicite dédié.
@@ -1034,6 +1046,8 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - mettre à jour `docs/project/04_LAST_STATE.md`
 
 ## Prochaine étape prévue
+- `GLOBAL-VARIABLE-INVENTORY-001` est DONE ; l'inventaire global brut couvre `DOC-001` à `DOC-043`, les sources V1/V2/V3, les templates présents, les specs delivery et les mappings V1 sans toucher au moteur ni à l'UI.
+- prochain ticket recommandé pour le rebuild front global : `GLOBAL-CANONICAL-CANDIDATES-V2-001`, afin de transformer l'inventaire brut en matrice de candidats canoniques V2 sans fusion définitive non validée.
 - `WORKTREE-CLEANUP-AND-UI-STATUS-001` est DONE ; le pack `REVIEW-FINAL-001` est consolide dans `main`, le rapport 23 clarifie le dossier canonique et le statut UI, et les anciens worktrees locaux sont a considerer comme archives.
 - `SYNC-FINAL-FOUNDATIONS-001` est DONE ; `main` contient les audits 16/17/18, les cadrages UI 19/20/21, le framework de recette finale, l'UI intégrée, le backend PDF et le backend ZIP déterministe.
 - `UI-PDF-ZIP-INTEGRATION-001` est DONE ; l'UI sait produire et telecharger DOCX, PDF local optionnel et ZIP dossier.
@@ -1216,3 +1230,4 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - 2026-05-20 : SELARL-CLOUD-GENERATION-BUG-001 reproduit le blocage de génération visible quand les réutilisations SELARL sont cochées avant saisie, corrige le `session_state` des champs dérivés associé/domiciliation, ajoute un test AppTest de génération réelle et valide ruff + pytest 266 tests ; commit local bloqué par refus d'écriture dans `.git`.
 - 2026-05-20 : DOCUMENT-UNITAIRE-001 ajoute le mode Streamlit `Document unitaire`, limite la V1 à `DOC-001` à `DOC-004`, affiche honnêtement les documents manuels ou non encore supportés et valide ruff + pytest 266 tests.
 - 2026-05-20 : ASSISTANT-METIER-PREFILL-001 ajoute des scénarios de test déterministes dans l'Assistant métier, avec sélecteur, préremplissage, réinitialisation, indication visible, synchronisation `session_state` des champs dérivés SELARL/domiciliation et non-régression SCI/Document unitaire/Technique ; aucun générateur, moteur DOCX/PDF/ZIP ni wording juridique modifié.
+- 2026-05-20 : GLOBAL-VARIABLE-INVENTORY-001 crée l'inventaire global brut `docs/project/GLOBAL_VARIABLE_RAW_INVENTORY_V1.csv` et le rapport `docs/review/global_variable_inventory_001_report_v1.md` : 12 443 lignes, 43 documents `DOC-001` à `DOC-043`, 15 familles, aucun générateur/moteur/UI/wording juridique modifié.
