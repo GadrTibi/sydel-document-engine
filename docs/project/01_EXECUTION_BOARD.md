@@ -148,7 +148,15 @@
 | GLOBAL-VARIABLE-INVENTORY-001 | DONE | Construire l'inventaire global brut des variables documentaires | référentiels V1 + source truth V1/V2/V3 + templates + specs + registre | CSV global brut + rapport exécutif + pilotage |
 | GLOBAL-VARIABLE-IDENTITY-AUDIT-001 | DONE | Auditer l'identité sémantique globale des variables avant rebuild front | `GLOBAL_VARIABLE_RAW_INVENTORY_V1.csv` + référentiels V1 + templates + specs | matrice identité V2 + registre canonique global V2 + questions humaines + rapport |
 | GLOBAL-HUMAN-ANSWERS-INTEGRATION-001 | DONE | Intégrer les réponses humaines dans le registre canonique global | audit global V2 + réponse Albane + modèle SELAS micro-holding + V3/NotebookLM | questions V2 + registre canonique V2.1 + rapport exécutif |
-| GLOBAL-FRONT-ARCHITECTURE-001 | READY | Concevoir l'architecture du nouveau front global sur le registre V2.1 | registre canonique global V2.1 + questions V2 | architecture front sans modification moteur/générateurs/UI existante |
+| GLOBAL-FRONT-ARCHITECTURE-001 | DONE | Concevoir l'architecture du nouveau front global sur le registre V2.1 | registre canonique global V2.1 + questions V2 | architecture front sans modification moteur/générateurs/UI existante |
+| FRONT-DATA-LAYER-001 | READY | Créer la couche de données front globale | architecture front V1 + registre V2.1 | objets front globaux + tests/validations sans toucher aux générateurs |
+| FRONT-ROLE-MODEL-001 | BLOCKED | Modéliser les rôles explicites du front global | `FRONT-DATA-LAYER-001` | RoleAssignment sans fusion silencieuse |
+| FRONT-ADDRESS-MODEL-001 | BLOCKED | Modéliser les adresses typées par usage | `FRONT-DATA-LAYER-001` + `FRONT-ROLE-MODEL-001` | adresses pivots, règles de réutilisation, overrides |
+| FRONT-DOSSIER-FLOW-001 | BLOCKED | Définir le flow dossier complet global | data layer + rôles + adresses | flow dossier par opération/famille documentaire |
+| FRONT-DOCUMENT-STATUS-LAYER-001 | BLOCKED | Construire la couche de statuts documentaires front | `FRONT-DOSSIER-FLOW-001` | documents attendus, manuels, réservés, non prêts |
+| FRONT-UNIT-DOCUMENT-MODE-001 | BLOCKED | Reconcevoir le mode document unitaire comme diagnostic séparé | `FRONT-DOCUMENT-STATUS-LAYER-001` | test document unique sans polluer le parcours dossier |
+| FRONT-TEST-PREFILL-001 | BLOCKED | Concevoir les préremplissages fictifs de test du nouveau front | `FRONT-DOSSIER-FLOW-001` + status layer | scénarios déterministes non métier |
+| FRONT-REVIEW-001 | BLOCKED | Faire valider le modèle front global avant UI visible | tickets front data/role/address/flow/status | revue produit/juriste et arbitrages restants |
 | SELARL-JURIST-REVIEW-001 | READY | Faire valider le parcours SELARL réaligné par un juriste | `SELARL-SMOKE-REALISTIC-001` | revue juriste, réserves et arbitrages documentés |
 | SELARL-DOCS-GENERATION-SMOKE-001 | BLOCKED | Smoke tester la génération SELARL depuis le parcours Assistant métier | parcours SELARL réaligné + catalogue + schema + contextes réalistes | bloqué par la réconciliation NotebookLM ; remplacé par `SELARL-SMOKE-REALISTIC-001` après réalignement |
 | UI-001 | BLOCKED | Brancher Streamlit V0 Lot 1 | orchestrateur Lot 1 + spec canonique PV nomination gérant validée | écran simple + test manuel |
@@ -1051,6 +1059,16 @@
 - Validation : relecture documentaire et contrôle du diff ; aucun test Python requis car aucun fichier Python modifié.
 - Prochaine étape recommandée : `GLOBAL-FRONT-ARCHITECTURE-001`, concevoir l'architecture du nouveau front global sur le registre V2.1.
 
+### GLOBAL-FRONT-ARCHITECTURE-001
+- Objectif : concevoir l'architecture produit et données du nouveau front global sur le registre canonique global V2.1.
+- Statut : DONE.
+- Livrables : `docs/project/GLOBAL_FRONT_ARCHITECTURE_V1.md`, `docs/project/GLOBAL_FRONT_OBJECT_MODEL_V1.md`, `docs/project/GLOBAL_FRONT_RULES_V1.md`, `docs/project/GLOBAL_FRONT_SCREEN_STRATEGY_V1.md`, `docs/project/GLOBAL_FRONT_REBUILD_BACKLOG_V1.md` et `docs/review/global_front_architecture_001_report_v1.md`.
+- Décisions : modèle front par objets métier role-based, adresses typées par usage, reutilisation uniquement via règles explicites, distinction dossier / document / lot, mode document unitaire séparé du parcours dossier complet.
+- Prototype : conserver les concepts utiles et le diagnostic technique ; ne pas généraliser les écrans, le `session_state` ou les listes de champs du prototype actuel.
+- Garde-fous : aucun générateur, moteur DOCX/PDF/ZIP, Streamlit ou wording juridique modifié ; `docs/docssource_truth/` non suivi laissé hors périmètre.
+- Validation : relecture documentaire et contrôle du diff ; aucun test Python requis car aucun fichier Python modifié.
+- Prochaine étape recommandée : `FRONT-DATA-LAYER-001`, créer la couche de données front globale sans toucher au moteur ni au prototype.
+
 ### UI-001
 - Objectif : exposer une Streamlit simple pour générer le Lot 1.
 - Statut : en attente explicite ; ne pas lancer sans ticket explicite dédié.
@@ -1066,8 +1084,9 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - mettre à jour `docs/project/04_LAST_STATE.md`
 
 ## Prochaine étape prévue
+- `GLOBAL-FRONT-ARCHITECTURE-001` est DONE ; l'architecture produit et données du nouveau front global est cadrée sans toucher au moteur, aux générateurs, à Streamlit ni au wording juridique.
+- Prochain ticket recommandé pour le rebuild front global : `FRONT-DATA-LAYER-001`, créer la couche de données front globale sur les objets et règles V1.
 - `GLOBAL-HUMAN-ANSWERS-INTEGRATION-001` est DONE ; les réponses humaines disponibles sont intégrées dans les questions V2, le registre canonique global V2.1 et le rapport exécutif, sans toucher au moteur ni à l'UI.
-- Prochain ticket recommandé pour le rebuild front global : `GLOBAL-FRONT-ARCHITECTURE-001`, concevoir l'architecture du nouveau front sur le registre V2.1 avant tout changement applicatif.
 - `WORKTREE-CLEANUP-AND-UI-STATUS-001` est DONE ; le pack `REVIEW-FINAL-001` est consolide dans `main`, le rapport 23 clarifie le dossier canonique et le statut UI, et les anciens worktrees locaux sont a considerer comme archives.
 - `SYNC-FINAL-FOUNDATIONS-001` est DONE ; `main` contient les audits 16/17/18, les cadrages UI 19/20/21, le framework de recette finale, l'UI intégrée, le backend PDF et le backend ZIP déterministe.
 - `UI-PDF-ZIP-INTEGRATION-001` est DONE ; l'UI sait produire et telecharger DOCX, PDF local optionnel et ZIP dossier.
@@ -1252,3 +1271,4 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - 2026-05-20 : ASSISTANT-METIER-PREFILL-001 ajoute des scénarios de test déterministes dans l'Assistant métier, avec sélecteur, préremplissage, réinitialisation, indication visible, synchronisation `session_state` des champs dérivés SELARL/domiciliation et non-régression SCI/Document unitaire/Technique ; aucun générateur, moteur DOCX/PDF/ZIP ni wording juridique modifié.
 - 2026-05-20 : GLOBAL-VARIABLE-INVENTORY-001 crée l'inventaire global brut `docs/project/GLOBAL_VARIABLE_RAW_INVENTORY_V1.csv` et le rapport `docs/review/global_variable_inventory_001_report_v1.md` : 12 443 lignes, 43 documents `DOC-001` à `DOC-043`, 15 familles, aucun générateur/moteur/UI/wording juridique modifié.
 - 2026-05-20 : GLOBAL-VARIABLE-IDENTITY-AUDIT-001 crée la matrice d'identité V2, le registre canonique global V2, la liste de 10 questions humaines et le rapport exécutif : 1 334 slugs distincts audités, 49 champs proposés, 142 rapprochements classés, aucun générateur/moteur/UI/wording juridique modifié.
+- 2026-05-24 : GLOBAL-FRONT-ARCHITECTURE-001 crée l'architecture front globale V1, le modèle d'objets, les règles structurelles, la stratégie d'écrans, le backlog de rebuild et le rapport exécutif ; aucun générateur, moteur DOCX/PDF/ZIP, Streamlit ou wording juridique modifié.
