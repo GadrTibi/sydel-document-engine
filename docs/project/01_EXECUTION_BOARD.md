@@ -153,8 +153,8 @@
 | FRONT-DATA-LAYER-001 | DONE | Créer la couche de données front globale | architecture front V1 + registre V2.1 | objets front globaux + tests/validations sans toucher aux générateurs |
 | FRONT-ROLE-MODEL-001 | DONE | Modéliser les rôles explicites du front global | `FRONT-DATA-LAYER-001` | RoleAssignment sans fusion silencieuse |
 | FRONT-ADDRESS-MODEL-001 | DONE | Modéliser les adresses typées par usage | `FRONT-DATA-LAYER-001` + `FRONT-ROLE-MODEL-001` | adresses pivots, règles de réutilisation, overrides |
-| FRONT-DOSSIER-FLOW-001 | READY | Définir le flow dossier complet global | data layer + rôles + adresses | flow dossier par opération/famille documentaire |
-| FRONT-DOCUMENT-STATUS-LAYER-001 | BLOCKED | Construire la couche de statuts documentaires front | `FRONT-DOSSIER-FLOW-001` | documents attendus, manuels, réservés, non prêts |
+| FRONT-DOSSIER-FLOW-001 | DONE | Définir le flow dossier complet global | data layer + rôles + adresses | flow dossier par opération/famille documentaire |
+| FRONT-DOCUMENT-STATUS-LAYER-001 | READY | Construire la couche de statuts documentaires front | `FRONT-DOSSIER-FLOW-001` | documents attendus, manuels, réservés, non prêts |
 | FRONT-UNIT-DOCUMENT-MODE-001 | BLOCKED | Reconcevoir le mode document unitaire comme diagnostic séparé | `FRONT-DOCUMENT-STATUS-LAYER-001` | test document unique sans polluer le parcours dossier |
 | FRONT-TEST-PREFILL-001 | BLOCKED | Concevoir les préremplissages fictifs de test du nouveau front | `FRONT-DOSSIER-FLOW-001` + status layer | scénarios déterministes non métier |
 | FRONT-REVIEW-001 | BLOCKED | Faire valider le modèle front global avant UI visible | tickets front data/role/address/flow/status | revue produit/juriste et arbitrages restants |
