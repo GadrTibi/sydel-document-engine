@@ -157,7 +157,14 @@
 | FRONT-DOCUMENT-STATUS-LAYER-001 | DONE | Construire la couche de statuts documentaires front | `FRONT-DOSSIER-FLOW-001` | documents attendus, manuels, réservés, non prêts |
 | FRONT-UNIT-DOCUMENT-MODE-001 | DONE | Reconcevoir le mode document unitaire comme diagnostic séparé | `FRONT-DOCUMENT-STATUS-LAYER-001` | test document unique sans polluer le parcours dossier |
 | FRONT-TEST-PREFILL-001 | DONE | Concevoir les préremplissages fictifs de test du nouveau front | `FRONT-DOSSIER-FLOW-001` + status layer | scénarios déterministes non métier |
-| FRONT-REVIEW-001 | READY | Faire valider le modèle front global avant UI visible | tickets front data/role/address/flow/status/prefill | revue produit/juriste et arbitrages restants |
+| FRONT-REVIEW-001 | DONE | Faire valider le modèle front global avant UI visible | tickets front data/role/address/flow/status/prefill | carte de migration + backlog UI visible |
+| FRONT-UI-SHELL-001 | READY | Creer la premiere tranche visible du nouveau front global | `FRONT-REVIEW-001` + `front_data` | shell cible distinct du prototype, outils de test isoles |
+| FRONT-DOSSIER-EDITOR-001 | BLOCKED | Construire l'editeur dossier data-first | `FRONT-UI-SHELL-001` | `DossierRecord` minimal depuis UI, roles/adresses explicites |
+| FRONT-DOCUMENTS-PANEL-001 | BLOCKED | Afficher les documents attendus et leurs statuts | `FRONT-DOSSIER-EDITOR-001` + status layer | panneau documents, reserves, blocages et lots |
+| FRONT-GENERATION-ACTIONS-001 | BLOCKED | Brancher les actions DOCX/PDF/ZIP du nouveau front | `FRONT-DOCUMENTS-PANEL-001` | generation limitee aux documents prets |
+| FRONT-UNIT-DOCUMENT-UI-001 | BLOCKED | Consolider l'UI Document unitaire autour de `front_data` | `FRONT-UI-SHELL-001` | mode document unique separe du dossier complet |
+| FRONT-TEST-TOOLS-CONSOLIDATION-001 | BLOCKED | Regrouper prefills, smoke et diagnostic | `FRONT-UI-SHELL-001` | outils de test marques et separes du produit |
+| FRONT-PROTOTYPE-DEPRECATION-001 | BLOCKED | Deprecier le prototype historique sans perte de diagnostic | nouveaux parcours UI visibles | prototype marque obsolete ou archive |
 | SELARL-JURIST-REVIEW-001 | READY | Faire valider le parcours SELARL réaligné par un juriste | `SELARL-SMOKE-REALISTIC-001` | revue juriste, réserves et arbitrages documentés |
 | SELARL-DOCS-GENERATION-SMOKE-001 | BLOCKED | Smoke tester la génération SELARL depuis le parcours Assistant métier | parcours SELARL réaligné + catalogue + schema + contextes réalistes | bloqué par la réconciliation NotebookLM ; remplacé par `SELARL-SMOKE-REALISTIC-001` après réalignement |
 | UI-001 | BLOCKED | Brancher Streamlit V0 Lot 1 | orchestrateur Lot 1 + spec canonique PV nomination gérant validée | écran simple + test manuel |
@@ -1095,8 +1102,9 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - mettre à jour `docs/project/04_LAST_STATE.md`
 
 ## Prochaine étape prévue
-- `GLOBAL-FRONT-ARCHITECTURE-QA-001` est DONE ; l'architecture front globale a été contrôlée sur 7 documents sentinelles, avec 2 verts, 5 oranges et aucun rouge.
-- Prochain ticket recommandé pour le rebuild front global : `FRONT-DATA-LAYER-001`, créer la couche de données front globale sur les objets et règles V1 en intégrant les sentinelles orange comme critères de couverture.
+- `FRONT-REVIEW-001` est DONE ; le prototype actuel est confirme comme bac a sable / outil de diagnostic, la carte de migration V1 est creee et le backlog pointe maintenant vers les tickets UI visibles.
+- Prochain ticket recommande pour le rebuild front global : `FRONT-UI-SHELL-001`, creer la premiere tranche visible du nouveau front en isolant clairement le prototype et les outils de test.
+- `GLOBAL-FRONT-ARCHITECTURE-QA-001` est DONE ; l'architecture front globale a ete controlee sur 7 documents sentinelles, avec 2 verts, 5 oranges et aucun rouge.
 - `GLOBAL-FRONT-ARCHITECTURE-001` est DONE ; l'architecture produit et données du nouveau front global est cadrée sans toucher au moteur, aux générateurs, à Streamlit ni au wording juridique.
 - `GLOBAL-HUMAN-ANSWERS-INTEGRATION-001` est DONE ; les réponses humaines disponibles sont intégrées dans les questions V2, le registre canonique global V2.1 et le rapport exécutif, sans toucher au moteur ni à l'UI.
 - `WORKTREE-CLEANUP-AND-UI-STATUS-001` est DONE ; le pack `REVIEW-FINAL-001` est consolide dans `main`, le rapport 23 clarifie le dossier canonique et le statut UI, et les anciens worktrees locaux sont a considerer comme archives.
@@ -1289,3 +1297,4 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - 2026-05-24 : FRONT-ROLE-MODEL-001 raffine les roles front globaux avec familles, portees, modele ordre, representation de personne morale, tiers commissaire/evaluateur, garde-fous de placeholders et tests dedies ; ruff OK et pytest 298 tests passes ; aucun generateur, moteur DOCX/PDF/ZIP, Streamlit ou UI visible modifie.
 - 2026-05-24 : FRONT-ADDRESS-MODEL-001 raffine les adresses typees avec usages explicites, politiques de reutilisation tracees, formes affichees/composants, overrides legacy, mapping canonique et validations dediees ; ruff OK et pytest 313 tests passes ; aucun generateur, moteur DOCX/PDF/ZIP, Streamlit ou UI visible modifie.
 - 2026-05-24 : FRONT-TEST-PREFILL-001 realigne les prefills fictifs de l'Assistant metier sur `front_data`, conserve les quatre scenarios existants, ajoute les profils front_data, la conversion en `BusinessWizardInput`, le `DossierRecord` de test, la synthese de statuts documentaires et les tests dedies ; ruff OK et pytest OK, 352 tests passes ; aucun generateur, moteur DOCX/PDF/ZIP, wording juridique, mode Technique ou mode Document unitaire modifie.
+- 2026-05-24 : FRONT-REVIEW-001 audite le prototype Streamlit face aux fondations `front_data`, classe les briques en prototype / migration / test / deprecation, cree `FRONT_MIGRATION_MAP_V1.md`, met a jour le backlog vers `FRONT-UI-SHELL-001` puis les tickets UI visibles ; aucun code Python, generateur, moteur DOCX/PDF/ZIP ou wording juridique modifie.

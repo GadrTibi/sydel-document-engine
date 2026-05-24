@@ -1,262 +1,275 @@
 # Backlog rebuild front global V1
 
-Ticket source : `GLOBAL-FRONT-ARCHITECTURE-001`
+Tickets sources :
 
-Statut : backlog de reconstruction, sans implementation dans ce ticket.
+- `GLOBAL-FRONT-ARCHITECTURE-001`
+- `FRONT-REVIEW-001`
 
-## Ordre recommande
+Statut : socle data termine ; backlog maintenant oriente vers le rebuild UI visible.
 
-1. `FRONT-DATA-LAYER-001`
-2. `FRONT-ROLE-MODEL-001`
-3. `FRONT-ADDRESS-MODEL-001`
-4. `FRONT-DOSSIER-FLOW-001`
-5. `FRONT-DOCUMENT-STATUS-LAYER-001`
-6. `FRONT-UNIT-DOCUMENT-MODE-001`
-7. `FRONT-TEST-PREFILL-001`
-8. `FRONT-REVIEW-001`
+## Socle termine
 
-Les tickets doivent rester separes. Aucun ticket ne doit modifier les generateurs ou le moteur DOCX/PDF/ZIP sans decision explicite.
+Ces tickets fondent le nouveau front et ne doivent pas etre recodes dans les tickets UI :
 
-## FRONT-DATA-LAYER-001
+1. `FRONT-DATA-LAYER-001` - objets front globaux, valeurs canoniques, reuse rules, diagnostics.
+2. `FRONT-ROLE-MODEL-001` - roles fins, portees, ordre, representation, garde-fous.
+3. `FRONT-ADDRESS-MODEL-001` - adresses typees, reutilisations explicites, overrides.
+4. `FRONT-DOSSIER-FLOW-001` - etapes, blocs, dependances et validations dossier.
+5. `FRONT-DOCUMENT-STATUS-LAYER-001` - statuts documents/lots, raisons, reserves, blocages.
+6. `FRONT-UNIT-DOCUMENT-MODE-001` - mode document unique data-layer.
+7. `FRONT-TEST-PREFILL-001` - scenarios fictifs alignes sur `front_data`.
+8. `FRONT-REVIEW-001` - carte de migration, decision prototype, backlog UI visible.
 
-Objectif : creer la couche de donnees front globale a partir du registre V2.1.
+## Ordre recommande maintenant
+
+1. `FRONT-UI-SHELL-001`
+2. `FRONT-DOSSIER-EDITOR-001`
+3. `FRONT-DOCUMENTS-PANEL-001`
+4. `FRONT-GENERATION-ACTIONS-001`
+5. `FRONT-UNIT-DOCUMENT-UI-001`
+6. `FRONT-TEST-TOOLS-CONSOLIDATION-001`
+7. `FRONT-PROTOTYPE-DEPRECATION-001`
+
+`SELARL-JURIST-REVIEW-001` reste recommande en parallele comme revue metier/juridique, mais le shell UI peut demarrer sans attendre cette revue tant qu'il ne modifie pas les generateurs ni le wording juridique.
+
+## Garde-fous communs
+
+Pour tous les tickets UI visibles :
+
+- ne pas modifier les generateurs ;
+- ne pas modifier le moteur DOCX/PDF/ZIP ;
+- ne pas modifier le wording juridique ;
+- ne pas supprimer le prototype tant que `FRONT-PROTOTYPE-DEPRECATION-001` n'est pas execute ;
+- ne pas utiliser le prototype comme source de verite metier ;
+- consommer `front_data` comme source produit/data cible ;
+- conserver les documents manuels visibles mais hors generation automatique ;
+- distinguer dossier complet, document unitaire et diagnostic technique.
+
+## FRONT-UI-SHELL-001
+
+Objectif : creer la premiere tranche visible du nouveau front global en isolant clairement le prototype actuel.
 
 Fichiers concernes :
 
-- a creer : module de schema front global, a definir lors du ticket ;
-- a lire : `docs/project/GLOBAL_CANONICAL_FIELD_REGISTRY_V2_1.md` ;
-- a lire : `docs/project/GLOBAL_FRONT_OBJECT_MODEL_V1.md` ;
-- a lire : `docs/project/GLOBAL_FRONT_RULES_V1.md`.
+- `src/sydel_doc_engine/app/streamlit_app.py` ou nouveau module shell app dedie ;
+- eventuels composants UI sous `src/sydel_doc_engine/app/` ;
+- tests UI/AppTest si structure modifiee ;
+- documentation de revue si necessaire.
+
+Ne pas toucher :
+
+- generateurs ;
+- moteur DOCX/PDF/ZIP ;
+- logique de generation des documents ;
+- wording juridique ;
+- suppression du prototype.
+
+Dependances :
+
+- `FRONT-REVIEW-001` DONE ;
+- `front_data/dossier_flow.py` ;
+- `front_data/document_status.py`.
+
+CritÃ¨res d'acceptation :
+
+- le nouveau front global est visible comme entree distincte ;
+- le prototype actuel reste accessible et explicitement marque comme prototype / diagnostic ;
+- `Technique / diagnostic` reste accessible ;
+- `Document unitaire` reste separe du parcours dossier complet ;
+- un squelette read-only du flow dossier global peut etre affiche sans coder l'editeur complet ;
+- aucun document n'est genere automatiquement par le nouveau shell seul ;
+- tests ou smoke UI adaptes au changement.
+
+## FRONT-DOSSIER-EDITOR-001
+
+Objectif : implementer un premier editeur dossier data-first, sans chercher la couverture exhaustive.
+
+Fichiers concernes :
+
+- composants UI du nouveau front ;
+- `src/sydel_doc_engine/front_data/models.py` en lecture ;
+- `role_model.py`, `address_model.py`, `dossier_flow.py`, `canonical_mapping.py`, `validation.py` en lecture ;
+- tests d'assemblage `DossierRecord` depuis l'UI.
+
+Ne pas toucher :
+
+- generateurs ;
+- moteur DOCX/PDF/ZIP ;
+- `business_wizard.py` sauf adaptateur explicitement justifie ;
+- prototype historique hors branchement shell.
+
+Dependances :
+
+- `FRONT-UI-SHELL-001`.
+
+CritÃ¨res d'acceptation :
+
+- l'UI sait construire un `DossierRecord` minimal ;
+- qualification, personnes, societes, roles et adresses typees sont representes ;
+- aucune fusion silencieuse de roles ou d'adresses ;
+- les reuse rules sont visibles et explicites ;
+- les champs derives restent tracables ;
+- les validations `front_data` peuvent etre affichees.
+
+## FRONT-DOCUMENTS-PANEL-001
+
+Objectif : construire le panneau Documents attendus du nouveau front a partir de la couche de statuts.
+
+Fichiers concernes :
+
+- composants UI du nouveau front ;
+- `src/sydel_doc_engine/front_data/document_status.py` ;
+- `src/sydel_doc_engine/front_data/dossier_flow.py` ;
+- `src/sydel_doc_engine/front_data/validation.py` ;
+- tests de rendu / table de statuts.
+
+Ne pas toucher :
+
+- generateurs ;
+- moteur DOCX/PDF/ZIP ;
+- selection documentaire moteur hors lecture ;
+- wording juridique.
+
+Dependances :
+
+- `FRONT-DOSSIER-EDITOR-001`.
+
+CritÃ¨res d'acceptation :
+
+- afficher documents attendus, generables, manuels, non implementes, contexte incomplet, reserves et blocages ;
+- afficher les raisons : roles manquants, adresses manquantes, valeurs canoniques absentes, ambiguities, reserves ;
+- distinguer statut document et statut lot ;
+- ne jamais presenter un document manuel comme pret a generer ;
+- conserver `DOC-006`, `DOC-013` et `DOC-014` dans leur statut produit attendu.
+
+## FRONT-GENERATION-ACTIONS-001
+
+Objectif : brancher les actions de generation du nouveau front uniquement sur les documents prets, sans modifier le moteur.
+
+Fichiers concernes :
+
+- composants UI de generation ;
+- `src/sydel_doc_engine/app/ui_runtime.py` ou adaptateur equivalent ;
+- adaptateur futur `DossierRecord` -> contexte moteur si cree dans un ticket dedie ;
+- tests de generation ciblee si code modifie.
 
 Ne pas toucher :
 
 - generateurs ;
 - moteur DOCX/PDF/ZIP ;
 - wording juridique ;
-- Streamlit existant sauf si le ticket le prevoit explicitement.
+- documents non generables ou manuels.
 
 Dependances :
 
-- `GLOBAL-FRONT-ARCHITECTURE-001` DONE.
+- `FRONT-DOCUMENTS-PANEL-001`.
 
-Critères d'acceptation :
+CritÃ¨res d'acceptation :
 
-- objets front representes sans reference au prototype comme source ;
-- `Person`, `Organization`, `Address`, `RoleAssignment`, `Dossier`, `DocumentRequirement`, `FieldDefinition`, `ReuseRule`, `ValidationIssue`, `SupportingEvidence` couverts ;
-- regles `SAME_FIELD`, `SAME_DATA_DIFFERENT_SHAPE`, `EXPLICIT_REUSE_ONLY`, `DISTINCT_FIELDS` et `UNCERTAIN_REQUIRES_HUMAN_DECISION` preservées ;
-- tests ou validations adaptes au type de modification ;
-- aucune modification des generateurs.
+- seuls les documents `generable` ou explicitement `generable_with_reserve` selon decision UI peuvent etre proposes ;
+- les documents manuels restent exclus ;
+- DOCX reste prioritaire, PDF local optionnel, ZIP dossier avec manifeste ;
+- les erreurs moteur sont affichees sans masquer les raisons data-layer ;
+- aucune logique de mapping documentaire n'est dupliquee dans l'UI.
 
-## FRONT-ROLE-MODEL-001
+## FRONT-UNIT-DOCUMENT-UI-001
 
-Objectif : modeliser les roles explicites et leurs assignments sans fusion silencieuse.
-
-Fichiers concernes :
-
-- couche de donnees front issue de `FRONT-DATA-LAYER-001` ;
-- documentation des roles ;
-- tests de non-regression role/reutilisation si code ajoute.
-
-Ne pas toucher :
-
-- generateurs ;
-- catalogue moteur sauf besoin de lecture ;
-- Streamlit prototype.
-
-Dependances :
-
-- `FRONT-DATA-LAYER-001`.
-
-Critères d'acceptation :
-
-- praticien, associe, gerant, president, signataire, mandataire, vendeur, cedant, acquereur, cessionnaire, bailleur, locataire et representant sont distincts ;
-- `Dossier unipersonnel` cree des liens, pas des fusions ;
-- un role peut etre scope dossier, operation, document ou lot ;
-- cas personne morale + representant prevu.
-
-## FRONT-ADDRESS-MODEL-001
-
-Objectif : modeliser les adresses typees par usage et leurs formes composees/affichees.
+Objectif : consolider le mode Document unitaire visible autour de `front_data/unit_document_mode.py`.
 
 Fichiers concernes :
 
-- couche de donnees front ;
-- mapping des adresses pivots ;
-- tests de derivation si code ajoute.
-
-Ne pas toucher :
-
-- moteur DOCX ;
-- generateurs ;
-- wording de documents.
-
-Dependances :
-
-- `FRONT-DATA-LAYER-001`;
-- `FRONT-ROLE-MODEL-001` si les adresses sont rattachees aux roles.
-
-Critères d'acceptation :
-
-- domicile praticien, lieu d'exercice, siege social et domiciliation distingues ;
-- domiciliation = siege social modele comme regle ;
-- siege = lieu d'exercice uniquement via option ;
-- SCM cedee et cessionnaire SCM distincts par defaut ;
-- adresse affichee derivee depuis composants avec override possible.
-
-## FRONT-DOSSIER-FLOW-001
-
-Objectif : definir le flow dossier complet global, data-first, sans maquettes detaillees.
-
-Fichiers concernes :
-
-- future couche front ;
-- documentation de flow ;
-- eventuels tests de selection de blocs si code ajoute.
-
-Ne pas toucher :
-
-- prototype Streamlit actuel ;
-- generateurs ;
-- moteur PDF/ZIP.
-
-Dependances :
-
-- `FRONT-DATA-LAYER-001`;
-- `FRONT-ROLE-MODEL-001`;
-- `FRONT-ADDRESS-MODEL-001`.
-
-Critères d'acceptation :
-
-- entree par operation/famille documentaire ;
-- fiches personne et societe separees ;
-- blocs parties, adresses, ordre, financement, bail, cession, SCM et SPFPL couverts ;
-- distinction dossier complet vs document unitaire documentee ;
-- documents attendus visibles avant generation.
-
-## FRONT-DOCUMENT-STATUS-LAYER-001
-
-Objectif : creer la couche de statut des documents attendus pour le futur front.
-
-Fichiers concernes :
-
-- future couche front ;
-- `src/sydel_doc_engine/registry/catalog.py` en lecture ;
-- eventuellement `src/sydel_doc_engine/domain/case_catalog.py` si le ticket l'autorise ;
-- tests de statuts si code ajoute.
-
-Ne pas toucher :
-
-- generateurs ;
-- contenu juridique ;
-- sortie DOCX/PDF/ZIP.
-
-Dependances :
-
-- `FRONT-DATA-LAYER-001`;
-- `FRONT-DOSSIER-FLOW-001`.
-
-Critères d'acceptation :
-
-- statuts generable, manuel, non implemente, reserve, contexte incomplet couverts ;
-- document attendu et document pret a generer distingues ;
-- champs manquants et pieces manquantes visibles ;
-- documents manuels visibles mais exclus de la generation automatique ;
-- mode dossier complet compatible avec le catalogue.
-
-## FRONT-UNIT-DOCUMENT-MODE-001
-
-Objectif : definir ou reconstruire le mode document unitaire comme outil separe de test et diagnostic.
-
-Fichiers concernes :
-
-- future couche front ;
-- mode document unitaire futur ;
-- tests de contexte minimal si code ajoute.
+- `src/sydel_doc_engine/app/single_document_mode.py` ;
+- composants UI du mode document unitaire ;
+- `src/sydel_doc_engine/front_data/unit_document_mode.py` en lecture ou extension limitee ;
+- tests du mode document unique.
 
 Ne pas toucher :
 
 - parcours dossier complet ;
 - generateurs ;
-- Streamlit prototype tant que le ticket ne l'autorise pas.
+- moteur DOCX/PDF/ZIP ;
+- prefills Assistant metier sauf reuse de test explicite.
 
 Dependances :
 
-- `FRONT-DOCUMENT-STATUS-LAYER-001`.
+- `FRONT-UI-SHELL-001`;
+- `FRONT-GENERATION-ACTIONS-001` si les actions sont mutualisees.
 
-Critères d'acceptation :
+CritÃ¨res d'acceptation :
 
-- selection par `DOC-XXX` ;
-- contexte minimal clairement separe du dossier complet ;
-- champs requis du document affiches ;
-- documents manuels/non supportes signales ;
-- aucun comportement de reutilisation globale deduit depuis ce mode.
+- selection par `DOC-XXX` ou libelle ;
+- exigences data-layer visibles ;
+- documents hors perimetre V1 signales proprement ;
+- `DOC-006` reste avec reserve ;
+- `DOC-013` et `DOC-014` restent manuels ;
+- aucune confusion avec le parcours dossier complet.
 
-## FRONT-TEST-PREFILL-001
+## FRONT-TEST-TOOLS-CONSOLIDATION-001
 
-Objectif : concevoir des scenarios fictifs deterministes pour tester le nouveau front sans melanger prefill et donnees reelles.
-
-Fichiers concernes :
-
-- future couche de presets ;
-- tests front/data ;
-- documentation de scenarios.
-
-Ne pas toucher :
-
-- sources juridiques ;
-- generateurs ;
-- wording ;
-- donnees reelles client.
-
-Dependances :
-
-- `FRONT-DOSSIER-FLOW-001`;
-- `FRONT-DOCUMENT-STATUS-LAYER-001`;
-- `FRONT-UNIT-DOCUMENT-MODE-001` si les presets couvrent le test unitaire.
-
-Critères d'acceptation :
-
-- presets marques comme fictifs ;
-- scenarios couvrant SELARL standard, SELARL avec regime communautaire, cession cabinet, SCM, SPFPL et SCI si pertinent ;
-- prefill reversible ;
-- aucune valeur fictive masquee comme source metier ;
-- tests reproductibles.
-
-## FRONT-REVIEW-001
-
-Objectif : organiser la revue produit/juriste du nouveau modele front avant implementation UI visible.
+Objectif : regrouper proprement les outils de test, prefill et diagnostic pour eviter qu'ils ressemblent au parcours produit.
 
 Fichiers concernes :
 
-- rapports de revue ;
-- docs d'architecture front ;
-- backlog mis a jour.
+- shell UI ;
+- `app/test_prefill_presets.py` ;
+- `front_data/test_prefill_presets.py` ;
+- tests AppTest / unitaires lies aux scenarios.
 
 Ne pas toucher :
 
 - generateurs ;
 - moteur DOCX/PDF/ZIP ;
-- wording ;
-- Streamlit production ou prototype.
+- donnees reelles ;
+- wording juridique.
 
 Dependances :
 
-- `FRONT-DATA-LAYER-001`;
-- `FRONT-ROLE-MODEL-001`;
-- `FRONT-ADDRESS-MODEL-001`;
-- `FRONT-DOSSIER-FLOW-001`;
-- `FRONT-DOCUMENT-STATUS-LAYER-001`.
+- `FRONT-UI-SHELL-001`;
+- `FRONT-DOSSIER-EDITOR-001` si les prefills alimentent le nouvel editeur.
 
-Critères d'acceptation :
+CritÃ¨res d'acceptation :
 
-- revue des roles et adresses par un humain metier ;
-- points ouverts qualifies en arbitrage interne, backlog documentaire ou futur produit ;
-- decision explicite sur le demarrage de l'implementation UI ;
-- confirmation que le registre V2.1 reste la base du rebuild.
+- les donnees fictives sont marquees comme telles ;
+- les scenarios SELARL simple, SELARL regime/site, SELARL cession/bail/financement et SCI restent disponibles ;
+- reset propre des etats de test ;
+- le mode `Technique / diagnostic` reste separe ;
+- les prefills peuvent alimenter un `DossierRecord` sans passer par les widgets historiques.
+
+## FRONT-PROTOTYPE-DEPRECATION-001
+
+Objectif : deprecier progressivement le prototype historique quand les parcours cibles couvrent les memes usages.
+
+Fichiers concernes :
+
+- shell UI ;
+- docs de migration ;
+- tests de non-regression sur modes conserves ;
+- eventuellement suppression differee de composants obsoletes, seulement apres decision explicite.
+
+Ne pas toucher :
+
+- generateurs ;
+- moteur DOCX/PDF/ZIP ;
+- wording juridique ;
+- outils de diagnostic encore utiles sans remplacement.
+
+Dependances :
+
+- `FRONT-DOSSIER-EDITOR-001`;
+- `FRONT-DOCUMENTS-PANEL-001`;
+- `FRONT-GENERATION-ACTIONS-001`;
+- `FRONT-TEST-TOOLS-CONSOLIDATION-001`.
+
+CritÃ¨res d'acceptation :
+
+- le prototype est marque comme obsolete ou archive dans l'UI ;
+- aucun usage de diagnostic encore utile n'est perdu ;
+- les tests prouvent que les parcours cibles remplacent les usages principaux ;
+- la suppression de code, si elle est proposee, est explicite et reversible par ticket separe.
 
 ## Tickets futurs possibles
 
-Ces sujets ne doivent pas entrer dans les huit tickets ci-dessus sans decision explicite :
+Ces sujets restent hors rebuild UI V1 sauf decision explicite :
 
 - mode Projet / filigrane ;
 - SELAS medecin avec micro-holding ;
@@ -264,4 +277,5 @@ Ces sujets ne doivent pas entrer dans les huit tickets ci-dessus sans decision e
 - API Pappers ;
 - portail client ;
 - pieces justificatives bloquantes pour l'ordre ;
-- parametrage cabinet pour banque, fiscalite et signature electronique.
+- parametrage cabinet pour banque, fiscalite et signature electronique ;
+- remplacement complet de Streamlit par un autre framework.
