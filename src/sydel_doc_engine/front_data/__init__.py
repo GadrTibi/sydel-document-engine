@@ -115,6 +115,12 @@ from sydel_doc_engine.front_data.role_model import (
     role_ref,
     role_reuse_policy,
 )
+from sydel_doc_engine.front_data.test_prefill_presets import (
+    FRONT_DATA_TEST_PREFILL_PROFILES,
+    FrontDataTestPrefillProfile,
+    front_data_test_prefill_profile,
+    front_data_test_prefill_profiles,
+)
 from sydel_doc_engine.front_data.unit_document_mode import (
     UNIT_DOCUMENT_V1_EXCLUSIONS,
     UNIT_DOCUMENT_V1_REQUIREMENTS,
@@ -148,6 +154,7 @@ __all__ = [
     "ADDRESS_USAGE_DEFINITIONS",
     "DOSSIER_STEPS",
     "FLOW_DEPENDENCIES",
+    "FRONT_DATA_TEST_PREFILL_PROFILES",
     "AddressDisplaySource",
     "AddressRecord",
     "AddressReusePolicy",
@@ -180,6 +187,7 @@ __all__ = [
     "FlowStatus",
     "FlowValidationResult",
     "FrontObjectType",
+    "FrontDataTestPrefillProfile",
     "LegacyAliasMapping",
     "ORDER_ROLE_MODEL",
     "OperationContext",
@@ -232,6 +240,8 @@ __all__ = [
     "document_missing_canonical_fields",
     "document_missing_roles",
     "document_unresolved_ambiguities",
+    "front_data_test_prefill_profile",
+    "front_data_test_prefill_profiles",
     "has_decomposed_components",
     "has_transaction_party_role_on_same_target",
     "is_address_reuse_allowed",
