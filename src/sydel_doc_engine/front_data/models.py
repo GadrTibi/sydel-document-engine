@@ -34,6 +34,14 @@ class FieldFormKind(StrEnum):
     OVERRIDE = "override"
 
 
+class AddressDisplaySource(StrEnum):
+    MANUAL = "manual"
+    COMPONENTS = "components"
+    REUSE_RULE = "reuse_rule"
+    DOCUMENTARY_ALIAS = "documentary_alias"
+    OVERRIDE = "override"
+
+
 class AddressUsage(StrEnum):
     DOMICILE_PRATICIEN = "domicile_praticien"
     DOMICILE_CEDANT = "domicile_cedant"
@@ -143,6 +151,10 @@ class ValidationIssueType(StrEnum):
     MISSING_REPRESENTED_ENTITY = "missing_represented_entity"
     THIRD_PARTY_ROLE_CONFLICT = "third_party_role_conflict"
     IMPLICIT_ROLE_REUSE_FORBIDDEN = "implicit_role_reuse_forbidden"
+    ADDRESS_REUSE_FORBIDDEN = "address_reuse_forbidden"
+    WRONG_ADDRESS_USAGE = "wrong_address_usage"
+    INCONSISTENT_ADDRESS_OVERRIDE = "inconsistent_address_override"
+    MISSING_ADDRESS_REUSE_SOURCE = "missing_address_reuse_source"
 
 
 class ValidationSeverity(StrEnum):
@@ -192,6 +204,9 @@ class AddressRecord:
     postal_code: str | None = None
     city: str | None = None
     country: str = "France"
+    display_source: AddressDisplaySource | None = None
+    display_source_rule_id: str | None = None
+    display_override_reason: str | None = None
     owner_object_type: FrontObjectType | None = None
     owner_object_id: str | None = None
     source_address_id: str | None = None

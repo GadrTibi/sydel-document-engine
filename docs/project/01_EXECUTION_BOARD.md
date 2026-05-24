@@ -152,8 +152,8 @@
 | GLOBAL-FRONT-ARCHITECTURE-QA-001 | DONE | Contrôler l'architecture front globale sur documents sentinelles | architecture front V1 + registre V2.1 + catalogue moteur + templates sentinelles | rapport QA + CSV sentinelles sans modification moteur/générateurs/UI |
 | FRONT-DATA-LAYER-001 | DONE | Créer la couche de données front globale | architecture front V1 + registre V2.1 | objets front globaux + tests/validations sans toucher aux générateurs |
 | FRONT-ROLE-MODEL-001 | DONE | Modéliser les rôles explicites du front global | `FRONT-DATA-LAYER-001` | RoleAssignment sans fusion silencieuse |
-| FRONT-ADDRESS-MODEL-001 | READY | Modéliser les adresses typées par usage | `FRONT-DATA-LAYER-001` + `FRONT-ROLE-MODEL-001` | adresses pivots, règles de réutilisation, overrides |
-| FRONT-DOSSIER-FLOW-001 | BLOCKED | Définir le flow dossier complet global | data layer + rôles + adresses | flow dossier par opération/famille documentaire |
+| FRONT-ADDRESS-MODEL-001 | DONE | Modéliser les adresses typées par usage | `FRONT-DATA-LAYER-001` + `FRONT-ROLE-MODEL-001` | adresses pivots, règles de réutilisation, overrides |
+| FRONT-DOSSIER-FLOW-001 | READY | Définir le flow dossier complet global | data layer + rôles + adresses | flow dossier par opération/famille documentaire |
 | FRONT-DOCUMENT-STATUS-LAYER-001 | BLOCKED | Construire la couche de statuts documentaires front | `FRONT-DOSSIER-FLOW-001` | documents attendus, manuels, réservés, non prêts |
 | FRONT-UNIT-DOCUMENT-MODE-001 | BLOCKED | Reconcevoir le mode document unitaire comme diagnostic séparé | `FRONT-DOCUMENT-STATUS-LAYER-001` | test document unique sans polluer le parcours dossier |
 | FRONT-TEST-PREFILL-001 | BLOCKED | Concevoir les préremplissages fictifs de test du nouveau front | `FRONT-DOSSIER-FLOW-001` + status layer | scénarios déterministes non métier |
@@ -1287,3 +1287,4 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - 2026-05-24 : GLOBAL-FRONT-ARCHITECTURE-QA-001 contrôle l'architecture front sur 7 documents sentinelles, crée le rapport QA et le CSV de couverture ; verdict global ORANGE maîtrisable, aucun rouge, aucun générateur/moteur/UI/Python modifié.
 - 2026-05-24 : FRONT-DATA-LAYER-001 crée le package `front_data` avec objets front globaux, mapping canonique V2.1, checks sentinelles, diagnostics de validation et tests unitaires ; ruff OK et pytest 288 tests passés ; aucun générateur, moteur DOCX/PDF/ZIP, Streamlit ou UI visible modifié.
 - 2026-05-24 : FRONT-ROLE-MODEL-001 raffine les roles front globaux avec familles, portees, modele ordre, representation de personne morale, tiers commissaire/evaluateur, garde-fous de placeholders et tests dedies ; ruff OK et pytest 298 tests passes ; aucun generateur, moteur DOCX/PDF/ZIP, Streamlit ou UI visible modifie.
+- 2026-05-24 : FRONT-ADDRESS-MODEL-001 raffine les adresses typees avec usages explicites, politiques de reutilisation tracees, formes affichees/composants, overrides legacy, mapping canonique et validations dediees ; ruff OK et pytest 313 tests passes ; aucun generateur, moteur DOCX/PDF/ZIP, Streamlit ou UI visible modifie.

@@ -3,7 +3,16 @@ from __future__ import annotations
 import re
 from collections import defaultdict
 
+from sydel_doc_engine.front_data.address_model import (
+    address_reuse_policy,
+    address_usage_definition,
+    is_address_reuse_allowed,
+    is_display_derived_from_components,
+    parse_address_ref,
+)
 from sydel_doc_engine.front_data.models import (
+    AddressDisplaySource,
+    AddressRecord,
     CanonicalRelationType,
     DocumentRequirementRecord,
     DossierRecord,
@@ -136,6 +145,59 @@ def validate_reuse_rules(dossier: DossierRecord) -> tuple[ValidationIssue, ...]:
                 )
             )
 
+        if rule.relation_type in {
+            CanonicalRelationType.DISTINCT_FIELDS,
+            CanonicalRelationType.UNCERTAIN_REQUIRES_HUMAN_DECISION,
+        }:
+            continue
+
+        source_address = parse_address_ref(rule.source_ref)
+        target_address = parse_address_ref(rule.target_ref)
+        if source_address and target_address and source_address is not target_address:
+            policy = address_reuse_policy(source_address, target_address)
+            if not rule.explicit:
+                issues.append(
+                    ValidationIssue(
+                        issue_type=ValidationIssueType.ADDRESS_REUSE_FORBIDDEN,
+                        severity=ValidationSeverity.BLOCKING,
+                        message="Distinct address usages cannot be reused implicitly.",
+                        address_usage=target_address,
+                        source_ref=rule.source_ref,
+                        target_ref=rule.target_ref,
+                        action="Record an explicit address reuse rule.",
+                    )
+                )
+            if not is_address_reuse_allowed(source_address, target_address):
+                issues.append(
+                    ValidationIssue(
+                        issue_type=ValidationIssueType.ADDRESS_REUSE_FORBIDDEN,
+                        severity=ValidationSeverity.BLOCKING,
+                        message=(
+                            "Address reuse is not allowed without a registered policy: "
+                            f"{source_address.value} -> {target_address.value}"
+                        ),
+                        address_usage=target_address,
+                        source_ref=rule.source_ref,
+                        target_ref=rule.target_ref,
+                        action="Keep both typed addresses distinct or register a policy.",
+                    )
+                )
+            elif policy and rule.relation_type is not policy.relation_type:
+                issues.append(
+                    ValidationIssue(
+                        issue_type=ValidationIssueType.REUSE_CONFLICT,
+                        severity=ValidationSeverity.BLOCKING,
+                        message=(
+                            "Address reuse relation does not match the registered policy: "
+                            f"{policy.relation_type.value}"
+                        ),
+                        address_usage=target_address,
+                        source_ref=rule.source_ref,
+                        target_ref=rule.target_ref,
+                        action="Use the policy relation type or split the addresses.",
+                    )
+                )
+
         source_role = parse_role_ref(rule.source_ref)
         target_role = parse_role_ref(rule.target_ref)
         if source_role and target_role and source_role is not target_role:
@@ -180,6 +242,15 @@ def validate_reuse_rules(dossier: DossierRecord) -> tuple[ValidationIssue, ...]:
                 )
             )
 
+    return tuple(issues)
+
+
+def validate_address_records(dossier: DossierRecord) -> tuple[ValidationIssue, ...]:
+    issues: list[ValidationIssue] = []
+    for address in dossier.addresses.values():
+        issues.extend(_validate_address_owner(address))
+        issues.extend(_validate_address_sources(dossier, address))
+        issues.extend(_validate_address_override(address))
     return tuple(issues)
 
 
@@ -229,10 +300,118 @@ def validate_dossier(dossier: DossierRecord) -> tuple[ValidationIssue, ...]:
     issues: list[ValidationIssue] = []
     issues.extend(validate_required_entities_linked(dossier))
     issues.extend(validate_role_assignments(dossier))
+    issues.extend(validate_address_records(dossier))
     issues.extend(validate_reuse_rules(dossier))
     for requirement in dossier.document_requirements.values():
         issues.extend(validate_document_requirement(dossier, requirement))
     return tuple(issues)
+
+
+def _validate_address_owner(address: AddressRecord) -> tuple[ValidationIssue, ...]:
+    if address.owner_object_type is None:
+        return ()
+    definition = address_usage_definition(address.usage)
+    if (
+        not definition.allowed_owner_types
+        or address.owner_object_type in definition.allowed_owner_types
+    ):
+        return ()
+    allowed = ", ".join(
+        sorted(owner_type.value for owner_type in definition.allowed_owner_types)
+    )
+    return (
+        ValidationIssue(
+            issue_type=ValidationIssueType.WRONG_ADDRESS_USAGE,
+            severity=ValidationSeverity.BLOCKING,
+            message=(
+                f"Address usage {address.usage.value} cannot be attached to "
+                f"{address.owner_object_type.value}; allowed: {allowed}."
+            ),
+            address_usage=address.usage,
+            action="Move the address to the right business party or choose another usage.",
+        ),
+    )
+
+
+def _validate_address_sources(
+    dossier: DossierRecord,
+    address: AddressRecord,
+) -> tuple[ValidationIssue, ...]:
+    issues: list[ValidationIssue] = []
+    if address.source_address_id:
+        if address.source_address_id not in dossier.addresses:
+            issues.append(
+                ValidationIssue(
+                    issue_type=ValidationIssueType.MISSING_ADDRESS_REUSE_SOURCE,
+                    severity=ValidationSeverity.BLOCKING,
+                    message=f"Address source does not exist: {address.source_address_id}",
+                    address_usage=address.usage,
+                    action="Link the address to an existing source address.",
+                )
+            )
+        if not address.source_rule_id:
+            issues.append(
+                ValidationIssue(
+                    issue_type=ValidationIssueType.MISSING_ADDRESS_REUSE_SOURCE,
+                    severity=ValidationSeverity.BLOCKING,
+                    message="A reused address must reference the explicit reuse rule.",
+                    address_usage=address.usage,
+                    action="Set source_rule_id on the derived address.",
+                )
+            )
+    if address.source_rule_id and address.source_rule_id not in dossier.reuse_rules:
+        issues.append(
+            ValidationIssue(
+                issue_type=ValidationIssueType.MISSING_ADDRESS_REUSE_SOURCE,
+                severity=ValidationSeverity.BLOCKING,
+                message=f"Address reuse rule does not exist: {address.source_rule_id}",
+                address_usage=address.usage,
+                action="Create the ReuseRuleState or clear the source link.",
+            )
+        )
+    if (
+        address.display_source is AddressDisplaySource.REUSE_RULE
+        and not address.source_rule_id
+        and not address.display_source_rule_id
+    ):
+        issues.append(
+            ValidationIssue(
+                issue_type=ValidationIssueType.MISSING_ADDRESS_REUSE_SOURCE,
+                severity=ValidationSeverity.BLOCKING,
+                message="Address display value is marked as reused without a source rule.",
+                address_usage=address.usage,
+                action="Set source_rule_id or display_source_rule_id.",
+            )
+        )
+    if is_display_derived_from_components(address) and not address.display_source_rule_id:
+        issues.append(
+            ValidationIssue(
+                issue_type=ValidationIssueType.MISSING_ADDRESS_REUSE_SOURCE,
+                severity=ValidationSeverity.BLOCKING,
+                message="Address display value derived from components needs a traceable rule.",
+                address_usage=address.usage,
+                action="Set display_source_rule_id for the component-to-display derivation.",
+            )
+        )
+    return tuple(issues)
+
+
+def _validate_address_override(address: AddressRecord) -> tuple[ValidationIssue, ...]:
+    if not (
+        address.is_override or address.display_source is AddressDisplaySource.OVERRIDE
+    ):
+        return ()
+    if address.display_value and address.display_override_reason:
+        return ()
+    return (
+        ValidationIssue(
+            issue_type=ValidationIssueType.INCONSISTENT_ADDRESS_OVERRIDE,
+            severity=ValidationSeverity.BLOCKING,
+            message="Address display override must provide a value and a reason.",
+            address_usage=address.usage,
+            action="Provide display_value and display_override_reason, or remove the override.",
+        ),
+    )
 
 
 def _validate_role_target(assignment: RoleAssignment) -> tuple[ValidationIssue, ...]:
