@@ -147,6 +147,8 @@
 | ASSISTANT-METIER-PREFILL-001 | DONE | Ajouter des scénarios fictifs déterministes de préremplissage dans Assistant métier | Assistant métier SELARL/SCI + specs UI/SELARL | module presets + boutons Préremplir/Réinitialiser + tests + rapport |
 | GLOBAL-VARIABLE-INVENTORY-001 | DONE | Construire l'inventaire global brut des variables documentaires | référentiels V1 + source truth V1/V2/V3 + templates + specs + registre | CSV global brut + rapport exécutif + pilotage |
 | GLOBAL-VARIABLE-IDENTITY-AUDIT-001 | DONE | Auditer l'identité sémantique globale des variables avant rebuild front | `GLOBAL_VARIABLE_RAW_INVENTORY_V1.csv` + référentiels V1 + templates + specs | matrice identité V2 + registre canonique global V2 + questions humaines + rapport |
+| GLOBAL-HUMAN-ANSWERS-INTEGRATION-001 | DONE | Intégrer les réponses humaines dans le registre canonique global | audit global V2 + réponse Albane + modèle SELAS micro-holding + V3/NotebookLM | questions V2 + registre canonique V2.1 + rapport exécutif |
+| GLOBAL-FRONT-ARCHITECTURE-001 | READY | Concevoir l'architecture du nouveau front global sur le registre V2.1 | registre canonique global V2.1 + questions V2 | architecture front sans modification moteur/générateurs/UI existante |
 | SELARL-JURIST-REVIEW-001 | READY | Faire valider le parcours SELARL réaligné par un juriste | `SELARL-SMOKE-REALISTIC-001` | revue juriste, réserves et arbitrages documentés |
 | SELARL-DOCS-GENERATION-SMOKE-001 | BLOCKED | Smoke tester la génération SELARL depuis le parcours Assistant métier | parcours SELARL réaligné + catalogue + schema + contextes réalistes | bloqué par la réconciliation NotebookLM ; remplacé par `SELARL-SMOKE-REALISTIC-001` après réalignement |
 | UI-001 | BLOCKED | Brancher Streamlit V0 Lot 1 | orchestrateur Lot 1 + spec canonique PV nomination gérant validée | écran simple + test manuel |
@@ -1038,7 +1040,16 @@
 - Couverture : 1 334 slugs normalisés distincts audités, 43 documents `DOC-001` à `DOC-043`, 15 familles, 49 champs canoniques V2 proposés, 142 rapprochements représentatifs, 10 questions humaines groupées.
 - Décision : pas de fusion silencieuse ; les relations sont classées en `SAME_FIELD`, `SAME_DATA_DIFFERENT_SHAPE`, `EXPLICIT_REUSE_ONLY`, `DISTINCT_FIELDS` ou `UNCERTAIN_REQUIRES_HUMAN_DECISION`.
 - Garde-fous : aucun générateur, moteur DOCX/PDF/ZIP, UI ou wording juridique modifié ; aucun test Python requis car aucun fichier Python modifié.
-- Prochaine étape recommandée : `GLOBAL-CANONICAL-V2-ARBITRATION-001`, répondre aux questions Q-001 à Q-010 puis geler un registre V2.1 avant ticket de rebuild front global.
+- Prochaine étape réalisée : `GLOBAL-HUMAN-ANSWERS-INTEGRATION-001`, intégrer les réponses humaines disponibles puis geler un registre V2.1 avant architecture front.
+
+### GLOBAL-HUMAN-ANSWERS-INTEGRATION-001
+- Objectif : intégrer les réponses humaines déjà obtenues dans l'audit global des variables et figer une version V2.1 du registre canonique global.
+- Statut : DONE.
+- Livrables : `docs/project/GLOBAL_VARIABLE_OPEN_QUESTIONS_V2.md`, `docs/project/GLOBAL_CANONICAL_FIELD_REGISTRY_V2_1.md` et `docs/review/global_human_answers_integration_001_report_v1.md`.
+- Décisions : 4 questions V1 fermées, 5 questions restant arbitrables en interne, 1 question basculée en backlog documentaire ; règles V2.1 sur rôles, adresses, parties de cession, SCM, bail et cas futur SELAS micro-holding.
+- Garde-fous : aucun générateur, moteur DOCX/PDF/ZIP, UI ou wording juridique modifié ; contradiction filigrane PROJET documentée mais non implémentée.
+- Validation : relecture documentaire et contrôle du diff ; aucun test Python requis car aucun fichier Python modifié.
+- Prochaine étape recommandée : `GLOBAL-FRONT-ARCHITECTURE-001`, concevoir l'architecture du nouveau front global sur le registre V2.1.
 
 ### UI-001
 - Objectif : exposer une Streamlit simple pour générer le Lot 1.
@@ -1055,8 +1066,8 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - mettre à jour `docs/project/04_LAST_STATE.md`
 
 ## Prochaine étape prévue
-- `GLOBAL-VARIABLE-IDENTITY-AUDIT-001` est DONE ; la matrice d'identité, le registre canonique global V2, les questions humaines et le rapport exécutif sont disponibles sans toucher au moteur ni à l'UI.
-- Prochain ticket recommandé pour le rebuild front global : `GLOBAL-CANONICAL-V2-ARBITRATION-001`, répondre aux 10 questions humaines et figer le registre V2.1 ; ouvrir ensuite le ticket de rebuild front sur ce registre arbitré.
+- `GLOBAL-HUMAN-ANSWERS-INTEGRATION-001` est DONE ; les réponses humaines disponibles sont intégrées dans les questions V2, le registre canonique global V2.1 et le rapport exécutif, sans toucher au moteur ni à l'UI.
+- Prochain ticket recommandé pour le rebuild front global : `GLOBAL-FRONT-ARCHITECTURE-001`, concevoir l'architecture du nouveau front sur le registre V2.1 avant tout changement applicatif.
 - `WORKTREE-CLEANUP-AND-UI-STATUS-001` est DONE ; le pack `REVIEW-FINAL-001` est consolide dans `main`, le rapport 23 clarifie le dossier canonique et le statut UI, et les anciens worktrees locaux sont a considerer comme archives.
 - `SYNC-FINAL-FOUNDATIONS-001` est DONE ; `main` contient les audits 16/17/18, les cadrages UI 19/20/21, le framework de recette finale, l'UI intégrée, le backend PDF et le backend ZIP déterministe.
 - `UI-PDF-ZIP-INTEGRATION-001` est DONE ; l'UI sait produire et telecharger DOCX, PDF local optionnel et ZIP dossier.
