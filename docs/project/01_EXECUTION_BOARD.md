@@ -149,6 +149,7 @@
 | GLOBAL-VARIABLE-IDENTITY-AUDIT-001 | DONE | Auditer l'identité sémantique globale des variables avant rebuild front | `GLOBAL_VARIABLE_RAW_INVENTORY_V1.csv` + référentiels V1 + templates + specs | matrice identité V2 + registre canonique global V2 + questions humaines + rapport |
 | GLOBAL-HUMAN-ANSWERS-INTEGRATION-001 | DONE | Intégrer les réponses humaines dans le registre canonique global | audit global V2 + réponse Albane + modèle SELAS micro-holding + V3/NotebookLM | questions V2 + registre canonique V2.1 + rapport exécutif |
 | GLOBAL-FRONT-ARCHITECTURE-001 | DONE | Concevoir l'architecture du nouveau front global sur le registre V2.1 | registre canonique global V2.1 + questions V2 | architecture front sans modification moteur/générateurs/UI existante |
+| GLOBAL-FRONT-ARCHITECTURE-QA-001 | DONE | Contrôler l'architecture front globale sur documents sentinelles | architecture front V1 + registre V2.1 + catalogue moteur + templates sentinelles | rapport QA + CSV sentinelles sans modification moteur/générateurs/UI |
 | FRONT-DATA-LAYER-001 | READY | Créer la couche de données front globale | architecture front V1 + registre V2.1 | objets front globaux + tests/validations sans toucher aux générateurs |
 | FRONT-ROLE-MODEL-001 | BLOCKED | Modéliser les rôles explicites du front global | `FRONT-DATA-LAYER-001` | RoleAssignment sans fusion silencieuse |
 | FRONT-ADDRESS-MODEL-001 | BLOCKED | Modéliser les adresses typées par usage | `FRONT-DATA-LAYER-001` + `FRONT-ROLE-MODEL-001` | adresses pivots, règles de réutilisation, overrides |
@@ -1069,6 +1070,16 @@
 - Validation : relecture documentaire et contrôle du diff ; aucun test Python requis car aucun fichier Python modifié.
 - Prochaine étape recommandée : `FRONT-DATA-LAYER-001`, créer la couche de données front globale sans toucher au moteur ni au prototype.
 
+### GLOBAL-FRONT-ARCHITECTURE-QA-001
+- Objectif : vérifier l'architecture front globale V1 sur des documents sentinelles représentatifs du moteur.
+- Statut : DONE.
+- Sentinelles contrôlées : `DOC-002`, `DOC-034`, `DOC-017`, `DOC-033`, `DOC-009`, `DOC-041` et `DOC-025`.
+- Livrables : `docs/review/global_front_architecture_qa_001_report_v1.md` et `docs/project/GLOBAL_FRONT_SENTINEL_CHECKS_V1.csv`.
+- Verdict : architecture globalement ORANGE maîtrisable ; `DOC-002` et `DOC-033` verts, cinq sentinelles orange, aucun rouge.
+- Garde-fous : aucun générateur, moteur DOCX/PDF/ZIP, Streamlit, UI ou wording juridique modifié ; `docs/docssource_truth/` non suivi laissé hors périmètre.
+- Validation : relecture documentaire et contrôle du diff ; aucun test Python requis car aucun fichier Python modifié.
+- Prochaine étape recommandée : `FRONT-DATA-LAYER-001`, en intégrant les sentinelles orange comme critères de couverture data.
+
 ### UI-001
 - Objectif : exposer une Streamlit simple pour générer le Lot 1.
 - Statut : en attente explicite ; ne pas lancer sans ticket explicite dédié.
@@ -1084,8 +1095,9 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - mettre à jour `docs/project/04_LAST_STATE.md`
 
 ## Prochaine étape prévue
+- `GLOBAL-FRONT-ARCHITECTURE-QA-001` est DONE ; l'architecture front globale a été contrôlée sur 7 documents sentinelles, avec 2 verts, 5 oranges et aucun rouge.
+- Prochain ticket recommandé pour le rebuild front global : `FRONT-DATA-LAYER-001`, créer la couche de données front globale sur les objets et règles V1 en intégrant les sentinelles orange comme critères de couverture.
 - `GLOBAL-FRONT-ARCHITECTURE-001` est DONE ; l'architecture produit et données du nouveau front global est cadrée sans toucher au moteur, aux générateurs, à Streamlit ni au wording juridique.
-- Prochain ticket recommandé pour le rebuild front global : `FRONT-DATA-LAYER-001`, créer la couche de données front globale sur les objets et règles V1.
 - `GLOBAL-HUMAN-ANSWERS-INTEGRATION-001` est DONE ; les réponses humaines disponibles sont intégrées dans les questions V2, le registre canonique global V2.1 et le rapport exécutif, sans toucher au moteur ni à l'UI.
 - `WORKTREE-CLEANUP-AND-UI-STATUS-001` est DONE ; le pack `REVIEW-FINAL-001` est consolide dans `main`, le rapport 23 clarifie le dossier canonique et le statut UI, et les anciens worktrees locaux sont a considerer comme archives.
 - `SYNC-FINAL-FOUNDATIONS-001` est DONE ; `main` contient les audits 16/17/18, les cadrages UI 19/20/21, le framework de recette finale, l'UI intégrée, le backend PDF et le backend ZIP déterministe.
@@ -1272,3 +1284,4 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - 2026-05-20 : GLOBAL-VARIABLE-INVENTORY-001 crée l'inventaire global brut `docs/project/GLOBAL_VARIABLE_RAW_INVENTORY_V1.csv` et le rapport `docs/review/global_variable_inventory_001_report_v1.md` : 12 443 lignes, 43 documents `DOC-001` à `DOC-043`, 15 familles, aucun générateur/moteur/UI/wording juridique modifié.
 - 2026-05-20 : GLOBAL-VARIABLE-IDENTITY-AUDIT-001 crée la matrice d'identité V2, le registre canonique global V2, la liste de 10 questions humaines et le rapport exécutif : 1 334 slugs distincts audités, 49 champs proposés, 142 rapprochements classés, aucun générateur/moteur/UI/wording juridique modifié.
 - 2026-05-24 : GLOBAL-FRONT-ARCHITECTURE-001 crée l'architecture front globale V1, le modèle d'objets, les règles structurelles, la stratégie d'écrans, le backlog de rebuild et le rapport exécutif ; aucun générateur, moteur DOCX/PDF/ZIP, Streamlit ou wording juridique modifié.
+- 2026-05-24 : GLOBAL-FRONT-ARCHITECTURE-QA-001 contrôle l'architecture front sur 7 documents sentinelles, crée le rapport QA et le CSV de couverture ; verdict global ORANGE maîtrisable, aucun rouge, aucun générateur/moteur/UI/Python modifié.
