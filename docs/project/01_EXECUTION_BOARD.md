@@ -160,7 +160,8 @@
 | FRONT-REVIEW-001 | DONE | Faire valider le modèle front global avant UI visible | tickets front data/role/address/flow/status/prefill | carte de migration + backlog UI visible |
 | FRONT-UI-SHELL-001 | DONE | Creer la premiere tranche visible du nouveau front global | `FRONT-REVIEW-001` + `front_data` | shell cible distinct du prototype, outils de test isoles |
 | FRONT-DOSSIER-EDITOR-001 | DONE | Construire l'editeur dossier data-first | `FRONT-UI-SHELL-001` | editeur dossier V1, flow/blocs/exigences/statuts visibles |
-| FRONT-DOCUMENTS-PANEL-001 | READY | Afficher les documents attendus et leurs statuts | `FRONT-DOSSIER-EDITOR-001` + status layer | panneau documents, reserves, blocages et lots |
+| FRONT-DOSSIER-DATA-ENTRY-001 | DONE | Ajouter la premiere saisie reelle du nouvel editeur dossier | `FRONT-DOSSIER-EDITOR-001` + `front_data` | saisie SELARL simple vers DossierRecord + statuts recalcules |
+| FRONT-DOCUMENTS-PANEL-001 | READY | Afficher les documents attendus et leurs statuts | `FRONT-DOSSIER-DATA-ENTRY-001` + status layer | panneau documents, reserves, blocages et lots |
 | FRONT-GENERATION-ACTIONS-001 | BLOCKED | Brancher les actions DOCX/PDF/ZIP du nouveau front | `FRONT-DOCUMENTS-PANEL-001` | generation limitee aux documents prets |
 | FRONT-UNIT-DOCUMENT-UI-001 | BLOCKED | Consolider l'UI Document unitaire autour de `front_data` | `FRONT-UI-SHELL-001` | mode document unique separe du dossier complet |
 | FRONT-TEST-TOOLS-CONSOLIDATION-001 | BLOCKED | Regrouper prefills, smoke et diagnostic | `FRONT-UI-SHELL-001` | outils de test marques et separes du produit |
@@ -1103,7 +1104,7 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 
 ## Prochaine étape prévue
 - `FRONT-REVIEW-001` est DONE ; le prototype actuel est confirme comme bac a sable / outil de diagnostic, la carte de migration V1 est creee et le backlog pointe maintenant vers les tickets UI visibles.
-- Prochain ticket recommande pour le rebuild front global : `FRONT-UI-SHELL-001`, creer la premiere tranche visible du nouveau front en isolant clairement le prototype et les outils de test.
+- Prochain ticket recommande pour le rebuild front global : `FRONT-DOCUMENTS-PANEL-001`, consolider le panneau Documents attendus depuis les statuts recalcules par la saisie V1.
 - `GLOBAL-FRONT-ARCHITECTURE-QA-001` est DONE ; l'architecture front globale a ete controlee sur 7 documents sentinelles, avec 2 verts, 5 oranges et aucun rouge.
 - `GLOBAL-FRONT-ARCHITECTURE-001` est DONE ; l'architecture produit et données du nouveau front global est cadrée sans toucher au moteur, aux générateurs, à Streamlit ni au wording juridique.
 - `GLOBAL-HUMAN-ANSWERS-INTEGRATION-001` est DONE ; les réponses humaines disponibles sont intégrées dans les questions V2, le registre canonique global V2.1 et le rapport exécutif, sans toucher au moteur ni à l'UI.
@@ -1299,3 +1300,4 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - 2026-05-24 : FRONT-TEST-PREFILL-001 realigne les prefills fictifs de l'Assistant metier sur `front_data`, conserve les quatre scenarios existants, ajoute les profils front_data, la conversion en `BusinessWizardInput`, le `DossierRecord` de test, la synthese de statuts documentaires et les tests dedies ; ruff OK et pytest OK, 352 tests passes ; aucun generateur, moteur DOCX/PDF/ZIP, wording juridique, mode Technique ou mode Document unitaire modifie.
 - 2026-05-24 : FRONT-REVIEW-001 audite le prototype Streamlit face aux fondations `front_data`, classe les briques en prototype / migration / test / deprecation, cree `FRONT_MIGRATION_MAP_V1.md`, met a jour le backlog vers `FRONT-UI-SHELL-001` puis les tickets UI visibles ; aucun code Python, generateur, moteur DOCX/PDF/ZIP ou wording juridique modifie.
 - 2026-05-24 : FRONT-DOSSIER-EDITOR-001 ajoute un editeur dossier V1 dans le nouveau shell, avec profils prudents, `DossierRecord` minimal, etapes/blocs `dossier_flow`, exigences, documents attendus et statuts/lots `document_status` ; ruff OK et pytest OK, 364 tests passes ; aucun generateur, moteur DOCX/PDF/ZIP, wording juridique ou prototype historique modifie.
+- 2026-05-24 : FRONT-DOSSIER-DATA-ENTRY-001 ajoute la premiere saisie reelle du nouvel editeur dossier sur le profil `SELARL creation simple` : personne principale, societe principale, adresses typees, role assignments explicites, `domiciliation = siege` via `ReuseRuleState`, valeurs canoniques et statuts DOC-001 a DOC-004 recalcules ; aucun generateur, moteur DOCX/PDF/ZIP ou wording juridique modifie.

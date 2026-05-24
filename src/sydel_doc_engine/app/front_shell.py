@@ -61,8 +61,8 @@ TARGET_FRONT_ITEMS: Final[tuple[FrontShellNavigationItem, ...]] = (
         key="dossier",
         group=TARGET_FRONT_LABEL,
         label="Dossier",
-        status="Editeur V1",
-        purpose="Assemble un DossierRecord minimal, le flow et les statuts.",
+        status="Saisie V1",
+        purpose="Alimente un DossierRecord simple, puis recalcule le flow et les statuts.",
         next_ticket="FRONT-DOCUMENTS-PANEL-001",
     ),
     FrontShellNavigationItem(

@@ -40,6 +40,14 @@ from sydel_doc_engine.app.front_dossier_editor import (
     front_dossier_requirement_rows,
     front_dossier_summary_rows,
 )
+from sydel_doc_engine.app.front_dossier_entry import (
+    FrontDossierSimpleEntry,
+    build_front_dossier_entry_view,
+    front_dossier_entry_address_rows,
+    front_dossier_entry_is_supported,
+    front_dossier_entry_object_rows,
+    front_dossier_entry_role_rows,
+)
 from sydel_doc_engine.app.front_shell import (
     PROTOTYPE_TOOL_LABELS,
     PROTOTYPE_TOOLS_LABEL,
@@ -239,20 +247,50 @@ def _render_target_front_home() -> None:
 
 def _render_target_front_dossier() -> None:
     st.info(
-        "Premiere tranche de l'editeur dossier cible : elle assemble un "
-        "DossierRecord minimal, le flow dossier et les statuts documentaires. "
-        "La saisie effective des valeurs reste volontairement hors de ce ticket."
+        "Premiere tranche de saisie de l'editeur dossier cible : le profil "
+        "SELARL creation simple alimente maintenant un vrai DossierRecord, "
+        "puis recalcule le flow et les statuts documentaires."
     )
     profile_label = st.selectbox(
         "Type de dossier / structure de base",
         front_dossier_editor_profile_labels(),
         key="front_dossier_editor_profile",
     )
-    view = build_front_dossier_editor_view(profile_label)
+
+    if front_dossier_entry_is_supported(profile_label):
+        entry = _render_front_dossier_simple_entry(profile_label)
+        view = build_front_dossier_entry_view(entry)
+        st.success(
+            "Saisie V1 active : les valeurs visibles alimentent PersonRecord, "
+            "CompanyRecord, AddressRecord, RoleAssignment et CanonicalFieldValue."
+        )
+    else:
+        view = build_front_dossier_editor_view(profile_label)
+        st.warning(
+            "Profil encore read-only : les cas ordre, cession, SCM et SPFPL "
+            "restent volontairement en analyse de flow/statuts."
+        )
 
     st.subheader("Editeur dossier")
     st.caption(view.profile.description)
     st.table(front_dossier_summary_rows(view))
+
+    if front_dossier_entry_is_supported(profile_label):
+        st.subheader("DossierRecord alimente")
+        st.table(front_dossier_entry_object_rows(view.dossier))
+        with st.expander("Roles et adresses saisis", expanded=False):
+            role_rows = front_dossier_entry_role_rows(view.dossier)
+            address_rows = front_dossier_entry_address_rows(view.dossier)
+            st.caption("RoleAssignment explicites")
+            if role_rows:
+                st.table(role_rows)
+            else:
+                st.caption("Aucun role saisi.")
+            st.caption("AddressRecord types")
+            if address_rows:
+                st.table(address_rows)
+            else:
+                st.caption("Aucune adresse saisie.")
 
     st.subheader("Etapes dossier")
     st.table(front_dossier_flow_step_rows(view))
@@ -271,8 +309,163 @@ def _render_target_front_dossier() -> None:
         st.table(front_dossier_lot_status_legend_rows())
 
     st.warning(
-        "Placeholder controle : les blocs de saisie, les overrides et la "
-        "generation seront branches dans les tickets suivants."
+        "Placeholder controle : les overrides avances et la generation seront "
+        "branches dans les tickets suivants."
+    )
+
+
+def _render_front_dossier_simple_entry(profile_label: str) -> FrontDossierSimpleEntry:
+    st.subheader("Saisie V1 - SELARL creation simple")
+    dossier_unipersonnel = st.checkbox(
+        "Dossier unipersonnel",
+        value=True,
+        key="front_entry_dossier_unipersonnel",
+    )
+
+    with st.expander("Personne principale", expanded=True):
+        col_identity_left, col_identity_right = st.columns(2)
+        civilite_affichage = col_identity_left.selectbox(
+            "Civilite",
+            ("", "Madame", "Monsieur"),
+            key="front_entry_person_civilite",
+        )
+        genre = col_identity_right.selectbox(
+            "Genre grammatical",
+            ("", "feminin", "masculin"),
+            key="front_entry_person_genre",
+        )
+        prenom = col_identity_left.text_input(
+            "Prenom",
+            key="front_entry_person_prenom",
+        )
+        nom = col_identity_right.text_input("Nom", key="front_entry_person_nom")
+        date_naissance = col_identity_left.text_input(
+            "Date de naissance (AAAA-MM-JJ)",
+            key="front_entry_person_date_naissance",
+        )
+        nationalite = col_identity_right.text_input(
+            "Nationalite",
+            key="front_entry_person_nationalite",
+        )
+        nom_pere = col_identity_left.text_input(
+            "Nom du pere",
+            key="front_entry_person_nom_pere",
+        )
+        nom_mere = col_identity_right.text_input(
+            "Nom de la mere",
+            key="front_entry_person_nom_mere",
+        )
+        adresse_personnelle = st.text_input(
+            "Adresse personnelle",
+            key="front_entry_person_adresse_personnelle",
+        )
+
+    with st.expander("Societe principale", expanded=True):
+        col_company_left, col_company_right = st.columns(2)
+        societe_denomination = col_company_left.text_input(
+            "Denomination",
+            key="front_entry_company_denomination",
+        )
+        societe_forme_sociale = col_company_right.selectbox(
+            "Forme sociale",
+            ("SELARL", "SELAS", "SCM", "SCI"),
+            key="front_entry_company_forme_sociale",
+        )
+        societe_capital_social = col_company_left.text_input(
+            "Capital social",
+            key="front_entry_company_capital_social",
+        )
+        siege_social = col_company_right.text_input(
+            "Siege social",
+            key="front_entry_company_siege_social",
+        )
+        domiciliation_same_as_siege = st.checkbox(
+            "Domiciliation = siege social",
+            value=True,
+            key="front_entry_domiciliation_same_as_siege",
+        )
+        domiciliation = ""
+        if domiciliation_same_as_siege:
+            st.caption(
+                "La domiciliation est creee comme adresse typee derivee du "
+                "siege via ReuseRuleState explicite."
+            )
+        else:
+            domiciliation = st.text_input(
+                "Adresse de domiciliation",
+                key="front_entry_company_domiciliation",
+            )
+
+    with st.expander("Capital, decision et signature", expanded=True):
+        col_capital_left, col_capital_right = st.columns(2)
+        capital_titres_nombre_total = col_capital_left.text_input(
+            "Nombre total de titres",
+            key="front_entry_capital_titres_nombre_total",
+        )
+        capital_titres_valeur_nominale = col_capital_right.text_input(
+            "Valeur nominale",
+            key="front_entry_capital_titres_valeur_nominale",
+        )
+        capital_repartition_associes = st.text_input(
+            "Repartition des associes",
+            key="front_entry_capital_repartition_associes",
+            help=(
+                "Optionnel en dossier unipersonnel : le DossierRecord peut "
+                "derive une repartition simple depuis la personne et le nombre de titres."
+            ),
+        )
+        decision_date = col_capital_left.text_input(
+            "Date de decision (AAAA-MM-JJ)",
+            key="front_entry_decision_date",
+        )
+        reunion_date_lettres = col_capital_right.text_input(
+            "Date de reunion en lettres",
+            key="front_entry_reunion_date_lettres",
+        )
+        reunion_heure = col_capital_left.text_input(
+            "Heure de reunion",
+            key="front_entry_reunion_heure",
+        )
+        signature_lieu = col_capital_right.text_input(
+            "Lieu de signature",
+            key="front_entry_signature_lieu",
+        )
+        signature_date = col_capital_left.text_input(
+            "Date de signature (AAAA-MM-JJ)",
+            key="front_entry_signature_date",
+        )
+        signature_nombre_exemplaires = col_capital_right.text_input(
+            "Nombre d'exemplaires",
+            key="front_entry_signature_nombre_exemplaires",
+        )
+
+    return FrontDossierSimpleEntry(
+        profile_key=profile_label,
+        dossier_unipersonnel=dossier_unipersonnel,
+        domiciliation_same_as_siege=domiciliation_same_as_siege,
+        civilite_affichage=civilite_affichage,
+        genre=genre,
+        prenom=prenom,
+        nom=nom,
+        date_naissance=date_naissance,
+        nationalite=nationalite,
+        nom_pere=nom_pere,
+        nom_mere=nom_mere,
+        adresse_personnelle=adresse_personnelle,
+        societe_denomination=societe_denomination,
+        societe_forme_sociale=societe_forme_sociale,
+        societe_capital_social=societe_capital_social,
+        siege_social=siege_social,
+        domiciliation=domiciliation,
+        capital_titres_nombre_total=capital_titres_nombre_total,
+        capital_titres_valeur_nominale=capital_titres_valeur_nominale,
+        capital_repartition_associes=capital_repartition_associes,
+        decision_date=decision_date,
+        reunion_date_lettres=reunion_date_lettres,
+        reunion_heure=reunion_heure,
+        signature_lieu=signature_lieu,
+        signature_date=signature_date,
+        signature_nombre_exemplaires=signature_nombre_exemplaires,
     )
 
 

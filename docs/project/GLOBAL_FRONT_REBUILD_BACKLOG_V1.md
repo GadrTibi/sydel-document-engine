@@ -21,6 +21,7 @@ Ces tickets fondent le nouveau front et ne doivent pas etre recodes dans les tic
 8. `FRONT-REVIEW-001` - carte de migration, decision prototype, backlog UI visible.
 9. `FRONT-UI-SHELL-001` - shell UI visible, nouveau front distinct du prototype.
 10. `FRONT-DOSSIER-EDITOR-001` - editeur dossier V1 branche sur `front_data`.
+11. `FRONT-DOSSIER-DATA-ENTRY-001` - premiere saisie reelle SELARL simple vers `DossierRecord`.
 
 ## Ordre recommande maintenant
 
@@ -115,6 +116,41 @@ CritÃ¨res d'acceptation :
 - les statuts de lot `ready`, `partial` et `blocked` sont prepares ;
 - les validations `front_data` peuvent etre affichees sans logique metier dans Streamlit.
 
+## FRONT-DOSSIER-DATA-ENTRY-001
+
+Statut : DONE.
+
+Objectif : ajouter une premiere tranche de saisie reelle dans le nouvel editeur dossier sans reconstruire le wizard historique.
+
+Fichiers concernes :
+
+- `src/sydel_doc_engine/app/front_dossier_entry.py` ;
+- `src/sydel_doc_engine/app/front_dossier_editor.py` en lecture ;
+- `src/sydel_doc_engine/app/streamlit_app.py` pour le rendu des champs ;
+- `src/sydel_doc_engine/front_data/*` en consommation ;
+- tests AppTest et unitaires.
+
+Ne pas toucher :
+
+- generateurs ;
+- moteur DOCX/PDF/ZIP ;
+- wording juridique ;
+- modes prototype hors isolement existant ;
+- logique historique `business_wizard.py`.
+
+Dependances :
+
+- `FRONT-DOSSIER-EDITOR-001`.
+
+Criteres d'acceptation :
+
+- le profil `SELARL creation simple` alimente un vrai `DossierRecord` ;
+- la personne principale, la societe principale, les adresses typees, les roles et les valeurs canoniques sont crees depuis la saisie ;
+- `Dossier unipersonnel` cree des `RoleAssignment` explicites sans fusion silencieuse ;
+- `domiciliation = siege_social` passe par une `ReuseRuleState` explicite ;
+- les statuts DOC-001 a DOC-004 se recalculent depuis les donnees saisies ;
+- les cas ordre, cession, SCM, SPFPL restent read-only/orange pour les tickets suivants.
+
 ## FRONT-DOCUMENTS-PANEL-001
 
 Statut : READY.
@@ -138,7 +174,7 @@ Ne pas toucher :
 
 Dependances :
 
-- `FRONT-DOSSIER-EDITOR-001`.
+- `FRONT-DOSSIER-DATA-ENTRY-001`.
 
 CritÃ¨res d'acceptation :
 
