@@ -55,30 +55,43 @@ def test_front_shell_exposes_document_status_preview() -> None:
 def test_streamlit_shell_renders_target_front_by_default() -> None:
     app = AppTest.from_file("src/sydel_doc_engine/app/streamlit_app.py").run(timeout=120)
 
-    assert app.radio[0].label == "Espace de travail"
-    assert app.radio[0].value == TARGET_FRONT_LABEL
-    assert len(app.radio) == 1
-    assert any(TARGET_FRONT_LABEL in item.value for item in app.subheader)
-    assert any("Parcours principal de test" in item.value for item in app.caption)
-    assert any("Generation" == item.value for item in app.subheader)
-    assert {item.label for item in app.expander}.issuperset(
-        {"Diagnostic dossier", "Details generation", "Diagnostic front_data"}
+    assert len(app.radio) == 0
+    assert [item.value for item in app.subheader] == [
+        "Type de dossier",
+        "Donnees a saisir",
+        "Generation",
+    ]
+    assert app.selectbox(key="front_dossier_editor_profile").value == (
+        "SELARL creation simple"
     )
+    assert {item.label for item in app.expander} == {
+        "Personne principale",
+        "Societe principale",
+        "Capital, decision et signature",
+    }
+    assert len(app.table) == 0
 
 
 def test_streamlit_shell_keeps_prototype_tools_secondary() -> None:
     app = AppTest.from_file("src/sydel_doc_engine/app/streamlit_app.py").run(timeout=120)
 
-    app.radio[0].set_value(PROTOTYPE_TOOLS_LABEL)
+    assert app.checkbox(key="front_internal_tools_enabled").label == "Outils internes"
+    assert len(app.radio) == 0
+
+    app.checkbox(key="front_internal_tools_enabled").set_value(True)
     app.run(timeout=120)
 
-    assert any(PROTOTYPE_TOOLS_LABEL in item.value for item in app.subheader)
-    assert any("front cible" in item.value for item in app.caption)
+    assert any("Outils internes" in item.value for item in app.subheader)
+    assert app.radio(key="front_internal_tool").label == "Outil interne"
 
-    app.radio[1].set_value("Document unitaire")
+    app.radio(key="front_internal_tool").set_value("Document unitaire")
     app.run(timeout=120)
     assert app.selectbox(key="single_document_choice").label == "Document a tester"
 
-    app.radio[1].set_value("Technique / diagnostic")
+    app.radio(key="front_internal_tool").set_value("Technique / diagnostic")
     app.run(timeout=120)
     assert any("Mode technique / diagnostic" in item.value for item in app.subheader)
+
+    app.radio(key="front_internal_tool").set_value("Debug interne")
+    app.run(timeout=120)
+    assert len(app.table) > 0

@@ -12,7 +12,6 @@ from sydel_doc_engine.app.front_dossier_entry import (
     front_dossier_entry_object_rows,
     front_dossier_entry_role_rows,
 )
-from sydel_doc_engine.app.front_shell import PROTOTYPE_TOOLS_LABEL, TARGET_FRONT_LABEL
 from sydel_doc_engine.front_data import (
     AddressUsage,
     BusinessRole,
@@ -151,8 +150,6 @@ def test_entry_support_stays_limited_to_selarl_creation_simple() -> None:
 def test_streamlit_dossier_area_exposes_real_entry_fields() -> None:
     app = AppTest.from_file("src/sydel_doc_engine/app/streamlit_app.py").run(timeout=120)
 
-    assert app.radio[0].value == TARGET_FRONT_LABEL
-
     assert app.checkbox(key="front_entry_dossier_unipersonnel").label == (
         "Dossier unipersonnel"
     )
@@ -161,18 +158,20 @@ def test_streamlit_dossier_area_exposes_real_entry_fields() -> None:
     assert app.checkbox(key="front_entry_domiciliation_same_as_siege").label == (
         "Domiciliation = siege social"
     )
-    assert any(item.label == "Diagnostic dossier" for item in app.expander)
-    assert any(metric.label == "Documents prets" for metric in app.metric)
+    assert not any(item.label == "Diagnostic dossier" for item in app.expander)
+    assert any(metric.label == "Prets a generer" for metric in app.metric)
+    assert len(app.table) == 0
 
 
 def test_streamlit_prototype_zone_remains_secondary() -> None:
     app = AppTest.from_file("src/sydel_doc_engine/app/streamlit_app.py").run(timeout=120)
 
-    app.radio[0].set_value(PROTOTYPE_TOOLS_LABEL)
+    assert len(app.radio) == 0
+    app.checkbox(key="front_internal_tools_enabled").set_value(True)
     app.run(timeout=120)
 
-    assert app.radio[1].label == "Outil de test / prototype"
-    assert any(PROTOTYPE_TOOLS_LABEL in item.value for item in app.subheader)
+    assert app.radio(key="front_internal_tool").label == "Outil interne"
+    assert any("Outils internes" in item.value for item in app.subheader)
 
 
 def _complete_simple_entry(**overrides: object) -> FrontDossierSimpleEntry:

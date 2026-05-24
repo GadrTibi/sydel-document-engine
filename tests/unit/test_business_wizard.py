@@ -783,9 +783,9 @@ def _fill_selarl_simple_generation_fields(app: AppTest) -> None:
 
 
 def _open_prototype_tool(app: AppTest, tool_label: str) -> None:
-    app.radio[0].set_value("Prototype / outils de test")
+    app.checkbox(key="front_internal_tools_enabled").set_value(True)
     app.run(timeout=120)
-    app.radio[1].set_value(tool_label)
+    app.radio(key="front_internal_tool").set_value(tool_label)
     app.run(timeout=120)
 
 

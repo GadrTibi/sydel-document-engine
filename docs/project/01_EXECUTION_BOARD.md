@@ -164,6 +164,7 @@
 | FRONT-DOCUMENTS-PANEL-001 | READY | Afficher les documents attendus et leurs statuts | `FRONT-DOSSIER-DATA-ENTRY-001` + status layer | panneau documents, reserves, blocages et lots |
 | FRONT-GENERATION-ACTIONS-001 | DONE | Brancher les actions DOCX/PDF/ZIP du nouveau front | `FRONT-DOSSIER-DATA-ENTRY-001` + status layer | generation V1 DOC-001 a DOC-004 depuis le nouveau front |
 | FRONT-UX-CLEANUP-001 | DONE | Simplifier le nouveau front pour test utilisateur reel | `FRONT-GENERATION-ACTIONS-001` | parcours principal type dossier / saisie / resume / generation, diagnostics replies |
+| FRONT-UX-HARD-CUT-001 | DONE | Retirer tout bruit non-user du nouveau front | `FRONT-UX-CLEANUP-001` | vue principale limitee a type dossier, saisie et generation ; outils internes en sidebar |
 | FRONT-UNIT-DOCUMENT-UI-001 | BLOCKED | Consolider l'UI Document unitaire autour de `front_data` | `FRONT-UI-SHELL-001` | mode document unique separe du dossier complet |
 | FRONT-TEST-TOOLS-CONSOLIDATION-001 | BLOCKED | Regrouper prefills, smoke et diagnostic | `FRONT-UI-SHELL-001` | outils de test marques et separes du produit |
 | FRONT-PROTOTYPE-DEPRECATION-001 | BLOCKED | Deprecier le prototype historique sans perte de diagnostic | nouveaux parcours UI visibles | prototype marque obsolete ou archive |
@@ -1105,7 +1106,7 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 
 ## Prochaine étape prévue
 - `FRONT-REVIEW-001` est DONE ; le prototype actuel est confirme comme bac a sable / outil de diagnostic, la carte de migration V1 est creee et le backlog pointe maintenant vers les tickets UI visibles.
-- Prochain jalon recommande pour le rebuild front global : premier vrai test local du nouveau front sur `SELARL creation simple`; `FRONT-DOCUMENTS-PANEL-001` reste le ticket suivant si le test valide le parcours simplifie.
+- Prochain jalon recommande pour le rebuild front global : premier vrai test local utilisateur du nouveau front hard-cut sur `SELARL creation simple`; `FRONT-DOCUMENTS-PANEL-001` reste optionnel apres retour test.
 - `GLOBAL-FRONT-ARCHITECTURE-QA-001` est DONE ; l'architecture front globale a ete controlee sur 7 documents sentinelles, avec 2 verts, 5 oranges et aucun rouge.
 - `GLOBAL-FRONT-ARCHITECTURE-001` est DONE ; l'architecture produit et données du nouveau front global est cadrée sans toucher au moteur, aux générateurs, à Streamlit ni au wording juridique.
 - `GLOBAL-HUMAN-ANSWERS-INTEGRATION-001` est DONE ; les réponses humaines disponibles sont intégrées dans les questions V2, le registre canonique global V2.1 et le rapport exécutif, sans toucher au moteur ni à l'UI.
@@ -1304,3 +1305,4 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - 2026-05-24 : FRONT-DOSSIER-DATA-ENTRY-001 ajoute la premiere saisie reelle du nouvel editeur dossier sur le profil `SELARL creation simple` : personne principale, societe principale, adresses typees, role assignments explicites, `domiciliation = siege` via `ReuseRuleState`, valeurs canoniques et statuts DOC-001 a DOC-004 recalcules ; aucun generateur, moteur DOCX/PDF/ZIP ou wording juridique modifie.
 - 2026-05-24 : FRONT-GENERATION-ACTIONS-001 branche les actions de generation du nouveau front sur le profil `SELARL creation simple`, cree l'adaptateur `DossierRecord` vers contexte moteur, limite la generation a `DOC-001` a `DOC-004`, exclut `DOC-006`, `DOC-013` et `DOC-014`, expose DOCX/ZIP/PDF optionnel dans le shell, valide ruff et pytest 380 tests, et conserve le prototype comme zone secondaire ; aucun generateur, moteur DOCX/PDF/ZIP ou wording juridique modifie.
 - 2026-05-24 : FRONT-UX-CLEANUP-001 simplifie la vue principale du nouveau front : suppression de la navigation interne visible, tables de flow/blocs/exigences/statuts repliees en diagnostics, parcours principal limite a type de dossier, saisie, resume documents et generation ; ruff OK et pytest OK 380 tests ; aucun generateur, moteur DOCX/PDF/ZIP ou wording juridique modifie.
+- 2026-05-24 : FRONT-UX-HARD-CUT-001 retire les diagnostics et outils de la surface utilisateur normale : aucun radio, aucun tableau par defaut, seulement Type de dossier / Donnees a saisir / Generation ; les outils internes sont accessibles via sidebar `Outils internes`, ruff OK et pytest OK 380 tests ; aucun generateur, moteur DOCX/PDF/ZIP ou wording juridique modifie.

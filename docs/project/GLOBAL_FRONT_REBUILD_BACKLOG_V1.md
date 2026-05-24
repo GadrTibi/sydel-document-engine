@@ -24,11 +24,12 @@ Ces tickets fondent le nouveau front et ne doivent pas etre recodes dans les tic
 11. `FRONT-DOSSIER-DATA-ENTRY-001` - premiere saisie reelle SELARL simple vers `DossierRecord`.
 12. `FRONT-GENERATION-ACTIONS-001` - actions DOCX/ZIP/PDF optionnel sur `DOC-001` a `DOC-004` depuis le nouveau front.
 13. `FRONT-UX-CLEANUP-001` - simplification du parcours visible pour test utilisateur reel.
+14. `FRONT-UX-HARD-CUT-001` - retrait complet du bruit non-user de la surface principale.
 
 ## Ordre recommande maintenant
 
-1. Premier vrai test local du nouveau front simplifie sur `SELARL creation simple`
-2. `FRONT-DOCUMENTS-PANEL-001` si le test confirme le besoin d'un panneau documents dedie
+1. Premier vrai test local utilisateur du nouveau front hard-cut sur `SELARL creation simple`
+2. `FRONT-DOCUMENTS-PANEL-001` seulement si le test confirme un besoin de panneau documents dedie
 3. `FRONT-UNIT-DOCUMENT-UI-001`
 4. `FRONT-TEST-TOOLS-CONSOLIDATION-001`
 5. `FRONT-PROTOTYPE-DEPRECATION-001`
@@ -252,6 +253,39 @@ Criteres d'acceptation :
 - les outils de test restent accessibles mais secondaires ;
 - le parcours `SELARL creation simple` et `DOC-001` a `DOC-004` reste fonctionnel ;
 - ruff et pytest restent verts.
+
+## FRONT-UX-HARD-CUT-001
+
+Statut : DONE.
+
+Objectif : retirer tout le bruit non-user de la vue principale normale.
+
+Fichiers concernes :
+
+- `src/sydel_doc_engine/app/streamlit_app.py` ;
+- tests AppTest du shell, de la saisie, de la generation, du prototype interne et du document unitaire ;
+- rapport de revue UX hard cut.
+
+Ne pas toucher :
+
+- generateurs ;
+- moteur DOCX/PDF/ZIP ;
+- fondations `front_data` ;
+- wording juridique ;
+- suppression des outils de test.
+
+Dependances :
+
+- `FRONT-UX-CLEANUP-001`.
+
+Criteres d'acceptation :
+
+- la vue principale normale n'affiche aucun radio de navigation ;
+- aucun tableau de diagnostic n'est rendu par defaut ;
+- la surface principale contient seulement type de dossier, champs de saisie et generation ;
+- les outils historiques sont accessibles via `Outils internes` en sidebar ;
+- le debug est disponible uniquement via `Debug interne` ;
+- le parcours `SELARL creation simple` et `DOC-001` a `DOC-004` reste fonctionnel.
 
 ## FRONT-UNIT-DOCUMENT-UI-001
 

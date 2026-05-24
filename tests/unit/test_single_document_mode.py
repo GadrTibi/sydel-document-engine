@@ -37,9 +37,9 @@ def test_single_document_mode_is_visible_next_to_existing_streamlit_modes() -> N
 def test_streamlit_single_document_mode_renders_document_selector() -> None:
     app = AppTest.from_file("src/sydel_doc_engine/app/streamlit_app.py").run(timeout=120)
 
-    app.radio[0].set_value("Prototype / outils de test")
+    app.checkbox(key="front_internal_tools_enabled").set_value(True)
     app.run(timeout=120)
-    app.radio[1].set_value("Document unitaire")
+    app.radio(key="front_internal_tool").set_value("Document unitaire")
     app.run(timeout=120)
 
     assert app.selectbox(key="single_document_choice").label == "Document a tester"

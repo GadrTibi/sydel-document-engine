@@ -17,7 +17,6 @@ from sydel_doc_engine.app.front_dossier_editor import (
     front_dossier_requirement_rows,
     front_dossier_summary_rows,
 )
-from sydel_doc_engine.app.front_shell import PROTOTYPE_TOOLS_LABEL, TARGET_FRONT_LABEL
 from sydel_doc_engine.front_data import DossierRecord, OperationType
 
 
@@ -96,23 +95,27 @@ def test_front_dossier_editor_has_no_streamlit_dependency() -> None:
 def test_streamlit_shell_renders_new_dossier_editor() -> None:
     app = AppTest.from_file("src/sydel_doc_engine/app/streamlit_app.py").run(timeout=120)
 
-    assert app.radio[0].value == TARGET_FRONT_LABEL
-
     assert app.selectbox(key="front_dossier_editor_profile").label == (
         "Type de dossier / structure de base"
     )
+    assert [item.value for item in app.subheader] == [
+        "Type de dossier",
+        "Donnees a saisir",
+        "Generation",
+    ]
     assert not any("Etapes dossier" in item.value for item in app.subheader)
     assert not any("Documents attendus et statuts" in item.value for item in app.subheader)
-    assert any("Generation" == item.value for item in app.subheader)
-    assert any(item.label == "Diagnostic dossier" for item in app.expander)
+    assert not any(item.label == "Diagnostic dossier" for item in app.expander)
+    assert len(app.table) == 0
     assert any("Generation bloquee" in item.value for item in app.warning)
 
 
 def test_streamlit_shell_keeps_prototype_zone_secondary() -> None:
     app = AppTest.from_file("src/sydel_doc_engine/app/streamlit_app.py").run(timeout=120)
 
-    app.radio[0].set_value(PROTOTYPE_TOOLS_LABEL)
+    assert len(app.radio) == 0
+    app.checkbox(key="front_internal_tools_enabled").set_value(True)
     app.run(timeout=120)
 
-    assert any(PROTOTYPE_TOOLS_LABEL in item.value for item in app.subheader)
-    assert app.radio[1].label == "Outil de test / prototype"
+    assert any("Outils internes" in item.value for item in app.subheader)
+    assert app.radio(key="front_internal_tool").label == "Outil interne"
