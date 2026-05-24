@@ -97,15 +97,14 @@ def test_streamlit_shell_renders_new_dossier_editor() -> None:
     app = AppTest.from_file("src/sydel_doc_engine/app/streamlit_app.py").run(timeout=120)
 
     assert app.radio[0].value == TARGET_FRONT_LABEL
-    app.radio[1].set_value("Dossier")
-    app.run(timeout=120)
 
     assert app.selectbox(key="front_dossier_editor_profile").label == (
         "Type de dossier / structure de base"
     )
-    assert any("Editeur dossier" in item.value for item in app.subheader)
-    assert any("Documents attendus et statuts" in item.value for item in app.subheader)
-    assert any("Generation V1" in item.value for item in app.subheader)
+    assert not any("Etapes dossier" in item.value for item in app.subheader)
+    assert not any("Documents attendus et statuts" in item.value for item in app.subheader)
+    assert any("Generation" == item.value for item in app.subheader)
+    assert any(item.label == "Diagnostic dossier" for item in app.expander)
     assert any("Generation bloquee" in item.value for item in app.warning)
 
 

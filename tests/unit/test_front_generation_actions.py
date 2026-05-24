@@ -105,8 +105,6 @@ def test_front_generation_module_does_not_depend_on_business_wizard() -> None:
 def test_streamlit_new_front_generates_docx_then_zip() -> None:
     app = AppTest.from_file("src/sydel_doc_engine/app/streamlit_app.py").run(timeout=120)
 
-    app.radio[1].set_value("Dossier")
-    app.run(timeout=120)
     _fill_front_generation_fields(app)
     app.run(timeout=120)
 

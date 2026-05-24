@@ -57,8 +57,13 @@ def test_streamlit_shell_renders_target_front_by_default() -> None:
 
     assert app.radio[0].label == "Espace de travail"
     assert app.radio[0].value == TARGET_FRONT_LABEL
+    assert len(app.radio) == 1
     assert any(TARGET_FRONT_LABEL in item.value for item in app.subheader)
-    assert any("nouvelle entree produit" in item.value for item in app.info)
+    assert any("Parcours principal de test" in item.value for item in app.caption)
+    assert any("Generation" == item.value for item in app.subheader)
+    assert {item.label for item in app.expander}.issuperset(
+        {"Diagnostic dossier", "Details generation", "Diagnostic front_data"}
+    )
 
 
 def test_streamlit_shell_keeps_prototype_tools_secondary() -> None:

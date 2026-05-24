@@ -152,8 +152,6 @@ def test_streamlit_dossier_area_exposes_real_entry_fields() -> None:
     app = AppTest.from_file("src/sydel_doc_engine/app/streamlit_app.py").run(timeout=120)
 
     assert app.radio[0].value == TARGET_FRONT_LABEL
-    app.radio[1].set_value("Dossier")
-    app.run(timeout=120)
 
     assert app.checkbox(key="front_entry_dossier_unipersonnel").label == (
         "Dossier unipersonnel"
@@ -163,7 +161,8 @@ def test_streamlit_dossier_area_exposes_real_entry_fields() -> None:
     assert app.checkbox(key="front_entry_domiciliation_same_as_siege").label == (
         "Domiciliation = siege social"
     )
-    assert any("DossierRecord alimente" in item.value for item in app.subheader)
+    assert any(item.label == "Diagnostic dossier" for item in app.expander)
+    assert any(metric.label == "Documents prets" for metric in app.metric)
 
 
 def test_streamlit_prototype_zone_remains_secondary() -> None:

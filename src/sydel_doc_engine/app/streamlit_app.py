@@ -60,7 +60,6 @@ from sydel_doc_engine.app.front_generation_actions import (
 from sydel_doc_engine.app.front_shell import (
     PROTOTYPE_TOOL_LABELS,
     PROTOTYPE_TOOLS_LABEL,
-    TARGET_FRONT_AREA_LABELS,
     TARGET_FRONT_LABEL,
     front_shell_navigation_rows,
     prototype_tool_navigation_rows,
@@ -224,42 +223,25 @@ def _render_pdf_downloads(pdf_paths: list[Path], *, key_prefix: str) -> None:
 def _render_target_front_shell() -> None:
     st.subheader(TARGET_FRONT_LABEL)
     st.caption(
-        "Premiere tranche visible du nouveau front : navigation cible, "
-        "fondations front_data exposees, editeur dossier complet non implemente."
+        "Parcours principal de test : choisir un type de dossier, saisir les "
+        "donnees utiles, puis generer les documents prets."
     )
-    area = st.radio(
-        "Zone du nouveau front",
-        TARGET_FRONT_AREA_LABELS,
-        horizontal=True,
-        key="front_shell_target_area",
-    )
+    _render_target_front_dossier()
 
-    if area == "Accueil / selection":
+    with st.expander("Diagnostic front_data", expanded=False):
+        st.caption("Lecture secondaire pour verifier le shell, les previews et les statuts.")
         _render_target_front_home()
-    elif area == "Dossier":
-        _render_target_front_dossier()
-    elif area == "Documents attendus":
         _render_target_front_documents()
-    else:
-        _render_target_front_generation()
 
 
 def _render_target_front_home() -> None:
-    st.info(
-        "Ce shell est la nouvelle entree produit. Les zones ci-dessous sont "
-        "structurees pour le rebuild, sans reprendre la logique du prototype."
-    )
+    st.caption("Navigation cible et outils isoles.")
     st.table(front_shell_navigation_rows())
-    st.subheader("Zones cible")
+    st.caption("Zones cible")
     st.table(target_front_navigation_rows())
 
 
 def _render_target_front_dossier() -> None:
-    st.info(
-        "Premiere tranche de saisie de l'editeur dossier cible : le profil "
-        "SELARL creation simple alimente maintenant un vrai DossierRecord, "
-        "puis recalcule le flow et les statuts documentaires."
-    )
     profile_label = st.selectbox(
         "Type de dossier / structure de base",
         front_dossier_editor_profile_labels(),
@@ -269,25 +251,23 @@ def _render_target_front_dossier() -> None:
     if front_dossier_entry_is_supported(profile_label):
         entry = _render_front_dossier_simple_entry(profile_label)
         view = build_front_dossier_entry_view(entry)
-        st.success(
-            "Saisie V1 active : les valeurs visibles alimentent PersonRecord, "
-            "CompanyRecord, AddressRecord, RoleAssignment et CanonicalFieldValue."
-        )
     else:
         view = build_front_dossier_editor_view(profile_label)
         st.warning(
-            "Profil encore read-only : les cas ordre, cession, SCM et SPFPL "
-            "restent volontairement en analyse de flow/statuts."
+            "Ce profil reste hors saisie V1. Pour le test utilisateur actuel, "
+            "utilisez SELARL creation simple."
         )
 
-    st.subheader("Editeur dossier")
-    st.caption(view.profile.description)
-    st.table(front_dossier_summary_rows(view))
+    _render_front_document_summary(view)
 
-    if front_dossier_entry_is_supported(profile_label):
-        st.subheader("DossierRecord alimente")
-        st.table(front_dossier_entry_object_rows(view.dossier))
-        with st.expander("Roles et adresses saisis", expanded=False):
+    with st.expander("Diagnostic dossier", expanded=False):
+        st.caption(view.profile.description)
+        st.caption("Synthese data-layer")
+        st.table(front_dossier_summary_rows(view))
+
+        if front_dossier_entry_is_supported(profile_label):
+            st.caption("DossierRecord alimente")
+            st.table(front_dossier_entry_object_rows(view.dossier))
             role_rows = front_dossier_entry_role_rows(view.dossier)
             address_rows = front_dossier_entry_address_rows(view.dossier)
             st.caption("RoleAssignment explicites")
@@ -301,20 +281,17 @@ def _render_target_front_dossier() -> None:
             else:
                 st.caption("Aucune adresse saisie.")
 
-    st.subheader("Etapes dossier")
-    st.table(front_dossier_flow_step_rows(view))
-    with st.expander("Blocs actifs", expanded=True):
+        st.caption("Etapes dossier")
+        st.table(front_dossier_flow_step_rows(view))
+        st.caption("Blocs actifs")
         st.table(front_dossier_block_rows(view))
-
-    st.subheader("Exigences principales")
-    st.table(front_dossier_requirement_rows(view))
-
-    st.subheader("Documents attendus et statuts")
-    st.table(front_dossier_document_status_rows(view))
-
-    st.subheader("Statut de lot")
-    st.table(front_dossier_lot_status_rows(view))
-    with st.expander("Legende ready / partial / blocked", expanded=False):
+        st.caption("Exigences principales")
+        st.table(front_dossier_requirement_rows(view))
+        st.caption("Documents attendus et statuts")
+        st.table(front_dossier_document_status_rows(view))
+        st.caption("Statut de lot")
+        st.table(front_dossier_lot_status_rows(view))
+        st.caption("Legende ready / partial / blocked")
         st.table(front_dossier_lot_status_legend_rows())
 
     if front_dossier_entry_is_supported(profile_label):
@@ -324,6 +301,38 @@ def _render_target_front_dossier() -> None:
             "Generation non ouverte sur ce profil : les cas ordre, cession, SCM "
             "et SPFPL restent hors perimetre de l'action V1."
         )
+
+
+def _render_front_document_summary(view) -> None:
+    ready_codes = view.status_summary.generable_doc_codes
+    blocked_codes = view.status_summary.blocked_doc_codes
+    lot_status = (
+        ", ".join(lot.status.value for lot in view.status_summary.lots)
+        if view.status_summary.lots
+        else "-"
+    )
+
+    ready_col, blocked_col, lot_col = st.columns(3)
+    ready_col.metric("Documents prets", len(ready_codes))
+    blocked_col.metric("Documents bloques", len(blocked_codes))
+    lot_col.metric("Lot", lot_status)
+
+    st.caption(
+        "Prets : "
+        + (_codes_label(ready_codes) if ready_codes else "aucun")
+        + " | Bloques : "
+        + (_codes_label(blocked_codes) if blocked_codes else "aucun")
+    )
+
+    if blocked_codes:
+        with st.expander("Voir les blocages", expanded=False):
+            st.table(
+                tuple(
+                    row
+                    for row in front_dossier_document_status_rows(view)
+                    if row["document"] in blocked_codes
+                )
+            )
 
 
 def _render_front_dossier_simple_entry(profile_label: str) -> FrontDossierSimpleEntry:
@@ -564,14 +573,27 @@ def _front_dossier_entry_from_session_state(profile_label: str) -> FrontDossierS
 
 
 def _render_front_generation_actions(dossier) -> None:
-    st.subheader("Generation V1")
+    st.subheader("Generation")
     st.caption(
-        "Action limitee au nouveau front pour SELARL creation simple : DOC-001 "
-        "a DOC-004 uniquement."
+        "Perimetre V1 : DOC-001 a DOC-004 uniquement, sur SELARL creation simple."
     )
     readiness = front_generation_readiness(dossier)
-    st.table(front_generation_document_rows(readiness))
-    with st.expander("Garde-fous generation", expanded=not readiness.can_generate_docx):
+    ready_col, blocked_col = st.columns(2)
+    ready_col.metric("Prets a generer", len(readiness.generable_doc_codes))
+    blocked_col.metric(
+        "Bloques",
+        len(readiness.blocked_doc_codes) + len(readiness.runtime_blockers),
+    )
+    st.caption(
+        "Documents cibles : "
+        + _codes_label(readiness.target_doc_codes)
+        + " | Exclus V1 : "
+        + _codes_label(readiness.excluded_doc_codes)
+    )
+    with st.expander("Details generation", expanded=False):
+        st.caption("Statuts documentaires")
+        st.table(front_generation_document_rows(readiness))
+        st.caption("Garde-fous generation")
         st.table(front_generation_runtime_rows(readiness))
 
     if readiness.can_generate_docx:
@@ -586,12 +608,13 @@ def _render_front_generation_actions(dossier) -> None:
         "nouveau_front_selarl_creation_simple.yaml",
         FRONT_GENERATION_ARTIFACTS_DIR,
     )
-    st.text_input(
-        "Dossier de sortie generation V1",
-        value=str(output_dir),
-        disabled=True,
-        key="front_generation_output_dir_display",
-    )
+    with st.expander("Dossier de sortie", expanded=False):
+        st.text_input(
+            "Dossier de sortie generation V1",
+            value=str(output_dir),
+            disabled=True,
+            key="front_generation_output_dir_display",
+        )
 
     _ensure_front_generation_session_defaults()
     docx_paths = _front_generation_docx_paths()
@@ -651,7 +674,7 @@ def _render_front_generation_actions(dossier) -> None:
                 else:
                     st.success(f"{len(pdf_batch.pdf_paths)} PDF generes.")
 
-    st.subheader("Telechargement nouveau front")
+    st.subheader("Telechargements")
     docx_paths = _front_generation_docx_paths()
     pdf_paths = _front_generation_pdf_paths()
     zip_path = _front_generation_zip_path()
@@ -698,13 +721,10 @@ def _front_generation_output_dir(default: Path) -> Path:
 
 
 def _render_target_front_documents() -> None:
-    st.info(
-        "Apercu des statuts documentaires consommes par le futur panneau "
-        "Documents attendus. Aucune generation n'est lancee depuis ce shell."
-    )
-    st.subheader("Documents de reference")
+    st.caption("Apercu des statuts documentaires consommes par le futur panneau.")
+    st.caption("Documents de reference")
     st.table(shell_document_status_rows())
-    st.subheader("Lot documentaire")
+    st.caption("Lot documentaire")
     st.table(shell_lot_status_rows())
 
 
@@ -729,6 +749,10 @@ def _render_target_front_generation() -> None:
     entry = _front_dossier_entry_from_session_state(profile_label)
     view = build_front_dossier_entry_view(entry)
     _render_front_generation_actions(view.dossier)
+
+
+def _codes_label(codes) -> str:
+    return ", ".join(str(code) for code in codes) if codes else "aucun"
 
 
 def _render_prototype_tools_shell() -> None:
