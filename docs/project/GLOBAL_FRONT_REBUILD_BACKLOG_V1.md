@@ -22,11 +22,12 @@ Ces tickets fondent le nouveau front et ne doivent pas etre recodes dans les tic
 9. `FRONT-UI-SHELL-001` - shell UI visible, nouveau front distinct du prototype.
 10. `FRONT-DOSSIER-EDITOR-001` - editeur dossier V1 branche sur `front_data`.
 11. `FRONT-DOSSIER-DATA-ENTRY-001` - premiere saisie reelle SELARL simple vers `DossierRecord`.
+12. `FRONT-GENERATION-ACTIONS-001` - actions DOCX/ZIP/PDF optionnel sur `DOC-001` a `DOC-004` depuis le nouveau front.
 
 ## Ordre recommande maintenant
 
-1. `FRONT-DOCUMENTS-PANEL-001`
-2. `FRONT-GENERATION-ACTIONS-001`
+1. Premier vrai test local du nouveau front sur `SELARL creation simple`
+2. `FRONT-DOCUMENTS-PANEL-001`
 3. `FRONT-UNIT-DOCUMENT-UI-001`
 4. `FRONT-TEST-TOOLS-CONSOLIDATION-001`
 5. `FRONT-PROTOTYPE-DEPRECATION-001`
@@ -186,6 +187,8 @@ CritÃ¨res d'acceptation :
 
 ## FRONT-GENERATION-ACTIONS-001
 
+Statut : DONE.
+
 Objectif : brancher les actions de generation du nouveau front uniquement sur les documents prets, sans modifier le moteur.
 
 Fichiers concernes :
@@ -204,12 +207,14 @@ Ne pas toucher :
 
 Dependances :
 
-- `FRONT-DOCUMENTS-PANEL-001`.
+- `FRONT-DOSSIER-DATA-ENTRY-001`.
+- `FRONT-DOCUMENTS-PANEL-001` reste utile ensuite pour consolider l'affichage documents, mais n'a pas ete rendu bloquant pour le premier test local prudent.
 
 CritÃ¨res d'acceptation :
 
-- seuls les documents `generable` ou explicitement `generable_with_reserve` selon decision UI peuvent etre proposes ;
+- seuls les documents `generable` dans le perimetre V1 peuvent etre proposes ;
 - les documents manuels restent exclus ;
+- `DOC-006`, `DOC-013` et `DOC-014` restent exclus de la generation V1 ;
 - DOCX reste prioritaire, PDF local optionnel, ZIP dossier avec manifeste ;
 - les erreurs moteur sont affichees sans masquer les raisons data-layer ;
 - aucune logique de mapping documentaire n'est dupliquee dans l'UI.

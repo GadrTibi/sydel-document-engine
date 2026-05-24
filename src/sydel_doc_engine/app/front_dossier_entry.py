@@ -58,6 +58,8 @@ class FrontDossierSimpleEntry:
     nom: str = ""
     fonction: str = "gerant"
     date_naissance: str = ""
+    ville_naissance: str = ""
+    departement_naissance: str = ""
     nationalite: str = ""
     nom_pere: str = ""
     nom_mere: str = ""
@@ -65,6 +67,7 @@ class FrontDossierSimpleEntry:
     societe_denomination: str = ""
     societe_forme_sociale: str = "SELARL"
     societe_capital_social: str = ""
+    societe_ville_rcs: str = ""
     siege_social: str = ""
     domiciliation: str = ""
     capital_titres_nombre_total: str = ""
@@ -194,6 +197,8 @@ def _add_person_if_present(
         entry.prenom,
         entry.nom,
         entry.date_naissance,
+        entry.ville_naissance,
+        entry.departement_naissance,
         entry.nationalite,
         entry.nom_pere,
         entry.nom_mere,
@@ -220,6 +225,7 @@ def _add_company_if_present(
     if not _has_any_value(
         entry.societe_denomination,
         entry.societe_capital_social,
+        entry.societe_ville_rcs,
         entry.siege_social,
         entry.domiciliation if not entry.domiciliation_same_as_siege else "",
     ):
@@ -230,6 +236,7 @@ def _add_company_if_present(
             denomination=_clean(entry.societe_denomination) or "",
             forme_sociale=_clean(entry.societe_forme_sociale),
             capital_social=_clean(entry.societe_capital_social),
+            rcs_ville=_clean(entry.societe_ville_rcs),
             metadata={"front_entry_v1": True},
         )
     )
@@ -407,6 +414,8 @@ def _add_person_canonical_values(
             "nom": entry.nom,
             "fonction": entry.fonction,
             "date_naissance": entry.date_naissance,
+            "ville_naissance": entry.ville_naissance,
+            "departement_naissance": entry.departement_naissance,
             "nationalite": entry.nationalite,
             "nom_pere": entry.nom_pere,
             "nom_mere": entry.nom_mere,
@@ -431,6 +440,7 @@ def _add_company_canonical_values(
         "societe.societe_principale.denomination": entry.societe_denomination,
         "societe.societe_principale.forme_sociale": entry.societe_forme_sociale,
         "societe.societe_principale.capital_social": entry.societe_capital_social,
+        "societe.societe_principale.rcs.ville": entry.societe_ville_rcs,
         "societe.societe_principale.siege.adresse": entry.siege_social,
         "forme_sociale": entry.societe_forme_sociale,
         "capital_social": entry.societe_capital_social,

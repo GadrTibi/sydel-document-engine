@@ -77,9 +77,9 @@ TARGET_FRONT_ITEMS: Final[tuple[FrontShellNavigationItem, ...]] = (
         key="generation",
         group=TARGET_FRONT_LABEL,
         label="Generation",
-        status="Placeholder",
-        purpose="Reserve l'emplacement des actions DOCX/PDF/ZIP du futur front.",
-        next_ticket="FRONT-GENERATION-ACTIONS-001",
+        status="Action V1",
+        purpose="Lance DOCX/ZIP/PDF optionnel pour DOC-001 a DOC-004 si le dossier V1 est pret.",
+        next_ticket="FRONT-DOCUMENTS-PANEL-001",
     ),
 )
 

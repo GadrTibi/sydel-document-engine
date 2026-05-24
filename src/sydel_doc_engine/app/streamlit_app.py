@@ -48,6 +48,15 @@ from sydel_doc_engine.app.front_dossier_entry import (
     front_dossier_entry_object_rows,
     front_dossier_entry_role_rows,
 )
+from sydel_doc_engine.app.front_generation_actions import (
+    FRONT_GENERATION_ARTIFACTS_DIR,
+    front_generation_document_rows,
+    front_generation_readiness,
+    front_generation_runtime_rows,
+    generate_front_docx,
+    generate_front_pdf,
+    generate_front_zip,
+)
 from sydel_doc_engine.app.front_shell import (
     PROTOTYPE_TOOL_LABELS,
     PROTOTYPE_TOOLS_LABEL,
@@ -308,10 +317,13 @@ def _render_target_front_dossier() -> None:
     with st.expander("Legende ready / partial / blocked", expanded=False):
         st.table(front_dossier_lot_status_legend_rows())
 
-    st.warning(
-        "Placeholder controle : les overrides avances et la generation seront "
-        "branches dans les tickets suivants."
-    )
+    if front_dossier_entry_is_supported(profile_label):
+        _render_front_generation_actions(view.dossier)
+    else:
+        st.warning(
+            "Generation non ouverte sur ce profil : les cas ordre, cession, SCM "
+            "et SPFPL restent hors perimetre de l'action V1."
+        )
 
 
 def _render_front_dossier_simple_entry(profile_label: str) -> FrontDossierSimpleEntry:
@@ -342,6 +354,14 @@ def _render_front_dossier_simple_entry(profile_label: str) -> FrontDossierSimple
         date_naissance = col_identity_left.text_input(
             "Date de naissance (AAAA-MM-JJ)",
             key="front_entry_person_date_naissance",
+        )
+        ville_naissance = col_identity_right.text_input(
+            "Ville de naissance",
+            key="front_entry_person_ville_naissance",
+        )
+        departement_naissance = col_identity_left.text_input(
+            "Departement de naissance",
+            key="front_entry_person_departement_naissance",
         )
         nationalite = col_identity_right.text_input(
             "Nationalite",
@@ -374,6 +394,10 @@ def _render_front_dossier_simple_entry(profile_label: str) -> FrontDossierSimple
         societe_capital_social = col_company_left.text_input(
             "Capital social",
             key="front_entry_company_capital_social",
+        )
+        societe_ville_rcs = col_company_right.text_input(
+            "Ville RCS",
+            key="front_entry_company_ville_rcs",
         )
         siege_social = col_company_right.text_input(
             "Siege social",
@@ -448,6 +472,8 @@ def _render_front_dossier_simple_entry(profile_label: str) -> FrontDossierSimple
         prenom=prenom,
         nom=nom,
         date_naissance=date_naissance,
+        ville_naissance=ville_naissance,
+        departement_naissance=departement_naissance,
         nationalite=nationalite,
         nom_pere=nom_pere,
         nom_mere=nom_mere,
@@ -455,6 +481,7 @@ def _render_front_dossier_simple_entry(profile_label: str) -> FrontDossierSimple
         societe_denomination=societe_denomination,
         societe_forme_sociale=societe_forme_sociale,
         societe_capital_social=societe_capital_social,
+        societe_ville_rcs=societe_ville_rcs,
         siege_social=siege_social,
         domiciliation=domiciliation,
         capital_titres_nombre_total=capital_titres_nombre_total,
@@ -469,6 +496,207 @@ def _render_front_dossier_simple_entry(profile_label: str) -> FrontDossierSimple
     )
 
 
+def _front_dossier_entry_from_session_state(profile_label: str) -> FrontDossierSimpleEntry:
+    return FrontDossierSimpleEntry(
+        profile_key=profile_label,
+        dossier_unipersonnel=bool(
+            st.session_state.get("front_entry_dossier_unipersonnel", True)
+        ),
+        domiciliation_same_as_siege=bool(
+            st.session_state.get("front_entry_domiciliation_same_as_siege", True)
+        ),
+        civilite_affichage=str(st.session_state.get("front_entry_person_civilite", "") or ""),
+        genre=str(st.session_state.get("front_entry_person_genre", "") or ""),
+        prenom=str(st.session_state.get("front_entry_person_prenom", "") or ""),
+        nom=str(st.session_state.get("front_entry_person_nom", "") or ""),
+        date_naissance=str(
+            st.session_state.get("front_entry_person_date_naissance", "") or ""
+        ),
+        ville_naissance=str(
+            st.session_state.get("front_entry_person_ville_naissance", "") or ""
+        ),
+        departement_naissance=str(
+            st.session_state.get("front_entry_person_departement_naissance", "") or ""
+        ),
+        nationalite=str(st.session_state.get("front_entry_person_nationalite", "") or ""),
+        nom_pere=str(st.session_state.get("front_entry_person_nom_pere", "") or ""),
+        nom_mere=str(st.session_state.get("front_entry_person_nom_mere", "") or ""),
+        adresse_personnelle=str(
+            st.session_state.get("front_entry_person_adresse_personnelle", "") or ""
+        ),
+        societe_denomination=str(
+            st.session_state.get("front_entry_company_denomination", "") or ""
+        ),
+        societe_forme_sociale=str(
+            st.session_state.get("front_entry_company_forme_sociale", "SELARL")
+            or "SELARL"
+        ),
+        societe_capital_social=str(
+            st.session_state.get("front_entry_company_capital_social", "") or ""
+        ),
+        societe_ville_rcs=str(
+            st.session_state.get("front_entry_company_ville_rcs", "") or ""
+        ),
+        siege_social=str(st.session_state.get("front_entry_company_siege_social", "") or ""),
+        domiciliation=str(
+            st.session_state.get("front_entry_company_domiciliation", "") or ""
+        ),
+        capital_titres_nombre_total=str(
+            st.session_state.get("front_entry_capital_titres_nombre_total", "") or ""
+        ),
+        capital_titres_valeur_nominale=str(
+            st.session_state.get("front_entry_capital_titres_valeur_nominale", "") or ""
+        ),
+        capital_repartition_associes=str(
+            st.session_state.get("front_entry_capital_repartition_associes", "") or ""
+        ),
+        decision_date=str(st.session_state.get("front_entry_decision_date", "") or ""),
+        reunion_date_lettres=str(
+            st.session_state.get("front_entry_reunion_date_lettres", "") or ""
+        ),
+        reunion_heure=str(st.session_state.get("front_entry_reunion_heure", "") or ""),
+        signature_lieu=str(st.session_state.get("front_entry_signature_lieu", "") or ""),
+        signature_date=str(st.session_state.get("front_entry_signature_date", "") or ""),
+        signature_nombre_exemplaires=str(
+            st.session_state.get("front_entry_signature_nombre_exemplaires", "") or ""
+        ),
+    )
+
+
+def _render_front_generation_actions(dossier) -> None:
+    st.subheader("Generation V1")
+    st.caption(
+        "Action limitee au nouveau front pour SELARL creation simple : DOC-001 "
+        "a DOC-004 uniquement."
+    )
+    readiness = front_generation_readiness(dossier)
+    st.table(front_generation_document_rows(readiness))
+    with st.expander("Garde-fous generation", expanded=not readiness.can_generate_docx):
+        st.table(front_generation_runtime_rows(readiness))
+
+    if readiness.can_generate_docx:
+        st.success("Les quatre documents V1 sont prets pour generation DOCX.")
+    else:
+        st.warning(
+            "Generation bloquee tant que tous les documents V1 ne sont pas "
+            "generables et que le contexte moteur minimal n'est pas complet."
+        )
+
+    output_dir = build_output_dir(
+        "nouveau_front_selarl_creation_simple.yaml",
+        FRONT_GENERATION_ARTIFACTS_DIR,
+    )
+    st.text_input(
+        "Dossier de sortie generation V1",
+        value=str(output_dir),
+        disabled=True,
+        key="front_generation_output_dir_display",
+    )
+
+    _ensure_front_generation_session_defaults()
+    docx_paths = _front_generation_docx_paths()
+    pdf_paths = _front_generation_pdf_paths()
+    zip_path = _front_generation_zip_path()
+    pdf_available = _pdf_backend_available()
+    if not pdf_available:
+        st.caption("PDF local indisponible : DOCX et ZIP restent disponibles.")
+
+    docx_col, zip_col, pdf_col = st.columns(3)
+    with docx_col:
+        if st.button(
+            "Generer les DOCX",
+            type="primary",
+            key="front_generation_generate_docx",
+            disabled=not readiness.can_generate_docx,
+        ):
+            with st.spinner("Generation DOCX depuis le nouveau front..."):
+                try:
+                    result = generate_front_docx(dossier, output_dir)
+                    docx_paths = list(result.docx_paths)
+                    st.session_state.front_generation_docx_paths = docx_paths
+                    st.session_state.front_generation_pdf_results = []
+                    st.session_state.front_generation_pdf_error = None
+                    st.session_state.front_generation_zip_path = None
+                    st.session_state.front_generation_output_dir = result.output_dir
+                    st.success(f"{len(docx_paths)} DOCX generes depuis le nouveau front.")
+                except Exception as exc:  # noqa: BLE001 - Streamlit displays the failure.
+                    st.error(f"Generation DOCX bloquee : {exc}")
+    with zip_col:
+        if st.button(
+            "Generer le ZIP",
+            key="front_generation_generate_zip",
+            disabled=not docx_paths,
+        ):
+            with st.spinner("Creation du ZIP depuis le nouveau front..."):
+                try:
+                    active_output_dir = _front_generation_output_dir(output_dir)
+                    zip_path = generate_front_zip(active_output_dir, docx_paths, pdf_paths)
+                    st.session_state.front_generation_zip_path = zip_path
+                    st.success("ZIP nouveau front genere avec manifest.")
+                except Exception as exc:  # noqa: BLE001 - Streamlit displays the failure.
+                    st.error(f"Generation ZIP bloquee : {exc}")
+    with pdf_col:
+        if st.button(
+            "Generer les PDF",
+            key="front_generation_generate_pdf",
+            disabled=not (pdf_available and docx_paths),
+        ):
+            with st.spinner("Conversion PDF depuis le nouveau front..."):
+                active_output_dir = _front_generation_output_dir(output_dir)
+                pdf_batch = generate_front_pdf(active_output_dir, docx_paths)
+                st.session_state.front_generation_pdf_results = pdf_batch.pdf_results
+                st.session_state.front_generation_pdf_error = pdf_batch.pdf_error
+                if pdf_batch.pdf_error:
+                    st.warning(f"PDF non produits : {pdf_batch.pdf_error}")
+                else:
+                    st.success(f"{len(pdf_batch.pdf_paths)} PDF generes.")
+
+    st.subheader("Telechargement nouveau front")
+    docx_paths = _front_generation_docx_paths()
+    pdf_paths = _front_generation_pdf_paths()
+    zip_path = _front_generation_zip_path()
+    if docx_paths:
+        _render_docx_downloads(docx_paths, key_prefix="front-generation")
+    if pdf_paths:
+        _render_pdf_downloads(pdf_paths, key_prefix="front-generation")
+    if zip_path is not None:
+        _download_file(
+            zip_path,
+            label="Telecharger le ZIP nouveau front",
+            mime="application/zip",
+            key=f"download-front-generation-zip-{zip_path.name}",
+        )
+    if not docx_paths and zip_path is None:
+        st.caption("Aucune sortie generee depuis le nouveau front pour le moment.")
+
+
+def _ensure_front_generation_session_defaults() -> None:
+    st.session_state.setdefault("front_generation_docx_paths", [])
+    st.session_state.setdefault("front_generation_pdf_results", [])
+    st.session_state.setdefault("front_generation_pdf_error", None)
+    st.session_state.setdefault("front_generation_zip_path", None)
+    st.session_state.setdefault("front_generation_output_dir", None)
+
+
+def _front_generation_docx_paths() -> list[Path]:
+    return list(st.session_state.get("front_generation_docx_paths") or [])
+
+
+def _front_generation_pdf_paths() -> list[Path]:
+    return [
+        result.pdf_path
+        for result in st.session_state.get("front_generation_pdf_results") or []
+    ]
+
+
+def _front_generation_zip_path() -> Path | None:
+    return st.session_state.get("front_generation_zip_path")
+
+
+def _front_generation_output_dir(default: Path) -> Path:
+    return st.session_state.get("front_generation_output_dir") or default
+
+
 def _render_target_front_documents() -> None:
     st.info(
         "Apercu des statuts documentaires consommes par le futur panneau "
@@ -481,20 +709,26 @@ def _render_target_front_documents() -> None:
 
 
 def _render_target_front_generation() -> None:
-    st.warning(
-        "Les actions DOCX/PDF/ZIP du nouveau front seront branchees plus tard, "
-        "uniquement sur les documents declares prets par la couche de statuts."
+    st.info(
+        "Zone d'action V1 du nouveau front. Elle relit la saisie du dossier en "
+        "session, reconstruit un DossierRecord, puis ne propose la generation "
+        "que pour DOC-001 a DOC-004 si tout est pret."
     )
-    st.table(
-        (
-            {
-                "zone": "Generation",
-                "statut": "Placeholder",
-                "fondation": "document_status + ui_runtime",
-                "prochain ticket": "FRONT-GENERATION-ACTIONS-001",
-            },
+    profile_label = str(
+        st.session_state.get(
+            "front_dossier_editor_profile",
+            front_dossier_editor_profile_labels()[0],
         )
     )
+    if not front_dossier_entry_is_supported(profile_label):
+        st.warning(
+            "Generation V1 limitee au profil SELARL creation simple. "
+            "Retournez dans Dossier pour choisir ce profil."
+        )
+        return
+    entry = _front_dossier_entry_from_session_state(profile_label)
+    view = build_front_dossier_entry_view(entry)
+    _render_front_generation_actions(view.dossier)
 
 
 def _render_prototype_tools_shell() -> None:

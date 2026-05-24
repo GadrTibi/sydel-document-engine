@@ -105,7 +105,8 @@ def test_streamlit_shell_renders_new_dossier_editor() -> None:
     )
     assert any("Editeur dossier" in item.value for item in app.subheader)
     assert any("Documents attendus et statuts" in item.value for item in app.subheader)
-    assert any("Placeholder controle" in item.value for item in app.warning)
+    assert any("Generation V1" in item.value for item in app.subheader)
+    assert any("Generation bloquee" in item.value for item in app.warning)
 
 
 def test_streamlit_shell_keeps_prototype_zone_secondary() -> None:
