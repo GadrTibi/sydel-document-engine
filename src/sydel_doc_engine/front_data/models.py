@@ -137,6 +137,12 @@ class ValidationIssueType(StrEnum):
     UNRESOLVED_AMBIGUITY = "unresolved_ambiguity"
     MISSING_CANONICAL_VALUE = "missing_canonical_value"
     UNLINKED_REQUIRED_ENTITY = "unlinked_required_entity"
+    INCOMPATIBLE_ROLE_TARGET = "incompatible_role_target"
+    INVALID_ROLE_SCOPE = "invalid_role_scope"
+    ROLE_CONFUSION = "role_confusion"
+    MISSING_REPRESENTED_ENTITY = "missing_represented_entity"
+    THIRD_PARTY_ROLE_CONFLICT = "third_party_role_conflict"
+    IMPLICIT_ROLE_REUSE_FORBIDDEN = "implicit_role_reuse_forbidden"
 
 
 class ValidationSeverity(StrEnum):
@@ -256,6 +262,9 @@ class RoleAssignment:
     explicit: bool = True
     source_rule_id: str | None = None
     document_code: str | None = None
+    represented_target_type: RoleTargetType | None = None
+    represented_target_id: str | None = None
+    represented_role: BusinessRole | None = None
     notes: str = ""
 
 
@@ -399,6 +408,9 @@ class DossierRecord:
         document_code: str | None = None,
         source_rule_id: str | None = None,
         explicit: bool = True,
+        represented_target_type: RoleTargetType | None = None,
+        represented_target_id: str | None = None,
+        represented_role: BusinessRole | None = None,
         notes: str = "",
     ) -> RoleAssignment:
         role_id = assignment_id or f"role-{len(self.role_assignments) + 1:03d}"
@@ -414,6 +426,9 @@ class DossierRecord:
             explicit=explicit,
             source_rule_id=source_rule_id,
             document_code=document_code,
+            represented_target_type=represented_target_type,
+            represented_target_id=represented_target_id,
+            represented_role=represented_role,
             notes=notes,
         )
         self.role_assignments[role_id] = assignment

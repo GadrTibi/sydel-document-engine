@@ -53,8 +53,7 @@ CANONICAL_FIELD_DEFINITIONS: dict[str, CanonicalFieldDefinition] = {
     "personne.{role}.*": _field(
         "personne.{role}.*",
         FrontObjectType.PERSON,
-        role=BusinessRole.PRATICIEN,
-        notes="Role placeholder resolved by RoleAssignment, never by silent merge.",
+        notes="Generic role placeholder resolved by RoleAssignment; no default role.",
     ),
     "personne.{role}.civilite_affichage": _field(
         "personne.{role}.civilite_affichage",
@@ -87,7 +86,7 @@ CANONICAL_FIELD_DEFINITIONS: dict[str, CanonicalFieldDefinition] = {
     "societe.{role}.*": _field(
         "societe.{role}.*",
         FrontObjectType.COMPANY,
-        role=BusinessRole.SOCIETE_PRINCIPALE,
+        notes="Generic company role placeholder; never defaults to societe_principale.",
     ),
     "societe.{role}.denomination": _field(
         "societe.{role}.denomination",
