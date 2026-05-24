@@ -30,6 +30,7 @@ from sydel_doc_engine.app.business_wizard import (
     selarl_ui_visible_screen_title,
 )
 from sydel_doc_engine.app.single_document_mode import (
+    UNIT_STATUS_GENERABLE_WITH_RESERVE,
     UNIT_STATUS_MANUAL_ONLY,
     UNIT_STATUS_NEEDS_MAPPING,
     UNIT_STATUS_NOT_IMPLEMENTED,
@@ -40,10 +41,12 @@ from sydel_doc_engine.app.single_document_mode import (
     SingleDocumentFieldSpec,
     SingleDocumentInput,
     build_single_document_context,
+    build_single_document_unit_plan,
     emprunt_field_specs_for_doc_004,
     field_specs_for_document,
     sample_single_document_input,
     single_document_choices,
+    single_document_requirement_rows,
     single_document_table_rows,
     validate_single_document_input,
 )
@@ -331,6 +334,9 @@ def _render_single_document_mode() -> None:
         key="single_document_choice",
     )
     _render_single_document_choice_status(selected_choice)
+    if selected_choice.document_code is not None:
+        st.subheader("Exigences data-layer")
+        st.table(single_document_requirement_rows(selected_choice.document_code))
     if selected_choice.status != UNIT_STATUS_SUPPORTED or selected_choice.document_code is None:
         return
 
@@ -348,8 +354,14 @@ def _render_single_document_mode() -> None:
         use_examples,
     )
     missing_fields = validate_single_document_input(data)
+    unit_plan = build_single_document_unit_plan(data)
     if missing_fields:
         st.warning("Champs manquants : " + ", ".join(missing_fields))
+    elif not unit_plan.is_generation_allowed:
+        st.warning(
+            "Generation bloquee par la couche data : "
+            + " ; ".join(unit_plan.explain_blockers())
+        )
     else:
         st.success("Champs requis du document completés.")
 
@@ -374,7 +386,7 @@ def _render_single_document_mode() -> None:
         if st.button(
             "Generer le DOCX",
             type="primary",
-            disabled=bool(missing_fields),
+            disabled=bool(missing_fields) or not unit_plan.is_generation_allowed,
         ):
             with st.spinner("Generation DOCX en cours..."):
                 try:
@@ -451,6 +463,12 @@ def _render_single_document_choice_status(choice: SingleDocumentChoice) -> None:
         return
     if choice.status == UNIT_STATUS_NEEDS_MAPPING:
         st.warning("Document sans mapping DOC-XXX confirme : generation impossible.")
+        return
+    if choice.status == UNIT_STATUS_GENERABLE_WITH_RESERVE:
+        st.warning(
+            "Document visible avec reserve documentaire : non ouvert a la generation "
+            "dans le perimetre unitaire V1."
+        )
         return
     if choice.status == UNIT_STATUS_NOT_SUPPORTED:
         st.info("Document pas encore supporte dans ce mode unitaire.")

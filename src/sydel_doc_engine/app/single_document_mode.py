@@ -29,19 +29,41 @@ from sydel_doc_engine.domain.models import (
     ReunionContext,
     Signature,
 )
-
-SUPPORTED_SINGLE_DOCUMENT_CODES: Final[tuple[str, ...]] = (
-    "DOC-001",
-    "DOC-002",
-    "DOC-003",
-    "DOC-004",
+from sydel_doc_engine.front_data.models import (
+    AddressRecord,
+    AddressUsage,
+    BusinessRole,
+    CanonicalFieldValue,
+    CanonicalRelationType,
+    CompanyRecord,
+    DossierRecord,
+    FrontObjectType,
+    PersonRecord,
+    ReuseRuleKind,
+    ReuseRuleState,
+    ReuseRuleStatus,
+    RoleScope,
+    RoleTargetType,
+    address_ref,
 )
+from sydel_doc_engine.front_data.unit_document_mode import (
+    UNIT_DOCUMENT_V1_SUPPORTED_CODES,
+    UnitDocumentPlan,
+    UnitDocumentScopeStatus,
+    build_unit_document_plan,
+    prepare_unit_document_generation,
+    unit_document_requirement,
+    unit_document_requirement_rows,
+)
+
+SUPPORTED_SINGLE_DOCUMENT_CODES: Final[tuple[str, ...]] = UNIT_DOCUMENT_V1_SUPPORTED_CODES
 
 UNIT_STATUS_SUPPORTED: Final = "supported"
 UNIT_STATUS_MANUAL_ONLY: Final = "manual_only"
 UNIT_STATUS_NOT_IMPLEMENTED: Final = "not_implemented"
 UNIT_STATUS_NEEDS_MAPPING: Final = "needs_mapping"
 UNIT_STATUS_NOT_SUPPORTED: Final = "not_supported"
+UNIT_STATUS_GENERABLE_WITH_RESERVE: Final = "generable_with_reserve"
 
 UNIT_STATUS_LABELS: Final[dict[str, str]] = {
     UNIT_STATUS_SUPPORTED: "Supporte dans ce mode",
@@ -49,6 +71,7 @@ UNIT_STATUS_LABELS: Final[dict[str, str]] = {
     UNIT_STATUS_NOT_IMPLEMENTED: "Non implemente",
     UNIT_STATUS_NEEDS_MAPPING: "Mapping DOC-XXX a confirmer",
     UNIT_STATUS_NOT_SUPPORTED: "Pas encore supporte dans ce mode",
+    UNIT_STATUS_GENERABLE_WITH_RESERVE: "Visible avec reserve",
 }
 
 
@@ -255,6 +278,18 @@ FIELD_SPECS_BY_DOCUMENT: Final[dict[str, tuple[SingleDocumentFieldSpec, ...]]] =
         ),
         SingleDocumentFieldSpec(
             "societe_capital_social", "Capital social", "Societe", example="5 000"
+        ),
+        SingleDocumentFieldSpec(
+            "societe_siege_num_voie", "Adresse du siege - numero", "Siege", example="12"
+        ),
+        SingleDocumentFieldSpec(
+            "societe_siege_voie", "Adresse du siege - voie", "Siege", example="rue de la Paix"
+        ),
+        SingleDocumentFieldSpec(
+            "societe_siege_cp", "Adresse du siege - code postal", "Siege", example="75002"
+        ),
+        SingleDocumentFieldSpec(
+            "societe_siege_ville", "Adresse du siege - ville", "Siege", example="Paris"
         ),
         SingleDocumentFieldSpec(
             "domiciliation_adresse_affichee",
@@ -572,6 +607,10 @@ def single_document_table_rows(
     ]
 
 
+def single_document_requirement_rows(document_code: str) -> tuple[dict[str, str], ...]:
+    return unit_document_requirement_rows(document_code)
+
+
 def field_specs_for_document(document_code: str) -> tuple[SingleDocumentFieldSpec, ...]:
     return FIELD_SPECS_BY_DOCUMENT.get(document_code, ())
 
@@ -674,6 +713,37 @@ def validate_single_document_input(data: SingleDocumentInput) -> tuple[str, ...]
     return tuple(dict.fromkeys(missing))
 
 
+def build_single_document_front_dossier(data: SingleDocumentInput) -> DossierRecord:
+    dossier = DossierRecord(
+        id=f"unit-{data.document_code}",
+        label=f"Document unitaire {data.document_code}",
+        structure=data.structure,
+    )
+    dossier.add_document_requirement(unit_document_requirement(data.document_code))
+
+    if data.document_code == "DOC-004":
+        _populate_doc_004_front_dossier(dossier, data)
+    else:
+        _populate_common_signataire(dossier, data)
+        if data.document_code in {"DOC-002", "DOC-003"}:
+            _populate_common_company(dossier, data)
+        if data.document_code == "DOC-002":
+            _populate_doc_002_front_data(dossier, data)
+        if data.document_code == "DOC-003":
+            _populate_doc_003_front_data(dossier, data)
+        if data.document_code == "DOC-001":
+            _populate_doc_001_front_data(dossier, data)
+
+    _add_canonical_value(dossier, "signature.lieu", data.signature_lieu)
+    _add_canonical_value(dossier, "signature.date", data.signature_date)
+    return dossier
+
+
+def build_single_document_unit_plan(data: SingleDocumentInput) -> UnitDocumentPlan:
+    dossier = build_single_document_front_dossier(data)
+    return prepare_unit_document_generation(data.document_code, dossier).plan
+
+
 def build_single_document_context(data: SingleDocumentInput) -> DocumentGenerationContext:
     missing = validate_single_document_input(data)
     if missing:
@@ -690,6 +760,410 @@ def build_single_document_context(data: SingleDocumentInput) -> DocumentGenerati
     raise ValueError(f"Document non supporte dans ce mode: {data.document_code}")
 
 
+def _populate_common_signataire(
+    dossier: DossierRecord,
+    data: SingleDocumentInput,
+) -> None:
+    person = PersonRecord(
+        id="person-signataire",
+        civilite_affichage=data.personne_civilite or None,
+        genre=data.personne_genre or None,
+        prenom=data.personne_prenom or None,
+        nom=data.personne_nom or None,
+        fonction=data.personne_fonction_dirigeant or None,
+    )
+    dossier.add_person(person)
+    dossier.assign_role(
+        BusinessRole.SIGNATAIRE,
+        RoleTargetType.PERSON,
+        person.id,
+        scope=RoleScope.DOCUMENT,
+        document_code=data.document_code,
+    )
+    if data.document_code == "DOC-002":
+        dossier.assign_role(
+            BusinessRole.PRATICIEN,
+            RoleTargetType.PERSON,
+            person.id,
+            scope=RoleScope.DOSSIER,
+        )
+
+    address = _front_address_from_parts(
+        "address-signataire",
+        AddressUsage.ADRESSE_PERSONNELLE,
+        data.personne_adresse_num_voie,
+        data.personne_adresse_voie,
+        data.personne_adresse_cp,
+        data.personne_adresse_ville,
+    )
+    if address.has_value():
+        dossier.add_address(address)
+        person.add_address(address.id)
+
+
+def _populate_common_company(
+    dossier: DossierRecord,
+    data: SingleDocumentInput,
+) -> None:
+    company = CompanyRecord(
+        id="company-principale",
+        denomination=data.societe_denomination or "__societe_a_completer__",
+        forme_sociale=data.societe_forme_sociale or None,
+        capital_social=data.societe_capital_social or None,
+    )
+    dossier.add_company(company)
+    dossier.assign_role(
+        BusinessRole.SOCIETE_PRINCIPALE,
+        RoleTargetType.COMPANY,
+        company.id,
+        scope=RoleScope.DOSSIER,
+    )
+    address = _front_address_from_parts(
+        "address-siege",
+        AddressUsage.SIEGE_SOCIAL,
+        data.societe_siege_num_voie,
+        data.societe_siege_voie,
+        data.societe_siege_cp,
+        data.societe_siege_ville,
+    )
+    if address.has_value():
+        dossier.add_address(address)
+        company.add_address(address.id)
+
+
+def _populate_doc_001_front_data(
+    dossier: DossierRecord,
+    data: SingleDocumentInput,
+) -> None:
+    _add_canonical_value(dossier, "personne.signataire.genre", data.personne_genre)
+    _add_canonical_value(
+        dossier,
+        "personne.signataire.civilite_affichage",
+        data.personne_civilite,
+    )
+    _add_canonical_value(dossier, "personne.signataire.prenom", data.personne_prenom)
+    _add_canonical_value(dossier, "personne.signataire.nom", data.personne_nom)
+    _add_canonical_value(
+        dossier,
+        "personne.signataire.date_naissance",
+        data.personne_date_naissance,
+    )
+    _add_canonical_value(
+        dossier,
+        "personne.signataire.nationalite",
+        data.personne_nationalite,
+    )
+    _add_canonical_value(dossier, "personne.signataire.nom_pere", data.personne_nom_pere)
+    _add_canonical_value(dossier, "personne.signataire.nom_mere", data.personne_nom_mere)
+    _add_canonical_value(
+        dossier,
+        "personne.signataire.adresse_personnelle",
+        _display_address(
+            data.personne_adresse_num_voie,
+            data.personne_adresse_voie,
+            data.personne_adresse_cp,
+            data.personne_adresse_ville,
+        ),
+    )
+
+
+def _populate_doc_002_front_data(
+    dossier: DossierRecord,
+    data: SingleDocumentInput,
+) -> None:
+    _add_canonical_value(
+        dossier,
+        "personne.signataire.civilite_affichage",
+        data.personne_civilite,
+    )
+    _add_canonical_value(dossier, "personne.signataire.prenom", data.personne_prenom)
+    _add_canonical_value(dossier, "personne.signataire.nom", data.personne_nom)
+    _add_canonical_value(
+        dossier,
+        "societe.societe_principale.denomination",
+        data.societe_denomination,
+    )
+    _add_canonical_value(
+        dossier,
+        "societe.societe_principale.capital_social",
+        data.societe_capital_social,
+    )
+    _add_canonical_value(
+        dossier,
+        "societe.societe_principale.siege.adresse",
+        _display_address(
+            data.societe_siege_num_voie,
+            data.societe_siege_voie,
+            data.societe_siege_cp,
+            data.societe_siege_ville,
+        ),
+    )
+    domiciliation = AddressRecord(
+        id="address-domiciliation",
+        usage=AddressUsage.DOMICILIATION,
+        display_value=data.domiciliation_adresse_affichee or None,
+    )
+    if domiciliation.has_value():
+        dossier.add_address(domiciliation)
+    dossier.add_reuse_rule(
+        ReuseRuleState(
+            id="unit-doc-002-siege-domiciliation",
+            source_ref=address_ref(AddressUsage.SIEGE_SOCIAL),
+            target_ref=address_ref(AddressUsage.DOMICILIATION),
+            relation_type=CanonicalRelationType.EXPLICIT_REUSE_ONLY,
+            label="Document unitaire : domiciliation depuis le siege",
+            kind=ReuseRuleKind.REFERENCE,
+            status=ReuseRuleStatus.ACTIVE,
+            explicit=True,
+        )
+    )
+    _add_canonical_value(
+        dossier,
+        "domiciliation.adresse",
+        data.domiciliation_adresse_affichee,
+    )
+    dossier.resolve_ambiguity("legacy_domiciliation_display_alias")
+
+
+def _populate_doc_003_front_data(
+    dossier: DossierRecord,
+    data: SingleDocumentInput,
+) -> None:
+    _add_canonical_value(
+        dossier,
+        "personne.signataire.civilite_affichage",
+        data.personne_civilite,
+    )
+    _add_canonical_value(dossier, "personne.signataire.prenom", data.personne_prenom)
+    _add_canonical_value(dossier, "personne.signataire.nom", data.personne_nom)
+    _add_canonical_value(
+        dossier,
+        "personne.signataire.fonction",
+        data.personne_fonction_dirigeant,
+    )
+    _add_canonical_value(
+        dossier,
+        "personne.signataire.adresse_personnelle",
+        _display_address(
+            data.personne_adresse_num_voie,
+            data.personne_adresse_voie,
+            data.personne_adresse_cp,
+            data.personne_adresse_ville,
+        ),
+    )
+    _add_canonical_value(
+        dossier,
+        "societe.societe_principale.forme_sociale",
+        data.societe_forme_sociale,
+    )
+    _add_canonical_value(
+        dossier,
+        "societe.societe_principale.denomination",
+        data.societe_denomination,
+    )
+    _add_canonical_value(
+        dossier,
+        "societe.societe_principale.siege.adresse",
+        _display_address(
+            data.societe_siege_num_voie,
+            data.societe_siege_voie,
+            data.societe_siege_cp,
+            data.societe_siege_ville,
+        ),
+    )
+
+
+def _populate_doc_004_front_dossier(
+    dossier: DossierRecord,
+    data: SingleDocumentInput,
+) -> None:
+    person = PersonRecord(
+        id="person-gerant",
+        civilite_affichage=data.dirigeant_civilite_affichage or None,
+        genre=data.dirigeant_genre or None,
+        prenom=data.dirigeant_prenom or None,
+        nom=data.dirigeant_nom or None,
+        fonction=data.dirigeant_fonction_affichage or None,
+    )
+    dossier.add_person(person)
+    for role in (BusinessRole.GERANT, BusinessRole.ASSOCIE):
+        dossier.assign_role(
+            role,
+            RoleTargetType.PERSON,
+            person.id,
+            scope=RoleScope.DOSSIER,
+        )
+    dossier.assign_role(
+        BusinessRole.SIGNATAIRE,
+        RoleTargetType.PERSON,
+        person.id,
+        scope=RoleScope.DOCUMENT,
+        document_code=data.document_code,
+    )
+
+    company = CompanyRecord(
+        id="company-principale",
+        denomination=data.societe_denomination or "__societe_a_completer__",
+        forme_sociale=data.societe_forme_sociale or None,
+        capital_social=data.societe_capital_social or None,
+    )
+    dossier.add_company(company)
+    dossier.assign_role(
+        BusinessRole.SOCIETE_PRINCIPALE,
+        RoleTargetType.COMPANY,
+        company.id,
+        scope=RoleScope.DOSSIER,
+    )
+
+    gerant_address = _front_address_from_parts(
+        "address-gerant",
+        AddressUsage.ADRESSE_PERSONNELLE,
+        data.dirigeant_adresse_num_voie,
+        data.dirigeant_adresse_voie,
+        data.dirigeant_adresse_cp,
+        data.dirigeant_adresse_ville,
+    )
+    if gerant_address.has_value():
+        dossier.add_address(gerant_address)
+        person.add_address(gerant_address.id)
+
+    siege = _front_address_from_parts(
+        "address-siege",
+        AddressUsage.SIEGE_SOCIAL,
+        data.societe_siege_num_voie,
+        data.societe_siege_voie,
+        data.societe_siege_cp,
+        data.societe_siege_ville,
+    )
+    if siege.has_value():
+        dossier.add_address(siege)
+        company.add_address(siege.id)
+
+    _add_canonical_value(
+        dossier,
+        "societe.societe_principale.denomination",
+        data.societe_denomination,
+    )
+    _add_canonical_value(
+        dossier,
+        "societe.societe_principale.forme_sociale",
+        data.societe_forme_sociale,
+    )
+    _add_canonical_value(
+        dossier,
+        "societe.societe_principale.capital_social",
+        data.societe_capital_social,
+    )
+    _add_canonical_value(
+        dossier,
+        "societe.societe_principale.siege.adresse",
+        _display_address(
+            data.societe_siege_num_voie,
+            data.societe_siege_voie,
+            data.societe_siege_cp,
+            data.societe_siege_ville,
+        ),
+    )
+    _add_canonical_value(
+        dossier,
+        "capital.titres.nombre_total",
+        data.capital_nb_parts_total,
+    )
+    _add_canonical_value(
+        dossier,
+        "capital.titres.valeur_nominale",
+        data.capital_valeur_nominale_part,
+    )
+    _add_canonical_value(dossier, "capital.repartition_associes", data.associes)
+    _add_canonical_value(
+        dossier,
+        "personne.gerant.civilite_affichage",
+        data.dirigeant_civilite_affichage,
+    )
+    _add_canonical_value(dossier, "personne.gerant.prenom", data.dirigeant_prenom)
+    _add_canonical_value(dossier, "personne.gerant.nom", data.dirigeant_nom)
+    _add_canonical_value(
+        dossier,
+        "personne.gerant.date_naissance",
+        data.dirigeant_date_naissance,
+    )
+    _add_canonical_value(
+        dossier,
+        "personne.gerant.nationalite",
+        data.dirigeant_nationalite,
+    )
+    _add_canonical_value(
+        dossier,
+        "personne.gerant.adresse_personnelle",
+        _display_address(
+            data.dirigeant_adresse_num_voie,
+            data.dirigeant_adresse_voie,
+            data.dirigeant_adresse_cp,
+            data.dirigeant_adresse_ville,
+        ),
+    )
+    _add_canonical_value(dossier, "decision.date", data.decision_date)
+    _add_canonical_value(dossier, "reunion.date_lettres", data.reunion_date_lettres)
+    _add_canonical_value(dossier, "reunion.heure", data.reunion_heure)
+    _add_canonical_value(
+        dossier,
+        "signature.nombre_exemplaires",
+        data.signature_nombre_exemplaires,
+    )
+
+
+def _front_address_from_parts(
+    address_id: str,
+    usage: AddressUsage,
+    street_number: str,
+    street_name: str,
+    postal_code: str,
+    city: str,
+) -> AddressRecord:
+    return AddressRecord(
+        id=address_id,
+        usage=usage,
+        display_value=_display_address(street_number, street_name, postal_code, city),
+        street_number=street_number or None,
+        street_name=street_name or None,
+        postal_code=postal_code or None,
+        city=city or None,
+        owner_object_type=(
+            FrontObjectType.COMPANY
+            if usage is AddressUsage.SIEGE_SOCIAL
+            else FrontObjectType.PERSON
+        ),
+    )
+
+
+def _display_address(
+    street_number: str,
+    street_name: str,
+    postal_code: str,
+    city: str,
+) -> str:
+    return " ".join(
+        part.strip()
+        for part in (street_number, street_name, postal_code, city)
+        if part and part.strip()
+    )
+
+
+def _add_canonical_value(
+    dossier: DossierRecord,
+    field_path: str,
+    value: object,
+) -> None:
+    if _is_blank(value):
+        return
+    dossier.add_canonical_value(
+        CanonicalFieldValue(
+            field_path=field_path,
+            value=value,
+        )
+    )
+
+
 def _choice_from_expected(document: ExpectedDocument) -> SingleDocumentChoice:
     return SingleDocumentChoice(
         document_key=document.document_key,
@@ -703,6 +1177,10 @@ def _choice_from_expected(document: ExpectedDocument) -> SingleDocumentChoice:
 
 
 def _choice_status(document: ExpectedDocument) -> str:
+    if document.document_code is not None:
+        return _app_status_from_unit_scope(
+            build_unit_document_plan(document.document_code).scope_status
+        )
     if document.availability == DocumentAvailability.MANUAL_ONLY:
         return UNIT_STATUS_MANUAL_ONLY
     if document.availability == DocumentAvailability.NOT_IMPLEMENTED:
@@ -712,8 +1190,20 @@ def _choice_status(document: ExpectedDocument) -> str:
         or document.document_code is None
     ):
         return UNIT_STATUS_NEEDS_MAPPING
-    if document.document_code in SUPPORTED_SINGLE_DOCUMENT_CODES:
+    return UNIT_STATUS_NOT_SUPPORTED
+
+
+def _app_status_from_unit_scope(scope_status: UnitDocumentScopeStatus) -> str:
+    if scope_status is UnitDocumentScopeStatus.SUPPORTED:
         return UNIT_STATUS_SUPPORTED
+    if scope_status is UnitDocumentScopeStatus.MANUAL_ONLY:
+        return UNIT_STATUS_MANUAL_ONLY
+    if scope_status is UnitDocumentScopeStatus.NOT_IMPLEMENTED:
+        return UNIT_STATUS_NOT_IMPLEMENTED
+    if scope_status is UnitDocumentScopeStatus.CONTEXT_INCOMPLETE:
+        return UNIT_STATUS_NEEDS_MAPPING
+    if scope_status is UnitDocumentScopeStatus.GENERABLE_WITH_RESERVE:
+        return UNIT_STATUS_GENERABLE_WITH_RESERVE
     return UNIT_STATUS_NOT_SUPPORTED
 
 
@@ -1099,4 +1589,8 @@ def _required_positive_int_value(value: int | None, field_name: str) -> int:
 
 
 def _is_blank(value: object) -> bool:
-    return value is None or (isinstance(value, str) and not value.strip())
+    return (
+        value is None
+        or (isinstance(value, str) and not value.strip())
+        or (isinstance(value, (tuple, list)) and not value)
+    )
