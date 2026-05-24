@@ -29,6 +29,19 @@ from sydel_doc_engine.app.business_wizard import (
     selarl_ui_visible_fields_by_step,
     selarl_ui_visible_screen_title,
 )
+from sydel_doc_engine.app.front_shell import (
+    PROTOTYPE_TOOL_LABELS,
+    PROTOTYPE_TOOLS_LABEL,
+    TARGET_FRONT_AREA_LABELS,
+    TARGET_FRONT_LABEL,
+    front_shell_navigation_rows,
+    prototype_tool_navigation_rows,
+    shell_document_status_rows,
+    shell_flow_block_rows,
+    shell_flow_step_rows,
+    shell_lot_status_rows,
+    target_front_navigation_rows,
+)
 from sydel_doc_engine.app.single_document_mode import (
     UNIT_STATUS_GENERABLE_WITH_RESERVE,
     UNIT_STATUS_MANUAL_ONLY,
@@ -180,6 +193,112 @@ def _render_pdf_downloads(pdf_paths: list[Path], *, key_prefix: str) -> None:
             mime="application/pdf",
             key=f"download-{key_prefix}-pdf-{index}-{path.name}",
         )
+
+
+def _render_target_front_shell() -> None:
+    st.subheader(TARGET_FRONT_LABEL)
+    st.caption(
+        "Premiere tranche visible du nouveau front : navigation cible, "
+        "fondations front_data exposees, editeur dossier complet non implemente."
+    )
+    area = st.radio(
+        "Zone du nouveau front",
+        TARGET_FRONT_AREA_LABELS,
+        horizontal=True,
+        key="front_shell_target_area",
+    )
+
+    if area == "Accueil / selection":
+        _render_target_front_home()
+    elif area == "Dossier":
+        _render_target_front_dossier()
+    elif area == "Documents attendus":
+        _render_target_front_documents()
+    else:
+        _render_target_front_generation()
+
+
+def _render_target_front_home() -> None:
+    st.info(
+        "Ce shell est la nouvelle entree produit. Les zones ci-dessous sont "
+        "structurees pour le rebuild, sans reprendre la logique du prototype."
+    )
+    st.table(front_shell_navigation_rows())
+    st.subheader("Zones cible")
+    st.table(target_front_navigation_rows())
+
+
+def _render_target_front_dossier() -> None:
+    st.info(
+        "Vue read-only du flow dossier global. Le prochain ticket construira "
+        "l'editeur dossier data-first a partir de ces etapes."
+    )
+    st.subheader("Etapes dossier")
+    st.table(shell_flow_step_rows())
+    with st.expander("Blocs metier actifs sur les sentinelles", expanded=False):
+        st.table(shell_flow_block_rows())
+
+
+def _render_target_front_documents() -> None:
+    st.info(
+        "Apercu des statuts documentaires consommes par le futur panneau "
+        "Documents attendus. Aucune generation n'est lancee depuis ce shell."
+    )
+    st.subheader("Documents de reference")
+    st.table(shell_document_status_rows())
+    st.subheader("Lot documentaire")
+    st.table(shell_lot_status_rows())
+
+
+def _render_target_front_generation() -> None:
+    st.warning(
+        "Les actions DOCX/PDF/ZIP du nouveau front seront branchees plus tard, "
+        "uniquement sur les documents declares prets par la couche de statuts."
+    )
+    st.table(
+        (
+            {
+                "zone": "Generation",
+                "statut": "Placeholder",
+                "fondation": "document_status + ui_runtime",
+                "prochain ticket": "FRONT-GENERATION-ACTIONS-001",
+            },
+        )
+    )
+
+
+def _render_prototype_tools_shell() -> None:
+    st.subheader(PROTOTYPE_TOOLS_LABEL)
+    st.caption(
+        "Zone secondaire : les parcours ci-dessous restent disponibles pour "
+        "smoke, diagnostic et comparaison. Ils ne representent plus le front cible."
+    )
+    st.table(prototype_tool_navigation_rows())
+    tool = st.radio(
+        "Outil de test / prototype",
+        PROTOTYPE_TOOL_LABELS,
+        horizontal=True,
+        key="front_shell_prototype_tool",
+    )
+
+    if tool == "Assistant metier prototype":
+        st.warning(
+            "Assistant metier conserve comme bac a sable historique. "
+            "Le futur editeur dossier sera reconstruit depuis front_data."
+        )
+        _render_business_mode()
+    elif tool == "Document unitaire":
+        st.warning(
+            "Mode de test separe du parcours dossier complet. Il reste utile "
+            "pour verifier un document isole."
+        )
+        _render_single_document_mode()
+    else:
+        st.warning(
+            "Diagnostic technique reserve aux contextes YAML/JSON et aux "
+            "verifications moteur."
+        )
+        _render_technical_mode()
 
 
 def _render_business_mode() -> None:
@@ -2046,20 +2165,19 @@ def _default_forme_longue(structure: str) -> str:
 st.set_page_config(page_title="SYDEL Document Engine", layout="wide")
 
 st.title("SYDEL Document Engine")
-st.caption("Generation dossier DOCX, PDF local optionnel et ZIP.")
+st.caption("Nouveau front global, prototype isole, outils de diagnostic conserves.")
 
-mode = st.radio(
-    "Mode d'utilisation",
-    ("Assistant metier", "Document unitaire", "Technique / diagnostic"),
+workspace = st.radio(
+    "Espace de travail",
+    (TARGET_FRONT_LABEL, PROTOTYPE_TOOLS_LABEL),
     horizontal=True,
+    key="front_shell_workspace",
 )
 
-if mode == "Assistant metier":
-    _render_business_mode()
-elif mode == "Document unitaire":
-    _render_single_document_mode()
+if workspace == TARGET_FRONT_LABEL:
+    _render_target_front_shell()
 else:
-    _render_technical_mode()
+    _render_prototype_tools_shell()
 
 st.caption(
     "La generation technique ne vaut pas validation juridique ni revue visuelle humaine. "

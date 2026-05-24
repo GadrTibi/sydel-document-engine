@@ -19,16 +19,16 @@ Ces tickets fondent le nouveau front et ne doivent pas etre recodes dans les tic
 6. `FRONT-UNIT-DOCUMENT-MODE-001` - mode document unique data-layer.
 7. `FRONT-TEST-PREFILL-001` - scenarios fictifs alignes sur `front_data`.
 8. `FRONT-REVIEW-001` - carte de migration, decision prototype, backlog UI visible.
+9. `FRONT-UI-SHELL-001` - shell UI visible, nouveau front distinct du prototype.
 
 ## Ordre recommande maintenant
 
-1. `FRONT-UI-SHELL-001`
-2. `FRONT-DOSSIER-EDITOR-001`
-3. `FRONT-DOCUMENTS-PANEL-001`
-4. `FRONT-GENERATION-ACTIONS-001`
-5. `FRONT-UNIT-DOCUMENT-UI-001`
-6. `FRONT-TEST-TOOLS-CONSOLIDATION-001`
-7. `FRONT-PROTOTYPE-DEPRECATION-001`
+1. `FRONT-DOSSIER-EDITOR-001`
+2. `FRONT-DOCUMENTS-PANEL-001`
+3. `FRONT-GENERATION-ACTIONS-001`
+4. `FRONT-UNIT-DOCUMENT-UI-001`
+5. `FRONT-TEST-TOOLS-CONSOLIDATION-001`
+6. `FRONT-PROTOTYPE-DEPRECATION-001`
 
 `SELARL-JURIST-REVIEW-001` reste recommande en parallele comme revue metier/juridique, mais le shell UI peut demarrer sans attendre cette revue tant qu'il ne modifie pas les generateurs ni le wording juridique.
 
@@ -46,6 +46,8 @@ Pour tous les tickets UI visibles :
 - distinguer dossier complet, document unitaire et diagnostic technique.
 
 ## FRONT-UI-SHELL-001
+
+Statut : DONE.
 
 Objectif : creer la premiere tranche visible du nouveau front global en isolant clairement le prototype actuel.
 
@@ -81,6 +83,8 @@ CritÃ¨res d'acceptation :
 - tests ou smoke UI adaptes au changement.
 
 ## FRONT-DOSSIER-EDITOR-001
+
+Statut : READY.
 
 Objectif : implementer un premier editeur dossier data-first, sans chercher la couverture exhaustive.
 

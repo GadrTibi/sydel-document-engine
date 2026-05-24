@@ -6,6 +6,7 @@ from zipfile import ZipFile
 from docx import Document
 from streamlit.testing.v1 import AppTest
 
+from sydel_doc_engine.app.front_shell import PROTOTYPE_TOOL_LABELS
 from sydel_doc_engine.app.single_document_mode import (
     UNIT_STATUS_MANUAL_ONLY,
     UNIT_STATUS_NOT_SUPPORTED,
@@ -27,15 +28,18 @@ from sydel_doc_engine.app.ui_runtime import (
 def test_single_document_mode_is_visible_next_to_existing_streamlit_modes() -> None:
     app_source = Path("src/sydel_doc_engine/app/streamlit_app.py").read_text(encoding="utf-8")
 
-    assert "Assistant metier" in app_source
-    assert "Document unitaire" in app_source
-    assert "Technique / diagnostic" in app_source
+    assert "PROTOTYPE_TOOL_LABELS" in app_source
+    assert "Assistant metier prototype" in PROTOTYPE_TOOL_LABELS
+    assert "Document unitaire" in PROTOTYPE_TOOL_LABELS
+    assert "Technique / diagnostic" in PROTOTYPE_TOOL_LABELS
 
 
 def test_streamlit_single_document_mode_renders_document_selector() -> None:
     app = AppTest.from_file("src/sydel_doc_engine/app/streamlit_app.py").run(timeout=120)
 
-    app.radio[0].set_value("Document unitaire")
+    app.radio[0].set_value("Prototype / outils de test")
+    app.run(timeout=120)
+    app.radio[1].set_value("Document unitaire")
     app.run(timeout=120)
 
     assert app.selectbox(key="single_document_choice").label == "Document a tester"

@@ -158,8 +158,8 @@
 | FRONT-UNIT-DOCUMENT-MODE-001 | DONE | Reconcevoir le mode document unitaire comme diagnostic séparé | `FRONT-DOCUMENT-STATUS-LAYER-001` | test document unique sans polluer le parcours dossier |
 | FRONT-TEST-PREFILL-001 | DONE | Concevoir les préremplissages fictifs de test du nouveau front | `FRONT-DOSSIER-FLOW-001` + status layer | scénarios déterministes non métier |
 | FRONT-REVIEW-001 | DONE | Faire valider le modèle front global avant UI visible | tickets front data/role/address/flow/status/prefill | carte de migration + backlog UI visible |
-| FRONT-UI-SHELL-001 | READY | Creer la premiere tranche visible du nouveau front global | `FRONT-REVIEW-001` + `front_data` | shell cible distinct du prototype, outils de test isoles |
-| FRONT-DOSSIER-EDITOR-001 | BLOCKED | Construire l'editeur dossier data-first | `FRONT-UI-SHELL-001` | `DossierRecord` minimal depuis UI, roles/adresses explicites |
+| FRONT-UI-SHELL-001 | DONE | Creer la premiere tranche visible du nouveau front global | `FRONT-REVIEW-001` + `front_data` | shell cible distinct du prototype, outils de test isoles |
+| FRONT-DOSSIER-EDITOR-001 | READY | Construire l'editeur dossier data-first | `FRONT-UI-SHELL-001` | `DossierRecord` minimal depuis UI, roles/adresses explicites |
 | FRONT-DOCUMENTS-PANEL-001 | BLOCKED | Afficher les documents attendus et leurs statuts | `FRONT-DOSSIER-EDITOR-001` + status layer | panneau documents, reserves, blocages et lots |
 | FRONT-GENERATION-ACTIONS-001 | BLOCKED | Brancher les actions DOCX/PDF/ZIP du nouveau front | `FRONT-DOCUMENTS-PANEL-001` | generation limitee aux documents prets |
 | FRONT-UNIT-DOCUMENT-UI-001 | BLOCKED | Consolider l'UI Document unitaire autour de `front_data` | `FRONT-UI-SHELL-001` | mode document unique separe du dossier complet |

@@ -30,6 +30,7 @@ from sydel_doc_engine.app.business_wizard import (
     selarl_ui_visible_fields_by_step,
     selarl_ui_visible_screen_titles,
 )
+from sydel_doc_engine.app.front_shell import PROTOTYPE_TOOL_LABELS
 from sydel_doc_engine.app.test_prefill_presets import (
     business_test_prefill_by_label,
     business_test_prefill_labels,
@@ -253,8 +254,9 @@ def test_business_wizard_manual_and_not_implemented_documents_are_not_sent_to_ge
 def test_streamlit_technical_mode_remains_accessible() -> None:
     app_source = Path("src/sydel_doc_engine/app/streamlit_app.py").read_text(encoding="utf-8")
 
-    assert "Technique / diagnostic" in app_source
-    assert "Assistant metier" in app_source
+    assert "PROTOTYPE_TOOL_LABELS" in app_source
+    assert "Technique / diagnostic" in PROTOTYPE_TOOL_LABELS
+    assert "Assistant metier prototype" in PROTOTYPE_TOOL_LABELS
 
 
 def test_streamlit_business_mode_exposes_sci_and_selarl() -> None:
@@ -274,20 +276,19 @@ def test_business_prefill_presets_are_available() -> None:
 
 def test_streamlit_business_prefill_controls_are_business_only() -> None:
     app = AppTest.from_file("src/sydel_doc_engine/app/streamlit_app.py").run(timeout=120)
+    _open_prototype_tool(app, "Assistant metier prototype")
 
     assert _has_selectbox(app, "Scénario de test")
     assert _has_button(app, "Préremplir")
     assert _has_button(app, "Réinitialiser")
 
-    app.radio[0].set_value("Technique / diagnostic")
-    app.run(timeout=120)
+    _open_prototype_tool(app, "Technique / diagnostic")
 
     assert not _has_selectbox(app, "Scénario de test")
     assert not _has_button(app, "Préremplir")
     assert not _has_button(app, "Réinitialiser")
 
-    app.radio[0].set_value("Document unitaire")
-    app.run(timeout=120)
+    _open_prototype_tool(app, "Document unitaire")
 
     assert not _has_selectbox(app, "Scénario de test")
     assert not _has_button(app, "Préremplir")
@@ -296,6 +297,7 @@ def test_streamlit_business_prefill_controls_are_business_only() -> None:
 
 def test_business_prefill_selarl_simple_enables_generation() -> None:
     app = AppTest.from_file("src/sydel_doc_engine/app/streamlit_app.py").run(timeout=120)
+    _open_prototype_tool(app, "Assistant metier prototype")
 
     _apply_business_prefill(app, "SELARL médecin unipersonnelle simple")
 
@@ -312,6 +314,7 @@ def test_business_prefill_selarl_simple_enables_generation() -> None:
 
 def test_business_prefill_complex_selarl_scenarios_show_expected_blocks() -> None:
     app = AppTest.from_file("src/sydel_doc_engine/app/streamlit_app.py").run(timeout=120)
+    _open_prototype_tool(app, "Assistant metier prototype")
 
     _apply_business_prefill(
         app,
@@ -336,6 +339,7 @@ def test_business_prefill_complex_selarl_scenarios_show_expected_blocks() -> Non
 
 def test_business_prefill_reset_clears_assistant_state() -> None:
     app = AppTest.from_file("src/sydel_doc_engine/app/streamlit_app.py").run(timeout=120)
+    _open_prototype_tool(app, "Assistant metier prototype")
 
     _apply_business_prefill(app, "SELARL médecin unipersonnelle simple")
     _button_by_label(app, "Réinitialiser").click()
@@ -348,6 +352,7 @@ def test_business_prefill_reset_clears_assistant_state() -> None:
 
 def test_business_prefill_sci_simple_is_non_regression() -> None:
     app = AppTest.from_file("src/sydel_doc_engine/app/streamlit_app.py").run(timeout=120)
+    _open_prototype_tool(app, "Assistant metier prototype")
 
     _apply_business_prefill(app, "SCI simple")
 
@@ -691,6 +696,7 @@ def test_business_wizard_generates_docx_and_zip_without_residual_placeholders(
 
 def test_streamlit_selarl_unipersonnel_can_generate_after_late_entry() -> None:
     app = AppTest.from_file("src/sydel_doc_engine/app/streamlit_app.py").run(timeout=120)
+    _open_prototype_tool(app, "Assistant metier prototype")
     _select_selarl_simple_qualification(app)
     app.checkbox(key="condition_selarl_dossier_unipersonnel").set_value(True)
     app.run(timeout=120)
@@ -774,6 +780,13 @@ def _fill_selarl_simple_generation_fields(app: AppTest) -> None:
         _set_text_input(app, label, value)
     _set_number_input(app, "nombre total de parts de la selarl", 500)
     _set_number_input(app, "associe 1 - nombre de parts", 500)
+
+
+def _open_prototype_tool(app: AppTest, tool_label: str) -> None:
+    app.radio[0].set_value("Prototype / outils de test")
+    app.run(timeout=120)
+    app.radio[1].set_value(tool_label)
+    app.run(timeout=120)
 
 
 def _apply_business_prefill(app: AppTest, label: str) -> None:
