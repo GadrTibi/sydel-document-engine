@@ -61,9 +61,9 @@ TARGET_FRONT_ITEMS: Final[tuple[FrontShellNavigationItem, ...]] = (
         key="dossier",
         group=TARGET_FRONT_LABEL,
         label="Dossier",
-        status="Squelette read-only",
-        purpose="Prepare l'editeur dossier data-first sans le construire ici.",
-        next_ticket="FRONT-DOSSIER-EDITOR-001",
+        status="Editeur V1",
+        purpose="Assemble un DossierRecord minimal, le flow et les statuts.",
+        next_ticket="FRONT-DOCUMENTS-PANEL-001",
     ),
     FrontShellNavigationItem(
         key="documents",

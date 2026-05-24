@@ -29,6 +29,17 @@ from sydel_doc_engine.app.business_wizard import (
     selarl_ui_visible_fields_by_step,
     selarl_ui_visible_screen_title,
 )
+from sydel_doc_engine.app.front_dossier_editor import (
+    build_front_dossier_editor_view,
+    front_dossier_block_rows,
+    front_dossier_document_status_rows,
+    front_dossier_editor_profile_labels,
+    front_dossier_flow_step_rows,
+    front_dossier_lot_status_legend_rows,
+    front_dossier_lot_status_rows,
+    front_dossier_requirement_rows,
+    front_dossier_summary_rows,
+)
 from sydel_doc_engine.app.front_shell import (
     PROTOTYPE_TOOL_LABELS,
     PROTOTYPE_TOOLS_LABEL,
@@ -37,8 +48,6 @@ from sydel_doc_engine.app.front_shell import (
     front_shell_navigation_rows,
     prototype_tool_navigation_rows,
     shell_document_status_rows,
-    shell_flow_block_rows,
-    shell_flow_step_rows,
     shell_lot_status_rows,
     target_front_navigation_rows,
 )
@@ -230,13 +239,41 @@ def _render_target_front_home() -> None:
 
 def _render_target_front_dossier() -> None:
     st.info(
-        "Vue read-only du flow dossier global. Le prochain ticket construira "
-        "l'editeur dossier data-first a partir de ces etapes."
+        "Premiere tranche de l'editeur dossier cible : elle assemble un "
+        "DossierRecord minimal, le flow dossier et les statuts documentaires. "
+        "La saisie effective des valeurs reste volontairement hors de ce ticket."
     )
+    profile_label = st.selectbox(
+        "Type de dossier / structure de base",
+        front_dossier_editor_profile_labels(),
+        key="front_dossier_editor_profile",
+    )
+    view = build_front_dossier_editor_view(profile_label)
+
+    st.subheader("Editeur dossier")
+    st.caption(view.profile.description)
+    st.table(front_dossier_summary_rows(view))
+
     st.subheader("Etapes dossier")
-    st.table(shell_flow_step_rows())
-    with st.expander("Blocs metier actifs sur les sentinelles", expanded=False):
-        st.table(shell_flow_block_rows())
+    st.table(front_dossier_flow_step_rows(view))
+    with st.expander("Blocs actifs", expanded=True):
+        st.table(front_dossier_block_rows(view))
+
+    st.subheader("Exigences principales")
+    st.table(front_dossier_requirement_rows(view))
+
+    st.subheader("Documents attendus et statuts")
+    st.table(front_dossier_document_status_rows(view))
+
+    st.subheader("Statut de lot")
+    st.table(front_dossier_lot_status_rows(view))
+    with st.expander("Legende ready / partial / blocked", expanded=False):
+        st.table(front_dossier_lot_status_legend_rows())
+
+    st.warning(
+        "Placeholder controle : les blocs de saisie, les overrides et la "
+        "generation seront branches dans les tickets suivants."
+    )
 
 
 def _render_target_front_documents() -> None:

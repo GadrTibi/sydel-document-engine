@@ -20,15 +20,15 @@ Ces tickets fondent le nouveau front et ne doivent pas etre recodes dans les tic
 7. `FRONT-TEST-PREFILL-001` - scenarios fictifs alignes sur `front_data`.
 8. `FRONT-REVIEW-001` - carte de migration, decision prototype, backlog UI visible.
 9. `FRONT-UI-SHELL-001` - shell UI visible, nouveau front distinct du prototype.
+10. `FRONT-DOSSIER-EDITOR-001` - editeur dossier V1 branche sur `front_data`.
 
 ## Ordre recommande maintenant
 
-1. `FRONT-DOSSIER-EDITOR-001`
-2. `FRONT-DOCUMENTS-PANEL-001`
-3. `FRONT-GENERATION-ACTIONS-001`
-4. `FRONT-UNIT-DOCUMENT-UI-001`
-5. `FRONT-TEST-TOOLS-CONSOLIDATION-001`
-6. `FRONT-PROTOTYPE-DEPRECATION-001`
+1. `FRONT-DOCUMENTS-PANEL-001`
+2. `FRONT-GENERATION-ACTIONS-001`
+3. `FRONT-UNIT-DOCUMENT-UI-001`
+4. `FRONT-TEST-TOOLS-CONSOLIDATION-001`
+5. `FRONT-PROTOTYPE-DEPRECATION-001`
 
 `SELARL-JURIST-REVIEW-001` reste recommande en parallele comme revue metier/juridique, mais le shell UI peut demarrer sans attendre cette revue tant qu'il ne modifie pas les generateurs ni le wording juridique.
 
@@ -84,7 +84,7 @@ CritÃ¨res d'acceptation :
 
 ## FRONT-DOSSIER-EDITOR-001
 
-Statut : READY.
+Statut : DONE.
 
 Objectif : implementer un premier editeur dossier data-first, sans chercher la couverture exhaustive.
 
@@ -109,13 +109,15 @@ Dependances :
 CritÃ¨res d'acceptation :
 
 - l'UI sait construire un `DossierRecord` minimal ;
-- qualification, personnes, societes, roles et adresses typees sont representes ;
-- aucune fusion silencieuse de roles ou d'adresses ;
-- les reuse rules sont visibles et explicites ;
-- les champs derives restent tracables ;
-- les validations `front_data` peuvent etre affichees.
+- les etapes, blocs actifs, exigences et statuts documentaires sont visibles ;
+- aucune fusion silencieuse de roles ou d'adresses n'est introduite ;
+- les documents attendus affichent roles, adresses, champs canoniques et blocages ;
+- les statuts de lot `ready`, `partial` et `blocked` sont prepares ;
+- les validations `front_data` peuvent etre affichees sans logique metier dans Streamlit.
 
 ## FRONT-DOCUMENTS-PANEL-001
+
+Statut : READY.
 
 Objectif : construire le panneau Documents attendus du nouveau front a partir de la couche de statuts.
 
