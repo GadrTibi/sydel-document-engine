@@ -150,8 +150,8 @@
 | GLOBAL-HUMAN-ANSWERS-INTEGRATION-001 | DONE | Intégrer les réponses humaines dans le registre canonique global | audit global V2 + réponse Albane + modèle SELAS micro-holding + V3/NotebookLM | questions V2 + registre canonique V2.1 + rapport exécutif |
 | GLOBAL-FRONT-ARCHITECTURE-001 | DONE | Concevoir l'architecture du nouveau front global sur le registre V2.1 | registre canonique global V2.1 + questions V2 | architecture front sans modification moteur/générateurs/UI existante |
 | GLOBAL-FRONT-ARCHITECTURE-QA-001 | DONE | Contrôler l'architecture front globale sur documents sentinelles | architecture front V1 + registre V2.1 + catalogue moteur + templates sentinelles | rapport QA + CSV sentinelles sans modification moteur/générateurs/UI |
-| FRONT-DATA-LAYER-001 | READY | Créer la couche de données front globale | architecture front V1 + registre V2.1 | objets front globaux + tests/validations sans toucher aux générateurs |
-| FRONT-ROLE-MODEL-001 | BLOCKED | Modéliser les rôles explicites du front global | `FRONT-DATA-LAYER-001` | RoleAssignment sans fusion silencieuse |
+| FRONT-DATA-LAYER-001 | DONE | Créer la couche de données front globale | architecture front V1 + registre V2.1 | objets front globaux + tests/validations sans toucher aux générateurs |
+| FRONT-ROLE-MODEL-001 | READY | Modéliser les rôles explicites du front global | `FRONT-DATA-LAYER-001` | RoleAssignment sans fusion silencieuse |
 | FRONT-ADDRESS-MODEL-001 | BLOCKED | Modéliser les adresses typées par usage | `FRONT-DATA-LAYER-001` + `FRONT-ROLE-MODEL-001` | adresses pivots, règles de réutilisation, overrides |
 | FRONT-DOSSIER-FLOW-001 | BLOCKED | Définir le flow dossier complet global | data layer + rôles + adresses | flow dossier par opération/famille documentaire |
 | FRONT-DOCUMENT-STATUS-LAYER-001 | BLOCKED | Construire la couche de statuts documentaires front | `FRONT-DOSSIER-FLOW-001` | documents attendus, manuels, réservés, non prêts |
@@ -1285,3 +1285,4 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - 2026-05-20 : GLOBAL-VARIABLE-IDENTITY-AUDIT-001 crée la matrice d'identité V2, le registre canonique global V2, la liste de 10 questions humaines et le rapport exécutif : 1 334 slugs distincts audités, 49 champs proposés, 142 rapprochements classés, aucun générateur/moteur/UI/wording juridique modifié.
 - 2026-05-24 : GLOBAL-FRONT-ARCHITECTURE-001 crée l'architecture front globale V1, le modèle d'objets, les règles structurelles, la stratégie d'écrans, le backlog de rebuild et le rapport exécutif ; aucun générateur, moteur DOCX/PDF/ZIP, Streamlit ou wording juridique modifié.
 - 2026-05-24 : GLOBAL-FRONT-ARCHITECTURE-QA-001 contrôle l'architecture front sur 7 documents sentinelles, crée le rapport QA et le CSV de couverture ; verdict global ORANGE maîtrisable, aucun rouge, aucun générateur/moteur/UI/Python modifié.
+- 2026-05-24 : FRONT-DATA-LAYER-001 crée le package `front_data` avec objets front globaux, mapping canonique V2.1, checks sentinelles, diagnostics de validation et tests unitaires ; ruff OK et pytest 288 tests passés ; aucun générateur, moteur DOCX/PDF/ZIP, Streamlit ou UI visible modifié.
