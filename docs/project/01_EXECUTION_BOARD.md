@@ -161,10 +161,14 @@
 | FRONT-UI-SHELL-001 | DONE | Creer la premiere tranche visible du nouveau front global | `FRONT-REVIEW-001` + `front_data` | shell cible distinct du prototype, outils de test isoles |
 | FRONT-DOSSIER-EDITOR-001 | DONE | Construire l'editeur dossier data-first | `FRONT-UI-SHELL-001` | editeur dossier V1, flow/blocs/exigences/statuts visibles |
 | FRONT-DOSSIER-DATA-ENTRY-001 | DONE | Ajouter la premiere saisie reelle du nouvel editeur dossier | `FRONT-DOSSIER-EDITOR-001` + `front_data` | saisie SELARL simple vers DossierRecord + statuts recalcules |
-| FRONT-DOCUMENTS-PANEL-001 | READY | Afficher les documents attendus et leurs statuts | `FRONT-DOSSIER-DATA-ENTRY-001` + status layer | panneau documents, reserves, blocages et lots |
+| FRONT-DOCUMENTS-PANEL-001 | BLOCKED | Afficher les documents attendus et leurs statuts | attendre `FRONT-MINIMAL-SURFACE-CLEANUP-001` | ne pas ajouter de panneau visible avant la coupe UX |
 | FRONT-GENERATION-ACTIONS-001 | DONE | Brancher les actions DOCX/PDF/ZIP du nouveau front | `FRONT-DOSSIER-DATA-ENTRY-001` + status layer | generation V1 DOC-001 a DOC-004 depuis le nouveau front |
 | FRONT-UX-CLEANUP-001 | DONE | Simplifier le nouveau front pour test utilisateur reel | `FRONT-GENERATION-ACTIONS-001` | parcours principal type dossier / saisie / resume / generation, diagnostics replies |
 | FRONT-UX-HARD-CUT-001 | DONE | Retirer tout bruit non-user du nouveau front | `FRONT-UX-CLEANUP-001` | vue principale limitee a type dossier, saisie et generation ; outils internes en sidebar |
+| FRONT-STATE-AUDIT-001 | DONE | Auditer l'etat reel projet/front apres retour utilisateur | docs projet + front Streamlit + tests front | rapport d'audit + direction front immediate |
+| FRONT-REALITY-CHECK-001 | DONE | Auditer l'ecart entre debriefs front et code reel | code Streamlit + debriefs front + etat Git | rapport de realite + plan surface minimale |
+| FRONT-MINIMAL-SURFACE-CLEANUP-001 | READY | Appliquer la surface utilisateur minimale | `FRONT-REALITY-CHECK-001` + `FRONT_MINIMAL_USER_SURFACE_V1.md` | type dossier / saisie / generation, debug cache |
+| FRONT-GENERATION-READINESS-UX-001 | BLOCKED | Expliquer les blocages de generation dans la vue normale | a absorber dans `FRONT-MINIMAL-SURFACE-CLEANUP-001` | ne pas lancer comme ticket separe avant la coupe UX |
 | FRONT-UNIT-DOCUMENT-UI-001 | BLOCKED | Consolider l'UI Document unitaire autour de `front_data` | `FRONT-UI-SHELL-001` | mode document unique separe du dossier complet |
 | FRONT-TEST-TOOLS-CONSOLIDATION-001 | BLOCKED | Regrouper prefills, smoke et diagnostic | `FRONT-UI-SHELL-001` | outils de test marques et separes du produit |
 | FRONT-PROTOTYPE-DEPRECATION-001 | BLOCKED | Deprecier le prototype historique sans perte de diagnostic | nouveaux parcours UI visibles | prototype marque obsolete ou archive |
@@ -1090,6 +1094,39 @@
 - Validation : relecture documentaire et contrôle du diff ; aucun test Python requis car aucun fichier Python modifié.
 - Prochaine étape recommandée : `FRONT-DATA-LAYER-001`, en intégrant les sentinelles orange comme critères de couverture data.
 
+### FRONT-STATE-AUDIT-001
+- Objectif : auditer l'etat reel du projet et du nouveau front apres retour utilisateur sur la limitation a quatre documents et le blocage de generation.
+- Statut : DONE.
+- Livrable : `docs/review/front_state_audit_001_report_v1.md`.
+- Constat : le moteur reste disponible sur 43 documents moteurs, mais la surface normale du nouveau front est volontairement limitee au pilote `SELARL creation simple` et a `DOC-001` a `DOC-004`.
+- Cause UX identifiee : la readiness data-layer peut annoncer quatre documents generables tandis que l'adaptateur moteur bloque ensuite sur un format de date, une adresse ou une ville RCS, sans exposer le detail dans la vue normale.
+- Validation : tests cibles `test_front_generation_actions.py` et `test_front_dossier_data_entry.py` OK ; diagnostic lecture seule des blocages runtime OK.
+- Prochaine étape recommandee : `FRONT-GENERATION-READINESS-UX-001`, avant toute extension du perimetre SELARL.
+
+### FRONT-REALITY-CHECK-001
+- Objectif : auditer l'ecart entre les debriefs recents du nouveau front et le code reel visible / branche.
+- Statut : DONE.
+- Livrables : `docs/review/front_reality_check_001_report_v1.md` et `docs/project/FRONT_MINIMAL_USER_SURFACE_V1.md`.
+- Constat : le hard cut est reel sur la vue normale (3 titres, 0 table, 0 radio), mais la surface reste chargee par les expanders ouverts, 22 champs, la sidebar `Outils internes`, le bouton PDF visible quand le backend est indisponible et les blocages runtime non expliques.
+- Generation reelle : DOCX et ZIP branches pour `DOC-001` a `DOC-004`; PDF branche en code mais indisponible localement (`is_pdf_export_available() == False`).
+- Decision de pilotage : ne pas ajouter de panneau documents visible avant une coupe UX minimale ; absorber les explications de readiness dans un ticket unique de surface minimale.
+- Validation : audit code + inventaire AppTest de la vue normale + controle PDF local ; aucun fichier Python modifie, donc pas de ruff/pytest requis.
+- Prochaine étape recommandee : `FRONT-MINIMAL-SURFACE-CLEANUP-001`.
+
+### FRONT-MINIMAL-SURFACE-CLEANUP-001
+- Objectif : appliquer la surface utilisateur minimale avant tout push, redeploiement ou test utilisateur.
+- Statut : READY.
+- Contraintes : ne pas modifier les generateurs, le moteur DOCX/PDF/ZIP, la source de verite ou le wording juridique ; ne pas etendre le perimetre documentaire.
+- Sortie attendue : page normale limitee a `Type de dossier`, `Donnees a saisir`, `Generation`; debug interne cache; pas de sidebar outils en session utilisateur; PDF cache si backend indisponible; raisons de blocage runtime visibles dans `Generation`.
+- Prochaine étape ensuite : test utilisateur local du pilote `SELARL creation simple`.
+
+### FRONT-GENERATION-READINESS-UX-001
+- Objectif : rendre les blocages de generation visibles et actionnables dans la vue normale du nouveau front.
+- Statut : BLOCKED.
+- Contraintes : ne pas modifier les generateurs, le moteur DOCX/PDF/ZIP, la source de verite ou le wording juridique.
+- Sortie attendue : a absorber dans `FRONT-MINIMAL-SURFACE-CLEANUP-001` pour eviter un ticket qui ajoute de la surface avant la coupe UX.
+- Prochaine étape ensuite : reassessment apres le test utilisateur local minimal.
+
 ### UI-001
 - Objectif : exposer une Streamlit simple pour générer le Lot 1.
 - Statut : en attente explicite ; ne pas lancer sans ticket explicite dédié.
@@ -1105,8 +1142,12 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - mettre à jour `docs/project/04_LAST_STATE.md`
 
 ## Prochaine étape prévue
+- `FRONT-REALITY-CHECK-001` est DONE ; l'audit confirme que la vue normale est reduite techniquement a trois zones, mais encore trop chargee dans la saisie et trop muette sur les blocages runtime.
+- Prochain ticket unique recommande : `FRONT-MINIMAL-SURFACE-CLEANUP-001`, avant tout push, redeploiement ou test utilisateur.
+- `FRONT-STATE-AUDIT-001` est DONE ; l'audit confirme que le moteur est plus avance que le front visible, que le nouveau front est volontairement limite a `SELARL creation simple` / `DOC-001` a `DOC-004`, et que les blocages runtime de date/adresse/ville RCS ne sont pas assez visibles dans la vue normale.
+- `FRONT-GENERATION-READINESS-UX-001` et `FRONT-DOCUMENTS-PANEL-001` sont suspendus comme tickets separes tant que la surface minimale n'est pas appliquee.
 - `FRONT-REVIEW-001` est DONE ; le prototype actuel est confirme comme bac a sable / outil de diagnostic, la carte de migration V1 est creee et le backlog pointe maintenant vers les tickets UI visibles.
-- Prochain jalon recommande pour le rebuild front global : premier vrai test local utilisateur du nouveau front hard-cut sur `SELARL creation simple`; `FRONT-DOCUMENTS-PANEL-001` reste optionnel apres retour test.
+- Jalon front revise apres `FRONT-REALITY-CHECK-001` : ne pas ajouter `FRONT-DOCUMENTS-PANEL-001` en surface visible avant `FRONT-MINIMAL-SURFACE-CLEANUP-001`.
 - `GLOBAL-FRONT-ARCHITECTURE-QA-001` est DONE ; l'architecture front globale a ete controlee sur 7 documents sentinelles, avec 2 verts, 5 oranges et aucun rouge.
 - `GLOBAL-FRONT-ARCHITECTURE-001` est DONE ; l'architecture produit et données du nouveau front global est cadrée sans toucher au moteur, aux générateurs, à Streamlit ni au wording juridique.
 - `GLOBAL-HUMAN-ANSWERS-INTEGRATION-001` est DONE ; les réponses humaines disponibles sont intégrées dans les questions V2, le registre canonique global V2.1 et le rapport exécutif, sans toucher au moteur ni à l'UI.
@@ -1306,3 +1347,4 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - 2026-05-24 : FRONT-GENERATION-ACTIONS-001 branche les actions de generation du nouveau front sur le profil `SELARL creation simple`, cree l'adaptateur `DossierRecord` vers contexte moteur, limite la generation a `DOC-001` a `DOC-004`, exclut `DOC-006`, `DOC-013` et `DOC-014`, expose DOCX/ZIP/PDF optionnel dans le shell, valide ruff et pytest 380 tests, et conserve le prototype comme zone secondaire ; aucun generateur, moteur DOCX/PDF/ZIP ou wording juridique modifie.
 - 2026-05-24 : FRONT-UX-CLEANUP-001 simplifie la vue principale du nouveau front : suppression de la navigation interne visible, tables de flow/blocs/exigences/statuts repliees en diagnostics, parcours principal limite a type de dossier, saisie, resume documents et generation ; ruff OK et pytest OK 380 tests ; aucun generateur, moteur DOCX/PDF/ZIP ou wording juridique modifie.
 - 2026-05-24 : FRONT-UX-HARD-CUT-001 retire les diagnostics et outils de la surface utilisateur normale : aucun radio, aucun tableau par defaut, seulement Type de dossier / Donnees a saisir / Generation ; les outils internes sont accessibles via sidebar `Outils internes`, ruff OK et pytest OK 380 tests ; aucun generateur, moteur DOCX/PDF/ZIP ou wording juridique modifie.
+- 2026-05-25 : FRONT-REALITY-CHECK-001 audite le front reel contre les debriefs recents, confirme DOCX/ZIP branches sur `DOC-001` a `DOC-004`, PDF conditionnel indisponible localement, identifie les pollutions restantes de surface et cree le plan `FRONT_MINIMAL_USER_SURFACE_V1.md`; aucun Python, generateur, moteur DOCX/PDF/ZIP ou wording juridique modifie.
