@@ -11,6 +11,8 @@ from sydel_doc_engine.app.front_shell import (
     shell_lot_status_rows,
 )
 
+INTERNAL_TOOLS_SESSION_FLAG = "_sydel_internal_tools_unlocked"
+
 
 def test_front_shell_navigation_separates_target_and_prototype_tools() -> None:
     rows = front_shell_navigation_rows()
@@ -64,20 +66,21 @@ def test_streamlit_shell_renders_target_front_by_default() -> None:
     assert app.selectbox(key="front_dossier_editor_profile").value == (
         "SELARL creation simple"
     )
-    assert {item.label for item in app.expander} == {
-        "Personne principale",
-        "Societe principale",
-        "Capital, decision et signature",
-    }
+    assert not any(item.label == "Outils internes" for item in app.checkbox)
+    assert len(app.expander) == 0
     assert len(app.table) == 0
 
 
 def test_streamlit_shell_keeps_prototype_tools_secondary() -> None:
     app = AppTest.from_file("src/sydel_doc_engine/app/streamlit_app.py").run(timeout=120)
 
-    assert app.checkbox(key="front_internal_tools_enabled").label == "Outils internes"
+    assert not any(item.label == "Outils internes" for item in app.checkbox)
     assert len(app.radio) == 0
 
+    app.session_state[INTERNAL_TOOLS_SESSION_FLAG] = True
+    app.run(timeout=120)
+
+    assert app.checkbox(key="front_internal_tools_enabled").label == "Outils internes"
     app.checkbox(key="front_internal_tools_enabled").set_value(True)
     app.run(timeout=120)
 

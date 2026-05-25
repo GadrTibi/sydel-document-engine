@@ -27,16 +27,16 @@ Ces tickets fondent le nouveau front et ne doivent pas etre recodes dans les tic
 14. `FRONT-UX-HARD-CUT-001` - retrait complet du bruit non-user de la surface principale.
 15. `FRONT-STATE-AUDIT-001` - audit de l'etat projet/front apres retour utilisateur.
 16. `FRONT-REALITY-CHECK-001` - audit de l'ecart entre debriefs front et code reel visible/branche.
+17. `FRONT-MINIMAL-SURFACE-CLEANUP-001` - surface normale minimale type dossier / saisie / generation, debug cache.
 
 ## Ordre recommande maintenant
 
-1. `FRONT-MINIMAL-SURFACE-CLEANUP-001` pour appliquer la surface stricte type dossier / saisie / generation.
-2. Nouveau test local utilisateur du pilote `SELARL creation simple`.
-3. Reassessment : integrer seulement les explications de blocage indispensables, sans panneau visible supplementaire.
-4. Extension ciblee du perimetre SELARL par bloc canonique, apres arbitrage.
-5. `FRONT-UNIT-DOCUMENT-UI-001`
-6. `FRONT-TEST-TOOLS-CONSOLIDATION-001`
-7. `FRONT-PROTOTYPE-DEPRECATION-001`
+1. Nouveau test local utilisateur du pilote `SELARL creation simple` sur la surface minimale.
+2. Reassessment : integrer seulement les explications de blocage indispensables, sans panneau visible supplementaire.
+3. Extension ciblee du perimetre SELARL par bloc canonique, apres arbitrage.
+4. `FRONT-UNIT-DOCUMENT-UI-001`
+5. `FRONT-TEST-TOOLS-CONSOLIDATION-001`
+6. `FRONT-PROTOTYPE-DEPRECATION-001`
 
 `SELARL-JURIST-REVIEW-001` reste recommande en parallele comme revue metier/juridique, mais le shell UI peut demarrer sans attendre cette revue tant qu'il ne modifie pas les generateurs ni le wording juridique.
 
@@ -181,7 +181,7 @@ Ne pas toucher :
 
 Dependances :
 
-- `FRONT-MINIMAL-SURFACE-CLEANUP-001`.
+- `FRONT-MINIMAL-SURFACE-CLEANUP-001` DONE.
 - Decision post-test utilisateur confirmant qu'un panneau visible ne pollue pas la surface principale.
 
 CritÃ¨res d'acceptation :
@@ -194,7 +194,7 @@ CritÃ¨res d'acceptation :
 
 ## FRONT-MINIMAL-SURFACE-CLEANUP-001
 
-Statut : READY.
+Statut : DONE.
 
 Objectif : appliquer la surface utilisateur minimale definie dans
 `docs/project/FRONT_MINIMAL_USER_SURFACE_V1.md`, avant tout push, redeploiement
@@ -230,6 +230,15 @@ Criteres d'acceptation :
 - le perimetre `DOC-001` a `DOC-004` reste explicite sans liste/table detaillee ;
 - AppTest couvre la surface normale minimale.
 
+Livraison :
+
+- suppression des expanders ouverts de la surface normale ;
+- masquage des outils internes derriere `SYDEL_ENABLE_INTERNAL_TOOLS=1` ou flag de session interne ;
+- masquage du bouton PDF quand le backend local est indisponible ;
+- affichage de blocages courts dans `Generation` ;
+- validation `ruff check .` et `pytest` OK, 382 tests passes ;
+- rapport : `docs/review/front_minimal_surface_cleanup_001_report_v1.md`.
+
 ## FRONT-GENERATION-READINESS-UX-001
 
 Statut : BLOCKED.
@@ -255,6 +264,7 @@ Ne pas toucher :
 Dependances :
 
 - `FRONT-MINIMAL-SURFACE-CLEANUP-001`.
+- Reassessment post-test utilisateur.
 
 Criteres d'acceptation :
 

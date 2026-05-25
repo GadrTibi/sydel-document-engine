@@ -23,6 +23,8 @@ from sydel_doc_engine.front_data import (
     validate_dossier,
 )
 
+INTERNAL_TOOLS_SESSION_FLAG = "_sydel_internal_tools_unlocked"
+
 
 def test_simple_entry_populates_dossier_records() -> None:
     dossier = build_front_dossier_entry_dossier(_complete_simple_entry())
@@ -158,6 +160,7 @@ def test_streamlit_dossier_area_exposes_real_entry_fields() -> None:
     assert app.checkbox(key="front_entry_domiciliation_same_as_siege").label == (
         "Domiciliation = siege social"
     )
+    assert len(app.expander) == 0
     assert not any(item.label == "Diagnostic dossier" for item in app.expander)
     assert any(metric.label == "Prets a generer" for metric in app.metric)
     assert len(app.table) == 0
@@ -167,6 +170,9 @@ def test_streamlit_prototype_zone_remains_secondary() -> None:
     app = AppTest.from_file("src/sydel_doc_engine/app/streamlit_app.py").run(timeout=120)
 
     assert len(app.radio) == 0
+    assert not any(item.label == "Outils internes" for item in app.checkbox)
+    app.session_state[INTERNAL_TOOLS_SESSION_FLAG] = True
+    app.run(timeout=120)
     app.checkbox(key="front_internal_tools_enabled").set_value(True)
     app.run(timeout=120)
 

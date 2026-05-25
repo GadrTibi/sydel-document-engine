@@ -783,6 +783,8 @@ def _fill_selarl_simple_generation_fields(app: AppTest) -> None:
 
 
 def _open_prototype_tool(app: AppTest, tool_label: str) -> None:
+    app.session_state["_sydel_internal_tools_unlocked"] = True
+    app.run(timeout=120)
     app.checkbox(key="front_internal_tools_enabled").set_value(True)
     app.run(timeout=120)
     app.radio(key="front_internal_tool").set_value(tool_label)

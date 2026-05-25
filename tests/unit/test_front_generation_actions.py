@@ -20,6 +20,7 @@ from sydel_doc_engine.app.front_generation_actions import (
     generate_front_zip,
 )
 from sydel_doc_engine.front_data.document_status import DocumentStatus
+from sydel_doc_engine.rendering.pdf_export import is_pdf_export_available
 
 
 def test_front_generation_readiness_targets_only_simple_selarl_docs() -> None:
@@ -127,6 +128,30 @@ def test_streamlit_new_front_generates_docx_then_zip() -> None:
     assert zip_button.disabled is False
     zip_button.click().run(timeout=120)
     assert Path(app.session_state.front_generation_zip_path).is_file()
+
+
+def test_streamlit_new_front_hides_pdf_when_backend_is_unavailable() -> None:
+    app = AppTest.from_file("src/sydel_doc_engine/app/streamlit_app.py").run(timeout=120)
+
+    button_labels = {button.label for button in app.button}
+    if is_pdf_export_available():
+        assert "Generer les PDF" in button_labels
+    else:
+        assert "Generer les PDF" not in button_labels
+
+
+def test_streamlit_new_front_shows_runtime_blocker_in_generation() -> None:
+    app = AppTest.from_file("src/sydel_doc_engine/app/streamlit_app.py").run(timeout=120)
+
+    _fill_front_generation_fields(app)
+    app.text_input(key="front_entry_signature_date").set_value("24/05/2026")
+    app.run(timeout=120)
+
+    assert _button_by_label(app, "Generer les DOCX").disabled is True
+    assert any(
+        "signature.date doit etre au format AAAA-MM-JJ." in item.value
+        for item in app.markdown
+    )
 
 
 def _complete_generation_entry(**overrides: object) -> FrontDossierSimpleEntry:
