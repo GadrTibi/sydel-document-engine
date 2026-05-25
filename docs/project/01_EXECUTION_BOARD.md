@@ -168,6 +168,8 @@
 | FRONT-STATE-AUDIT-001 | DONE | Auditer l'etat reel projet/front apres retour utilisateur | docs projet + front Streamlit + tests front | rapport d'audit + direction front immediate |
 | FRONT-REALITY-CHECK-001 | DONE | Auditer l'ecart entre debriefs front et code reel | code Streamlit + debriefs front + etat Git | rapport de realite + plan surface minimale |
 | FRONT-MINIMAL-SURFACE-CLEANUP-001 | DONE | Appliquer la surface utilisateur minimale | `FRONT-REALITY-CHECK-001` + `FRONT_MINIMAL_USER_SURFACE_V1.md` | type dossier / saisie / generation, debug cache |
+| SELARL-COMPLETE-CASE-PLAYBOOK-001 | DONE | Cadrer la SELARL complete et la recette reproductible | specs SELARL + code front reel + catalogue moteur | playbook SELARL complet + rapport de realite |
+| SELARL-COMPLETE-CONTEXT-ADAPTER-001 | READY | Brancher l'adaptateur contexte SELARL complet cote front | `SELARL_COMPLETE_CASE_PLAYBOOK_V1.md` + `front_data` + catalogue | selection documentaire conditionnelle + readiness + contexte moteur |
 | FRONT-GENERATION-READINESS-UX-001 | BLOCKED | Expliquer les blocages de generation dans la vue normale | a absorber dans `FRONT-MINIMAL-SURFACE-CLEANUP-001` | ne pas lancer comme ticket separe avant la coupe UX |
 | FRONT-UNIT-DOCUMENT-UI-001 | BLOCKED | Consolider l'UI Document unitaire autour de `front_data` | `FRONT-UI-SHELL-001` | mode document unique separe du dossier complet |
 | FRONT-TEST-TOOLS-CONSOLIDATION-001 | BLOCKED | Regrouper prefills, smoke et diagnostic | `FRONT-UI-SHELL-001` | outils de test marques et separes du produit |
@@ -1122,6 +1124,23 @@
 - Validation : tests cibles front OK, 79 tests passes ; `ruff check .` OK ; `pytest` OK, 382 tests passes.
 - Prochaine étape ensuite : test utilisateur local du pilote `SELARL creation simple`.
 
+### SELARL-COMPLETE-CASE-PLAYBOOK-001
+- Objectif : transformer le retour utilisateur "SELARL seulement quatre documents / encore test" en cadrage executable pour une SELARL complete.
+- Statut : DONE.
+- Contraintes : aucun generateur, moteur DOCX/PDF/ZIP, source de verite ou wording juridique modifie ; pas de push ni redeploiement.
+- Livrables : `docs/project/SELARL_COMPLETE_CASE_PLAYBOOK_V1.md` et `docs/review/selarl_complete_case_playbook_001_report_v1.md`.
+- Constat : le moteur sait deja generer les familles SELARL principales, mais le nouveau front global reste explicitement limite a `DOC-001` a `DOC-004` via `FRONT_GENERATION_SUPPORTED_DOC_CODES`, `UNIT_DOCUMENT_V1_SUPPORTED_CODES` et `BUSINESS_WIZARD_CONTEXT_READY_DOCUMENT_IDS`.
+- Decision : la cible SELARL complete passe par un adaptateur contexte/readiness front, pas par une modification immediate des generateurs.
+- Validation : documentation et pilotage uniquement ; aucun test Python requis.
+- Prochaine étape recommandee : `SELARL-COMPLETE-CONTEXT-ADAPTER-001`.
+
+### SELARL-COMPLETE-CONTEXT-ADAPTER-001
+- Objectif : brancher cote nouveau front une selection documentaire SELARL conditionnelle et un `DocumentGenerationContext` complet pour les documents deja autorises par la source et disponibles cote moteur.
+- Statut : READY.
+- Contraintes : ne pas modifier les generateurs, le moteur DOCX/PDF/ZIP ou le wording juridique ; conserver `DOC-013`, `DOC-014` et les documents sans code en manuel ; garder `DOC-006` en reserve explicite.
+- Sorties attendues : selection SELARL par scenarios, requirements/readiness pour les documents manquants, adaptateur contexte complet, tests unitaires par scenarios, rapport de smoke technique.
+- Scenarios minimum : SELARL medecin simple, SELARL dentiste simple, regime communautaire, cession medicale, cession dentaire, SCM cession, derogation manuelle.
+
 ### FRONT-GENERATION-READINESS-UX-001
 - Objectif : rendre les blocages de generation visibles et actionnables dans la vue normale du nouveau front.
 - Statut : BLOCKED.
@@ -1144,6 +1163,8 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - mettre à jour `docs/project/04_LAST_STATE.md`
 
 ## Prochaine étape prévue
+- `SELARL-COMPLETE-CASE-PLAYBOOK-001` est DONE ; la SELARL complete est cadree comme une extension front/adaptateur/readiness, avec matrice documentaire et mode d'emploi reproductible pour les autres cas.
+- Prochaine etape recommandee : `SELARL-COMPLETE-CONTEXT-ADAPTER-001`, avant toute promesse de SELARL finale utilisateur ou generalisation a un autre cas.
 - `FRONT-MINIMAL-SURFACE-CLEANUP-001` est DONE ; la surface normale est maintenant limitee a `Type de dossier`, `Donnees a saisir`, `Generation`, sans outil interne visible, sans radio, sans table et sans expander.
 - Prochaine etape recommandee : test utilisateur local du pilote `SELARL creation simple`, avant tout ajout de panneau ou extension documentaire.
 - `FRONT-REALITY-CHECK-001` est DONE ; l'audit confirme que la vue normale etait reduite techniquement a trois zones, mais encore trop chargee dans la saisie et trop muette sur les blocages runtime.
@@ -1352,3 +1373,4 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - 2026-05-24 : FRONT-UX-HARD-CUT-001 retire les diagnostics et outils de la surface utilisateur normale : aucun radio, aucun tableau par defaut, seulement Type de dossier / Donnees a saisir / Generation ; les outils internes sont accessibles via sidebar `Outils internes`, ruff OK et pytest OK 380 tests ; aucun generateur, moteur DOCX/PDF/ZIP ou wording juridique modifie.
 - 2026-05-25 : FRONT-REALITY-CHECK-001 audite le front reel contre les debriefs recents, confirme DOCX/ZIP branches sur `DOC-001` a `DOC-004`, PDF conditionnel indisponible localement, identifie les pollutions restantes de surface et cree le plan `FRONT_MINIMAL_USER_SURFACE_V1.md`; aucun Python, generateur, moteur DOCX/PDF/ZIP ou wording juridique modifie.
 - 2026-05-25 : FRONT-MINIMAL-SURFACE-CLEANUP-001 applique la surface minimale du nouveau front : 3 zones principales, 0 radio, 0 table, 0 expander, outils internes caches par mode equipe, PDF cache si backend indisponible et blocages visibles dans `Generation`; ruff OK et pytest OK, 382 tests passes ; aucun generateur, moteur DOCX/PDF/ZIP, source de verite ou wording juridique modifie.
+- 2026-05-25 : SELARL-COMPLETE-CASE-PLAYBOOK-001 cadre la SELARL complete : le moteur est plus avance que le front, la generation visible reste limitee a `DOC-001` a `DOC-004`, les documents manuels restent hors generation, et le prochain ticket unique devient `SELARL-COMPLETE-CONTEXT-ADAPTER-001`; aucun Python, generateur, moteur DOCX/PDF/ZIP, source de verite ou wording juridique modifie.

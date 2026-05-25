@@ -28,17 +28,20 @@ Ces tickets fondent le nouveau front et ne doivent pas etre recodes dans les tic
 15. `FRONT-STATE-AUDIT-001` - audit de l'etat projet/front apres retour utilisateur.
 16. `FRONT-REALITY-CHECK-001` - audit de l'ecart entre debriefs front et code reel visible/branche.
 17. `FRONT-MINIMAL-SURFACE-CLEANUP-001` - surface normale minimale type dossier / saisie / generation, debug cache.
+18. `SELARL-COMPLETE-CASE-PLAYBOOK-001` - cadrage SELARL complete, matrice documents et recette reproductible.
 
 ## Ordre recommande maintenant
 
-1. Nouveau test local utilisateur du pilote `SELARL creation simple` sur la surface minimale.
-2. Reassessment : integrer seulement les explications de blocage indispensables, sans panneau visible supplementaire.
-3. Extension ciblee du perimetre SELARL par bloc canonique, apres arbitrage.
-4. `FRONT-UNIT-DOCUMENT-UI-001`
-5. `FRONT-TEST-TOOLS-CONSOLIDATION-001`
-6. `FRONT-PROTOTYPE-DEPRECATION-001`
+1. `SELARL-COMPLETE-CONTEXT-ADAPTER-001` : brancher le perimetre SELARL complet cote front, sans modifier les generateurs.
+2. `SELARL-COMPLETE-UI-SURFACE-001` : conserver la surface type dossier / saisie / generation tout en exposant les blocages utiles.
+3. `SELARL-COMPLETE-SMOKE-001` : generer les packs DOCX/ZIP des scenarios SELARL complets.
+4. `SELARL-COMPLETE-JURIST-REVIEW-001` : revue humaine avant toute promesse de final juridique.
+5. `REPLICATION-NEXT-CASE-001` : appliquer la recette SELARL au cas suivant.
+6. `FRONT-UNIT-DOCUMENT-UI-001`
+7. `FRONT-TEST-TOOLS-CONSOLIDATION-001`
+8. `FRONT-PROTOTYPE-DEPRECATION-001`
 
-`SELARL-JURIST-REVIEW-001` reste recommande en parallele comme revue metier/juridique, mais le shell UI peut demarrer sans attendre cette revue tant qu'il ne modifie pas les generateurs ni le wording juridique.
+`SELARL-JURIST-REVIEW-001` reste conserve comme jalon historique du pilote, mais la demande utilisateur courante de SELARL complete remplace la prochaine action par `SELARL-COMPLETE-CONTEXT-ADAPTER-001`.
 
 ## Garde-fous communs
 
