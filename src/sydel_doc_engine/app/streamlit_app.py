@@ -242,10 +242,48 @@ def _render_target_front_dossier() -> None:
 
 
 def _render_front_dossier_simple_entry(profile_label: str) -> FrontDossierSimpleEntry:
+    col_conditions_left, col_conditions_right = st.columns(2)
+    profession = col_conditions_left.selectbox(
+        "Profession",
+        ("medecin", "chirurgien_dentiste"),
+        key="front_entry_profession",
+    )
     dossier_unipersonnel = st.checkbox(
         "Dossier unipersonnel",
         value=True,
         key="front_entry_dossier_unipersonnel",
+    )
+    regime_communautaire = col_conditions_right.checkbox(
+        "Regime communautaire",
+        value=False,
+        key="front_entry_regime_communautaire",
+    )
+    cession = col_conditions_left.checkbox(
+        "Cession de cabinet",
+        value=False,
+        key="front_entry_cession",
+    )
+    cabinet_type = ""
+    if cession:
+        cabinet_type = col_conditions_right.selectbox(
+            "Type de cabinet cede",
+            ("medical", "dentaire"),
+            key="front_entry_cabinet_type",
+        )
+    scm_cession = col_conditions_left.checkbox(
+        "SCM cession de parts",
+        value=False,
+        key="front_entry_scm_cession",
+    )
+    site_distinct = col_conditions_right.checkbox(
+        "Site distinct",
+        value=False,
+        key="front_entry_site_distinct",
+    )
+    derogation = col_conditions_left.checkbox(
+        "Derogation",
+        value=False,
+        key="front_entry_derogation",
     )
 
     st.markdown("Personne principale")
@@ -259,6 +297,11 @@ def _render_front_dossier_simple_entry(profile_label: str) -> FrontDossierSimple
         "Genre grammatical",
         ("", "feminin", "masculin"),
         key="front_entry_person_genre",
+    )
+    titre_affichage = col_identity_left.text_input(
+        "Titre ordinal",
+        key="front_entry_person_titre",
+        placeholder="Dr",
     )
     prenom = col_identity_left.text_input(
         "Prenom",
@@ -380,13 +423,240 @@ def _render_front_dossier_simple_entry(profile_label: str) -> FrontDossierSimple
         "Nombre d'exemplaires",
         key="front_entry_signature_nombre_exemplaires",
     )
+    signature_prestataire = col_capital_right.text_input(
+        "Prestataire signature electronique",
+        key="front_entry_signature_prestataire",
+        placeholder="Yousign",
+    )
+
+    st.markdown("Ordre et mandataire")
+    col_order_left, col_order_right = st.columns(2)
+    ordre_conseil_departemental_libelle = col_order_left.text_input(
+        "Conseil departemental",
+        key="front_entry_order_conseil",
+    )
+    ordre_destinataire_appel = col_order_right.text_input(
+        "Appel destinataire",
+        key="front_entry_order_destinataire_appel",
+        placeholder="Monsieur le President",
+    )
+    ordre_profession_signataire_affichee = col_order_left.text_input(
+        "Profession signee",
+        key="front_entry_order_profession_signataire",
+    )
+    ordre_profession_ligne_destinataire = col_order_right.text_input(
+        "Profession destinataire",
+        key="front_entry_order_profession_destinataire",
+    )
+    ordre_profession_reglementee_pluriel = col_order_left.text_input(
+        "Profession reglementee pluriel",
+        key="front_entry_order_profession_pluriel",
+    )
+    ordre_adresse_ligne_1 = col_order_right.text_input(
+        "Adresse ordre",
+        key="front_entry_order_adresse_ligne_1",
+    )
+    ordre_adresse_cp = col_order_left.text_input(
+        "Code postal ordre",
+        key="front_entry_order_adresse_cp",
+    )
+    ordre_adresse_ville = col_order_right.text_input(
+        "Ville ordre",
+        key="front_entry_order_adresse_ville",
+    )
+    ordre_numero = col_order_left.text_input(
+        "Numero ordre",
+        key="front_entry_order_numero",
+    )
+    ordre_numero_rpps = col_order_right.text_input(
+        "Numero RPPS",
+        key="front_entry_order_numero_rpps",
+    )
+    ordre_derogation_mention_manuelle = ""
+    if derogation:
+        ordre_derogation_mention_manuelle = st.text_input(
+            "Mention derogation pour le courrier ordre",
+            key="front_entry_order_derogation_mention",
+        )
+    mandataire_civilite_affichage = col_order_left.selectbox(
+        "Civilite mandataire",
+        ("", "Madame", "Monsieur"),
+        key="front_entry_mandataire_civilite",
+    )
+    mandataire_prenom = col_order_right.text_input(
+        "Prenom mandataire",
+        key="front_entry_mandataire_prenom",
+    )
+    mandataire_nom = col_order_left.text_input(
+        "Nom mandataire",
+        key="front_entry_mandataire_nom",
+    )
+    mandataire_fonction = col_order_right.text_input(
+        "Fonction mandataire",
+        key="front_entry_mandataire_fonction",
+    )
+    mandataire_cabinet = col_order_left.text_input(
+        "Cabinet mandataire",
+        key="front_entry_mandataire_cabinet",
+    )
+
+    st.markdown("Statuts et depot")
+    col_statuts_left, col_statuts_right = st.columns(2)
+    statuts_capital_social_lettres = col_statuts_left.text_input(
+        "Capital en lettres",
+        key="front_entry_statuts_capital_lettres",
+    )
+    statuts_societe_duree = col_statuts_right.text_input(
+        "Duree de la societe",
+        value="99 ans",
+        key="front_entry_statuts_societe_duree",
+    )
+    statuts_apport_montant = col_statuts_left.text_input(
+        "Apport numeraire",
+        key="front_entry_statuts_apport_montant",
+    )
+    statuts_apport_montant_lettres = col_statuts_right.text_input(
+        "Apport numeraire en lettres",
+        key="front_entry_statuts_apport_montant_lettres",
+    )
+    statuts_nombre_titres_total_lettres = col_statuts_left.text_input(
+        "Nombre de titres en lettres",
+        key="front_entry_statuts_titres_total_lettres",
+    )
+    statuts_valeur_nominale_titre_lettres = col_statuts_right.text_input(
+        "Valeur nominale en lettres",
+        key="front_entry_statuts_valeur_nominale_lettres",
+    )
+    statuts_associe_qualification_principale = col_statuts_left.text_input(
+        "Qualification principale",
+        key="front_entry_statuts_qualification",
+    )
+    statuts_associe_situation_maritale = col_statuts_right.text_input(
+        "Situation matrimoniale",
+        key="front_entry_statuts_situation_maritale",
+    )
+    statuts_associe_regime_matrimonial = col_statuts_left.text_input(
+        "Regime matrimonial",
+        key="front_entry_statuts_regime_matrimonial",
+    )
+    conjoint_civilite_affichage = col_statuts_right.selectbox(
+        "Civilite conjoint",
+        ("", "Madame", "Monsieur"),
+        key="front_entry_conjoint_civilite",
+    )
+    conjoint_prenom = col_statuts_left.text_input(
+        "Prenom conjoint",
+        key="front_entry_conjoint_prenom",
+    )
+    conjoint_nom = col_statuts_right.text_input(
+        "Nom conjoint",
+        key="front_entry_conjoint_nom",
+    )
+    conjoint_adresse = st.text_input(
+        "Adresse conjoint",
+        key="front_entry_conjoint_adresse",
+        placeholder="12 rue Exemple, 75001 Paris",
+    )
+    depot_banque_nom = col_statuts_left.text_input(
+        "Banque depot des fonds",
+        key="front_entry_depot_banque_nom",
+    )
+    depot_banque_adresse = col_statuts_right.text_input(
+        "Adresse banque depot",
+        key="front_entry_depot_banque_adresse",
+    )
+    exercice_social_debut = col_statuts_left.text_input(
+        "Debut exercice social",
+        key="front_entry_exercice_social_debut",
+    )
+    exercice_social_fin = col_statuts_right.text_input(
+        "Fin exercice social",
+        key="front_entry_exercice_social_fin",
+    )
+    exercice_social_date_cloture_premier_exercice = col_statuts_left.text_input(
+        "Cloture premier exercice",
+        key="front_entry_exercice_social_cloture",
+    )
+    exercice_lieu_principal_adresse = col_statuts_right.text_input(
+        "Lieu d'exercice principal",
+        key="front_entry_exercice_lieu_adresse",
+    )
+    gerance_seuil_achat_materiel = col_statuts_left.text_input(
+        "Seuil achat materiel",
+        key="front_entry_gerance_seuil_achat",
+    )
+    gerance_seuil_emprunt = col_statuts_right.text_input(
+        "Seuil emprunt",
+        key="front_entry_gerance_seuil_emprunt",
+    )
+    document_nombre_exemplaires_lettres = col_statuts_left.text_input(
+        "Exemplaires en lettres",
+        key="front_entry_document_exemplaires_lettres",
+    )
+
+    regime_apport_montant = ""
+    regime_apport_montant_lettres = ""
+    regime_matrimonial = ""
+    regime_qualite_renoncee = ""
+    regime_date_courrier_avertissement = ""
+    regime_renonciation_lieu_signature = ""
+    regime_renonciation_date_signature = ""
+    regime_renonciation_nombre_exemplaires_lettres = ""
+    regime_avertissement_date_signature = ""
+    if regime_communautaire:
+        st.markdown("Regime communautaire")
+        col_regime_left, col_regime_right = st.columns(2)
+        regime_apport_montant = col_regime_left.text_input(
+            "Apport commun",
+            key="front_entry_regime_apport_montant",
+        )
+        regime_apport_montant_lettres = col_regime_right.text_input(
+            "Apport commun en lettres",
+            key="front_entry_regime_apport_lettres",
+        )
+        regime_matrimonial = col_regime_left.text_input(
+            "Regime matrimonial commun",
+            key="front_entry_regime_matrimonial",
+        )
+        regime_qualite_renoncee = col_regime_right.text_input(
+            "Qualite renoncee",
+            key="front_entry_regime_qualite_renoncee",
+        )
+        regime_date_courrier_avertissement = col_regime_left.text_input(
+            "Date courrier avertissement",
+            key="front_entry_regime_date_courrier",
+        )
+        regime_renonciation_lieu_signature = col_regime_right.text_input(
+            "Lieu signature renonciation",
+            key="front_entry_regime_renonciation_lieu",
+        )
+        regime_renonciation_date_signature = col_regime_left.text_input(
+            "Date signature renonciation",
+            key="front_entry_regime_renonciation_date",
+        )
+        regime_renonciation_nombre_exemplaires_lettres = col_regime_right.text_input(
+            "Exemplaires renonciation en lettres",
+            key="front_entry_regime_renonciation_exemplaires",
+        )
+        regime_avertissement_date_signature = col_regime_left.text_input(
+            "Date avertissement conjoint",
+            key="front_entry_regime_avertissement_date",
+        )
 
     return FrontDossierSimpleEntry(
         profile_key=profile_label,
         dossier_unipersonnel=dossier_unipersonnel,
         domiciliation_same_as_siege=domiciliation_same_as_siege,
+        profession=profession,
+        site_distinct=site_distinct,
+        scm_cession=scm_cession,
+        regime_communautaire=regime_communautaire,
+        derogation=derogation,
+        cession=cession,
+        cabinet_type=cabinet_type,
         civilite_affichage=civilite_affichage,
         genre=genre,
+        titre_affichage=titre_affichage,
         prenom=prenom,
         nom=nom,
         date_naissance=date_naissance,
@@ -411,6 +681,60 @@ def _render_front_dossier_simple_entry(profile_label: str) -> FrontDossierSimple
         signature_lieu=signature_lieu,
         signature_date=signature_date,
         signature_nombre_exemplaires=signature_nombre_exemplaires,
+        signature_prestataire=signature_prestataire,
+        ordre_conseil_departemental_libelle=ordre_conseil_departemental_libelle,
+        ordre_destinataire_appel=ordre_destinataire_appel,
+        ordre_profession_signataire_affichee=ordre_profession_signataire_affichee,
+        ordre_profession_ligne_destinataire=ordre_profession_ligne_destinataire,
+        ordre_profession_reglementee_pluriel=ordre_profession_reglementee_pluriel,
+        ordre_adresse_ligne_1=ordre_adresse_ligne_1,
+        ordre_adresse_cp=ordre_adresse_cp,
+        ordre_adresse_ville=ordre_adresse_ville,
+        ordre_numero=ordre_numero,
+        ordre_numero_rpps=ordre_numero_rpps,
+        ordre_derogation_mention_manuelle=ordre_derogation_mention_manuelle,
+        mandataire_civilite_affichage=mandataire_civilite_affichage,
+        mandataire_prenom=mandataire_prenom,
+        mandataire_nom=mandataire_nom,
+        mandataire_fonction=mandataire_fonction,
+        mandataire_cabinet=mandataire_cabinet,
+        statuts_capital_social_lettres=statuts_capital_social_lettres,
+        statuts_societe_duree=statuts_societe_duree,
+        statuts_apport_montant=statuts_apport_montant,
+        statuts_apport_montant_lettres=statuts_apport_montant_lettres,
+        statuts_nombre_titres_total_lettres=statuts_nombre_titres_total_lettres,
+        statuts_valeur_nominale_titre_lettres=statuts_valeur_nominale_titre_lettres,
+        statuts_associe_qualification_principale=(
+            statuts_associe_qualification_principale
+        ),
+        statuts_associe_situation_maritale=statuts_associe_situation_maritale,
+        statuts_associe_regime_matrimonial=statuts_associe_regime_matrimonial,
+        conjoint_civilite_affichage=conjoint_civilite_affichage,
+        conjoint_prenom=conjoint_prenom,
+        conjoint_nom=conjoint_nom,
+        conjoint_adresse=conjoint_adresse,
+        depot_banque_nom=depot_banque_nom,
+        depot_banque_adresse=depot_banque_adresse,
+        exercice_social_debut=exercice_social_debut,
+        exercice_social_fin=exercice_social_fin,
+        exercice_social_date_cloture_premier_exercice=(
+            exercice_social_date_cloture_premier_exercice
+        ),
+        exercice_lieu_principal_adresse=exercice_lieu_principal_adresse,
+        gerance_seuil_achat_materiel=gerance_seuil_achat_materiel,
+        gerance_seuil_emprunt=gerance_seuil_emprunt,
+        document_nombre_exemplaires_lettres=document_nombre_exemplaires_lettres,
+        regime_apport_montant=regime_apport_montant,
+        regime_apport_montant_lettres=regime_apport_montant_lettres,
+        regime_matrimonial=regime_matrimonial,
+        regime_qualite_renoncee=regime_qualite_renoncee,
+        regime_date_courrier_avertissement=regime_date_courrier_avertissement,
+        regime_renonciation_lieu_signature=regime_renonciation_lieu_signature,
+        regime_renonciation_date_signature=regime_renonciation_date_signature,
+        regime_renonciation_nombre_exemplaires_lettres=(
+            regime_renonciation_nombre_exemplaires_lettres
+        ),
+        regime_avertissement_date_signature=regime_avertissement_date_signature,
     )
 
 
@@ -423,8 +747,18 @@ def _front_dossier_entry_from_session_state(profile_label: str) -> FrontDossierS
         domiciliation_same_as_siege=bool(
             st.session_state.get("front_entry_domiciliation_same_as_siege", True)
         ),
+        profession=str(st.session_state.get("front_entry_profession", "medecin") or "medecin"),
+        site_distinct=bool(st.session_state.get("front_entry_site_distinct", False)),
+        scm_cession=bool(st.session_state.get("front_entry_scm_cession", False)),
+        regime_communautaire=bool(
+            st.session_state.get("front_entry_regime_communautaire", False)
+        ),
+        derogation=bool(st.session_state.get("front_entry_derogation", False)),
+        cession=bool(st.session_state.get("front_entry_cession", False)),
+        cabinet_type=str(st.session_state.get("front_entry_cabinet_type", "") or ""),
         civilite_affichage=str(st.session_state.get("front_entry_person_civilite", "") or ""),
         genre=str(st.session_state.get("front_entry_person_genre", "") or ""),
+        titre_affichage=str(st.session_state.get("front_entry_person_titre", "") or ""),
         prenom=str(st.session_state.get("front_entry_person_prenom", "") or ""),
         nom=str(st.session_state.get("front_entry_person_nom", "") or ""),
         date_naissance=str(
@@ -478,6 +812,136 @@ def _front_dossier_entry_from_session_state(profile_label: str) -> FrontDossierS
         signature_nombre_exemplaires=str(
             st.session_state.get("front_entry_signature_nombre_exemplaires", "") or ""
         ),
+        signature_prestataire=str(
+            st.session_state.get("front_entry_signature_prestataire", "") or ""
+        ),
+        ordre_conseil_departemental_libelle=str(
+            st.session_state.get("front_entry_order_conseil", "") or ""
+        ),
+        ordre_destinataire_appel=str(
+            st.session_state.get("front_entry_order_destinataire_appel", "") or ""
+        ),
+        ordre_profession_signataire_affichee=str(
+            st.session_state.get("front_entry_order_profession_signataire", "") or ""
+        ),
+        ordre_profession_ligne_destinataire=str(
+            st.session_state.get("front_entry_order_profession_destinataire", "") or ""
+        ),
+        ordre_profession_reglementee_pluriel=str(
+            st.session_state.get("front_entry_order_profession_pluriel", "") or ""
+        ),
+        ordre_adresse_ligne_1=str(
+            st.session_state.get("front_entry_order_adresse_ligne_1", "") or ""
+        ),
+        ordre_adresse_cp=str(st.session_state.get("front_entry_order_adresse_cp", "") or ""),
+        ordre_adresse_ville=str(
+            st.session_state.get("front_entry_order_adresse_ville", "") or ""
+        ),
+        ordre_numero=str(st.session_state.get("front_entry_order_numero", "") or ""),
+        ordre_numero_rpps=str(
+            st.session_state.get("front_entry_order_numero_rpps", "") or ""
+        ),
+        ordre_derogation_mention_manuelle=str(
+            st.session_state.get("front_entry_order_derogation_mention", "") or ""
+        ),
+        mandataire_civilite_affichage=str(
+            st.session_state.get("front_entry_mandataire_civilite", "") or ""
+        ),
+        mandataire_prenom=str(
+            st.session_state.get("front_entry_mandataire_prenom", "") or ""
+        ),
+        mandataire_nom=str(st.session_state.get("front_entry_mandataire_nom", "") or ""),
+        mandataire_fonction=str(
+            st.session_state.get("front_entry_mandataire_fonction", "") or ""
+        ),
+        mandataire_cabinet=str(
+            st.session_state.get("front_entry_mandataire_cabinet", "") or ""
+        ),
+        statuts_capital_social_lettres=str(
+            st.session_state.get("front_entry_statuts_capital_lettres", "") or ""
+        ),
+        statuts_societe_duree=str(
+            st.session_state.get("front_entry_statuts_societe_duree", "99 ans") or ""
+        ),
+        statuts_apport_montant=str(
+            st.session_state.get("front_entry_statuts_apport_montant", "") or ""
+        ),
+        statuts_apport_montant_lettres=str(
+            st.session_state.get("front_entry_statuts_apport_montant_lettres", "") or ""
+        ),
+        statuts_nombre_titres_total_lettres=str(
+            st.session_state.get("front_entry_statuts_titres_total_lettres", "") or ""
+        ),
+        statuts_valeur_nominale_titre_lettres=str(
+            st.session_state.get("front_entry_statuts_valeur_nominale_lettres", "") or ""
+        ),
+        statuts_associe_qualification_principale=str(
+            st.session_state.get("front_entry_statuts_qualification", "") or ""
+        ),
+        statuts_associe_situation_maritale=str(
+            st.session_state.get("front_entry_statuts_situation_maritale", "") or ""
+        ),
+        statuts_associe_regime_matrimonial=str(
+            st.session_state.get("front_entry_statuts_regime_matrimonial", "") or ""
+        ),
+        conjoint_civilite_affichage=str(
+            st.session_state.get("front_entry_conjoint_civilite", "") or ""
+        ),
+        conjoint_prenom=str(st.session_state.get("front_entry_conjoint_prenom", "") or ""),
+        conjoint_nom=str(st.session_state.get("front_entry_conjoint_nom", "") or ""),
+        conjoint_adresse=str(st.session_state.get("front_entry_conjoint_adresse", "") or ""),
+        depot_banque_nom=str(st.session_state.get("front_entry_depot_banque_nom", "") or ""),
+        depot_banque_adresse=str(
+            st.session_state.get("front_entry_depot_banque_adresse", "") or ""
+        ),
+        exercice_social_debut=str(
+            st.session_state.get("front_entry_exercice_social_debut", "") or ""
+        ),
+        exercice_social_fin=str(
+            st.session_state.get("front_entry_exercice_social_fin", "") or ""
+        ),
+        exercice_social_date_cloture_premier_exercice=str(
+            st.session_state.get("front_entry_exercice_social_cloture", "") or ""
+        ),
+        exercice_lieu_principal_adresse=str(
+            st.session_state.get("front_entry_exercice_lieu_adresse", "") or ""
+        ),
+        gerance_seuil_achat_materiel=str(
+            st.session_state.get("front_entry_gerance_seuil_achat", "") or ""
+        ),
+        gerance_seuil_emprunt=str(
+            st.session_state.get("front_entry_gerance_seuil_emprunt", "") or ""
+        ),
+        document_nombre_exemplaires_lettres=str(
+            st.session_state.get("front_entry_document_exemplaires_lettres", "") or ""
+        ),
+        regime_apport_montant=str(
+            st.session_state.get("front_entry_regime_apport_montant", "") or ""
+        ),
+        regime_apport_montant_lettres=str(
+            st.session_state.get("front_entry_regime_apport_lettres", "") or ""
+        ),
+        regime_matrimonial=str(
+            st.session_state.get("front_entry_regime_matrimonial", "") or ""
+        ),
+        regime_qualite_renoncee=str(
+            st.session_state.get("front_entry_regime_qualite_renoncee", "") or ""
+        ),
+        regime_date_courrier_avertissement=str(
+            st.session_state.get("front_entry_regime_date_courrier", "") or ""
+        ),
+        regime_renonciation_lieu_signature=str(
+            st.session_state.get("front_entry_regime_renonciation_lieu", "") or ""
+        ),
+        regime_renonciation_date_signature=str(
+            st.session_state.get("front_entry_regime_renonciation_date", "") or ""
+        ),
+        regime_renonciation_nombre_exemplaires_lettres=str(
+            st.session_state.get("front_entry_regime_renonciation_exemplaires", "") or ""
+        ),
+        regime_avertissement_date_signature=str(
+            st.session_state.get("front_entry_regime_avertissement_date", "") or ""
+        ),
     )
 
 
@@ -519,8 +983,8 @@ def _render_front_generation_actions(dossier) -> None:
     st.subheader("Generation")
     readiness = front_generation_readiness(dossier)
     st.caption(
-        "Pilote actuel : DOC-001 a DOC-004 en DOCX puis ZIP. "
-        "Les documents reserves ou manuels restent hors generation V1."
+        "SELARL complete : documents selectionnes selon les conditions. "
+        "Les reserves et manuels restent exclus de la generation automatique."
     )
     ready_col, blocked_col = st.columns(2)
     ready_col.metric("Prets a generer", len(readiness.generable_doc_codes))
@@ -530,11 +994,13 @@ def _render_front_generation_actions(dossier) -> None:
     )
 
     if readiness.can_generate_docx:
-        st.success("Les quatre documents V1 sont prets pour generation DOCX.")
+        st.success(
+            f"{len(readiness.target_doc_codes)} documents sont prets pour generation DOCX."
+        )
     else:
         st.warning(
-            "Generation bloquee tant que tous les documents V1 ne sont pas "
-            "generables et que le contexte moteur minimal n'est pas complet."
+            "Generation bloquee tant que tous les documents cibles ne sont pas "
+            "generables et que le contexte moteur SELARL n'est pas complet."
         )
         blocker_messages = _front_generation_blocker_messages(readiness)
         if blocker_messages:

@@ -29,16 +29,26 @@ INTERNAL_TOOLS_SESSION_FLAG = "_sydel_internal_tools_unlocked"
 def test_simple_entry_populates_dossier_records() -> None:
     dossier = build_front_dossier_entry_dossier(_complete_simple_entry())
 
-    assert set(dossier.persons) == {"person-praticien-principal"}
-    assert set(dossier.companies) == {"company-societe-principale"}
+    assert {"person-praticien-principal", "person-mandataire-ordre"}.issubset(
+        dossier.persons
+    )
+    assert {
+        "company-societe-principale",
+        "company-ordre-professionnel",
+        "company-banque-depot",
+    }.issubset(dossier.companies)
     assert {address.usage for address in dossier.addresses.values()} == {
         AddressUsage.ADRESSE_PERSONNELLE,
         AddressUsage.SIEGE_SOCIAL,
         AddressUsage.DOMICILIATION,
+        AddressUsage.ORDRE,
+        AddressUsage.BANQUE,
     }
     assert "personne.signataire.prenom" in dossier.canonical_values
     assert "societe.societe_principale.denomination" in dossier.canonical_values
     assert "domiciliation.adresse" in dossier.canonical_values
+    assert "ordre.professionnel" in dossier.canonical_values
+    assert "banque.depot.nom" in dossier.canonical_values
 
 
 def test_dossier_unipersonnel_creates_explicit_role_assignments() -> None:
@@ -88,7 +98,7 @@ def test_distinct_domiciliation_does_not_create_reuse_rule() -> None:
     )
 
 
-def test_simple_entry_recalculates_document_statuses_for_doc_001_to_doc_004() -> None:
+def test_simple_entry_recalculates_document_statuses_for_simple_selarl_pack() -> None:
     view = build_front_dossier_entry_view(_complete_simple_entry())
 
     statuses = {
@@ -100,12 +110,16 @@ def test_simple_entry_recalculates_document_statuses_for_doc_001_to_doc_004() ->
         "DOC-002": DocumentStatus.GENERABLE,
         "DOC-003": DocumentStatus.GENERABLE,
         "DOC-004": DocumentStatus.GENERABLE,
+        "DOC-017": DocumentStatus.GENERABLE,
+        "DOC-034": DocumentStatus.GENERABLE,
     }
     assert view.status_summary.generable_doc_codes == (
         "DOC-001",
         "DOC-002",
         "DOC-003",
         "DOC-004",
+        "DOC-034",
+        "DOC-017",
     )
     assert view.status_summary.lots[0].status is DocumentLotStatus.READY
 
@@ -120,6 +134,8 @@ def test_incomplete_entry_keeps_statuses_blocked_and_explained() -> None:
         "DOC-002",
         "DOC-003",
         "DOC-004",
+        "DOC-017",
+        "DOC-034",
     }
     doc_002 = next(
         document for document in view.status_summary.documents if document.doc_code == "DOC-002"
@@ -135,7 +151,7 @@ def test_entry_rows_expose_real_data_layer_objects() -> None:
     role_rows = front_dossier_entry_role_rows(dossier)
     address_rows = front_dossier_entry_address_rows(dossier)
 
-    assert {"objet": "PersonRecord", "nombre": "1"} in object_rows
+    assert {"objet": "PersonRecord", "nombre": "2"} in object_rows
     assert any(row["role"] == "signataire" for row in role_rows)
     assert any(row["usage"] == "domiciliation" for row in address_rows)
     assert all(
@@ -144,7 +160,7 @@ def test_entry_rows_expose_real_data_layer_objects() -> None:
     )
 
 
-def test_entry_support_stays_limited_to_selarl_creation_simple() -> None:
+def test_entry_support_keeps_single_visible_selarl_surface() -> None:
     assert front_dossier_entry_is_supported("SELARL creation simple") is True
     assert front_dossier_entry_is_supported("SELARL ordre / inscription") is False
 
@@ -202,6 +218,40 @@ def _complete_simple_entry(**overrides: object) -> FrontDossierSimpleEntry:
         "signature_lieu": "Paris",
         "signature_date": "2026-05-24",
         "signature_nombre_exemplaires": "3",
+        "signature_prestataire": "Yousign",
+        "titre_affichage": "Dr",
+        "ordre_conseil_departemental_libelle": "Conseil departemental de l'Ordre",
+        "ordre_destinataire_appel": "Madame la Presidente",
+        "ordre_profession_signataire_affichee": "medecin",
+        "ordre_profession_ligne_destinataire": "medecins",
+        "ordre_profession_reglementee_pluriel": "medecins",
+        "ordre_adresse_ligne_1": "6 rue du Conseil",
+        "ordre_adresse_cp": "75001",
+        "ordre_adresse_ville": "Paris",
+        "ordre_numero": "12345",
+        "ordre_numero_rpps": "10000000001",
+        "mandataire_civilite_affichage": "Madame",
+        "mandataire_prenom": "Sophie",
+        "mandataire_nom": "Durand",
+        "mandataire_fonction": "juriste",
+        "mandataire_cabinet": "DAAT",
+        "statuts_capital_social_lettres": "dix mille",
+        "statuts_apport_montant": "10 000",
+        "statuts_apport_montant_lettres": "dix mille",
+        "statuts_nombre_titres_total_lettres": "cent",
+        "statuts_valeur_nominale_titre_lettres": "cent euros",
+        "statuts_associe_qualification_principale": "cardiologue",
+        "statuts_associe_situation_maritale": "celibataire",
+        "statuts_associe_regime_matrimonial": "neant",
+        "depot_banque_nom": "BANQUE EXEMPLE",
+        "depot_banque_adresse": "1 boulevard Haussmann, 75009 Paris",
+        "exercice_social_debut": "1er janvier",
+        "exercice_social_fin": "31 decembre",
+        "exercice_social_date_cloture_premier_exercice": "31 decembre 2026",
+        "exercice_lieu_principal_adresse": "12 avenue de la Republique, 75011 Paris",
+        "gerance_seuil_achat_materiel": "10 000 euros",
+        "gerance_seuil_emprunt": "50 000 euros",
+        "document_nombre_exemplaires_lettres": "trois",
     }
     values.update(overrides)
     return FrontDossierSimpleEntry(**values)

@@ -29,19 +29,19 @@ Ces tickets fondent le nouveau front et ne doivent pas etre recodes dans les tic
 16. `FRONT-REALITY-CHECK-001` - audit de l'ecart entre debriefs front et code reel visible/branche.
 17. `FRONT-MINIMAL-SURFACE-CLEANUP-001` - surface normale minimale type dossier / saisie / generation, debug cache.
 18. `SELARL-COMPLETE-CASE-PLAYBOOK-001` - cadrage SELARL complete, matrice documents et recette reproductible.
+19. `SELARL-COMPLETE-CONTEXT-ADAPTER-001` - selection/readiness/contexte SELARL complet cote front, sans modification des generateurs.
 
 ## Ordre recommande maintenant
 
-1. `SELARL-COMPLETE-CONTEXT-ADAPTER-001` : brancher le perimetre SELARL complet cote front, sans modifier les generateurs.
-2. `SELARL-COMPLETE-UI-SURFACE-001` : conserver la surface type dossier / saisie / generation tout en exposant les blocages utiles.
-3. `SELARL-COMPLETE-SMOKE-001` : generer les packs DOCX/ZIP des scenarios SELARL complets.
-4. `SELARL-COMPLETE-JURIST-REVIEW-001` : revue humaine avant toute promesse de final juridique.
-5. `REPLICATION-NEXT-CASE-001` : appliquer la recette SELARL au cas suivant.
-6. `FRONT-UNIT-DOCUMENT-UI-001`
-7. `FRONT-TEST-TOOLS-CONSOLIDATION-001`
-8. `FRONT-PROTOTYPE-DEPRECATION-001`
+1. `SELARL-COMPLETE-COMPLEX-SUBFORMS-001` : completer les sous-formulaires et l'adaptateur contexte pour cession medicale/dentaire, bail/appel de fonds et cession SCM.
+2. `SELARL-COMPLETE-SMOKE-001` : generer les packs DOCX/ZIP des scenarios SELARL complets.
+3. `SELARL-COMPLETE-JURIST-REVIEW-001` : revue humaine avant toute promesse de final juridique.
+4. `REPLICATION-NEXT-CASE-001` : appliquer la recette SELARL au cas suivant.
+5. `FRONT-UNIT-DOCUMENT-UI-001`
+6. `FRONT-TEST-TOOLS-CONSOLIDATION-001`
+7. `FRONT-PROTOTYPE-DEPRECATION-001`
 
-`SELARL-JURIST-REVIEW-001` reste conserve comme jalon historique du pilote, mais la demande utilisateur courante de SELARL complete remplace la prochaine action par `SELARL-COMPLETE-CONTEXT-ADAPTER-001`.
+`SELARL-JURIST-REVIEW-001` reste conserve comme jalon historique du pilote, mais la demande utilisateur courante de SELARL complete remplace la prochaine action par `SELARL-COMPLETE-COMPLEX-SUBFORMS-001`.
 
 ## Garde-fous communs
 

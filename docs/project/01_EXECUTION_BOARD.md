@@ -169,7 +169,8 @@
 | FRONT-REALITY-CHECK-001 | DONE | Auditer l'ecart entre debriefs front et code reel | code Streamlit + debriefs front + etat Git | rapport de realite + plan surface minimale |
 | FRONT-MINIMAL-SURFACE-CLEANUP-001 | DONE | Appliquer la surface utilisateur minimale | `FRONT-REALITY-CHECK-001` + `FRONT_MINIMAL_USER_SURFACE_V1.md` | type dossier / saisie / generation, debug cache |
 | SELARL-COMPLETE-CASE-PLAYBOOK-001 | DONE | Cadrer la SELARL complete et la recette reproductible | specs SELARL + code front reel + catalogue moteur | playbook SELARL complet + rapport de realite |
-| SELARL-COMPLETE-CONTEXT-ADAPTER-001 | READY | Brancher l'adaptateur contexte SELARL complet cote front | `SELARL_COMPLETE_CASE_PLAYBOOK_V1.md` + `front_data` + catalogue | selection documentaire conditionnelle + readiness + contexte moteur |
+| SELARL-COMPLETE-CONTEXT-ADAPTER-001 | DONE | Brancher l'adaptateur contexte SELARL complet cote front | `SELARL_COMPLETE_CASE_PLAYBOOK_V1.md` + `front_data` + catalogue | selection documentaire conditionnelle + readiness + contexte moteur |
+| SELARL-COMPLETE-COMPLEX-SUBFORMS-001 | READY | Completer les sous-formulaires SELARL complexes | `SELARL-COMPLETE-CONTEXT-ADAPTER-001` + catalogue + specs cession/SCM | cession medicale/dentaire et SCM generables quand les donnees sont completes |
 | FRONT-GENERATION-READINESS-UX-001 | BLOCKED | Expliquer les blocages de generation dans la vue normale | a absorber dans `FRONT-MINIMAL-SURFACE-CLEANUP-001` | ne pas lancer comme ticket separe avant la coupe UX |
 | FRONT-UNIT-DOCUMENT-UI-001 | BLOCKED | Consolider l'UI Document unitaire autour de `front_data` | `FRONT-UI-SHELL-001` | mode document unique separe du dossier complet |
 | FRONT-TEST-TOOLS-CONSOLIDATION-001 | BLOCKED | Regrouper prefills, smoke et diagnostic | `FRONT-UI-SHELL-001` | outils de test marques et separes du produit |
@@ -1136,10 +1137,20 @@
 
 ### SELARL-COMPLETE-CONTEXT-ADAPTER-001
 - Objectif : brancher cote nouveau front une selection documentaire SELARL conditionnelle et un `DocumentGenerationContext` complet pour les documents deja autorises par la source et disponibles cote moteur.
-- Statut : READY.
+- Statut : DONE.
 - Contraintes : ne pas modifier les generateurs, le moteur DOCX/PDF/ZIP ou le wording juridique ; conserver `DOC-013`, `DOC-014` et les documents sans code en manuel ; garder `DOC-006` en reserve explicite.
-- Sorties attendues : selection SELARL par scenarios, requirements/readiness pour les documents manquants, adaptateur contexte complet, tests unitaires par scenarios, rapport de smoke technique.
-- Scenarios minimum : SELARL medecin simple, SELARL dentiste simple, regime communautaire, cession medicale, cession dentaire, SCM cession, derogation manuelle.
+- Livrables : `src/sydel_doc_engine/app/front_selarl_complete.py`, extension de `front_dossier_entry.py`, `front_generation_actions.py`, `streamlit_app.py`, tests unitaires front et rapport `docs/review/selarl_complete_context_adapter_001_report_v1.md`.
+- Sortie realisee : la SELARL medecin simple genere maintenant `DOC-001`, `DOC-002`, `DOC-003`, `DOC-004`, `DOC-034` et `DOC-017` depuis le nouveau front ; la profession chirurgien-dentiste bascule vers `DOC-016` ; le regime communautaire ajoute `DOC-005` en cible et conserve `DOC-006` en reserve exclue.
+- Limite volontaire : cession medicale/dentaire et cession SCM sont selectionnees depuis le catalogue, mais restent `context_incomplete` tant que les sous-formulaires metier detailles ne sont pas branches.
+- Validation : `ruff check .` OK ; tests cibles `test_front_generation_actions.py` + `test_front_dossier_data_entry.py` OK, 23 tests passes ; smoke DOCX dentiste et regime communautaire OK ; `pytest` complet tente mais non conclusif a cause de `PermissionError` Windows sur les dossiers temporaires `tmp_path`/`basetemp`.
+- Prochaine etape recommandee : `SELARL-COMPLETE-COMPLEX-SUBFORMS-001`.
+
+### SELARL-COMPLETE-COMPLEX-SUBFORMS-001
+- Objectif : brancher les sous-formulaires et l'adaptateur contexte pour les scenarios cession medicale/dentaire, bail/appel de fonds et cession SCM.
+- Statut : READY.
+- Contraintes : ne pas modifier les generateurs, le moteur DOCX/PDF/ZIP, la source de verite ou le wording juridique ; ne pas exposer de nouveau panneau de diagnostic en surface principale.
+- Sorties attendues : champs metier detailles, contexte moteur complet pour `DOC-007` a `DOC-012` et `DOC-031` a `DOC-033`, readiness actionnable, tests par scenario et smoke DOCX/ZIP.
+- Prochaine etape ensuite : `SELARL-COMPLETE-SMOKE-001`.
 
 ### FRONT-GENERATION-READINESS-UX-001
 - Objectif : rendre les blocages de generation visibles et actionnables dans la vue normale du nouveau front.
@@ -1163,8 +1174,9 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - mettre à jour `docs/project/04_LAST_STATE.md`
 
 ## Prochaine étape prévue
+- `SELARL-COMPLETE-CONTEXT-ADAPTER-001` est DONE ; le nouveau front n'est plus limite a quatre documents : medecin simple cible et genere `DOC-001`, `DOC-002`, `DOC-003`, `DOC-004`, `DOC-034`, `DOC-017`, dentiste bascule vers `DOC-016`, regime communautaire ajoute `DOC-005` et conserve `DOC-006` en reserve.
+- Prochaine etape recommandee : `SELARL-COMPLETE-COMPLEX-SUBFORMS-001`, pour transformer les scenarios cession medicale/dentaire et SCM encore `context_incomplete` en generation utilisable quand les donnees sont completes.
 - `SELARL-COMPLETE-CASE-PLAYBOOK-001` est DONE ; la SELARL complete est cadree comme une extension front/adaptateur/readiness, avec matrice documentaire et mode d'emploi reproductible pour les autres cas.
-- Prochaine etape recommandee : `SELARL-COMPLETE-CONTEXT-ADAPTER-001`, avant toute promesse de SELARL finale utilisateur ou generalisation a un autre cas.
 - `FRONT-MINIMAL-SURFACE-CLEANUP-001` est DONE ; la surface normale est maintenant limitee a `Type de dossier`, `Donnees a saisir`, `Generation`, sans outil interne visible, sans radio, sans table et sans expander.
 - Prochaine etape recommandee : test utilisateur local du pilote `SELARL creation simple`, avant tout ajout de panneau ou extension documentaire.
 - `FRONT-REALITY-CHECK-001` est DONE ; l'audit confirme que la vue normale etait reduite techniquement a trois zones, mais encore trop chargee dans la saisie et trop muette sur les blocages runtime.
@@ -1374,3 +1386,4 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - 2026-05-25 : FRONT-REALITY-CHECK-001 audite le front reel contre les debriefs recents, confirme DOCX/ZIP branches sur `DOC-001` a `DOC-004`, PDF conditionnel indisponible localement, identifie les pollutions restantes de surface et cree le plan `FRONT_MINIMAL_USER_SURFACE_V1.md`; aucun Python, generateur, moteur DOCX/PDF/ZIP ou wording juridique modifie.
 - 2026-05-25 : FRONT-MINIMAL-SURFACE-CLEANUP-001 applique la surface minimale du nouveau front : 3 zones principales, 0 radio, 0 table, 0 expander, outils internes caches par mode equipe, PDF cache si backend indisponible et blocages visibles dans `Generation`; ruff OK et pytest OK, 382 tests passes ; aucun generateur, moteur DOCX/PDF/ZIP, source de verite ou wording juridique modifie.
 - 2026-05-25 : SELARL-COMPLETE-CASE-PLAYBOOK-001 cadre la SELARL complete : le moteur est plus avance que le front, la generation visible reste limitee a `DOC-001` a `DOC-004`, les documents manuels restent hors generation, et le prochain ticket unique devient `SELARL-COMPLETE-CONTEXT-ADAPTER-001`; aucun Python, generateur, moteur DOCX/PDF/ZIP, source de verite ou wording juridique modifie.
+- 2026-05-25 : SELARL-COMPLETE-CONTEXT-ADAPTER-001 branche la selection/readiness/contexte SELARL complet cote nouveau front : medecin simple genere 6 DOCX (`DOC-001`, `DOC-002`, `DOC-003`, `DOC-004`, `DOC-034`, `DOC-017`), dentiste bascule vers `DOC-016`, regime communautaire ajoute `DOC-005`, `DOC-006` reste reserve, `DOC-013`/`DOC-014` restent manuels, et cession/SCM restent `context_incomplete` jusqu'aux sous-formulaires ; ruff OK et tests cibles OK, 23 passes ; pytest complet non conclusif par `PermissionError` Windows temp ; aucun generateur, moteur DOCX/PDF/ZIP, source de verite ou wording juridique modifie.
