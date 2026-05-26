@@ -1,0 +1,743 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+from datetime import date
+from pathlib import Path
+from typing import Final
+
+from sydel_doc_engine.app.ui_runtime import (
+    GeneratedDossier,
+    generate_docx_files_for_document_codes,
+    generate_zip_file,
+)
+from sydel_doc_engine.domain.enums import Gender
+from sydel_doc_engine.domain.models import (
+    Address,
+    Apport,
+    Associe,
+    CapitalContext,
+    CessionBanque,
+    Company,
+    CompanyInscriptionOrdre,
+    DecisionContext,
+    DepotFonds,
+    DirigeantNomine,
+    DocumentContext,
+    DocumentGenerationContext,
+    DocumentSignataire,
+    Domiciliation,
+    DossierOptions,
+    Emprunt,
+    ExerciceLieu,
+    ExerciceSocial,
+    GeranceContext,
+    Mandataire,
+    OrdreAddress,
+    OrdreProfessionnel,
+    Person,
+    RegimeCommunautaire,
+    RegimeCommunautaireAvertissement,
+    RegimeCommunautaireRenonciation,
+    ReunionContext,
+    Signature,
+    SpfplConjoint,
+    SpfplOrdre,
+    StatutsSel,
+)
+from sydel_doc_engine.front_data import AddressUsage, BusinessRole, build_document_status_for_code
+
+SELARL_V1_BASE_DOC_CODES: Final = (
+    "DOC-001",
+    "DOC-002",
+    "DOC-003",
+    "DOC-004",
+    "DOC-034",
+)
+SELARL_V1_MEDECIN_STATUTS_CODE: Final = "DOC-017"
+SELARL_V1_DENTISTE_STATUTS_CODE: Final = "DOC-016"
+SELARL_V1_REGIME_CODE: Final = "DOC-005"
+SELARL_V1_RESERVE_REGIME_CODE: Final = "DOC-006"
+
+PROFESSION_MEDECIN: Final = "medecin"
+PROFESSION_DENTISTE: Final = "chirurgien_dentiste"
+SELARL_V1_PROFESSIONS: Final = (PROFESSION_MEDECIN, PROFESSION_DENTISTE)
+
+FRONT_DATA_ROLE_SCOPE: Final = (
+    BusinessRole.PRATICIEN.value,
+    BusinessRole.ASSOCIE.value,
+    BusinessRole.GERANT.value,
+    BusinessRole.SIGNATAIRE.value,
+    BusinessRole.MANDATAIRE.value,
+    BusinessRole.CONJOINT.value,
+    BusinessRole.ORDRE_PROFESSIONNEL.value,
+    BusinessRole.BANQUE.value,
+)
+FRONT_DATA_ADDRESS_SCOPE: Final = (
+    AddressUsage.DOMICILE_PRATICIEN.value,
+    AddressUsage.SIEGE_SOCIAL.value,
+    AddressUsage.DOMICILIATION.value,
+    AddressUsage.LIEU_EXERCICE.value,
+    AddressUsage.ORDRE.value,
+    AddressUsage.BANQUE.value,
+)
+
+
+@dataclass(frozen=True)
+class SelarlDocumentRow:
+    doc_code: str
+    label: str
+    status: str
+    message: str
+
+
+@dataclass(frozen=True)
+class SelarlSliceInput:
+    dossier_type_key: str
+    dossier_reference: str = ""
+    profession: str = PROFESSION_MEDECIN
+    dossier_unipersonnel: bool = True
+    regime_communautaire: bool = False
+    derogation: bool = False
+    site_distinct: bool = False
+    cession: bool = False
+    scm: bool = False
+    civilite: str = ""
+    genre: Gender = Gender.MASCULIN
+    prenom: str = ""
+    nom: str = ""
+    titre_affichage: str = ""
+    date_naissance: date | None = None
+    ville_naissance: str = ""
+    departement_naissance: str = ""
+    nationalite: str = ""
+    nom_pere: str = ""
+    nom_mere: str = ""
+    adresse_num_voie: str = ""
+    adresse_voie: str = ""
+    adresse_cp: str = ""
+    adresse_ville: str = ""
+    situation_maritale: str = ""
+    regime_matrimonial: str = ""
+    numero_ordre: str = ""
+    numero_rpps: str = ""
+    departement_ordre: str = ""
+    denomination: str = ""
+    capital_social: str = ""
+    capital_social_lettres: str = ""
+    duree: str = "99 ans"
+    nb_parts_total: int = 0
+    nb_parts_total_lettres: str = ""
+    valeur_nominale_part: str = ""
+    valeur_nominale_part_lettres: str = ""
+    siege_num_voie: str = ""
+    siege_voie: str = ""
+    siege_cp: str = ""
+    siege_ville: str = ""
+    ville_rcs: str = ""
+    ordre_conseil: str = ""
+    ordre_adresse_ligne_1: str = ""
+    ordre_cp: str = ""
+    ordre_ville: str = ""
+    mandataire_civilite: str = "Monsieur"
+    mandataire_prenom: str = "Jordan"
+    mandataire_nom: str = "ELBAZ"
+    mandataire_fonction: str = "gerant"
+    mandataire_cabinet: str = "SYDEL"
+    signature_lieu: str = ""
+    signature_date: date | None = None
+    signature_nombre_exemplaires: str = ""
+    prestataire_signature_electronique: str = ""
+    decision_date: date | None = None
+    reunion_date_lettres: str = ""
+    reunion_heure: str = ""
+    depot_banque_nom: str = ""
+    depot_banque_adresse: str = ""
+    exercice_debut: str = ""
+    exercice_fin: str = ""
+    exercice_cloture_premier: str = ""
+    lieu_exercice_adresse: str = ""
+    seuil_achat_materiel: str = ""
+    seuil_emprunt: str = ""
+    conjoint_civilite: str = ""
+    conjoint_genre: Gender = Gender.FEMININ
+    conjoint_prenom: str = ""
+    conjoint_nom: str = ""
+    qualite_renoncee: str = "associe"
+    date_courrier_avertissement: date | None = None
+
+    @property
+    def has_any_value(self) -> bool:
+        return any(
+            value.strip()
+            for value in (
+                self.dossier_reference,
+                self.prenom,
+                self.nom,
+                self.denomination,
+                self.capital_social,
+                self.numero_ordre,
+            )
+        )
+
+
+@dataclass(frozen=True)
+class SelarlSlicePlan:
+    can_generate: bool
+    status: str
+    reason: str
+    document_codes: tuple[str, ...]
+    document_rows: tuple[SelarlDocumentRow, ...]
+    blockers: tuple[str, ...]
+    warnings: tuple[str, ...]
+    target_engine_adapter: str = "front_app.selarl_slice"
+
+
+def selected_selarl_document_codes(data: SelarlSliceInput) -> tuple[str, ...]:
+    codes = [*SELARL_V1_BASE_DOC_CODES, _statuts_code(data.profession)]
+    if data.regime_communautaire:
+        codes.append(SELARL_V1_REGIME_CODE)
+    return tuple(codes)
+
+
+def build_selarl_plan(data: SelarlSliceInput) -> SelarlSlicePlan:
+    blockers = validate_selarl_input(data)
+    warnings = _warning_messages(data)
+    document_codes = selected_selarl_document_codes(data)
+    rows = _document_rows(data, blockers)
+
+    if blockers:
+        return SelarlSlicePlan(
+            can_generate=False,
+            status="blocked",
+            reason=blockers[0],
+            document_codes=document_codes,
+            document_rows=rows,
+            blockers=blockers,
+            warnings=warnings,
+        )
+    return SelarlSlicePlan(
+        can_generate=True,
+        status="ready",
+        reason="Pret pour generation SELARL V1 bornee.",
+        document_codes=document_codes,
+        document_rows=rows,
+        blockers=(),
+        warnings=warnings,
+    )
+
+
+def validate_selarl_input(data: SelarlSliceInput) -> tuple[str, ...]:
+    blockers: list[str] = []
+    if data.profession not in SELARL_V1_PROFESSIONS:
+        blockers.append("Profession hors perimetre SELARL V1.")
+    if not data.dossier_unipersonnel:
+        blockers.append("La V1 ne couvre que le dossier unipersonnel.")
+    if data.derogation:
+        blockers.append("Derogations hors perimetre V1 : aucun DOC-013/DOC-014 genere.")
+    if data.site_distinct:
+        blockers.append("Site distinct hors perimetre V1 : traitement manuel requis.")
+    if data.cession:
+        blockers.append("Cession hors perimetre V1.")
+    if data.scm:
+        blockers.append("SCM hors perimetre V1.")
+
+    blockers.extend(_missing_text_blockers(data))
+    if data.date_naissance is None:
+        blockers.append("Date de naissance du praticien requise.")
+    if data.signature_date is None:
+        blockers.append("Date de signature requise.")
+    if data.decision_date is None:
+        blockers.append("Date de decision requise.")
+    if data.nb_parts_total < 1:
+        blockers.append("Nombre de parts requis et superieur a zero.")
+    if data.profession == PROFESSION_DENTISTE:
+        blockers.extend(
+            _missing_for_fields(
+                data,
+                (
+                    ("conjoint_civilite", "Civilite du conjoint requise pour DOC-016."),
+                    ("conjoint_prenom", "Prenom du conjoint requis pour DOC-016."),
+                    ("conjoint_nom", "Nom du conjoint requis pour DOC-016."),
+                ),
+            )
+        )
+    if data.regime_communautaire:
+        blockers.extend(
+            _missing_for_fields(
+                data,
+                (
+                    ("conjoint_civilite", "Civilite du conjoint requise pour DOC-005."),
+                    ("conjoint_prenom", "Prenom du conjoint requis pour DOC-005."),
+                    ("conjoint_nom", "Nom du conjoint requis pour DOC-005."),
+                    (
+                        "regime_matrimonial",
+                        "Regime matrimonial requis quand DOC-005 est genere.",
+                    ),
+                    (
+                        "qualite_renoncee",
+                        "Qualite renoncee requise quand DOC-005 est genere.",
+                    ),
+                ),
+            )
+        )
+        if data.date_courrier_avertissement is None:
+            blockers.append("Date du courrier d'avertissement requise pour DOC-005.")
+    return tuple(dict.fromkeys(blockers))
+
+
+def build_generation_context(data: SelarlSliceInput) -> DocumentGenerationContext:
+    person_address = _address(
+        data.adresse_num_voie,
+        data.adresse_voie,
+        data.adresse_cp,
+        data.adresse_ville,
+    )
+    company_address = _address(
+        data.siege_num_voie,
+        data.siege_voie,
+        data.siege_cp,
+        data.siege_ville,
+    )
+    profession_label = _profession_label(data.profession)
+    profession_plural = _profession_plural(data.profession)
+    person = Person(
+        genre=data.genre,
+        civilite=data.civilite,
+        prenom=data.prenom,
+        nom=data.nom,
+        titre_affichage=data.titre_affichage,
+        adresse_personnelle_affichee=person_address.adresse_affichee,
+        adresse_perso=person_address,
+        date_naissance=data.date_naissance,
+        nationalite=data.nationalite,
+        nom_pere=data.nom_pere,
+        nom_mere=data.nom_mere,
+        fonction_dirigeant="gerant",
+        numero_inscription_ordre=data.numero_ordre,
+        qualification_principale=profession_label,
+    )
+    company = Company(
+        forme_sociale="SELARL",
+        forme_sociale_affichage="SELARL",
+        forme_sociale_libelle_long="Societe d'exercice liberal a responsabilite limitee",
+        forme_sociale_complete="societe d'exercice liberal a responsabilite limitee",
+        forme_sociale_abregee="SELARL",
+        denomination=data.denomination,
+        denomination_courte=data.denomination,
+        capital=data.capital_social,
+        capital_social=data.capital_social,
+        capital_social_lettres=data.capital_social_lettres,
+        capital_variable=True,
+        duree=data.duree,
+        siege=company_address,
+        ville_rcs=data.ville_rcs,
+        nb_parts_total=data.nb_parts_total,
+        inscription_ordre=CompanyInscriptionOrdre(
+            departement=data.departement_ordre,
+            ville=data.ordre_ville,
+            numero=data.numero_ordre,
+        ),
+    )
+    conjoint = _conjoint_person(data) if _needs_conjoint(data) else None
+    return DocumentGenerationContext(
+        structure="SELARL",
+        dossier_options=DossierOptions(
+            regime_communautaire=data.regime_communautaire,
+            associe_unique=True,
+            derogation=False,
+            site_distinct=False,
+            cession=False,
+            scm_cession=False,
+        ),
+        personne_signataire=person,
+        conjoint=conjoint,
+        signature=Signature(
+            lieu=data.signature_lieu,
+            date=_required_date(data.signature_date, "signature_date"),
+            nombre_exemplaires=data.signature_nombre_exemplaires,
+            prestataire_signature_electronique=data.prestataire_signature_electronique,
+        ),
+        societe=company,
+        domiciliation=Domiciliation(
+            adresse_domiciliation_affichee=company_address.adresse_affichee,
+        ),
+        ordre=_ordre(data, profession_label, profession_plural),
+        mandataire=Mandataire(
+            civilite_affichage=data.mandataire_civilite,
+            prenom=data.mandataire_prenom,
+            nom=data.mandataire_nom,
+            fonction=data.mandataire_fonction,
+            cabinet=data.mandataire_cabinet,
+        ),
+        associes=(
+            _associe(data, person_address, profession_label, profession_plural),
+        ),
+        dirigeant_nomine=DirigeantNomine(
+            genre=data.genre,
+            civilite_affichage=data.civilite,
+            prenom=data.prenom,
+            nom=data.nom,
+            date_naissance=data.date_naissance,
+            ville_naissance=data.ville_naissance,
+            departement_naissance=data.departement_naissance,
+            nationalite=data.nationalite,
+            adresse_personnelle=person_address,
+            fonction_affichage="gerant",
+            ref_associe_index=0,
+        ),
+        decision=DecisionContext(date=_display_date(data.decision_date)),
+        reunion=ReunionContext(
+            date_lettres=data.reunion_date_lettres,
+            heure=data.reunion_heure,
+        ),
+        capital=CapitalContext(
+            nb_parts_total=data.nb_parts_total,
+            valeur_nominale_part=data.valeur_nominale_part,
+            nb_parts_representees=data.nb_parts_total,
+            montant=data.capital_social,
+            montant_lettres=data.capital_social_lettres,
+            nombre_titres_total=data.nb_parts_total,
+            nombre_titres_total_lettres=data.nb_parts_total_lettres,
+            valeur_nominale_titre=data.valeur_nominale_part,
+            valeur_nominale_titre_lettres=data.valeur_nominale_part_lettres,
+            type_titre="parts sociales",
+        ),
+        gerance=GeranceContext(
+            seuil_achat_materiel=data.seuil_achat_materiel,
+            seuil_emprunt=data.seuil_emprunt,
+        ),
+        apport=Apport(
+            montant=data.capital_social,
+            montant_lettres=data.capital_social_lettres,
+        ),
+        regime_communautaire=_regime_communautaire(data),
+        statuts_sel=StatutsSel(
+            overlay=_statuts_overlay(data.profession),
+            profession=profession_label,
+        ),
+        depot_fonds=DepotFonds(
+            banque=CessionBanque(
+                nom=data.depot_banque_nom,
+                adresse_affichee=data.depot_banque_adresse,
+            ),
+            montant=data.capital_social,
+        ),
+        exercice_social=ExerciceSocial(
+            debut=data.exercice_debut,
+            fin=data.exercice_fin,
+            date_cloture_premier_exercice=data.exercice_cloture_premier,
+            lieux=(
+                ExerciceLieu(
+                    adresse_affichee=data.lieu_exercice_adresse
+                    or company_address.adresse_affichee
+                ),
+            ),
+        ),
+        document=DocumentContext(
+            nombre_exemplaires_lettres=data.signature_nombre_exemplaires,
+            signataire=DocumentSignataire(prenom=data.prenom, nom=data.nom),
+        ),
+        emprunt=Emprunt(actif=False),
+        metadata={
+            "front_slice": "track_b_selarl_v1",
+            "dossier_reference": data.dossier_reference,
+        },
+    )
+
+
+def generate_selarl_dossier(data: SelarlSliceInput, output_dir: Path) -> GeneratedDossier:
+    plan = build_selarl_plan(data)
+    if not plan.can_generate:
+        raise ValueError(plan.reason)
+    ctx = build_generation_context(data)
+    docx_paths = generate_docx_files_for_document_codes(
+        ctx,
+        output_dir,
+        plan.document_codes,
+    )
+    zip_path = generate_zip_file(output_dir, docx_paths)
+    return GeneratedDossier(
+        output_dir=output_dir,
+        docx_paths=docx_paths,
+        pdf_results=[],
+        zip_path=zip_path,
+    )
+
+
+def front_data_scope_summary() -> tuple[str, ...]:
+    return (
+        "roles=" + ", ".join(FRONT_DATA_ROLE_SCOPE),
+        "adresses=" + ", ".join(FRONT_DATA_ADDRESS_SCOPE),
+    )
+
+
+def _document_rows(
+    data: SelarlSliceInput,
+    blockers: tuple[str, ...],
+) -> tuple[SelarlDocumentRow, ...]:
+    generated_status = "blocked" if blockers else "generable"
+    rows = [
+        SelarlDocumentRow(
+            doc_code=code,
+            label=build_document_status_for_code(code).doc_label,
+            status=generated_status,
+            message="Inclus dans SELARL V1." if not blockers else "Bloque par donnees ou scope.",
+        )
+        for code in selected_selarl_document_codes(data)
+    ]
+    rows.append(
+        SelarlDocumentRow(
+            doc_code=SELARL_V1_RESERVE_REGIME_CODE,
+            label=build_document_status_for_code(SELARL_V1_RESERVE_REGIME_CODE).doc_label,
+            status="reserve" if data.regime_communautaire else "hors_v1",
+            message=(
+                "Reserve documentaire : non genere en V1 meme si le regime communautaire est actif."
+                if data.regime_communautaire
+                else "Non genere : document conditionnel hors generation V1."
+            ),
+        )
+    )
+    rows.extend(
+        (
+            SelarlDocumentRow(
+                doc_code="DOC-013/DOC-014",
+                label="Derogations",
+                status="hors_v1",
+                message="Manuel / hors perimetre SELARL V1.",
+            ),
+            SelarlDocumentRow(
+                doc_code="DOC-031/DOC-032/DOC-033",
+                label="SCM et cession de parts SCM",
+                status="hors_v1",
+                message="Non expose dans cette slice.",
+            ),
+            SelarlDocumentRow(
+                doc_code="DOC-006",
+                label="Lettre d'avertissement conjoint",
+                status="reserve",
+                message="Reserve source : non generee par la V1 bornee.",
+            ),
+        )
+    )
+    return tuple(rows)
+
+
+def _warning_messages(data: SelarlSliceInput) -> tuple[str, ...]:
+    warnings = [
+        "SELARL V1 bornee : creation medecin ou chirurgien-dentiste, associe unique uniquement.",
+        "DOC-006 reste en reserve et ne sera pas genere automatiquement.",
+    ]
+    if data.regime_communautaire:
+        warnings.append("Regime communautaire actif : DOC-005 sera genere, DOC-006 reste exclu.")
+    return tuple(warnings)
+
+
+def _missing_text_blockers(data: SelarlSliceInput) -> list[str]:
+    base_fields = (
+        ("dossier_reference", "Reference dossier requise."),
+        ("civilite", "Civilite du praticien requise."),
+        ("prenom", "Prenom du praticien requis."),
+        ("nom", "Nom du praticien requis."),
+        ("titre_affichage", "Titre d'affichage du signataire requis."),
+        ("ville_naissance", "Ville de naissance requise."),
+        ("departement_naissance", "Departement de naissance requis."),
+        ("nationalite", "Nationalite requise."),
+        ("nom_pere", "Nom du pere requis pour DOC-001."),
+        ("nom_mere", "Nom de la mere requis pour DOC-001."),
+        ("adresse_num_voie", "Numero de voie du praticien requis."),
+        ("adresse_voie", "Voie du praticien requise."),
+        ("adresse_cp", "Code postal du praticien requis."),
+        ("adresse_ville", "Ville du praticien requise."),
+        ("situation_maritale", "Situation matrimoniale requise pour les statuts."),
+        ("regime_matrimonial", "Regime matrimonial requis pour les statuts."),
+        ("numero_ordre", "Numero d'inscription a l'ordre requis."),
+        ("numero_rpps", "Numero RPPS requis pour les statuts."),
+        ("departement_ordre", "Departement d'inscription a l'ordre requis."),
+        ("denomination", "Denomination sociale requise."),
+        ("capital_social", "Capital social requis."),
+        ("capital_social_lettres", "Capital social en lettres requis."),
+        ("nb_parts_total_lettres", "Nombre de parts en lettres requis."),
+        ("valeur_nominale_part", "Valeur nominale de part requise."),
+        ("valeur_nominale_part_lettres", "Valeur nominale en lettres requise."),
+        ("siege_num_voie", "Numero de voie du siege requis."),
+        ("siege_voie", "Voie du siege requise."),
+        ("siege_cp", "Code postal du siege requis."),
+        ("siege_ville", "Ville du siege requise."),
+        ("ville_rcs", "Ville RCS requise."),
+        ("ordre_conseil", "Conseil departemental de l'ordre requis."),
+        ("ordre_adresse_ligne_1", "Adresse de l'ordre requise."),
+        ("ordre_cp", "Code postal de l'ordre requis."),
+        ("ordre_ville", "Ville de l'ordre requise."),
+        ("signature_lieu", "Lieu de signature requis."),
+        ("signature_nombre_exemplaires", "Nombre d'exemplaires requis."),
+        ("reunion_date_lettres", "Date de reunion en lettres requise."),
+        ("reunion_heure", "Heure de reunion requise."),
+        ("depot_banque_nom", "Banque du depot des fonds requise."),
+        ("depot_banque_adresse", "Adresse de la banque requise."),
+        ("exercice_debut", "Debut d'exercice social requis."),
+        ("exercice_fin", "Fin d'exercice social requise."),
+        ("exercice_cloture_premier", "Date de cloture du premier exercice requise."),
+        ("seuil_achat_materiel", "Seuil achat materiel requis pour les statuts medecin."),
+        ("seuil_emprunt", "Seuil emprunt requis pour les statuts medecin."),
+    )
+    return _missing_for_fields(data, base_fields)
+
+
+def _missing_for_fields(
+    data: SelarlSliceInput,
+    fields: tuple[tuple[str, str], ...],
+) -> list[str]:
+    blockers = []
+    for field_name, message in fields:
+        value = getattr(data, field_name)
+        if isinstance(value, str) and not value.strip():
+            blockers.append(message)
+    return blockers
+
+
+def _required_date(value: date | None, field_name: str) -> date:
+    if value is None:
+        raise ValueError(f"{field_name} est obligatoire.")
+    return value
+
+
+def _display_date(value: date | None) -> str | None:
+    if value is None:
+        return None
+    return value.strftime("%d/%m/%Y")
+
+
+def _address(num_voie: str, voie: str, cp: str, ville: str) -> Address:
+    display = f"{num_voie} {voie}, {cp} {ville}".strip()
+    return Address(
+        num_voie=num_voie,
+        voie=voie,
+        cp=cp,
+        ville=ville,
+        adresse_affichee=display,
+    )
+
+
+def _statuts_code(profession: str) -> str:
+    if profession == PROFESSION_DENTISTE:
+        return SELARL_V1_DENTISTE_STATUTS_CODE
+    return SELARL_V1_MEDECIN_STATUTS_CODE
+
+
+def _statuts_overlay(profession: str) -> str:
+    if profession == PROFESSION_DENTISTE:
+        return "selarl_dentiste"
+    return "selarl_medecin"
+
+
+def _profession_label(profession: str) -> str:
+    if profession == PROFESSION_DENTISTE:
+        return "chirurgien-dentiste"
+    return "medecin"
+
+
+def _profession_plural(profession: str) -> str:
+    if profession == PROFESSION_DENTISTE:
+        return "chirurgiens-dentistes"
+    return "medecins"
+
+
+def _ordre(
+    data: SelarlSliceInput,
+    profession_label: str,
+    profession_plural: str,
+) -> OrdreProfessionnel:
+    return OrdreProfessionnel(
+        conseil_departemental_libelle=data.ordre_conseil,
+        destinataire_appel="Monsieur le President",
+        profession_signataire_affichee=profession_label,
+        profession_ligne_destinataire=profession_plural,
+        profession_reglementee_pluriel=profession_plural,
+        adresse_affichee=f"{data.ordre_adresse_ligne_1}\n{data.ordre_cp} {data.ordre_ville}",
+        adresse_bloc_affiche=(
+            f"{data.ordre_adresse_ligne_1}\n{data.ordre_cp} {data.ordre_ville}"
+        ),
+        adresse=OrdreAddress(
+            ligne_1=data.ordre_adresse_ligne_1,
+            cp=data.ordre_cp,
+            ville=data.ordre_ville,
+        ),
+    )
+
+
+def _associe(
+    data: SelarlSliceInput,
+    address: Address,
+    profession_label: str,
+    profession_plural: str,
+) -> Associe:
+    return Associe(
+        genre=data.genre,
+        civilite_affichage=data.civilite,
+        prenom=data.prenom,
+        nom=data.nom,
+        nb_parts=data.nb_parts_total,
+        profession=profession_label,
+        profession_reglementee=profession_label,
+        profession_reglementee_pluriel=profession_plural,
+        qualification_principale=profession_label,
+        titre_professionnel=data.titre_affichage,
+        qualite="associe unique",
+        date_naissance=data.date_naissance,
+        ville_naissance=data.ville_naissance,
+        departement_naissance=data.departement_naissance,
+        nationalite=data.nationalite,
+        situation_maritale=data.situation_maritale,
+        regime_matrimonial=data.regime_matrimonial,
+        conjoint=_spfpl_conjoint(data) if _needs_conjoint(data) else None,
+        adresse_personnelle=address,
+        adresse_personnelle_affichee=address.adresse_affichee,
+        ordre=SpfplOrdre(
+            professionnel=data.ordre_conseil,
+            departement=data.departement_ordre,
+            ville=data.ordre_ville,
+            numero=data.numero_ordre,
+            numero_rpps=data.numero_rpps,
+        ),
+        apport_numeraire=data.capital_social,
+        apport_numeraire_lettres=data.capital_social_lettres,
+    )
+
+
+def _needs_conjoint(data: SelarlSliceInput) -> bool:
+    return data.profession == PROFESSION_DENTISTE or data.regime_communautaire
+
+
+def _spfpl_conjoint(data: SelarlSliceInput) -> SpfplConjoint:
+    return SpfplConjoint(
+        civilite_affichage=data.conjoint_civilite,
+        prenom=data.conjoint_prenom,
+        nom=data.conjoint_nom,
+    )
+
+
+def _conjoint_person(data: SelarlSliceInput) -> Person:
+    return Person(
+        genre=data.conjoint_genre,
+        civilite=data.conjoint_civilite,
+        prenom=data.conjoint_prenom,
+        nom=data.conjoint_nom,
+    )
+
+
+def _regime_communautaire(data: SelarlSliceInput) -> RegimeCommunautaire | None:
+    if not data.regime_communautaire:
+        return None
+    return RegimeCommunautaire(
+        avertissement=RegimeCommunautaireAvertissement(
+            date_signature=data.date_courrier_avertissement,
+        ),
+        renonciation=RegimeCommunautaireRenonciation(
+            lieu_signature=data.signature_lieu,
+            date_signature=data.signature_date,
+            nombre_exemplaires_lettres=data.signature_nombre_exemplaires,
+        ),
+        date_courrier_avertissement=data.date_courrier_avertissement,
+        regime_matrimonial=data.regime_matrimonial,
+        qualite_renoncee=data.qualite_renoncee,
+    )
