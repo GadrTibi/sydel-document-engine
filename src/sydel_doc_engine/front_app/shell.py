@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import random
 import re
 from datetime import date
 from pathlib import Path
@@ -59,10 +60,176 @@ def _render_dossier_type_selection() -> DossierTypeOption:
         dossier_type_labels(),
         key="clean_dossier_type",
     )
+    if st.button("Generer des donnees de test", key="clean_generate_test_data"):
+        _prefill_random_selarl_data()
+        st.success("Donnees de test coherentes pre-remplies.")
     st.caption(
         "Perimetre actif : creation SELARL medecin ou chirurgien-dentiste, associe unique."
     )
     return dossier_type_by_label(selected_label)
+
+
+def _prefill_random_selarl_data() -> None:
+    person = random.choice(_test_people())
+    company = random.choice(_test_companies())
+    capital, parts = random.choice(((1000, 100), (2000, 200), (5000, 500), (10000, 1000)))
+    profession_label = random.choice(("Medecin", "Chirurgien-dentiste"))
+    regime_communautaire = profession_label == "Chirurgien-dentiste" or random.choice(
+        (False, True)
+    )
+    today_text = format_french_date(date.today())
+    dossier_suffix = random.randint(1000, 9999)
+    status = "Marie(e)" if regime_communautaire else random.choice(MATRIMONIAL_STATUS_PRESETS)
+
+    values = {
+        "selarl_profession": profession_label,
+        "selarl_dossier_unipersonnel": True,
+        "selarl_regime_communautaire": regime_communautaire,
+        "selarl_derogation": False,
+        "selarl_site_distinct": False,
+        "selarl_cession": False,
+        "selarl_scm": False,
+        "selarl_dossier_reference": f"TEST-SELARL-{dossier_suffix}",
+        "selarl_civilite": person["civilite"],
+        "selarl_prenom": person["prenom"],
+        "selarl_nom": person["nom"],
+        "selarl_date_naissance": person["date_naissance"],
+        "selarl_ville_naissance": person["ville_naissance"],
+        "selarl_departement_naissance": person["departement_naissance"],
+        "selarl_nationalite_choice": random.choice(NATIONALITY_PRESETS[:-1]),
+        "selarl_nationalite_other": "",
+        "selarl_situation_maritale": status,
+        "selarl_numero_ordre": f"ORD-{random.randint(100000, 999999)}",
+        "selarl_numero_rpps": str(random.randint(10000000000, 19999999999)),
+        "selarl_nom_pere": person["nom_pere"],
+        "selarl_nom_mere": person["nom_mere"],
+        "selarl_adresse_num_voie": person["adresse_num_voie"],
+        "selarl_adresse_voie": person["adresse_voie"],
+        "selarl_adresse_cp": person["adresse_cp"],
+        "selarl_adresse_ville": person["adresse_ville"],
+        "selarl_denomination": f"SELARL {person['nom']}",
+        "selarl_capital_social": capital,
+        "selarl_nb_parts_total": parts,
+        "selarl_duree": "99 ans",
+        "selarl_ville_rcs": company["ville"],
+        "selarl_siege_num_voie": company["numero"],
+        "selarl_siege_voie": company["voie"],
+        "selarl_siege_cp": company["cp"],
+        "selarl_siege_ville": company["ville"],
+        "selarl_ordre_conseil": _ordre_label(profession_label, company["ville"]),
+        "selarl_departement_ordre": company["departement_ordre"],
+        "selarl_ordre_adresse_ligne_1": company["ordre_adresse"],
+        "selarl_ordre_cp": company["ordre_cp"],
+        "selarl_ordre_ville": company["ville"],
+        "selarl_signature_lieu": company["ville"],
+        "selarl_signature_date": today_text,
+        "selarl_signature_nombre_exemplaires": 2,
+        "selarl_decision_date": today_text,
+        "selarl_reunion_heure": "10 heures",
+        "selarl_depot_banque_nom": random.choice(("BNP Paribas", "CIC", "Credit Agricole")),
+        "selarl_depot_banque_adresse": company["banque_adresse"],
+        "selarl_exercice_debut": "1er janvier",
+        "selarl_exercice_fin": "31 decembre",
+        "selarl_exercice_cloture_premier": "31 decembre 2026",
+        "selarl_autre_lieu_exercice": False,
+        "selarl_lieu_exercice_adresse": "",
+        "selarl_conjoint_civilite": "Madame",
+        "selarl_conjoint_prenom": random.choice(("Claire", "Sophie", "Nadia")),
+        "selarl_conjoint_nom": person["nom"],
+        "selarl_qualite_renoncee": "associe",
+        "selarl_date_courrier_avertissement": today_text,
+    }
+    st.session_state.update(values)
+    st.session_state.pop(GENERATED_DOSSIER_STATE_KEY, None)
+
+
+def _test_people() -> tuple[dict[str, str], ...]:
+    return (
+        {
+            "civilite": "Monsieur",
+            "prenom": "Jean",
+            "nom": "Martin",
+            "date_naissance": "12/04/1984",
+            "ville_naissance": "Paris",
+            "departement_naissance": "75",
+            "nom_pere": "Pierre Martin",
+            "nom_mere": "Anne Martin",
+            "adresse_num_voie": "10",
+            "adresse_voie": "rue des Tilleuls",
+            "adresse_cp": "75011",
+            "adresse_ville": "Paris",
+        },
+        {
+            "civilite": "Madame",
+            "prenom": "Camille",
+            "nom": "Bernard",
+            "date_naissance": "21/09/1978",
+            "ville_naissance": "Lyon",
+            "departement_naissance": "69",
+            "nom_pere": "Laurent Bernard",
+            "nom_mere": "Marie Bernard",
+            "adresse_num_voie": "8",
+            "adresse_voie": "avenue Victor Hugo",
+            "adresse_cp": "69002",
+            "adresse_ville": "Lyon",
+        },
+        {
+            "civilite": "Monsieur",
+            "prenom": "Thomas",
+            "nom": "Durand",
+            "date_naissance": "03/02/1981",
+            "ville_naissance": "Nantes",
+            "departement_naissance": "44",
+            "nom_pere": "Alain Durand",
+            "nom_mere": "Helene Durand",
+            "adresse_num_voie": "14",
+            "adresse_voie": "boulevard Saint-Felix",
+            "adresse_cp": "44000",
+            "adresse_ville": "Nantes",
+        },
+    )
+
+
+def _test_companies() -> tuple[dict[str, str], ...]:
+    return (
+        {
+            "numero": "20",
+            "voie": "avenue du Siege",
+            "cp": "75002",
+            "ville": "Paris",
+            "departement_ordre": "75, Paris",
+            "ordre_adresse": "1 rue de l'Ordre",
+            "ordre_cp": "75008",
+            "banque_adresse": "30 boulevard Haussmann, 75009 Paris",
+        },
+        {
+            "numero": "5",
+            "voie": "place Bellecour",
+            "cp": "69002",
+            "ville": "Lyon",
+            "departement_ordre": "69, Rhone",
+            "ordre_adresse": "12 quai Jules Courmont",
+            "ordre_cp": "69002",
+            "banque_adresse": "7 cours de la Liberte, 69003 Lyon",
+        },
+        {
+            "numero": "3",
+            "voie": "rue Crebillon",
+            "cp": "44000",
+            "ville": "Nantes",
+            "departement_ordre": "44, Loire-Atlantique",
+            "ordre_adresse": "9 allee Baco",
+            "ordre_cp": "44000",
+            "banque_adresse": "2 rue de Strasbourg, 44000 Nantes",
+        },
+    )
+
+
+def _ordre_label(profession_label: str, ville: str) -> str:
+    profession = (
+        "chirurgiens-dentistes" if profession_label == "Chirurgien-dentiste" else "medecins"
+    )
+    return f"Conseil departemental de l'Ordre des {profession} de {ville}"
 
 
 def _render_data_entry_zone(dossier_type: DossierTypeOption) -> CleanDataEntry:

@@ -202,6 +202,7 @@ def test_clean_front_streamlit_surface_is_not_legacy() -> None:
     ]
     assert app.selectbox(key="clean_dossier_type").label == "Type de dossier"
     assert app.selectbox(key="clean_dossier_type").value == "SELARL creation V1"
+    assert app.button(key="clean_generate_test_data").label == "Generer des donnees de test"
     assert app.button(key="clean_generate_dossier").disabled is True
     assert app.button(key="selarl_signature_date_today").label == "Aujourd'hui"
     assert len(app.radio) == 0
@@ -243,6 +244,33 @@ def test_clean_front_streamlit_surface_is_not_legacy() -> None:
     assert (
         app.text_input(key="selarl_departement_ordre").label
         == "Departement d'inscription a l'ordre"
+    )
+
+
+def test_clean_front_streamlit_random_data_button_prefills_generable_case(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    from sydel_doc_engine.front_app import shell
+
+    monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "random-data")
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=120)
+
+    app.button(key="clean_generate_test_data").click()
+    app = app.run(timeout=120)
+
+    assert app.text_input(key="selarl_dossier_reference").value.startswith("TEST-SELARL-")
+    assert app.number_input(key="selarl_capital_social").value > 0
+    assert app.number_input(key="selarl_nb_parts_total").value > 0
+    assert app.button(key="clean_generate_dossier").disabled is False
+    assert not any("Blocage" in item.value for item in app.caption)
+
+    app.button(key="clean_generate_dossier").click()
+    app = app.run(timeout=120)
+
+    assert any(
+        item.label == "Telecharger le dossier ZIP"
+        for item in app.get("download_button")
     )
 
 
