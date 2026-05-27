@@ -3,9 +3,31 @@ from __future__ import annotations
 from typing import Any
 
 from sydel_doc_engine.front_app.dossier_selection import DossierTypeOption
+from sydel_doc_engine.front_app.field_derivations import (
+    DEFAULT_MANDATAIRE_CABINET,
+    DEFAULT_MANDATAIRE_CIVILITE,
+    DEFAULT_MANDATAIRE_FONCTION,
+    DEFAULT_MANDATAIRE_NOM,
+    DEFAULT_MANDATAIRE_PRENOM,
+    DEFAULT_PRESTATAIRE_SIGNATURE_ELECTRONIQUE,
+    DEFAULT_SEUIL_ACHAT_MATERIEL,
+    DEFAULT_SEUIL_EMPRUNT,
+    DEFAULT_TITRE_AFFICHAGE,
+    date_to_french_words,
+    derive_gender_from_civilite,
+    format_numeric_value,
+    number_words_from_value,
+)
 from sydel_doc_engine.front_app.selarl_slice import SelarlSliceInput
 
 CleanDataEntry = SelarlSliceInput
+
+_NUMERIC_TEXT_FIELDS = (
+    "capital_social",
+    "valeur_nominale_part",
+    "seuil_achat_materiel",
+    "seuil_emprunt",
+)
 
 
 def build_clean_data_entry(
@@ -23,8 +45,65 @@ def build_clean_data_entry(
     for key, value in tuple(normalized.items()):
         if isinstance(value, str):
             normalized[key] = value.strip()
+    for key in _NUMERIC_TEXT_FIELDS:
+        if key in normalized:
+            normalized[key] = format_numeric_value(normalized[key])
+
+    _derive_hidden_values(normalized)
 
     return CleanDataEntry(
         dossier_type_key=dossier_type.key,
         **normalized,
     )
+
+
+def _derive_hidden_values(values: dict[str, Any]) -> None:
+    _set_default(values, "genre", derive_gender_from_civilite(str(values.get("civilite", ""))))
+    _set_default(
+        values,
+        "conjoint_genre",
+        derive_gender_from_civilite(str(values.get("conjoint_civilite", "Madame"))),
+    )
+    _set_default(values, "titre_affichage", DEFAULT_TITRE_AFFICHAGE)
+    _set_default(
+        values,
+        "capital_social_lettres",
+        number_words_from_value(values.get("capital_social")),
+    )
+    _set_default(
+        values,
+        "nb_parts_total_lettres",
+        number_words_from_value(values.get("nb_parts_total")),
+    )
+    _set_default(
+        values,
+        "valeur_nominale_part_lettres",
+        number_words_from_value(values.get("valeur_nominale_part")),
+    )
+    _set_default(values, "reunion_date_lettres", date_to_french_words(values.get("decision_date")))
+
+    exemplaires_words = number_words_from_value(values.get("signature_nombre_exemplaires"))
+    if exemplaires_words:
+        values["signature_nombre_exemplaires"] = exemplaires_words
+
+    _set_default(values, "mandataire_civilite", DEFAULT_MANDATAIRE_CIVILITE)
+    _set_default(values, "mandataire_prenom", DEFAULT_MANDATAIRE_PRENOM)
+    _set_default(values, "mandataire_nom", DEFAULT_MANDATAIRE_NOM)
+    _set_default(values, "mandataire_fonction", DEFAULT_MANDATAIRE_FONCTION)
+    _set_default(values, "mandataire_cabinet", DEFAULT_MANDATAIRE_CABINET)
+    _set_default(
+        values,
+        "prestataire_signature_electronique",
+        DEFAULT_PRESTATAIRE_SIGNATURE_ELECTRONIQUE,
+    )
+    _set_default(values, "seuil_achat_materiel", DEFAULT_SEUIL_ACHAT_MATERIEL)
+    _set_default(values, "seuil_emprunt", DEFAULT_SEUIL_EMPRUNT)
+
+    if not values.get("regime_communautaire"):
+        values["date_courrier_avertissement"] = None
+
+
+def _set_default(values: dict[str, Any], key: str, default: Any) -> None:
+    value = values.get(key)
+    if value is None or (isinstance(value, str) and not value.strip()):
+        values[key] = default

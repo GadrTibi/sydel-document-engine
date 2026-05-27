@@ -100,6 +100,27 @@ def test_clean_front_selarl_context_selects_only_expected_engine_docs() -> None:
     assert "DOC-006" not in selected_codes
 
 
+def test_clean_front_selarl_context_derives_hidden_ux_values() -> None:
+    ctx = build_generation_context(_valid_selarl_input(PROFESSION_MEDECIN))
+
+    assert ctx.personne_signataire.genre.value == "masculin"
+    assert ctx.societe.capital_social_lettres == "mille"
+    assert ctx.capital is not None
+    assert ctx.capital.nombre_titres_total_lettres == "cent"
+    assert ctx.capital.valeur_nominale_titre_lettres == "dix"
+    assert ctx.reunion is not None
+    assert ctx.reunion.date_lettres == "vingt-six mai deux mille vingt-six"
+    assert ctx.signature.prestataire_signature_electronique == "Yousign"
+    assert ctx.gerance is not None
+    assert ctx.gerance.seuil_achat_materiel == "5000"
+    assert ctx.gerance.seuil_emprunt == "10000"
+    assert ctx.mandataire is not None
+    assert ctx.mandataire.cabinet == "SYDEL"
+    assert ctx.exercice_social is not None
+    assert ctx.exercice_social.lieux[0].adresse_affichee == "20 avenue du Siege, 75002 Paris"
+    assert ctx.associes[0].nb_parts == 100
+
+
 def test_clean_front_selarl_generation_smoke(tmp_path: Path) -> None:
     generated = generate_selarl_dossier(
         _valid_selarl_input(PROFESSION_MEDECIN),
@@ -160,10 +181,31 @@ def test_clean_front_streamlit_surface_is_not_legacy() -> None:
     assert app.selectbox(key="clean_dossier_type").label == "Type de dossier"
     assert app.selectbox(key="clean_dossier_type").value == "SELARL creation V1"
     assert app.button(key="clean_generate_dossier").disabled is True
+    assert app.button(key="selarl_signature_date_today").label == "Aujourd'hui"
     assert len(app.radio) == 0
     assert len(app.table) == 0
     assert len(app.expander) == 0
     assert not any(item.label == "Outils internes" for item in app.checkbox)
+
+    visible_labels = {
+        *[item.label for item in app.text_input],
+        *[item.label for item in app.number_input],
+        *[item.label for item in app.selectbox],
+        *[item.label for item in app.date_input],
+    }
+    assert "Genre" not in visible_labels
+    assert "Titre affichage" not in visible_labels
+    assert "Capital social en lettres" not in visible_labels
+    assert "Nombre de parts en lettres" not in visible_labels
+    assert "Valeur nominale en lettres" not in visible_labels
+    assert "Date reunion en lettres" not in visible_labels
+    assert "Prestataire signature electronique" not in visible_labels
+    assert "Seuil achat materiel" not in visible_labels
+    assert "Seuil emprunt" not in visible_labels
+    assert "Lieu exercice" not in visible_labels
+    assert "Civilite mandataire" not in visible_labels
+    assert "Civilite conjoint" not in visible_labels
+    assert app.selectbox(key="selarl_nationalite_choice").label == "Nationalite"
 
 
 def _valid_selarl_input(
@@ -194,7 +236,6 @@ def _valid_selarl_kwargs(
         "civilite": "Monsieur",
         "prenom": "Jean",
         "nom": "Martin",
-        "titre_affichage": "Docteur",
         "date_naissance": date(1984, 4, 12),
         "ville_naissance": "Paris",
         "departement_naissance": "75",
@@ -212,11 +253,8 @@ def _valid_selarl_kwargs(
         "departement_ordre": "75",
         "denomination": "SELARL MARTIN",
         "capital_social": "1000",
-        "capital_social_lettres": "mille",
         "nb_parts_total": 100,
-        "nb_parts_total_lettres": "cent",
         "valeur_nominale_part": "10",
-        "valeur_nominale_part_lettres": "dix",
         "siege_num_voie": "20",
         "siege_voie": "avenue du Siege",
         "siege_cp": "75002",
@@ -228,23 +266,25 @@ def _valid_selarl_kwargs(
         "ordre_ville": "Paris",
         "signature_lieu": "Paris",
         "signature_date": date(2026, 5, 26),
-        "signature_nombre_exemplaires": "deux",
+        "signature_nombre_exemplaires": 2,
         "decision_date": date(2026, 5, 26),
-        "reunion_date_lettres": "vingt-six mai deux mille vingt-six",
         "reunion_heure": "10 heures",
         "depot_banque_nom": "Banque Test",
         "depot_banque_adresse": "30 boulevard Banque, 75009 Paris",
         "exercice_debut": "1er janvier",
         "exercice_fin": "31 decembre",
         "exercice_cloture_premier": "31 decembre 2026",
-        "lieu_exercice_adresse": "20 avenue du Siege, 75002 Paris",
-        "seuil_achat_materiel": "5000",
-        "seuil_emprunt": "10000",
-        "conjoint_civilite": "Madame",
-        "conjoint_prenom": "Claire",
-        "conjoint_nom": "Martin",
         "qualite_renoncee": "associe",
         "date_courrier_avertissement": date(2026, 5, 20)
         if regime_communautaire
         else None,
+        **(
+            {
+                "conjoint_civilite": "Madame",
+                "conjoint_prenom": "Claire",
+                "conjoint_nom": "Martin",
+            }
+            if profession == PROFESSION_DENTISTE or regime_communautaire
+            else {}
+        ),
     }

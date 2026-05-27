@@ -10,9 +10,11 @@
 
 | ID | Statut | Objet | Entrées obligatoires | Sorties obligatoires |
 |---|---|---|---|---|
+| TRACK-B-SELARL-UX-DEDUP-RECONCILIATION-001 | DONE | Corriger l'UX SELARL V1 apres reconciliation associe / NotebookLM | retours associe + NotebookLM + audit dedup + branche track-b/clean-rebuild | front_app SELARL sans doubles saisies implicites + derivations + tests cibles + lancement local |
 | TRACK-B-FRONT-ARCHITECTURE-RESET-001 | DONE | Refonder le chemin front Track B propre et isoler le legacy | arbitrage produit front + fondations front_data + branche track-b/clean-rebuild | nouveau front_app clean + rapport + tests + lancement local |
 | TRACK-B-SELARL-SOURCE-OF-TRUTH-CONTRACT-001 | DONE | Figer le contrat metier-front SELARL V1 depuis les sources de verite | sources SELARL V2/V3 + reponse metier + NotebookLM + specs/revues + branche track-b/clean-rebuild | `docs/project/TRACK_B_SELARL_FRONT_CONTRACT_V1.md` + conclusion GO bornee |
 | TRACK-B-SELARL-VERTICAL-SLICE-IMPLEMENT-001 | DONE | Brancher la vraie vertical slice SELARL V1 dans le front_app clean | contrat `TRACK_B_SELARL_FRONT_CONTRACT_V1.md` + moteur documentaire existant + branche track-b/clean-rebuild | slice SELARL V1 bornee dans `front_app` + generation DOCX/ZIP + tests cibles |
+| TRACK-B-SELARL-FIELD-DEDUP-AUDIT-001 | DONE | Auditer les doublons de champs utilisateur dans le clean front SELARL V1 | front_app SELARL V1 + contrat metier-front + branche track-b/clean-rebuild | rapport `docs/review/track_b_selarl_field_dedup_audit_001_report_v1.md` + conclusion PASS |
 | PM-001 | DONE | Installer la mémoire projet dans le repo | source de vérité + specs Lot 1 | docs/project/* |
 | PM-002 | DONE | Vérifier et compléter la mémoire projet opérationnelle | AGENTS.md + docs/project/* | docs/project complétés + artefact parasite traité |
 | PM-003 | DONE | Installer le kit de reprise nouveau ChatGPT / Codex | mémoire projet existante | handoff + last state + prompt nouveau chat |
@@ -1295,6 +1297,7 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - Points ouverts statuts après SYNC-WAVE-007 : SAS limité au modèle SAS/SPFPL médecins source ; SPFPL doit conserver cession/apport sans harmonisation ; SCM est codé en V1 mais reste soumis à revue humaine juridique/visuelle du premier rendu.
 
 ## Journal court
+- 2026-05-27 : TRACK-B-SELARL-UX-DEDUP-RECONCILIATION-001 nettoie l'UX du clean front SELARL V1 : genre/titre, montants et dates en lettres, mandataire, prestataire de signature, seuils de gerance, lieu d'exercice et conjoint sont derives, pre-remplis ou conditionnels ; tests clean front et ruff valides, aucun push/merge.
 - 2026-05-12 : mémoire projet installée dans `docs/project/`.
 - 2026-05-12 : mémoire projet complétée pour servir de contexte opérationnel autonome ; artefact `tall -U pip` identifié comme fichier parasite à supprimer.
 - 2026-05-12 : kit de reprise ajouté pour nouveau ChatGPT / Codex avec handoff, dernier état et prompt de reprise.

@@ -6,7 +6,6 @@ from pathlib import Path
 
 import streamlit as st
 
-from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.front_app.data_entry import (
     CleanDataEntry,
     build_clean_data_entry,
@@ -15,6 +14,11 @@ from sydel_doc_engine.front_app.dossier_selection import (
     DossierTypeOption,
     dossier_type_by_label,
     dossier_type_labels,
+)
+from sydel_doc_engine.front_app.field_derivations import (
+    NATIONALITY_PRESETS,
+    derive_gender_from_civilite,
+    format_numeric_value,
 )
 from sydel_doc_engine.front_app.generation import (
     CleanGenerationPlan,
@@ -59,7 +63,7 @@ def _render_data_entry_zone(dossier_type: DossierTypeOption) -> CleanDataEntry:
     praticien = _render_praticien()
     societe = _render_societe()
     ordre_mandataire = _render_ordre_mandataire()
-    generation_context = _render_generation_context()
+    generation_context = _render_generation_context(societe)
     conjoint = _render_conjoint(
         profession=qualification["profession"],
         regime_communautaire=qualification["regime_communautaire"],
@@ -121,26 +125,33 @@ def _render_qualification() -> dict[str, object]:
 
 def _render_praticien() -> dict[str, object]:
     st.markdown("**Fiche Client / Praticien**")
-    col_a, col_b, col_c = st.columns(3)
-    civilite = col_a.text_input("Civilite", key="selarl_civilite")
-    genre_label = col_b.selectbox("Genre", ("Masculin", "Feminin"), key="selarl_genre")
-    titre_affichage = col_c.text_input("Titre affichage", key="selarl_titre_affichage")
+    civilite = st.selectbox("Civilite", ("Monsieur", "Madame"), key="selarl_civilite")
     col_d, col_e = st.columns(2)
     prenom = col_d.text_input("Prenom", key="selarl_prenom")
     nom = col_e.text_input("Nom", key="selarl_nom")
     col_f, col_g, col_h = st.columns(3)
-    date_naissance = col_f.date_input(
-        "Date de naissance",
-        value=date(1990, 1, 1),
-        key="selarl_date_naissance",
-    )
+    with col_f:
+        date_naissance = _date_input_with_today(
+            "Date de naissance",
+            key="selarl_date_naissance",
+            value=date(1990, 1, 1),
+        )
     ville_naissance = col_g.text_input("Ville de naissance", key="selarl_ville_naissance")
     departement_naissance = col_h.text_input(
         "Departement naissance",
         key="selarl_departement_naissance",
     )
     col_i, col_j = st.columns(2)
-    nationalite = col_i.text_input("Nationalite", key="selarl_nationalite")
+    nationalite_choice = col_i.selectbox(
+        "Nationalite",
+        NATIONALITY_PRESETS,
+        key="selarl_nationalite_choice",
+    )
+    nationalite = (
+        col_i.text_input("Nationalite autre", key="selarl_nationalite_other")
+        if nationalite_choice == "Autre"
+        else nationalite_choice.lower()
+    )
     situation_maritale = col_j.text_input(
         "Situation matrimoniale",
         key="selarl_situation_maritale",
@@ -160,10 +171,9 @@ def _render_praticien() -> dict[str, object]:
     adr_a, adr_b, adr_c, adr_d = st.columns(4)
     return {
         "civilite": civilite,
-        "genre": Gender.FEMININ if genre_label == "Feminin" else Gender.MASCULIN,
+        "genre": derive_gender_from_civilite(civilite),
         "prenom": prenom,
         "nom": nom,
-        "titre_affichage": titre_affichage,
         "date_naissance": date_naissance,
         "ville_naissance": ville_naissance,
         "departement_naissance": departement_naissance,
@@ -183,58 +193,54 @@ def _render_praticien() -> dict[str, object]:
 
 def _render_societe() -> dict[str, object]:
     st.markdown("**Fiche Societe**")
-    col_a, col_b, col_c = st.columns(3)
-    denomination = col_a.text_input("Denomination", key="selarl_denomination")
-    capital_social = col_b.text_input("Capital social", key="selarl_capital_social")
-    capital_social_lettres = col_c.text_input(
-        "Capital social en lettres",
-        key="selarl_capital_social_lettres",
+    col_a, col_b = st.columns(2)
+    denomination = col_a.text_input("Denomination sociale", key="selarl_denomination")
+    capital_social = col_b.number_input(
+        "Capital social (€)",
+        min_value=0,
+        step=100,
+        value=0,
+        key="selarl_capital_social",
+        help="Montant numerique uniquement.",
     )
-    col_d, col_e, col_f, col_g = st.columns(4)
+    col_d, col_f = st.columns(2)
     nb_parts_total = col_d.number_input(
-        "Nombre de parts",
+        "Nombre total de parts",
         min_value=0,
         step=1,
         value=0,
         key="selarl_nb_parts_total",
     )
-    nb_parts_total_lettres = col_e.text_input(
-        "Nombre de parts en lettres",
-        key="selarl_nb_parts_total_lettres",
-    )
-    valeur_nominale_part = col_f.text_input(
-        "Valeur nominale",
+    valeur_nominale_part = col_f.number_input(
+        "Valeur nominale d'une part (€)",
+        min_value=0,
+        step=1,
+        value=0,
         key="selarl_valeur_nominale_part",
-    )
-    valeur_nominale_part_lettres = col_g.text_input(
-        "Valeur nominale en lettres",
-        key="selarl_valeur_nominale_part_lettres",
+        help="Montant numerique uniquement.",
     )
     col_h, col_i = st.columns(2)
     duree = col_h.text_input("Duree sociale", value="99 ans", key="selarl_duree")
-    ville_rcs = col_i.text_input("Ville RCS", key="selarl_ville_rcs")
+    ville_rcs = col_i.text_input("RCS (ville)", key="selarl_ville_rcs")
 
     st.markdown("Siege social")
     adr_a, adr_b, adr_c, adr_d = st.columns(4)
     return {
         "denomination": denomination,
-        "capital_social": capital_social,
-        "capital_social_lettres": capital_social_lettres,
+        "capital_social": format_numeric_value(capital_social),
         "duree": duree,
         "nb_parts_total": int(nb_parts_total),
-        "nb_parts_total_lettres": nb_parts_total_lettres,
-        "valeur_nominale_part": valeur_nominale_part,
-        "valeur_nominale_part_lettres": valeur_nominale_part_lettres,
+        "valeur_nominale_part": format_numeric_value(valeur_nominale_part),
         "ville_rcs": ville_rcs,
-        "siege_num_voie": adr_a.text_input("No siege", key="selarl_siege_num_voie"),
-        "siege_voie": adr_b.text_input("Voie siege", key="selarl_siege_voie"),
-        "siege_cp": adr_c.text_input("CP siege", key="selarl_siege_cp"),
-        "siege_ville": adr_d.text_input("Ville siege", key="selarl_siege_ville"),
+        "siege_num_voie": adr_a.text_input("Numero", key="selarl_siege_num_voie"),
+        "siege_voie": adr_b.text_input("Voie", key="selarl_siege_voie"),
+        "siege_cp": adr_c.text_input("Code postal", key="selarl_siege_cp"),
+        "siege_ville": adr_d.text_input("Ville", key="selarl_siege_ville"),
     }
 
 
 def _render_ordre_mandataire() -> dict[str, object]:
-    st.markdown("**Ordre et mandataire**")
+    st.markdown("**Ordre professionnel**")
     col_a, col_b = st.columns(2)
     ordre_conseil = col_a.text_input(
         "Conseil departemental de l'ordre",
@@ -251,80 +257,45 @@ def _render_ordre_mandataire() -> dict[str, object]:
     )
     ordre_cp = col_d.text_input("CP ordre", key="selarl_ordre_cp")
     ordre_ville = col_e.text_input("Ville ordre", key="selarl_ordre_ville")
-    col_f, col_g, col_h = st.columns(3)
-    mandataire_civilite = col_f.text_input(
-        "Civilite mandataire",
-        value="Monsieur",
-        key="selarl_mandataire_civilite",
-    )
-    mandataire_prenom = col_g.text_input(
-        "Prenom mandataire",
-        value="Jordan",
-        key="selarl_mandataire_prenom",
-    )
-    mandataire_nom = col_h.text_input(
-        "Nom mandataire",
-        value="ELBAZ",
-        key="selarl_mandataire_nom",
-    )
-    col_i, col_j = st.columns(2)
-    mandataire_fonction = col_i.text_input(
-        "Fonction mandataire",
-        value="gerant",
-        key="selarl_mandataire_fonction",
-    )
-    mandataire_cabinet = col_j.text_input(
-        "Cabinet mandataire",
-        value="SYDEL",
-        key="selarl_mandataire_cabinet",
-    )
     return {
         "ordre_conseil": ordre_conseil,
         "departement_ordre": departement_ordre,
         "ordre_adresse_ligne_1": ordre_adresse_ligne_1,
         "ordre_cp": ordre_cp,
         "ordre_ville": ordre_ville,
-        "mandataire_civilite": mandataire_civilite,
-        "mandataire_prenom": mandataire_prenom,
-        "mandataire_nom": mandataire_nom,
-        "mandataire_fonction": mandataire_fonction,
-        "mandataire_cabinet": mandataire_cabinet,
     }
 
 
-def _render_generation_context() -> dict[str, object]:
+def _render_generation_context(societe: dict[str, object]) -> dict[str, object]:
     st.markdown("**Generation**")
     col_a, col_b, col_c = st.columns(3)
     signature_lieu = col_a.text_input("Lieu de signature", key="selarl_signature_lieu")
-    signature_date = col_b.date_input(
-        "Date de signature",
-        value=date.today(),
-        key="selarl_signature_date",
-    )
-    signature_nombre_exemplaires = col_c.text_input(
+    with col_b:
+        signature_date = _date_input_with_today(
+            "Date de signature",
+            key="selarl_signature_date",
+            value=date.today(),
+        )
+    signature_nombre_exemplaires = col_c.number_input(
         "Nombre d'exemplaires",
+        min_value=1,
+        step=1,
+        value=2,
         key="selarl_signature_nombre_exemplaires",
     )
-    col_d, col_e, col_f = st.columns(3)
-    decision_date = col_d.date_input(
-        "Date decision",
-        value=date.today(),
-        key="selarl_decision_date",
-    )
-    reunion_date_lettres = col_e.text_input(
-        "Date reunion en lettres",
-        key="selarl_reunion_date_lettres",
-    )
-    reunion_heure = col_f.text_input("Heure reunion", key="selarl_reunion_heure")
-    col_g, col_h, col_i = st.columns(3)
+    col_d, col_f = st.columns(2)
+    with col_d:
+        decision_date = _date_input_with_today(
+            "Date de decision",
+            key="selarl_decision_date",
+            value=date.today(),
+        )
+    reunion_heure = col_f.text_input("Heure de decision", key="selarl_reunion_heure")
+    col_g, col_h = st.columns(2)
     depot_banque_nom = col_g.text_input("Banque depot", key="selarl_depot_banque_nom")
     depot_banque_adresse = col_h.text_input(
         "Adresse banque",
         key="selarl_depot_banque_adresse",
-    )
-    prestataire_signature_electronique = col_i.text_input(
-        "Prestataire signature electronique",
-        key="selarl_prestataire_signature_electronique",
     )
     col_j, col_k, col_l = st.columns(3)
     exercice_debut = col_j.text_input("Debut exercice", key="selarl_exercice_debut")
@@ -333,23 +304,25 @@ def _render_generation_context() -> dict[str, object]:
         "Cloture premier exercice",
         key="selarl_exercice_cloture_premier",
     )
-    col_m, col_n, col_o = st.columns(3)
-    lieu_exercice_adresse = col_m.text_input(
-        "Lieu exercice",
-        key="selarl_lieu_exercice_adresse",
+    autre_lieu_exercice = st.checkbox(
+        "Autre lieu d'exercice ?",
+        value=False,
+        key="selarl_autre_lieu_exercice",
     )
-    seuil_achat_materiel = col_n.text_input(
-        "Seuil achat materiel",
-        key="selarl_seuil_achat_materiel",
-    )
-    seuil_emprunt = col_o.text_input("Seuil emprunt", key="selarl_seuil_emprunt")
+    lieu_exercice_adresse = ""
+    if autre_lieu_exercice:
+        siege_display = _siege_display(societe)
+        if "selarl_lieu_exercice_adresse" not in st.session_state:
+            st.session_state["selarl_lieu_exercice_adresse"] = siege_display
+        lieu_exercice_adresse = st.text_input(
+            "Adresse du lieu d'exercice",
+            key="selarl_lieu_exercice_adresse",
+        )
     return {
         "signature_lieu": signature_lieu,
         "signature_date": signature_date,
         "signature_nombre_exemplaires": signature_nombre_exemplaires,
-        "prestataire_signature_electronique": prestataire_signature_electronique,
         "decision_date": decision_date,
-        "reunion_date_lettres": reunion_date_lettres,
         "reunion_heure": reunion_heure,
         "depot_banque_nom": depot_banque_nom,
         "depot_banque_adresse": depot_banque_adresse,
@@ -357,9 +330,26 @@ def _render_generation_context() -> dict[str, object]:
         "exercice_fin": exercice_fin,
         "exercice_cloture_premier": exercice_cloture_premier,
         "lieu_exercice_adresse": lieu_exercice_adresse,
-        "seuil_achat_materiel": seuil_achat_materiel,
-        "seuil_emprunt": seuil_emprunt,
     }
+
+
+def _date_input_with_today(label: str, *, key: str, value: date) -> date:
+    button_col, input_col = st.columns([1, 3])
+    if button_col.button("Aujourd'hui", key=f"{key}_today"):
+        st.session_state[key] = date.today()
+    selected = input_col.date_input(label, value=value, key=key)
+    if isinstance(selected, date):
+        return selected
+    return value
+
+
+def _siege_display(societe: dict[str, object]) -> str:
+    return (
+        f"{societe.get('siege_num_voie', '')} "
+        f"{societe.get('siege_voie', '')}, "
+        f"{societe.get('siege_cp', '')} "
+        f"{societe.get('siege_ville', '')}"
+    ).strip(" ,")
 
 
 def _render_conjoint(
@@ -367,40 +357,47 @@ def _render_conjoint(
     profession: str,
     regime_communautaire: bool,
 ) -> dict[str, object]:
-    st.markdown("**Conjoint**")
     if profession != PROFESSION_DENTISTE and not regime_communautaire:
-        st.caption("Non requis pour la generation active.")
-    col_a, col_b, col_c, col_d = st.columns(4)
-    conjoint_civilite = col_a.text_input("Civilite conjoint", key="selarl_conjoint_civilite")
-    conjoint_genre_label = col_b.selectbox(
-        "Genre conjoint",
-        ("Feminin", "Masculin"),
-        key="selarl_conjoint_genre",
+        return {
+            "conjoint_civilite": "",
+            "conjoint_genre": derive_gender_from_civilite("Madame"),
+            "conjoint_prenom": "",
+            "conjoint_nom": "",
+            "qualite_renoncee": "associe",
+            "date_courrier_avertissement": None,
+        }
+
+    st.markdown("**Conjoint**")
+    col_a, col_c, col_d = st.columns(3)
+    conjoint_civilite = col_a.selectbox(
+        "Civilite conjoint",
+        ("Madame", "Monsieur"),
+        key="selarl_conjoint_civilite",
     )
     conjoint_prenom = col_c.text_input("Prenom conjoint", key="selarl_conjoint_prenom")
     conjoint_nom = col_d.text_input("Nom conjoint", key="selarl_conjoint_nom")
-    col_e, col_f = st.columns(2)
-    qualite_renoncee = col_e.text_input(
-        "Qualite renoncee",
-        value="associe",
-        key="selarl_qualite_renoncee",
-    )
-    date_courrier_avertissement = col_f.date_input(
-        "Date courrier avertissement",
-        value=date.today(),
-        key="selarl_date_courrier_avertissement",
-    )
+    qualite_renoncee = "associe"
+    date_courrier_avertissement = None
+    if regime_communautaire:
+        col_e, col_f = st.columns(2)
+        qualite_renoncee = col_e.text_input(
+            "Qualite renoncee",
+            value="associe",
+            key="selarl_qualite_renoncee",
+        )
+        with col_f:
+            date_courrier_avertissement = _date_input_with_today(
+                "Date courrier avertissement",
+                key="selarl_date_courrier_avertissement",
+                value=date.today(),
+            )
     return {
         "conjoint_civilite": conjoint_civilite,
-        "conjoint_genre": (
-            Gender.MASCULIN if conjoint_genre_label == "Masculin" else Gender.FEMININ
-        ),
+        "conjoint_genre": derive_gender_from_civilite(conjoint_civilite),
         "conjoint_prenom": conjoint_prenom,
         "conjoint_nom": conjoint_nom,
         "qualite_renoncee": qualite_renoncee,
-        "date_courrier_avertissement": date_courrier_avertissement
-        if regime_communautaire
-        else None,
+        "date_courrier_avertissement": date_courrier_avertissement,
     }
 
 

@@ -44,6 +44,19 @@ from sydel_doc_engine.domain.models import (
     SpfplOrdre,
     StatutsSel,
 )
+from sydel_doc_engine.front_app.field_derivations import (
+    DEFAULT_MANDATAIRE_CABINET,
+    DEFAULT_MANDATAIRE_CIVILITE,
+    DEFAULT_MANDATAIRE_FONCTION,
+    DEFAULT_MANDATAIRE_NOM,
+    DEFAULT_MANDATAIRE_PRENOM,
+    DEFAULT_PRESTATAIRE_SIGNATURE_ELECTRONIQUE,
+    DEFAULT_SEUIL_ACHAT_MATERIEL,
+    DEFAULT_SEUIL_EMPRUNT,
+    DEFAULT_TITRE_AFFICHAGE,
+    date_to_french_words,
+    number_words_from_value,
+)
 from sydel_doc_engine.front_data import AddressUsage, BusinessRole, build_document_status_for_code
 
 SELARL_V1_BASE_DOC_CODES: Final = (
@@ -105,7 +118,7 @@ class SelarlSliceInput:
     genre: Gender = Gender.MASCULIN
     prenom: str = ""
     nom: str = ""
-    titre_affichage: str = ""
+    titre_affichage: str = DEFAULT_TITRE_AFFICHAGE
     date_naissance: date | None = None
     ville_naissance: str = ""
     departement_naissance: str = ""
@@ -138,15 +151,15 @@ class SelarlSliceInput:
     ordre_adresse_ligne_1: str = ""
     ordre_cp: str = ""
     ordre_ville: str = ""
-    mandataire_civilite: str = "Monsieur"
-    mandataire_prenom: str = "Jordan"
-    mandataire_nom: str = "ELBAZ"
-    mandataire_fonction: str = "gerant"
-    mandataire_cabinet: str = "SYDEL"
+    mandataire_civilite: str = DEFAULT_MANDATAIRE_CIVILITE
+    mandataire_prenom: str = DEFAULT_MANDATAIRE_PRENOM
+    mandataire_nom: str = DEFAULT_MANDATAIRE_NOM
+    mandataire_fonction: str = DEFAULT_MANDATAIRE_FONCTION
+    mandataire_cabinet: str = DEFAULT_MANDATAIRE_CABINET
     signature_lieu: str = ""
     signature_date: date | None = None
     signature_nombre_exemplaires: str = ""
-    prestataire_signature_electronique: str = ""
+    prestataire_signature_electronique: str = DEFAULT_PRESTATAIRE_SIGNATURE_ELECTRONIQUE
     decision_date: date | None = None
     reunion_date_lettres: str = ""
     reunion_heure: str = ""
@@ -156,8 +169,8 @@ class SelarlSliceInput:
     exercice_fin: str = ""
     exercice_cloture_premier: str = ""
     lieu_exercice_adresse: str = ""
-    seuil_achat_materiel: str = ""
-    seuil_emprunt: str = ""
+    seuil_achat_materiel: str = DEFAULT_SEUIL_ACHAT_MATERIEL
+    seuil_emprunt: str = DEFAULT_SEUIL_EMPRUNT
     conjoint_civilite: str = ""
     conjoint_genre: Gender = Gender.FEMININ
     conjoint_prenom: str = ""
@@ -298,6 +311,23 @@ def build_generation_context(data: SelarlSliceInput) -> DocumentGenerationContex
         data.siege_cp,
         data.siege_ville,
     )
+    capital_social_lettres = data.capital_social_lettres or number_words_from_value(
+        data.capital_social
+    )
+    nb_parts_total_lettres = data.nb_parts_total_lettres or number_words_from_value(
+        data.nb_parts_total
+    )
+    valeur_nominale_part_lettres = (
+        data.valeur_nominale_part_lettres
+        or number_words_from_value(data.valeur_nominale_part)
+    )
+    reunion_date_lettres = data.reunion_date_lettres or date_to_french_words(data.decision_date)
+    signature_prestataire = (
+        data.prestataire_signature_electronique
+        or DEFAULT_PRESTATAIRE_SIGNATURE_ELECTRONIQUE
+    )
+    seuil_achat_materiel = data.seuil_achat_materiel or DEFAULT_SEUIL_ACHAT_MATERIEL
+    seuil_emprunt = data.seuil_emprunt or DEFAULT_SEUIL_EMPRUNT
     profession_label = _profession_label(data.profession)
     profession_plural = _profession_plural(data.profession)
     person = Person(
@@ -326,7 +356,7 @@ def build_generation_context(data: SelarlSliceInput) -> DocumentGenerationContex
         denomination_courte=data.denomination,
         capital=data.capital_social,
         capital_social=data.capital_social,
-        capital_social_lettres=data.capital_social_lettres,
+        capital_social_lettres=capital_social_lettres,
         capital_variable=True,
         duree=data.duree,
         siege=company_address,
@@ -355,7 +385,7 @@ def build_generation_context(data: SelarlSliceInput) -> DocumentGenerationContex
             lieu=data.signature_lieu,
             date=_required_date(data.signature_date, "signature_date"),
             nombre_exemplaires=data.signature_nombre_exemplaires,
-            prestataire_signature_electronique=data.prestataire_signature_electronique,
+            prestataire_signature_electronique=signature_prestataire,
         ),
         societe=company,
         domiciliation=Domiciliation(
@@ -363,11 +393,11 @@ def build_generation_context(data: SelarlSliceInput) -> DocumentGenerationContex
         ),
         ordre=_ordre(data, profession_label, profession_plural),
         mandataire=Mandataire(
-            civilite_affichage=data.mandataire_civilite,
-            prenom=data.mandataire_prenom,
-            nom=data.mandataire_nom,
-            fonction=data.mandataire_fonction,
-            cabinet=data.mandataire_cabinet,
+            civilite_affichage=data.mandataire_civilite or DEFAULT_MANDATAIRE_CIVILITE,
+            prenom=data.mandataire_prenom or DEFAULT_MANDATAIRE_PRENOM,
+            nom=data.mandataire_nom or DEFAULT_MANDATAIRE_NOM,
+            fonction=data.mandataire_fonction or DEFAULT_MANDATAIRE_FONCTION,
+            cabinet=data.mandataire_cabinet or DEFAULT_MANDATAIRE_CABINET,
         ),
         associes=(
             _associe(data, person_address, profession_label, profession_plural),
@@ -387,7 +417,7 @@ def build_generation_context(data: SelarlSliceInput) -> DocumentGenerationContex
         ),
         decision=DecisionContext(date=_display_date(data.decision_date)),
         reunion=ReunionContext(
-            date_lettres=data.reunion_date_lettres,
+            date_lettres=reunion_date_lettres,
             heure=data.reunion_heure,
         ),
         capital=CapitalContext(
@@ -395,20 +425,20 @@ def build_generation_context(data: SelarlSliceInput) -> DocumentGenerationContex
             valeur_nominale_part=data.valeur_nominale_part,
             nb_parts_representees=data.nb_parts_total,
             montant=data.capital_social,
-            montant_lettres=data.capital_social_lettres,
+            montant_lettres=capital_social_lettres,
             nombre_titres_total=data.nb_parts_total,
-            nombre_titres_total_lettres=data.nb_parts_total_lettres,
+            nombre_titres_total_lettres=nb_parts_total_lettres,
             valeur_nominale_titre=data.valeur_nominale_part,
-            valeur_nominale_titre_lettres=data.valeur_nominale_part_lettres,
+            valeur_nominale_titre_lettres=valeur_nominale_part_lettres,
             type_titre="parts sociales",
         ),
         gerance=GeranceContext(
-            seuil_achat_materiel=data.seuil_achat_materiel,
-            seuil_emprunt=data.seuil_emprunt,
+            seuil_achat_materiel=seuil_achat_materiel,
+            seuil_emprunt=seuil_emprunt,
         ),
         apport=Apport(
             montant=data.capital_social,
-            montant_lettres=data.capital_social_lettres,
+            montant_lettres=capital_social_lettres,
         ),
         regime_communautaire=_regime_communautaire(data),
         statuts_sel=StatutsSel(
@@ -555,10 +585,7 @@ def _missing_text_blockers(data: SelarlSliceInput) -> list[str]:
         ("departement_ordre", "Departement d'inscription a l'ordre requis."),
         ("denomination", "Denomination sociale requise."),
         ("capital_social", "Capital social requis."),
-        ("capital_social_lettres", "Capital social en lettres requis."),
-        ("nb_parts_total_lettres", "Nombre de parts en lettres requis."),
         ("valeur_nominale_part", "Valeur nominale de part requise."),
-        ("valeur_nominale_part_lettres", "Valeur nominale en lettres requise."),
         ("siege_num_voie", "Numero de voie du siege requis."),
         ("siege_voie", "Voie du siege requise."),
         ("siege_cp", "Code postal du siege requis."),
@@ -570,15 +597,12 @@ def _missing_text_blockers(data: SelarlSliceInput) -> list[str]:
         ("ordre_ville", "Ville de l'ordre requise."),
         ("signature_lieu", "Lieu de signature requis."),
         ("signature_nombre_exemplaires", "Nombre d'exemplaires requis."),
-        ("reunion_date_lettres", "Date de reunion en lettres requise."),
         ("reunion_heure", "Heure de reunion requise."),
         ("depot_banque_nom", "Banque du depot des fonds requise."),
         ("depot_banque_adresse", "Adresse de la banque requise."),
         ("exercice_debut", "Debut d'exercice social requis."),
         ("exercice_fin", "Fin d'exercice social requise."),
         ("exercice_cloture_premier", "Date de cloture du premier exercice requise."),
-        ("seuil_achat_materiel", "Seuil achat materiel requis pour les statuts medecin."),
-        ("seuil_emprunt", "Seuil emprunt requis pour les statuts medecin."),
     )
     return _missing_for_fields(data, base_fields)
 
@@ -700,7 +724,8 @@ def _associe(
             numero_rpps=data.numero_rpps,
         ),
         apport_numeraire=data.capital_social,
-        apport_numeraire_lettres=data.capital_social_lettres,
+        apport_numeraire_lettres=data.capital_social_lettres
+        or number_words_from_value(data.capital_social),
     )
 
 
