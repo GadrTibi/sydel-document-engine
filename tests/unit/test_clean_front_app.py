@@ -104,8 +104,10 @@ def test_clean_front_selarl_context_derives_hidden_ux_values() -> None:
     ctx = build_generation_context(_valid_selarl_input(PROFESSION_MEDECIN))
 
     assert ctx.personne_signataire.genre.value == "masculin"
+    assert ctx.personne_signataire.date_naissance == date(1984, 4, 12)
     assert ctx.societe.capital_social_lettres == "mille"
     assert ctx.capital is not None
+    assert ctx.capital.valeur_nominale_titre == "10"
     assert ctx.capital.nombre_titres_total_lettres == "cent"
     assert ctx.capital.valeur_nominale_titre_lettres == "dix"
     assert ctx.reunion is not None
@@ -119,6 +121,26 @@ def test_clean_front_selarl_context_derives_hidden_ux_values() -> None:
     assert ctx.exercice_social is not None
     assert ctx.exercice_social.lieux[0].adresse_affichee == "20 avenue du Siege, 75002 Paris"
     assert ctx.associes[0].nb_parts == 100
+
+
+def test_clean_front_selarl_accepts_french_date_strings_outside_streamlit_range() -> None:
+    dossier_type = dossier_type_by_label("SELARL creation V1")
+    data_entry = build_clean_data_entry(
+        dossier_type,
+        **{
+            **_valid_selarl_kwargs(PROFESSION_MEDECIN),
+            "date_naissance": "31/12/1974",
+            "signature_date": "27/05/2026",
+            "decision_date": "27/05/2026",
+        },
+    )
+
+    plan = build_clean_generation_plan(dossier_type, data_entry)
+
+    assert plan.can_generate is True
+    assert data_entry.date_naissance == date(1974, 12, 31)
+    assert data_entry.signature_date == date(2026, 5, 27)
+    assert data_entry.decision_date == date(2026, 5, 27)
 
 
 def test_clean_front_selarl_generation_smoke(tmp_path: Path) -> None:
@@ -193,12 +215,15 @@ def test_clean_front_streamlit_surface_is_not_legacy() -> None:
         *[item.label for item in app.selectbox],
         *[item.label for item in app.date_input],
     }
+    assert len(app.date_input) == 0
     assert "Genre" not in visible_labels
     assert "Titre affichage" not in visible_labels
     assert "Capital social en lettres" not in visible_labels
     assert "Nombre de parts en lettres" not in visible_labels
+    assert "Valeur nominale d'une part (?)" not in visible_labels
     assert "Valeur nominale en lettres" not in visible_labels
     assert "Date reunion en lettres" not in visible_labels
+    assert "Regime matrimonial" not in visible_labels
     assert "Prestataire signature electronique" not in visible_labels
     assert "Seuil achat materiel" not in visible_labels
     assert "Seuil emprunt" not in visible_labels
@@ -206,6 +231,19 @@ def test_clean_front_streamlit_surface_is_not_legacy() -> None:
     assert "Civilite mandataire" not in visible_labels
     assert "Civilite conjoint" not in visible_labels
     assert app.selectbox(key="selarl_nationalite_choice").label == "Nationalite"
+    assert app.selectbox(key="selarl_situation_maritale").label == "Situation matrimoniale"
+    assert (
+        app.checkbox(key="selarl_regime_communautaire").label
+        == "Documents regime de la communaute"
+    )
+    assert (
+        app.text_input(key="selarl_ordre_conseil").label
+        == "Conseil departemental de l'ordre (libelle complet)"
+    )
+    assert (
+        app.text_input(key="selarl_departement_ordre").label
+        == "Departement d'inscription a l'ordre"
+    )
 
 
 def _valid_selarl_input(

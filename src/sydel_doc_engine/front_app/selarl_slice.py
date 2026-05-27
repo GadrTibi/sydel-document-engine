@@ -54,6 +54,7 @@ from sydel_doc_engine.front_app.field_derivations import (
     DEFAULT_SEUIL_ACHAT_MATERIEL,
     DEFAULT_SEUIL_EMPRUNT,
     DEFAULT_TITRE_AFFICHAGE,
+    calculate_nominal_value,
     date_to_french_words,
     number_words_from_value,
 )
@@ -317,9 +318,12 @@ def build_generation_context(data: SelarlSliceInput) -> DocumentGenerationContex
     nb_parts_total_lettres = data.nb_parts_total_lettres or number_words_from_value(
         data.nb_parts_total
     )
+    valeur_nominale_part = data.valeur_nominale_part or calculate_nominal_value(
+        data.capital_social,
+        data.nb_parts_total,
+    )
     valeur_nominale_part_lettres = (
-        data.valeur_nominale_part_lettres
-        or number_words_from_value(data.valeur_nominale_part)
+        data.valeur_nominale_part_lettres or number_words_from_value(valeur_nominale_part)
     )
     reunion_date_lettres = data.reunion_date_lettres or date_to_french_words(data.decision_date)
     signature_prestataire = (
@@ -422,13 +426,13 @@ def build_generation_context(data: SelarlSliceInput) -> DocumentGenerationContex
         ),
         capital=CapitalContext(
             nb_parts_total=data.nb_parts_total,
-            valeur_nominale_part=data.valeur_nominale_part,
+            valeur_nominale_part=valeur_nominale_part,
             nb_parts_representees=data.nb_parts_total,
             montant=data.capital_social,
             montant_lettres=capital_social_lettres,
             nombre_titres_total=data.nb_parts_total,
             nombre_titres_total_lettres=nb_parts_total_lettres,
-            valeur_nominale_titre=data.valeur_nominale_part,
+            valeur_nominale_titre=valeur_nominale_part,
             valeur_nominale_titre_lettres=valeur_nominale_part_lettres,
             type_titre="parts sociales",
         ),
@@ -585,7 +589,6 @@ def _missing_text_blockers(data: SelarlSliceInput) -> list[str]:
         ("departement_ordre", "Departement d'inscription a l'ordre requis."),
         ("denomination", "Denomination sociale requise."),
         ("capital_social", "Capital social requis."),
-        ("valeur_nominale_part", "Valeur nominale de part requise."),
         ("siege_num_voie", "Numero de voie du siege requis."),
         ("siege_voie", "Voie du siege requise."),
         ("siege_cp", "Code postal du siege requis."),

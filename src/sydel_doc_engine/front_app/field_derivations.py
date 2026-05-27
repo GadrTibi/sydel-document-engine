@@ -23,6 +23,13 @@ NATIONALITY_PRESETS: Final = (
     "Luxembourgeoise",
     "Autre",
 )
+MATRIMONIAL_STATUS_PRESETS: Final = (
+    "Celibataire",
+    "Marie(e)",
+    "Pacs(e)",
+    "Divorce(e)",
+    "Veuf / veuve",
+)
 
 _SMALL_NUMBERS: Final = {
     0: "zero",
@@ -88,6 +95,60 @@ def number_words_from_value(value: object) -> str:
     if number is None or number != number.to_integral_value():
         return ""
     return integer_to_french_words(int(number))
+
+
+def calculate_nominal_value(capital_social: object, nb_parts_total: object) -> str:
+    capital = _decimal_from_value(capital_social)
+    nb_parts = _decimal_from_value(nb_parts_total)
+    if capital is None or nb_parts is None or nb_parts == 0:
+        return ""
+    return format_numeric_value(capital / nb_parts)
+
+
+def format_french_date(value: date | None) -> str:
+    if not isinstance(value, date):
+        return ""
+    return value.strftime("%d/%m/%Y")
+
+
+def parse_french_date(value: object) -> date | None:
+    if isinstance(value, date):
+        return value
+    if not isinstance(value, str):
+        return None
+    stripped = value.strip()
+    if not stripped:
+        return None
+    match = re.fullmatch(r"(\d{1,2})/(\d{1,2})/(\d{4})", stripped)
+    if match is None:
+        return None
+    day, month, year = (int(part) for part in match.groups())
+    try:
+        return date(year, month, day)
+    except ValueError:
+        return None
+
+
+def matrimonial_status_value(label: str) -> str:
+    normalized = _normalize_label(label)
+    if normalized.startswith("marie"):
+        return "marie"
+    if normalized.startswith("pacs"):
+        return "pacse"
+    if normalized.startswith("divorce"):
+        return "divorce"
+    if normalized.startswith("veuf"):
+        return "veuf"
+    return "celibataire"
+
+
+def regime_matrimonial_from_status(label: str, regime_communautaire: bool) -> str:
+    if regime_communautaire:
+        return "regime de communaute"
+    status = matrimonial_status_value(label)
+    if status == "marie":
+        return "hors regime de communaute"
+    return status
 
 
 def integer_to_french_words(value: int) -> str:

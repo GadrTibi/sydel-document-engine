@@ -16,9 +16,15 @@ from sydel_doc_engine.front_app.dossier_selection import (
     dossier_type_labels,
 )
 from sydel_doc_engine.front_app.field_derivations import (
+    MATRIMONIAL_STATUS_PRESETS,
     NATIONALITY_PRESETS,
+    calculate_nominal_value,
     derive_gender_from_civilite,
+    format_french_date,
     format_numeric_value,
+    matrimonial_status_value,
+    parse_french_date,
+    regime_matrimonial_from_status,
 )
 from sydel_doc_engine.front_app.generation import (
     CleanGenerationPlan,
@@ -60,7 +66,9 @@ def _render_dossier_type_selection() -> DossierTypeOption:
 def _render_data_entry_zone(dossier_type: DossierTypeOption) -> CleanDataEntry:
     st.subheader("Donnees a saisir")
     qualification = _render_qualification()
-    praticien = _render_praticien()
+    praticien = _render_praticien(
+        regime_communautaire=bool(qualification["regime_communautaire"])
+    )
     societe = _render_societe()
     ordre_mandataire = _render_ordre_mandataire()
     generation_context = _render_generation_context(societe)
@@ -93,11 +101,11 @@ def _render_qualification() -> dict[str, object]:
         key="selarl_dossier_unipersonnel",
     )
     regime_communautaire = col_b.checkbox(
-        "Regime communautaire",
+        "Documents regime de la communaute",
         value=False,
         key="selarl_regime_communautaire",
     )
-    col_c.caption("DOC-005 seulement si regime communautaire actif.")
+    col_c.caption("Active DOC-005. DOC-006 reste reserve.")
 
     st.markdown("**Cas hors perimetre V1**")
     out_a, out_b, out_c, out_d = st.columns(4)
@@ -123,7 +131,7 @@ def _render_qualification() -> dict[str, object]:
     }
 
 
-def _render_praticien() -> dict[str, object]:
+def _render_praticien(*, regime_communautaire: bool) -> dict[str, object]:
     st.markdown("**Fiche Client / Praticien**")
     civilite = st.selectbox("Civilite", ("Monsieur", "Madame"), key="selarl_civilite")
     col_d, col_e = st.columns(2)
@@ -152,16 +160,12 @@ def _render_praticien() -> dict[str, object]:
         if nationalite_choice == "Autre"
         else nationalite_choice.lower()
     )
-    situation_maritale = col_j.text_input(
+    situation_maritale_label = col_j.selectbox(
         "Situation matrimoniale",
+        MATRIMONIAL_STATUS_PRESETS,
         key="selarl_situation_maritale",
     )
-    col_k, col_l = st.columns(2)
-    regime_matrimonial = col_k.text_input(
-        "Regime matrimonial",
-        key="selarl_regime_matrimonial",
-    )
-    numero_ordre = col_l.text_input("Numero Ordre", key="selarl_numero_ordre")
+    numero_ordre = st.text_input("Numero Ordre", key="selarl_numero_ordre")
     col_m, col_n, col_o = st.columns(3)
     numero_rpps = col_m.text_input("Numero RPPS", key="selarl_numero_rpps")
     nom_pere = col_n.text_input("Nom du pere", key="selarl_nom_pere")
@@ -180,8 +184,11 @@ def _render_praticien() -> dict[str, object]:
         "nationalite": nationalite,
         "nom_pere": nom_pere,
         "nom_mere": nom_mere,
-        "situation_maritale": situation_maritale,
-        "regime_matrimonial": regime_matrimonial,
+        "situation_maritale": matrimonial_status_value(situation_maritale_label),
+        "regime_matrimonial": regime_matrimonial_from_status(
+            situation_maritale_label,
+            regime_communautaire,
+        ),
         "numero_ordre": numero_ordre,
         "numero_rpps": numero_rpps,
         "adresse_num_voie": adr_a.text_input("No", key="selarl_adresse_num_voie"),
@@ -196,29 +203,25 @@ def _render_societe() -> dict[str, object]:
     col_a, col_b = st.columns(2)
     denomination = col_a.text_input("Denomination sociale", key="selarl_denomination")
     capital_social = col_b.number_input(
-        "Capital social (€)",
+        "Capital social (?)",
         min_value=0,
         step=100,
         value=0,
         key="selarl_capital_social",
         help="Montant numerique uniquement.",
     )
-    col_d, col_f = st.columns(2)
-    nb_parts_total = col_d.number_input(
+    nb_parts_total = st.number_input(
         "Nombre total de parts",
         min_value=0,
         step=1,
         value=0,
         key="selarl_nb_parts_total",
     )
-    valeur_nominale_part = col_f.number_input(
-        "Valeur nominale d'une part (€)",
-        min_value=0,
-        step=1,
-        value=0,
-        key="selarl_valeur_nominale_part",
-        help="Montant numerique uniquement.",
-    )
+    valeur_nominale_part = calculate_nominal_value(capital_social, nb_parts_total)
+    if valeur_nominale_part:
+        st.caption(f"Valeur nominale calculee : {valeur_nominale_part} EUR")
+    else:
+        st.caption("Valeur nominale calculee automatiquement apres capital et parts.")
     col_h, col_i = st.columns(2)
     duree = col_h.text_input("Duree sociale", value="99 ans", key="selarl_duree")
     ville_rcs = col_i.text_input("RCS (ville)", key="selarl_ville_rcs")
@@ -230,7 +233,7 @@ def _render_societe() -> dict[str, object]:
         "capital_social": format_numeric_value(capital_social),
         "duree": duree,
         "nb_parts_total": int(nb_parts_total),
-        "valeur_nominale_part": format_numeric_value(valeur_nominale_part),
+        "valeur_nominale_part": valeur_nominale_part,
         "ville_rcs": ville_rcs,
         "siege_num_voie": adr_a.text_input("Numero", key="selarl_siege_num_voie"),
         "siege_voie": adr_b.text_input("Voie", key="selarl_siege_voie"),
@@ -243,12 +246,14 @@ def _render_ordre_mandataire() -> dict[str, object]:
     st.markdown("**Ordre professionnel**")
     col_a, col_b = st.columns(2)
     ordre_conseil = col_a.text_input(
-        "Conseil departemental de l'ordre",
+        "Conseil departemental de l'ordre (libelle complet)",
         key="selarl_ordre_conseil",
+        help="Exemple : Conseil departemental de l'Ordre des medecins de Paris.",
     )
     departement_ordre = col_b.text_input(
-        "Departement d'inscription",
+        "Departement d'inscription a l'ordre",
         key="selarl_departement_ordre",
+        help="Exemple : 75, Paris ou le departement ordinal attendu par le dossier.",
     )
     col_c, col_d, col_e = st.columns(3)
     ordre_adresse_ligne_1 = col_c.text_input(
@@ -333,14 +338,25 @@ def _render_generation_context(societe: dict[str, object]) -> dict[str, object]:
     }
 
 
-def _date_input_with_today(label: str, *, key: str, value: date) -> date:
+def _date_input_with_today(label: str, *, key: str, value: date) -> date | None:
+    current_value = st.session_state.get(key)
+    if isinstance(current_value, date):
+        st.session_state[key] = format_french_date(current_value)
+    elif current_value is None:
+        st.session_state[key] = format_french_date(value)
+
     button_col, input_col = st.columns([1, 3])
     if button_col.button("Aujourd'hui", key=f"{key}_today"):
-        st.session_state[key] = date.today()
-    selected = input_col.date_input(label, value=value, key=key)
-    if isinstance(selected, date):
-        return selected
-    return value
+        st.session_state[key] = format_french_date(date.today())
+    raw_value = input_col.text_input(
+        label,
+        key=key,
+        placeholder="JJ/MM/AAAA",
+    )
+    parsed = parse_french_date(raw_value)
+    if str(raw_value).strip() and parsed is None:
+        input_col.caption("Format attendu : JJ/MM/AAAA")
+    return parsed
 
 
 def _siege_display(societe: dict[str, object]) -> str:

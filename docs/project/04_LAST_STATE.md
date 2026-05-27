@@ -1,11 +1,11 @@
-# Dernier état projet
+# Dernier ?tat projet
 
-## Date de mise à jour
+## Date de mise ? jour
 2026-05-27
 
+## Dernier ticket termin?
+TRACK-B-SELARL-UX-FOLLOWUP-001 : corrections apres test local du clean front SELARL V1. Dates visibles passees en champs texte `JJ/MM/AAAA` sans borne Streamlit, bouton `Aujourd'hui` conserve, `Situation matrimoniale` en liste courte, doublon visible `Regime matrimonial` retire au profit de la case `Documents regime de la communaute`, valeur nominale calculee par capital / parts, champs ordre clarifies. Validations : `.\.venv\Scripts\python.exe -m ruff check .` OK ; `.\.venv\Scripts\python.exe -m pytest tests/unit/test_clean_front_app.py -q` OK, 12 tests passes ; clean front lance sur `http://localhost:8510`, HTTP 200 confirme, PID `3480` arrete proprement. Aucun generateur, moteur documentaire, wording juridique source, Track A, repo anchor, push ou merge n'a ete modifie.
 
-
-## Dernier ticket terminé
 TRACK-B-SELARL-UX-DEDUP-RECONCILIATION-001 : reconciliation UX du clean front SELARL V1 apres retours associe / NotebookLM. Livrables : `src/sydel_doc_engine/front_app/field_derivations.py`, corrections ciblees dans `data_entry.py`, `shell.py`, `selarl_slice.py`, tests `tests/unit/test_clean_front_app.py` et pilotage mis a jour. Corrections appliquees : suppression des champs visibles de genre grammatical et titre d'affichage, derivation des accords depuis la civilite, suppression des champs en lettres derivables, capital/parts/valeur nominale en saisie numerique, boutons `Aujourd'hui` sur les dates visibles, lieu d'exercice masque par defaut derriere `Autre lieu d'exercice ?`, conjoint masque hors cas utile, date courrier avertissement visible seulement si regime communautaire, mandataire SYDEL pre-rempli hors parcours principal, seuils de gerance et prestataire Yousign fixes par defaut, repartition associe unique conservee a 100 %, nationalite remplacee par presets courts + `Autre`. Aucun generateur, moteur documentaire, wording juridique source, Track A, repo anchor, push ou merge n'a ete modifie. Validations : `.\.venv\Scripts\python.exe -m ruff check .` OK ; `.\.venv\Scripts\python.exe -m pytest tests/unit/test_clean_front_app.py -q` OK, 11 tests passes ; clean front lance via `.\.venv\Scripts\python.exe -m streamlit run src/sydel_doc_engine/front_app/app.py --server.port 8508 --server.headless true --browser.gatherUsageStats false`, HTTP 200 confirme sur `http://localhost:8508`, PID `18436` arrete proprement. Aucun ticket suivant n'est suggere.
 
 TRACK-B-SELARL-FIELD-DEDUP-AUDIT-001 : audit des champs utilisateur du parcours clean front SELARL V1. Livrable : `docs/review/track_b_selarl_field_dedup_audit_001_report_v1.md`. Resultat : PASS, aucune vraie duplication editable detectee sur les 72 champs de donnees recenses, hors bouton de generation. Les derivations Praticien -> associe/gerant/signataire, siege -> domiciliation, capital -> apport/depot et profession -> DOC-016/DOC-017 restent internes, sans double saisie. Points ambigus documentes : lieu d'exercice pouvant coincider avec le siege, bloc conjoint toujours visible, date courrier avertissement visible hors regime, seuils medecin exiges aussi en dentiste, mandataire `DOC-003` encore gere par constantes moteur. Aucun code Python, moteur, wording juridique, push ou merge n'a ete fait. Aucun ticket suivant n'est suggere.
@@ -54,39 +54,39 @@ GLOBAL-FRONT-ARCHITECTURE-QA-001 : controle documentaire de l'architecture front
 
 GLOBAL-FRONT-ARCHITECTURE-001 : conception documentaire de l'architecture produit et donnees du nouveau front global a partir du registre canonique global V2.1. Livrables : `docs/project/GLOBAL_FRONT_ARCHITECTURE_V1.md`, `docs/project/GLOBAL_FRONT_OBJECT_MODEL_V1.md`, `docs/project/GLOBAL_FRONT_RULES_V1.md`, `docs/project/GLOBAL_FRONT_SCREEN_STRATEGY_V1.md`, `docs/project/GLOBAL_FRONT_REBUILD_BACKLOG_V1.md` et `docs/review/global_front_architecture_001_report_v1.md`. Decisions : modele front par objets metier role-based, adresses typees par usage, reutilisation uniquement via regles explicites, distinction dossier / document / lot, parcours dossier complet separe du mode document unitaire. Le prototype actuel est conserve comme bac a sable et outil de diagnostic, mais ne sert pas de fondation produit. Aucun generateur, moteur DOCX/PDF/ZIP, Streamlit ou wording juridique n'a ete modifie. Aucun test Python requis car aucun fichier Python modifie.
 
-GLOBAL-HUMAN-ANSWERS-INTEGRATION-001 : intégration des réponses humaines déjà obtenues dans l'audit global des variables, notamment la réponse d'Albane et le modèle SELAS médecin avec micro-holding. Livrables : `docs/project/GLOBAL_VARIABLE_OPEN_QUESTIONS_V2.md`, `docs/project/GLOBAL_CANONICAL_FIELD_REGISTRY_V2_1.md` et `docs/review/global_human_answers_integration_001_report_v1.md`. Couverture : 10 questions V1 reprises, 4 fermées par arbitrage humain, 5 encore arbitrables en interne, 1 basculée en backlog documentaire futur. Décisions : rôles personne explicitement distincts, trois adresses pivots, domiciliation = siège social, siège = lieu d'exercice seulement via option explicite, SCM = lieu d'exercice en standard, SCM cédée distincte du cessionnaire SCM par défaut, vendeur/cédant = praticien BNC et acquéreur/cessionnaire = SEL en constitution dans le parcours SELARL standard. Cas SELAS médecin + micro-holding documenté comme futur ticket séparé ; contradiction filigrane PROJET documentée mais non implémentée. Aucun générateur, moteur DOCX/PDF/ZIP, UI ou wording juridique n'a été modifié. Aucun test Python requis car aucun fichier Python modifié.
+GLOBAL-HUMAN-ANSWERS-INTEGRATION-001 : int?gration des r?ponses humaines d?j? obtenues dans l'audit global des variables, notamment la r?ponse d'Albane et le mod?le SELAS m?decin avec micro-holding. Livrables : `docs/project/GLOBAL_VARIABLE_OPEN_QUESTIONS_V2.md`, `docs/project/GLOBAL_CANONICAL_FIELD_REGISTRY_V2_1.md` et `docs/review/global_human_answers_integration_001_report_v1.md`. Couverture : 10 questions V1 reprises, 4 ferm?es par arbitrage humain, 5 encore arbitrables en interne, 1 bascul?e en backlog documentaire futur. D?cisions : r?les personne explicitement distincts, trois adresses pivots, domiciliation = si?ge social, si?ge = lieu d'exercice seulement via option explicite, SCM = lieu d'exercice en standard, SCM c?d?e distincte du cessionnaire SCM par d?faut, vendeur/c?dant = praticien BNC et acqu?reur/cessionnaire = SEL en constitution dans le parcours SELARL standard. Cas SELAS m?decin + micro-holding document? comme futur ticket s?par? ; contradiction filigrane PROJET document?e mais non impl?ment?e. Aucun g?n?rateur, moteur DOCX/PDF/ZIP, UI ou wording juridique n'a ?t? modifi?. Aucun test Python requis car aucun fichier Python modifi?.
 
-GLOBAL-VARIABLE-IDENTITY-AUDIT-001 : audit d'identité sémantique globale des variables documentaires construit à partir de l'inventaire brut global, des référentiels V1, du registre moteur, des templates et des specs. Livrables : `docs/project/GLOBAL_VARIABLE_IDENTITY_MATRIX_V1.csv`, `docs/project/GLOBAL_CANONICAL_FIELD_REGISTRY_V2.md`, `docs/project/GLOBAL_VARIABLE_OPEN_QUESTIONS_V1.md` et `docs/review/global_variable_identity_audit_001_report_v1.md`. Couverture : 1 334 slugs normalisés distincts audités, 43 documents `DOC-001` à `DOC-043`, 15 familles, 49 champs canoniques V2 proposés, 142 rapprochements représentatifs classés et 10 questions humaines groupées. Décision : aucune fusion silencieuse ; les relations distinguent identité métier, forme différente, réutilisation explicite, champs distincts et arbitrage humain requis. Aucun générateur, moteur DOCX/PDF/ZIP, UI ou wording juridique n'a été modifié. Aucun test Python requis car aucun fichier Python modifié.
+GLOBAL-VARIABLE-IDENTITY-AUDIT-001 : audit d'identit? s?mantique globale des variables documentaires construit ? partir de l'inventaire brut global, des r?f?rentiels V1, du registre moteur, des templates et des specs. Livrables : `docs/project/GLOBAL_VARIABLE_IDENTITY_MATRIX_V1.csv`, `docs/project/GLOBAL_CANONICAL_FIELD_REGISTRY_V2.md`, `docs/project/GLOBAL_VARIABLE_OPEN_QUESTIONS_V1.md` et `docs/review/global_variable_identity_audit_001_report_v1.md`. Couverture : 1 334 slugs normalis?s distincts audit?s, 43 documents `DOC-001` ? `DOC-043`, 15 familles, 49 champs canoniques V2 propos?s, 142 rapprochements repr?sentatifs class?s et 10 questions humaines group?es. D?cision : aucune fusion silencieuse ; les relations distinguent identit? m?tier, forme diff?rente, r?utilisation explicite, champs distincts et arbitrage humain requis. Aucun g?n?rateur, moteur DOCX/PDF/ZIP, UI ou wording juridique n'a ?t? modifi?. Aucun test Python requis car aucun fichier Python modifi?.
 
-GLOBAL-VARIABLE-INVENTORY-001 : inventaire global brut des variables documentaires construit sur tout le périmètre moteur. Livrables : `docs/project/GLOBAL_VARIABLE_RAW_INVENTORY_V1.csv` et `docs/review/global_variable_inventory_001_report_v1.md`. Le CSV contient 12 443 lignes, 1 334 slugs normalisés distincts sur documents `DOC-XXX`, couvre les 43 documents `DOC-001` à `DOC-043` et 15 familles documentaires. Sources lues/exploitées : dictionnaire canonique V1, mapping documents/variables V1, arbre moteur, `src/sydel_doc_engine/registry/catalog.py`, source truth V1/V2/V3, templates présents dans `project/source_documents/`, specs `docs/delivery/` et `case_catalog.py` en aide. Aucun générateur, moteur DOCX/PDF/ZIP, UI ou wording juridique n'a été modifié. Aucun test Python requis car aucun fichier Python modifié ; validations documentaires : couverture complète, absence de lignes `UNMAPPED`, contrôle CSV/report.
+GLOBAL-VARIABLE-INVENTORY-001 : inventaire global brut des variables documentaires construit sur tout le p?rim?tre moteur. Livrables : `docs/project/GLOBAL_VARIABLE_RAW_INVENTORY_V1.csv` et `docs/review/global_variable_inventory_001_report_v1.md`. Le CSV contient 12 443 lignes, 1 334 slugs normalis?s distincts sur documents `DOC-XXX`, couvre les 43 documents `DOC-001` ? `DOC-043` et 15 familles documentaires. Sources lues/exploit?es : dictionnaire canonique V1, mapping documents/variables V1, arbre moteur, `src/sydel_doc_engine/registry/catalog.py`, source truth V1/V2/V3, templates pr?sents dans `project/source_documents/`, specs `docs/delivery/` et `case_catalog.py` en aide. Aucun g?n?rateur, moteur DOCX/PDF/ZIP, UI ou wording juridique n'a ?t? modifi?. Aucun test Python requis car aucun fichier Python modifi? ; validations documentaires : couverture compl?te, absence de lignes `UNMAPPED`, contr?le CSV/report.
 
-ASSISTANT-METIER-PREFILL-001 : ajout d'un mécanisme de préremplissage de test déterministe dans le seul mode `Assistant metier`. L'UI expose un sélecteur `Scénario de test`, un bouton `Préremplir`, un bouton `Réinitialiser` et une indication visible `Mode test — données fictives préremplies`. Les presets couvrent `SELARL médecin unipersonnelle simple`, `SELARL chirurgien-dentiste + régime communautaire + site distinct`, `SELARL médecin + cession cabinet médical + bail + financement` et `SCI simple`. Le `session_state` Streamlit est synchronisé pour les champs visibles et dérivés, notamment `Dossier unipersonnel`, l'associé unique et la domiciliation = siège. Aucun générateur, moteur DOCX/PDF/ZIP, wording juridique, mode `Technique / diagnostic` ou mode `Document unitaire` n'a été modifié. Rapport : `docs/review/assistant_metier_prefill_001_report_v1.md`. Ruff OK et pytest OK avec 272 tests passés.
+ASSISTANT-METIER-PREFILL-001 : ajout d'un m?canisme de pr?remplissage de test d?terministe dans le seul mode `Assistant metier`. L'UI expose un s?lecteur `Sc?nario de test`, un bouton `Pr?remplir`, un bouton `R?initialiser` et une indication visible `Mode test ? donn?es fictives pr?remplies`. Les presets couvrent `SELARL m?decin unipersonnelle simple`, `SELARL chirurgien-dentiste + r?gime communautaire + site distinct`, `SELARL m?decin + cession cabinet m?dical + bail + financement` et `SCI simple`. Le `session_state` Streamlit est synchronis? pour les champs visibles et d?riv?s, notamment `Dossier unipersonnel`, l'associ? unique et la domiciliation = si?ge. Aucun g?n?rateur, moteur DOCX/PDF/ZIP, wording juridique, mode `Technique / diagnostic` ou mode `Document unitaire` n'a ?t? modifi?. Rapport : `docs/review/assistant_metier_prefill_001_report_v1.md`. Ruff OK et pytest OK avec 272 tests pass?s.
 
-DOCUMENT-UNITAIRE-001 : ajout du mode Streamlit `Document unitaire` aux côtés de `Assistant metier` et `Technique / diagnostic`. Le mode permet de choisir un document par code/libellé après sélection du cas, affiche uniquement les champs utiles, propose un préremplissage d'exemple, valide les champs manquants et génère un DOCX unique avec téléchargement, ZIP optionnel et PDF optionnel si le backend local est disponible. Le périmètre V1 est limité à `DOC-001`, `DOC-002`, `DOC-003` et `DOC-004`; les documents manuels restent visibles mais non générables, et les autres documents affichent une limite claire de non-support dans ce mode. Aucun générateur, moteur DOCX/PDF/ZIP, catalogue métier, parcours Assistant métier ou mode `Technique / diagnostic` n'a été modifié. Rapport : `docs/review/document_unitaire_001_report_v1.md`. Ruff OK et pytest OK avec 266 tests passés.
+DOCUMENT-UNITAIRE-001 : ajout du mode Streamlit `Document unitaire` aux c?t?s de `Assistant metier` et `Technique / diagnostic`. Le mode permet de choisir un document par code/libell? apr?s s?lection du cas, affiche uniquement les champs utiles, propose un pr?remplissage d'exemple, valide les champs manquants et g?n?re un DOCX unique avec t?l?chargement, ZIP optionnel et PDF optionnel si le backend local est disponible. Le p?rim?tre V1 est limit? ? `DOC-001`, `DOC-002`, `DOC-003` et `DOC-004`; les documents manuels restent visibles mais non g?n?rables, et les autres documents affichent une limite claire de non-support dans ce mode. Aucun g?n?rateur, moteur DOCX/PDF/ZIP, catalogue m?tier, parcours Assistant m?tier ou mode `Technique / diagnostic` n'a ?t? modifi?. Rapport : `docs/review/document_unitaire_001_report_v1.md`. Ruff OK et pytest OK avec 266 tests pass?s.
 
-SELARL-CLOUD-GENERATION-BUG-001 : bug de génération SELARL visible reproduit avec `streamlit.testing.v1.AppTest`. Le parcours bloquait quand l'utilisateur cochait `Dossier unipersonnel` ou `L'adresse de domiciliation est le siège social` avant de remplir les champs source : les widgets Streamlit dérivés et désactivés conservaient des valeurs vides en `session_state`, `can_generate_docx` restait faux, `generatable_document_codes` restait vide côté UI et le bouton `Generer les DOCX` restait désactivé. Correction minimale dans `streamlit_app.py` : synchronisation explicite du `session_state` pour l'associé unique dérivé et l'adresse de domiciliation dérivée. Aucun générateur, moteur DOCX/PDF/ZIP, catalogue, parcours SCI ou mode `Technique / diagnostic` n'a été modifié. Rapport : `docs/review/selarl_cloud_generation_bug_001_report_v1.md`. Ruff OK et pytest OK avec 266 tests passés. Commit local tenté mais bloqué par refus d'écriture dans `.git/index.lock` / `.git/objects` dans l'environnement Codex.
+SELARL-CLOUD-GENERATION-BUG-001 : bug de g?n?ration SELARL visible reproduit avec `streamlit.testing.v1.AppTest`. Le parcours bloquait quand l'utilisateur cochait `Dossier unipersonnel` ou `L'adresse de domiciliation est le si?ge social` avant de remplir les champs source : les widgets Streamlit d?riv?s et d?sactiv?s conservaient des valeurs vides en `session_state`, `can_generate_docx` restait faux, `generatable_document_codes` restait vide c?t? UI et le bouton `Generer les DOCX` restait d?sactiv?. Correction minimale dans `streamlit_app.py` : synchronisation explicite du `session_state` pour l'associ? unique d?riv? et l'adresse de domiciliation d?riv?e. Aucun g?n?rateur, moteur DOCX/PDF/ZIP, catalogue, parcours SCI ou mode `Technique / diagnostic` n'a ?t? modifi?. Rapport : `docs/review/selarl_cloud_generation_bug_001_report_v1.md`. Ruff OK et pytest OK avec 266 tests pass?s. Commit local tent? mais bloqu? par refus d'?criture dans `.git/index.lock` / `.git/objects` dans l'environnement Codex.
 
-SELARL-SMOKE-REALISTIC-001 : smoke réaliste du pilote SELARL après réalignement wording / flow / réutilisations / UI. Trois scénarios ont été exécutés : médecin unipersonnelle simple, chirurgien-dentiste avec régime communautaire et site distinct, médecin avec cession de cabinet médical / bail / financement. Chaque scénario génère uniquement `DOC-001`, `DOC-002`, `DOC-003`, `DOC-004` et un ZIP avec manifeste ; les documents manuels `DOC-013` / `DOC-014` restent visibles mais exclus, `DOC-006` garde sa réserve, les documents non prêts restent en contexte incomplet V2, et le PV d'autorisation d'emprunt reste une option de `DOC-004`. Aucun fichier Python, générateur, moteur DOCX/PDF/ZIP, catalogue ou UI n'a été modifié. Artefacts : `artifacts/selarl_smoke_realistic_001/20260519_185045/`. Rapport : `docs/review/selarl_smoke_realistic_001_report_v1.md`. Backend PDF local indisponible pendant le smoke. Ruff OK et pytest OK avec 257 tests passés.
+SELARL-SMOKE-REALISTIC-001 : smoke r?aliste du pilote SELARL apr?s r?alignement wording / flow / r?utilisations / UI. Trois sc?narios ont ?t? ex?cut?s : m?decin unipersonnelle simple, chirurgien-dentiste avec r?gime communautaire et site distinct, m?decin avec cession de cabinet m?dical / bail / financement. Chaque sc?nario g?n?re uniquement `DOC-001`, `DOC-002`, `DOC-003`, `DOC-004` et un ZIP avec manifeste ; les documents manuels `DOC-013` / `DOC-014` restent visibles mais exclus, `DOC-006` garde sa r?serve, les documents non pr?ts restent en contexte incomplet V2, et le PV d'autorisation d'emprunt reste une option de `DOC-004`. Aucun fichier Python, g?n?rateur, moteur DOCX/PDF/ZIP, catalogue ou UI n'a ?t? modifi?. Artefacts : `artifacts/selarl_smoke_realistic_001/20260519_185045/`. Rapport : `docs/review/selarl_smoke_realistic_001_report_v1.md`. Backend PDF local indisponible pendant le smoke. Ruff OK et pytest OK avec 257 tests pass?s.
 
-SELARL-UI-REALIGN-001 : réalignement du parcours Streamlit visible SELARL sur le wording, le flow et les règles de réutilisation corrigés. Le parcours affiche désormais : Écran 1 — Qualification, Écran 2 — Fiche Client, Écran 3 — Fiche Société, Écran 4 — Capital & Associés, Écran 5 — Contexte & scénarios métier, Écran 6 — Documents & génération. `Dossier unipersonnel` est exposé en qualification et verrouille le cas Praticien = associé unique = gérant = signataire. Le mandataire est relégué dans un bloc secondaire replié et n'est pas assimilé au signataire par défaut. `DOC-006` garde sa réserve, `DOC-013` et `DOC-014` restent visibles mais non générables, et l'emprunt reste une option du `DOC-004`. Aucun générateur, moteur DOCX/PDF/ZIP, `case_catalog.py`, parcours SCI ou mode `Technique / diagnostic` n'a été modifié. Rapport : `docs/review/selarl_ui_realign_001_report_v1.md`. Ruff OK et pytest OK avec 257 tests passés.
+SELARL-UI-REALIGN-001 : r?alignement du parcours Streamlit visible SELARL sur le wording, le flow et les r?gles de r?utilisation corrig?s. Le parcours affiche d?sormais : ?cran 1 ? Qualification, ?cran 2 ? Fiche Client, ?cran 3 ? Fiche Soci?t?, ?cran 4 ? Capital & Associ?s, ?cran 5 ? Contexte & sc?narios m?tier, ?cran 6 ? Documents & g?n?ration. `Dossier unipersonnel` est expos? en qualification et verrouille le cas Praticien = associ? unique = g?rant = signataire. Le mandataire est rel?gu? dans un bloc secondaire repli? et n'est pas assimil? au signataire par d?faut. `DOC-006` garde sa r?serve, `DOC-013` et `DOC-014` restent visibles mais non g?n?rables, et l'emprunt reste une option du `DOC-004`. Aucun g?n?rateur, moteur DOCX/PDF/ZIP, `case_catalog.py`, parcours SCI ou mode `Technique / diagnostic` n'a ?t? modifi?. Rapport : `docs/review/selarl_ui_realign_001_report_v1.md`. Ruff OK et pytest OK avec 257 tests pass?s.
 
-SELARL-REUSE-RULES-REALIGN-001 : réalignement des règles de réutilisation SELARL dans le schéma et les projections métier. `Dossier unipersonnel` est désormais la règle pivot : quand l'option est active, le Praticien alimente l'associé unique, le gérant et le signataire ; quand elle est inactive, aucune dérivation n'est imposée. Les options SELARL acquéreur, SELARL cessionnaire SCM et domiciliation = siège restent explicites. Le mandataire ne dérive plus du signataire par défaut, les relations vendeur / locataire, siège / lieu d'exercice / cabinet, vendeur / Praticien et cédant SCM / Praticien sont documentées comme non automatiques. Rapport : `docs/review/selarl_reuse_rules_realign_001_report_v1.md`. Aucun générateur, moteur DOCX/PDF/ZIP, `case_catalog.py` ou `streamlit_app.py` n'a été modifié. Ruff OK et pytest OK avec 252 tests passés.
+SELARL-REUSE-RULES-REALIGN-001 : r?alignement des r?gles de r?utilisation SELARL dans le sch?ma et les projections m?tier. `Dossier unipersonnel` est d?sormais la r?gle pivot : quand l'option est active, le Praticien alimente l'associ? unique, le g?rant et le signataire ; quand elle est inactive, aucune d?rivation n'est impos?e. Les options SELARL acqu?reur, SELARL cessionnaire SCM et domiciliation = si?ge restent explicites. Le mandataire ne d?rive plus du signataire par d?faut, les relations vendeur / locataire, si?ge / lieu d'exercice / cabinet, vendeur / Praticien et c?dant SCM / Praticien sont document?es comme non automatiques. Rapport : `docs/review/selarl_reuse_rules_realign_001_report_v1.md`. Aucun g?n?rateur, moteur DOCX/PDF/ZIP, `case_catalog.py` ou `streamlit_app.py` n'a ?t? modifi?. Ruff OK et pytest OK avec 252 tests pass?s.
 
-SELARL-FLOW-REALIGN-001 : réalignement de l'ordre conceptuel SELARL dans le schéma et les projections métier. Le flow cible est désormais explicite : Qualification, Fiche Client / Praticien, Fiche Société, Capital & Associés, Contexte & scénarios métier, Documents & génération. `src/sydel_doc_engine/app/selarl_form_schema.py` expose `FormStep`, `SELARL_FLOW_STEPS` et `selarl_blocks_by_step()`, `src/sydel_doc_engine/app/business_wizard.py` expose les projections par étape, les specs actives sont mises à jour in-place et le rapport est `docs/review/selarl_flow_realign_001_report_v1.md`. Aucun générateur, moteur DOCX/PDF/ZIP, `case_catalog.py`, mode SCI ou wording juridique n'a été modifié. `streamlit_app.py` n'a pas été touché ; l'UI visible reste non validée produit et ne doit pas être poussée ou redéployée avant le ticket UI dédié. Ruff OK et pytest OK avec 245 tests passés.
+SELARL-FLOW-REALIGN-001 : r?alignement de l'ordre conceptuel SELARL dans le sch?ma et les projections m?tier. Le flow cible est d?sormais explicite : Qualification, Fiche Client / Praticien, Fiche Soci?t?, Capital & Associ?s, Contexte & sc?narios m?tier, Documents & g?n?ration. `src/sydel_doc_engine/app/selarl_form_schema.py` expose `FormStep`, `SELARL_FLOW_STEPS` et `selarl_blocks_by_step()`, `src/sydel_doc_engine/app/business_wizard.py` expose les projections par ?tape, les specs actives sont mises ? jour in-place et le rapport est `docs/review/selarl_flow_realign_001_report_v1.md`. Aucun g?n?rateur, moteur DOCX/PDF/ZIP, `case_catalog.py`, mode SCI ou wording juridique n'a ?t? modifi?. `streamlit_app.py` n'a pas ?t? touch? ; l'UI visible reste non valid?e produit et ne doit pas ?tre pouss?e ou red?ploy?e avant le ticket UI d?di?. Ruff OK et pytest OK avec 245 tests pass?s.
 
-SELARL-WORDING-REALIGN-001 : réalignement du vocabulaire visible SELARL sur les arbitrages associé. L'écran personne visible devient `Fiche Client`, le terme pivot devient `Praticien`, les rôles `Gérant`, `Associé`, `Signataire` et `Mandataire` restent conservés selon contexte, et les specs actives sont mises à jour in-place. Aucun générateur, moteur DOCX/PDF/ZIP, `case_catalog.py`, ordre d'écran ou règle de réutilisation fonctionnelle n'a été modifié. Rapport : `docs/review/selarl_wording_realign_001_report_v1.md`. Ruff OK et pytest OK avec 241 tests passés.
+SELARL-WORDING-REALIGN-001 : r?alignement du vocabulaire visible SELARL sur les arbitrages associ?. L'?cran personne visible devient `Fiche Client`, le terme pivot devient `Praticien`, les r?les `G?rant`, `Associ?`, `Signataire` et `Mandataire` restent conserv?s selon contexte, et les specs actives sont mises ? jour in-place. Aucun g?n?rateur, moteur DOCX/PDF/ZIP, `case_catalog.py`, ordre d'?cran ou r?gle de r?utilisation fonctionnelle n'a ?t? modifi?. Rapport : `docs/review/selarl_wording_realign_001_report_v1.md`. Ruff OK et pytest OK avec 241 tests pass?s.
 
-SELARL-PLAN-CORRECTION-001 : correction documentaire de la planification SELARL selon les arbitrages explicites de l'associé. La hiérarchie de sources place désormais les arbitrages associé avant NotebookLM, puis V3, templates/registre et code existant. Le rapport de réconciliation et le backlog ont été resserrés autour de `Fiche Client`, `Praticien` et `Dossier unipersonnel`, avec retrait du mode Projet / filigrane V1, retrait de la couche statut documentaire lourde et sortie du mandataire des priorités UX hors variables ou documents liés. Aucun fichier Python, générateur, moteur DOCX/PDF/ZIP ou UI n'a été modifié ; aucun test code lancé car les modifications sont documentaires.
+SELARL-PLAN-CORRECTION-001 : correction documentaire de la planification SELARL selon les arbitrages explicites de l'associ?. La hi?rarchie de sources place d?sormais les arbitrages associ? avant NotebookLM, puis V3, templates/registre et code existant. Le rapport de r?conciliation et le backlog ont ?t? resserr?s autour de `Fiche Client`, `Praticien` et `Dossier unipersonnel`, avec retrait du mode Projet / filigrane V1, retrait de la couche statut documentaire lourde et sortie du mandataire des priorit?s UX hors variables ou documents li?s. Aucun fichier Python, g?n?rateur, moteur DOCX/PDF/ZIP ou UI n'a ?t? modifi? ; aucun test code lanc? car les modifications sont documentaires.
 
-SELARL-NOTEBOOKLM-RECONCILIATION-001 : réconciliation documentaire du pilote SELARL avec la nouvelle hiérarchie NotebookLM / V3 / templates / code. Les sources validées par l'utilisateur ont été normalisées et committées sous `project/source_truth/notebooklm_selarl_10_prompts_v1.md` et `project/source_truth/Documents_a_generer_par_cas_V3.docx` dans le commit source `f1da08b`. Le ticket crée `docs/project/SELARL_SOURCE_HIERARCHY_V2.md`, `docs/review/selarl_notebooklm_reconciliation_001_report_v1.md` et `docs/project/SELARL_REBUILD_BACKLOG_V2.md`, puis bloque le smoke SELARL prématuré au profit d'une reconstruction contrôlée. Cette reconstruction a été corrigée par `SELARL-PLAN-CORRECTION-001` : wording, flow, réutilisations, UI, smoke réaliste, revue juriste.
+SELARL-NOTEBOOKLM-RECONCILIATION-001 : r?conciliation documentaire du pilote SELARL avec la nouvelle hi?rarchie NotebookLM / V3 / templates / code. Les sources valid?es par l'utilisateur ont ?t? normalis?es et committ?es sous `project/source_truth/notebooklm_selarl_10_prompts_v1.md` et `project/source_truth/Documents_a_generer_par_cas_V3.docx` dans le commit source `f1da08b`. Le ticket cr?e `docs/project/SELARL_SOURCE_HIERARCHY_V2.md`, `docs/review/selarl_notebooklm_reconciliation_001_report_v1.md` et `docs/project/SELARL_REBUILD_BACKLOG_V2.md`, puis bloque le smoke SELARL pr?matur? au profit d'une reconstruction contr?l?e. Cette reconstruction a ?t? corrig?e par `SELARL-PLAN-CORRECTION-001` : wording, flow, r?utilisations, UI, smoke r?aliste, revue juriste.
 
 SELARL-UI-WIZARD-IMPL-001 : branchement du mode `Assistant metier` Streamlit sur le schema machine-readable SELARL, ajout d'un parcours pilote en ecrans qualification / societe / personne et gerant / associes / conditions specifiques / documents attendus / generation, consommation des labels, blocs, regles de reutilisation et documents issus de `src/sydel_doc_engine/app/selarl_form_schema.py` via `business_wizard.py`, conservation du mode SCI et du mode `Technique / diagnostic`, affichage de `DOC-006` avec reserve source V2, `DOC-013` et `DOC-014` visibles mais `MANUAL_ONLY` et exclus de la generation, rapport `docs/review/selarl_ui_wizard_impl_001_report_v1.md`, ruff OK et pytest OK avec 239 tests passes. Ce parcours est techniquement committe, mais pas valide produit.
 
-SELARL-FORM-SCHEMA-IMPL-001 : implémentation du schéma de données SELARL côté Assistant métier depuis la vraie source V2 `project/source_truth/Documents_a_generer_par_cas_V2.docx`, ajout de `src/sydel_doc_engine/app/selarl_form_schema.py`, couverture machine-readable des blocs métier, champs qualifiés, règles de réutilisation, documents attendus et variables V2, ajout de la réserve source V2 exploitable sur `DOC-006`, clarification finale de `DOC-013` / `DOC-014` comme `MANUAL_ONLY` hors génération pilote, rapport `docs/review/selarl_form_schema_impl_001_report_v1.md`, ruff OK et pytest OK avec 231 tests passés.
+SELARL-FORM-SCHEMA-IMPL-001 : impl?mentation du sch?ma de donn?es SELARL c?t? Assistant m?tier depuis la vraie source V2 `project/source_truth/Documents_a_generer_par_cas_V2.docx`, ajout de `src/sydel_doc_engine/app/selarl_form_schema.py`, couverture machine-readable des blocs m?tier, champs qualifi?s, r?gles de r?utilisation, documents attendus et variables V2, ajout de la r?serve source V2 exploitable sur `DOC-006`, clarification finale de `DOC-013` / `DOC-014` comme `MANUAL_ONLY` hors g?n?ration pilote, rapport `docs/review/selarl_form_schema_impl_001_report_v1.md`, ruff OK et pytest OK avec 231 tests pass?s.
 
-SELARL-PILOT-SOURCE-VERIFY-001 : vérification des livrables SELARL contre la vraie source V2 de l'associé `project/source_truth/Documents_a_generer_par_cas_V2.docx` hash SHA-256 `2E9843AA1EC05A01D82DF5FCE12516A8EF49EA2B3842547D186204218C90B23F`, remplacement du fichier V2 canonique provisoire, création du rapport `docs/review/selarl_source_verify_001_report_v1.md`, correction des statuts de dérogation SELARL dans le catalogue (`DOC-013` et `DOC-014` hors génération pilote), enrichissement des specs SELARL avec les variables V2 brutes et réserves source ; ruff OK et pytest OK avec 217 tests passés.
+SELARL-PILOT-SOURCE-VERIFY-001 : v?rification des livrables SELARL contre la vraie source V2 de l'associ? `project/source_truth/Documents_a_generer_par_cas_V2.docx` hash SHA-256 `2E9843AA1EC05A01D82DF5FCE12516A8EF49EA2B3842547D186204218C90B23F`, remplacement du fichier V2 canonique provisoire, cr?ation du rapport `docs/review/selarl_source_verify_001_report_v1.md`, correction des statuts de d?rogation SELARL dans le catalogue (`DOC-013` et `DOC-014` hors g?n?ration pilote), enrichissement des specs SELARL avec les variables V2 brutes et r?serves source ; ruff OK et pytest OK avec 217 tests pass?s.
 
-SELARL-PILOT-PROTOCOL-001 : cadrage produit du pilote SELARL depuis `project/source_truth/Documents_a_generer_par_cas_V2.docx`, création du protocole réplicable de construction de processus, des specs SELARL processus/formulaire/wizard, du plan d'implémentation et du rapport `docs/review/selarl_pilot_protocol_001_report_v1.md`, sans modification de l'UI, du moteur DOCX/PDF/ZIP ni des générateurs ; ruff OK et pytest OK avec 217 tests passés.
+SELARL-PILOT-PROTOCOL-001 : cadrage produit du pilote SELARL depuis `project/source_truth/Documents_a_generer_par_cas_V2.docx`, cr?ation du protocole r?plicable de construction de processus, des specs SELARL processus/formulaire/wizard, du plan d'impl?mentation et du rapport `docs/review/selarl_pilot_protocol_001_report_v1.md`, sans modification de l'UI, du moteur DOCX/PDF/ZIP ni des g?n?rateurs ; ruff OK et pytest OK avec 217 tests pass?s.
 
 UI-CASE-WIZARD-002 : branchement du mode Assistant metier Streamlit sur `get_expected_documents(...)` et CASE-CATALOG-001, ajout des conditions UI pour les 8 familles, affichage des documents attendus avec statuts generable / manuel / non implemente / mapping / contexte incomplet V2, filtrage de la generation sur les seuls documents attendus generables avec `DOC-XXX` et contexte pret, mode Technique / diagnostic conserve, rapport `docs/review/ui_case_wizard_002_report_v1.md`, ruff OK et pytest OK avec 217 tests passes.
 
@@ -104,33 +104,33 @@ SYNC-FINAL-FOUNDATIONS-001 : synchronisation finale de `main` avant revue/clotur
 
 UI-PDF-ZIP-INTEGRATION-001 : integration de l'UI Streamlit avec la generation dossier DOCX, l'export PDF local optionnel et le ZIP dossier, avec telechargements par fichier, smoke manuel documente et validations locales vertes.
 
-SYNC-POST-MOTOR-UI-001 : absorption dans `main` des fondations UI/PDF/recette issues des branches `codex/ui-flow-001`, `codex/ui-occurrences-001`, `codex/ui-form-schema-001`, `codex/pdf-backend-001` et `codex/recipe-frame-001`, puis réalignement du pilotage vers `UI-CORE-001`, `RESUME-ZIP-BACKEND-001` et `REVIEW-FINAL-001`.
+SYNC-POST-MOTOR-UI-001 : absorption dans `main` des fondations UI/PDF/recette issues des branches `codex/ui-flow-001`, `codex/ui-occurrences-001`, `codex/ui-form-schema-001`, `codex/pdf-backend-001` et `codex/recipe-frame-001`, puis r?alignement du pilotage vers `UI-CORE-001`, `RESUME-ZIP-BACKEND-001` et `REVIEW-FINAL-001`.
 
-PDF-BACKEND-001 : implementation d'un backend local d'export PDF depuis DOCX genere, avec priorite LibreOffice headless si disponible puis fallback Word COM Windows, erreurs explicites, tests ciblés, smoke réel DOCX vers PDF et aucune modification UI.
+PDF-BACKEND-001 : implementation d'un backend local d'export PDF depuis DOCX genere, avec priorite LibreOffice headless si disponible puis fallback Word COM Windows, erreurs explicites, tests cibl?s, smoke r?el DOCX vers PDF et aucune modification UI.
 
 RECONCILE-MOTOR-CLOSE-001 : reconciliation finale du moteur DOCX V1, exposition des generateurs ordre/SPFPL sous `DOC-034` a `DOC-043`, consolidation des referentiels `08/09`, integration des audits `17/18`, requalification de l'audit `16`, validations ruff/pytest et cloture moteur hors UI/PDF/ZIP/recette finale.
 
-SYNC-CLOSE-AUDIT-001 : absorption dans `main` du commit source `0139202b170531fd628f25811c55855a2512acc0` depuis `origin/codex/close-motor-audit-001`, confirmation de `docs/project/16_MOTOR_COMPLETION_AUDIT_V1.md` et conservation de la version finale plus récente déjà présente dans `main`, sans modification de code Python.
+SYNC-CLOSE-AUDIT-001 : absorption dans `main` du commit source `0139202b170531fd628f25811c55855a2512acc0` depuis `origin/codex/close-motor-audit-001`, confirmation de `docs/project/16_MOTOR_COMPLETION_AUDIT_V1.md` et conservation de la version finale plus r?cente d?j? pr?sente dans `main`, sans modification de code Python.
 
-FINAL-SCM-CESSION-WAVE-001 : restauration de la résolution V1 cession SCM depuis la branche d'arbitrage, implémentation du bloc cession SCM sous `DOC-031` à `DOC-033`, smoke DOCX réel, validations ruff/pytest et audit de clôture moteur V1.
+FINAL-SCM-CESSION-WAVE-001 : restauration de la r?solution V1 cession SCM depuis la branche d'arbitrage, impl?mentation du bloc cession SCM sous `DOC-031` ? `DOC-033`, smoke DOCX r?el, validations ruff/pytest et audit de cl?ture moteur V1.
 
-SYNC-WAVE-010 : absorption finale dans `main` des branches `codex/arbitrage-scm-cession-resolve-001` et `codex/code-scm-cession-block-001`, passage en DONE des tickets SCM cession finaux et réalignement du pilotage vers UI, PDF, ZIP et recette finale.
+SYNC-WAVE-010 : absorption finale dans `main` des branches `codex/arbitrage-scm-cession-resolve-001` et `codex/code-scm-cession-block-001`, passage en DONE des tickets SCM cession finaux et r?alignement du pilotage vers UI, PDF, ZIP et recette finale.
 
-SYNC-WAVE-009 : absorption dans `main` des commits sources `4288837648d099935d6c57307003f3b33d038d90`, `af1020a165d11e830428394e02a5baca4a110f5c`, `81f7a7e407002428d8fce1ce31d16f3a798bd2e5`, `fa3cb65ffd1055bbf16ba3a5352f4a7d5deb713a` et `bdf61166b0770c5ab8f3610f48d89e5cdcb3f582`, puis réalignement du pilotage.
+SYNC-WAVE-009 : absorption dans `main` des commits sources `4288837648d099935d6c57307003f3b33d038d90`, `af1020a165d11e830428394e02a5baca4a110f5c`, `81f7a7e407002428d8fce1ce31d16f3a798bd2e5`, `fa3cb65ffd1055bbf16ba3a5352f4a7d5deb713a` et `bdf61166b0770c5ab8f3610f48d89e5cdcb3f582`, puis r?alignement du pilotage.
 
-SYNC-WAVE-008 : absorption dans `main` des branches acte actions, sources SCM cession, reviews Lot 03/Lot 04, audit restant, analyses style Lot 03/statuts et specs blocage cession SCM, puis réalignement du pilotage.
+SYNC-WAVE-008 : absorption dans `main` des branches acte actions, sources SCM cession, reviews Lot 03/Lot 04, audit restant, analyses style Lot 03/statuts et specs blocage cession SCM, puis r?alignement du pilotage.
 
-SYNC-WAVE-007 : absorption dans `main` des branches SCM et acte actions, passage en DONE des tickets absorbés et réalignement du pilotage.
+SYNC-WAVE-007 : absorption dans `main` des branches SCM et acte actions, passage en DONE des tickets absorb?s et r?alignement du pilotage.
 
-SYNC-WAVE-006 : absorption dans `main` des branches tardives Lot 04 / Lot 05, passage en DONE des tickets absorbés et réalignement du pilotage.
+SYNC-WAVE-006 : absorption dans `main` des branches tardives Lot 04 / Lot 05, passage en DONE des tickets absorb?s et r?alignement du pilotage.
 
-CONVERT-ACTE-ACTIONS-001 : conversion du candidat legacy `Acte_cession_SPFPL_tiers_modele.doc` en DOCX exploitable, placement dans `project/source_documents/lot_05/` et documentation de préparation V1.
+CONVERT-ACTE-ACTIONS-001 : conversion du candidat legacy `Acte_cession_SPFPL_tiers_modele.doc` en DOCX exploitable, placement dans `project/source_documents/lot_05/` et documentation de pr?paration V1.
 
 CONVERT-DEROG-SALARIEE-001 : tentative de conversion Word COM du `.doc` legacy salariee, aucun DOCX exploitable produit, blocage documente.
 
-SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc98450b72ba6e602cb8f1a3b`, `1b3ba14d0bcc31fc7dcbf1752d6d3263645ae8b3`, `32059155c618b4e985893f42ef2817187599c281`, `74d41db53543b790e197082e8b9c713f7de92dc2` et `d1d649e11fdc638e6d7da0640c154d1f213739ee`, puis réalignement du pilotage.
+SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc98450b72ba6e602cb8f1a3b`, `1b3ba14d0bcc31fc7dcbf1752d6d3263645ae8b3`, `32059155c618b4e985893f42ef2817187599c281`, `74d41db53543b790e197082e8b9c713f7de92dc2` et `d1d649e11fdc638e6d7da0640c154d1f213739ee`, puis r?alignement du pilotage.
 
-## État courant du repo
+## ?tat courant du repo
 - Track B dispose maintenant d'un front propre `src/sydel_doc_engine/front_app/` qui branche une vraie slice SELARL V1 bornee. Le point d'entree reste `src/sydel_doc_engine/front_app/app.py`.
 - La slice clean construit un `DocumentGenerationContext` moteur depuis le contrat SELARL V1, selectionne strictement les codes autorises, produit les DOCX puis le ZIP, et n'importe pas les anciens ecrans `business_wizard`, `single_document_mode` ou `streamlit_app`.
 - Surface visible : type de dossier, donnees a saisir et generation. Les cas hors perimetre restent visibles comme blocages ou reserves honnetes ; `DOC-006` reste exclu de la generation V1.
@@ -144,13 +144,13 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
 - Audit `FRONT-STATE-AUDIT-001` : la limitation a quatre documents est volontaire, mais insuffisamment expliquee ; les blocages runtime de date, adresse et ville RCS peuvent rester invisibles dans la vue normale.
 - Cleanup `FRONT-MINIMAL-SURFACE-CLEANUP-001` : les outils internes sont caches par mode equipe (`SYDEL_ENABLE_INTERNAL_TOOLS=1` ou flag de session interne), les expanders visibles sont supprimes et les blocages data-layer/runtime sont affiches dans `Generation`.
 - Le prochain jalon front recommande est `SELARL-COMPLETE-COMPLEX-SUBFORMS-001`, avant smoke complet et revue juriste.
-- Le registre canonique global V2.1 est disponible : `docs/project/GLOBAL_CANONICAL_FIELD_REGISTRY_V2_1.md`. Il intègre les arbitrages humains sur les rôles, les adresses et les parties de cession, et il est suffisamment stable pour lancer l'architecture du nouveau front global.
-- La matrice courte des questions humaines V2 est disponible : `docs/project/GLOBAL_VARIABLE_OPEN_QUESTIONS_V2.md`. Aucune relance client n'est requise pour le gel V2.1 ; les sujets restants sont à arbitrer en interne ou à remettre en backlog documentaire.
-- L'audit d'identité sémantique global V2 est disponible : matrice `docs/project/GLOBAL_VARIABLE_IDENTITY_MATRIX_V1.csv`, registre `docs/project/GLOBAL_CANONICAL_FIELD_REGISTRY_V2.md`, questions humaines `docs/project/GLOBAL_VARIABLE_OPEN_QUESTIONS_V1.md` et rapport `docs/review/global_variable_identity_audit_001_report_v1.md`. Il couvre tout `DOC-001` à `DOC-043` et prépare l'arbitrage humain avant rebuild front.
-- L'inventaire global brut des variables documentaires V1 est disponible dans `docs/project/GLOBAL_VARIABLE_RAW_INVENTORY_V1.csv` avec son rapport exécutif dans `docs/review/global_variable_inventory_001_report_v1.md`; il prépare un audit sémantique V2 avant reconstruction globale du front.
-- DOC-001, DOC-002 et DOC-003 disposent chacun d'un générateur dédié déjà terminé.
+- Le registre canonique global V2.1 est disponible : `docs/project/GLOBAL_CANONICAL_FIELD_REGISTRY_V2_1.md`. Il int?gre les arbitrages humains sur les r?les, les adresses et les parties de cession, et il est suffisamment stable pour lancer l'architecture du nouveau front global.
+- La matrice courte des questions humaines V2 est disponible : `docs/project/GLOBAL_VARIABLE_OPEN_QUESTIONS_V2.md`. Aucune relance client n'est requise pour le gel V2.1 ; les sujets restants sont ? arbitrer en interne ou ? remettre en backlog documentaire.
+- L'audit d'identit? s?mantique global V2 est disponible : matrice `docs/project/GLOBAL_VARIABLE_IDENTITY_MATRIX_V1.csv`, registre `docs/project/GLOBAL_CANONICAL_FIELD_REGISTRY_V2.md`, questions humaines `docs/project/GLOBAL_VARIABLE_OPEN_QUESTIONS_V1.md` et rapport `docs/review/global_variable_identity_audit_001_report_v1.md`. Il couvre tout `DOC-001` ? `DOC-043` et pr?pare l'arbitrage humain avant rebuild front.
+- L'inventaire global brut des variables documentaires V1 est disponible dans `docs/project/GLOBAL_VARIABLE_RAW_INVENTORY_V1.csv` avec son rapport ex?cutif dans `docs/review/global_variable_inventory_001_report_v1.md`; il pr?pare un audit s?mantique V2 avant reconstruction globale du front.
+- DOC-001, DOC-002 et DOC-003 disposent chacun d'un g?n?rateur d?di? d?j? termin?.
 - L'orchestrateur dossier expose :
-  - un registre des générateurs DOC-001 à DOC-043 ;
+  - un registre des g?n?rateurs DOC-001 ? DOC-043 ;
   - `select_documents(structure)` selon le catalogue ;
   - `select_documents_for_context(ctx)` avec filtrage des batchs regime communautaire, bail/appel de fonds, cession cabinets, derogations, statuts, SPFPL, SCM satellites et cession SCM ;
   - `generate_documents(ctx, output_dir) -> list[Path]`.
@@ -163,35 +163,35 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
   - `Technique / diagnostic` : chargement YAML/JSON, selection `select_documents_for_context`, generation dossier DOCX/PDF optionnel/ZIP et telechargements existants ;
   - `Document unitaire` : choix d'un document supporte, champs limites au document, generation DOCX unique, ZIP/PDF optionnels.
 - La couche metier catalogue des cas est disponible dans `src/sydel_doc_engine/domain/case_catalog.py` : elle expose `CaseType`, `CaseCondition`, `DocumentOccurrence`, `DocumentAvailability`, `ExpectedDocument` et `get_expected_documents(...)`.
-- Le catalogue metier couvre 8 familles, 104 occurrences source et 46 documents attendus uniques : 43 documents restent mappes a un `DOC-XXX`, mais après vérification de la vraie V2 SELARL seuls 41 sont `GENERATABLE`, 4 sont `MANUAL_ONLY`, 1 est `NOT_IMPLEMENTED`, 0 `NEEDS_MAPPING`.
+- Le catalogue metier couvre 8 familles, 104 occurrences source et 46 documents attendus uniques : 43 documents restent mappes a un `DOC-XXX`, mais apr?s v?rification de la vraie V2 SELARL seuls 41 sont `GENERATABLE`, 4 sont `MANUAL_ONLY`, 1 est `NOT_IMPLEMENTED`, 0 `NEEDS_MAPPING`.
 - La vraie source V2 du cadrage produit SELARL est disponible dans `project/source_truth/Documents_a_generer_par_cas_V2.docx` avec hash SHA-256 `2E9843AA1EC05A01D82DF5FCE12516A8EF49EA2B3842547D186204218C90B23F`.
-- Les nouvelles sources SELARL validées pour la réconciliation NotebookLM sont disponibles :
+- Les nouvelles sources SELARL valid?es pour la r?conciliation NotebookLM sont disponibles :
   - `project/source_truth/notebooklm_selarl_10_prompts_v1.md` ;
   - `project/source_truth/Documents_a_generer_par_cas_V3.docx`.
-- La hiérarchie de sources SELARL V2 corrigée est disponible dans `docs/project/SELARL_SOURCE_HIERARCHY_V2.md` : arbitrages associé, NotebookLM, V3, templates/registre, code existant.
-- Le rapport d'écarts NotebookLM / V3 / code corrigé est disponible dans `docs/review/selarl_notebooklm_reconciliation_001_report_v1.md`.
-- Le backlog de reconstruction contrôlée SELARL V2 corrigé est disponible dans `docs/project/SELARL_REBUILD_BACKLOG_V2.md`.
-- `SELARL-DOCS-GENERATION-SMOKE-001` est bloqué et remplacé par `SELARL-SMOKE-REALISTIC-001` après réalignement wording / flow / règles de réutilisation / UI.
+- La hi?rarchie de sources SELARL V2 corrig?e est disponible dans `docs/project/SELARL_SOURCE_HIERARCHY_V2.md` : arbitrages associ?, NotebookLM, V3, templates/registre, code existant.
+- Le rapport d'?carts NotebookLM / V3 / code corrig? est disponible dans `docs/review/selarl_notebooklm_reconciliation_001_report_v1.md`.
+- Le backlog de reconstruction contr?l?e SELARL V2 corrig? est disponible dans `docs/project/SELARL_REBUILD_BACKLOG_V2.md`.
+- `SELARL-DOCS-GENERATION-SMOKE-001` est bloqu? et remplac? par `SELARL-SMOKE-REALISTIC-001` apr?s r?alignement wording / flow / r?gles de r?utilisation / UI.
 - `SELARL-WORDING-REALIGN-001` est DONE.
 - `SELARL-FLOW-REALIGN-001` est DONE.
 - `SELARL-REUSE-RULES-REALIGN-001` est DONE.
 - `SELARL-UI-REALIGN-001` est DONE.
-- `SELARL-SMOKE-REALISTIC-001` est DONE ; le prochain ticket SELARL recommandé est `SELARL-JURIST-REVIEW-001`.
-- `SELARL-CLOUD-GENERATION-BUG-001` est DONE ; le parcours visible SELARL resynchronise désormais les champs dérivés de l'associé unique et de la domiciliation avant génération.
-- Le protocole réplicable de construction de processus est disponible dans `docs/project/PROCESS_BUILD_PROTOCOL_V1.md`.
+- `SELARL-SMOKE-REALISTIC-001` est DONE ; le prochain ticket SELARL recommand? est `SELARL-JURIST-REVIEW-001`.
+- `SELARL-CLOUD-GENERATION-BUG-001` est DONE ; le parcours visible SELARL resynchronise d?sormais les champs d?riv?s de l'associ? unique et de la domiciliation avant g?n?ration.
+- Le protocole r?plicable de construction de processus est disponible dans `docs/project/PROCESS_BUILD_PROTOCOL_V1.md`.
 - Les specs SELARL pilote sont disponibles :
   - `docs/project/SELARL_PROCESS_SPEC_V1.md` ;
   - `docs/project/SELARL_FORM_SCHEMA_V1.md` ;
   - `docs/project/SELARL_UI_WIZARD_SPEC_V1.md` ;
   - `docs/project/SELARL_IMPLEMENTATION_PLAN_V1.md`.
-- Le schéma de données SELARL côté Assistant métier est disponible dans `src/sydel_doc_engine/app/selarl_form_schema.py` : blocs métier, champs UI qualifiés, règles de réutilisation, documents attendus, codes générables et couverture des variables V2.
-- Le parcours UI SELARL pilote est disponible dans `src/sydel_doc_engine/app/streamlit_app.py` et consomme le schema via `src/sydel_doc_engine/app/business_wizard.py`, mais il n'est pas encore validé produit ; ne pas pousser ni redéployer avant réalignement wording / flow / réutilisation / UI.
-- `DOC-006` porte désormais une réserve source V2 exploitable depuis `case_catalog.py`; `DOC-013` et `DOC-014` restent visibles mais `MANUAL_ONLY` et exclus des codes générables SELARL.
+- Le sch?ma de donn?es SELARL c?t? Assistant m?tier est disponible dans `src/sydel_doc_engine/app/selarl_form_schema.py` : blocs m?tier, champs UI qualifi?s, r?gles de r?utilisation, documents attendus, codes g?n?rables et couverture des variables V2.
+- Le parcours UI SELARL pilote est disponible dans `src/sydel_doc_engine/app/streamlit_app.py` et consomme le schema via `src/sydel_doc_engine/app/business_wizard.py`, mais il n'est pas encore valid? produit ; ne pas pousser ni red?ployer avant r?alignement wording / flow / r?utilisation / UI.
+- `DOC-006` porte d?sormais une r?serve source V2 exploitable depuis `case_catalog.py`; `DOC-013` et `DOC-014` restent visibles mais `MANUAL_ONLY` et exclus des codes g?n?rables SELARL.
 - Le smoke manuel UI/PDF/ZIP est documente dans `docs/review/ui_pdf_zip_integration_001_smoke.md`.
-- `examples/contexts/lot_01_example.yaml` utilise encore le champ legacy Lot 1 `adresse_domiciliation_affichee`, en attente d'un refactor dédié vers `domiciliation.adresse_affichee`.
-- Un smoke test réel a généré les trois DOCX du Lot 1 dans `artifacts/lot_01_smoke_test/`.
-- Le moteur dispose de trois référentiels de cadrage :
-  - arbre documentaire document-centré V1 : `docs/project/07_ARBRE_MOTEUR_DOCUMENT_CENTRE_V1.md` ;
+- `examples/contexts/lot_01_example.yaml` utilise encore le champ legacy Lot 1 `adresse_domiciliation_affichee`, en attente d'un refactor d?di? vers `domiciliation.adresse_affichee`.
+- Un smoke test r?el a g?n?r? les trois DOCX du Lot 1 dans `artifacts/lot_01_smoke_test/`.
+- Le moteur dispose de trois r?f?rentiels de cadrage :
+  - arbre documentaire document-centr? V1 : `docs/project/07_ARBRE_MOTEUR_DOCUMENT_CENTRE_V1.md` ;
   - dictionnaire canonique des variables V1 : `docs/project/08_DICTIONNAIRE_VARIABLES_CANONIQUES_V1.md` ;
   - table de mapping document -> variables canoniques V1 : `docs/project/09_TABLE_MAPPING_DOCUMENTS_VARIABLES_V1.md`.
 - Les audits/fondations finaux sont disponibles :
@@ -222,32 +222,32 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
 - `UI-BUSINESS-WIZARD-001` est DONE avec perimetre assistant SCI simple.
 - `CASE-CATALOG-001` est DONE ; il n'a pas modifie l'UI, le moteur DOCX/PDF/ZIP ni les generateurs.
 - `UI-CASE-WIZARD-002` est DONE ; l'assistant metier est maintenant pilote par le catalogue des cas, avec generation partielle honnete et documents manuels/non implementes visibles.
-- `SELARL-PILOT-PROTOCOL-001` est DONE ; il n'a pas modifié l'UI, le moteur DOCX/PDF/ZIP ni les générateurs.
-- `SELARL-PILOT-SOURCE-VERIFY-001` est DONE ; il n'a pas modifié l'UI, le moteur DOCX/PDF/ZIP ni les générateurs, mais il a aligné le catalogue produit SELARL sur la vraie V2.
-- `SELARL-FORM-SCHEMA-IMPL-001` est DONE ; il n'a pas modifié l'UI visible, le moteur DOCX/PDF/ZIP ni les générateurs.
-- `SELARL-UI-WIZARD-IMPL-001` est DONE techniquement ; il n'a pas modifié les générateurs ni le moteur DOCX/PDF/ZIP et conserve SCI ainsi que le mode Technique / diagnostic, mais il n'est pas validé produit.
-- `SELARL-PLAN-CORRECTION-001` est DONE ; la séquence SELARL cible est `WORDING -> FLOW -> REUSE -> UI -> SMOKE -> JURIST`.
-- `SELARL-WORDING-REALIGN-001` est DONE ; le vocabulaire visible est réaligné, sans changement de flow ni de génération.
-- `SELARL-FLOW-REALIGN-001` est DONE ; le flow conceptuel est réaligné dans le schéma et les projections métier, sans refonte Streamlit visible.
-- `SELARL-REUSE-RULES-REALIGN-001` est DONE ; `Dossier unipersonnel` et les options explicites sont dans le schéma et les projections métier, sans refonte Streamlit visible.
+- `SELARL-PILOT-PROTOCOL-001` est DONE ; il n'a pas modifi? l'UI, le moteur DOCX/PDF/ZIP ni les g?n?rateurs.
+- `SELARL-PILOT-SOURCE-VERIFY-001` est DONE ; il n'a pas modifi? l'UI, le moteur DOCX/PDF/ZIP ni les g?n?rateurs, mais il a align? le catalogue produit SELARL sur la vraie V2.
+- `SELARL-FORM-SCHEMA-IMPL-001` est DONE ; il n'a pas modifi? l'UI visible, le moteur DOCX/PDF/ZIP ni les g?n?rateurs.
+- `SELARL-UI-WIZARD-IMPL-001` est DONE techniquement ; il n'a pas modifi? les g?n?rateurs ni le moteur DOCX/PDF/ZIP et conserve SCI ainsi que le mode Technique / diagnostic, mais il n'est pas valid? produit.
+- `SELARL-PLAN-CORRECTION-001` est DONE ; la s?quence SELARL cible est `WORDING -> FLOW -> REUSE -> UI -> SMOKE -> JURIST`.
+- `SELARL-WORDING-REALIGN-001` est DONE ; le vocabulaire visible est r?align?, sans changement de flow ni de g?n?ration.
+- `SELARL-FLOW-REALIGN-001` est DONE ; le flow conceptuel est r?align? dans le sch?ma et les projections m?tier, sans refonte Streamlit visible.
+- `SELARL-REUSE-RULES-REALIGN-001` est DONE ; `Dossier unipersonnel` et les options explicites sont dans le sch?ma et les projections m?tier, sans refonte Streamlit visible.
 - `SELARL-UI-REALIGN-001` est DONE ; le rendu Streamlit SELARL visible suit le flow, expose `Dossier unipersonnel` et conserve le mandataire secondaire.
-- Tickets READY confirmés : `GLOBAL-CANONICAL-V2-ARBITRATION-001`, `CLOSE-PROJECT-V1-001`, `SELARL-JURIST-REVIEW-001`.
-- Le cadrage métier de la famille `PV nomination gérant` est disponible dans `docs/delivery/lot_02_pv_nomination_gerant_cadrage_v1.md`.
-- La spec canonique V1 de la famille `PV nomination gérant` est disponible dans `docs/delivery/lot_02_pv_nomination_gerant_spec_canonique_v1.md`.
-- La spec texte V1 de la famille `PV nomination gérant` est disponible dans `docs/delivery/lot_02_pv_nomination_gerant_spec_texte_v1.md`.
+- Tickets READY confirm?s : `GLOBAL-CANONICAL-V2-ARBITRATION-001`, `CLOSE-PROJECT-V1-001`, `SELARL-JURIST-REVIEW-001`.
+- Le cadrage m?tier de la famille `PV nomination g?rant` est disponible dans `docs/delivery/lot_02_pv_nomination_gerant_cadrage_v1.md`.
+- La spec canonique V1 de la famille `PV nomination g?rant` est disponible dans `docs/delivery/lot_02_pv_nomination_gerant_spec_canonique_v1.md`.
+- La spec texte V1 de la famille `PV nomination g?rant` est disponible dans `docs/delivery/lot_02_pv_nomination_gerant_spec_texte_v1.md`.
 - `SPEC-PV-001` est DONE.
 - `SPEC-TEXTE-PV-001` est DONE.
 - `CODE-PV-001` est DONE.
 - `REVIEW-PV-001` est DONE.
 - `SPEC-RENDER-001` est DONE.
 - `RENDER-STYLE-001` est DONE.
-- Le générateur PV nomination gérant est disponible dans `src/sydel_doc_engine/generators/lot_02/pv_nomination_gerant.py`.
+- Le g?n?rateur PV nomination g?rant est disponible dans `src/sydel_doc_engine/generators/lot_02/pv_nomination_gerant.py`.
 - Un contexte exemple de smoke test est disponible dans `examples/contexts/lot_02_pv_nomination_gerant_example.yaml`.
 - Le pack de revue humaine est disponible dans `docs/review/lot_02_pv_nomination_gerant_review_v1.md`.
-- L'aperçu texte extrait est disponible dans `docs/review/lot_02_pv_nomination_gerant_preview_v1.txt`.
+- L'aper?u texte extrait est disponible dans `docs/review/lot_02_pv_nomination_gerant_preview_v1.txt`.
 - La spec technique V1 de couche de rendu DOCX commune est disponible dans `docs/delivery/render_style_system_v1.md`.
 - Le blueprint de style batch V1 est disponible dans `docs/delivery/render_style_blueprint_batch_v1.md`.
-- Le modèle de données supporte désormais les rôles canoniques nécessaires au PV :
+- Le mod?le de donn?es supporte d?sormais les r?les canoniques n?cessaires au PV :
   - `associes[]` ;
   - `dirigeant_nomine` ;
   - `decision` ;
@@ -255,63 +255,63 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
   - `capital` ;
   - `emprunt` ;
   - `bien_immobilier`.
-- Le modèle de données supporte désormais les rôles nécessaires à la demande d'inscription à l'ordre :
+- Le mod?le de donn?es supporte d?sormais les r?les n?cessaires ? la demande d'inscription ? l'ordre :
   - `dossier_options.derogation` ;
   - `personne_signataire.titre_affichage` ;
   - `personne_signataire.adresse_personnelle_affichee` ;
   - `ordre` ;
   - `mandataire`.
-- Le modèle de données supporte désormais le batch régime communautaire :
+- Le mod?le de donn?es supporte d?sormais le batch r?gime communautaire :
   - `dossier_options.regime_communautaire` ;
   - `conjoint` ;
   - `apport` ;
   - `regime_communautaire.avertissement` ;
   - `regime_communautaire.renonciation`.
-- Le modèle de données supporte désormais le mini-batch bail / appel de fonds :
+- Le mod?le de donn?es supporte d?sormais le mini-batch bail / appel de fonds :
   - `dossier_options.cession` ;
   - `bail` ;
   - `cession.cabinet` ;
   - `cession.financement` ;
   - `cession.vendeur` ;
   - `cession.acquereur`.
-- Le PV nomination gérant est branché dans l'orchestrateur pour SELARL, SELAS, SPFPL cession, SPFPL apport, SCS, SCI et SCM.
-- Le PV nomination gérant est exclu de la sélection SAS.
-- FIX-PV-RENDER-001 est terminé : le PV dispose désormais d'un titre principal encadré, de listes à tirets pour les associés et les décisions, d'intertitres gras/soulignés, de formules de vote en italique et de signatures centrées.
+- Le PV nomination g?rant est branch? dans l'orchestrateur pour SELARL, SELAS, SPFPL cession, SPFPL apport, SCS, SCI et SCM.
+- Le PV nomination g?rant est exclu de la s?lection SAS.
+- FIX-PV-RENDER-001 est termin? : le PV dispose d?sormais d'un titre principal encadr?, de listes ? tirets pour les associ?s et les d?cisions, d'intertitres gras/soulign?s, de formules de vote en italique et de signatures centr?es.
 - Deux contextes exemples d'orchestration Lot 2 sont disponibles :
   - `examples/contexts/lot_02_orchestrator_positive_example.yaml`
   - `examples/contexts/lot_02_orchestrator_negative_sas_example.yaml`
-- Le smoke orchestrateur Lot 2 a généré les dossiers DOCX attendus :
+- Le smoke orchestrateur Lot 2 a g?n?r? les dossiers DOCX attendus :
   - `artifacts/lot_02_orchestrator_positive_smoke_test/`
   - `artifacts/lot_02_orchestrator_negative_sas_smoke_test/`
 - La revue smoke orchestrateur Lot 2 est disponible : `docs/review/lot_02_orchestrator_smoke_review_v1.md`.
-- Le cadrage V1 de la demande d'inscription à l'ordre est disponible : `docs/delivery/lot_02_demande_inscription_ordre_cadrage_v1.md`.
-- La spec canonique V1 de la demande d'inscription à l'ordre est disponible : `docs/delivery/lot_02_demande_inscription_ordre_spec_canonique_v1.md`.
-- La spec texte V1 de la demande d'inscription à l'ordre est disponible : `docs/delivery/lot_02_demande_inscription_ordre_spec_texte_v1.md`.
-- Le cadrage V1 du batch régime communautaire est disponible : `docs/delivery/lot_02_regime_communautaire_batch_cadrage_v1.md`.
-- La spec canonique V1 du batch régime communautaire est disponible : `docs/delivery/lot_02_regime_communautaire_batch_spec_canonique_v1.md`.
-- La spec texte V1 du batch régime communautaire est disponible : `docs/delivery/lot_02_regime_communautaire_batch_spec_texte_v1.md`.
-- Les générateurs du batch régime communautaire sont disponibles :
+- Le cadrage V1 de la demande d'inscription ? l'ordre est disponible : `docs/delivery/lot_02_demande_inscription_ordre_cadrage_v1.md`.
+- La spec canonique V1 de la demande d'inscription ? l'ordre est disponible : `docs/delivery/lot_02_demande_inscription_ordre_spec_canonique_v1.md`.
+- La spec texte V1 de la demande d'inscription ? l'ordre est disponible : `docs/delivery/lot_02_demande_inscription_ordre_spec_texte_v1.md`.
+- Le cadrage V1 du batch r?gime communautaire est disponible : `docs/delivery/lot_02_regime_communautaire_batch_cadrage_v1.md`.
+- La spec canonique V1 du batch r?gime communautaire est disponible : `docs/delivery/lot_02_regime_communautaire_batch_spec_canonique_v1.md`.
+- La spec texte V1 du batch r?gime communautaire est disponible : `docs/delivery/lot_02_regime_communautaire_batch_spec_texte_v1.md`.
+- Les g?n?rateurs du batch r?gime communautaire sont disponibles :
   - `src/sydel_doc_engine/generators/lot_02/lettre_renonciation_associe.py` ;
   - `src/sydel_doc_engine/generators/lot_02/lettre_avertissement_conjoint.py`.
 - Un contexte exemple de smoke test est disponible : `examples/contexts/lot_02_regime_communautaire_example.yaml`.
-- La spec canonique V1 du batch SPFPL spécifique est disponible : `docs/delivery/lot_05_spfpl_spec_canonique_v1.md`.
-- La spec texte V1 du batch SPFPL spécifique est disponible : `docs/delivery/lot_05_spfpl_spec_texte_v1.md`.
-- Les arbitrages V1 du batch SPFPL spécifique sont disponibles : `docs/delivery/lot_05_spfpl_arbitrages_v1.md`.
-- Le sous-batch SPFPL agrément / note d'information est codé et testé :
+- La spec canonique V1 du batch SPFPL sp?cifique est disponible : `docs/delivery/lot_05_spfpl_spec_canonique_v1.md`.
+- La spec texte V1 du batch SPFPL sp?cifique est disponible : `docs/delivery/lot_05_spfpl_spec_texte_v1.md`.
+- Les arbitrages V1 du batch SPFPL sp?cifique sont disponibles : `docs/delivery/lot_05_spfpl_arbitrages_v1.md`.
+- Le sous-batch SPFPL agr?ment / note d'information est cod? et test? :
   - `src/sydel_doc_engine/generators/lot_05/note_information.py` ;
   - `src/sydel_doc_engine/generators/lot_05/pv_agrement_cession_spfpl_associe_unique.py` ;
   - `src/sydel_doc_engine/generators/lot_05/pv_agrement_cession_spfpl_plusieurs_associes.py`.
-- Un contexte exemple SPFPL agrément / note d'information est disponible : `examples/contexts/lot_05_spfpl_agrement_info_example.yaml`.
-- Le cœur SPFPL restant est codé et testé :
+- Un contexte exemple SPFPL agr?ment / note d'information est disponible : `examples/contexts/lot_05_spfpl_agrement_info_example.yaml`.
+- Le c?ur SPFPL restant est cod? et test? :
   - `src/sydel_doc_engine/generators/lot_05/acte_cession_parts_spfpl.py` ;
   - `src/sydel_doc_engine/generators/lot_05/contrat_apport_spfpl.py` ;
   - `src/sydel_doc_engine/generators/lot_05/attestation_capital_liste_souscripteurs.py` ;
   - `src/sydel_doc_engine/generators/lot_05/attestation_commissaire_apports.py`.
-- Un contexte exemple SPFPL cœur est disponible : `examples/contexts/lot_05_spfpl_core_example.yaml`.
-- La spec canonique V1 de la famille dérogations est disponible : `docs/delivery/lot_03_derogations_spec_canonique_v1.md`.
-- La spec texte V1 de la famille dérogations est disponible : `docs/delivery/lot_03_derogations_spec_texte_v1.md`.
-- Les arbitrages V1 de la famille dérogations sont disponibles : `docs/delivery/lot_03_derogations_arbitrages_v1.md`.
-- La préparation sources dérogations V1 est disponible :
+- Un contexte exemple SPFPL c?ur est disponible : `examples/contexts/lot_05_spfpl_core_example.yaml`.
+- La spec canonique V1 de la famille d?rogations est disponible : `docs/delivery/lot_03_derogations_spec_canonique_v1.md`.
+- La spec texte V1 de la famille d?rogations est disponible : `docs/delivery/lot_03_derogations_spec_texte_v1.md`.
+- Les arbitrages V1 de la famille d?rogations sont disponibles : `docs/delivery/lot_03_derogations_arbitrages_v1.md`.
+- La pr?paration sources d?rogations V1 est disponible :
   - `docs/delivery/lot_03_derogations_preparation_v1.md` ;
   - `docs/delivery/lot_03_derogations_legacy_conversion_report_v1.md`.
 - La spec canonique V1 `cession cabinets` est disponible : `docs/delivery/lot_03_cession_cabinets_spec_canonique_v1.md`.
@@ -319,30 +319,30 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
 - Les arbitrages V1 `cession cabinets` sont disponibles : `docs/delivery/lot_03_cession_cabinets_arbitrages_v1.md`.
 - La spec canonique V1 `bail / appel de fonds` est disponible : `docs/delivery/lot_03_bail_appel_fonds_spec_v1.md`.
 - La spec texte V1 `bail / appel de fonds` est disponible : `docs/delivery/lot_03_bail_appel_fonds_spec_texte_v1.md`.
-- Les générateurs du mini-batch bail / appel de fonds sont disponibles :
+- Les g?n?rateurs du mini-batch bail / appel de fonds sont disponibles :
   - `src/sydel_doc_engine/generators/lot_03/avenant_contrat_bail.py` ;
   - `src/sydel_doc_engine/generators/lot_03/appel_fond_sel.py`.
-- Le catalogue et l'orchestrateur exposent désormais :
+- Le catalogue et l'orchestrateur exposent d?sormais :
   - `DOC-007` : avenant au contrat de bail ;
   - `DOC-008` : appel de fonds SEL.
 - Un contexte exemple du mini-batch bail / appel de fonds est disponible : `examples/contexts/lot_03_bail_appel_fonds_example.yaml`.
-- Les générateurs cession cabinets sont disponibles :
+- Les g?n?rateurs cession cabinets sont disponibles :
   - `src/sydel_doc_engine/generators/lot_03/acte_cession_cabinet_medical.py` ;
   - `src/sydel_doc_engine/generators/lot_03/compromis_cession_cabinet_medical.py` ;
   - `src/sydel_doc_engine/generators/lot_03/acte_cession_cabinet_dentaire.py` ;
   - `src/sydel_doc_engine/generators/lot_03/compromis_cession_cabinet_dentaire.py`.
-- Le catalogue et l'orchestrateur exposent désormais :
-  - `DOC-009` : acte de cession d'un cabinet médical ;
-  - `DOC-010` : compromis de cession d'un cabinet médical ;
+- Le catalogue et l'orchestrateur exposent d?sormais :
+  - `DOC-009` : acte de cession d'un cabinet m?dical ;
+  - `DOC-010` : compromis de cession d'un cabinet m?dical ;
   - `DOC-011` : acte de cession d'un cabinet dentaire ;
   - `DOC-012` : compromis de cession d'un cabinet dentaire.
 - Un contexte exemple cession cabinets est disponible : `examples/contexts/lot_03_cession_cabinets_example.yaml`.
 - Le manifest d'import sources V1 est disponible : `docs/project/10_SOURCE_IMPORT_MANIFEST_V1.md`.
 - Le rapport de doublons sources V1 est disponible : `docs/project/11_SOURCE_DUPLICATES_REPORT_V1.md`.
 - Le plan de placement sources V1 est disponible : `docs/project/12_SOURCE_PLACEMENT_PLAN_V1.md`.
-- Les décisions d'arbitrage sources V1 sont disponibles : `docs/project/13_SOURCE_ARBITRATION_DECISIONS_V1.md`.
-- Le journal d'exécution du placement HIGH V1 est disponible : `docs/project/14_SOURCE_PLACEMENT_EXECUTION_V1.md`.
-- La préparation V1 des sources statuts est disponible : `docs/delivery/lot_04_statuts_preparation_v1.md`.
+- Les d?cisions d'arbitrage sources V1 sont disponibles : `docs/project/13_SOURCE_ARBITRATION_DECISIONS_V1.md`.
+- Le journal d'ex?cution du placement HIGH V1 est disponible : `docs/project/14_SOURCE_PLACEMENT_EXECUTION_V1.md`.
+- La pr?paration V1 des sources statuts est disponible : `docs/delivery/lot_04_statuts_preparation_v1.md`.
 - Les specs V1 des statuts SAS sont disponibles :
   - `docs/delivery/lot_04_statuts_sas_spec_canonique_v1.md` ;
   - `docs/delivery/lot_04_statuts_sas_spec_texte_v1.md`.
@@ -355,19 +355,19 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
 - Les specs V1 des statuts civils sont disponibles :
   - `docs/delivery/lot_04_statuts_civils_spec_canonique_v1.md` ;
   - `docs/delivery/lot_04_statuts_civils_spec_texte_v1.md`.
-- Le générateur statuts SAS V1 est disponible dans `src/sydel_doc_engine/generators/lot_04/statuts_sas.py`.
-- Les générateurs statuts civils V1 sont disponibles :
+- Le g?n?rateur statuts SAS V1 est disponible dans `src/sydel_doc_engine/generators/lot_04/statuts_sas.py`.
+- Les g?n?rateurs statuts civils V1 sont disponibles :
   - `src/sydel_doc_engine/generators/lot_04/statuts_scs.py` ;
   - `src/sydel_doc_engine/generators/lot_04/statuts_sci.py` ;
   - `src/sydel_doc_engine/generators/lot_04/statuts_sci_iris.py`.
-- Le modèle de données supporte désormais `statuts_civils` pour SCS, SCI et SCI IRIS : associés dynamiques, apports, parts, dépôt de capital et groupes de résultat exceptionnel SCI IRIS.
-- Le générateur statuts SCM V1 est disponible dans `src/sydel_doc_engine/generators/lot_04/statuts_scm.py` et branché sous `DOC-025`.
-- Les générateurs statuts SPFPL V1 sont disponibles :
+- Le mod?le de donn?es supporte d?sormais `statuts_civils` pour SCS, SCI et SCI IRIS : associ?s dynamiques, apports, parts, d?p?t de capital et groupes de r?sultat exceptionnel SCI IRIS.
+- Le g?n?rateur statuts SCM V1 est disponible dans `src/sydel_doc_engine/generators/lot_04/statuts_scm.py` et branch? sous `DOC-025`.
+- Les g?n?rateurs statuts SPFPL V1 sont disponibles :
   - `src/sydel_doc_engine/generators/lot_04/statuts_spfpl_cession.py` ;
   - `src/sydel_doc_engine/generators/lot_04/statuts_spfpl_apport.py` ;
   - `src/sydel_doc_engine/generators/lot_04/statuts_spfpl_common.py` ;
   - `src/sydel_doc_engine/generators/lot_04/statuts_spfpl_templates.py`.
-- Les générateurs statuts SEL d'exercice V1 sont disponibles :
+- Les g?n?rateurs statuts SEL d'exercice V1 sont disponibles :
   - `src/sydel_doc_engine/generators/lot_04/statuts_selarl_dentiste.py` ;
   - `src/sydel_doc_engine/generators/lot_04/statuts_selarl_medecin.py` ;
   - `src/sydel_doc_engine/generators/lot_04/statuts_selas_medecin.py` ;
@@ -376,49 +376,49 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
 - Les arbitrages V1 des statuts SEL d'exercice sont disponibles dans `docs/delivery/lot_04_statuts_sel_exercice_arbitrages_v1.md`.
 - Les arbitrages V1 des statuts civils sont disponibles dans `docs/delivery/lot_04_statuts_civils_arbitrages_v1.md`.
 - Les arbitrages V1 des statuts SCM sont disponibles dans `docs/delivery/lot_04_statuts_scm_arbitrages_v1.md`.
-- La préparation V1 des satellites SCM est disponible dans `docs/delivery/lot_05_scm_satellites_preparation_v1.md`.
+- La pr?paration V1 des satellites SCM est disponible dans `docs/delivery/lot_05_scm_satellites_preparation_v1.md`.
 - Les specs V1 des satellites SAS sont disponibles :
   - `docs/delivery/lot_05_sas_satellites_spec_canonique_v1.md` ;
   - `docs/delivery/lot_05_sas_satellites_spec_texte_v1.md`.
-- La lettre option IS est codée et testée :
+- La lettre option IS est cod?e et test?e :
   - `src/sydel_doc_engine/generators/lot_05/lettre_option_is.py` ;
   - `tests/unit/test_lettre_option_is.py` ;
   - `examples/contexts/lot_05_lettre_option_is_example.yaml`.
-- Les satellites SCM DOCX hors liste dépenses sont codés et testés :
+- Les satellites SCM DOCX hors liste d?penses sont cod?s et test?s :
   - `src/sydel_doc_engine/generators/lot_05/pacte_associes_scm.py` ;
   - `src/sydel_doc_engine/generators/lot_05/contrat_frais_communs.py` ;
   - `src/sydel_doc_engine/generators/lot_05/reglement_interieur_scm.py`.
-- Le catalogue et l'orchestrateur exposent désormais :
-  - `DOC-026` : pacte d'associés SCM ;
-  - `DOC-027` : contrat d'exercice professionnel à frais communs ;
-  - `DOC-028` : règlement intérieur de la SCM.
+- Le catalogue et l'orchestrateur exposent d?sormais :
+  - `DOC-026` : pacte d'associ?s SCM ;
+  - `DOC-027` : contrat d'exercice professionnel ? frais communs ;
+  - `DOC-028` : r?glement int?rieur de la SCM.
 - L'audit V1 de l'acte de cession d'actions est disponible dans `docs/delivery/lot_05_acte_cession_actions_audit_v1.md`.
 - Les specs V1 de l'acte de cession d'actions sont disponibles :
   - `docs/delivery/lot_05_acte_cession_actions_spec_canonique_v1.md` ;
   - `docs/delivery/lot_05_acte_cession_actions_spec_texte_v1.md`.
-- Le générateur acte de cession d'actions SPFPL est disponible dans `src/sydel_doc_engine/generators/lot_05/acte_cession_actions_spfpl.py` et branché sous `DOC-029`.
+- Le g?n?rateur acte de cession d'actions SPFPL est disponible dans `src/sydel_doc_engine/generators/lot_05/acte_cession_actions_spfpl.py` et branch? sous `DOC-029`.
 - Un contexte exemple acte de cession d'actions SPFPL est disponible dans `examples/contexts/lot_05_acte_cession_actions_example.yaml`.
-- La préparation V1 des sources cession SCM est disponible dans `docs/delivery/lot_05_scm_cession_sources_preparation_v1.md`.
-- Les sources cession SCM exploitables sont placées dans `project/source_documents/lot_05/`.
+- La pr?paration V1 des sources cession SCM est disponible dans `docs/delivery/lot_05_scm_cession_sources_preparation_v1.md`.
+- Les sources cession SCM exploitables sont plac?es dans `project/source_documents/lot_05/`.
 - Les specs V1 du blocage cession SCM sont disponibles :
   - `docs/delivery/lot_05_scm_cession_block_spec_canonique_v1.md` ;
   - `docs/delivery/lot_05_scm_cession_block_spec_texte_v1.md`.
-- La résolution V1 du bloc cession SCM est disponible dans `docs/delivery/lot_05_scm_cession_block_resolution_v1.md`.
-- Le bloc cession SCM est codé, testé et branché :
+- La r?solution V1 du bloc cession SCM est disponible dans `docs/delivery/lot_05_scm_cession_block_resolution_v1.md`.
+- Le bloc cession SCM est cod?, test? et branch? :
   - `DOC-031` : PV AGE cession part SCM ;
   - `DOC-032` : courrier SDE cession SCM ;
   - `DOC-033` : acte de cession de parts SCM vers SEL.
-- Les générateurs cession SCM sont disponibles :
+- Les g?n?rateurs cession SCM sont disponibles :
   - `src/sydel_doc_engine/generators/lot_05/pv_age_cession_scm.py` ;
   - `src/sydel_doc_engine/generators/lot_05/courrier_sde_cession_scm.py` ;
   - `src/sydel_doc_engine/generators/lot_05/acte_cession_parts_scm.py`.
 - Un contexte exemple cession SCM est disponible : `examples/contexts/lot_05_scm_cession_block_example.yaml`.
-- L'audit de clôture moteur V1 est disponible dans `docs/project/16_MOTOR_COMPLETION_AUDIT_V1.md`.
+- L'audit de cl?ture moteur V1 est disponible dans `docs/project/16_MOTOR_COMPLETION_AUDIT_V1.md`.
 - Les revues batch Lot 03 et Lot 04 sont disponibles :
   - `docs/review/lot_03_batch_review_v1.md` ;
   - `docs/review/lot_04_batch_review_v1.md`.
-- L'audit du périmètre restant V1 est disponible dans `docs/project/15_REMAINING_SCOPE_AUDIT_V1.md`.
-- Les blueprints style dédiés sont disponibles :
+- L'audit du p?rim?tre restant V1 est disponible dans `docs/project/15_REMAINING_SCOPE_AUDIT_V1.md`.
+- Les blueprints style d?di?s sont disponibles :
   - `docs/delivery/render_style_blueprint_lot03_batch_v1.md` ;
   - `docs/delivery/render_style_blueprint_statuts_batch_v1.md`.
 - `ARBITRAGE-SOURCES-001` est DONE.
@@ -501,12 +501,12 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
 - `FINAL-SCM-CESSION-WAVE-001` est DONE.
 - `SYNC-CLOSE-AUDIT-001` est DONE.
 - `RECONCILE-MOTOR-CLOSE-001` est DONE.
-- `RESUME-ARBITRAGE-STATUTS-CIVILS-001` est DONE, remplacé par l'arbitrage civils V1 absorbé.
+- `RESUME-ARBITRAGE-STATUTS-CIVILS-001` est DONE, remplac? par l'arbitrage civils V1 absorb?.
 - `STYLE-ANALYSE-BATCH-001` est DONE.
 - `SYNC-STYLE-CIVILS-001` est DONE.
 - `SYNC-STATUTS-SEL-CIVILS-001` est DONE.
 - `UI-001` reste explicitement en attente : ne pas brancher Streamlit maintenant.
-- Fichiers générés connus :
+- Fichiers g?n?r?s connus :
   - `artifacts/lot_01_smoke_test/autorisation_domiciliation.docx`
   - `artifacts/lot_01_smoke_test/declaration_non_condamnation.docx`
   - `artifacts/lot_01_smoke_test/procuration.docx`
@@ -533,398 +533,398 @@ SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc984
   - `artifacts/lot_04_statuts_civils_core_smoke_test/statuts_scs.docx`
   - `artifacts/lot_04_statuts_civils_core_smoke_test/statuts_sci.docx`
   - `artifacts/lot_04_statuts_civils_core_smoke_test/statuts_sci_iris.docx`
-- Fichiers smoke RENDER-STYLE-001 générés :
+- Fichiers smoke RENDER-STYLE-001 g?n?r?s :
   - `artifacts/render_style_001_lot_01_smoke_test/declaration_non_condamnation.docx`
   - `artifacts/render_style_001_lot_01_smoke_test/autorisation_domiciliation.docx`
   - `artifacts/render_style_001_lot_01_smoke_test/procuration.docx`
   - `artifacts/render_style_001_pv_nomination_gerant_smoke_test/pv_nomination_gerant.docx`
-- Streamlit, PDF, ZIP et `rendering/bundle.py` n'ont pas été modifiés dans ce ticket.
+- Streamlit, PDF, ZIP et `rendering/bundle.py` n'ont pas ?t? modifi?s dans ce ticket.
 - `artifacts/` reste hors versionnement via `.gitignore`.
 
-## Décisions métier/techniques appliquées dans ce ticket
-- Le générateur PV est codé from-scratch dans un module Lot 2 dédié, sans utiliser le DOCX source comme gabarit d'exécution.
-- Les variables `personne_1` et `personne_2` ne sont pas introduites dans le modèle de données.
-- La liste `associes[]` est répétable pour la liste des associés présents ou représentés et pour les signatures.
-- `dirigeant_nomine` est un rôle distinct des associés ; la nomination ne dépend pas de `associes[1]`.
+## D?cisions m?tier/techniques appliqu?es dans ce ticket
+- Le g?n?rateur PV est cod? from-scratch dans un module Lot 2 d?di?, sans utiliser le DOCX source comme gabarit d'ex?cution.
+- Les variables `personne_1` et `personne_2` ne sont pas introduites dans le mod?le de donn?es.
+- La liste `associes[]` est r?p?table pour la liste des associ?s pr?sents ou repr?sent?s et pour les signatures.
+- `dirigeant_nomine` est un r?le distinct des associ?s ; la nomination ne d?pend pas de `associes[1]`.
 - La branche `emprunt.actif` pilote :
   - la ligne d'ordre du jour emprunt ;
-  - la décision emprunt ;
-  - la renumérotation du bloc pouvoirs en `DEUXIEME DECISION` ou `TROISIEME DECISION`.
+  - la d?cision emprunt ;
+  - la renum?rotation du bloc pouvoirs en `DEUXIEME DECISION` ou `TROISIEME DECISION`.
 - Les variantes couvertes par tests incluent :
-  - un associé / deux associés ;
+  - un associ? / deux associ?s ;
   - `part` / `parts` ;
-  - `né` / `née`.
-- La génération bloque si les parts présentes ou représentées ne correspondent pas à la totalité du capital en V1.
-- La génération bloque si `societe.capital_variable=false`, faute de wording source validé pour une société non capital variable.
-- Aucune intégration orchestrateur Lot 2, UI, PDF ou ZIP n'a été faite.
-- Le smoke test réel charge le contexte YAML d'exemple, génère le DOCX PV et vérifie les textes principaux ainsi que l'absence de placeholders résiduels `[` / `]`.
+  - `n?` / `n?e`.
+- La g?n?ration bloque si les parts pr?sentes ou repr?sent?es ne correspondent pas ? la totalit? du capital en V1.
+- La g?n?ration bloque si `societe.capital_variable=false`, faute de wording source valid? pour une soci?t? non capital variable.
+- Aucune int?gration orchestrateur Lot 2, UI, PDF ou ZIP n'a ?t? faite.
+- Le smoke test r?el charge le contexte YAML d'exemple, g?n?re le DOCX PV et v?rifie les textes principaux ainsi que l'absence de placeholders r?siduels `[` / `]`.
 - REVIEW-PV-001 ne modifie pas le code Python et ne change aucun wording juridique ; il documente seulement les points de revue humaine avant branchement.
-- Le DOCX de revue couvre la branche `emprunt.actif=true`, deux associés, et un dirigeant nommé féminin distinct des associés.
-- La branche `emprunt.actif=false`, le cas associé unique et le dirigeant masculin restent couverts par tests mais doivent faire l'objet d'une revue humaine dédiée avant branchement si l'arbitrage projet l'exige.
-- SPEC-RENDER-001 ne modifie pas le code Python et ne change aucun wording juridique ; il formalise uniquement le profil de style global, les paragraphes/blocs, le titre encadré, les signatures simples/encadrées, le rappel légal et le mécanisme de surcharge document par document.
-- Les documents déjà impactés par la future couche commune sont DOC-001, DOC-002, DOC-003 et PV nomination gérant.
-- Ecart rendu explicitement documenté : les encadrés de signature manquent aujourd'hui dans le rendu généré.
-- RENDER-STYLE-001 implémente `SydelDocxStyleProfile` et les helpers communs dans `docx_builder.py`.
-- DOC-001, DOC-002 et DOC-003 utilisent désormais le profil global, le cartouche titre commun et un bloc signature encadré commun.
-- DOC-001 utilise désormais le rappel légal commun.
-- Le PV nomination gérant utilise le profil global, les paragraphes communs, le bloc centré commun et les lignes de signature communes.
-- Aucun wording juridique n'a été volontairement modifié ; les changements portent sur le rendu et la factorisation.
-- ORCH-L2-PV-001 ajoute le PV nomination gérant au catalogue sous `DOC-004`.
-- ORCH-L2-PV-001 enregistre `PvNominationGerantGenerator` dans le registre par défaut de l'orchestrateur.
-- Les décisions de sélection appliquées sont : inclusion SELARL, SELAS, SPFPL cession, SPFPL apport, SCS, SCI et SCM ; exclusion SAS.
-- SMOKE-ORCH-L2-001 confirme en génération réelle que SCI produit les documents universels et `pv_nomination_gerant.docx`.
-- SMOKE-ORCH-L2-001 confirme en génération réelle que SAS produit seulement les documents universels et exclut `pv_nomination_gerant.docx`.
-- Aucun wording juridique, aucune UI, aucun PDF et aucun ZIP n'ont été modifiés.
-- ANALYSE-ORDRE-001 lit les trois sources Lot 2 en lecture seule et crée deux cadrages dans `docs/delivery/`.
-- Les chemins nommés dans le ticket pour les trois DOCX ne correspondent pas littéralement aux noms présents dans le dépôt ; les fichiers transformés correspondants ont été utilisés et l'écart est documenté dans les cadrages.
-- La demande d'inscription à l'ordre est considérée suffisamment cadrée pour ouvrir `SPEC-ORDRE-001`, mais pas pour coder.
-- Le batch régime communautaire est désormais suffisamment spécifié pour ouvrir `CODE-RC-001`.
-- Pour le batch régime communautaire, la mutualisation réaliste porte surtout sur les variables, les rôles, les montants et les helpers de rendu ; deux documents canoniques distincts restent recommandés.
-- SPEC-RC-001 compare les variantes SELARL, SELAS et SPFPL du batch régime communautaire.
-- Le groupe source Lot 2 / SELAS / SPFPL est retenu comme canonique pour la renonciation ; la variante SELARL brute reste documentée comme écart à relire.
-- L'avertissement conserve un overlay limité pour la mention manuscrite SELARL (`à la Société ...`) contre SELAS/SPFPL (`à la [forme_sociale_abregee] ...`).
+- Le DOCX de revue couvre la branche `emprunt.actif=true`, deux associ?s, et un dirigeant nomm? f?minin distinct des associ?s.
+- La branche `emprunt.actif=false`, le cas associ? unique et le dirigeant masculin restent couverts par tests mais doivent faire l'objet d'une revue humaine d?di?e avant branchement si l'arbitrage projet l'exige.
+- SPEC-RENDER-001 ne modifie pas le code Python et ne change aucun wording juridique ; il formalise uniquement le profil de style global, les paragraphes/blocs, le titre encadr?, les signatures simples/encadr?es, le rappel l?gal et le m?canisme de surcharge document par document.
+- Les documents d?j? impact?s par la future couche commune sont DOC-001, DOC-002, DOC-003 et PV nomination g?rant.
+- Ecart rendu explicitement document? : les encadr?s de signature manquent aujourd'hui dans le rendu g?n?r?.
+- RENDER-STYLE-001 impl?mente `SydelDocxStyleProfile` et les helpers communs dans `docx_builder.py`.
+- DOC-001, DOC-002 et DOC-003 utilisent d?sormais le profil global, le cartouche titre commun et un bloc signature encadr? commun.
+- DOC-001 utilise d?sormais le rappel l?gal commun.
+- Le PV nomination g?rant utilise le profil global, les paragraphes communs, le bloc centr? commun et les lignes de signature communes.
+- Aucun wording juridique n'a ?t? volontairement modifi? ; les changements portent sur le rendu et la factorisation.
+- ORCH-L2-PV-001 ajoute le PV nomination g?rant au catalogue sous `DOC-004`.
+- ORCH-L2-PV-001 enregistre `PvNominationGerantGenerator` dans le registre par d?faut de l'orchestrateur.
+- Les d?cisions de s?lection appliqu?es sont : inclusion SELARL, SELAS, SPFPL cession, SPFPL apport, SCS, SCI et SCM ; exclusion SAS.
+- SMOKE-ORCH-L2-001 confirme en g?n?ration r?elle que SCI produit les documents universels et `pv_nomination_gerant.docx`.
+- SMOKE-ORCH-L2-001 confirme en g?n?ration r?elle que SAS produit seulement les documents universels et exclut `pv_nomination_gerant.docx`.
+- Aucun wording juridique, aucune UI, aucun PDF et aucun ZIP n'ont ?t? modifi?s.
+- ANALYSE-ORDRE-001 lit les trois sources Lot 2 en lecture seule et cr?e deux cadrages dans `docs/delivery/`.
+- Les chemins nomm?s dans le ticket pour les trois DOCX ne correspondent pas litt?ralement aux noms pr?sents dans le d?p?t ; les fichiers transform?s correspondants ont ?t? utilis?s et l'?cart est document? dans les cadrages.
+- La demande d'inscription ? l'ordre est consid?r?e suffisamment cadr?e pour ouvrir `SPEC-ORDRE-001`, mais pas pour coder.
+- Le batch r?gime communautaire est d?sormais suffisamment sp?cifi? pour ouvrir `CODE-RC-001`.
+- Pour le batch r?gime communautaire, la mutualisation r?aliste porte surtout sur les variables, les r?les, les montants et les helpers de rendu ; deux documents canoniques distincts restent recommand?s.
+- SPEC-RC-001 compare les variantes SELARL, SELAS et SPFPL du batch r?gime communautaire.
+- Le groupe source Lot 2 / SELAS / SPFPL est retenu comme canonique pour la renonciation ; la variante SELARL brute reste document?e comme ?cart ? relire.
+- L'avertissement conserve un overlay limit? pour la mention manuscrite SELARL (`? la Soci?t? ...`) contre SELAS/SPFPL (`? la [forme_sociale_abregee] ...`).
 - CODE-RC-001 produit deux documents canoniques distincts, uniquement pour SELARL, SELAS, SPFPL cession et SPFPL apport lorsque `dossier_options.regime_communautaire == true`.
-- CODE-RC-001 ajoute les entrées catalogue `DOC-005` et `DOC-006`, enregistrées dans l'orchestrateur.
-- Le filtrage contexte exclut `DOC-005` et `DOC-006` lorsque l'option régime communautaire est fausse.
-- La mention manuscrite de l'avertissement applique l'overlay SELARL `à la Société ...` et l'overlay SELAS/SPFPL `à la {forme_sociale_abregee} ...`.
-- La renonciation résout `date_courrier_avertissement` explicitement ou par repli sur la date de l'avertissement du batch.
-- SPEC-SPFPL-001 formalise le batch SPFPL spécifique sans code Python ; l'acte de cession d'actions reste bloqué faute de source DOCX confirmée.
-- SPEC-DEROG-001 formalise les dérogations sans automatiser les formulaires marqués ou traités comme manuels.
+- CODE-RC-001 ajoute les entr?es catalogue `DOC-005` et `DOC-006`, enregistr?es dans l'orchestrateur.
+- Le filtrage contexte exclut `DOC-005` et `DOC-006` lorsque l'option r?gime communautaire est fausse.
+- La mention manuscrite de l'avertissement applique l'overlay SELARL `? la Soci?t? ...` et l'overlay SELAS/SPFPL `? la {forme_sociale_abregee} ...`.
+- La renonciation r?sout `date_courrier_avertissement` explicitement ou par repli sur la date de l'avertissement du batch.
+- SPEC-SPFPL-001 formalise le batch SPFPL sp?cifique sans code Python ; l'acte de cession d'actions reste bloqu? faute de source DOCX confirm?e.
+- SPEC-DEROG-001 formalise les d?rogations sans automatiser les formulaires marqu?s ou trait?s comme manuels.
 - SPEC-CESSION-BAIL-001 formalise deux blocs distincts : `cession cabinets` et `bail / appel de fonds`, sans trancher les anomalies de wording avant code.
-- SYNC-SPECS-001 a cherry-pické les quatre specs parallèles dans `main`, puis limite le commit de synchronisation aux fichiers de pilotage.
-- SYNC-TEXTE-SPECS-001 a cherry-pické les quatre specs texte parallèles dans `main`.
-- Les specs texte intégrées sont bail/appel, cession cabinets, dérogations et SPFPL.
-- Le commit final de synchronisation texte est limité aux fichiers de pilotage `docs/project/01_EXECUTION_BOARD.md` et `docs/project/04_LAST_STATE.md`.
-- Aucun code Python, aucun fichier `project/source_import/raw_drive_dump/` et aucun fichier `artifacts/` n'a été modifié.
-- SYNC-ARBITRAGES-001 a cherry-pické les trois arbitrages parallèles dans `main`.
-- Les arbitrages intégrés sont cession cabinets, dérogations et SPFPL.
-- Le commit final de synchronisation arbitrages est limité aux fichiers de pilotage `docs/project/01_EXECUTION_BOARD.md` et `docs/project/04_LAST_STATE.md`.
-- Aucun code Python, aucun fichier `project/source_import/raw_drive_dump/` et aucun fichier `artifacts/` n'a été modifié.
-- SYNC-CODE-BAIL-APP-001 a absorbé par fast-forward le commit `557a013274aa9f7122c81d5e6e0b52c4043a540c` de `codex/code-bail-app-001` dans `main`.
-- CODE-BAIL-APP-001 ajoute `DOC-007` avenant au contrat de bail et `DOC-008` appel de fonds SEL au catalogue et à l'orchestrateur.
-- L'avenant au contrat de bail est sélectionné pour SELARL/SELAS lorsque `dossier_options.cession == true`.
-- L'appel de fonds SEL est sélectionné uniquement pour SELARL dentaire lorsque `dossier_options.cession == true`.
-- Les fichiers `project/source_import/raw_drive_dump/` et `artifacts/` n'ont pas été modifiés.
-- SYNC-WAVE-LOT03-05-001 a cherry-pické dans `main` les commits `36828fbc45d6b8a37c2e76eb8227460df441ebde` de `codex/prep-derog-001` et `958fce5d2a9d5d30df4d918cb098fec483f5140e` de `codex/code-spfpl-agr-info-001`.
-- PREP-DEROG-001 place les deux sources Lot 03 préparées et ajoute les rapports de préparation / conversion legacy.
-- CODE-SPFPL-AGR-INFO-001 ajoute les générateurs SPFPL agrément et note d'information, les sources Lot 05 ciblées, le contexte exemple et les tests unitaires associés.
-- Les fichiers `project/source_import/raw_drive_dump/` et `artifacts/` n'ont pas été modifiés.
-- SYNC-CODE-WAVE-002 a cherry-pické dans `main` les commits sources `ea35d2af353ac5b8567e82091ab978cf24a27445` de `codex/code-cession-cab-001` et `bee4c8bec27397198a170c4f9888b2470b24c67f` de `codex/code-derog-core-001`.
-- Le commit final de synchronisation `SYNC-CODE-WAVE-002` est limité aux fichiers de pilotage `docs/project/01_EXECUTION_BOARD.md` et `docs/project/04_LAST_STATE.md`.
-- Les fichiers `project/source_import/raw_drive_dump/` et `artifacts/` n'ont pas été modifiés.
-- SYNC-WAVE-003 a cherry-pické dans `main` les commits sources `b854821061b85ac66fe785c11cb3c6b0bac5a85b` de `codex/prep-statuts-001` et `09cbad120d22910f05ba5e645971ade56fedb76d` de `codex/code-spfpl-core-001`.
-- PREP-STATUTS-001 ajoute la préparation documentaire Lot 04 statuts et place les sources statuts retenues dans `project/source_documents/lot_04/`, sans déduplication ni harmonisation juridique.
-- CODE-SPFPL-CORE-001 ajoute les générateurs SPFPL cœur, les sources Lot 05 ciblées, le contexte exemple et les tests unitaires associés.
-- Le commit final de synchronisation `SYNC-WAVE-003` est limité aux fichiers de pilotage `docs/project/01_EXECUTION_BOARD.md` et `docs/project/04_LAST_STATE.md`.
-- Les fichiers `project/source_import/raw_drive_dump/` et `artifacts/` n'ont pas été modifiés.
-- SYNC-STATUTS-CODE-ARB-001 a cherry-pické dans `main` les commits sources `82e67120ed714b791d5483108336a570ea520e59`, `a98939c649e4124e40f2cd69c9ed125d342acc31` et `1caafd7`.
-- Le conflit modèle entre les apports SAS et SPFPL a été résolu par fusion additive des champs de données nécessaires aux deux familles.
-- CODE-STATUTS-SAS-001 ajoute le générateur statuts SAS V1, son contexte exemple, son branchement catalogue/orchestrateur et ses tests ciblés.
-- CODE-STATUTS-SPFPL-001 ajoute les générateurs statuts SPFPL cession/apport V1, leur contexte exemple et leurs tests ciblés.
+- SYNC-SPECS-001 a cherry-pick? les quatre specs parall?les dans `main`, puis limite le commit de synchronisation aux fichiers de pilotage.
+- SYNC-TEXTE-SPECS-001 a cherry-pick? les quatre specs texte parall?les dans `main`.
+- Les specs texte int?gr?es sont bail/appel, cession cabinets, d?rogations et SPFPL.
+- Le commit final de synchronisation texte est limit? aux fichiers de pilotage `docs/project/01_EXECUTION_BOARD.md` et `docs/project/04_LAST_STATE.md`.
+- Aucun code Python, aucun fichier `project/source_import/raw_drive_dump/` et aucun fichier `artifacts/` n'a ?t? modifi?.
+- SYNC-ARBITRAGES-001 a cherry-pick? les trois arbitrages parall?les dans `main`.
+- Les arbitrages int?gr?s sont cession cabinets, d?rogations et SPFPL.
+- Le commit final de synchronisation arbitrages est limit? aux fichiers de pilotage `docs/project/01_EXECUTION_BOARD.md` et `docs/project/04_LAST_STATE.md`.
+- Aucun code Python, aucun fichier `project/source_import/raw_drive_dump/` et aucun fichier `artifacts/` n'a ?t? modifi?.
+- SYNC-CODE-BAIL-APP-001 a absorb? par fast-forward le commit `557a013274aa9f7122c81d5e6e0b52c4043a540c` de `codex/code-bail-app-001` dans `main`.
+- CODE-BAIL-APP-001 ajoute `DOC-007` avenant au contrat de bail et `DOC-008` appel de fonds SEL au catalogue et ? l'orchestrateur.
+- L'avenant au contrat de bail est s?lectionn? pour SELARL/SELAS lorsque `dossier_options.cession == true`.
+- L'appel de fonds SEL est s?lectionn? uniquement pour SELARL dentaire lorsque `dossier_options.cession == true`.
+- Les fichiers `project/source_import/raw_drive_dump/` et `artifacts/` n'ont pas ?t? modifi?s.
+- SYNC-WAVE-LOT03-05-001 a cherry-pick? dans `main` les commits `36828fbc45d6b8a37c2e76eb8227460df441ebde` de `codex/prep-derog-001` et `958fce5d2a9d5d30df4d918cb098fec483f5140e` de `codex/code-spfpl-agr-info-001`.
+- PREP-DEROG-001 place les deux sources Lot 03 pr?par?es et ajoute les rapports de pr?paration / conversion legacy.
+- CODE-SPFPL-AGR-INFO-001 ajoute les g?n?rateurs SPFPL agr?ment et note d'information, les sources Lot 05 cibl?es, le contexte exemple et les tests unitaires associ?s.
+- Les fichiers `project/source_import/raw_drive_dump/` et `artifacts/` n'ont pas ?t? modifi?s.
+- SYNC-CODE-WAVE-002 a cherry-pick? dans `main` les commits sources `ea35d2af353ac5b8567e82091ab978cf24a27445` de `codex/code-cession-cab-001` et `bee4c8bec27397198a170c4f9888b2470b24c67f` de `codex/code-derog-core-001`.
+- Le commit final de synchronisation `SYNC-CODE-WAVE-002` est limit? aux fichiers de pilotage `docs/project/01_EXECUTION_BOARD.md` et `docs/project/04_LAST_STATE.md`.
+- Les fichiers `project/source_import/raw_drive_dump/` et `artifacts/` n'ont pas ?t? modifi?s.
+- SYNC-WAVE-003 a cherry-pick? dans `main` les commits sources `b854821061b85ac66fe785c11cb3c6b0bac5a85b` de `codex/prep-statuts-001` et `09cbad120d22910f05ba5e645971ade56fedb76d` de `codex/code-spfpl-core-001`.
+- PREP-STATUTS-001 ajoute la pr?paration documentaire Lot 04 statuts et place les sources statuts retenues dans `project/source_documents/lot_04/`, sans d?duplication ni harmonisation juridique.
+- CODE-SPFPL-CORE-001 ajoute les g?n?rateurs SPFPL c?ur, les sources Lot 05 cibl?es, le contexte exemple et les tests unitaires associ?s.
+- Le commit final de synchronisation `SYNC-WAVE-003` est limit? aux fichiers de pilotage `docs/project/01_EXECUTION_BOARD.md` et `docs/project/04_LAST_STATE.md`.
+- Les fichiers `project/source_import/raw_drive_dump/` et `artifacts/` n'ont pas ?t? modifi?s.
+- SYNC-STATUTS-CODE-ARB-001 a cherry-pick? dans `main` les commits sources `82e67120ed714b791d5483108336a570ea520e59`, `a98939c649e4124e40f2cd69c9ed125d342acc31` et `1caafd7`.
+- Le conflit mod?le entre les apports SAS et SPFPL a ?t? r?solu par fusion additive des champs de donn?es n?cessaires aux deux familles.
+- CODE-STATUTS-SAS-001 ajoute le g?n?rateur statuts SAS V1, son contexte exemple, son branchement catalogue/orchestrateur et ses tests cibl?s.
+- CODE-STATUTS-SPFPL-001 ajoute les g?n?rateurs statuts SPFPL cession/apport V1, leur contexte exemple et leurs tests cibl?s.
 - ARBITRAGE-STATUTS-SEL-001 ajoute les arbitrages V1 des statuts SEL d'exercice dans `docs/delivery/`.
-- Les fichiers `project/source_import/raw_drive_dump/` et `artifacts/` n'ont pas été modifiés.
-- CODE-DEROG-CORE-001 ajoute `DOC-013` formulaire multi-sites SEL et `DOC-014` demande cumul SELARL/BNC au catalogue et à l'orchestrateur.
-- Les deux documents dérogations cœur sont rendus uniquement en `formulaire_a_completer`, avec zones narratives sensibles laissées visibles et non générées par défaut.
-- `cumul_salariee` reste hors périmètre tant qu'un DOCX propre n'est pas fourni.
+- Les fichiers `project/source_import/raw_drive_dump/` et `artifacts/` n'ont pas ?t? modifi?s.
+- CODE-DEROG-CORE-001 ajoute `DOC-013` formulaire multi-sites SEL et `DOC-014` demande cumul SELARL/BNC au catalogue et ? l'orchestrateur.
+- Les deux documents d?rogations c?ur sont rendus uniquement en `formulaire_a_completer`, avec zones narratives sensibles laiss?es visibles et non g?n?r?es par d?faut.
+- `cumul_salariee` reste hors p?rim?tre tant qu'un DOCX propre n'est pas fourni.
 - ARBITRAGE-SOURCES-001 scanne 147 fichiers dans `project/source_import/raw_drive_dump/` et 11 fichiers dans `project/source_documents/`.
 - ARBITRAGE-SOURCES-001 identifie 18 groupes de doublons probables, dont 15 groupes de doublons exacts.
-- Les 4 cas HIGH documentés sont : DOC-001, DOC-002, DOC-003 et la source canonique `PV nomination gérant`.
-- PLACEMENT-HIGH-001 confirme que les 4 cas HIGH sont déjà présents aux emplacements retenus dans `project/source_documents/`.
-- PLACEMENT-HIGH-001 n'a effectué aucune nouvelle copie, car chaque cible HIGH existait déjà.
-- PLACEMENT-HIGH-001 crée `docs/project/14_SOURCE_PLACEMENT_EXECUTION_V1.md`.
-- SPEC-ORDRE-001 compare les variantes raw dump SELARL, SELAS et SPFPL de `Demande d'inscription à l'ordre`.
-- Pour cette famille, SELARL et SELAS ont un texte visible identique et plus paramétré ; le groupe SPFPL/source Lot 2 est une copie exacte incluant la mention résiduelle `Dérogation ?`.
-- Les structures retenues pour la famille ordre sont SELARL, SELAS, SPFPL cession, SPFPL apport et SCM ; aucune variante SCM dédiée n'a été retrouvée dans le raw dump.
+- Les 4 cas HIGH document?s sont : DOC-001, DOC-002, DOC-003 et la source canonique `PV nomination g?rant`.
+- PLACEMENT-HIGH-001 confirme que les 4 cas HIGH sont d?j? pr?sents aux emplacements retenus dans `project/source_documents/`.
+- PLACEMENT-HIGH-001 n'a effectu? aucune nouvelle copie, car chaque cible HIGH existait d?j?.
+- PLACEMENT-HIGH-001 cr?e `docs/project/14_SOURCE_PLACEMENT_EXECUTION_V1.md`.
+- SPEC-ORDRE-001 compare les variantes raw dump SELARL, SELAS et SPFPL de `Demande d'inscription ? l'ordre`.
+- Pour cette famille, SELARL et SELAS ont un texte visible identique et plus param?tr? ; le groupe SPFPL/source Lot 2 est une copie exacte incluant la mention r?siduelle `D?rogation ?`.
+- Les structures retenues pour la famille ordre sont SELARL, SELAS, SPFPL cession, SPFPL apport et SCM ; aucune variante SCM d?di?e n'a ?t? retrouv?e dans le raw dump.
 - SPEC-TEXTE-ORDRE-001 retient un tronc commun texte fixe et trois overlays : SELARL/SELAS, SPFPL cession/apport et SCM.
-- La mention source `Dérogation ?` n'est pas un wording juridique automatique ; elle devient un bloc conditionnel manuel qui bloque si `dossier.options.derogation == true` sans mention fournie.
-- `Dr`, `Monsieur le Président`, la profession ordinale et l'adresse ordinale restent variables ou blocs variables.
-- Le mandataire SYDEL peut être préconfiguré, mais ne doit pas être codé en dur dans le générateur.
-- CODE-ORDRE-001 implémente le générateur `Demande d'inscription à l'ordre` dans `src/sydel_doc_engine/generators/lot_02/demande_inscription_ordre.py`.
-- Le générateur ordre couvre explicitement SELARL, SELAS, SPFPL cession, SPFPL apport et SCM.
-- Les overlays SELARL/SELAS, SPFPL et SCM pilotent le rendu de l'adresse ordinale, sans wording SCM spécifique ajouté.
-- Le bloc `Dérogation ?` n'est jamais rendu littéralement ; si `dossier_options.derogation=true`, une mention manuelle `ordre.derogation_mention_manuelle` est obligatoire.
-- Le mandataire est résolu depuis `mandataire.libelle_affiche` ou depuis les champs détaillés, sans constante SYDEL/Jordan ELBAZ codée dans le générateur.
-- Le smoke DOCX dédié a été généré dans `artifacts/lot_02_demande_inscription_ordre_smoke_test/demande_inscription_ordre.docx`, hors versionnement.
-- Les 2 cas MEDIUM régime communautaire sont désormais spécifiés et codés dans `CODE-RC-001`.
-- Les 3 cas LOW restent bloqués : statuts, liste des souscripteurs / attestation sur le capital, documents sans source claire.
-- 16 documents sources sont explicitement hors périmètre moteur courant.
-- Aucun fichier de `project/source_import/raw_drive_dump/` ni de `artifacts/` n'a été modifié ; les seules sources ajoutées par la vague sont placées sous `project/source_documents/lot_05/`.
-- Aucune UI, aucun PDF, aucun ZIP et aucun wording juridique source n'ont été modifiés.
-- FIX-PV-RENDER-001 conserve l'approche from-scratch et ne modifie pas le texte juridique ; les changements portent uniquement sur le rendu DOCX du PV et un helper commun de liste à tiret.
-- Le smoke DOCX dédié a été généré dans `artifacts/fix_pv_render_001_smoke_test_2/pv_nomination_gerant.docx`, hors versionnement.
+- La mention source `D?rogation ?` n'est pas un wording juridique automatique ; elle devient un bloc conditionnel manuel qui bloque si `dossier.options.derogation == true` sans mention fournie.
+- `Dr`, `Monsieur le Pr?sident`, la profession ordinale et l'adresse ordinale restent variables ou blocs variables.
+- Le mandataire SYDEL peut ?tre pr?configur?, mais ne doit pas ?tre cod? en dur dans le g?n?rateur.
+- CODE-ORDRE-001 impl?mente le g?n?rateur `Demande d'inscription ? l'ordre` dans `src/sydel_doc_engine/generators/lot_02/demande_inscription_ordre.py`.
+- Le g?n?rateur ordre couvre explicitement SELARL, SELAS, SPFPL cession, SPFPL apport et SCM.
+- Les overlays SELARL/SELAS, SPFPL et SCM pilotent le rendu de l'adresse ordinale, sans wording SCM sp?cifique ajout?.
+- Le bloc `D?rogation ?` n'est jamais rendu litt?ralement ; si `dossier_options.derogation=true`, une mention manuelle `ordre.derogation_mention_manuelle` est obligatoire.
+- Le mandataire est r?solu depuis `mandataire.libelle_affiche` ou depuis les champs d?taill?s, sans constante SYDEL/Jordan ELBAZ cod?e dans le g?n?rateur.
+- Le smoke DOCX d?di? a ?t? g?n?r? dans `artifacts/lot_02_demande_inscription_ordre_smoke_test/demande_inscription_ordre.docx`, hors versionnement.
+- Les 2 cas MEDIUM r?gime communautaire sont d?sormais sp?cifi?s et cod?s dans `CODE-RC-001`.
+- Les 3 cas LOW restent bloqu?s : statuts, liste des souscripteurs / attestation sur le capital, documents sans source claire.
+- 16 documents sources sont explicitement hors p?rim?tre moteur courant.
+- Aucun fichier de `project/source_import/raw_drive_dump/` ni de `artifacts/` n'a ?t? modifi? ; les seules sources ajout?es par la vague sont plac?es sous `project/source_documents/lot_05/`.
+- Aucune UI, aucun PDF, aucun ZIP et aucun wording juridique source n'ont ?t? modifi?s.
+- FIX-PV-RENDER-001 conserve l'approche from-scratch et ne modifie pas le texte juridique ; les changements portent uniquement sur le rendu DOCX du PV et un helper commun de liste ? tiret.
+- Le smoke DOCX d?di? a ?t? g?n?r? dans `artifacts/fix_pv_render_001_smoke_test_2/pv_nomination_gerant.docx`, hors versionnement.
 
-## Prochain ticket à lancer
-Prochains chantiers recommandés :
+## Prochain ticket ? lancer
+Prochains chantiers recommand?s :
 - UI ;
 - PDF batch/orchestrateur ;
 - ZIP ;
 - recette finale.
 
-`SYNC-POST-MOTOR-UI-001` est DONE : les commits UI/PDF/recette `d62670efe10481926437c0e1a5dabbe349fd5938`, `24a881b999371811d39a2403c0b51d9ae8ce0556`, `ef6252b3c15dc3fc39f1efdc05687c0f448f8fe1`, `2f76f61848469ddf2f7b29c3169e8893e83fd3a5` et `c2fc0db4d51485c7c5e721c5184028ae17c68cb3` sont absorbés dans `main`.
+`SYNC-POST-MOTOR-UI-001` est DONE : les commits UI/PDF/recette `d62670efe10481926437c0e1a5dabbe349fd5938`, `24a881b999371811d39a2403c0b51d9ae8ce0556`, `ef6252b3c15dc3fc39f1efdc05687c0f448f8fe1`, `2f76f61848469ddf2f7b29c3169e8893e83fd3a5` et `c2fc0db4d51485c7c5e721c5184028ae17c68cb3` sont absorb?s dans `main`.
 
 `UI-FLOW-001`, `UI-OCCURRENCES-001`, `UI-FORM-SCHEMA-001`, `PDF-BACKEND-001` et `RECIPE-FRAME-001` sont DONE.
 
 `UI-CORE-001`, `RESUME-ZIP-BACKEND-001` et `REVIEW-FINAL-001` sont READY.
 
-`PDF-BACKEND-001` est DONE : le backend PDF local est disponible et intégré à la fondation absorbée, sans ticket PDF supplémentaire confirmé dans cette synchronisation.
+`PDF-BACKEND-001` est DONE : le backend PDF local est disponible et int?gr? ? la fondation absorb?e, sans ticket PDF suppl?mentaire confirm? dans cette synchronisation.
 
-`RECONCILE-MOTOR-CLOSE-001` est DONE : le runtime expose `DOC-001` à `DOC-043`, les audits `16/17` concluent la couverture globale OK du moteur DOCX V1, et `docs/project/18_NEXT_PHASE_FOUNDATION_V1.md` cadre la suite UI/PDF/ZIP/recette finale.
+`RECONCILE-MOTOR-CLOSE-001` est DONE : le runtime expose `DOC-001` ? `DOC-043`, les audits `16/17` concluent la couverture globale OK du moteur DOCX V1, et `docs/project/18_NEXT_PHASE_FOUNDATION_V1.md` cadre la suite UI/PDF/ZIP/recette finale.
 
-`SYNC-CLOSE-AUDIT-001` est DONE : le commit source `0139202b170531fd628f25811c55855a2512acc0` a été absorbé depuis `origin/codex/close-motor-audit-001` par merge de synchronisation ; l'audit présent sur `main` reste la version finale plus récente.
+`SYNC-CLOSE-AUDIT-001` est DONE : le commit source `0139202b170531fd628f25811c55855a2512acc0` a ?t? absorb? depuis `origin/codex/close-motor-audit-001` par merge de synchronisation ; l'audit pr?sent sur `main` reste la version finale plus r?cente.
 
-`ARBITRAGE-SCM-CESSION-RESOLVE-001` et `CODE-SCM-CESSION-BLOCK-001` sont DONE et absorbés dans `main` via SYNC-WAVE-010.
+`ARBITRAGE-SCM-CESSION-RESOLVE-001` et `CODE-SCM-CESSION-BLOCK-001` sont DONE et absorb?s dans `main` via SYNC-WAVE-010.
 
-`CODE-SCM-LISTE-DEPENSES-001`, `SPEC-DEROG-SALARIEE-MANUAL-001`, `REVIEW-BATCH-LOT05-001`, `FIX-STYLE-STATUTS-BATCH-001` et `FIX-STYLE-LOT03-BATCH-001` sont DONE et absorbés dans `main` via SYNC-WAVE-009.
-`CODE-OPTION-IS-001`, `PREP-SCM-SAT-001`, `ARBITRAGE-STATUTS-SCM-001`, `SPEC-SAS-SATELLITES-001` et `PREP-ACTE-ACTIONS-001` sont DONE et absorbés dans `main`.
-`RESUME-FIX-STYLE-LETTERS-001`, `CODE-STATUTS-CIVILS-CORE-001`, `CODE-SAS-SATELLITES-001`, `CONVERT-DEROG-SALARIEE-001`, `CONVERT-ACTE-ACTIONS-001` et `SPEC-SCM-SATELLITES-001` sont DONE et absorbés dans `main` via SYNC-WAVE-006.
-`CODE-STATUTS-SCM-001`, `PREP-SCM-LISTE-DEPENSES-CONVERT-001`, `CODE-SCM-SAT-DOCX-001` et `SPEC-ACTE-ACTIONS-001` sont DONE et absorbés dans `main` via SYNC-WAVE-007.
-`CODE-ACTE-ACTIONS-001`, `PREP-SCM-CESSION-SOURCES-001`, `REVIEW-BATCH-LOT03-001`, `REVIEW-BATCH-LOT04-001`, `AUDIT-REMAINING-SCOPE-001`, `STYLE-ANALYSE-LOT03-BATCH-001`, `STYLE-ANALYSE-STATUTS-BATCH-001` et `SPEC-SCM-CESSION-BLOCK-001` sont DONE et absorbés dans `main` via SYNC-WAVE-008.
-`CONVERT-ACTE-ACTIONS-001` est DONE avec DOCX placé dans `project/source_documents/lot_05/` et préparation V1 documentée.
+`CODE-SCM-LISTE-DEPENSES-001`, `SPEC-DEROG-SALARIEE-MANUAL-001`, `REVIEW-BATCH-LOT05-001`, `FIX-STYLE-STATUTS-BATCH-001` et `FIX-STYLE-LOT03-BATCH-001` sont DONE et absorb?s dans `main` via SYNC-WAVE-009.
+`CODE-OPTION-IS-001`, `PREP-SCM-SAT-001`, `ARBITRAGE-STATUTS-SCM-001`, `SPEC-SAS-SATELLITES-001` et `PREP-ACTE-ACTIONS-001` sont DONE et absorb?s dans `main`.
+`RESUME-FIX-STYLE-LETTERS-001`, `CODE-STATUTS-CIVILS-CORE-001`, `CODE-SAS-SATELLITES-001`, `CONVERT-DEROG-SALARIEE-001`, `CONVERT-ACTE-ACTIONS-001` et `SPEC-SCM-SATELLITES-001` sont DONE et absorb?s dans `main` via SYNC-WAVE-006.
+`CODE-STATUTS-SCM-001`, `PREP-SCM-LISTE-DEPENSES-CONVERT-001`, `CODE-SCM-SAT-DOCX-001` et `SPEC-ACTE-ACTIONS-001` sont DONE et absorb?s dans `main` via SYNC-WAVE-007.
+`CODE-ACTE-ACTIONS-001`, `PREP-SCM-CESSION-SOURCES-001`, `REVIEW-BATCH-LOT03-001`, `REVIEW-BATCH-LOT04-001`, `AUDIT-REMAINING-SCOPE-001`, `STYLE-ANALYSE-LOT03-BATCH-001`, `STYLE-ANALYSE-STATUTS-BATCH-001` et `SPEC-SCM-CESSION-BLOCK-001` sont DONE et absorb?s dans `main` via SYNC-WAVE-008.
+`CONVERT-ACTE-ACTIONS-001` est DONE avec DOCX plac? dans `project/source_documents/lot_05/` et pr?paration V1 document?e.
 `CONVERT-DEROG-SALARIEE-001` est DONE ; aucun DOCX exploitable n'a ete produit.
 `CODE-BAIL-APP-001` est DONE dans `main`.
 `PREP-DEROG-001` et `CODE-SPFPL-AGR-INFO-001` sont DONE dans `main`.
-`CODE-CESSION-CAB-001` et `CODE-DEROG-CORE-001` sont DONE et absorbés dans `main`.
-`PREP-STATUTS-001` et `CODE-SPFPL-CORE-001` sont DONE et absorbés dans `main`.
-Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans `main`.
-`CODE-STATUTS-SAS-001`, `CODE-STATUTS-SPFPL-001` et `ARBITRAGE-STATUTS-SEL-001` sont DONE et absorbés dans `main`.
-`STYLE-ANALYSE-BATCH-001` et `ARBITRAGE-STATUTS-CIVILS-001` sont DONE et absorbés dans `main`.
-`CODE-STATUTS-SEL-001` est DONE et absorbé dans `main`.
-`RESUME-FIX-STYLE-LETTERS-001`, `FIX-STYLE-LETTERS-001` et `CODE-STATUTS-CIVILS-CORE-001` sont DONE et absorbés dans `main`.
+`CODE-CESSION-CAB-001` et `CODE-DEROG-CORE-001` sont DONE et absorb?s dans `main`.
+`PREP-STATUTS-001` et `CODE-SPFPL-CORE-001` sont DONE et absorb?s dans `main`.
+Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorb?es dans `main`.
+`CODE-STATUTS-SAS-001`, `CODE-STATUTS-SPFPL-001` et `ARBITRAGE-STATUTS-SEL-001` sont DONE et absorb?s dans `main`.
+`STYLE-ANALYSE-BATCH-001` et `ARBITRAGE-STATUTS-CIVILS-001` sont DONE et absorb?s dans `main`.
+`CODE-STATUTS-SEL-001` est DONE et absorb? dans `main`.
+`RESUME-FIX-STYLE-LETTERS-001`, `FIX-STYLE-LETTERS-001` et `CODE-STATUTS-CIVILS-CORE-001` sont DONE et absorb?s dans `main`.
 
 ## Points ouverts
-- Aucun point bloquant moteur DOCX restant après `RECONCILE-MOTOR-CLOSE-001`.
-- Restent hors périmètre moteur : UI, ZIP, recette finale, revue humaine juridique/visuelle, documents explicitement manuels et sources legacy non converties.
-- PDF-BACKEND-001 est terminé : export DOCX vers PDF disponible en backend local, sans intégration UI.
-- Points ouverts PDF après PDF-BACKEND-001 : LibreOffice absent localement, fallback Word COM validé sur smoke, conversion batch/orchestrateur et revue visuelle PDF restent à traiter séparément.
-- Fondation UI/PDF/recette synchronisée : `UI-CORE-001`, `RESUME-ZIP-BACKEND-001` et `REVIEW-FINAL-001` sont les prochains tickets READY confirmés.
-- Aucun point bloquant identifié après le smoke test réel Lot 1.
-- Le smoke test confirme la production de trois fichiers DOCX, mais ne remplace pas une revue humaine du rendu visuel ni une validation juridique fine du contenu généré.
-- PDF batch/orchestrateur et ZIP restent à intégrer dans des tickets ultérieurs.
-- Ecart temporaire non bloquant pour l'UI : la table V1 retient `domiciliation.adresse_affichee` comme nom canonique, tandis que le code Lot 1 existant conserve l'alias legacy `adresse_domiciliation_affichee` jusqu'à refactor dédié.
-- Le PV nomination gérant est codé, testé et branché dans l'orchestrateur pour les structures concernées.
-- Le smoke orchestrateur Lot 2 est vert sur SCI positif et SAS négatif.
-- Le pack REVIEW-PV-001 est prêt, mais il ne vaut pas validation juridique.
-- La couche commune de rendu DOCX est implémentée.
-- Le rendu PV restauré par FIX-PV-RENDER-001 reste soumis à revue humaine visuelle/juridique fine ; le ticket ne vaut pas validation juridique.
-- Les signatures encadrées sont disponibles et appliquées aux documents Lot 1 ; le PV conserve des lignes de signature simples sans décision métier supplémentaire.
+- Aucun point bloquant moteur DOCX restant apr?s `RECONCILE-MOTOR-CLOSE-001`.
+- Restent hors p?rim?tre moteur : UI, ZIP, recette finale, revue humaine juridique/visuelle, documents explicitement manuels et sources legacy non converties.
+- PDF-BACKEND-001 est termin? : export DOCX vers PDF disponible en backend local, sans int?gration UI.
+- Points ouverts PDF apr?s PDF-BACKEND-001 : LibreOffice absent localement, fallback Word COM valid? sur smoke, conversion batch/orchestrateur et revue visuelle PDF restent ? traiter s?par?ment.
+- Fondation UI/PDF/recette synchronis?e : `UI-CORE-001`, `RESUME-ZIP-BACKEND-001` et `REVIEW-FINAL-001` sont les prochains tickets READY confirm?s.
+- Aucun point bloquant identifi? apr?s le smoke test r?el Lot 1.
+- Le smoke test confirme la production de trois fichiers DOCX, mais ne remplace pas une revue humaine du rendu visuel ni une validation juridique fine du contenu g?n?r?.
+- PDF batch/orchestrateur et ZIP restent ? int?grer dans des tickets ult?rieurs.
+- Ecart temporaire non bloquant pour l'UI : la table V1 retient `domiciliation.adresse_affichee` comme nom canonique, tandis que le code Lot 1 existant conserve l'alias legacy `adresse_domiciliation_affichee` jusqu'? refactor d?di?.
+- Le PV nomination g?rant est cod?, test? et branch? dans l'orchestrateur pour les structures concern?es.
+- Le smoke orchestrateur Lot 2 est vert sur SCI positif et SAS n?gatif.
+- Le pack REVIEW-PV-001 est pr?t, mais il ne vaut pas validation juridique.
+- La couche commune de rendu DOCX est impl?ment?e.
+- Le rendu PV restaur? par FIX-PV-RENDER-001 reste soumis ? revue humaine visuelle/juridique fine ; le ticket ne vaut pas validation juridique.
+- Les signatures encadr?es sont disponibles et appliqu?es aux documents Lot 1 ; le PV conserve des lignes de signature simples sans d?cision m?tier suppl?mentaire.
 - UI-001 reste en attente explicite : ne pas brancher Streamlit sans nouveau ticket.
-- Points ouverts PV documentés dans la spec texte :
-  - périmètre SELAS ;
+- Points ouverts PV document?s dans la spec texte :
+  - p?rim?tre SELAS ;
   - wording capital non variable ;
-  - wording société déjà immatriculée ;
-  - signature si le dirigeant nommé n'est pas associé ;
-  - ponctuation de la dernière ligne `associes[]` ;
-  - féminisation éventuelle de la fonction ;
-  - règle `euro` / `euros`.
-- Points ouverts demande d'inscription à l'ordre après CODE-ORDRE-001 :
-  - absence de variante SCM dédiée dans le raw dump, à compenser par une revue humaine du premier rendu SCM ;
-  - wording de dérogation non validé, donc bloc manuel obligatoire ou blocage conservé ;
-  - valeurs ordinales fournies par contexte ou référentiel ;
-  - mandataire SYDEL configurable, jamais imposé comme constante en dur.
-- Points ouverts régime communautaire après CODE-RC-001 :
+  - wording soci?t? d?j? immatricul?e ;
+  - signature si le dirigeant nomm? n'est pas associ? ;
+  - ponctuation de la derni?re ligne `associes[]` ;
+  - f?minisation ?ventuelle de la fonction ;
+  - r?gle `euro` / `euros`.
+- Points ouverts demande d'inscription ? l'ordre apr?s CODE-ORDRE-001 :
+  - absence de variante SCM d?di?e dans le raw dump, ? compenser par une revue humaine du premier rendu SCM ;
+  - wording de d?rogation non valid?, donc bloc manuel obligatoire ou blocage conserv? ;
+  - valeurs ordinales fournies par contexte ou r?f?rentiel ;
+  - mandataire SYDEL configurable, jamais impos? comme constante en dur.
+- Points ouverts r?gime communautaire apr?s CODE-RC-001 :
   - revue humaine SELARL de la renonciation canonique, car la variante brute contient des valeurs fixes et `En 2exemplaires` ;
-  - féminisation éventuelle de `futur`, non activée automatiquement faute de source ;
+  - f?minisation ?ventuelle de `futur`, non activ?e automatiquement faute de source ;
   - absence de variante `ma conjointe`, `mon conjoint` restant fixe en V1 ;
-  - apport limité à une somme en numéraire ;
-  - valeurs par défaut de régime matrimonial, qualité renoncée et formes sociales à fournir par contexte ou référentiel.
-  - le smoke DOCX réel ne vaut pas validation juridique fine.
-- Points ouverts SPFPL après ARBITRAGE-SPFPL-001 :
-  - acte de cession d'actions sans source DOCX confirmée, hors automatisation V1 ;
+  - apport limit? ? une somme en num?raire ;
+  - valeurs par d?faut de r?gime matrimonial, qualit? renonc?e et formes sociales ? fournir par contexte ou r?f?rentiel.
+  - le smoke DOCX r?el ne vaut pas validation juridique fine.
+- Points ouverts SPFPL apr?s ARBITRAGE-SPFPL-001 :
+  - acte de cession d'actions sans source DOCX confirm?e, hors automatisation V1 ;
   - multi-souscripteurs hors automatisation V1 ;
-  - commissaire aux apports et évaluateur fournis par contexte ou référentiel validé ;
-  - aucune double option `OU` ou cession/apport ne doit être rendue.
-- Points ouverts dérogations après CODE-DEROG-CORE-001 :
-  - les deux sources Lot 03 préparées sont placées dans `project/source_documents/lot_03/` ;
+  - commissaire aux apports et ?valuateur fournis par contexte ou r?f?rentiel valid? ;
+  - aucune double option `OU` ou cession/apport ne doit ?tre rendue.
+- Points ouverts d?rogations apr?s CODE-DEROG-CORE-001 :
+  - les deux sources Lot 03 pr?par?es sont plac?es dans `project/source_documents/lot_03/` ;
   - `cumul_salariee` reste bloque apres retentative Word COM : erreur `0x800706BE`, aucun DOCX propre produit ;
   - revue humaine juridique/visuelle du premier rendu `DOC-013` et `DOC-014` ;
-  - champs narratifs sensibles toujours fournis explicitement ou laissés comme zones à compléter.
-- Points ouverts bail/appel après CODE-BAIL-APP-001 :
-  - appel de fonds limité à SELARL dentaire ;
-  - avenant limité SELARL/SELAS avec `dossier_options.cession=true` et société en cours d'immatriculation confirmée ;
-  - revue humaine juridique/visuelle du premier rendu toujours nécessaire.
-- Points ouverts cession après CODE-CESSION-CAB-001 :
+  - champs narratifs sensibles toujours fournis explicitement ou laiss?s comme zones ? compl?ter.
+- Points ouverts bail/appel apr?s CODE-BAIL-APP-001 :
+  - appel de fonds limit? ? SELARL dentaire ;
+  - avenant limit? SELARL/SELAS avec `dossier_options.cession=true` et soci?t? en cours d'immatriculation confirm?e ;
+  - revue humaine juridique/visuelle du premier rendu toujours n?cessaire.
+- Points ouverts cession apr?s CODE-CESSION-CAB-001 :
   - revue humaine juridique/visuelle du premier rendu DOCX ;
-  - variantes SELAS sources non stabilisées au-delà du paramétrage V1 ;
+  - variantes SELAS sources non stabilis?es au-del? du param?trage V1 ;
   - PDF et ZIP hors ticket ;
-  - les blocages explicites sur validations médicales, crédit-vendeur, SCM, salariés et exercices restent volontaires.
+  - les blocages explicites sur validations m?dicales, cr?dit-vendeur, SCM, salari?s et exercices restent volontaires.
 - Points ouverts sources :
-  - ne pas élargir la demande d'inscription à l'ordre hors specs V1 sans ticket dédié ;
-  - ne pas sortir du choix SPEC-RC-001 pour le régime communautaire sans nouveau ticket d'arbitrage ;
+  - ne pas ?largir la demande d'inscription ? l'ordre hors specs V1 sans ticket d?di? ;
+  - ne pas sortir du choix SPEC-RC-001 pour le r?gime communautaire sans nouveau ticket d'arbitrage ;
   - ne pas placer automatiquement la famille liste des souscripteurs / attestation sur le capital ;
   - ne pas dedupliquer les statuts entre familles, professions ou variantes.
-- Points ouverts statuts après arbitrages V1 :
-  - SAS : générateur V1 intégré, modèle source inventorié sous `SAS` mais contenu SAS/SPFPL médecins, actionnaire unique et vocabulaire hétérogène à relire humainement ;
-  - SPFPL : générateurs V1 cession/apport intégrés, multi-associés bloqué et corrections d'anomalies non arbitrées toujours exclues ;
-  - SEL : générateurs V1 intégrés, multi-associés et signature dirigeant non associé restent bloqués selon arbitrages ;
-  - civils : SCS, SCI, SCI IRIS et SCM codés ; SCM reste soumis à revue humaine juridique/visuelle du premier rendu.
-- Toute ambiguïté de wording juridique doit bloquer l'implémentation concernée et être documentée.
+- Points ouverts statuts apr?s arbitrages V1 :
+  - SAS : g?n?rateur V1 int?gr?, mod?le source inventori? sous `SAS` mais contenu SAS/SPFPL m?decins, actionnaire unique et vocabulaire h?t?rog?ne ? relire humainement ;
+  - SPFPL : g?n?rateurs V1 cession/apport int?gr?s, multi-associ?s bloqu? et corrections d'anomalies non arbitr?es toujours exclues ;
+  - SEL : g?n?rateurs V1 int?gr?s, multi-associ?s et signature dirigeant non associ? restent bloqu?s selon arbitrages ;
+  - civils : SCS, SCI, SCI IRIS et SCM cod?s ; SCM reste soumis ? revue humaine juridique/visuelle du premier rendu.
+- Toute ambigu?t? de wording juridique doit bloquer l'impl?mentation concern?e et ?tre document?e.
 
 ## Validations connues
-- FINAL-SCM-CESSION-WAVE-001 : smoke DOCX OK dans `artifacts/lot_05_scm_cession_block_smoke_test/`, trois documents produits sans placeholder `[` / `]` ni littéral résiduel `Ajouter en cas de CV`.
+- FINAL-SCM-CESSION-WAVE-001 : smoke DOCX OK dans `artifacts/lot_05_scm_cession_block_smoke_test/`, trois documents produits sans placeholder `[` / `]` ni litt?ral r?siduel `Ajouter en cas de CV`.
 - FINAL-SCM-CESSION-WAVE-001 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m ruff check .` OK.
-- FINAL-SCM-CESSION-WAVE-001 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m pytest` OK, 172 tests passés.
-- FINAL-SCM-CESSION-WAVE-001 : `artifacts/` non versionné.
+- FINAL-SCM-CESSION-WAVE-001 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m pytest` OK, 172 tests pass?s.
+- FINAL-SCM-CESSION-WAVE-001 : `artifacts/` non versionn?.
 - SYNC-CLOSE-AUDIT-001 : `git fetch --all --prune` OK.
-- SYNC-CLOSE-AUDIT-001 : `origin/codex/close-motor-audit-001` confirmé au commit `0139202b170531fd628f25811c55855a2512acc0`.
-- SYNC-CLOSE-AUDIT-001 : `docs/project/16_MOTOR_COMPLETION_AUDIT_V1.md` présent sur `main` ; relecture documentaire et contrôle du diff, aucun test de code exécuté car aucun fichier Python modifié.
+- SYNC-CLOSE-AUDIT-001 : `origin/codex/close-motor-audit-001` confirm? au commit `0139202b170531fd628f25811c55855a2512acc0`.
+- SYNC-CLOSE-AUDIT-001 : `docs/project/16_MOTOR_COMPLETION_AUDIT_V1.md` pr?sent sur `main` ; relecture documentaire et contr?le du diff, aucun test de code ex?cut? car aucun fichier Python modifi?.
 - SYNC-WAVE-010 : `git fetch --all --prune` OK.
-- SYNC-WAVE-010 : `codex/arbitrage-scm-cession-resolve-001` confirmé au même commit que `main`, et `codex/code-scm-cession-block-001` confirmé ancêtre de `main`.
+- SYNC-WAVE-010 : `codex/arbitrage-scm-cession-resolve-001` confirm? au m?me commit que `main`, et `codex/code-scm-cession-block-001` confirm? anc?tre de `main`.
 - SYNC-WAVE-010 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m ruff check .` OK.
-- SYNC-WAVE-010 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m pytest` OK, 165 tests passés.
-- SYNC-WAVE-010 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifiés.
-- FIX-PV-RENDER-001 : source DOCX Lot 2 analysée côté structure/rendu ; en-tête société centré, listes Word, intertitres de décision gras/soulignés et formules de vote en italique identifiés.
+- SYNC-WAVE-010 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m pytest` OK, 165 tests pass?s.
+- SYNC-WAVE-010 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifi?s.
+- FIX-PV-RENDER-001 : source DOCX Lot 2 analys?e c?t? structure/rendu ; en-t?te soci?t? centr?, listes Word, intertitres de d?cision gras/soulign?s et formules de vote en italique identifi?s.
 - FIX-PV-RENDER-001 : smoke DOCX OK dans `artifacts/fix_pv_render_001_smoke_test_2/pv_nomination_gerant.docx`.
 - FIX-PV-RENDER-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
-- FIX-PV-RENDER-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 49 tests passés.
-- CODE-ORDRE-001 : tests unitaires ciblés OK, 7 tests passés dans `tests/unit/test_demande_inscription_ordre.py`.
-- CODE-ORDRE-001 : smoke DOCX OK dans `artifacts/lot_02_demande_inscription_ordre_smoke_test/demande_inscription_ordre.docx`, sans placeholder `[` / `]` ni littéral résiduel `Dérogation ?`.
+- FIX-PV-RENDER-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 49 tests pass?s.
+- CODE-ORDRE-001 : tests unitaires cibl?s OK, 7 tests pass?s dans `tests/unit/test_demande_inscription_ordre.py`.
+- CODE-ORDRE-001 : smoke DOCX OK dans `artifacts/lot_02_demande_inscription_ordre_smoke_test/demande_inscription_ordre.docx`, sans placeholder `[` / `]` ni litt?ral r?siduel `D?rogation ?`.
 - CODE-ORDRE-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
-- CODE-ORDRE-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 56 tests passés.
-- SPEC-RC-001 : source de vérité, sources Lot 2 et variantes raw dump SELARL / SELAS / SPFPL lues en lecture seule.
-- SPEC-RC-001 : specs créées dans `docs/delivery/lot_02_regime_communautaire_batch_spec_canonique_v1.md` et `docs/delivery/lot_02_regime_communautaire_batch_spec_texte_v1.md`.
-- SPEC-RC-001 : aucun code Python modifié ; validations limitées à la relecture documentaire et au contrôle du diff.
+- CODE-ORDRE-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 56 tests pass?s.
+- SPEC-RC-001 : source de v?rit?, sources Lot 2 et variantes raw dump SELARL / SELAS / SPFPL lues en lecture seule.
+- SPEC-RC-001 : specs cr??es dans `docs/delivery/lot_02_regime_communautaire_batch_spec_canonique_v1.md` et `docs/delivery/lot_02_regime_communautaire_batch_spec_texte_v1.md`.
+- SPEC-RC-001 : aucun code Python modifi? ; validations limit?es ? la relecture documentaire et au contr?le du diff.
 - CODE-RC-001 : smoke DOCX OK dans `artifacts/lot_02_regime_communautaire_smoke_test/`, deux lettres produites sans placeholder `[` / `]`.
 - CODE-RC-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
-- CODE-RC-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 66 tests passés.
+- CODE-RC-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 66 tests pass?s.
 - SYNC-SPECS-001 : `git fetch --all --prune` OK.
-- SYNC-SPECS-001 : branche `codex/spec-rc-001` créée et poussée avec les deux specs RC uniquement.
-- SYNC-SPECS-001 : commits SPFPL, dérogations, cession/bail et RC cherry-pickés dans `main` sans conflit.
-- SYNC-SPECS-001 : commit final de pilotage limité à `docs/project/01_EXECUTION_BOARD.md` et `docs/project/04_LAST_STATE.md`.
-- SYNC-TEXTE-SPECS-001 : `git fetch --all --prune` lancé avant synchronisation.
-- SYNC-TEXTE-SPECS-001 : commits `417870da6ee6717a79853547060d6fc0cbacfa9f`, `3672cd129c90e63f440a2316aec54d653b2d24a4`, `18c6614abc1dd3036e1c56565059650748c08883` et `f0424ddad7690d7973d16b00f37aa54b20796d04` cherry-pickés dans `main` sans conflit.
-- SYNC-TEXTE-SPECS-001 : relecture documentaire et contrôle du diff ; aucun test de code exécuté car aucun fichier Python n'a été modifié.
-- SYNC-TEXTE-SPECS-001 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifiés.
-- SYNC-ARBITRAGES-001 : `git fetch --all --prune` lancé avant synchronisation.
-- SYNC-ARBITRAGES-001 : commits `16a7472610c315fd67f701fa7d9f48d253d62e9c`, `0dda81373125e71ce7817a674322cdcf498a88b0` et `ab8b4c00ead28fcd9ead4ad62e19657f35efa397` cherry-pickés dans `main` sans conflit.
-- SYNC-ARBITRAGES-001 : relecture documentaire et contrôle du diff ; aucun test de code exécuté car aucun fichier Python n'a été modifié.
-- SYNC-ARBITRAGES-001 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifiés.
+- SYNC-SPECS-001 : branche `codex/spec-rc-001` cr??e et pouss?e avec les deux specs RC uniquement.
+- SYNC-SPECS-001 : commits SPFPL, d?rogations, cession/bail et RC cherry-pick?s dans `main` sans conflit.
+- SYNC-SPECS-001 : commit final de pilotage limit? ? `docs/project/01_EXECUTION_BOARD.md` et `docs/project/04_LAST_STATE.md`.
+- SYNC-TEXTE-SPECS-001 : `git fetch --all --prune` lanc? avant synchronisation.
+- SYNC-TEXTE-SPECS-001 : commits `417870da6ee6717a79853547060d6fc0cbacfa9f`, `3672cd129c90e63f440a2316aec54d653b2d24a4`, `18c6614abc1dd3036e1c56565059650748c08883` et `f0424ddad7690d7973d16b00f37aa54b20796d04` cherry-pick?s dans `main` sans conflit.
+- SYNC-TEXTE-SPECS-001 : relecture documentaire et contr?le du diff ; aucun test de code ex?cut? car aucun fichier Python n'a ?t? modifi?.
+- SYNC-TEXTE-SPECS-001 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifi?s.
+- SYNC-ARBITRAGES-001 : `git fetch --all --prune` lanc? avant synchronisation.
+- SYNC-ARBITRAGES-001 : commits `16a7472610c315fd67f701fa7d9f48d253d62e9c`, `0dda81373125e71ce7817a674322cdcf498a88b0` et `ab8b4c00ead28fcd9ead4ad62e19657f35efa397` cherry-pick?s dans `main` sans conflit.
+- SYNC-ARBITRAGES-001 : relecture documentaire et contr?le du diff ; aucun test de code ex?cut? car aucun fichier Python n'a ?t? modifi?.
+- SYNC-ARBITRAGES-001 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifi?s.
 - SYNC-CODE-BAIL-APP-001 : `git fetch --all --prune` OK.
-- SYNC-CODE-BAIL-APP-001 : commit `557a013274aa9f7122c81d5e6e0b52c4043a540c` fast-forwardé dans `main` sans conflit.
+- SYNC-CODE-BAIL-APP-001 : commit `557a013274aa9f7122c81d5e6e0b52c4043a540c` fast-forward? dans `main` sans conflit.
 - SYNC-CODE-BAIL-APP-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
-- SYNC-CODE-BAIL-APP-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 75 tests passés.
-- SYNC-CODE-BAIL-APP-001 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifiés.
+- SYNC-CODE-BAIL-APP-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 75 tests pass?s.
+- SYNC-CODE-BAIL-APP-001 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifi?s.
 - SYNC-WAVE-LOT03-05-001 : `git fetch --all --prune` OK.
-- SYNC-WAVE-LOT03-05-001 : commits `36828fbc45d6b8a37c2e76eb8227460df441ebde` et `958fce5d2a9d5d30df4d918cb098fec483f5140e` cherry-pickés dans `main` sans conflit.
+- SYNC-WAVE-LOT03-05-001 : commits `36828fbc45d6b8a37c2e76eb8227460df441ebde` et `958fce5d2a9d5d30df4d918cb098fec483f5140e` cherry-pick?s dans `main` sans conflit.
 - SYNC-WAVE-LOT03-05-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
-- SYNC-WAVE-LOT03-05-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 80 tests passés après sauvegarde des fichiers cession non suivis hors ticket.
-- SYNC-WAVE-LOT03-05-001 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifiés.
+- SYNC-WAVE-LOT03-05-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 80 tests pass?s apr?s sauvegarde des fichiers cession non suivis hors ticket.
+- SYNC-WAVE-LOT03-05-001 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifi?s.
 - RESUME-CODE-CESSION-CAB-001 : smoke DOCX OK dans `artifacts/lot_03_cession_cabinets_smoke_test/`, quatre documents produits sans placeholder `[` / `]`.
 - RESUME-CODE-CESSION-CAB-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
-- RESUME-CODE-CESSION-CAB-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 89 tests passés.
-- CODE-DEROG-CORE-001 : smoke DOCX OK dans `artifacts/lot_03_derogations_core_smoke_test/`, deux formulaires à compléter produits sans placeholder `[` / `]`.
+- RESUME-CODE-CESSION-CAB-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 89 tests pass?s.
+- CODE-DEROG-CORE-001 : smoke DOCX OK dans `artifacts/lot_03_derogations_core_smoke_test/`, deux formulaires ? compl?ter produits sans placeholder `[` / `]`.
 - CODE-DEROG-CORE-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
-- CODE-DEROG-CORE-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 95 tests passés.
+- CODE-DEROG-CORE-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 95 tests pass?s.
 - SYNC-CODE-WAVE-002 : `git fetch --all --prune` OK.
-- SYNC-CODE-WAVE-002 : commits sources `ea35d2af353ac5b8567e82091ab978cf24a27445` et `bee4c8bec27397198a170c4f9888b2470b24c67f` cherry-pickés dans `main` sans conflit.
+- SYNC-CODE-WAVE-002 : commits sources `ea35d2af353ac5b8567e82091ab978cf24a27445` et `bee4c8bec27397198a170c4f9888b2470b24c67f` cherry-pick?s dans `main` sans conflit.
 - SYNC-CODE-WAVE-002 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
-- SYNC-CODE-WAVE-002 : `.\.venv\Scripts\python.exe -m pytest` OK, 95 tests passés.
-- SYNC-CODE-WAVE-002 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifiés.
+- SYNC-CODE-WAVE-002 : `.\.venv\Scripts\python.exe -m pytest` OK, 95 tests pass?s.
+- SYNC-CODE-WAVE-002 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifi?s.
 - SYNC-WAVE-003 : `git fetch --all --prune` OK.
-- SYNC-WAVE-003 : commits sources `b854821061b85ac66fe785c11cb3c6b0bac5a85b` et `09cbad120d22910f05ba5e645971ade56fedb76d` cherry-pickés dans `main` sans conflit.
+- SYNC-WAVE-003 : commits sources `b854821061b85ac66fe785c11cb3c6b0bac5a85b` et `09cbad120d22910f05ba5e645971ade56fedb76d` cherry-pick?s dans `main` sans conflit.
 - SYNC-WAVE-003 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
-- SYNC-WAVE-003 : `.\.venv\Scripts\python.exe -m pytest` OK, 101 tests passés.
-- SYNC-WAVE-003 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifiés.
+- SYNC-WAVE-003 : `.\.venv\Scripts\python.exe -m pytest` OK, 101 tests pass?s.
+- SYNC-WAVE-003 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifi?s.
 - SYNC-STATUTS-SPECS-001 : `git fetch --all --prune` OK.
-- SYNC-STATUTS-SPECS-001 : commits sources `00b7886ac431c8a47d9cdcca8bfed026a756cb69`, `b34c66e5e67f3261317035943e974536be27d6d3`, `9b25e09d08ec2161d757d1581c34073dcbbc594f` et `704eeb7301cf69460c16b2ed9fbc0ea22ca83c8c` cherry-pickés dans `main` sans conflit.
-- SYNC-STATUTS-SPECS-001 : relecture documentaire et contrôle du diff ; aucun test de code exécuté car aucun fichier Python n'a été modifié.
-- SYNC-STATUTS-SPECS-001 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifiés.
+- SYNC-STATUTS-SPECS-001 : commits sources `00b7886ac431c8a47d9cdcca8bfed026a756cb69`, `b34c66e5e67f3261317035943e974536be27d6d3`, `9b25e09d08ec2161d757d1581c34073dcbbc594f` et `704eeb7301cf69460c16b2ed9fbc0ea22ca83c8c` cherry-pick?s dans `main` sans conflit.
+- SYNC-STATUTS-SPECS-001 : relecture documentaire et contr?le du diff ; aucun test de code ex?cut? car aucun fichier Python n'a ?t? modifi?.
+- SYNC-STATUTS-SPECS-001 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifi?s.
 - SYNC-STATUTS-CODE-ARB-001 : `git fetch --all --prune` OK.
-- SYNC-STATUTS-CODE-ARB-001 : commits sources `82e67120ed714b791d5483108336a570ea520e59`, `a98939c649e4124e40f2cd69c9ed125d342acc31` et `1caafd7` cherry-pickés dans `main`.
-- SYNC-STATUTS-CODE-ARB-001 : conflit unique résolu dans `src/sydel_doc_engine/domain/models.py` par fusion additive SAS/SPFPL.
+- SYNC-STATUTS-CODE-ARB-001 : commits sources `82e67120ed714b791d5483108336a570ea520e59`, `a98939c649e4124e40f2cd69c9ed125d342acc31` et `1caafd7` cherry-pick?s dans `main`.
+- SYNC-STATUTS-CODE-ARB-001 : conflit unique r?solu dans `src/sydel_doc_engine/domain/models.py` par fusion additive SAS/SPFPL.
 - SYNC-STATUTS-CODE-ARB-001 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m ruff check .` OK.
-- SYNC-STATUTS-CODE-ARB-001 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m pytest` OK, 111 tests passés.
-- SYNC-STATUTS-CODE-ARB-001 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifiés.
+- SYNC-STATUTS-CODE-ARB-001 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m pytest` OK, 111 tests pass?s.
+- SYNC-STATUTS-CODE-ARB-001 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifi?s.
 - SYNC-STYLE-CIVILS-001 : `git fetch --all --prune` OK.
-- SYNC-STYLE-CIVILS-001 : commit source `76dd139da65c233f0c6aecc76bc2ea5e929381ca` intégré dans `main` par fast-forward.
-- SYNC-STYLE-CIVILS-001 : commit source `b21f1b0cc5b975049e4acc279b8303f1d739b60f` cherry-pické dans `main` sans conflit.
-- SYNC-STYLE-CIVILS-001 : relecture documentaire et contrôle du diff ; aucun test de code exécuté car aucun fichier Python n'a été modifié par le commit final de pilotage.
-- SYNC-STYLE-CIVILS-001 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifiés.
+- SYNC-STYLE-CIVILS-001 : commit source `76dd139da65c233f0c6aecc76bc2ea5e929381ca` int?gr? dans `main` par fast-forward.
+- SYNC-STYLE-CIVILS-001 : commit source `b21f1b0cc5b975049e4acc279b8303f1d739b60f` cherry-pick? dans `main` sans conflit.
+- SYNC-STYLE-CIVILS-001 : relecture documentaire et contr?le du diff ; aucun test de code ex?cut? car aucun fichier Python n'a ?t? modifi? par le commit final de pilotage.
+- SYNC-STYLE-CIVILS-001 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifi?s.
 - SYNC-STATUTS-SEL-CIVILS-001 : `git fetch --all --prune` OK.
-- SYNC-STATUTS-SEL-CIVILS-001 : commit source `9a79560c4bae1ae3a98ec5305b4187f9f4ebd6a8` cherry-pické dans `main` sans conflit.
-- SYNC-STATUTS-SEL-CIVILS-001 : arbitrage civils V1 confirmé présent dans `main`, contenu identique au commit source `b21f1b0cc5b975049e4acc279b8303f1d739b60f`.
+- SYNC-STATUTS-SEL-CIVILS-001 : commit source `9a79560c4bae1ae3a98ec5305b4187f9f4ebd6a8` cherry-pick? dans `main` sans conflit.
+- SYNC-STATUTS-SEL-CIVILS-001 : arbitrage civils V1 confirm? pr?sent dans `main`, contenu identique au commit source `b21f1b0cc5b975049e4acc279b8303f1d739b60f`.
 - SYNC-STATUTS-SEL-CIVILS-001 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m ruff check .` OK.
-- SYNC-STATUTS-SEL-CIVILS-001 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m pytest` OK, 122 tests passés.
-- SYNC-STATUTS-SEL-CIVILS-001 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifiés.
+- SYNC-STATUTS-SEL-CIVILS-001 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m pytest` OK, 122 tests pass?s.
+- SYNC-STATUTS-SEL-CIVILS-001 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifi?s.
 - CODE-STATUTS-CIVILS-CORE-001 : smoke DOCX OK dans `artifacts/lot_04_statuts_civils_core_smoke_test/`, trois documents produits sans placeholder `[` / `]`.
-- CODE-STATUTS-CIVILS-CORE-001 : tests ciblés OK sur `tests/unit/test_lot_04_statuts_civils.py`, `tests/unit/test_registry_seed.py` et `tests/unit/test_orchestrator_service.py`, 21 tests passés.
+- CODE-STATUTS-CIVILS-CORE-001 : tests cibl?s OK sur `tests/unit/test_lot_04_statuts_civils.py`, `tests/unit/test_registry_seed.py` et `tests/unit/test_orchestrator_service.py`, 21 tests pass?s.
 - CODE-STATUTS-CIVILS-CORE-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
-- CODE-STATUTS-CIVILS-CORE-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 129 tests passés.
+- CODE-STATUTS-CIVILS-CORE-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 129 tests pass?s.
 - SYNC-WAVE-004 : `git fetch --all --prune` OK.
-- SYNC-WAVE-004 : commits sources `557fc1920361a8c7831e6b023d70471c9c29e5ff` et `291da7b6db68b3de413fba50cf652dde98a8f6a8` cherry-pickés dans `main` sans conflit.
+- SYNC-WAVE-004 : commits sources `557fc1920361a8c7831e6b023d70471c9c29e5ff` et `291da7b6db68b3de413fba50cf652dde98a8f6a8` cherry-pick?s dans `main` sans conflit.
 - SYNC-WAVE-004 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m ruff check .` OK.
-- SYNC-WAVE-004 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m pytest` OK, 130 tests passés.
-- SYNC-WAVE-004 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifiés.
+- SYNC-WAVE-004 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m pytest` OK, 130 tests pass?s.
+- SYNC-WAVE-004 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifi?s.
 - CONVERT-DEROG-SALARIEE-001 : `Word.Application` COM disponible, mais conversion du `.doc` legacy salariee echouee avec `0x800706BE` ; aucun DOCX cible cree dans `project/source_documents/lot_03/`.
 - CONVERT-DEROG-SALARIEE-001 : `LibreOffice` / `soffice`, `pandoc`, `antiword` et `catdoc` non disponibles localement ; aucun code Python modifie.
 - SYNC-WAVE-005 : `git fetch --all --prune` OK.
-- SYNC-WAVE-005 : commits sources `91436f0916fdecbcc98450b72ba6e602cb8f1a3b`, `1b3ba14d0bcc31fc7dcbf1752d6d3263645ae8b3`, `32059155c618b4e985893f42ef2817187599c281`, `74d41db53543b790e197082e8b9c713f7de92dc2` et `d1d649e11fdc638e6d7da0640c154d1f213739ee` cherry-pickés dans `main` sans conflit.
+- SYNC-WAVE-005 : commits sources `91436f0916fdecbcc98450b72ba6e602cb8f1a3b`, `1b3ba14d0bcc31fc7dcbf1752d6d3263645ae8b3`, `32059155c618b4e985893f42ef2817187599c281`, `74d41db53543b790e197082e8b9c713f7de92dc2` et `d1d649e11fdc638e6d7da0640c154d1f213739ee` cherry-pick?s dans `main` sans conflit.
 - SYNC-WAVE-005 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m ruff check .` OK.
-- SYNC-WAVE-005 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m pytest` OK, 135 tests passés.
-- SYNC-WAVE-005 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifiés.
+- SYNC-WAVE-005 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m pytest` OK, 135 tests pass?s.
+- SYNC-WAVE-005 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifi?s.
 - SYNC-WAVE-006 : `git fetch --all --prune` OK.
-- SYNC-WAVE-006 : commits sources `557fc1920361a8c7831e6b023d70471c9c29e5ff` et `291da7b6db68b3de413fba50cf652dde98a8f6a8` déjà présents par équivalence de contenu ; commits sources `2c55a7ab5f8a44de5c29305cfbc280f930ee32ec`, `568336bed7ccb0a5901abe5d921fd9056573e32d`, `8f0c8ab13d6e8f1a9e50747f8a9d5b607bcb90d6` et `11dc0d8dda23f841d650586e0977e0202270a3b5` cherry-pickés dans `main`.
-- SYNC-WAVE-006 : conflits de pilotage résolus dans `docs/project/01_EXECUTION_BOARD.md` et `docs/project/04_LAST_STATE.md` en conservant les états les plus récents.
+- SYNC-WAVE-006 : commits sources `557fc1920361a8c7831e6b023d70471c9c29e5ff` et `291da7b6db68b3de413fba50cf652dde98a8f6a8` d?j? pr?sents par ?quivalence de contenu ; commits sources `2c55a7ab5f8a44de5c29305cfbc280f930ee32ec`, `568336bed7ccb0a5901abe5d921fd9056573e32d`, `8f0c8ab13d6e8f1a9e50747f8a9d5b607bcb90d6` et `11dc0d8dda23f841d650586e0977e0202270a3b5` cherry-pick?s dans `main`.
+- SYNC-WAVE-006 : conflits de pilotage r?solus dans `docs/project/01_EXECUTION_BOARD.md` et `docs/project/04_LAST_STATE.md` en conservant les ?tats les plus r?cents.
 - SYNC-WAVE-006 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m ruff check .` OK.
-- SYNC-WAVE-006 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m pytest` OK, 143 tests passés.
-- SYNC-WAVE-006 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifiés.
+- SYNC-WAVE-006 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m pytest` OK, 143 tests pass?s.
+- SYNC-WAVE-006 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifi?s.
 - SYNC-WAVE-007 : `git fetch --all --prune` OK.
-- SYNC-WAVE-007 : commits sources `3c040774cdfe57c203b78776a9ea412ec3d14d94`, `6453b6f64665feda898a076f730cba9a6684825b`, `075af377f7c9d7475429f1e738b46483127d757f` et `c221681570782a1b1efc5afc72087cb903cd8a65` cherry-pickés dans `main`.
-- SYNC-WAVE-007 : conflits résolus par fusion additive entre statuts SCM, satellites SAS et satellites SCM ; les satellites SCM DOCX sont intégrés sous `DOC-026` à `DOC-028`.
+- SYNC-WAVE-007 : commits sources `3c040774cdfe57c203b78776a9ea412ec3d14d94`, `6453b6f64665feda898a076f730cba9a6684825b`, `075af377f7c9d7475429f1e738b46483127d757f` et `c221681570782a1b1efc5afc72087cb903cd8a65` cherry-pick?s dans `main`.
+- SYNC-WAVE-007 : conflits r?solus par fusion additive entre statuts SCM, satellites SAS et satellites SCM ; les satellites SCM DOCX sont int?gr?s sous `DOC-026` ? `DOC-028`.
 - SYNC-WAVE-007 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m ruff check .` OK.
-- SYNC-WAVE-007 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m pytest` OK, 155 tests passés.
-- SYNC-WAVE-007 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifiés.
+- SYNC-WAVE-007 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m pytest` OK, 155 tests pass?s.
+- SYNC-WAVE-007 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifi?s.
 - SYNC-WAVE-008 : `git fetch --all --prune` OK.
-- SYNC-WAVE-008 : commits sources `61a1c49353724bbf5b8f1bb8f039d5e96b877ecc`, `d3188c0b4a4a61d889a2ce9ccc37e84e1284adaa`, `939e1c2088892abcf4a8fdcbaa35911f4f8a2f9f`, `19468886f5e885f79b2b35e17e2ff2a097ea9c3a`, `d8747ef20aba478c575c5a491cdf0f634a9c26d3`, `00b4c955b372399bb8701f47a5686748539f061b`, `a181e069f756a1ea846fdcd1824b3f8c57cc11f5` et `518e46fbb8d8bee03a23ea203654b4199103fb7e` cherry-pickés dans `main` sans conflit.
+- SYNC-WAVE-008 : commits sources `61a1c49353724bbf5b8f1bb8f039d5e96b877ecc`, `d3188c0b4a4a61d889a2ce9ccc37e84e1284adaa`, `939e1c2088892abcf4a8fdcbaa35911f4f8a2f9f`, `19468886f5e885f79b2b35e17e2ff2a097ea9c3a`, `d8747ef20aba478c575c5a491cdf0f634a9c26d3`, `00b4c955b372399bb8701f47a5686748539f061b`, `a181e069f756a1ea846fdcd1824b3f8c57cc11f5` et `518e46fbb8d8bee03a23ea203654b4199103fb7e` cherry-pick?s dans `main` sans conflit.
 - SYNC-WAVE-008 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m ruff check .` OK.
-- SYNC-WAVE-008 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m pytest` OK, 161 tests passés.
-- SYNC-WAVE-008 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifiés.
-- SPEC-TEXTE-ORDRE-001 : source de vérité, source Lot 2 et variantes raw dump SELARL / SELAS / SPFPL cession / SPFPL apport lues en lecture seule.
-- SPEC-TEXTE-ORDRE-001 : spec texte créée dans `docs/delivery/lot_02_demande_inscription_ordre_spec_texte_v1.md`.
-- SPEC-TEXTE-ORDRE-001 : aucun code Python modifié ; validations limitées à la relecture documentaire et au contrôle du diff.
-- SPEC-TEXTE-ORDRE-001 : `git status --short --branch` n'était pas propre avant intervention ; aucun commit ni push n'a été effectué.
-- SPEC-ORDRE-001 : source de vérité, source Lot 2 et variantes raw dump SELARL / SELAS / SPFPL lues en lecture seule.
-- SPEC-ORDRE-001 : spec canonique créée dans `docs/delivery/lot_02_demande_inscription_ordre_spec_canonique_v1.md`.
-- SPEC-ORDRE-001 : aucun code Python modifié ; validations limitées à la relecture documentaire et au contrôle du diff.
-- SPEC-ORDRE-001 : `git status --short` n'était pas propre avant intervention ; aucun commit ni push n'a été effectué.
+- SYNC-WAVE-008 : `C:\Users\Gad\Desktop\Sydel\sydel-document-engine\.venv\Scripts\python.exe -m pytest` OK, 161 tests pass?s.
+- SYNC-WAVE-008 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifi?s.
+- SPEC-TEXTE-ORDRE-001 : source de v?rit?, source Lot 2 et variantes raw dump SELARL / SELAS / SPFPL cession / SPFPL apport lues en lecture seule.
+- SPEC-TEXTE-ORDRE-001 : spec texte cr??e dans `docs/delivery/lot_02_demande_inscription_ordre_spec_texte_v1.md`.
+- SPEC-TEXTE-ORDRE-001 : aucun code Python modifi? ; validations limit?es ? la relecture documentaire et au contr?le du diff.
+- SPEC-TEXTE-ORDRE-001 : `git status --short --branch` n'?tait pas propre avant intervention ; aucun commit ni push n'a ?t? effectu?.
+- SPEC-ORDRE-001 : source de v?rit?, source Lot 2 et variantes raw dump SELARL / SELAS / SPFPL lues en lecture seule.
+- SPEC-ORDRE-001 : spec canonique cr??e dans `docs/delivery/lot_02_demande_inscription_ordre_spec_canonique_v1.md`.
+- SPEC-ORDRE-001 : aucun code Python modifi? ; validations limit?es ? la relecture documentaire et au contr?le du diff.
+- SPEC-ORDRE-001 : `git status --short` n'?tait pas propre avant intervention ; aucun commit ni push n'a ?t? effectu?.
 - PLACEMENT-HIGH-001 : les 4 fichiers HIGH cibles existent dans `project/source_documents/`.
-- PLACEMENT-HIGH-001 : les hashes cibles ont été comparés aux sources brutes correspondantes pour les cas HIGH ; aucune copie nouvelle nécessaire.
-- PLACEMENT-HIGH-001 : aucun test de code exécuté car aucun fichier Python n'a été modifié.
-- PLACEMENT-HIGH-001 : `git status --short` n'était pas propre avant intervention ; aucun commit ni push n'a été effectué.
-- ARBITRAGE-SOURCES-001 : scan documentaire en lecture seule ; aucun test de code exécuté car aucun fichier Python n'a été modifié.
+- PLACEMENT-HIGH-001 : les hashes cibles ont ?t? compar?s aux sources brutes correspondantes pour les cas HIGH ; aucune copie nouvelle n?cessaire.
+- PLACEMENT-HIGH-001 : aucun test de code ex?cut? car aucun fichier Python n'a ?t? modifi?.
+- PLACEMENT-HIGH-001 : `git status --short` n'?tait pas propre avant intervention ; aucun commit ni push n'a ?t? effectu?.
+- ARBITRAGE-SOURCES-001 : scan documentaire en lecture seule ; aucun test de code ex?cut? car aucun fichier Python n'a ?t? modifi?.
 - ARBITRAGE-SOURCES-001 : relecture documentaire du diff requise avant toute reprise de placement physique.
-- ARBITRAGE-SOURCES-001 : `raw_drive_dump` n'a pas été versionné.
-- ANALYSE-ORDRE-001 : relecture documentaire uniquement ; aucun test de code exécuté car aucun fichier Python n'a été modifié.
-- ANALYSE-ORDRE-001 : `git status --short` consulté avant modifications ; le dépôt contenait déjà des fichiers non suivis hors périmètre du ticket.
-- Harnais temporaire de smoke test revue : OK, 1 test passé ; DOCX régénéré et aperçu texte extrait.
+- ARBITRAGE-SOURCES-001 : `raw_drive_dump` n'a pas ?t? versionn?.
+- ANALYSE-ORDRE-001 : relecture documentaire uniquement ; aucun test de code ex?cut? car aucun fichier Python n'a ?t? modifi?.
+- ANALYSE-ORDRE-001 : `git status --short` consult? avant modifications ; le d?p?t contenait d?j? des fichiers non suivis hors p?rim?tre du ticket.
+- Harnais temporaire de smoke test revue : OK, 1 test pass? ; DOCX r?g?n?r? et aper?u texte extrait.
 - `.\.venv\Scripts\python.exe -m ruff check .` : OK.
-- `.\.venv\Scripts\python.exe -m pytest` : OK, 44 tests passés.
-- Smoke test PV réel : OK, DOCX généré dans `artifacts/lot_02_pv_nomination_gerant_smoke_test/`.
-- Smoke test Lot 1 réel : OK, 3 DOCX produits dans `artifacts/lot_01_smoke_test/`.
-- SPEC-RENDER-001 : relecture documentaire uniquement ; aucun test de code exécuté car aucun fichier Python n'a été modifié.
+- `.\.venv\Scripts\python.exe -m pytest` : OK, 44 tests pass?s.
+- Smoke test PV r?el : OK, DOCX g?n?r? dans `artifacts/lot_02_pv_nomination_gerant_smoke_test/`.
+- Smoke test Lot 1 r?el : OK, 3 DOCX produits dans `artifacts/lot_01_smoke_test/`.
+- SPEC-RENDER-001 : relecture documentaire uniquement ; aucun test de code ex?cut? car aucun fichier Python n'a ?t? modifi?.
 - RENDER-STYLE-001 : smoke Lot 1 OK dans `artifacts/render_style_001_lot_01_smoke_test/`.
 - RENDER-STYLE-001 : smoke PV OK dans `artifacts/render_style_001_pv_nomination_gerant_smoke_test/`.
-- RENDER-STYLE-001 : un premier smoke PV vers l'ancien dossier `artifacts/lot_02_pv_nomination_gerant_smoke_test/` a échoué avec `PermissionError` sur le DOCX existant, probablement verrouillé ; le smoke a été relancé avec succès dans un nouveau dossier d'artefacts.
+- RENDER-STYLE-001 : un premier smoke PV vers l'ancien dossier `artifacts/lot_02_pv_nomination_gerant_smoke_test/` a ?chou? avec `PermissionError` sur le DOCX existant, probablement verrouill? ; le smoke a ?t? relanc? avec succ?s dans un nouveau dossier d'artefacts.
 - ORCH-L2-PV-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
 - ORCH-L2-PV-001 : `.\.venv\Scripts\python.exe -m pytest` OK.
-- SMOKE-ORCH-L2-001 : smoke SCI positif OK, `pv_nomination_gerant.docx` présent.
-- SMOKE-ORCH-L2-001 : smoke SAS négatif OK, `pv_nomination_gerant.docx` absent.
+- SMOKE-ORCH-L2-001 : smoke SCI positif OK, `pv_nomination_gerant.docx` pr?sent.
+- SMOKE-ORCH-L2-001 : smoke SAS n?gatif OK, `pv_nomination_gerant.docx` absent.
 - SMOKE-ORCH-L2-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
-- SMOKE-ORCH-L2-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 47 tests passés.
+- SMOKE-ORCH-L2-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 47 tests pass?s.
 - RECONCILE-MOTOR-CLOSE-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
-- RECONCILE-MOTOR-CLOSE-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 176 tests passés.
-- RECONCILE-MOTOR-CLOSE-001 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifiés.
-- PDF-BACKEND-001 : tests ciblés `tests/unit/test_pdf_export.py` OK, 6 tests passés.
-- PDF-BACKEND-001 : smoke réel OK, `declaration_non_condamnation.docx` généré puis converti en PDF via `word-com` dans `artifacts/pdf_backend_001_smoke_test_2/`, hors versionnement.
+- RECONCILE-MOTOR-CLOSE-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 176 tests pass?s.
+- RECONCILE-MOTOR-CLOSE-001 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifi?s.
+- PDF-BACKEND-001 : tests cibl?s `tests/unit/test_pdf_export.py` OK, 6 tests pass?s.
+- PDF-BACKEND-001 : smoke r?el OK, `declaration_non_condamnation.docx` g?n?r? puis converti en PDF via `word-com` dans `artifacts/pdf_backend_001_smoke_test_2/`, hors versionnement.
 - PDF-BACKEND-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
 - PDF-BACKEND-001 : `.\.venv\Scripts\python.exe -m pytest` OK.
-- PDF-BACKEND-001 : `artifacts/` non versionné ; aucun fichier UI modifié.
+- PDF-BACKEND-001 : `artifacts/` non versionn? ; aucun fichier UI modifi?.
 - SYNC-POST-MOTOR-UI-001 : `git fetch --all --prune` OK.
-- SYNC-POST-MOTOR-UI-001 : commits sources `d62670efe10481926437c0e1a5dabbe349fd5938`, `24a881b999371811d39a2403c0b51d9ae8ce0556`, `ef6252b3c15dc3fc39f1efdc05687c0f448f8fe1`, `2f76f61848469ddf2f7b29c3169e8893e83fd3a5` et `c2fc0db4d51485c7c5e721c5184028ae17c68cb3` cherry-pickés dans `main` sans conflit.
+- SYNC-POST-MOTOR-UI-001 : commits sources `d62670efe10481926437c0e1a5dabbe349fd5938`, `24a881b999371811d39a2403c0b51d9ae8ce0556`, `ef6252b3c15dc3fc39f1efdc05687c0f448f8fe1`, `2f76f61848469ddf2f7b29c3169e8893e83fd3a5` et `c2fc0db4d51485c7c5e721c5184028ae17c68cb3` cherry-pick?s dans `main` sans conflit.
 - SYNC-POST-MOTOR-UI-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
-- SYNC-POST-MOTOR-UI-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 182 tests passés.
-- SYNC-POST-MOTOR-UI-001 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifiés.
+- SYNC-POST-MOTOR-UI-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 182 tests pass?s.
+- SYNC-POST-MOTOR-UI-001 : `project/source_import/raw_drive_dump/` et `artifacts/` non modifi?s.
 - UI-PDF-ZIP-INTEGRATION-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
-- UI-PDF-ZIP-INTEGRATION-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 186 tests passés.
+- UI-PDF-ZIP-INTEGRATION-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 186 tests pass?s.
 - UI-PDF-ZIP-INTEGRATION-001 : smoke lancement Streamlit OK sur `http://localhost:8502`, page UI chargee.
 - UI-PDF-ZIP-INTEGRATION-001 : `artifacts/` non versionne ; le PDF reste dependant de LibreOffice ou Word COM local.
 
@@ -958,29 +958,29 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
 - SELARL-PILOT-PROTOCOL-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
 - SELARL-PILOT-PROTOCOL-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 217 tests passes.
 - SELARL-PILOT-SOURCE-VERIFY-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
-- SELARL-PILOT-SOURCE-VERIFY-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 217 tests passés.
+- SELARL-PILOT-SOURCE-VERIFY-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 217 tests pass?s.
 - SELARL-FORM-SCHEMA-IMPL-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
-- SELARL-FORM-SCHEMA-IMPL-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 231 tests passés.
+- SELARL-FORM-SCHEMA-IMPL-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 231 tests pass?s.
 - SELARL-UI-WIZARD-IMPL-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
-- SELARL-UI-WIZARD-IMPL-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 239 tests passés.
+- SELARL-UI-WIZARD-IMPL-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 239 tests pass?s.
 - SELARL-FLOW-REALIGN-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
-- SELARL-FLOW-REALIGN-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 245 tests passés.
-- SELARL-REUSE-RULES-REALIGN-001 : `.\.venv\Scripts\python.exe -m pytest tests/unit/test_selarl_form_schema.py tests/unit/test_business_wizard.py` OK, 48 tests passés.
+- SELARL-FLOW-REALIGN-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 245 tests pass?s.
+- SELARL-REUSE-RULES-REALIGN-001 : `.\.venv\Scripts\python.exe -m pytest tests/unit/test_selarl_form_schema.py tests/unit/test_business_wizard.py` OK, 48 tests pass?s.
 - SELARL-REUSE-RULES-REALIGN-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
-- SELARL-REUSE-RULES-REALIGN-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 252 tests passés.
-- SELARL-UI-REALIGN-001 : `.\.venv\Scripts\python.exe -m pytest tests/unit/test_business_wizard.py` OK, 34 tests passés.
+- SELARL-REUSE-RULES-REALIGN-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 252 tests pass?s.
+- SELARL-UI-REALIGN-001 : `.\.venv\Scripts\python.exe -m pytest tests/unit/test_business_wizard.py` OK, 34 tests pass?s.
 - SELARL-UI-REALIGN-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
-- SELARL-UI-REALIGN-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 257 tests passés.
-- SELARL-SMOKE-REALISTIC-001 : smoke DOCX/ZIP OK sur trois scénarios réalistes, 4 DOCX et 1 ZIP produits par scénario ; backend PDF local indisponible.
-- SELARL-SMOKE-REALISTIC-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK ; `.\.venv\Scripts\python.exe -m pytest` OK, 257 tests passés.
-- SELARL-CLOUD-GENERATION-BUG-001 : bug reproduit via AppTest sur le parcours visible ; avant correction `Documents prets = 0` et `Generer les DOCX` désactivé après saisie tardive des champs source.
-- SELARL-CLOUD-GENERATION-BUG-001 : `.\.venv\Scripts\python.exe -m pytest tests/unit/test_business_wizard.py -q` OK, 35 tests passés.
+- SELARL-UI-REALIGN-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 257 tests pass?s.
+- SELARL-SMOKE-REALISTIC-001 : smoke DOCX/ZIP OK sur trois sc?narios r?alistes, 4 DOCX et 1 ZIP produits par sc?nario ; backend PDF local indisponible.
+- SELARL-SMOKE-REALISTIC-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK ; `.\.venv\Scripts\python.exe -m pytest` OK, 257 tests pass?s.
+- SELARL-CLOUD-GENERATION-BUG-001 : bug reproduit via AppTest sur le parcours visible ; avant correction `Documents prets = 0` et `Generer les DOCX` d?sactiv? apr?s saisie tardive des champs source.
+- SELARL-CLOUD-GENERATION-BUG-001 : `.\.venv\Scripts\python.exe -m pytest tests/unit/test_business_wizard.py -q` OK, 35 tests pass?s.
 - SELARL-CLOUD-GENERATION-BUG-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
-- SELARL-CLOUD-GENERATION-BUG-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 266 tests passés.
-- ASSISTANT-METIER-PREFILL-001 : `.\.venv\Scripts\python.exe -m pytest tests\unit\test_business_wizard.py -q` OK, 41 tests passés.
-- ASSISTANT-METIER-PREFILL-001 : `.\.venv\Scripts\python.exe -m pytest tests\unit\test_single_document_mode.py tests\unit\test_ui_runtime.py -q` OK, 12 tests passés.
+- SELARL-CLOUD-GENERATION-BUG-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 266 tests pass?s.
+- ASSISTANT-METIER-PREFILL-001 : `.\.venv\Scripts\python.exe -m pytest tests\unit\test_business_wizard.py -q` OK, 41 tests pass?s.
+- ASSISTANT-METIER-PREFILL-001 : `.\.venv\Scripts\python.exe -m pytest tests\unit\test_single_document_mode.py tests\unit\test_ui_runtime.py -q` OK, 12 tests pass?s.
 - ASSISTANT-METIER-PREFILL-001 : `.\.venv\Scripts\python.exe -m ruff check .` OK.
-- ASSISTANT-METIER-PREFILL-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 272 tests passés.
+- ASSISTANT-METIER-PREFILL-001 : `.\.venv\Scripts\python.exe -m pytest` OK, 272 tests pass?s.
 - GLOBAL-FRONT-ARCHITECTURE-001 : relecture documentaire et controle du diff OK ; aucun test Python requis car aucun fichier Python modifie.
 - GLOBAL-FRONT-ARCHITECTURE-001 : `docs/docssource_truth/` etait non suivi avant intervention et reste hors perimetre.
 - GLOBAL-FRONT-ARCHITECTURE-QA-001 : relecture documentaire et controle du diff OK ; aucun test Python requis car aucun fichier Python modifie.
