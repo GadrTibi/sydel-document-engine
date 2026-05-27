@@ -13,6 +13,13 @@
 | TRACK-B-FRONT-ARCHITECTURE-RESET-001 | DONE | Refonder le chemin front Track B propre et isoler le legacy | arbitrage produit front + fondations front_data + branche track-b/clean-rebuild | nouveau front_app clean + rapport + tests + lancement local |
 | TRACK-B-SELARL-SOURCE-OF-TRUTH-CONTRACT-001 | DONE | Figer le contrat metier-front SELARL V1 depuis les sources de verite | sources SELARL V2/V3 + reponse metier + NotebookLM + specs/revues + branche track-b/clean-rebuild | `docs/project/TRACK_B_SELARL_FRONT_CONTRACT_V1.md` + conclusion GO bornee |
 | TRACK-B-SELARL-VERTICAL-SLICE-IMPLEMENT-001 | DONE | Brancher la vraie vertical slice SELARL V1 dans le front_app clean | contrat `TRACK_B_SELARL_FRONT_CONTRACT_V1.md` + moteur documentaire existant + branche track-b/clean-rebuild | slice SELARL V1 bornee dans `front_app` + generation DOCX/ZIP + tests cibles |
+| YB-S12-001 | DONE | Boss Delta Bridge | cadrage Boss Delta session + arbitrages PM + memoire projet | canon Sprint 12 absorbe, flows PM, ledger YB, pilote cobayes en pause |
+| YB-S12-002 | READY | Multi-contextes multi-bureaux | canon YB-S12-001 + flow multi-bureaux | spec contextes separes par bureau, users autorises, pas de vue fusionnee |
+| YB-S12-003 | QUEUED | Modele multi-blocs Lead / Atelier / Relance | YB-S12-002 + canon Lead/Atelier/Relance | spec blocs, transitions, ownership et droits |
+| YB-S12-004 | QUEUED | REFAIS_AG + relance telepro | YB-S12-003 + flow REFAIS_AG v2 | REFAIS_AG historise, visible telepro, hors prospection brute |
+| YB-S12-005 | QUEUED | Relance boss | YB-S12-004 + etats relance | RELANCE_BOSS lecture seule telepro + messagerie autorisee |
+| YB-S12-006 | QUEUED | Affectation atelier par bureau | YB-S12-005 + contextes bureau | file manuelle atelier non attribue, aucun fallback auto |
+| YB-S12-007 | BLOCKED | Rebuild pilote / UAT | YB-S12-002 a YB-S12-006 DONE | pilote/UAT reconstruits, cobayes seulement apres absorption |
 | PM-001 | DONE | Installer la mémoire projet dans le repo | source de vérité + specs Lot 1 | docs/project/* |
 | PM-002 | DONE | Vérifier et compléter la mémoire projet opérationnelle | AGENTS.md + docs/project/* | docs/project complétés + artefact parasite traité |
 | PM-003 | DONE | Installer le kit de reprise nouveau ChatGPT / Codex | mémoire projet existante | handoff + last state + prompt nouveau chat |
