@@ -10,6 +10,7 @@
 
 | ID | Statut | Objet | Entr?es obligatoires | Sorties obligatoires |
 |---|---|---|---|---|
+| TRACK-B-SELARL-DOWNLOAD-UX-001 | DONE | Rendre le dossier genere telechargeable depuis le clean front | retour testeur du 2026-05-27 + capture console + clean front SELARL V1 | boutons de telechargement Streamlit ZIP et DOCX apres generation + test AppTest + ruff/test/HTTP 200 |
 | TRACK-B-SELARL-UX-FOLLOWUP-001 | DONE | Corriger les retours UI SELARL apres test local | retour utilisateur du 2026-05-27 + clean front SELARL V1 | dates JJ/MM/AAAA sans borne Streamlit + situation matrimoniale en liste + valeur nominale calculee + labels ordre clarifies + ruff/test/HTTP 200 |
 | TRACK-B-SELARL-UX-DEDUP-RECONCILIATION-001 | DONE | Corriger l'UX SELARL V1 apres reconciliation associe / NotebookLM | retours associe + NotebookLM + audit dedup + branche track-b/clean-rebuild | front_app SELARL sans doubles saisies implicites + derivations + tests cibles + lancement local |
 | TRACK-B-FRONT-ARCHITECTURE-RESET-001 | DONE | Refonder le chemin front Track B propre et isoler le legacy | arbitrage produit front + fondations front_data + branche track-b/clean-rebuild | nouveau front_app clean + rapport + tests + lancement local |
@@ -1298,6 +1299,7 @@ Chaque ticket termin? doit mettre ? jour ce fichier :
 - Points ouverts statuts apr?s SYNC-WAVE-007 : SAS limit? au mod?le SAS/SPFPL m?decins source ; SPFPL doit conserver cession/apport sans harmonisation ; SCM est cod? en V1 mais reste soumis ? revue humaine juridique/visuelle du premier rendu.
 
 ## Journal court
+- 2026-05-27 : TRACK-B-SELARL-DOWNLOAD-UX-001 ajoute des boutons `Telecharger le dossier ZIP` et `Telecharger ...docx` dans le clean front apres generation, avec conservation du dernier dossier genere en session Streamlit ; test AppTest ajoute pour verifier l'apparition des 7 boutons de telechargement ; `ruff check .` OK, test clean front OK, HTTP 200 sur `http://localhost:8511` avec PID `16648` arrete, browser-use refuse localhost donc non contourne.
 - 2026-05-27 : TRACK-B-SELARL-UX-FOLLOWUP-001 remplace les dates Streamlit par des champs `JJ/MM/AAAA`, ajoute la liste `Situation matrimoniale`, retire le doublon visible `Regime matrimonial`, calcule la valeur nominale depuis capital / parts et clarifie les champs d'ordre ; `ruff check .` OK, test clean front OK, HTTP 200 sur `http://localhost:8510` avec PID `3480` arrete.
 - 2026-05-27 : TRACK-B-SELARL-UX-DEDUP-RECONCILIATION-001 nettoie l'UX du clean front SELARL V1 : genre/titre, montants et dates en lettres, mandataire, prestataire de signature, seuils de gerance, lieu d'exercice et conjoint sont derives, pre-remplis ou conditionnels ; tests clean front et ruff valides, aucun push/merge.
 - 2026-05-12 : m?moire projet install?e dans `docs/project/`.

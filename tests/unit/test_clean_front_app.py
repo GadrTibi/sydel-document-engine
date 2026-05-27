@@ -246,6 +246,34 @@ def test_clean_front_streamlit_surface_is_not_legacy() -> None:
     )
 
 
+def test_clean_front_streamlit_generation_exposes_download_buttons(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    from sydel_doc_engine.front_app import shell
+
+    monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "streamlit-downloads")
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=120)
+    _fill_valid_streamlit_selarl_form(app)
+    app = app.run(timeout=120)
+
+    assert app.button(key="clean_generate_dossier").disabled is False
+
+    app.button(key="clean_generate_dossier").click()
+    app = app.run(timeout=120)
+
+    download_labels = [item.label for item in app.get("download_button")]
+    assert download_labels == [
+        "Telecharger le dossier ZIP",
+        "Telecharger declaration_non_condamnation.docx",
+        "Telecharger autorisation_domiciliation.docx",
+        "Telecharger procuration.docx",
+        "Telecharger pv_nomination_gerant.docx",
+        "Telecharger demande_inscription_ordre.docx",
+        "Telecharger statuts_selarl_medecin.docx",
+    ]
+
+
 def _valid_selarl_input(
     profession: str,
     *,
@@ -326,3 +354,47 @@ def _valid_selarl_kwargs(
             else {}
         ),
     }
+
+
+def _fill_valid_streamlit_selarl_form(app: AppTest) -> None:
+    values = {
+        "selarl_dossier_reference": "B-SELARL-DOWNLOAD-TEST",
+        "selarl_prenom": "Jean",
+        "selarl_nom": "Martin",
+        "selarl_date_naissance": "31/12/1974",
+        "selarl_ville_naissance": "Paris",
+        "selarl_departement_naissance": "75",
+        "selarl_nom_pere": "Pierre Martin",
+        "selarl_nom_mere": "Anne Martin",
+        "selarl_numero_ordre": "ORD-123",
+        "selarl_numero_rpps": "10000000001",
+        "selarl_adresse_num_voie": "10",
+        "selarl_adresse_voie": "rue Test",
+        "selarl_adresse_cp": "75001",
+        "selarl_adresse_ville": "Paris",
+        "selarl_denomination": "SELARL MARTIN",
+        "selarl_ville_rcs": "Paris",
+        "selarl_siege_num_voie": "20",
+        "selarl_siege_voie": "avenue du Siege",
+        "selarl_siege_cp": "75002",
+        "selarl_siege_ville": "Paris",
+        "selarl_ordre_conseil": "Conseil departemental de l'Ordre de Paris",
+        "selarl_departement_ordre": "75",
+        "selarl_ordre_adresse_ligne_1": "1 rue de l'Ordre",
+        "selarl_ordre_cp": "75008",
+        "selarl_ordre_ville": "Paris",
+        "selarl_signature_lieu": "Paris",
+        "selarl_signature_date": "27/05/2026",
+        "selarl_decision_date": "27/05/2026",
+        "selarl_reunion_heure": "10 heures",
+        "selarl_depot_banque_nom": "Banque Test",
+        "selarl_depot_banque_adresse": "30 boulevard Banque, 75009 Paris",
+        "selarl_exercice_debut": "1er janvier",
+        "selarl_exercice_fin": "31 decembre",
+        "selarl_exercice_cloture_premier": "31 decembre 2026",
+    }
+    for key, value in values.items():
+        app.text_input(key=key).set_value(value)
+    app.number_input(key="selarl_capital_social").set_value(1000)
+    app.number_input(key="selarl_nb_parts_total").set_value(100)
+    app.number_input(key="selarl_signature_nombre_exemplaires").set_value(2)

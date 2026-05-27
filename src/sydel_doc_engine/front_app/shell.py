@@ -37,6 +37,8 @@ from sydel_doc_engine.front_app.selarl_slice import (
 )
 
 ARTIFACTS_DIR = Path("artifacts") / "track_b_selarl_v1"
+GENERATED_DOSSIER_STATE_KEY = "clean_generated_dossier"
+DOCX_MIME_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 
 
 def render_clean_front() -> None:
@@ -452,12 +454,56 @@ def _render_generation_zone(data_entry: CleanDataEntry, plan: CleanGenerationPla
         except Exception as exc:
             st.error(f"Generation bloquee par le moteur : {exc}")
             return
-        st.success(f"Dossier genere : {result.output_dir}")
-        st.caption(f"ZIP : {result.zip_path}")
-        for path in result.docx_paths:
-            st.caption(f"DOCX : {path}")
+        st.session_state[GENERATED_DOSSIER_STATE_KEY] = {
+            "output_dir": str(result.output_dir),
+            "zip_path": str(result.zip_path),
+            "docx_paths": [str(path) for path in result.docx_paths],
+        }
+
+    generated_dossier = st.session_state.get(GENERATED_DOSSIER_STATE_KEY)
+    if isinstance(generated_dossier, dict):
+        _render_generated_dossier_downloads(generated_dossier)
 
 
 def _output_dir(dossier_reference: str) -> Path:
     slug = re.sub(r"[^A-Za-z0-9_.-]+", "_", dossier_reference).strip("._")
     return ARTIFACTS_DIR / (slug or "selarl_v1")
+
+
+def _render_generated_dossier_downloads(generated_dossier: dict[str, object]) -> None:
+    output_dir = generated_dossier.get("output_dir", "")
+    zip_path = Path(str(generated_dossier.get("zip_path", "")))
+    docx_paths = [
+        Path(str(path))
+        for path in generated_dossier.get("docx_paths", [])
+        if isinstance(path, str)
+    ]
+
+    st.success(f"Dossier genere : {output_dir}")
+    st.caption(f"ZIP : {zip_path}")
+    if zip_path.is_file():
+        st.download_button(
+            "Telecharger le dossier ZIP",
+            data=zip_path.read_bytes(),
+            file_name=zip_path.name,
+            mime="application/zip",
+            key="clean_download_zip",
+            type="primary",
+            on_click="ignore",
+        )
+    else:
+        st.error("ZIP genere introuvable sur le serveur.")
+
+    for index, path in enumerate(docx_paths):
+        st.caption(f"DOCX : {path}")
+        if not path.is_file():
+            st.error(f"DOCX genere introuvable : {path.name}")
+            continue
+        st.download_button(
+            f"Telecharger {path.name}",
+            data=path.read_bytes(),
+            file_name=path.name,
+            mime=DOCX_MIME_TYPE,
+            key=f"clean_download_docx_{index}",
+            on_click="ignore",
+        )
