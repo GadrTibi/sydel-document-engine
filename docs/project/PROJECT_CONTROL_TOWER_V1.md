@@ -78,7 +78,7 @@ incomplete, Codex doit dire `NO-GO dev` et donner l'action exacte suivante.
 
 | Type | Sprint | Pilote metier | Branche | Phase courante | Statut | Action autorisee maintenant |
 | --- | --- | --- | --- | --- | --- | --- |
-| SELARL | `SPRINT-SELARL-CLOSING-V1` | Gad | `track-b/clean-rebuild` | Cloture perimetre simple | PARTIAL | lancer `SELARL-CLOSING-PACK-001` |
+| SELARL | `SPRINT-SELARL-CLOSING-V1` | Gad | `track-b/clean-rebuild` | Revue humaine pack simple | IN_PROGRESS | transmettre le pack et le brief `SELARL-ASSOCIE-REVIEW-001`, attendre retour humain |
 | SELAS | `SPRINT-SELAS-V1` | Naomie | `codex/naomie-selas-sprint` | Sous-sprint NotebookLM | `NO-GO dev` | donner Prompt NotebookLM 01, attendre la reponse brute, structurer le journal |
 
 ## Etat courant SELARL
@@ -91,10 +91,14 @@ Etat utile :
 - regime communautaire partiellement traite avec `DOC-005` actif et `DOC-006`
   reserve ;
 - multi-associes limite disponible sur certains sous-cas ;
+- pack de revue simple regenere dans `artifacts/selarl_closing_pack_001/` ;
+- brief de revue associe pret dans
+  `docs/review/selarl_associe_review_001_brief_v1.md` ;
 - cession, SCM, derogations, site distinct, plusieurs gerants et statuts
   multi-associes complets restent a cadrer ;
 - fin de sprint ecrite dans `docs/sprints/SPRINT_SELARL_CLOSING_V1.md` ;
-- prochaine action recommandee : `SELARL-CLOSING-PACK-001`.
+- action courante : transmettre le pack a l'associe / juriste et attendre le
+  retour humain.
 
 SELARL ne doit pas etre consideree terminee a 100 % tant que la revue humaine
 finale et les corrections eventuelles ne sont pas bouclees.

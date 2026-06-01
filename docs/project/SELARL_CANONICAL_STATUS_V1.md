@@ -61,6 +61,14 @@ Ce qui est vraiment disponible :
 - Multi-associes : uniquement deux sous-cas limites existent :
   `DOC-004` seul, ou dentiste `DOC-004` + `DOC-016` en PARTIAL.
 
+Dernier checkpoint de cloture :
+
+- `SELARL-CLOSING-PACK-001` est `DONE` au 2026-06-01 ;
+- pack de revue produit dans `artifacts/selarl_closing_pack_001/` ;
+- rapport de recette : `docs/review/selarl_closing_pack_001_report_v1.md` ;
+- brief de revue : `docs/review/selarl_associe_review_001_brief_v1.md` ;
+- action en cours : `SELARL-ASSOCIE-REVIEW-001`.
+
 Ce qui n'est pas encore proprement disponible :
 
 - statuts multi-associes complets ;
@@ -259,8 +267,7 @@ La SELARL a permis de fixer le mode d'emploi global :
 - la cloture produit un statut canonique comme le present fichier.
 
 Ce point cloture la SELARL comme modele de methode. Il ne cloture pas encore la
-SELARL juridiquement a 100 %, car le pack simple doit encore passer par la revue
-associe / juriste.
+SELARL juridiquement a 100 %, car le pack simple est en revue associe / juriste.
 
 ## Plan de sprint recommande
 
@@ -311,10 +318,11 @@ prochaine forme sociale ou famille documentaire.
 
 ## Prochaine action recommandee
 
-Lancer `SELARL-CLOSING-PACK-001` selon
-`docs/sprints/SPRINT_SELARL_CLOSING_V1.md` : regenerer le pack simple medecin,
-dentiste et regime communautaire pour revue associe / juriste avant d'ouvrir un
-nouveau developpement complexe.
+Poursuivre `SELARL-ASSOCIE-REVIEW-001` selon
+`docs/sprints/SPRINT_SELARL_CLOSING_V1.md` : transmettre le pack simple medecin,
+dentiste et regime communautaire avec
+`docs/review/selarl_associe_review_001_brief_v1.md`, puis attendre le retour
+associe / juriste avant d'ouvrir un nouveau developpement complexe.
 
 Si l'utilisateur prefere accelerer le produit plutot que la revue, la prochaine
 discussion doit choisir un seul sous-cas et produire un `GO dev` explicite.

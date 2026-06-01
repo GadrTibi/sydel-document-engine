@@ -12,8 +12,8 @@
 |---|---|---|---|---|
 | GLOBAL-NAOMIE-COLLABORATION-001 | DONE | Formaliser le workflow Gad / Naomie / Codex reusable sur tous les projets | demande Gad 2026-06-01 + incidents cadrage Naomie + besoin multi-projets | `GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md` + `PROJECT_NAOMIE_RUNTIME_TEMPLATE_V1.md` + pointeurs projet mis a jour |
 | SELARL-CLOSING-PLAN-001 | DONE | Ecrire la fin de sprint SELARL avec tickets et gates | `SELARL_CANONICAL_STATUS_V1.md` + backlog/factory SELARL + demande Gad | `docs/sprints/SPRINT_SELARL_CLOSING_V1.md` + tickets de cloture `SELARL-CLOSING-*` |
-| SELARL-CLOSING-PACK-001 | READY | Regenerer le pack de revue SELARL simple | `SPRINT_SELARL_CLOSING_V1.md` + clean front Track B + scenarios medecin/dentiste/regime communautaire | pack medecin, dentiste et regime communautaire + liste documents produits/reserves/manuels |
-| SELARL-ASSOCIE-REVIEW-001 | READY | Faire tester / relire le pack SELARL par l'associe ou juriste | pack de revue SELARL simple | retour humain classe ou validation explicite |
+| SELARL-CLOSING-PACK-001 | DONE | Regenerer le pack de revue SELARL simple | `SPRINT_SELARL_CLOSING_V1.md` + clean front Track B + scenarios medecin/dentiste/regime communautaire | `artifacts/selarl_closing_pack_001/` + `docs/review/selarl_closing_pack_001_report_v1.md` |
+| SELARL-ASSOCIE-REVIEW-001 | IN_PROGRESS | Faire tester / relire le pack SELARL par l'associe ou juriste | `artifacts/selarl_closing_pack_001/` + `docs/review/selarl_associe_review_001_brief_v1.md` | attente retour humain brut, annote ou validation explicite |
 | SELARL-REVIEW-TRIAGE-001 | BLOCKED | Classer les retours humains SELARL | retour associe/juriste | tableau bug/wording/source/UX/hors scope + decisions corriger/reporter/bloquer |
 | SELARL-REVIEW-FIXES-001 | BLOCKED | Corriger uniquement les retours SELARL valides | triage + `GO dev` explicite | corrections limitees + tests cibles + note wording si necessaire |
 | SELARL-CLOSING-SMOKE-001 | BLOCKED | Relancer smoke final SELARL simple apres corrections | corrections validees | tests/smoke medecin, dentiste, regime communautaire + absence placeholders/DOC-006 |
@@ -217,7 +217,7 @@
 | FRONT-UNIT-DOCUMENT-UI-001 | BLOCKED | Consolider l'UI Document unitaire autour de `front_data` | `FRONT-UI-SHELL-001` | mode document unique separe du dossier complet |
 | FRONT-TEST-TOOLS-CONSOLIDATION-001 | BLOCKED | Regrouper prefills, smoke et diagnostic | `FRONT-UI-SHELL-001` | outils de test marques et separes du produit |
 | FRONT-PROTOTYPE-DEPRECATION-001 | BLOCKED | Deprecier le prototype historique sans perte de diagnostic | nouveaux parcours UI visibles | prototype marque obsolete ou archive |
-| SELARL-JURIST-REVIEW-001 | READY | Faire valider le parcours SELARL réaligné par un juriste | `SELARL_CANONICAL_STATUS_V1.md` + pack simple médecin/dentiste + régime communautaire | revue humaine du périmètre déjà générable avant extension complexe |
+| SELARL-JURIST-REVIEW-001 | BLOCKED | Ancien libelle de revue humaine SELARL | remplace par `SELARL-ASSOCIE-REVIEW-001` | ne pas utiliser comme prochaine action |
 | SELARL-DOCS-GENERATION-SMOKE-001 | BLOCKED | Smoke tester la génération SELARL depuis le parcours Assistant métier | parcours SELARL réaligné + catalogue + schema + contextes réalistes | bloqué par la réconciliation NotebookLM ; remplacé par `SELARL-SMOKE-REALISTIC-001` après réalignement |
 | UI-001 | BLOCKED | Brancher Streamlit V0 Lot 1 | orchestrateur Lot 1 + spec canonique PV nomination gérant validée | écran simple + test manuel |
 
@@ -1059,7 +1059,7 @@
 - Artefacts : `artifacts/selarl_smoke_realistic_001/20260519_185045/`.
 - Rapport : `docs/review/selarl_smoke_realistic_001_report_v1.md`.
 - Tests : `.\.venv\Scripts\python.exe -m ruff check .` OK ; `.\.venv\Scripts\python.exe -m pytest` OK, 257 tests passés.
-- Prochaine étape recommandée : `SELARL-JURIST-REVIEW-001`.
+- Prochaine étape courante : `SELARL-ASSOCIE-REVIEW-001`.
 
 ### SELARL-CLOUD-GENERATION-BUG-001
 - Objectif : diagnostiquer le blocage utilisateur où le parcours SELARL visible ne permettait pas de générer, malgré le smoke local.
@@ -1089,7 +1089,7 @@
 - Garde-fous : générateurs, moteur DOCX/PDF/ZIP, wording juridique, mode `Technique / diagnostic` et mode `Document unitaire` non modifiés.
 - Rapport : `docs/review/assistant_metier_prefill_001_report_v1.md`.
 - Tests : `.\.venv\Scripts\python.exe -m pytest tests\unit\test_business_wizard.py -q` OK, 41 tests passés ; `.\.venv\Scripts\python.exe -m pytest tests\unit\test_single_document_mode.py tests\unit\test_ui_runtime.py -q` OK, 12 tests passés ; `.\.venv\Scripts\python.exe -m ruff check .` OK ; `.\.venv\Scripts\python.exe -m pytest` OK, 272 tests passés.
-- Prochaine étape recommandée : revue manuelle Streamlit des quatre scénarios de test, puis `SELARL-JURIST-REVIEW-001`.
+- Prochaine étape courante : revue manuelle du pack `artifacts/selarl_closing_pack_001/`, puis `SELARL-ASSOCIE-REVIEW-001`.
 
 ### GLOBAL-VARIABLE-INVENTORY-001
 - Objectif : construire un inventaire global brut des variables documentaires sur tout le périmètre moteur, sans décider les fusions.
@@ -1221,7 +1221,7 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - Branche Naomie cible : `codex/naomie-selas-sprint`, creee/poussee par Codex depuis le checkpoint documentaire ; Naomie ne gere pas Git.
 - Pour l'accueil de Naomie : repondre avec `Statut sprint`, `Action maintenant`, `Point pedagogie`, `Prochaine etape`; aucun dev avant NotebookLM, audit reutilisation, matrice documentaire, tickets et `GO dev` explicite de Gad.
 - Pour tout nouveau type d'entreprise : produire la matrice de reutilisation selon `docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md` avant le premier `GO dev`.
-- Pour la SELARL : lire `docs/project/SELARL_CANONICAL_STATUS_V1.md`, puis lancer `SELARL-JURIST-REVIEW-001` ou choisir un seul sous-cas avec `GO dev` explicite. Aucun ticket de dev SELARL complexe ne doit demarrer sans ce choix.
+- Pour la SELARL : lire `docs/project/SELARL_CANONICAL_STATUS_V1.md`, puis lancer `SELARL-ASSOCIE-REVIEW-001` ou choisir un seul sous-cas avec `GO dev` explicite. Aucun ticket de dev SELARL complexe ne doit demarrer sans ce choix.
 - `SELARL-COMPLETE-CONTEXT-ADAPTER-001` est DONE ; le nouveau front n'est plus limite a quatre documents : medecin simple cible et genere `DOC-001`, `DOC-002`, `DOC-003`, `DOC-004`, `DOC-034`, `DOC-017`, dentiste bascule vers `DOC-016`, regime communautaire ajoute `DOC-005` et conserve `DOC-006` en reserve.
 - `SELARL-COMPLETE-COMPLEX-SUBFORMS-001` est bloqué tant que le prochain sous-cas n'est pas cadré sous gate produit.
 - `SELARL-COMPLETE-CASE-PLAYBOOK-001` est DONE ; la SELARL complete est cadree comme une extension front/adaptateur/readiness, avec matrice documentaire et mode d'emploi reproductible pour les autres cas.
@@ -1253,9 +1253,9 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - `SELARL-FLOW-REALIGN-001` est DONE ; le schéma et les projections métier expriment Qualification, Fiche Client / Praticien, Fiche Société, Capital & Associés, Contexte & scénarios métier, Documents & génération.
 - `SELARL-REUSE-RULES-REALIGN-001` est DONE ; `Dossier unipersonnel` pilote les liens Praticien / associé unique / gérant / signataire, les autres réutilisations restent opt-in et les relations sensibles sont non automatiques.
 - `SELARL-UI-REALIGN-001` est DONE ; le parcours Streamlit visible SELARL suit les six écrans métier et consomme le schéma/projections corrigés.
-- tickets READY confirmés : `SELARL-JURIST-REVIEW-001`, `CLOSE-PROJECT-V1-001`.
+- ticket SELARL en cours : `SELARL-ASSOCIE-REVIEW-001`; autre ticket pret hors SELARL : `CLOSE-PROJECT-V1-001`.
 - ticket SELARL smoke précédent bloqué : `SELARL-DOCS-GENERATION-SMOKE-001`, remplacé par la séquence `WORDING -> FLOW -> REUSE -> UI -> SMOKE -> JURIST`.
-- prochain ticket recommandé : `SELARL-JURIST-REVIEW-001`, puis dev ciblé seulement après décision `GO dev` / `NO-GO dev` sur un sous-cas unique.
+- prochain ticket recommandé : `SELARL-ASSOCIE-REVIEW-001`, puis dev ciblé seulement après décision `GO dev` / `NO-GO dev` sur un sous-cas unique.
 - ne pas pousser ni redéployer l'UI SELARL actuelle sans décision explicite après smoke et revue.
 - moteur documentaire DOCX V1 feature complete et clos après `RECONCILE-MOTOR-CLOSE-001`.
 - tickets absorbés par `SYNC-POST-MOTOR-UI-001` : `UI-FLOW-001`, `UI-OCCURRENCES-001`, `UI-FORM-SCHEMA-001`, `PDF-BACKEND-001` et `RECIPE-FRAME-001`.
@@ -1350,7 +1350,7 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - 2026-06-01 : REUSE-AUDIT-AGENT-PROTOCOL-001 cree `docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md`, lance un sous-agent Reuse Auditor en lecture seule, integre sa synthese sur les artefacts SELARL/globaux reutilisables, et impose une matrice `identique / reuse-check / adapter / no-go` avant tout `GO dev` d'un nouveau type d'entreprise.
 - 2026-06-01 : NAOMIE-GITHUB-ONBOARDING-001 cree `docs/project/NAOMIE_GITHUB_ONBOARDING_V1.md`, formalise l'installation GitHub, la venv Python, les validations locales, le lancement Streamlit et la regle `1 sprint = 1 branche = 1 type d'entreprise`; correction produit : Naomie ne gere pas Git ni les commandes, Codex execute les operations techniques pour elle ; la creation de branche reste bloquee tant que le type d'entreprise et le checkpoint pousse ne sont pas confirmes.
 - 2026-06-01 : COMPANY-TYPE-SPRINT-PLAYBOOK-001 cree `docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md`, formalise `1 sprint = 1 type d'entreprise`, impose le demarrage en `NO-GO dev`, l'interrogation NotebookLM large, l'identification de Naomie, le guidage etape par etape, et la boucle retour de l'associe avant validation 100 %.
-- 2026-06-01 : SELARL-CANONICAL-STATUS-001 cree `docs/project/SELARL_CANONICAL_STATUS_V1.md`, designe ce fichier comme point de reprise SELARL unique, classe l'extension complexe en `NO-GO dev` tant qu'un sous-cas n'est pas choisi, et confirme `SELARL-JURIST-REVIEW-001` comme prochaine etape recommandee avant nouveau developpement.
+- 2026-06-01 : SELARL-CANONICAL-STATUS-001 cree `docs/project/SELARL_CANONICAL_STATUS_V1.md`, designe ce fichier comme point de reprise SELARL unique, classe l'extension complexe en `NO-GO dev` tant qu'un sous-cas n'est pas choisi, et confirme la revue humaine comme prochaine etape recommandee avant nouveau developpement. Apres generation du pack, le ticket courant est `SELARL-ASSOCIE-REVIEW-001`.
 - 2026-06-01 : TRACK-B-PREVIEW-VALIDATION-AND-CHECKPOINT-009 valide le clean front Track B sans `Start-Process` via `python -m streamlit run src/sydel_doc_engine/front_app/app.py --server.port 8534 --server.headless true --browser.gatherUsageStats false`, confirme HTTP 200 sur `http://127.0.0.1:8534`, arrete le process proprement, verifie le mode `SELARL dentiste multi-associes simple (PARTIAL statuts)`, classe les changements Track B a committer et prepare le checkpoint local `feat: advance track B SELARL production pack` sans push.
 - 2026-05-31 : TRACK-B-SELARL-DENTIST-MULTI-ASSOCIES-STATUTS-PARTIAL-008 ajoute dans le clean front le mode `SELARL dentiste multi-associes simple (PARTIAL statuts)`, genere `DOC-004` et `DOC-016`, derive les apports simples par associe, rend la repartition du capital dentiste multi-associes simple et documente `DOC-016` en PARTIAL sur comparution/signatures strictes ; tests cibles, ruff et smoke DOCX/ZIP OK ; preview HTTP non validee car le lancement Streamlit via `Start-Process` est reste bloque dans le shell local, ports 8532/8533 verifies libres ; plusieurs gerants, president externe, cession, SCM, votes non unanimes et medecin multi-associes restent hors scope.
 - 2026-05-31 : TRACK-B-SELARL-MULTI-ASSOCIES-DOC004-LIMITED-007 ajoute dans le clean front un mode `SELARL multi-associes simple (limite DOC-004)`, collecte les associes du PV, choisit le president parmi les associes, genere uniquement `DOC-004`, garde un gerant unique et bloque les parts incoherentes ; statuts multi-associes, plusieurs gerants, cession, SCM et votes non unanimes restent hors scope.
@@ -1461,3 +1461,4 @@ Chaque ticket terminé doit mettre à jour ce fichier :
 - 2026-05-31 : TRACK-B-SELARL-ROLLOUT-NEXT-CASE-001 choisit la SELARL medecin unipersonnelle standard comme prochain cas GO apres le lock dentiste, cree le rapport de matrice/decision, lance le smoke DOCX/ZIP medecin et ne modifie pas le moteur/front car le delta utile est deja cable.
 - 2026-05-31 : TRACK-B-SELARL-MEDECIN-LINE-BY-LINE-LOCK-004 compare `DOC-017` a la source repo `Modèle statuts SELARL médecins.docx`, ajoute un test ligne par ligne article/signature/annexe, classe le `DOC-017` LOCKED source-level en unipersonnel standard avec OPEN GAP limite a l'absence de retour humain medecin recent et a la ligne source `personne_2` incomplete.
 - 2026-05-31 : TRACK-B-SELARL-MEDECIN-REGIME-COMMUNAUTAIRE-005 industrialise le cas SELARL medecin unipersonnelle avec regime communautaire : `DOC-005` active, `DOC-006` reserve, conjoint/date courrier conditionnels, `DOC-017` conserve, rapport 005 cree et smoke DOCX/ZIP produit dans `artifacts/track_b_selarl_medecin_regime_communautaire_005`.
+- 2026-06-01 : SELARL-ASSOCIE-REVIEW-001 demarre en `GO revue humaine` / `NO-GO dev` ; brief cree dans `docs/review/selarl_associe_review_001_brief_v1.md`, pack a transmettre depuis `artifacts/selarl_closing_pack_001/`, attente retour associe / juriste avant triage, correction, smoke final ou cloture.
