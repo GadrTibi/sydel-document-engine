@@ -12,8 +12,12 @@
   - `DOC-034` demande d'inscription a l'ordre ;
   - `DOC-017` statuts SELARL medecin ;
   - `DOC-016` statuts SELARL chirurgien-dentiste ;
-  - `DOC-005` si regime communautaire actif.
-- `DOC-006` reste en reserve.
+  - `DOC-005` si regime communautaire actif ;
+  - `DOC-006` si regime communautaire actif.
+- Correction 2026-06-01 : l'ancienne reserve `DOC-006` est levee pour le
+  perimetre SELARL regime communautaire. La source DOCX existe dans
+  `project/source_documents/lot_02/` et le batch regime communautaire couvre les
+  deux lettres.
 - Les cas cession, SCM, derogations, site distinct, SELAS et multi-associes restent hors slice Track B initiale.
 
 ## Couvert par TRACK-B-SELARL-PRODUCTION-PACK-001
@@ -57,12 +61,13 @@
 - Industrialisation du cas SELARL medecin unipersonnelle avec regime communautaire.
 - Confirmation que le delta est deja cable dans le clean front :
   - `profession=medecin` conserve `DOC-017` ;
-  - `regime_communautaire=True` active `DOC-005` ;
-  - `DOC-006` reste reserve et exclu de la generation V1 bornee.
-- Validation que le conjoint et la date du courrier d'avertissement sont requis uniquement si le regime communautaire est actif.
+  - `regime_communautaire=True` active `DOC-005` et `DOC-006`.
+- Validation que le conjoint, l'adresse du conjoint et la date du courrier
+  d'avertissement sont requis uniquement si le regime communautaire est actif.
 - Ajout de tests cibles de non-regression medecin standard et de smoke medecin + regime communautaire.
 - Smoke DOCX/ZIP medecin + regime communautaire dans `artifacts/track_b_selarl_medecin_regime_communautaire_005`.
-- Statut du pack : documents courts et `DOC-005` LOCKED, `DOC-017` LOCKED source-level, `DOC-034` PARTIAL, `DOC-006` reserve.
+- Statut courant apres correction 2026-06-01 : documents courts, `DOC-005` et
+  `DOC-006` generables ; `DOC-017` LOCKED source-level ; `DOC-034` PARTIAL.
 
 ## Couvert par TRACK-B-SELARL-MULTI-ASSOCIES-SOURCE-CONTRACT-006
 
@@ -120,8 +125,7 @@
 - SELARL avec cession SCM.
 - SELARL avec derogation.
 - SELARL avec site distinct.
-- Documents manuels ou reserves :
-  - `DOC-006` conjoint commun en biens, reserve source ;
+- Documents manuels ou hors generation automatique :
   - `DOC-013` declaration SEL BNC, manuel ;
   - `DOC-014` attestation inscription SEL, manuel ;
   - documents marques a remplir a la main dans la source de verite.
@@ -136,7 +140,8 @@
 - Les regles documentaires multi-associes de `DOC-001`, `DOC-003` et `DOC-034` restent a arbitrer.
 - Plusieurs gerants : modele `gerants[]`, resolution, ordre d'affichage, signatures et pouvoirs restent a sourcer.
 - Les accords de genre au-dela des cas deja testes ne doivent pas etre inventes sans source humaine.
-- Le maintien ou l'extension de `DOC-006` depend d'une decision de scope source.
+- `DOC-006` est actif seulement dans le perimetre regime communautaire. Les
+  variantes hors regime ne doivent pas l'inclure.
 
 ## Ordre restant indicatif
 
@@ -144,4 +149,4 @@
 2. Plusieurs gerants, seulement apres reference humaine dediee.
 3. SELARL cession medicale ou dentaire, apres sous-formulaire clean front complet et arbitrages sources.
 4. SELARL cession SCM, apres sous-formulaire clean front complet et mapping explicite des roles.
-5. Derogations, site distinct et documents reserves/manuels selon arbitrage humain.
+5. Derogations, site distinct et documents manuels selon arbitrage humain.

@@ -173,9 +173,8 @@ CATALOG_DOCUMENTS: tuple[CatalogDocument, ...] = (
         "DOC-006",
         DocumentAvailability.GENERATABLE,
         (
-            "La vraie V2 indique que ce document ne figure pas parmi les sources "
-            "fournies ; generation moteur existante a afficher avec reserve dans "
-            "le pilote SELARL."
+            "Source DOCX Lot 2 disponible ; document a generer avec DOC-005 quand "
+            "le regime communautaire est actif."
         ),
     ),
     CatalogDocument(

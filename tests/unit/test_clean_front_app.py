@@ -62,7 +62,7 @@ def test_clean_front_selarl_slice_switches_statuts_for_dentiste() -> None:
     assert "DOC-017" not in plan.document_codes
 
 
-def test_clean_front_selarl_slice_adds_doc_005_only_for_regime() -> None:
+def test_clean_front_selarl_slice_adds_regime_batch_only_for_regime() -> None:
     dossier_type = dossier_type_by_label("SELARL creation V1")
     data_entry = _valid_selarl_input(PROFESSION_MEDECIN, regime_communautaire=True)
 
@@ -70,8 +70,11 @@ def test_clean_front_selarl_slice_adds_doc_005_only_for_regime() -> None:
 
     assert plan.can_generate is True
     assert "DOC-005" in plan.document_codes
-    assert "DOC-006" not in plan.document_codes
-    assert any(row.doc_code == "DOC-006" and row.status == "reserve" for row in plan.document_rows)
+    assert "DOC-006" in plan.document_codes
+    assert any(
+        row.doc_code == "DOC-006" and row.status == "generable"
+        for row in plan.document_rows
+    )
 
 
 def test_clean_front_selarl_medecin_regime_derives_conjoint_only_when_active() -> None:
@@ -85,6 +88,8 @@ def test_clean_front_selarl_medecin_regime_derives_conjoint_only_when_active() -
     assert regime_ctx.conjoint is not None
     assert regime_ctx.conjoint.prenom == "Claire"
     assert regime_ctx.conjoint.nom == "Martin"
+    assert regime_ctx.conjoint.adresse_perso is not None
+    assert regime_ctx.conjoint.adresse_perso.adresse_affichee == "30 rue Conjoint, 75003 Paris"
     assert regime_ctx.statuts_sel is not None
     assert regime_ctx.statuts_sel.overlay == "selarl_medecin"
     assert regime_ctx.regime_communautaire is not None
@@ -190,7 +195,10 @@ def test_clean_front_selarl_multi_associes_doc004_generation_smoke(tmp_path: Pat
     assert generated.zip_path.exists()
 
     text = _docx_text(generated.docx_paths[0])
-    assert "Les associés de la SELARL SELARL MARTIN" in text
+    assert "En cours d’immatriculation" in text
+    assert "DE L’ASSEMBLEE GENERALE" in text
+    assert "Les associés de la SELARL MARTIN" in text
+    assert "SELARL SELARL" not in text
     assert "Sont présents ou représentés :" in text
     assert "Monsieur Jean Martin, détenant 60 parts," in text
     assert "Madame Claire Leroy, détenant 40 parts," in text
@@ -335,6 +343,8 @@ def test_clean_front_selarl_generation_smoke(tmp_path: Path) -> None:
         "demande_inscription_ordre.docx",
         "statuts_selarl_medecin.docx",
     }
+    combined_text = "\n".join(_docx_text(path) for path in generated.docx_paths)
+    assert "SELARL SELARL" not in combined_text
 
 
 def test_clean_front_selarl_medecin_regime_communautaire_generation_smoke(
@@ -346,7 +356,7 @@ def test_clean_front_selarl_medecin_regime_communautaire_generation_smoke(
     )
 
     names = {path.name for path in generated.docx_paths}
-    assert len(generated.docx_paths) == 7
+    assert len(generated.docx_paths) == 8
     assert generated.zip_path.exists()
     assert names == {
         "declaration_non_condamnation.docx",
@@ -356,19 +366,22 @@ def test_clean_front_selarl_medecin_regime_communautaire_generation_smoke(
         "demande_inscription_ordre.docx",
         "statuts_selarl_medecin.docx",
         "lettre_renonciation_associe.docx",
+        "lettre_avertissement_conjoint.docx",
     }
     assert "statuts_selarl_chirurgien_dentiste.docx" not in names
-    assert "lettre_avertissement_conjoint.docx" not in names
 
     combined_text = "\n".join(_docx_text(path) for path in generated.docx_paths)
     ascii_text = _ascii_text(combined_text)
     assert "[" not in combined_text
     assert "]" not in combined_text
+    assert "SELARL SELARL" not in combined_text
     assert "RCS PARIS 788 531 432" not in combined_text
     assert "0153814303" not in combined_text
     assert "Par courrier en date du 20/05/2026" in combined_text
     assert "euros dependant de notre communaute." in ascii_text
     assert "regime de communaute" not in ascii_text
+    assert "Madame Martin" in combined_text
+    assert "30 rue Conjoint" in combined_text
 
 
 def test_clean_front_legacy_boundary_is_explicit() -> None:
@@ -673,6 +686,10 @@ def _valid_selarl_kwargs(
                 "conjoint_civilite": "Madame",
                 "conjoint_prenom": "Claire",
                 "conjoint_nom": "Martin",
+                "conjoint_adresse_num_voie": "30",
+                "conjoint_adresse_voie": "rue Conjoint",
+                "conjoint_adresse_cp": "75003",
+                "conjoint_adresse_ville": "Paris",
             }
             if profession == PROFESSION_DENTISTE or regime_communautaire
             else {}

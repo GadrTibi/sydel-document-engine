@@ -51,7 +51,8 @@ Les actions de generation visibles utilisent actuellement :
 
 ```text
 FRONT_GENERATION_SUPPORTED_DOC_CODES = DOC-001, DOC-002, DOC-003, DOC-004
-FRONT_GENERATION_EXCLUDED_DOC_CODES = DOC-006, DOC-013, DOC-014
+FRONT_GENERATION_CONDITIONAL_DOC_CODES = DOC-005, DOC-006
+FRONT_GENERATION_EXCLUDED_DOC_CODES = DOC-013, DOC-014
 ```
 
 Le mode document unitaire V1 est lui aussi limite a :
@@ -124,7 +125,7 @@ modele de donnees doit garder ces blocs distincts.
 | SCM cession | Courrier SDE cession SCM | `DOC-032` | Generable | Branche | Non branche front generation | A brancher si SCM cession |
 | SCM cession | Acte cession parts SCM vers SELARL | `DOC-033` | Generable | Branche | Non branche front generation | A brancher si SCM cession |
 | Regime communautaire | Lettre renonciation associe | `DOC-005` | Generable | Branche | Non branche front generation | A brancher si regime communautaire |
-| Regime communautaire | Lettre avertissement conjoint | `DOC-006` | Generable moteur avec reserve V2 | Branche | Exclu front generation | A brancher seulement avec reserve explicite |
+| Regime communautaire | Lettre avertissement conjoint | `DOC-006` | Generable | Branche | Genere si regime communautaire | A produire avec `DOC-005` |
 | Derogation | Formulaire multi-sites SEL | `DOC-013` | Manuel pour pilote SELARL | Branche moteur | Exclu front generation | Rester manuel sans arbitrage |
 | Derogation | Derogation SEL BNC | Aucun code | Manuel | Hors moteur | Non branche | Rester manuel |
 | Derogation | Demande derogation cumul SELARL BNC | `DOC-014` | Manuel | Branche moteur | Exclu front generation | Rester manuel sans arbitrage |
@@ -151,14 +152,13 @@ SELARL sans arbitrage explicite :
 Meme si `DOC-013` et `DOC-014` existent cote moteur, la source SELARL verifiee
 les maintient hors generation pilote.
 
-### Reserve `DOC-006`
+### `DOC-006` regime communautaire
 
-`DOC-006` est techniquement disponible, mais la source SELARL porte une reserve.
-Il peut rejoindre le pack complet seulement si le front affiche clairement :
+Correction 2026-06-01 : l'ancienne reserve `DOC-006` est levee. La source DOCX
+Lot 2 existe et le batch regime communautaire couvre les deux lettres. Le front
+doit donc generer `DOC-005` et `DOC-006` quand le regime communautaire est actif.
 
-- document genere avec reserve ;
-- revue humaine requise ;
-- exclusion possible du ZIP final utilisateur si la reserve n'est pas levee.
+Il ne doit pas generer `DOC-006` hors regime communautaire.
 
 ### Reutilisations explicites
 
@@ -212,7 +212,7 @@ Perimetre :
 - ajouter les requirements front manquants pour `DOC-005` a `DOC-012`,
   `DOC-016`, `DOC-017`, `DOC-031`, `DOC-032`, `DOC-033`, `DOC-034` ;
 - garder `DOC-013`, `DOC-014` et les documents sans code en manuel ;
-- garder `DOC-006` en reserve explicite ;
+- generer `DOC-006` uniquement si le regime communautaire est actif ;
 - ne pas changer le texte juridique ;
 - ne pas modifier les generateurs.
 
@@ -353,7 +353,7 @@ La SELARL sera consideree complete quand :
 - le front selectionne tous les documents attendus selon les conditions ;
 - les documents moteur autorises sont generables depuis le parcours principal ;
 - les documents manuels sont visibles comme manuels et exclus du moteur ;
-- `DOC-006` est gere comme reserve ou arbitre ;
+- `DOC-006` est gere comme document conditionnel du regime communautaire ;
 - DOCX et ZIP sortent pour tous les scenarios de smoke ;
 - les blocages sont comprehensibles sans debug ;
 - la surface principale reste limitee a type de dossier, saisie, generation ;

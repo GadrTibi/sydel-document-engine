@@ -503,7 +503,10 @@ def test_selarl_docs_006_013_014_have_required_ui_statuses() -> None:
         )
     )
 
-    assert any("vraie V2" in note for note in _row_by_code(validation, "DOC-006").notes)
+    assert any(
+        "Source DOCX Lot 2 disponible" in note
+        for note in _row_by_code(validation, "DOC-006").notes
+    )
     assert _row_by_code(validation, "DOC-013").status == STATUS_MANUAL_ONLY
     assert _row_by_code(validation, "DOC-014").status == STATUS_MANUAL_ONLY
     assert "DOC-013" not in validation.generatable_document_codes
@@ -625,7 +628,8 @@ def test_selarl_documents_are_unchanged_by_dossier_unipersonnel() -> None:
     assert "DOC-013" not in unipersonnel_validation.generatable_document_codes
     assert "DOC-014" not in unipersonnel_validation.generatable_document_codes
     assert any(
-        "vraie V2" in note for note in _row_by_code(unipersonnel_validation, "DOC-006").notes
+        "Source DOCX Lot 2 disponible" in note
+        for note in _row_by_code(unipersonnel_validation, "DOC-006").notes
     )
 
 

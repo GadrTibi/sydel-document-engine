@@ -237,12 +237,7 @@ class DocumentStatusSummary:
 
 NON_BLOCKING_AMBIGUITY_KEYS = frozenset({"legacy_domiciliation_display_alias"})
 
-DOCUMENT_RESERVES: dict[str, tuple[str, ...]] = {
-    "DOC-006": (
-        "Reserve source V2 : document techniquement disponible dans le moteur, mais "
-        "la source SELARL pilote signale une reserve documentaire.",
-    ),
-}
+DOCUMENT_RESERVES: dict[str, tuple[str, ...]] = {}
 
 CATALOG_BY_CODE = {
     document.document_code: document

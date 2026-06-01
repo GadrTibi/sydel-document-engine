@@ -20,7 +20,7 @@ from sydel_doc_engine.front_data.unit_document_mode import unit_document_require
 
 SELARL_FRONT_PROFILE_LABEL: Final = "SELARL complete"
 
-SELARL_FRONT_RESERVE_DOC_CODES: Final[tuple[str, ...]] = ("DOC-006",)
+SELARL_FRONT_RESERVE_DOC_CODES: Final[tuple[str, ...]] = ()
 SELARL_FRONT_MANUAL_DOC_CODES: Final[tuple[str, ...]] = ("DOC-013", "DOC-014")
 SELARL_FRONT_COMPLEX_PENDING_DOC_CODES: Final[tuple[str, ...]] = (
     "DOC-007",
@@ -42,6 +42,7 @@ SELARL_FRONT_AUTO_DOC_CODES: Final[tuple[str, ...]] = (
     "DOC-016",
     "DOC-017",
     "DOC-005",
+    "DOC-006",
     "DOC-007",
     "DOC-008",
     "DOC-009",

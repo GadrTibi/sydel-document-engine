@@ -72,8 +72,8 @@ SELARL_V1_BASE_DOC_CODES: Final = (
 )
 SELARL_V1_MEDECIN_STATUTS_CODE: Final = "DOC-017"
 SELARL_V1_DENTISTE_STATUTS_CODE: Final = "DOC-016"
-SELARL_V1_REGIME_CODE: Final = "DOC-005"
-SELARL_V1_RESERVE_REGIME_CODE: Final = "DOC-006"
+SELARL_V1_REGIME_RENONCIATION_CODE: Final = "DOC-005"
+SELARL_V1_REGIME_AVERTISSEMENT_CODE: Final = "DOC-006"
 
 PROFESSION_MEDECIN: Final = "medecin"
 PROFESSION_DENTISTE: Final = "chirurgien_dentiste"
@@ -191,6 +191,10 @@ class SelarlSliceInput:
     conjoint_genre: Gender = Gender.FEMININ
     conjoint_prenom: str = ""
     conjoint_nom: str = ""
+    conjoint_adresse_num_voie: str = ""
+    conjoint_adresse_voie: str = ""
+    conjoint_adresse_cp: str = ""
+    conjoint_adresse_ville: str = ""
     qualite_renoncee: str = "associe"
     date_courrier_avertissement: date | None = None
 
@@ -228,7 +232,12 @@ def selected_selarl_document_codes(data: SelarlSliceInput) -> tuple[str, ...]:
         return ("DOC-004",)
     codes = [*SELARL_V1_BASE_DOC_CODES, _statuts_code(data.profession)]
     if data.regime_communautaire:
-        codes.append(SELARL_V1_REGIME_CODE)
+        codes.extend(
+            (
+                SELARL_V1_REGIME_RENONCIATION_CODE,
+                SELARL_V1_REGIME_AVERTISSEMENT_CODE,
+            )
+        )
     return tuple(codes)
 
 
@@ -313,6 +322,16 @@ def validate_selarl_input(data: SelarlSliceInput) -> tuple[str, ...]:
                     ("conjoint_civilite", "Civilite du conjoint requise pour DOC-005."),
                     ("conjoint_prenom", "Prenom du conjoint requis pour DOC-005."),
                     ("conjoint_nom", "Nom du conjoint requis pour DOC-005."),
+                    (
+                        "conjoint_adresse_num_voie",
+                        "Numero de voie du conjoint requis pour DOC-006.",
+                    ),
+                    ("conjoint_adresse_voie", "Voie du conjoint requise pour DOC-006."),
+                    (
+                        "conjoint_adresse_cp",
+                        "Code postal du conjoint requis pour DOC-006.",
+                    ),
+                    ("conjoint_adresse_ville", "Ville du conjoint requise pour DOC-006."),
                     (
                         "regime_matrimonial",
                         "Regime matrimonial requis quand DOC-005 est genere.",
@@ -745,18 +764,17 @@ def _document_rows(
         )
         for code in selected_selarl_document_codes(data)
     ]
-    rows.append(
-        SelarlDocumentRow(
-            doc_code=SELARL_V1_RESERVE_REGIME_CODE,
-            label=build_document_status_for_code(SELARL_V1_RESERVE_REGIME_CODE).doc_label,
-            status="reserve" if data.regime_communautaire else "hors_v1",
-            message=(
-                "Reserve documentaire : non genere en V1 meme si le regime communautaire est actif."
-                if data.regime_communautaire
-                else "Non genere : document conditionnel hors generation V1."
-            ),
+    if not data.regime_communautaire:
+        rows.append(
+            SelarlDocumentRow(
+                doc_code=SELARL_V1_REGIME_AVERTISSEMENT_CODE,
+                label=build_document_status_for_code(
+                    SELARL_V1_REGIME_AVERTISSEMENT_CODE
+                ).doc_label,
+                status="hors_v1",
+                message="Non genere : document conditionnel du regime communautaire.",
+            )
         )
-    )
     rows.extend(
         (
             SelarlDocumentRow(
@@ -770,12 +788,6 @@ def _document_rows(
                 label="SCM et cession de parts SCM",
                 status="hors_v1",
                 message="Non expose dans cette slice.",
-            ),
-            SelarlDocumentRow(
-                doc_code="DOC-006",
-                label="Lettre d'avertissement conjoint",
-                status="reserve",
-                message="Reserve source : non generee par la V1 bornee.",
             ),
         )
     )
@@ -799,10 +811,9 @@ def _warning_messages(data: SelarlSliceInput) -> tuple[str, ...]:
         )
     warnings = [
         "SELARL V1 bornee : creation medecin ou chirurgien-dentiste, associe unique uniquement.",
-        "DOC-006 reste en reserve et ne sera pas genere automatiquement.",
     ]
     if data.regime_communautaire:
-        warnings.append("Regime communautaire actif : DOC-005 sera genere, DOC-006 reste exclu.")
+        warnings.append("Regime communautaire actif : DOC-005 et DOC-006 seront generes.")
     return tuple(warnings)
 
 
@@ -1070,11 +1081,25 @@ def _spfpl_conjoint(data: SelarlSliceInput) -> SpfplConjoint:
 
 
 def _conjoint_person(data: SelarlSliceInput) -> Person:
+    conjoint_address = (
+        _address(
+            data.conjoint_adresse_num_voie,
+            data.conjoint_adresse_voie,
+            data.conjoint_adresse_cp,
+            data.conjoint_adresse_ville,
+        )
+        if data.regime_communautaire
+        else None
+    )
     return Person(
         genre=data.conjoint_genre,
         civilite=data.conjoint_civilite,
         prenom=data.conjoint_prenom,
         nom=data.conjoint_nom,
+        adresse_personnelle_affichee=(
+            conjoint_address.adresse_affichee if conjoint_address else None
+        ),
+        adresse_perso=conjoint_address,
     )
 
 

@@ -50,7 +50,7 @@ L'arbre théorique abandonné n'est pas une source valide. Il n'existe pas de fi
 - Le moteur documentaire a dépassé le Lot 1 initial : le catalogue, l'orchestrateur, les générateurs principaux, DOCX, ZIP et PDF best-effort existent.
 - Le clean front Track B existe dans `src/sydel_doc_engine/front_app/`.
 - La SELARL V1 limitée est générable pour création simple médecin / chirurgien-dentiste.
-- Le régime communautaire SELARL génère `DOC-005` et garde `DOC-006` en réserve.
+- Le régime communautaire SELARL génère `DOC-005` et `DOC-006`.
 - Le multi-associés SELARL est disponible seulement en sous-cas limité : `DOC-004`, et `DOC-016` dentiste en PARTIAL.
 - L'état SELARL courant se lit d'abord dans `docs/project/SELARL_CANONICAL_STATUS_V1.md`.
 - La méthode de sprint par type d'entreprise est formalisée dans `docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md`.
@@ -102,7 +102,7 @@ lire aussi `docs/sprints/SPRINT_SELARL_CLOSING_V1.md`.
 - Pour le sprint SELAS, l'etat immediat est `docs/sprints/SPRINT_SELAS_V1.md` : `NO-GO dev`, sous-sprint NotebookLM actif, prochaine action = donner a Naomie le prompt NotebookLM courant a copier-coller.
 - Si Naomie dit seulement `bonjour`, Codex doit quand meme donner le Prompt NotebookLM 01 et ne pas attendre qu'elle choisisse une tache.
 - Si Naomie dit qu'elle veut lancer/demarrer/reprendre le sprint SELAS/CELAS, Codex doit comprendre `lancer = lancer le sous-sprint NotebookLM`, et ne doit pas passer en production, generation, audit, matrice ou code.
-- Pour la SELARL, la prochaine action de cloture est `SELARL-ASSOCIE-REVIEW-001` selon `docs/sprints/SPRINT_SELARL_CLOSING_V1.md`.
+- Pour la SELARL, la prochaine action de cloture est `SELARL-FINAL-ASSOCIE-VALIDATION-001` sur le pack corrige `artifacts/selarl_closing_pack_004/`, selon `docs/sprints/SPRINT_SELARL_CLOSING_V1.md`.
 - Si Naomie travaille sur un nouveau type d'entreprise, elle doit partir d'une branche dediee selon `NAOMIE_GITHUB_ONBOARDING_V1.md`, mais Codex gere Git, les commandes, les tests et les checkpoints pour elle.
 - Si Naomie pose une question d'apprentissage, utiliser le mode `Professeur Naomie` defini dans `NAOMIE_LEARNING_MENTOR_PROTOCOL_V1.md`.
 - Le sous-agent prioritaire pour un nouveau sprint est `Reuse Auditor`, défini dans `REUSE_AUDIT_AGENT_PROTOCOL_V1.md`.

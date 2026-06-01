@@ -76,7 +76,7 @@ Ce fichier fixe la mémoire opérationnelle globale : il doit permettre à un no
 - couche pedagogique Naomie disponible dans `docs/project/NAOMIE_LEARNING_MENTOR_PROTOCOL_V1.md` ;
 - SELARL V1 de production limitée disponible pour création simple médecin / chirurgien-dentiste ;
 - fin de sprint SELARL structuree dans `docs/sprints/SPRINT_SELARL_CLOSING_V1.md` ;
-- régime communautaire SELARL : `DOC-005` généré, `DOC-006` réservé ;
+- régime communautaire SELARL : `DOC-005` et `DOC-006` générés quand l'option est active ;
 - multi-associés SELARL : `DOC-004` limité implémenté, `DOC-016` dentiste multi-associés en PARTIAL ;
 - cession, SCM, dérogations, site distinct, plusieurs gérants et statuts multi-associés complets restent à cadrer/arbitrer avant extension ;
 - gate produit / métier obligatoire installé dans `docs/project/PRODUCT_GUARDRAIL_PROTOCOL_V1.md`.

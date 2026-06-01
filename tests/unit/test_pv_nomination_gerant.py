@@ -188,6 +188,7 @@ def test_pv_nomination_gerant_repeats_two_associes(tmp_path: Path) -> None:
     assert "· Nomination du gérant" in text
     assert "· Pouvoirs" in text
     assert "RCS de Paris" not in text
+    assert "En cours d’immatriculation" in text
     assert "EXTRAORDINAIRE" not in text
     assert "extraordinaire" not in text
     assert "10 heures" not in text
@@ -282,6 +283,7 @@ def test_pv_nomination_gerant_restores_essential_docx_structure(tmp_path: Path) 
     assert title_paragraph.alignment == WD_ALIGN_PARAGRAPH.CENTER
     assert title_paragraph.text == (
         "PROCES-VERBAL DES DECISIONS\n"
+        " DE L’ASSEMBLEE GENERALE\n"
         " DU 13 mai 2026"
     )
     assert all(run.bold for run in title_paragraph.runs if run.text.strip())

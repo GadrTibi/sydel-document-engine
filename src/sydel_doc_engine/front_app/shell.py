@@ -137,6 +137,10 @@ def _prefill_random_selarl_data() -> None:
         "selarl_conjoint_civilite": "Madame",
         "selarl_conjoint_prenom": random.choice(("Claire", "Sophie", "Nadia")),
         "selarl_conjoint_nom": person["nom"],
+        "selarl_conjoint_adresse_num_voie": person["adresse_num_voie"],
+        "selarl_conjoint_adresse_voie": person["adresse_voie"],
+        "selarl_conjoint_adresse_cp": person["adresse_cp"],
+        "selarl_conjoint_adresse_ville": person["adresse_ville"],
         "selarl_qualite_renoncee": "associe",
         "selarl_date_courrier_avertissement": today_text,
     }
@@ -315,7 +319,7 @@ def _render_qualification() -> dict[str, object]:
             value=False,
             key="selarl_regime_communautaire",
         )
-        col_c.caption("Active DOC-005. DOC-006 reste reserve.")
+        col_c.caption("Active DOC-005 et DOC-006.")
     if multi_associes_doc004_limited:
         st.info(
             "Sous-cas limite : DOC-004 uniquement, gerant unique, president choisi "
@@ -702,6 +706,10 @@ def _render_conjoint(
             "conjoint_genre": derive_gender_from_civilite("Madame"),
             "conjoint_prenom": "",
             "conjoint_nom": "",
+            "conjoint_adresse_num_voie": "",
+            "conjoint_adresse_voie": "",
+            "conjoint_adresse_cp": "",
+            "conjoint_adresse_ville": "",
             "qualite_renoncee": "associe",
             "date_courrier_avertissement": None,
         }
@@ -718,6 +726,24 @@ def _render_conjoint(
     qualite_renoncee = "associe"
     date_courrier_avertissement = None
     if regime_communautaire:
+        st.markdown("Adresse conjoint")
+        adr_a, adr_b, adr_c, adr_d = st.columns(4)
+        conjoint_adresse_num_voie = adr_a.text_input(
+            "No conjoint",
+            key="selarl_conjoint_adresse_num_voie",
+        )
+        conjoint_adresse_voie = adr_b.text_input(
+            "Voie conjoint",
+            key="selarl_conjoint_adresse_voie",
+        )
+        conjoint_adresse_cp = adr_c.text_input(
+            "CP conjoint",
+            key="selarl_conjoint_adresse_cp",
+        )
+        conjoint_adresse_ville = adr_d.text_input(
+            "Ville conjoint",
+            key="selarl_conjoint_adresse_ville",
+        )
         col_e, col_f = st.columns(2)
         qualite_renoncee = col_e.text_input(
             "Qualite renoncee",
@@ -735,6 +761,14 @@ def _render_conjoint(
         "conjoint_genre": derive_gender_from_civilite(conjoint_civilite),
         "conjoint_prenom": conjoint_prenom,
         "conjoint_nom": conjoint_nom,
+        "conjoint_adresse_num_voie": conjoint_adresse_num_voie
+        if regime_communautaire
+        else "",
+        "conjoint_adresse_voie": conjoint_adresse_voie if regime_communautaire else "",
+        "conjoint_adresse_cp": conjoint_adresse_cp if regime_communautaire else "",
+        "conjoint_adresse_ville": conjoint_adresse_ville
+        if regime_communautaire
+        else "",
         "qualite_renoncee": qualite_renoncee,
         "date_courrier_avertissement": date_courrier_avertissement,
     }

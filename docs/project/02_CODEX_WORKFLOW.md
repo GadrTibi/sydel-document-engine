@@ -92,7 +92,8 @@ local a partir de `docs/project/PROJECT_NAOMIE_RUNTIME_TEMPLATE_V1.md`.
 
 Pour la fin de sprint SELARL, appliquer
 `docs/sprints/SPRINT_SELARL_CLOSING_V1.md`. La prochaine action propre courante
-est `SELARL-ASSOCIE-REVIEW-001`, maintenant que le pack de revue est regenere.
+est `SELARL-FINAL-ASSOCIE-VALIDATION-001`, maintenant que le pack corrige
+`artifacts/selarl_closing_pack_004/` est regenere.
 Ce n'est pas un developpement complexe.
 
 ## Choix du périmètre

@@ -4,6 +4,11 @@ Ticket : `SELARL-CLOSING-PACK-001`
 
 Date : 2026-06-01
 
+Note 2026-06-01 : ce pack est historique et remplace par
+`docs/review/selarl_closing_pack_002_report_v1.md`. Le pack 001 excluait
+`DOC-006`; le pack 002 corrige cette erreur et genere `DOC-006` quand le regime
+communautaire est actif.
+
 ## Decision
 
 `GO recette`, `NO-GO dev`.

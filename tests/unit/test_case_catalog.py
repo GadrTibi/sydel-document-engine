@@ -57,15 +57,15 @@ def test_selarl_regime_communautaire_adds_conjoint_letters() -> None:
     assert "DOC-006" in selected
 
 
-def test_doc_006_carries_source_v2_reserve_note() -> None:
+def test_doc_006_carries_regime_communautaire_source_note() -> None:
     documents = get_expected_documents(
         {"case_type": "SELARL", "conditions": {"regime_communautaire": True}}
     )
     doc_006 = next(document for document in documents if document.document_code == "DOC-006")
 
     assert doc_006.availability == DocumentAvailability.GENERATABLE
-    assert any("vraie V2" in note for note in doc_006.notes)
-    assert any("reserve" in note for note in doc_006.notes)
+    assert any("Source DOCX Lot 2 disponible" in note for note in doc_006.notes)
+    assert not any("reserve" in note.casefold() for note in doc_006.notes)
 
 
 def test_selarl_scm_cession_adds_scm_cession_documents() -> None:
