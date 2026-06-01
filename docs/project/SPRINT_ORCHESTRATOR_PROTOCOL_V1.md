@@ -11,6 +11,9 @@ Il s'inscrit sous la tour de controle globale
 `docs/project/PROJECT_CONTROL_TOWER_V1.md`, qui indique quel sprint est actif,
 quelle phase est en cours et quelle action est autorisee maintenant.
 
+Pour Naomie/SELAS, appliquer aussi le protocole court prioritaire
+`docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md`.
+
 Il ne remplace pas l'orchestrateur moteur qui choisit les generateurs de
 documents. Il protege le projet avant et pendant le developpement : il garde le
 statut du sprint, les gates, les preuves attendues et la prochaine action.
@@ -92,7 +95,7 @@ Chaque fichier de sprint doit indiquer au minimum :
 
 | Situation | Reponse obligatoire de Codex |
 | --- | --- |
-| Naomie dit seulement `Bonjour` dans un contexte Naomie/SELAS | Accueil sprint SELAS, verification branche, point pedagogie, aucun dev |
+| Naomie dit seulement `Bonjour` dans un contexte Naomie/SELAS | Accueil sprint SELAS, verification branche, point pedagogie, Prompt NotebookLM 01, aucun dev |
 | Le contexte mentionne Naomi/Naomie mais le message est vague | Traiter comme accueil Naomie, pas comme demande generique |
 | Naomie dit `Je veux lancer le sprint X` | Creer/lire le sprint, phase 0, `NO-GO dev`, puis lancer uniquement le sous-sprint NotebookLM |
 | Naomie dit `Je veux lancer/demarrer/reprendre le sprint SELAS/CELAS` | Rester dans `SELAS-SOURCES-NOTEBOOKLM-001`, donner le prochain prompt NotebookLM a copier-coller, attendre sa reponse |
@@ -117,6 +120,9 @@ Prochaine etape : [ce qu'on fera ensuite]
 ```
 
 Le point pedagogie est obligatoire a chaque reponse a Naomie.
+
+Pour Naomie/SELAS, un simple `bonjour` suffit a declencher le Prompt NotebookLM
+01. Codex ne doit pas attendre que Naomie choisisse une tache.
 
 Reponse interdite dans un contexte Naomie :
 

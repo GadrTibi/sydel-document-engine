@@ -15,6 +15,7 @@ Ce document ne remplace pas :
 
 - `docs/project/01_EXECUTION_BOARD.md` pour les tickets ;
 - `docs/project/04_LAST_STATE.md` pour le dernier etat reprenable ;
+- `docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md` pour le protocole court Naomie ;
 - `docs/sprints/SPRINT_[TYPE]_V1.md` pour l'etat detaille d'un sprint ;
 - `docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md` pour la methode.
 
@@ -111,6 +112,7 @@ Etat utile :
 - prompt source : `docs/sprints/SPRINT_SELAS_NOTEBOOKLM_PROMPTS_V1.md` ;
 - action courante : donner Prompt 01, attendre la reponse brute, structurer,
   puis iterer.
+- protocole court obligatoire : `docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md`.
 
 Interdits actuels SELAS :
 
@@ -129,6 +131,13 @@ suffisant.
 
 Si Naomie arrive dans un environnement qui indique la branche `main`, Codex doit
 considerer que le contexte de sprint n'est pas encore correctement place.
+
+Le nom du dossier local ne suffit pas a diagnostiquer. `sydel-track-b` est le
+nom du worktree utilise par Gad ; `sydel-document-engine` peut etre le nom normal
+d'un clone chez Naomie. Le diagnostic correct est :
+
+- remote GitHub attendu : `https://github.com/GadrTibi/sydel-document-engine.git` ;
+- branche attendue pour Naomie/SELAS : `codex/naomie-selas-sprint`.
 
 Action obligatoire :
 
@@ -161,6 +170,9 @@ Action maintenant : [une seule action]
 Point pedagogie : [explication courte]
 Prochaine etape : [suite immediate]
 ```
+
+Si la demande est un simple `bonjour`, Codex doit quand meme donner le Prompt
+NotebookLM 01 complet. Il ne doit pas attendre que Naomie choisisse une tache.
 
 ## Reponse attendue si Naomie lance SELAS
 

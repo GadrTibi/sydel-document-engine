@@ -1,4 +1,4 @@
-# Tableau d'exécution
+﻿# Tableau d'exécution
 
 ## Statuts
 - READY
@@ -10,6 +10,7 @@
 
 | ID | Statut | Objet | Entrées obligatoires | Sorties obligatoires |
 |---|---|---|---|---|
+| NAOMIE-RUNTIME-FAILSAFE-001 | DONE | Corriger l'accueil Naomie quand un nouveau chat repond encore trop vaguement | captures 2026-06-01 + incidents `bonjour` / ancien ticket NotebookLM | `NAOMIE_RUNTIME_PROTOCOL_V1.md` + consigne prioritaire en tete de `AGENTS.md` + sprint SELAS aligne sur Phase 3 NotebookLM + ancien libelle `SELAS-NOTEBOOKLM-RECONCILIATION-001` declare obsolete |
 | PM-PRODUCT-GUARDRAIL-001 | DONE | Installer le gate produit / métier obligatoire avant tout développement | demande utilisateur 2026-06-01 + workflow projet + handoff | doctrine globale `GLOBAL_CODEX_PRODUCT_GUARDRAIL_V1.md` + protocole local `PRODUCT_GUARDRAIL_PROTOCOL_V1.md` + AGENTS/workflow/handoff/master plan mis à jour + mémoire de reprise alignée |
 | SELARL-CANONICAL-STATUS-001 | DONE | Consolider l'état SELARL canonique avant tout nouveau dev | gate produit + backlog/playbook/factory SELARL + dernier état Track B | `docs/project/SELARL_CANONICAL_STATUS_V1.md` + `NO-GO dev` pour extension complexe sans sous-cas choisi |
 | COMPANY-TYPE-SPRINT-PLAYBOOK-001 | DONE | Formaliser le sprint par type d'entreprise pour Gad / Naomie / associe | demande utilisateur 2026-06-01 + methode SELARL + gate produit | `docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md` + workflow NotebookLM + boucle retour associe + pointers projet |
@@ -17,7 +18,7 @@
 | NAOMIE-GITHUB-ONBOARDING-001 | DONE | Ecrire le mode d'emploi GitHub / branche pour Naomie | demande utilisateur 2026-06-01 + remote GitHub + branche courante `track-b/clean-rebuild` | `docs/project/NAOMIE_GITHUB_ONBOARDING_V1.md` + regle `1 sprint = 1 branche = 1 type d'entreprise` + Git/commandes geres par Codex, pas par Naomie |
 | NAOMIE-LEARNING-MENTOR-001 | DONE | Ajouter le sous-agent Professeur Naomie pour l'apprentissage | demande utilisateur 2026-06-01 + synthese sous-agent Professeur Naomie | `docs/project/NAOMIE_LEARNING_MENTOR_PROTOCOL_V1.md` + onboarding/playbook/workflow/handoff/master plan mis a jour + `GO pedagogie`, `NO-GO dev` |
 | SPRINT-ORCHESTRATOR-PROTOCOL-001 | DONE | Installer l'orchestrateur de sprint pour empecher le demarrage direct en dev/prod | demande utilisateur 2026-06-01 + incident lancement SELAS sans NotebookLM | `docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md` + workflow Naomie/Gad raccorde + `NO-GO dev` par defaut |
-| SPRINT-SELAS-V1-001 | IN_PROGRESS | Ouvrir le sprint SELAS pour Naomie en phase 0 | choix logique Codex valide par Gad + methode SELARL + protocols sprint/reuse | `docs/sprints/SPRINT_SELAS_V1.md` + phase 0 ACCUEIL + NotebookLM/reuse/matrice en attente + aucun dev autorise |
+| SPRINT-SELAS-V1-001 | IN_PROGRESS | Suivre le sprint SELAS pour Naomie en phase NotebookLM | choix logique Codex valide par Gad + methode SELARL + protocols sprint/reuse | `docs/sprints/SPRINT_SELAS_V1.md` + phase 3 NOTEBOOKLM + Prompt 01 a donner meme apres simple bonjour + aucun dev autorise |
 | NAOMIE-BRANCH-CREATION-001 | DONE | Creer et pousser la branche de sprint de Naomie | checkpoint documentaire publie + type d'entreprise choisi : SELAS | branche distante `codex/naomie-selas-sprint` creee depuis le checkpoint Track B |
 | NAOMIE-HELLO-TRIGGER-001 | DONE | Corriger le declencheur d'accueil Naomie apres reponse generique incorrecte | incident 2026-06-01 : reponse "tu veux qu'on attaque quoi..." | trigger explicite dans `AGENTS.md`, orchestrateur, sprint SELAS et workflow ; branche a verifier avant toute suite |
 | SELAS-NOTEBOOKLM-PROMPT-LOOP-001 | DONE | Formaliser la boucle NotebookLM SELAS par prompts courts | demande Gad 2026-06-01 + limite caracteres NotebookLM + besoin iteration Naomie | `SPRINT_SELAS_NOTEBOOKLM_PROMPTS_V1.md` + `SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md` + workflow mis a jour |

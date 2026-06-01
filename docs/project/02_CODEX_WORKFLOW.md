@@ -1,4 +1,4 @@
-# Mode opératoire Codex
+﻿# Mode opératoire Codex
 
 ## Lecture obligatoire avant tout ticket
 1. AGENTS.md
@@ -8,13 +8,14 @@
 5. docs/project/03_HANDOFF_FOR_NEW_AGENT.md
 6. docs/project/04_LAST_STATE.md
 7. docs/project/PROJECT_CONTROL_TOWER_V1.md
-8. docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise
-9. docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise
-10. docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise
-11. docs/sprints/SPRINT_[TYPE]_V1.md si le sprint existe
-12. docs/project/SELARL_CANONICAL_STATUS_V1.md si le ticket touche la SELARL
-13. docs/project/PRODUCT_GUARDRAIL_PROTOCOL_V1.md
-14. le document de spec concerné
+8. docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md si Naomie/SELAS est dans le contexte
+9. docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise
+10. docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise
+11. docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise
+12. docs/sprints/SPRINT_[TYPE]_V1.md si le sprint existe
+13. docs/project/SELARL_CANONICAL_STATUS_V1.md si le ticket touche la SELARL
+14. docs/project/PRODUCT_GUARDRAIL_PROTOCOL_V1.md
+15. le document de spec concerné
 
 Pour un ticket documentaire, vérifier aussi l'ADR applicable dans `docs/adr/` avant d'écrire du code.
 
@@ -60,7 +61,9 @@ Si le contexte indique Naomie/Naomi et que le message est seulement `Bonjour`,
 Codex doit traiter le message comme un accueil de sprint, pas comme une demande
 generique. Il doit lire `docs/sprints/SPRINT_SELAS_V1.md`, verifier la branche
 `codex/naomie-selas-sprint`, repondre avec `Statut sprint`, `Action maintenant`,
-`Point pedagogie`, `Prochaine etape`, et rester en `NO-GO dev`.
+`Point pedagogie`, `Prochaine etape`, donner le Prompt NotebookLM 01 complet, et
+rester en `NO-GO dev`. Le protocole court prioritaire est
+`docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md`.
 
 Pour le sprint SELAS, Codex doit ensuite donner un prompt court depuis
 `docs/sprints/SPRINT_SELAS_NOTEBOOKLM_PROMPTS_V1.md`. Quand Naomie colle une
@@ -168,6 +171,7 @@ Lis d'abord :
 - docs/project/03_HANDOFF_FOR_NEW_AGENT.md
 - docs/project/04_LAST_STATE.md
 - docs/project/PROJECT_CONTROL_TOWER_V1.md
+- docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md si Naomie/SELAS est dans le contexte
 - docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise
 - docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise
 - docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise

@@ -16,6 +16,10 @@ Regles :
 - choisir le prompt suivant selon les manques ;
 - rester en `NO-GO dev`.
 
+Le Prompt 01 doit etre donne meme si Naomie dit seulement `bonjour`, des lors
+que le contexte indique Naomie/SELAS. Voir
+`docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md`.
+
 ## Prompt 01 - Inventaire documentaire SELAS
 
 ```text
