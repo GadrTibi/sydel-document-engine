@@ -63,6 +63,8 @@ Ce fichier fixe la mémoire opérationnelle globale : il doit permettre à un no
 - etat SELARL courant consolide dans `docs/project/SELARL_CANONICAL_STATUS_V1.md` ;
 - tour de controle projet disponible dans `docs/project/PROJECT_CONTROL_TOWER_V1.md` ;
 - protocole runtime Naomie disponible dans `docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md` ;
+- protocole global Gad/Naomie/Codex disponible dans `docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md` ;
+- template runtime Naomie multi-projets disponible dans `docs/project/PROJECT_NAOMIE_RUNTIME_TEMPLATE_V1.md` ;
 - protocole sprint par type d'entreprise disponible dans `docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md` ;
 - orchestrateur de sprint operationnel disponible dans `docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md` ;
 - sprint SELAS ouvert en `NO-GO dev` dans `docs/sprints/SPRINT_SELAS_V1.md` ;
@@ -73,6 +75,7 @@ Ce fichier fixe la mémoire opérationnelle globale : il doit permettre à un no
 - mode d'emploi branche / installation Naomie disponible dans `docs/project/NAOMIE_GITHUB_ONBOARDING_V1.md` ;
 - couche pedagogique Naomie disponible dans `docs/project/NAOMIE_LEARNING_MENTOR_PROTOCOL_V1.md` ;
 - SELARL V1 de production limitée disponible pour création simple médecin / chirurgien-dentiste ;
+- fin de sprint SELARL structuree dans `docs/sprints/SPRINT_SELARL_CLOSING_V1.md` ;
 - régime communautaire SELARL : `DOC-005` généré, `DOC-006` réservé ;
 - multi-associés SELARL : `DOC-004` limité implémenté, `DOC-016` dentiste multi-associés en PARTIAL ;
 - cession, SCM, dérogations, site distinct, plusieurs gérants et statuts multi-associés complets restent à cadrer/arbitrer avant extension ;
@@ -117,10 +120,11 @@ Pour DOC-002, l'adresse de domiciliation est gérée en champ libre :
 7. si le sprint est pilote par Naomie, lancer d'abord le sous-sprint NotebookLM par prompts courts et attendre les reponses structurees ;
 8. pour tout nouveau type d'entreprise, appliquer ensuite `docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md` ;
 9. pour toute demande SELARL, lire `docs/project/SELARL_CANONICAL_STATUS_V1.md` ;
-10. appliquer `docs/project/PRODUCT_GUARDRAIL_PROTOCOL_V1.md` ;
-11. qualifier la demande en `GO dev` ou `NO-GO dev` ;
-12. si `GO dev`, limiter l'implémentation au ticket cadré ;
-13. si `NO-GO dev`, produire ou mettre à jour le cadrage fonctionnel requis.
+10. pour cloturer la SELARL, lire `docs/sprints/SPRINT_SELARL_CLOSING_V1.md` ;
+11. appliquer `docs/project/PRODUCT_GUARDRAIL_PROTOCOL_V1.md` ;
+12. qualifier la demande en `GO dev` ou `NO-GO dev` ;
+13. si `GO dev`, limiter l'implémentation au ticket cadré ;
+14. si `NO-GO dev`, produire ou mettre à jour le cadrage fonctionnel requis.
 
 ## Documents que Codex doit lire avant toute implémentation
 - AGENTS.md
@@ -131,11 +135,13 @@ Pour DOC-002, l'adresse de domiciliation est gérée en champ libre :
 - docs/project/04_LAST_STATE.md
 - docs/project/PROJECT_CONTROL_TOWER_V1.md
 - docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md si Naomie/SELAS est dans le contexte
+- docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md pour les workflows multi-projets avec Naomie
 - docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md pour tout sprint de type d'entreprise
 - docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md
 - docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md pour tout sprint de type d'entreprise
 - docs/sprints/SPRINT_[TYPE]_V1.md si le sprint existe
 - docs/project/SELARL_CANONICAL_STATUS_V1.md pour toute reprise SELARL
+- docs/sprints/SPRINT_SELARL_CLOSING_V1.md pour toute cloture SELARL
 - docs/project/PRODUCT_GUARDRAIL_PROTOCOL_V1.md
 - le fichier de spec ou de livraison concerné dans docs/delivery/
 

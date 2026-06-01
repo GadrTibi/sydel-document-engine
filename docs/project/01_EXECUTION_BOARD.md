@@ -10,6 +10,15 @@
 
 | ID | Statut | Objet | Entrées obligatoires | Sorties obligatoires |
 |---|---|---|---|---|
+| GLOBAL-NAOMIE-COLLABORATION-001 | DONE | Formaliser le workflow Gad / Naomie / Codex reusable sur tous les projets | demande Gad 2026-06-01 + incidents cadrage Naomie + besoin multi-projets | `GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md` + `PROJECT_NAOMIE_RUNTIME_TEMPLATE_V1.md` + pointeurs projet mis a jour |
+| SELARL-CLOSING-PLAN-001 | DONE | Ecrire la fin de sprint SELARL avec tickets et gates | `SELARL_CANONICAL_STATUS_V1.md` + backlog/factory SELARL + demande Gad | `docs/sprints/SPRINT_SELARL_CLOSING_V1.md` + tickets de cloture `SELARL-CLOSING-*` |
+| SELARL-CLOSING-PACK-001 | READY | Regenerer le pack de revue SELARL simple | `SPRINT_SELARL_CLOSING_V1.md` + clean front Track B + scenarios medecin/dentiste/regime communautaire | pack medecin, dentiste et regime communautaire + liste documents produits/reserves/manuels |
+| SELARL-ASSOCIE-REVIEW-001 | READY | Faire tester / relire le pack SELARL par l'associe ou juriste | pack de revue SELARL simple | retour humain classe ou validation explicite |
+| SELARL-REVIEW-TRIAGE-001 | BLOCKED | Classer les retours humains SELARL | retour associe/juriste | tableau bug/wording/source/UX/hors scope + decisions corriger/reporter/bloquer |
+| SELARL-REVIEW-FIXES-001 | BLOCKED | Corriger uniquement les retours SELARL valides | triage + `GO dev` explicite | corrections limitees + tests cibles + note wording si necessaire |
+| SELARL-CLOSING-SMOKE-001 | BLOCKED | Relancer smoke final SELARL simple apres corrections | corrections validees | tests/smoke medecin, dentiste, regime communautaire + absence placeholders/DOC-006 |
+| SELARL-CANONICAL-CLOSE-001 | BLOCKED | Clore le statut canonique SELARL simple | smoke final + retour humain traite | `SELARL_CANONICAL_STATUS_V1.md` mis a jour avec statut final |
+| SELARL-NEXT-SUBCASE-SELECTION-001 | READY | Choisir le prochain sous-cas SELARL complexe | `SPRINT_SELARL_CLOSING_V1.md` + arbitrage Gad | un seul sous-cas choisi ou report explicite |
 | NAOMIE-RUNTIME-FAILSAFE-001 | DONE | Corriger l'accueil Naomie quand un nouveau chat repond encore trop vaguement | captures 2026-06-01 + incidents `bonjour` / ancien ticket NotebookLM | `NAOMIE_RUNTIME_PROTOCOL_V1.md` + consigne prioritaire en tete de `AGENTS.md` + sprint SELAS aligne sur Phase 3 NotebookLM + ancien libelle `SELAS-NOTEBOOKLM-RECONCILIATION-001` declare obsolete |
 | PM-PRODUCT-GUARDRAIL-001 | DONE | Installer le gate produit / métier obligatoire avant tout développement | demande utilisateur 2026-06-01 + workflow projet + handoff | doctrine globale `GLOBAL_CODEX_PRODUCT_GUARDRAIL_V1.md` + protocole local `PRODUCT_GUARDRAIL_PROTOCOL_V1.md` + AGENTS/workflow/handoff/master plan mis à jour + mémoire de reprise alignée |
 | SELARL-CANONICAL-STATUS-001 | DONE | Consolider l'état SELARL canonique avant tout nouveau dev | gate produit + backlog/playbook/factory SELARL + dernier état Track B | `docs/project/SELARL_CANONICAL_STATUS_V1.md` + `NO-GO dev` pour extension complexe sans sous-cas choisi |
