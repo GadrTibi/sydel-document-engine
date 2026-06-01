@@ -27,21 +27,41 @@ L'arbre théorique abandonné n'est pas une source valide. Il n'existe pas de fi
 - Aucun document ne doit être codé sans source reçue, analyse et spec écrite.
 - Les DOCX propres sont reconstruits de manière déterministe plutôt que nettoyés à la volée en production.
 - Pour DOC-002 en V1, l'adresse de domiciliation est un champ libre : `domiciliation.adresse_domiciliation_affichee`.
+- Codex est désormais pilote projet / produit principal dans le dépôt.
+- Avant tout développement, appliquer `docs/project/PRODUCT_GUARDRAIL_PROTOCOL_V1.md` et établir `GO dev` ou `NO-GO dev`.
+- Avant tout nouveau sprint de type d'entreprise, appliquer `docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md`.
+- Avant tout nouveau sprint de type d'entreprise, appliquer `docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md`.
+- Avant tout nouveau sprint de type d'entreprise, appliquer aussi `docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md`.
+- Quand un sprint existe, lire son fichier `docs/sprints/SPRINT_[TYPE]_V1.md` avant de repondre.
+- La tour de controle projet est `docs/project/PROJECT_CONTROL_TOWER_V1.md` ;
+  elle indique sprint actif, phase courante, action autorisee et actions
+  interdites.
+- Un nouveau chat doit pouvoir reprendre le projet depuis `docs/project/04_LAST_STATE.md`, sans dépendre d'un chat externe.
 
 ## Ce qui est déjà fait
 - Le dépôt de base existe.
-- La mémoire projet initiale est installée dans `docs/project/`.
+- La mémoire projet est installée dans `docs/project/`.
 - Les ADR principales existent dans `docs/adr/`.
-- La spec Lot 1 existe dans `docs/delivery/lot_01_analysis_and_specs_v1.md`.
-- Le Lot 1 est défini : DOC-001, DOC-002, DOC-003.
-- Le prochain ticket opérationnel est DOC-001.
+- Le moteur documentaire a dépassé le Lot 1 initial : le catalogue, l'orchestrateur, les générateurs principaux, DOCX, ZIP et PDF best-effort existent.
+- Le clean front Track B existe dans `src/sydel_doc_engine/front_app/`.
+- La SELARL V1 limitée est générable pour création simple médecin / chirurgien-dentiste.
+- Le régime communautaire SELARL génère `DOC-005` et garde `DOC-006` en réserve.
+- Le multi-associés SELARL est disponible seulement en sous-cas limité : `DOC-004`, et `DOC-016` dentiste en PARTIAL.
+- L'état SELARL courant se lit d'abord dans `docs/project/SELARL_CANONICAL_STATUS_V1.md`.
+- La méthode de sprint par type d'entreprise est formalisée dans `docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md`.
+- L'orchestrateur de sprint operationnel est formalise dans `docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md`.
+- Le sprint SELAS est ouvert en `NO-GO dev` dans `docs/sprints/SPRINT_SELAS_V1.md`.
+- La réutilisation SELARL/global est cadrée dans `docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md`.
+- Le mode d'emploi d'installation et branche Naomie est `docs/project/NAOMIE_GITHUB_ONBOARDING_V1.md`.
+- La couche pedagogique pour Naomie est `docs/project/NAOMIE_LEARNING_MENTOR_PROTOCOL_V1.md`.
+- Le gate produit / métier obligatoire est défini dans `docs/project/PRODUCT_GUARDRAIL_PROTOCOL_V1.md`.
+- La tour de controle chef de projet est disponible dans `docs/project/PROJECT_CONTROL_TOWER_V1.md`.
 
 ## Ce qui n'est pas encore fait
-- Le code métier Lot 1 n'est pas démarré.
-- Les générateurs DOC-001, DOC-002 et DOC-003 ne sont pas encore implémentés.
-- L'orchestrateur Lot 1 n'est pas encore branché.
-- L'interface Streamlit Lot 1 n'est pas encore branchée.
-- Les sorties PDF et ZIP restent à intégrer dans le flux V1.
+- La SELARL complète n'est pas juridiquement finalisée sur toutes ses variantes.
+- Les cessions cabinet, cession SCM, dérogations, site distinct, président externe, plusieurs gérants et statuts multi-associés complets restent à cadrer/arbitrer avant développement front complet.
+- Le wording juridique ne doit pas être étendu ou modifié sans validation explicite.
+- Chaque prochain développement doit passer par le gate `GO dev` / `NO-GO dev`.
 
 ## Ordre de lecture des fichiers
 Avant toute proposition ou implémentation, lire dans cet ordre :
@@ -52,13 +72,27 @@ Avant toute proposition ou implémentation, lire dans cet ordre :
 4. `docs/project/02_CODEX_WORKFLOW.md`
 5. `docs/project/03_HANDOFF_FOR_NEW_AGENT.md`
 6. `docs/project/04_LAST_STATE.md`
-7. Le fichier de spec concerné dans `docs/delivery/`
-8. Les ADR applicables dans `docs/adr/`
+7. `docs/project/PROJECT_CONTROL_TOWER_V1.md`
+8. `docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md` pour tout sprint de type d'entreprise
+9. `docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md` pour tout sprint de type d'entreprise
+10. `docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md` pour tout sprint de type d'entreprise
+11. `docs/sprints/SPRINT_[TYPE]_V1.md` si le sprint existe
+12. `docs/project/SELARL_CANONICAL_STATUS_V1.md` pour toute reprise SELARL
+13. `docs/project/PRODUCT_GUARDRAIL_PROTOCOL_V1.md`
+14. Le fichier de spec concerné dans `docs/delivery/`
+15. Les ADR applicables dans `docs/adr/`
 
-## Travail entre ChatGPT chef de projet et Codex exécutant
-- ChatGPT chef de projet cadre les tickets, arbitre les priorités et explicite les décisions métier à documenter.
-- Codex exécutant lit la mémoire projet, applique le ticket demandé et garde un scope minimal.
-- Codex ne modifie pas le wording juridique sans instruction explicite.
+## Travail avec Codex pilote projet / produit
+- Codex cadre les tickets, reformule l'intention métier, arbitre le passage en `GO dev` ou `NO-GO dev` et explicite les décisions métier à documenter.
+- Codex doit d'abord consulter la tour de controle projet pour connaitre sprint actif, phase, action autorisee et actions interdites.
+- Si Naomie démarre un sprint, elle doit s'identifier et Codex doit la guider étape par étape selon `SPRINT_ORCHESTRATOR_PROTOCOL_V1.md` et `COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md`.
+- Pour le sprint SELAS, l'etat immediat est `docs/sprints/SPRINT_SELAS_V1.md` : `NO-GO dev`, sous-sprint NotebookLM actif, prochaine action = donner a Naomie le prompt NotebookLM courant a copier-coller.
+- Si Naomie dit qu'elle veut lancer/demarrer/reprendre le sprint SELAS/CELAS, Codex doit comprendre `lancer = lancer le sous-sprint NotebookLM`, et ne doit pas passer en production, generation, audit, matrice ou code.
+- Si Naomie travaille sur un nouveau type d'entreprise, elle doit partir d'une branche dediee selon `NAOMIE_GITHUB_ONBOARDING_V1.md`, mais Codex gere Git, les commandes, les tests et les checkpoints pour elle.
+- Si Naomie pose une question d'apprentissage, utiliser le mode `Professeur Naomie` defini dans `NAOMIE_LEARNING_MENTOR_PROTOCOL_V1.md`.
+- Le sous-agent prioritaire pour un nouveau sprint est `Reuse Auditor`, défini dans `REUSE_AUDIT_AGENT_PROTOCOL_V1.md`.
+- Codex peut utiliser des sous-agents spécialisés pour auditer le produit, les sources, le front, le moteur ou la QA, mais reste responsable de la synthèse et de l'intégration.
+- Codex ne modifie pas le wording juridique sans instruction explicite et validation tracée.
 - Codex met à jour `docs/project/01_EXECUTION_BOARD.md` et `docs/project/04_LAST_STATE.md` à la fin de chaque ticket.
 - En cas d'ambiguïté métier, Codex bloque l'implémentation concernée et documente la décision requise.
 - Les PR doivent rester petites, traçables et centrées sur un seul document métier sauf demande explicite.
