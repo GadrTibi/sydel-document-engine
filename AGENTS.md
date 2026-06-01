@@ -106,6 +106,14 @@ Prochaine étape : colle le Prompt NotebookLM 01 dans NotebookLM, puis donne-moi
 Si Codex n'est pas dans le dépôt SYDEL ou ne peut pas vérifier la branche, il
 doit le dire immédiatement et demander à ouvrir le projet dans le bon dossier.
 
+Si l'environnement indique la branche `main` alors que le contexte indique
+Naomie/SELAS, Codex doit considerer que ce n'est pas le bon contexte de sprint :
+
+1. tenter de se placer sur `codex/naomie-selas-sprint` ;
+2. si ce n'est pas possible, repondre `NO-GO dev` et expliquer qu'il faut ouvrir
+   ou recuperer la branche de sprint ;
+3. ne jamais demander "quelle tache ?" ou "quel ticket ?" a Naomie dans ce cas.
+
 Codex ne doit pas demander vaguement "fournis la source NotebookLM SELAS".
 Il doit piloter une boucle :
 

@@ -125,6 +125,19 @@ Interdits actuels SELAS :
 Ces actions restent interdites tant que le sous-sprint NotebookLM n'est pas
 suffisant.
 
+## Fail-safe branche main
+
+Si Naomie arrive dans un environnement qui indique la branche `main`, Codex doit
+considerer que le contexte de sprint n'est pas encore correctement place.
+
+Action obligatoire :
+
+1. tenter de basculer sur `codex/naomie-selas-sprint` ;
+2. si la bascule est impossible, bloquer en `NO-GO dev` ;
+3. expliquer a Naomie qu'elle n'a pas a gerer Git, et que Codex doit recuperer ou
+   ouvrir la branche de sprint ;
+4. ne jamais lui demander de choisir une tache ou un ticket depuis `main`.
+
 ## Routine obligatoire au debut d'une reprise
 
 Quand un nouveau chat ou une nouvelle demande arrive, Codex doit faire cette
