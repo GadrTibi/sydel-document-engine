@@ -4,6 +4,12 @@ Ticket : `TRACK-B-SELARL-SOURCE-OF-TRUTH-CONTRACT-001`
 
 Statut : contrat documentaire V1, sans implementation SELARL nouvelle.
 
+Addendum 2026-06-01 : les passages historiques qui qualifiaient `DOC-006`
+comme reserve source sont remplaces par la decision courante. Pour une SELARL
+avec regime communautaire, le front doit generer `DOC-005` et `DOC-006`. La
+source DOCX de `DOC-006` existe dans `project/source_documents/lot_02/` et le
+batch regime communautaire des specs Lot 2 couvre les deux lettres.
+
 ## 1. Objet
 
 Ce document fige le contrat entre le metier SELARL et le futur front Track B propre.
@@ -130,7 +136,7 @@ Inclus :
   `Dossier unipersonnel` est active ;
 - domiciliation = siege social, conformement a la reponse metier Albane ;
 - generation des documents coeur listés en section 7 ;
-- affichage honnete des exclusions et reserves.
+- affichage honnete des exclusions, manuels et hors scope.
 
 Exclus du coeur V1 :
 
@@ -156,6 +162,7 @@ Exclus du coeur V1 :
 | `DOC-016` | Statuts SELARL chirurgien-dentiste | Si profession = `chirurgien_dentiste` | Generable seulement associe unique |
 | `DOC-017` | Statuts SELARL medecin | Si profession = `medecin` | Generable seulement associe unique |
 | `DOC-005` | Lettre de renonciation a revendiquer la qualite d'associe | Si regime communautaire = oui | Generable si conjoint, apport, societe et signature complets |
+| `DOC-006` | Lettre d'avertissement au conjoint | Si regime communautaire = oui | Generable si conjoint, adresse conjoint, apport, societe et signature complets |
 
 La generation V1 doit filtrer strictement sur ces documents. Les documents
 techniquement presents dans le moteur mais hors contrat ne doivent pas etre
@@ -166,7 +173,6 @@ declenches par le front V1.
 | Code | Document | Condition source | Decision front V1 | Message attendu |
 |---|---|---|---|---|
 | sans code | Formulaire declaration prealable site distinct CD94 avec la SEL | Site distinct | Manuel | Document attendu par la source, mais a remplir manuellement en V1. |
-| `DOC-006` | Lettre d'avertissement au conjoint | Regime communautaire | Reserve, non lance automatiquement | Source V2 indique que le document ne figure pas parmi les sources fournies. |
 | `DOC-013` | Formulaire derogation plusieurs sites avec la SEL | Derogation | Manuel / hors generation | Document mentionne, variables non fournies ; preparation manuelle. |
 | sans code | Derogation SEL BNC | Derogation | Manuel | Document indique comme a remplir a la main. |
 | `DOC-014` | Derogation cumul SELARL BNC | Derogation | Manuel / hors generation | Document indique comme a remplir a la main. |
@@ -205,8 +211,7 @@ declenches par le front V1.
 ### Regime communautaire
 
 - `DOC-005` : present si regime communautaire = oui.
-- `DOC-006` : visible avec reserve source, non inclus dans le lancement
-  automatique V1.
+- `DOC-006` : present si regime communautaire = oui.
 
 ### Branches non couvertes V1
 
@@ -281,7 +286,8 @@ declenches par le front V1.
 
 ### Etape 6 - Scenarios et generation
 
-- conjoint et apport si regime communautaire = oui ;
+- conjoint, adresse du conjoint, apport et date du courrier si regime
+  communautaire = oui ;
 - lieu de signature ;
 - date de signature ;
 - liste des documents generables ;
@@ -295,7 +301,7 @@ Messages standards a utiliser cote front :
 | Cas | Message |
 |---|---|
 | Document manuel | `Ce document est attendu par la source, mais il reste a preparer manuellement en SELARL V1.` |
-| Document reserve `DOC-006` | `La source V2 indique que ce document ne figure pas parmi les sources fournies. Il est affiche avec reserve et n'est pas lance automatiquement.` |
+| Regime communautaire | `Regime communautaire actif : les lettres DOC-005 et DOC-006 seront generees.` |
 | Cession / SCM / bail hors V1 | `Le moteur peut contenir une famille documentaire liee, mais le front SELARL V1 ne couvre pas encore les donnees metier necessaires. Generation bloquee pour ce document.` |
 | Statuts multi-associes | `Les sources actuelles ne stabilisent pas le wording des statuts avec plusieurs associes. Generation automatique bloquee en V1.` |
 | SELAS / micro-holding | `Ce cas releve d'une SELAS distincte, pas de la SELARL V1.` |
@@ -321,7 +327,7 @@ Blocages :
 
 Avertissements :
 
-- `DOC-006` est visible avec reserve source ;
+- `DOC-005` et `DOC-006` sont generes quand le regime communautaire est actif ;
 - des adresses peuvent etre identiques en pratique, mais ne doivent pas etre
   copiees silencieusement hors regle documentee ;
 - siege social et lieu d'exercice peuvent coincider via option explicite ;
@@ -340,7 +346,7 @@ Avertissements :
 | Domiciliation | Albane mail, V2/V3, registre | Albane mail | Domiciliation = siege social. |
 | Siege vs lieu d'exercice | Albane mail, registre | Albane mail + registre | Peut coincider via option, pas de fusion silencieuse. |
 | Liste documents coeur | V2/V3, process spec, catalogue | V2/V3 + process spec | `DOC-001`, `DOC-002`, `DOC-003`, `DOC-004`, `DOC-034`, `DOC-016` ou `DOC-017`. |
-| Regime communautaire | V2/V3, source verify, catalogue | V2/V3 + source verify | `DOC-005` generable ; `DOC-006` reserve. |
+| Regime communautaire | Source verite, specs Lot 2, source DOCX, catalogue | Specs Lot 2 + source DOCX | `DOC-005` et `DOC-006` generables quand le regime communautaire est actif. |
 | Site distinct | V2/V3, source verify | V2/V3 | Manuel, hors generation V1. |
 | Derogation | V2/V3, source verify | V2/V3 | `DOC-013` et `DOC-014` manuels, hors generation V1. |
 | Statuts multi-associes | Source verite 1 a 6, specs statuts, arbitrage statuts | Arbitrage statuts SEL | Generation V1 limitee a associe unique. |
@@ -356,9 +362,10 @@ Avertissements :
 2. V2/V3 contiennent l'anomalie de libelle `Si medecin Statuts dentiste` tout
    en pointant le modele de statuts medecins. Resolution : profession medecin
    selectionne `DOC-017`.
-3. `DOC-006` existe cote moteur/catalogue, mais V2 indique que la lettre
-   d'avertissement ne figure pas parmi les sources fournies. Resolution :
-   visible avec reserve, non lance automatiquement.
+3. Historique `DOC-006` : le contrat initial l'avait laisse en reserve par
+   prudence. Resolution 2026-06-01 : reserve levee, car la source DOCX existe
+   dans `project/source_documents/lot_02/` et le batch regime communautaire
+   couvre les deux lettres.
 4. V2/V3 listent des documents de derogation et site distinct, mais certains sont
    explicitement a remplir a la main ou sans variables fournies. Resolution :
    manuel / hors generation V1.
@@ -376,7 +383,6 @@ Avertissements :
 Ces questions ne bloquent pas le GO de la vertical slice V1 bornee ci-dessus,
 mais bloquent l'extension du perimetre :
 
-- faut-il rendre `DOC-006` generable malgre l'absence de source V2 fournie ?
 - faut-il automatiser le site distinct CD94, et avec quelle source de variables ?
 - faut-il automatiser les derogations SEL/BNC, et avec quel wording valide ?
 - faut-il ouvrir les statuts SELARL a 2 a 6 associes, et quel wording exact
@@ -399,8 +405,8 @@ ce contrat :
 - dossier unipersonnel ;
 - documents coeur `DOC-001`, `DOC-002`, `DOC-003`, `DOC-004`, `DOC-034` et
   `DOC-016` ou `DOC-017` ;
-- `DOC-005` conditionnel regime communautaire ;
-- documents reserves, manuels et complexes affiches mais non generes.
+- `DOC-005` et `DOC-006` conditionnels regime communautaire ;
+- documents manuels et complexes affiches mais non generes.
 
 Ce GO ne vaut pas pour une SELARL complete couvrant cession, SCM, derogations,
 site distinct ou statuts multi-associes.

@@ -1332,7 +1332,7 @@ BUSINESS_TEST_PREFILL_PRESETS: Final[tuple[BusinessTestPrefillPreset, ...]] = (
         case_type="SELARL",
         description=(
             "Active le regime communautaire, le site distinct et la derogation "
-            "pour voir DOC-006 avec reserve ainsi que DOC-013/DOC-014 manuels."
+            "pour voir DOC-005/DOC-006 generes ainsi que DOC-013/DOC-014 manuels."
         ),
         widget_values=_selarl_dentiste_regime_site_values(),
         front_data_profile=front_data_test_prefill_profile("selarl_dentiste_regime_site"),

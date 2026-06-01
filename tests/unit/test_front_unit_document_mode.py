@@ -3,8 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 
 from sydel_doc_engine.app.single_document_mode import (
-    UNIT_STATUS_GENERABLE_WITH_RESERVE,
     UNIT_STATUS_MANUAL_ONLY,
+    UNIT_STATUS_NOT_SUPPORTED,
     build_single_document_context,
     build_single_document_unit_plan,
     sample_single_document_input,
@@ -90,22 +90,22 @@ def test_doc_013_and_doc_014_remain_non_generable_manual_documents() -> None:
     assert not doc_014.is_generation_allowed
 
 
-def test_doc_006_keeps_generation_reserve_without_v1_generation() -> None:
+def test_doc_006_is_not_supported_by_prudent_unit_mode() -> None:
     plan = build_unit_document_plan("DOC-006")
 
-    assert plan.scope_status is UnitDocumentScopeStatus.GENERABLE_WITH_RESERVE
-    assert plan.status_record.status is DocumentStatus.GENERABLE_WITH_RESERVE
+    assert plan.scope_status is UnitDocumentScopeStatus.OUT_OF_SCOPE_V1
+    assert plan.status_record.status is DocumentStatus.EXPECTED
     assert not plan.is_generation_allowed
 
 
-def test_unit_choices_expose_reserve_and_manual_statuses() -> None:
+def test_unit_choices_expose_unsupported_and_manual_statuses() -> None:
     choices = single_document_choices(
         "SELARL",
         {"regime_communautaire": True, "derogation": True},
     )
     by_code = {choice.document_code: choice for choice in choices if choice.document_code}
 
-    assert by_code["DOC-006"].status == UNIT_STATUS_GENERABLE_WITH_RESERVE
+    assert by_code["DOC-006"].status == UNIT_STATUS_NOT_SUPPORTED
     assert by_code["DOC-013"].status == UNIT_STATUS_MANUAL_ONLY
     assert by_code["DOC-014"].status == UNIT_STATUS_MANUAL_ONLY
 

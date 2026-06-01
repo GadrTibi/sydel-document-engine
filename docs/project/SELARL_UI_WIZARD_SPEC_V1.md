@@ -181,7 +181,7 @@ Le rendu Streamlit SELARL a été réaligné par `SELARL-UI-REALIGN-001`. Il con
 | SCM cession | Le bloc SCM reste distinct et la SELARL cessionnaire est une option explicite. | Bloc SCM distinct de la cession de cabinet. |
 | Régime communautaire | Le bloc conjoint/apport est conditionné par régime communautaire. | Bloc régime matrimonial / conjoint. |
 | Dérogation | Le catalogue V1 exposait `DOC-013` et `DOC-014` comme formulaires à compléter. | Dans le pilote SELARL vérifié, le formulaire multi-sites est hors génération faute de variables V2 et `Dérogation cumul SELARL BNC` est manuel. |
-| Lettre d'avertissement conjoint | Le moteur expose `DOC-006` comme générable. | L'écran doit afficher une réserve source V2 : le document ne figure pas parmi les sources fournies. |
+| Lettre d'avertissement conjoint | Le moteur expose `DOC-006` comme générable. | L'écran doit le générer avec `DOC-005` quand le régime communautaire est actif ; la réserve historique est levée par la source DOCX Lot 2. |
 | Documents à retirer du pilote | Aucun document autonome d'autorisation d'emprunt ne doit être ajouté. | Ne montrer que les documents SELARL attendus par la V2. |
 
 ## Critères d'acceptation UI réaligné

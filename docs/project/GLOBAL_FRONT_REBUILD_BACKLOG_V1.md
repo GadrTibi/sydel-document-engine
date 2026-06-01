@@ -303,7 +303,8 @@ CritÃ¨res d'acceptation :
 
 - seuls les documents `generable` dans le perimetre V1 peuvent etre proposes ;
 - les documents manuels restent exclus ;
-- `DOC-006`, `DOC-013` et `DOC-014` restent exclus de la generation V1 ;
+- `DOC-006` est inclus quand le regime communautaire SELARL est actif ;
+  `DOC-013` et `DOC-014` restent exclus de la generation V1 ;
 - DOCX reste prioritaire, PDF local optionnel, ZIP dossier avec manifeste ;
 - les erreurs moteur sont affichees sans masquer les raisons data-layer ;
 - aucune logique de mapping documentaire n'est dupliquee dans l'UI.
@@ -402,7 +403,7 @@ CritÃ¨res d'acceptation :
 - selection par `DOC-XXX` ou libelle ;
 - exigences data-layer visibles ;
 - documents hors perimetre V1 signales proprement ;
-- `DOC-006` reste avec reserve ;
+- `DOC-006` est genere uniquement si le regime communautaire SELARL est actif ;
 - `DOC-013` et `DOC-014` restent manuels ;
 - aucune confusion avec le parcours dossier complet.
 

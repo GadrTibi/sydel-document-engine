@@ -80,7 +80,7 @@ def test_front_generation_readiness_switches_statuts_for_dentiste() -> None:
     assert context.statuts_sel.overlay == "selarl_dentiste"
 
 
-def test_front_generation_regime_communautaire_adds_doc_005_and_excludes_reserve() -> None:
+def test_front_generation_regime_communautaire_adds_doc_005_and_doc_006() -> None:
     dossier = build_front_dossier_entry_dossier(
         _complete_generation_entry(regime_communautaire=True)
     )
@@ -90,9 +90,9 @@ def test_front_generation_regime_communautaire_adds_doc_005_and_excludes_reserve
     statuses = {status.doc_code: status.status for status in readiness.summary.documents}
 
     assert "DOC-005" in readiness.target_doc_codes
-    assert "DOC-006" in readiness.excluded_doc_codes
+    assert "DOC-006" in readiness.target_doc_codes
     assert statuses["DOC-005"] is DocumentStatus.GENERABLE
-    assert statuses["DOC-006"] is DocumentStatus.GENERABLE_WITH_RESERVE
+    assert statuses["DOC-006"] is DocumentStatus.GENERABLE
     assert readiness.can_generate_docx is True
     assert context.regime_communautaire is not None
 
@@ -183,7 +183,7 @@ def test_front_generation_blocks_incomplete_dossier() -> None:
         generate_front_docx(dossier, output_dir)
 
 
-def test_front_generation_never_includes_manual_or_reserved_docs() -> None:
+def test_front_generation_excludes_manual_docs_but_keeps_regime_docs() -> None:
     dossier = build_front_dossier_entry_dossier(
         _complete_generation_entry(
             regime_communautaire=True,
@@ -199,10 +199,10 @@ def test_front_generation_never_includes_manual_or_reserved_docs() -> None:
     assert "DOC-006" in statuses
     assert "DOC-013" in statuses
     assert "DOC-014" in statuses
-    assert "DOC-006" in readiness.excluded_doc_codes
+    assert "DOC-006" in readiness.target_doc_codes
     assert "DOC-013" in readiness.excluded_doc_codes
     assert "DOC-014" in readiness.excluded_doc_codes
-    assert statuses["DOC-006"] is DocumentStatus.GENERABLE_WITH_RESERVE
+    assert statuses["DOC-006"] is DocumentStatus.GENERABLE
     assert statuses["DOC-013"] is DocumentStatus.MANUAL_ONLY
     assert statuses["DOC-014"] is DocumentStatus.MANUAL_ONLY
 

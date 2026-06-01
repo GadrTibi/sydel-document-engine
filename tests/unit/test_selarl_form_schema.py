@@ -213,7 +213,7 @@ def test_doc_013_and_doc_014_are_visible_manual_and_not_generable() -> None:
     assert "DOC-014" not in generable_codes
 
 
-def test_doc_006_carries_source_v2_reserve_in_schema_and_catalog_projection() -> None:
+def test_doc_006_is_generable_without_source_reserve() -> None:
     specs_by_code = {
         document.document_code: document
         for document in selarl_document_specs()
@@ -226,9 +226,8 @@ def test_doc_006_carries_source_v2_reserve_in_schema_and_catalog_projection() ->
     }
 
     assert specs_by_code["DOC-006"].expected_availability == DocumentAvailability.GENERATABLE
-    assert specs_by_code["DOC-006"].reserve_note is not None
-    assert "vraie V2" in specs_by_code["DOC-006"].reserve_note
-    assert any("vraie V2" in note for note in expected_by_code["DOC-006"].notes)
+    assert specs_by_code["DOC-006"].reserve_note is None
+    assert any("Source DOCX Lot 2 disponible" in note for note in expected_by_code["DOC-006"].notes)
 
 
 def test_doc_005_and_conditional_selarl_documents_remain_generable() -> None:

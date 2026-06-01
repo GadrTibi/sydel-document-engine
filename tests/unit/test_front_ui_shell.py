@@ -48,7 +48,7 @@ def test_front_shell_exposes_document_status_preview() -> None:
     lot_rows = shell_lot_status_rows()
 
     assert rows["DOC-002"]["statut"] == "expected"
-    assert rows["DOC-006"]["statut"] == "generable_with_reserve"
+    assert rows["DOC-006"]["statut"] == "expected"
     assert rows["DOC-013"]["statut"] == "manual_only"
     assert rows["DOC-014"]["generation"] == "non"
     assert lot_rows[0]["statut"] == "partial"

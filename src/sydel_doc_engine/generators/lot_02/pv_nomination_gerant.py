@@ -287,6 +287,7 @@ def _add_company_header(document, company: Company) -> None:
         f"{_forme_sociale_affichage(company)}{_capital_variable_mention(company)}",
         f"Au capital minimum et effectif de {_capital_social(company)} euros",
         f"Siège social : {_address_no_comma(siege)}",
+        "En cours d’immatriculation",
     ]
     add_centered_block(document, lines, space_after_pt=2)
 
@@ -304,6 +305,7 @@ def _add_title_and_meeting(document, ctx: DocumentGenerationContext) -> None:
         document,
         [
             "PROCES-VERBAL DES DECISIONS",
+            " DE L’ASSEMBLEE GENERALE",
             f" DU {_required_display_value(decision.date, 'decision.date')}",
         ],
     )
@@ -349,18 +351,47 @@ def _add_introduction(
     associes: list[Associe],
 ) -> None:
     denomination = _required_text(company.denomination, "societe.denomination")
-    forme = _forme_sociale_affichage(company)
+    company_designation = _company_designation_for_intro(company, denomination)
     nb_parts_total = _required_positive_int(capital.nb_parts_total, "capital.nb_parts_total")
     valeur_nominale = _required_text(
         capital.valeur_nominale_part,
         "capital.valeur_nominale_part",
     )
     common = (
-        f"de la {forme} {denomination}, au capital de {_capital_social(company)}, "
+        f"de la {company_designation}, au capital de {_capital_social(company)}, "
         f"composé de {nb_parts_total} parts de {valeur_nominale} euro chacune, "
     )
     text = f"Les associés {common}se sont réunis au siège social."
     _add_paragraph(document, text, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY)
+
+
+def _company_designation_for_intro(company: Company, denomination: str) -> str:
+    forme = _forme_sociale_affichage(company)
+    if _denomination_starts_with_form(denomination, company, forme):
+        return denomination
+    return f"{forme} {denomination}"
+
+
+def _denomination_starts_with_form(
+    denomination: str,
+    company: Company,
+    forme: str,
+) -> bool:
+    normalized_denomination = _normalize_for_prefix(denomination)
+    candidates = [
+        forme,
+        company.forme_sociale_abregee,
+    ]
+    return any(
+        normalized_denomination.startswith(_normalize_for_prefix(candidate) + " ")
+        or normalized_denomination == _normalize_for_prefix(candidate)
+        for candidate in candidates
+        if candidate and _normalize_for_prefix(candidate)
+    )
+
+
+def _normalize_for_prefix(value: str) -> str:
+    return " ".join(value.casefold().replace("’", "'").split())
 
 
 def _add_associes_block(

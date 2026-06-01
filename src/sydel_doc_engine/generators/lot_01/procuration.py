@@ -58,6 +58,7 @@ class ProcurationGenerator:
         )
         forme_sociale = _required_text(company.forme_sociale, "societe.forme_sociale")
         denomination_societe = _required_text(company.denomination, "societe.denomination")
+        company_designation = _company_designation(company, forme_sociale, denomination_societe)
         lieu_signature = _required_text(ctx.signature.lieu, "signature.lieu")
 
         document = new_document()
@@ -67,7 +68,7 @@ class ProcurationGenerator:
             (
                 f"{subject_line(person.genre)} {civilite} {prenom} {nom}, demeurant au "
                 f"{personal_address}. Agissant en qualité de {fonction_dirigeant} de "
-                f"{forme_sociale} {denomination_societe} dont le siège est situé au "
+                f"{company_designation} dont le siège est situé au "
                 f"{company_address}"
             ),
         )
@@ -110,6 +111,36 @@ def _required_address(address: Address | None, field_name: str) -> str:
     ville = _required_text(address.ville, f"{field_name}.ville")
     cp = _required_text(address.cp, f"{field_name}.cp")
     return f"{num_voie} {voie}, {ville} {cp}"
+
+
+def _company_designation(company: Company, forme: str, denomination: str) -> str:
+    if _denomination_starts_with_form(denomination, company, forme):
+        return denomination
+    return f"{forme} {denomination}"
+
+
+def _denomination_starts_with_form(
+    denomination: str,
+    company: Company,
+    forme: str,
+) -> bool:
+    normalized_denomination = _normalize_for_prefix(denomination)
+    candidates = [
+        forme,
+        company.forme_sociale_abregee,
+        company.forme_sociale_affichage,
+        company.forme_juridique,
+    ]
+    return any(
+        normalized_denomination.startswith(_normalize_for_prefix(candidate) + " ")
+        or normalized_denomination == _normalize_for_prefix(candidate)
+        for candidate in candidates
+        if candidate and _normalize_for_prefix(candidate)
+    )
+
+
+def _normalize_for_prefix(value: str) -> str:
+    return " ".join(value.casefold().replace("’", "'").split())
 
 
 def _format_date(value: date) -> str:

@@ -40,6 +40,8 @@ Ce fichier fixe la mémoire opérationnelle globale : il doit permettre à un no
 
 ## Règles de travail
 - ne pas coder un document sans source + analyse + spec
+- appliquer le gate produit / métier `docs/project/PRODUCT_GUARDRAIL_PROTOCOL_V1.md` avant tout développement
+- qualifier explicitement une demande en `GO dev` ou `NO-GO dev`
 - ne pas réécrire implicitement un texte juridique
 - travailler par petits tickets traçables
 - documenter ce qui est fait et ce qui vient après
@@ -55,17 +57,38 @@ Ce fichier fixe la mémoire opérationnelle globale : il doit permettre à un no
 6. lots documentaires suivants
 
 ## Etat actuel
-- repo GitHub créé
-- base poussée
-- CI verte
-- specs Lot 1 disponibles
-- mémoire opérationnelle projet en cours d'installation dans `docs/project/`
-- code métier Lot 1 non démarré
+- moteur documentaire DOCX V1 avancé avec catalogue et générateurs principaux versionnés ;
+- sorties DOCX, ZIP et PDF best-effort intégrées côté moteur/runtime ;
+- clean front Track B disponible dans `src/sydel_doc_engine/front_app/` ;
+- etat SELARL courant consolide dans `docs/project/SELARL_CANONICAL_STATUS_V1.md` ;
+- tour de controle projet disponible dans `docs/project/PROJECT_CONTROL_TOWER_V1.md` ;
+- protocole runtime Naomie disponible dans `docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md` ;
+- protocole global Gad/Naomie/Codex disponible dans `docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md` ;
+- template runtime Naomie multi-projets disponible dans `docs/project/PROJECT_NAOMIE_RUNTIME_TEMPLATE_V1.md` ;
+- protocole sprint par type d'entreprise disponible dans `docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md` ;
+- orchestrateur de sprint operationnel disponible dans `docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md` ;
+- sprint SELAS ouvert en `NO-GO dev` dans `docs/sprints/SPRINT_SELAS_V1.md` ;
+- sous-sprint NotebookLM SELAS actif : Naomie doit recevoir un prompt court,
+  le coller dans NotebookLM, puis donner la reponse brute a Codex pour
+  structuration et iteration ;
+- protocole de reutilisation SELARL/global disponible dans `docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md` ;
+- mode d'emploi branche / installation Naomie disponible dans `docs/project/NAOMIE_GITHUB_ONBOARDING_V1.md` ;
+- couche pedagogique Naomie disponible dans `docs/project/NAOMIE_LEARNING_MENTOR_PROTOCOL_V1.md` ;
+- SELARL V1 de production limitée disponible pour création simple médecin / chirurgien-dentiste ;
+- fin de sprint SELARL structuree dans `docs/sprints/SPRINT_SELARL_CLOSING_V1.md` ;
+- régime communautaire SELARL : `DOC-005` et `DOC-006` générés quand l'option est active ;
+- multi-associés SELARL : `DOC-004` limité implémenté, `DOC-016` dentiste multi-associés en PARTIAL ;
+- cession, SCM, dérogations, site distinct, plusieurs gérants et statuts multi-associés complets restent à cadrer/arbitrer avant extension ;
+- gate produit / métier obligatoire installé dans `docs/project/PRODUCT_GUARDRAIL_PROTOCOL_V1.md`.
 
-## Lot 1
+## Lot 1 historique
 - DOC-001 : Déclaration sur l'honneur de non-condamnation
 - DOC-002 : Autorisation de domiciliation
 - DOC-003 : Procuration
+
+Le Lot 1 n'est plus le prochain chantier : il constitue le socle documentaire
+historique déjà implémenté. L'état opérationnel courant se lit dans
+`docs/project/04_LAST_STATE.md`.
 
 ## Entrées nécessaires avant codage d'un document
 - Le document doit être inventorié dans la source de vérité.
@@ -88,19 +111,39 @@ Pour DOC-002, l'adresse de domiciliation est gérée en champ libre :
 - adresse_domiciliation_libre
 
 ## Ordre d'exécution immédiat
-1. finaliser et versionner la mémoire projet dans le repo
-2. implémenter DOC-001 : déclaration de non-condamnation
-3. implémenter DOC-003
-4. implémenter DOC-002
-5. brancher l'orchestrateur Lot 1
-6. brancher Streamlit Lot 1
+1. lire `docs/project/04_LAST_STATE.md` pour l'état réellement reprenable ;
+2. lire `docs/project/PROJECT_CONTROL_TOWER_V1.md` pour identifier sprint actif, phase et action autorisee ;
+3. si le contexte indique Naomie/SELAS, appliquer `docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md` et donner le Prompt NotebookLM 01 ;
+4. pour tout nouveau type d'entreprise, lire `docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md` ;
+5. pour tout nouveau type d'entreprise, lire `docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md` ;
+6. pour tout nouveau type d'entreprise, lire le fichier actif `docs/sprints/SPRINT_[TYPE]_V1.md` s'il existe ;
+7. si le sprint est pilote par Naomie, lancer d'abord le sous-sprint NotebookLM par prompts courts et attendre les reponses structurees ;
+8. pour tout nouveau type d'entreprise, appliquer ensuite `docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md` ;
+9. pour toute demande SELARL, lire `docs/project/SELARL_CANONICAL_STATUS_V1.md` ;
+10. pour cloturer la SELARL, lire `docs/sprints/SPRINT_SELARL_CLOSING_V1.md` ;
+11. appliquer `docs/project/PRODUCT_GUARDRAIL_PROTOCOL_V1.md` ;
+12. qualifier la demande en `GO dev` ou `NO-GO dev` ;
+13. si `GO dev`, limiter l'implémentation au ticket cadré ;
+14. si `NO-GO dev`, produire ou mettre à jour le cadrage fonctionnel requis.
 
 ## Documents que Codex doit lire avant toute implémentation
 - AGENTS.md
 - docs/project/00_MASTER_PLAN.md
 - docs/project/01_EXECUTION_BOARD.md
 - docs/project/02_CODEX_WORKFLOW.md
-- docs/delivery/lot_01_analysis_and_specs_v1.md
+- docs/project/03_HANDOFF_FOR_NEW_AGENT.md
+- docs/project/04_LAST_STATE.md
+- docs/project/PROJECT_CONTROL_TOWER_V1.md
+- docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md si Naomie/SELAS est dans le contexte
+- docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md pour les workflows multi-projets avec Naomie
+- docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md pour tout sprint de type d'entreprise
+- docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md
+- docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md pour tout sprint de type d'entreprise
+- docs/sprints/SPRINT_[TYPE]_V1.md si le sprint existe
+- docs/project/SELARL_CANONICAL_STATUS_V1.md pour toute reprise SELARL
+- docs/sprints/SPRINT_SELARL_CLOSING_V1.md pour toute cloture SELARL
+- docs/project/PRODUCT_GUARDRAIL_PROTOCOL_V1.md
+- le fichier de spec ou de livraison concerné dans docs/delivery/
 
 ## Garde-fous permanents
 - Ne pas introduire d'IA générative dans le moteur de production.

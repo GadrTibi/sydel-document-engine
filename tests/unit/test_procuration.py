@@ -124,6 +124,22 @@ def test_procuration_contains_essential_texts(tmp_path: Path) -> None:
     assert "Jean Durand" in text
 
 
+def test_procuration_does_not_duplicate_form_when_denomination_contains_it(
+    tmp_path: Path,
+) -> None:
+    ctx = _context()
+    assert ctx.societe is not None
+    ctx.societe.forme_sociale = "SELARL"
+    ctx.societe.forme_sociale_abregee = "SELARL"
+    ctx.societe.denomination = "SELARL MARTIN"
+
+    output_path = ProcurationGenerator().generate(ctx, tmp_path)
+
+    text = _docx_text(output_path)
+    assert "Agissant en qualité de Président de SELARL MARTIN" in text
+    assert "SELARL SELARL" not in text
+
+
 def test_procuration_uses_feminine_agreement(tmp_path: Path) -> None:
     text = _docx_text(_generate(tmp_path, Gender.FEMININ))
 

@@ -7,9 +7,94 @@
 4. docs/project/02_CODEX_WORKFLOW.md
 5. docs/project/03_HANDOFF_FOR_NEW_AGENT.md
 6. docs/project/04_LAST_STATE.md
-7. le document de spec concerné
+7. docs/project/PROJECT_CONTROL_TOWER_V1.md
+8. docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md si Naomie/SELAS est dans le contexte
+9. docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md si le ticket formalise un workflow Naomie multi-projets
+10. docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise
+11. docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise
+12. docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise
+13. docs/sprints/SPRINT_[TYPE]_V1.md si le sprint existe
+14. docs/project/SELARL_CANONICAL_STATUS_V1.md si le ticket touche la SELARL
+15. docs/sprints/SPRINT_SELARL_CLOSING_V1.md si le ticket touche la cloture SELARL
+16. docs/project/PRODUCT_GUARDRAIL_PROTOCOL_V1.md
+17. le document de spec concerné
 
 Pour un ticket documentaire, vérifier aussi l'ADR applicable dans `docs/adr/` avant d'écrire du code.
+
+## Gate produit / métier avant développement
+
+Avant de coder, Codex doit appliquer `docs/project/PRODUCT_GUARDRAIL_PROTOCOL_V1.md`.
+Avant meme de choisir une action, Codex doit appliquer
+`docs/project/PROJECT_CONTROL_TOWER_V1.md` pour identifier le sprint actif, la
+phase courante, l'action autorisee et les actions interdites.
+Pour un nouveau type d'entreprise, Codex doit aussi appliquer
+`docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md`,
+`docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md` et
+`docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md`.
+
+Si un fichier `docs/sprints/SPRINT_[TYPE]_V1.md` existe, il devient l'etat
+operationnel du sprint. Si Naomie ou Gad ouvre un sprint et que ce fichier
+n'existe pas, Codex doit le creer en phase 0 avec `NO-GO dev` avant toute autre
+action.
+
+Le ticket ne peut passer en implémentation que si le besoin métier est reformulé,
+les sources et specs applicables sont identifiées, les documents inclus/exclus
+sont listés, les réserves/manuels sont protégés et la décision `GO dev` est
+explicite.
+
+Si une demande utilisateur est encore une intention métier non stabilisée, Codex
+doit produire ou mettre à jour un cadrage fonctionnel avant toute modification de
+code. Le bon résultat peut donc être `NO-GO dev` avec arbitrage documenté.
+
+Quand la tâche est large, Codex peut déléguer à des sous-agents spécialisés
+produit, source, front, moteur ou QA. Le pilote principal reste responsable de
+l'intégration et de la décision finale.
+
+Pour un sprint de type d'entreprise, le sous-agent prioritaire est
+`Reuse Auditor` : il compare le besoin au travail déjà fait côté SELARL et aux
+registres globaux avant tout `GO dev`.
+
+Si le sprint est pilote par Naomie, verifier aussi
+`docs/project/NAOMIE_GITHUB_ONBOARDING_V1.md` avant toute consigne Git ou setup
+local. Naomie ne doit pas executer les commandes Git elle-meme ; Codex gere ces
+operations dans le terminal du projet.
+
+Si le contexte indique Naomie/Naomi et que le message est seulement `Bonjour`,
+Codex doit traiter le message comme un accueil de sprint, pas comme une demande
+generique. Il doit lire `docs/sprints/SPRINT_SELAS_V1.md`, verifier la branche
+`codex/naomie-selas-sprint`, repondre avec `Statut sprint`, `Action maintenant`,
+`Point pedagogie`, `Prochaine etape`, donner le Prompt NotebookLM 01 complet, et
+rester en `NO-GO dev`. Le protocole court prioritaire est
+`docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md`.
+
+Pour le sprint SELAS, Codex doit ensuite donner un prompt court depuis
+`docs/sprints/SPRINT_SELAS_NOTEBOOKLM_PROMPTS_V1.md`. Quand Naomie colle une
+reponse NotebookLM, Codex doit la structurer dans
+`docs/sprints/SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md` avant de poser le prompt
+suivant. Il ne doit pas demander vaguement une "source NotebookLM SELAS" sans
+donner le prompt exact a utiliser.
+
+Si Naomie dit `je veux lancer le sprint SELAS`, `je veux demarrer le sprint
+SELAS`, `je reprends le sprint SELAS`, ou une variante phonetique `CELAS`,
+Codex doit comprendre : `lancer = lancer le sous-sprint NotebookLM`. La seule
+action utilisateur demandee a Naomie est alors de copier-coller le prompt
+NotebookLM courant, puis de rapporter la reponse brute. Codex ne doit pas
+passer en production, generation, matrice, audit de reutilisation ou code avant
+que le journal NotebookLM soit suffisamment rempli.
+
+Si Naomie pose une question d'apprentissage, appliquer
+`docs/project/NAOMIE_LEARNING_MENTOR_PROTOCOL_V1.md`. Le mode professeur explique
+mais ne vaut jamais `GO dev`.
+
+Pour un workflow Naomie non specifique a SYDEL, appliquer
+`docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md` puis creer un protocole
+local a partir de `docs/project/PROJECT_NAOMIE_RUNTIME_TEMPLATE_V1.md`.
+
+Pour la fin de sprint SELARL, appliquer
+`docs/sprints/SPRINT_SELARL_CLOSING_V1.md`. La prochaine action propre courante
+est `SELARL-FINAL-ASSOCIE-VALIDATION-001`, maintenant que le pack corrige
+`artifacts/selarl_closing_pack_004/` est regenere.
+Ce n'est pas un developpement complexe.
 
 ## Choix du périmètre
 - Identifier le ticket exact dans `docs/project/01_EXECUTION_BOARD.md`.
@@ -97,9 +182,21 @@ Lis d'abord :
 - docs/project/02_CODEX_WORKFLOW.md
 - docs/project/03_HANDOFF_FOR_NEW_AGENT.md
 - docs/project/04_LAST_STATE.md
+- docs/project/PROJECT_CONTROL_TOWER_V1.md
+- docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md si Naomie/SELAS est dans le contexte
+- docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md si le ticket concerne un workflow Naomie global
+- docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise
+- docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise
+- docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise
+- docs/sprints/SPRINT_[TYPE]_V1.md si le sprint existe
+- docs/project/NAOMIE_LEARNING_MENTOR_PROTOCOL_V1.md si Naomie pose une question d'apprentissage
+- docs/project/SELARL_CANONICAL_STATUS_V1.md si le ticket touche la SELARL
+- docs/sprints/SPRINT_SELARL_CLOSING_V1.md si le ticket touche la cloture SELARL
+- docs/project/PRODUCT_GUARDRAIL_PROTOCOL_V1.md
 - le fichier de spec visé
 
 Ensuite :
+- applique le gate produit / métier et annonce `GO dev` ou `NO-GO dev`
 - implémente le ticket demandé avec un scope minimal et propre
 - ne modifie pas le texte juridique hors besoins explicitement spécifiés
 - ajoute ou mets à jour les tests nécessaires
