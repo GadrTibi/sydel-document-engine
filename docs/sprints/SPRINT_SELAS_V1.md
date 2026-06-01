@@ -13,10 +13,11 @@ Date d'ouverture : 2026-06-01
 | Pilote projet / technique | Codex |
 | Tour de controle | `docs/project/PROJECT_CONTROL_TOWER_V1.md` |
 | Branche cible | `codex/naomie-selas-sprint` |
-| Phase courante | 0 - ACCUEIL / INITIALISATION |
+| Dossier local attendu | Le nom peut etre `sydel-document-engine` chez Naomie ; verifier surtout remote + branche |
+| Phase courante | 3 - NOTEBOOKLM |
 | Statut courant | `NO-GO dev` |
 | Derniere action | Sprint SELAS choisi comme prochain sprint logique apres SELARL |
-| Prochaine action | Lancer uniquement le sous-sprint NotebookLM : donner a Naomie le Prompt 01, attendre sa reponse, puis la structurer |
+| Prochaine action | Donner a Naomie le Prompt NotebookLM 01, attendre sa reponse brute, puis la structurer |
 
 ## Decisions d'ouverture
 
@@ -37,7 +38,7 @@ Date d'ouverture : 2026-06-01
 | Gate | Statut | Note |
 | --- | --- | --- |
 | Branche cible | PRETE A VERIFIER AU DEMARRAGE | `codex/naomie-selas-sprint` geree par Codex |
-| Identification Naomie | A FAIRE | Naomie doit dire `Je suis Naomie` |
+| Identification Naomie | A CONFIRMER | Si le contexte ou le titre indique Naomie, appliquer quand meme le protocole runtime |
 | Sources | A FAIRE | Lire source de verite, sources SELAS, specs et retours |
 | NotebookLM | A FAIRE | Utiliser `SPRINT_SELAS_NOTEBOOKLM_PROMPTS_V1.md`, puis journaliser dans `SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md` |
 | Audit reutilisation | BLOQUE | Interdit tant que le sous-sprint NotebookLM n'est pas suffisant |
@@ -52,11 +53,14 @@ Date d'ouverture : 2026-06-01
 Si Naomie dit seulement `Bonjour`, repondre :
 
 ```text
-Statut sprint : Phase 0 - ACCUEIL / NO-GO dev
-Action maintenant : je verifie que tu es bien sur la branche codex/naomie-selas-sprint et que tu reprends le sprint SELAS.
-Point pedagogie : tu n'as pas a gerer Git ni les commandes ; Codex protege la branche et l'ordre des etapes.
-Prochaine etape : on lira le statut du sprint, puis on preparera les questions NotebookLM.
+Statut sprint : Phase 3 - NOTEBOOKLM / NO-GO dev
+Action maintenant : colle le Prompt NotebookLM 01 dans NotebookLM, puis donne-moi la reponse brute.
+Point pedagogie : tu n'as pas a gerer Git ni les commandes ; Codex protege la branche, l'ordre du sprint et le passage par NotebookLM avant tout dev.
+Prochaine etape : je structure ta reponse dans SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md et je choisis le prompt suivant selon les trous.
 ```
+
+Puis donner le Prompt NotebookLM 01 complet depuis
+`docs/sprints/SPRINT_SELAS_NOTEBOOKLM_PROMPTS_V1.md`.
 
 Si Naomie dit `Je suis Naomie. Je veux demarrer le sprint SELAS.`, ou une
 variante comme `je veux lancer/reprendre le sprint SELAS/CELAS`, Codex ne doit

@@ -36,6 +36,9 @@ L'arbre théorique abandonné n'est pas une source valide. Il n'existe pas de fi
 - La tour de controle projet est `docs/project/PROJECT_CONTROL_TOWER_V1.md` ;
   elle indique sprint actif, phase courante, action autorisee et actions
   interdites.
+- Le protocole runtime Naomie est `docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md` ;
+  si Naomie/SELAS est dans le contexte, il prime et impose de donner le Prompt
+  NotebookLM 01.
 - Un nouveau chat doit pouvoir reprendre le projet depuis `docs/project/04_LAST_STATE.md`, sans dépendre d'un chat externe.
 
 ## Ce qui est déjà fait
@@ -73,6 +76,7 @@ Avant toute proposition ou implémentation, lire dans cet ordre :
 5. `docs/project/03_HANDOFF_FOR_NEW_AGENT.md`
 6. `docs/project/04_LAST_STATE.md`
 7. `docs/project/PROJECT_CONTROL_TOWER_V1.md`
+8. `docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md` si Naomie/SELAS est dans le contexte
 8. `docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md` pour tout sprint de type d'entreprise
 9. `docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md` pour tout sprint de type d'entreprise
 10. `docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md` pour tout sprint de type d'entreprise
@@ -87,6 +91,7 @@ Avant toute proposition ou implémentation, lire dans cet ordre :
 - Codex doit d'abord consulter la tour de controle projet pour connaitre sprint actif, phase, action autorisee et actions interdites.
 - Si Naomie démarre un sprint, elle doit s'identifier et Codex doit la guider étape par étape selon `SPRINT_ORCHESTRATOR_PROTOCOL_V1.md` et `COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md`.
 - Pour le sprint SELAS, l'etat immediat est `docs/sprints/SPRINT_SELAS_V1.md` : `NO-GO dev`, sous-sprint NotebookLM actif, prochaine action = donner a Naomie le prompt NotebookLM courant a copier-coller.
+- Si Naomie dit seulement `bonjour`, Codex doit quand meme donner le Prompt NotebookLM 01 et ne pas attendre qu'elle choisisse une tache.
 - Si Naomie dit qu'elle veut lancer/demarrer/reprendre le sprint SELAS/CELAS, Codex doit comprendre `lancer = lancer le sous-sprint NotebookLM`, et ne doit pas passer en production, generation, audit, matrice ou code.
 - Si Naomie travaille sur un nouveau type d'entreprise, elle doit partir d'une branche dediee selon `NAOMIE_GITHUB_ONBOARDING_V1.md`, mais Codex gere Git, les commandes, les tests et les checkpoints pour elle.
 - Si Naomie pose une question d'apprentissage, utiliser le mode `Professeur Naomie` defini dans `NAOMIE_LEARNING_MENTOR_PROTOCOL_V1.md`.

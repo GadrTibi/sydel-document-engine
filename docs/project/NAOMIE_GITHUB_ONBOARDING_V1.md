@@ -68,6 +68,20 @@ d'executer les commandes elle-meme.
 Naomie ne doit pas developper sur `main` ni directement sur
 `track-b/clean-rebuild`.
 
+Le nom du dossier local n'est pas une preuve suffisante. Gad travaille dans un
+worktree appele `sydel-track-b`, tandis qu'un clone standard sur l'ordinateur de
+Naomie peut s'appeler `sydel-document-engine`. Les deux peuvent pointer vers le
+meme depot GitHub.
+
+Ce que Codex doit verifier pour Naomie :
+
+- remote : `https://github.com/GadrTibi/sydel-document-engine.git` ;
+- branche active : `codex/naomie-selas-sprint` pour le sprint SELAS.
+
+Si Naomie est dans `sydel-document-engine` mais sur `main`, le dossier peut etre
+bon mais la branche est mauvaise pour le sprint. Codex doit basculer sur la
+branche de sprint ou bloquer en `NO-GO dev`.
+
 Concretement, elle ne doit pas lancer elle-meme de commandes Git. Si une action
 Git est necessaire, elle demande a Codex de la faire.
 
