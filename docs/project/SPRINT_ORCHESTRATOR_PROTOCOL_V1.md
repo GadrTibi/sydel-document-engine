@@ -131,6 +131,42 @@ pas economiser les questions.
 Si Codex n'a pas acces direct a NotebookLM, Codex prepare les questions et
 demande a Gad ou Naomie de coller les reponses ou un export.
 
+Pour un sprint pilote par Naomie, Codex ne doit pas demander vaguement une
+"source NotebookLM". Il doit donner un prompt court a copier-coller, puis
+attendre la reponse.
+
+Regles de boucle :
+
+1. un prompt NotebookLM a la fois ;
+2. prompt court, compatible avec une limite de caracteres NotebookLM ;
+3. reponse NotebookLM structuree par Codex dans le journal du sprint ;
+4. prompt suivant choisi selon les manques reels ;
+5. aucune economie de questions ;
+6. aucune matrice finale avant couverture suffisante.
+
+Chaque reponse NotebookLM doit etre transformee en structure :
+
+- prompt utilise ;
+- synthese fiable ;
+- documents cites ;
+- conditions d'apparition ;
+- variables ou donnees ;
+- contradictions ;
+- informations non trouvees ;
+- impact sur le sprint ;
+- prochain prompt recommande.
+
+La boucle NotebookLM peut s'arreter seulement quand Codex dispose au minimum de :
+
+- inventaire documentaire SELAS ;
+- conditions d'apparition / exclusion ;
+- documents manuels, reserves et bloques ;
+- differences SELARL / SELAS ;
+- roles et gouvernance SELAS ;
+- variables et donnees a saisir ;
+- points reutilisables / non reutilisables ;
+- questions ouvertes explicites.
+
 Aucune reponse NotebookLM ne remplace :
 
 - la source de verite ;

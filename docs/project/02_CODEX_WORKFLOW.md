@@ -58,6 +58,13 @@ generique. Il doit lire `docs/sprints/SPRINT_SELAS_V1.md`, verifier la branche
 `codex/naomie-selas-sprint`, repondre avec `Statut sprint`, `Action maintenant`,
 `Point pedagogie`, `Prochaine etape`, et rester en `NO-GO dev`.
 
+Pour le sprint SELAS, Codex doit ensuite donner un prompt court depuis
+`docs/sprints/SPRINT_SELAS_NOTEBOOKLM_PROMPTS_V1.md`. Quand Naomie colle une
+reponse NotebookLM, Codex doit la structurer dans
+`docs/sprints/SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md` avant de poser le prompt
+suivant. Il ne doit pas demander vaguement une "source NotebookLM SELAS" sans
+donner le prompt exact a utiliser.
+
 Si Naomie pose une question d'apprentissage, appliquer
 `docs/project/NAOMIE_LEARNING_MENTOR_PROTOCOL_V1.md`. Le mode professeur explique
 mais ne vaut jamais `GO dev`.

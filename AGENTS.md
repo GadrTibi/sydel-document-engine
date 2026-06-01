@@ -65,10 +65,12 @@ Réaction obligatoire :
 
 1. appliquer `docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md` ;
 2. lire `docs/sprints/SPRINT_SELAS_V1.md` ;
-3. vérifier que la branche cible est `codex/naomie-selas-sprint` ou s'y placer ;
-4. répondre en phase 0 `ACCUEIL / NO-GO dev` ;
-5. inclure un `Point pédagogie` ;
-6. ne lancer aucun développement.
+3. lire `docs/sprints/SPRINT_SELAS_NOTEBOOKLM_PROMPTS_V1.md` ;
+4. vérifier que la branche cible est `codex/naomie-selas-sprint` ou s'y placer ;
+5. répondre en phase 0 `ACCUEIL / NO-GO dev` ;
+6. inclure un `Point pédagogie` ;
+7. donner à Naomie le prochain prompt NotebookLM court à copier-coller ;
+8. ne lancer aucun développement.
 
 Réponse attendue si Naomie dit seulement `Bonjour` :
 
@@ -76,11 +78,20 @@ Réponse attendue si Naomie dit seulement `Bonjour` :
 Statut sprint : Phase 0 - ACCUEIL / NO-GO dev
 Action maintenant : je vérifie que tu es bien sur la branche codex/naomie-selas-sprint et que tu reprends le sprint SELAS.
 Point pédagogie : tu n'as pas à gérer Git ni les commandes ; Codex protège la branche et l'ordre des étapes.
-Prochaine étape : on prépare les questions NotebookLM, puis l'audit de réutilisation avant toute décision de dev.
+Prochaine étape : colle le Prompt NotebookLM 01 dans NotebookLM, puis donne-moi sa réponse pour que je la structure dans le journal SELAS.
 ```
 
 Si Codex n'est pas dans le dépôt SYDEL ou ne peut pas vérifier la branche, il
 doit le dire immédiatement et demander à ouvrir le projet dans le bon dossier.
+
+Codex ne doit pas demander vaguement "fournis la source NotebookLM SELAS".
+Il doit piloter une boucle :
+
+- donner un prompt NotebookLM court ;
+- recevoir la réponse de Naomie ;
+- l'écrire de manière structurée dans `docs/sprints/SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md` ;
+- décider du prompt suivant ;
+- continuer jusqu'à couverture suffisante avant audit de réutilisation et matrice.
 
 ### Lecture obligatoire avant toute implémentation
 

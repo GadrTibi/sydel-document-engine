@@ -15,7 +15,7 @@ Date d'ouverture : 2026-06-01
 | Phase courante | 0 - ACCUEIL / INITIALISATION |
 | Statut courant | `NO-GO dev` |
 | Derniere action | Sprint SELAS choisi comme prochain sprint logique apres SELARL |
-| Prochaine action | Accueillir Naomie en phase 0, verifier la branche, puis preparer NotebookLM |
+| Prochaine action | Donner a Naomie le Prompt NotebookLM 01, puis structurer sa reponse |
 
 ## Decisions d'ouverture
 
@@ -38,7 +38,7 @@ Date d'ouverture : 2026-06-01
 | Branche cible | PRETE A VERIFIER AU DEMARRAGE | `codex/naomie-selas-sprint` geree par Codex |
 | Identification Naomie | A FAIRE | Naomie doit dire `Je suis Naomie` |
 | Sources | A FAIRE | Lire source de verite, sources SELAS, specs et retours |
-| NotebookLM | A FAIRE | Questions a poser avant matrice finale |
+| NotebookLM | A FAIRE | Utiliser `SPRINT_SELAS_NOTEBOOKLM_PROMPTS_V1.md`, puis journaliser dans `SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md` |
 | Audit reutilisation | A FAIRE | Appliquer `REUSE_AUDIT_AGENT_PROTOCOL_V1.md` |
 | Matrice documentaire | A FAIRE | Classer tous les documents SELAS |
 | Parcours metier | A FAIRE | Definir saisie, roles, adresses, reutilisations |
@@ -73,6 +73,13 @@ pedagogie et risque de lancer du travail sans NotebookLM.
 ## Questions NotebookLM initiales
 
 Ces questions sont a poser avant toute matrice finale. Codex peut en ajouter.
+Pour respecter les limites de caracteres NotebookLM, elles ne doivent pas etre
+envoyees toutes ensemble. Utiliser les prompts courts de
+`docs/sprints/SPRINT_SELAS_NOTEBOOKLM_PROMPTS_V1.md`.
+
+Chaque reponse NotebookLM donnee par Naomie doit etre structuree dans
+`docs/sprints/SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md` avant de passer au prompt
+suivant.
 
 1. Pour une SELAS, quels documents doivent etre generes a la creation ?
 2. Quels documents SELAS sont identiques aux documents SELARL deja traites ?
@@ -135,7 +142,7 @@ Statut : A FAIRE.
 
 | Ordre | Ticket | Statut | Objet | Criteria |
 | --- | --- | --- | --- | --- |
-| 1 | SELAS-SOURCES-NOTEBOOKLM-001 | READY | Lire sources et poser NotebookLM | Reponses importees, contradictions listees |
+| 1 | SELAS-SOURCES-NOTEBOOKLM-001 | READY | Piloter la boucle NotebookLM par prompts courts | Reponses structurees dans `SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md`, contradictions listees |
 | 2 | SELAS-REUSE-AUDIT-001 | BLOCKED | Auditer reutilisation SELARL/global | Debloque apres sources/NotebookLM |
 | 3 | SELAS-MATRIX-001 | BLOCKED | Produire matrice documentaire SELAS | Debloque apres reuse audit |
 | 4 | SELAS-FRONT-CONTRACT-001 | BLOCKED | Ecrire contrat metier-front | Debloque apres matrice |
@@ -153,7 +160,9 @@ Statut : A FAIRE.
 
 1. Quand Naomie arrive, Codex verifie la branche `codex/naomie-selas-sprint`.
 2. Codex l'accueille en phase 0 avec le point pedagogie.
-3. Le premier vrai travail de sprint est `SELAS-SOURCES-NOTEBOOKLM-001`.
+3. Codex donne le Prompt NotebookLM 01 a copier-coller.
+4. Naomie colle la reponse NotebookLM.
+5. Codex structure la reponse dans le journal, puis choisit le prompt suivant.
 
 ## Statut final
 
