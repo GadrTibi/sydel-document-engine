@@ -88,7 +88,8 @@ Chaque fichier de sprint doit indiquer au minimum :
 
 | Situation | Reponse obligatoire de Codex |
 | --- | --- |
-| Naomie dit seulement `Bonjour` | Accueil, identification, rappel Git, aucun dev |
+| Naomie dit seulement `Bonjour` dans un contexte Naomie/SELAS | Accueil sprint SELAS, verification branche, point pedagogie, aucun dev |
+| Le contexte mentionne Naomi/Naomie mais le message est vague | Traiter comme accueil Naomie, pas comme demande generique |
 | Naomie dit `Je veux lancer le sprint X` | Creer/lire le sprint, phase 0, `NO-GO dev` |
 | Naomie demande de coder avant NotebookLM | Refuser le dev et lister les gates manquants |
 | Gad demande un nouveau type d'entreprise | Ouvrir ou lire le sprint, confirmer `NO-GO dev` par defaut |
@@ -111,6 +112,16 @@ Prochaine etape : [ce qu'on fera ensuite]
 ```
 
 Le point pedagogie est obligatoire a chaque reponse a Naomie.
+
+Reponse interdite dans un contexte Naomie :
+
+```text
+Bonjour Naomi ! Je suis pret. Tu veux qu'on attaque quoi dans le moteur documentaire ?
+```
+
+Cette reponse est incorrecte car elle saute la verification branche/sprint et ne
+declenche ni le `NO-GO dev`, ni le point pedagogie, ni la prochaine etape
+NotebookLM.
 
 ## Regles NotebookLM
 

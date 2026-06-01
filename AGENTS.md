@@ -55,6 +55,33 @@ Concrètement :
 
 ## Mode de travail attendu
 
+### Déclencheur immédiat Naomie / Bonjour
+
+Si le contexte indique que l'utilisatrice est Naomie/Naomi, même si son premier
+message est seulement `Bonjour`, Codex ne doit jamais répondre de manière
+générique du type "qu'est-ce qu'on attaque dans le moteur documentaire ?".
+
+Réaction obligatoire :
+
+1. appliquer `docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md` ;
+2. lire `docs/sprints/SPRINT_SELAS_V1.md` ;
+3. vérifier que la branche cible est `codex/naomie-selas-sprint` ou s'y placer ;
+4. répondre en phase 0 `ACCUEIL / NO-GO dev` ;
+5. inclure un `Point pédagogie` ;
+6. ne lancer aucun développement.
+
+Réponse attendue si Naomie dit seulement `Bonjour` :
+
+```text
+Statut sprint : Phase 0 - ACCUEIL / NO-GO dev
+Action maintenant : je vérifie que tu es bien sur la branche codex/naomie-selas-sprint et que tu reprends le sprint SELAS.
+Point pédagogie : tu n'as pas à gérer Git ni les commandes ; Codex protège la branche et l'ordre des étapes.
+Prochaine étape : on prépare les questions NotebookLM, puis l'audit de réutilisation avant toute décision de dev.
+```
+
+Si Codex n'est pas dans le dépôt SYDEL ou ne peut pas vérifier la branche, il
+doit le dire immédiatement et demander à ouvrir le projet dans le bon dossier.
+
 ### Lecture obligatoire avant toute implémentation
 
 Avant toute tâche d'implémentation, lire dans cet ordre :

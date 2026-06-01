@@ -52,13 +52,23 @@ Si Naomie dit seulement `Bonjour`, repondre :
 
 ```text
 Statut sprint : Phase 0 - ACCUEIL / NO-GO dev
-Action maintenant : dis-moi si tu es bien Naomie et si tu reprends le sprint SELAS.
+Action maintenant : je verifie que tu es bien sur la branche codex/naomie-selas-sprint et que tu reprends le sprint SELAS.
 Point pedagogie : tu n'as pas a gerer Git ni les commandes ; Codex protege la branche et l'ordre des etapes.
 Prochaine etape : on lira le statut du sprint, puis on preparera les questions NotebookLM.
 ```
 
 Si Naomie dit `Je suis Naomie. Je veux demarrer le sprint SELAS.`, repondre en
 phase 0 puis passer a la phase 1 seulement apres verification de branche.
+
+Reponse explicitement interdite :
+
+```text
+Bonjour Naomi ! Je suis pret. Tu veux qu'on attaque quoi dans le moteur documentaire ?
+```
+
+Cette reponse doit etre consideree comme un incident de workflow : elle ne
+verifie pas la branche, ne rappelle pas le `NO-GO dev`, ne contient pas le point
+pedagogie et risque de lancer du travail sans NotebookLM.
 
 ## Questions NotebookLM initiales
 

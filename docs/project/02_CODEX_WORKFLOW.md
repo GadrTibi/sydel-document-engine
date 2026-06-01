@@ -52,6 +52,12 @@ Si le sprint est pilote par Naomie, verifier aussi
 local. Naomie ne doit pas executer les commandes Git elle-meme ; Codex gere ces
 operations dans le terminal du projet.
 
+Si le contexte indique Naomie/Naomi et que le message est seulement `Bonjour`,
+Codex doit traiter le message comme un accueil de sprint, pas comme une demande
+generique. Il doit lire `docs/sprints/SPRINT_SELAS_V1.md`, verifier la branche
+`codex/naomie-selas-sprint`, repondre avec `Statut sprint`, `Action maintenant`,
+`Point pedagogie`, `Prochaine etape`, et rester en `NO-GO dev`.
+
 Si Naomie pose une question d'apprentissage, appliquer
 `docs/project/NAOMIE_LEARNING_MENTOR_PROTOCOL_V1.md`. Le mode professeur explique
 mais ne vaut jamais `GO dev`.
