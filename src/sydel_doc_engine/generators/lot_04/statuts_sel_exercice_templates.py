@@ -6,7 +6,7 @@ from __future__ import annotations
 STATUTS_SELARL_DENTISTE_BLOCKS: tuple[str, ...] = (
     '[denomination_societe]',
     '[forme_sociale_complete] de [profession_reglementee]',
-    'Au capital de [capital_social]',
+    'Au capital de [capital_social] euros',
     'Siège social : [adresse_siege]',
     'LE SOUSSIGNE\xa0:',
     '[civilite] [prenom] [nom], [profession], né le [date_naissance] à [ville_naissance] ([departement_naissance]), de nationalité [nationalite], demeurant [adresse_personnelle], [situation_maritale] sous le régime de [regime_matrimonial] avec [civilite_conjoint] [prenom_conjoint] [nom_conjoint].',
@@ -41,7 +41,7 @@ STATUTS_SELARL_DENTISTE_BLOCKS: tuple[str, ...] = (
     'ARTICLE 8 - CAPITAL SOCIAL ',
     'Le capital social est fixé à la somme de [capital_lettres].',
     'Il est divisé en [nb_parts_total] parts de [valeur_nominale_part] chacune, entièrement souscrites et libérées dans les conditions exposées ci-dessus et attribuées comme suit\xa0: ',
-    'à Monsieur [prenom] [nom], mille parts sociales en pleine propriété, ci \t1000 parts  ',
+    'à [civilite] [prenom] [nom], [nb_parts_total_lettres] parts sociales en pleine propriété, ci \t[nb_parts_total] parts  ',
     'Total du nombre de parts composant le capital social : ………………………………………. [nb_parts_total] parts',
     'ARTICLE 9 - QUALITE D’ASSOCIE ',
     'Associés professionnels exerçant dans la société',

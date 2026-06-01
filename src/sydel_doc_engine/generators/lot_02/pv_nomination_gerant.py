@@ -15,6 +15,7 @@ from sydel_doc_engine.domain.models import (
     DirigeantNomine,
     DocumentGenerationContext,
     Emprunt,
+    ReunionPresident,
 )
 from sydel_doc_engine.rendering.docx_builder import (
     add_centered_block,
@@ -29,10 +30,10 @@ from sydel_doc_engine.rendering.docx_builder import (
 OUTPUT_FILENAME = "pv_nomination_gerant.docx"
 DOCUMENT_CODE = "CODE-PV-001"
 
-VOTE_FORMULA = "Cette résolution, soumise au vote est adoptée à l’unanimité des voix présentes."
+VOTE_FORMULA = "Cette résolution est adoptée à l’unanimité"
 POWERS_TEXT = (
-    "L’assemblée générale extraordinaire confère tous les pouvoirs au porteur d’un original à "
-    "l’effet de procéder aux formalités d’enregistrement au greffe du Tribunal de Commerce."
+    "L’assemblée générale confère tous les pouvoirs au porteur d’un original à l’effet de procéder "
+    "aux formalités d’enregistrement au greffe du Tribunal de Commerce de la Société."
 )
 
 
@@ -54,7 +55,7 @@ class PvNominationGerantGenerator:
         _add_title_and_meeting(document, ctx)
         _add_introduction(document, company, capital, associes)
         _add_associes_block(document, represented_associes, represented_parts)
-        _add_order_of_business(document, associes, dirigeant, emprunt, bien_immobilier)
+        _add_order_of_business(document, ctx, dirigeant, emprunt, bien_immobilier)
         _add_nomination_decision(document, dirigeant)
         _add_borrowing_decision(document, emprunt, bien_immobilier)
         _add_powers_decision(document, emprunt)
@@ -185,6 +186,17 @@ def _parts_label(nb_parts: int) -> str:
     return "part" if nb_parts == 1 else "parts"
 
 
+def _nomination_agenda_label(fonction_affichage: str) -> str:
+    normalized = fonction_affichage.strip().lower()
+    if "gérant" in normalized or "gerant" in normalized:
+        if normalized.endswith("s"):
+            return "Nomination des premiers gérants"
+        return "Nomination du gérant"
+    if normalized.endswith("s"):
+        return f"Nomination des {fonction_affichage}"
+    return f"Nomination du {fonction_affichage}"
+
+
 def _ne_label(genre: Gender) -> str:
     return "née" if genre == Gender.FEMININ else "né"
 
@@ -275,10 +287,6 @@ def _add_company_header(document, company: Company) -> None:
         f"{_forme_sociale_affichage(company)}{_capital_variable_mention(company)}",
         f"Au capital minimum et effectif de {_capital_social(company)} euros",
         f"Siège social : {_address_no_comma(siege)}",
-        (
-            "En cours d’immatriculation au RCS de "
-            f"{_required_text(company.ville_rcs, 'societe.ville_rcs')}"
-        ),
     ]
     add_centered_block(document, lines, space_after_pt=2)
 
@@ -296,17 +304,42 @@ def _add_title_and_meeting(document, ctx: DocumentGenerationContext) -> None:
         document,
         [
             "PROCES-VERBAL DES DECISIONS",
-            " DE L’ASSEMBLEE GENERALE EXTRAORDINAIRE",
             f" DU {_required_display_value(decision.date, 'decision.date')}",
         ],
     )
+    _add_paragraph(document, f"Le {_required_text(reunion.date_lettres, 'reunion.date_lettres')}")
+
+
+def _add_president_sentence(document, ctx: DocumentGenerationContext) -> None:
+    if ctx.reunion is None or ctx.reunion.president is None:
+        return
+    president = ctx.reunion.president
+    civilite = _president_civilite(president)
+    prenom = _president_prenom(president)
+    nom = _president_nom(president)
+    if civilite is None and prenom is None and nom is None:
+        return
     _add_paragraph(
         document,
         (
-            f"Le {_required_text(reunion.date_lettres, 'reunion.date_lettres')} "
-            f"à {_required_text(reunion.heure, 'reunion.heure')}"
+            f"{_required_text(civilite, 'reunion.president.civilite_president_seance')} "
+            f"{_required_text(prenom, 'reunion.president.prenom_president_seance')} "
+            f"{_required_text(nom, 'reunion.president.nom_personne_seance')} "
+            "préside la séance."
         ),
     )
+
+
+def _president_civilite(president: ReunionPresident) -> str | None:
+    return president.civilite_president_seance or president.civilite_affichage
+
+
+def _president_prenom(president: ReunionPresident) -> str | None:
+    return president.prenom_president_seance or president.prenom
+
+
+def _president_nom(president: ReunionPresident) -> str | None:
+    return president.nom_personne_seance or president.nom
 
 
 def _add_introduction(
@@ -316,24 +349,17 @@ def _add_introduction(
     associes: list[Associe],
 ) -> None:
     denomination = _required_text(company.denomination, "societe.denomination")
-    forme_longue = _required_text(
-        company.forme_sociale_libelle_long,
-        "societe.forme_sociale_libelle_long",
-    )
+    forme = _forme_sociale_affichage(company)
     nb_parts_total = _required_positive_int(capital.nb_parts_total, "capital.nb_parts_total")
     valeur_nominale = _required_text(
         capital.valeur_nominale_part,
         "capital.valeur_nominale_part",
     )
     common = (
-        f"de la {forme_longue} {denomination}, {_capital_variable_formule_intro(company)}, "
-        f"au capital minimum de {_capital_social(company)} euros, divisé en {nb_parts_total} "
-        f"parts de {valeur_nominale} euro chacune, "
+        f"de la {forme} {denomination}, au capital de {_capital_social(company)}, "
+        f"composé de {nb_parts_total} parts de {valeur_nominale} euro chacune, "
     )
-    if len(associes) == 1:
-        text = f"L’associé {common}s’est réuni ce jour au siège de la société."
-    else:
-        text = f"Les associés {common}se sont réunis ce jour au siège de la société."
+    text = f"Les associés {common}se sont réunis au siège social."
     _add_paragraph(document, text, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY)
 
 
@@ -342,31 +368,28 @@ def _add_associes_block(
     associes: list[Associe],
     represented_parts: int,
 ) -> None:
-    _add_paragraph(document, "Associés présents ou représentés :")
+    _add_paragraph(document, "Sont présents ou représentés :")
     for associe in associes:
         _add_list_item(
             document,
             (
                 f"{associe.civilite_affichage} {associe.prenom} {associe.nom}, "
-                f"représentant {associe.nb_parts} {_parts_label(associe.nb_parts)},"
+                f"détenant {associe.nb_parts} {_parts_label(associe.nb_parts)},"
             ),
         )
-    if len(associes) == 1:
-        text = (
-            f"L’associé présent représente {represented_parts} {_parts_label(represented_parts)}, "
-            "soit la totalité du capital."
-        )
-    else:
-        text = (
-            f"Les associés présents représentent {represented_parts} "
-            f"{_parts_label(represented_parts)}, soit la totalité du capital."
-        )
-    _add_paragraph(document, text, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY)
+    _add_paragraph(
+        document,
+        (
+            "Les associés présents ou représentés disposent ensemble de la totalité des parts "
+            "sociales. Cet ensemble est habilité à prendre des décisions."
+        ),
+        alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
+    )
 
 
 def _add_order_of_business(
     document,
-    associes: list[Associe],
+    ctx: DocumentGenerationContext,
     dirigeant: DirigeantNomine,
     emprunt: Emprunt,
     bien_immobilier: BienImmobilier | None,
@@ -375,18 +398,9 @@ def _add_order_of_business(
         dirigeant.fonction_affichage,
         "dirigeant_nomine.fonction_affichage",
     )
-    if len(associes) == 1:
-        opening = (
-            "A l’issue de la signature des statuts, l’associé s’est réuni pour prendre "
-            "les décisions suivantes :"
-        )
-    else:
-        opening = (
-            "A l’issue de la signature des statuts, les associés se sont réunis pour prendre "
-            "les décisions suivantes :"
-        )
-    _add_paragraph(document, opening, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY)
-    _add_list_item(document, f"Nomination du {fonction_affichage} ;")
+    _add_president_sentence(document, ctx)
+    _add_paragraph(document, "Le président rappelle l’ordre du jour :")
+    _add_paragraph(document, f"· {_nomination_agenda_label(fonction_affichage)}")
     if emprunt.actif:
         bien_adresse = _address_inline(
             _required_address(
@@ -394,14 +408,14 @@ def _add_order_of_business(
                 "bien_immobilier.adresse",
             )
         )
-        _add_list_item(
+        _add_paragraph(
             document,
             (
-                "Autorisation de  contracter un emprunt pour l’achat d’un bien immobilier sis "
-                f"{bien_adresse} ;"
+                "· Autorisation de contracter un emprunt pour l’achat d’un bien immobilier sis "
+                f"{bien_adresse}"
             ),
         )
-    _add_list_item(document, "Pouvoir.")
+    _add_paragraph(document, "· Pouvoirs")
 
 
 def _add_nomination_decision(document, dirigeant: DirigeantNomine) -> None:
@@ -433,7 +447,7 @@ def _add_nomination_decision(document, dirigeant: DirigeantNomine) -> None:
     _add_paragraph(
         document,
         (
-            "L’assemblée générale extraordinaire décide de désigner en qualité de "
+            "L’assemblée générale décide de désigner en qualité de "
             f"{fonction_affichage} pour une durée indéterminée :"
         ),
     )
@@ -443,7 +457,7 @@ def _add_nomination_decision(document, dirigeant: DirigeantNomine) -> None:
             f"{dirigeant.civilite_affichage} {dirigeant.prenom} {dirigeant.nom}, "
             f"{_ne_label(dirigeant.genre)} le {birth_date} à {birth_city} "
             f"({birth_department}), de nationalité {nationality}, "
-            f"demeurant {_address_inline(address)}."
+            f"demeurant au {_address_inline(address)}."
         ),
         alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
     )
@@ -468,7 +482,7 @@ def _add_borrowing_decision(
     _add_paragraph(
         document,
         (
-            "L’assemblée générale extraordinaire, décide de contracter un emprunt d’un montant "
+            "L’assemblée générale décide de contracter un emprunt d’un montant "
             f"maximum de {montant} euros pour l’acquisition d’un bien immobilier sis "
             f"{bien_adresse}."
         ),
@@ -498,22 +512,6 @@ def _add_closing_and_signatures(
     nombre_exemplaires = _required_text(
         ctx.signature.nombre_exemplaires,
         "signature.nombre_exemplaires",
-    )
-    _add_paragraph(
-        document,
-        (
-            "De tout ce qui a été décidé, il a été dressé le présent procès-verbal qui a été "
-            "signé après lecture par les associés."
-        ),
-        alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
-    )
-    _add_paragraph(
-        document,
-        (
-            "L’ordre du jour étant épuisé et personne ne demandant plus la parole, la séance "
-            "est levée."
-        ),
-        alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
     )
     _add_paragraph(
         document,

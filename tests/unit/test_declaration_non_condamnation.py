@@ -112,8 +112,8 @@ def test_declaration_non_condamnation_uses_feminine_agreements(tmp_path: Path) -
 def test_declaration_non_condamnation_composes_personal_address(tmp_path: Path) -> None:
     text = _docx_text(_generate(tmp_path))
 
-    assert "demeurant au 12 rue des Lilas, Paris 75008" in text
-    assert "demeurant au 12 rue des Lilas, 75008 Paris" not in text
+    assert "demeurant au 12 rue des Lilas, 75008 Paris" in text
+    assert "demeurant au 12 rue des Lilas, Paris 75008" not in text
 
 
 def test_declaration_non_condamnation_matches_source_visual_formatting(tmp_path: Path) -> None:

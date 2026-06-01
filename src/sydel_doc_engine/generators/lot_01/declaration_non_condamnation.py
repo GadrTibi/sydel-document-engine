@@ -108,7 +108,7 @@ def _compose_required_address(address: Address) -> str:
     voie = _required_text(address.voie, "personne_signataire.adresse_perso.voie")
     cp = _required_text(address.cp, "personne_signataire.adresse_perso.cp")
     ville = _required_text(address.ville, "personne_signataire.adresse_perso.ville")
-    return f"{num_voie} {voie}, {ville} {cp}"
+    return f"{num_voie} {voie}, {cp} {ville}"
 
 
 def _format_date(value: date) -> str:

@@ -13,10 +13,13 @@ from sydel_doc_engine.front_app.field_derivations import (
     DEFAULT_SEUIL_ACHAT_MATERIEL,
     DEFAULT_SEUIL_EMPRUNT,
     DEFAULT_TITRE_AFFICHAGE,
+    calculate_nominal_value,
     date_to_french_words,
     derive_gender_from_civilite,
     format_numeric_value,
     number_words_from_value,
+    parse_french_date,
+    regime_matrimonial_from_status,
 )
 from sydel_doc_engine.front_app.selarl_slice import SelarlSliceInput
 
@@ -27,6 +30,12 @@ _NUMERIC_TEXT_FIELDS = (
     "valeur_nominale_part",
     "seuil_achat_materiel",
     "seuil_emprunt",
+)
+_DATE_FIELDS = (
+    "date_naissance",
+    "signature_date",
+    "decision_date",
+    "date_courrier_avertissement",
 )
 
 
@@ -48,6 +57,9 @@ def build_clean_data_entry(
     for key in _NUMERIC_TEXT_FIELDS:
         if key in normalized:
             normalized[key] = format_numeric_value(normalized[key])
+    for key in _DATE_FIELDS:
+        if key in normalized:
+            normalized[key] = parse_french_date(normalized[key])
 
     _derive_hidden_values(normalized)
 
@@ -65,6 +77,10 @@ def _derive_hidden_values(values: dict[str, Any]) -> None:
         derive_gender_from_civilite(str(values.get("conjoint_civilite", "Madame"))),
     )
     _set_default(values, "titre_affichage", DEFAULT_TITRE_AFFICHAGE)
+    values["valeur_nominale_part"] = calculate_nominal_value(
+        values.get("capital_social"),
+        values.get("nb_parts_total"),
+    )
     _set_default(
         values,
         "capital_social_lettres",
@@ -79,6 +95,14 @@ def _derive_hidden_values(values: dict[str, Any]) -> None:
         values,
         "valeur_nominale_part_lettres",
         number_words_from_value(values.get("valeur_nominale_part")),
+    )
+    _set_default(
+        values,
+        "regime_matrimonial",
+        regime_matrimonial_from_status(
+            str(values.get("situation_maritale", "")),
+            bool(values.get("regime_communautaire")),
+        ),
     )
     _set_default(values, "reunion_date_lettres", date_to_french_words(values.get("decision_date")))
 

@@ -81,6 +81,12 @@ ruff check .
 streamlit run src/sydel_doc_engine/app/streamlit_app.py
 ```
 
+Nouveau front Track B propre :
+
+```bash
+python -m streamlit run src/sydel_doc_engine/front_app/app.py
+```
+
 ## Ordre de travail recommandé à partir de ce dépôt
 
 1. créer le dépôt GitHub privé ;
