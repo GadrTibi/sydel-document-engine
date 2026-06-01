@@ -45,6 +45,10 @@ Dans ce dépôt, Codex doit agir comme :
 - gardien de reprise : maintenir les documents permettant à un nouveau chat de
   savoir immédiatement où en est le projet.
 
+La couche chef de projet globale est `docs/project/PROJECT_CONTROL_TOWER_V1.md`.
+Codex doit l'utiliser avant de choisir une action, pour connaitre le sprint
+actif, la phase courante, l'action autorisee et les actions interdites.
+
 ## Usage des sous-agents
 
 Codex peut utiliser des sous-agents spécialisés quand la tâche s'y prête.
@@ -137,6 +141,7 @@ chat sans dépendre de la conversation en cours.
 
 Les fichiers à tenir à jour sont :
 
+- `docs/project/PROJECT_CONTROL_TOWER_V1.md` : sprint actif, phase, prochaine action ;
 - `docs/project/01_EXECUTION_BOARD.md` : ticket, statut, livrables ;
 - `docs/project/04_LAST_STATE.md` : état immédiatement reprenable ;
 - le document de cadrage/spec concerné ;

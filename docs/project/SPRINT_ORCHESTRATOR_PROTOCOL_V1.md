@@ -7,6 +7,10 @@ Date : 2026-06-01
 Ce document definit l'orchestrateur de sprint operationnel pour les sprints par
 type d'entreprise.
 
+Il s'inscrit sous la tour de controle globale
+`docs/project/PROJECT_CONTROL_TOWER_V1.md`, qui indique quel sprint est actif,
+quelle phase est en cours et quelle action est autorisee maintenant.
+
 Il ne remplace pas l'orchestrateur moteur qui choisit les generateurs de
 documents. Il protege le projet avant et pendant le developpement : il garde le
 statut du sprint, les gates, les preuves attendues et la prochaine action.

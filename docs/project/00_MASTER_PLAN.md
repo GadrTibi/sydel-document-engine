@@ -61,6 +61,7 @@ Ce fichier fixe la mémoire opérationnelle globale : il doit permettre à un no
 - sorties DOCX, ZIP et PDF best-effort intégrées côté moteur/runtime ;
 - clean front Track B disponible dans `src/sydel_doc_engine/front_app/` ;
 - etat SELARL courant consolide dans `docs/project/SELARL_CANONICAL_STATUS_V1.md` ;
+- tour de controle projet disponible dans `docs/project/PROJECT_CONTROL_TOWER_V1.md` ;
 - protocole sprint par type d'entreprise disponible dans `docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md` ;
 - orchestrateur de sprint operationnel disponible dans `docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md` ;
 - sprint SELAS ouvert en `NO-GO dev` dans `docs/sprints/SPRINT_SELAS_V1.md` ;
@@ -107,16 +108,17 @@ Pour DOC-002, l'adresse de domiciliation est gérée en champ libre :
 
 ## Ordre d'exécution immédiat
 1. lire `docs/project/04_LAST_STATE.md` pour l'état réellement reprenable ;
-2. pour tout nouveau type d'entreprise, lire `docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md` ;
-3. pour tout nouveau type d'entreprise, lire `docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md` ;
-4. pour tout nouveau type d'entreprise, lire le fichier actif `docs/sprints/SPRINT_[TYPE]_V1.md` s'il existe ;
-5. si le sprint est pilote par Naomie, lancer d'abord le sous-sprint NotebookLM par prompts courts et attendre les reponses structurees ;
-6. pour tout nouveau type d'entreprise, appliquer ensuite `docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md` ;
-7. pour toute demande SELARL, lire `docs/project/SELARL_CANONICAL_STATUS_V1.md` ;
-8. appliquer `docs/project/PRODUCT_GUARDRAIL_PROTOCOL_V1.md` ;
-9. qualifier la demande en `GO dev` ou `NO-GO dev` ;
-10. si `GO dev`, limiter l'implémentation au ticket cadré ;
-11. si `NO-GO dev`, produire ou mettre à jour le cadrage fonctionnel requis.
+2. lire `docs/project/PROJECT_CONTROL_TOWER_V1.md` pour identifier sprint actif, phase et action autorisee ;
+3. pour tout nouveau type d'entreprise, lire `docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md` ;
+4. pour tout nouveau type d'entreprise, lire `docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md` ;
+5. pour tout nouveau type d'entreprise, lire le fichier actif `docs/sprints/SPRINT_[TYPE]_V1.md` s'il existe ;
+6. si le sprint est pilote par Naomie, lancer d'abord le sous-sprint NotebookLM par prompts courts et attendre les reponses structurees ;
+7. pour tout nouveau type d'entreprise, appliquer ensuite `docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md` ;
+8. pour toute demande SELARL, lire `docs/project/SELARL_CANONICAL_STATUS_V1.md` ;
+9. appliquer `docs/project/PRODUCT_GUARDRAIL_PROTOCOL_V1.md` ;
+10. qualifier la demande en `GO dev` ou `NO-GO dev` ;
+11. si `GO dev`, limiter l'implémentation au ticket cadré ;
+12. si `NO-GO dev`, produire ou mettre à jour le cadrage fonctionnel requis.
 
 ## Documents que Codex doit lire avant toute implémentation
 - AGENTS.md
@@ -125,6 +127,7 @@ Pour DOC-002, l'adresse de domiciliation est gérée en champ libre :
 - docs/project/02_CODEX_WORKFLOW.md
 - docs/project/03_HANDOFF_FOR_NEW_AGENT.md
 - docs/project/04_LAST_STATE.md
+- docs/project/PROJECT_CONTROL_TOWER_V1.md
 - docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md pour tout sprint de type d'entreprise
 - docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md
 - docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md pour tout sprint de type d'entreprise

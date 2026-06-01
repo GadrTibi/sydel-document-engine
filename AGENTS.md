@@ -55,6 +55,21 @@ Concrètement :
 
 ## Mode de travail attendu
 
+### Tour de controle projet
+
+Codex doit appliquer `docs/project/PROJECT_CONTROL_TOWER_V1.md` comme couche
+chef de projet globale. Avant toute action operationnelle, Codex doit savoir :
+
+- quel est le sprint actif ;
+- qui le pilote ;
+- quelle branche est ciblee ;
+- quelle phase est en cours ;
+- quelle action unique est autorisee maintenant ;
+- quelles actions sont interdites tant que les gates ne sont pas passes.
+
+Si ces informations ne sont pas claires, Codex reste en cadrage et ne developpe
+pas.
+
 ### Déclencheur immédiat Naomie / Bonjour
 
 Si le contexte indique que l'utilisatrice est Naomie/Naomi, même si son premier
@@ -63,14 +78,15 @@ générique du type "qu'est-ce qu'on attaque dans le moteur documentaire ?".
 
 Réaction obligatoire :
 
-1. appliquer `docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md` ;
-2. lire `docs/sprints/SPRINT_SELAS_V1.md` ;
-3. lire `docs/sprints/SPRINT_SELAS_NOTEBOOKLM_PROMPTS_V1.md` ;
-4. vérifier que la branche cible est `codex/naomie-selas-sprint` ou s'y placer ;
-5. répondre en phase 0 `ACCUEIL / NO-GO dev` ;
-6. inclure un `Point pédagogie` ;
-7. donner à Naomie le prochain prompt NotebookLM court à copier-coller ;
-8. ne lancer aucun développement.
+1. appliquer `docs/project/PROJECT_CONTROL_TOWER_V1.md` ;
+2. appliquer `docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md` ;
+3. lire `docs/sprints/SPRINT_SELAS_V1.md` ;
+4. lire `docs/sprints/SPRINT_SELAS_NOTEBOOKLM_PROMPTS_V1.md` ;
+5. vérifier que la branche cible est `codex/naomie-selas-sprint` ou s'y placer ;
+6. répondre en phase 0 `ACCUEIL / NO-GO dev` ;
+7. inclure un `Point pédagogie` ;
+8. donner à Naomie le prochain prompt NotebookLM court à copier-coller ;
+9. ne lancer aucun développement.
 
 Cette règle s'applique aussi si Naomie dit qu'elle veut `lancer`, `demarrer` ou
 `reprendre` le sprint SELAS/CELAS. Dans ce contexte, `lancer le sprint` signifie
@@ -114,7 +130,8 @@ Avant toute tâche d'implémentation, lire dans cet ordre :
 4. `docs/project/02_CODEX_WORKFLOW.md` ;
 5. `docs/project/03_HANDOFF_FOR_NEW_AGENT.md` ;
 6. `docs/project/04_LAST_STATE.md` ;
-7. le fichier de livraison/specification pertinent dans `docs/delivery/`.
+7. `docs/project/PROJECT_CONTROL_TOWER_V1.md` ;
+8. le fichier de livraison/specification pertinent dans `docs/delivery/`.
 
 Si l'un de ces fichiers manque ou contredit le ticket demandé, arrêter l'implémentation et signaler le blocage.
 
@@ -204,6 +221,7 @@ Before any implementation task, read:
 - docs/project/02_CODEX_WORKFLOW.md
 - docs/project/03_HANDOFF_FOR_NEW_AGENT.md
 - docs/project/04_LAST_STATE.md
+- docs/project/PROJECT_CONTROL_TOWER_V1.md
 - docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md when opening or following a company-type sprint
 - docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md
 - docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md when opening or following a company-type sprint

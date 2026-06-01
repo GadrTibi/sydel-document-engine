@@ -7,19 +7,23 @@
 4. docs/project/02_CODEX_WORKFLOW.md
 5. docs/project/03_HANDOFF_FOR_NEW_AGENT.md
 6. docs/project/04_LAST_STATE.md
-7. docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise
-8. docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise
-9. docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise
-10. docs/sprints/SPRINT_[TYPE]_V1.md si le sprint existe
-11. docs/project/SELARL_CANONICAL_STATUS_V1.md si le ticket touche la SELARL
-12. docs/project/PRODUCT_GUARDRAIL_PROTOCOL_V1.md
-13. le document de spec concerné
+7. docs/project/PROJECT_CONTROL_TOWER_V1.md
+8. docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise
+9. docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise
+10. docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise
+11. docs/sprints/SPRINT_[TYPE]_V1.md si le sprint existe
+12. docs/project/SELARL_CANONICAL_STATUS_V1.md si le ticket touche la SELARL
+13. docs/project/PRODUCT_GUARDRAIL_PROTOCOL_V1.md
+14. le document de spec concerné
 
 Pour un ticket documentaire, vérifier aussi l'ADR applicable dans `docs/adr/` avant d'écrire du code.
 
 ## Gate produit / métier avant développement
 
 Avant de coder, Codex doit appliquer `docs/project/PRODUCT_GUARDRAIL_PROTOCOL_V1.md`.
+Avant meme de choisir une action, Codex doit appliquer
+`docs/project/PROJECT_CONTROL_TOWER_V1.md` pour identifier le sprint actif, la
+phase courante, l'action autorisee et les actions interdites.
 Pour un nouveau type d'entreprise, Codex doit aussi appliquer
 `docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md`,
 `docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md` et
@@ -163,6 +167,7 @@ Lis d'abord :
 - docs/project/02_CODEX_WORKFLOW.md
 - docs/project/03_HANDOFF_FOR_NEW_AGENT.md
 - docs/project/04_LAST_STATE.md
+- docs/project/PROJECT_CONTROL_TOWER_V1.md
 - docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise
 - docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise
 - docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise

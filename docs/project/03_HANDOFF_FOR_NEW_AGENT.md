@@ -33,6 +33,9 @@ L'arbre théorique abandonné n'est pas une source valide. Il n'existe pas de fi
 - Avant tout nouveau sprint de type d'entreprise, appliquer `docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md`.
 - Avant tout nouveau sprint de type d'entreprise, appliquer aussi `docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md`.
 - Quand un sprint existe, lire son fichier `docs/sprints/SPRINT_[TYPE]_V1.md` avant de repondre.
+- La tour de controle projet est `docs/project/PROJECT_CONTROL_TOWER_V1.md` ;
+  elle indique sprint actif, phase courante, action autorisee et actions
+  interdites.
 - Un nouveau chat doit pouvoir reprendre le projet depuis `docs/project/04_LAST_STATE.md`, sans dépendre d'un chat externe.
 
 ## Ce qui est déjà fait
@@ -52,6 +55,7 @@ L'arbre théorique abandonné n'est pas une source valide. Il n'existe pas de fi
 - Le mode d'emploi d'installation et branche Naomie est `docs/project/NAOMIE_GITHUB_ONBOARDING_V1.md`.
 - La couche pedagogique pour Naomie est `docs/project/NAOMIE_LEARNING_MENTOR_PROTOCOL_V1.md`.
 - Le gate produit / métier obligatoire est défini dans `docs/project/PRODUCT_GUARDRAIL_PROTOCOL_V1.md`.
+- La tour de controle chef de projet est disponible dans `docs/project/PROJECT_CONTROL_TOWER_V1.md`.
 
 ## Ce qui n'est pas encore fait
 - La SELARL complète n'est pas juridiquement finalisée sur toutes ses variantes.
@@ -68,17 +72,19 @@ Avant toute proposition ou implémentation, lire dans cet ordre :
 4. `docs/project/02_CODEX_WORKFLOW.md`
 5. `docs/project/03_HANDOFF_FOR_NEW_AGENT.md`
 6. `docs/project/04_LAST_STATE.md`
-7. `docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md` pour tout sprint de type d'entreprise
-8. `docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md` pour tout sprint de type d'entreprise
-9. `docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md` pour tout sprint de type d'entreprise
-10. `docs/sprints/SPRINT_[TYPE]_V1.md` si le sprint existe
-11. `docs/project/SELARL_CANONICAL_STATUS_V1.md` pour toute reprise SELARL
-12. `docs/project/PRODUCT_GUARDRAIL_PROTOCOL_V1.md`
-13. Le fichier de spec concerné dans `docs/delivery/`
-14. Les ADR applicables dans `docs/adr/`
+7. `docs/project/PROJECT_CONTROL_TOWER_V1.md`
+8. `docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md` pour tout sprint de type d'entreprise
+9. `docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md` pour tout sprint de type d'entreprise
+10. `docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md` pour tout sprint de type d'entreprise
+11. `docs/sprints/SPRINT_[TYPE]_V1.md` si le sprint existe
+12. `docs/project/SELARL_CANONICAL_STATUS_V1.md` pour toute reprise SELARL
+13. `docs/project/PRODUCT_GUARDRAIL_PROTOCOL_V1.md`
+14. Le fichier de spec concerné dans `docs/delivery/`
+15. Les ADR applicables dans `docs/adr/`
 
 ## Travail avec Codex pilote projet / produit
 - Codex cadre les tickets, reformule l'intention métier, arbitre le passage en `GO dev` ou `NO-GO dev` et explicite les décisions métier à documenter.
+- Codex doit d'abord consulter la tour de controle projet pour connaitre sprint actif, phase, action autorisee et actions interdites.
 - Si Naomie démarre un sprint, elle doit s'identifier et Codex doit la guider étape par étape selon `SPRINT_ORCHESTRATOR_PROTOCOL_V1.md` et `COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md`.
 - Pour le sprint SELAS, l'etat immediat est `docs/sprints/SPRINT_SELAS_V1.md` : `NO-GO dev`, sous-sprint NotebookLM actif, prochaine action = donner a Naomie le prompt NotebookLM courant a copier-coller.
 - Si Naomie dit qu'elle veut lancer/demarrer/reprendre le sprint SELAS/CELAS, Codex doit comprendre `lancer = lancer le sous-sprint NotebookLM`, et ne doit pas passer en production, generation, audit, matrice ou code.

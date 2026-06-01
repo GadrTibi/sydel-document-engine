@@ -11,6 +11,7 @@ Date d'ouverture : 2026-06-01
 | Pilote metier | Naomie |
 | Superviseur | Gad |
 | Pilote projet / technique | Codex |
+| Tour de controle | `docs/project/PROJECT_CONTROL_TOWER_V1.md` |
 | Branche cible | `codex/naomie-selas-sprint` |
 | Phase courante | 0 - ACCUEIL / INITIALISATION |
 | Statut courant | `NO-GO dev` |

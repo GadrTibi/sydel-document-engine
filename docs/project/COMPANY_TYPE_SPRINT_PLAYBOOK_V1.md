@@ -8,9 +8,11 @@ Ce document formalise la methode de sprint a appliquer avant tout developpement
 d'un nouveau type d'entreprise.
 
 Le suivi operationnel de chaque sprint est gere par
+`docs/project/PROJECT_CONTROL_TOWER_V1.md`,
 `docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md` et par le fichier actif
-`docs/sprints/SPRINT_[TYPE]_V1.md`. Le present playbook decrit la methode ; le
-fichier de sprint indique l'etat exact a l'instant T.
+`docs/sprints/SPRINT_[TYPE]_V1.md`. Le present playbook decrit la methode ; la
+tour de controle indique le sprint actif, et le fichier de sprint indique l'etat
+exact a l'instant T.
 
 La SELARL est le sprint pilote. Les prochains sprints doivent reutiliser la meme
 methode, avec un perimetre clair :
