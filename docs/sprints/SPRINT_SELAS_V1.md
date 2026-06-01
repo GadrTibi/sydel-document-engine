@@ -15,7 +15,7 @@ Date d'ouverture : 2026-06-01
 | Phase courante | 0 - ACCUEIL / INITIALISATION |
 | Statut courant | `NO-GO dev` |
 | Derniere action | Sprint SELAS choisi comme prochain sprint logique apres SELARL |
-| Prochaine action | Donner a Naomie le Prompt NotebookLM 01, puis structurer sa reponse |
+| Prochaine action | Lancer uniquement le sous-sprint NotebookLM : donner a Naomie le Prompt 01, attendre sa reponse, puis la structurer |
 
 ## Decisions d'ouverture
 
@@ -39,8 +39,8 @@ Date d'ouverture : 2026-06-01
 | Identification Naomie | A FAIRE | Naomie doit dire `Je suis Naomie` |
 | Sources | A FAIRE | Lire source de verite, sources SELAS, specs et retours |
 | NotebookLM | A FAIRE | Utiliser `SPRINT_SELAS_NOTEBOOKLM_PROMPTS_V1.md`, puis journaliser dans `SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md` |
-| Audit reutilisation | A FAIRE | Appliquer `REUSE_AUDIT_AGENT_PROTOCOL_V1.md` |
-| Matrice documentaire | A FAIRE | Classer tous les documents SELAS |
+| Audit reutilisation | BLOQUE | Interdit tant que le sous-sprint NotebookLM n'est pas suffisant |
+| Matrice documentaire | BLOQUE | Interdite tant que NotebookLM et reuse audit ne sont pas faits |
 | Parcours metier | A FAIRE | Definir saisie, roles, adresses, reutilisations |
 | Tickets sprint | A FAIRE | Ecrire les tickets avant dev |
 | Validation Gad | MANQUANTE | Aucun `GO dev` donne |
@@ -57,8 +57,22 @@ Point pedagogie : tu n'as pas a gerer Git ni les commandes ; Codex protege la br
 Prochaine etape : on lira le statut du sprint, puis on preparera les questions NotebookLM.
 ```
 
-Si Naomie dit `Je suis Naomie. Je veux demarrer le sprint SELAS.`, repondre en
-phase 0 puis passer a la phase 1 seulement apres verification de branche.
+Si Naomie dit `Je suis Naomie. Je veux demarrer le sprint SELAS.`, ou une
+variante comme `je veux lancer/reprendre le sprint SELAS/CELAS`, Codex ne doit
+pas partir en production, ni en generation, ni en audit, ni en matrice finale.
+Il doit lancer uniquement le sous-sprint NotebookLM.
+
+Reponse attendue :
+
+```text
+Statut sprint : Phase 3 - NOTEBOOKLM / NO-GO dev
+Action maintenant : colle le Prompt NotebookLM 01 dans NotebookLM, puis donne-moi la reponse brute.
+Point pedagogie : on collecte d'abord la matiere metier ; Codex la transforme ensuite en journal, puis en prompts de precision.
+Prochaine etape : je structure ta reponse dans SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md et je choisis le prompt suivant selon les trous.
+```
+
+Puis donner le Prompt NotebookLM 01 complet depuis
+`docs/sprints/SPRINT_SELAS_NOTEBOOKLM_PROMPTS_V1.md`.
 
 Reponse explicitement interdite :
 
@@ -142,7 +156,7 @@ Statut : A FAIRE.
 
 | Ordre | Ticket | Statut | Objet | Criteria |
 | --- | --- | --- | --- | --- |
-| 1 | SELAS-SOURCES-NOTEBOOKLM-001 | READY | Piloter la boucle NotebookLM par prompts courts | Reponses structurees dans `SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md`, contradictions listees |
+| 1 | SELAS-SOURCES-NOTEBOOKLM-001 | IN_PROGRESS | Piloter la boucle NotebookLM par prompts courts | Reponses structurees dans `SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md`, contradictions listees |
 | 2 | SELAS-REUSE-AUDIT-001 | BLOCKED | Auditer reutilisation SELARL/global | Debloque apres sources/NotebookLM |
 | 3 | SELAS-MATRIX-001 | BLOCKED | Produire matrice documentaire SELAS | Debloque apres reuse audit |
 | 4 | SELAS-FRONT-CONTRACT-001 | BLOCKED | Ecrire contrat metier-front | Debloque apres matrice |
@@ -160,9 +174,11 @@ Statut : A FAIRE.
 
 1. Quand Naomie arrive, Codex verifie la branche `codex/naomie-selas-sprint`.
 2. Codex l'accueille en phase 0 avec le point pedagogie.
-3. Codex donne le Prompt NotebookLM 01 a copier-coller.
-4. Naomie colle la reponse NotebookLM.
-5. Codex structure la reponse dans le journal, puis choisit le prompt suivant.
+3. Si Naomie dit qu'elle veut lancer/reprendre le sprint, Codex lance uniquement le sous-sprint NotebookLM.
+4. Codex donne le Prompt NotebookLM 01 a copier-coller.
+5. Naomie colle la reponse NotebookLM.
+6. Codex structure la reponse dans le journal, puis choisit le prompt suivant selon les trous.
+7. Codex reste dans NotebookLM tant que la couverture minimale n'est pas atteinte.
 
 ## Statut final
 

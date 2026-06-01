@@ -64,6 +64,9 @@ Ce fichier fixe la mémoire opérationnelle globale : il doit permettre à un no
 - protocole sprint par type d'entreprise disponible dans `docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md` ;
 - orchestrateur de sprint operationnel disponible dans `docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md` ;
 - sprint SELAS ouvert en `NO-GO dev` dans `docs/sprints/SPRINT_SELAS_V1.md` ;
+- sous-sprint NotebookLM SELAS actif : Naomie doit recevoir un prompt court,
+  le coller dans NotebookLM, puis donner la reponse brute a Codex pour
+  structuration et iteration ;
 - protocole de reutilisation SELARL/global disponible dans `docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md` ;
 - mode d'emploi branche / installation Naomie disponible dans `docs/project/NAOMIE_GITHUB_ONBOARDING_V1.md` ;
 - couche pedagogique Naomie disponible dans `docs/project/NAOMIE_LEARNING_MENTOR_PROTOCOL_V1.md` ;
@@ -107,12 +110,13 @@ Pour DOC-002, l'adresse de domiciliation est gérée en champ libre :
 2. pour tout nouveau type d'entreprise, lire `docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md` ;
 3. pour tout nouveau type d'entreprise, lire `docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md` ;
 4. pour tout nouveau type d'entreprise, lire le fichier actif `docs/sprints/SPRINT_[TYPE]_V1.md` s'il existe ;
-5. pour tout nouveau type d'entreprise, appliquer `docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md` ;
-6. pour toute demande SELARL, lire `docs/project/SELARL_CANONICAL_STATUS_V1.md` ;
-7. appliquer `docs/project/PRODUCT_GUARDRAIL_PROTOCOL_V1.md` ;
-8. qualifier la demande en `GO dev` ou `NO-GO dev` ;
-9. si `GO dev`, limiter l'implémentation au ticket cadré ;
-10. si `NO-GO dev`, produire ou mettre à jour le cadrage fonctionnel requis.
+5. si le sprint est pilote par Naomie, lancer d'abord le sous-sprint NotebookLM par prompts courts et attendre les reponses structurees ;
+6. pour tout nouveau type d'entreprise, appliquer ensuite `docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md` ;
+7. pour toute demande SELARL, lire `docs/project/SELARL_CANONICAL_STATUS_V1.md` ;
+8. appliquer `docs/project/PRODUCT_GUARDRAIL_PROTOCOL_V1.md` ;
+9. qualifier la demande en `GO dev` ou `NO-GO dev` ;
+10. si `GO dev`, limiter l'implémentation au ticket cadré ;
+11. si `NO-GO dev`, produire ou mettre à jour le cadrage fonctionnel requis.
 
 ## Documents que Codex doit lire avant toute implémentation
 - AGENTS.md

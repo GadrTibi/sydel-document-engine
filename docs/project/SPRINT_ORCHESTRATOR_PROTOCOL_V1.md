@@ -90,7 +90,8 @@ Chaque fichier de sprint doit indiquer au minimum :
 | --- | --- |
 | Naomie dit seulement `Bonjour` dans un contexte Naomie/SELAS | Accueil sprint SELAS, verification branche, point pedagogie, aucun dev |
 | Le contexte mentionne Naomi/Naomie mais le message est vague | Traiter comme accueil Naomie, pas comme demande generique |
-| Naomie dit `Je veux lancer le sprint X` | Creer/lire le sprint, phase 0, `NO-GO dev` |
+| Naomie dit `Je veux lancer le sprint X` | Creer/lire le sprint, phase 0, `NO-GO dev`, puis lancer uniquement le sous-sprint NotebookLM |
+| Naomie dit `Je veux lancer/demarrer/reprendre le sprint SELAS/CELAS` | Rester dans `SELAS-SOURCES-NOTEBOOKLM-001`, donner le prochain prompt NotebookLM a copier-coller, attendre sa reponse |
 | Naomie demande de coder avant NotebookLM | Refuser le dev et lister les gates manquants |
 | Gad demande un nouveau type d'entreprise | Ouvrir ou lire le sprint, confirmer `NO-GO dev` par defaut |
 | NotebookLM n'a pas ete interroge | Rester avant phase 5, preparer les questions |
@@ -122,6 +123,37 @@ Bonjour Naomi ! Je suis pret. Tu veux qu'on attaque quoi dans le moteur document
 Cette reponse est incorrecte car elle saute la verification branche/sprint et ne
 declenche ni le `NO-GO dev`, ni le point pedagogie, ni la prochaine etape
 NotebookLM.
+
+## Sous-sprint NotebookLM
+
+Pour un sprint pilote par Naomie, le premier sous-sprint operationnel est
+NotebookLM. Il est actif avant l'audit de reutilisation, avant la matrice
+documentaire, avant les tickets de code et avant toute production.
+
+Quand Naomie dit qu'elle veut lancer, demarrer ou reprendre un sprint, Codex doit
+comprendre :
+
+```text
+Action autorisee maintenant = lancer le sous-sprint NotebookLM.
+Action interdite maintenant = developper, generer, produire, merger, pousser une fonctionnalite.
+```
+
+La reponse attendue est donc toujours :
+
+```text
+Statut sprint : Phase 3 - NOTEBOOKLM / NO-GO dev
+Action maintenant : colle le Prompt NotebookLM NN dans NotebookLM, puis donne-moi la reponse brute.
+Point pedagogie : NotebookLM sert a extraire les regles metier ; Codex les structure ensuite avant tout dev.
+Prochaine etape : je note ta reponse dans le journal du sprint et je prepare le prompt suivant selon les trous.
+```
+
+Codex ne doit pas envoyer une liste globale de questions. Il doit donner un seul
+prompt court, compatible avec la limite de caracteres NotebookLM.
+
+Codex ne peut sortir du sous-sprint NotebookLM que si le journal du sprint
+contient des reponses structurees suffisantes. Si une reponse cree un trou ou
+une contradiction, le prompt suivant doit cibler ce trou, pas passer a la
+matrice.
 
 ## Regles NotebookLM
 

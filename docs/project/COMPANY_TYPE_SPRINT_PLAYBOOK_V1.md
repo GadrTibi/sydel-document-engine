@@ -60,6 +60,13 @@ Quand Naomie conduit le sprint, Codex doit la guider etape par etape. Codex ne
 doit pas sauter directement au dev. Chaque etape doit produire une sortie simple
 a valider avant de passer a la suivante.
 
+Si Naomie dit qu'elle veut lancer, demarrer ou reprendre le sprint, Codex doit
+demarrer le sous-sprint NotebookLM, pas le developpement. Codex donne un seul
+prompt court a copier-coller dans NotebookLM, attend la reponse brute de Naomie,
+la structure dans le journal du sprint, puis choisit le prompt suivant selon les
+trous. Cette boucle continue jusqu'a ce que Codex considere les informations
+suffisantes pour passer a l'audit de reutilisation.
+
 Si Naomie travaille depuis son ordinateur, elle doit suivre
 `docs/project/NAOMIE_GITHUB_ONBOARDING_V1.md`. Elle ne gere pas Git elle-meme :
 Codex gere la branche, les commandes, les tests et les checkpoints.
@@ -124,6 +131,19 @@ ou Naomie de coller les reponses ou un export.
 Regle : aucune reponse NotebookLM ne remplace une source de verite ou un retour
 humain. NotebookLM sert a explorer, comparer, detecter les cas, les exceptions et
 les contradictions.
+
+Pour Naomie, cette phase se pilote comme un sous-sprint :
+
+1. Codex donne un prompt court ;
+2. Naomie copie ce prompt dans NotebookLM ;
+3. Naomie colle la reponse NotebookLM dans Codex ;
+4. Codex structure la reponse dans le journal ;
+5. Codex identifie les trous ;
+6. Codex donne le prompt suivant ;
+7. la boucle continue tant que les informations ne sont pas suffisantes.
+
+Pendant ce sous-sprint, Codex ne doit pas produire de matrice finale, lancer un
+audit de reutilisation, coder, generer ou pousser une fonctionnalite.
 
 ### Phase 3 - Matrice documentaire
 
@@ -411,18 +431,20 @@ Naomie doit suivre cette checklist dans l'ordre :
 1. dire explicitement `Je suis Naomie` ;
 2. nommer le type d'entreprise du sprint ;
 3. lire avec Codex le statut projet courant ;
-4. faire l'inventaire des sources ;
-5. poser les questions NotebookLM ;
-6. coller les reponses NotebookLM dans le chat ou dans un fichier source ;
-7. faire l'audit de reutilisation SELARL/global ;
-8. valider la matrice documentaire avec Codex ;
-9. valider les documents manuels/reserves/bloques ;
-10. obtenir un `GO dev` uniquement pour un ticket borne ;
-11. laisser Codex implementer et tester ;
-12. preparer le pack de test pour l'associe ;
-13. collecter le retour humain de l'associe ;
-14. faire boucler les corrections ;
-15. cloturer le sprint avec un statut canonique.
+4. recevoir de Codex le prompt NotebookLM courant ;
+5. copier-coller ce prompt dans NotebookLM ;
+6. coller la reponse NotebookLM brute dans Codex ;
+7. laisser Codex structurer la reponse et donner le prompt suivant ;
+8. repeter la boucle NotebookLM jusqu'au feu vert de Codex ;
+9. faire ensuite seulement l'audit de reutilisation SELARL/global ;
+10. valider la matrice documentaire avec Codex ;
+11. valider les documents manuels/reserves/bloques ;
+12. obtenir un `GO dev` uniquement pour un ticket borne ;
+13. laisser Codex implementer et tester ;
+14. preparer le pack de test pour l'associe ;
+15. collecter le retour humain de l'associe ;
+16. faire boucler les corrections ;
+17. cloturer le sprint avec un statut canonique.
 
 ## Definition de done d'un sprint
 

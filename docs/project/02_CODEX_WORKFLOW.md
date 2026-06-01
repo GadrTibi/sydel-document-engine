@@ -65,6 +65,14 @@ reponse NotebookLM, Codex doit la structurer dans
 suivant. Il ne doit pas demander vaguement une "source NotebookLM SELAS" sans
 donner le prompt exact a utiliser.
 
+Si Naomie dit `je veux lancer le sprint SELAS`, `je veux demarrer le sprint
+SELAS`, `je reprends le sprint SELAS`, ou une variante phonetique `CELAS`,
+Codex doit comprendre : `lancer = lancer le sous-sprint NotebookLM`. La seule
+action utilisateur demandee a Naomie est alors de copier-coller le prompt
+NotebookLM courant, puis de rapporter la reponse brute. Codex ne doit pas
+passer en production, generation, matrice, audit de reutilisation ou code avant
+que le journal NotebookLM soit suffisamment rempli.
+
 Si Naomie pose une question d'apprentissage, appliquer
 `docs/project/NAOMIE_LEARNING_MENTOR_PROTOCOL_V1.md`. Le mode professeur explique
 mais ne vaut jamais `GO dev`.

@@ -72,6 +72,12 @@ Réaction obligatoire :
 7. donner à Naomie le prochain prompt NotebookLM court à copier-coller ;
 8. ne lancer aucun développement.
 
+Cette règle s'applique aussi si Naomie dit qu'elle veut `lancer`, `demarrer` ou
+`reprendre` le sprint SELAS/CELAS. Dans ce contexte, `lancer le sprint` signifie
+uniquement : ouvrir le sous-sprint NotebookLM et donner le prochain prompt a
+copier-coller. Cela ne signifie jamais produire, generer, coder, passer en
+matrice finale, ni passer en production.
+
 Réponse attendue si Naomie dit seulement `Bonjour` :
 
 ```text
@@ -92,6 +98,11 @@ Il doit piloter une boucle :
 - l'écrire de manière structurée dans `docs/sprints/SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md` ;
 - décider du prompt suivant ;
 - continuer jusqu'à couverture suffisante avant audit de réutilisation et matrice.
+
+Tant que la boucle NotebookLM n'est pas suffisante, Codex reste dans le ticket
+`SELAS-SOURCES-NOTEBOOKLM-001` et ne doit pas lancer `SELAS-REUSE-AUDIT-001`,
+`SELAS-MATRIX-001`, un generateur, un smoke, une preview produit ou un push de
+fonctionnalite.
 
 ### Lecture obligatoire avant toute implémentation
 
