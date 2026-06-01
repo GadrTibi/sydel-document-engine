@@ -49,6 +49,10 @@ La couche chef de projet globale est `docs/project/PROJECT_CONTROL_TOWER_V1.md`.
 Codex doit l'utiliser avant de choisir une action, pour connaitre le sprint
 actif, la phase courante, l'action autorisee et les actions interdites.
 
+Pour les workflows Gad / Naomie / Codex reutilisables sur d'autres projets,
+appliquer aussi `docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md` et le
+template `docs/project/PROJECT_NAOMIE_RUNTIME_TEMPLATE_V1.md`.
+
 ## Usage des sous-agents
 
 Codex peut utiliser des sous-agents spécialisés quand la tâche s'y prête.
@@ -128,6 +132,7 @@ La réutilisation SELARL/global doit etre auditee avant le premier `GO dev`.
 Pour SELARL, les documents de référence actuels sont :
 
 - `docs/project/SELARL_CANONICAL_STATUS_V1.md` ;
+- `docs/sprints/SPRINT_SELARL_CLOSING_V1.md` ;
 - `docs/project/SELARL_COMPLETE_CASE_PLAYBOOK_V1.md` ;
 - `docs/project/SELARL_PRODUCTION_BACKLOG_V1.md` ;
 - `docs/project/SELARL_PRODUCTION_FACTORY_V1.md` ;

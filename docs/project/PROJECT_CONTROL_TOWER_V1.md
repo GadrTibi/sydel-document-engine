@@ -16,6 +16,7 @@ Ce document ne remplace pas :
 - `docs/project/01_EXECUTION_BOARD.md` pour les tickets ;
 - `docs/project/04_LAST_STATE.md` pour le dernier etat reprenable ;
 - `docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md` pour le protocole court Naomie ;
+- `docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md` pour le workflow Gad / Naomie / Codex multi-projets ;
 - `docs/sprints/SPRINT_[TYPE]_V1.md` pour l'etat detaille d'un sprint ;
 - `docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md` pour la methode.
 
@@ -77,7 +78,7 @@ incomplete, Codex doit dire `NO-GO dev` et donner l'action exacte suivante.
 
 | Type | Sprint | Pilote metier | Branche | Phase courante | Statut | Action autorisee maintenant |
 | --- | --- | --- | --- | --- | --- | --- |
-| SELARL | Sprint pilote historique / production partielle | Gad | `track-b/clean-rebuild` | Revue humaine / consolidation | PARTIAL | preparer revue associe/juriste ou choisir un sous-cas unique avec `GO dev` |
+| SELARL | `SPRINT-SELARL-CLOSING-V1` | Gad | `track-b/clean-rebuild` | Cloture perimetre simple | PARTIAL | lancer `SELARL-CLOSING-PACK-001` |
 | SELAS | `SPRINT-SELAS-V1` | Naomie | `codex/naomie-selas-sprint` | Sous-sprint NotebookLM | `NO-GO dev` | donner Prompt NotebookLM 01, attendre la reponse brute, structurer le journal |
 
 ## Etat courant SELARL
@@ -92,8 +93,8 @@ Etat utile :
 - multi-associes limite disponible sur certains sous-cas ;
 - cession, SCM, derogations, site distinct, plusieurs gerants et statuts
   multi-associes complets restent a cadrer ;
-- prochaine action recommandee : revue humaine associe/juriste ou choix d'un
-  seul sous-cas avec `GO dev`.
+- fin de sprint ecrite dans `docs/sprints/SPRINT_SELARL_CLOSING_V1.md` ;
+- prochaine action recommandee : `SELARL-CLOSING-PACK-001`.
 
 SELARL ne doit pas etre consideree terminee a 100 % tant que la revue humaine
 finale et les corrections eventuelles ne sont pas bouclees.

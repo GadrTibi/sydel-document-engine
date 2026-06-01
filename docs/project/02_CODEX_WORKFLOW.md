@@ -9,13 +9,15 @@
 6. docs/project/04_LAST_STATE.md
 7. docs/project/PROJECT_CONTROL_TOWER_V1.md
 8. docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md si Naomie/SELAS est dans le contexte
-9. docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise
-10. docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise
-11. docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise
-12. docs/sprints/SPRINT_[TYPE]_V1.md si le sprint existe
-13. docs/project/SELARL_CANONICAL_STATUS_V1.md si le ticket touche la SELARL
-14. docs/project/PRODUCT_GUARDRAIL_PROTOCOL_V1.md
-15. le document de spec concerné
+9. docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md si le ticket formalise un workflow Naomie multi-projets
+10. docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise
+11. docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise
+12. docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise
+13. docs/sprints/SPRINT_[TYPE]_V1.md si le sprint existe
+14. docs/project/SELARL_CANONICAL_STATUS_V1.md si le ticket touche la SELARL
+15. docs/sprints/SPRINT_SELARL_CLOSING_V1.md si le ticket touche la cloture SELARL
+16. docs/project/PRODUCT_GUARDRAIL_PROTOCOL_V1.md
+17. le document de spec concerné
 
 Pour un ticket documentaire, vérifier aussi l'ADR applicable dans `docs/adr/` avant d'écrire du code.
 
@@ -83,6 +85,14 @@ que le journal NotebookLM soit suffisamment rempli.
 Si Naomie pose une question d'apprentissage, appliquer
 `docs/project/NAOMIE_LEARNING_MENTOR_PROTOCOL_V1.md`. Le mode professeur explique
 mais ne vaut jamais `GO dev`.
+
+Pour un workflow Naomie non specifique a SYDEL, appliquer
+`docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md` puis creer un protocole
+local a partir de `docs/project/PROJECT_NAOMIE_RUNTIME_TEMPLATE_V1.md`.
+
+Pour la fin de sprint SELARL, appliquer
+`docs/sprints/SPRINT_SELARL_CLOSING_V1.md`. La prochaine action propre est
+`SELARL-CLOSING-PACK-001`, pas un developpement complexe.
 
 ## Choix du périmètre
 - Identifier le ticket exact dans `docs/project/01_EXECUTION_BOARD.md`.
@@ -172,12 +182,14 @@ Lis d'abord :
 - docs/project/04_LAST_STATE.md
 - docs/project/PROJECT_CONTROL_TOWER_V1.md
 - docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md si Naomie/SELAS est dans le contexte
+- docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md si le ticket concerne un workflow Naomie global
 - docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise
 - docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise
 - docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise
 - docs/sprints/SPRINT_[TYPE]_V1.md si le sprint existe
 - docs/project/NAOMIE_LEARNING_MENTOR_PROTOCOL_V1.md si Naomie pose une question d'apprentissage
 - docs/project/SELARL_CANONICAL_STATUS_V1.md si le ticket touche la SELARL
+- docs/sprints/SPRINT_SELARL_CLOSING_V1.md si le ticket touche la cloture SELARL
 - docs/project/PRODUCT_GUARDRAIL_PROTOCOL_V1.md
 - le fichier de spec visé
 

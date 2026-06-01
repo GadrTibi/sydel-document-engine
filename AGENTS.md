@@ -49,6 +49,10 @@ Termine par les 5 questions les plus importantes a poser ensuite.
 
 Le protocole complet est dans `docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md`.
 
+Pour un workflow Gad / Naomie / Codex non specifique a SYDEL, lire
+`docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md` et utiliser le
+template `docs/project/PROJECT_NAOMIE_RUNTIME_TEMPLATE_V1.md`.
+
 Ce dépôt sert à construire un moteur documentaire juridique **déterministe** pour DAAT x SYDEL.
 
 ## Mission de l'agent
@@ -191,7 +195,9 @@ Avant toute tâche d'implémentation, lire dans cet ordre :
 6. `docs/project/04_LAST_STATE.md` ;
 7. `docs/project/PROJECT_CONTROL_TOWER_V1.md` ;
 8. `docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md` si Naomie/SELAS est dans le contexte ;
-9. le fichier de livraison/specification pertinent dans `docs/delivery/`.
+9. `docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md` si le ticket concerne un workflow Naomie global ;
+10. `docs/sprints/SPRINT_SELARL_CLOSING_V1.md` si le ticket touche la cloture SELARL ;
+11. le fichier de livraison/specification pertinent dans `docs/delivery/`.
 
 Si l'un de ces fichiers manque ou contredit le ticket demandé, arrêter l'implémentation et signaler le blocage.
 
@@ -283,10 +289,12 @@ Before any implementation task, read:
 - docs/project/04_LAST_STATE.md
 - docs/project/PROJECT_CONTROL_TOWER_V1.md
 - docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md when Naomie/SELAS is in context
+- docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md when the task defines a generic Naomie workflow
 - docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md when opening or following a company-type sprint
 - docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md
 - docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md when opening or following a company-type sprint
 - docs/sprints/SPRINT_[TYPE]_V1.md when the sprint file exists
+- docs/sprints/SPRINT_SELARL_CLOSING_V1.md when closing SELARL
 - docs/project/PRODUCT_GUARDRAIL_PROTOCOL_V1.md
 - the relevant delivery/spec file
 

@@ -88,6 +88,8 @@ Quand la tâche est large, Codex peut organiser des sous-agents spécialisés :
 - QA : smoke, non-régression, artefacts et contrôles finaux ;
 - Reuse Auditor : comparaison avec les travaux deja faits avant toute
   generalisation ou duplication.
+- Professeur Naomie : accompagnement pedagogique quand Naomie intervient dans un
+  projet.
 
 Les sous-agents aident à vérifier et exécuter. Codex pilote reste responsable de
 la décision finale et de la synthèse utilisateur.
@@ -108,6 +110,20 @@ Chaque projet doit donc avoir au minimum :
 
 Si un projet ne dispose pas encore de ces fichiers, Codex doit proposer ou créer
 une mémoire minimale avant de poursuivre un développement risqué.
+
+## Collaboration avec Naomie
+
+Quand Naomie intervient dans un projet, appliquer la doctrine generique :
+
+- `docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md`
+
+Chaque projet doit ensuite disposer d'un protocole local inspire de :
+
+- `docs/project/PROJECT_NAOMIE_RUNTIME_TEMPLATE_V1.md`
+
+Regle : Naomie peut apprendre, poser des questions, collecter des reponses et
+suivre le metier, mais Codex gere le risque technique, Git, les commandes, les
+tests et la memoire de reprise.
 
 ## Règle de priorité
 
