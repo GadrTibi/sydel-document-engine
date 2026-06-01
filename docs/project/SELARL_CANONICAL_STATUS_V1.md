@@ -17,6 +17,10 @@ sur les anciennes formulations du type "le front est limite a quatre
 documents". Ces formulations sont historiques quand elles contredisent les
 tickets Track B plus recents.
 
+La fin de sprint operationnelle est detaillee dans :
+
+- `docs/sprints/SPRINT_SELARL_CLOSING_V1.md`
+
 ## Decision produit actuelle
 
 Decision : `NO-GO dev` pour une nouvelle extension SELARL complexe tant que le
@@ -307,7 +311,9 @@ prochaine forme sociale ou famille documentaire.
 
 ## Prochaine action recommandee
 
-Lancer `SELARL-JURIST-REVIEW-001` sur le pack simple courant avant d'ouvrir un
+Lancer `SELARL-CLOSING-PACK-001` selon
+`docs/sprints/SPRINT_SELARL_CLOSING_V1.md` : regenerer le pack simple medecin,
+dentiste et regime communautaire pour revue associe / juriste avant d'ouvrir un
 nouveau developpement complexe.
 
 Si l'utilisateur prefere accelerer le produit plutot que la revue, la prochaine

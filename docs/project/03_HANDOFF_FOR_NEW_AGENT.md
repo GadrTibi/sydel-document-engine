@@ -39,6 +39,8 @@ L'arbre théorique abandonné n'est pas une source valide. Il n'existe pas de fi
 - Le protocole runtime Naomie est `docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md` ;
   si Naomie/SELAS est dans le contexte, il prime et impose de donner le Prompt
   NotebookLM 01.
+- La doctrine Naomie multi-projets est `docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md`.
+- La fin de sprint SELARL est suivie dans `docs/sprints/SPRINT_SELARL_CLOSING_V1.md`.
 - Un nouveau chat doit pouvoir reprendre le projet depuis `docs/project/04_LAST_STATE.md`, sans dépendre d'un chat externe.
 
 ## Ce qui est déjà fait
@@ -59,6 +61,8 @@ L'arbre théorique abandonné n'est pas une source valide. Il n'existe pas de fi
 - La couche pedagogique pour Naomie est `docs/project/NAOMIE_LEARNING_MENTOR_PROTOCOL_V1.md`.
 - Le gate produit / métier obligatoire est défini dans `docs/project/PRODUCT_GUARDRAIL_PROTOCOL_V1.md`.
 - La tour de controle chef de projet est disponible dans `docs/project/PROJECT_CONTROL_TOWER_V1.md`.
+- Le workflow global Gad / Naomie / Codex est disponible dans `docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md`.
+- La fin de sprint SELARL est disponible dans `docs/sprints/SPRINT_SELARL_CLOSING_V1.md`.
 
 ## Ce qui n'est pas encore fait
 - La SELARL complète n'est pas juridiquement finalisée sur toutes ses variantes.
@@ -86,6 +90,11 @@ Avant toute proposition ou implémentation, lire dans cet ordre :
 14. Le fichier de spec concerné dans `docs/delivery/`
 15. Les ADR applicables dans `docs/adr/`
 
+Note : pour un workflow Naomie global, lire aussi
+`docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md` et
+`docs/project/PROJECT_NAOMIE_RUNTIME_TEMPLATE_V1.md`. Pour la cloture SELARL,
+lire aussi `docs/sprints/SPRINT_SELARL_CLOSING_V1.md`.
+
 ## Travail avec Codex pilote projet / produit
 - Codex cadre les tickets, reformule l'intention métier, arbitre le passage en `GO dev` ou `NO-GO dev` et explicite les décisions métier à documenter.
 - Codex doit d'abord consulter la tour de controle projet pour connaitre sprint actif, phase, action autorisee et actions interdites.
@@ -93,6 +102,7 @@ Avant toute proposition ou implémentation, lire dans cet ordre :
 - Pour le sprint SELAS, l'etat immediat est `docs/sprints/SPRINT_SELAS_V1.md` : `NO-GO dev`, sous-sprint NotebookLM actif, prochaine action = donner a Naomie le prompt NotebookLM courant a copier-coller.
 - Si Naomie dit seulement `bonjour`, Codex doit quand meme donner le Prompt NotebookLM 01 et ne pas attendre qu'elle choisisse une tache.
 - Si Naomie dit qu'elle veut lancer/demarrer/reprendre le sprint SELAS/CELAS, Codex doit comprendre `lancer = lancer le sous-sprint NotebookLM`, et ne doit pas passer en production, generation, audit, matrice ou code.
+- Pour la SELARL, la prochaine action de cloture est `SELARL-CLOSING-PACK-001` selon `docs/sprints/SPRINT_SELARL_CLOSING_V1.md`.
 - Si Naomie travaille sur un nouveau type d'entreprise, elle doit partir d'une branche dediee selon `NAOMIE_GITHUB_ONBOARDING_V1.md`, mais Codex gere Git, les commandes, les tests et les checkpoints pour elle.
 - Si Naomie pose une question d'apprentissage, utiliser le mode `Professeur Naomie` defini dans `NAOMIE_LEARNING_MENTOR_PROTOCOL_V1.md`.
 - Le sous-agent prioritaire pour un nouveau sprint est `Reuse Auditor`, défini dans `REUSE_AUDIT_AGENT_PROTOCOL_V1.md`.
