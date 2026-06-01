@@ -78,6 +78,24 @@ Si l'un de ces fichiers manque ou contredit le ticket demandé, arrêter l'impl�
 5. documenter les hypothèses ;
 6. ne pas toucher à plusieurs documents métier dans la même PR sauf ticket explicite.
 
+### Gate produit / métier obligatoire
+
+Avant tout développement, appliquer `docs/project/PRODUCT_GUARDRAIL_PROTOCOL_V1.md`.
+Ce protocole est l'application locale de la doctrine globale
+`docs/project/GLOBAL_CODEX_PRODUCT_GUARDRAIL_V1.md`, destinée à tous les projets
+pilotés avec Codex.
+
+Codex agit comme pilote projet / produit principal :
+
+- reformuler l'intention métier avant de coder ;
+- vérifier que le technique colle au besoin fonctionnel, aux sources et aux specs ;
+- qualifier le ticket en `GO dev` ou `NO-GO dev` ;
+- documenter les hypothèses, exclusions, réserves et arbitrages requis ;
+- utiliser des sous-agents spécialisés si cela aide à protéger le périmètre ;
+- maintenir une mémoire de reprise suffisante pour qu'un nouveau chat sache où en est le projet.
+
+Si le fonctionnel n'est pas défini, ne pas coder : produire ou mettre à jour le cadrage nécessaire.
+
 ### Pour toute PR
 
 - rester petite et traçable ;
@@ -114,10 +132,15 @@ streamlit run src/sydel_doc_engine/app/streamlit_app.py
 
 ## Priorités actuelles
 
-1. finaliser le bootstrap GitHub / Codex
-2. verrouiller le registre moteur initial
-3. implémenter les helpers transverses sûrs
-4. coder le Lot 1 document par document après arbitrages
+1. appliquer le gate produit / métier avant tout développement ;
+2. maintenir `docs/project/04_LAST_STATE.md` comme état immédiatement reprenable ;
+3. utiliser `docs/project/SELARL_CANONICAL_STATUS_V1.md` comme point de reprise SELARL ;
+4. appliquer `docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md` avant tout nouveau sprint par type d'entreprise ;
+5. appliquer `docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md` avant tout nouveau sprint par type d'entreprise ;
+6. appliquer `docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md` avant tout nouveau sprint par type d'entreprise ;
+7. lire le fichier actif `docs/sprints/SPRINT_[TYPE]_V1.md` quand il existe ;
+8. ne rouvrir un développement SELARL complexe qu'après décision explicite `GO dev` ;
+9. capitaliser la méthode SELARL comme protocole réutilisable pour les autres formes sociales.
 
 ## Garde-fous juridiques
 
@@ -132,6 +155,11 @@ Before any implementation task, read:
 - docs/project/02_CODEX_WORKFLOW.md
 - docs/project/03_HANDOFF_FOR_NEW_AGENT.md
 - docs/project/04_LAST_STATE.md
+- docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md when opening or following a company-type sprint
+- docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md
+- docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md when opening or following a company-type sprint
+- docs/sprints/SPRINT_[TYPE]_V1.md when the sprint file exists
+- docs/project/PRODUCT_GUARDRAIL_PROTOCOL_V1.md
 - the relevant delivery/spec file
 
 At the end of each task:

@@ -11,6 +11,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_framed_title,
     add_paragraph,
     add_signature_block,
+    add_spacer,
     new_document,
 )
 from sydel_doc_engine.utils.grammar import subject_line
@@ -19,8 +20,6 @@ OUTPUT_FILENAME = "procuration.docx"
 
 MANDATAIRE_NOM = "SYDEL"
 MANDATAIRE_ADRESSE = "80 avenue Marceau, 75008 PARIS"
-MANDATAIRE_RCS = "RCS PARIS 788 531 432"
-MANDATAIRE_TELEPHONE = "0153814303"
 
 MANDATE_PARAGRAPH_1 = (
     "De pour moi et en mon nom faire tous dépôts, immatriculations, modifications, radiations "
@@ -35,6 +34,7 @@ MANDATE_PARAGRAPH_2 = (
     "nécessaire."
 )
 MANDATE_PARAGRAPH_3 = "L’exécution de ce mandat vaudra décharge au mandataire."
+LEGAL_EFFECT_PARAGRAPH = "Fait pour servir et valoir ce que de droit."
 
 
 class ProcurationGenerator:
@@ -75,6 +75,8 @@ class ProcurationGenerator:
         _add_mandataire_block(document)
         for text in (MANDATE_PARAGRAPH_1, MANDATE_PARAGRAPH_2, MANDATE_PARAGRAPH_3):
             _add_paragraph(document, text, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY)
+        _add_paragraph(document, LEGAL_EFFECT_PARAGRAPH)
+        add_spacer(document, space_after_pt=6)
         _add_final_block(
             document,
             lieu_signature=lieu_signature,
@@ -133,8 +135,6 @@ def _add_mandataire_block(document) -> None:
         [
             (MANDATAIRE_NOM, True, False),
             (MANDATAIRE_ADRESSE, False, True),
-            (MANDATAIRE_RCS, False, True),
-            (MANDATAIRE_TELEPHONE, False, True),
         ],
         space_after_pt=0,
     )

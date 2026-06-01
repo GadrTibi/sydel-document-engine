@@ -759,6 +759,7 @@ class Associe(BaseModel):
     ordre: SpfplOrdre | None = None
     apport_numeraire: str | None = None
     apport_numeraire_lettres: str | None = None
+    nb_parts_lettres: str | None = None
 
 
 class DirigeantNomine(BaseModel):
@@ -785,6 +786,9 @@ class ReunionPresident(BaseModel):
     prenom: str | None = None
     nom: str | None = None
     qualite: str | None = None
+    civilite_president_seance: str | None = None
+    prenom_president_seance: str | None = None
+    nom_personne_seance: str | None = None
 
 
 class ReunionContext(BaseModel):

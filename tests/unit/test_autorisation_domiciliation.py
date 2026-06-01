@@ -104,7 +104,7 @@ def test_autorisation_domiciliation_contains_essential_texts(tmp_path: Path) -> 
     assert (
         "Je soussigné Monsieur Jean Durand autorise la domiciliation de la Société "
         "DURAND CONSEIL au capital de 1 000 € en cours de formation, dans les locaux "
-        "situés au 15 rue du Libre, Lyon 69002, pour une durée indéterminée."
+        "du cabinet au 80 avenue Marceau, 75008 Paris pour une durée indéterminée."
     ) in text
     assert "Fait à Paris" in text
     assert "Le 12/05/2026" in text
@@ -124,22 +124,27 @@ def test_autorisation_domiciliation_uses_masculine_agreement(tmp_path: Path) -> 
     assert "Je soussignée Monsieur Jean Durand" not in text
 
 
-def test_autorisation_domiciliation_uses_free_address_as_is(tmp_path: Path) -> None:
+def test_autorisation_domiciliation_ignores_free_address_for_cabinet_wording(
+    tmp_path: Path,
+) -> None:
     adresse = "Bâtiment B, 4 impasse des Tests, Marseille 13002"
 
     text = _docx_text(_generate(tmp_path, adresse_domiciliation_affichee=adresse))
 
-    assert f"dans les locaux situés au {adresse}, pour une durée indéterminée." in text
+    assert adresse not in text
+    assert (
+        "dans les locaux du cabinet au 80 avenue Marceau, 75008 Paris "
+        "pour une durée indéterminée."
+    ) in text
 
 
-def test_autorisation_domiciliation_does_not_rebuild_address_from_company_seat(
+def test_autorisation_domiciliation_uses_company_seat_as_cabinet_address(
     tmp_path: Path,
 ) -> None:
     text = _docx_text(_generate(tmp_path))
 
-    assert "15 rue du Libre, Lyon 69002" in text
-    assert "80 avenue Marceau" not in text
-    assert "75008 Paris" not in text
+    assert "15 rue du Libre, Lyon 69002" not in text
+    assert "80 avenue Marceau, 75008 Paris" in text
     assert "Paris 75008" not in text
 
 

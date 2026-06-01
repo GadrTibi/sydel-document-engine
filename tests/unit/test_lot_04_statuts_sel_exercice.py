@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from datetime import date
 from pathlib import Path
 
@@ -163,6 +164,10 @@ def _docx_text(path: Path) -> str:
     return "\n".join(texts)
 
 
+def _docx_paragraphs(path: Path) -> list[str]:
+    return [paragraph.text for paragraph in Document(path).paragraphs if paragraph.text.strip()]
+
+
 def _assert_clean(text: str) -> None:
     assert "[" not in text
     assert "]" not in text
@@ -190,10 +195,75 @@ def test_statuts_selarl_dentiste_generates_unique_associate_docx(tmp_path: Path)
 
     assert output_path.name == "statuts_selarl_chirurgien_dentiste.docx"
     assert "SEL MARTIN" in text
+    assert "Au capital de 1 000 euros" in text
+    assert "marié sous le régime de la communauté légale" in text
+    assert "ARTICLE 5 - LIEU(X) D’EXERCICE" in text
+    assert (
+        "Le lieu d’exercice de la société est situé au "
+        "12 avenue de la Republique, 75011 Paris. Il constitue le lieu d’exercice unique "
+        "de la société"
+    ) in text
+    assert "Total des apports en numéraire : ci- 1 000." in text
+    assert (
+        "à Docteur Camille Martin, mille parts sociales en pleine propriété, ci"
+    ) in text
+    assert "1000 parts" in text
     assert "chirurgiens-dentistes" in text
     assert "Yousign" in text
     assert "STATUTS" in table_text
     assert any(run.underline for run in article_1.runs)
+    _assert_clean(text)
+
+
+def test_statuts_selarl_dentiste_generates_multi_associes_partial_docx(
+    tmp_path: Path,
+) -> None:
+    ctx = _context(overlay="selarl_dentiste")
+    ctx.metadata["selarl_dentiste_multi_associes_statuts_partial"] = "true"
+    ctx.associes[0].profession = "chirurgien-dentiste"
+    ctx.associes[0].profession_reglementee = "chirurgien-dentiste"
+    ctx.associes[0].profession_reglementee_pluriel = "chirurgiens-dentistes"
+    ctx.associes[0].ordre.professionnel = "Ordre des chirurgiens-dentistes"
+    ctx.associes[0].nb_parts = 60
+    ctx.associes[0].nb_parts_lettres = "soixante"
+    ctx.associes[0].apport_numeraire = "600"
+    ctx.associes[0].apport_numeraire_lettres = "six cents"
+    ctx.associes.append(
+        Associe(
+            genre=Gender.FEMININ,
+            civilite_affichage="Madame",
+            prenom="Claire",
+            nom="Leroy",
+            nb_parts=40,
+            profession="chirurgien-dentiste",
+            profession_reglementee="chirurgien-dentiste",
+            profession_reglementee_pluriel="chirurgiens-dentistes",
+            apport_numeraire="400",
+            apport_numeraire_lettres="quatre cents",
+            nb_parts_lettres="quarante",
+        )
+    )
+    ctx.capital.nombre_titres_total = 100
+    ctx.capital.nb_parts_total = 100
+    ctx.capital.nombre_titres_total_lettres = "cent"
+    ctx.capital.valeur_nominale_titre = "10"
+    ctx.societe.capital_social = "1000"
+    ctx.societe.capital_social_lettres = "mille"
+
+    output_path = StatutsSelarlDentisteGenerator().generate(ctx, tmp_path)
+
+    text = _docx_text(output_path)
+
+    assert output_path.name == "statuts_selarl_chirurgien_dentiste.docx"
+    assert "Docteur Camille Martin apporte à la Société la somme de 600." in text
+    assert "Madame Claire Leroy apporte à la Société la somme de 400." in text
+    assert "Total des apports en numéraire : ci- 1000." in text
+    assert "a été déposée par les associés conformément à la loi" in text
+    assert "à Docteur Camille Martin, soixante parts sociales" in text
+    assert "à Madame Claire Leroy, quarante parts sociales" in text
+    assert "Camille Martin" in text
+    assert "Claire Leroy" in text
+    assert "l’associé unique" not in text
     _assert_clean(text)
 
 
@@ -210,6 +280,23 @@ def test_statuts_selarl_medecin_skips_personne_2_source_alias(tmp_path: Path) ->
     assert "personne_2" not in text
     assert "50 000 euros" in text
     _assert_clean(text)
+
+
+def test_statuts_selarl_medecin_matches_source_docx_line_by_line(
+    tmp_path: Path,
+) -> None:
+    ctx = _context(overlay="selarl_medecin")
+    output_path = StatutsSelarlMedecinGenerator().generate(ctx, tmp_path)
+    source_path = next(Path("project/source_documents/lot_04").glob("*SELARL*decins.docx"))
+
+    source_article = _article_paragraphs(
+        _render_source_medecin_paragraph(paragraph, ctx)
+        for paragraph in _docx_paragraphs(source_path)
+        if "[civilite_personne_2]" not in paragraph
+    )
+    generated_article = _article_paragraphs(_docx_paragraphs(output_path))
+
+    assert generated_article == source_article
 
 
 def test_statuts_selas_medecin_generates_without_second_lieu_by_default(
@@ -303,3 +390,58 @@ def test_statuts_sel_orchestrator_ignores_sel_statuts_without_overlay() -> None:
     assert {"DOC-016", "DOC-017", "DOC-018"}.isdisjoint(
         {document.doc_id for document in selected}
     )
+
+
+def _article_paragraphs(paragraphs) -> list[str]:
+    normalized = [_normalize_source_line(paragraph) for paragraph in paragraphs]
+    for index, paragraph in enumerate(normalized):
+        if paragraph.startswith("ARTICLE 1"):
+            return normalized[index:]
+    raise AssertionError("ARTICLE 1 introuvable dans les statuts SEL.")
+
+
+def _normalize_source_line(value: str) -> str:
+    return re.sub(r"\s+", " ", value.replace("\u00a0", " ").strip())
+
+
+def _render_source_medecin_paragraph(
+    paragraph: str,
+    ctx: DocumentGenerationContext,
+) -> str:
+    associate = ctx.associes[0]
+    replacements = {
+        "[denomination_societe]": ctx.societe.denomination,
+        "[capital_social]": ctx.capital.montant,
+        "[adresse_siege]": ctx.societe.siege.adresse_affichee,
+        "[civilite]": associate.civilite_affichage,
+        "[prenom]": associate.prenom,
+        "[nom]": associate.nom,
+        "[profession]": associate.profession,
+        "[date_naissance]": associate.date_naissance.strftime("%d/%m/%Y"),
+        "[ville_naissance]": associate.ville_naissance,
+        "[departement_naissance]": associate.departement_naissance,
+        "[nationalite]": associate.nationalite,
+        "[adresse_personnelle]": associate.adresse_personnelle_affichee,
+        "[ville_ordre]": associate.ordre.ville,
+        "[numero_ordre]": associate.ordre.numero,
+        "[numero_rpps]": associate.ordre.numero_rpps,
+        "[situation_maritale]": "marié",
+        "[forme_sociale_complete]": ctx.societe.forme_sociale_complete,
+        "[capital_lettres]": ctx.capital.montant_lettres,
+        "[nom_banque]": ctx.depot_fonds.banque.nom,
+        "[adresse_banque]": ctx.depot_fonds.banque.adresse_affichee,
+        "[nb_parts_total]": str(ctx.capital.nombre_titres_total),
+        "[valeur_nominale_part]": ctx.capital.valeur_nominale_titre,
+        "[seuil_achat_materiel]": ctx.gerance.seuil_achat_materiel,
+        "[seuil_emprunt_gerance]": ctx.gerance.seuil_emprunt,
+        "[date_cloture_exercice_1]": ctx.exercice_social.date_cloture_premier_exercice,
+        "[lieu_signature]": ctx.signature.lieu,
+        "[date_signature]": ctx.signature.date.strftime("%d/%m/%Y"),
+        "[nombre_exemplaires_lettres]": ctx.document.nombre_exemplaires_lettres,
+        "[prenom_signataire]": ctx.document.signataire.prenom,
+        "[nom_signataire]": ctx.document.signataire.nom,
+    }
+    rendered = paragraph
+    for placeholder, value in replacements.items():
+        rendered = rendered.replace(placeholder, value)
+    return rendered
