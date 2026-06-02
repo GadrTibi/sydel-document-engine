@@ -177,6 +177,12 @@ def test_demande_inscription_ordre_selas_uses_same_overlay_as_selarl(tmp_path: P
         "Je sollicite l’inscription de ma société au tableau de l’Ordre des "
         "chirurgiens-dentistes."
     ) in text
+    assert "SELARL" not in text
+    assert "gérant" not in text
+    assert "gerant" not in text
+    assert "Gérant" not in text
+    assert "parts sociales" not in text
+    assert "Directeur General" not in text
     _assert_no_source_placeholders(text)
 
 
@@ -248,6 +254,15 @@ def test_demande_inscription_ordre_blocks_derogation_without_manual_mention(
         mandataire=_configured_mandataire(),
         derogation=True,
     )
+
+    with pytest.raises(ValueError, match="ordre.derogation_mention_manuelle"):
+        _generate(tmp_path, ctx)
+
+
+def test_demande_inscription_ordre_selas_blocks_derogation_without_manual_mention(
+    tmp_path: Path,
+) -> None:
+    ctx = _context("SELAS", ordre=_selarl_selas_ordre(), derogation=True)
 
     with pytest.raises(ValueError, match="ordre.derogation_mention_manuelle"):
         _generate(tmp_path, ctx)

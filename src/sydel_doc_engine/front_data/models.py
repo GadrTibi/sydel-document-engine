@@ -65,6 +65,7 @@ class AddressUsage(StrEnum):
 class BusinessRole(StrEnum):
     PRATICIEN = "praticien"
     ASSOCIE = "associe"
+    ACTIONNAIRE = "actionnaire"
     GERANT = "gerant"
     PRESIDENT = "president"
     DIRIGEANT = "dirigeant"
@@ -330,6 +331,7 @@ class DocumentRequirementRecord:
     verdict: str = "ORANGE"
     action_needed: str = ""
     status: DocumentRequirementStatus = DocumentRequirementStatus.EXPECTED
+    required_reuse_rules: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)

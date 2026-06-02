@@ -61,11 +61,12 @@ Si le contexte indique Naomie/Naomi et que le message est seulement `Bonjour`,
 Codex doit traiter le message comme un accueil de sprint, pas comme une demande
 generique. Il doit lire `docs/sprints/SPRINT_SELAS_V1.md`, verifier la branche
 `codex/naomie-selas-sprint`, repondre avec `Statut sprint`, `Action maintenant`,
-`Point pedagogie`, `Prochaine etape`, donner le Prompt NotebookLM 01 complet, et
-rester en `NO-GO dev`. Le protocole court prioritaire est
+`Point pedagogie`, `Prochaine etape`, suivre l'action courante du fichier de
+sprint, et rester en `NO-GO dev`. Le protocole court prioritaire est
 `docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md`.
 
-Pour le sprint SELAS, Codex doit ensuite donner un prompt court depuis
+Pour le sprint SELAS, si la phase courante est NotebookLM, Codex doit ensuite
+donner un prompt court depuis
 `docs/sprints/SPRINT_SELAS_NOTEBOOKLM_PROMPTS_V1.md`. Quand Naomie colle une
 reponse NotebookLM, Codex doit la structurer dans
 `docs/sprints/SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md` avant de poser le prompt

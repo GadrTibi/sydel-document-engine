@@ -39,10 +39,12 @@ from sydel_doc_engine.domain.models import (
     StatutsCivilsRepresentant,
     StatutsPresident,
     StatutsSas,
+    StatutsSel,
 )
 from sydel_doc_engine.orchestrator.service import (
     DocumentOrchestrator,
     MissingDocumentGeneratorError,
+    UnsupportedSelasPackContextError,
     build_generator_registry,
 )
 from sydel_doc_engine.registry.catalog import build_seed_catalog
@@ -337,6 +339,64 @@ def _spfpl_apport_selection_context() -> DocumentGenerationContext:
     )
 
 
+def _selas_v1_pack_context(
+    *,
+    regime_communautaire: bool = False,
+    cession: bool = False,
+    scm_cession: bool = False,
+    site_distinct: bool = False,
+    derogation: bool = False,
+    overlay: str | None = "selas_medecin",
+    associes_count: int = 1,
+    fonction_dirigeant: str = "President",
+) -> DocumentGenerationContext:
+    return DocumentGenerationContext(
+        structure="SELAS",
+        dossier_options=DossierOptions(
+            regime_communautaire=regime_communautaire,
+            cession=cession,
+            scm_cession=scm_cession,
+            site_distinct=site_distinct,
+            derogation=derogation,
+        ),
+        personne_signataire=Person(
+            genre=Gender.MASCULIN,
+            civilite="Monsieur",
+            prenom="Jean",
+            nom="Durand",
+            fonction_dirigeant="President",
+        ),
+        societe=Company(
+            forme_sociale="SELAS",
+            forme_sociale_affichage="SELAS",
+            forme_sociale_libelle_long=(
+                "societe d'exercice liberal par actions simplifiee"
+            ),
+            denomination="SELAS DURAND",
+        ),
+        signature=Signature(lieu="Paris", date=date(2026, 5, 12)),
+        statuts_sel=StatutsSel(overlay=overlay, profession="medecin"),
+        associes=[
+            Associe(
+                genre=Gender.MASCULIN,
+                civilite_affichage="Monsieur",
+                prenom=f"Associe {index}",
+                nom="Durand",
+                nb_parts=100,
+            )
+            for index in range(associes_count)
+        ],
+        dirigeant_nomine=DirigeantNomine(
+            genre=Gender.MASCULIN,
+            civilite_affichage="Monsieur",
+            prenom="Jean",
+            nom="Durand",
+            fonction_affichage=fonction_dirigeant,
+        ),
+        capital=CapitalContext(type_titre="actions"),
+    )
+
+
 def test_select_documents_for_selarl_includes_pv_nomination_gerant() -> None:
     orchestrator = DocumentOrchestrator(build_seed_catalog())
 
@@ -494,6 +554,78 @@ def test_select_documents_for_scm_context_includes_statuts_scm_when_enabled() ->
     selected = orchestrator.select_documents_for_context(_scm_context())
 
     assert "DOC-025" in [document.doc_id for document in selected]
+
+
+def test_select_selas_v1_pack_documents_returns_simple_ready_pack() -> None:
+    orchestrator = DocumentOrchestrator(build_seed_catalog())
+
+    selected = orchestrator.select_selas_v1_pack_documents(_selas_v1_pack_context())
+
+    assert [document.doc_id for document in selected] == [
+        "DOC-001",
+        "DOC-002",
+        "DOC-003",
+        "DOC-034",
+        "DOC-018",
+    ]
+
+
+def test_select_selas_v1_pack_documents_adds_regime_communautaire_batch() -> None:
+    orchestrator = DocumentOrchestrator(build_seed_catalog())
+
+    selected = orchestrator.select_selas_v1_pack_documents(
+        _selas_v1_pack_context(regime_communautaire=True)
+    )
+
+    assert [document.doc_id for document in selected] == [
+        "DOC-001",
+        "DOC-002",
+        "DOC-003",
+        "DOC-034",
+        "DOC-018",
+        "DOC-005",
+        "DOC-006",
+    ]
+
+
+def test_selas_context_selection_does_not_activate_reserved_or_complex_documents() -> None:
+    orchestrator = DocumentOrchestrator(build_seed_catalog())
+
+    selected = orchestrator.select_documents_for_context(
+        _selas_v1_pack_context(cession=True, scm_cession=True)
+    )
+
+    selected_ids = {document.doc_id for document in selected}
+    assert "DOC-004" not in selected_ids
+    assert "DOC-007" not in selected_ids
+    assert "DOC-009" not in selected_ids
+    assert "DOC-031" not in selected_ids
+    assert "DOC-032" not in selected_ids
+    assert "DOC-033" not in selected_ids
+
+
+def test_select_selas_v1_pack_documents_blocks_non_v1_context() -> None:
+    orchestrator = DocumentOrchestrator(build_seed_catalog())
+
+    with pytest.raises(UnsupportedSelasPackContextError, match="selas_medecin"):
+        orchestrator.select_selas_v1_pack_documents(
+            _selas_v1_pack_context(overlay="selas_dentiste")
+        )
+
+    with pytest.raises(UnsupportedSelasPackContextError, match="cession"):
+        orchestrator.select_selas_v1_pack_documents(
+            _selas_v1_pack_context(cession=True)
+        )
+
+    with pytest.raises(UnsupportedSelasPackContextError, match="multi-actionnaires"):
+        orchestrator.select_selas_v1_pack_documents(
+            _selas_v1_pack_context(associes_count=2)
+        )
+
+    with pytest.raises(UnsupportedSelasPackContextError, match="Directeur General"):
+        orchestrator.select_selas_v1_pack_documents(
+            _selas_v1_pack_context(fonction_dirigeant="Directeur General")
+        )
 
 
 def test_select_documents_for_sci_context_includes_option_is_only_when_enabled() -> None:

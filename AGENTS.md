@@ -13,19 +13,23 @@ toute autre reponse :
 2. ne jamais demander "quelle tache ?" ou "quel ticket ?" ;
 3. ne jamais demander vaguement de "fournir ou valider une source NotebookLM" ;
 4. verifier ou tenter de rejoindre la branche `codex/naomie-selas-sprint` ;
-5. rester en `NO-GO dev` ;
-6. donner le Prompt NotebookLM 01 a copier-coller ;
-7. inclure un `Point pedagogie` ;
-8. attendre la reponse brute NotebookLM de Naomie ;
-9. structurer cette reponse dans
-   `docs/sprints/SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md` avant tout prompt suivant.
+5. lire l'etat courant dans `docs/sprints/SPRINT_SELAS_V1.md` ;
+6. respecter le statut courant du sprint : par defaut `NO-GO dev`, sauf `GO dev`
+   explicite et borne inscrit dans `SPRINT_SELAS_V1.md` ;
+7. donner l'action courante du sprint avec un `Point pedagogie` ;
+8. si le sprint est encore en phase NotebookLM, donner le prompt NotebookLM
+   courant et structurer la reponse dans
+   `docs/sprints/SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md` ;
+9. si le sprint a depasse NotebookLM, ne pas relancer le Prompt 01 par defaut et
+   continuer l'etape courante indiquee par `SPRINT_SELAS_V1.md`.
 
-Le ticket actif est `SELAS-SOURCES-NOTEBOOKLM-001`.
+Le ticket actif courant est indique dans `docs/sprints/SPRINT_SELAS_V1.md`.
 L'ancien libelle `SELAS-NOTEBOOKLM-RECONCILIATION-001` est obsolete et ne doit
 plus etre utilise pour guider Naomie.
 
 Reponse obligatoire si Naomie dit seulement `bonjour`, `je suis naomie`, ou
-`je reprends/lance le sprint SELAS` :
+`je reprends/lance le sprint SELAS`, lorsque le sprint est encore en phase
+NotebookLM :
 
 ```text
 Statut sprint : Phase 3 - NOTEBOOKLM / NO-GO dev
@@ -48,6 +52,11 @@ Termine par les 5 questions les plus importantes a poser ensuite.
 ```
 
 Le protocole complet est dans `docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md`.
+
+Si le sprint a depasse NotebookLM, la reponse obligatoire doit reprendre la
+phase et l'action courante de `docs/sprints/SPRINT_SELAS_V1.md`. Ne pas revenir
+au Prompt NotebookLM 01, et ne pas annoncer de generation SELAS tant qu'un ticket
+documentaire n'est pas explicitement specifie et valide.
 
 Ce dépôt sert à construire un moteur documentaire juridique **déterministe** pour DAAT x SYDEL.
 
@@ -130,26 +139,28 @@ Réaction obligatoire :
 1. appliquer `docs/project/PROJECT_CONTROL_TOWER_V1.md` ;
 2. appliquer `docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md` ;
 3. lire `docs/sprints/SPRINT_SELAS_V1.md` ;
-4. lire `docs/sprints/SPRINT_SELAS_NOTEBOOKLM_PROMPTS_V1.md` ;
-5. vérifier que la branche cible est `codex/naomie-selas-sprint` ou s'y placer ;
-6. répondre en phase 3 `NOTEBOOKLM / NO-GO dev` ;
-7. inclure un `Point pédagogie` ;
-8. donner à Naomie le prochain prompt NotebookLM court à copier-coller ;
-9. ne lancer aucun développement.
+4. vérifier que la branche cible est `codex/naomie-selas-sprint` ou s'y placer ;
+5. repondre avec la phase et l'action courante du fichier sprint ;
+6. inclure un `Point pédagogie` ;
+7. si la phase courante est NotebookLM, lire
+   `docs/sprints/SPRINT_SELAS_NOTEBOOKLM_PROMPTS_V1.md` et donner le prochain
+   prompt court a copier-coller ;
+8. si la phase a depasse NotebookLM, ne pas relancer le Prompt 01 ;
+9. ne lancer aucun developpement hors ticket `GO dev` explicitement borne.
 
 Cette règle s'applique aussi si Naomie dit qu'elle veut `lancer`, `demarrer` ou
-`reprendre` le sprint SELAS/CELAS. Dans ce contexte, `lancer le sprint` signifie
-uniquement : ouvrir le sous-sprint NotebookLM et donner le prochain prompt a
-copier-coller. Cela ne signifie jamais produire, generer, coder, passer en
-matrice finale, ni passer en production.
+`reprendre` le sprint SELAS/CELAS. Dans ce contexte, Codex reprend l'etape
+courante tracee dans `SPRINT_SELAS_V1.md`. Cela ne signifie jamais produire,
+generer, coder hors ticket borne, passer en matrice finale, ni passer en
+production.
 
 Réponse attendue si Naomie dit seulement `Bonjour` :
 
 ```text
-Statut sprint : Phase 3 - NOTEBOOKLM / NO-GO dev
-Action maintenant : colle le Prompt NotebookLM 01 dans NotebookLM, puis donne-moi sa réponse brute.
-Point pédagogie : tu n'as pas à gérer Git ni les commandes ; Codex protège la branche, l'ordre du sprint et le passage par NotebookLM avant tout dev.
-Prochaine étape : je structure ta réponse dans le journal SELAS, puis je te donne le prompt suivant selon les trous.
+Statut sprint : [phase courante dans SPRINT_SELAS_V1.md] / [statut courant]
+Action maintenant : [action courante du sprint]
+Point pédagogie : tu n'as pas à gérer Git ni les commandes ; Codex protège la branche, l'ordre du sprint et les gates juridiques.
+Prochaine étape : [prochaine action indiquée par le fichier de sprint]
 ```
 
 Si Codex n'est pas dans le dépôt SYDEL ou ne peut pas vérifier la branche, il
@@ -166,7 +177,7 @@ Naomie/SELAS, Codex doit considerer que ce n'est pas le bon contexte de sprint :
 3. ne jamais demander "quelle tache ?" ou "quel ticket ?" a Naomie dans ce cas.
 
 Codex ne doit pas demander vaguement "fournis la source NotebookLM SELAS".
-Il doit piloter une boucle :
+Quand le sprint est en phase NotebookLM, il doit piloter une boucle :
 
 - donner un prompt NotebookLM court ;
 - recevoir la réponse de Naomie ;
@@ -177,7 +188,9 @@ Il doit piloter une boucle :
 Tant que la boucle NotebookLM n'est pas suffisante, Codex reste dans le ticket
 `SELAS-SOURCES-NOTEBOOKLM-001` et ne doit pas lancer `SELAS-REUSE-AUDIT-001`,
 `SELAS-MATRIX-001`, un generateur, un smoke, une preview produit ou un push de
-fonctionnalite.
+fonctionnalite. Quand `SPRINT_SELAS_V1.md` indique que NotebookLM et l'audit
+reuse sont suffisants, Codex suit la prochaine etape du fichier sprint, toujours
+en `NO-GO dev`.
 
 ### Lecture obligatoire avant toute implémentation
 

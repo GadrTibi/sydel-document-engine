@@ -65,10 +65,11 @@ Ce fichier fixe la mémoire opérationnelle globale : il doit permettre à un no
 - protocole runtime Naomie disponible dans `docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md` ;
 - protocole sprint par type d'entreprise disponible dans `docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md` ;
 - orchestrateur de sprint operationnel disponible dans `docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md` ;
-- sprint SELAS ouvert en `NO-GO dev` dans `docs/sprints/SPRINT_SELAS_V1.md` ;
-- sous-sprint NotebookLM SELAS actif : Naomie doit recevoir un prompt court,
-  le coller dans NotebookLM, puis donner la reponse brute a Codex pour
-  structuration et iteration ;
+- sprint SELAS ouvert dans `docs/sprints/SPRINT_SELAS_V1.md` ; le premier ticket
+  front/data borne est code, mais la generation documentaire SELAS reste
+  interdite ;
+- sous-sprint NotebookLM SELAS termine pour la V1 exploratoire ; le premier
+  socle front/data est code, mais les documents SELAS restent non generatifs ;
 - protocole de reutilisation SELARL/global disponible dans `docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md` ;
 - mode d'emploi branche / installation Naomie disponible dans `docs/project/NAOMIE_GITHUB_ONBOARDING_V1.md` ;
 - couche pedagogique Naomie disponible dans `docs/project/NAOMIE_LEARNING_MENTOR_PROTOCOL_V1.md` ;
@@ -110,7 +111,7 @@ Pour DOC-002, l'adresse de domiciliation est gérée en champ libre :
 ## Ordre d'exécution immédiat
 1. lire `docs/project/04_LAST_STATE.md` pour l'état réellement reprenable ;
 2. lire `docs/project/PROJECT_CONTROL_TOWER_V1.md` pour identifier sprint actif, phase et action autorisee ;
-3. si le contexte indique Naomie/SELAS, appliquer `docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md` et donner le Prompt NotebookLM 01 ;
+3. si le contexte indique Naomie/SELAS, appliquer `docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md` et reprendre l'action courante du sprint SELAS ;
 4. pour tout nouveau type d'entreprise, lire `docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md` ;
 5. pour tout nouveau type d'entreprise, lire `docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md` ;
 6. pour tout nouveau type d'entreprise, lire le fichier actif `docs/sprints/SPRINT_[TYPE]_V1.md` s'il existe ;

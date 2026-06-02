@@ -1,9 +1,234 @@
 # Dernier état projet
 
 ## Date de mise à jour
-2026-06-01
+2026-06-02
 
 ## Dernier ticket terminé
+SELAS-HUMAN-REVIEW-PACK-001 : pack SELAS V1 prepare pour revue humaine.
+Scope respecte : pas de changement de code, pas de regeneration des DOCX, pas
+de changement de wording juridique, pas de source DOCX modifiee et pas de
+validation finale du pack. Artefacts :
+`artifacts/selas_human_review_pack_001/20260602_135708/` et ZIP
+`artifacts/selas_human_review_pack_001/selas_human_review_pack_001_20260602_135708.zip`.
+Contenu : copie des DOCX happy path, copie des DOCX regime communautaire,
+`README_REVIEW.md`, `QUESTIONS_REVUE.md`, `CHECKLIST_REVUE.md`,
+`INVENTAIRE_PACK.md`, `NOTEBOOKLM_PRECHECK.md` et `manifest.json`. Questions bloquees pour revue :
+nomination President dans les statuts vs acte separe, wording
+`associe`/`actionnaire`, titre de la renonciation, filiation DNC President,
+plans/devis Ordre, attestation capital/liste souscripteurs et confirmation du
+perimetre V1 limite. Le pre-check NotebookLM recu par Naomie renforce deux
+priorites : plans/devis Ordre probablement bloquants et attestation
+capital/liste souscripteurs probablement attendue ; il ajoute aussi la
+feminisation `President` / `Presidente` comme point a confirmer. Decision :
+`PACK PRET POUR REVUE HUMAINE`, `NO-GO cloture SELAS V1`. Prochaine action :
+transmettre le ZIP, le pre-check et les questions a Gad / associe / juriste,
+puis lancer `SELAS-HUMAN-FIXES-001` si corrections.
+
+SELAS-TRIPLE-SOURCE-CHECK-001 : checkpoint trois sources realise en QA
+partielle sur la premiere version totale SELAS V1. Scope respecte : pas de
+changement de code, pas de changement de wording juridique, pas de source DOCX
+modifiee, pas de PDF/ZIP final et pas de validation finale du pack. Sources
+controlees : `project/source_truth/Documents_a_generer_par_cas.docx`,
+`docs/sprints/SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md` et les retours humains
+disponibles. Artefacts :
+`artifacts/selas_triple_source_check_001/20260602_135234/`. Resultat :
+source metier + NotebookLM alignes sur le perimetre V1 (`DOC-001`, `DOC-002`,
+`DOC-003`, `DOC-034`, `DOC-018`, plus `DOC-005`/`DOC-006` si regime
+communautaire). Retour Gad strategie trouve dans
+`docs/sprints/SPRINT_SELAS_GAD_FEEDBACK_001.md` : reutiliser le socle SELAS,
+mais activer la generation documentaire progressivement. Aucun retour humain
+pack complet Gad / associe / juriste n'est encore present dans le depot.
+Decision : `GO revue humaine`, `NO-GO cloture SELAS V1`. Prochaine action
+recommandee : `SELAS-HUMAN-REVIEW-PACK-001`. Pack SELAS non valide final.
+
+SELAS-ANTI-REGRESSION-WORDING-001 : controle anti-regression wording des deux
+packs SELAS V1 deja generes. Scope respecte : pas de changement de code, pas de
+changement de wording juridique, pas de source DOCX modifiee, pas de PDF/ZIP
+final, pas de checkpoint trois sources et pas de validation finale du pack.
+Packs controles : `artifacts/selas_smoke_happy_path_001/20260602_130911/` et
+`artifacts/selas_smoke_regime_communautaire_001/20260602_133412/`. Artefacts :
+`artifacts/selas_anti_regression_wording_001/20260602_134239/`. Resultat :
+strict OK, avec 0 occurrence bloquante de `SELARL`, forme longue SELARL,
+`Gerant`/`Gérant`/`gérant`, `parts sociales` ou `part sociale`. Occurrences
+`associe` / `associé` : 173 paragraphes classes en revue, principalement dans
+les statuts SELAS source (`associés professionnels`, `associé unique`, etc.) et
+quelques occurrences dans `DOC-034` Ordre et `DOC-005` Renonciation. Decision :
+pas de correction automatique, pas de bug moteur declare sur ce ticket ; ces
+occurrences doivent etre verifiees dans `SELAS-TRIPLE-SOURCE-CHECK-001` avec la
+source metier, NotebookLM et les retours humains. Prochaine action recommandee :
+`SELAS-TRIPLE-SOURCE-CHECK-001`. Pack SELAS non valide final.
+
+SELAS-SMOKE-REGIME-COMMUNAUTAIRE-001 : smoke interne du pack SELAS V1 avec
+regime communautaire realise. Scope respecte : pas de changement de code, pas
+de changement de wording juridique, pas de source DOCX modifiee, pas de PDF/ZIP
+final, pas de checkpoint trois sources et pas de validation finale du pack.
+Scenario teste : SELAS medecin, actionnaire unique, President unique, creation
+simple, capital en numeraire divise en actions ordinaires, avec conjoint et
+regime communautaire, sans cession, SCM, bail, site distinct, derogation,
+multi-actionnaires ni Directeur General nomme. Resultat : l'orchestrateur
+selectionne exactement `DOC-001`, `DOC-002`, `DOC-003`, `DOC-034`, `DOC-018`,
+`DOC-005`, `DOC-006` et genere 7 DOCX :
+`declaration_non_condamnation.docx`, `autorisation_domiciliation.docx`,
+`procuration.docx`, `demande_inscription_ordre.docx`,
+`lettre_renonciation_associe.docx`, `lettre_avertissement_conjoint.docx`,
+`statuts_selas_medecin.docx`. Artefacts :
+`artifacts/selas_smoke_regime_communautaire_001/20260602_133412/`. Controles
+OK : absence de `DOC-004`, absence des documents cession, SCM, bail,
+derogation et reserves, absence de placeholders, absence de `SELARL`,
+`Gerant`/`gérant`/`Gérant` et `parts sociales`, presence de `actionnaire` dans
+la renonciation, presence de `SELAS` dans l'avertissement, presence de
+`President` dans la procuration et les statuts, presence de `actions` dans les
+statuts. Limites : ce smoke ne vaut pas validation juridique, ne remplace pas
+la revue humaine et ne cloture pas la SELAS V1. Prochaine action recommandee :
+`SELAS-ANTI-REGRESSION-WORDING-001`. Pack SELAS non valide final.
+
+SELAS-SMOKE-HAPPY-PATH-001 : smoke interne du pack SELAS V1 simple sans regime
+communautaire realise. Scope respecte : pas de changement de code, pas de
+changement de wording juridique, pas de source DOCX modifiee, pas de PDF/ZIP
+final, pas de checkpoint trois sources et pas de validation finale du pack.
+Scenario teste : SELAS medecin, actionnaire unique, President unique, creation
+simple, capital en numeraire divise en actions ordinaires, sans cession, SCM,
+site distinct, derogation, multi-actionnaires, regime communautaire ni Directeur
+General nomme. Resultat : l'orchestrateur selectionne exactement `DOC-001`,
+`DOC-002`, `DOC-003`, `DOC-034`, `DOC-018` et genere 5 DOCX :
+`declaration_non_condamnation.docx`, `autorisation_domiciliation.docx`,
+`procuration.docx`, `demande_inscription_ordre.docx`,
+`statuts_selas_medecin.docx`. Artefacts :
+`artifacts/selas_smoke_happy_path_001/20260602_130911/`. Controles OK :
+absence de `DOC-004`, absence de `DOC-005`/`DOC-006`, absence de placeholders,
+absence de `SELARL`, `Gerant`/`gérant`/`Gérant` et `parts sociales`, presence
+de `President` dans la procuration et les statuts, presence de `actions` dans
+les statuts. Limites : ce smoke ne vaut pas validation juridique, ne remplace
+pas la revue humaine et ne cloture pas la SELAS V1. Prochaine action
+recommandee : `SELAS-SMOKE-REGIME-COMMUNAUTAIRE-001`. Pack SELAS non valide
+final.
+
+SELAS-ORCHESTRATOR-PACK-001 : selection orchestrateur du pack SELAS V1 branchee
+pour le cas SELAS medecin actionnaire unique President unique. Scope respecte :
+pas de changement de wording juridique, pas de source DOCX modifiee, pas de
+checkpoint trois sources et pas de validation finale du pack. Changements :
+`src/sydel_doc_engine/orchestrator/service.py` ajoute
+`UnsupportedSelasPackContextError` et
+`DocumentOrchestrator.select_selas_v1_pack_documents(ctx)`, raccorde la
+selection a `selas_pack_readiness(...)`, conserve l'ordre readiness
+`DOC-001`, `DOC-002`, `DOC-003`, `DOC-034`, `DOC-018`, puis ajoute `DOC-005`
+et `DOC-006` si `regime_communautaire=True`. La selection generique
+`select_documents_for_context(...)` filtre aussi les documents SELAS hors V1
+afin de ne pas activer par accident `DOC-004`, cession, SCM ou satellites
+reserves. Cas explicitement bloques : structure non SELAS, overlay autre que
+`selas_medecin`, cession, cession SCM, site distinct, derogation,
+multi-actionnaires, Directeur General nomme et capital non divise en actions.
+Tests cibles ajoutes dans `tests/unit/test_orchestrator_service.py`.
+Validations realisees : `compileall` OK ; smoke selection pack simple OK ;
+smoke selection pack regime communautaire OK ; smoke blocages hors V1 OK ;
+4 tests directs orchestrateur SELAS OK ; test direct selection regime
+communautaire OK. Limite : `pytest` et `ruff` indisponibles dans
+l'environnement local ; a relancer dans un environnement dev equipe. Prochaine
+action recommandee : `SELAS-SMOKE-HAPPY-PATH-001`. Pack SELAS non valide final.
+
+SELAS-FRONT-READINESS-PACK-001 : readiness front/data du pack SELAS V1 alignee
+pour le cas SELAS medecin actionnaire unique President unique. Scope respecte :
+pas de branchement orchestrateur, pas de generation de pack DOCX/PDF/ZIP, pas
+de modification des sources DOCX et pas de modification du wording juridique.
+Changements : `src/sydel_doc_engine/front_data/selas_schema.py` expose
+`SelasPackReadiness`, les constantes `SELAS_READY_DOCUMENT_CODES`,
+`SELAS_CONDITIONAL_DOCUMENT_CODES` et `SELAS_RESERVED_DOCUMENT_CODES`, ainsi
+que le prochain ticket `SELAS-ORCHESTRATOR-PACK-001`. Le pack simple cote
+readiness contient `DOC-001`, `DOC-002`, `DOC-003`, `DOC-034` et `DOC-018`.
+Le pack avec regime communautaire ajoute `DOC-005` et `DOC-006`.
+`SELAS-DECISION-PRESIDENT`, `SELAS-STATUTS-DENTISTE` et
+`SELAS-ATTESTATION-CAPITAL` restent reserves. La generation reste inactive
+avec `generation_enabled=False`. Tests cibles ajoutes dans
+`tests/unit/test_selas_front_schema.py`. Validations realisees : `compileall`
+OK ; tests SELAS front directs OK, 13 tests executes ; smoke schema simple OK ;
+smoke schema regime communautaire OK ; `git diff --check` OK. Limite : `pytest`
+et `ruff` indisponibles dans l'environnement local ; a relancer dans un
+environnement dev equipe. Prochaine action recommandee :
+`SELAS-ORCHESTRATOR-PACK-001`. Pack SELAS toujours bloque.
+
+SELAS-DOC018-STATUTS-MEDECIN-AU-001 : adaptation bornee de `DOC-018 - Statuts
+SELAS medecin` pour le cas SELAS medecin actionnaire unique President unique.
+Scope respecte : pas de nouveau document canonique, pas de pack SELAS active,
+pas de modification des sources DOCX et pas de modification du wording
+juridique. Changements : `StatutsSelasMedecinGenerator` verifie le perimetre V1
+avant rendu : `capital.type_titre == actions`, capital coherent avec
+`nombre_actions * valeur_nominale`, apport de l'actionnaire unique coherent,
+numerotation simple `1 a N` si fournie, et blocage de Directeur General nomme,
+actions de preference, categories d'actions, demembrement, personne morale
+actionnaire, micro-holding et droits derogatoires. L'orchestrateur ne
+selectionne plus `DOC-004 - PV nomination gerant` pour `SELAS` +
+`statuts_sel.overlay == selas_medecin`, car la nomination du President est
+absorbee par les statuts V1. Tests cibles ajoutes dans
+`tests/unit/test_lot_04_statuts_sel_exercice.py` et `tests/unit/test_registry_seed.py`.
+Validations realisees : `compileall` OK ; smoke manuel orchestrateur OK ;
+smoke manuel DOCX OK ; smokes negatifs hors V1 OK ; `git diff --check` OK.
+Limite : `pytest` et `ruff` indisponibles dans l'environnement local et dans le
+runtime embarque ; a relancer dans un environnement dev equipe. Prochaine action
+recommandee : `SELAS-FRONT-READINESS-PACK-001`. Pack SELAS toujours bloque.
+
+SELAS-DOC005-DOC006-REGIME-COMMUNAUTAIRE-001 : adaptation bornee du batch
+conditionnel `DOC-005 - Lettre de renonciation a revendiquer la qualite
+d'associe` et `DOC-006 - Lettre d'avertissement au conjoint en cas d'apport
+d'un bien commun` pour le cas SELAS medecin actionnaire unique President unique.
+Scope respecte : pas de nouveau document canonique, pas de pack SELAS active,
+pas de modification des sources DOCX et pas de modification du wording
+juridique. Changements : `src/sydel_doc_engine/front_data/selas_schema.py`
+expose `DOC-005` et `DOC-006` comme candidats uniquement si
+`regime_communautaire=True`, retire `DOC-006` des documents reserves SELAS et
+liste les champs canoniques conjoint/apport/societe/signature requis pour le
+batch. Tests cibles ajoutes dans `tests/unit/test_selas_front_schema.py` et
+`tests/unit/test_regime_communautaire.py` pour verifier le parcours simple sans
+`DOC-005`/`DOC-006`, le parcours regime communautaire avec les deux documents,
+l'absence de `GERANT`, `SELARL`, `parts sociales` et `Directeur General`, ainsi
+que le wording SELAS `actionnaire` / `SELAS`. Validations realisees :
+`compileall` OK ; smoke manuel schema SELAS OK ; smoke manuel generateur DOCX
+SELAS OK avec generation des deux lettres. Limite : `pytest` et `ruff`
+indisponibles dans l'environnement local et dans le runtime embarque ; a
+relancer dans un environnement dev equipe. Action suivante effectivement
+realisee : `SELAS-DOC018-STATUTS-MEDECIN-AU-001`. Pack SELAS toujours bloque.
+
+SELAS-DOC034-ORDRE-001 : adaptation bornee de `DOC-034 - Demande d'inscription a l'Ordre` pour le cas SELAS medecin actionnaire unique President unique. Scope respecte : pas de nouveau document canonique, pas de pack SELAS active, pas de modification des sources DOCX et pas de modification du wording juridique. Changements : `src/sydel_doc_engine/front_data/selas_schema.py` aligne l'exigence SELAS `DOC-034` sur Signataire + Mandataire + Societe principale + Ordre professionnel, avec champs explicites ordre/mandataire/signature ; l'ambiguite `mandataire_configurable` est levee, tandis que `selas_ordre_pieces_plans_devis` reste une reserve produit pieces attendues. Tests cibles ajoutes dans `tests/unit/test_selas_front_schema.py` et `tests/unit/test_demande_inscription_ordre.py` pour verifier les champs requis, l'absence de confusion President ordinal / President SELAS, l'absence de `SELARL`, `gerant` / `gérant`, `parts sociales`, `Directeur General`, `Dérogation ?` et le blocage derogation sans mention manuelle. Validations realisees : `compileall` OK ; smoke manuel schema SELAS DOC-034 OK ; smoke manuel generateur DOCX SELAS OK. Limite : `pytest` et `ruff` indisponibles dans l'environnement local et dans le runtime embarque ; a relancer dans un environnement dev equipe. Action suivante effectivement realisee : `SELAS-DOC005-DOC006-REGIME-COMMUNAUTAIRE-001`. Pack SELAS toujours bloque.
+
+SELAS-ROADMAP-TO-COMPLETION-001 : roadmap A-Z SELAS V1 produite dans `docs/sprints/SPRINT_SELAS_ROADMAP_TO_COMPLETION_001.md`. Scope respecte : aucun code, aucun generateur modifie, aucun DOCX/PDF/ZIP, aucune activation du pack SELAS et aucun changement de wording juridique final. Decision : la SELAS V1 finalisable reste bornee a `SELAS medecin / actionnaire unique / President unique / creation simple / capital en numeraire / actions ordinaires`, avec exclusions explicites DG, multi-actionnaires, cession, SCM, site distinct, micro-holding et actions de preference. Ordre propose : validations outillees des docs deja codes, `DOC-034`, `DOC-005`/`DOC-006`, `DOC-018`, readiness front, orchestrateur pack, smokes, checkpoint trois sources, revue humaine, corrections, cloture. Action suivante effectivement realisee : `SELAS-DOC034-ORDRE-001`. Pack SELAS toujours bloque.
+
+SELAS-SPEC-REGIME-COMMUNAUTAIRE-001 : spec documentaire Regime communautaire SELAS produite dans `docs/sprints/SPRINT_SELAS_SPEC_REGIME_COMMUNAUTAIRE_001.md`. Scope respecte : aucun code, aucun generateur modifie, aucun DOCX/PDF/ZIP, aucune activation du pack SELAS et aucun changement de wording juridique final. Decision : `DOC-005 - Lettre de renonciation a revendiquer la qualite d'associe` et `DOC-006 - Lettre d'avertissement au conjoint en cas d'apport d'un bien commun` forment un batch conditionnel SELAS si `dossier.options.regime_communautaire = true`. Le parcours simple sans regime communautaire ne doit afficher ni generer ces documents. La sortie de reserve front de `DOC-006` a ete realisee dans `SELAS-DOC005-DOC006-REGIME-COMMUNAUTAIRE-001`, avec tests front/schema et sans activer le pack SELAS complet. Pack SELAS toujours bloque.
+
+SELAS-SPEC-ORDRE-001 : spec documentaire Demande d'inscription a l'Ordre SELAS produite dans `docs/sprints/SPRINT_SELAS_SPEC_ORDRE_001.md`. Scope respecte : aucun code, aucun generateur modifie, aucun DOCX/PDF/ZIP, aucune activation du pack SELAS et aucun changement de wording juridique final. Decision : `DOC-034 - Demande d'inscription a l'Ordre` est reutilisable pour SELAS via l'overlay SELARL/SELAS deja decrit dans les specs Lot 2, sous reserve de donnees ordinales completes, d'un mandataire resolu, et d'une derogation absente ou accompagnee d'une mention manuelle validee. Point verrouille : `Monsieur le President` designe le president du Conseil departemental de l'Ordre, pas le President de la SELAS. Les plans/devis restent des pieces attendues non generees ; leur caractere bloquant pour un dossier ordre complet reste un arbitrage produit separe. Action suivante effectivement realisee : `SELAS-SPEC-REGIME-COMMUNAUTAIRE-001`. Pack SELAS toujours bloque.
+
+SELAS-SPEC-CAPITAL-ACTIONS-001 : spec documentaire Capital / Actions SELAS produite dans `docs/sprints/SPRINT_SELAS_SPEC_CAPITAL_ACTIONS_001.md`. Scope respecte : aucun code, aucun generateur modifie, aucun DOCX/PDF/ZIP, aucune activation du pack SELAS et aucun changement de wording juridique final. Decision : la V1 SELAS automatise uniquement un capital en numeraire divise en actions ordinaires, detenues a 100 % par l'actionnaire unique, avec droits de vote et droits financiers proportionnels au capital. La numerotation simple `1 a N` est derivee automatiquement pour le controle interne, mais ne doit pas etre ajoutee dans `DOC-018` si la source statuts ne l'affiche pas. Les cas multi-actionnaires, actions de preference, categories d'actions, droits derogatoires, demembrement, personne morale actionnaire, micro-holding, apport en nature, apport de titres, capital variable, augmentation/reduction de capital, cession d'actions, liste des souscripteurs et attestation capital SELAS restent hors V1 ou reserves. Prochaine action recommandee : `SELAS-SPEC-ORDRE-001`, ou validation outillee DOC-001/DOC-002/DOC-003. Pack SELAS toujours bloque.
+
+SELAS-SPEC-STATUTS-MEDECIN-AU-001 : spec documentaire Statuts SELAS medecin actionnaire unique produite dans `docs/sprints/SPRINT_SELAS_SPEC_STATUTS_MEDECIN_AU_001.md`. Scope respecte : aucun code, aucun generateur modifie, aucun DOCX/PDF/ZIP, aucune activation du pack SELAS et aucun changement de wording juridique final. Decision : `DOC-018 - Statuts SELAS medecin` est confirme comme document canonique candidat pour le parcours SELAS medecin actionnaire unique / President unique / creation simple. La nomination et l'acceptation des fonctions de President sont absorbees par les statuts V1 ; `SELAS-DECISION-PRESIDENT` reste reserve/conditionnel. Nuance importante : les clauses generales source sur les directeurs generaux peuvent rester dans les statuts si elles appartiennent au wording source, mais aucune nomination effective de Directeur General n'est automatisee et tout dossier demandant un DG reste bloque. Multi-actionnaires, President non associe, actions de preference, droits derogatoires, demembrement, micro-holding, SCM, cession de fonds, site distinct complexe et statuts SELAS dentiste restent hors V1. Prochaine action recommandee : `SELAS-SPEC-CAPITAL-ACTIONS-001`, ou validation outillee DOC-001/DOC-002/DOC-003. Pack SELAS toujours bloque.
+
+SELAS-SPEC-DECISION-PRESIDENT-001 : spec documentaire Decision/PV nomination President SELAS produite dans `docs/sprints/SPRINT_SELAS_SPEC_DECISION_PRESIDENT_001.md`. Scope respecte : aucun code, aucun generateur modifie, aucun DOCX/PDF/ZIP, aucune activation du pack SELAS et aucun changement de wording juridique final. Decision : `DOC-004 - PV nomination gerant` reste seulement un patron structurel possible ; son wording et son generateur ne doivent pas etre reutilises directement pour SELAS. Le code front temporaire `SELAS-DECISION-PRESIDENT` est confirme comme candidat, mais le futur code documentaire reste bloque tant que la source texte SELAS et le choix `President nomme dans les statuts` vs `decision separee` ne sont pas verrouilles. Directeur General, multi-actionnaires, actions de preference et droits derogatoires restent hors V1. Prochaine action recommandee : `SELAS-SPEC-STATUTS-MEDECIN-AU-001`, ou validation outillee DOC-001/DOC-002/DOC-003. Pack SELAS toujours bloque.
+
+SELAS-DOC002-DOMICILIATION-001 : adaptation bornee de `DOC-002 - Autorisation de domiciliation` codee pour le cas SELAS medecin actionnaire unique President unique. Scope respecte : pas de nouveau document canonique, pas de pack SELAS active, pas de modification des sources DOCX et pas de modification du wording juridique du `DOC-002`. Changements : `src/sydel_doc_engine/front_data/models.py` ajoute la notion generique `required_reuse_rules` sur un besoin documentaire ; `src/sydel_doc_engine/front_data/validation.py` bloque un document si une regle de reutilisation obligatoire n'est pas active ; `src/sydel_doc_engine/front_data/selas_schema.py` aligne l'exigence SELAS `DOC-002` sur `President` + `Signataire` + `Societe principale`, capital, composants du siege et regle obligatoire `address:siege_social -> address:domiciliation`. Tests cibles ajoutes dans `tests/unit/test_selas_front_schema.py` et `tests/unit/test_autorisation_domiciliation.py` pour verifier les roles, les champs, le blocage d'une domiciliation distincte sans reuse rule, l'acceptation de la reuse rule explicite, la generation DOCX neutre et l'absence de `SELARL` / `SELAS` / `Gerant` / `President` / `parts sociales` / `actions` / `Directeur General` dans le texte. Validations realisees : `compileall` OK ; smoke manuel schema + DOCX SELAS OK. Limite : `pytest` et `ruff` indisponibles dans l'environnement local et dans le runtime embarque ; a relancer dans un environnement dev equipe. Prochaine action recommandee : `SELAS-SPEC-DECISION-PRESIDENT-001`, ou validation outillee. Pack SELAS toujours bloque.
+
+SELAS-SPEC-DOC002-DOMICILIATION-001 : spec documentaire `DOC-002 - Autorisation de domiciliation` produite dans `docs/sprints/SPRINT_SELAS_SPEC_DOC002_DOMICILIATION_001.md`. Scope respecte : aucun code, aucun generateur modifie, aucun DOCX/PDF/ZIP, aucune activation du pack SELAS et aucun changement de wording juridique. Decision : `DOC-002` reste le document canonique cible pour la SELAS ; il est reutilisable parce que son texte est neutre vis-a-vis de la forme sociale et de la gouvernance, sans mention `SELARL`, `SELAS`, `Gerant`, `President`, `parts sociales` ou `actions`. Le signataire SELAS est le President dans le contexte dossier, mais le texte ne doit pas ajouter le mot `President`. Point sensible verrouille : le generateur actuel utilise l'adresse du siege/cabinet ; la generation SELAS V1 est donc autorisee seulement si la domiciliation correspond explicitement au siege/cabinet via la regle `address:siege_social -> address:domiciliation`. Si une adresse de domiciliation distincte est saisie, la generation doit rester bloquee ou passer par un ticket separe. Prochaine action recommandee : `SELAS-DOC002-DOMICILIATION-001` en GO borne, ou `SELAS-SPEC-DECISION-PRESIDENT-001`. Pack SELAS toujours bloque.
+
+SELAS-DOC001-DNC-PRESIDENT-001 : adaptation bornee de `DOC-001 - Declaration sur l'honneur de non-condamnation` codee pour le cas SELAS medecin actionnaire unique President unique. Scope respecte : pas de nouveau document canonique, pas de pack SELAS active, pas de modification des sources DOCX et pas de modification du wording juridique de la DNC. Changements : `src/sydel_doc_engine/front_data/selas_schema.py` aligne l'exigence SELAS `DOC-001` sur `President` + `Signataire`, adresse personnelle, nationalite, filiation complete (`nom_pere`, `nom_mere`) et signature ; l'ambiguite `selas_dnc_filiation_president` est levee cote schema car la filiation reste obligatoire selon la spec et le generateur canonique. Tests cibles ajoutes dans `tests/unit/test_selas_front_schema.py` et `tests/unit/test_declaration_non_condamnation.py` pour verifier les champs requis, le blocage si filiation manquante, l'absence de `Gerant` / `SELARL` / `parts sociales` / `Directeur General`, et l'absence d'insertion non validee de `President` dans le texte DNC. Validations realisees : `compileall` OK ; smoke manuel DOCX SELAS OK avec lecture du document, controles de presence/absence et blocages `nom_pere` / `nom_mere` verifies ; controle schema SELAS manuel OK. Limite : `pytest` et `ruff` indisponibles dans l'environnement local et dans le runtime embarque ; a relancer dans un environnement dev equipe. Prochaine action recommandee : validation outillee, puis `SELAS-SPEC-DOC002-DOMICILIATION-001` ou `SELAS-SPEC-DECISION-PRESIDENT-001`. Pack SELAS toujours bloque.
+
+SELAS-SPEC-DNC-PRESIDENT-001 : spec documentaire DNC President SELAS produite dans `docs/sprints/SPRINT_SELAS_SPEC_DNC_PRESIDENT_001.md`. Scope respecte : aucun code, aucun generateur modifie, aucun DOCX/PDF/ZIP, aucune activation de generation SELAS et aucun changement de wording juridique. Decision : `DOC-001 - Declaration sur l'honneur de non-condamnation` reste le document canonique cible ; il est reutilisable pour SELAS si le declarant/signataire est explicitement le President personne physique. La DNC actuelle ne consomme pas la forme sociale ni la fonction dans son texte, donc la spec ne demande pas d'inserer `President` dans le corps du document. La filiation (`nom_pere`, `nom_mere`) reste obligatoire parce qu'elle est deja exigee par la spec Lot 1 et par le generateur canonique actuel ; l'ambiguite NotebookLM est documentee et la generation doit bloquer si la filiation manque. Prochaine action recommandee : demander un `GO dev` borne sur `SELAS-DOC001-DNC-PRESIDENT-001`, ou continuer en spec avec `SELAS-SPEC-DOC002-DOMICILIATION-001`. Pack SELAS toujours bloque.
+
+SELAS-DOC003-PROCURATION-PRESIDENT-001 : adaptation bornee de `DOC-003 - Procuration` codee pour le cas SELAS medecin actionnaire unique President unique. Scope respecte : pas de nouveau document canonique, pas de pack SELAS active, pas de modification des sources DOCX, pas de changement global `gerant -> president`. Changements : `ProcurationGenerator` detecte la forme SELAS, force l'affichage `President`, bloque `Gerant` et `Directeur General` pour une procuration SELAS, tout en conservant le comportement existant hors SELAS. Tests cibles ajoutes dans `tests/unit/test_procuration.py` pour presence `Agissant en qualite de President`, `SELAS`, bloc mandataire SYDEL, adresses president/siege, et absence `Gerant`, `gerant`, `SELARL`, `parts sociales`, `Directeur General`. Validations realisees : `compileall` OK ; smoke manuel DOCX SELAS OK avec lecture du document et blocages `Gerant` / `Directeur General` verifies. Limite : `pytest` et `ruff` indisponibles dans l'environnement local et dans le runtime embarque ; a relancer dans un environnement dev equipe. Prochaine action recommandee : `SELAS-SPEC-DNC-PRESIDENT-001` ou validation outillee de DOC-003 avant prochain GO documentaire. Pack SELAS toujours bloque.
+
+SELAS-SPEC-PROCURATION-001 : spec documentaire Procuration President SELAS produite dans `docs/sprints/SPRINT_SELAS_SPEC_PROCURATION_001.md`. Scope respecte : aucun code, aucun generateur modifie, aucun DOCX/PDF/ZIP et aucune activation de generation SELAS. Decision : `DOC-003` reste le document canonique cible ; la reutilisation est possible a condition de fournir `fonction_dirigeant = President`, une forme sociale SELAS, un president/signataire explicite et un mandataire distinct. Le futur ticket de code devra tester la presence de `Agissant en qualite de President` et l'absence de `Gerant`, `gerant`, `SELARL`, `parts sociales`, `Directeur General` et toute confusion mandataire/signataire. Prochaine action recommandee : demander a Gad un `GO dev` borne sur `SELAS-DOC003-PROCURATION-PRESIDENT-001`, ou continuer en spec avec `SELAS-SPEC-DNC-PRESIDENT-001`. La generation SELAS reste en `NO-GO generation`.
+
+SELAS-SPEC-PRESIDENT-001 : spec metier President SELAS produite dans `docs/sprints/SPRINT_SELAS_SPEC_PRESIDENT_001.md`. Scope respecte : aucun code, aucun generateur, aucun DOCX/PDF/ZIP et aucun wording juridique final valide. La spec fixe le role `President` pour le parcours SELAS medecin actionnaire unique : President distinct de Gerant, Actionnaire, Signataire et Mandataire ; Directeur General bloque faute de source V1 ; reutilisations praticien -> actionnaire/president/signataire uniquement explicites ; documents impactes listes (`DOC-001`, `DOC-003`, decision/PV President, `DOC-018`, `DOC-034`, regime communautaire). Prochaine action recommandee : `SELAS-SPEC-PROCURATION-001`. La generation SELAS reste en `NO-GO generation`.
+
+SELAS-FRONT-SCHEMA-001 : premier ticket dev borne SELAS implemente apres le `ok go` de Gad transmis par Naomie. Scope respecte : socle front/data uniquement, sans generateur, sans DOCX/PDF/ZIP et sans modification de wording juridique. Changements principaux : ajout du role `ACTIONNAIRE`, regles explicites de reutilisation `PRATICIEN -> ACTIONNAIRE` et `PRATICIEN -> PRESIDENT`, nouveau module `src/sydel_doc_engine/front_data/selas_schema.py` pour decrire le pack candidat SELAS medecin actionnaire unique president unique, les documents reserves et les cas bloques. Tests ajoutes : `tests/unit/test_selas_front_schema.py`. Validations realisees : `compileall` OK, import/comportement SELAS OK, execution manuelle des fonctions de test SELAS/front_role_model/front_dossier_flow OK. Limite : `pytest` et `ruff` ne sont pas installes dans l'environnement local, donc la validation complete doit etre relancee dans un environnement dev equipe. Prochaine action recommandee : `SELAS-SPEC-PRESIDENT-001` apres validation outillee, pour cadrer president/procuration/decision avant toute generation documentaire.
+
+SELAS-GAD-FEEDBACK-001 : retour Gad sur la strategie cas par cas / reutilisation traite en lecture seule. Livrable principal : `docs/sprints/SPRINT_SELAS_GAD_FEEDBACK_001.md`. Conclusion : le sprint reste en `NO-GO dev`; la strategie reformulee devient `socle commun SELAS reutilisable` cote front/data, avec activation documentaire progressive. L'audit reuse `SPRINT_SELAS_REUSE_AUDIT_001.md` est confirme comme deja utilise. Prochaine action : envoyer a Gad la reponse reformulee et attendre une decision explicite.
+
+SELAS-GO-DEV-FIRST-TICKET-001 : demande d'arbitrage Gad preparee en lecture seule. Livrable principal : `docs/sprints/SPRINT_SELAS_GO_DEV_FIRST_TICKET_001.md`. Conclusion : le sprint reste en `NO-GO dev`; le premier ticket recommande pour un futur `GO dev` est `SELAS-FRONT-SCHEMA-001`, strictement limite au schema front SELAS medecin actionnaire unique president unique, sans DOCX, PDF, ZIP, generateur ou wording juridique.
+
+SELAS-TICKETS-001 : backlog ordonne SELAS realise en lecture seule. Livrable principal : `docs/sprints/SPRINT_SELAS_TICKETS_001.md`. Conclusion : le sprint reste en `NO-GO dev`; les tickets sont classes en arbitrage, spec, dev candidat et reserve. Le premier ticket potentiellement codable recommande est `SELAS-FRONT-SCHEMA-001`, mais seulement apres arbitrage Gad et sans generation DOCX.
+
+SELAS-FRONT-CONTRACT-001 : contrat metier-front SELAS provisoire realise en lecture seule. Livrable principal : `docs/sprints/SPRINT_SELAS_FRONT_CONTRACT_001.md`. Conclusion : le sprint reste en `NO-GO dev`; le parcours candidat est limite a `SELAS medecin associe unique`, president unique, capital en actions, documents candidats `DOC-001`, `DOC-002`, `DOC-003`, decision/PV president a specifier, `DOC-034`, `DOC-018` et `DOC-005` conditionnel. Le contrat decrit les blocs de saisie, roles, reutilisations explicites et blocages visibles.
+
+SELAS-MATRIX-001 : matrice documentaire SELAS provisoire realisee en lecture seule. Livrable principal : `docs/sprints/SPRINT_SELAS_MATRIX_001.md`. Conclusion : le sprint reste en `NO-GO dev`; le premier pack candidat futur est limite a `SELAS medecin associe unique` avec `DOC-001`, `DOC-002`, `DOC-003`, decision/PV president a specifier, `DOC-034`, `DOC-018` et `DOC-005` conditionnel. Sont exclus du premier pack : statuts SELAS dentiste faute de source identifiee, `DOC-006` reserve, cession fonds/cabinet, SCM, derogations/site distinct, multi-actionnaires, directeur general, micro-holding et actions de preference.
+
+SELAS-REUSE-AUDIT-001 : audit de reutilisation SELARL/global realise pour le sprint SELAS, en lecture seule. Livrable principal : `docs/sprints/SPRINT_SELAS_REUSE_AUDIT_001.md`. Conclusion : le sprint reste en `NO-GO dev`; le socle SELARL/global est reutilisable comme methode, roles, adresses, signature et variables, mais le wording SELARL ne doit pas etre copie tel quel. Documents courts universels classes majoritairement `reuse-check`, procuration/PV/statuts classes `adapter`, statuts SELAS medecin rattaches a une source dediee, statuts SELAS dentiste en `no-go` provisoire faute de source identifiee. Cession, SCM, derogations, multi-actionnaires, directeur general, micro-holding et actions de preference restent hors premier ticket.
+
 NAOMIE-RUNTIME-FAILSAFE-001 : auto-critique et correction de l'incident persistant d'accueil Naomie. Constat : le repo contenait deja des garde-fous, mais ils etaient trop disperses et coexistaient avec des formulations anciennes ; un nouveau chat pouvait encore repondre vaguement ou retomber sur l'ancien libelle `SELAS-NOTEBOOKLM-RECONCILIATION-001`. Correction : creation de `docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md`, ajout d'une regle prioritaire en tete de `AGENTS.md`, alignement de `SPRINT_SELAS_V1.md` sur la phase 3 NotebookLM, et declaration explicite que le ticket actif est `SELAS-SOURCES-NOTEBOOKLM-001`. Reponse attendue desormais apres un simple `bonjour` de Naomie : statut sprint, action NotebookLM, point pedagogie, prochaine etape, puis Prompt NotebookLM 01 complet. Aucun code Python, generateur, moteur DOCX/PDF/ZIP, source de verite ou wording juridique n'a ete modifie.
 
 MAIN-NAOMIE-TRIGGER-001 : correction du probleme constate sur la capture 2026-06-01, ou un nouveau chat ouvert sur `main` repond genericement a `bonjour` puis `je suis naomi`. Cause : les garde-fous Naomie/SELAS et la tour de controle etaient publies sur `track-b/clean-rebuild` et `codex/naomie-selas-sprint`, mais pas visibles depuis un chat demarre sur `main`. Correction : ajout d'un fail-safe explicite dans `AGENTS.md` et `docs/project/PROJECT_CONTROL_TOWER_V1.md` : si Naomie/SELAS arrive sur `main`, Codex doit tenter de basculer sur `codex/naomie-selas-sprint`, ou bloquer en `NO-GO dev` en expliquant que Codex gere la branche ; il ne doit jamais demander une tache ou un ticket. Le kit de gouvernance doit etre pousse aussi sur `main`. Aucun code Python, generateur, moteur DOCX/PDF/ZIP, source de verite ou wording juridique n'a ete modifie.
@@ -171,6 +396,20 @@ CONVERT-DEROG-SALARIEE-001 : tentative de conversion Word COM du `.doc` legacy s
 SYNC-WAVE-005 : absorption dans `main` des commits sources `91436f0916fdecbcc98450b72ba6e602cb8f1a3b`, `1b3ba14d0bcc31fc7dcbf1752d6d3263645ae8b3`, `32059155c618b4e985893f42ef2817187599c281`, `74d41db53543b790e197082e8b9c713f7de92dc2` et `d1d649e11fdc638e6d7da0640c154d1f213739ee`, puis réalignement du pilotage.
 
 ## État courant du repo
+- SELAS : le premier socle front/data est maintenant code, mais non generatif. Il expose un schema SELAS medecin actionnaire unique president unique, des documents candidats (`DOC-001`, `DOC-002`, `DOC-003`, decision president, `DOC-034`, `DOC-018`, `DOC-005`/`DOC-006` conditionnels si regime communautaire), des documents reserves (statuts SELAS dentiste, attestation capital) et des blocages V1 (multi-actionnaires, directeur general, SCM, cession fonds, actions de preference, site distinct/derogation).
+- SELAS : `DOC-003` Procuration est maintenant securise cote generateur pour le cas SELAS President unique : affichage `President`, blocage `Gerant` et `Directeur General`, tests cibles ajoutes. Le pack SELAS complet reste non active.
+- SELAS : `DOC-001` DNC President est maintenant securise cote schema/front-data et tests pour le cas SELAS President unique : President signataire explicite, filiation obligatoire, generation bloquee si la filiation manque, wording DNC inchange. Le pack SELAS complet reste non active.
+- SELAS : `DOC-002` Domiciliation est maintenant securise cote schema/front-data et tests pour le cas SELAS President unique : President signataire explicite, capital/siege requis, reuse `siege_social -> domiciliation` obligatoire, wording DOC-002 inchange.
+- SELAS : `SELAS-DECISION-PRESIDENT` est maintenant specifie en cadrage V1 : `DOC-004` reste seulement un patron structurel ; l'acte separe reste reserve/conditionnel car la nomination President est absorbee par les statuts V1.
+- SELAS : `DOC-018` Statuts SELAS medecin actionnaire unique est maintenant specifie comme candidat V1 : nomination President absorbee par les statuts, DG nomme et cas complexes bloques, wording source conserve.
+- SELAS : le bloc Capital / Actions est maintenant specifie pour la V1 : actions ordinaires uniquement, actionnaire unique 100 %, droits proportionnels, numerotation simple derivee `1 a N`, aucun ajout de wording dans les statuts sans source.
+- SELAS : `DOC-034` Demande d'inscription a l'Ordre est maintenant specifie comme reutilisable via overlay SELARL/SELAS : President ordinal distinct du President SELAS, mandataire obligatoire, derogation bloquee sans mention manuelle, plans/devis classes comme pieces attendues non generees.
+- SELAS : `DOC-005` et `DOC-006` Regime communautaire sont maintenant securises cote schema/front-data comme batch conditionnel si regime communautaire ; `DOC-006` est sorti de reserve, sans pack SELAS.
+- SELAS : la roadmap A-Z jusqu'a cloture V1 est maintenant produite et doit etre envoyee a Gad pour validation avant tout nouveau dev.
+- SELAS : le gate trois sources est ajoute avant cloture V1 : `Documents_a_generer_par_cas.docx`, NotebookLM SELAS et retours humains de premiere version complete.
+- SELAS : `DOC-034` Demande d'inscription a l'Ordre est maintenant securise cote schema/front-data et smoke generateur pour le cas SELAS President unique ; `pytest`/`ruff` restent a relancer en environnement equipe.
+- SELAS : `DOC-018` Statuts SELAS medecin actionnaire unique est maintenant securise cote generateur et smoke DOCX pour le cas V1 simple ; `DOC-004` n'est pas selectionne quand la nomination President est absorbee par les statuts.
+- SELAS : les packs SELAS V1 simple et regime communautaire ont ete generes et controles en smoke, le wording strict anti-regression a ete verifie, puis le checkpoint trois sources a confirme le perimetre V1 cote source metier et NotebookLM. Ils ne sont pas valides final. Le prochain travail doit rester borne a `SELAS-HUMAN-REVIEW-PACK-001`.
 - Le clean front Track B dispose maintenant d'un sous-cas `SELARL dentiste multi-associes simple (PARTIAL statuts)` : plusieurs associes, repartition simple des parts, president choisi parmi eux, gerant unique et unanimite totale. Ce mode genere `DOC-004` et `DOC-016`; `DOC-016` est PARTIAL et couvre les apports/capital/repartition/signatures associes, sans revendiquer le lock complet de la comparution plurielle.
 - Le clean front Track B dispose maintenant d'un sous-cas `DOC-004` multi-associes limite : plusieurs associes pour le PV, president choisi parmi eux, gerant unique et unanimite totale. Ce mode genere uniquement `DOC-004` et ne couvre pas les statuts multi-associes, plusieurs gerants, cession, SCM, regime communautaire ou votes non unanimes.
 - Le contrat source SELARL multi-associes est disponible : `docs/project/TRACK_B_SELARL_MULTI_ASSOCIES_FRONT_CONTRACT_V1.md`. Il autorisait initialement seulement un sous-cas borne `DOC-004`; le ticket 008 ouvre ensuite un delta limite `DOC-016` dentiste PARTIAL. Plusieurs gerants, president externe, cession medicale/dentaire et cession SCM restent bloques dans ce contrat.
@@ -1055,11 +1294,26 @@ Les quatre specs statuts SAS, SPFPL, SEL et civils sont DONE et absorbées dans 
 - TRACK-B-SELARL-MEDECIN-REGIME-COMMUNAUTAIRE-005 : rapport cree dans `docs/review/track_b_selarl_medecin_regime_communautaire_005_report_v1.md`; le cas medecin + regime communautaire reutilise `DOC-017` LOCKED source-level et `DOC-005` LOCKED, active conjoint/date courrier uniquement quand l'option est active, garde `DOC-006` reserve, et ajoute des tests cibles dans `tests/unit/test_clean_front_app.py`.
 - TRACK-B-SELARL-MEDECIN-REGIME-COMMUNAUTAIRE-005 : smoke DOCX/ZIP OK dans `artifacts/track_b_selarl_medecin_regime_communautaire_005`, avec 7 DOCX, ZIP, `DOC-005` present, `DOC-006` absent, aucun placeholder ni segment parasite RCS/telephone.
 - TRACK-B-SELARL-MEDECIN-REGIME-COMMUNAUTAIRE-005 : validations OK : tests cibles 25 passes, tests cibles + statuts 36 passes, `ruff check .`, clean front HTTP 200 sur `http://localhost:8528`, processus Python/Streamlit arretes et port 8528 ferme.
+- SPRINT-SELAS-V1-001 : reponse NotebookLM Prompt 01 importee depuis Naomie et structuree dans `docs/sprints/SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md`; inventaire exploratoire SELAS utile mais sources non citees ou vides, donc aucune validation juridique ni `GO dev`.
+- SPRINT-SELAS-V1-001 : reponse NotebookLM Prompt 02 importee depuis Naomie et structuree dans `docs/sprints/SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md`; differences SELARL/SELAS utiles mais sources non citees, donc aucune validation juridique ni `GO dev`.
+- SPRINT-SELAS-V1-001 : reponse NotebookLM Prompt 03 importee depuis Naomie et structuree dans `docs/sprints/SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md`; gouvernance/statuts SELAS utiles mais sources non citees, donc aucune validation juridique ni `GO dev`.
+- SPRINT-SELAS-V1-001 : reponse NotebookLM Prompt 04 importee depuis Naomie et structuree dans `docs/sprints/SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md`; blocs de donnees SELAS utiles mais sources non citees, donc aucune validation juridique ni `GO dev`.
+- SPRINT-SELAS-V1-001 : reponse NotebookLM Prompt 05 importee depuis Naomie et structuree dans `docs/sprints/SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md`; documents proches SELARL classes provisoirement, mais sources non citees et substitutions automatiques traitees comme risque, donc aucune validation juridique ni `GO dev`.
+- SPRINT-SELAS-V1-001 : reponse NotebookLM Prompt 06 importee depuis Naomie et structuree dans `docs/sprints/SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md`; cas conditionnels et dangereux classes provisoirement, mais sources non citees, donc aucune validation juridique ni `GO dev`.
+- SPRINT-SELAS-V1-001 : reponse NotebookLM Prompt 07 importee depuis Naomie et structuree dans `docs/sprints/SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md`; recette/revue humaine utiles mais sources non citees, donc aucune validation juridique ni `GO dev`.
+- SPRINT-SELAS-V1-001 : reponse NotebookLM de suivi sources importee depuis Naomie et structuree dans `docs/sprints/SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md`; sources NotebookLM nommees (`Texte colle`, `Besoins Sydel (juridique).pdf`, `Notre job - Sydel.pdf`) mais passages/pages encore a verifier, donc aucune validation juridique ni `GO dev`.
+- SPRINT-SELAS-V1-001 : `docs/sprints/SPRINT_SELAS_V1.md` et `docs/project/01_EXECUTION_BOARD.md` mis a jour apres NotebookLM ; action suivante alors preparee = `SELAS-REUSE-AUDIT-001` en lecture seule.
+- SELAS-REUSE-AUDIT-001 : audit de reutilisation SELARL/global realise en lecture seule dans `docs/sprints/SPRINT_SELAS_REUSE_AUDIT_001.md`. Decisions principales : documents courts universels en `reuse-check`, procuration/PV/statuts en `adapter`, statuts SELAS medecin sur source dediee, statuts SELAS dentiste en `no-go` provisoire faute de source identifiee, cession/SCM/derogation/multi-actionnaires/DG/actions de preference hors premier ticket. Aucun code, aucun generateur, aucune source DOCX et aucun wording juridique modifies. `NO-GO dev` maintenu ; prochaine action = `SELAS-MATRIX-001` en lecture seule.
+- SELAS-MATRIX-001 : matrice documentaire SELAS provisoire realisee en lecture seule dans `docs/sprints/SPRINT_SELAS_MATRIX_001.md`. Pack candidat futur limite a SELAS medecin associe unique ; statuts SELAS dentiste, `DOC-006`, cession, SCM, derogations, multi-actionnaires, DG, micro-holding et actions de preference exclus ou reserves. Aucun code, aucun generateur, aucune source DOCX et aucun wording juridique modifies. `NO-GO dev` maintenu ; prochaine action = `SELAS-FRONT-CONTRACT-001` en lecture seule.
+- SELAS-FRONT-CONTRACT-001 : contrat metier-front SELAS provisoire realise en lecture seule dans `docs/sprints/SPRINT_SELAS_FRONT_CONTRACT_001.md`. Parcours candidat limite a SELAS medecin associe unique ; blocs Qualification / Fiche Client / Roles / Societe / Adresses / Capital-actions / Ordre / Regime communautaire / Signature documentes ; blocages visibles listes. Aucun code, aucun generateur, aucune source DOCX et aucun wording juridique modifies. `NO-GO dev` maintenu ; prochaine action = `SELAS-TICKETS-001` en lecture seule.
+- SELAS-TICKETS-001 : backlog ordonne SELAS realise en lecture seule dans `docs/sprints/SPRINT_SELAS_TICKETS_001.md`. Tickets classes en `ARBITRAGE`, `SPEC`, `DEV CANDIDAT` et `RESERVE`; premier candidat dev recommande = `SELAS-FRONT-SCHEMA-001`, mais bloque jusqu'a arbitrage Gad. Aucun code, aucun generateur, aucune source DOCX et aucun wording juridique modifies. `NO-GO dev` maintenu ; prochaine action = `SELAS-GO-DEV-FIRST-TICKET-001` en lecture seule.
+- SELAS-GO-DEV-FIRST-TICKET-001 : demande d'arbitrage Gad preparee en lecture seule dans `docs/sprints/SPRINT_SELAS_GO_DEV_FIRST_TICKET_001.md`. Recommandation : demander un `GO dev` borne pour `SELAS-FRONT-SCHEMA-001` uniquement, sans generation DOCX, PDF, ZIP, generateur ni wording juridique. Aucun code, aucun generateur, aucune source DOCX et aucun wording juridique modifies. `NO-GO dev` maintenu ; prochaine action = attendre decision Gad.
+- SELAS-GAD-FEEDBACK-001 : retour Gad "cas par cas / tous les cas / agent reutilisation" traite en lecture seule dans `docs/sprints/SPRINT_SELAS_GAD_FEEDBACK_001.md`. Reponse proposee : oui a un socle commun SELAS reutilisable, non a la generation documentaire de tous les cas d'un coup ; activation progressive pour limiter le risque juridique. Aucun code, aucun generateur, aucune source DOCX et aucun wording juridique modifies. `NO-GO dev` maintenu ; prochaine action = envoyer la reponse reformulee a Gad.
 
 ## Recommandation immediate suivante
 Recommandation prioritaire 2026-06-01 : commencer par `docs/project/PROJECT_CONTROL_TOWER_V1.md`, puis lire `docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md`, puis le fichier actif `docs/sprints/SPRINT_[TYPE]_V1.md`, puis `docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md`, puis `docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md`, puis appliquer `docs/project/PRODUCT_GUARDRAIL_PROTOCOL_V1.md`.
 
-Pour Naomie, le sprint actif est SELAS : appliquer d'abord `docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md`, puis `docs/sprints/SPRINT_SELAS_V1.md`. Statut : Phase 3 NotebookLM, `NO-GO dev`. La branche cible est `codex/naomie-selas-sprint`. Meme si Naomie dit seulement `bonjour`, Codex doit donner le Prompt NotebookLM 01 complet, attendre sa reponse brute, la structurer dans le journal, puis choisir le prompt suivant. Pas de production, generation, audit, matrice, code ou push de fonctionnalite avant couverture NotebookLM suffisante.
+Pour Naomie, le sprint actif est SELAS : appliquer d'abord `docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md`, puis `docs/sprints/SPRINT_SELAS_V1.md`. Statut courant : Phase 31 HUMAN REVIEW PACK SELAS, `SELAS-HUMAN-REVIEW-PACK-001` realise. La branche cible est `codex/naomie-selas-sprint`. Prompts 01 a 07 + suivi sources, audit reuse V1, matrice V1, contrat front V1, backlog tickets V1, demande d'arbitrage, retour Gad, `SELAS-FRONT-SCHEMA-001`, `SELAS-SPEC-PRESIDENT-001`, `SELAS-SPEC-PROCURATION-001`, `SELAS-DOC003-PROCURATION-PRESIDENT-001`, `SELAS-SPEC-DNC-PRESIDENT-001`, `SELAS-DOC001-DNC-PRESIDENT-001`, `SELAS-SPEC-DOC002-DOMICILIATION-001`, `SELAS-DOC002-DOMICILIATION-001`, `SELAS-SPEC-DECISION-PRESIDENT-001`, `SELAS-SPEC-STATUTS-MEDECIN-AU-001`, `SELAS-SPEC-CAPITAL-ACTIONS-001`, `SELAS-SPEC-ORDRE-001`, `SELAS-SPEC-REGIME-COMMUNAUTAIRE-001`, `SELAS-ROADMAP-TO-COMPLETION-001`, `SELAS-DOC034-ORDRE-001`, `SELAS-DOC005-DOC006-REGIME-COMMUNAUTAIRE-001`, `SELAS-DOC018-STATUTS-MEDECIN-AU-001`, `SELAS-FRONT-READINESS-PACK-001`, `SELAS-ORCHESTRATOR-PACK-001`, `SELAS-SMOKE-HAPPY-PATH-001`, `SELAS-SMOKE-REGIME-COMMUNAUTAIRE-001`, `SELAS-ANTI-REGRESSION-WORDING-001`, `SELAS-TRIPLE-SOURCE-CHECK-001` et `SELAS-HUMAN-REVIEW-PACK-001` sont realises. Prochaine action : transmettre le pack de revue humaine, puis classer les retours. Pas de cloture SELAS V1 sans revue humaine et corrections eventuelles.
 
 Si Naomie pose une question d'apprentissage, appliquer `docs/project/NAOMIE_LEARNING_MENTOR_PROTOCOL_V1.md`. Le mode professeur explique mais ne declenche jamais de developpement.
 

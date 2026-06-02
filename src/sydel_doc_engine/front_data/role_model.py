@@ -92,6 +92,15 @@ ROLE_DEFINITIONS: dict[BusinessRole, RoleDefinition] = {
         allowed_scopes=ANY_ROLE_SCOPE,
         notes="Detenteur de titres ; peut etre personne physique ou personne morale.",
     ),
+    BusinessRole.ACTIONNAIRE: RoleDefinition(
+        role=BusinessRole.ACTIONNAIRE,
+        label="Actionnaire",
+        family=RoleFamily.GOVERNANCE,
+        target_types=PERSON_OR_COMPANY,
+        default_scope=RoleScope.OPERATION,
+        allowed_scopes=ANY_ROLE_SCOPE,
+        notes="Detenteur d'actions SELAS ; distinct du libelle generique associe.",
+    ),
     BusinessRole.GERANT: RoleDefinition(
         role=BusinessRole.GERANT,
         label="Gerant",
@@ -324,12 +333,30 @@ ROLE_REUSE_POLICIES: dict[tuple[BusinessRole, BusinessRole], RoleReusePolicy] = 
     ),
     (
         BusinessRole.PRATICIEN,
+        BusinessRole.ACTIONNAIRE,
+    ): RoleReusePolicy(
+        source_role=BusinessRole.PRATICIEN,
+        target_role=BusinessRole.ACTIONNAIRE,
+        allowed_scopes=ANY_ROLE_SCOPE,
+        label="SELAS unipersonnelle : praticien vers actionnaire",
+    ),
+    (
+        BusinessRole.PRATICIEN,
         BusinessRole.GERANT,
     ): RoleReusePolicy(
         source_role=BusinessRole.PRATICIEN,
         target_role=BusinessRole.GERANT,
         allowed_scopes=DOSSIER_OR_OPERATION,
         label="Dossier unipersonnel : praticien vers gerant",
+    ),
+    (
+        BusinessRole.PRATICIEN,
+        BusinessRole.PRESIDENT,
+    ): RoleReusePolicy(
+        source_role=BusinessRole.PRATICIEN,
+        target_role=BusinessRole.PRESIDENT,
+        allowed_scopes=DOSSIER_OR_OPERATION,
+        label="SELAS unipersonnelle : praticien vers president",
     ),
     (
         BusinessRole.PRATICIEN,

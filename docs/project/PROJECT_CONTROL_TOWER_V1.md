@@ -1,6 +1,6 @@
 # Tour de controle projet V1
 
-Date : 2026-06-01
+Date : 2026-06-02
 
 ## Objet
 
@@ -78,7 +78,7 @@ incomplete, Codex doit dire `NO-GO dev` et donner l'action exacte suivante.
 | Type | Sprint | Pilote metier | Branche | Phase courante | Statut | Action autorisee maintenant |
 | --- | --- | --- | --- | --- | --- | --- |
 | SELARL | Sprint pilote historique / production partielle | Gad | `track-b/clean-rebuild` | Revue humaine / consolidation | PARTIAL | preparer revue associe/juriste ou choisir un sous-cas unique avec `GO dev` |
-| SELAS | `SPRINT-SELAS-V1` | Naomie | `codex/naomie-selas-sprint` | Sous-sprint NotebookLM | `NO-GO dev` | donner Prompt NotebookLM 01, attendre la reponse brute, structurer le journal |
+| SELAS | `SPRINT-SELAS-V1` | Naomie | `codex/naomie-selas-sprint` | Human review pack SELAS | `WAITING_HUMAN_REVIEW` | transmettre le pack de revue ; aucun pack SELAS final valide |
 
 ## Etat courant SELARL
 
@@ -106,26 +106,69 @@ Etat utile :
 
 - branche cible : `codex/naomie-selas-sprint` ;
 - sprint : `docs/sprints/SPRINT_SELAS_V1.md` ;
-- ticket actif : `SELAS-SOURCES-NOTEBOOKLM-001` ;
-- sous-sprint actif : NotebookLM ;
+- dernier ticket : `SELAS-HUMAN-REVIEW-PACK-001` realise en `DONE_WAITING_HUMAN_REVIEW` ;
+- dernier ticket code : `SELAS-ORCHESTRATOR-PACK-001` en `DONE_PARTIAL_QA` ;
+- tickets codes precedents : `SELAS-DOC001-DNC-PRESIDENT-001` et `SELAS-DOC003-PROCURATION-PRESIDENT-001` en `DONE_PARTIAL_QA` ;
+- spec President : `SELAS-SPEC-PRESIDENT-001` terminee ;
+- spec Procuration : `SELAS-SPEC-PROCURATION-001` terminee ;
+- spec DNC President : `SELAS-SPEC-DNC-PRESIDENT-001` terminee ; `DOC-001` reutilisable avec President signataire explicite et filiation obligatoire ;
+- spec Domiciliation : `SELAS-SPEC-DOC002-DOMICILIATION-001` terminee ; `DOC-002` reutilisable comme document neutre seulement si domiciliation = siege/cabinet ;
+- spec Decision President : `SELAS-SPEC-DECISION-PRESIDENT-001` terminee ; `DOC-004` est seulement un patron structurel et l'acte separe reste reserve car la nomination President est absorbee par les statuts V1 ;
+- spec Statuts SELAS medecin AU : `SELAS-SPEC-STATUTS-MEDECIN-AU-001` terminee ; `DOC-018` est le candidat V1 pour actionnaire unique / President unique, nomination President absorbee par les statuts, DG nomme et cas complexes bloques ;
+- spec Capital / Actions : `SELAS-SPEC-CAPITAL-ACTIONS-001` terminee ; actions ordinaires uniquement, actionnaire unique 100 %, droits proportionnels et numerotation simple derivee `1 a N` ;
+- spec Ordre : `SELAS-SPEC-ORDRE-001` terminee ; `DOC-034` reutilisable via overlay SELARL/SELAS, `Monsieur le President` rattache au Conseil de l'Ordre et non au President SELAS, plans/devis traites comme pieces attendues non generees ;
+- spec Regime communautaire : `SELAS-SPEC-REGIME-COMMUNAUTAIRE-001` terminee ; `DOC-005` et `DOC-006` sont conditionnels si regime communautaire ;
+- ticket dev borne DOC-005/DOC-006 : `SELAS-DOC005-DOC006-REGIME-COMMUNAUTAIRE-001` code ; schema SELAS aligne, `DOC-006` sorti de reserve, tests cibles ajoutes, smoke manuel DOCX OK ;
+- ticket dev borne DOC-018 : `SELAS-DOC018-STATUTS-MEDECIN-AU-001` code ; verrous capital/actions et cas hors V1 ajoutes, `DOC-004` non selectionne si nomination President absorbee par les statuts, smoke manuel DOCX OK ;
+- ticket readiness pack : `SELAS-FRONT-READINESS-PACK-001` code ; pack simple/conditionnel/reserve expose cote front/data, generation pack toujours inactive, prochain ticket `SELAS-ORCHESTRATOR-PACK-001` ;
+- ticket orchestration pack : `SELAS-ORCHESTRATOR-PACK-001` code ; selection explicite du pack SELAS V1, batch regime communautaire conditionnel et blocage des cas hors V1 ;
+- ticket smoke happy path : `SELAS-SMOKE-HAPPY-PATH-001` realise ; pack simple sans regime communautaire genere en DOCX avec `DOC-001`, `DOC-002`, `DOC-003`, `DOC-034`, `DOC-018`, sans `DOC-004`, `DOC-005`, `DOC-006` ni documents complexes ;
+- ticket smoke regime communautaire : `SELAS-SMOKE-REGIME-COMMUNAUTAIRE-001`
+  realise ; pack conditionnel genere en DOCX avec `DOC-001`, `DOC-002`,
+  `DOC-003`, `DOC-034`, `DOC-018`, `DOC-005`, `DOC-006`, sans `DOC-004`,
+  cession, SCM, bail, derogations ni documents reserves ;
+- ticket anti-regression wording : `SELAS-ANTI-REGRESSION-WORDING-001`
+  realise ; controle strict OK sur les deux packs, sans `SELARL`, `Gerant` ni
+  `parts sociales`, avec occurrences `associe` classees pour le checkpoint
+  trois sources ;
+- ticket triple source check : `SELAS-TRIPLE-SOURCE-CHECK-001` realise ;
+  source metier et NotebookLM alignes sur le perimetre SELAS V1, retour Gad
+  strategie pris en compte, retour humain pack complet encore absent ;
+- ticket human review pack : `SELAS-HUMAN-REVIEW-PACK-001` realise ; pack de
+  revue humaine, ZIP, inventaire, checklist, pre-check NotebookLM et questions
+  de decision prets ; attente retour Gad / associe / juriste ;
+- roadmap A-Z : `SELAS-ROADMAP-TO-COMPLETION-001` terminee ; ordre propose jusqu'a cloture SELAS V1, a envoyer a Gad pour validation avant tout nouveau dev ;
+- gate trois sources : execute en QA partielle ; il autorise la preparation de
+  revue humaine mais pas la cloture SELAS V1 ;
+- ticket dev borne DOC-034 : `SELAS-DOC034-ORDRE-001` code ; schema SELAS aligne sur signataire/societe/ordre/mandataire/signature, tests cibles ajoutes, smoke manuel DOCX OK ;
+- ticket dev borne DOC-001 : `SELAS-DOC001-DNC-PRESIDENT-001` code ; schema SELAS aligne sur President/Signataire/filiation/signature, tests cibles ajoutes, smoke manuel DOCX OK ;
+- ticket dev borne DOC-002 : `SELAS-DOC002-DOMICILIATION-001` code ; schema SELAS aligne sur President/Signataire/Societe, capital, siege et reuse siege->domiciliation obligatoire, tests cibles ajoutes, smoke manuel DOCX OK ;
+- socle front/data : `SELAS-FRONT-SCHEMA-001` implemente ;
+- ticket dev borne : `SELAS-FRONT-SCHEMA-001`, valide oralement par Gad via `ok go` ;
+- ticket dev borne DOC-003 : `SELAS-DOC003-PROCURATION-PRESIDENT-001` code ; `President` force pour SELAS, `Gerant` et `Directeur General` bloques ;
+- sous-sprint NotebookLM : suffisant pour audit, journalise ;
+- audit reutilisation : V1 realise dans `docs/sprints/SPRINT_SELAS_REUSE_AUDIT_001.md` ;
+- matrice documentaire : V1 realisee dans `docs/sprints/SPRINT_SELAS_MATRIX_001.md` ;
+- contrat metier-front : V1 realise dans `docs/sprints/SPRINT_SELAS_FRONT_CONTRACT_001.md` ;
+- tickets SELAS : V1 realises dans `docs/sprints/SPRINT_SELAS_TICKETS_001.md` ;
+- demande premier GO dev : preparee dans `docs/sprints/SPRINT_SELAS_GO_DEV_FIRST_TICKET_001.md` ;
 - journal : `docs/sprints/SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md` ;
 - prompt source : `docs/sprints/SPRINT_SELAS_NOTEBOOKLM_PROMPTS_V1.md` ;
-- action courante : donner Prompt 01, attendre la reponse brute, structurer,
-  puis iterer.
+- action courante : transmettre le pack de revue humaine, puis attendre le retour humain classe.
 - protocole court obligatoire : `docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md`.
 
 Interdits actuels SELAS :
 
 - production ;
 - generation ;
-- code ;
-- matrice finale ;
-- audit reutilisation ;
+- generation documentaire ;
+- matrice finale generable ;
 - push de fonctionnalite ;
-- `GO dev`.
+- wording juridique non specifie.
 
-Ces actions restent interdites tant que le sous-sprint NotebookLM n'est pas
-suffisant.
+Le code front/data borne est autorise uniquement pour le ticket deja valide.
+Les actions ci-dessus restent interdites sans spec documentaire et validation
+humaine.
 
 ## Fail-safe branche main
 
@@ -156,9 +199,9 @@ lecture mentale avant d'agir :
 Projet : SYDEL document engine.
 Tour de controle : PROJECT_CONTROL_TOWER_V1.md.
 Sprint actif Naomie : SELAS.
-Phase SELAS : NotebookLM.
-Action SELAS : prompt -> reponse -> journal -> prompt suivant.
-Dev SELAS : interdit.
+Phase SELAS : Human review pack SELAS.
+Action SELAS : transmettre le pack de revue humaine, puis garder les corrections humaines avant cloture.
+Pack SELAS : interdit.
 SELARL : production partielle, prochaine action revue humaine ou sous-cas borne.
 ```
 
@@ -171,8 +214,9 @@ Point pedagogie : [explication courte]
 Prochaine etape : [suite immediate]
 ```
 
-Si la demande est un simple `bonjour`, Codex doit quand meme donner le Prompt
-NotebookLM 01 complet. Il ne doit pas attendre que Naomie choisisse une tache.
+Si la demande est un simple `bonjour`, Codex doit reprendre la phase courante
+du sprint SELAS et donner l'action exacte suivante. Il ne doit pas revenir au
+Prompt NotebookLM 01 si cette phase est deja terminee.
 
 ## Reponse attendue si Naomie lance SELAS
 
@@ -186,13 +230,14 @@ Je veux lancer le sprint SELAS.
 Codex doit repondre :
 
 ```text
-Statut sprint : Phase 3 - NOTEBOOKLM / NO-GO dev
-Action maintenant : colle le Prompt NotebookLM 01 dans NotebookLM, puis donne-moi la reponse brute.
-Point pedagogie : on demarre par la collecte metier. NotebookLM aide a extraire les regles, mais Codex decide ensuite quoi noter, quoi verifier et quoi demander.
-Prochaine etape : je structure ta reponse dans le journal SELAS, puis je te donne le prompt suivant selon les trous.
+Statut sprint : [phase courante dans SPRINT_SELAS_V1.md] / NO-GO dev
+Action maintenant : [action courante dans SPRINT_SELAS_V1.md]
+Point pedagogie : Codex protege l'ordre du sprint ; Naomie n'a pas a gerer Git, les commandes ou les gates juridiques.
+Prochaine etape : [prochaine etape indiquee par le fichier de sprint]
 ```
 
-Puis Codex donne le Prompt NotebookLM 01 complet.
+Si la phase courante est encore NotebookLM, Codex donne le prompt NotebookLM
+courant. Si la phase a avance, Codex ne relance pas le Prompt 01 par defaut.
 
 ## Mise a jour obligatoire
 

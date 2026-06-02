@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import date
 from pathlib import Path
+from unicodedata import combining, normalize
 
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
@@ -35,6 +36,7 @@ MANDATE_PARAGRAPH_2 = (
 )
 MANDATE_PARAGRAPH_3 = "L’exécution de ce mandat vaudra décharge au mandataire."
 LEGAL_EFFECT_PARAGRAPH = "Fait pour servir et valoir ce que de droit."
+SELAS_FUNCTION_DISPLAY = "President"
 
 
 class ProcurationGenerator:
@@ -52,11 +54,12 @@ class ProcurationGenerator:
         civilite = _required_text(person.civilite, "personne_signataire.civilite")
         prenom = _required_text(person.prenom, "personne_signataire.prenom")
         nom = _required_text(person.nom, "personne_signataire.nom")
-        fonction_dirigeant = _required_text(
+        fonction_dirigeant = _resolve_fonction_dirigeant(
             person.fonction_dirigeant,
             "personne_signataire.fonction_dirigeant",
+            company,
         )
-        forme_sociale = _required_text(company.forme_sociale, "societe.forme_sociale")
+        forme_sociale = _resolve_forme_sociale(company)
         denomination_societe = _required_text(company.denomination, "societe.denomination")
         lieu_signature = _required_text(ctx.signature.lieu, "signature.lieu")
 
@@ -110,6 +113,65 @@ def _required_address(address: Address | None, field_name: str) -> str:
     ville = _required_text(address.ville, f"{field_name}.ville")
     cp = _required_text(address.cp, f"{field_name}.cp")
     return f"{num_voie} {voie}, {ville} {cp}"
+
+
+def _resolve_fonction_dirigeant(
+    value: str | None,
+    field_name: str,
+    company: Company,
+) -> str:
+    fonction_dirigeant = _required_text(value, field_name)
+    if not _is_selas_company(company):
+        return fonction_dirigeant
+
+    normalized = _normalize_text(fonction_dirigeant)
+    if normalized == "president":
+        return SELAS_FUNCTION_DISPLAY
+    if normalized == "directeur general":
+        raise ValueError(
+            f"{field_name} doit etre President pour une procuration SELAS DOC-003 ; "
+            "Directeur General est hors perimetre V1."
+        )
+    raise ValueError(f"{field_name} doit etre President pour une procuration SELAS DOC-003.")
+
+
+def _resolve_forme_sociale(company: Company) -> str:
+    forme_sociale = _required_text(company.forme_sociale, "societe.forme_sociale")
+    if _is_selas_label(forme_sociale) and _normalize_text(forme_sociale) == "selas":
+        return "SELAS"
+    return forme_sociale
+
+
+def _is_selas_company(company: Company) -> bool:
+    candidates = (
+        company.forme_sociale,
+        company.forme_sociale_affichage,
+        company.forme_sociale_libelle_long,
+        company.forme_sociale_complete,
+        company.forme_sociale_abregee,
+    )
+    return any(_is_selas_label(candidate) for candidate in candidates if candidate)
+
+
+def _is_selas_label(value: str) -> bool:
+    normalized = _normalize_text(value)
+    if normalized == "selas":
+        return True
+    return (
+        "societe" in normalized
+        and "exercice liberal" in normalized
+        and "actions simplifiee" in normalized
+    )
+
+
+def _normalize_text(value: str) -> str:
+    without_accents = "".join(
+        character for character in normalize("NFKD", value) if not combining(character)
+    )
+    normalized = without_accents.strip().lower()
+    for character in ("'", "’", "-", "_", ".", ","):
+        normalized = normalized.replace(character, " ")
+    return " ".join(normalized.split())
 
 
 def _format_date(value: date) -> str:

@@ -87,10 +87,36 @@ def validate_document_requirement(
                 )
             )
 
+    for reuse_rule in requirement.required_reuse_rules:
+        source_ref, target_ref = _parse_required_reuse_rule(reuse_rule)
+        if (
+            source_ref is None
+            or target_ref is None
+            or not dossier.has_active_reuse_rule(source_ref, target_ref)
+        ):
+            issues.append(
+                ValidationIssue(
+                    issue_type=ValidationIssueType.MISSING_ADDRESS_REUSE_SOURCE,
+                    severity=ValidationSeverity.BLOCKING,
+                    message=f"Required reuse rule is missing: {reuse_rule}",
+                    doc_code=requirement.doc_code,
+                    source_ref=source_ref,
+                    target_ref=target_ref,
+                    action="Activate the explicit reuse rule before generation.",
+                )
+            )
+
     if include_unresolved_ambiguities:
         issues.extend(validate_unresolved_ambiguities(dossier, requirement))
 
     return tuple(issues)
+
+
+def _parse_required_reuse_rule(rule: str) -> tuple[str | None, str | None]:
+    parts = [part.strip() for part in rule.split("->", 1)]
+    if len(parts) != 2 or not parts[0] or not parts[1]:
+        return None, None
+    return parts[0], parts[1]
 
 
 def validate_unresolved_ambiguities(

@@ -133,9 +133,16 @@ def test_regime_communautaire_selas_generates_both_documents(tmp_path: Path) -> 
     assert "euros dépendant de notre communauté." in renonciation_text
     assert "euros dépendant de notre regime de communaute." not in renonciation_text
     assert "personnellement actionnaire de cette société" in renonciation_text
+    assert "personnellement associé de cette société" not in renonciation_text
     assert "Fait pour servir et valoir ce que de droit." in renonciation_text
     assert "RCS" not in renonciation_text
     assert "à la SELAS RC SANTE" in avertissement_text
+    assert "SELARL" not in renonciation_text
+    assert "SELARL" not in avertissement_text
+    assert "parts sociales" not in renonciation_text
+    assert "parts sociales" not in avertissement_text
+    assert "Directeur General" not in renonciation_text
+    assert "Directeur General" not in avertissement_text
     assert "Le  14/05/2026" in avertissement_text
     renonciation_section = Document(renonciation).sections[0]
     assert abs(renonciation_section.left_margin - Cm(3.17)) < 300

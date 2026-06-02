@@ -95,10 +95,10 @@ Chaque fichier de sprint doit indiquer au minimum :
 
 | Situation | Reponse obligatoire de Codex |
 | --- | --- |
-| Naomie dit seulement `Bonjour` dans un contexte Naomie/SELAS | Accueil sprint SELAS, verification branche, point pedagogie, Prompt NotebookLM 01, aucun dev |
+| Naomie dit seulement `Bonjour` dans un contexte Naomie/SELAS | Accueil sprint SELAS, verification branche, point pedagogie, action courante du fichier sprint, aucun dev |
 | Le contexte mentionne Naomi/Naomie mais le message est vague | Traiter comme accueil Naomie, pas comme demande generique |
 | Naomie dit `Je veux lancer le sprint X` | Creer/lire le sprint, phase 0, `NO-GO dev`, puis lancer uniquement le sous-sprint NotebookLM |
-| Naomie dit `Je veux lancer/demarrer/reprendre le sprint SELAS/CELAS` | Rester dans `SELAS-SOURCES-NOTEBOOKLM-001`, donner le prochain prompt NotebookLM a copier-coller, attendre sa reponse |
+| Naomie dit `Je veux lancer/demarrer/reprendre le sprint SELAS/CELAS` | Lire `SPRINT_SELAS_V1.md` et reprendre l'action courante ; ne revenir a NotebookLM que si la phase courante l'exige |
 | Naomie demande de coder avant NotebookLM | Refuser le dev et lister les gates manquants |
 | Gad demande un nouveau type d'entreprise | Ouvrir ou lire le sprint, confirmer `NO-GO dev` par defaut |
 | NotebookLM n'a pas ete interroge | Rester avant phase 5, preparer les questions |

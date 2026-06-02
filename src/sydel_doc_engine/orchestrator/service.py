@@ -5,6 +5,7 @@ from pathlib import Path
 
 from sydel_doc_engine.domain.document import DocumentDefinition
 from sydel_doc_engine.domain.models import DocumentGenerationContext
+from sydel_doc_engine.front_data.selas_schema import selas_pack_readiness
 from sydel_doc_engine.generators.base import DocumentGenerator
 from sydel_doc_engine.generators.lot_01.autorisation_domiciliation import (
     AutorisationDomiciliationGenerator,
@@ -120,6 +121,7 @@ REGIME_COMMUNAUTAIRE_DOCUMENT_IDS = {"DOC-005", "DOC-006"}
 DEMANDE_INSCRIPTION_ORDRE_DOCUMENT_ID = "DOC-034"
 BAIL_AVENANT_DOCUMENT_ID = "DOC-007"
 APPEL_FONDS_DOCUMENT_ID = "DOC-008"
+PV_NOMINATION_GERANT_DOCUMENT_ID = "DOC-004"
 CESSION_CABINET_DOCUMENT_IDS = {
     "DOC-009": ("acte", "medical"),
     "DOC-010": ("compromis", "medical"),
@@ -167,6 +169,10 @@ SCM_CESSION_DOCUMENT_IDS = {"DOC-031", "DOC-032", "DOC-033"}
 
 
 class MissingDocumentGeneratorError(RuntimeError):
+    pass
+
+
+class UnsupportedSelasPackContextError(RuntimeError):
     pass
 
 
@@ -255,6 +261,23 @@ class DocumentOrchestrator:
         documents = self.select_documents(ctx.structure)
         return [document for document in documents if _document_enabled_for_context(document, ctx)]
 
+    def select_selas_v1_pack_documents(
+        self,
+        ctx: DocumentGenerationContext,
+    ) -> list[DocumentDefinition]:
+        _validate_selas_v1_pack_context(ctx)
+        readiness = selas_pack_readiness(
+            regime_communautaire=_regime_communautaire_enabled(ctx),
+        )
+        selected_by_id = {
+            document.doc_id: document for document in self.select_documents_for_context(ctx)
+        }
+        return [
+            selected_by_id[doc_id]
+            for doc_id in readiness.active_pack_document_codes
+            if doc_id in selected_by_id
+        ]
+
     def generate_documents(self, ctx: DocumentGenerationContext, output_dir: Path) -> list[Path]:
         output_dir.mkdir(parents=True, exist_ok=True)
         output_paths: list[Path] = []
@@ -273,6 +296,8 @@ def _document_enabled_for_context(
     document: DocumentDefinition,
     ctx: DocumentGenerationContext,
 ) -> bool:
+    if ctx.structure == "SELAS" and not _selas_v1_document_allowed(document.doc_id, ctx):
+        return False
     if document.doc_id not in REGIME_COMMUNAUTAIRE_DOCUMENT_IDS:
         if document.doc_id == DEMANDE_INSCRIPTION_ORDRE_DOCUMENT_ID:
             return _demande_inscription_ordre_enabled(ctx)
@@ -280,6 +305,8 @@ def _document_enabled_for_context(
             return _cession_bail_enabled(ctx)
         if document.doc_id == APPEL_FONDS_DOCUMENT_ID:
             return _appel_fonds_enabled(ctx)
+        if document.doc_id == PV_NOMINATION_GERANT_DOCUMENT_ID:
+            return _pv_nomination_gerant_enabled(ctx)
         if document.doc_id in CESSION_CABINET_DOCUMENT_IDS:
             return _cession_cabinet_enabled(document.doc_id, ctx)
         if document.doc_id in DEROGATION_DOCUMENT_TYPES:
@@ -319,7 +346,58 @@ def _document_enabled_for_context(
         if document.doc_id in SCM_CESSION_DOCUMENT_IDS:
             return _scm_cession_enabled(ctx)
         return True
+    return _regime_communautaire_enabled(ctx)
+
+
+def _regime_communautaire_enabled(ctx: DocumentGenerationContext) -> bool:
     return bool(ctx.dossier_options and ctx.dossier_options.regime_communautaire)
+
+
+def _selas_v1_document_allowed(doc_id: str, ctx: DocumentGenerationContext) -> bool:
+    readiness = selas_pack_readiness(
+        regime_communautaire=_regime_communautaire_enabled(ctx),
+    )
+    return doc_id in readiness.active_pack_document_codes
+
+
+def _validate_selas_v1_pack_context(ctx: DocumentGenerationContext) -> None:
+    if ctx.structure != "SELAS":
+        raise UnsupportedSelasPackContextError("Le pack SELAS V1 exige structure=SELAS.")
+    if not _statuts_sel_enabled(ctx, ("SELAS", "selas_medecin")):
+        raise UnsupportedSelasPackContextError(
+            "Le pack SELAS V1 exige statuts_sel.overlay=selas_medecin."
+        )
+    if ctx.dossier_options is not None:
+        blocked_options = [
+            option
+            for option in (
+                "cession",
+                "scm_cession",
+                "site_distinct",
+                "derogation",
+            )
+            if getattr(ctx.dossier_options, option)
+        ]
+        if blocked_options:
+            raise UnsupportedSelasPackContextError(
+                "Cas SELAS hors V1 bloque : " + ", ".join(blocked_options) + "."
+            )
+    if len(ctx.associes) > 1:
+        raise UnsupportedSelasPackContextError(
+            "Cas SELAS hors V1 bloque : multi-actionnaires."
+        )
+    if ctx.dirigeant_nomine is not None:
+        fonction = (ctx.dirigeant_nomine.fonction_affichage or "").strip().lower()
+        fonction = fonction.replace("é", "e").replace("è", "e")
+        if "directeur" in fonction and "general" in fonction:
+            raise UnsupportedSelasPackContextError(
+                "Cas SELAS hors V1 bloque : Directeur General."
+            )
+    if ctx.capital is not None and ctx.capital.type_titre is not None:
+        if ctx.capital.type_titre.strip().lower() != "actions":
+            raise UnsupportedSelasPackContextError(
+                "Cas SELAS hors V1 bloque : capital non divise en actions."
+            )
 
 
 def _demande_inscription_ordre_enabled(ctx: DocumentGenerationContext) -> bool:
@@ -338,6 +416,12 @@ def _appel_fonds_enabled(ctx: DocumentGenerationContext) -> bool:
     if ctx.cession is None or ctx.cession.type_cabinet is None:
         return False
     return ctx.cession.type_cabinet.strip().lower() == "dentaire"
+
+
+def _pv_nomination_gerant_enabled(ctx: DocumentGenerationContext) -> bool:
+    if ctx.structure == "SELAS" and ctx.statuts_sel is not None:
+        return (ctx.statuts_sel.overlay or "").strip().lower() != "selas_medecin"
+    return True
 
 
 def _cession_cabinet_enabled(doc_id: str, ctx: DocumentGenerationContext) -> bool:

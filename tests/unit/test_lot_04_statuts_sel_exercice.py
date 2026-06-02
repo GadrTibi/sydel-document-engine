@@ -312,6 +312,9 @@ def test_statuts_selas_medecin_generates_without_second_lieu_by_default(
     assert output_path.name == "statuts_selas_medecin.docx"
     assert "Societe d'exercice liberal par actions simplifiee" in text
     assert "President" in text
+    assert "actions" in text
+    assert "parts sociales" not in text
+    assert "SELARL" not in text
     assert "nom_lieu_exercice_2" not in text
     _assert_clean(text)
 
@@ -358,6 +361,63 @@ def test_statuts_selas_blocks_dirigeant_non_associe_signature(tmp_path: Path) ->
         StatutsSelasMedecinGenerator().generate(ctx, tmp_path)
 
 
+def test_statuts_selas_blocks_non_action_capital_type(tmp_path: Path) -> None:
+    ctx = _context(overlay="selas_medecin")
+    ctx.capital.type_titre = "parts_sociales"
+
+    with pytest.raises(ValueError, match="type_titre"):
+        StatutsSelasMedecinGenerator().generate(ctx, tmp_path)
+
+
+def test_statuts_selas_blocks_incoherent_nominal_value(tmp_path: Path) -> None:
+    ctx = _context(overlay="selas_medecin")
+    ctx.capital.valeur_nominale_titre = "2"
+
+    with pytest.raises(ValueError, match="valeur_nominale_titre"):
+        StatutsSelasMedecinGenerator().generate(ctx, tmp_path)
+
+
+def test_statuts_selas_blocks_incoherent_unique_actionnaire_apport(tmp_path: Path) -> None:
+    ctx = _context(overlay="selas_medecin")
+    ctx.associes[0].apport_numeraire = "900"
+
+    with pytest.raises(ValueError, match="apport_numeraire"):
+        StatutsSelasMedecinGenerator().generate(ctx, tmp_path)
+
+
+def test_statuts_selas_blocks_directeur_general_nomination(tmp_path: Path) -> None:
+    ctx = _context(overlay="selas_medecin")
+    ctx.dirigeant_nomine.fonction_affichage = "Directeur General"
+
+    with pytest.raises(ValueError, match="Directeur General"):
+        StatutsSelasMedecinGenerator().generate(ctx, tmp_path)
+
+
+@pytest.mark.parametrize(
+    "flag",
+    [
+        "selas_actions_preference",
+        "selas_demembrement_actions",
+        "selas_droits_vote_derogatoires",
+        "selas_personne_morale_actionnaire",
+    ],
+)
+def test_statuts_selas_blocks_complex_action_cases(tmp_path: Path, flag: str) -> None:
+    ctx = _context(overlay="selas_medecin")
+    ctx.metadata[flag] = "true"
+
+    with pytest.raises(ValueError, match="hors V1"):
+        StatutsSelasMedecinGenerator().generate(ctx, tmp_path)
+
+
+def test_statuts_selas_blocks_bad_manual_action_numbering(tmp_path: Path) -> None:
+    ctx = _context(overlay="selas_medecin")
+    ctx.metadata["capital.actions.numerotation"] = "actions 2 a 1000"
+
+    with pytest.raises(ValueError, match="numerotation"):
+        StatutsSelasMedecinGenerator().generate(ctx, tmp_path)
+
+
 def test_statuts_sel_applies_female_birth_agreement(tmp_path: Path) -> None:
     ctx = _context(overlay="selas_medecin", gender=Gender.FEMININ)
 
@@ -378,6 +438,18 @@ def test_statuts_sel_orchestrator_selects_only_requested_overlay() -> None:
     assert "DOC-017" in selected_ids
     assert "DOC-016" not in selected_ids
     assert "DOC-018" not in selected_ids
+
+
+def test_statuts_selas_orchestrator_selects_doc018_without_pv_gerant() -> None:
+    orchestrator = DocumentOrchestrator(build_seed_catalog())
+
+    selected = orchestrator.select_documents_for_context(_context(overlay="selas_medecin"))
+
+    selected_ids = {document.doc_id for document in selected}
+    assert "DOC-018" in selected_ids
+    assert "DOC-016" not in selected_ids
+    assert "DOC-017" not in selected_ids
+    assert "DOC-004" not in selected_ids
 
 
 def test_statuts_sel_orchestrator_ignores_sel_statuts_without_overlay() -> None:

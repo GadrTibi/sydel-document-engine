@@ -114,6 +114,8 @@ def test_seed_catalog_statuts_sel_scope_is_split_by_overlay() -> None:
     assert "statuts_sel.overlay == selarl_dentiste" in dentiste.specific_conditions
     assert "statuts_sel.overlay == selarl_medecin" in medecin.specific_conditions
     assert "statuts_sel.overlay == selas_medecin" in selas.specific_conditions
+    assert "capital.type_titre == actions" in selas.specific_conditions
+    assert "Directeur General nomme bloque en V1" in selas.specific_conditions
 
 
 def test_seed_catalog_statuts_civils_core_scope_is_limited_to_civil_structures() -> None:

@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import date
 from pathlib import Path
 
+import pytest
 from docx import Document
 from docx.oxml.ns import qn
 
@@ -25,6 +26,10 @@ def _context(
     *,
     adresse_domiciliation_affichee: str = "15 rue du Libre, Lyon 69002",
     image_optionnelle: Path | None = None,
+    forme_sociale: str | None = None,
+    fonction_dirigeant: str | None = None,
+    capital: str | None = "1 000",
+    signature_lieu: str = "Paris",
 ) -> DocumentGenerationContext:
     civilite = "Madame" if genre == Gender.FEMININ else "Monsieur"
     prenom = "Marie" if genre == Gender.FEMININ else "Jean"
@@ -34,10 +39,12 @@ def _context(
             civilite=civilite,
             prenom=prenom,
             nom="Durand",
+            fonction_dirigeant=fonction_dirigeant,
         ),
         societe=Company(
+            forme_sociale=forme_sociale,
             denomination="DURAND CONSEIL",
-            capital="1 000",
+            capital=capital,
             siege=Address(
                 num_voie="80",
                 voie="avenue Marceau",
@@ -49,7 +56,7 @@ def _context(
             adresse_domiciliation_affichee=adresse_domiciliation_affichee,
         ),
         signature=Signature(
-            lieu="Paris",
+            lieu=signature_lieu,
             date=date(2026, 5, 12),
             image_optionnelle=image_optionnelle,
         ),
@@ -62,12 +69,20 @@ def _generate(
     *,
     adresse_domiciliation_affichee: str = "15 rue du Libre, Lyon 69002",
     image_optionnelle: Path | None = None,
+    forme_sociale: str | None = None,
+    fonction_dirigeant: str | None = None,
+    capital: str | None = "1 000",
+    signature_lieu: str = "Paris",
 ) -> Path:
     return AutorisationDomiciliationGenerator().generate(
         _context(
             genre,
             adresse_domiciliation_affichee=adresse_domiciliation_affichee,
             image_optionnelle=image_optionnelle,
+            forme_sociale=forme_sociale,
+            fonction_dirigeant=fonction_dirigeant,
+            capital=capital,
+            signature_lieu=signature_lieu,
         ),
         tmp_path,
     )
@@ -146,6 +161,50 @@ def test_autorisation_domiciliation_uses_company_seat_as_cabinet_address(
     assert "15 rue du Libre, Lyon 69002" not in text
     assert "80 avenue Marceau, 75008 Paris" in text
     assert "Paris 75008" not in text
+
+
+def test_autorisation_domiciliation_selas_president_context_stays_neutral(
+    tmp_path: Path,
+) -> None:
+    text = _docx_text(
+        _generate(
+            tmp_path,
+            forme_sociale="SELAS",
+            fonction_dirigeant="Président",
+        )
+    )
+
+    assert "AUTORISATION DE DOMICILIATION" in text
+    assert "Je soussigné Monsieur Jean Durand" in text
+    assert "DURAND CONSEIL au capital de 1 000 €" in text
+    assert "80 avenue Marceau, 75008 Paris" in text
+    for forbidden in (
+        "SELARL",
+        "SELAS",
+        "Gérant",
+        "Gerant",
+        "gérant",
+        "gerant",
+        "Président",
+        "President",
+        "parts sociales",
+        "actions",
+        "Directeur Général",
+        "Directeur General",
+    ):
+        assert forbidden not in text
+
+
+def test_autorisation_domiciliation_blocks_missing_capital(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="societe.capital est obligatoire"):
+        _generate(tmp_path, capital=None)
+
+
+def test_autorisation_domiciliation_blocks_missing_signature_place(
+    tmp_path: Path,
+) -> None:
+    with pytest.raises(ValueError, match="signature.lieu est obligatoire"):
+        _generate(tmp_path, signature_lieu="")
 
 
 def test_autorisation_domiciliation_does_not_use_signature_image(tmp_path: Path) -> None:

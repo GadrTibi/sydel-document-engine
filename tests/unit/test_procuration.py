@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import date
 from pathlib import Path
 
+import pytest
 from docx import Document
 from docx.oxml.ns import qn
 
@@ -21,6 +22,9 @@ def _context(
     genre: Gender = Gender.MASCULIN,
     *,
     image_optionnelle: Path | None = None,
+    fonction_dirigeant: str = "Président",
+    forme_sociale: str = "SAS",
+    denomination: str = "DURAND CONSEIL",
 ) -> DocumentGenerationContext:
     civilite = "Madame" if genre == Gender.FEMININ else "Monsieur"
     prenom = "Marie" if genre == Gender.FEMININ else "Jean"
@@ -36,11 +40,11 @@ def _context(
                 cp="75008",
                 ville="Paris",
             ),
-            fonction_dirigeant="Président",
+            fonction_dirigeant=fonction_dirigeant,
         ),
         societe=Company(
-            forme_sociale="SAS",
-            denomination="DURAND CONSEIL",
+            forme_sociale=forme_sociale,
+            denomination=denomination,
             siege=Address(
                 num_voie="80",
                 voie="avenue Marceau",
@@ -61,9 +65,18 @@ def _generate(
     genre: Gender = Gender.MASCULIN,
     *,
     image_optionnelle: Path | None = None,
+    fonction_dirigeant: str = "Président",
+    forme_sociale: str = "SAS",
+    denomination: str = "DURAND CONSEIL",
 ) -> Path:
     return ProcurationGenerator().generate(
-        _context(genre, image_optionnelle=image_optionnelle),
+        _context(
+            genre,
+            image_optionnelle=image_optionnelle,
+            fonction_dirigeant=fonction_dirigeant,
+            forme_sociale=forme_sociale,
+            denomination=denomination,
+        ),
         tmp_path,
     )
 
@@ -122,6 +135,62 @@ def test_procuration_contains_essential_texts(tmp_path: Path) -> None:
     assert "Fait à Paris" in text
     assert "Le 12/05/2026" in text
     assert "Jean Durand" in text
+
+
+def test_procuration_selas_president_contains_required_terms(tmp_path: Path) -> None:
+    text = _docx_text(
+        _generate(
+            tmp_path,
+            fonction_dirigeant="Président",
+            forme_sociale="SELAS",
+            denomination="DURAND MEDECIN",
+        )
+    )
+
+    assert "Procuration" in text
+    assert "Je soussigné Monsieur Jean Durand" in text
+    assert "Agissant en qualité de President de SELAS DURAND MEDECIN" in text
+    assert "80 avenue Marceau, 75008 PARIS" in text
+    assert "demeurant au 12 rue des Lilas, Paris 75008" in text
+    assert "dont le siège est situé au 80 avenue Marceau, Paris 75008" in text
+    assert "Gerant" not in text
+    assert "gerant" not in text
+    assert "Gérant" not in text
+    assert "gérant" not in text
+    assert "SELARL" not in text
+    assert "parts sociales" not in text
+    assert "Directeur General" not in text
+    assert "Directeur Général" not in text
+
+
+def test_procuration_selas_normalizes_abbreviated_forme_sociale(tmp_path: Path) -> None:
+    text = _docx_text(
+        _generate(
+            tmp_path,
+            fonction_dirigeant="President",
+            forme_sociale="selas",
+            denomination="DURAND MEDECIN",
+        )
+    )
+
+    assert "Agissant en qualité de President de SELAS DURAND MEDECIN" in text
+    assert " de selas " not in text
+
+
+def test_procuration_selas_rejects_gerant_function(tmp_path: Path) -> None:
+    with pytest.raises(
+        ValueError,
+        match="personne_signataire.fonction_dirigeant doit etre President",
+    ):
+        _generate(tmp_path, fonction_dirigeant="Gerant", forme_sociale="SELAS")
+
+
+def test_procuration_selas_rejects_directeur_general(tmp_path: Path) -> None:
+    with pytest.raises(
+        ValueError,
+        match="Directeur General est hors perimetre V1",
+    ):
+        _generate(tmp_path, fonction_dirigeant="Directeur General", forme_sociale="SELAS")
 
 
 def test_procuration_uses_feminine_agreement(tmp_path: Path) -> None:

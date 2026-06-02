@@ -53,7 +53,9 @@ L'arbre théorique abandonné n'est pas une source valide. Il n'existe pas de fi
 - L'état SELARL courant se lit d'abord dans `docs/project/SELARL_CANONICAL_STATUS_V1.md`.
 - La méthode de sprint par type d'entreprise est formalisée dans `docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md`.
 - L'orchestrateur de sprint operationnel est formalise dans `docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md`.
-- Le sprint SELAS est ouvert en `NO-GO dev` dans `docs/sprints/SPRINT_SELAS_V1.md`.
+- Le sprint SELAS est ouvert dans `docs/sprints/SPRINT_SELAS_V1.md`. Son etat
+  courant doit etre lu dans ce fichier ; a date, le premier ticket front/data
+  borne a ete implemente, mais la generation documentaire SELAS reste interdite.
 - La réutilisation SELARL/global est cadrée dans `docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md`.
 - Le mode d'emploi d'installation et branche Naomie est `docs/project/NAOMIE_GITHUB_ONBOARDING_V1.md`.
 - La couche pedagogique pour Naomie est `docs/project/NAOMIE_LEARNING_MENTOR_PROTOCOL_V1.md`.
@@ -90,9 +92,10 @@ Avant toute proposition ou implémentation, lire dans cet ordre :
 - Codex cadre les tickets, reformule l'intention métier, arbitre le passage en `GO dev` ou `NO-GO dev` et explicite les décisions métier à documenter.
 - Codex doit d'abord consulter la tour de controle projet pour connaitre sprint actif, phase, action autorisee et actions interdites.
 - Si Naomie démarre un sprint, elle doit s'identifier et Codex doit la guider étape par étape selon `SPRINT_ORCHESTRATOR_PROTOCOL_V1.md` et `COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md`.
-- Pour le sprint SELAS, l'etat immediat est `docs/sprints/SPRINT_SELAS_V1.md` : `NO-GO dev`, sous-sprint NotebookLM actif, prochaine action = donner a Naomie le prompt NotebookLM courant a copier-coller.
-- Si Naomie dit seulement `bonjour`, Codex doit quand meme donner le Prompt NotebookLM 01 et ne pas attendre qu'elle choisisse une tache.
-- Si Naomie dit qu'elle veut lancer/demarrer/reprendre le sprint SELAS/CELAS, Codex doit comprendre `lancer = lancer le sous-sprint NotebookLM`, et ne doit pas passer en production, generation, audit, matrice ou code.
+- Pour le sprint SELAS, l'etat immediat est `docs/sprints/SPRINT_SELAS_V1.md` :
+  phase courante, statut et prochaine action y sont indiques.
+- Si Naomie dit seulement `bonjour`, Codex doit quand meme lire `SPRINT_SELAS_V1.md`, repondre avec statut/action/point pedagogie/prochaine etape, et ne pas attendre qu'elle choisisse une tache.
+- Si Naomie dit qu'elle veut lancer/demarrer/reprendre le sprint SELAS/CELAS, Codex doit suivre la phase courante du fichier sprint ; depuis `SELAS-REUSE-AUDIT-001`, l'action suivante est la matrice documentaire en lecture seule, pas un retour automatique au Prompt 01.
 - Si Naomie travaille sur un nouveau type d'entreprise, elle doit partir d'une branche dediee selon `NAOMIE_GITHUB_ONBOARDING_V1.md`, mais Codex gere Git, les commandes, les tests et les checkpoints pour elle.
 - Si Naomie pose une question d'apprentissage, utiliser le mode `Professeur Naomie` defini dans `NAOMIE_LEARNING_MENTOR_PROTOCOL_V1.md`.
 - Le sous-agent prioritaire pour un nouveau sprint est `Reuse Auditor`, défini dans `REUSE_AUDIT_AGENT_PROTOCOL_V1.md`.

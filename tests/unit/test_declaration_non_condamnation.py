@@ -3,19 +3,27 @@ from __future__ import annotations
 from datetime import date
 from pathlib import Path
 
+import pytest
 from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml.ns import qn
 from docx.shared import Pt
 
 from sydel_doc_engine.domain.enums import Gender
-from sydel_doc_engine.domain.models import Address, DocumentGenerationContext, Person, Signature
+from sydel_doc_engine.domain.models import Address, Company, DocumentGenerationContext, Person, Signature
 from sydel_doc_engine.generators.lot_01.declaration_non_condamnation import (
     DeclarationNonCondamnationGenerator,
 )
 
 
-def _context(genre: Gender = Gender.MASCULIN) -> DocumentGenerationContext:
+def _context(
+    genre: Gender = Gender.MASCULIN,
+    *,
+    nom_pere: str | None = "Pierre Durand",
+    nom_mere: str | None = "Anne Martin",
+    structure: str | None = None,
+    societe: Company | None = None,
+) -> DocumentGenerationContext:
     civilite = "Madame" if genre == Gender.FEMININ else "Monsieur"
     prenom = "Marie" if genre == Gender.FEMININ else "Jean"
     return DocumentGenerationContext(
@@ -32,18 +40,26 @@ def _context(genre: Gender = Gender.MASCULIN) -> DocumentGenerationContext:
             ),
             date_naissance=date(1990, 2, 3),
             nationalite="française",
-            nom_pere="Pierre Durand",
-            nom_mere="Anne Martin",
+            nom_pere=nom_pere,
+            nom_mere=nom_mere,
+            fonction_dirigeant="President" if structure == "SELAS" else None,
         ),
         signature=Signature(
             lieu="Paris",
             date=date(2026, 5, 12),
         ),
+        structure=structure,
+        societe=societe,
     )
 
 
-def _generate(tmp_path: Path, genre: Gender = Gender.MASCULIN) -> Path:
-    return DeclarationNonCondamnationGenerator().generate(_context(genre), tmp_path)
+def _generate(
+    tmp_path: Path,
+    genre: Gender = Gender.MASCULIN,
+    *,
+    ctx: DocumentGenerationContext | None = None,
+) -> Path:
+    return DeclarationNonCondamnationGenerator().generate(ctx or _context(genre), tmp_path)
 
 
 def _docx_text(path: Path) -> str:
@@ -107,6 +123,46 @@ def test_declaration_non_condamnation_uses_feminine_agreements(tmp_path: Path) -
     assert "Je soussignée Madame Marie Durand" in text
     assert "Née le 03/02/1990" in text
     assert "fille de Monsieur Pierre Durand" in text
+
+
+def test_declaration_non_condamnation_selas_president_keeps_person_centered_text(
+    tmp_path: Path,
+) -> None:
+    ctx = _context(
+        structure="SELAS",
+        societe=Company(forme_sociale="SELAS", denomination="SELAS EXEMPLE"),
+    )
+    text = _docx_text(_generate(tmp_path, ctx=ctx))
+
+    assert "Je soussigné Monsieur Jean Durand" in text
+    assert "fils de Monsieur Pierre Durand" in text
+    assert "et de Madame Anne Martin" in text
+    assert "Gerant" not in text
+    assert "Gérant" not in text
+    assert "gerant" not in text
+    assert "gérant" not in text
+    assert "SELARL" not in text
+    assert "parts sociales" not in text
+    assert "Directeur General" not in text
+    assert "Directeur Général" not in text
+    assert "President" not in text
+    assert "Président" not in text
+
+
+def test_declaration_non_condamnation_blocks_missing_father_name(tmp_path: Path) -> None:
+    with pytest.raises(
+        ValueError,
+        match="personne_signataire.nom_pere est obligatoire pour DOC-001",
+    ):
+        _generate(tmp_path, ctx=_context(nom_pere=None))
+
+
+def test_declaration_non_condamnation_blocks_missing_mother_name(tmp_path: Path) -> None:
+    with pytest.raises(
+        ValueError,
+        match="personne_signataire.nom_mere est obligatoire pour DOC-001",
+    ):
+        _generate(tmp_path, ctx=_context(nom_mere=None))
 
 
 def test_declaration_non_condamnation_composes_personal_address(tmp_path: Path) -> None:

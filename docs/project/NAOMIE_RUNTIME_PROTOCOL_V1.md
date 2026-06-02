@@ -13,7 +13,9 @@ Il existe pour eviter l'incident suivant : Naomie dit seulement `bonjour` ou
 ## Regle centrale
 
 ```text
-Naomie + SELAS = sprint actif, phase NotebookLM, NO-GO dev.
+Naomie + SELAS = sprint actif, phase courante lue dans `SPRINT_SELAS_V1.md`.
+Par defaut `NO-GO dev`; un `GO dev` ne vaut que pour le ticket borne inscrit
+dans le fichier de sprint.
 ```
 
 Codex doit se comporter comme chef de projet et professeur, pas comme un simple
@@ -40,11 +42,15 @@ Appliquer ce protocole si le message, le titre du chat ou le contexte contient :
      `https://github.com/GadrTibi/sydel-document-engine.git` ;
    - la branche cible doit etre `codex/naomie-selas-sprint`.
 4. Verifier ou tenter de rejoindre la branche `codex/naomie-selas-sprint`.
-5. Rester en `NO-GO dev`.
-6. Donner le Prompt NotebookLM 01.
-7. Attendre la reponse brute NotebookLM.
-8. Structurer la reponse dans `docs/sprints/SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md`.
-9. Donner le prompt suivant selon les trous.
+5. Lire l'etat courant dans `docs/sprints/SPRINT_SELAS_V1.md`.
+6. Respecter le statut courant du sprint : `NO-GO dev` par defaut, ou `GO dev`
+   borne si Gad l'a donne et que le fichier de sprint le trace.
+7. Donner l'action courante du sprint avec un point pedagogie.
+8. Si le sprint est encore en phase NotebookLM, donner le prompt NotebookLM
+   courant, attendre la reponse brute et la structurer dans
+   `docs/sprints/SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md`.
+9. Si le sprint a depasse NotebookLM, ne pas relancer le Prompt 01 par defaut et
+   continuer l'etape courante indiquee dans le fichier sprint.
 
 ## Interdits
 
@@ -58,15 +64,18 @@ Codex ne doit pas :
 - utiliser `SELAS-NOTEBOOKLM-RECONCILIATION-001` comme ticket actif ;
 - lancer un audit de reutilisation avant NotebookLM suffisant ;
 - produire une matrice finale avant NotebookLM + reuse audit ;
-- coder, generer ou pousser une fonctionnalite SELAS.
+- coder hors ticket borne ;
+- generer ou pousser une fonctionnalite documentaire SELAS sans spec et gate.
 
 ## Ticket actif
 
-Le ticket actif est :
+Le ticket actif initial NotebookLM etait :
 
 ```text
 SELAS-SOURCES-NOTEBOOKLM-001
 ```
+
+Le ticket actif courant doit etre lu dans `docs/sprints/SPRINT_SELAS_V1.md`.
 
 L'ancien libelle ci-dessous est obsolete :
 
@@ -80,7 +89,9 @@ Si Codex le rencontre dans une ancienne conversation, il doit le traduire en
 ## Reponse obligatoire
 
 Si Naomie dit `bonjour`, `je suis Naomie`, `je reprends le sprint SELAS`, ou
-equivalent, repondre avec ce format :
+equivalent, lire d'abord `docs/sprints/SPRINT_SELAS_V1.md`.
+
+Si le sprint est encore en phase NotebookLM, repondre avec ce format :
 
 ```text
 Statut sprint : Phase 3 - NOTEBOOKLM / NO-GO dev
@@ -102,6 +113,10 @@ Pour chaque document, donne :
 Termine par les 5 questions les plus importantes a poser ensuite.
 ```
 
+Si le sprint a depasse NotebookLM, repondre avec le statut et l'action courante
+du fichier de sprint, toujours avec un point pedagogie. Ne pas relancer le
+Prompt 01 et ne pas annoncer de generation documentaire sans ticket explicite.
+
 ## Si l'environnement est sur main
 
 Si l'environnement indique `main`, Codex doit tenter de rejoindre
@@ -113,7 +128,7 @@ Si la bascule est impossible, repondre :
 Statut sprint : CONTEXTE BRANCHE A CORRIGER / NO-GO dev
 Action maintenant : je dois recuperer ou ouvrir la branche codex/naomie-selas-sprint avant de continuer.
 Point pedagogie : main est la branche generale ; ton sprint SELAS a une branche dediee pour ne pas melanger les travaux.
-Prochaine etape : je gere la branche, puis je te donne le Prompt NotebookLM 01.
+Prochaine etape : je gere la branche, puis je reprends l'action courante du sprint SELAS.
 ```
 
 Naomie ne doit pas executer les commandes Git elle-meme.
@@ -148,7 +163,7 @@ ou juridique.
 Le protocole est respecte si, apres un simple `bonjour`, Naomie sait :
 
 - ou en est le sprint ;
-- qu'aucun dev n'est autorise ;
-- qu'elle doit copier le Prompt NotebookLM 01 ;
-- que Codex journalisera la reponse ;
+- si le sprint est en `NO-GO dev`, ou quel ticket borne est autorise ;
+- quelle action unique est maintenant autorisee ;
+- que Codex journalise ou met a jour les fichiers de sprint selon l'etape ;
 - que Codex gere Git et les commandes pour elle.

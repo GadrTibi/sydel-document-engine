@@ -558,6 +558,10 @@ def build_seed_catalog() -> list[DocumentDefinition]:
             specific_conditions=[
                 "statuts_sel.overlay == selas_medecin",
                 "associe unique uniquement en V1",
+                "capital.type_titre == actions",
+                "capital actions coherent en V1",
+                "Directeur General nomme bloque en V1",
+                "actions de preference et droits derogatoires bloques en V1",
                 "second lieu rendu seulement si nom et adresse sont fournis ensemble",
             ],
             dynamic_associates=False,
