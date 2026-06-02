@@ -16,8 +16,9 @@ Date d'ouverture : 2026-06-01
 | Dossier local attendu | Le nom peut etre `sydel-document-engine` chez Naomie ; verifier surtout remote + branche |
 | Phase courante | 3 - NOTEBOOKLM |
 | Statut courant | `NO-GO dev` |
-| Derniere action | Sprint SELAS choisi comme prochain sprint logique apres SELARL |
-| Prochaine action | Donner a Naomie le Prompt NotebookLM 01, attendre sa reponse brute, puis la structurer |
+| Derniere action | Audit de fraicheur 2026-06-02 : les rapports Naomi etaient stale car ils ignoraient l'etat SELAS deja present dans le repo |
+| Prochaine action | Backfiller l'etat SELAS reel, puis reprendre NotebookLM uniquement sur les trous reels |
+| Worklog Naomie | `docs/sprints/SPRINT_SELAS_NAOMIE_WORKLOG_V1.md` |
 
 ## Decisions d'ouverture
 
@@ -32,15 +33,47 @@ Date d'ouverture : 2026-06-01
 - Le sprint est ouvert en `NO-GO dev`.
 - Aucun code, aucune generation nouvelle et aucune mise en production SELAS ne
   sont autorises avant les gates.
+- Le repo n'est pas vierge cote SELAS : des sources, documents, mappings,
+  generateurs, tests et exemples SELAS existent deja. Le sprint Naomie doit
+  consolider/auditer cette matiere, pas pretendre repartir de zero.
+
+## Etat reel SELAS preexistant
+
+Au 2026-06-02, un rapport Gad ne doit pas dire que SELAS est simplement "au
+demarrage NotebookLM" sans nuance.
+
+Preuves deja presentes dans le repo :
+
+- sources SELAS :
+  - `project/source_documents/lot_02/Lettre de renonciation a revendiquer la qualite d_associe - SELAS.docx` ;
+  - `project/source_documents/lot_04/Statuts_SELAS_medecin.docx` ;
+  - `project/source_documents/lot_05/Courrier SDE - SELAS.docx` ;
+  - `project/source_documents/lot_05/PV AGE cession part SCM - SELAS.docx` ;
+  - `project/source_truth/modele Statuts SELAS avec MH.docx`.
+- selection SELAS dans `src/sydel_doc_engine/domain/case_catalog.py` ;
+- `DOC-018` `Statuts SELAS medecin` dans
+  `src/sydel_doc_engine/registry/catalog.py` ;
+- generateur `StatutsSelasMedecinGenerator` branche dans
+  `src/sydel_doc_engine/orchestrator/service.py` ;
+- conditions UI SELAS dans `src/sydel_doc_engine/app/business_wizard.py` ;
+- tests et exemples SELAS.
+
+Cette matiere ne vaut pas validation finale du sprint SELAS. Elle prouve en
+revanche que le rapport de supervision doit separer :
+
+- l'avancement personnel de Naomie trace dans le worklog ;
+- l'etat reel SELAS deja existant dans le repo ;
+- les trous NotebookLM/audit/reuse/matrice restant a combler.
 
 ## Etat des gates
 
 | Gate | Statut | Note |
 | --- | --- | --- |
 | Branche cible | PRETE A VERIFIER AU DEMARRAGE | `codex/naomie-selas-sprint` geree par Codex |
-| Identification Naomie | A CONFIRMER | Si le contexte ou le titre indique Naomie, appliquer quand meme le protocole runtime |
-| Sources | A FAIRE | Lire source de verite, sources SELAS, specs et retours |
-| NotebookLM | A FAIRE | Utiliser `SPRINT_SELAS_NOTEBOOKLM_PROMPTS_V1.md`, puis journaliser dans `SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md` |
+| Identification Naomie | A CONFIRMER | Si Naomie est l'interlocutrice active, appliquer le protocole runtime ; si Gad parle de Naomie, appliquer l'orchestrateur de suivi |
+| Sources | PARTIEL | Sources SELAS deja presentes ; backfill et hierarchie a consolider |
+| NotebookLM | TRACE INCOMPLETE | Journal NotebookLM SELAS vide ; ne pas confondre avec absence d'etat SELAS repo |
+| Worklog Naomie | STALE | Worklog ouvert mais incomplet ; doit distinguer action Naomi et etat reel SELAS |
 | Audit reutilisation | BLOQUE | Interdit tant que le sous-sprint NotebookLM n'est pas suffisant |
 | Matrice documentaire | BLOQUE | Interdite tant que NotebookLM et reuse audit ne sont pas faits |
 | Parcours metier | A FAIRE | Definir saisie, roles, adresses, reutilisations |
@@ -50,7 +83,8 @@ Date d'ouverture : 2026-06-01
 
 ## Reponse obligatoire quand Naomie arrive
 
-Si Naomie dit seulement `Bonjour`, repondre :
+Si Naomie est l'interlocutrice active deja identifiee et dit seulement
+`Bonjour`, repondre :
 
 ```text
 Statut sprint : Phase 3 - NOTEBOOKLM / NO-GO dev
@@ -78,6 +112,14 @@ Prochaine etape : je structure ta reponse dans SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md
 
 Puis donner le Prompt NotebookLM 01 complet depuis
 `docs/sprints/SPRINT_SELAS_NOTEBOOKLM_PROMPTS_V1.md`.
+
+Si un nouveau chat dit seulement `Bonjour` sans identite explicite, ne pas
+declencher ce bloc. Demander d'abord :
+
+```text
+Bonjour, tu es Gad ou Naomi ?
+Je te route ensuite sur le bon protocole projet.
+```
 
 Reponse explicitement interdite :
 
@@ -170,6 +212,7 @@ Statut : A FAIRE.
 ## Blocages actuels
 
 - NotebookLM non interroge.
+- Le suivi Naomi/worklog n'est pas a jour face a l'etat reel SELAS du repo.
 - Audit de reutilisation non fait.
 - Matrice documentaire non faite.
 - Aucun `GO dev` donne par Gad.
@@ -177,13 +220,16 @@ Statut : A FAIRE.
 
 ## Prochaine action concrete
 
-1. Quand Naomie arrive, Codex verifie la branche `codex/naomie-selas-sprint`.
-2. Codex l'accueille en phase 0 avec le point pedagogie.
-3. Si Naomie dit qu'elle veut lancer/reprendre le sprint, Codex lance uniquement le sous-sprint NotebookLM.
-4. Codex donne le Prompt NotebookLM 01 a copier-coller.
-5. Naomie colle la reponse NotebookLM.
-6. Codex structure la reponse dans le journal, puis choisit le prompt suivant selon les trous.
-7. Codex reste dans NotebookLM tant que la couverture minimale n'est pas atteinte.
+1. Faire un audit de fraicheur avant tout nouveau rapport Gad : worklog,
+   NotebookLM, branche, threads, sources, catalogue, generateurs, tests.
+2. Backfiller le worklog avec l'etat SELAS reel deja present dans le repo.
+3. Quand Naomie arrive, verifier la branche `codex/naomie-selas-sprint`.
+4. Donner a Naomie la prochaine action NotebookLM seulement apres avoir indique
+   que la mission consiste a consolider les trous reels, pas a repartir de zero.
+5. Structurer chaque reponse dans le journal, mettre a jour le worklog Naomie,
+   puis choisir le prompt suivant selon les trous.
+6. Rester en `NO-GO dev` tant que NotebookLM/reuse/matrice/GO Gad ne sont pas
+   passes.
 
 ## Statut final
 

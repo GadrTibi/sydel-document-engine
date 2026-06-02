@@ -16,6 +16,8 @@ Ce document ne remplace pas :
 - `docs/project/01_EXECUTION_BOARD.md` pour les tickets ;
 - `docs/project/04_LAST_STATE.md` pour le dernier etat reprenable ;
 - `docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md` pour le protocole court Naomie ;
+- `docs/project/NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md` pour le suivi
+  de Naomie demande par Gad ;
 - `docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md` pour le workflow Gad / Naomie / Codex multi-projets ;
 - `docs/sprints/SPRINT_[TYPE]_V1.md` pour l'etat detaille d'un sprint ;
 - `docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md` pour la methode.
@@ -40,12 +42,53 @@ Avant toute reponse operationnelle, Codex doit identifier :
 Si Codex ne peut pas repondre a ces six points, il doit rester en cadrage et ne
 pas developper.
 
+## Routage interlocuteur au debut d'un chat
+
+Dans un nouveau chat, le premier gate est l'identite de l'interlocuteur.
+
+Si le message est un simple accueil sans identite explicite (`bonjour`, `salut`,
+`ca va`, `on reprend`), Codex doit demander :
+
+```text
+Bonjour, tu es Gad ou Naomi ?
+Je te route ensuite sur le bon protocole projet.
+```
+
+Codex ne doit pas declencher NotebookLM, changer de branche, demander une tache
+ou choisir un sprint tant que l'interlocuteur n'est pas identifie.
+
+Si l'interlocuteur est Gad :
+
+- Gad est le superviseur produit et decisionnaire ;
+- Codex applique la tour de controle et donne l'etat utile du projet ;
+- mentionner Naomi ou SELAS dans une question de Gad ne suffit pas a declencher
+  le protocole runtime Naomi ;
+- si Gad demande ou en est Naomi, Codex applique l'orchestrateur Naomie et lit
+  les traces disponibles avant de repondre ;
+- avant de repondre a Gad sur Naomi, Codex doit aussi auditer la fraicheur des
+  traces : worklog, journal specialise, branche, threads accessibles et etat
+  reel du type dans le repo ;
+- Codex ne doit jamais assimiler `aucune action Naomi tracee` a `projet au
+  debut` sans avoir verifie l'etat reel du type ;
+- chaque rapport Naomi demande par Gad doit etre inscrit dans le worklog et le
+  rapport suivant doit etre differentiel depuis ce curseur ;
+- si Gad laisse un message pour Naomi, Codex l'inscrit dans le worklog et le
+  transmet au prochain echange avec elle ;
+- Codex peut auditer, corriger ou preparer le protocole Naomi si Gad le demande.
+
+Si l'interlocutrice est Naomi/Naomie :
+
+- Codex applique `docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md` ;
+- le sprint SELAS actif reste en phase NotebookLM / `NO-GO dev` ;
+- Codex donne la prochaine action simple a Naomi, avec un point pedagogie.
+
 ## Niveaux de pilotage
 
 | Niveau | Source de verite | Role |
 | --- | --- | --- |
 | Projet global | `PROJECT_CONTROL_TOWER_V1.md` + `04_LAST_STATE.md` | Savoir ou en est le projet entier |
 | Sprint type entreprise | `docs/sprints/SPRINT_[TYPE]_V1.md` | Suivre un type d'entreprise de bout en bout |
+| Suivi Naomie | `NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md` + worklog sprint | Repondre a Gad sur l'avancee de Naomie depuis les traces |
 | Sous-sprint | journal ou protocole dedie | Gerer une etape specialisee, ex. NotebookLM |
 | Ticket | `01_EXECUTION_BOARD.md` | Encadrer une action bornee |
 | Validation humaine | retour Gad / associe | Autoriser la suite ou les corrections |
@@ -67,19 +110,33 @@ Ce cycle est le meme pour SELARL, SELAS et tous les futurs types d'entreprise.
 | 8 | Validation Gad | Gad | `GO dev ticket X` ou `NO-GO dev` | accord explicite de Gad |
 | 9 | Dev limite | Codex dev | code + tests du ticket | tests et scope respectes |
 | 10 | Smoke interne | QA sous Codex PM | DOCX/ZIP/PDF si dispo + rapport | pas de regressions bloquantes |
-| 11 | Revue associe | Associe via Gad/Naomie | retour humain classe | retours compris |
-| 12 | Corrections | Codex PM + dev | tickets correction | retours traites ou reportes |
-| 13 | Cloture sprint | Codex PM | statut canonique final | sprint reprenable et auditable |
+| 11 | Audit fidelite / trois sources | Source + QA sous Codex PM | pack actif + audit source/reference/NotebookLM/humain | questions inutiles eliminees, pack transmissible |
+| 12 | Revue associe | Associe via Gad/Naomie | retour humain classe | retours compris |
+| 13 | Corrections | Codex PM + dev | tickets correction | retours traites ou reportes |
+| 14 | Cloture sprint | Codex PM | statut canonique final | sprint reprenable et auditable |
 
 Regle : aucune etape ne saute par-dessus la precedente. Si une etape est
 incomplete, Codex doit dire `NO-GO dev` et donner l'action exacte suivante.
+
+## Regle issue de la cloture SELARL
+
+Avant toute revue finale ou cloture d'un type d'entreprise, Codex doit verifier
+les trois familles de preuves :
+
+1. document de reference / source de verite ;
+2. NotebookLM ou retours modele journalises ;
+3. retour humain deja disponible, puis retour final de l'associe.
+
+Codex ne doit pas poser de questions abstraites si ces preuves repondent deja.
+Il doit transmettre a l'associe un pack actif et demander des ecarts concrets.
+Si un pack est corrige, l'ancien pack est remplace et ne doit plus etre utilise.
 
 ## Registre courant des sprints
 
 | Type | Sprint | Pilote metier | Branche | Phase courante | Statut | Action autorisee maintenant |
 | --- | --- | --- | --- | --- | --- | --- |
-| SELARL | `SPRINT-SELARL-CLOSING-V1` | Gad | `track-b/clean-rebuild` | Cloture perimetre simple | PARTIAL | lancer `SELARL-CLOSING-PACK-001` |
-| SELAS | `SPRINT-SELAS-V1` | Naomie | `codex/naomie-selas-sprint` | Sous-sprint NotebookLM | `NO-GO dev` | donner Prompt NotebookLM 01, attendre la reponse brute, structurer le journal |
+| SELARL | `SPRINT-SELARL-CLOSING-V1` | Gad | `track-b/clean-rebuild` | Validation finale pack corrige | IN_PROGRESS | transmettre le pack 004 et le brief `SELARL-FINAL-ASSOCIE-VALIDATION-001`, attendre validation ou ecarts concrets |
+| SELAS | `SPRINT-SELAS-V1` | Naomie | `codex/naomie-selas-sprint` | Sous-sprint NotebookLM + backfill suivi | `NO-GO dev` | auditer la fraicheur, backfiller l'etat SELAS reel, puis reprendre NotebookLM sur les trous reels |
 
 ## Etat courant SELARL
 
@@ -88,13 +145,16 @@ La SELARL est le modele de methode et le premier pack de production partielle.
 Etat utile :
 
 - creation simple medecin / chirurgien-dentiste generable ;
-- regime communautaire partiellement traite avec `DOC-005` actif et `DOC-006`
-  reserve ;
+- regime communautaire traite avec `DOC-005` et `DOC-006` actifs ;
 - multi-associes limite disponible sur certains sous-cas ;
+- pack de revue corrige regenere dans `artifacts/selarl_closing_pack_004/` ;
+- brief de validation associe pret dans
+  `docs/review/selarl_final_validation_001_brief_v1.md` ;
 - cession, SCM, derogations, site distinct, plusieurs gerants et statuts
   multi-associes complets restent a cadrer ;
 - fin de sprint ecrite dans `docs/sprints/SPRINT_SELARL_CLOSING_V1.md` ;
-- prochaine action recommandee : `SELARL-CLOSING-PACK-001`.
+- action courante : transmettre le pack 004 a l'associe / juriste et attendre
+  une validation finale ou des ecarts concrets.
 
 SELARL ne doit pas etre consideree terminee a 100 % tant que la revue humaine
 finale et les corrections eventuelles ne sont pas bouclees.
@@ -110,9 +170,16 @@ Etat utile :
 - ticket actif : `SELAS-SOURCES-NOTEBOOKLM-001` ;
 - sous-sprint actif : NotebookLM ;
 - journal : `docs/sprints/SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md` ;
+- worklog Naomie : `docs/sprints/SPRINT_SELAS_NAOMIE_WORKLOG_V1.md` ;
+- dernier rapport Gad : voir section `Rapports Gad` du worklog ;
+- messages Gad a transmettre : voir section `Messages Gad a transmettre a
+  Naomi` du worklog ;
 - prompt source : `docs/sprints/SPRINT_SELAS_NOTEBOOKLM_PROMPTS_V1.md` ;
-- action courante : donner Prompt 01, attendre la reponse brute, structurer,
-  puis iterer.
+- etat reel SELAS : matiere preexistante dans le repo, dont sources SELAS,
+  `DOC-018`, generateur statuts SELAS, selection catalogue, conditions UI, tests
+  et exemples ;
+- action courante : auditer la fraicheur, backfiller le suivi SELAS reel, puis
+  reprendre NotebookLM sur les trous reels.
 - protocole court obligatoire : `docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md`.
 
 Interdits actuels SELAS :
@@ -163,7 +230,8 @@ Dev SELAS : interdit.
 SELARL : production partielle, prochaine action revue humaine ou sous-cas borne.
 ```
 
-Si la demande concerne Naomie, Codex doit repondre en format sprint :
+Si l'interlocutrice active est Naomie/Naomi, Codex doit repondre en format
+sprint :
 
 ```text
 Statut sprint : [phase] / [statut]
@@ -172,8 +240,10 @@ Point pedagogie : [explication courte]
 Prochaine etape : [suite immediate]
 ```
 
-Si la demande est un simple `bonjour`, Codex doit quand meme donner le Prompt
-NotebookLM 01 complet. Il ne doit pas attendre que Naomie choisisse une tache.
+Si la demande est un simple `bonjour` sans identite explicite, Codex demande
+d'abord si l'interlocuteur est Gad ou Naomi. Si la personne repond ensuite
+Naomi/Naomie, Codex donne le Prompt NotebookLM 01 complet. Il ne doit pas
+attendre que Naomie choisisse une tache.
 
 ## Reponse attendue si Naomie lance SELAS
 

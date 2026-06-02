@@ -35,15 +35,20 @@ superviseur du workflow Naomi/Codex, Codex doit appliquer le protocole Gad :
 4. lire les traces disponibles : tour de controle, dernier etat, fichier de
    sprint, worklog Naomi, journal de base de connaissance, branche Naomi si
    accessible ;
-5. si Gad demande un rapport, produire uniquement le delta depuis le dernier
+5. auditer aussi la fraicheur des traces : un worklog vide ne prouve pas que le
+   projet ou le type d'entreprise est au debut ; verifier sources, catalogue,
+   generateurs, tests, exemples, commits et threads accessibles ;
+6. si Gad demande un rapport, produire uniquement le delta depuis le dernier
    rapport Gad inscrit dans le worklog, puis mettre a jour ce curseur ;
-6. si Gad laisse un message pour Naomi, l'inscrire dans le worklog avec statut
+7. si le suivi est stale ou contradictoire, dire `suivi Naomi defaillant` et
+   localiser le point de rupture au lieu de donner un statut faussement certain ;
+8. si Gad laisse un message pour Naomi, l'inscrire dans le worklog avec statut
    `a transmettre`, le citer au prochain echange avec Naomi, puis le marquer
    `transmis` ;
-7. rappeler l'etat projet utile et la prochaine action autorisee ;
-8. ne pas declencher le protocole NotebookLM seulement parce que Gad parle de
+9. rappeler l'etat projet utile et la prochaine action autorisee ;
+10. ne pas declencher le protocole NotebookLM seulement parce que Gad parle de
    Naomi ;
-9. poser une question de cadrage seulement si l'action demandee par Gad n'est
+11. poser une question de cadrage seulement si l'action demandee par Gad n'est
    pas claire.
 
 Si l'interlocuteur repond `Naomie`, `Naomi`, `je suis Naomie`, `je suis Naomi`,

@@ -30,6 +30,18 @@ Quand Gad demande l'etat de Naomi, Codex doit d'abord lire les sources de suivi
 du projet et de la branche Naomi. Il ne doit pas demander a Naomi ce qu'elle a
 fait, sauf si les traces sont absentes, contradictoires ou inaccessibles.
 
+Deuxieme regle centrale :
+
+```text
+Un worklog vide ne prouve pas que le projet est au debut.
+```
+
+Le worklog suit l'activite operationnelle de Naomi. Il ne suffit jamais a
+determiner l'etat reel du projet, du type d'entreprise ou du moteur. Si le
+worklog ne contient aucune action Naomi, Codex doit dire `aucune action Naomi
+tracee`, et non `le projet est au demarrage`, tant qu'il n'a pas audite les
+autres preuves.
+
 ## Roles
 
 ### Gad
@@ -112,11 +124,58 @@ Quand Gad demande un statut Naomi, Codex consulte dans cet ordre :
 8. la branche Naomi attendue, si elle est accessible ;
 9. les derniers commits ou changements de la branche Naomi, si utiles et
    accessibles ;
-10. les blocages Git ou d'acces, s'il y en a.
+10. l'etat reel du projet/type concerne : sources disponibles, catalogue,
+    generateurs, tests, exemples, rapports de revue et specs deja existantes ;
+11. les threads Codex accessibles lies a Naomi ou au sprint, si l'outil de
+    lecture de threads est disponible ;
+12. les blocages Git, GitHub, thread ou d'acces, s'il y en a.
 
 Le worklog est la source de suivi humain/operationnel de Naomi. Le journal
 NotebookLM ou autre base de connaissance est une preuve specialisee, pas un
 worklog complet.
+
+## Audit de fraicheur obligatoire
+
+Avant tout rapport a Gad, Codex doit produire mentalement un diagnostic de
+fraicheur des traces.
+
+Codex doit comparer :
+
+- le dernier curseur de rapport Gad ;
+- la derniere action Naomi dans le worklog ;
+- le dernier journal specialise structure, par exemple NotebookLM ;
+- les derniers commits ou fichiers de la branche Naomi ;
+- l'etat reel du type d'entreprise dans le repo, par exemple sources, catalogue,
+  generateurs, tests, exemples et rapports ;
+- les threads Codex lisibles qui peuvent contenir une session Naomi non
+  journalisee.
+
+Si ces sources concordent, le rapport peut etre donne avec `fiabilite : tracee`.
+
+Si le worklog est vide mais que le repo contient deja une implementation, des
+sources ou des specs pour le type concerne, Codex doit repondre :
+
+```text
+Fiabilite du suivi Naomi : STALE / suivi defaillant
+Ce que je peux affirmer : aucune action Naomi tracee depuis [curseur].
+Ce que je ne dois pas affirmer : que le projet/type est au debut.
+Etat reel du type : [preuves repo lues].
+Point de rupture : le worklog Naomi ou le journal specialise n'a pas ete mis a jour apres l'activite effective, ou l'activite est dans un autre thread non raccorde.
+Action correction : backfiller le worklog depuis les preuves, puis imposer une mise a jour atomique worklog + journal a chaque session Naomi.
+```
+
+Si un thread Naomi montre une reponse ou une action non reportee dans les
+fichiers, le point de rupture est `THREAD_ONLY_TRACE`.
+
+Si la branche contient une avancee non reportee dans le worklog, le point de
+rupture est `BRANCH_AHEAD_OF_WORKLOG`.
+
+Si le repo contient une matiere SELAS preexistante mais que le worklog ne la
+rappelle pas, le point de rupture est `PROJECT_STATE_IGNORED`.
+
+Si aucune trace fiable n'est trouvee malgre recherche locale, GitHub et threads,
+Codex doit dire que le suivi est insuffisant. Il ne doit pas inventer l'avancee
+de Naomi.
 
 ## Lecture de branche Naomi
 
@@ -180,8 +239,10 @@ Statut Naomi : [projet] / [sprint ou mission] / [phase] / [GO ou NO-GO]
 Branche suivie : [branche] / [OK, inaccessible, absente, a verifier]
 Dernieres traces lues : [fichiers ou commits consultes]
 Mode de lecture branche : [local git | connecteur GitHub | local seulement faute acces]
+Fiabilite du suivi : [tracee | stale | insuffisante | contradictoire]
 Perimetre du rapport : depuis [dernier rapport Gad] jusqu'a [maintenant]
 Ce que Naomi a fait depuis le dernier rapport : [faits traces uniquement]
+Etat reel du projet/type : [preuves hors worklog utiles]
 Ce qui manque ou bloque : [trous, contradictions, acces, reponses attendues]
 Messages Gad en attente pour Naomi : [aucun ou liste courte]
 Action maintenant cote Naomi : [une seule action]
@@ -210,8 +271,9 @@ Statut Naomi : SUIVI INSUFFISANT / NO-GO dev
 Branche suivie : [branche] / [etat]
 Dernieres traces lues : [sources disponibles]
 Ce que Naomi a fait : non determine depuis les traces
-Ce qui manque ou bloque : worklog absent ou branche inaccessible
-Action maintenant cote Codex/Gad : creer ou recuperer le worklog de sprint, puis reprendre depuis la tour de controle
+Etat reel du projet/type : [preuves hors worklog lues, ou non determine]
+Ce qui manque ou bloque : worklog absent, branche inaccessible, thread non raccorde ou sources contradictoires
+Action maintenant cote Codex/Gad : creer, recuperer ou backfiller le worklog de sprint, puis reprendre depuis la tour de controle
 ```
 
 ## Format du worklog Naomi

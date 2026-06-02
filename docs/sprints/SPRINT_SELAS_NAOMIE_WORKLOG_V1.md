@@ -31,8 +31,9 @@ Naomie a fait, ce qui manque et ce que Gad peut superviser.
 | Phase courante | Phase 3 - NOTEBOOKLM |
 | Statut courant | `NO-GO dev` |
 | Ticket actif | `SELAS-SOURCES-NOTEBOOKLM-001` |
-| Dernier rapport Gad | 2026-06-02 - premier rapport supervision Naomi |
+| Dernier rapport Gad | 2026-06-02 - audit fraicheur rapports Naomi |
 | Lecture branche | Branche distante visible via connecteur GitHub ; fetch local bloque par permissions/identifiants |
+| Fiabilite suivi | `STALE` : worklog Naomi incomplet face a l'etat reel SELAS du repo |
 
 ## Etat courant
 
@@ -47,18 +48,52 @@ Naomie a fait, ce qui manque et ce que Gad peut superviser.
 | Matrice documentaire | Bloquee |
 | GO dev | Manquant |
 
+## Etat reel SELAS hors worklog
+
+Le worklog ne doit pas etre lu comme la preuve que SELAS est vierge.
+
+Preuves repo deja presentes au 2026-06-02 :
+
+- sources SELAS dans `project/source_documents/`, notamment :
+  - `project/source_documents/lot_02/Lettre de renonciation a revendiquer la qualite d_associe - SELAS.docx` ;
+  - `project/source_documents/lot_04/Statuts_SELAS_medecin.docx` ;
+  - `project/source_documents/lot_05/Courrier SDE - SELAS.docx` ;
+  - `project/source_documents/lot_05/PV AGE cession part SCM - SELAS.docx` ;
+  - `project/source_truth/modele Statuts SELAS avec MH.docx`.
+- catalogue SELAS deja existant dans `src/sydel_doc_engine/domain/case_catalog.py`
+  avec documents SELAS communs, statuts medecin, regime communautaire, SCM,
+  cession et derogations ;
+- `DOC-018` deja defini comme `Statuts SELAS medecin` dans
+  `src/sydel_doc_engine/registry/catalog.py` ;
+- generateur `StatutsSelasMedecinGenerator` deja branche dans
+  `src/sydel_doc_engine/orchestrator/service.py` ;
+- conditions UI SELAS deja presentes dans
+  `src/sydel_doc_engine/app/business_wizard.py` ;
+- tests et exemples SELAS deja presents.
+
+Conclusion : le rapport Gad ne doit pas dire `SELAS est au debut` ou `Naomi est
+au demarrage NotebookLM` sans nuance. Il doit dire :
+
+```text
+Aucune action Naomi n'est tracee depuis le dernier rapport, mais le repo contient deja une matiere SELAS preexistante. Le suivi Naomi est stale/incomplet tant qu'il ne relie pas ces preuves a l'avancement operationnel.
+```
+
 ## Derniere action Naomi tracee
 
-Aucune action Naomi tracee dans ce worklog a date.
+Aucune action Naomi personnelle n'est tracee dans ce worklog a date.
 
-Les protocoles indiquent que la prochaine action doit etre : donner a Naomie le
-Prompt NotebookLM 01, attendre sa reponse brute, puis structurer cette reponse
-dans `docs/sprints/SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md`.
+Les protocoles indiquent encore que la prochaine action Naomi, si Naomi reprend
+le sprint, doit etre : consolider l'etat SELAS reel, puis reprendre la boucle
+NotebookLM a l'endroit utile. Le Prompt 01 ne doit plus etre donne comme si le
+projet etait vierge sans audit de fraicheur prealable.
 
 ## Blocages
 
 - Aucune reponse brute NotebookLM SELAS n'est encore tracee.
-- Le sous-sprint NotebookLM n'est pas suffisant.
+- Le sous-sprint NotebookLM n'est pas suffisant dans les fichiers de suivi,
+  mais le repo contient deja des sources, specs, code et tests SELAS.
+- Le suivi Naomi est defaillant/stale : les rapports Gad ont confondu absence
+  de trace Naomi et absence d'avancee SELAS.
 - L'audit de reutilisation et la matrice documentaire restent interdits.
 - Aucun `GO dev` Gad n'a ete donne.
 - `git fetch` peut echouer depuis ce worktree avec `FETCH_HEAD Permission
@@ -68,13 +103,13 @@ dans `docs/sprints/SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md`.
 ## Prochaine action Naomi
 
 ```text
-Coller le Prompt NotebookLM 01 dans NotebookLM, puis donner la reponse brute a Codex.
+Reprendre apres audit de fraicheur : verifier l'etat reel SELAS existant, puis demander seulement la reponse NotebookLM qui manque encore.
 ```
 
 ## Prochaine action Codex
 
 ```text
-Structurer la reponse brute dans SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md, mettre a jour ce worklog, puis choisir le prompt suivant selon les trous.
+Backfiller le suivi SELAS depuis les preuves repo/thread/branche, puis relancer la boucle NotebookLM sur les trous reels.
 ```
 
 ## Questions pedagogiques posees
@@ -90,6 +125,8 @@ le rapport couvre toute la periode tracee depuis l'ouverture du worklog.
 | Date | Demande Gad | Periode couverte | Sources lues | Synthese donnee | Action suivante | Curseur |
 | --- | --- | --- | --- | --- | --- | --- |
 | 2026-06-02 | Gad demande : "ou en est Naomi ?" | Depuis l'ouverture du worklog 2026-06-02 jusqu'au 2026-06-02 | `PROJECT_CONTROL_TOWER_V1.md`, `04_LAST_STATE.md`, `NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md`, `SPRINT_SELAS_V1.md`, `SPRINT_SELAS_NAOMIE_WORKLOG_V1.md`, `SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md`, tentative `git log/show origin/codex/naomie-selas-sprint` bloquee car ref absente localement, tentative `git fetch origin codex/naomie-selas-sprint --prune` bloquee par `FETCH_HEAD` permission denied, correction ulterieure : branche distante confirmee via connecteur GitHub | Naomi est toujours au demarrage du sprint SELAS : phase 3 NotebookLM, `NO-GO dev`, aucune action Naomi ni reponse NotebookLM tracee ; prompt 01 reste a donner dans la session Naomi. Diagnostic branche corrige : branche OK via connecteur GitHub, fetch local bloque | Naomi doit coller le Prompt NotebookLM 01 dans NotebookLM puis donner la reponse brute ; Codex structurera ensuite le journal | Dernier rapport Gad = 2026-06-02 premier rapport supervision Naomi |
+| 2026-06-02 | Gad demande : "C'est gad, ou en est Naomi ?" | Depuis le premier rapport supervision Naomi 2026-06-02 jusqu'au 2026-06-02 | `PROJECT_CONTROL_TOWER_V1.md`, `04_LAST_STATE.md`, `NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md`, `SPRINT_SELAS_V1.md`, `SPRINT_SELAS_NAOMIE_WORKLOG_V1.md`, `SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md`, `git status --short --branch`, `git remote -v`, `git branch --show-current`, `git show-ref refs/remotes/origin/codex/naomie-selas-sprint`, connecteur GitHub branche/fichiers | Aucun delta Naomi trace depuis le premier rapport : toujours Phase 3 NotebookLM, `NO-GO dev`, aucune reponse NotebookLM importee, Prompt 01 encore a donner dans la session Naomi. Branche distante confirmee via connecteur GitHub ; ref locale absente dans ce worktree | Naomi doit coller le Prompt NotebookLM 01 dans NotebookLM puis donner la reponse brute ; Codex structurera ensuite le journal | Dernier rapport Gad = 2026-06-02 deuxieme rapport supervision Naomi |
+| 2026-06-02 | Gad signale que le rapport test est faux et demande ou la chaine casse | Depuis le deuxieme rapport supervision Naomi 2026-06-02 jusqu'au 2026-06-02 | worklog, journal NotebookLM local et distant, commits `codex/naomie-selas-sprint`, threads Codex recents, scan repo `rg SELAS`, catalogue, orchestrateur, sources, tests et exemples SELAS | Diagnostic corrige : aucune action Naomi personnelle n'est tracee, mais le projet SELAS n'est pas au debut. Le point de rupture est `PROJECT_STATE_IGNORED` + `WORKLOG_STALE` : les rapports ont pris le worklog vide comme verite unique et n'ont pas audite l'etat reel SELAS du repo | Backfiller le worklog depuis les preuves repo et imposer l'audit de fraicheur avant chaque rapport Gad | Dernier rapport Gad = 2026-06-02 audit fraicheur rapports Naomi |
 
 ## Messages Gad a transmettre a Naomi
 
@@ -114,6 +151,9 @@ comme `transmis`.
   garde dans ce worklog et le citera au prochain echange avec elle.
 - 2026-06-02 : si `git fetch` local echoue, Codex doit tenter la lecture via
   connecteur GitHub avant d'ecrire que la branche est inaccessible.
+- 2026-06-02 : un rapport Gad ne doit plus assimiler worklog vide et projet au
+  debut. Codex doit toujours distinguer `aucune action Naomi tracee` de `etat
+  reel SELAS du repo`.
 
 ## Historique
 
@@ -122,3 +162,4 @@ comme `transmis`.
 | 2026-06-02 | Gad | Demande de formaliser un suivi Naomi generique et supervisable | Creation du protocole orchestrateur Naomi et de ce worklog SELAS |
 | 2026-06-02 | Gad | Demande de rapports differentiels et de messages Gad en attente pour Naomi | Ajout des sections `Rapports Gad` et `Messages Gad a transmettre a Naomi` |
 | 2026-06-02 | Gad | Capture montrant une branche declaree inaccessible apres `FETCH_HEAD Permission denied` | Correction du diagnostic : branche distante confirmee via connecteur GitHub ; fetch local bloque seulement |
+| 2026-06-02 | Gad | Capture d'un rapport disant que Naomi est encore au demarrage NotebookLM alors que le repo contient deja de la matiere SELAS | Diagnostic : chaine de suivi stale ; ajout obligatoire d'un audit de fraicheur et d'un etat reel SELAS hors worklog |
