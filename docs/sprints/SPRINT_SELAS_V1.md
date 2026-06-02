@@ -74,6 +74,7 @@ revanche que le rapport de supervision doit separer :
 | Sources | PARTIEL | Sources SELAS deja presentes ; backfill et hierarchie a consolider |
 | NotebookLM | TRACE INCOMPLETE | Journal NotebookLM SELAS vide ; ne pas confondre avec absence d'etat SELAS repo |
 | Worklog Naomie | STALE | Worklog ouvert mais incomplet ; doit distinguer action Naomi et etat reel SELAS |
+| Backfill retroactif | FAIT / TRACE PARTIELLE | Rapport `docs/review/selas_naomie_backfill_001_report_v1.md` ; aucune action Naomi personnelle prouvee, etat SELAS repo non vierge |
 | Audit reutilisation | BLOQUE | Interdit tant que le sous-sprint NotebookLM n'est pas suffisant |
 | Matrice documentaire | BLOQUE | Interdite tant que NotebookLM et reuse audit ne sont pas faits |
 | Parcours metier | A FAIRE | Definir saisie, roles, adresses, reutilisations |
@@ -204,15 +205,16 @@ Statut : A FAIRE.
 | Ordre | Ticket | Statut | Objet | Criteria |
 | --- | --- | --- | --- | --- |
 | 1 | SELAS-SOURCES-NOTEBOOKLM-001 | IN_PROGRESS | Piloter la boucle NotebookLM par prompts courts | Reponses structurees dans `SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md`, contradictions listees |
-| 2 | SELAS-REUSE-AUDIT-001 | BLOCKED | Auditer reutilisation SELARL/global | Debloque apres sources/NotebookLM |
-| 3 | SELAS-MATRIX-001 | BLOCKED | Produire matrice documentaire SELAS | Debloque apres reuse audit |
-| 4 | SELAS-FRONT-CONTRACT-001 | BLOCKED | Ecrire contrat metier-front | Debloque apres matrice |
-| 5 | SELAS-GO-DEV-FIRST-TICKET-001 | BLOCKED | Obtenir GO dev borne | Debloque apres validation Gad |
+| 2 | SELAS-NAOMIE-BACKFILL-001 | DONE | Reconstituer les traces SELAS/Naomie avant suivi complet | Rapport `docs/review/selas_naomie_backfill_001_report_v1.md` + worklog mis a jour, sans attribution Naomi non prouvee |
+| 3 | SELAS-REUSE-AUDIT-001 | BLOCKED | Auditer reutilisation SELARL/global | Debloque apres sources/NotebookLM + backfill |
+| 4 | SELAS-MATRIX-001 | BLOCKED | Produire matrice documentaire SELAS | Debloque apres reuse audit |
+| 5 | SELAS-FRONT-CONTRACT-001 | BLOCKED | Ecrire contrat metier-front | Debloque apres matrice |
+| 6 | SELAS-GO-DEV-FIRST-TICKET-001 | BLOCKED | Obtenir GO dev borne | Debloque apres validation Gad |
 
 ## Blocages actuels
 
 - NotebookLM non interroge.
-- Le suivi Naomi/worklog n'est pas a jour face a l'etat reel SELAS du repo.
+- Le suivi Naomi/worklog est backfille, mais aucune action Naomi personnelle n'est prouvee dans les traces accessibles.
 - Audit de reutilisation non fait.
 - Matrice documentaire non faite.
 - Aucun `GO dev` donne par Gad.

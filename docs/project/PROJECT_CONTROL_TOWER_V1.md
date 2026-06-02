@@ -19,6 +19,8 @@ Ce document ne remplace pas :
 - `docs/project/NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md` pour le suivi
   de Naomie demande par Gad ;
 - `docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md` pour le workflow Gad / Naomie / Codex multi-projets ;
+- `docs/project/PROJECT_AGENT_ORG_CHART_V1.md` pour la pyramide des agents, la
+  chaine d'escalade et le Backfill Agent ;
 - `docs/sprints/SPRINT_[TYPE]_V1.md` pour l'etat detaille d'un sprint ;
 - `docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md` pour la methode.
 
@@ -38,6 +40,8 @@ Avant toute reponse operationnelle, Codex doit identifier :
 4. la phase courante ;
 5. la seule action autorisee maintenant ;
 6. les actions interdites tant que les gates ne sont pas passes.
+7. l'agent specialise a interroger si la demande demande une preuve, un
+   backfill, un audit ou une orchestration descendante.
 
 Si Codex ne peut pas repondre a ces six points, il doit rester en cadrage et ne
 pas developper.
@@ -87,6 +91,7 @@ Si l'interlocutrice est Naomi/Naomie :
 | Niveau | Source de verite | Role |
 | --- | --- | --- |
 | Projet global | `PROJECT_CONTROL_TOWER_V1.md` + `04_LAST_STATE.md` | Savoir ou en est le projet entier |
+| Pyramide agents | `PROJECT_AGENT_ORG_CHART_V1.md` | Savoir quel agent/protocole interroger et ou remonte la preuve |
 | Sprint type entreprise | `docs/sprints/SPRINT_[TYPE]_V1.md` | Suivre un type d'entreprise de bout en bout |
 | Suivi Naomie | `NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md` + worklog sprint | Repondre a Gad sur l'avancee de Naomie depuis les traces |
 | Sous-sprint | journal ou protocole dedie | Gerer une etape specialisee, ex. NotebookLM |
@@ -181,6 +186,7 @@ Etat utile :
 - action courante : auditer la fraicheur, backfiller le suivi SELAS reel, puis
   reprendre NotebookLM sur les trous reels.
 - protocole court obligatoire : `docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md`.
+- pyramide agent/backfill : `docs/project/PROJECT_AGENT_ORG_CHART_V1.md`.
 
 Interdits actuels SELAS :
 
@@ -228,6 +234,8 @@ Phase SELAS : NotebookLM.
 Action SELAS : prompt -> reponse -> journal -> prompt suivant.
 Dev SELAS : interdit.
 SELARL : production partielle, prochaine action revue humaine ou sous-cas borne.
+Pyramide agents : PROJECT_AGENT_ORG_CHART_V1.md si la demande demande qui
+orchestre quoi, un statut transverse ou un backfill.
 ```
 
 Si l'interlocutrice active est Naomie/Naomi, Codex doit repondre en format

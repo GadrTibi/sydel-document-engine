@@ -34,6 +34,7 @@ Naomie a fait, ce qui manque et ce que Gad peut superviser.
 | Dernier rapport Gad | 2026-06-02 - rapport applique dans chat courant sans delta Naomi trace |
 | Lecture branche | Branche distante visible via connecteur GitHub ; fetch local bloque par permissions/identifiants |
 | Fiabilite suivi | `STALE` : worklog Naomi incomplet face a l'etat reel SELAS du repo |
+| Backfill retroactif | Realise selon `docs/project/PROJECT_AGENT_ORG_CHART_V1.md` ; rapport `docs/review/selas_naomie_backfill_001_report_v1.md` |
 
 ## Etat courant
 
@@ -109,8 +110,40 @@ Reprendre apres audit de fraicheur : verifier l'etat reel SELAS existant, puis d
 ## Prochaine action Codex
 
 ```text
-Backfiller le suivi SELAS depuis les preuves repo/thread/branche, puis relancer la boucle NotebookLM sur les trous reels.
+Relancer la boucle NotebookLM sur les trous reels, en s'appuyant sur le backfill SELAS deja produit.
 ```
+
+## Backfill retroactif
+
+Objectif : reconstruire ce qui etait deja fait avant que le worklog Naomi existe
+ou avant qu'il soit correctement tenu.
+
+Agent responsable : `Backfill Agent`, defini dans
+`docs/project/PROJECT_AGENT_ORG_CHART_V1.md`.
+
+Regle : ne pas attribuer a Naomi une action qui n'est pas explicitement tracee.
+Le backfill doit separer :
+
+- actions Naomi tracees ;
+- faits projet/code/sources non attribuables ;
+- actions Codex ;
+- traces de threads ;
+- commits branche Naomi ;
+- trous de suivi.
+
+Sortie attendue :
+
+```text
+docs/review/selas_naomie_backfill_001_report_v1.md
+```
+
+Statut : realise le 2026-06-02 dans
+`docs/review/selas_naomie_backfill_001_report_v1.md`.
+
+Conclusion : aucune action personnelle de Naomi n'est prouvee dans les traces
+accessibles, mais SELAS n'est pas vierge. Le repo contient deja sources, code,
+catalogue, `DOC-018`, generateur, conditions UI et tests SELAS. Le suivi doit
+donc reprendre depuis les trous reels, notamment la reponse NotebookLM brute.
 
 ## Questions pedagogiques posees
 
@@ -156,6 +189,10 @@ comme `transmis`.
 - 2026-06-02 : un rapport Gad ne doit plus assimiler worklog vide et projet au
   debut. Codex doit toujours distinguer `aucune action Naomi tracee` de `etat
   reel SELAS du repo`.
+- 2026-06-02 : Gad demande une pyramide d'agents et un chemin de backfill
+  retroactif. Decision : `PROJECT_AGENT_ORG_CHART_V1.md` devient le registre
+  central des agents ; le backfill SELAS produit
+  `docs/review/selas_naomie_backfill_001_report_v1.md`.
 
 ## Historique
 
@@ -165,3 +202,5 @@ comme `transmis`.
 | 2026-06-02 | Gad | Demande de rapports differentiels et de messages Gad en attente pour Naomi | Ajout des sections `Rapports Gad` et `Messages Gad a transmettre a Naomi` |
 | 2026-06-02 | Gad | Capture montrant une branche declaree inaccessible apres `FETCH_HEAD Permission denied` | Correction du diagnostic : branche distante confirmee via connecteur GitHub ; fetch local bloque seulement |
 | 2026-06-02 | Gad | Capture d'un rapport disant que Naomi est encore au demarrage NotebookLM alors que le repo contient deja de la matiere SELAS | Diagnostic : chaine de suivi stale ; ajout obligatoire d'un audit de fraicheur et d'un etat reel SELAS hors worklog |
+| 2026-06-02 | Gad | Demande d'un organigramme pyramidal des agents et d'un agent retroactif pour retrouver ce qui a ete fait avant le suivi | Creation du registre `PROJECT_AGENT_ORG_CHART_V1.md`; backfill SELAS produit avant reprise NotebookLM |
+| 2026-06-02 | Codex | Backfill retroactif SELAS execute depuis repo, GitHub, threads recents, worklog et journal NotebookLM | Rapport `docs/review/selas_naomie_backfill_001_report_v1.md` cree ; aucune action Naomi personnelle prouvee, mais etat SELAS repo non vierge |

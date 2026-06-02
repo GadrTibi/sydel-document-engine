@@ -9,6 +9,9 @@ Ce protocole definit l'agent `Orchestrateur Naomie`.
 Il n'est pas specifique a SELAS. SELAS est seulement le premier sprint ou la
 methode est appliquee.
 
+La place de cet agent dans la pyramide projet est definie dans
+`docs/project/PROJECT_AGENT_ORG_CHART_V1.md`.
+
 But : permettre a Gad de demander `ou en est Naomi ?`, `que fait Naomi ?`,
 `qu'est-ce qu'elle a produit ?`, sans devoir demander a Naomi de refaire un
 statut oral.
@@ -172,6 +175,12 @@ rupture est `BRANCH_AHEAD_OF_WORKLOG`.
 
 Si le repo contient une matiere SELAS preexistante mais que le worklog ne la
 rappelle pas, le point de rupture est `PROJECT_STATE_IGNORED`.
+
+Dans tous les cas de suivi `STALE`, Codex doit activer le `Backfill Agent`
+defini dans `docs/project/PROJECT_AGENT_ORG_CHART_V1.md`. Son role est de
+reconstruire retroactivement les faits depuis le repo, les commits, les
+rapports, les specs, les threads et les branches, sans attribuer a Naomi une
+action qui n'est pas explicitement tracee.
 
 Si aucune trace fiable n'est trouvee malgre recherche locale, GitHub et threads,
 Codex doit dire que le suivi est insuffisant. Il ne doit pas inventer l'avancee
@@ -373,6 +382,8 @@ Le suivi Naomi est correctement installe si :
 - Gad peut demander un statut sans solliciter Naomi ;
 - chaque rapport Gad est horodate et sert de curseur pour le rapport suivant ;
 - Gad peut laisser un message a transmettre a Naomi au prochain echange ;
+- un suivi stale declenche un backfill retroactif au lieu d'une conclusion
+  faussement certaine ;
 - Codex sait quelle branche et quel worklog lire ;
 - les actions de Naomi sont tracees par date ;
 - le professeur Naomi reste pedagogique et separe de l'orchestrateur ;
