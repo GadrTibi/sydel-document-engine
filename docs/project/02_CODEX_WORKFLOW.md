@@ -10,12 +10,13 @@
 7. docs/project/PROJECT_CONTROL_TOWER_V1.md
 8. docs/project/PROJECT_AGENT_ORG_CHART_V1.md si le ticket concerne la chaine d'agents, un statut transverse ou un rattrapage retroactif
 9. docs/project/WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md si le ticket concerne la tracabilite d'un flux pilote ou un rapport boss
-10. docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md si l'interlocutrice active est Naomie/Naomi, ou si Gad demande explicitement le workflow Naomie/SELAS
-11. docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md si le ticket formalise un workflow Naomie multi-projets
-12. docs/project/NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md si Gad demande le statut ou le suivi de Naomie
-13. docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise
-14. docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise
-15. docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise
+10. docs/project/NAOMIE_WORKSTREAM_SYNC_PROTOCOL_V1.md si le ticket concerne une avancee annoncee mais absente de la branche/worklog ou une sync inter-threads
+11. docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md si l'interlocutrice active est Naomie/Naomi, ou si Gad demande explicitement le workflow Naomie/SELAS
+12. docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md si le ticket formalise un workflow Naomie multi-projets
+13. docs/project/NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md si Gad demande le statut ou le suivi de Naomie
+14. docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise
+15. docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise
+16. docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise
 16. docs/sprints/SPRINT_[TYPE]_V1.md si le sprint existe
 17. docs/project/SELARL_CANONICAL_STATUS_V1.md si le ticket touche la SELARL
 18. docs/sprints/SPRINT_SELARL_CLOSING_V1.md si le ticket touche la cloture SELARL
@@ -39,6 +40,11 @@ Si la demande porte sur le statut d'un flux pilote, par exemple `ou en est
 Naomi ?`, Codex doit appliquer
 `docs/project/WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md` et repondre par defaut en
 rapport boss court.
+
+Si Gad annonce une avancee du flux que la branche ou le worklog ne montrent pas,
+Codex doit appliquer `docs/project/NAOMIE_WORKSTREAM_SYNC_PROTOCOL_V1.md`.
+Le statut devient `avancee annoncee, synchronisation manquante` jusqu'a commit
+pousse ou Sync packet.
 
 Au debut d'un nouveau chat, si l'interlocuteur n'est pas identifie et dit
 seulement `bonjour`, `salut`, `ca va` ou une reprise vague, Codex doit demander
@@ -224,6 +230,7 @@ Lis d'abord :
 - docs/project/PROJECT_CONTROL_TOWER_V1.md
 - docs/project/PROJECT_AGENT_ORG_CHART_V1.md si le ticket concerne la chaine d'agents, un statut transverse ou un rattrapage retroactif
 - docs/project/WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md si le ticket concerne la tracabilite d'un flux pilote ou un rapport boss
+- docs/project/NAOMIE_WORKSTREAM_SYNC_PROTOCOL_V1.md si le ticket concerne une avancee annoncee mais absente de la branche/worklog
 - docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md si l'interlocutrice active est Naomie/Naomi, ou si Gad demande explicitement le workflow Naomie/SELAS
 - docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md si le ticket concerne un workflow Naomie global
 - docs/project/NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md si Gad demande le statut ou le suivi de Naomie

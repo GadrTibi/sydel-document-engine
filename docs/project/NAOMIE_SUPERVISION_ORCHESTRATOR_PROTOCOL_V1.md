@@ -15,6 +15,9 @@ La place de cet agent dans la pyramide projet est definie dans
 La tracabilite du flux est definie dans
 `docs/project/WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md`.
 
+La synchronisation entre le thread Gad, le thread Naomie et la branche est
+definie dans `docs/project/NAOMIE_WORKSTREAM_SYNC_PROTOCOL_V1.md`.
+
 But : permettre a Gad de demander `ou en est Naomi ?`, `que fait Naomi ?`,
 `qu'est-ce qu'elle a produit ?`, sans devoir demander a Naomi de refaire un
 statut oral.
@@ -56,6 +59,19 @@ Le worklog suit l'activite operationnelle du flux. Il ne suffit jamais a
 determiner l'etat reel du projet, du type d'entreprise ou du moteur. Si le
 worklog est vide ou stale, Codex doit activer l'Agent de tracabilite de flux et
 son mode de rattrapage retroactif.
+
+Quatrieme regle centrale :
+
+```text
+Une avancee annoncee mais absente de la branche et du worklog est un probleme
+de synchronisation, pas une preuve d'absence de travail.
+```
+
+Si Gad sait que Naomie a termine ou avance une phase mais que Codex ne voit pas
+cette avancee dans les traces publiees, Codex doit appliquer
+`NAOMIE_WORKSTREAM_SYNC_PROTOCOL_V1.md` et demander un checkpoint de
+synchronisation. Il ne doit pas relancer NotebookLM ni conclure que le flux est
+au debut.
 
 ## Roles
 
@@ -99,6 +115,8 @@ Il doit :
   base de connaissance ;
 - signaler les trous de suivi ;
 - produire un statut lisible pour Gad ;
+- detecter les ruptures de synchronisation entre thread Naomie, worklog et
+  branche ;
 - limiter le rapport aux traces posterieures au dernier rapport Gad, sauf
   demande contraire ;
 - noter chaque rapport Gad dans le worklog ;
@@ -106,8 +124,9 @@ Il doit :
 - transmettre ces messages a Naomi au prochain echange, en citant clairement
   Gad ;
 - recommander la prochaine action unique ;
-- maintenir les fichiers de suivi quand Gad demande une mise en ordre.
-- repondre par defaut avec un rapport boss court, pas un audit technique.
+- maintenir les fichiers de suivi quand Gad demande une mise en ordre ;
+- repondre par defaut avec un rapport boss court, pas un audit technique ;
+- demander un Sync checkpoint quand l'avancee est annoncee mais non visible.
 
 Il ne doit pas :
 

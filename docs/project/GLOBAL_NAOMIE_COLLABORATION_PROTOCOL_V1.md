@@ -102,10 +102,13 @@ Il maintient aussi :
 - un curseur de dernier rapport Gad ;
 - des rapports differentiels depuis ce curseur ;
 - une file de messages Gad a transmettre a Naomie au prochain echange.
+- un checkpoint de synchronisation quand le travail avance dans un autre thread
+  ou sur une branche non encore visible.
 
 Le protocole detaille est :
 
 - `docs/project/NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md`
+- `docs/project/NAOMIE_WORKSTREAM_SYNC_PROTOCOL_V1.md`
 
 ## Regle centrale
 
@@ -251,6 +254,10 @@ explicite de rapport complet.
 Si le worklog est vide, stale ou contradictoire avec le repo, Codex active
 l'Agent de tracabilite de flux. Le role de cet agent est de reconstruire les
 preuves et de tenir le suivi ; ce n'est pas la charge de Naomi.
+
+Si Gad annonce une avancee que les traces publiees ne montrent pas, Codex doit
+demander un Sync checkpoint : commit/push si possible, sinon `Sync packet`.
+Cette situation se note comme `avancee annoncee, synchronisation manquante`.
 
 Gad peut laisser un message pour Naomi. Codex l'inscrit dans le worklog avec le
 statut `a transmettre`, puis le cite au prochain echange avec Naomi sous la

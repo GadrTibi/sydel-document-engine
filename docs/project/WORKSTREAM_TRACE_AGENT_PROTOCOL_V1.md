@@ -59,6 +59,8 @@ L'Agent de tracabilite de flux doit :
 - tenir un curseur pour les rapports differentiels ;
 - conserver les preuves internes sans alourdir le rapport boss ;
 - declencher un rattrapage retroactif si le suivi est stale ;
+- declencher le protocole de synchronisation si une avancee est annoncee mais
+  absente des traces publiees ;
 - produire un rapport court par defaut quand Gad demande le statut.
 
 Il ne doit pas :
@@ -82,7 +84,8 @@ Pour un rapport de statut, l'agent lit selon le besoin :
 7. derniers commits ou fichiers modifies ;
 8. threads Codex accessibles ;
 9. rapports `docs/review/` ;
-10. sources, specs, code, tests et artefacts lies au flux.
+10. Sync packet, s'il existe ;
+11. sources, specs, code, tests et artefacts lies au flux.
 
 Ces preuves servent a l'agent. Elles ne doivent pas toutes etre deversees dans
 le rapport Gad.
@@ -141,6 +144,27 @@ docs/review/[flux]_naomie_backfill_001_report_v1.md
 
 Le rapport de rattrapage est une preuve interne. Le rapport boss suivant doit
 redevenir court.
+
+## Synchronisation inter-threads
+
+Si Gad annonce que le flux a avance, mais que ni la branche, ni le worklog, ni
+les rapports ne montrent cette avancee, l'agent ne doit pas conclure que le
+travail n'existe pas.
+
+Il doit conclure :
+
+```text
+avancee annoncee, synchronisation manquante
+```
+
+Puis appliquer :
+
+```text
+docs/project/NAOMIE_WORKSTREAM_SYNC_PROTOCOL_V1.md
+```
+
+Le but est de recuperer soit un commit pousse, soit un `Sync packet` produit par
+le thread qui contient le travail.
 
 ## Application a SYDEL / SELAS
 

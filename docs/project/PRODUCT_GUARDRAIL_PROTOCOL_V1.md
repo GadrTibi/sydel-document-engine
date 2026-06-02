@@ -67,6 +67,11 @@ flux Naomi, pas d'une evaluation personnelle. Il vient des traces : tour de
 controle, dernier etat, fichier de sprint, worklog Naomi, journal de base de
 connaissance et branche Naomi si accessible.
 
+Si Gad annonce une avancee absente de ces traces, appliquer
+`docs/project/NAOMIE_WORKSTREAM_SYNC_PROTOCOL_V1.md`. La bonne conclusion est
+`avancee annoncee, synchronisation manquante` jusqu'a commit pousse ou Sync
+packet.
+
 ## Usage des sous-agents
 
 Codex peut utiliser des sous-agents spécialisés quand la tâche s'y prête.

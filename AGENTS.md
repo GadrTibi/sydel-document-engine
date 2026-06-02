@@ -36,26 +36,31 @@ superviseur du workflow Naomi/Codex, Codex doit appliquer le protocole Gad :
    appliquer `docs/project/NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md` ;
 5. appliquer `docs/project/WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md` : Gad demande
    l'etat du flux Naomi, pas une evaluation personnelle de Naomi ;
-6. lire les traces disponibles : tour de controle, dernier etat, fichier de
+6. appliquer `docs/project/NAOMIE_WORKSTREAM_SYNC_PROTOCOL_V1.md` si Gad indique
+   que Naomi a avance mais que les traces publiees ne le montrent pas ;
+7. lire les traces disponibles : tour de controle, dernier etat, fichier de
    sprint, worklog Naomi, journal de base de connaissance, branche Naomi si
    accessible ;
-7. auditer aussi la fraicheur des traces : un worklog vide ne prouve pas que le
+8. auditer aussi la fraicheur des traces : un worklog vide ne prouve pas que le
    flux est au debut ; verifier sources, catalogue, generateurs, tests,
    exemples, commits et threads accessibles ;
-8. si le suivi est stale, activer l'Agent de tracabilite de flux et son mode de
+9. si le suivi est stale, activer l'Agent de tracabilite de flux et son mode de
    rattrapage retroactif avant de conclure ;
-9. si Gad demande un rapport, produire par defaut un rapport boss court :
+10. si Gad annonce une avancee terminee mais que la branche/worklog ne le
+   prouvent pas, conclure `avancee annoncee, synchronisation manquante` et
+   demander un Sync checkpoint, pas un nouveau travail metier ;
+11. si Gad demande un rapport, produire par defaut un rapport boss court :
    statut du flux, avancement depuis le dernier point, prochaine etape,
    blocage/risque, fiabilite ;
-10. si le suivi est stale ou contradictoire, dire `suivi a rattraper` et
+12. si le suivi est stale ou contradictoire, dire `suivi a rattraper` et
    localiser le point de rupture au lieu de donner un statut faussement certain ;
-11. si Gad laisse un message pour Naomi, l'inscrire dans le worklog avec statut
+13. si Gad laisse un message pour Naomi, l'inscrire dans le worklog avec statut
    `a transmettre`, le citer au prochain echange avec Naomi, puis le marquer
    `transmis` ;
-12. rappeler l'etat projet utile et la prochaine action autorisee ;
-13. ne pas declencher le protocole NotebookLM seulement parce que Gad parle de
+14. rappeler l'etat projet utile et la prochaine action autorisee ;
+15. ne pas declencher le protocole NotebookLM seulement parce que Gad parle de
    Naomi ;
-14. poser une question de cadrage seulement si l'action demandee par Gad n'est
+16. poser une question de cadrage seulement si l'action demandee par Gad n'est
    pas claire.
 
 Si l'interlocuteur repond `Naomie`, `Naomi`, `je suis Naomie`, `je suis Naomi`,
@@ -111,6 +116,8 @@ Termine par les 5 questions les plus importantes a poser ensuite.
 ```
 
 Le protocole complet est dans `docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md`.
+La synchronisation entre le thread Gad, le thread Naomie, le worklog et la
+branche est dans `docs/project/NAOMIE_WORKSTREAM_SYNC_PROTOCOL_V1.md`.
 
 Pour un workflow Gad / Naomie / Codex non specifique a SYDEL, lire
 `docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md`, appliquer
@@ -263,11 +270,12 @@ Avant toute tâche d'implémentation, lire dans cet ordre :
 7. `docs/project/PROJECT_CONTROL_TOWER_V1.md` ;
 8. `docs/project/PROJECT_AGENT_ORG_CHART_V1.md` si le ticket concerne la chaine d'agents, l'orchestration globale ou un rattrapage de suivi ;
 9. `docs/project/WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md` si le ticket concerne la tracabilite d'un flux pilote ou un rapport boss ;
-10. `docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md` si l'interlocutrice active est Naomie/Naomi, ou si Gad demande explicitement le workflow Naomie/SELAS ;
-11. `docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md` si le ticket concerne un workflow Naomie global ;
-12. `docs/project/NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md` si Gad demande le statut ou le suivi de Naomie ;
-12. `docs/sprints/SPRINT_SELARL_CLOSING_V1.md` si le ticket touche la cloture SELARL ;
-13. le fichier de livraison/specification pertinent dans `docs/delivery/`.
+10. `docs/project/NAOMIE_WORKSTREAM_SYNC_PROTOCOL_V1.md` si le ticket concerne une avancee annoncee mais absente de la branche/worklog, ou une synchronisation inter-threads ;
+11. `docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md` si l'interlocutrice active est Naomie/Naomi, ou si Gad demande explicitement le workflow Naomie/SELAS ;
+12. `docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md` si le ticket concerne un workflow Naomie global ;
+13. `docs/project/NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md` si Gad demande le statut ou le suivi de Naomie ;
+14. `docs/sprints/SPRINT_SELARL_CLOSING_V1.md` si le ticket touche la cloture SELARL ;
+15. le fichier de livraison/specification pertinent dans `docs/delivery/`.
 
 Si l'un de ces fichiers manque ou contredit le ticket demandé, arrêter l'implémentation et signaler le blocage.
 
@@ -363,6 +371,7 @@ Before any implementation task, read:
 - docs/project/PROJECT_CONTROL_TOWER_V1.md
 - docs/project/PROJECT_AGENT_ORG_CHART_V1.md when the task concerns agent hierarchy, orchestration chain, or retroactive tracking recovery
 - docs/project/WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md when the task concerns a tracked workstream, boss status report, or trace recovery
+- docs/project/NAOMIE_WORKSTREAM_SYNC_PROTOCOL_V1.md when a workstream advance is announced but missing from the branch/worklog, or when inter-thread sync is needed
 - docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md when the active speaker is Naomie/Naomi, or when Gad explicitly asks for the Naomie/SELAS workflow
 - docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md when the task defines a generic Naomie workflow
 - docs/project/NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md when Gad asks for Naomie's status or work tracking

@@ -45,6 +45,9 @@ L'arbre théorique abandonné n'est pas une source valide. Il n'existe pas de fi
 - L'agent de tracabilite de flux est
   `docs/project/WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md` ; il trace l'avancement
   d'un flux pilote sans demander au pilote humain de tenir le journal.
+- Le protocole de synchronisation de flux est
+  `docs/project/NAOMIE_WORKSTREAM_SYNC_PROTOCOL_V1.md` ; il s'applique quand
+  une avancee est annoncee mais absente de la branche ou du worklog.
 - Un nouveau chat doit d'abord identifier l'interlocuteur. Si le message est
   seulement `bonjour`, Codex doit demander `Bonjour, tu es Gad ou Naomi ?` et ne
   pas declencher de sprint avant la reponse.
@@ -114,6 +117,8 @@ orchestration descendante ou un rattrapage retroactif, lire aussi
 `docs/project/PROJECT_AGENT_ORG_CHART_V1.md` juste apres la tour de controle.
 Si la demande concerne un rapport boss sur un flux pilote, lire aussi
 `docs/project/WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md`.
+Si la demande concerne une avancee annoncee mais absente des traces publiees,
+lire aussi `docs/project/NAOMIE_WORKSTREAM_SYNC_PROTOCOL_V1.md`.
 
 Note : pour un workflow Naomie global, lire aussi
 `docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md` et
@@ -134,6 +139,9 @@ lire aussi `docs/sprints/SPRINT_SELARL_CLOSING_V1.md`.
 - Si Gad demande ou en est Naomie, Codex applique l'orchestrateur Naomie :
   lecture tour de controle, dernier etat, sprint, worklog, journal et branche
   accessible avant toute demande a Naomie.
+- Si Gad annonce que Naomie a avance mais que la branche/worklog ne montrent pas
+  cette avancee, Codex ne relance pas le travail metier : il demande un Sync
+  checkpoint, commit/push ou Sync packet.
 - Le rapport Gad par defaut doit porter sur le flux Naomie et rester court :
   statut, avancement, prochaine etape, blocage/risque, fiabilite.
 - Si Naomie démarre un sprint, elle doit s'identifier et Codex doit la guider étape par étape selon `SPRINT_ORCHESTRATOR_PROTOCOL_V1.md` et `COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md`.

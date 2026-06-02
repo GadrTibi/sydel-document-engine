@@ -14,12 +14,13 @@ Date d'ouverture : 2026-06-01
 | Tour de controle | `docs/project/PROJECT_CONTROL_TOWER_V1.md` |
 | Branche cible | `codex/naomie-selas-sprint` |
 | Dossier local attendu | Le nom peut etre `sydel-document-engine` chez Naomie ; verifier surtout remote + branche |
-| Phase courante | 3 - NOTEBOOKLM |
-| Statut courant | `NO-GO dev` |
-| Derniere action | Audit de fraicheur 2026-06-02 : les rapports Naomi etaient stale car ils ignoraient l'etat SELAS deja present dans le repo |
-| Prochaine action | Reprendre NotebookLM uniquement sur les trous reels, avec tracabilite du flux Naomie |
+| Phase courante | Sync incident : avancee annoncee jusqu'a attente retour humain, non verifiee dans traces publiees |
+| Statut courant | `NO-GO dev` tant que commit pousse ou Sync packet absent |
+| Derniere action | Gad indique le 2026-06-02 que Naomie a avance SELAS jusqu'a attente retour humain ; branche publiee encore sans preuve correspondante |
+| Prochaine action | Resoudre la sync manquante : obtenir commit pousse ou Sync packet de Naomie avant de requalifier l'etat SELAS |
 | Worklog Naomie | `docs/sprints/SPRINT_SELAS_NAOMIE_WORKLOG_V1.md` |
 | Agent de tracabilite | `docs/project/WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md` |
+| Agent de synchronisation | `docs/project/NAOMIE_WORKSTREAM_SYNC_PROTOCOL_V1.md` |
 
 ## Decisions d'ouverture
 
@@ -72,15 +73,16 @@ audit detaille seulement.
 | Branche cible | PRETE A VERIFIER AU DEMARRAGE | `codex/naomie-selas-sprint` geree par Codex |
 | Identification Naomie | A CONFIRMER | Si Naomie est l'interlocutrice active, appliquer le protocole runtime ; si Gad parle de Naomie, appliquer l'orchestrateur de suivi |
 | Sources | PARTIEL | Sources SELAS deja presentes ; rattrapage et hierarchie a consolider |
-| NotebookLM | TRACE INCOMPLETE | Journal NotebookLM SELAS vide ; ne pas confondre avec absence d'etat SELAS repo |
+| NotebookLM | INCONNU APRES SYNC INCIDENT | Journal NotebookLM SELAS vide cote branche publiee ; Gad annonce une avancee au-dela de cette trace |
 | Worklog Naomie | PARTIAL | Worklog ouvert ; doit tracer le flux Naomie, pas seulement les actions humaines |
+| Sync Naomie | BLOQUE | Gad annonce SELAS terminee jusqu'a attente retour humain, mais la branche publiee ne contient pas encore cette preuve |
 | Rattrapage retroactif | FAIT | Rapport `docs/review/selas_naomie_backfill_001_report_v1.md` ; etat SELAS repo non vierge |
-| Audit reutilisation | BLOQUE | Interdit tant que le sous-sprint NotebookLM n'est pas suffisant |
-| Matrice documentaire | BLOQUE | Interdite tant que NotebookLM et reuse audit ne sont pas faits |
-| Parcours metier | A FAIRE | Definir saisie, roles, adresses, reutilisations |
-| Tickets sprint | A FAIRE | Ecrire les tickets avant dev |
-| Validation Gad | MANQUANTE | Aucun `GO dev` donne |
-| Revue associe | NON APPLICABLE | Seulement en fin de sprint |
+| Audit reutilisation | INCONNU | Peut avoir ete fait dans le thread Naomie, mais pas visible sans sync |
+| Matrice documentaire | INCONNU | Peut avoir ete faite dans le thread Naomie, mais pas visible sans sync |
+| Parcours metier | INCONNU | Peut avoir ete traite dans le thread Naomie, mais pas visible sans sync |
+| Tickets sprint | INCONNU | A verifier via commit pousse ou Sync packet |
+| Validation Gad | MANQUANTE DANS TRACES PUBLIEES | Aucun `GO dev` visible cote branche publiee |
+| Revue associe | ATTENTE ANNONCEE NON VERIFIEE | Gad indique attente retour humain, a confirmer via sync |
 
 ## Reponse obligatoire quand Naomie arrive
 
@@ -213,24 +215,26 @@ Statut : A FAIRE.
 
 ## Blocages actuels
 
-- NotebookLM non interroge.
-- Le suivi du flux Naomie est rattrape partiellement ; NotebookLM reste le trou operationnel.
-- Audit de reutilisation non fait.
-- Matrice documentaire non faite.
-- Aucun `GO dev` donne par Gad.
-- Aucune revue associe possible tant qu'aucun pack SELAS n'existe.
+- Sync Naomie manquante : Gad annonce une avancee jusqu'a attente retour humain,
+  mais la branche publiee ne montre pas encore le commit, le pack ou le rapport
+  correspondant.
+- NotebookLM/reuse/matrice/pack sont `INCONNU` dans les traces publiees, pas
+  forcement non faits.
+- Aucun `GO dev` donne par Gad n'est visible dans les traces publiees.
+- Le rapport boss ne doit pas requalifier SELAS tant que le commit pousse ou le
+  Sync packet n'a pas ete recu.
 
 ## Prochaine action concrete
 
-1. Faire un audit de fraicheur avant tout nouveau rapport Gad : worklog,
-   NotebookLM, branche, threads, sources, catalogue, generateurs, tests.
-2. Quand Naomie arrive, verifier la branche `codex/naomie-selas-sprint`.
-3. Donner a Naomie la prochaine action NotebookLM seulement apres avoir indique
-   que la mission consiste a consolider les trous reels, pas a repartir de zero.
-4. Structurer chaque reponse dans le journal, mettre a jour le worklog Naomie,
-   puis choisir le prompt suivant selon les trous.
-5. Rester en `NO-GO dev` tant que NotebookLM/reuse/matrice/GO Gad ne sont pas
-   passes.
+1. Demander a Naomie un Sync checkpoint selon
+   `docs/project/NAOMIE_WORKSTREAM_SYNC_PROTOCOL_V1.md`.
+2. Si le travail est local et coherent, le pousser sur
+   `codex/naomie-selas-sprint`.
+3. Si le push bloque, produire un Sync packet complet.
+4. Lire le commit pousse ou le Sync packet, puis requalifier les gates SELAS :
+   NotebookLM, reuse, matrice, pack, retour humain.
+5. Rester en `NO-GO dev` tant que la preuve de sync et les gates ne sont pas
+   confirmes.
 
 ## Statut final
 

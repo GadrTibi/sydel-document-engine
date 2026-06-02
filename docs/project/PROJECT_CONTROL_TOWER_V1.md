@@ -23,6 +23,8 @@ Ce document ne remplace pas :
   chaine d'escalade et le rattrapage retroactif ;
 - `docs/project/WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md` pour la tracabilite de
   flux et les rapports boss courts ;
+- `docs/project/NAOMIE_WORKSTREAM_SYNC_PROTOCOL_V1.md` pour la synchronisation
+  entre thread Naomie, thread Gad, worklog et branche ;
 - `docs/sprints/SPRINT_[TYPE]_V1.md` pour l'etat detaille d'un sprint ;
 - `docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md` pour la methode.
 
@@ -78,6 +80,9 @@ Si l'interlocuteur est Gad :
   Naomie ; les details humains/Codex/repo restent internes sauf audit demande ;
 - Codex ne doit jamais assimiler `worklog vide` a `flux au debut` sans avoir
   verifie l'etat reel du type ;
+- si Gad annonce que le flux Naomie a avance mais que la branche ou le worklog
+  ne montrent pas cette avancee, Codex doit conclure `sync manquante` et
+  appliquer `NAOMIE_WORKSTREAM_SYNC_PROTOCOL_V1.md` ;
 - chaque rapport Naomi demande par Gad doit etre inscrit dans le worklog et le
   rapport suivant doit etre differentiel depuis ce curseur ;
 - si Gad laisse un message pour Naomi, Codex l'inscrit dans le worklog et le
@@ -98,6 +103,7 @@ Si l'interlocutrice est Naomi/Naomie :
 | Pyramide agents | `PROJECT_AGENT_ORG_CHART_V1.md` | Savoir quel agent/protocole interroger et ou remonte la preuve |
 | Sprint type entreprise | `docs/sprints/SPRINT_[TYPE]_V1.md` | Suivre un type d'entreprise de bout en bout |
 | Tracabilite de flux | `WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md` + worklog sprint | Tracer l'avancee du flux sans charger le pilote humain |
+| Synchronisation de flux | `NAOMIE_WORKSTREAM_SYNC_PROTOCOL_V1.md` + branche + Sync packet | Rendre visible ce qui a ete fait dans un autre thread |
 | Suivi Naomie | `NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md` + worklog sprint | Repondre a Gad sur le flux Naomie depuis les traces |
 | Sous-sprint | journal ou protocole dedie | Gerer une etape specialisee, ex. NotebookLM |
 | Ticket | `01_EXECUTION_BOARD.md` | Encadrer une action bornee |
@@ -145,7 +151,7 @@ Si un pack est corrige, l'ancien pack est remplace et ne doit plus etre utilise.
 
 | Type | Sprint | Pilote metier | Branche | Phase courante | Statut | Action autorisee maintenant |
 | --- | --- | --- | --- | --- | --- | --- |
-| SELARL | `SPRINT-SELARL-CLOSING-V1` | Gad | `track-b/clean-rebuild` | Validation finale pack corrige | IN_PROGRESS | transmettre le pack 004 et le brief `SELARL-FINAL-ASSOCIE-VALIDATION-001`, attendre validation ou ecarts concrets |
+| SELARL | `SPRINT-SELARL-CLOSING-V1` | Gad | `track-b/clean-rebuild` | Corrections retours humains 006 | IN_PROGRESS | commencer par `SELARL-RETURNS-006-STATUTS-001`, traiter les tickets 006, puis regenerer le pack 005 |
 | SELAS | `SPRINT-SELAS-V1` | Naomie | `codex/naomie-selas-sprint` | Sous-sprint NotebookLM + tracabilite flux | `NO-GO dev` | reprendre NotebookLM sur les trous reels et tenir le worklog par l'Agent de tracabilite |
 
 ## Etat courant SELARL
@@ -157,17 +163,22 @@ Etat utile :
 - creation simple medecin / chirurgien-dentiste generable ;
 - regime communautaire traite avec `DOC-005` et `DOC-006` actifs ;
 - multi-associes limite disponible sur certains sous-cas ;
-- pack de revue corrige regenere dans `artifacts/selarl_closing_pack_004/` ;
+- pack de revue corrige `artifacts/selarl_closing_pack_004/` a corriger apres
+  retours humains 006 ;
+- retour humain brut 006 :
+  `docs/review/selarl_human_returns_006_raw_v1.md` ;
+- triage retour humain 006 :
+  `docs/review/selarl_human_returns_triage_006_report_v1.md` ;
 - brief de validation associe pret dans
   `docs/review/selarl_final_validation_001_brief_v1.md` ;
 - cession, SCM, derogations, site distinct, plusieurs gerants et statuts
   multi-associes complets restent a cadrer ;
 - fin de sprint ecrite dans `docs/sprints/SPRINT_SELARL_CLOSING_V1.md` ;
-- action courante : transmettre le pack 004 a l'associe / juriste et attendre
-  une validation finale ou des ecarts concrets.
+- action courante : traiter les tickets `SELARL-RETURNS-006-*`, commencer par
+  `SELARL-RETURNS-006-STATUTS-001`, puis produire le pack 005.
 
-SELARL ne doit pas etre consideree terminee a 100 % tant que la revue humaine
-finale et les corrections eventuelles ne sont pas bouclees.
+SELARL ne doit pas etre consideree terminee a 100 % tant que les retours humains
+006, le pack 005, l'audit 006 et la validation finale ne sont pas boucles.
 
 ## Etat courant SELAS
 
@@ -239,7 +250,7 @@ Sprint actif Naomie : SELAS.
 Phase SELAS : NotebookLM.
 Action SELAS : prompt -> reponse -> journal -> prompt suivant.
 Dev SELAS : interdit.
-SELARL : production partielle, prochaine action revue humaine ou sous-cas borne.
+SELARL : production partielle, retours humains 006 a corriger avant pack 005.
 Pyramide agents : PROJECT_AGENT_ORG_CHART_V1.md si la demande demande qui
 orchestre quoi, un statut transverse ou un rattrapage retroactif.
 Tracabilite : WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md pour les rapports boss sur

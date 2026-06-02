@@ -36,6 +36,7 @@ Fichiers de memoire projet :
 - handoff :
 - protocole local :
 - protocole orchestrateur Naomie :
+- protocole sync Naomie :
 - worklog Naomie :
 - dernier rapport Gad :
 - messages Gad a transmettre :
@@ -79,6 +80,8 @@ Chaque projet doit definir au minimum :
 14. comment repondre a Gad sans demander a Naomie un statut oral.
 15. comment noter le dernier rapport Gad ;
 16. ou conserver les messages Gad a transmettre a Naomie.
+17. comment produire un commit/push ou un `Sync packet` quand une phase avance
+    dans le thread Naomie.
 
 ## Reponse type identite inconnue
 
@@ -108,6 +111,10 @@ Fiabilite : [OK / suivi a rattraper / source manquante]
 
 Le rapport detaille, avec branche, sources lues, curseur exact et separation
 Naomi/Codex/outils, est reserve a une demande explicite d'audit.
+
+Si l'avancee est annoncee par Gad ou Naomie mais absente des traces publiees,
+repondre `avancee annoncee, synchronisation manquante` et demander le checkpoint
+de `docs/project/NAOMIE_WORKSTREAM_SYNC_PROTOCOL_V1.md`.
 
 ## Message Gad a transmettre type
 

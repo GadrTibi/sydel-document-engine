@@ -53,6 +53,7 @@ Big Orchestrateur Projet / Codex PM
   +-- Orchestrateur Naomie / supervision Gad
   |     Source : docs/project/NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md
   |     Tracabilite : docs/project/WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md
+  |     Sync : docs/project/NAOMIE_WORKSTREAM_SYNC_PROTOCOL_V1.md
   |     Worklog : docs/sprints/SPRINT_[TYPE]_NAOMIE_WORKLOG_V1.md
   |     Sortie : rapport boss court + curseur mis a jour
   |
@@ -89,6 +90,7 @@ Big Orchestrateur Projet / Codex PM
 | 3 | Fichier de sprint | `docs/sprints/SPRINT_[TYPE]_V1.md` | Etat exact d'un type | phase, gates, blocages |
 | 4 | Orchestrateur Naomie | `NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md` | Ou en est Naomi ? | rapport Gad + worklog mis a jour |
 | 4 | Agent de tracabilite de flux | `WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md` | Ou en est le flux pilote ? | avancement du flux + preuves internes |
+| 4 | Agent de synchronisation de flux | `NAOMIE_WORKSTREAM_SYNC_PROTOCOL_V1.md` | Pourquoi le travail annonce n'est pas visible ? | commit pousse ou Sync packet |
 | 4 | Runtime Naomie | `NAOMIE_RUNTIME_PROTOCOL_V1.md` | Que dire a Naomi maintenant ? | action unique + point pedagogie |
 | 4 | Professeur Naomie | `NAOMIE_LEARNING_MENTOR_PROTOCOL_V1.md` | Comment expliquer sans coder ? | explication pedagogique |
 | 4 | Reuse Auditor | `REUSE_AUDIT_AGENT_PROTOCOL_V1.md` | Que reutiliser sans risque ? | matrice reuse |
@@ -119,9 +121,12 @@ Quand Gad demande `ou en est Naomi ?`, la chaine obligatoire est :
 4. Si tout concorde, rapport boss court.
 5. Si le worklog est vide ou stale mais que le flux a avance, activer le
    rattrapage retroactif.
-6. Produire un rapport differentiel depuis le dernier curseur Gad, en parlant
+6. Si Gad annonce une avancee terminee mais qu'aucune trace publiee ne la
+   montre, activer le protocole de synchronisation avant de repondre comme si le
+   flux n'avait pas avance.
+7. Produire un rapport differentiel depuis le dernier curseur Gad, en parlant
    du flux Naomie et non de performance personnelle.
-7. Mettre a jour le worklog avec le nouveau curseur.
+8. Mettre a jour le worklog avec le nouveau curseur.
 
 ## Agent de tracabilite et rattrapage retroactif
 
@@ -178,6 +183,7 @@ technique.
 | Suivi flux Naomie | PARTIAL | Rattrapage SELAS 001 produit ; le flux est suivi mais NotebookLM manque | reprendre NotebookLM sur les trous reels |
 | Rapport Gad | OK V2 | Rapport boss court defini par `WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md` | statut / avancement / prochaine etape / blocage / fiabilite |
 | Etat reel SELAS | OK | Doit remonter comme avancement du flux Naomie SELAS | garder details en preuve interne |
+| Sync inter-threads | A INSTALLER | Si Naomie avance dans un autre thread sans push, Gad ne voit rien | appliquer `NAOMIE_WORKSTREAM_SYNC_PROTOCOL_V1.md` |
 | NotebookLM SELAS | INCOMPLET | aucune reponse brute structuree | reprendre uniquement sur trous reels |
 | Reuse audit SELAS | BLOQUE | NotebookLM pas assez propre | attendre sortie NotebookLM |
 | Matrice SELAS | BLOQUE | reuse audit absent | interdite avant gate |

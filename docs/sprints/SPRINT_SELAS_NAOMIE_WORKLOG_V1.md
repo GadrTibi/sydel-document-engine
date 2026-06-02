@@ -28,14 +28,15 @@ le flux Naomie a produit, ce qui manque et ce que Gad peut superviser.
 | Sprint | SPRINT-SELAS-V1 |
 | Type d'entreprise | SELAS |
 | Branche cible | `codex/naomie-selas-sprint` |
-| Phase courante | Phase 3 - NOTEBOOKLM |
-| Statut courant | `NO-GO dev` |
-| Ticket actif | `SELAS-SOURCES-NOTEBOOKLM-001` |
-| Dernier rapport Gad | 2026-06-02 - rapport Gad courant sans delta Naomi trace |
+| Phase courante | Sync incident : avancee annoncee jusqu'a attente retour humain, non verifiee dans les traces publiees |
+| Statut courant | `NO-GO dev` tant que commit pousse ou Sync packet absent |
+| Ticket actif | `NAOMIE-SYNC-CHECKPOINT-001` |
+| Dernier rapport Gad | 2026-06-02 - Gad annonce que le flux SELAS est termine jusqu'a attente retour humain, mais la branche publiee ne montre pas cette avancee |
 | Lecture branche | Branche distante visible via connecteur GitHub ; fetch local bloque par permissions/identifiants |
-| Fiabilite suivi | `STALE` : worklog Naomi incomplet face a l'etat reel SELAS du repo |
+| Fiabilite suivi | `SYNC_MANQUANTE` : avancee annoncee, commit/Sync packet absent |
 | Rattrapage retroactif | Realise selon `docs/project/PROJECT_AGENT_ORG_CHART_V1.md` ; rapport `docs/review/selas_naomie_backfill_001_report_v1.md` |
 | Agent de tracabilite | `docs/project/WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md` |
+| Agent de synchronisation | `docs/project/NAOMIE_WORKSTREAM_SYNC_PROTOCOL_V1.md` |
 
 ## Etat courant
 
@@ -46,9 +47,10 @@ le flux Naomie a produit, ce qui manque et ce que Gad peut superviser.
 | Prompt NotebookLM 01 donne | A faire dans la session Naomie |
 | Reponse brute NotebookLM 01 recue | Non |
 | Reponse structuree dans journal NotebookLM | Non |
-| Audit reutilisation | Bloque |
-| Matrice documentaire | Bloquee |
-| GO dev | Manquant |
+| Avancee SELAS terminee jusqu'a retour humain | Annoncee par Gad, non verifiee dans branche/worklog |
+| Audit reutilisation | Inconnu dans traces publiees |
+| Matrice documentaire | Inconnue dans traces publiees |
+| GO dev | Manquant dans traces publiees |
 
 ## Etat reel SELAS hors worklog
 
@@ -93,6 +95,11 @@ fraicheur prealable.
 
 ## Blocages
 
+- Gad indique que Naomie a avance SELAS jusqu'a attente retour humain, mais
+  cette avancee n'est pas visible sur la branche `codex/naomie-selas-sprint`
+  publiee au moment du controle.
+- Le point de rupture probable est la synchronisation : travail non pousse,
+  mauvais thread, mauvais depot, mauvaise branche, ou Sync packet absent.
 - Aucune reponse brute NotebookLM SELAS n'est encore tracee.
 - Le sous-sprint NotebookLM n'est pas suffisant dans les fichiers de suivi,
   mais le repo contient deja des sources, specs, code et tests SELAS.
@@ -107,13 +114,15 @@ fraicheur prealable.
 ## Prochaine action Naomi
 
 ```text
-Reprendre la boucle NotebookLM sur le trou reel : obtenir la reponse brute NotebookLM manquante, puis la faire structurer par Codex dans le journal.
+Faire un Sync checkpoint : verifier branche/HEAD/status, puis pousser le travail
+termine ou produire un Sync packet complet si le push bloque.
 ```
 
 ## Prochaine action Codex
 
 ```text
-Relancer la boucle NotebookLM sur les trous reels, en s'appuyant sur le rattrapage SELAS deja produit.
+Ne pas relancer NotebookLM tant que la sync n'est pas clarifiee. Lire le commit
+pousse ou le Sync packet de Naomie, puis mettre a jour le statut reel SELAS.
 ```
 
 ## Rattrapage retroactif
@@ -170,12 +179,14 @@ Fiabilite : suivi rattrape partiellement, preuves repo OK, prochain suivi a teni
 
 | Date | Demande Gad | Periode couverte | Sources lues | Synthese donnee | Action suivante | Curseur |
 | --- | --- | --- | --- | --- | --- | --- |
+| 2026-06-02 | Gad informe que Naomie a avance SELAS jusqu'a attente retour humain, mais que le rapport ne le voit pas | Depuis le rapport boss court precedent jusqu'au 2026-06-02 | branche GitHub `codex/naomie-selas-sprint` HEAD `6a0382f`, commits visibles, liste branches GitHub, threads Codex recents accessibles, worklog local | Avancee annoncee par Gad, non verifiee dans les traces publiees. La branche distante ne montre pas de commit/livrable SELAS termine apres les commits de protocoles. Point de rupture probable : sync Git/thread manquante, mauvais thread, mauvais depot, mauvaise branche, ou push absent | Demander a Naomie un Sync checkpoint : commit/push si possible, sinon Sync packet complet ; ne pas relancer NotebookLM avant de clarifier la sync | Dernier rapport Gad = 2026-06-02 sync manquante flux SELAS |
 | 2026-06-02 | Gad demande : "ou en est Naomi ?" | Depuis l'ouverture du worklog 2026-06-02 jusqu'au 2026-06-02 | `PROJECT_CONTROL_TOWER_V1.md`, `04_LAST_STATE.md`, `NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md`, `SPRINT_SELAS_V1.md`, `SPRINT_SELAS_NAOMIE_WORKLOG_V1.md`, `SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md`, tentative `git log/show origin/codex/naomie-selas-sprint` bloquee car ref absente localement, tentative `git fetch origin codex/naomie-selas-sprint --prune` bloquee par `FETCH_HEAD` permission denied, correction ulterieure : branche distante confirmee via connecteur GitHub | Historique depasse : ce rapport confondait worklog vide et flux au demarrage. Le format actuel doit parler du flux Naomie SELAS et activer le rattrapage si les traces sont stale | Reprendre depuis le rapport boss par defaut et le rattrapage retroactif | Dernier rapport Gad = 2026-06-02 premier rapport supervision Naomi |
 | 2026-06-02 | Gad demande : "C'est gad, ou en est Naomi ?" | Depuis le premier rapport supervision Naomi 2026-06-02 jusqu'au 2026-06-02 | `PROJECT_CONTROL_TOWER_V1.md`, `04_LAST_STATE.md`, `NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md`, `SPRINT_SELAS_V1.md`, `SPRINT_SELAS_NAOMIE_WORKLOG_V1.md`, `SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md`, `git status --short --branch`, `git remote -v`, `git branch --show-current`, `git show-ref refs/remotes/origin/codex/naomie-selas-sprint`, connecteur GitHub branche/fichiers | Historique depasse : ce rapport cherchait un delta individuel au lieu de consolider l'avancement du flux. Branche distante confirmee via connecteur GitHub ; ref locale absente dans ce worktree | Reprendre depuis le rapport boss par defaut et le rattrapage retroactif | Dernier rapport Gad = 2026-06-02 deuxieme rapport supervision Naomi |
 | 2026-06-02 | Gad signale que le rapport test est faux et demande ou la chaine casse | Depuis le deuxieme rapport supervision Naomi 2026-06-02 jusqu'au 2026-06-02 | worklog, journal NotebookLM local et distant, commits `codex/naomie-selas-sprint`, threads Codex recents, scan repo `rg SELAS`, catalogue, orchestrateur, sources, tests et exemples SELAS | Diagnostic corrige : aucune action humaine directe n'est tracee, mais le flux SELAS n'est pas au debut. Le point de rupture est `PROJECT_STATE_IGNORED` + `WORKLOG_STALE` : les rapports ont pris le worklog vide comme verite unique et n'ont pas audite l'etat reel SELAS du repo | Rattraper retroactivement le worklog depuis les preuves repo et imposer l'audit de fraicheur avant chaque rapport Gad | Dernier rapport Gad = 2026-06-02 audit fraicheur rapports Naomi |
 | 2026-06-02 | Gad demande : "C'est gad, ou en est Naomi ?" | Depuis l'audit fraicheur rapports Naomi 2026-06-02 jusqu'au 2026-06-02 | `PROJECT_CONTROL_TOWER_V1.md`, `04_LAST_STATE.md`, `NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md`, `SPRINT_SELAS_V1.md`, `SPRINT_SELAS_NAOMIE_WORKLOG_V1.md`, `SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md`, `git rev-parse --show-toplevel`, `git branch --show-current`, `git remote -v`, tentative `git log origin/codex/naomie-selas-sprint` bloquee par ref locale absente, connecteur GitHub branche/worklog, scan `rg SELAS` sur sources/catalogue/generateurs/tests/docs | Aucun delta de flux supplementaire trace depuis le dernier curseur : aucune reponse NotebookLM importee, aucun message Gad en attente. Suivi defaillant/stale maintenu : le worklog ne prouve pas que SELAS est au debut ; le repo contient deja sources, specs, catalogue, generateur `DOC-018`, conditions UI, tests et exemples SELAS | Rattraper retroactivement le suivi SELAS depuis les preuves repo/branche, puis reprendre NotebookLM uniquement sur les trous reels avec Naomi ; rester en `NO-GO dev` | Dernier rapport Gad = 2026-06-02 rapport Gad sans delta Naomi trace |
 | 2026-06-02 | Gad demande d'appliquer le processus dans ce chat et de repondre comme a "ou en est Naomi ?" | Depuis le rapport Gad sans delta Naomi trace 2026-06-02 jusqu'au 2026-06-02 | `PROJECT_CONTROL_TOWER_V1.md`, `04_LAST_STATE.md`, `NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md`, `SPRINT_SELAS_V1.md`, `SPRINT_SELAS_NAOMIE_WORKLOG_V1.md`, `SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md`, branche GitHub `codex/naomie-selas-sprint` HEAD `59bf703`, threads recents `Suivre statut Naomi`, `Saluer`, `Saluer l'utilisateur`, `Bonjour`, scan `rg SELAS` sur repo | Historique depasse par `WORKSTREAM-TRACE-BOSS-REPORT-001` : SELAS non vierge, suivi alors `STALE`, rattrapage a produire | Produire le rattrapage puis reprendre NotebookLM sur les trous reels ; rester en `NO-GO dev` | Dernier rapport Gad = 2026-06-02 rapport applique dans chat courant sans delta Naomi trace |
 | 2026-06-02 | Gad demande : "C'est gad, ou en est Naomi ?" | Depuis le rapport applique dans chat courant sans delta de flux trace 2026-06-02 jusqu'au 2026-06-02 | `PROJECT_CONTROL_TOWER_V1.md`, `04_LAST_STATE.md`, `NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md`, `PROJECT_AGENT_ORG_CHART_V1.md`, `SPRINT_SELAS_V1.md`, `SPRINT_SELAS_NAOMIE_WORKLOG_V1.md`, `SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md`, connecteur GitHub branche `codex/naomie-selas-sprint`, `docs/review/naomie_reporting_freshness_audit_001_report_v1.md`, `docs/review/selas_naomie_backfill_001_report_v1.md`, scan `rg SELAS` sur repo | Historique depasse par `WORKSTREAM-TRACE-BOSS-REPORT-001` : le rapport doit maintenant consolider le flux Naomie SELAS. Rattrapage disponible : SELAS n'est pas vierge, avec sources, catalogue, `DOC-018`, generateur `StatutsSelasMedecinGenerator`, conditions UI, tests et exemples | Reprendre NotebookLM avec Naomi sur les trous reels, tenir worklog + journal a chaque reponse, rester en `NO-GO dev` jusqu'a NotebookLM suffisant, reuse audit, matrice et GO Gad | Dernier rapport Gad = 2026-06-02 rapport Gad courant sans delta de flux trace |
+| 2026-06-02 | Gad demande : "C'est gad, ou en est Naomi ?" | Depuis le rapport Gad courant sans delta de flux trace 2026-06-02 jusqu'au 2026-06-02 | `PROJECT_CONTROL_TOWER_V1.md`, `04_LAST_STATE.md`, `NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md`, `SPRINT_SELAS_V1.md`, `SPRINT_SELAS_NAOMIE_WORKLOG_V1.md`, `SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md`, `docs/review/selas_naomie_backfill_001_report_v1.md`, `docs/review/naomie_reporting_freshness_audit_001_report_v1.md`, `git rev-parse --show-toplevel`, `git branch --show-current`, `git remote -v`, `git show-ref refs/remotes/origin/codex/naomie-selas-sprint`, connecteur GitHub branche `codex/naomie-selas-sprint`, scan `rg SELAS` | Aucun delta supplementaire trace depuis le dernier curseur : aucune reponse NotebookLM importee, aucun message Gad en attente, branche distante confirmee via GitHub mais ref locale absente. Le flux Naomie SELAS reste non vierge et rattrape partiellement : sources, catalogue, `DOC-018`, generateur, conditions UI, tests et exemples existent deja | Reprendre NotebookLM avec Naomi sur la reponse brute manquante, puis structurer le journal ; rester en `NO-GO dev` jusqu'a NotebookLM suffisant, reuse audit, matrice et GO Gad | Dernier rapport Gad = 2026-06-02 rapport Gad courant : aucun delta de flux trace depuis le rattrapage |
 
 ## Messages Gad a transmettre a Naomi
 
