@@ -6,7 +6,6 @@ from sydel_doc_engine.domain.models import DocumentGenerationContext
 from sydel_doc_engine.generators.lot_04.statuts_sel_exercice_common import (
     OVERLAY_SELARL_DENTISTE,
     STRUCTURE_SELARL,
-    add_conjoint_replacements,
     add_depot_replacements,
     add_exercice_replacements,
     add_ordre_replacements,
@@ -46,7 +45,6 @@ class StatutsSelarlDentisteGenerator:
             title_type="parts_sociales",
             allow_multi_associes_partial=multi_partial,
         )
-        add_conjoint_replacements(replacements, associate)
         add_ordre_replacements(replacements, associate)
         add_depot_replacements(replacements, ctx, require_address=False)
         add_exercice_replacements(
@@ -74,4 +72,5 @@ class StatutsSelarlDentisteGenerator:
             replacements,
             output_dir / OUTPUT_FILENAME,
             associate=associate,
+            annex_page_break=True,
         )

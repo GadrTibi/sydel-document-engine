@@ -187,7 +187,6 @@ def _regime_communautaire_requirement(doc_code: str) -> DocumentRequirementRecor
             "personne.conjoint.civilite_affichage",
             "personne.conjoint.prenom",
             "personne.conjoint.nom",
-            "personne.conjoint.adresse_personnelle",
         ),
         target_screen_blocks=("regime_communautaire", "capital_associes", "generation"),
         verdict="ORANGE",

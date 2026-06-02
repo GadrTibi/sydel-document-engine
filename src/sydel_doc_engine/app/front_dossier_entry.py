@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from dataclasses import dataclass
+from datetime import date
 from typing import Any, Final
 
 from sydel_doc_engine.app.front_dossier_editor import (
@@ -80,6 +81,7 @@ class FrontDossierSimpleEntry:
     fonction: str = "gerant"
     date_naissance: str = ""
     ville_naissance: str = ""
+    ville_naissance_article_au: bool = False
     departement_naissance: str = ""
     nationalite: str = ""
     nom_pere: str = ""
@@ -102,6 +104,7 @@ class FrontDossierSimpleEntry:
     signature_nombre_exemplaires: str = ""
     signature_prestataire: str = ""
     ordre_conseil_departemental_libelle: str = ""
+    ordre_departement_inscription: str = ""
     ordre_destinataire_appel: str = ""
     ordre_profession_signataire_affichee: str = ""
     ordre_profession_ligne_destinataire: str = ""
@@ -483,6 +486,7 @@ def _add_company_addresses_if_present(
 def _add_order_if_present(dossier: DossierRecord, entry: FrontDossierSimpleEntry) -> None:
     if not _has_any_value(
         entry.ordre_conseil_departemental_libelle,
+        entry.ordre_departement_inscription,
         entry.ordre_destinataire_appel,
         entry.ordre_adresse_ligne_1,
         entry.ordre_adresse_cp,
@@ -569,7 +573,6 @@ def _add_conjoint_if_present(dossier: DossierRecord, entry: FrontDossierSimpleEn
         entry.conjoint_civilite_affichage,
         entry.conjoint_prenom,
         entry.conjoint_nom,
-        entry.conjoint_adresse,
     ):
         return
     dossier.add_person(
@@ -652,6 +655,7 @@ def _add_person_canonical_values(
             "fonction": entry.fonction,
             "date_naissance": entry.date_naissance,
             "ville_naissance": entry.ville_naissance,
+            "ville_naissance_article_au": entry.ville_naissance_article_au,
             "departement_naissance": entry.departement_naissance,
             "nationalite": entry.nationalite,
             "nom_pere": entry.nom_pere,
@@ -723,7 +727,7 @@ def _add_capital_and_signature_values(
         "reunion.heure": entry.reunion_heure,
         "signature.lieu": entry.signature_lieu,
         "signature.date": entry.signature_date,
-        "signature.nombre_exemplaires": entry.signature_nombre_exemplaires,
+        "signature.nombre_exemplaires": "quatre",
     }
     for field_path, value in values.items():
         _add_canonical_value(
@@ -770,7 +774,12 @@ def _selarl_complete_field_values(entry: FrontDossierSimpleEntry) -> dict[str, o
         "dossier.options.derogation": entry.derogation,
         "dossier.options.cession": entry.cession,
         "dossier.options.cabinet_type": entry.cabinet_type,
-        "ordre.professionnel": entry.ordre_conseil_departemental_libelle,
+        "ordre.professionnel": (
+            entry.ordre_conseil_departemental_libelle or f"Ordre des {profession_plural}"
+        ),
+        "ordre.departement_inscription": (
+            entry.ordre_departement_inscription or entry.ordre_adresse_ville
+        ),
         "ordre.destinataire_appel": entry.ordre_destinataire_appel,
         "ordre.profession_signataire_affichee": (
             entry.ordre_profession_signataire_affichee or profession_label
@@ -802,7 +811,7 @@ def _selarl_complete_field_values(entry: FrontDossierSimpleEntry) -> dict[str, o
         "societe.societe_principale.capital_social_lettres": (
             entry.statuts_capital_social_lettres
         ),
-        "societe.societe_principale.duree": entry.statuts_societe_duree,
+        "societe.societe_principale.duree": "99 ans",
         "capital.titres.nombre_total_lettres": entry.statuts_nombre_titres_total_lettres,
         "capital.titres.valeur_nominale_lettres": (
             entry.statuts_valeur_nominale_titre_lettres
@@ -827,7 +836,6 @@ def _selarl_complete_field_values(entry: FrontDossierSimpleEntry) -> dict[str, o
         "personne.conjoint.civilite_affichage": entry.conjoint_civilite_affichage,
         "personne.conjoint.prenom": entry.conjoint_prenom,
         "personne.conjoint.nom": entry.conjoint_nom,
-        "personne.conjoint.adresse_personnelle": entry.conjoint_adresse,
         "banque.depot.nom": entry.depot_banque_nom,
         "banque.depot.adresse": entry.depot_banque_adresse,
         "banque.banque": entry.depot_banque_nom,
@@ -841,27 +849,20 @@ def _selarl_complete_field_values(entry: FrontDossierSimpleEntry) -> dict[str, o
         "exercice.lieu_principal.adresse": entry.exercice_lieu_principal_adresse,
         "gerance.seuil_achat_materiel": entry.gerance_seuil_achat_materiel,
         "gerance.seuil_emprunt": entry.gerance_seuil_emprunt,
-        "document.nombre_exemplaires_lettres": (
-            entry.document_nombre_exemplaires_lettres
-            or entry.signature_nombre_exemplaires
-        ),
+        "document.nombre_exemplaires_lettres": "quatre",
         "document.signataire.prenom": entry.prenom,
         "document.signataire.nom": entry.nom,
         "signature.prestataire_signature_electronique": entry.signature_prestataire,
         "regime_communautaire.regime_matrimonial": entry.regime_matrimonial,
-        "regime_communautaire.qualite_renoncee": entry.regime_qualite_renoncee,
-        "regime_communautaire.date_courrier_avertissement": (
-            entry.regime_date_courrier_avertissement
-        ),
+        "regime_communautaire.qualite_renoncee": "associe",
+        "regime_communautaire.date_courrier_avertissement": date.today().isoformat(),
         "regime_communautaire.renonciation.lieu_signature": (
             entry.regime_renonciation_lieu_signature
         ),
         "regime_communautaire.renonciation.date_signature": (
             entry.regime_renonciation_date_signature
         ),
-        "regime_communautaire.renonciation.nombre_exemplaires_lettres": (
-            entry.regime_renonciation_nombre_exemplaires_lettres
-        ),
+        "regime_communautaire.renonciation.nombre_exemplaires_lettres": "quatre",
         "regime_communautaire.avertissement.date_signature": (
             entry.regime_avertissement_date_signature
         ),
@@ -895,6 +896,7 @@ def _resolve_selarl_complete_ambiguities(
 ) -> None:
     if _has_any_value(
         entry.ordre_conseil_departemental_libelle,
+        entry.ordre_departement_inscription,
         entry.ordre_adresse_ligne_1,
         entry.ordre_adresse_cp,
         entry.ordre_adresse_ville,

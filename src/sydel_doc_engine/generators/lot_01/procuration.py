@@ -67,8 +67,8 @@ class ProcurationGenerator:
             document,
             (
                 f"{subject_line(person.genre)} {civilite} {prenom} {nom}, demeurant au "
-                f"{personal_address}. Agissant en qualité de {fonction_dirigeant} de "
-                f"{company_designation} dont le siège est situé au "
+                f"{personal_address}, agissant en qualité de {fonction_dirigeant} de la "
+                f"{company_designation}, dont le siège est situé "
                 f"{company_address}"
             ),
         )
@@ -110,7 +110,7 @@ def _required_address(address: Address | None, field_name: str) -> str:
     voie = _required_text(address.voie, f"{field_name}.voie")
     ville = _required_text(address.ville, f"{field_name}.ville")
     cp = _required_text(address.cp, f"{field_name}.cp")
-    return f"{num_voie} {voie}, {ville} {cp}"
+    return f"{num_voie} {voie}, {cp} {ville}"
 
 
 def _company_designation(company: Company, forme: str, denomination: str) -> str:
@@ -181,5 +181,4 @@ def _add_final_block(
     add_signature_block(
         document,
         [f"Fait à {lieu_signature}", f"Le {date_signature}", signatory_name],
-        framed=True,
     )

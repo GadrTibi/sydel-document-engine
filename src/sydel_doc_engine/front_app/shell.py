@@ -81,7 +81,11 @@ def _prefill_random_selarl_data() -> None:
     )
     today_text = format_french_date(date.today())
     dossier_suffix = random.randint(1000, 9999)
-    status = "Marie(e)" if regime_communautaire else random.choice(MATRIMONIAL_STATUS_PRESETS)
+    status = (
+        "Marie(e)"
+        if regime_communautaire
+        else random.choice(tuple(item for item in MATRIMONIAL_STATUS_PRESETS if item != "Marie(e)"))
+    )
 
     values = {
         "selarl_profession": profession_label,
@@ -97,6 +101,7 @@ def _prefill_random_selarl_data() -> None:
         "selarl_nom": person["nom"],
         "selarl_date_naissance": person["date_naissance"],
         "selarl_ville_naissance": person["ville_naissance"],
+        "selarl_ville_naissance_article_au": False,
         "selarl_departement_naissance": person["departement_naissance"],
         "selarl_nationalite_choice": random.choice(NATIONALITY_PRESETS[:-1]),
         "selarl_nationalite_other": "",
@@ -112,20 +117,17 @@ def _prefill_random_selarl_data() -> None:
         "selarl_denomination": f"SELARL {person['nom']}",
         "selarl_capital_social": capital,
         "selarl_nb_parts_total": parts,
-        "selarl_duree": "99 ans",
         "selarl_ville_rcs": company["ville"],
         "selarl_siege_num_voie": company["numero"],
         "selarl_siege_voie": company["voie"],
         "selarl_siege_cp": company["cp"],
         "selarl_siege_ville": company["ville"],
-        "selarl_ordre_conseil": _ordre_label(profession_label, company["ville"]),
         "selarl_departement_ordre": company["departement_ordre"],
         "selarl_ordre_adresse_ligne_1": company["ordre_adresse"],
         "selarl_ordre_cp": company["ordre_cp"],
         "selarl_ordre_ville": company["ville"],
         "selarl_signature_lieu": company["ville"],
         "selarl_signature_date": today_text,
-        "selarl_signature_nombre_exemplaires": 2,
         "selarl_decision_date": today_text,
         "selarl_depot_banque_nom": random.choice(("BNP Paribas", "CIC", "Credit Agricole")),
         "selarl_depot_banque_adresse": company["banque_adresse"],
@@ -141,8 +143,6 @@ def _prefill_random_selarl_data() -> None:
         "selarl_conjoint_adresse_voie": person["adresse_voie"],
         "selarl_conjoint_adresse_cp": person["adresse_cp"],
         "selarl_conjoint_adresse_ville": person["adresse_ville"],
-        "selarl_qualite_renoncee": "associe",
-        "selarl_date_courrier_avertissement": today_text,
     }
     st.session_state.update(values)
     st.session_state.pop(GENERATED_DOSSIER_STATE_KEY, None)
@@ -371,6 +371,11 @@ def _render_praticien(*, regime_communautaire: bool) -> dict[str, object]:
             value=date(1990, 1, 1),
         )
     ville_naissance = col_g.text_input("Ville de naissance", key="selarl_ville_naissance")
+    ville_naissance_article_au = col_g.checkbox(
+        "au",
+        key="selarl_ville_naissance_article_au",
+        help="Affiche 'ne au ...' au lieu de 'ne a ...' dans la DNC.",
+    )
     departement_naissance = col_h.text_input(
         "Departement naissance",
         key="selarl_departement_naissance",
@@ -406,6 +411,7 @@ def _render_praticien(*, regime_communautaire: bool) -> dict[str, object]:
         "nom": nom,
         "date_naissance": date_naissance,
         "ville_naissance": ville_naissance,
+        "ville_naissance_article_au": ville_naissance_article_au,
         "departement_naissance": departement_naissance,
         "nationalite": nationalite,
         "nom_pere": nom_pere,
@@ -464,16 +470,33 @@ def _render_societe(
             praticien=praticien,
             include_statuts=dentist_multi_associes_statuts_partial,
         )
-    col_h, col_i = st.columns(2)
-    duree = col_h.text_input("Duree sociale", value="99 ans", key="selarl_duree")
-    ville_rcs = col_i.text_input("RCS (ville)", key="selarl_ville_rcs")
+    ville_rcs = st.text_input("RCS (ville)", key="selarl_ville_rcs")
 
     st.markdown("Siege social")
+    siege_same_as_personal = st.checkbox(
+        "identique a l'adresse personnelle",
+        value=False,
+        key="selarl_siege_same_as_personal",
+    )
+    if siege_same_as_personal:
+        return {
+            "denomination": denomination,
+            "capital_social": format_numeric_value(capital_social),
+            "duree": "99 ans",
+            "nb_parts_total": int(nb_parts_total),
+            "valeur_nominale_part": valeur_nominale_part,
+            **multi_associes_data,
+            "ville_rcs": ville_rcs,
+            "siege_num_voie": str(praticien.get("adresse_num_voie") or ""),
+            "siege_voie": str(praticien.get("adresse_voie") or ""),
+            "siege_cp": str(praticien.get("adresse_cp") or ""),
+            "siege_ville": str(praticien.get("adresse_ville") or ""),
+        }
     adr_a, adr_b, adr_c, adr_d = st.columns(4)
     return {
         "denomination": denomination,
         "capital_social": format_numeric_value(capital_social),
-        "duree": duree,
+        "duree": "99 ans",
         "nb_parts_total": int(nb_parts_total),
         "valeur_nominale_part": valeur_nominale_part,
         **multi_associes_data,
@@ -575,16 +598,11 @@ def _associe_label(index: int, prenom: object, nom: object) -> str:
 
 def _render_ordre_mandataire() -> dict[str, object]:
     st.markdown("**Ordre professionnel**")
-    col_a, col_b = st.columns(2)
-    ordre_conseil = col_a.text_input(
-        "Conseil departemental de l'ordre (libelle complet)",
-        key="selarl_ordre_conseil",
-        help="Exemple : Conseil departemental de l'Ordre des medecins de Paris.",
-    )
-    departement_ordre = col_b.text_input(
+    col_a, _ = st.columns(2)
+    departement_ordre = col_a.text_input(
         "Departement d'inscription a l'ordre",
         key="selarl_departement_ordre",
-        help="Exemple : 75, Paris ou le departement ordinal attendu par le dossier.",
+        help="Exemple : Paris, Loire-Atlantique ou le departement ordinal attendu par le dossier.",
     )
     col_c, col_d, col_e = st.columns(3)
     ordre_adresse_ligne_1 = col_c.text_input(
@@ -594,7 +612,6 @@ def _render_ordre_mandataire() -> dict[str, object]:
     ordre_cp = col_d.text_input("CP ordre", key="selarl_ordre_cp")
     ordre_ville = col_e.text_input("Ville ordre", key="selarl_ordre_ville")
     return {
-        "ordre_conseil": ordre_conseil,
         "departement_ordre": departement_ordre,
         "ordre_adresse_ligne_1": ordre_adresse_ligne_1,
         "ordre_cp": ordre_cp,
@@ -604,7 +621,7 @@ def _render_ordre_mandataire() -> dict[str, object]:
 
 def _render_generation_context(societe: dict[str, object]) -> dict[str, object]:
     st.markdown("**Generation**")
-    col_a, col_b, col_c = st.columns(3)
+    col_a, col_b = st.columns(2)
     signature_lieu = col_a.text_input("Lieu de signature", key="selarl_signature_lieu")
     with col_b:
         signature_date = _date_input_with_today(
@@ -612,13 +629,6 @@ def _render_generation_context(societe: dict[str, object]) -> dict[str, object]:
             key="selarl_signature_date",
             value=date.today(),
         )
-    signature_nombre_exemplaires = col_c.number_input(
-        "Nombre d'exemplaires",
-        min_value=1,
-        step=1,
-        value=2,
-        key="selarl_signature_nombre_exemplaires",
-    )
     decision_date = _date_input_with_today(
         "Date de decision",
         key="selarl_decision_date",
@@ -654,7 +664,7 @@ def _render_generation_context(societe: dict[str, object]) -> dict[str, object]:
     return {
         "signature_lieu": signature_lieu,
         "signature_date": signature_date,
-        "signature_nombre_exemplaires": signature_nombre_exemplaires,
+        "signature_nombre_exemplaires": "quatre",
         "decision_date": decision_date,
         "depot_banque_nom": depot_banque_nom,
         "depot_banque_adresse": depot_banque_adresse,
@@ -726,49 +736,16 @@ def _render_conjoint(
     qualite_renoncee = "associe"
     date_courrier_avertissement = None
     if regime_communautaire:
-        st.markdown("Adresse conjoint")
-        adr_a, adr_b, adr_c, adr_d = st.columns(4)
-        conjoint_adresse_num_voie = adr_a.text_input(
-            "No conjoint",
-            key="selarl_conjoint_adresse_num_voie",
-        )
-        conjoint_adresse_voie = adr_b.text_input(
-            "Voie conjoint",
-            key="selarl_conjoint_adresse_voie",
-        )
-        conjoint_adresse_cp = adr_c.text_input(
-            "CP conjoint",
-            key="selarl_conjoint_adresse_cp",
-        )
-        conjoint_adresse_ville = adr_d.text_input(
-            "Ville conjoint",
-            key="selarl_conjoint_adresse_ville",
-        )
-        col_e, col_f = st.columns(2)
-        qualite_renoncee = col_e.text_input(
-            "Qualite renoncee",
-            value="associe",
-            key="selarl_qualite_renoncee",
-        )
-        with col_f:
-            date_courrier_avertissement = _date_input_with_today(
-                "Date courrier avertissement",
-                key="selarl_date_courrier_avertissement",
-                value=date.today(),
-            )
+        date_courrier_avertissement = date.today()
     return {
         "conjoint_civilite": conjoint_civilite,
         "conjoint_genre": derive_gender_from_civilite(conjoint_civilite),
         "conjoint_prenom": conjoint_prenom,
         "conjoint_nom": conjoint_nom,
-        "conjoint_adresse_num_voie": conjoint_adresse_num_voie
-        if regime_communautaire
-        else "",
-        "conjoint_adresse_voie": conjoint_adresse_voie if regime_communautaire else "",
-        "conjoint_adresse_cp": conjoint_adresse_cp if regime_communautaire else "",
-        "conjoint_adresse_ville": conjoint_adresse_ville
-        if regime_communautaire
-        else "",
+        "conjoint_adresse_num_voie": "",
+        "conjoint_adresse_voie": "",
+        "conjoint_adresse_cp": "",
+        "conjoint_adresse_ville": "",
         "qualite_renoncee": qualite_renoncee,
         "date_courrier_avertissement": date_courrier_avertissement,
     }

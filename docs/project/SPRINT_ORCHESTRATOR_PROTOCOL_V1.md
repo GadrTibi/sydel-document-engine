@@ -64,12 +64,19 @@ Chaque fichier de sprint doit indiquer au minimum :
 - derniere action ;
 - prochaine action ;
 - blocages ;
+- worklog Naomie si le sprint est pilote par Naomie ;
+- dernier rapport Gad et messages Gad en attente si le sprint est pilote par
+  Naomie ;
 - statut NotebookLM ;
 - statut audit reutilisation ;
 - statut matrice documentaire ;
 - statut tickets ;
 - statut validation Gad ;
 - statut revue associe ;
+- pack actif et packs remplaces ;
+- statut audit fidelite source ;
+- statut audit trois sources ;
+- questions humaines deja resolues par les sources ;
 - decision `GO dev` limitee, si elle existe.
 
 ## Phases obligatoires
@@ -87,16 +94,22 @@ Chaque fichier de sprint doit indiquer au minimum :
 | 8 | VALIDATION_GAD | `NO-GO dev` | validation explicite de Gad |
 | 9 | DEV_LIMITE | `GO dev ticket X` | ticket unique et scope borne |
 | 10 | SMOKE | `GO test` | tests et smoke internes |
-| 11 | ASSOCIE_REVIEW | `NO-GO cloture` | pack de test et retour associe |
-| 12 | CORRECTIONS | selon retour | retours classes et traites |
-| 13 | CLOTURE | `DONE` ou `PARTIAL` | statut canonique final |
+| 11 | SOURCE_FIDELITY | `NO-GO cloture` | pack actif, controle source et audit trois sources |
+| 12 | ASSOCIE_REVIEW | `NO-GO cloture` | brief d'ecarts concrets et retour associe |
+| 13 | CORRECTIONS | selon retour | retours classes et traites |
+| 14 | CLOTURE | `DONE` ou `PARTIAL` ou `BLOCKED` | statut canonique final |
 
 ## Gates anti-derapage
 
 | Situation | Reponse obligatoire de Codex |
 | --- | --- |
-| Naomie dit seulement `Bonjour` dans un contexte Naomie/SELAS | Accueil sprint SELAS, verification branche, point pedagogie, Prompt NotebookLM 01, aucun dev |
-| Le contexte mentionne Naomi/Naomie mais le message est vague | Traiter comme accueil Naomie, pas comme demande generique |
+| Nouveau chat : `Bonjour` sans identite | Demander `Bonjour, tu es Gad ou Naomi ? Je te route ensuite sur le bon protocole projet.` Aucun sprint, aucune tache, aucun NotebookLM avant identification |
+| Gad parle de Naomi/Naomie, SELAS ou du protocole | Traiter Gad comme superviseur produit ; ne pas declencher NotebookLM sauf demande explicite de simulation/preparation/reprise du workflow Naomi |
+| Gad demande ou en est Naomi | Appliquer `NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md` + `WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md`, lire les traces/worklog/branche, puis repondre sur le flux Naomi sans demander un statut oral a Naomi |
+| Gad demande un rapport Naomi | Produire un rapport boss court differentiel depuis le dernier rapport Gad inscrit dans le worklog, puis mettre a jour le curseur |
+| Gad laisse un message pour Naomi | Enregistrer le message exact dans le worklog avec statut `a transmettre`; le citer au prochain echange avec Naomi puis le marquer `transmis` |
+| Naomie dit seulement `Bonjour` apres identification comme Naomie/SELAS | Accueil sprint SELAS, verification branche, point pedagogie, Prompt NotebookLM 01, aucun dev |
+| L'interlocutrice active est Naomi/Naomie mais le message est vague | Traiter comme accueil Naomie, pas comme demande generique |
 | Naomie dit `Je veux lancer le sprint X` | Creer/lire le sprint, phase 0, `NO-GO dev`, puis lancer uniquement le sous-sprint NotebookLM |
 | Naomie dit `Je veux lancer/demarrer/reprendre le sprint SELAS/CELAS` | Rester dans `SELAS-SOURCES-NOTEBOOKLM-001`, donner le prochain prompt NotebookLM a copier-coller, attendre sa reponse |
 | Naomie demande de coder avant NotebookLM | Refuser le dev et lister les gates manquants |
@@ -105,6 +118,9 @@ Chaque fichier de sprint doit indiquer au minimum :
 | Reuse audit absent | Interdire matrice finale et `GO dev` |
 | Matrice documentaire absente | Interdire tickets et dev |
 | Gad n'a pas donne de `GO dev` explicite | Interdire le code |
+| Pack actif non identifie apres correction | Interdire la revue associe |
+| Audit trois sources absent avant revue finale | Interdire la cloture 100 % |
+| Question humaine deja resolue par source/spec | Ne pas poser la question, noter la decision source |
 | L'associe n'a pas teste | Interdire cloture 100 % |
 
 ## Format de reponse obligatoire a Naomie
@@ -122,7 +138,10 @@ Prochaine etape : [ce qu'on fera ensuite]
 Le point pedagogie est obligatoire a chaque reponse a Naomie.
 
 Pour Naomie/SELAS, un simple `bonjour` suffit a declencher le Prompt NotebookLM
-01. Codex ne doit pas attendre que Naomie choisisse une tache.
+01 seulement si l'interlocutrice active est deja identifiee comme Naomie/Naomi.
+Si l'identite est inconnue, Codex doit d'abord demander si la personne est Gad
+ou Naomi. Codex ne doit pas attendre que Naomie choisisse une tache apres son
+identification.
 
 Reponse interdite dans un contexte Naomie :
 
@@ -198,6 +217,19 @@ Chaque reponse NotebookLM doit etre transformee en structure :
 - impact sur le sprint ;
 - prochain prompt recommande.
 
+Chaque avance du flux Naomie doit aussi mettre a jour le worklog du sprint.
+Ce suivi est porte par l'Agent de tracabilite de flux
+`docs/project/WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md`, pas par Naomie :
+
+- dernier avancement du flux ;
+- reponse brute recue ;
+- fichier structure par Codex ;
+- blocages ;
+- prochaine action Naomie ;
+- prochaine action Codex ;
+- decision Gad si elle existe.
+- message Gad transmis ou encore en attente.
+
 La boucle NotebookLM peut s'arreter seulement quand Codex dispose au minimum de :
 
 - inventaire documentaire SELAS ;
@@ -216,6 +248,39 @@ Aucune reponse NotebookLM ne remplace :
 - une spec `docs/delivery/` ;
 - un retour humain valide ;
 - une decision explicite de Gad.
+
+## Regles de fidelite source et retours humains
+
+La lecon SELARL est obligatoire pour les prochains sprints : Codex ne doit pas
+demander a l'humain de confirmer ce que les sources disent deja. Avant de
+solliciter Gad ou l'associe, Codex doit d'abord verifier :
+
+- le document de reference qui liste les documents a produire ;
+- les notes NotebookLM / modele deja structurees ;
+- les sources DOCX et specs disponibles ;
+- les retours humains deja versionnes ou fournis.
+
+Les questions humaines autorisees sont uniquement :
+
+- ecart concret dans un DOCX produit ;
+- contradiction entre sources ;
+- source absente ;
+- variable mal injectee ;
+- document absent, en trop, manuel ou reserve a arbitrer ;
+- choix de scope.
+
+Avant une revue associe, le sprint doit avoir :
+
+- un pack actif numerote ;
+- un manifest ou une liste des documents attendus ;
+- un brief de revue limite aux ecarts ;
+- les anciens packs marques comme remplaces ;
+- un audit trois sources si le perimetre touche des documents juridiques
+  sensibles.
+
+Si une correction est faite apres retour humain, Codex doit regenerer un nouveau
+pack, relancer les controles cibles et mettre a jour le fichier de sprint avant
+de redemander une validation.
 
 ## Regles de reutilisation
 

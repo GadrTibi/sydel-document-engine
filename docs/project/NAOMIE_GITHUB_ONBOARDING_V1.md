@@ -16,6 +16,9 @@ Le suivi operationnel d'un sprint Naomie est defini dans
 `docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md`. Pour la SELAS, l'etat actif
 est `docs/sprints/SPRINT_SELAS_V1.md`.
 
+La synchronisation entre le thread Naomie, le thread Gad, le worklog et la
+branche est definie dans `docs/project/NAOMIE_WORKSTREAM_SYNC_PROTOCOL_V1.md`.
+
 ## Principe operationnel
 
 Naomie ne pilote pas GitHub, Git, les branches, les commits, les push ou les
@@ -40,6 +43,8 @@ Codex gere :
 - les tests ;
 - les commits/push uniquement quand Gad l'a demande ou valide ;
 - les mises a jour de la memoire projet.
+- les checkpoints de synchronisation quand une phase est terminee ou quand Gad
+  ne voit pas l'avancee.
 
 Gad garde l'arbitrage final sur le type d'entreprise, la base de branche et les
 validations metier sensibles.
@@ -84,6 +89,12 @@ branche de sprint ou bloquer en `NO-GO dev`.
 
 Concretement, elle ne doit pas lancer elle-meme de commandes Git. Si une action
 Git est necessaire, elle demande a Codex de la faire.
+
+Si Naomie pense qu'une phase est terminee, elle ne doit pas seulement le dire
+dans le chat. Codex doit produire un checkpoint :
+
+- soit commit + push sur la branche de sprint ;
+- soit `Sync packet` complet si le push est bloque.
 
 Pour chaque nouveau type d'entreprise :
 

@@ -85,6 +85,11 @@ SELARL_ALWAYS_VISIBLE_BLOCK_KEYS: Final[tuple[str, ...]] = (
     "signature",
 )
 
+PRODUCT_TREATED_CASE_TYPES: Final[frozenset[CaseType]] = frozenset(
+    {CaseType.SELARL, CaseType.SELAS}
+)
+PRODUCT_GENERABLE_CASE_TYPES: Final[frozenset[CaseType]] = frozenset({CaseType.SELARL})
+
 
 @dataclass(frozen=True)
 class BusinessDossierType:
@@ -135,6 +140,8 @@ class BusinessWizardInput:
     personne_prenom: str = ""
     personne_nom: str = ""
     personne_date_naissance: date | str | None = None
+    personne_ville_naissance: str = ""
+    personne_ville_naissance_article_au: bool = False
     personne_nationalite: str = ""
     personne_nom_pere: str = ""
     personne_nom_mere: str = ""
@@ -252,7 +259,7 @@ def business_dossier_types() -> tuple[BusinessDossierType, ...]:
             structure=case_type.value,
             label=_structure_label(case_type),
             status=_structure_status(case_type),
-            generable_in_v1=True,
+            generable_in_v1=case_type in PRODUCT_GENERABLE_CASE_TYPES,
         )
         for case_type in CaseType
     )
@@ -537,6 +544,7 @@ def sample_business_wizard_input() -> BusinessWizardInput:
         personne_prenom="Jean",
         personne_nom="Durand",
         personne_date_naissance=date(1990, 2, 3),
+        personne_ville_naissance="Paris",
         personne_nationalite="francaise",
         personne_nom_pere="Pierre Durand",
         personne_nom_mere="Anne Martin",
@@ -707,6 +715,11 @@ def build_business_context(data: BusinessWizardInput) -> DocumentGenerationConte
                 ),
             ),
             date_naissance=personne_date_naissance,
+            ville_naissance=_required_text_value(
+                data.personne_ville_naissance,
+                "personne_signataire.ville_naissance",
+            ),
+            ville_naissance_article_au=data.personne_ville_naissance_article_au,
             nationalite=_required_text_value(
                 data.personne_nationalite,
                 "personne_signataire.nationalite",
@@ -816,14 +829,34 @@ def business_document_table_rows(
 
 
 def _structure_label(case_type: CaseType) -> str:
-    return f"{case_type.value} - catalogue metier"
+    if case_type == CaseType.SELARL:
+        return "SELARL - sprint produit actif"
+    if case_type == CaseType.SELAS:
+        return "SELAS - sprint produit actif (NO-GO dev)"
+    return f"{case_type.value} - inventaire technique seulement"
 
 
 def _structure_status(case_type: CaseType) -> str:
+    if case_type == CaseType.SELARL:
+        return (
+            "SPRINT_ACTIF/PARTIAL : type en traitement avance ; generation produit "
+            "bornee aux sous-cas SELARL valides."
+        )
+    if case_type == CaseType.SELAS:
+        return (
+            "SPRINT_ACTIF/BLOCKED sync/NO-GO dev : type en traitement Naomie ; "
+            "aucune generation produit avant synchronisation et gates NotebookLM."
+        )
     condition_count = len(get_ui_conditions_for_case(case_type))
     if condition_count:
-        return "selection documentaire pilotee par CASE-CATALOG-001"
-    return "aucune condition metier specifique V1, selection catalogue directe"
+        return (
+            "INVENTAIRE_TECHNIQUE : present dans le catalogue/code, mais non traite "
+            "comme sprint produit ; usage diagnostic seulement avec conditions catalogue."
+        )
+    return (
+        "INVENTAIRE_TECHNIQUE : present dans le catalogue/code, mais non traite "
+        "comme sprint produit ; usage diagnostic seulement avec selection catalogue directe."
+    )
 
 
 def _missing_fields_by_document(
@@ -857,6 +890,7 @@ def _validate_doc_001(data: BusinessWizardInput, missing: list[str]) -> None:
     _require_text(data.personne_prenom, "personne_signataire.prenom", missing)
     _require_text(data.personne_nom, "personne_signataire.nom", missing)
     _require_date(data.personne_date_naissance, "personne_signataire.date_naissance", missing)
+    _require_text(data.personne_ville_naissance, "personne_signataire.ville_naissance", missing)
     _require_text(data.personne_nationalite, "personne_signataire.nationalite", missing)
     _require_text(data.personne_nom_pere, "personne_signataire.nom_pere", missing)
     _require_text(data.personne_nom_mere, "personne_signataire.nom_mere", missing)
@@ -971,11 +1005,22 @@ def _business_warnings(
     data: BusinessWizardInput,
     document_rows: tuple[BusinessDocumentRow, ...],
 ) -> tuple[str, ...]:
+    case_type = _normalize_case_type(data)
     warnings: list[str] = [
         "La generation ne vaut pas validation juridique ni revue visuelle humaine.",
         "La generation Assistant se limite aux documents attendus, generables, "
         "codes en DOC-XXX et prets avec le contexte formulaire V2.",
     ]
+    if case_type not in PRODUCT_TREATED_CASE_TYPES:
+        warnings.append(
+            "Statut produit du type : INVENTAIRE_TECHNIQUE. Le type existe dans "
+            "le catalogue/code, mais n'a pas ete traite comme sprint produit."
+        )
+    elif case_type not in PRODUCT_GENERABLE_CASE_TYPES:
+        warnings.append(
+            "Statut produit du type : SPRINT_ACTIF/NO-GO dev. Le type est en "
+            "traitement, mais pas encore generable comme produit V1."
+        )
     if any(row.status == STATUS_CONTEXT_INCOMPLETE for row in document_rows):
         warnings.append(
             "Certains documents sont attendus par le catalogue, mais le contexte "
@@ -987,7 +1032,7 @@ def _business_warnings(
         warnings.append(
             "Les documents non implementes restent visibles et exclus de la generation."
         )
-    if _normalize_case_type(data) == CaseType.SELAS and data.scm is True:
+    if case_type == CaseType.SELAS and data.scm is True:
         warnings.append(
             "Reserve SELAS + SCM : la source contient des fichiers specifiques SELAS, "
             "mais le catalogue mappe le bloc SCM vers DOC-031/DOC-032/DOC-033."

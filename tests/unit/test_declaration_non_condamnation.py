@@ -31,6 +31,7 @@ def _context(genre: Gender = Gender.MASCULIN) -> DocumentGenerationContext:
                 ville="Paris",
             ),
             date_naissance=date(1990, 2, 3),
+            ville_naissance="Paris",
             nationalite="française",
             nom_pere="Pierre Durand",
             nom_mere="Anne Martin",
@@ -77,6 +78,10 @@ def _table_has_explicit_borders(table) -> bool:
     return borders is not None and borders.find(qn("w:top")) is not None
 
 
+def _table_text(table) -> str:
+    return "\n".join(cell.text for row in table.rows for cell in row.cells)
+
+
 def test_declaration_non_condamnation_creates_docx(tmp_path: Path) -> None:
     output_path = _generate(tmp_path)
 
@@ -90,7 +95,7 @@ def test_declaration_non_condamnation_contains_essential_texts(tmp_path: Path) -
     assert "DECLARATION DE NON CONDAMNATION" in text
     assert "EN APPLICATION DE L’ARTICLE A.123-51 du Code de Commerce" in text
     assert "Je soussigné Monsieur Jean Durand" in text
-    assert "Né le 03/02/1990" in text
+    assert "Né le 03/02/1990 à Paris." in text
     assert "de nationalité française" in text
     assert "fils de Monsieur Pierre Durand" in text
     assert "et de Madame Anne Martin" in text
@@ -105,8 +110,19 @@ def test_declaration_non_condamnation_uses_feminine_agreements(tmp_path: Path) -
     text = _docx_text(_generate(tmp_path, Gender.FEMININ))
 
     assert "Je soussignée Madame Marie Durand" in text
-    assert "Née le 03/02/1990" in text
+    assert "Née le 03/02/1990 à Paris." in text
     assert "fille de Monsieur Pierre Durand" in text
+
+
+def test_declaration_non_condamnation_can_use_au_before_birth_city(tmp_path: Path) -> None:
+    ctx = _context()
+    ctx.personne_signataire.ville_naissance = "Bourget"
+    ctx.personne_signataire.ville_naissance_article_au = True
+
+    text = _docx_text(DeclarationNonCondamnationGenerator().generate(ctx, tmp_path))
+
+    assert "Né le 03/02/1990 au Bourget." in text
+    assert "Né le 03/02/1990 à Bourget." not in text
 
 
 def test_declaration_non_condamnation_composes_personal_address(tmp_path: Path) -> None:
@@ -134,9 +150,8 @@ def test_declaration_non_condamnation_matches_source_visual_formatting(tmp_path:
     assert _table_has_explicit_borders(title_table)
 
     signature_table = document.tables[1]
-    assert signature_table.style.name == "Table Grid"
-    assert _table_has_explicit_borders(signature_table)
-    assert "Fait à Paris" in signature_table.cell(0, 0).text
+    assert not _table_has_explicit_borders(signature_table)
+    assert "Fait à Paris" in _table_text(signature_table)
 
     subject_paragraph = _find_paragraph(document, "Je soussigné Monsieur Jean Durand")
     assert all(run.bold for run in subject_paragraph.runs if run.text.strip())

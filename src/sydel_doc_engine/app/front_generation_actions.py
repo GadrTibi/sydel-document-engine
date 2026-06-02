@@ -93,6 +93,10 @@ _ADDRESS_PATTERN = re.compile(
     r"(?P<street>.+?)[,\s]+(?P<postal_code>\d{5})\s+(?P<city>.+?)\s*$",
     re.IGNORECASE,
 )
+_CITY_POSTAL_ADDRESS_PATTERN = re.compile(
+    r"^\s*(?P<prefix>.+?,\s*)(?P<city>[^\d,]+?)\s+(?P<postal_code>\d{5})\s*$",
+    re.IGNORECASE,
+)
 
 _FORME_LABELS: Final[dict[str, tuple[str, str]]] = {
     "SELARL": (
@@ -318,6 +322,13 @@ def build_front_generation_context(dossier: DossierRecord) -> DocumentGeneration
             adresse_personnelle_affichee=person_address.adresse_affichee,
             adresse_perso=person_address,
             date_naissance=birth_date,
+            ville_naissance=_required_text(
+                _role_field(dossier, BusinessRole.PRATICIEN, "ville_naissance"),
+                "personne.praticien.ville_naissance",
+            ),
+            ville_naissance_article_au=_truthy(
+                _role_field(dossier, BusinessRole.PRATICIEN, "ville_naissance_article_au")
+            ),
             nationalite=_required_text(
                 _role_field(dossier, BusinessRole.PRATICIEN, "nationalite"),
                 "personne.praticien.nationalite",
@@ -341,7 +352,7 @@ def build_front_generation_context(dossier: DossierRecord) -> DocumentGeneration
                 "personne.praticien.qualification_principale",
             ),
         ),
-        conjoint=_conjoint_context(dossier),
+        conjoint=_conjoint_context(dossier, person_address),
         signature=Signature(
             lieu=_required_text(_field(dossier, "signature.lieu"), "signature.lieu"),
             date=signature_date,
@@ -738,9 +749,11 @@ def _ordre_context(
     profession_plural: str,
 ) -> OrdreProfessionnel:
     return OrdreProfessionnel(
-        conseil_departemental_libelle=_required_text(
-            _field(dossier, "ordre.professionnel"),
-            "ordre.professionnel",
+        conseil_departemental_libelle=_field(dossier, "ordre.professionnel") or None,
+        departement_inscription=(
+            _field(dossier, "ordre.departement_inscription")
+            or _field(dossier, "ordre.departement")
+            or None
         ),
         destinataire_appel=_required_text(
             _field(dossier, "ordre.destinataire_appel"),
@@ -815,16 +828,15 @@ def _statuts_conjoint(dossier: DossierRecord) -> SpfplConjoint | None:
     )
 
 
-def _conjoint_context(dossier: DossierRecord) -> Person | None:
+def _conjoint_context(dossier: DossierRecord, person_address: Address) -> Person | None:
     if not _field(dossier, "personne.conjoint.nom"):
         return None
-    address_text = _field(dossier, "personne.conjoint.adresse_personnelle")
     return Person(
         genre=Gender.FEMININ,
         civilite=_field(dossier, "personne.conjoint.civilite_affichage") or "Madame",
         prenom=_field(dossier, "personne.conjoint.prenom"),
         nom=_field(dossier, "personne.conjoint.nom"),
-        adresse_perso=_display_address(address_text) if address_text else None,
+        adresse_perso=person_address,
     )
 
 
@@ -874,6 +886,7 @@ def _regime_communautaire_context(
 
 
 def _display_address(value: str) -> Address:
+    value = _normalize_address_display(value)
     match = _ADDRESS_PATTERN.match(value)
     if match is None:
         return Address(adresse_affichee=value)
@@ -884,6 +897,16 @@ def _display_address(value: str) -> Address:
         ville=match.group("city").strip(),
         adresse_affichee=value,
     )
+
+
+def _normalize_address_display(value: str) -> str:
+    cleaned = value.strip()
+    match = _CITY_POSTAL_ADDRESS_PATTERN.match(cleaned)
+    if match is None:
+        return cleaned
+    city = match.group("city").strip()
+    postal_code = match.group("postal_code").strip()
+    return f"{match.group('prefix')}{postal_code} {city}"
 
 
 def _require_generation_profile(dossier: DossierRecord) -> None:
@@ -950,15 +973,15 @@ def _required_address_record(
 
 
 def _engine_address(address: AddressRecord, field_name: str) -> Address:
+    display_value = _address_display(address)
     if address.street_number and address.street_name and address.postal_code and address.city:
         return Address(
             num_voie=address.street_number.strip(),
             voie=address.street_name.strip(),
             cp=address.postal_code.strip(),
             ville=address.city.strip(),
-            adresse_affichee=_address_display(address),
+            adresse_affichee=display_value,
         )
-    display_value = _address_display(address)
     match = _ADDRESS_PATTERN.match(display_value)
     if match is None:
         raise FrontGenerationBlockedError(
@@ -975,14 +998,16 @@ def _engine_address(address: AddressRecord, field_name: str) -> Address:
 
 def _address_display(address: AddressRecord) -> str:
     if address.display_value and address.display_value.strip():
-        return address.display_value.strip()
+        return _normalize_address_display(address.display_value)
     parts = (
         address.street_number,
         address.street_name,
         address.postal_code,
         address.city,
     )
-    return " ".join(part.strip() for part in parts if part and part.strip())
+    return _normalize_address_display(
+        " ".join(part.strip() for part in parts if part and part.strip())
+    )
 
 
 def _role_field(

@@ -168,6 +168,28 @@ def test_pv_nomination_gerant_creates_docx(tmp_path: Path) -> None:
     assert output_path.is_file()
 
 
+def test_pv_nomination_gerant_selarl_header_uses_written_form_and_simple_capital(
+    tmp_path: Path,
+) -> None:
+    ctx = _context(associes=_associes(1))
+    ctx.societe.forme_sociale = "SELARL"
+    ctx.societe.forme_sociale_affichage = "SELARL"
+    ctx.societe.forme_sociale_complete = "société d’exercice libéral à responsabilité limitée"
+    ctx.societe.forme_sociale_abregee = "SELARL"
+    ctx.societe.denomination = "SELARL MARTIN"
+    ctx.societe.capital_social = "5 000"
+    ctx.associes[0].profession_reglementee = "médecin"
+
+    text = _docx_text(_generate(tmp_path, ctx))
+    paragraphs = _paragraphs(_generate(tmp_path / "second", ctx))
+
+    assert "SELARL MARTIN" in paragraphs
+    assert "Société d’exercice libéral à responsabilité limitée de médecin" in paragraphs
+    assert "Au capital de 5 000 euros" in paragraphs
+    assert "SELARL à capital variable" not in text
+    assert "Au capital minimum et effectif" not in text
+
+
 def test_pv_nomination_gerant_repeats_two_associes(tmp_path: Path) -> None:
     text = _docx_text(_generate(tmp_path))
     paragraphs = _paragraphs(_generate(tmp_path / "second"))

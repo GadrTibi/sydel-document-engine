@@ -95,6 +95,28 @@ def test_front_generation_regime_communautaire_adds_doc_005_and_doc_006() -> Non
     assert statuses["DOC-006"] is DocumentStatus.GENERABLE
     assert readiness.can_generate_docx is True
     assert context.regime_communautaire is not None
+    assert context.conjoint is not None
+    assert context.conjoint.adresse_perso is not None
+    assert context.conjoint.adresse_perso.adresse_affichee == "12 rue Exemple, 75001 Paris"
+
+
+def test_front_generation_normalizes_city_before_postal_code_addresses() -> None:
+    dossier = build_front_dossier_entry_dossier(
+        _complete_generation_entry(
+            adresse_personnelle="12 rue Exemple, Paris 75001",
+            siege_social="20 avenue du Siege, Paris 75002",
+        )
+    )
+
+    context = build_front_generation_context(dossier)
+
+    assert context.personne_signataire.adresse_perso is not None
+    assert context.personne_signataire.adresse_perso.adresse_affichee == (
+        "12 rue Exemple, 75001 Paris"
+    )
+    assert context.societe is not None
+    assert context.societe.siege is not None
+    assert context.societe.siege.adresse_affichee == "20 avenue du Siege, 75002 Paris"
 
 
 @pytest.mark.parametrize(
@@ -292,7 +314,6 @@ def _complete_generation_entry(**overrides: object) -> FrontDossierSimpleEntry:
         "reunion_heure": "10 heures",
         "signature_lieu": "Paris",
         "signature_date": "2026-05-24",
-        "signature_nombre_exemplaires": "3",
         "signature_prestataire": "Yousign",
         "titre_affichage": "Dr",
         "ordre_conseil_departemental_libelle": "Conseil departemental de l'Ordre",
@@ -330,15 +351,11 @@ def _complete_generation_entry(**overrides: object) -> FrontDossierSimpleEntry:
         "exercice_lieu_principal_adresse": "12 avenue de la Republique, 75011 Paris",
         "gerance_seuil_achat_materiel": "10 000 euros",
         "gerance_seuil_emprunt": "50 000 euros",
-        "document_nombre_exemplaires_lettres": "trois",
         "regime_apport_montant": "10 000",
         "regime_apport_montant_lettres": "dix mille",
         "regime_matrimonial": "communaute legale",
-        "regime_qualite_renoncee": "associe",
-        "regime_date_courrier_avertissement": "2026-05-24",
         "regime_renonciation_lieu_signature": "Paris",
         "regime_renonciation_date_signature": "2026-05-24",
-        "regime_renonciation_nombre_exemplaires_lettres": "trois",
         "regime_avertissement_date_signature": "2026-05-24",
     }
     values.update(overrides)
@@ -371,9 +388,8 @@ def _fill_front_generation_fields(app: AppTest) -> None:
         ("front_entry_reunion_heure", "10 heures"),
         ("front_entry_signature_lieu", "Paris"),
         ("front_entry_signature_date", "2026-05-24"),
-        ("front_entry_signature_nombre_exemplaires", "3"),
         ("front_entry_signature_prestataire", "Yousign"),
-        ("front_entry_order_conseil", "Conseil departemental de l'Ordre"),
+        ("front_entry_order_departement_inscription", "Paris"),
         ("front_entry_order_destinataire_appel", "Madame la Presidente"),
         ("front_entry_order_profession_signataire", "medecin"),
         ("front_entry_order_profession_destinataire", "medecins"),
@@ -403,7 +419,6 @@ def _fill_front_generation_fields(app: AppTest) -> None:
         ("front_entry_exercice_lieu_adresse", "12 avenue de la Republique, 75011 Paris"),
         ("front_entry_gerance_seuil_achat", "10 000 euros"),
         ("front_entry_gerance_seuil_emprunt", "50 000 euros"),
-        ("front_entry_document_exemplaires_lettres", "trois"),
     ):
         app.text_input(key=key).set_value(value)
 

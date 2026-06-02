@@ -1,6 +1,6 @@
 # Sprint SELARL closing V1
 
-Date : 2026-06-01
+Date : 2026-06-02
 
 ## Objet
 
@@ -17,7 +17,7 @@ Point de reprise canonique :
 
 ## Statut executif
 
-Statut SELARL : `PARTIAL - perimetre simple + regime communautaire pret pour validation finale`.
+Statut SELARL : `PARTIAL - perimetre simple + regime communautaire pret pour validation finale associe`.
 
 Correction majeure du 2026-06-01 :
 
@@ -40,30 +40,48 @@ Derniere execution :
 - `SELARL-CLOSING-PACK-004` est `DONE` ;
 - `SELARL-CLOSING-SMOKE-001` est `DONE` ;
 - `SELARL-HUMAN-RETURNS-DEEP-AUDIT-005` est `DONE` ;
-- pack corrige actif dans `artifacts/selarl_closing_pack_004/` ;
-- rapport pack : `docs/review/selarl_closing_pack_004_report_v1.md` ;
+- `SELARL-HUMAN-RETURNS-006-TRIAGE-001` est `DONE` ;
+- `SELARL-RETURNS-006-STATUTS-001` est `DONE` ;
+- `SELARL-RETURNS-006-DNC-001` est `DONE` ;
+- `SELARL-RETURNS-006-PV-001` est `DONE` ;
+- `SELARL-RETURNS-006-PROCURATION-001` est `DONE` ;
+- `SELARL-RETURNS-006-CONJOINT-LETTERS-001` est `DONE` ;
+- `SELARL-RETURNS-006-ORDRE-001` est `DONE` ;
+- `SELARL-RETURNS-006-FRONT-VARIABLES-001` est `DONE` ;
+- `SELARL-RETURNS-006-ADDRESS-SIGNATURE-001` est `DONE` ;
+- `SELARL-CLOSING-PACK-005` est `DONE` ;
+- `SELARL-HUMAN-RETURNS-DEEP-AUDIT-006` est `DONE` ;
+- pack actif : `artifacts/selarl_closing_pack_005/` ;
+- rapport pack : `docs/review/selarl_closing_pack_005_report_v1.md` ;
 - rapport audit trois sources : `docs/review/selarl_three_source_alignment_004_report_v1.md` ;
-- rapport audit retours humains actif : `docs/review/selarl_human_returns_deep_audit_005_report_v1.md` ;
+- rapport audit retours humains actif : `docs/review/selarl_human_returns_deep_audit_006_report_v1.md` ;
+- retour humain brut 006 : `docs/review/selarl_human_returns_006_raw_v1.md` ;
+- triage retour humain 006 : `docs/review/selarl_human_returns_triage_006_report_v1.md` ;
+- rapports corrections 006 finales :
+  `docs/review/selarl_returns_006_ordre_001_report_v1.md`,
+  `docs/review/selarl_returns_006_front_variables_001_report_v1.md`,
+  `docs/review/selarl_returns_006_address_signature_001_report_v1.md` ;
 - rapport source/fidelite : `docs/review/selarl_source_fidelity_audit_001_report_v1.md` ;
+- brief validation associe : `docs/review/selarl_final_validation_001_brief_v1.md` ;
 - action en cours : `SELARL-FINAL-ASSOCIE-VALIDATION-001`.
 
 Estimation PM apres correction :
 
 | Perimetre | Avancement | Lecture |
 | --- | ---: | --- |
-| SELARL simple + regime communautaire, technique | 98 % | Code, pack, smoke et tests OK ; reste validation humaine finale. |
-| SELARL simple + regime communautaire, produit | 90 % | L'associe doit valider le pack corrige ou annoter les derniers ecarts. |
+| SELARL simple + regime communautaire, technique | 99 % | Pack 005 regenere et audit 006 vert cote Codex ; la derniere marche technique depend seulement d'ecarts associe eventuels. |
+| SELARL simple + regime communautaire, produit | 95 % | Retours humains 006 traites, pack actif pret ; validation finale associe requise avant 100 %. |
 | SELARL globale tous cas confondus | 75 % | Les variantes cession, SCM, site distinct, derogation et statuts multi-associes complets restent separees. |
 
 ## Pack corrige
 
 Racine :
 
-- `artifacts/selarl_closing_pack_004/`
+- `artifacts/selarl_closing_pack_005/`
 
 Manifest :
 
-- `artifacts/selarl_closing_pack_004/manifest_selarl_closing_pack_004.json`
+- `artifacts/selarl_closing_pack_005/manifest_selarl_closing_pack_005.json`
 
 Scenarios generes :
 
@@ -100,7 +118,8 @@ Effet :
 
 - `DOC-005` est ajoute si regime communautaire actif ;
 - `DOC-006` est ajoute si regime communautaire actif ;
-- l'adresse du conjoint est requise pour `DOC-006`.
+- l'adresse du conjoint est derivee depuis l'adresse personnelle de l'associe /
+  signataire pour `DOC-006`.
 
 Statut : couvert dans le pack corrige.
 
@@ -124,9 +143,10 @@ Limites :
 
 | Sujet | Statut | Decision |
 | --- | --- | --- |
-| Validation finale associe du pack corrige | IN_PROGRESS | Transmettre pack 004 et brief final |
-| Corrections eventuelles issues du pack 004 | BLOCKED | Attend retour concret associe |
-| `DOC-034` lock humain | A VALIDER | Demander seulement ecarts concrets, pas questions abstraites |
+| Validation finale associe du pack corrige | READY | Pack 005 pret ; demander seulement des ecarts concrets ou validation |
+| Retours humains 006 | DONE code/test/pack/audit | Retours recus, triage fait, corrections traitees, pack 005 regenere, audit 006 vert cote Codex |
+| Corrections eventuelles issues du pack 004 | DONE code/test/pack | Tickets `SELARL-RETURNS-006-*` traites ; pack 004 remplace par pack 005 |
+| `DOC-034` lock humain | A VALIDER | Demander seulement ecarts concrets sur pack 005, pas questions abstraites |
 | `DOC-016` wrapper post-article | A VALIDER | Articles 1 a 34 deja couverts |
 | `DOC-017` retour humain medecin | A VALIDER | Source-level lock deja OK |
 | Cession cabinet medicale / dentaire | BLOQUE | Nouveau sous-cas obligatoire |
@@ -151,34 +171,47 @@ Limites :
 | 9 | `SELARL-CLOSING-PACK-004` | DONE | Corriger la procuration et regenerer le pack | Pack 004 vert sur controles trois sources |
 | 10 | `SELARL-CLOSING-SMOKE-001` | DONE | Relancer tests et smoke final technique | Ruff OK, tests cibles OK, `pytest -q` 416 passes, manifest pack 004 sans echec |
 | 11 | `SELARL-HUMAN-RETURNS-DEEP-AUDIT-005` | DONE | Reverifier les retours humains sur pack 004 | 116 controles cibles OK ; nuance article 8 statuts dentiste documentee |
-| 12 | `SELARL-FINAL-ASSOCIE-VALIDATION-001` | IN_PROGRESS | Faire valider le pack corrige par l'associe | Validation finale ou liste courte d'ecarts reels |
-| 13 | `SELARL-CANONICAL-CLOSE-001` | BLOCKED | Clore le statut canonique SELARL simple/regime | Debloque apres validation finale associe |
-| 14 | `SELARL-NEXT-SUBCASE-SELECTION-001` | READY | Choisir un seul sous-cas complexe suivant | Decision Gad : cession, SCM, multi-associes complet, plusieurs gerants, derogation, site distinct, ou report |
+| 12 | `SELARL-FINAL-ASSOCIE-VALIDATION-001` | READY | Faire valider le pack final par l'associe | Pack 005 audite ; attendre verdict associe par ecarts concrets |
+| 13 | `SELARL-HUMAN-RETURNS-006-TRIAGE-001` | DONE | Enregistrer et classer les retours humains 006 | Brut + triage + tickets de correction |
+| 14 | `SELARL-RETURNS-006-STATUTS-001` | DONE | Corriger les retours 006 statuts | Rapport `docs/review/selarl_returns_006_statuts_001_report_v1.md` ; tests statuts SEL OK |
+| 15 | `SELARL-RETURNS-006-DNC-001` | DONE | Corriger declaration non condamnation | Rapport `docs/review/selarl_returns_006_dnc_001_report_v1.md` ; tests DNC/front OK |
+| 16 | `SELARL-RETURNS-006-PV-001` | DONE | Corriger PV nomination gerant | Rapport `docs/review/selarl_returns_006_pv_001_report_v1.md` ; tests PV/front OK |
+| 17 | `SELARL-RETURNS-006-PROCURATION-001` | DONE | Corriger procuration | Rapport `docs/review/selarl_returns_006_procuration_001_report_v1.md` ; phrase `demeurant..., agissant...` conforme ; tests procuration OK |
+| 18 | `SELARL-RETURNS-006-CONJOINT-LETTERS-001` | DONE | Corriger lettres regime communautaire | Rapport `docs/review/selarl_returns_006_conjoint_letters_001_report_v1.md` ; adresse conjoint derivee, forme juridique redigee, date renonciation retiree ; tests regime/front OK |
+| 19 | `SELARL-RETURNS-006-ORDRE-001` | DONE | Corriger demande inscription ordre | Rapport `docs/review/selarl_returns_006_ordre_001_report_v1.md` ; conseil compose depuis profession + departement ; tests ordre/front OK |
+| 20 | `SELARL-RETURNS-006-FRONT-VARIABLES-001` | DONE | Simplifier variables/front SELARL | Rapport `docs/review/selarl_returns_006_front_variables_001_report_v1.md` ; constantes + nationalite portugaise + reuse siege=adresse personnelle ; tests front OK |
+| 21 | `SELARL-RETURNS-006-ADDRESS-SIGNATURE-001` | DONE | Corriger regles transversales adresses/signatures | Rapport `docs/review/selarl_returns_006_address_signature_001_report_v1.md` ; CP avant ville + suppression encadres signature ; tests cibles OK |
+| 22 | `SELARL-CLOSING-PACK-005` | DONE | Regenerer le pack apres retours 006 | Pack 005 6/6/8/8 DOCX, manifest 0 echec, rapport pack 005 |
+| 23 | `SELARL-HUMAN-RETURNS-DEEP-AUDIT-006` | DONE | Verifier retours 006 sur pack 005 | Audit 006 vert cote Codex ; aucune question humaine restante |
+| 24 | `SELARL-CANONICAL-CLOSE-001` | BLOCKED | Clore le statut canonique SELARL simple/regime | Debloque apres validation finale associe ou corrections d'ecarts concrets |
+| 25 | `SELARL-NEXT-SUBCASE-SELECTION-001` | READY | Choisir un seul sous-cas complexe suivant | Decision Gad : cession, SCM, multi-associes complet, plusieurs gerants, derogation, site distinct, ou report |
 
 ## Gate de cloture
 
 La SELARL simple + regime communautaire peut etre declaree
 `DONE - perimetre simple/regime` seulement si :
 
-1. le pack 004 est transmis ;
-2. l'associe valide le pack ou donne des ecarts concrets ;
-3. chaque ecart concret est corrige ou reporte explicitement ;
-4. `SELARL_CANONICAL_STATUS_V1.md`, `01_EXECUTION_BOARD.md` et
+1. les retours humains 006 sont corriges ou reportes explicitement ;
+2. le pack 005 est regenere ;
+3. l'audit retours 006 sur pack 005 est vert ;
+4. l'associe valide le pack 005 ou donne uniquement des ecarts residuels ;
+5. chaque ecart concret residuel est corrige ou reporte explicitement ;
+6. `SELARL_CANONICAL_STATUS_V1.md`, `01_EXECUTION_BOARD.md` et
    `04_LAST_STATE.md` sont mis a jour.
 
 ## Reponse courte a "ou en est la SELARL ?"
 
 Techniquement, le perimetre SELARL simple medecin/dentiste + regime
-communautaire est quasiment ferme. La correction importante est faite :
-`DOC-006` est genere avec `DOC-005` quand il y a regime communautaire.
+communautaire est quasiment ferme. Les corrections retours humains 006 sont
+faites, testees, integrees dans le pack 005 et auditees cote Codex.
 
 Il reste une validation finale humaine du pack corrige. Les variantes complexes
 ne sont pas fermees par ce sprint et doivent etre traitees une par une.
 
 ## Prochaine action recommandee
 
-Poursuivre `SELARL-FINAL-ASSOCIE-VALIDATION-001` :
+Faire valider le pack corrige apres retours humains 006 :
 
-- transmettre `artifacts/selarl_closing_pack_004/` ;
+- transmettre `artifacts/selarl_closing_pack_005/` ;
 - transmettre `docs/review/selarl_final_validation_001_brief_v1.md` ;
-- demander uniquement une validation finale ou des ecarts concrets par document.
+- demander a l'associe uniquement une validation ou des ecarts concrets.

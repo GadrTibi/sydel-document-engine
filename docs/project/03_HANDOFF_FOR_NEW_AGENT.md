@@ -33,12 +33,31 @@ L'arbre théorique abandonné n'est pas une source valide. Il n'existe pas de fi
 - Avant tout nouveau sprint de type d'entreprise, appliquer `docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md`.
 - Avant tout nouveau sprint de type d'entreprise, appliquer aussi `docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md`.
 - Quand un sprint existe, lire son fichier `docs/sprints/SPRINT_[TYPE]_V1.md` avant de repondre.
+- Pour tout nouveau sprint, appliquer l'amendement SELARL 2026-06-01 du playbook :
+  trois sources, questions humaines seulement si trou reel, pack actif, audit
+  fidelite, retour associe par ecarts concrets, cloture `DONE/PARTIAL/BLOCKED`.
 - La tour de controle projet est `docs/project/PROJECT_CONTROL_TOWER_V1.md` ;
   elle indique sprint actif, phase courante, action autorisee et actions
   interdites.
+- La pyramide des agents est `docs/project/PROJECT_AGENT_ORG_CHART_V1.md` ;
+  elle indique quel agent interroger, dans quel ordre, et ou trouver la preuve
+  avant de repondre a Gad.
+- L'agent de tracabilite de flux est
+  `docs/project/WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md` ; il trace l'avancement
+  d'un flux pilote sans demander au pilote humain de tenir le journal.
+- Le protocole de synchronisation de flux est
+  `docs/project/NAOMIE_WORKSTREAM_SYNC_PROTOCOL_V1.md` ; il s'applique quand
+  une avancee est annoncee mais absente de la branche ou du worklog.
+- Un nouveau chat doit d'abord identifier l'interlocuteur. Si le message est
+  seulement `bonjour`, Codex doit demander `Bonjour, tu es Gad ou Naomi ?` et ne
+  pas declencher de sprint avant la reponse.
 - Le protocole runtime Naomie est `docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md` ;
-  si Naomie/SELAS est dans le contexte, il prime et impose de donner le Prompt
-  NotebookLM 01.
+  il prime seulement si l'interlocutrice active est Naomie/Naomi, ou si Gad
+  demande explicitement de preparer/simuler/reprendre son workflow operationnel.
+- Le protocole d'orchestration du suivi Naomie est
+  `docs/project/NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md` ; il s'applique
+  quand Gad demande ou en est Naomie, et il impose de lire les traces avant de
+  demander quoi que ce soit a Naomie.
 - La doctrine Naomie multi-projets est `docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md`.
 - La fin de sprint SELARL est suivie dans `docs/sprints/SPRINT_SELARL_CLOSING_V1.md`.
 - Un nouveau chat doit pouvoir reprendre le projet depuis `docs/project/04_LAST_STATE.md`, sans dépendre d'un chat externe.
@@ -61,11 +80,23 @@ L'arbre théorique abandonné n'est pas une source valide. Il n'existe pas de fi
 - La couche pedagogique pour Naomie est `docs/project/NAOMIE_LEARNING_MENTOR_PROTOCOL_V1.md`.
 - Le gate produit / métier obligatoire est défini dans `docs/project/PRODUCT_GUARDRAIL_PROTOCOL_V1.md`.
 - La tour de controle chef de projet est disponible dans `docs/project/PROJECT_CONTROL_TOWER_V1.md`.
+- La pyramide agents / rattrapage est disponible dans `docs/project/PROJECT_AGENT_ORG_CHART_V1.md`.
+- Le registre de statut des types d'entreprise est disponible dans
+  `docs/project/COMPANY_TYPE_STATUS_REGISTRY_V1.md`.
+- Clarification 2026-06-02 : seuls `SELARL` et `SELAS` sont en traitement
+  metier. Les autres types presents dans le catalogue ou le moteur (`SPFPL
+  cession`, `SPFPL apport`, `SCS`, `SCI`, `SCM`, `SAS`) sont des acquis
+  techniques/historiques et ne doivent pas etre presentes comme sprints produit
+  traites.
+- La tracabilite de flux est disponible dans `docs/project/WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md`.
 - Le workflow global Gad / Naomie / Codex est disponible dans `docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md`.
 - La fin de sprint SELARL est disponible dans `docs/sprints/SPRINT_SELARL_CLOSING_V1.md`.
 
 ## Ce qui n'est pas encore fait
 - La SELARL complète n'est pas juridiquement finalisée sur toutes ses variantes.
+- Les types `SPFPL cession`, `SPFPL apport`, `SCS`, `SCI`, `SCM` et `SAS`
+  n'ont pas encore ete traites comme sprints produit selon la methode actuelle
+  source + NotebookLM + reuse audit + matrice + pack + retour humain.
 - Les cessions cabinet, cession SCM, dérogations, site distinct, président externe, plusieurs gérants et statuts multi-associés complets restent à cadrer/arbitrer avant développement front complet.
 - Le wording juridique ne doit pas être étendu ou modifié sans validation explicite.
 - Chaque prochain développement doit passer par le gate `GO dev` / `NO-GO dev`.
@@ -80,29 +111,54 @@ Avant toute proposition ou implémentation, lire dans cet ordre :
 5. `docs/project/03_HANDOFF_FOR_NEW_AGENT.md`
 6. `docs/project/04_LAST_STATE.md`
 7. `docs/project/PROJECT_CONTROL_TOWER_V1.md`
-8. `docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md` si Naomie/SELAS est dans le contexte
-8. `docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md` pour tout sprint de type d'entreprise
-9. `docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md` pour tout sprint de type d'entreprise
-10. `docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md` pour tout sprint de type d'entreprise
-11. `docs/sprints/SPRINT_[TYPE]_V1.md` si le sprint existe
-12. `docs/project/SELARL_CANONICAL_STATUS_V1.md` pour toute reprise SELARL
-13. `docs/project/PRODUCT_GUARDRAIL_PROTOCOL_V1.md`
-14. Le fichier de spec concerné dans `docs/delivery/`
-15. Les ADR applicables dans `docs/adr/`
+8. `docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md` si l'interlocutrice active est Naomie/Naomi, ou si Gad demande explicitement le workflow Naomie/SELAS
+9. `docs/project/NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md` si Gad demande le statut ou le suivi de Naomie
+10. `docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md` pour tout sprint de type d'entreprise
+11. `docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md` pour tout sprint de type d'entreprise
+12. `docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md` pour tout sprint de type d'entreprise
+13. `docs/sprints/SPRINT_[TYPE]_V1.md` si le sprint existe
+14. `docs/project/SELARL_CANONICAL_STATUS_V1.md` pour toute reprise SELARL
+15. `docs/project/PRODUCT_GUARDRAIL_PROTOCOL_V1.md`
+16. Le fichier de spec concerné dans `docs/delivery/`
+17. Les ADR applicables dans `docs/adr/`
+
+Note : si la demande concerne une chaine d'agents, un statut transverse, une
+orchestration descendante ou un rattrapage retroactif, lire aussi
+`docs/project/PROJECT_AGENT_ORG_CHART_V1.md` juste apres la tour de controle.
+Si la demande concerne un rapport boss sur un flux pilote, lire aussi
+`docs/project/WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md`.
+Si la demande concerne une avancee annoncee mais absente des traces publiees,
+lire aussi `docs/project/NAOMIE_WORKSTREAM_SYNC_PROTOCOL_V1.md`.
 
 Note : pour un workflow Naomie global, lire aussi
 `docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md` et
+`docs/project/NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md`, puis
 `docs/project/PROJECT_NAOMIE_RUNTIME_TEMPLATE_V1.md`. Pour la cloture SELARL,
 lire aussi `docs/sprints/SPRINT_SELARL_CLOSING_V1.md`.
 
 ## Travail avec Codex pilote projet / produit
 - Codex cadre les tickets, reformule l'intention métier, arbitre le passage en `GO dev` ou `NO-GO dev` et explicite les décisions métier à documenter.
 - Codex doit d'abord consulter la tour de controle projet pour connaitre sprint actif, phase, action autorisee et actions interdites.
+- Si Gad demande qui orchestre quoi, ou si un suivi est stale, Codex doit
+  consulter `PROJECT_AGENT_ORG_CHART_V1.md` et activer l'agent specialise
+  indique, notamment l'Agent de tracabilite de flux si les traces anciennes
+  manquent.
+- Si Gad s'identifie, Codex le traite comme superviseur produit et decisionnaire :
+  il applique la tour de controle, donne l'etat utile et ne declenche pas
+  NotebookLM seulement parce que Gad parle de Naomie.
+- Si Gad demande ou en est Naomie, Codex applique l'orchestrateur Naomie :
+  lecture tour de controle, dernier etat, sprint, worklog, journal et branche
+  accessible avant toute demande a Naomie.
+- Si Gad annonce que Naomie a avance mais que la branche/worklog ne montrent pas
+  cette avancee, Codex ne relance pas le travail metier : il demande un Sync
+  checkpoint, commit/push ou Sync packet.
+- Le rapport Gad par defaut doit porter sur le flux Naomie et rester court :
+  statut, avancement, prochaine etape, blocage/risque, fiabilite.
 - Si Naomie démarre un sprint, elle doit s'identifier et Codex doit la guider étape par étape selon `SPRINT_ORCHESTRATOR_PROTOCOL_V1.md` et `COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md`.
 - Pour le sprint SELAS, l'etat immediat est `docs/sprints/SPRINT_SELAS_V1.md` : `NO-GO dev`, sous-sprint NotebookLM actif, prochaine action = donner a Naomie le prompt NotebookLM courant a copier-coller.
-- Si Naomie dit seulement `bonjour`, Codex doit quand meme donner le Prompt NotebookLM 01 et ne pas attendre qu'elle choisisse une tache.
+- Si Naomie dit seulement `bonjour` apres identification comme Naomie, Codex doit quand meme donner le Prompt NotebookLM 01 et ne pas attendre qu'elle choisisse une tache.
 - Si Naomie dit qu'elle veut lancer/demarrer/reprendre le sprint SELAS/CELAS, Codex doit comprendre `lancer = lancer le sous-sprint NotebookLM`, et ne doit pas passer en production, generation, audit, matrice ou code.
-- Pour la SELARL, la prochaine action de cloture est `SELARL-FINAL-ASSOCIE-VALIDATION-001` sur le pack corrige `artifacts/selarl_closing_pack_004/`, selon `docs/sprints/SPRINT_SELARL_CLOSING_V1.md`.
+- Pour la SELARL, la prochaine action de cloture est `SELARL-FINAL-ASSOCIE-VALIDATION-001` sur le pack corrige `artifacts/selarl_closing_pack_005/`, selon `docs/sprints/SPRINT_SELARL_CLOSING_V1.md`.
 - Si Naomie travaille sur un nouveau type d'entreprise, elle doit partir d'une branche dediee selon `NAOMIE_GITHUB_ONBOARDING_V1.md`, mais Codex gere Git, les commandes, les tests et les checkpoints pour elle.
 - Si Naomie pose une question d'apprentissage, utiliser le mode `Professeur Naomie` defini dans `NAOMIE_LEARNING_MENTOR_PROTOCOL_V1.md`.
 - Le sous-agent prioritaire pour un nouveau sprint est `Reuse Auditor`, défini dans `REUSE_AUDIT_AGENT_PROTOCOL_V1.md`.

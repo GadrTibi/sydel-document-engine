@@ -173,6 +173,17 @@ def _assert_clean(text: str) -> None:
     assert "]" not in text
 
 
+def _assert_annex_starts_next_page(path: Path) -> None:
+    document = Document(path)
+    annex_index = next(
+        index for index, paragraph in enumerate(document.paragraphs) if paragraph.text == "ANNEXE"
+    )
+    preceding_xml = "\n".join(
+        paragraph._p.xml for paragraph in document.paragraphs[max(0, annex_index - 2) : annex_index]
+    )
+    assert 'w:type="page"' in preceding_xml
+
+
 def test_statuts_selarl_dentiste_generates_unique_associate_docx(tmp_path: Path) -> None:
     ctx = _context(overlay="selarl_dentiste")
     ctx.associes[0].profession = "chirurgien-dentiste"
@@ -196,7 +207,11 @@ def test_statuts_selarl_dentiste_generates_unique_associate_docx(tmp_path: Path)
     assert output_path.name == "statuts_selarl_chirurgien_dentiste.docx"
     assert "SEL MARTIN" in text
     assert "Au capital de 1 000 euros" in text
-    assert "marié sous le régime de la communauté légale" in text
+    assert (
+        "sous le numéro RPPS 10000000001, marié sous le régime de la communauté "
+        "avec Madame Alice Martin."
+    ) in text
+    assert "marié sous le régime de la communauté légale" not in text
     assert "ARTICLE 5 - LIEU(X) D’EXERCICE" in text
     assert (
         "Le lieu d’exercice de la société est situé au "
@@ -211,7 +226,9 @@ def test_statuts_selarl_dentiste_generates_unique_associate_docx(tmp_path: Path)
     assert "chirurgiens-dentistes" in text
     assert "Yousign" in text
     assert "STATUTS" in table_text
+    assert "- Ouverture d’un compte bancaire" in text
     assert any(run.underline for run in article_1.runs)
+    _assert_annex_starts_next_page(output_path)
     _assert_clean(text)
 
 
@@ -279,6 +296,57 @@ def test_statuts_selarl_medecin_skips_personne_2_source_alias(tmp_path: Path) ->
     assert "Conseil" in text
     assert "personne_2" not in text
     assert "50 000 euros" in text
+    assert (
+        "sous le numéro national 12345 et sous le numéro RPPS 10000000001, "
+        "marié sous le régime de la communauté avec Madame Alice Martin."
+    ) in text
+    assert "Docteur Camille Martin, associé unique." in text
+    assert "- Ouverture d’un compte bancaire" in text
+    _assert_annex_starts_next_page(output_path)
+    _assert_clean(text)
+
+
+def test_statuts_selarl_medecin_renders_separation_de_biens_clause(
+    tmp_path: Path,
+) -> None:
+    ctx = _context(overlay="selarl_medecin")
+    ctx.associes[0].regime_matrimonial = "separation de biens"
+
+    output_path = StatutsSelarlMedecinGenerator().generate(ctx, tmp_path)
+
+    text = _docx_text(output_path)
+
+    assert (
+        "marié sous le régime de la séparation de biens avec Madame Alice Martin"
+    ) in text
+    assert "marié sous le régime de separation de biens" not in text
+    _assert_clean(text)
+
+
+def test_statuts_selarl_medecin_article_8_agrees_female_unique(
+    tmp_path: Path,
+) -> None:
+    ctx = _context(overlay="selarl_medecin", gender=Gender.FEMININ)
+
+    output_path = StatutsSelarlMedecinGenerator().generate(ctx, tmp_path)
+
+    text = _docx_text(output_path)
+
+    assert "Docteur Camille Martin, associée unique." in text
+    _assert_clean(text)
+
+
+def test_statuts_selarl_dentiste_deposit_agrees_female_unique(
+    tmp_path: Path,
+) -> None:
+    ctx = _context(overlay="selarl_dentiste", gender=Gender.FEMININ)
+
+    output_path = StatutsSelarlDentisteGenerator().generate(ctx, tmp_path)
+
+    text = _docx_text(output_path)
+
+    assert "déposée par l’associée unique conformément à la loi" in text
+    assert "déposée par l’associé unique conformément à la loi" not in text
     _assert_clean(text)
 
 
@@ -425,7 +493,9 @@ def _render_source_medecin_paragraph(
         "[ville_ordre]": associate.ordre.ville,
         "[numero_ordre]": associate.ordre.numero,
         "[numero_rpps]": associate.ordre.numero_rpps,
-        "[situation_maritale]": "marié",
+        "[situation_maritale]": (
+            "marié sous le régime de la communauté avec Madame Alice Martin"
+        ),
         "[forme_sociale_complete]": ctx.societe.forme_sociale_complete,
         "[capital_lettres]": ctx.capital.montant_lettres,
         "[nom_banque]": ctx.depot_fonds.banque.nom,
@@ -444,4 +514,7 @@ def _render_source_medecin_paragraph(
     rendered = paragraph
     for placeholder, value in replacements.items():
         rendered = rendered.replace(placeholder, value)
+    rendered = rendered.replace("associée unique", "associé unique")
+    if rendered == "Ouverture d’un compte bancaire":
+        return "- Ouverture d’un compte bancaire"
     return rendered

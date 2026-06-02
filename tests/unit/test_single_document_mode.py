@@ -95,6 +95,8 @@ def test_single_document_field_specs_are_scoped_to_selected_document() -> None:
     doc_002_fields = {field.key for field in field_specs_for_document("DOC-002")}
 
     assert "personne_date_naissance" in doc_001_fields
+    assert "personne_ville_naissance" in doc_001_fields
+    assert "personne_ville_naissance_article_au" in doc_001_fields
     assert "societe_denomination" not in doc_001_fields
     assert "domiciliation_adresse_affichee" in doc_002_fields
     assert "personne_adresse_num_voie" not in doc_002_fields

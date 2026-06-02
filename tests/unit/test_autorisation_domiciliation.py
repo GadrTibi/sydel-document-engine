@@ -88,6 +88,10 @@ def _table_has_explicit_borders(table) -> bool:
     return borders is not None and borders.find(qn("w:top")) is not None
 
 
+def _table_text(table) -> str:
+    return "\n".join(cell.text for row in table.rows for cell in row.cells)
+
+
 def test_autorisation_domiciliation_creates_docx(tmp_path: Path) -> None:
     output_dir = tmp_path / "nested"
 
@@ -156,10 +160,9 @@ def test_autorisation_domiciliation_does_not_use_signature_image(tmp_path: Path)
     assert len(Document(output_path).inline_shapes) == 0
 
 
-def test_autorisation_domiciliation_uses_framed_signature_block(tmp_path: Path) -> None:
+def test_autorisation_domiciliation_uses_unframed_signature_block(tmp_path: Path) -> None:
     document = Document(_generate(tmp_path))
 
     signature_table = document.tables[1]
-    assert signature_table.style.name == "Table Grid"
-    assert _table_has_explicit_borders(signature_table)
-    assert "Monsieur Jean Durand" in signature_table.cell(0, 0).text
+    assert not _table_has_explicit_borders(signature_table)
+    assert "Monsieur Jean Durand" in _table_text(signature_table)

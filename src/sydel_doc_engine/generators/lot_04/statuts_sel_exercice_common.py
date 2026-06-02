@@ -155,7 +155,9 @@ def common_replacements(
         "[nationalite]": required_text(associate.nationalite, "associes[0].nationalite"),
         "[adresse_personnelle]": person_address_display(associate),
         "[situation_maritale]": marital_status_display(associate),
+        "[situation_matrimoniale_statuts]": statuts_sel_matrimonial_clause(associate),
         "[regime_matrimonial]": matrimonial_regime_display(associate),
+        "[qualite_associe_article_8]": article_8_associate_label(ctx, associate),
         "[nb_parts_total]": str(capital_titles_total(ctx)),
         "[nb_parts_total_lettres]": capital_titles_total_letters(ctx),
         "[nb_actions]": str(capital_titles_total(ctx)),
@@ -224,6 +226,54 @@ def matrimonial_regime_display(associate: Associe) -> str:
         if value.lower().startswith(prefix):
             return value[len(prefix) :].strip()
     return value
+
+
+def statuts_sel_matrimonial_clause(associate: Associe) -> str:
+    status = marital_status_display(associate)
+    normalized_status = _normalized_text(status)
+    if normalized_status not in {"marie", "mariee"}:
+        return status
+    conjoint = associate.conjoint
+    if conjoint is None:
+        raise ValueError(f"associes[0].conjoint est obligatoire pour {DOCUMENT_CODE}.")
+    conjoint_label = " ".join(
+        (
+            required_text(
+                conjoint.civilite_affichage,
+                "associes[0].conjoint.civilite_affichage",
+            ),
+            required_text(conjoint.prenom, "associes[0].conjoint.prenom"),
+            required_text(conjoint.nom, "associes[0].conjoint.nom"),
+        )
+    )
+    return (
+        f"{status} sous le régime de {statuts_sel_matrimonial_regime(associate)} "
+        f"avec {conjoint_label}"
+    )
+
+
+def statuts_sel_matrimonial_regime(associate: Associe) -> str:
+    value = required_text(
+        associate.regime_matrimonial,
+        "associes[0].regime_matrimonial",
+    )
+    normalized = _normalized_text(value)
+    if "separation" in normalized and "bien" in normalized:
+        return "la séparation de biens"
+    if "communaute" in normalized:
+        return "la communauté"
+    return matrimonial_regime_display(associate)
+
+
+def article_8_associate_label(
+    ctx: DocumentGenerationContext,
+    associate: Associe,
+) -> str:
+    if len(ctx.associes) == 1:
+        return "associée unique" if associate.genre == Gender.FEMININ else "associé unique"
+    if all(other.genre == Gender.FEMININ for other in ctx.associes):
+        return "associées"
+    return "associés"
 
 
 def _normalized_text(value: str) -> str:
@@ -321,6 +371,7 @@ def render_statuts_sel_docx(
     skip_personne_2_line: bool = False,
     render_selas_second_lieu: bool = False,
     title_box_bordered: bool = True,
+    annex_page_break: bool = False,
 ) -> Path:
     docx = new_document()
     signature_mode = False
@@ -337,6 +388,8 @@ def render_statuts_sel_docx(
             if text.startswith("ANNEXE"):
                 signature_mode = False
             if text.startswith("ANNEXE"):
+                if annex_page_break:
+                    docx.add_page_break()
                 add_statuts_annex_heading(docx, text)
             else:
                 add_paragraph(docx, text, alignment=WD_ALIGN_PARAGRAPH.CENTER, bold=True)

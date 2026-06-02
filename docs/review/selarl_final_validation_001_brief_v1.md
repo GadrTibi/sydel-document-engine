@@ -2,7 +2,7 @@
 
 Ticket : `SELARL-FINAL-ASSOCIE-VALIDATION-001`
 
-Date : 2026-06-01
+Date : 2026-06-02
 
 Statut : `IN_PROGRESS - attente validation finale associe`
 
@@ -10,34 +10,33 @@ Statut : `IN_PROGRESS - attente validation finale associe`
 
 `GO validation finale`, `NO-GO nouvelles questions abstraites`.
 
-Ce brief remplace les briefs des packs 001, 002 et 003. Le pack 004 integre la
-correction `DOC-006`, l'audit approfondi des retours humains sur le `DOC-004`
-PV nomination gerant, et la correction `DOC-003` detectee par audit trois
-sources.
+Ce brief remplace les briefs des packs 001, 002, 003 et 004. Le pack 005
+integre les retours humains 006, l'audit pack 005 et les corrections detectees
+pendant cet audit.
 
 ## Pack a revoir
 
 Racine :
 
-- `artifacts/selarl_closing_pack_004/`
+- `artifacts/selarl_closing_pack_005/`
 
 Manifest :
 
-- `artifacts/selarl_closing_pack_004/manifest_selarl_closing_pack_004.json`
+- `artifacts/selarl_closing_pack_005/manifest_selarl_closing_pack_005.json`
 
 Rapport :
 
-- `docs/review/selarl_closing_pack_004_report_v1.md`
-- `docs/review/selarl_three_source_alignment_004_report_v1.md`
+- `docs/review/selarl_closing_pack_005_report_v1.md`
+- `docs/review/selarl_human_returns_deep_audit_006_report_v1.md`
 
 ## Scenarios a ouvrir
 
 | Scenario | Dossier | Nombre DOCX attendu |
 | --- | --- | ---: |
-| Medecin simple | `artifacts/selarl_closing_pack_004/medecin_simple/` | 6 |
-| Dentiste simple | `artifacts/selarl_closing_pack_004/dentiste_simple/` | 6 |
-| Medecin regime communautaire | `artifacts/selarl_closing_pack_004/medecin_regime_communautaire/` | 8 |
-| Dentiste regime communautaire | `artifacts/selarl_closing_pack_004/dentiste_regime_communautaire/` | 8 |
+| Medecin simple | `artifacts/selarl_closing_pack_005/medecin_simple/` | 6 |
+| Dentiste simple | `artifacts/selarl_closing_pack_005/dentiste_simple/` | 6 |
+| Medecin regime communautaire | `artifacts/selarl_closing_pack_005/medecin_regime_communautaire/` | 8 |
+| Dentiste regime communautaire | `artifacts/selarl_closing_pack_005/dentiste_regime_communautaire/` | 8 |
 
 ## Regle de revue
 
@@ -66,6 +65,10 @@ La revue demandee est une revue d'ecarts :
    `SELARL SELARL`.
 7. La procuration ne doit pas afficher `SELARL SELARL` quand la denomination
    contient deja la forme sociale.
+8. Les retours humains 006 doivent etre controles par ecarts concrets :
+   naissance avec ville, conseil de l'Ordre compose, quatre exemplaires,
+   adresse conjoint derivee, signatures sans encadre, adresses CP avant ville,
+   et accords `associe/associee`.
 
 ## Format de retour souhaite
 

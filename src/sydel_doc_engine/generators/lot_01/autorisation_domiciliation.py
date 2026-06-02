@@ -106,5 +106,4 @@ def _add_final_block(
     add_signature_block(
         document,
         [f"Fait à {lieu_signature}", f"Le {date_signature}", signatory_name],
-        framed=True,
     )

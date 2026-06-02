@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from datetime import date
 from pathlib import Path
 
@@ -51,7 +52,7 @@ class PvNominationGerantGenerator:
         bien_immobilier = _required_bien_immobilier(ctx.bien_immobilier, emprunt)
 
         document = new_document()
-        _add_company_header(document, company)
+        _add_company_header(document, company, associes)
         _add_title_and_meeting(document, ctx)
         _add_introduction(document, company, capital, associes)
         _add_associes_block(document, represented_associes, represented_parts)
@@ -205,11 +206,62 @@ def _capital_social(company: Company) -> str:
     return _required_text(company.capital_social or company.capital, "societe.capital_social")
 
 
+def _capital_social_header(company: Company) -> str:
+    capital = _capital_social(company)
+    if re.search(r"\b(?:euro|euros|eur|€)\s*$", capital, flags=re.IGNORECASE):
+        return capital
+    return f"{capital} euros"
+
+
 def _forme_sociale_affichage(company: Company) -> str:
     return _required_text(
         company.forme_sociale_affichage or company.forme_sociale,
         "societe.forme_sociale_affichage",
     )
+
+
+def _forme_sociale_header(company: Company, associes: list[Associe]) -> str:
+    base = _known_forme_sociale_header(company) or _required_text(
+        company.forme_sociale_complete
+        or company.forme_sociale_libelle_long
+        or company.forme_sociale_affichage
+        or company.forme_sociale,
+        "societe.forme_sociale_complete",
+    )
+    profession = _sel_profession_for_header(company, associes)
+    if profession and not _normalized_contains_profession(base, profession):
+        return f"{base} de {profession}"
+    return base
+
+
+def _known_forme_sociale_header(company: Company) -> str | None:
+    acronym = (company.forme_sociale_abregee or company.forme_sociale or "").strip().upper()
+    if acronym == "SELARL":
+        return "Société d’exercice libéral à responsabilité limitée"
+    if acronym == "SELAS":
+        return "Société d’exercice libéral par actions simplifiée"
+    return None
+
+
+def _sel_profession_for_header(company: Company, associes: list[Associe]) -> str | None:
+    acronym = (company.forme_sociale_abregee or company.forme_sociale or "").strip().upper()
+    if acronym not in {"SELARL", "SELAS"}:
+        return None
+    for associe in associes:
+        profession = (
+            associe.profession_reglementee
+            or associe.profession
+            or associe.qualification_principale
+        )
+        if profession and profession.strip():
+            return profession.strip()
+    return None
+
+
+def _normalized_contains_profession(base: str, profession: str) -> bool:
+    normalized_base = _normalize_for_prefix(base)
+    normalized_profession = _normalize_for_prefix(profession)
+    return normalized_base.endswith(f" de {normalized_profession}")
 
 
 def _capital_variable_mention(company: Company) -> str:
@@ -280,12 +332,12 @@ def _add_vote_formula(document) -> None:
     _add_paragraph(document, VOTE_FORMULA, italic=True)
 
 
-def _add_company_header(document, company: Company) -> None:
+def _add_company_header(document, company: Company, associes: list[Associe]) -> None:
     siege = _required_address(company.siege, "societe.siege")
     lines = [
         (_required_text(company.denomination, "societe.denomination"), True, False),
-        f"{_forme_sociale_affichage(company)}{_capital_variable_mention(company)}",
-        f"Au capital minimum et effectif de {_capital_social(company)} euros",
+        _forme_sociale_header(company, associes),
+        f"Au capital de {_capital_social_header(company)}",
         f"Siège social : {_address_no_comma(siege)}",
         "En cours d’immatriculation",
     ]

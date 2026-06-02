@@ -317,6 +317,11 @@ def _render_front_dossier_simple_entry(profile_label: str) -> FrontDossierSimple
         "Ville de naissance",
         key="front_entry_person_ville_naissance",
     )
+    ville_naissance_article_au = col_identity_right.checkbox(
+        "au",
+        key="front_entry_person_ville_naissance_article_au",
+        help="Affiche 'ne au ...' au lieu de 'ne a ...' dans la DNC.",
+    )
     departement_naissance = col_identity_left.text_input(
         "Departement de naissance",
         key="front_entry_person_departement_naissance",
@@ -359,12 +364,20 @@ def _render_front_dossier_simple_entry(profile_label: str) -> FrontDossierSimple
         "Ville RCS",
         key="front_entry_company_ville_rcs",
     )
-    siege_social = col_company_right.text_input(
-        "Siege social",
-        key="front_entry_company_siege_social",
-        help="Format attendu : 12 rue Exemple, 75001 Paris.",
-        placeholder="12 rue Exemple, 75001 Paris",
+    siege_same_as_personal = st.checkbox(
+        "identique a l'adresse personnelle",
+        value=False,
+        key="front_entry_company_siege_same_as_personal",
     )
+    if siege_same_as_personal:
+        siege_social = adresse_personnelle
+    else:
+        siege_social = col_company_right.text_input(
+            "Siege social",
+            key="front_entry_company_siege_social",
+            help="Format attendu : 12 rue Exemple, 75001 Paris.",
+            placeholder="12 rue Exemple, 75001 Paris",
+        )
     domiciliation_same_as_siege = st.checkbox(
         "Domiciliation = siege social",
         value=True,
@@ -419,10 +432,7 @@ def _render_front_dossier_simple_entry(profile_label: str) -> FrontDossierSimple
         key="front_entry_signature_date",
         placeholder="2026-05-24",
     )
-    signature_nombre_exemplaires = col_capital_right.text_input(
-        "Nombre d'exemplaires",
-        key="front_entry_signature_nombre_exemplaires",
-    )
+    signature_nombre_exemplaires = "quatre"
     signature_prestataire = col_capital_right.text_input(
         "Prestataire signature electronique",
         key="front_entry_signature_prestataire",
@@ -431,9 +441,9 @@ def _render_front_dossier_simple_entry(profile_label: str) -> FrontDossierSimple
 
     st.markdown("Ordre et mandataire")
     col_order_left, col_order_right = st.columns(2)
-    ordre_conseil_departemental_libelle = col_order_left.text_input(
-        "Conseil departemental",
-        key="front_entry_order_conseil",
+    ordre_departement_inscription = col_order_left.text_input(
+        "Departement d'inscription a l'ordre",
+        key="front_entry_order_departement_inscription",
     )
     ordre_destinataire_appel = col_order_right.text_input(
         "Appel destinataire",
@@ -506,11 +516,7 @@ def _render_front_dossier_simple_entry(profile_label: str) -> FrontDossierSimple
         "Capital en lettres",
         key="front_entry_statuts_capital_lettres",
     )
-    statuts_societe_duree = col_statuts_right.text_input(
-        "Duree de la societe",
-        value="99 ans",
-        key="front_entry_statuts_societe_duree",
-    )
+    statuts_societe_duree = "99 ans"
     statuts_apport_montant = col_statuts_left.text_input(
         "Apport numeraire",
         key="front_entry_statuts_apport_montant",
@@ -552,11 +558,7 @@ def _render_front_dossier_simple_entry(profile_label: str) -> FrontDossierSimple
         "Nom conjoint",
         key="front_entry_conjoint_nom",
     )
-    conjoint_adresse = st.text_input(
-        "Adresse conjoint",
-        key="front_entry_conjoint_adresse",
-        placeholder="12 rue Exemple, 75001 Paris",
-    )
+    conjoint_adresse = ""
     depot_banque_nom = col_statuts_left.text_input(
         "Banque depot des fonds",
         key="front_entry_depot_banque_nom",
@@ -589,10 +591,7 @@ def _render_front_dossier_simple_entry(profile_label: str) -> FrontDossierSimple
         "Seuil emprunt",
         key="front_entry_gerance_seuil_emprunt",
     )
-    document_nombre_exemplaires_lettres = col_statuts_left.text_input(
-        "Exemplaires en lettres",
-        key="front_entry_document_exemplaires_lettres",
-    )
+    document_nombre_exemplaires_lettres = "quatre"
 
     regime_apport_montant = ""
     regime_apport_montant_lettres = ""
@@ -618,14 +617,8 @@ def _render_front_dossier_simple_entry(profile_label: str) -> FrontDossierSimple
             "Regime matrimonial commun",
             key="front_entry_regime_matrimonial",
         )
-        regime_qualite_renoncee = col_regime_right.text_input(
-            "Qualite renoncee",
-            key="front_entry_regime_qualite_renoncee",
-        )
-        regime_date_courrier_avertissement = col_regime_left.text_input(
-            "Date courrier avertissement",
-            key="front_entry_regime_date_courrier",
-        )
+        regime_qualite_renoncee = "associe"
+        regime_date_courrier_avertissement = date.today().isoformat()
         regime_renonciation_lieu_signature = col_regime_right.text_input(
             "Lieu signature renonciation",
             key="front_entry_regime_renonciation_lieu",
@@ -634,10 +627,7 @@ def _render_front_dossier_simple_entry(profile_label: str) -> FrontDossierSimple
             "Date signature renonciation",
             key="front_entry_regime_renonciation_date",
         )
-        regime_renonciation_nombre_exemplaires_lettres = col_regime_right.text_input(
-            "Exemplaires renonciation en lettres",
-            key="front_entry_regime_renonciation_exemplaires",
-        )
+        regime_renonciation_nombre_exemplaires_lettres = "quatre"
         regime_avertissement_date_signature = col_regime_left.text_input(
             "Date avertissement conjoint",
             key="front_entry_regime_avertissement_date",
@@ -661,6 +651,7 @@ def _render_front_dossier_simple_entry(profile_label: str) -> FrontDossierSimple
         nom=nom,
         date_naissance=date_naissance,
         ville_naissance=ville_naissance,
+        ville_naissance_article_au=ville_naissance_article_au,
         departement_naissance=departement_naissance,
         nationalite=nationalite,
         nom_pere=nom_pere,
@@ -682,7 +673,7 @@ def _render_front_dossier_simple_entry(profile_label: str) -> FrontDossierSimple
         signature_date=signature_date,
         signature_nombre_exemplaires=signature_nombre_exemplaires,
         signature_prestataire=signature_prestataire,
-        ordre_conseil_departemental_libelle=ordre_conseil_departemental_libelle,
+        ordre_departement_inscription=ordre_departement_inscription,
         ordre_destinataire_appel=ordre_destinataire_appel,
         ordre_profession_signataire_affichee=ordre_profession_signataire_affichee,
         ordre_profession_ligne_destinataire=ordre_profession_ligne_destinataire,
@@ -739,6 +730,13 @@ def _render_front_dossier_simple_entry(profile_label: str) -> FrontDossierSimple
 
 
 def _front_dossier_entry_from_session_state(profile_label: str) -> FrontDossierSimpleEntry:
+    adresse_personnelle = str(
+        st.session_state.get("front_entry_person_adresse_personnelle", "") or ""
+    )
+    if bool(st.session_state.get("front_entry_company_siege_same_as_personal", False)):
+        siege_social = adresse_personnelle
+    else:
+        siege_social = str(st.session_state.get("front_entry_company_siege_social", "") or "")
     return FrontDossierSimpleEntry(
         profile_key=profile_label,
         dossier_unipersonnel=bool(
@@ -773,9 +771,7 @@ def _front_dossier_entry_from_session_state(profile_label: str) -> FrontDossierS
         nationalite=str(st.session_state.get("front_entry_person_nationalite", "") or ""),
         nom_pere=str(st.session_state.get("front_entry_person_nom_pere", "") or ""),
         nom_mere=str(st.session_state.get("front_entry_person_nom_mere", "") or ""),
-        adresse_personnelle=str(
-            st.session_state.get("front_entry_person_adresse_personnelle", "") or ""
-        ),
+        adresse_personnelle=adresse_personnelle,
         societe_denomination=str(
             st.session_state.get("front_entry_company_denomination", "") or ""
         ),
@@ -789,7 +785,7 @@ def _front_dossier_entry_from_session_state(profile_label: str) -> FrontDossierS
         societe_ville_rcs=str(
             st.session_state.get("front_entry_company_ville_rcs", "") or ""
         ),
-        siege_social=str(st.session_state.get("front_entry_company_siege_social", "") or ""),
+        siege_social=siege_social,
         domiciliation=str(
             st.session_state.get("front_entry_company_domiciliation", "") or ""
         ),
@@ -809,14 +805,12 @@ def _front_dossier_entry_from_session_state(profile_label: str) -> FrontDossierS
         reunion_heure=str(st.session_state.get("front_entry_reunion_heure", "") or ""),
         signature_lieu=str(st.session_state.get("front_entry_signature_lieu", "") or ""),
         signature_date=str(st.session_state.get("front_entry_signature_date", "") or ""),
-        signature_nombre_exemplaires=str(
-            st.session_state.get("front_entry_signature_nombre_exemplaires", "") or ""
-        ),
+        signature_nombre_exemplaires="quatre",
         signature_prestataire=str(
             st.session_state.get("front_entry_signature_prestataire", "") or ""
         ),
-        ordre_conseil_departemental_libelle=str(
-            st.session_state.get("front_entry_order_conseil", "") or ""
+        ordre_departement_inscription=str(
+            st.session_state.get("front_entry_order_departement_inscription", "") or ""
         ),
         ordre_destinataire_appel=str(
             st.session_state.get("front_entry_order_destinataire_appel", "") or ""
@@ -860,9 +854,7 @@ def _front_dossier_entry_from_session_state(profile_label: str) -> FrontDossierS
         statuts_capital_social_lettres=str(
             st.session_state.get("front_entry_statuts_capital_lettres", "") or ""
         ),
-        statuts_societe_duree=str(
-            st.session_state.get("front_entry_statuts_societe_duree", "99 ans") or ""
-        ),
+        statuts_societe_duree="99 ans",
         statuts_apport_montant=str(
             st.session_state.get("front_entry_statuts_apport_montant", "") or ""
         ),
@@ -912,9 +904,7 @@ def _front_dossier_entry_from_session_state(profile_label: str) -> FrontDossierS
         gerance_seuil_emprunt=str(
             st.session_state.get("front_entry_gerance_seuil_emprunt", "") or ""
         ),
-        document_nombre_exemplaires_lettres=str(
-            st.session_state.get("front_entry_document_exemplaires_lettres", "") or ""
-        ),
+        document_nombre_exemplaires_lettres="quatre",
         regime_apport_montant=str(
             st.session_state.get("front_entry_regime_apport_montant", "") or ""
         ),
@@ -924,21 +914,15 @@ def _front_dossier_entry_from_session_state(profile_label: str) -> FrontDossierS
         regime_matrimonial=str(
             st.session_state.get("front_entry_regime_matrimonial", "") or ""
         ),
-        regime_qualite_renoncee=str(
-            st.session_state.get("front_entry_regime_qualite_renoncee", "") or ""
-        ),
-        regime_date_courrier_avertissement=str(
-            st.session_state.get("front_entry_regime_date_courrier", "") or ""
-        ),
+        regime_qualite_renoncee="associe",
+        regime_date_courrier_avertissement=date.today().isoformat(),
         regime_renonciation_lieu_signature=str(
             st.session_state.get("front_entry_regime_renonciation_lieu", "") or ""
         ),
         regime_renonciation_date_signature=str(
             st.session_state.get("front_entry_regime_renonciation_date", "") or ""
         ),
-        regime_renonciation_nombre_exemplaires_lettres=str(
-            st.session_state.get("front_entry_regime_renonciation_exemplaires", "") or ""
-        ),
+        regime_renonciation_nombre_exemplaires_lettres="quatre",
         regime_avertissement_date_signature=str(
             st.session_state.get("front_entry_regime_avertissement_date", "") or ""
         ),
@@ -1928,6 +1912,15 @@ def _collect_business_input() -> BusinessWizardInput:
             "Date de naissance signataire (AAAA-MM-JJ)",
             key="business_personne_date_naissance",
         )
+        personne_ville_naissance = st.text_input(
+            "Ville de naissance signataire",
+            key="business_personne_ville_naissance",
+        )
+        personne_ville_naissance_article_au = st.checkbox(
+            "au",
+            key="business_personne_ville_naissance_article_au",
+            help="Affiche 'ne au ...' au lieu de 'ne a ...' dans la DNC.",
+        )
         personne_nationalite = st.text_input(
             "Nationalite du signataire",
             key="business_personne_nationalite",
@@ -2116,6 +2109,8 @@ def _collect_business_input() -> BusinessWizardInput:
         personne_prenom=personne_prenom,
         personne_nom=personne_nom,
         personne_date_naissance=personne_date_naissance,
+        personne_ville_naissance=personne_ville_naissance,
+        personne_ville_naissance_article_au=personne_ville_naissance_article_au,
         personne_nationalite=personne_nationalite,
         personne_nom_pere=personne_nom_pere,
         personne_nom_mere=personne_nom_mere,
@@ -2214,6 +2209,11 @@ def _collect_selarl_business_input(conditions: dict[str, object | None]) -> Busi
         dirigeant_ville_naissance = naissance_cols[0].text_input(
             "Ville de naissance du Praticien",
             key="selarl_personne_ville_naissance",
+        )
+        personne_ville_naissance_article_au = naissance_cols[0].checkbox(
+            "au",
+            key="selarl_personne_ville_naissance_article_au",
+            help="Affiche 'ne au ...' au lieu de 'ne a ...' dans la DNC.",
         )
         dirigeant_departement_naissance = naissance_cols[1].text_input(
             "Departement de naissance du Praticien",
@@ -2593,10 +2593,7 @@ def _collect_selarl_business_input(conditions: dict[str, object | None]) -> Busi
             "Date de signature (AAAA-MM-JJ)",
             key="selarl_signature_date",
         )
-        signature_nombre_exemplaires = st.text_input(
-            "Nombre d'exemplaires",
-            key="selarl_signature_nombre_exemplaires",
-        )
+        signature_nombre_exemplaires = "quatre"
         emprunt_actif = st.checkbox(
             "Emprunt autorise dans le PV nomination gerant (DOC-004)",
             value=False,
@@ -2659,6 +2656,8 @@ def _collect_selarl_business_input(conditions: dict[str, object | None]) -> Busi
         personne_prenom=personne_prenom,
         personne_nom=personne_nom,
         personne_date_naissance=personne_date_naissance,
+        personne_ville_naissance=dirigeant_ville_naissance,
+        personne_ville_naissance_article_au=personne_ville_naissance_article_au,
         personne_nationalite=personne_nationalite,
         personne_nom_pere=personne_nom_pere,
         personne_nom_mere=personne_nom_mere,

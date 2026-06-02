@@ -19,6 +19,7 @@ DEFAULT_TITRE_AFFICHAGE: Final = "Docteur"
 NATIONALITY_PRESETS: Final = (
     "Francaise",
     "Belge",
+    "Portugaise",
     "Suisse",
     "Luxembourgeoise",
     "Autre",

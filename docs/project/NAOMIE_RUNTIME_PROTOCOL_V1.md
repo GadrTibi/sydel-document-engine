@@ -7,8 +7,12 @@ Date : 2026-06-01
 Ce fichier est le protocole court que Codex doit appliquer dans un nouveau chat
 quand Naomie arrive sur le projet SYDEL.
 
-Il existe pour eviter l'incident suivant : Naomie dit seulement `bonjour` ou
-`je suis Naomie`, et Codex repond comme si aucun sprint n'etait actif.
+Il existe pour eviter deux incidents :
+
+1. Naomie dit seulement `bonjour` ou `je suis Naomie`, et Codex repond comme si
+   aucun sprint n'etait actif ;
+2. Gad parle de Naomie comme superviseur, et Codex declenche a tort le prompt
+   NotebookLM au lieu de rester en cadrage avec Gad.
 
 ## Regle centrale
 
@@ -21,30 +25,51 @@ assistant qui attend une tache.
 
 ## Declencheurs
 
-Appliquer ce protocole si le message, le titre du chat ou le contexte contient :
+Appliquer ce protocole si l'interlocutrice active est identifiee comme
+Naomie/Naomi, ou si Gad demande explicitement de preparer, simuler ou reprendre
+son workflow operationnel.
 
-- `Naomie` ou `Naomi` ;
+Declencheurs directs, seulement si ces phrases identifient la personne qui
+parle ou la session active :
+
+- `Naomie` ou `Naomi` comme reponse a la question d'identite ;
+- `je suis Naomie` ou `je suis Naomi` ;
 - `bonjour` dans un chat Naomie ;
 - `SELAS` ou `CELAS` ;
 - `lancer`, `demarrer` ou `reprendre` le sprint SELAS ;
 - un reproche de Gad indiquant que l'accueil Naomie est mal cadre.
 
+Non-declencheurs :
+
+- Gad dit `ou en est Naomi ?` ;
+- Gad explique le fonctionnement voulu entre Gad, Naomi et Codex ;
+- Gad demande d'auditer ou de corriger le protocole Naomi ;
+- un nouveau chat contient seulement `bonjour` sans identite.
+
+Dans ces cas, Codex doit d'abord traiter Gad comme superviseur ou demander
+l'identite. Il ne doit pas donner le Prompt NotebookLM par reflexe.
+
 ## Action obligatoire
 
 1. Lire ou appliquer `docs/project/PROJECT_CONTROL_TOWER_V1.md`.
 2. Lire ou appliquer `docs/sprints/SPRINT_SELAS_V1.md`.
-3. Verifier le depot et la branche :
+3. Lire `docs/sprints/SPRINT_SELAS_NAOMIE_WORKLOG_V1.md` pour verifier les
+   messages Gad a transmettre.
+4. Verifier le depot et la branche :
    - le nom du dossier local peut etre `sydel-track-b` ou
      `sydel-document-engine` ;
    - ce qui compte est le remote
      `https://github.com/GadrTibi/sydel-document-engine.git` ;
    - la branche cible doit etre `codex/naomie-selas-sprint`.
-4. Verifier ou tenter de rejoindre la branche `codex/naomie-selas-sprint`.
-5. Rester en `NO-GO dev`.
-6. Donner le Prompt NotebookLM 01.
-7. Attendre la reponse brute NotebookLM.
-8. Structurer la reponse dans `docs/sprints/SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md`.
-9. Donner le prompt suivant selon les trous.
+5. Verifier ou tenter de rejoindre la branche `codex/naomie-selas-sprint`.
+6. S'il existe un message Gad `a transmettre`, le citer a Naomie et marquer la
+   transmission dans le worklog.
+7. Rester en `NO-GO dev`.
+8. Donner le Prompt NotebookLM 01.
+9. Attendre la reponse brute NotebookLM.
+10. Structurer la reponse dans `docs/sprints/SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md`.
+11. Mettre a jour `docs/sprints/SPRINT_SELAS_NAOMIE_WORKLOG_V1.md`.
+12. Donner le prompt suivant selon les trous.
 
 ## Interdits
 
@@ -55,6 +80,8 @@ Codex ne doit pas :
 - demander "quel ticket ?" ;
 - dire "je suis pret a travailler sur le moteur documentaire" ;
 - demander vaguement a Naomie de fournir une source NotebookLM SELAS ;
+- laisser le worklog Naomie sans mise a jour apres une action tracee ;
+- ignorer un message Gad en attente dans le worklog ;
 - utiliser `SELAS-NOTEBOOKLM-RECONCILIATION-001` comme ticket actif ;
 - lancer un audit de reutilisation avant NotebookLM suffisant ;
 - produire une matrice finale avant NotebookLM + reuse audit ;
@@ -151,4 +178,5 @@ Le protocole est respecte si, apres un simple `bonjour`, Naomie sait :
 - qu'aucun dev n'est autorise ;
 - qu'elle doit copier le Prompt NotebookLM 01 ;
 - que Codex journalisera la reponse ;
+- que Codex maintiendra le worklog de suivi pour que Gad puisse superviser ;
 - que Codex gere Git et les commandes pour elle.

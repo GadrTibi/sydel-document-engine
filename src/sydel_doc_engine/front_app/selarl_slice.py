@@ -135,6 +135,7 @@ class SelarlSliceInput:
     titre_affichage: str = DEFAULT_TITRE_AFFICHAGE
     date_naissance: date | None = None
     ville_naissance: str = ""
+    ville_naissance_article_au: bool = False
     departement_naissance: str = ""
     nationalite: str = ""
     nom_pere: str = ""
@@ -175,7 +176,7 @@ class SelarlSliceInput:
     mandataire_cabinet: str = DEFAULT_MANDATAIRE_CABINET
     signature_lieu: str = ""
     signature_date: date | None = None
-    signature_nombre_exemplaires: str = ""
+    signature_nombre_exemplaires: str = "quatre"
     prestataire_signature_electronique: str = DEFAULT_PRESTATAIRE_SIGNATURE_ELECTRONIQUE
     decision_date: date | None = None
     reunion_date_lettres: str = ""
@@ -323,28 +324,12 @@ def validate_selarl_input(data: SelarlSliceInput) -> tuple[str, ...]:
                     ("conjoint_prenom", "Prenom du conjoint requis pour DOC-005."),
                     ("conjoint_nom", "Nom du conjoint requis pour DOC-005."),
                     (
-                        "conjoint_adresse_num_voie",
-                        "Numero de voie du conjoint requis pour DOC-006.",
-                    ),
-                    ("conjoint_adresse_voie", "Voie du conjoint requise pour DOC-006."),
-                    (
-                        "conjoint_adresse_cp",
-                        "Code postal du conjoint requis pour DOC-006.",
-                    ),
-                    ("conjoint_adresse_ville", "Ville du conjoint requise pour DOC-006."),
-                    (
                         "regime_matrimonial",
                         "Regime matrimonial requis quand DOC-005 est genere.",
-                    ),
-                    (
-                        "qualite_renoncee",
-                        "Qualite renoncee requise quand DOC-005 est genere.",
                     ),
                 ),
             )
         )
-        if data.date_courrier_avertissement is None:
-            blockers.append("Date du courrier d'avertissement requise pour DOC-005.")
     return tuple(dict.fromkeys(blockers))
 
 
@@ -456,7 +441,6 @@ def _missing_doc004_text_blockers(data: SelarlSliceInput) -> list[str]:
         ("siege_cp", "Code postal du siege requis."),
         ("siege_ville", "Ville du siege requise."),
         ("signature_lieu", "Lieu de signature requis."),
-        ("signature_nombre_exemplaires", "Nombre d'exemplaires requis."),
     )
     return _missing_for_fields(data, doc004_fields)
 
@@ -507,6 +491,8 @@ def build_generation_context(data: SelarlSliceInput) -> DocumentGenerationContex
         adresse_personnelle_affichee=person_address.adresse_affichee,
         adresse_perso=person_address,
         date_naissance=data.date_naissance,
+        ville_naissance=data.ville_naissance,
+        ville_naissance_article_au=data.ville_naissance_article_au,
         nationalite=data.nationalite,
         nom_pere=data.nom_pere,
         nom_mere=data.nom_mere,
@@ -536,7 +522,7 @@ def build_generation_context(data: SelarlSliceInput) -> DocumentGenerationContex
             numero=data.numero_ordre,
         ),
     )
-    conjoint = _conjoint_person(data) if _needs_conjoint(data) else None
+    conjoint = _conjoint_person(data, person_address) if _needs_conjoint(data) else None
     return DocumentGenerationContext(
         structure="SELARL",
         dossier_options=DossierOptions(
@@ -845,12 +831,10 @@ def _missing_text_blockers(data: SelarlSliceInput) -> list[str]:
         ("siege_cp", "Code postal du siege requis."),
         ("siege_ville", "Ville du siege requise."),
         ("ville_rcs", "Ville RCS requise."),
-        ("ordre_conseil", "Conseil departemental de l'ordre requis."),
         ("ordre_adresse_ligne_1", "Adresse de l'ordre requise."),
         ("ordre_cp", "Code postal de l'ordre requis."),
         ("ordre_ville", "Ville de l'ordre requise."),
         ("signature_lieu", "Lieu de signature requis."),
-        ("signature_nombre_exemplaires", "Nombre d'exemplaires requis."),
         ("depot_banque_nom", "Banque du depot des fonds requise."),
         ("depot_banque_adresse", "Adresse de la banque requise."),
         ("exercice_debut", "Debut d'exercice social requis."),
@@ -926,6 +910,7 @@ def _ordre(
 ) -> OrdreProfessionnel:
     return OrdreProfessionnel(
         conseil_departemental_libelle=data.ordre_conseil,
+        departement_inscription=data.departement_ordre,
         destinataire_appel="Monsieur le President",
         profession_signataire_affichee=profession_label,
         profession_ligne_destinataire=profession_plural,
@@ -1054,7 +1039,7 @@ def _associe(
         adresse_personnelle=address,
         adresse_personnelle_affichee=address.adresse_affichee,
         ordre=SpfplOrdre(
-            professionnel=data.ordre_conseil,
+            professionnel=data.ordre_conseil or f"Ordre des {profession_plural}",
             departement=data.departement_ordre,
             ville=data.ordre_ville,
             numero=data.numero_ordre,
@@ -1080,17 +1065,8 @@ def _spfpl_conjoint(data: SelarlSliceInput) -> SpfplConjoint:
     )
 
 
-def _conjoint_person(data: SelarlSliceInput) -> Person:
-    conjoint_address = (
-        _address(
-            data.conjoint_adresse_num_voie,
-            data.conjoint_adresse_voie,
-            data.conjoint_adresse_cp,
-            data.conjoint_adresse_ville,
-        )
-        if data.regime_communautaire
-        else None
-    )
+def _conjoint_person(data: SelarlSliceInput, personal_address: Address) -> Person:
+    conjoint_address = personal_address if data.regime_communautaire else None
     return Person(
         genre=data.conjoint_genre,
         civilite=data.conjoint_civilite,

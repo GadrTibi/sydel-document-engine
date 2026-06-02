@@ -89,16 +89,38 @@ def test_clean_front_selarl_medecin_regime_derives_conjoint_only_when_active() -
     assert regime_ctx.conjoint.prenom == "Claire"
     assert regime_ctx.conjoint.nom == "Martin"
     assert regime_ctx.conjoint.adresse_perso is not None
-    assert regime_ctx.conjoint.adresse_perso.adresse_affichee == "30 rue Conjoint, 75003 Paris"
+    assert regime_ctx.conjoint.adresse_perso.adresse_affichee == "10 rue Test, 75001 Paris"
     assert regime_ctx.statuts_sel is not None
     assert regime_ctx.statuts_sel.overlay == "selarl_medecin"
     assert regime_ctx.regime_communautaire is not None
-    assert regime_ctx.regime_communautaire.date_courrier_avertissement == date(2026, 5, 20)
+    assert regime_ctx.regime_communautaire.date_courrier_avertissement == date.today()
     assert regime_ctx.regime_communautaire.renonciation is not None
     assert (
         regime_ctx.regime_communautaire.renonciation.nombre_exemplaires_lettres
-        == "deux"
+        == "quatre"
     )
+
+
+def test_clean_front_selarl_regime_does_not_require_conjoint_address() -> None:
+    dossier_type = dossier_type_by_label("SELARL creation V1")
+    kwargs = _valid_selarl_kwargs(PROFESSION_MEDECIN, regime_communautaire=True)
+    kwargs.update(
+        {
+            "conjoint_adresse_num_voie": "",
+            "conjoint_adresse_voie": "",
+            "conjoint_adresse_cp": "",
+            "conjoint_adresse_ville": "",
+        }
+    )
+    data_entry = build_clean_data_entry(dossier_type, **kwargs)
+
+    plan = build_clean_generation_plan(dossier_type, data_entry)
+    ctx = build_generation_context(data_entry)
+
+    assert plan.can_generate is True
+    assert ctx.conjoint is not None
+    assert ctx.conjoint.adresse_perso is not None
+    assert ctx.conjoint.adresse_perso.adresse_affichee == "10 rue Test, 75001 Paris"
 
 
 def test_clean_front_selarl_slice_blocks_out_of_scope_cases() -> None:
@@ -284,6 +306,8 @@ def test_clean_front_selarl_context_derives_hidden_ux_values() -> None:
 
     assert ctx.personne_signataire.genre.value == "masculin"
     assert ctx.personne_signataire.date_naissance == date(1984, 4, 12)
+    assert ctx.personne_signataire.ville_naissance == "Paris"
+    assert ctx.personne_signataire.ville_naissance_article_au is False
     assert ctx.societe.capital_social_lettres == "mille"
     assert ctx.capital is not None
     assert ctx.capital.valeur_nominale_titre == "10"
@@ -325,6 +349,19 @@ def test_clean_front_selarl_accepts_french_date_strings_outside_streamlit_range(
     assert data_entry.date_naissance == date(1974, 12, 31)
     assert data_entry.signature_date == date(2026, 5, 27)
     assert data_entry.decision_date == date(2026, 5, 27)
+
+
+def test_clean_front_selarl_maps_birth_city_article_au() -> None:
+    ctx = build_generation_context(
+        _valid_selarl_input(
+            PROFESSION_MEDECIN,
+            ville_naissance="Bourget",
+            ville_naissance_article_au=True,
+        )
+    )
+
+    assert ctx.personne_signataire.ville_naissance == "Bourget"
+    assert ctx.personne_signataire.ville_naissance_article_au is True
 
 
 def test_clean_front_selarl_generation_smoke(tmp_path: Path) -> None:
@@ -377,11 +414,12 @@ def test_clean_front_selarl_medecin_regime_communautaire_generation_smoke(
     assert "SELARL SELARL" not in combined_text
     assert "RCS PARIS 788 531 432" not in combined_text
     assert "0153814303" not in combined_text
-    assert "Par courrier en date du 20/05/2026" in combined_text
+    assert f"Par courrier en date du {date.today():%d/%m/%Y}" in combined_text
     assert "euros dependant de notre communaute." in ascii_text
     assert "regime de communaute" not in ascii_text
     assert "Madame Martin" in combined_text
-    assert "30 rue Conjoint" in combined_text
+    assert "10 rue Test" in combined_text
+    assert "30 rue Conjoint" not in combined_text
 
 
 def test_clean_front_legacy_boundary_is_explicit() -> None:
@@ -457,14 +495,11 @@ def test_clean_front_streamlit_surface_is_not_legacy() -> None:
     assert "Civilite mandataire" not in visible_labels
     assert "Civilite conjoint" not in visible_labels
     assert app.selectbox(key="selarl_nationalite_choice").label == "Nationalite"
+    assert "Portugaise" in app.selectbox(key="selarl_nationalite_choice").options
     assert app.selectbox(key="selarl_situation_maritale").label == "Situation matrimoniale"
     assert (
         app.checkbox(key="selarl_regime_communautaire").label
         == "Documents regime de la communaute"
-    )
-    assert (
-        app.text_input(key="selarl_ordre_conseil").label
-        == "Conseil departemental de l'ordre (libelle complet)"
     )
     assert (
         app.text_input(key="selarl_departement_ordre").label
@@ -572,14 +607,17 @@ def _valid_selarl_input(
     profession: str,
     *,
     regime_communautaire: bool = False,
+    **overrides: object,
 ):
     dossier_type = dossier_type_by_label("SELARL creation V1")
+    values = _valid_selarl_kwargs(
+        profession,
+        regime_communautaire=regime_communautaire,
+    )
+    values.update(overrides)
     return build_clean_data_entry(
         dossier_type,
-        **_valid_selarl_kwargs(
-            profession,
-            regime_communautaire=regime_communautaire,
-        ),
+        **values,
     )
 
 
@@ -650,8 +688,8 @@ def _valid_selarl_kwargs(
         "adresse_voie": "rue Test",
         "adresse_cp": "75001",
         "adresse_ville": "Paris",
-        "situation_maritale": "marie",
-        "regime_matrimonial": "regime de communaute",
+        "situation_maritale": "marie" if regime_communautaire else "celibataire",
+        "regime_matrimonial": "regime de communaute" if regime_communautaire else "",
         "numero_ordre": "ORD-123",
         "numero_rpps": "10000000001",
         "departement_ordre": "75",
@@ -664,23 +702,17 @@ def _valid_selarl_kwargs(
         "siege_cp": "75002",
         "siege_ville": "Paris",
         "ville_rcs": "Paris",
-        "ordre_conseil": "Conseil departemental de l'Ordre de Paris",
         "ordre_adresse_ligne_1": "1 rue de l'Ordre",
         "ordre_cp": "75008",
         "ordre_ville": "Paris",
         "signature_lieu": "Paris",
         "signature_date": date(2026, 5, 26),
-        "signature_nombre_exemplaires": 2,
         "decision_date": date(2026, 5, 26),
         "depot_banque_nom": "Banque Test",
         "depot_banque_adresse": "30 boulevard Banque, 75009 Paris",
         "exercice_debut": "1er janvier",
         "exercice_fin": "31 decembre",
         "exercice_cloture_premier": "31 decembre 2026",
-        "qualite_renoncee": "associe",
-        "date_courrier_avertissement": date(2026, 5, 20)
-        if regime_communautaire
-        else None,
         **(
             {
                 "conjoint_civilite": "Madame",
@@ -733,7 +765,6 @@ def _fill_valid_streamlit_selarl_form(app: AppTest) -> None:
         "selarl_siege_voie": "avenue du Siege",
         "selarl_siege_cp": "75002",
         "selarl_siege_ville": "Paris",
-        "selarl_ordre_conseil": "Conseil departemental de l'Ordre de Paris",
         "selarl_departement_ordre": "75",
         "selarl_ordre_adresse_ligne_1": "1 rue de l'Ordre",
         "selarl_ordre_cp": "75008",
@@ -749,6 +780,6 @@ def _fill_valid_streamlit_selarl_form(app: AppTest) -> None:
     }
     for key, value in values.items():
         app.text_input(key=key).set_value(value)
+    app.checkbox(key="selarl_ville_naissance_article_au").set_value(False)
     app.number_input(key="selarl_capital_social").set_value(1000)
     app.number_input(key="selarl_nb_parts_total").set_value(100)
-    app.number_input(key="selarl_signature_nombre_exemplaires").set_value(2)

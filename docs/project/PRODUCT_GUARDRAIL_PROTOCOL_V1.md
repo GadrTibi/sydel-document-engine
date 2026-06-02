@@ -49,9 +49,28 @@ La couche chef de projet globale est `docs/project/PROJECT_CONTROL_TOWER_V1.md`.
 Codex doit l'utiliser avant de choisir une action, pour connaitre le sprint
 actif, la phase courante, l'action autorisee et les actions interdites.
 
+Avant meme ce choix d'action, un nouveau chat doit identifier qui parle. Si le
+message est seulement `bonjour`, `salut`, `ca va` ou une reprise vague, Codex
+demande `Bonjour, tu es Gad ou Naomi ? Je te route ensuite sur le bon protocole
+projet.` Gad est ensuite traite comme superviseur produit ; Naomi/Naomie est
+traitee selon le protocole runtime local. Mentionner Naomi dans une question de
+Gad ne suffit pas a declencher NotebookLM.
+
 Pour les workflows Gad / Naomie / Codex reutilisables sur d'autres projets,
 appliquer aussi `docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md` et le
 template `docs/project/PROJECT_NAOMIE_RUNTIME_TEMPLATE_V1.md`.
+
+Quand Gad demande le statut de Naomi, appliquer aussi
+`docs/project/NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md` et
+`docs/project/WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md`. Le statut doit parler du
+flux Naomi, pas d'une evaluation personnelle. Il vient des traces : tour de
+controle, dernier etat, fichier de sprint, worklog Naomi, journal de base de
+connaissance et branche Naomi si accessible.
+
+Si Gad annonce une avancee absente de ces traces, appliquer
+`docs/project/NAOMIE_WORKSTREAM_SYNC_PROTOCOL_V1.md`. La bonne conclusion est
+`avancee annoncee, synchronisation manquante` jusqu'a commit pousse ou Sync
+packet.
 
 ## Usage des sous-agents
 
@@ -69,8 +88,19 @@ Exemples de rôles utiles :
 - agent QA : vérifie smoke, placeholders, ZIP/PDF et non-régressions.
 - agent Reuse Auditor : vérifie ce qui existe déjà côté SELARL et registres
   globaux avant de refaire documents, variables, conditions ou tests.
+- agent Front Information Dedup : vérifie qu'une information métier identique
+  n'est demandée qu'une seule fois dans le front, puis réutilisée, dérivée ou
+  affichée en lecture seule selon `FRONT_INFORMATION_DEDUP_AGENT_PROTOCOL_V1.md`.
+- agent Blocker / Question : quand une information manque vraiment, vérifie
+  d'abord les sources disponibles, formule le trou exact, pose une question
+  concrète à Gad et maintient le ticket en `BLOCKED` ou `NO-GO dev` tant que
+  la réponse est absente.
 - agent Professeur Naomie : explique le projet, Git, les sprints et le moteur
   documentaire a Naomie sans piloter le scope ni executer les commandes.
+- agent Orchestrateur Naomie : lit les traces de la branche et du worklog pour
+  informer Gad de l'avancement du flux Naomi sans solliciter Naomi inutilement.
+- agent de tracabilite de flux : tient le worklog, les preuves, les curseurs de
+  rapport et les rattrapages retroactifs ; cette charge ne repose pas sur Naomi.
 
 Le pilote principal reste responsable de la décision finale. Les sous-agents
 produisent des constats et des propositions, pas des arbitrages juridiques.
@@ -106,6 +136,49 @@ Le ticket est `NO-GO dev` si :
 - une formulation juridique devrait être créée ou modifiée sans validation ;
 - le changement mélange plusieurs familles ou documents sans décision explicite.
 
+## Discipline de questions
+
+Avant de demander une réponse humaine, Codex doit vérifier si la réponse existe
+déjà dans les sources, specs, retours NotebookLM journalisés ou retours humains
+antérieurs.
+
+Si la réponse existe, Codex doit noter la décision et avancer. Si elle n'existe
+pas, la question doit être concrète et rattachée à un trou réel :
+
+- source manquante ;
+- contradiction ;
+- document absent/en trop ;
+- variable ou wording mal placé ;
+- choix de scope.
+
+Un retour associé doit être demandé comme revue d'écarts sur un pack actif, pas
+comme questionnaire abstrait.
+
+### Discipline de blocage et questions a Gad
+
+Quand Codex est bloque sur n'importe quel ticket, il ne doit pas continuer en
+supposant ni garder le blocage implicite.
+
+Avant de demander a Gad, Codex doit verifier :
+
+- source de verite / document initial ;
+- specs et matrices existantes ;
+- retours NotebookLM ou modele deja journalises ;
+- retours humains et rapports d'audit ;
+- code, tests et pack actif.
+
+Si le trou demeure, Codex doit dire explicitement :
+
+- `BLOCKED` ou `NO-GO dev` ;
+- ce qui manque exactement ;
+- les sources deja consultees ;
+- la question precise a laquelle Gad ou l'associe doit repondre ;
+- l'impact si la reponse manque ;
+- la prochaine action possible en attendant.
+
+Si la reponse est logiquement deduite ou deja presente dans une source fiable,
+Codex ne pose pas la question : il note la decision sourcee et avance.
+
 ## Forme attendue d'un cadrage avant implémentation
 
 Pour chaque nouveau chantier important, produire ou mettre à jour un document de
@@ -114,6 +187,8 @@ cadrage qui contient au minimum :
 - la matrice documents attendus / générables / réservés / manuels / bloqués ;
 - la liste des données à collecter ;
 - les règles de déduplication et de réutilisation ;
+- le verdict du `Front Information Dedup Agent` si le ticket touche le front ou
+  les variables demandées à l'utilisateur ;
 - les messages de blocage visibles côté utilisateur ;
 - les scénarios de smoke ;
 - les points d'arbitrage humain.

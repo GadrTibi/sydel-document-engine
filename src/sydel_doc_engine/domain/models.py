@@ -31,6 +31,8 @@ class Person(BaseModel):
     adresse_personnelle_affichee: str | None = None
     adresse_perso: Address | None = None
     date_naissance: date | None = None
+    ville_naissance: str | None = None
+    ville_naissance_article_au: bool = False
     nationalite: str | None = None
     nom_pere: str | None = None
     nom_mere: str | None = None
@@ -715,6 +717,7 @@ class OrdreAddress(BaseModel):
 
 class OrdreProfessionnel(BaseModel):
     conseil_departemental_libelle: str | None = None
+    departement_inscription: str | None = None
     destinataire_appel: str | None = None
     profession_signataire_affichee: str | None = None
     profession_ligne_destinataire: str | None = None

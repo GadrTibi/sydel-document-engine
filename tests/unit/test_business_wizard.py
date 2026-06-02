@@ -39,6 +39,7 @@ from sydel_doc_engine.app.ui_runtime import (
     generate_docx_files_for_document_codes,
     generate_zip_file,
 )
+from sydel_doc_engine.domain.case_catalog import CaseType
 from sydel_doc_engine.orchestrator.service import DocumentOrchestrator
 from sydel_doc_engine.registry.catalog import build_seed_catalog
 
@@ -259,10 +260,40 @@ def test_streamlit_technical_mode_remains_accessible() -> None:
     assert "Assistant metier prototype" in PROTOTYPE_TOOL_LABELS
 
 
-def test_streamlit_business_mode_exposes_sci_and_selarl() -> None:
-    dossier_types = {item.structure for item in business_wizard.business_dossier_types()}
+def test_business_dossier_types_distinguish_product_status_from_technical_inventory() -> None:
+    dossier_types = {
+        item.structure: item for item in business_wizard.business_dossier_types()
+    }
 
-    assert {"SCI", "SELARL"}.issubset(dossier_types)
+    assert set(dossier_types) == {case_type.value for case_type in CaseType}
+    assert dossier_types["SELARL"].generable_in_v1 is True
+    assert "SPRINT_ACTIF/PARTIAL" in dossier_types["SELARL"].status
+    assert dossier_types["SELAS"].generable_in_v1 is False
+    assert "SPRINT_ACTIF/BLOCKED sync/NO-GO dev" in dossier_types["SELAS"].status
+
+    inventory_only = {
+        "SCI",
+        "SCM",
+        "SAS",
+        "SCS",
+        "SPFPL cession",
+        "SPFPL apport",
+    }
+    assert all(dossier_types[structure].generable_in_v1 is False for structure in inventory_only)
+    assert all(
+        "INVENTAIRE_TECHNIQUE" in dossier_types[structure].status
+        for structure in inventory_only
+    )
+    assert all(
+        "inventaire technique seulement" in dossier_types[structure].label
+        for structure in inventory_only
+    )
+
+
+def test_business_wizard_warns_when_case_type_is_technical_inventory() -> None:
+    validation = evaluate_business_wizard(sample_business_wizard_input())
+
+    assert any("INVENTAIRE_TECHNIQUE" in warning for warning in validation.warnings)
 
 
 def test_business_prefill_presets_are_available() -> None:
@@ -779,7 +810,6 @@ def _fill_selarl_simple_generation_fields(app: AppTest) -> None:
         ("heure de reunion", "10 heures"),
         ("lieu de signature", "Paris"),
         ("date de signature (aaaa-mm-jj)", "2026-05-19"),
-        ("nombre d'exemplaires", "3"),
     ):
         _set_text_input(app, label, value)
     _set_number_input(app, "nombre total de parts de la selarl", 500)

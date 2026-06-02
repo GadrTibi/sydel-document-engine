@@ -45,10 +45,6 @@ class LettreRenonciationAssocieGenerator:
             regime.renonciation.lieu_signature,
             "regime_communautaire.renonciation.lieu_signature",
         )
-        date_signature = format_display_date(
-            regime.renonciation.date_signature,
-            "regime_communautaire.renonciation.date_signature",
-        )
         nombre_exemplaires = required_text(
             regime.renonciation.nombre_exemplaires_lettres,
             "regime_communautaire.renonciation.nombre_exemplaires_lettres",
@@ -57,7 +53,7 @@ class LettreRenonciationAssocieGenerator:
         document = new_document(style_profile=LETTER_WIDE_STYLE_PROFILE)
         add_right_aligned_lines(
             document,
-            [f"À {lieu_signature}", f"Le {date_signature}"],
+            [f"À {lieu_signature}"],
             space_after_pt=2,
         )
         add_spacer(document, space_after_pt=12)

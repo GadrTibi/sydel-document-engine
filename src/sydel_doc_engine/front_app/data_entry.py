@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date
 from typing import Any
 
 from sydel_doc_engine.front_app.dossier_selection import DossierTypeOption
@@ -106,6 +107,10 @@ def _derive_hidden_values(values: dict[str, Any]) -> None:
     )
     _set_default(values, "reunion_date_lettres", date_to_french_words(values.get("decision_date")))
 
+    values["duree"] = "99 ans"
+    values["signature_nombre_exemplaires"] = "4"
+    values["qualite_renoncee"] = "associe"
+
     exemplaires_words = number_words_from_value(values.get("signature_nombre_exemplaires"))
     if exemplaires_words:
         values["signature_nombre_exemplaires"] = exemplaires_words
@@ -123,7 +128,9 @@ def _derive_hidden_values(values: dict[str, Any]) -> None:
     _set_default(values, "seuil_achat_materiel", DEFAULT_SEUIL_ACHAT_MATERIEL)
     _set_default(values, "seuil_emprunt", DEFAULT_SEUIL_EMPRUNT)
 
-    if not values.get("regime_communautaire"):
+    if values.get("regime_communautaire"):
+        values["date_courrier_avertissement"] = date.today()
+    else:
         values["date_courrier_avertissement"] = None
 
 

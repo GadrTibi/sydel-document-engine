@@ -51,10 +51,12 @@ def _context(
 
 def _selarl_selas_ordre(
     *,
+    departement_inscription: str | None = "la Loire-Atlantique",
     derogation_mention_manuelle: str | None = None,
 ) -> OrdreProfessionnel:
     return OrdreProfessionnel(
         conseil_departemental_libelle="Conseil départemental de l’Ordre",
+        departement_inscription=departement_inscription,
         destinataire_appel="Monsieur le Président",
         profession_signataire_affichee="chirurgien-dentiste",
         profession_ligne_destinataire="chirurgiens-dentistes",
@@ -145,7 +147,11 @@ def test_demande_inscription_ordre_selarl_uses_structured_ordinal_address(
 
     assert output_path == tmp_path / "demande_inscription_ordre.docx"
     assert "Dr Jean Durand" in text
-    assert "Des chirurgiens-dentistes" in text
+    assert (
+        "Conseil départemental de l'Ordre des chirurgiens-dentistes "
+        "de la Loire-Atlantique"
+    ) in paragraphs
+    assert "Des chirurgiens-dentistes" not in paragraphs
     assert "6 rue du Conseil" in paragraphs
     assert "75001 Paris" in paragraphs
     assert (
@@ -161,7 +167,10 @@ def test_demande_inscription_ordre_selarl_uses_structured_ordinal_address(
     )[0]
     assert subject.runs[0].bold is True
     assert subject.runs[0].underline is True
-    recipient = _matching_paragraphs(output_path, "Conseil départemental de l’Ordre")[0]
+    recipient = _matching_paragraphs(
+        output_path,
+        "Conseil départemental de l'Ordre des chirurgiens-dentistes de la Loire-Atlantique",
+    )[0]
     assert recipient.paragraph_format.left_indent > Cm(8)
     assert _matching_paragraphs(output_path, "Dr Jean Durand")[-1].alignment == (
         WD_ALIGN_PARAGRAPH.RIGHT
