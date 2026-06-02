@@ -49,9 +49,23 @@ La couche chef de projet globale est `docs/project/PROJECT_CONTROL_TOWER_V1.md`.
 Codex doit l'utiliser avant de choisir une action, pour connaitre le sprint
 actif, la phase courante, l'action autorisee et les actions interdites.
 
+Avant meme ce choix d'action, un nouveau chat doit identifier qui parle. Si le
+message est seulement `bonjour`, `salut`, `ca va` ou une reprise vague, Codex
+demande `Bonjour, tu es Gad ou Naomi ? Je te route ensuite sur le bon protocole
+projet.` Gad est ensuite traite comme superviseur produit ; Naomi/Naomie est
+traitee selon le protocole runtime local. Mentionner Naomi dans une question de
+Gad ne suffit pas a declencher NotebookLM.
+
 Pour les workflows Gad / Naomie / Codex reutilisables sur d'autres projets,
 appliquer aussi `docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md` et le
 template `docs/project/PROJECT_NAOMIE_RUNTIME_TEMPLATE_V1.md`.
+
+Quand Gad demande le statut de Naomi, appliquer aussi
+`docs/project/NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md` et
+`docs/project/WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md`. Le statut doit parler du
+flux Naomi, pas d'une evaluation personnelle. Il vient des traces : tour de
+controle, dernier etat, fichier de sprint, worklog Naomi, journal de base de
+connaissance et branche Naomi si accessible.
 
 ## Usage des sous-agents
 
@@ -71,6 +85,10 @@ Exemples de rôles utiles :
   globaux avant de refaire documents, variables, conditions ou tests.
 - agent Professeur Naomie : explique le projet, Git, les sprints et le moteur
   documentaire a Naomie sans piloter le scope ni executer les commandes.
+- agent Orchestrateur Naomie : lit les traces de la branche et du worklog pour
+  informer Gad de l'avancement du flux Naomi sans solliciter Naomi inutilement.
+- agent de tracabilite de flux : tient le worklog, les preuves, les curseurs de
+  rapport et les rattrapages retroactifs ; cette charge ne repose pas sur Naomi.
 
 Le pilote principal reste responsable de la décision finale. Les sous-agents
 produisent des constats et des propositions, pas des arbitrages juridiques.
@@ -105,6 +123,24 @@ Le ticket est `NO-GO dev` si :
 - un document est marqué manuel sans arbitrage contraire ;
 - une formulation juridique devrait être créée ou modifiée sans validation ;
 - le changement mélange plusieurs familles ou documents sans décision explicite.
+
+## Discipline de questions
+
+Avant de demander une réponse humaine, Codex doit vérifier si la réponse existe
+déjà dans les sources, specs, retours NotebookLM journalisés ou retours humains
+antérieurs.
+
+Si la réponse existe, Codex doit noter la décision et avancer. Si elle n'existe
+pas, la question doit être concrète et rattachée à un trou réel :
+
+- source manquante ;
+- contradiction ;
+- document absent/en trop ;
+- variable ou wording mal placé ;
+- choix de scope.
+
+Un retour associé doit être demandé comme revue d'écarts sur un pack actif, pas
+comme questionnaire abstrait.
 
 ## Forme attendue d'un cadrage avant implémentation
 

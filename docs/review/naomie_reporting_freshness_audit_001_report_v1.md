@@ -2,6 +2,16 @@
 
 Date : 2026-06-02
 
+## Statut du rapport
+
+Ce rapport est historique. Il identifie correctement le probleme
+`PROJECT_STATE_IGNORED + WORKLOG_STALE`, mais son format de rapport a Gad est
+remplace par `docs/project/WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md`.
+
+Desormais, le rapport boss par defaut porte sur le `flux Naomie`, pas sur une
+evaluation personnelle de Naomie. Les distinctions humain / Codex / repo restent
+des preuves internes ou un audit detaille sur demande.
+
 ## Objet
 
 Diagnostiquer pourquoi un rapport Gad `ou en est Naomi ?` a repondu que Naomi
@@ -37,9 +47,8 @@ Ce saut est faux.
 La conclusion correcte est :
 
 ```text
-aucune action personnelle Naomi n'est tracee dans le worklog depuis le curseur,
-mais le repo contient deja une matiere SELAS preexistante et le suivi Naomi est
-stale/incomplet.
+le worklog ne suffit pas a mesurer le flux Naomi ; le repo contient deja une
+matiere SELAS preexistante et le suivi du flux est stale/incomplet.
 ```
 
 ## Preuves SELAS ignorees par le rapport
@@ -75,7 +84,7 @@ Il y a aussi un defaut de process :
 
 - le worklog Naomi a ete ouvert apres une partie de la matiere SELAS deja
   presente ;
-- il n'a pas ete backfille avec cet etat reel ;
+- il n'a pas ete rattrape avec cet etat reel ;
 - les rapports differentiels partent donc d'un curseur incomplet.
 
 ## Correction decidee
@@ -84,22 +93,21 @@ Il y a aussi un defaut de process :
 2. Interdire explicitement la conclusion `worklog vide = projet au debut`.
 3. Ajouter dans le worklog SELAS une section `Etat reel SELAS hors worklog`.
 4. Mettre a jour le sprint SELAS : la prochaine action n'est plus de donner le
-   Prompt 01 comme si le repo etait vierge, mais de backfiller l'etat reel puis
+   Prompt 01 comme si le repo etait vierge, mais de rattraper l'etat reel puis
    reprendre NotebookLM sur les trous reels.
 5. Dans les rapports Gad, ajouter `Fiabilite du suivi` et `Etat reel du
    projet/type`.
 
 ## Reponse attendue desormais
 
-Un rapport Gad doit ressembler a :
+Un rapport Gad doit maintenant ressembler au format boss court :
 
 ```text
-Statut Naomi : SYDEL / SPRINT-SELAS-V1 / NotebookLM + backfill suivi / NO-GO dev
-Fiabilite du suivi : STALE
-Ce que Naomi a fait depuis le dernier rapport : aucune action Naomi personnelle tracee.
-Etat reel SELAS : sources, DOC-018, generateur statuts SELAS, catalogue, UI, tests et exemples deja presents.
-Point de rupture : worklog non backfille et etat projet ignore.
-Action maintenant : backfiller le suivi, puis reprendre NotebookLM sur les trous reels.
+Statut flux Naomi : SYDEL / SPRINT-SELAS-V1 / Phase 3 NotebookLM / NO-GO dev
+Avancement depuis le dernier point : rattrapage retroactif fait ; SELAS contient deja sources, DOC-018, generateur, catalogue, UI, tests et exemples.
+Prochaine etape : obtenir la reponse brute NotebookLM manquante, puis la structurer dans le journal.
+Blocage / risque : NotebookLM pas encore couvert ; reuse audit, matrice et dev restent bloques.
+Fiabilite : suivi rattrape partiellement, preuves repo OK, prochain suivi a tenir par l'Agent de tracabilite.
 ```
 
 ## Tests

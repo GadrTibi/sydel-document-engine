@@ -52,8 +52,9 @@ Big Orchestrateur Projet / Codex PM
   |
   +-- Orchestrateur Naomie / supervision Gad
   |     Source : docs/project/NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md
+  |     Tracabilite : docs/project/WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md
   |     Worklog : docs/sprints/SPRINT_[TYPE]_NAOMIE_WORKLOG_V1.md
-  |     Sortie : rapport differentiel Gad + curseur mis a jour
+  |     Sortie : rapport boss court + curseur mis a jour
   |
   +-- Runtime Naomie / agent operationnel accompagne
   |     Source : docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md
@@ -68,8 +69,8 @@ Big Orchestrateur Projet / Codex PM
   |     Sortie : matrice identique / reuse-check / adapter / no-go
   |
   +-- Agents specialistes
-        Source/Juridique, NotebookLM, Front, Moteur, QA, Revue humaine,
-        Git/branche, Backfill retroactif
+        Tracabilite de flux, Source/Juridique, NotebookLM, Front, Moteur, QA,
+        Revue humaine, Git/branche, rattrapage retroactif
         Sortie : rapport, matrice, tests, pack, ou blocage trace
 ```
 
@@ -87,6 +88,7 @@ Big Orchestrateur Projet / Codex PM
 | 3 | Playbook type entreprise | `COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md` | Quelle methode pour un type ? | sources, NotebookLM, reuse, matrice, pack |
 | 3 | Fichier de sprint | `docs/sprints/SPRINT_[TYPE]_V1.md` | Etat exact d'un type | phase, gates, blocages |
 | 4 | Orchestrateur Naomie | `NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md` | Ou en est Naomi ? | rapport Gad + worklog mis a jour |
+| 4 | Agent de tracabilite de flux | `WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md` | Ou en est le flux pilote ? | avancement du flux + preuves internes |
 | 4 | Runtime Naomie | `NAOMIE_RUNTIME_PROTOCOL_V1.md` | Que dire a Naomi maintenant ? | action unique + point pedagogie |
 | 4 | Professeur Naomie | `NAOMIE_LEARNING_MENTOR_PROTOCOL_V1.md` | Comment expliquer sans coder ? | explication pedagogique |
 | 4 | Reuse Auditor | `REUSE_AUDIT_AGENT_PROTOCOL_V1.md` | Que reutiliser sans risque ? | matrice reuse |
@@ -97,7 +99,7 @@ Big Orchestrateur Projet / Codex PM
 | 5 | QA Agent | tests, smoke, pack | Est-ce verifie ? | rapport de validation |
 | 5 | Human Review Agent | brief, pack actif, retours | Que dit l'humain ? | retours classes |
 | 5 | Git/Branch Agent | remote, branche, commits | Quelle branche/fichier distant ? | etat local/distant |
-| 5 | Backfill Agent | repo, commits, threads, docs | Qu'a-t-on fait avant le suivi ? | ledger retroactif |
+| 5 | Agent de rattrapage retroactif | repo, commits, threads, docs | Qu'est-ce qui n'a pas ete trace ? | ledger retroactif |
 
 ## Chaine standard pour "ou en est Naomi ?"
 
@@ -105,7 +107,7 @@ Quand Gad demande `ou en est Naomi ?`, la chaine obligatoire est :
 
 1. Routeur identite confirme que l'interlocuteur est Gad.
 2. Big Orchestrateur lit la tour de controle.
-3. Orchestrateur Naomie lit :
+3. Orchestrateur Naomie active l'Agent de tracabilite de flux, qui lit :
    - `04_LAST_STATE.md` ;
    - `SPRINT_SELAS_V1.md` ou le sprint actif ;
    - `SPRINT_SELAS_NAOMIE_WORKLOG_V1.md` ;
@@ -114,30 +116,31 @@ Quand Gad demande `ou en est Naomi ?`, la chaine obligatoire est :
    - threads Codex accessibles ;
    - etat reel du repo : sources, specs, catalogue, generateurs, tests,
      exemples, rapports.
-4. Si tout concorde, rapport `fiabilite : tracee`.
-5. Si le worklog est vide ou stale mais que le repo contient des preuves,
-   activer le Backfill Agent.
-6. Produire un rapport differentiel depuis le dernier curseur Gad.
+4. Si tout concorde, rapport boss court.
+5. Si le worklog est vide ou stale mais que le flux a avance, activer le
+   rattrapage retroactif.
+6. Produire un rapport differentiel depuis le dernier curseur Gad, en parlant
+   du flux Naomie et non de performance personnelle.
 7. Mettre a jour le worklog avec le nouveau curseur.
 
-## Backfill Agent
+## Agent de tracabilite et rattrapage retroactif
 
-Le Backfill Agent reconstruit retroactivement ce qui a ete fait avant que les
-processus de suivi existent.
+L'Agent de tracabilite de flux est defini dans
+`docs/project/WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md`.
 
-Il doit distinguer deux choses :
+Son role est de tracer ce qui avance sur le flux, sans demander au pilote humain
+de tenir le journal.
 
-- `action Naomi tracee` : action explicitement attribuable a Naomi dans un
-  thread, un message, un worklog, un commit ou un rapport ;
-- `etat projet existant` : sources, code, tests, specs ou rapports presents,
-  mais non attribuables directement a Naomi.
+Le rattrapage retroactif est un mode de cet agent. Il reconstruit ce qui a ete
+fait avant que les processus de suivi existent ou quand ils n'ont pas ete tenus.
 
-Le Backfill Agent ne doit jamais transformer une preuve projet en action Naomi
-sans preuve d'attribution.
+Pour Gad, le rapport par defaut parle d'un seul niveau : le flux Naomie. Les
+details `humain / Codex / repo / outil` restent des preuves internes et ne
+sortent qu'en audit detaille.
 
-### Sources du backfill
+### Sources du rattrapage
 
-Le Backfill Agent fouille dans cet ordre :
+L'agent fouille dans cet ordre :
 
 1. worklog Naomi du sprint ;
 2. journaux NotebookLM ou base de connaissance ;
@@ -153,16 +156,18 @@ Le Backfill Agent fouille dans cet ordre :
 12. threads Codex accessibles ;
 13. artefacts ou packs actifs.
 
-### Sortie du backfill
+### Sortie du rattrapage
 
-Le Backfill Agent produit une table :
+L'agent produit une table :
 
 | Date | Source | Fait trouve | Attribution | Fiabilite | Impact sprint | Action |
 | --- | --- | --- | --- | --- | --- | --- |
-| date | fichier/commit/thread | fait | Naomi / Codex / Projet / inconnu | tracee / probable / non attribuable | effet | backfill / ignorer / demander |
+| date | fichier/commit/thread | fait | humain / Codex / Projet / outil / inconnu | tracee / probable / non attribuable | effet | rattraper / ignorer / demander |
 
 Cette table doit etre ecrite dans le worklog du sprint ou dans un rapport dedie
-`docs/review/[type]_naomie_backfill_001_report_v1.md`.
+`docs/review/[type]_trace_recovery_001_report_v1.md`. Si un ancien nom de
+rapport existe deja, comme `naomie_backfill`, il reste utilisable comme alias
+technique.
 
 ## Etat actuel des trous
 
@@ -170,11 +175,11 @@ Cette table doit etre ecrite dans le worklog du sprint ou dans un rapport dedie
 | --- | --- | --- | --- |
 | Big orchestrateur | OK | Aucun registre pyramidal unique avant ce fichier | Ce document devient le registre |
 | Routage Gad/Naomi | OK | A surveiller dans nouveaux chats | `AGENTS.md` + tour de controle |
-| Suivi Naomi | PARTIAL | Backfill SELAS 001 produit, mais aucune action Naomi personnelle prouvee | reprendre NotebookLM sur les trous reels |
-| Rapport Gad | OK/PARTIAL | Delta possible, mais seulement apres curseur fiable | rapport differentiel + audit fraicheur |
-| Etat reel SELAS | OK | Non attribuable automatiquement a Naomi | distinguer projet vs action Naomi |
+| Suivi flux Naomie | PARTIAL | Rattrapage SELAS 001 produit ; le flux est suivi mais NotebookLM manque | reprendre NotebookLM sur les trous reels |
+| Rapport Gad | OK V2 | Rapport boss court defini par `WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md` | statut / avancement / prochaine etape / blocage / fiabilite |
+| Etat reel SELAS | OK | Doit remonter comme avancement du flux Naomie SELAS | garder details en preuve interne |
 | NotebookLM SELAS | INCOMPLET | aucune reponse brute structuree | reprendre uniquement sur trous reels |
-| Reuse audit SELAS | BLOQUE | NotebookLM/backfill pas assez propres | attendre sortie backfill + NotebookLM |
+| Reuse audit SELAS | BLOQUE | NotebookLM pas assez propre | attendre sortie NotebookLM |
 | Matrice SELAS | BLOQUE | reuse audit absent | interdite avant gate |
 | Dev SELAS | NO-GO | aucun GO Gad | interdit |
 | Threads Codex | OUTIL-DEPENDANT | recherche possible mais pas source garantie | noter si l'outil est indisponible |

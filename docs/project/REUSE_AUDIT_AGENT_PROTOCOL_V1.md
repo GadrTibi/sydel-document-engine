@@ -41,6 +41,11 @@ Mission :
 Le sous-agent travaille en lecture seule tant qu'un ticket de modification
 precis n'a pas ete ouvert.
 
+Regle issue de la SELARL : le sous-agent doit distinguer ce qui est reutilisable
+par preuve de ce qui est seulement similaire. Il ne doit pas transformer un
+retour humain SELARL en regle globale sans verifier la source du nouveau type
+d'entreprise.
+
 ## Sources obligatoires du sous-agent
 
 Le sous-agent doit lire au minimum :
@@ -74,6 +79,15 @@ Le sous-agent doit produire une matrice de ce format :
 | Element | Source existante | Usage nouveau sprint | Conditions identiques ? | Variables identiques ? | Decision | Risque | Action |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | DOC-XXX / variable / helper | chemin | cas cible | oui/non/a verifier | oui/non/a verifier | identique / reuse-check / adapter / no-go | faible/moyen/fort | prochaine action |
+
+La matrice doit aussi indiquer, dans les notes du sprint, si la preuve vient :
+
+- d'une source juridique ou spec ;
+- de NotebookLM / modele ;
+- d'un retour humain ;
+- du code existant seulement.
+
+Le code existant seul ne suffit jamais a classer `identique`.
 
 ## Decisions possibles
 
@@ -122,6 +136,21 @@ Exemples :
 - conditions contradictoires ;
 - risque de fusionner deux roles distincts ;
 - scope du sprint trop large.
+
+## Questions humaines et reuse
+
+Le `Reuse Auditor` ne doit pas demander a Gad ou a l'associe de confirmer un
+element deja prouve par source/spec. Il doit noter la decision et passer a la
+suite.
+
+Il doit demander une validation humaine seulement si :
+
+- deux sources se contredisent ;
+- la source du nouveau type manque ;
+- le meme nom cache un role different ;
+- le wording devrait changer ;
+- le retour humain SELARL semble non transposable ;
+- un document genere montre un ecart concret.
 
 ## Questions NotebookLM specifiques reuse
 

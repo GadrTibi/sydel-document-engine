@@ -64,6 +64,8 @@ Ce fichier fixe la mémoire opérationnelle globale : il doit permettre à un no
 - tour de controle projet disponible dans `docs/project/PROJECT_CONTROL_TOWER_V1.md` ;
 - pyramide des agents et chaine d'escalade disponible dans
   `docs/project/PROJECT_AGENT_ORG_CHART_V1.md` ;
+- protocole de tracabilite de flux disponible dans
+  `docs/project/WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md` ;
 - protocole runtime Naomie disponible dans `docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md` ;
 - protocole global Gad/Naomie/Codex disponible dans `docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md` ;
 - template runtime Naomie multi-projets disponible dans `docs/project/PROJECT_NAOMIE_RUNTIME_TEMPLATE_V1.md` ;
@@ -124,22 +126,23 @@ Pour DOC-002, l'adresse de domiciliation est gérée en champ libre :
 1. si un nouveau chat commence par `bonjour` ou une reprise vague sans identite, demander d'abord `Bonjour, tu es Gad ou Naomi ?` ;
 2. lire `docs/project/04_LAST_STATE.md` pour l'état réellement reprenable ;
 3. lire `docs/project/PROJECT_CONTROL_TOWER_V1.md` pour identifier sprint actif, phase et action autorisee ;
-4. lire `docs/project/PROJECT_AGENT_ORG_CHART_V1.md` si la demande concerne la chaine d'agents, un statut transverse ou un backfill ;
-5. si l'interlocutrice active est Naomie/Naomi, appliquer `docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md` et donner le Prompt NotebookLM 01 ;
-6. si l'interlocuteur est Gad, le traiter comme superviseur produit et ne pas declencher NotebookLM seulement parce qu'il parle de Naomie ;
-7. si Gad demande ou en est Naomie, appliquer `docs/project/NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md` et lire le worklog/branche avant de repondre ;
-8. si le suivi est stale, activer le Backfill Agent defini dans `docs/project/PROJECT_AGENT_ORG_CHART_V1.md` ;
-9. pour tout nouveau type d'entreprise, lire `docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md` ;
-10. pour tout nouveau type d'entreprise, lire `docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md` ;
-11. pour tout nouveau type d'entreprise, lire le fichier actif `docs/sprints/SPRINT_[TYPE]_V1.md` s'il existe ;
-12. si le sprint est pilote par Naomie, lancer d'abord le sous-sprint NotebookLM par prompts courts et attendre les reponses structurees ;
-13. pour tout nouveau type d'entreprise, appliquer ensuite `docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md` ;
-14. pour toute demande SELARL, lire `docs/project/SELARL_CANONICAL_STATUS_V1.md` ;
-15. pour cloturer la SELARL, lire `docs/sprints/SPRINT_SELARL_CLOSING_V1.md` ;
-16. appliquer `docs/project/PRODUCT_GUARDRAIL_PROTOCOL_V1.md` ;
-17. qualifier la demande en `GO dev` ou `NO-GO dev` ;
-18. si `GO dev`, limiter l'implémentation au ticket cadré ;
-19. si `NO-GO dev`, produire ou mettre à jour le cadrage fonctionnel requis.
+4. lire `docs/project/PROJECT_AGENT_ORG_CHART_V1.md` si la demande concerne la chaine d'agents, un statut transverse ou un rattrapage retroactif ;
+5. lire `docs/project/WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md` si Gad demande un rapport boss sur un flux pilote ;
+6. si l'interlocutrice active est Naomie/Naomi, appliquer `docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md` et donner le Prompt NotebookLM 01 ;
+7. si l'interlocuteur est Gad, le traiter comme superviseur produit et ne pas declencher NotebookLM seulement parce qu'il parle de Naomie ;
+8. si Gad demande ou en est Naomie, appliquer `docs/project/NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md` et repondre par defaut sur le flux Naomie, format boss court ;
+9. si le suivi est stale, activer l'Agent de tracabilite de flux et son mode rattrapage retroactif ;
+10. pour tout nouveau type d'entreprise, lire `docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md` ;
+11. pour tout nouveau type d'entreprise, lire `docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md` ;
+12. pour tout nouveau type d'entreprise, lire le fichier actif `docs/sprints/SPRINT_[TYPE]_V1.md` s'il existe ;
+13. si le sprint est pilote par Naomie, lancer d'abord le sous-sprint NotebookLM par prompts courts et attendre les reponses structurees ;
+14. pour tout nouveau type d'entreprise, appliquer ensuite `docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md` ;
+15. pour toute demande SELARL, lire `docs/project/SELARL_CANONICAL_STATUS_V1.md` ;
+16. pour cloturer la SELARL, lire `docs/sprints/SPRINT_SELARL_CLOSING_V1.md` ;
+17. appliquer `docs/project/PRODUCT_GUARDRAIL_PROTOCOL_V1.md` ;
+18. qualifier la demande en `GO dev` ou `NO-GO dev` ;
+19. si `GO dev`, limiter l'implémentation au ticket cadré ;
+20. si `NO-GO dev`, produire ou mettre à jour le cadrage fonctionnel requis.
 
 ## Documents que Codex doit lire avant toute implémentation
 - AGENTS.md
@@ -149,7 +152,8 @@ Pour DOC-002, l'adresse de domiciliation est gérée en champ libre :
 - docs/project/03_HANDOFF_FOR_NEW_AGENT.md
 - docs/project/04_LAST_STATE.md
 - docs/project/PROJECT_CONTROL_TOWER_V1.md
-- docs/project/PROJECT_AGENT_ORG_CHART_V1.md si le ticket concerne la chaine d'agents, un statut transverse ou un backfill
+- docs/project/PROJECT_AGENT_ORG_CHART_V1.md si le ticket concerne la chaine d'agents, un statut transverse ou un rattrapage retroactif
+- docs/project/WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md si le ticket concerne la tracabilite d'un flux pilote ou un rapport boss
 - docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md si l'interlocutrice active est Naomie/Naomi, ou si Gad demande explicitement le workflow Naomie/SELAS
 - docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md pour les workflows multi-projets avec Naomie
 - docs/project/NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md si Gad demande le statut ou le suivi de Naomie

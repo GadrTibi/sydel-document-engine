@@ -17,8 +17,9 @@ Date d'ouverture : 2026-06-01
 | Phase courante | 3 - NOTEBOOKLM |
 | Statut courant | `NO-GO dev` |
 | Derniere action | Audit de fraicheur 2026-06-02 : les rapports Naomi etaient stale car ils ignoraient l'etat SELAS deja present dans le repo |
-| Prochaine action | Backfiller l'etat SELAS reel, puis reprendre NotebookLM uniquement sur les trous reels |
+| Prochaine action | Reprendre NotebookLM uniquement sur les trous reels, avec tracabilite du flux Naomie |
 | Worklog Naomie | `docs/sprints/SPRINT_SELAS_NAOMIE_WORKLOG_V1.md` |
+| Agent de tracabilite | `docs/project/WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md` |
 
 ## Decisions d'ouverture
 
@@ -34,7 +35,7 @@ Date d'ouverture : 2026-06-01
 - Aucun code, aucune generation nouvelle et aucune mise en production SELAS ne
   sont autorises avant les gates.
 - Le repo n'est pas vierge cote SELAS : des sources, documents, mappings,
-  generateurs, tests et exemples SELAS existent deja. Le sprint Naomie doit
+  generateurs, tests et exemples SELAS existent deja. Le flux Naomie doit
   consolider/auditer cette matiere, pas pretendre repartir de zero.
 
 ## Etat reel SELAS preexistant
@@ -59,11 +60,10 @@ Preuves deja presentes dans le repo :
 - tests et exemples SELAS.
 
 Cette matiere ne vaut pas validation finale du sprint SELAS. Elle prouve en
-revanche que le rapport de supervision doit separer :
-
-- l'avancement personnel de Naomie trace dans le worklog ;
-- l'etat reel SELAS deja existant dans le repo ;
-- les trous NotebookLM/audit/reuse/matrice restant a combler.
+revanche que le rapport de supervision doit parler du flux Naomie SELAS :
+avancement du flux, trous restants, blocages et prochaine etape. La separation
+fine entre humain, Codex, repo et outil reste une preuve interne, disponible en
+audit detaille seulement.
 
 ## Etat des gates
 
@@ -71,10 +71,10 @@ revanche que le rapport de supervision doit separer :
 | --- | --- | --- |
 | Branche cible | PRETE A VERIFIER AU DEMARRAGE | `codex/naomie-selas-sprint` geree par Codex |
 | Identification Naomie | A CONFIRMER | Si Naomie est l'interlocutrice active, appliquer le protocole runtime ; si Gad parle de Naomie, appliquer l'orchestrateur de suivi |
-| Sources | PARTIEL | Sources SELAS deja presentes ; backfill et hierarchie a consolider |
+| Sources | PARTIEL | Sources SELAS deja presentes ; rattrapage et hierarchie a consolider |
 | NotebookLM | TRACE INCOMPLETE | Journal NotebookLM SELAS vide ; ne pas confondre avec absence d'etat SELAS repo |
-| Worklog Naomie | STALE | Worklog ouvert mais incomplet ; doit distinguer action Naomi et etat reel SELAS |
-| Backfill retroactif | FAIT / TRACE PARTIELLE | Rapport `docs/review/selas_naomie_backfill_001_report_v1.md` ; aucune action Naomi personnelle prouvee, etat SELAS repo non vierge |
+| Worklog Naomie | PARTIAL | Worklog ouvert ; doit tracer le flux Naomie, pas seulement les actions humaines |
+| Rattrapage retroactif | FAIT | Rapport `docs/review/selas_naomie_backfill_001_report_v1.md` ; etat SELAS repo non vierge |
 | Audit reutilisation | BLOQUE | Interdit tant que le sous-sprint NotebookLM n'est pas suffisant |
 | Matrice documentaire | BLOQUE | Interdite tant que NotebookLM et reuse audit ne sont pas faits |
 | Parcours metier | A FAIRE | Definir saisie, roles, adresses, reutilisations |
@@ -205,8 +205,8 @@ Statut : A FAIRE.
 | Ordre | Ticket | Statut | Objet | Criteria |
 | --- | --- | --- | --- | --- |
 | 1 | SELAS-SOURCES-NOTEBOOKLM-001 | IN_PROGRESS | Piloter la boucle NotebookLM par prompts courts | Reponses structurees dans `SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md`, contradictions listees |
-| 2 | SELAS-NAOMIE-BACKFILL-001 | DONE | Reconstituer les traces SELAS/Naomie avant suivi complet | Rapport `docs/review/selas_naomie_backfill_001_report_v1.md` + worklog mis a jour, sans attribution Naomi non prouvee |
-| 3 | SELAS-REUSE-AUDIT-001 | BLOCKED | Auditer reutilisation SELARL/global | Debloque apres sources/NotebookLM + backfill |
+| 2 | SELAS-NAOMIE-TRACE-RECOVERY-001 | DONE | Reconstituer les traces du flux Naomie SELAS avant suivi complet | Rapport `docs/review/selas_naomie_backfill_001_report_v1.md` + worklog mis a jour |
+| 3 | SELAS-REUSE-AUDIT-001 | BLOCKED | Auditer reutilisation SELARL/global | Debloque apres sources/NotebookLM et suivi de flux a jour |
 | 4 | SELAS-MATRIX-001 | BLOCKED | Produire matrice documentaire SELAS | Debloque apres reuse audit |
 | 5 | SELAS-FRONT-CONTRACT-001 | BLOCKED | Ecrire contrat metier-front | Debloque apres matrice |
 | 6 | SELAS-GO-DEV-FIRST-TICKET-001 | BLOCKED | Obtenir GO dev borne | Debloque apres validation Gad |
@@ -214,7 +214,7 @@ Statut : A FAIRE.
 ## Blocages actuels
 
 - NotebookLM non interroge.
-- Le suivi Naomi/worklog est backfille, mais aucune action Naomi personnelle n'est prouvee dans les traces accessibles.
+- Le suivi du flux Naomie est rattrape partiellement ; NotebookLM reste le trou operationnel.
 - Audit de reutilisation non fait.
 - Matrice documentaire non faite.
 - Aucun `GO dev` donne par Gad.
@@ -224,13 +224,12 @@ Statut : A FAIRE.
 
 1. Faire un audit de fraicheur avant tout nouveau rapport Gad : worklog,
    NotebookLM, branche, threads, sources, catalogue, generateurs, tests.
-2. Backfiller le worklog avec l'etat SELAS reel deja present dans le repo.
-3. Quand Naomie arrive, verifier la branche `codex/naomie-selas-sprint`.
-4. Donner a Naomie la prochaine action NotebookLM seulement apres avoir indique
+2. Quand Naomie arrive, verifier la branche `codex/naomie-selas-sprint`.
+3. Donner a Naomie la prochaine action NotebookLM seulement apres avoir indique
    que la mission consiste a consolider les trous reels, pas a repartir de zero.
-5. Structurer chaque reponse dans le journal, mettre a jour le worklog Naomie,
+4. Structurer chaque reponse dans le journal, mettre a jour le worklog Naomie,
    puis choisir le prompt suivant selon les trous.
-6. Rester en `NO-GO dev` tant que NotebookLM/reuse/matrice/GO Gad ne sont pas
+5. Rester en `NO-GO dev` tant que NotebookLM/reuse/matrice/GO Gad ne sont pas
    passes.
 
 ## Statut final

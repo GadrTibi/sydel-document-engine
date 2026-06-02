@@ -12,6 +12,9 @@ methode est appliquee.
 La place de cet agent dans la pyramide projet est definie dans
 `docs/project/PROJECT_AGENT_ORG_CHART_V1.md`.
 
+La tracabilite du flux est definie dans
+`docs/project/WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md`.
+
 But : permettre a Gad de demander `ou en est Naomi ?`, `que fait Naomi ?`,
 `qu'est-ce qu'elle a produit ?`, sans devoir demander a Naomi de refaire un
 statut oral.
@@ -36,14 +39,23 @@ fait, sauf si les traces sont absentes, contradictoires ou inaccessibles.
 Deuxieme regle centrale :
 
 ```text
-Un worklog vide ne prouve pas que le projet est au debut.
+Gad demande l'etat du flux Naomie, pas une evaluation personnelle de Naomie.
 ```
 
-Le worklog suit l'activite operationnelle de Naomi. Il ne suffit jamais a
+Si le sprint, la branche, Codex, un sous-agent ou un outil avance dans le
+perimetre pilote par Naomie, cela remonte comme avancement du flux Naomie pour
+le rapport Gad.
+
+Troisieme regle centrale :
+
+```text
+Un worklog vide ne prouve pas que le flux est au debut.
+```
+
+Le worklog suit l'activite operationnelle du flux. Il ne suffit jamais a
 determiner l'etat reel du projet, du type d'entreprise ou du moteur. Si le
-worklog ne contient aucune action Naomi, Codex doit dire `aucune action Naomi
-tracee`, et non `le projet est au demarrage`, tant qu'il n'a pas audite les
-autres preuves.
+worklog est vide ou stale, Codex doit activer l'Agent de tracabilite de flux et
+son mode de rattrapage retroactif.
 
 ## Roles
 
@@ -68,6 +80,7 @@ Naomie est operatrice metier accompagnee.
 Elle avance dans un sprint ou une mission, mais ne porte pas :
 
 - le suivi Git ;
+- la tracabilite du flux ;
 - la synthese projet ;
 - la decision de `GO dev` ;
 - la consolidation finale de statut.
@@ -94,6 +107,7 @@ Il doit :
   Gad ;
 - recommander la prochaine action unique ;
 - maintenir les fichiers de suivi quand Gad demande une mise en ordre.
+- repondre par defaut avec un rapport boss court, pas un audit technique.
 
 Il ne doit pas :
 
@@ -112,6 +126,18 @@ Le professeur Naomie est separe de l'orchestrateur.
 Il explique a Naomi ce qu'elle fait et pourquoi. Il ne suit pas l'avancement
 pour Gad, ne decide pas le scope, ne lit pas la branche a la place de
 l'orchestrateur et ne produit pas de statut projet.
+
+### Agent de tracabilite de flux
+
+L'agent de tracabilite de flux est separe de Naomie et du professeur Naomie.
+
+Il trace le flux Naomie : ce qui avance sur le sprint, la branche, les sous-
+agents, NotebookLM, les rapports et les livrables. Ce n'est pas a Naomie de
+tenir ce suivi.
+
+Par defaut, son rapport a Gad ne separe pas `Naomie personnelle`, `Codex` et
+`repo`. Il dit ou en est le flux Naomie. La separation fine reste disponible en
+preuve interne ou audit detaille.
 
 ## Sources a consulter pour un statut Naomi
 
@@ -145,7 +171,7 @@ fraicheur des traces.
 Codex doit comparer :
 
 - le dernier curseur de rapport Gad ;
-- la derniere action Naomi dans le worklog ;
+- le dernier avancement du flux dans le worklog ;
 - le dernier journal specialise structure, par exemple NotebookLM ;
 - les derniers commits ou fichiers de la branche Naomi ;
 - l'etat reel du type d'entreprise dans le repo, par exemple sources, catalogue,
@@ -159,12 +185,11 @@ Si le worklog est vide mais que le repo contient deja une implementation, des
 sources ou des specs pour le type concerne, Codex doit repondre :
 
 ```text
-Fiabilite du suivi Naomi : STALE / suivi defaillant
-Ce que je peux affirmer : aucune action Naomi tracee depuis [curseur].
-Ce que je ne dois pas affirmer : que le projet/type est au debut.
-Etat reel du type : [preuves repo lues].
-Point de rupture : le worklog Naomi ou le journal specialise n'a pas ete mis a jour apres l'activite effective, ou l'activite est dans un autre thread non raccorde.
-Action correction : backfiller le worklog depuis les preuves, puis imposer une mise a jour atomique worklog + journal a chaque session Naomi.
+Fiabilite du suivi : suivi a rattraper
+Ce que je peux affirmer : le flux [pilote/sprint] a deja de la matiere prouvee.
+Ce que je ne dois pas faire : reduire le statut aux seules actions humaines visibles.
+Point de rupture : l'agent de tracabilite n'a pas encore raccorde toutes les preuves.
+Action correction : rattraper le suivi, puis reprendre le flux au prochain trou reel.
 ```
 
 Si un thread Naomi montre une reponse ou une action non reportee dans les
@@ -176,11 +201,10 @@ rupture est `BRANCH_AHEAD_OF_WORKLOG`.
 Si le repo contient une matiere SELAS preexistante mais que le worklog ne la
 rappelle pas, le point de rupture est `PROJECT_STATE_IGNORED`.
 
-Dans tous les cas de suivi `STALE`, Codex doit activer le `Backfill Agent`
-defini dans `docs/project/PROJECT_AGENT_ORG_CHART_V1.md`. Son role est de
-reconstruire retroactivement les faits depuis le repo, les commits, les
-rapports, les specs, les threads et les branches, sans attribuer a Naomi une
-action qui n'est pas explicitement tracee.
+Dans tous les cas de suivi `STALE`, Codex doit activer l'Agent de tracabilite
+de flux defini dans `docs/project/WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md`. Son
+mode `rattrapage retroactif` reconstruit les faits depuis le repo, les commits,
+les rapports, les specs, les threads et les branches.
 
 Si aucune trace fiable n'est trouvee malgre recherche locale, GitHub et threads,
 Codex doit dire que le suivi est insuffisant. Il ne doit pas inventer l'avancee
@@ -241,21 +265,15 @@ a Naomi de compenser ce blocage par un statut oral vague.
 
 ## Format obligatoire du statut a Gad
 
-Quand Gad demande `ou en est Naomi ?`, Codex repond :
+Quand Gad demande `ou en est Naomi ?`, Codex repond par defaut avec un rapport
+boss court :
 
 ```text
-Statut Naomi : [projet] / [sprint ou mission] / [phase] / [GO ou NO-GO]
-Branche suivie : [branche] / [OK, inaccessible, absente, a verifier]
-Dernieres traces lues : [fichiers ou commits consultes]
-Mode de lecture branche : [local git | connecteur GitHub | local seulement faute acces]
-Fiabilite du suivi : [tracee | stale | insuffisante | contradictoire]
-Perimetre du rapport : depuis [dernier rapport Gad] jusqu'a [maintenant]
-Ce que Naomi a fait depuis le dernier rapport : [faits traces uniquement]
-Etat reel du projet/type : [preuves hors worklog utiles]
-Ce qui manque ou bloque : [trous, contradictions, acces, reponses attendues]
-Messages Gad en attente pour Naomi : [aucun ou liste courte]
-Action maintenant cote Naomi : [une seule action]
-Action maintenant cote Codex/Gad : [si besoin]
+Statut flux Naomi : [projet] / [sprint ou mission] / [phase] / [GO ou NO-GO]
+Avancement depuis le dernier point : [1-3 faits utiles du flux]
+Prochaine etape : [une action concrete]
+Blocage / risque : [aucun ou blocage principal]
+Fiabilite : [OK / suivi a rattraper / source manquante]
 ```
 
 Sauf demande explicite de Gad, Codex ne doit pas refaire tout l'historique.
@@ -273,16 +291,13 @@ Apres avoir donne le rapport, Codex doit mettre a jour le worklog :
 - action suivante ;
 - nouveau curseur `dernier rapport Gad`.
 
-Si aucune trace fiable n'existe :
+Si Gad demande explicitement un audit detaille, Codex peut ajouter :
 
 ```text
-Statut Naomi : SUIVI INSUFFISANT / NO-GO dev
-Branche suivie : [branche] / [etat]
-Dernieres traces lues : [sources disponibles]
-Ce que Naomi a fait : non determine depuis les traces
-Etat reel du projet/type : [preuves hors worklog lues, ou non determine]
-Ce qui manque ou bloque : worklog absent, branche inaccessible, thread non raccorde ou sources contradictoires
-Action maintenant cote Codex/Gad : creer, recuperer ou backfiller le worklog de sprint, puis reprendre depuis la tour de controle
+Sources lues : [...]
+Branche : [...]
+Rapport detaille : [...]
+Rattrapage retroactif : [...]
 ```
 
 ## Format du worklog Naomi
@@ -300,7 +315,7 @@ Ce fichier doit contenir au minimum :
 - branche suivie ;
 - phase courante ;
 - statut courant ;
-- derniere action Naomi tracee ;
+- dernier avancement du flux trace ;
 - derniere reponse brute recue ;
 - dernier fichier structure par Codex ;
 - blocages ;
@@ -327,6 +342,8 @@ Codex met a jour le worklog quand :
 - Naomi colle une reponse brute ;
 - Naomi pose une question d'apprentissage importante ;
 - Codex donne un nouveau prompt ou une nouvelle action a Naomi ;
+- Codex ou un sous-agent avance dans le perimetre du flux Naomie ;
+- une preuve repo/branche/thread pertinente au flux est decouverte ;
 - Gad demande un statut et une trace est manquante ;
 - Gad demande un rapport Naomi ;
 - Gad demande a laisser un message pour Naomi ;
@@ -382,10 +399,10 @@ Le suivi Naomi est correctement installe si :
 - Gad peut demander un statut sans solliciter Naomi ;
 - chaque rapport Gad est horodate et sert de curseur pour le rapport suivant ;
 - Gad peut laisser un message a transmettre a Naomi au prochain echange ;
-- un suivi stale declenche un backfill retroactif au lieu d'une conclusion
+- un suivi stale declenche un rattrapage retroactif au lieu d'une conclusion
   faussement certaine ;
 - Codex sait quelle branche et quel worklog lire ;
-- les actions de Naomi sont tracees par date ;
+- les avances du flux Naomie sont tracees par date ;
 - le professeur Naomi reste pedagogique et separe de l'orchestrateur ;
 - les sprints restent generiques et ne dependent pas d'un protocole SELAS
   particulier ;

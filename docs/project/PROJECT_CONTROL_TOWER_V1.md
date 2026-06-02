@@ -20,7 +20,9 @@ Ce document ne remplace pas :
   de Naomie demande par Gad ;
 - `docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md` pour le workflow Gad / Naomie / Codex multi-projets ;
 - `docs/project/PROJECT_AGENT_ORG_CHART_V1.md` pour la pyramide des agents, la
-  chaine d'escalade et le Backfill Agent ;
+  chaine d'escalade et le rattrapage retroactif ;
+- `docs/project/WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md` pour la tracabilite de
+  flux et les rapports boss courts ;
 - `docs/sprints/SPRINT_[TYPE]_V1.md` pour l'etat detaille d'un sprint ;
 - `docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md` pour la methode.
 
@@ -41,7 +43,7 @@ Avant toute reponse operationnelle, Codex doit identifier :
 5. la seule action autorisee maintenant ;
 6. les actions interdites tant que les gates ne sont pas passes.
 7. l'agent specialise a interroger si la demande demande une preuve, un
-   backfill, un audit ou une orchestration descendante.
+   rattrapage retroactif, un audit ou une orchestration descendante.
 
 Si Codex ne peut pas repondre a ces six points, il doit rester en cadrage et ne
 pas developper.
@@ -72,8 +74,10 @@ Si l'interlocuteur est Gad :
 - avant de repondre a Gad sur Naomi, Codex doit aussi auditer la fraicheur des
   traces : worklog, journal specialise, branche, threads accessibles et etat
   reel du type dans le repo ;
-- Codex ne doit jamais assimiler `aucune action Naomi tracee` a `projet au
-  debut` sans avoir verifie l'etat reel du type ;
+- Codex doit repondre sur le flux Naomie, pas sur la performance personnelle de
+  Naomie ; les details humains/Codex/repo restent internes sauf audit demande ;
+- Codex ne doit jamais assimiler `worklog vide` a `flux au debut` sans avoir
+  verifie l'etat reel du type ;
 - chaque rapport Naomi demande par Gad doit etre inscrit dans le worklog et le
   rapport suivant doit etre differentiel depuis ce curseur ;
 - si Gad laisse un message pour Naomi, Codex l'inscrit dans le worklog et le
@@ -93,7 +97,8 @@ Si l'interlocutrice est Naomi/Naomie :
 | Projet global | `PROJECT_CONTROL_TOWER_V1.md` + `04_LAST_STATE.md` | Savoir ou en est le projet entier |
 | Pyramide agents | `PROJECT_AGENT_ORG_CHART_V1.md` | Savoir quel agent/protocole interroger et ou remonte la preuve |
 | Sprint type entreprise | `docs/sprints/SPRINT_[TYPE]_V1.md` | Suivre un type d'entreprise de bout en bout |
-| Suivi Naomie | `NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md` + worklog sprint | Repondre a Gad sur l'avancee de Naomie depuis les traces |
+| Tracabilite de flux | `WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md` + worklog sprint | Tracer l'avancee du flux sans charger le pilote humain |
+| Suivi Naomie | `NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md` + worklog sprint | Repondre a Gad sur le flux Naomie depuis les traces |
 | Sous-sprint | journal ou protocole dedie | Gerer une etape specialisee, ex. NotebookLM |
 | Ticket | `01_EXECUTION_BOARD.md` | Encadrer une action bornee |
 | Validation humaine | retour Gad / associe | Autoriser la suite ou les corrections |
@@ -141,7 +146,7 @@ Si un pack est corrige, l'ancien pack est remplace et ne doit plus etre utilise.
 | Type | Sprint | Pilote metier | Branche | Phase courante | Statut | Action autorisee maintenant |
 | --- | --- | --- | --- | --- | --- | --- |
 | SELARL | `SPRINT-SELARL-CLOSING-V1` | Gad | `track-b/clean-rebuild` | Validation finale pack corrige | IN_PROGRESS | transmettre le pack 004 et le brief `SELARL-FINAL-ASSOCIE-VALIDATION-001`, attendre validation ou ecarts concrets |
-| SELAS | `SPRINT-SELAS-V1` | Naomie | `codex/naomie-selas-sprint` | Sous-sprint NotebookLM + backfill suivi | `NO-GO dev` | auditer la fraicheur, backfiller l'etat SELAS reel, puis reprendre NotebookLM sur les trous reels |
+| SELAS | `SPRINT-SELAS-V1` | Naomie | `codex/naomie-selas-sprint` | Sous-sprint NotebookLM + tracabilite flux | `NO-GO dev` | reprendre NotebookLM sur les trous reels et tenir le worklog par l'Agent de tracabilite |
 
 ## Etat courant SELARL
 
@@ -183,10 +188,11 @@ Etat utile :
 - etat reel SELAS : matiere preexistante dans le repo, dont sources SELAS,
   `DOC-018`, generateur statuts SELAS, selection catalogue, conditions UI, tests
   et exemples ;
-- action courante : auditer la fraicheur, backfiller le suivi SELAS reel, puis
-  reprendre NotebookLM sur les trous reels.
+- action courante : reprendre NotebookLM sur les trous reels et tenir le
+  worklog par l'Agent de tracabilite.
 - protocole court obligatoire : `docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md`.
-- pyramide agent/backfill : `docs/project/PROJECT_AGENT_ORG_CHART_V1.md`.
+- pyramide agents : `docs/project/PROJECT_AGENT_ORG_CHART_V1.md`.
+- tracabilite flux : `docs/project/WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md`.
 
 Interdits actuels SELAS :
 
@@ -235,7 +241,9 @@ Action SELAS : prompt -> reponse -> journal -> prompt suivant.
 Dev SELAS : interdit.
 SELARL : production partielle, prochaine action revue humaine ou sous-cas borne.
 Pyramide agents : PROJECT_AGENT_ORG_CHART_V1.md si la demande demande qui
-orchestre quoi, un statut transverse ou un backfill.
+orchestre quoi, un statut transverse ou un rattrapage retroactif.
+Tracabilite : WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md pour les rapports boss sur
+un flux pilote.
 ```
 
 Si l'interlocutrice active est Naomie/Naomi, Codex doit repondre en format

@@ -41,6 +41,63 @@ Aucun developpement d'un nouveau type d'entreprise ne demarre sans :
 7. boucle de test par l'associe en fin de sprint ;
 8. statut canonique de fin de sprint.
 
+## Amendement SELARL 2026-06-01
+
+La fin de sprint SELARL a ajoute des regles qui deviennent obligatoires pour
+tous les futurs types d'entreprise.
+
+### Trois sources minimum
+
+Avant de dire qu'un type d'entreprise est pret a developper ou a clore, Codex
+doit trianguler au minimum :
+
+1. le document de reference qui dit quels documents doivent etre produits ;
+2. les retours modele / NotebookLM deja journalises ;
+3. les retours humains disponibles, puis le retour final de l'associe.
+
+Si l'une de ces trois sources manque, Codex ne doit pas inventer. Il doit
+classer le point en `non trouve`, `reserve`, `manuel`, `bloque` ou `a valider`.
+
+### Discipline anti-questions inutiles
+
+Codex ne doit pas poser a Gad ou a l'associe des questions dont la reponse est
+deja dans les sources, les specs ou une regle documentaire evidente. Exemple
+SELARL : si le regime communautaire est actif, les sources disent deja que
+`DOC-005` et `DOC-006` doivent etre produits ensemble.
+
+Les questions humaines doivent donc porter uniquement sur :
+
+- un ecart concret dans un document genere ;
+- une contradiction entre sources ;
+- une source manquante ;
+- une variable mal placee ;
+- un document absent ou en trop ;
+- un arbitrage de scope.
+
+### Fidelite source et pack actif
+
+Quand un document est genere, la verification ne s'arrete pas au fait que le
+DOCX existe. Codex doit verifier la fidelite :
+
+- absence de placeholders ou parasites ;
+- respect du wording source, sauf variables assumees ;
+- comparaison ligne par ligne ou bloc par bloc pour les documents sensibles ;
+- ZIP/manifest coherent ;
+- pack actif clairement nomme.
+
+Un pack corrige remplace les packs precedents. Codex ne doit jamais transmettre
+a l'associe un ancien pack si un pack plus recent a corrige un ecart.
+
+### Cloture canonique
+
+Un sprint peut finir en trois etats seulement :
+
+- `DONE` : le perimetre annonce est valide techniquement et humainement ;
+- `PARTIAL` : un sous-perimetre est valide, mais des variantes restent ouvertes ;
+- `BLOCKED` : une source, une decision ou un retour humain manque.
+
+Le pourcentage n'est qu'une aide de pilotage. Le statut canonique prime.
+
 ## Roles
 
 ### Gad
@@ -118,8 +175,13 @@ Sources a verifier :
 Sortie obligatoire :
 
 - une hierarchie des sources ;
+- une table des trois sources disponibles : reference, NotebookLM/modele,
+  humain ;
 - la liste des contradictions ;
 - les questions ouvertes.
+
+Regle : si Codex sait deja repondre depuis les sources, il note la decision au
+lieu de poser une question humaine.
 
 ### Phase 2 - NotebookLM
 
@@ -146,6 +208,15 @@ Pour Naomie, cette phase se pilote comme un sous-sprint :
 
 Pendant ce sous-sprint, Codex ne doit pas produire de matrice finale, lancer un
 audit de reutilisation, coder, generer ou pousser une fonctionnalite.
+
+La phase NotebookLM est suffisante seulement si le journal permet de lister :
+
+- les documents attendus ;
+- les conditions d'apparition et d'exclusion ;
+- les documents manuels, reserves ou bloques ;
+- les roles et variables structurantes ;
+- les differences avec SELARL ou avec les socles globaux ;
+- les contradictions ou `non trouve`.
 
 ### Phase 3 - Matrice documentaire
 
@@ -229,6 +300,13 @@ Sorties obligatoires :
 - controle placeholders ;
 - rapport court.
 
+Pour les documents juridiques sensibles, ajouter un controle de fidelite source
+avant transmission humaine :
+
+- rendu DOCX compare a la source ou au retour humain disponible ;
+- differences classees en variable assumee, ecart reel ou hors source ;
+- pack numerote et manifest associe.
+
 ### Phase 8 - Test de l'associe
 
 Objectif : obtenir un retour humain externe a Codex.
@@ -236,12 +314,25 @@ Objectif : obtenir un retour humain externe a Codex.
 Sorties obligatoires :
 
 - pack de test prepare ;
-- consignes de test ;
+- consignes de test limitees aux ecarts concrets ;
 - retour humain de l'associe ;
 - classement des retours : bug, wording, UX, source, arbitrage, hors scope.
 
 Regle : le sprint n'est pas termine tant que le retour associe n'est pas traite
 ou classe avec decision explicite.
+
+Regle issue de la SELARL : l'associe ne doit pas recevoir une liste de questions
+abstraites quand les sources repondent deja. Il doit recevoir un pack actif et
+un format de retour de type :
+
+```text
+Verdict global : VALIDE / CORRECTIONS / BLOQUE
+Scenario :
+Document :
+Ecart constate :
+Correction demandee :
+Source ou emplacement :
+```
 
 ### Phase 9 - Boucle corrections
 
@@ -256,6 +347,14 @@ Chaque retour produit :
 
 On boucle jusqu'a validation humaine ou decision explicite de report.
 
+Apres chaque correction documentaire :
+
+1. regenerer un nouveau pack ;
+2. marquer l'ancien pack comme remplace ;
+3. relancer les controles cibles ;
+4. refaire l'audit des trois sources si l'ecart touchait un document produit ;
+5. mettre a jour le brief associe.
+
 ### Phase 10 - Cloture
 
 Objectif : rendre le sprint reprenable et fermer le type d'entreprise.
@@ -268,6 +367,16 @@ Sorties obligatoires :
 - liste des points ouverts ;
 - recommandation du sprint suivant ;
 - methode reutilisable ajustee si necessaire.
+
+La cloture doit dire explicitement :
+
+- perimetre `DONE`, `PARTIAL` ou `BLOCKED` ;
+- pack actif final ;
+- documents generables ;
+- documents manuels, reserves ou bloques ;
+- retours associe traites ;
+- ecarts reportes ;
+- prochain sous-cas si le type n'est pas clos a 100 %.
 
 ## Questions NotebookLM obligatoires
 
@@ -388,7 +497,25 @@ Decision initiale : NO-GO dev
 
 ## Reponses NotebookLM utiles
 
+## Journal NotebookLM structure
+
+Pour chaque reponse :
+- prompt utilise ;
+- synthese fiable ;
+- documents cites ;
+- conditions ;
+- variables ;
+- contradictions ;
+- non trouve ;
+- impact sprint ;
+- prompt suivant.
+
 ## Hierarchie des sources
+
+## Triangulation trois sources
+
+| Sujet | Reference documents a generer | NotebookLM / modele | Retour humain | Decision |
+| --- | --- | --- | --- | --- |
 
 ## Matrice documentaire
 
@@ -415,11 +542,24 @@ Decision initiale : NO-GO dev
 
 ## Scenarios de smoke
 
+## Pack actif
+
+| Version | Racine | Manifest | Statut | Remplace |
+| --- | --- | --- | --- | --- |
+
+## Audit fidelite source
+
+## Audit trois sources avant validation associe
+
 ## Pack pour l'associe
+
+## Brief associe
 
 ## Retours associe
 
 ## Corrections
+
+## Questions interdites / deja resolues par les sources
 
 ## Statut final
 
@@ -454,8 +594,10 @@ Un sprint est termine seulement si :
 
 - le type d'entreprise dispose d'un statut canonique ;
 - tous les documents attendus sont classes ;
+- les trois sources ont ete triangulees ou les manques sont documentes ;
 - les reutilisations SELARL/globales sont explicites et justifiees ;
 - les documents generables du perimetre ont DOCX et ZIP valides ;
+- le pack actif final est identifie et les anciens packs ne sont plus transmis ;
 - les documents reserves/manuels sont visibles comme tels ;
 - les retours de l'associe sont traites ou explicitement reportes ;
 - aucun wording juridique n'a derive sans validation ;
@@ -475,7 +617,9 @@ La SELARL a deja produit les briques de methode :
 
 Il reste a faire pour cloturer la SELARL a 100 % :
 
-1. preparer le pack de revue associe/juriste ;
-2. faire tester l'associe ;
-3. integrer ou classer ses retours ;
-4. confirmer le statut final ou ouvrir un sous-cas unique avec `GO dev`.
+1. transmettre le pack actif `artifacts/selarl_closing_pack_004/` ;
+2. transmettre le brief `docs/review/selarl_final_validation_001_brief_v1.md` ;
+3. demander seulement une validation finale ou des ecarts concrets ;
+4. integrer ou classer les retours ;
+5. lancer `SELARL-CANONICAL-CLOSE-001` si le pack est valide ;
+6. sinon ouvrir un ticket borne ou un sous-cas unique avec `GO dev`.

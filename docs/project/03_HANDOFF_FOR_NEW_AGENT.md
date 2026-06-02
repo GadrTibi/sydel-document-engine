@@ -42,6 +42,9 @@ L'arbre théorique abandonné n'est pas une source valide. Il n'existe pas de fi
 - La pyramide des agents est `docs/project/PROJECT_AGENT_ORG_CHART_V1.md` ;
   elle indique quel agent interroger, dans quel ordre, et ou trouver la preuve
   avant de repondre a Gad.
+- L'agent de tracabilite de flux est
+  `docs/project/WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md` ; il trace l'avancement
+  d'un flux pilote sans demander au pilote humain de tenir le journal.
 - Un nouveau chat doit d'abord identifier l'interlocuteur. Si le message est
   seulement `bonjour`, Codex doit demander `Bonjour, tu es Gad ou Naomi ?` et ne
   pas declencher de sprint avant la reponse.
@@ -74,7 +77,8 @@ L'arbre théorique abandonné n'est pas une source valide. Il n'existe pas de fi
 - La couche pedagogique pour Naomie est `docs/project/NAOMIE_LEARNING_MENTOR_PROTOCOL_V1.md`.
 - Le gate produit / métier obligatoire est défini dans `docs/project/PRODUCT_GUARDRAIL_PROTOCOL_V1.md`.
 - La tour de controle chef de projet est disponible dans `docs/project/PROJECT_CONTROL_TOWER_V1.md`.
-- La pyramide agents / backfill est disponible dans `docs/project/PROJECT_AGENT_ORG_CHART_V1.md`.
+- La pyramide agents / rattrapage est disponible dans `docs/project/PROJECT_AGENT_ORG_CHART_V1.md`.
+- La tracabilite de flux est disponible dans `docs/project/WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md`.
 - Le workflow global Gad / Naomie / Codex est disponible dans `docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md`.
 - La fin de sprint SELARL est disponible dans `docs/sprints/SPRINT_SELARL_CLOSING_V1.md`.
 
@@ -106,8 +110,10 @@ Avant toute proposition ou implémentation, lire dans cet ordre :
 17. Les ADR applicables dans `docs/adr/`
 
 Note : si la demande concerne une chaine d'agents, un statut transverse, une
-orchestration descendante ou un backfill retroactif, lire aussi
+orchestration descendante ou un rattrapage retroactif, lire aussi
 `docs/project/PROJECT_AGENT_ORG_CHART_V1.md` juste apres la tour de controle.
+Si la demande concerne un rapport boss sur un flux pilote, lire aussi
+`docs/project/WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md`.
 
 Note : pour un workflow Naomie global, lire aussi
 `docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md` et
@@ -120,13 +126,16 @@ lire aussi `docs/sprints/SPRINT_SELARL_CLOSING_V1.md`.
 - Codex doit d'abord consulter la tour de controle projet pour connaitre sprint actif, phase, action autorisee et actions interdites.
 - Si Gad demande qui orchestre quoi, ou si un suivi est stale, Codex doit
   consulter `PROJECT_AGENT_ORG_CHART_V1.md` et activer l'agent specialise
-  indique, notamment le Backfill Agent si les traces anciennes manquent.
+  indique, notamment l'Agent de tracabilite de flux si les traces anciennes
+  manquent.
 - Si Gad s'identifie, Codex le traite comme superviseur produit et decisionnaire :
   il applique la tour de controle, donne l'etat utile et ne declenche pas
   NotebookLM seulement parce que Gad parle de Naomie.
 - Si Gad demande ou en est Naomie, Codex applique l'orchestrateur Naomie :
   lecture tour de controle, dernier etat, sprint, worklog, journal et branche
   accessible avant toute demande a Naomie.
+- Le rapport Gad par defaut doit porter sur le flux Naomie et rester court :
+  statut, avancement, prochaine etape, blocage/risque, fiabilite.
 - Si Naomie démarre un sprint, elle doit s'identifier et Codex doit la guider étape par étape selon `SPRINT_ORCHESTRATOR_PROTOCOL_V1.md` et `COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md`.
 - Pour le sprint SELAS, l'etat immediat est `docs/sprints/SPRINT_SELAS_V1.md` : `NO-GO dev`, sous-sprint NotebookLM actif, prochaine action = donner a Naomie le prompt NotebookLM courant a copier-coller.
 - Si Naomie dit seulement `bonjour` apres identification comme Naomie, Codex doit quand meme donner le Prompt NotebookLM 01 et ne pas attendre qu'elle choisisse une tache.

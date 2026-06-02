@@ -22,6 +22,26 @@ Si une source manque ou contredit le ticket, bloquer la construction et document
 
 ## Méthode reproductible
 
+### Addendum 2026-06-01 - méthode SELARL capitalisée
+
+Pour tout nouveau processus/type d'entreprise, la méthode SELARL complète impose
+désormais :
+
+1. lire le document de référence qui dit quels documents produire ;
+2. interroger la base de connaissance par prompts courts et journaliser chaque
+   réponse ;
+3. recouper avec les retours humains disponibles ;
+4. éviter les questions humaines dont la réponse est déjà dans les sources ;
+5. produire une matrice documentaire et une matrice de réutilisation avant code ;
+6. générer un pack numéroté avec manifest après implémentation ;
+7. vérifier la fidélité source des documents sensibles ;
+8. faire relire l'associé uniquement sur des écarts concrets ;
+9. régénérer un nouveau pack après correction ;
+10. clore en `DONE`, `PARTIAL` ou `BLOCKED`.
+
+Cette séquence complète le protocole ci-dessous. Elle prime si une ancienne
+formulation semble autoriser un passage direct en implémentation.
+
 ### 1. Lire la source de vérité
 
 - Extraire le texte du DOCX source sans le modifier.

@@ -8,18 +8,19 @@
 5. docs/project/03_HANDOFF_FOR_NEW_AGENT.md
 6. docs/project/04_LAST_STATE.md
 7. docs/project/PROJECT_CONTROL_TOWER_V1.md
-8. docs/project/PROJECT_AGENT_ORG_CHART_V1.md si le ticket concerne la chaine d'agents, un statut transverse ou un backfill retroactif
-9. docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md si l'interlocutrice active est Naomie/Naomi, ou si Gad demande explicitement le workflow Naomie/SELAS
-10. docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md si le ticket formalise un workflow Naomie multi-projets
-11. docs/project/NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md si Gad demande le statut ou le suivi de Naomie
-12. docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise
-13. docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise
-14. docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise
-15. docs/sprints/SPRINT_[TYPE]_V1.md si le sprint existe
-16. docs/project/SELARL_CANONICAL_STATUS_V1.md si le ticket touche la SELARL
-17. docs/sprints/SPRINT_SELARL_CLOSING_V1.md si le ticket touche la cloture SELARL
-18. docs/project/PRODUCT_GUARDRAIL_PROTOCOL_V1.md
-19. le document de spec concerné
+8. docs/project/PROJECT_AGENT_ORG_CHART_V1.md si le ticket concerne la chaine d'agents, un statut transverse ou un rattrapage retroactif
+9. docs/project/WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md si le ticket concerne la tracabilite d'un flux pilote ou un rapport boss
+10. docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md si l'interlocutrice active est Naomie/Naomi, ou si Gad demande explicitement le workflow Naomie/SELAS
+11. docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md si le ticket formalise un workflow Naomie multi-projets
+12. docs/project/NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md si Gad demande le statut ou le suivi de Naomie
+13. docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise
+14. docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise
+15. docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise
+16. docs/sprints/SPRINT_[TYPE]_V1.md si le sprint existe
+17. docs/project/SELARL_CANONICAL_STATUS_V1.md si le ticket touche la SELARL
+18. docs/sprints/SPRINT_SELARL_CLOSING_V1.md si le ticket touche la cloture SELARL
+19. docs/project/PRODUCT_GUARDRAIL_PROTOCOL_V1.md
+20. le document de spec concerné
 
 Pour un ticket documentaire, vérifier aussi l'ADR applicable dans `docs/adr/` avant d'écrire du code.
 
@@ -33,6 +34,11 @@ phase courante, l'action autorisee et les actions interdites.
 Si la demande porte sur la chaine d'agents, l'orchestration descendante, un
 statut transverse ou un suivi stale a reconstruire, Codex doit appliquer aussi
 `docs/project/PROJECT_AGENT_ORG_CHART_V1.md`.
+
+Si la demande porte sur le statut d'un flux pilote, par exemple `ou en est
+Naomi ?`, Codex doit appliquer
+`docs/project/WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md` et repondre par defaut en
+rapport boss court.
 
 Au debut d'un nouveau chat, si l'interlocuteur n'est pas identifie et dit
 seulement `bonjour`, `salut`, `ca va` ou une reprise vague, Codex doit demander
@@ -49,8 +55,9 @@ Codex doit appliquer `docs/project/NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.m
 et lire les traces disponibles : tour de controle, dernier etat, fichier de
 sprint, worklog Naomi, journal de base de connaissance, branche Naomi si
 accessible. Il ne demande pas a Naomi un statut oral sauf blocage explicite.
-Si ces traces sont stale, Codex active le Backfill Agent defini dans
-`docs/project/PROJECT_AGENT_ORG_CHART_V1.md`.
+Le rapport doit porter sur le flux Naomie, pas sur une evaluation personnelle.
+Si ces traces sont stale, Codex active l'Agent de tracabilite de flux et son
+mode de rattrapage retroactif.
 Pour un nouveau type d'entreprise, Codex doit aussi appliquer
 `docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md`,
 `docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md` et
@@ -215,7 +222,8 @@ Lis d'abord :
 - docs/project/03_HANDOFF_FOR_NEW_AGENT.md
 - docs/project/04_LAST_STATE.md
 - docs/project/PROJECT_CONTROL_TOWER_V1.md
-- docs/project/PROJECT_AGENT_ORG_CHART_V1.md si le ticket concerne la chaine d'agents, un statut transverse ou un backfill
+- docs/project/PROJECT_AGENT_ORG_CHART_V1.md si le ticket concerne la chaine d'agents, un statut transverse ou un rattrapage retroactif
+- docs/project/WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md si le ticket concerne la tracabilite d'un flux pilote ou un rapport boss
 - docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md si l'interlocutrice active est Naomie/Naomi, ou si Gad demande explicitement le workflow Naomie/SELAS
 - docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md si le ticket concerne un workflow Naomie global
 - docs/project/NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md si Gad demande le statut ou le suivi de Naomie
