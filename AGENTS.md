@@ -1,13 +1,64 @@
 # AGENTS.md
 
-## PRIORITE ABSOLUE - Naomie / SELAS
+## PRIORITE ABSOLUE - Identification interlocuteur / nouveau chat
 
 Cette section prime sur tout le reste du fichier.
 
-Si le message, le titre du chat ou le contexte indique `Naomie`, `Naomi`,
-`SELAS`, `CELAS`, `bonjour Naomie`, `je suis Naomie`, `je reprends le sprint
-SELAS` ou un incident d'accueil Naomie, Codex doit appliquer ce protocole avant
-toute autre reponse :
+Dans un nouveau chat ou une reprise ou l'interlocuteur n'est pas identifie,
+Codex ne doit pas deviner qui parle.
+
+Si le message est seulement un accueil vague, par exemple `bonjour`, `salut`,
+`ca va`, `on reprend`, ou une formule equivalente sans identite explicite,
+Codex doit repondre uniquement en cadrage court :
+
+```text
+Bonjour, tu es Gad ou Naomi ?
+Je te route ensuite sur le bon protocole projet.
+```
+
+Codex ne doit pas :
+
+- lancer le sprint SELAS ;
+- donner le Prompt NotebookLM ;
+- demander "quelle tache ?" ou "quel ticket ?" ;
+- developper ;
+- changer de branche pour Naomi ;
+- inferer que la personne est Gad ou Naomi a partir d'un simple bonjour.
+
+Si l'interlocuteur repond `Gad`, `je suis Gad`, ou parle explicitement comme
+superviseur du workflow Naomi/Codex, Codex doit appliquer le protocole Gad :
+
+1. traiter Gad comme superviseur produit et decisionnaire ;
+2. appliquer `docs/project/PROJECT_CONTROL_TOWER_V1.md` ;
+3. si Gad demande `ou en est Naomi ?`, `que fait Naomi ?`, ou equivalent,
+   appliquer `docs/project/NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md` ;
+4. lire les traces disponibles : tour de controle, dernier etat, fichier de
+   sprint, worklog Naomi, journal de base de connaissance, branche Naomi si
+   accessible ;
+5. si Gad demande un rapport, produire uniquement le delta depuis le dernier
+   rapport Gad inscrit dans le worklog, puis mettre a jour ce curseur ;
+6. si Gad laisse un message pour Naomi, l'inscrire dans le worklog avec statut
+   `a transmettre`, le citer au prochain echange avec Naomi, puis le marquer
+   `transmis` ;
+7. rappeler l'etat projet utile et la prochaine action autorisee ;
+8. ne pas declencher le protocole NotebookLM seulement parce que Gad parle de
+   Naomi ;
+9. poser une question de cadrage seulement si l'action demandee par Gad n'est
+   pas claire.
+
+Si l'interlocuteur repond `Naomie`, `Naomi`, `je suis Naomie`, `je suis Naomi`,
+ou si le titre/contexte indique clairement que l'utilisatrice active est Naomi,
+Codex doit appliquer le protocole Naomie / SELAS ci-dessous.
+
+## PRIORITE ABSOLUE - Naomie / SELAS
+
+Cette section s'applique apres identification de l'interlocutrice comme
+Naomie/Naomi, ou quand Gad demande explicitement de simuler, preparer ou
+reprendre le workflow de Naomie.
+
+Si l'interlocutrice active est `Naomie` / `Naomi`, ou si elle dit `SELAS`,
+`CELAS`, `bonjour Naomie`, `je suis Naomie`, `je reprends le sprint SELAS` ou
+equivalent, Codex doit appliquer ce protocole avant toute autre reponse :
 
 1. ne jamais repondre par un simple bonjour ;
 2. ne jamais demander "quelle tache ?" ou "quel ticket ?" ;
@@ -50,8 +101,10 @@ Termine par les 5 questions les plus importantes a poser ensuite.
 Le protocole complet est dans `docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md`.
 
 Pour un workflow Gad / Naomie / Codex non specifique a SYDEL, lire
-`docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md` et utiliser le
-template `docs/project/PROJECT_NAOMIE_RUNTIME_TEMPLATE_V1.md`.
+`docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md`, appliquer
+`docs/project/NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md` pour le suivi
+Naomi demande par Gad, et utiliser le template
+`docs/project/PROJECT_NAOMIE_RUNTIME_TEMPLATE_V1.md`.
 
 Ce dépôt sert à construire un moteur documentaire juridique **déterministe** pour DAAT x SYDEL.
 
@@ -194,10 +247,11 @@ Avant toute tâche d'implémentation, lire dans cet ordre :
 5. `docs/project/03_HANDOFF_FOR_NEW_AGENT.md` ;
 6. `docs/project/04_LAST_STATE.md` ;
 7. `docs/project/PROJECT_CONTROL_TOWER_V1.md` ;
-8. `docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md` si Naomie/SELAS est dans le contexte ;
+8. `docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md` si l'interlocutrice active est Naomie/Naomi, ou si Gad demande explicitement le workflow Naomie/SELAS ;
 9. `docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md` si le ticket concerne un workflow Naomie global ;
-10. `docs/sprints/SPRINT_SELARL_CLOSING_V1.md` si le ticket touche la cloture SELARL ;
-11. le fichier de livraison/specification pertinent dans `docs/delivery/`.
+10. `docs/project/NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md` si Gad demande le statut ou le suivi de Naomie ;
+11. `docs/sprints/SPRINT_SELARL_CLOSING_V1.md` si le ticket touche la cloture SELARL ;
+12. le fichier de livraison/specification pertinent dans `docs/delivery/`.
 
 Si l'un de ces fichiers manque ou contredit le ticket demandé, arrêter l'implémentation et signaler le blocage.
 
@@ -273,6 +327,9 @@ streamlit run src/sydel_doc_engine/app/streamlit_app.py
 7. lire le fichier actif `docs/sprints/SPRINT_[TYPE]_V1.md` quand il existe ;
 8. ne rouvrir un développement SELARL complexe qu'après décision explicite `GO dev` ;
 9. capitaliser la méthode SELARL comme protocole réutilisable pour les autres formes sociales.
+10. appliquer l'amendement SELARL 2026-06-01 du playbook : trois sources, pas
+    de questions humaines inutiles, pack actif, audit fidélité, retour associé
+    par écarts concrets, clôture `DONE/PARTIAL/BLOCKED`.
 
 ## Garde-fous juridiques
 
@@ -288,8 +345,9 @@ Before any implementation task, read:
 - docs/project/03_HANDOFF_FOR_NEW_AGENT.md
 - docs/project/04_LAST_STATE.md
 - docs/project/PROJECT_CONTROL_TOWER_V1.md
-- docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md when Naomie/SELAS is in context
+- docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md when the active speaker is Naomie/Naomi, or when Gad explicitly asks for the Naomie/SELAS workflow
 - docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md when the task defines a generic Naomie workflow
+- docs/project/NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md when Gad asks for Naomie's status or work tracking
 - docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md when opening or following a company-type sprint
 - docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md
 - docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md when opening or following a company-type sprint
