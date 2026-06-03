@@ -17,8 +17,10 @@ Regles :
 - rester en `NO-GO dev`.
 
 Le Prompt 01 doit etre donne meme si Naomie dit seulement `bonjour`, des lors
-que le contexte indique Naomie/SELAS. Voir
-`docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md`.
+que Naomie est l'interlocutrice active deja identifiee. Si Gad parle de Naomie,
+Codex applique l'orchestrateur de suivi et ne declenche pas NotebookLM par
+reflexe. Voir `docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md` et
+`docs/project/NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md`.
 
 ## Prompt 01 - Inventaire documentaire SELAS
 

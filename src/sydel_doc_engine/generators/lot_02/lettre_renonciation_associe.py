@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from unicodedata import normalize
 
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
@@ -44,10 +45,6 @@ class LettreRenonciationAssocieGenerator:
             regime.renonciation.lieu_signature,
             "regime_communautaire.renonciation.lieu_signature",
         )
-        date_signature = format_display_date(
-            regime.renonciation.date_signature,
-            "regime_communautaire.renonciation.date_signature",
-        )
         nombre_exemplaires = required_text(
             regime.renonciation.nombre_exemplaires_lettres,
             "regime_communautaire.renonciation.nombre_exemplaires_lettres",
@@ -56,7 +53,7 @@ class LettreRenonciationAssocieGenerator:
         document = new_document(style_profile=LETTER_WIDE_STYLE_PROFILE)
         add_right_aligned_lines(
             document,
-            [f"A {lieu_signature}", f"Le {date_signature}"],
+            [f"À {lieu_signature}"],
             space_after_pt=2,
         )
         add_spacer(document, space_after_pt=12)
@@ -67,9 +64,11 @@ class LettreRenonciationAssocieGenerator:
         )
         add_paragraph(document, _apporteur_appel(ctx))
         denomination = required_text(company.denomination, "societe.denomination")
-        regime_matrimonial = required_text(
-            regime.regime_matrimonial,
-            "regime_communautaire.regime_matrimonial",
+        regime_matrimonial = _regime_matrimonial_display(
+            required_text(
+                regime.regime_matrimonial,
+                "regime_communautaire.regime_matrimonial",
+            )
         )
         add_paragraph(
             document,
@@ -103,6 +102,7 @@ class LettreRenonciationAssocieGenerator:
             ),
             alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
         )
+        add_paragraph(document, "Fait pour servir et valoir ce que de droit.")
         add_paragraph(document, f"En {nombre_exemplaires} exemplaires", space_before_pt=5)
         add_right_aligned_lines(document, [_conjoint_signature(ctx)], space_after_pt=0)
 
@@ -128,6 +128,18 @@ def _date_courrier_avertissement(ctx: DocumentGenerationContext) -> str:
         "regime_communautaire.date_courrier_avertissement ou "
         "regime_communautaire.avertissement.date_signature est obligatoire pour CODE-RC-001."
     )
+
+
+def _regime_matrimonial_display(value: str) -> str:
+    normalized = (
+        normalize("NFKD", value).encode("ascii", "ignore").decode("ascii").lower()
+    )
+    if "communaute" in " ".join(normalized.split()):
+        return "communauté"
+    for prefix in ("sous le régime de ", "sous le regime de ", "régime de ", "regime de "):
+        if value.lower().startswith(prefix):
+            return value[len(prefix) :].strip()
+    return value.strip()
 
 
 def _apporteur_appel(ctx: DocumentGenerationContext) -> str:

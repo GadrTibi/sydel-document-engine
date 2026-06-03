@@ -78,4 +78,5 @@ class StatutsSelarlMedecinGenerator:
             associate=associate,
             skip_personne_2_line=True,
             title_box_bordered=False,
+            annex_page_break=True,
         )

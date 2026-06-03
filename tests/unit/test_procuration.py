@@ -88,6 +88,10 @@ def _table_has_explicit_borders(table) -> bool:
     return borders is not None and borders.find(qn("w:top")) is not None
 
 
+def _table_text(table) -> str:
+    return "\n".join(cell.text for row in table.rows for cell in row.cells)
+
+
 def test_procuration_creates_docx(tmp_path: Path) -> None:
     output_dir = tmp_path / "nested"
 
@@ -102,7 +106,12 @@ def test_procuration_contains_essential_texts(tmp_path: Path) -> None:
 
     assert "Procuration" in text
     assert "Je soussigné Monsieur Jean Durand" in text
-    assert "Agissant en qualité de Président de SAS DURAND CONSEIL" in text
+    assert (
+        "demeurant au 12 rue des Lilas, 75008 Paris, agissant en qualité de "
+        "Président de la SAS DURAND CONSEIL, dont le siège est situé "
+        "80 avenue Marceau, 75008 Paris"
+    ) in text
+    assert ". Agissant en qualité" not in text
     assert "Donne par les présentes pouvoir à :" in text
     assert (
         "De pour moi et en mon nom faire tous dépôts, immatriculations, modifications, "
@@ -116,9 +125,28 @@ def test_procuration_contains_essential_texts(tmp_path: Path) -> None:
         "faire tout ce qui sera nécessaire."
     ) in text
     assert "L’exécution de ce mandat vaudra décharge au mandataire." in text
+    assert "Fait pour servir et valoir ce que de droit." in text
+    assert "RCS PARIS 788 531 432" not in text
+    assert "0153814303" not in text
     assert "Fait à Paris" in text
     assert "Le 12/05/2026" in text
     assert "Jean Durand" in text
+
+
+def test_procuration_does_not_duplicate_form_when_denomination_contains_it(
+    tmp_path: Path,
+) -> None:
+    ctx = _context()
+    assert ctx.societe is not None
+    ctx.societe.forme_sociale = "SELARL"
+    ctx.societe.forme_sociale_abregee = "SELARL"
+    ctx.societe.denomination = "SELARL MARTIN"
+
+    output_path = ProcurationGenerator().generate(ctx, tmp_path)
+
+    text = _docx_text(output_path)
+    assert "agissant en qualité de Président de la SELARL MARTIN" in text
+    assert "SELARL SELARL" not in text
 
 
 def test_procuration_uses_feminine_agreement(tmp_path: Path) -> None:
@@ -127,29 +155,32 @@ def test_procuration_uses_feminine_agreement(tmp_path: Path) -> None:
     assert "Je soussignée Madame Marie Durand" in text
 
 
-def test_procuration_composes_personal_address_in_source_order(tmp_path: Path) -> None:
+def test_procuration_composes_personal_address_with_postal_code_before_city(
+    tmp_path: Path,
+) -> None:
     text = _docx_text(_generate(tmp_path))
 
-    assert "demeurant au 12 rue des Lilas, Paris 75008" in text
-    assert "demeurant au 12 rue des Lilas, 75008 Paris" not in text
+    assert "demeurant au 12 rue des Lilas, 75008 Paris, agissant" in text
+    assert "demeurant au 12 rue des Lilas, Paris 75008" not in text
 
 
-def test_procuration_composes_company_address_in_source_order(tmp_path: Path) -> None:
+def test_procuration_composes_company_address_with_postal_code_before_city(
+    tmp_path: Path,
+) -> None:
     text = _docx_text(_generate(tmp_path))
 
-    assert "dont le siège est situé au 80 avenue Marceau, Paris 75008" in text
-    assert "dont le siège est situé au 80 avenue Marceau, 75008 Paris" not in text
+    assert "dont le siège est situé 80 avenue Marceau, 75008 Paris" in text
+    assert "dont le siège est situé au 80 avenue Marceau" not in text
+    assert "dont le siège est situé 80 avenue Marceau, Paris 75008" not in text
 
 
 def test_procuration_contains_exact_sydel_block(tmp_path: Path) -> None:
     paragraphs = _document_paragraphs(_generate(tmp_path))
 
     start = paragraphs.index("SYDEL")
-    assert paragraphs[start : start + 4] == [
+    assert paragraphs[start : start + 2] == [
         "SYDEL",
         "80 avenue Marceau, 75008 PARIS",
-        "RCS PARIS 788 531 432",
-        "0153814303",
     ]
 
 
@@ -161,10 +192,11 @@ def test_procuration_does_not_use_signature_image(tmp_path: Path) -> None:
     assert len(Document(output_path).inline_shapes) == 0
 
 
-def test_procuration_uses_framed_signature_block(tmp_path: Path) -> None:
+def test_procuration_uses_signature_paragraphs_without_table(tmp_path: Path) -> None:
     document = Document(_generate(tmp_path))
 
-    signature_table = document.tables[1]
-    assert signature_table.style.name == "Table Grid"
-    assert _table_has_explicit_borders(signature_table)
-    assert "Jean Durand" in signature_table.cell(0, 0).text
+    assert len(document.tables) == 1
+    paragraphs = [paragraph.text for paragraph in document.paragraphs if paragraph.text]
+    assert "Fait à Paris" in paragraphs
+    assert "Le 12/05/2026" in paragraphs
+    assert "Jean Durand" in paragraphs

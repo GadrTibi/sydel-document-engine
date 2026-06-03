@@ -96,12 +96,15 @@ def test_manual_documents_are_visible_but_never_ready_for_generation() -> None:
     )
 
 
-def test_doc_006_is_generable_with_source_reserve() -> None:
+def test_doc_006_has_no_source_reserve_by_default() -> None:
     status = build_document_status_for_code("DOC-006")
 
-    assert status.status is DocumentStatus.GENERABLE_WITH_RESERVE
-    assert status.is_ready_for_generation
-    assert any(reason.reason_type is DocumentStatusReasonType.RESERVE for reason in status.reasons)
+    assert status.status is DocumentStatus.EXPECTED
+    assert not status.is_ready_for_generation
+    assert not any(
+        reason.reason_type is DocumentStatusReasonType.RESERVE
+        for reason in status.reasons
+    )
 
 
 def test_document_lot_ready_partial_and_blocked_statuses() -> None:
@@ -129,7 +132,7 @@ def test_document_lot_ready_partial_and_blocked_statuses() -> None:
     assert partial_lot.status is DocumentLotStatus.PARTIAL
     assert blocked_lot.status is DocumentLotStatus.BLOCKED
     assert partial_lot.manual_document_codes == ("DOC-013",)
-    assert partial_lot.reserve_document_codes == ("DOC-006",)
+    assert partial_lot.reserve_document_codes == ()
     assert blocked_lot.blocked_document_codes == ("DOC-034",)
 
 

@@ -5,7 +5,7 @@ from pathlib import Path
 
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
-from sydel_doc_engine.domain.models import Company, DocumentGenerationContext, Domiciliation
+from sydel_doc_engine.domain.models import Address, Company, DocumentGenerationContext
 from sydel_doc_engine.rendering.docx_builder import (
     add_framed_title,
     add_paragraph,
@@ -23,17 +23,13 @@ class AutorisationDomiciliationGenerator:
     def generate(self, ctx: DocumentGenerationContext, output_dir: Path) -> Path:
         person = ctx.personne_signataire
         company = _required_company(ctx.societe)
-        domiciliation = _required_domiciliation(ctx.domiciliation)
 
         civilite = _required_text(person.civilite, "personne_signataire.civilite")
         prenom = _required_text(person.prenom, "personne_signataire.prenom")
         nom = _required_text(person.nom, "personne_signataire.nom")
         denomination_societe = _required_text(company.denomination, "societe.denomination")
         capital_social = _required_text(company.capital, "societe.capital")
-        adresse_domiciliation = _required_text(
-            domiciliation.adresse_domiciliation_affichee,
-            "domiciliation.adresse_domiciliation_affichee",
-        )
+        adresse_siege = _compose_required_address(company.siege)
         lieu_signature = _required_text(ctx.signature.lieu, "signature.lieu")
 
         document = new_document()
@@ -43,8 +39,8 @@ class AutorisationDomiciliationGenerator:
             (
                 f"{subject_line(person.genre)} {civilite} {prenom} {nom} autorise la "
                 f"domiciliation de la Société {denomination_societe} au capital de "
-                f"{capital_social} € en cours de formation, dans les locaux situés au "
-                f"{adresse_domiciliation}, pour une durée indéterminée."
+                f"{capital_social} € en cours de formation, dans les locaux du cabinet au "
+                f"{adresse_siege} pour 99 ans."
             ),
             alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
         )
@@ -67,16 +63,20 @@ def _required_company(company: Company | None) -> Company:
     return company
 
 
-def _required_domiciliation(domiciliation: Domiciliation | None) -> Domiciliation:
-    if domiciliation is None:
-        raise ValueError("domiciliation est obligatoire pour DOC-002.")
-    return domiciliation
-
-
 def _required_text(value: str | None, field_name: str) -> str:
     if value is None or not value.strip():
         raise ValueError(f"{field_name} est obligatoire pour DOC-002.")
     return value.strip()
+
+
+def _compose_required_address(address: Address | None) -> str:
+    if address is None:
+        raise ValueError("societe.siege est obligatoire pour DOC-002.")
+    num_voie = _required_text(address.num_voie, "societe.siege.num_voie")
+    voie = _required_text(address.voie, "societe.siege.voie")
+    cp = _required_text(address.cp, "societe.siege.cp")
+    ville = _required_text(address.ville, "societe.siege.ville")
+    return f"{num_voie} {voie}, {cp} {ville}"
 
 
 def _format_date(value: date) -> str:
@@ -106,5 +106,4 @@ def _add_final_block(
     add_signature_block(
         document,
         [f"Fait à {lieu_signature}", f"Le {date_signature}", signatory_name],
-        framed=True,
     )

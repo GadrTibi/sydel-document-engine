@@ -25,16 +25,23 @@ Ces tickets fondent le nouveau front et ne doivent pas etre recodes dans les tic
 12. `FRONT-GENERATION-ACTIONS-001` - actions DOCX/ZIP/PDF optionnel sur `DOC-001` a `DOC-004` depuis le nouveau front.
 13. `FRONT-UX-CLEANUP-001` - simplification du parcours visible pour test utilisateur reel.
 14. `FRONT-UX-HARD-CUT-001` - retrait complet du bruit non-user de la surface principale.
+15. `FRONT-STATE-AUDIT-001` - audit de l'etat projet/front apres retour utilisateur.
+16. `FRONT-REALITY-CHECK-001` - audit de l'ecart entre debriefs front et code reel visible/branche.
+17. `FRONT-MINIMAL-SURFACE-CLEANUP-001` - surface normale minimale type dossier / saisie / generation, debug cache.
+18. `SELARL-COMPLETE-CASE-PLAYBOOK-001` - cadrage SELARL complete, matrice documents et recette reproductible.
+19. `SELARL-COMPLETE-CONTEXT-ADAPTER-001` - selection/readiness/contexte SELARL complet cote front, sans modification des generateurs.
 
 ## Ordre recommande maintenant
 
-1. Premier vrai test local utilisateur du nouveau front hard-cut sur `SELARL creation simple`
-2. `FRONT-DOCUMENTS-PANEL-001` seulement si le test confirme un besoin de panneau documents dedie
-3. `FRONT-UNIT-DOCUMENT-UI-001`
-4. `FRONT-TEST-TOOLS-CONSOLIDATION-001`
-5. `FRONT-PROTOTYPE-DEPRECATION-001`
+1. `SELARL-COMPLETE-COMPLEX-SUBFORMS-001` : completer les sous-formulaires et l'adaptateur contexte pour cession medicale/dentaire, bail/appel de fonds et cession SCM.
+2. `SELARL-COMPLETE-SMOKE-001` : generer les packs DOCX/ZIP des scenarios SELARL complets.
+3. `SELARL-COMPLETE-JURIST-REVIEW-001` : revue humaine avant toute promesse de final juridique.
+4. `REPLICATION-NEXT-CASE-001` : appliquer la recette SELARL au cas suivant.
+5. `FRONT-UNIT-DOCUMENT-UI-001`
+6. `FRONT-TEST-TOOLS-CONSOLIDATION-001`
+7. `FRONT-PROTOTYPE-DEPRECATION-001`
 
-`SELARL-JURIST-REVIEW-001` reste recommande en parallele comme revue metier/juridique, mais le shell UI peut demarrer sans attendre cette revue tant qu'il ne modifie pas les generateurs ni le wording juridique.
+`SELARL-JURIST-REVIEW-001` reste conserve comme jalon historique du pilote, mais la demande utilisateur courante de SELARL complete remplace la prochaine action par `SELARL-COMPLETE-COMPLEX-SUBFORMS-001`.
 
 ## Garde-fous communs
 
@@ -156,7 +163,7 @@ Criteres d'acceptation :
 
 ## FRONT-DOCUMENTS-PANEL-001
 
-Statut : READY.
+Statut : BLOCKED.
 
 Objectif : construire le panneau Documents attendus du nouveau front a partir de la couche de statuts.
 
@@ -177,7 +184,8 @@ Ne pas toucher :
 
 Dependances :
 
-- `FRONT-DOSSIER-DATA-ENTRY-001`.
+- `FRONT-MINIMAL-SURFACE-CLEANUP-001` DONE.
+- Decision post-test utilisateur confirmant qu'un panneau visible ne pollue pas la surface principale.
 
 CritÃ¨res d'acceptation :
 
@@ -186,6 +194,85 @@ CritÃ¨res d'acceptation :
 - distinguer statut document et statut lot ;
 - ne jamais presenter un document manuel comme pret a generer ;
 - conserver `DOC-006`, `DOC-013` et `DOC-014` dans leur statut produit attendu.
+
+## FRONT-MINIMAL-SURFACE-CLEANUP-001
+
+Statut : DONE.
+
+Objectif : appliquer la surface utilisateur minimale definie dans
+`docs/project/FRONT_MINIMAL_USER_SURFACE_V1.md`, avant tout push, redeploiement
+ou test utilisateur.
+
+Fichiers concernes :
+
+- `src/sydel_doc_engine/app/streamlit_app.py` ;
+- `src/sydel_doc_engine/app/front_generation_actions.py` en lecture ou extension limitee ;
+- tests AppTest du nouveau front ;
+- docs de pilotage si necessaire.
+
+Ne pas toucher :
+
+- generateurs ;
+- moteur DOCX/PDF/ZIP ;
+- wording juridique ;
+- source de verite ;
+- extension du perimetre documentaire.
+
+Dependances :
+
+- `FRONT-REALITY-CHECK-001`.
+
+Criteres d'acceptation :
+
+- la vue normale affiche seulement `Type de dossier`, `Donnees a saisir` et `Generation` ;
+- aucun outil interne n'est visible en session utilisateur normale ;
+- aucune table, aucun radio, aucun panneau documents et aucun diagnostic visible ;
+- les aides de format restent pres des champs concernes ;
+- les blocages runtime utiles sont visibles dans `Generation` ;
+- le PDF est cache si le backend local est indisponible ;
+- le perimetre `DOC-001` a `DOC-004` reste explicite sans liste/table detaillee ;
+- AppTest couvre la surface normale minimale.
+
+Livraison :
+
+- suppression des expanders ouverts de la surface normale ;
+- masquage des outils internes derriere `SYDEL_ENABLE_INTERNAL_TOOLS=1` ou flag de session interne ;
+- masquage du bouton PDF quand le backend local est indisponible ;
+- affichage de blocages courts dans `Generation` ;
+- validation `ruff check .` et `pytest` OK, 382 tests passes ;
+- rapport : `docs/review/front_minimal_surface_cleanup_001_report_v1.md`.
+
+## FRONT-GENERATION-READINESS-UX-001
+
+Statut : BLOCKED.
+
+Objectif : expliquer les blocages de generation dans la surface normale du
+nouveau front avant d'etendre le perimetre documentaire.
+
+Fichiers concernes :
+
+- `src/sydel_doc_engine/app/streamlit_app.py` ;
+- `src/sydel_doc_engine/app/front_generation_actions.py` en lecture ou extension limitee ;
+- `src/sydel_doc_engine/front_data/document_status.py` en lecture ;
+- tests AppTest du nouveau front.
+
+Ne pas toucher :
+
+- generateurs ;
+- moteur DOCX/PDF/ZIP ;
+- wording juridique ;
+- source de verite ;
+- prototype historique hors affichage d'outils internes.
+
+Dependances :
+
+- `FRONT-MINIMAL-SURFACE-CLEANUP-001`.
+- Reassessment post-test utilisateur.
+
+Criteres d'acceptation :
+
+- ne lancer ce ticket separement que si le cleanup minimal ne suffit pas ;
+- privilegier l'absorption des raisons de blocage dans `FRONT-MINIMAL-SURFACE-CLEANUP-001`.
 
 ## FRONT-GENERATION-ACTIONS-001
 
@@ -210,13 +297,14 @@ Ne pas toucher :
 Dependances :
 
 - `FRONT-DOSSIER-DATA-ENTRY-001`.
-- `FRONT-DOCUMENTS-PANEL-001` reste utile ensuite pour consolider l'affichage documents, mais n'a pas ete rendu bloquant pour le premier test local prudent.
+- Depuis `FRONT-REALITY-CHECK-001`, ne pas ajouter `FRONT-DOCUMENTS-PANEL-001` en surface visible avant `FRONT-MINIMAL-SURFACE-CLEANUP-001`.
 
 CritÃ¨res d'acceptation :
 
 - seuls les documents `generable` dans le perimetre V1 peuvent etre proposes ;
 - les documents manuels restent exclus ;
-- `DOC-006`, `DOC-013` et `DOC-014` restent exclus de la generation V1 ;
+- `DOC-006` est inclus quand le regime communautaire SELARL est actif ;
+  `DOC-013` et `DOC-014` restent exclus de la generation V1 ;
 - DOCX reste prioritaire, PDF local optionnel, ZIP dossier avec manifeste ;
 - les erreurs moteur sont affichees sans masquer les raisons data-layer ;
 - aucune logique de mapping documentaire n'est dupliquee dans l'UI.
@@ -315,7 +403,7 @@ CritÃ¨res d'acceptation :
 - selection par `DOC-XXX` ou libelle ;
 - exigences data-layer visibles ;
 - documents hors perimetre V1 signales proprement ;
-- `DOC-006` reste avec reserve ;
+- `DOC-006` est genere uniquement si le regime communautaire SELARL est actif ;
 - `DOC-013` et `DOC-014` restent manuels ;
 - aucune confusion avec le parcours dossier complet.
 

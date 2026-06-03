@@ -66,8 +66,14 @@ SELARL_DENTISTE_PROFILE = FrontDataTestPrefillProfile(
     key="selarl_dentiste_regime_site",
     case_type="SELARL",
     purpose="Regime communautaire, site distinct and derogation visibility checks.",
-    expected_generable_doc_codes=("DOC-001", "DOC-002", "DOC-003", "DOC-004"),
-    expected_reserve_doc_codes=("DOC-006",),
+    expected_generable_doc_codes=(
+        "DOC-001",
+        "DOC-002",
+        "DOC-003",
+        "DOC-004",
+        "DOC-005",
+        "DOC-006",
+    ),
     expected_manual_doc_codes=("DOC-013", "DOC-014"),
     required_roles=SELARL_SIMPLE_PROFILE.required_roles,
     required_address_usages=SELARL_SIMPLE_PROFILE.required_address_usages,
@@ -78,7 +84,7 @@ SELARL_DENTISTE_PROFILE = FrontDataTestPrefillProfile(
     ),
     explicit_reuse_refs=SELARL_SIMPLE_PROFILE.explicit_reuse_refs,
     notes=(
-        "DOC-006 stays visible with the source V2 reserve.",
+        "DOC-006 is generated with DOC-005 when the community property regime is active.",
         "DOC-013 and DOC-014 stay manual/non-generated.",
     ),
 )

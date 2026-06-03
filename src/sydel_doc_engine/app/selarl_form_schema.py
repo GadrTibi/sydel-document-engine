@@ -12,11 +12,6 @@ from sydel_doc_engine.domain.case_catalog import (
     get_expected_documents,
 )
 
-DOC_006_SOURCE_V2_RESERVE: Final = (
-    "La vraie V2 indique que ce document ne figure pas parmi les sources fournies ; "
-    "generation moteur existante a afficher avec reserve dans le pilote SELARL."
-)
-
 SELARL_REQUIRED_CONDITIONS: Final[tuple[str, ...]] = (
     "profession",
     "site_distinct",
@@ -1224,8 +1219,12 @@ SELARL_DOCUMENTS: Final[tuple[SelarlDocumentSpec, ...]] = (
         "regime_conjoint",
         DocumentAvailability.GENERATABLE,
         "regime_communautaire = oui",
-        (),
-        DOC_006_SOURCE_V2_RESERVE,
+        (
+            "civilite_conjoint",
+            "prenom_conjoint",
+            "nom_conjoint",
+            "apport_personne_1",
+        ),
     ),
     SelarlDocumentSpec(
         "formulaire_derogation_sites_sel",

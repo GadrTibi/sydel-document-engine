@@ -11,6 +11,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_framed_title,
     add_paragraph,
     add_signature_block,
+    add_spacer,
     new_document,
 )
 from sydel_doc_engine.utils.grammar import subject_line
@@ -19,8 +20,6 @@ OUTPUT_FILENAME = "procuration.docx"
 
 MANDATAIRE_NOM = "SYDEL"
 MANDATAIRE_ADRESSE = "80 avenue Marceau, 75008 PARIS"
-MANDATAIRE_RCS = "RCS PARIS 788 531 432"
-MANDATAIRE_TELEPHONE = "0153814303"
 
 MANDATE_PARAGRAPH_1 = (
     "De pour moi et en mon nom faire tous dépôts, immatriculations, modifications, radiations "
@@ -35,6 +34,7 @@ MANDATE_PARAGRAPH_2 = (
     "nécessaire."
 )
 MANDATE_PARAGRAPH_3 = "L’exécution de ce mandat vaudra décharge au mandataire."
+LEGAL_EFFECT_PARAGRAPH = "Fait pour servir et valoir ce que de droit."
 
 
 class ProcurationGenerator:
@@ -58,6 +58,7 @@ class ProcurationGenerator:
         )
         forme_sociale = _required_text(company.forme_sociale, "societe.forme_sociale")
         denomination_societe = _required_text(company.denomination, "societe.denomination")
+        company_designation = _company_designation(company, forme_sociale, denomination_societe)
         lieu_signature = _required_text(ctx.signature.lieu, "signature.lieu")
 
         document = new_document()
@@ -66,8 +67,8 @@ class ProcurationGenerator:
             document,
             (
                 f"{subject_line(person.genre)} {civilite} {prenom} {nom}, demeurant au "
-                f"{personal_address}. Agissant en qualité de {fonction_dirigeant} de "
-                f"{forme_sociale} {denomination_societe} dont le siège est situé au "
+                f"{personal_address}, agissant en qualité de {fonction_dirigeant} de la "
+                f"{company_designation}, dont le siège est situé "
                 f"{company_address}"
             ),
         )
@@ -75,6 +76,8 @@ class ProcurationGenerator:
         _add_mandataire_block(document)
         for text in (MANDATE_PARAGRAPH_1, MANDATE_PARAGRAPH_2, MANDATE_PARAGRAPH_3):
             _add_paragraph(document, text, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY)
+        _add_paragraph(document, LEGAL_EFFECT_PARAGRAPH)
+        add_spacer(document, space_after_pt=6)
         _add_final_block(
             document,
             lieu_signature=lieu_signature,
@@ -107,7 +110,37 @@ def _required_address(address: Address | None, field_name: str) -> str:
     voie = _required_text(address.voie, f"{field_name}.voie")
     ville = _required_text(address.ville, f"{field_name}.ville")
     cp = _required_text(address.cp, f"{field_name}.cp")
-    return f"{num_voie} {voie}, {ville} {cp}"
+    return f"{num_voie} {voie}, {cp} {ville}"
+
+
+def _company_designation(company: Company, forme: str, denomination: str) -> str:
+    if _denomination_starts_with_form(denomination, company, forme):
+        return denomination
+    return f"{forme} {denomination}"
+
+
+def _denomination_starts_with_form(
+    denomination: str,
+    company: Company,
+    forme: str,
+) -> bool:
+    normalized_denomination = _normalize_for_prefix(denomination)
+    candidates = [
+        forme,
+        company.forme_sociale_abregee,
+        company.forme_sociale_affichage,
+        company.forme_juridique,
+    ]
+    return any(
+        normalized_denomination.startswith(_normalize_for_prefix(candidate) + " ")
+        or normalized_denomination == _normalize_for_prefix(candidate)
+        for candidate in candidates
+        if candidate and _normalize_for_prefix(candidate)
+    )
+
+
+def _normalize_for_prefix(value: str) -> str:
+    return " ".join(value.casefold().replace("’", "'").split())
 
 
 def _format_date(value: date) -> str:
@@ -133,8 +166,6 @@ def _add_mandataire_block(document) -> None:
         [
             (MANDATAIRE_NOM, True, False),
             (MANDATAIRE_ADRESSE, False, True),
-            (MANDATAIRE_RCS, False, True),
-            (MANDATAIRE_TELEPHONE, False, True),
         ],
         space_after_pt=0,
     )
@@ -150,5 +181,4 @@ def _add_final_block(
     add_signature_block(
         document,
         [f"Fait à {lieu_signature}", f"Le {date_signature}", signatory_name],
-        framed=True,
     )

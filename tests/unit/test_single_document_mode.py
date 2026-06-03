@@ -24,6 +24,8 @@ from sydel_doc_engine.app.ui_runtime import (
     generate_zip_file,
 )
 
+INTERNAL_TOOLS_SESSION_FLAG = "_sydel_internal_tools_unlocked"
+
 
 def test_single_document_mode_is_visible_next_to_existing_streamlit_modes() -> None:
     app_source = Path("src/sydel_doc_engine/app/streamlit_app.py").read_text(encoding="utf-8")
@@ -37,6 +39,8 @@ def test_single_document_mode_is_visible_next_to_existing_streamlit_modes() -> N
 def test_streamlit_single_document_mode_renders_document_selector() -> None:
     app = AppTest.from_file("src/sydel_doc_engine/app/streamlit_app.py").run(timeout=120)
 
+    app.session_state[INTERNAL_TOOLS_SESSION_FLAG] = True
+    app.run(timeout=120)
     app.checkbox(key="front_internal_tools_enabled").set_value(True)
     app.run(timeout=120)
     app.radio(key="front_internal_tool").set_value("Document unitaire")
@@ -91,6 +95,8 @@ def test_single_document_field_specs_are_scoped_to_selected_document() -> None:
     doc_002_fields = {field.key for field in field_specs_for_document("DOC-002")}
 
     assert "personne_date_naissance" in doc_001_fields
+    assert "personne_ville_naissance" in doc_001_fields
+    assert "personne_ville_naissance_article_au" in doc_001_fields
     assert "societe_denomination" not in doc_001_fields
     assert "domiciliation_adresse_affichee" in doc_002_fields
     assert "personne_adresse_num_voie" not in doc_002_fields

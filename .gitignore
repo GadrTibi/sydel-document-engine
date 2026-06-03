@@ -4,7 +4,11 @@ __pycache__/
 .env
 .mypy_cache/
 .pytest_cache/
+.pytest_tmp*/
+.pytest_temp*/
+.streamlit_verify_*.log
 .ruff_cache/
+.tmp/
 coverage.xml
 htmlcov/
 dist/

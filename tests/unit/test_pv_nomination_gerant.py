@@ -19,6 +19,7 @@ from sydel_doc_engine.domain.models import (
     Emprunt,
     Person,
     ReunionContext,
+    ReunionPresident,
     Signature,
 )
 from sydel_doc_engine.generators.lot_02.pv_nomination_gerant import (
@@ -84,7 +85,14 @@ def _context(
             ville_rcs="Paris",
         ),
         decision=DecisionContext(date="13 mai 2026"),
-        reunion=ReunionContext(date_lettres="treize mai deux mille vingt-six", heure="10 heures"),
+        reunion=ReunionContext(
+            date_lettres="treize mai deux mille vingt-six",
+            president=ReunionPresident(
+                civilite_president_seance="Madame",
+                prenom_president_seance="Alice",
+                nom_personne_seance="Durand",
+            ),
+        ),
         capital=CapitalContext(
             nb_parts_total=sum(associe.nb_parts for associe in associes),
             valeur_nominale_part="1",
@@ -160,16 +168,54 @@ def test_pv_nomination_gerant_creates_docx(tmp_path: Path) -> None:
     assert output_path.is_file()
 
 
+def test_pv_nomination_gerant_selarl_header_uses_written_form_and_simple_capital(
+    tmp_path: Path,
+) -> None:
+    ctx = _context(associes=_associes(1))
+    ctx.societe.forme_sociale = "SELARL"
+    ctx.societe.forme_sociale_affichage = "SELARL"
+    ctx.societe.forme_sociale_complete = "société d’exercice libéral à responsabilité limitée"
+    ctx.societe.forme_sociale_abregee = "SELARL"
+    ctx.societe.denomination = "SELARL MARTIN"
+    ctx.societe.capital_social = "5 000"
+    ctx.associes[0].profession_reglementee = "médecin"
+
+    text = _docx_text(_generate(tmp_path, ctx))
+    paragraphs = _paragraphs(_generate(tmp_path / "second", ctx))
+
+    assert "SELARL MARTIN" in paragraphs
+    assert "Société d’exercice libéral à responsabilité limitée de médecin" in paragraphs
+    assert "Au capital de 5 000 euros" in paragraphs
+    assert "SELARL à capital variable" not in text
+    assert "Au capital minimum et effectif" not in text
+
+
 def test_pv_nomination_gerant_repeats_two_associes(tmp_path: Path) -> None:
     text = _docx_text(_generate(tmp_path))
     paragraphs = _paragraphs(_generate(tmp_path / "second"))
 
-    assert "Les associés de la société civile immobilière SCI TEST" in text
-    assert "Madame Alice Durand, représentant 60 parts," in text
-    assert "Monsieur Bruno Martin, représentant 40 parts," in text
-    assert "- Madame Alice Durand, représentant 60 parts," in paragraphs
-    assert "- Monsieur Bruno Martin, représentant 40 parts," in paragraphs
-    assert "Les associés présents représentent 100 parts, soit la totalité du capital." in text
+    assert "Les associés de la Société civile immobilière SCI TEST" in text
+    assert "composé de 100 parts de 1 euro chacune, se sont réunis au siège social." in text
+    assert "Sont présents ou représentés :" in text
+    assert "Madame Alice Durand, détenant 60 parts," in text
+    assert "Monsieur Bruno Martin, détenant 40 parts," in text
+    assert "- Madame Alice Durand, détenant 60 parts," in paragraphs
+    assert "- Monsieur Bruno Martin, détenant 40 parts," in paragraphs
+    assert (
+        "Les associés présents ou représentés disposent ensemble de la totalité des parts "
+        "sociales. Cet ensemble est habilité à prendre des décisions."
+    ) in text
+    assert "Madame Alice Durand préside la séance." in text
+    assert "Le président rappelle l’ordre du jour :" in text
+    assert "· Nomination du gérant" in text
+    assert "· Pouvoirs" in text
+    assert "RCS de Paris" not in text
+    assert "En cours d’immatriculation" in text
+    assert "EXTRAORDINAIRE" not in text
+    assert "extraordinaire" not in text
+    assert "10 heures" not in text
+    assert "De tout ce qui a été décidé" not in text
+    assert "L’ordre du jour étant épuisé" not in text
     assert "Alice Durand" in paragraphs
     assert "Bruno Martin" in paragraphs
 
@@ -180,15 +226,15 @@ def test_pv_nomination_gerant_repeats_one_associe_with_singular_variants(
     ctx = _context(associes=_associes(1))
     text = _docx_text(_generate(tmp_path, ctx))
 
-    assert "L’associé de la société civile immobilière SCI TEST" in text
-    assert "s’est réuni ce jour au siège de la société." in text
-    assert "Madame Alice Durand, représentant 1 part," in text
-    assert "L’associé présent représente 1 part, soit la totalité du capital." in text
+    assert "Les associés de la Société civile immobilière SCI TEST" in text
+    assert "se sont réunis au siège social." in text
+    assert "Madame Alice Durand, détenant 1 part," in text
     assert (
-        "A l’issue de la signature des statuts, l’associé s’est réuni pour prendre "
-        "les décisions suivantes :"
+        "Les associés présents ou représentés disposent ensemble de la totalité des parts "
+        "sociales. Cet ensemble est habilité à prendre des décisions."
     ) in text
-    assert "- Madame Alice Durand, représentant 1 part," in text
+    assert "· Nomination du gérant" in text
+    assert "- Madame Alice Durand, détenant 1 part," in text
 
 
 def test_pv_nomination_gerant_without_emprunt_omits_borrowing_decision(
@@ -208,19 +254,26 @@ def test_pv_nomination_gerant_with_emprunt_writes_borrowing_decision(
     text = _docx_text(_generate(tmp_path, _context(emprunt_actif=True)))
 
     assert (
-        "Autorisation de  contracter un emprunt pour l’achat d’un bien immobilier sis "
-        "5 rue du Bien, 33000 Bordeaux ;"
+        "· Autorisation de contracter un emprunt pour l’achat d’un bien immobilier sis "
+        "5 rue du Bien, 33000 Bordeaux"
     ) in text
     assert (
-        "- Autorisation de  contracter un emprunt pour l’achat d’un bien immobilier sis "
-        "5 rue du Bien, 33000 Bordeaux ;"
-    ) in text
-    assert (
-        "L’assemblée générale extraordinaire, décide de contracter un emprunt d’un montant "
+        "L’assemblée générale décide de contracter un emprunt d’un montant "
         "maximum de 250 000 euros pour l’acquisition d’un bien immobilier sis "
         "5 rue du Bien, 33000 Bordeaux."
     ) in text
     assert "TROISIEME DECISION" in text
+
+
+def test_pv_nomination_gerant_uses_plural_agenda_for_plural_function(
+    tmp_path: Path,
+) -> None:
+    ctx = _context()
+    ctx.dirigeant_nomine.fonction_affichage = "gérants"
+
+    text = _docx_text(_generate(tmp_path, ctx))
+
+    assert "· Nomination des premiers gérants" in text
 
 
 def test_pv_nomination_gerant_uses_distinct_dirigeant_nomine(
@@ -229,6 +282,7 @@ def test_pv_nomination_gerant_uses_distinct_dirigeant_nomine(
     text = _docx_text(_generate(tmp_path))
 
     assert "Madame Claire Bernard, née le 03/04/1985 à Lyon (Rhône)" in text
+    assert "demeurant au 22 avenue des Fleurs, 69002 Lyon." in text
     assert "Madame Alice Durand, née le" not in text
     assert "Monsieur Bruno Martin, né le" not in text
 
@@ -251,7 +305,7 @@ def test_pv_nomination_gerant_restores_essential_docx_structure(tmp_path: Path) 
     assert title_paragraph.alignment == WD_ALIGN_PARAGRAPH.CENTER
     assert title_paragraph.text == (
         "PROCES-VERBAL DES DECISIONS\n"
-        " DE L’ASSEMBLEE GENERALE EXTRAORDINAIRE\n"
+        " DE L’ASSEMBLEE GENERALE\n"
         " DU 13 mai 2026"
     )
     assert all(run.bold for run in title_paragraph.runs if run.text.strip())
@@ -264,9 +318,8 @@ def test_pv_nomination_gerant_restores_essential_docx_structure(tmp_path: Path) 
     vote_formula = _find_paragraph(document, VOTE_FORMULA)
     assert vote_formula.runs[0].italic is True
 
-    decision_item = _find_paragraph(document, "- Nomination du gérant ;")
-    assert decision_item.paragraph_format.first_line_indent is not None
-    assert decision_item.paragraph_format.first_line_indent < 0
+    decision_item = _find_paragraph(document, "· Nomination du gérant")
+    assert decision_item.text == "· Nomination du gérant"
 
     signature_name = _find_paragraph(document, "Alice Durand")
     assert signature_name.alignment == WD_ALIGN_PARAGRAPH.CENTER

@@ -53,6 +53,10 @@ class DeclarationNonCondamnationGenerator:
             person.date_naissance,
             "personne_signataire.date_naissance",
         )
+        ville_naissance = _required_text(
+            person.ville_naissance,
+            "personne_signataire.ville_naissance",
+        )
         nationalite = _required_text(person.nationalite, "personne_signataire.nationalite")
         nom_pere = _required_text(person.nom_pere, "personne_signataire.nom_pere")
         nom_mere = _required_text(person.nom_mere, "personne_signataire.nom_mere")
@@ -64,7 +68,8 @@ class DeclarationNonCondamnationGenerator:
         _add_identity_block(
             document,
             subject=f"{subject_line(person.genre)} {civilite} {prenom} {nom}",
-            birth=f"{birth_label(person.genre)} {date_naissance}",
+            birth=f"{birth_label(person.genre)} {date_naissance} "
+            f"{_birth_city_prefix(person)} {ville_naissance}.",
             address=f"demeurant au {adresse_perso}",
             nationality=f"de nationalité {nationalite}",
             filiation_father=f"{filiation_label(person.genre)} {nom_pere}",
@@ -108,7 +113,11 @@ def _compose_required_address(address: Address) -> str:
     voie = _required_text(address.voie, "personne_signataire.adresse_perso.voie")
     cp = _required_text(address.cp, "personne_signataire.adresse_perso.cp")
     ville = _required_text(address.ville, "personne_signataire.adresse_perso.ville")
-    return f"{num_voie} {voie}, {ville} {cp}"
+    return f"{num_voie} {voie}, {cp} {ville}"
+
+
+def _birth_city_prefix(person) -> str:
+    return "au" if person.ville_naissance_article_au else "\u00e0"
 
 
 def _format_date(value: date) -> str:
@@ -174,7 +183,6 @@ def _add_signature_block(
         document,
         [f"Fait à {lieu_signature}", f"Le {date_signature}"],
         image_path=image_path,
-        framed=True,
     )
 
 

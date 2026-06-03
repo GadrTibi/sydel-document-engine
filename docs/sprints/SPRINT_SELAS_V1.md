@@ -14,10 +14,13 @@ Date d'ouverture : 2026-06-01
 | Tour de controle | `docs/project/PROJECT_CONTROL_TOWER_V1.md` |
 | Branche cible | `codex/naomie-selas-sprint` |
 | Dossier local attendu | Le nom peut etre `sydel-document-engine` chez Naomie ; verifier surtout remote + branche |
-| Phase courante | 3 - NOTEBOOKLM |
-| Statut courant | `NO-GO dev` |
-| Derniere action | Sprint SELAS choisi comme prochain sprint logique apres SELARL |
-| Prochaine action | Donner a Naomie le Prompt NotebookLM 01, attendre sa reponse brute, puis la structurer |
+| Phase courante | Sync incident : avancee annoncee jusqu'a attente retour humain, non verifiee dans traces publiees |
+| Statut courant | `NO-GO dev` tant que commit pousse ou Sync packet absent |
+| Derniere action | Gad indique le 2026-06-02 que Naomie a avance SELAS jusqu'a attente retour humain ; branche publiee encore sans preuve correspondante |
+| Prochaine action | Resoudre la sync manquante : obtenir commit pousse ou Sync packet de Naomie avant de requalifier l'etat SELAS |
+| Worklog Naomie | `docs/sprints/SPRINT_SELAS_NAOMIE_WORKLOG_V1.md` |
+| Agent de tracabilite | `docs/project/WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md` |
+| Agent de synchronisation | `docs/project/NAOMIE_WORKSTREAM_SYNC_PROTOCOL_V1.md` |
 
 ## Decisions d'ouverture
 
@@ -32,25 +35,59 @@ Date d'ouverture : 2026-06-01
 - Le sprint est ouvert en `NO-GO dev`.
 - Aucun code, aucune generation nouvelle et aucune mise en production SELAS ne
   sont autorises avant les gates.
+- Le repo n'est pas vierge cote SELAS : des sources, documents, mappings,
+  generateurs, tests et exemples SELAS existent deja. Le flux Naomie doit
+  consolider/auditer cette matiere, pas pretendre repartir de zero.
+
+## Etat reel SELAS preexistant
+
+Au 2026-06-02, un rapport Gad ne doit pas dire que SELAS est simplement "au
+demarrage NotebookLM" sans nuance.
+
+Preuves deja presentes dans le repo :
+
+- sources SELAS :
+  - `project/source_documents/lot_02/Lettre de renonciation a revendiquer la qualite d_associe - SELAS.docx` ;
+  - `project/source_documents/lot_04/Statuts_SELAS_medecin.docx` ;
+  - `project/source_documents/lot_05/Courrier SDE - SELAS.docx` ;
+  - `project/source_documents/lot_05/PV AGE cession part SCM - SELAS.docx` ;
+  - `project/source_truth/modele Statuts SELAS avec MH.docx`.
+- selection SELAS dans `src/sydel_doc_engine/domain/case_catalog.py` ;
+- `DOC-018` `Statuts SELAS medecin` dans
+  `src/sydel_doc_engine/registry/catalog.py` ;
+- generateur `StatutsSelasMedecinGenerator` branche dans
+  `src/sydel_doc_engine/orchestrator/service.py` ;
+- conditions UI SELAS dans `src/sydel_doc_engine/app/business_wizard.py` ;
+- tests et exemples SELAS.
+
+Cette matiere ne vaut pas validation finale du sprint SELAS. Elle prouve en
+revanche que le rapport de supervision doit parler du flux Naomie SELAS :
+avancement du flux, trous restants, blocages et prochaine etape. La separation
+fine entre humain, Codex, repo et outil reste une preuve interne, disponible en
+audit detaille seulement.
 
 ## Etat des gates
 
 | Gate | Statut | Note |
 | --- | --- | --- |
 | Branche cible | PRETE A VERIFIER AU DEMARRAGE | `codex/naomie-selas-sprint` geree par Codex |
-| Identification Naomie | A CONFIRMER | Si le contexte ou le titre indique Naomie, appliquer quand meme le protocole runtime |
-| Sources | A FAIRE | Lire source de verite, sources SELAS, specs et retours |
-| NotebookLM | A FAIRE | Utiliser `SPRINT_SELAS_NOTEBOOKLM_PROMPTS_V1.md`, puis journaliser dans `SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md` |
-| Audit reutilisation | BLOQUE | Interdit tant que le sous-sprint NotebookLM n'est pas suffisant |
-| Matrice documentaire | BLOQUE | Interdite tant que NotebookLM et reuse audit ne sont pas faits |
-| Parcours metier | A FAIRE | Definir saisie, roles, adresses, reutilisations |
-| Tickets sprint | A FAIRE | Ecrire les tickets avant dev |
-| Validation Gad | MANQUANTE | Aucun `GO dev` donne |
-| Revue associe | NON APPLICABLE | Seulement en fin de sprint |
+| Identification Naomie | A CONFIRMER | Si Naomie est l'interlocutrice active, appliquer le protocole runtime ; si Gad parle de Naomie, appliquer l'orchestrateur de suivi |
+| Sources | PARTIEL | Sources SELAS deja presentes ; rattrapage et hierarchie a consolider |
+| NotebookLM | INCONNU APRES SYNC INCIDENT | Journal NotebookLM SELAS vide cote branche publiee ; Gad annonce une avancee au-dela de cette trace |
+| Worklog Naomie | PARTIAL | Worklog ouvert ; doit tracer le flux Naomie, pas seulement les actions humaines |
+| Sync Naomie | BLOQUE | Gad annonce SELAS terminee jusqu'a attente retour humain, mais la branche publiee ne contient pas encore cette preuve |
+| Rattrapage retroactif | FAIT | Rapport `docs/review/selas_naomie_backfill_001_report_v1.md` ; etat SELAS repo non vierge |
+| Audit reutilisation | INCONNU | Peut avoir ete fait dans le thread Naomie, mais pas visible sans sync |
+| Matrice documentaire | INCONNU | Peut avoir ete faite dans le thread Naomie, mais pas visible sans sync |
+| Parcours metier | INCONNU | Peut avoir ete traite dans le thread Naomie, mais pas visible sans sync |
+| Tickets sprint | INCONNU | A verifier via commit pousse ou Sync packet |
+| Validation Gad | MANQUANTE DANS TRACES PUBLIEES | Aucun `GO dev` visible cote branche publiee |
+| Revue associe | ATTENTE ANNONCEE NON VERIFIEE | Gad indique attente retour humain, a confirmer via sync |
 
 ## Reponse obligatoire quand Naomie arrive
 
-Si Naomie dit seulement `Bonjour`, repondre :
+Si Naomie est l'interlocutrice active deja identifiee et dit seulement
+`Bonjour`, repondre :
 
 ```text
 Statut sprint : Phase 3 - NOTEBOOKLM / NO-GO dev
@@ -78,6 +115,14 @@ Prochaine etape : je structure ta reponse dans SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md
 
 Puis donner le Prompt NotebookLM 01 complet depuis
 `docs/sprints/SPRINT_SELAS_NOTEBOOKLM_PROMPTS_V1.md`.
+
+Si un nouveau chat dit seulement `Bonjour` sans identite explicite, ne pas
+declencher ce bloc. Demander d'abord :
+
+```text
+Bonjour, tu es Gad ou Naomi ?
+Je te route ensuite sur le bon protocole projet.
+```
 
 Reponse explicitement interdite :
 
@@ -162,28 +207,34 @@ Statut : A FAIRE.
 | Ordre | Ticket | Statut | Objet | Criteria |
 | --- | --- | --- | --- | --- |
 | 1 | SELAS-SOURCES-NOTEBOOKLM-001 | IN_PROGRESS | Piloter la boucle NotebookLM par prompts courts | Reponses structurees dans `SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md`, contradictions listees |
-| 2 | SELAS-REUSE-AUDIT-001 | BLOCKED | Auditer reutilisation SELARL/global | Debloque apres sources/NotebookLM |
-| 3 | SELAS-MATRIX-001 | BLOCKED | Produire matrice documentaire SELAS | Debloque apres reuse audit |
-| 4 | SELAS-FRONT-CONTRACT-001 | BLOCKED | Ecrire contrat metier-front | Debloque apres matrice |
-| 5 | SELAS-GO-DEV-FIRST-TICKET-001 | BLOCKED | Obtenir GO dev borne | Debloque apres validation Gad |
+| 2 | SELAS-NAOMIE-TRACE-RECOVERY-001 | DONE | Reconstituer les traces du flux Naomie SELAS avant suivi complet | Rapport `docs/review/selas_naomie_backfill_001_report_v1.md` + worklog mis a jour |
+| 3 | SELAS-REUSE-AUDIT-001 | BLOCKED | Auditer reutilisation SELARL/global | Debloque apres sources/NotebookLM et suivi de flux a jour |
+| 4 | SELAS-MATRIX-001 | BLOCKED | Produire matrice documentaire SELAS | Debloque apres reuse audit |
+| 5 | SELAS-FRONT-CONTRACT-001 | BLOCKED | Ecrire contrat metier-front | Debloque apres matrice |
+| 6 | SELAS-GO-DEV-FIRST-TICKET-001 | BLOCKED | Obtenir GO dev borne | Debloque apres validation Gad |
 
 ## Blocages actuels
 
-- NotebookLM non interroge.
-- Audit de reutilisation non fait.
-- Matrice documentaire non faite.
-- Aucun `GO dev` donne par Gad.
-- Aucune revue associe possible tant qu'aucun pack SELAS n'existe.
+- Sync Naomie manquante : Gad annonce une avancee jusqu'a attente retour humain,
+  mais la branche publiee ne montre pas encore le commit, le pack ou le rapport
+  correspondant.
+- NotebookLM/reuse/matrice/pack sont `INCONNU` dans les traces publiees, pas
+  forcement non faits.
+- Aucun `GO dev` donne par Gad n'est visible dans les traces publiees.
+- Le rapport boss ne doit pas requalifier SELAS tant que le commit pousse ou le
+  Sync packet n'a pas ete recu.
 
 ## Prochaine action concrete
 
-1. Quand Naomie arrive, Codex verifie la branche `codex/naomie-selas-sprint`.
-2. Codex l'accueille en phase 0 avec le point pedagogie.
-3. Si Naomie dit qu'elle veut lancer/reprendre le sprint, Codex lance uniquement le sous-sprint NotebookLM.
-4. Codex donne le Prompt NotebookLM 01 a copier-coller.
-5. Naomie colle la reponse NotebookLM.
-6. Codex structure la reponse dans le journal, puis choisit le prompt suivant selon les trous.
-7. Codex reste dans NotebookLM tant que la couverture minimale n'est pas atteinte.
+1. Demander a Naomie un Sync checkpoint selon
+   `docs/project/NAOMIE_WORKSTREAM_SYNC_PROTOCOL_V1.md`.
+2. Si le travail est local et coherent, le pousser sur
+   `codex/naomie-selas-sprint`.
+3. Si le push bloque, produire un Sync packet complet.
+4. Lire le commit pousse ou le Sync packet, puis requalifier les gates SELAS :
+   NotebookLM, reuse, matrice, pack, retour humain.
+5. Rester en `NO-GO dev` tant que la preuve de sync et les gates ne sont pas
+   confirmes.
 
 ## Statut final
 

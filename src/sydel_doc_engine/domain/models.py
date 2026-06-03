@@ -31,6 +31,8 @@ class Person(BaseModel):
     adresse_personnelle_affichee: str | None = None
     adresse_perso: Address | None = None
     date_naissance: date | None = None
+    ville_naissance: str | None = None
+    ville_naissance_article_au: bool = False
     nationalite: str | None = None
     nom_pere: str | None = None
     nom_mere: str | None = None
@@ -715,6 +717,7 @@ class OrdreAddress(BaseModel):
 
 class OrdreProfessionnel(BaseModel):
     conseil_departemental_libelle: str | None = None
+    departement_inscription: str | None = None
     destinataire_appel: str | None = None
     profession_signataire_affichee: str | None = None
     profession_ligne_destinataire: str | None = None
@@ -759,6 +762,7 @@ class Associe(BaseModel):
     ordre: SpfplOrdre | None = None
     apport_numeraire: str | None = None
     apport_numeraire_lettres: str | None = None
+    nb_parts_lettres: str | None = None
 
 
 class DirigeantNomine(BaseModel):
@@ -785,6 +789,9 @@ class ReunionPresident(BaseModel):
     prenom: str | None = None
     nom: str | None = None
     qualite: str | None = None
+    civilite_president_seance: str | None = None
+    prenom_president_seance: str | None = None
+    nom_personne_seance: str | None = None
 
 
 class ReunionContext(BaseModel):

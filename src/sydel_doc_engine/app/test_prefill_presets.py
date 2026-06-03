@@ -214,6 +214,10 @@ def _selarl_input_from_widget_values(
         personne_prenom=_text(values, "selarl_personne_prenom"),
         personne_nom=_text(values, "selarl_personne_nom"),
         personne_date_naissance=_text(values, "selarl_personne_date_naissance"),
+        personne_ville_naissance=_text(values, "selarl_personne_ville_naissance"),
+        personne_ville_naissance_article_au=_bool_value(
+            values.get("selarl_personne_ville_naissance_article_au")
+        ),
         personne_nationalite=_text(values, "selarl_personne_nationalite"),
         personne_nom_pere=_text(values, "selarl_personne_nom_pere"),
         personne_nom_mere=_text(values, "selarl_personne_nom_mere"),
@@ -362,6 +366,10 @@ def _sci_input_from_widget_values(values: dict[str, object]) -> BusinessWizardIn
         personne_prenom=_text(values, "business_personne_prenom"),
         personne_nom=_text(values, "business_personne_nom"),
         personne_date_naissance=_text(values, "business_personne_date_naissance"),
+        personne_ville_naissance=_text(values, "business_personne_ville_naissance"),
+        personne_ville_naissance_article_au=_bool_value(
+            values.get("business_personne_ville_naissance_article_au")
+        ),
         personne_nationalite=_text(values, "business_personne_nationalite"),
         personne_nom_pere=_text(values, "business_personne_nom_pere"),
         personne_nom_mere=_text(values, "business_personne_nom_mere"),
@@ -774,6 +782,16 @@ def _populate_common_canonical_values(
     )
     _add_canonical_value(
         dossier,
+        "personne.signataire.ville_naissance",
+        data.personne_ville_naissance,
+    )
+    _add_canonical_value(
+        dossier,
+        "personne.signataire.ville_naissance_article_au",
+        data.personne_ville_naissance_article_au,
+    )
+    _add_canonical_value(
+        dossier,
         "personne.signataire.nationalite",
         data.personne_nationalite,
     )
@@ -1060,6 +1078,7 @@ def _common_selarl_values(
         "selarl_personne_nom": praticien_nom,
         "selarl_personne_date_naissance": "1985-04-03",
         "selarl_personne_ville_naissance": "Lyon",
+        "selarl_personne_ville_naissance_article_au": False,
         "selarl_personne_departement_naissance": "Rhone",
         "selarl_personne_nationalite": "francaise",
         "selarl_personne_nom_pere": f"Paul {praticien_nom}",
@@ -1259,6 +1278,8 @@ def _sci_simple_values() -> dict[str, object]:
         "business_personne_prenom": "Jean",
         "business_personne_nom": "Durand",
         "business_personne_date_naissance": "1990-02-03",
+        "business_personne_ville_naissance": "Paris",
+        "business_personne_ville_naissance_article_au": False,
         "business_personne_nationalite": "francaise",
         "business_personne_nom_pere": "Pierre Durand",
         "business_personne_nom_mere": "Anne Martin",
@@ -1332,7 +1353,7 @@ BUSINESS_TEST_PREFILL_PRESETS: Final[tuple[BusinessTestPrefillPreset, ...]] = (
         case_type="SELARL",
         description=(
             "Active le regime communautaire, le site distinct et la derogation "
-            "pour voir DOC-006 avec reserve ainsi que DOC-013/DOC-014 manuels."
+            "pour voir DOC-005/DOC-006 generes ainsi que DOC-013/DOC-014 manuels."
         ),
         widget_values=_selarl_dentiste_regime_site_values(),
         front_data_profile=front_data_test_prefill_profile("selarl_dentiste_regime_site"),

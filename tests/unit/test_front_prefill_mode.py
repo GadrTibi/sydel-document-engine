@@ -92,7 +92,7 @@ def test_selarl_simple_prefill_is_generable_in_wizard_and_front_data() -> None:
     )
 
 
-def test_dentist_regime_site_prefill_keeps_reserve_and_manual_documents() -> None:
+def test_dentist_regime_site_prefill_generates_regime_and_keeps_manual_documents() -> None:
     label = _label_for_key("selarl_dentiste_regime_site")
     data = business_test_prefill_input(label)
     validation = evaluate_business_wizard(data)
@@ -101,7 +101,8 @@ def test_dentist_regime_site_prefill_keeps_reserve_and_manual_documents() -> Non
     assert data.regime_communautaire is True
     assert data.site_distinct is True
     assert data.derogation is True
-    assert status_by_code["DOC-006"].status is DocumentStatus.GENERABLE_WITH_RESERVE
+    assert status_by_code["DOC-005"].status is DocumentStatus.GENERABLE
+    assert status_by_code["DOC-006"].status is DocumentStatus.GENERABLE
     assert status_by_code["DOC-013"].status is DocumentStatus.MANUAL_ONLY
     assert status_by_code["DOC-014"].status is DocumentStatus.MANUAL_ONLY
     assert _row_status(validation, "DOC-013") == STATUS_MANUAL_ONLY

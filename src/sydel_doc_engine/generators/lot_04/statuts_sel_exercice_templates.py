@@ -6,11 +6,11 @@ from __future__ import annotations
 STATUTS_SELARL_DENTISTE_BLOCKS: tuple[str, ...] = (
     '[denomination_societe]',
     '[forme_sociale_complete] de [profession_reglementee]',
-    'Au capital de [capital_social]',
+    'Au capital de [capital_social] euros',
     'Siège social : [adresse_siege]',
     'LE SOUSSIGNE\xa0:',
-    '[civilite] [prenom] [nom], [profession], né le [date_naissance] à [ville_naissance] ([departement_naissance]), de nationalité [nationalite], demeurant [adresse_personnelle], [situation_maritale] sous le régime de [regime_matrimonial] avec [civilite_conjoint] [prenom_conjoint] [nom_conjoint].',
-    'Inscrit au Tableau de l’ordre départemental des [profession_reglementee_pluriel] de [ordre_departemental] sous le numéro RPPS [numero_rpps]. ',
+    '[civilite] [prenom] [nom], [profession], né le [date_naissance] à [ville_naissance] ([departement_naissance]), de nationalité [nationalite], demeurant [adresse_personnelle].',
+    'Inscrit au Tableau de l’ordre départemental des [profession_reglementee_pluriel] de [ordre_departemental] sous le numéro RPPS [numero_rpps], [situation_matrimoniale_statuts]. ',
     'A établi ainsi qu’il suit les statuts de la [forme_sociale_complete] de [profession_reglementee] qu’il a décidé d’instituer\xa0:',
     'ARTICLE 1 – FORME ',
     "La Société est une société d'exercice libéral à responsabilité limitée de [profession_reglementee_pluriel] (SELARL), régie par les dispositions du Code de commerce relatives aux sociétés commerciales et les lois en vigueur, les dispositions législatives et réglementaires applicables à la profession de [profession_reglementee], notamment l’ordonnance n°2023-77 du 8 février 2023 relative à l'exercice en société des professions libérales réglementées et les présents statuts.",
@@ -37,11 +37,11 @@ STATUTS_SELARL_DENTISTE_BLOCKS: tuple[str, ...] = (
     'ARTICLE 7 – APPORTS ',
     '[civilite] [prenom] [nom] apporte à la Société la somme de [montant_apport].   ',
     'Total des apports en numéraire : ci- [montant_apport].',
-    'Cette somme de [montant_apport_lettres] a été déposée par l’associé unique conformément à la loi, au crédit d’un compte ouvert au nom de la société en formation dans les livres de la banque [nom_banque].',
+    'Cette somme de [montant_apport_lettres] a été déposée par l’[qualite_associe_article_8] conformément à la loi, au crédit d’un compte ouvert au nom de la société en formation dans les livres de la banque [nom_banque].',
     'ARTICLE 8 - CAPITAL SOCIAL ',
     'Le capital social est fixé à la somme de [capital_lettres].',
     'Il est divisé en [nb_parts_total] parts de [valeur_nominale_part] chacune, entièrement souscrites et libérées dans les conditions exposées ci-dessus et attribuées comme suit\xa0: ',
-    'à Monsieur [prenom] [nom], mille parts sociales en pleine propriété, ci \t1000 parts  ',
+    'à [civilite] [prenom] [nom], [nb_parts_total_lettres] parts sociales en pleine propriété, ci \t[nb_parts_total] parts  ',
     'Total du nombre de parts composant le capital social : ………………………………………. [nb_parts_total] parts',
     'ARTICLE 9 - QUALITE D’ASSOCIE ',
     'Associés professionnels exerçant dans la société',
@@ -261,7 +261,7 @@ STATUTS_SELARL_DENTISTE_BLOCKS: tuple[str, ...] = (
     '«\xa0Lu et approuvé\xa0»)',
     'ANNEXE',
     'Liste des actes accomplis pour le compte de la société en formation',
-    'Ouverture d’un compte bancaire',
+    '-\tOuverture d’un compte bancaire',
 )
 
 STATUTS_SELARL_MEDECIN_BLOCKS: tuple[str, ...] = (
@@ -270,7 +270,7 @@ STATUTS_SELARL_MEDECIN_BLOCKS: tuple[str, ...] = (
     'Au capital de [capital_social] €',
     'Siège social\xa0: [adresse_siege]',
     'LE SOUSSIGNE\xa0:',
-    '[civilite] [prenom] [nom], [profession], né le [date_naissance] à [ville_naissance] ([departement_naissance]), de nationalité [nationalite], demeurant [adresse_personnelle], inscrit au tableau du Conseil départemental de [ville_ordre] sous le numéro national [numero_ordre] et sous le numéro RPPS [numero_rpps], [situation_maritale]. ',
+    '[civilite] [prenom] [nom], [profession], né le [date_naissance] à [ville_naissance] ([departement_naissance]), de nationalité [nationalite], demeurant [adresse_personnelle], inscrit au tableau du Conseil départemental de [ville_ordre] sous le numéro national [numero_ordre] et sous le numéro RPPS [numero_rpps], [situation_matrimoniale_statuts]. ',
     'A établi ainsi qu’il suit les statuts de la Société d’exercice libéral à responsabilité limitée de médecins qu’il a décidé d’instituer\xa0:',
     'ARTICLE 1 – FORME ',
     'Il est formé par le soussigné, une [forme_sociale_complete] (SELARL), qui existera entre les propriétaires des parts ci-après créées, celles qui pourront être créées ultérieurement, leurs cessionnaires et ceux qui pourront le devenir ultérieurement.',
@@ -306,7 +306,7 @@ STATUTS_SELARL_MEDECIN_BLOCKS: tuple[str, ...] = (
     'Cette somme a été intégralement déposée conformément à la loi, au crédit d’un compte ouvert au nom de la société en formation dans les livres de la banque [nom_banque] [adresse_banque].',
     'ARTICLE 8 - CAPITAL SOCIAL ',
     'Le capital social est fixé à la somme [capital_social] euros.',
-    'Il est divisé en [nb_parts_total] parts de [valeur_nominale_part] euro chacune, entièrement souscrites et libérées dans les conditions exposées ci-dessus et attribuées en totalité au Docteur [prenom] [nom], associée unique.',
+    'Il est divisé en [nb_parts_total] parts de [valeur_nominale_part] euro chacune, entièrement souscrites et libérées dans les conditions exposées ci-dessus et attribuées en totalité au Docteur [prenom] [nom], [qualite_associe_article_8].',
     '[civilite_personne_2] [prenom_personne_2] [nom_personne_2]\t……………………………………………………….……..[nb_parts_total] parts',
     'Total du nombre de parts composant le capital social\xa0: ……………………………………….[nb_parts_total] parts',
     'ARTICLE 9 - QUALITE D’ASSOCIE ',
@@ -583,7 +583,7 @@ STATUTS_SELARL_MEDECIN_BLOCKS: tuple[str, ...] = (
     '«\xa0Lu et approuvé\xa0»)',
     'ANNEXE',
     'Liste des actes accomplis pour le compte de la société en formation',
-    'Ouverture d’un compte bancaire',
+    '-\tOuverture d’un compte bancaire',
 )
 
 STATUTS_SELAS_MEDECIN_BLOCKS: tuple[str, ...] = (

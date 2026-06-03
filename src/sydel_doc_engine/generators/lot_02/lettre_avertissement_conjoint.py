@@ -4,7 +4,7 @@ from pathlib import Path
 
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
-from sydel_doc_engine.domain.models import Company, DocumentGenerationContext, Person
+from sydel_doc_engine.domain.models import Address, Company, DocumentGenerationContext, Person
 from sydel_doc_engine.generators.lot_02.regime_communautaire_common import (
     SELARL_STRUCTURE,
     city_line,
@@ -49,7 +49,7 @@ class LettreAvertissementConjointGenerator:
             )
 
         document = new_document(style_profile=LETTER_WIDE_STYLE_PROFILE)
-        _add_company_block(document, company)
+        _add_company_block(document, company, ctx)
         add_spacer(document, space_after_pt=12)
         _add_conjoint_block(document, ctx)
         date_signature = format_display_date(
@@ -76,7 +76,7 @@ class LettreAvertissementConjointGenerator:
             ),
             alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
         )
-        _add_company_block(document, company)
+        _add_company_block(document, company, ctx)
         add_hyphen_list_item(
             document,
             (
@@ -87,7 +87,7 @@ class LettreAvertissementConjointGenerator:
             ),
             alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
         )
-        add_paragraph(document, "Fait en trois exemplaires")
+        add_paragraph(document, "Fait en quatre exemplaires")
         _add_apporteur_signature_block(document, ctx)
         add_paragraph(document, _conjoint_line(ctx))
         add_italic_instruction(document, _mention_manuscrite(ctx, company, structure))
@@ -98,13 +98,17 @@ class LettreAvertissementConjointGenerator:
         return output_path
 
 
-def _add_company_block(document, company: Company) -> None:
+def _add_company_block(
+    document,
+    company: Company,
+    ctx: DocumentGenerationContext,
+) -> None:
     siege = required_address(company.siege, "societe.siege")
     add_company_identity_block(
         document,
         [
             required_text(company.denomination, "societe.denomination"),
-            company_forme_sociale(company),
+            _company_forme_sociale_header(company, ctx),
             f"Au capital de {company_capital_social(company)} €",
             street_line(siege),
             city_line(siege),
@@ -115,8 +119,7 @@ def _add_company_block(document, company: Company) -> None:
 
 
 def _add_conjoint_block(document, ctx: DocumentGenerationContext) -> None:
-    conjoint = _required_conjoint(ctx)
-    address = required_address(conjoint.adresse_perso, "conjoint.adresse")
+    address = _conjoint_address(ctx)
     add_right_aligned_lines(
         document,
         [
@@ -126,6 +129,16 @@ def _add_conjoint_block(document, ctx: DocumentGenerationContext) -> None:
         ],
         space_after_pt=2,
     )
+
+
+def _conjoint_address(ctx: DocumentGenerationContext) -> Address:
+    if ctx.personne_signataire.adresse_perso is not None:
+        return required_address(
+            ctx.personne_signataire.adresse_perso,
+            "personne_signataire.adresse_perso",
+        )
+    conjoint = _required_conjoint(ctx)
+    return required_address(conjoint.adresse_perso, "conjoint.adresse")
 
 
 def _required_conjoint(ctx: DocumentGenerationContext) -> Person:
@@ -144,6 +157,63 @@ def _conjoint_line(ctx: DocumentGenerationContext) -> str:
     civilite = required_text(conjoint.civilite, "conjoint.civilite_affichage")
     nom = required_text(conjoint.nom, "conjoint.nom")
     return f"{civilite} {nom}"
+
+
+def _company_forme_sociale_header(
+    company: Company,
+    ctx: DocumentGenerationContext,
+) -> str:
+    base = _known_forme_sociale_header(company) or required_text(
+        company.forme_sociale_complete
+        or company.forme_sociale_libelle_long
+        or company.forme_sociale_affichage
+        or company_forme_sociale(company),
+        "societe.forme_sociale_complete",
+    )
+    profession = _sel_profession_for_header(company, ctx)
+    if profession and not _normalized_contains_profession(base, profession):
+        return f"{base} de {profession}"
+    return base
+
+
+def _known_forme_sociale_header(company: Company) -> str | None:
+    acronym = (company.forme_sociale_abregee or company.forme_sociale or "").strip().upper()
+    if acronym == "SELARL":
+        return "Société d’exercice libéral à responsabilité limitée"
+    if acronym == "SELAS":
+        return "Société d’exercice libéral par actions simplifiée"
+    return None
+
+
+def _sel_profession_for_header(
+    company: Company,
+    ctx: DocumentGenerationContext,
+) -> str | None:
+    acronym = (company.forme_sociale_abregee or company.forme_sociale or "").strip().upper()
+    if acronym not in {"SELARL", "SELAS"}:
+        return None
+    for associe in ctx.associes:
+        profession = (
+            associe.profession_reglementee
+            or associe.profession
+            or associe.qualification_principale
+        )
+        if profession and profession.strip():
+            return profession.strip()
+    if ctx.statuts_sel is not None and ctx.statuts_sel.profession:
+        return ctx.statuts_sel.profession.strip()
+    profession = ctx.personne_signataire.qualification_principale
+    return profession.strip() if profession and profession.strip() else None
+
+
+def _normalized_contains_profession(base: str, profession: str) -> bool:
+    return _normalize_for_match(base).endswith(
+        f" de {_normalize_for_match(profession)}"
+    )
+
+
+def _normalize_for_match(value: str) -> str:
+    return " ".join(value.casefold().replace("’", "'").split())
 
 
 def _add_apporteur_signature_block(document, ctx: DocumentGenerationContext) -> None:

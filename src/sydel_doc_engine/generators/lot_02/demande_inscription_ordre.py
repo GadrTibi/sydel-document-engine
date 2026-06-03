@@ -55,11 +55,12 @@ class DemandeInscriptionOrdreGenerator:
             signataire.adresse_personnelle_affichee,
             "personne_signataire.adresse_personnelle_affichee",
         )
-        conseil_libelle = _required_text(
-            ordre.conseil_departemental_libelle,
-            "ordre.conseil_departemental_libelle",
-        )
         profession_ligne_destinataire = _profession_ligne_destinataire(ordre)
+        conseil_lines = _conseil_departemental_lines(
+            ordre,
+            overlay=overlay,
+            profession_ligne_destinataire=profession_ligne_destinataire,
+        )
         profession_reglementee = _required_text(
             ordre.profession_reglementee_pluriel,
             "ordre.profession_reglementee_pluriel",
@@ -79,8 +80,7 @@ class DemandeInscriptionOrdreGenerator:
             signataire_name=signataire_name,
             profession_signataire=profession_signataire,
             adresse_personnelle=adresse_personnelle,
-            conseil_libelle=conseil_libelle,
-            profession_ligne_destinataire=profession_ligne_destinataire,
+            conseil_lines=conseil_lines,
             adresse_ordre_lines=adresse_ordre_lines,
         )
         _add_signature_place_and_subject(document, ctx)
@@ -159,6 +159,30 @@ def _profession_ligne_destinataire(ordre: OrdreProfessionnel) -> str:
     )
 
 
+def _conseil_departemental_lines(
+    ordre: OrdreProfessionnel,
+    *,
+    overlay: str,
+    profession_ligne_destinataire: str,
+) -> list[str]:
+    if overlay == OVERLAY_SEL and ordre.departement_inscription:
+        departement = _required_text(
+            ordre.departement_inscription,
+            "ordre.departement_inscription",
+        )
+        return [
+            (
+                "Conseil départemental de l'Ordre des "
+                f"{profession_ligne_destinataire} de {departement}"
+            )
+        ]
+    conseil_libelle = _required_text(
+        ordre.conseil_departemental_libelle,
+        "ordre.conseil_departemental_libelle",
+    )
+    return [conseil_libelle, f"Des {profession_ligne_destinataire}"]
+
+
 def _ordre_address_lines(ordre: OrdreProfessionnel, overlay: str) -> list[str]:
     if overlay == OVERLAY_SEL:
         return _selarl_selas_address_lines(ordre)
@@ -233,8 +257,7 @@ def _add_header(
     signataire_name: str,
     profession_signataire: str,
     adresse_personnelle: str,
-    conseil_libelle: str,
-    profession_ligne_destinataire: str,
+    conseil_lines: list[str],
     adresse_ordre_lines: list[str],
 ) -> None:
     _add_lines(document, [signataire_name, profession_signataire])
@@ -242,7 +265,7 @@ def _add_header(
     add_spacer(document, space_after_pt=10)
     add_right_indented_block(
         document,
-        [conseil_libelle, f"Des {profession_ligne_destinataire}"],
+        conseil_lines,
         left_indent_cm=8.7,
         first_line_indent_cm=1.2,
         space_after_pt=2,

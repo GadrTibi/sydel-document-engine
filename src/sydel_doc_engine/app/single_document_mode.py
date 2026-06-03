@@ -126,6 +126,8 @@ class SingleDocumentInput:
     personne_prenom: str = ""
     personne_nom: str = ""
     personne_date_naissance: date | str | None = None
+    personne_ville_naissance: str = ""
+    personne_ville_naissance_article_au: bool = False
     personne_nationalite: str = ""
     personne_nom_pere: str = ""
     personne_nom_mere: str = ""
@@ -206,6 +208,19 @@ FIELD_SPECS_BY_DOCUMENT: Final[dict[str, tuple[SingleDocumentFieldSpec, ...]]] =
             "date",
             "1990-02-03",
             help_text="Format AAAA-MM-JJ.",
+        ),
+        SingleDocumentFieldSpec(
+            "personne_ville_naissance",
+            "Ville de naissance du signataire",
+            "Signataire",
+            example="Paris",
+        ),
+        SingleDocumentFieldSpec(
+            "personne_ville_naissance_article_au",
+            "Afficher au avant la ville de naissance",
+            "Signataire",
+            "bool",
+            False,
         ),
         SingleDocumentFieldSpec(
             "personne_nationalite",
@@ -641,6 +656,7 @@ def sample_single_document_input(
         personne_prenom="Jean",
         personne_nom="Durand",
         personne_date_naissance=date(1990, 2, 3),
+        personne_ville_naissance="Paris",
         personne_nationalite="francaise",
         personne_nom_pere="Pierre Durand",
         personne_nom_mere="Anne Martin",
@@ -847,6 +863,16 @@ def _populate_doc_001_front_data(
         dossier,
         "personne.signataire.date_naissance",
         data.personne_date_naissance,
+    )
+    _add_canonical_value(
+        dossier,
+        "personne.signataire.ville_naissance",
+        data.personne_ville_naissance,
+    )
+    _add_canonical_value(
+        dossier,
+        "personne.signataire.ville_naissance_article_au",
+        data.personne_ville_naissance_article_au,
     )
     _add_canonical_value(
         dossier,
@@ -1281,6 +1307,11 @@ def _build_doc_001_context(data: SingleDocumentInput) -> DocumentGenerationConte
             date_naissance=_required_date_value(
                 data.personne_date_naissance, "personne_date_naissance"
             ),
+            ville_naissance=_required_text_value(
+                data.personne_ville_naissance,
+                "personne_ville_naissance",
+            ),
+            ville_naissance_article_au=data.personne_ville_naissance_article_au,
             nationalite=_required_text_value(data.personne_nationalite, "personne_nationalite"),
             nom_pere=_required_text_value(data.personne_nom_pere, "personne_nom_pere"),
             nom_mere=_required_text_value(data.personne_nom_mere, "personne_nom_mere"),

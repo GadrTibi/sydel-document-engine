@@ -12,6 +12,7 @@ from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import (
     Address,
     Apport,
+    Associe,
     Company,
     DocumentGenerationContext,
     DossierOptions,
@@ -48,6 +49,12 @@ def _context(
             prenom="Jean",
             nom="Durand",
             fonction_dirigeant="président",
+            adresse_perso=Address(
+                num_voie="12",
+                voie="rue de l'Associe",
+                cp="75001",
+                ville="Paris",
+            ),
         ),
         conjoint=Person(
             genre=Gender.FEMININ,
@@ -130,15 +137,20 @@ def test_regime_communautaire_selas_generates_both_documents(tmp_path: Path) -> 
     renonciation_text = _docx_text(renonciation)
     avertissement_text = _docx_text(avertissement)
     assert "Par courrier en date du 14 mai 2026" in renonciation_text
+    assert "euros dépendant de notre communauté." in renonciation_text
+    assert "euros dépendant de notre regime de communaute." not in renonciation_text
     assert "personnellement actionnaire de cette société" in renonciation_text
+    assert "Fait pour servir et valoir ce que de droit." in renonciation_text
+    assert "RCS" not in renonciation_text
     assert "à la SELAS RC SANTE" in avertissement_text
     assert "Le  14/05/2026" in avertissement_text
     renonciation_section = Document(renonciation).sections[0]
     assert abs(renonciation_section.left_margin - Cm(3.17)) < 300
     assert abs(renonciation_section.right_margin - Cm(3.17)) < 300
-    assert _matching_paragraphs(renonciation, "A Paris")[0].alignment == (
+    assert _matching_paragraphs(renonciation, "À Paris")[0].alignment == (
         WD_ALIGN_PARAGRAPH.RIGHT
     )
+    assert "Le 15/05/2026" not in renonciation_text
     renonciation_subject = _matching_paragraphs(
         renonciation,
         "Objet : Lettre de renonciation à revendiquer la qualité d'associé",
@@ -187,6 +199,32 @@ def test_regime_communautaire_selarl_uses_societe_mention_without_abregee(
     assert "à la Société RC SANTE" in text
     assert "à la SELAS RC SANTE" not in text
     _assert_no_source_placeholders(text)
+
+
+def test_selarl_avertissement_uses_written_form_and_associe_address(
+    tmp_path: Path,
+) -> None:
+    ctx = _context("SELARL", forme_sociale_abregee="SELARL", qualite_renoncee="associé")
+    ctx.associes = [
+        Associe(
+            genre=Gender.MASCULIN,
+            civilite_affichage="Monsieur",
+            prenom="Jean",
+            nom="Durand",
+            nb_parts=100,
+            profession_reglementee="médecin",
+        )
+    ]
+
+    text = _docx_text(LettreAvertissementConjointGenerator().generate(ctx, tmp_path))
+
+    assert "Société d’exercice libéral à responsabilité limitée de médecin" in text
+    assert "12 rue de l'Associe" in text
+    assert "75001 Paris" in text
+    assert "24 rue de la Paix" not in text
+    assert "75002 Paris" not in text
+    assert "Fait en quatre exemplaires" in text
+    assert "Fait en trois exemplaires" not in text
 
 
 @pytest.mark.parametrize("structure", ["SPFPL cession", "SPFPL apport"])

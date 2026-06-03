@@ -19,6 +19,8 @@ from sydel_doc_engine.app.front_dossier_editor import (
 )
 from sydel_doc_engine.front_data import DossierRecord, OperationType
 
+INTERNAL_TOOLS_SESSION_FLAG = "_sydel_internal_tools_unlocked"
+
 
 def test_front_dossier_editor_builds_minimal_dossier_from_profile() -> None:
     dossier = build_front_dossier_editor_dossier("SELARL creation simple")
@@ -114,6 +116,9 @@ def test_streamlit_shell_keeps_prototype_zone_secondary() -> None:
     app = AppTest.from_file("src/sydel_doc_engine/app/streamlit_app.py").run(timeout=120)
 
     assert len(app.radio) == 0
+    assert not any(item.label == "Outils internes" for item in app.checkbox)
+    app.session_state[INTERNAL_TOOLS_SESSION_FLAG] = True
+    app.run(timeout=120)
     app.checkbox(key="front_internal_tools_enabled").set_value(True)
     app.run(timeout=120)
 
