@@ -189,8 +189,9 @@ Limites :
 | 23 | `SELARL-HUMAN-RETURNS-DEEP-AUDIT-006` | DONE historique | Verifier retours 006 sur pack 005 | Ancien audit trop confiant ; amende par `SELARL-RETURNS-006-INCIDENT-GENERALIZED-AUDIT-001` |
 | 24 | `SELARL-RETURNS-006-CONJOINT-ADDRESS-FRONT-LOCK-001` | DONE | Verrouiller adresse conjoint cote front/schema | Incident Gad/associe confirme ; aucune saisie adresse conjoint, derivee depuis adresse personnelle ; tests anti-regression OK |
 | 25 | `SELARL-RETURNS-006-INCIDENT-GENERALIZED-AUDIT-001` | DONE | Rejouer les incidents associe sur toutes les surfaces | Ecart `DOC-002` trouve et corrige ; pack 005 regenere localement ; regression 187 tests OK |
-| 26 | `SELARL-CANONICAL-CLOSE-001` | BLOCKED | Clore le statut canonique SELARL simple/regime | Debloque apres validation finale associe ou corrections d'ecarts concrets |
-| 27 | `SELARL-NEXT-SUBCASE-SELECTION-001` | READY | Choisir un seul sous-cas complexe suivant | Decision Gad : cession, SCM, multi-associes complet, plusieurs gerants, derogation, site distinct, ou report |
+| 26 | `SELARL-RETURNS-007-SIGNATURE-DNC-001` | DONE | Traiter nouveaux retours associe signatures/DNC | Signatures DOC-001/002/003 sans table ; DNC ville naissance verifiee ; pack 005 regenere ; regression 187 tests OK |
+| 27 | `SELARL-CANONICAL-CLOSE-001` | BLOCKED | Clore le statut canonique SELARL simple/regime | Debloque apres validation finale associe ou corrections d'ecarts concrets |
+| 28 | `SELARL-NEXT-SUBCASE-SELECTION-001` | READY | Choisir un seul sous-cas complexe suivant | Decision Gad : cession, SCM, multi-associes complet, plusieurs gerants, derogation, site distinct, ou report |
 
 ## Gate de cloture
 

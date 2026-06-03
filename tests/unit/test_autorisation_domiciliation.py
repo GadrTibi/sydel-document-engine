@@ -160,9 +160,13 @@ def test_autorisation_domiciliation_does_not_use_signature_image(tmp_path: Path)
     assert len(Document(output_path).inline_shapes) == 0
 
 
-def test_autorisation_domiciliation_uses_unframed_signature_block(tmp_path: Path) -> None:
+def test_autorisation_domiciliation_uses_signature_paragraphs_without_table(
+    tmp_path: Path,
+) -> None:
     document = Document(_generate(tmp_path))
 
-    signature_table = document.tables[1]
-    assert not _table_has_explicit_borders(signature_table)
-    assert "Monsieur Jean Durand" in _table_text(signature_table)
+    assert len(document.tables) == 1
+    paragraphs = [paragraph.text for paragraph in document.paragraphs if paragraph.text]
+    assert "Fait à Paris" in paragraphs
+    assert "Le 12/05/2026" in paragraphs
+    assert "Monsieur Jean Durand" in paragraphs

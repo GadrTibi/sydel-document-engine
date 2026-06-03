@@ -794,12 +794,31 @@ def add_simple_signature_block(
     style_profile: SydelDocxStyleProfile = DEFAULT_STYLE_PROFILE,
 ) -> Any:
     add_spacer(document)
-    table = document.add_table(rows=1, cols=2)
-    table.alignment = WD_TABLE_ALIGNMENT.RIGHT
-    right_cell = table.cell(0, 1)
-    right_cell.width = Cm(width_cm or style_profile.signature_width_cm)
-    _add_signature_cell_content(right_cell, lines, image_path, style_profile)
-    return table
+    paragraphs = [
+        add_paragraph(
+            document,
+            line,
+            alignment=WD_ALIGN_PARAGRAPH.RIGHT,
+            space_after_pt=style_profile.compact_space_after_pt,
+            style_profile=style_profile,
+        )
+        for line in lines
+    ]
+
+    signature_paragraph = document.add_paragraph()
+    signature_paragraph.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    signature_paragraph.paragraph_format.space_after = Pt(style_profile.compact_space_after_pt)
+    if image_path is not None:
+        if not image_path.exists():
+            raise ValueError(f"signature.image_optionnelle est introuvable : {image_path}")
+        signature_paragraph.add_run().add_picture(
+            str(image_path),
+            width=Cm(width_cm or style_profile.signature_image_width_cm),
+        )
+    else:
+        signature_paragraph.add_run("\n\n\n")
+    paragraphs.append(signature_paragraph)
+    return paragraphs
 
 
 def add_framed_signature_block(

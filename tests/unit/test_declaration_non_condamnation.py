@@ -149,9 +149,9 @@ def test_declaration_non_condamnation_matches_source_visual_formatting(tmp_path:
     assert all(run.bold for run in title_paragraph.runs if run.text.strip())
     assert _table_has_explicit_borders(title_table)
 
-    signature_table = document.tables[1]
-    assert not _table_has_explicit_borders(signature_table)
-    assert "Fait à Paris" in _table_text(signature_table)
+    assert len(document.tables) == 1
+    signature_paragraph = _find_paragraph(document, "Fait à Paris")
+    assert signature_paragraph.alignment == WD_ALIGN_PARAGRAPH.RIGHT
 
     subject_paragraph = _find_paragraph(document, "Je soussigné Monsieur Jean Durand")
     assert all(run.bold for run in subject_paragraph.runs if run.text.strip())
