@@ -59,6 +59,7 @@ from sydel_doc_engine.front_app.field_derivations import (
     calculate_nominal_value,
     date_to_french_words,
     derive_gender_from_civilite,
+    format_grouped_numeric_value,
     number_words_from_value,
 )
 from sydel_doc_engine.front_data import AddressUsage, BusinessRole, build_document_status_for_code
@@ -300,14 +301,14 @@ def validate_selarl_input(data: SelarlSliceInput) -> tuple[str, ...]:
         blockers.append("Date de decision requise.")
     if data.nb_parts_total < 1:
         blockers.append("Nombre de parts requis et superieur a zero.")
-    if data.profession == PROFESSION_DENTISTE:
+    if data.profession == PROFESSION_DENTISTE or _is_married(data):
         blockers.extend(
             _missing_for_fields(
                 data,
                 (
-                    ("conjoint_civilite", "Civilite du conjoint requise pour DOC-016."),
-                    ("conjoint_prenom", "Prenom du conjoint requis pour DOC-016."),
-                    ("conjoint_nom", "Nom du conjoint requis pour DOC-016."),
+                    ("conjoint_civilite", "Civilite du conjoint requise pour les statuts."),
+                    ("conjoint_prenom", "Prenom du conjoint requis pour les statuts."),
+                    ("conjoint_nom", "Nom du conjoint requis pour les statuts."),
                 ),
             )
         )
@@ -464,6 +465,7 @@ def build_generation_context(data: SelarlSliceInput) -> DocumentGenerationContex
         data.capital_social,
         data.nb_parts_total,
     )
+    capital_social_display = format_grouped_numeric_value(data.capital_social)
     valeur_nominale_part_lettres = (
         data.valeur_nominale_part_lettres or number_words_from_value(valeur_nominale_part)
     )
@@ -504,8 +506,8 @@ def build_generation_context(data: SelarlSliceInput) -> DocumentGenerationContex
         forme_sociale_abregee="SELARL",
         denomination=data.denomination,
         denomination_courte=data.denomination,
-        capital=data.capital_social,
-        capital_social=data.capital_social,
+        capital=capital_social_display,
+        capital_social=capital_social_display,
         capital_social_lettres=capital_social_lettres,
         capital_variable=True,
         duree=data.duree,
@@ -572,7 +574,7 @@ def build_generation_context(data: SelarlSliceInput) -> DocumentGenerationContex
             nb_parts_total=data.nb_parts_total,
             valeur_nominale_part=valeur_nominale_part,
             nb_parts_representees=data.nb_parts_total,
-            montant=data.capital_social,
+            montant=capital_social_display,
             montant_lettres=capital_social_lettres,
             nombre_titres_total=data.nb_parts_total,
             nombre_titres_total_lettres=nb_parts_total_lettres,
@@ -585,7 +587,7 @@ def build_generation_context(data: SelarlSliceInput) -> DocumentGenerationContex
             seuil_emprunt=seuil_emprunt,
         ),
         apport=Apport(
-            montant=data.capital_social,
+            montant=capital_social_display,
             montant_lettres=capital_social_lettres,
         ),
         regime_communautaire=_regime_communautaire(data),
@@ -598,7 +600,7 @@ def build_generation_context(data: SelarlSliceInput) -> DocumentGenerationContex
                 nom=data.depot_banque_nom,
                 adresse_affichee=data.depot_banque_adresse,
             ),
-            montant=data.capital_social,
+            montant=capital_social_display,
         ),
         exercice_social=ExerciceSocial(
             debut=data.exercice_debut,
@@ -890,13 +892,13 @@ def _statuts_overlay(profession: str) -> str:
 def _profession_label(profession: str) -> str:
     if profession == PROFESSION_DENTISTE:
         return "chirurgien-dentiste"
-    return "medecin"
+    return "médecin"
 
 
 def _profession_plural(profession: str) -> str:
     if profession == PROFESSION_DENTISTE:
         return "chirurgiens-dentistes"
-    return "medecins"
+    return "médecins"
 
 
 def _ordre(
@@ -907,7 +909,7 @@ def _ordre(
     return OrdreProfessionnel(
         conseil_departemental_libelle=data.ordre_conseil,
         departement_inscription=data.departement_ordre,
-        destinataire_appel="Monsieur le President",
+        destinataire_appel="Monsieur le Président",
         profession_signataire_affichee=profession_label,
         profession_ligne_destinataire=profession_plural,
         profession_reglementee_pluriel=profession_plural,
@@ -979,7 +981,7 @@ def _parts_amount(nb_parts: int, valeur_nominale_part: str) -> str:
         return ""
     total = amount * Decimal(nb_parts)
     if total == total.to_integral_value():
-        return str(int(total))
+        return format_grouped_numeric_value(str(int(total)))
     return format(total.normalize(), "f").replace(".", ",")
 
 
@@ -1013,6 +1015,8 @@ def _associe(
     apport_montant = data.capital_social
     if _is_multi_associes_simple(data):
         apport_montant = _parts_amount(nb_parts, data.valeur_nominale_part)
+    else:
+        apport_montant = format_grouped_numeric_value(apport_montant)
     return Associe(
         genre=data.genre,
         civilite_affichage=data.civilite,
@@ -1050,7 +1054,11 @@ def _associe(
 def _needs_conjoint(data: SelarlSliceInput) -> bool:
     if data.multi_associes_doc004_limited and not data.dentist_multi_associes_statuts_partial:
         return False
-    return data.profession == PROFESSION_DENTISTE or data.regime_communautaire
+    return data.profession == PROFESSION_DENTISTE or data.regime_communautaire or _is_married(data)
+
+
+def _is_married(data: SelarlSliceInput) -> bool:
+    return "marie" in data.situation_maritale.casefold()
 
 
 def _spfpl_conjoint(data: SelarlSliceInput) -> SpfplConjoint:

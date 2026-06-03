@@ -228,7 +228,7 @@ def _test_companies() -> tuple[dict[str, str], ...]:
 
 def _ordre_label(profession_label: str, ville: str) -> str:
     profession = (
-        "chirurgiens-dentistes" if profession_label == "Chirurgien-dentiste" else "medecins"
+        "chirurgiens-dentistes" if profession_label == "Chirurgien-dentiste" else "médecins"
     )
     return f"Conseil departemental de l'Ordre des {profession} de {ville}"
 
@@ -254,6 +254,7 @@ def _render_data_entry_zone(dossier_type: DossierTypeOption) -> CleanDataEntry:
     conjoint = _render_conjoint(
         profession=qualification["profession"],
         regime_communautaire=qualification["regime_communautaire"],
+        situation_maritale=praticien["situation_maritale"],
     )
     return build_clean_data_entry(
         dossier_type,
@@ -705,8 +706,10 @@ def _render_conjoint(
     *,
     profession: str,
     regime_communautaire: bool,
+    situation_maritale: object,
 ) -> dict[str, object]:
-    if profession != PROFESSION_DENTISTE and not regime_communautaire:
+    is_married = "marie" in str(situation_maritale).casefold()
+    if profession != PROFESSION_DENTISTE and not regime_communautaire and not is_married:
         return {
             "conjoint_civilite": "",
             "conjoint_genre": derive_gender_from_civilite("Madame"),

@@ -115,6 +115,51 @@ def test_clean_front_selarl_regime_does_not_require_conjoint_address() -> None:
     assert ctx.conjoint.adresse_perso.adresse_affichee == "10 rue Test, 75001 Paris"
 
 
+def test_clean_front_selarl_medecin_separation_de_biens_generates_statuts(
+    tmp_path: Path,
+) -> None:
+    dossier_type = dossier_type_by_label("SELARL creation V1")
+    data_entry = _valid_selarl_input(
+        PROFESSION_MEDECIN,
+        married_separation=True,
+    )
+
+    plan = build_clean_generation_plan(dossier_type, data_entry)
+    ctx = build_generation_context(data_entry)
+    generated = generate_selarl_dossier(data_entry, tmp_path / "selarl-medecin-separation")
+    statuts_path = next(path for path in generated.docx_paths if path.name.startswith("statuts"))
+    statuts_text = _docx_text(statuts_path)
+
+    assert plan.can_generate is True
+    assert "DOC-005" not in plan.document_codes
+    assert "DOC-006" not in plan.document_codes
+    assert ctx.conjoint is not None
+    assert ctx.conjoint.adresse_perso is None
+    assert ctx.associes[0].conjoint is not None
+    assert (
+        "marié sous le régime de la séparation de biens avec Madame Claire Martin"
+        in statuts_text
+    )
+
+
+def test_clean_front_selarl_medecin_separation_de_biens_blocks_without_conjoint() -> None:
+    dossier_type = dossier_type_by_label("SELARL creation V1")
+    kwargs = _valid_selarl_kwargs(PROFESSION_MEDECIN, married_separation=True)
+    kwargs.update(
+        {
+            "conjoint_civilite": "",
+            "conjoint_prenom": "",
+            "conjoint_nom": "",
+        }
+    )
+    data_entry = build_clean_data_entry(dossier_type, **kwargs)
+
+    plan = build_clean_generation_plan(dossier_type, data_entry)
+
+    assert plan.can_generate is False
+    assert any("conjoint" in blocker.casefold() for blocker in plan.blockers)
+
+
 def test_clean_front_selarl_regime_ui_never_exposes_conjoint_address_fields() -> None:
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=120)
 
@@ -396,6 +441,11 @@ def test_clean_front_selarl_generation_smoke(tmp_path: Path) -> None:
     }
     combined_text = "\n".join(_docx_text(path) for path in generated.docx_paths)
     assert "SELARL SELARL" not in combined_text
+    assert "Société d’exercice libéral à responsabilité limitée de médecin" in combined_text
+    assert "Conseil départemental de l'Ordre des médecins de 75" in combined_text
+    assert "Au capital de 1 000 euros" in combined_text
+    assert "Au capital de 1000" not in combined_text
+    assert " medecin" not in combined_text
 
 
 def test_clean_front_selarl_medecin_regime_communautaire_generation_smoke(
@@ -428,6 +478,10 @@ def test_clean_front_selarl_medecin_regime_communautaire_generation_smoke(
     assert "SELARL SELARL" not in combined_text
     assert "RCS PARIS 788 531 432" not in combined_text
     assert "0153814303" not in combined_text
+    assert "Société d’exercice libéral à responsabilité limitée de médecin" in combined_text
+    assert "Au capital de 1 000 €" in combined_text
+    assert "Au capital de 1000" not in combined_text
+    assert " medecin" not in combined_text
     assert f"Par courrier en date du {date.today():%d/%m/%Y}" in combined_text
     assert "euros dependant de notre communaute." in ascii_text
     assert "regime de communaute" not in ascii_text
@@ -621,12 +675,14 @@ def _valid_selarl_input(
     profession: str,
     *,
     regime_communautaire: bool = False,
+    married_separation: bool = False,
     **overrides: object,
 ):
     dossier_type = dossier_type_by_label("SELARL creation V1")
     values = _valid_selarl_kwargs(
         profession,
         regime_communautaire=regime_communautaire,
+        married_separation=married_separation,
     )
     values.update(overrides)
     return build_clean_data_entry(
@@ -683,7 +739,9 @@ def _valid_selarl_kwargs(
     profession: str,
     *,
     regime_communautaire: bool = False,
+    married_separation: bool = False,
 ) -> dict[str, object]:
+    is_married = regime_communautaire or married_separation
     return {
         "dossier_reference": "B-SELARL-001",
         "profession": profession,
@@ -695,15 +753,21 @@ def _valid_selarl_kwargs(
         "date_naissance": date(1984, 4, 12),
         "ville_naissance": "Paris",
         "departement_naissance": "75",
-        "nationalite": "francaise",
+        "nationalite": "française",
         "nom_pere": "Pierre Martin",
         "nom_mere": "Anne Martin",
         "adresse_num_voie": "10",
         "adresse_voie": "rue Test",
         "adresse_cp": "75001",
         "adresse_ville": "Paris",
-        "situation_maritale": "marie" if regime_communautaire else "celibataire",
-        "regime_matrimonial": "regime de communaute" if regime_communautaire else "",
+        "situation_maritale": "marie" if is_married else "celibataire",
+        "regime_matrimonial": (
+            "regime de communaute"
+            if regime_communautaire
+            else "separation de biens"
+            if married_separation
+            else ""
+        ),
         "numero_ordre": "ORD-123",
         "numero_rpps": "10000000001",
         "departement_ordre": "75",
@@ -733,7 +797,7 @@ def _valid_selarl_kwargs(
                 "conjoint_prenom": "Claire",
                 "conjoint_nom": "Martin",
             }
-            if profession == PROFESSION_DENTISTE or regime_communautaire
+            if profession == PROFESSION_DENTISTE or regime_communautaire or married_separation
             else {}
         ),
     }
