@@ -10,14 +10,14 @@ from sydel_doc_engine.domain.enums import Gender
 DEFAULT_MANDATAIRE_CIVILITE: Final = "Monsieur"
 DEFAULT_MANDATAIRE_PRENOM: Final = "Jordan"
 DEFAULT_MANDATAIRE_NOM: Final = "ELBAZ"
-DEFAULT_MANDATAIRE_FONCTION: Final = "gerant"
+DEFAULT_MANDATAIRE_FONCTION: Final = "gérant"
 DEFAULT_MANDATAIRE_CABINET: Final = "SYDEL"
 DEFAULT_PRESTATAIRE_SIGNATURE_ELECTRONIQUE: Final = "Yousign"
 DEFAULT_SEUIL_ACHAT_MATERIEL: Final = "5000"
 DEFAULT_SEUIL_EMPRUNT: Final = "10000"
 DEFAULT_TITRE_AFFICHAGE: Final = "Docteur"
 NATIONALITY_PRESETS: Final = (
-    "Francaise",
+    "Française",
     "Belge",
     "Portugaise",
     "Suisse",
@@ -91,6 +91,15 @@ def format_numeric_value(value: object) -> str:
     return format(number.normalize(), "f")
 
 
+def format_grouped_numeric_value(value: object) -> str:
+    number = _decimal_from_value(value)
+    if number is None:
+        return str(value).strip() if value is not None else ""
+    if number == number.to_integral_value():
+        return f"{int(number):,}".replace(",", " ")
+    return format(number.normalize(), "f").replace(".", ",")
+
+
 def number_words_from_value(value: object) -> str:
     number = _decimal_from_value(value)
     if number is None or number != number.to_integral_value():
@@ -148,7 +157,7 @@ def regime_matrimonial_from_status(label: str, regime_communautaire: bool) -> st
         return "regime de communaute"
     status = matrimonial_status_value(label)
     if status == "marie":
-        return "hors regime de communaute"
+        return "separation de biens"
     return status
 
 
