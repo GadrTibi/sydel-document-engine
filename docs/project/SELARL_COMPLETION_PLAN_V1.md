@@ -67,4 +67,6 @@ en attente de validation Albane. Outil : `scripts/generate_pack.py` + `scenarios
 ## JOURNAL D'AVANCEMENT (mettre à jour à chaque étape)
 | Date | Bloc | Étape | Statut | Commit |
 |---|---|---|---|---|
-| 2026-06-03 | — | Plan créé | ✅ | (ce commit) |
+| 2026-06-03 | — | Plan créé | ✅ | 7d12e6f |
+| 2026-06-03 | Bloc 1 cession cabinet | Spec de sous-cas rédigée (avant code) | ✅ | docs/delivery/selarl_cession_cabinet_subform_spec_v1.md |
+| 2026-06-03 | Bloc 1 cession cabinet | Câblage front (SelarlSliceInput + build_generation_context + codes + sous-formulaire + scénario + tests) | ⏳ À FAIRE (reprise) | — |
