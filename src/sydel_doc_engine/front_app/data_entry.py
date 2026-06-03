@@ -51,6 +51,13 @@ def build_clean_data_entry(
     normalized.pop("internal_note", None)
     if legacy_company_label and not normalized.get("denomination"):
         normalized["denomination"] = legacy_company_label
+    for legacy_conjoint_address_key in (
+        "conjoint_adresse_num_voie",
+        "conjoint_adresse_voie",
+        "conjoint_adresse_cp",
+        "conjoint_adresse_ville",
+    ):
+        normalized.pop(legacy_conjoint_address_key, None)
 
     for key, value in tuple(normalized.items()):
         if isinstance(value, str):

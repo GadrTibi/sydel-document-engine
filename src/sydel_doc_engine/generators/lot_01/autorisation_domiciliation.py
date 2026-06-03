@@ -40,7 +40,7 @@ class AutorisationDomiciliationGenerator:
                 f"{subject_line(person.genre)} {civilite} {prenom} {nom} autorise la "
                 f"domiciliation de la Société {denomination_societe} au capital de "
                 f"{capital_social} € en cours de formation, dans les locaux du cabinet au "
-                f"{adresse_siege} pour une durée indéterminée."
+                f"{adresse_siege} pour 99 ans."
             ),
             alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
         )

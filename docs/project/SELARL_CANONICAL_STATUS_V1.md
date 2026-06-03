@@ -21,16 +21,18 @@ La fin de sprint operationnelle est detaillee dans :
 
 ## Decision produit actuelle
 
-Decision : `GO validation finale associe` sur le pack 005.
+Decision : `GO validation finale associe` sur le pack 005 amende le 2026-06-03.
 
 Decision : `NO-GO dev` pour une nouvelle extension SELARL complexe tant que le
 prochain sous-cas n'est pas choisi et cadre sous gate produit.
 
 La SELARL actuelle est un candidat technique avance pour les cas simples et le
 regime communautaire. Les retours humains 006 sont corriges cote code/test,
-integres dans le pack 005 et audites cote Codex, mais elle n'est pas declaree
-juridiquement finale sur ce perimetre tant que l'associe n'a pas valide le pack
-005 ou donne des ecarts residuels corriges/classes.
+integres dans le pack 005 et audites cote Codex. L'audit incident du
+2026-06-03 a trouve puis corrige `DOC-002` (`pour une duree indeterminee` ->
+`pour 99 ans`). Elle n'est pas declaree juridiquement finale sur ce perimetre
+tant que l'associe n'a pas valide le pack 005 amende ou donne des ecarts
+residuels corriges/classes.
 
 ## Dernier checkpoint
 
@@ -52,10 +54,14 @@ juridiquement finale sur ce perimetre tant que l'associe n'a pas valide le pack
 - `SELARL-RETURNS-006-ADDRESS-SIGNATURE-001` : DONE.
 - `SELARL-CLOSING-PACK-005` : DONE.
 - `SELARL-HUMAN-RETURNS-DEEP-AUDIT-006` : DONE.
+- `SELARL-RETURNS-006-CONJOINT-ADDRESS-FRONT-LOCK-001` : DONE.
+- `SELARL-RETURNS-006-INCIDENT-GENERALIZED-AUDIT-001` : DONE.
 - Pack actif : `artifacts/selarl_closing_pack_005/`.
 - Rapport pack : `docs/review/selarl_closing_pack_005_report_v1.md`.
 - Rapport audit trois sources : `docs/review/selarl_three_source_alignment_004_report_v1.md`.
 - Rapport audit retours humains : `docs/review/selarl_human_returns_deep_audit_002_report_v1.md`.
+- Rapport audit incident retours 006 :
+  `docs/review/selarl_returns_006_incident_generalized_audit_001_report_v1.md`.
 - Rapport source/fidelite : `docs/review/selarl_source_fidelity_audit_001_report_v1.md`.
 - Brief final associe : `docs/review/selarl_final_validation_001_brief_v1.md`.
 - Retour humain brut 006 : `docs/review/selarl_human_returns_006_raw_v1.md`.
@@ -78,12 +84,15 @@ juridiquement finale sur ce perimetre tant que l'associe n'a pas valide le pack
   `docs/review/selarl_returns_006_address_signature_001_report_v1.md`.
 - Rapport audit pack 005 / retours 006 :
   `docs/review/selarl_human_returns_deep_audit_006_report_v1.md`.
+- Rapport actif apres incident generalise :
+  `docs/review/selarl_returns_006_incident_generalized_audit_001_report_v1.md`.
 
 Controles techniques :
 
 - Tests cibles retours humains/documents : dernier controle cible 25 passes
   sur statuts/regime apres corrections pack 005.
 - Regression SELARL large : 166 passes.
+- Regression SELARL ciblee apres amendement 2026-06-03 : 187 passes.
 - Ruff cible tickets 006 finaux : OK.
 - `pytest -q` complet : 416 passes.
 - Manifest pack 005 : 4 scenarios, 0 echec.
@@ -115,8 +124,8 @@ Ce qui n'est pas encore disponible en production complete :
 
 | Perimetre | Avancement | Lecture |
 | --- | ---: | --- |
-| SELARL simple + regime communautaire, technique | 99 % | Pack 005 regenere et audit 006 vert cote Codex ; la derniere marche technique depend seulement d'ecarts associe eventuels. |
-| SELARL simple + regime communautaire, produit | 95 % | Retours humains 006 traites, pack actif pret ; validation finale associe requise avant 100 %. |
+| SELARL simple + regime communautaire, technique | 99 % | Pack 005 regenere, adresse conjoint front/schema verrouillee, `DOC-002` corrige en `pour 99 ans`, regression 187 tests OK. |
+| SELARL simple + regime communautaire, produit | 96 % | Retours humains 006 traites et incidents recents corriges ; validation finale associe requise avant 100 %. |
 | SELARL globale tous cas confondus | 75 % | Le coeur est fort, mais les variantes complexes restent hors cloture. |
 
 ## Matrice des documents SELARL
@@ -246,6 +255,7 @@ Rapports de preuve principaux :
 - `docs/review/selarl_three_source_alignment_004_report_v1.md`
 - `docs/review/selarl_closing_pack_005_report_v1.md`
 - `docs/review/selarl_human_returns_deep_audit_006_report_v1.md`
+- `docs/review/selarl_returns_006_incident_generalized_audit_001_report_v1.md`
 - `docs/review/selarl_closing_pack_004_report_v1.md`
 - `docs/review/selarl_human_returns_deep_audit_002_report_v1.md`
 - `docs/review/selarl_closing_pack_003_report_v1.md`
@@ -260,7 +270,8 @@ Rapports de preuve principaux :
 Poursuivre `SELARL-FINAL-ASSOCIE-VALIDATION-001` :
 
 - ne plus transmettre le pack 003 ni le pack 004 ;
-- transmettre `artifacts/selarl_closing_pack_005/` ;
+- transmettre `artifacts/selarl_closing_pack_005/` regenere localement apres
+  amendement `DOC-002` ;
 - transmettre `docs/review/selarl_final_validation_001_brief_v1.md` ;
 - demander uniquement une validation finale ou des ecarts concrets document par
   document.

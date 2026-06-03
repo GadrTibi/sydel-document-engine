@@ -558,7 +558,6 @@ def _render_front_dossier_simple_entry(profile_label: str) -> FrontDossierSimple
         "Nom conjoint",
         key="front_entry_conjoint_nom",
     )
-    conjoint_adresse = ""
     depot_banque_nom = col_statuts_left.text_input(
         "Banque depot des fonds",
         key="front_entry_depot_banque_nom",
@@ -703,7 +702,6 @@ def _render_front_dossier_simple_entry(profile_label: str) -> FrontDossierSimple
         conjoint_civilite_affichage=conjoint_civilite_affichage,
         conjoint_prenom=conjoint_prenom,
         conjoint_nom=conjoint_nom,
-        conjoint_adresse=conjoint_adresse,
         depot_banque_nom=depot_banque_nom,
         depot_banque_adresse=depot_banque_adresse,
         exercice_social_debut=exercice_social_debut,
@@ -881,7 +879,6 @@ def _front_dossier_entry_from_session_state(profile_label: str) -> FrontDossierS
         ),
         conjoint_prenom=str(st.session_state.get("front_entry_conjoint_prenom", "") or ""),
         conjoint_nom=str(st.session_state.get("front_entry_conjoint_nom", "") or ""),
-        conjoint_adresse=str(st.session_state.get("front_entry_conjoint_adresse", "") or ""),
         depot_banque_nom=str(st.session_state.get("front_entry_depot_banque_nom", "") or ""),
         depot_banque_adresse=str(
             st.session_state.get("front_entry_depot_banque_adresse", "") or ""

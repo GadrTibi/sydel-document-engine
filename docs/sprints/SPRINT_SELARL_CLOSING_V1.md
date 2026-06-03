@@ -51,10 +51,14 @@ Derniere execution :
 - `SELARL-RETURNS-006-ADDRESS-SIGNATURE-001` est `DONE` ;
 - `SELARL-CLOSING-PACK-005` est `DONE` ;
 - `SELARL-HUMAN-RETURNS-DEEP-AUDIT-006` est `DONE` ;
+- `SELARL-RETURNS-006-CONJOINT-ADDRESS-FRONT-LOCK-001` est `DONE` ;
+- `SELARL-RETURNS-006-INCIDENT-GENERALIZED-AUDIT-001` est `DONE` ;
 - pack actif : `artifacts/selarl_closing_pack_005/` ;
 - rapport pack : `docs/review/selarl_closing_pack_005_report_v1.md` ;
 - rapport audit trois sources : `docs/review/selarl_three_source_alignment_004_report_v1.md` ;
 - rapport audit retours humains actif : `docs/review/selarl_human_returns_deep_audit_006_report_v1.md` ;
+- rapport audit incident generalise :
+  `docs/review/selarl_returns_006_incident_generalized_audit_001_report_v1.md` ;
 - retour humain brut 006 : `docs/review/selarl_human_returns_006_raw_v1.md` ;
 - triage retour humain 006 : `docs/review/selarl_human_returns_triage_006_report_v1.md` ;
 - rapports corrections 006 finales :
@@ -69,8 +73,8 @@ Estimation PM apres correction :
 
 | Perimetre | Avancement | Lecture |
 | --- | ---: | --- |
-| SELARL simple + regime communautaire, technique | 99 % | Pack 005 regenere et audit 006 vert cote Codex ; la derniere marche technique depend seulement d'ecarts associe eventuels. |
-| SELARL simple + regime communautaire, produit | 95 % | Retours humains 006 traites, pack actif pret ; validation finale associe requise avant 100 %. |
+| SELARL simple + regime communautaire, technique | 99 % | Pack 005 regenere, incident front adresse conjoint corrige, `DOC-002` corrige en `pour 99 ans`, regression SELARL ciblee 187 tests OK. |
+| SELARL simple + regime communautaire, produit | 96 % | Retours humains 006 traites et reverifies ; validation finale associe requise avant 100 %. |
 | SELARL globale tous cas confondus | 75 % | Les variantes cession, SCM, site distinct, derogation et statuts multi-associes complets restent separees. |
 
 ## Pack corrige
@@ -143,8 +147,8 @@ Limites :
 
 | Sujet | Statut | Decision |
 | --- | --- | --- |
-| Validation finale associe du pack corrige | READY | Pack 005 pret ; demander seulement des ecarts concrets ou validation |
-| Retours humains 006 | DONE code/test/pack/audit | Retours recus, triage fait, corrections traitees, pack 005 regenere, audit 006 vert cote Codex |
+| Validation finale associe du pack corrige | READY | Pack 005 amende apres audit incident ; demander seulement des ecarts concrets ou validation |
+| Retours humains 006 | DONE code/test/pack/audit | Retours recus, triage fait, corrections traitees, pack 005 regenere puis amende apres incident `DOC-002` |
 | Corrections eventuelles issues du pack 004 | DONE code/test/pack | Tickets `SELARL-RETURNS-006-*` traites ; pack 004 remplace par pack 005 |
 | `DOC-034` lock humain | A VALIDER | Demander seulement ecarts concrets sur pack 005, pas questions abstraites |
 | `DOC-016` wrapper post-article | A VALIDER | Articles 1 a 34 deja couverts |
@@ -171,7 +175,7 @@ Limites :
 | 9 | `SELARL-CLOSING-PACK-004` | DONE | Corriger la procuration et regenerer le pack | Pack 004 vert sur controles trois sources |
 | 10 | `SELARL-CLOSING-SMOKE-001` | DONE | Relancer tests et smoke final technique | Ruff OK, tests cibles OK, `pytest -q` 416 passes, manifest pack 004 sans echec |
 | 11 | `SELARL-HUMAN-RETURNS-DEEP-AUDIT-005` | DONE | Reverifier les retours humains sur pack 004 | 116 controles cibles OK ; nuance article 8 statuts dentiste documentee |
-| 12 | `SELARL-FINAL-ASSOCIE-VALIDATION-001` | READY | Faire valider le pack final par l'associe | Pack 005 audite ; attendre verdict associe par ecarts concrets |
+| 12 | `SELARL-FINAL-ASSOCIE-VALIDATION-001` | READY | Faire valider le pack final par l'associe | Pack 005 controle puis amende ; attendre verdict associe par ecarts concrets |
 | 13 | `SELARL-HUMAN-RETURNS-006-TRIAGE-001` | DONE | Enregistrer et classer les retours humains 006 | Brut + triage + tickets de correction |
 | 14 | `SELARL-RETURNS-006-STATUTS-001` | DONE | Corriger les retours 006 statuts | Rapport `docs/review/selarl_returns_006_statuts_001_report_v1.md` ; tests statuts SEL OK |
 | 15 | `SELARL-RETURNS-006-DNC-001` | DONE | Corriger declaration non condamnation | Rapport `docs/review/selarl_returns_006_dnc_001_report_v1.md` ; tests DNC/front OK |
@@ -182,9 +186,11 @@ Limites :
 | 20 | `SELARL-RETURNS-006-FRONT-VARIABLES-001` | DONE | Simplifier variables/front SELARL | Rapport `docs/review/selarl_returns_006_front_variables_001_report_v1.md` ; constantes + nationalite portugaise + reuse siege=adresse personnelle ; tests front OK |
 | 21 | `SELARL-RETURNS-006-ADDRESS-SIGNATURE-001` | DONE | Corriger regles transversales adresses/signatures | Rapport `docs/review/selarl_returns_006_address_signature_001_report_v1.md` ; CP avant ville + suppression encadres signature ; tests cibles OK |
 | 22 | `SELARL-CLOSING-PACK-005` | DONE | Regenerer le pack apres retours 006 | Pack 005 6/6/8/8 DOCX, manifest 0 echec, rapport pack 005 |
-| 23 | `SELARL-HUMAN-RETURNS-DEEP-AUDIT-006` | DONE | Verifier retours 006 sur pack 005 | Audit 006 vert cote Codex ; aucune question humaine restante |
-| 24 | `SELARL-CANONICAL-CLOSE-001` | BLOCKED | Clore le statut canonique SELARL simple/regime | Debloque apres validation finale associe ou corrections d'ecarts concrets |
-| 25 | `SELARL-NEXT-SUBCASE-SELECTION-001` | READY | Choisir un seul sous-cas complexe suivant | Decision Gad : cession, SCM, multi-associes complet, plusieurs gerants, derogation, site distinct, ou report |
+| 23 | `SELARL-HUMAN-RETURNS-DEEP-AUDIT-006` | DONE historique | Verifier retours 006 sur pack 005 | Ancien audit trop confiant ; amende par `SELARL-RETURNS-006-INCIDENT-GENERALIZED-AUDIT-001` |
+| 24 | `SELARL-RETURNS-006-CONJOINT-ADDRESS-FRONT-LOCK-001` | DONE | Verrouiller adresse conjoint cote front/schema | Incident Gad/associe confirme ; aucune saisie adresse conjoint, derivee depuis adresse personnelle ; tests anti-regression OK |
+| 25 | `SELARL-RETURNS-006-INCIDENT-GENERALIZED-AUDIT-001` | DONE | Rejouer les incidents associe sur toutes les surfaces | Ecart `DOC-002` trouve et corrige ; pack 005 regenere localement ; regression 187 tests OK |
+| 26 | `SELARL-CANONICAL-CLOSE-001` | BLOCKED | Clore le statut canonique SELARL simple/regime | Debloque apres validation finale associe ou corrections d'ecarts concrets |
+| 27 | `SELARL-NEXT-SUBCASE-SELECTION-001` | READY | Choisir un seul sous-cas complexe suivant | Decision Gad : cession, SCM, multi-associes complet, plusieurs gerants, derogation, site distinct, ou report |
 
 ## Gate de cloture
 
@@ -203,7 +209,9 @@ La SELARL simple + regime communautaire peut etre declaree
 
 Techniquement, le perimetre SELARL simple medecin/dentiste + regime
 communautaire est quasiment ferme. Les corrections retours humains 006 sont
-faites, testees, integrees dans le pack 005 et auditees cote Codex.
+faites, testees, integrees dans le pack 005 et auditees cote Codex. Le dernier
+audit incident a trouve puis corrige `DOC-002` : l'autorisation de domiciliation
+rend maintenant `pour 99 ans`.
 
 Il reste une validation finale humaine du pack corrige. Les variantes complexes
 ne sont pas fermees par ce sprint et doivent etre traitees une par une.

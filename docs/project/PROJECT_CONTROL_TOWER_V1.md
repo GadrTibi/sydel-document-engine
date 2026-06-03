@@ -208,7 +208,7 @@ code, Codex doit noter la decision et avancer sans solliciter Gad.
 
 | Type | Sprint | Pilote metier | Branche | Phase courante | Statut | Action autorisee maintenant |
 | --- | --- | --- | --- | --- | --- | --- |
-| SELARL | `SPRINT-SELARL-CLOSING-V1` | Gad | `track-b/clean-rebuild` | Validation finale associe pack 005 | IN_PROGRESS | faire valider `artifacts/selarl_closing_pack_005/` par l'associe avec le brief final |
+| SELARL | `SPRINT-SELARL-CLOSING-V1` | Gad | `track-b/clean-rebuild` | Validation finale associe pack 005 amende | IN_PROGRESS | faire valider `artifacts/selarl_closing_pack_005/` par l'associe avec le brief final et demander seulement des ecarts concrets |
 | SELAS | `SPRINT-SELAS-V1` | Naomie | `codex/naomie-selas-sprint` | Sous-sprint NotebookLM + tracabilite flux | `NO-GO dev` | reprendre NotebookLM sur les trous reels et tenir le worklog par l'Agent de tracabilite |
 
 ## Etat courant SELARL
@@ -223,8 +223,10 @@ Etat utile :
 - pack actif `artifacts/selarl_closing_pack_005/`, qui remplace le pack 004 ;
 - rapport pack 005 :
   `docs/review/selarl_closing_pack_005_report_v1.md` ;
-- audit retours humains 006 vert cote Codex :
+- audit retours humains 006 historique :
   `docs/review/selarl_human_returns_deep_audit_006_report_v1.md` ;
+- audit incident generalise actif :
+  `docs/review/selarl_returns_006_incident_generalized_audit_001_report_v1.md` ;
 - retour humain brut 006 :
   `docs/review/selarl_human_returns_006_raw_v1.md` ;
 - triage retour humain 006 :
@@ -245,6 +247,10 @@ Etat utile :
   `docs/review/selarl_returns_006_front_variables_001_report_v1.md` ;
 - adresses/signatures 006 corrigees :
   `docs/review/selarl_returns_006_address_signature_001_report_v1.md` ;
+- adresse conjoint front/schema verrouillee :
+  `docs/review/selarl_returns_006_conjoint_address_front_lock_001_report_v1.md` ;
+- `DOC-002` domiciliation corrige en `pour 99 ans` :
+  `docs/review/selarl_returns_006_incident_generalized_audit_001_report_v1.md` ;
 - brief de validation associe pret dans
   `docs/review/selarl_final_validation_001_brief_v1.md` ;
 - cession, SCM, derogations, site distinct, plusieurs gerants et statuts
@@ -253,8 +259,9 @@ Etat utile :
 - action courante : poursuivre `SELARL-FINAL-ASSOCIE-VALIDATION-001`.
 
 SELARL ne doit pas etre consideree terminee a 100 % tant que les retours humains
-006, le pack 005, l'audit 006 et la validation finale ne sont pas boucles. A ce
-stade, les trois premiers sont boucles cote Codex ; il reste le verdict associe.
+006, le pack 005 amende, l'audit incident generalise et la validation finale ne
+sont pas boucles. A ce stade, les corrections et l'audit actif sont boucles cote
+Codex ; il reste le verdict associe.
 
 ## Etat courant SELAS
 
@@ -326,7 +333,7 @@ Sprint actif Naomie : SELAS.
 Phase SELAS : NotebookLM.
 Action SELAS : prompt -> reponse -> journal -> prompt suivant.
 Dev SELAS : interdit.
-SELARL : production partielle, retours humains 006 corriges, pack 005 regenere, audit 006 vert cote Codex, prochain ticket validation finale associe.
+SELARL : production partielle, retours humains 006 corriges, pack 005 regenere/amende, audit incident generalise actif vert cote Codex, prochain ticket validation finale associe.
 Pyramide agents : PROJECT_AGENT_ORG_CHART_V1.md si la demande demande qui
 orchestre quoi, un statut transverse ou un rattrapage retroactif.
 Tracabilite : WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md pour les rapports boss sur

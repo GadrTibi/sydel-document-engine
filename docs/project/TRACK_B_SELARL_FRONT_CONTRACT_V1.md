@@ -162,7 +162,7 @@ Exclus du coeur V1 :
 | `DOC-016` | Statuts SELARL chirurgien-dentiste | Si profession = `chirurgien_dentiste` | Generable seulement associe unique |
 | `DOC-017` | Statuts SELARL medecin | Si profession = `medecin` | Generable seulement associe unique |
 | `DOC-005` | Lettre de renonciation a revendiquer la qualite d'associe | Si regime communautaire = oui | Generable si conjoint, apport, societe et signature complets |
-| `DOC-006` | Lettre d'avertissement au conjoint | Si regime communautaire = oui | Generable si conjoint, adresse conjoint, apport, societe et signature complets |
+| `DOC-006` | Lettre d'avertissement au conjoint | Si regime communautaire = oui | Generable si conjoint, apport, societe et signature complets ; adresse conjoint derivee depuis l'adresse personnelle de l'associe/signataire, sans champ front separe |
 
 La generation V1 doit filtrer strictement sur ces documents. Les documents
 techniquement presents dans le moteur mais hors contrat ne doivent pas etre
@@ -286,8 +286,9 @@ declenches par le front V1.
 
 ### Etape 6 - Scenarios et generation
 
-- conjoint, adresse du conjoint, apport et date du courrier si regime
-  communautaire = oui ;
+- conjoint, apport et date du courrier si regime communautaire = oui ;
+- adresse du conjoint derivee depuis l'adresse personnelle de l'associe/signataire,
+  jamais demandee comme champ front separe ;
 - lieu de signature ;
 - date de signature ;
 - liste des documents generables ;

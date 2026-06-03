@@ -104,14 +104,6 @@ def test_clean_front_selarl_medecin_regime_derives_conjoint_only_when_active() -
 def test_clean_front_selarl_regime_does_not_require_conjoint_address() -> None:
     dossier_type = dossier_type_by_label("SELARL creation V1")
     kwargs = _valid_selarl_kwargs(PROFESSION_MEDECIN, regime_communautaire=True)
-    kwargs.update(
-        {
-            "conjoint_adresse_num_voie": "",
-            "conjoint_adresse_voie": "",
-            "conjoint_adresse_cp": "",
-            "conjoint_adresse_ville": "",
-        }
-    )
     data_entry = build_clean_data_entry(dossier_type, **kwargs)
 
     plan = build_clean_generation_plan(dossier_type, data_entry)
@@ -121,6 +113,28 @@ def test_clean_front_selarl_regime_does_not_require_conjoint_address() -> None:
     assert ctx.conjoint is not None
     assert ctx.conjoint.adresse_perso is not None
     assert ctx.conjoint.adresse_perso.adresse_affichee == "10 rue Test, 75001 Paris"
+
+
+def test_clean_front_selarl_regime_ui_never_exposes_conjoint_address_fields() -> None:
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=120)
+
+    app.checkbox(key="selarl_regime_communautaire").set_value(True)
+    app.run(timeout=120)
+
+    conjoint_address_labels = [
+        widget.label
+        for widget in app.text_input
+        if "conjoint" in widget.label.casefold()
+        and "adresse" in widget.label.casefold()
+    ]
+    conjoint_address_keys = [
+        str(widget.key)
+        for widget in app.text_input
+        if "conjoint_adresse" in str(widget.key)
+    ]
+
+    assert conjoint_address_labels == []
+    assert conjoint_address_keys == []
 
 
 def test_clean_front_selarl_slice_blocks_out_of_scope_cases() -> None:
@@ -718,10 +732,6 @@ def _valid_selarl_kwargs(
                 "conjoint_civilite": "Madame",
                 "conjoint_prenom": "Claire",
                 "conjoint_nom": "Martin",
-                "conjoint_adresse_num_voie": "30",
-                "conjoint_adresse_voie": "rue Conjoint",
-                "conjoint_adresse_cp": "75003",
-                "conjoint_adresse_ville": "Paris",
             }
             if profession == PROFESSION_DENTISTE or regime_communautaire
             else {}

@@ -228,6 +228,27 @@ def test_doc_006_is_generable_without_source_reserve() -> None:
     assert specs_by_code["DOC-006"].expected_availability == DocumentAvailability.GENERATABLE
     assert specs_by_code["DOC-006"].reserve_note is None
     assert any("Source DOCX Lot 2 disponible" in note for note in expected_by_code["DOC-006"].notes)
+    assert "adresse_conjoint" not in specs_by_code["DOC-006"].required_variables
+
+
+def test_regime_conjoint_schema_does_not_expose_conjoint_address_variable() -> None:
+    regime_fields = [
+        field
+        for field in selarl_fields()
+        if field.block_key == "regime_conjoint"
+    ]
+    variables = {
+        variable
+        for field in regime_fields
+        for variable in field.variables
+    }
+
+    assert "adresse_conjoint" not in variables
+    assert not any(
+        "conjoint" in field.label.casefold()
+        and "adresse" in field.label.casefold()
+        for field in regime_fields
+    )
 
 
 def test_doc_005_and_conditional_selarl_documents_remain_generable() -> None:

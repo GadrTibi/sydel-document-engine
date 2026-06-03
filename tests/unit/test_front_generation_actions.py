@@ -342,7 +342,6 @@ def _complete_generation_entry(**overrides: object) -> FrontDossierSimpleEntry:
         "conjoint_civilite_affichage": "Madame",
         "conjoint_prenom": "Claire",
         "conjoint_nom": "Martin",
-        "conjoint_adresse": "14 rue Exemple, 75001 Paris",
         "depot_banque_nom": "BANQUE EXEMPLE",
         "depot_banque_adresse": "1 boulevard Haussmann, 75009 Paris",
         "exercice_social_debut": "1er janvier",

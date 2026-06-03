@@ -1223,7 +1223,6 @@ SELARL_DOCUMENTS: Final[tuple[SelarlDocumentSpec, ...]] = (
             "civilite_conjoint",
             "prenom_conjoint",
             "nom_conjoint",
-            "adresse_conjoint",
             "apport_personne_1",
         ),
     ),

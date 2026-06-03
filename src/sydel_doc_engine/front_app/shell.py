@@ -139,10 +139,6 @@ def _prefill_random_selarl_data() -> None:
         "selarl_conjoint_civilite": "Madame",
         "selarl_conjoint_prenom": random.choice(("Claire", "Sophie", "Nadia")),
         "selarl_conjoint_nom": person["nom"],
-        "selarl_conjoint_adresse_num_voie": person["adresse_num_voie"],
-        "selarl_conjoint_adresse_voie": person["adresse_voie"],
-        "selarl_conjoint_adresse_cp": person["adresse_cp"],
-        "selarl_conjoint_adresse_ville": person["adresse_ville"],
     }
     st.session_state.update(values)
     st.session_state.pop(GENERATED_DOSSIER_STATE_KEY, None)
@@ -716,10 +712,6 @@ def _render_conjoint(
             "conjoint_genre": derive_gender_from_civilite("Madame"),
             "conjoint_prenom": "",
             "conjoint_nom": "",
-            "conjoint_adresse_num_voie": "",
-            "conjoint_adresse_voie": "",
-            "conjoint_adresse_cp": "",
-            "conjoint_adresse_ville": "",
             "qualite_renoncee": "associe",
             "date_courrier_avertissement": None,
         }
@@ -742,10 +734,6 @@ def _render_conjoint(
         "conjoint_genre": derive_gender_from_civilite(conjoint_civilite),
         "conjoint_prenom": conjoint_prenom,
         "conjoint_nom": conjoint_nom,
-        "conjoint_adresse_num_voie": "",
-        "conjoint_adresse_voie": "",
-        "conjoint_adresse_cp": "",
-        "conjoint_adresse_ville": "",
         "qualite_renoncee": qualite_renoncee,
         "date_courrier_avertissement": date_courrier_avertissement,
     }

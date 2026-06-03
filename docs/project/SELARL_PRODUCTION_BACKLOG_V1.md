@@ -23,7 +23,7 @@
 ## Couvert par TRACK-B-SELARL-PRODUCTION-PACK-001
 
 - `DOC-002` : formulation de domiciliation alignee sur le cabinet et le siege :
-  `dans les locaux du cabinet au [num_voie_siege] [voie_siege], [cp_siege] [ville_siege] pour une duree indeterminee.`
+  `dans les locaux du cabinet au [num_voie_siege] [voie_siege], [cp_siege] [ville_siege] pour 99 ans.`
 - `DOC-001` : adresse personnelle reformatee en `[num_voie_perso] [voie_perso], [cp_perso] [ville_perso]`.
 - `DOC-005` lettre de renonciation : correction typographique de la ville, absence de parasite RCS verifiee, ajout de `Fait pour servir et valoir ce que de droit.`
 - `DOC-004` : suppression de `RCS de ...`, suppression de `EXTRAORDINAIRE`, suppression de l'heure de reunion, gestion `Nomination du gerant` / `Nomination des gerants`.
@@ -62,8 +62,10 @@
 - Confirmation que le delta est deja cable dans le clean front :
   - `profession=medecin` conserve `DOC-017` ;
   - `regime_communautaire=True` active `DOC-005` et `DOC-006`.
-- Validation que le conjoint, l'adresse du conjoint et la date du courrier
-  d'avertissement sont requis uniquement si le regime communautaire est actif.
+- Validation que le conjoint et la date du courrier d'avertissement sont requis
+  uniquement si le regime communautaire est actif ; l'adresse du conjoint est
+  derivee depuis l'adresse personnelle de l'associe/signataire et ne doit pas
+  etre redemandee dans le front.
 - Ajout de tests cibles de non-regression medecin standard et de smoke medecin + regime communautaire.
 - Smoke DOCX/ZIP medecin + regime communautaire dans `artifacts/track_b_selarl_medecin_regime_communautaire_005`.
 - Statut courant apres correction 2026-06-01 : documents courts, `DOC-005` et

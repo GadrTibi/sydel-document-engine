@@ -353,6 +353,11 @@ def test_business_prefill_complex_selarl_scenarios_show_expected_blocks() -> Non
     )
 
     assert _has_text_input(app, "Identité du conjoint")
+    assert not any(
+        "conjoint" in _plain(widget.label) and "adresse" in _plain(widget.label)
+        for widget in app.text_input
+    )
+    assert not any("adresse_conjoint" in str(widget.key) for widget in app.text_input)
     assert any("DOC-006" in item.value for item in app.markdown)
     assert any("DOC-013" in item.value and "DOC-014" in item.value for item in app.markdown)
 

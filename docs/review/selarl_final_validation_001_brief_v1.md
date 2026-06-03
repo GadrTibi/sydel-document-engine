@@ -2,7 +2,7 @@
 
 Ticket : `SELARL-FINAL-ASSOCIE-VALIDATION-001`
 
-Date : 2026-06-02
+Date : 2026-06-03
 
 Statut : `IN_PROGRESS - attente validation finale associe`
 
@@ -11,8 +11,8 @@ Statut : `IN_PROGRESS - attente validation finale associe`
 `GO validation finale`, `NO-GO nouvelles questions abstraites`.
 
 Ce brief remplace les briefs des packs 001, 002, 003 et 004. Le pack 005
-integre les retours humains 006, l'audit pack 005 et les corrections detectees
-pendant cet audit.
+integre les retours humains 006, l'audit pack 005, l'incident front adresse
+conjoint et l'amendement `DOC-002` du 2026-06-03.
 
 ## Pack a revoir
 
@@ -28,6 +28,7 @@ Rapport :
 
 - `docs/review/selarl_closing_pack_005_report_v1.md`
 - `docs/review/selarl_human_returns_deep_audit_006_report_v1.md`
+- `docs/review/selarl_returns_006_incident_generalized_audit_001_report_v1.md`
 
 ## Scenarios a ouvrir
 
@@ -68,7 +69,7 @@ La revue demandee est une revue d'ecarts :
 8. Les retours humains 006 doivent etre controles par ecarts concrets :
    naissance avec ville, conseil de l'Ordre compose, quatre exemplaires,
    adresse conjoint derivee, signatures sans encadre, adresses CP avant ville,
-   et accords `associe/associee`.
+   accords `associe/associee`, et autorisation de domiciliation `pour 99 ans`.
 
 ## Format de retour souhaite
 

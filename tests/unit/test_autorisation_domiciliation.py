@@ -108,7 +108,7 @@ def test_autorisation_domiciliation_contains_essential_texts(tmp_path: Path) -> 
     assert (
         "Je soussigné Monsieur Jean Durand autorise la domiciliation de la Société "
         "DURAND CONSEIL au capital de 1 000 € en cours de formation, dans les locaux "
-        "du cabinet au 80 avenue Marceau, 75008 Paris pour une durée indéterminée."
+        "du cabinet au 80 avenue Marceau, 75008 Paris pour 99 ans."
     ) in text
     assert "Fait à Paris" in text
     assert "Le 12/05/2026" in text
@@ -138,7 +138,7 @@ def test_autorisation_domiciliation_ignores_free_address_for_cabinet_wording(
     assert adresse not in text
     assert (
         "dans les locaux du cabinet au 80 avenue Marceau, 75008 Paris "
-        "pour une durée indéterminée."
+        "pour 99 ans."
     ) in text
 
 

@@ -137,7 +137,6 @@ class FrontDossierSimpleEntry:
     conjoint_civilite_affichage: str = ""
     conjoint_prenom: str = ""
     conjoint_nom: str = ""
-    conjoint_adresse: str = ""
     depot_banque_nom: str = ""
     depot_banque_adresse: str = ""
     exercice_social_debut: str = ""

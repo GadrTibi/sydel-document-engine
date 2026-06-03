@@ -192,10 +192,6 @@ class SelarlSliceInput:
     conjoint_genre: Gender = Gender.FEMININ
     conjoint_prenom: str = ""
     conjoint_nom: str = ""
-    conjoint_adresse_num_voie: str = ""
-    conjoint_adresse_voie: str = ""
-    conjoint_adresse_cp: str = ""
-    conjoint_adresse_ville: str = ""
     qualite_renoncee: str = "associe"
     date_courrier_avertissement: date | None = None
 

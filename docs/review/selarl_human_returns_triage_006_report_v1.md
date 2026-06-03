@@ -4,6 +4,13 @@ Date : 2026-06-02
 
 Ticket : `SELARL-HUMAN-RETURNS-006-TRIAGE-001`
 
+## Amendement 2026-06-03
+
+Le ticket `SELARL-HUMAN-RETURNS-DEEP-AUDIT-006` etait trop confiant. L'audit
+incident `SELARL-RETURNS-006-INCIDENT-GENERALIZED-AUDIT-001` a trouve puis
+corrige un ecart restant sur `DOC-002` autorisation de domiciliation :
+`pour une duree indeterminee` a ete remplace par `pour 99 ans`.
+
 Source brute :
 
 - `docs/review/selarl_human_returns_006_raw_v1.md`
@@ -82,7 +89,7 @@ Il est remplace apres traitement des retours 006 par :
 | 8 | `SELARL-RETURNS-006-FRONT-VARIABLES-001` | DONE | Variables/front SELARL | Rapport `docs/review/selarl_returns_006_front_variables_001_report_v1.md` ; constantes 99 ans / 4 exemplaires / associe / date du jour, nationalite portugaise, reuse siege=adresse perso |
 | 9 | `SELARL-RETURNS-006-ADDRESS-SIGNATURE-001` | DONE | Regles transversales SELARL pack | Rapport `docs/review/selarl_returns_006_address_signature_001_report_v1.md` ; CP avant ville et suppression encadres signature controles par tests |
 | 10 | `SELARL-CLOSING-PACK-005` | DONE | Pack corrige apres retours 006 | `artifacts/selarl_closing_pack_005/`, manifest 0 echec |
-| 11 | `SELARL-HUMAN-RETURNS-DEEP-AUDIT-006` | DONE | Audit retours 006 sur pack 005 | Audit 006 vert cote Codex |
+| 11 | `SELARL-HUMAN-RETURNS-DEEP-AUDIT-006` | DONE historique | Audit retours 006 sur pack 005 | Ancien audit amende par l'incident `DOC-002` du 2026-06-03 |
 
 ## Points a surveiller
 

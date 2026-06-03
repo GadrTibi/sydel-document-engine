@@ -4,6 +4,23 @@ Ticket : `SELARL-HUMAN-RETURNS-DEEP-AUDIT-006`
 
 Date : 2026-06-02
 
+## Amendement 2026-06-03
+
+Ce rapport est historique. Il a ete depasse par :
+
+- `docs/review/selarl_returns_006_incident_generalized_audit_001_report_v1.md`
+
+L'audit incident a trouve un ecart qui n'etait pas detecte ici :
+
+- `DOC-002` autorisation de domiciliation rendait encore
+  `pour une duree indeterminee`.
+
+Correction appliquee le 2026-06-03 :
+
+- `DOC-002` rend maintenant `pour 99 ans` ;
+- le pack 005 local a ete regenere ;
+- la regression SELARL ciblee affiche 187 tests passes.
+
 Sources :
 
 - `docs/review/selarl_human_returns_006_raw_v1.md`
@@ -13,13 +30,14 @@ Sources :
 
 ## Verdict
 
-Verdict : `DONE - audit 006 vert cote Codex`.
+Verdict historique : `DEPASSE - ecart DOC-002 trouve ensuite et corrige`.
 
 Les retours humains 006 sont traites dans le pack 005 selon les controles
 manifest et les tests cibles.
 
-Ce verdict ne remplace pas la validation finale de l'associe. Il signifie que
-Codex ne voit plus d'ecart concret 006 restant dans le perimetre pack 005.
+Ce rapport ne doit plus etre utilise comme feu vert autonome. Le verdict actif
+est celui de l'audit incident du 2026-06-03, qui corrige `DOC-002` puis
+revalide la regression SELARL ciblee.
 
 ## Controle par retour
 

@@ -1,5 +1,14 @@
 # TRACK-B-SELARL-DENTIST-LINE-BY-LINE-LOCK-003 - Rapport V1
 
+## Amendement 2026-06-03
+
+Ce rapport est historique. Le verrou `DOC-002` ci-dessous utilisait l'ancien
+libelle `pour une duree indeterminee`. Le retour humain 006 a ensuite remplace
+ce libelle par `pour 99 ans`. La source active pour `DOC-002` est maintenant :
+
+- `docs/project/SELARL_HUMAN_REFERENCE_LOCK_V1.md`
+- `docs/review/selarl_returns_006_incident_generalized_audit_001_report_v1.md`
+
 ## Contexte prouvé
 
 - `pwd` : `C:\Users\Gad\Desktop\Sydel\sydel-track-b`
