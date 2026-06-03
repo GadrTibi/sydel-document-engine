@@ -339,7 +339,7 @@ python -m pip install -U pip
 python -m pip install -e ".[dev]"
 pytest
 ruff check .
-streamlit run src/sydel_doc_engine/app/streamlit_app.py
+streamlit run src/sydel_doc_engine/front_app/app.py
 ```
 
 ## Conventions de code

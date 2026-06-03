@@ -12,4 +12,4 @@ test:
 	pytest
 
 run-ui:
-	streamlit run src/sydel_doc_engine/app/streamlit_app.py
+	streamlit run src/sydel_doc_engine/front_app/app.py
