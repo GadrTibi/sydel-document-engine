@@ -66,6 +66,7 @@ def _context(structure: str = "SELARL") -> DocumentGenerationContext:
                 ville="Paris",
             ),
             date_naissance=date(1990, 2, 3),
+            ville_naissance="Paris",
             nationalite="francaise",
             nom_pere="Pierre Durand",
             nom_mere="Anne Martin",

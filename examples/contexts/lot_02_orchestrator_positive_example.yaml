@@ -10,6 +10,7 @@ personne_signataire:
     cp: "75008"
     ville: Paris
   date_naissance: 1990-02-03
+  ville_naissance: Paris
   nationalite: francaise
   nom_pere: Pierre Durand
   nom_mere: Anne Martin

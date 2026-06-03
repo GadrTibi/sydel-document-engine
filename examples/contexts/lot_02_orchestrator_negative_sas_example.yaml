@@ -10,6 +10,7 @@ personne_signataire:
     cp: "75016"
     ville: Paris
   date_naissance: 1988-07-21
+  ville_naissance: Paris
   nationalite: francaise
   nom_pere: Louis Martin
   nom_mere: Claire Dupont
