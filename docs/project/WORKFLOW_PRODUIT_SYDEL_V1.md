@@ -52,5 +52,15 @@ n'est pas `confirmée` tant qu'elle n'est pas validée par le corpus ou la chaî
 
 ## 6. Ce qui est déjà livré (réf.)
 Voir `SELARL_COMPLETION_PLAN_V1.md` : SELARL création + cession cabinet (DOC-007→012) + SCM
-(DOC-031/033) câblés et générables sur `review/selarl`. Reste : couche genre/nombre + statuts
-multi-associés (wording présent dans le corpus, à dériver via le sachant-juridique) + formulaire UI.
+(DOC-031/033) câblés et générables sur `review/selarl`. **Couche genre faite** (2026-06-04, masc/fém,
+323 tests verts). Reste :
+- **statuts multi-associés** + **nombre/pluriel** : le wording (comparution « LES SOUSSIGNÉS », apports
+  N, répartition N, signatures N, agrément/quorum) est **ABSENT du corpus ET du NotebookLM**
+  (« NON TROUVÉ » ; les transcripts qualifient ces cas d'« ultra personnalisés / faits à la main ») →
+  **escaladé à Rafael** (message 2026-06-04). **Ne pas inventer.**
+- **règles de genre d'usage** (« Docteur » au féminin, article devant civilité) : idem escaladées à Rafael.
+- formulaire UI cession/SCM (gated par la définition de « SELARL terminée », Q6 Gad).
+
+**D1 tranché (2026-06-04, NotebookLM)** : une **personne morale PEUT être associée d'une SELARL** — le
+canon « société associée » est **correct** (pas une dérive), et le multi-associés doit la gérer ; les
+**champs** d'une PM sont connus, mais son **wording statuts** est « ultra personnalisé » (cf. Rafael).
