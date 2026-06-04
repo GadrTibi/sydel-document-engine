@@ -472,6 +472,21 @@ def _scm_cession_selarl() -> ScmCessionContext:
     )
 
 
+def _cession_cabinet_medical_compromis() -> CessionContext:
+    """Compromis de cession médical (DOC-010) : étape compromis, sans crédit-vendeur ni SCM
+    (réservés à l'acte médical par les règles métier des générateurs)."""
+    base = _cession_cabinet_medical_acte()
+    financement = base.financement.model_copy(update={"credit_vendeur": None})
+    return base.model_copy(
+        update={"etape": "compromis", "financement": financement, "scm": None}
+    )
+
+
+def _cession_cabinet_dentaire_compromis() -> CessionContext:
+    """Compromis de cession dentaire (DOC-012) — mêmes données que l'acte, étape compromis."""
+    return _cession_cabinet_dentaire_acte().model_copy(update={"etape": "compromis"})
+
+
 # clé de scénario -> paramètres du cas
 SELARL_SCENARIOS: dict[str, dict[str, Any]] = {
     "selarl_medecin_simple": {"profession": PROFESSION_MEDECIN},
@@ -493,6 +508,16 @@ SELARL_SCENARIOS: dict[str, dict[str, Any]] = {
     "selarl_dentiste_cession_scm": {
         "profession": PROFESSION_DENTISTE,
         "scm_cession": _scm_cession_selarl,
+    },
+    "selarl_medecin_cession_compromis_medical": {
+        "profession": PROFESSION_MEDECIN,
+        "cession": _cession_cabinet_medical_compromis,
+        "bail": _bail_avenant_medecin,
+    },
+    "selarl_dentiste_cession_compromis_dentaire": {
+        "profession": PROFESSION_DENTISTE,
+        "cession": _cession_cabinet_dentaire_compromis,
+        "bail": _bail_avenant_dentaire,
     },
 }
 

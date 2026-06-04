@@ -252,6 +252,30 @@ def test_clean_front_selarl_cession_scm_generates_scm_docs(tmp_path: Path) -> No
     assert "acte_cession_parts_scm.docx" in names
 
 
+def test_clean_front_selarl_cession_compromis_generates(tmp_path: Path) -> None:
+    # Compromis de cession : médical (DOC-010) et dentaire (DOC-012), même moteur que l'acte.
+    dossier_type = dossier_type_by_label("SELARL creation V1")
+    for scenario, expected_doc, filename in (
+        (
+            "selarl_medecin_cession_compromis_medical",
+            "DOC-010",
+            "compromis_cession_cabinet_medical.docx",
+        ),
+        (
+            "selarl_dentiste_cession_compromis_dentaire",
+            "DOC-012",
+            "compromis_cession_cabinet_dentaire.docx",
+        ),
+    ):
+        data = build_selarl_scenario(scenario)
+        plan = build_clean_generation_plan(dossier_type, data)
+        assert plan.can_generate is True
+        assert expected_doc in plan.document_codes
+        result = generate_selarl_dossier(data, tmp_path / scenario)
+        names = {path.name for path in result.docx_paths}
+        assert filename in names
+
+
 def test_clean_front_selarl_multi_associes_doc004_limited_plan_is_honest() -> None:
     dossier_type = dossier_type_by_label("SELARL creation V1")
     data_entry = _valid_multi_associes_doc004_input()
