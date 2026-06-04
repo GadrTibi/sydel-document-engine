@@ -37,7 +37,7 @@ données entre documents, fidélité juridique garantie par la source.
 
 **Garde-fou central (identité produit).** Sydel **ne rédige jamais** de droit : elle **remplit** des
 modèles validés. Toute formulation juridique provient du corpus source ou de la chaîne humaine
-(associé → Alban). C'est la condition de confiance du produit.
+(associé → Albane). C'est la condition de confiance du produit.
 
 ---
 
@@ -165,7 +165,7 @@ Format : intention attendue → comportement actuel → impact → sévérité �
   gérant SELARL et les statuts SELARL. Risque de générer un document juridiquement faux.
 - **Sévérité : HAUTE** (fidélité juridique = cœur de la promesse).
 - **Action recommandée.** **Ne rien coder/modifier** sur ce point sans arbitrage. Question boss
-  n°1 ; Gad relaie à la chaîne humaine (NotebookLM / associé / Alban). Si tranché → **superséder le
+  n°1 ; Gad relaie à la chaîne humaine (NotebookLM / associé / Albane). Si tranché → **superséder le
   canon V3** sur ce point dans le journal de décisions, puis propager. (cf. mémoire PM
   `open-q-personne-morale-selarl`)
 
@@ -261,7 +261,7 @@ la fidélité juridique avant la vitesse de code** :
   la forme intention → réalité → impact → sévérité → action — sans trancher moi-même une règle de
   droit.
 - **Refuser d'inventer une règle ou un wording juridique** : si une règle manque, je dis exactement
-  ce qui manque et je m'arrête (escalade via Gad → NotebookLM → associé → Alban).
+  ce qui manque et je m'arrête (escalade via Gad → NotebookLM → associé → Albane).
 - **Produire des critères d'acceptation** vérifiables sur les packs, contre lesquels
   l'implémentation est testée.
 - **Préserver les workflows déjà validés** : ne pas régresser la SELARL simple ; tout changement de

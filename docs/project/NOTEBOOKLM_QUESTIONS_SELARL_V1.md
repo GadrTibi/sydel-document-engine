@@ -26,8 +26,8 @@ d'une PM associée sont connus (dénomination, forme, capital, RCS, SIREN, nb pa
 10. **[Gad]** Confirmer qu'on **capture le genre** (ou le dérive de la civilité) pour : associé(s), gérant(s), vendeur, cédant, représentant, conjoint, salarié(s), destinataire.
 
 ## P1 — Associé PERSONNE MORALE dans les statuts (wording)
-11. **[NotebookLM/Alban]** Existe-t-il un **wording de référence** pour une associée PM en comparution (« La société X, [forme], au capital de…, RCS…, représentée par … en sa qualité de … ») ? (NotebookLM = NON TROUVÉ — Alban peut-il fournir, ou personnalisation manuelle ?)
-12. **[NotebookLM/Alban]** Si bloc PM généré : wording de sa **ligne de répartition (art.8)** + **signature** (« Pour la société X, [représentant], [fonction] ») ?
+11. **[NotebookLM/Albane]** Existe-t-il un **wording de référence** pour une associée PM en comparution (« La société X, [forme], au capital de…, RCS…, représentée par … en sa qualité de … ») ? (NotebookLM = NON TROUVÉ — Albane peut-il fournir, ou personnalisation manuelle ?)
+12. **[NotebookLM/Albane]** Si bloc PM généré : wording de sa **ligne de répartition (art.8)** + **signature** (« Pour la société X, [représentant], [fonction] ») ?
 13. **[Gad]** À défaut de wording : pour une PM, le moteur **(a)** génère via gabarit interne, **(b)** laisse un emplacement à compléter, ou **(c)** PM hors périmètre des statuts générés ?
 > Gabarit existant : SCM, SCS, PV agrément SPFPL présentent déjà une associée PM — voir Q40.
 

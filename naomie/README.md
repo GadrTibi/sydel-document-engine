@@ -34,7 +34,7 @@ carré et productif** : la structure 4 lignes (Statut / Action unique / Point p�
 
 ## Garde-fous DURS du Mousse (rappel)
 Le Mousse ne fait **jamais** : `push sur main` · `merge` · `déploiement` · contact humain externe
-(Rafael l'associé, Alban le sachant juridique, client, relecteur, administration) · décision de
+(Rafael l'associé, Albane le sachant juridique, client, relecteur, administration) · décision de
 scope-produit · modification d'une formulation juridique. Tout ça part **emballé** dans un **Pack de
 passation** pour le Capitaine. C'est aussi verrouillé côté GitHub (`main` protégée, PR + revue Gad).
 

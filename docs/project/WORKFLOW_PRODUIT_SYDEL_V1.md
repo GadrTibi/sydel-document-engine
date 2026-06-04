@@ -10,7 +10,7 @@ juridiques). Il complète le `00-phase-router` global ; ici on cadre la spécifi
 - **Claude — porte le juridique côté machine.** Cherche les règles dans le corpus source, encode,
   teste, génère. N'invente jamais de wording.
 - **Rafael (l'associé)** — détient/centralise le savoir métier (a tokenisé les modèles, alimente le NotebookLM).
-- **Alban** — sachant juridique externe (cabinet). Dernier recours pour une règle absente du corpus.
+- **Albane** — sachant juridique externe (cabinet). Dernier recours pour une règle absente du corpus.
 
 ## 2. Source de vérité juridique (dans l'ordre)
 1. `project/source_documents/` — modèles Word **tokenisés** (`[variable]`), par lot. Référence du
@@ -18,7 +18,7 @@ juridiques). Il complète le `00-phase-router` global ; ici on cadre la spécifi
 2. `docs/delivery/*_spec_canonique_*` / `*_spec_texte_*` — specs par document (règles, variantes,
    arbitrages tranchés).
 3. **NotebookLM** de l'équipe — infos compilées par l'associé + transcriptions des rendez-vous
-   (plusieurs heures) avec Alban et les équipes.
+   (plusieurs heures) avec Albane et les équipes.
 
 ## 3. Voie juridique (quand une règle est en doute)
 ```
@@ -27,7 +27,7 @@ Question de règle (genre / nombre / accord / variante / wording)
         lit project/source_documents/ + docs/delivery/specs
         ├─ trouvé      -> réponse SOURCÉE (règle + citation verbatim + fichier §) , confiance confirmé/dérivé
         └─ absent      -> question d'escalade précise
-                          -> Gad relaie -> NotebookLM -> associé (répond ou demande à Alban) -> Alban
+                          -> Gad relaie -> NotebookLM -> associé (répond ou demande à Albane) -> Albane
 ```
 Règle d'or : **jamais d'invention de wording.** Une règle `dérivée` (extrapolée d'un modèle frère)
 n'est pas `confirmée` tant qu'elle n'est pas validée par le corpus ou la chaîne humaine.

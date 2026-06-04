@@ -6,7 +6,7 @@ description: >
   multi-associés), accords, variantes par cas, et surtout le WORDING légal exact. Il répond
   UNIQUEMENT à partir du corpus source du projet (modèles Word tokenisés `project/source_documents/`
   + specs `docs/delivery/*_spec_*`). Il CITE toujours sa source, n'INVENTE jamais, et quand le corpus
-  ne suffit pas il formule une question d'escalade précise (NotebookLM → associé → Alban). Use when
+  ne suffit pas il formule une question d'escalade précise (NotebookLM → associé → Albane). Use when
   any legal/document wording or gender/number/agreement rule must be confirmed before coding a
   generator, or to extract the exact text/variant of a Sydel document.
 tools: Read, Glob, Grep, Bash
@@ -62,7 +62,7 @@ Pour chaque règle demandée, rends :
 
 ## Quand le corpus ne suffit pas → escalade (ne devine pas)
 Formule une **question précise** destinée à la chaîne humaine, sans la poser toi-même :
-`NotebookLM → associé (qui décide s'il répond ou demande à Alban) → Alban`.
+`NotebookLM → associé (qui décide s'il répond ou demande à Albane) → Albane`.
 Rends la question prête à relayer par Gad, avec : ce que tu as cherché, où, et ce qui manque
 exactement. **Gad reste côté code : il relaie, il n'arbitre pas le juridique.**
 

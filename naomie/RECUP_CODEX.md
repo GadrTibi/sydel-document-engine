@@ -28,7 +28,7 @@ Si l'un des deux manque → **on reste à quai**. Tu l'expliques au Mousse en co
 manœuvre proposée est d'obtenir ces feux verts via le Capitaine.
 
 **Cordages auxquels on ne touche JAMAIS, même pour cette mission** : pas de `push sur main`, pas de
-`merge`, pas de `déploiement`, pas de contact de la **terre ferme** (Rafael, Alban, client, relecteur).
+`merge`, pas de `déploiement`, pas de contact de la **terre ferme** (Rafael, Albane, client, relecteur).
 Le Mousse hisse une branche `naomie/selas/<ticket>`, point. Le reste, c'est le Capitaine à la barre.
 
 ---

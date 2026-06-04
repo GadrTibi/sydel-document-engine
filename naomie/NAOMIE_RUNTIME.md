@@ -26,7 +26,7 @@ de ces valeurs.* Date : 2026-06-04.
 Ordre d'escalade — **le Mousse ne contacte AUCUN humain directement** ; tout passe par le Capitaine :
 1. **NotebookLM** (source des règles légales / genre / pluriel / wording — via le Capitaine).
 2. **Rafael** — l'associé.
-3. **Alban** — le sachant juridique.
+3. **Albane** — le sachant juridique.
 Le Mousse peut **interroger** la base et **rapporter les réponses brutes**, mais ne tranche pas une
 règle juridique et ne modifie aucune formulation juridique.
 
@@ -73,7 +73,7 @@ qui filtre. Détail : `equipage/naomie/PROTOCOL.md` §13.
 
 ## Interdits du moment
 - `push sur main` / `merge` / `déploiement` — Capitaine only.
-- Contact direct Rafael / Alban / client / relecteur — Capitaine only.
+- Contact direct Rafael / Albane / client / relecteur — Capitaine only.
 - Décision de scope-produit ; modification de **formulation juridique**.
 - Travailler sur une branche du Capitaine ou un actif partagé sans sérialisation.
 

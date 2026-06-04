@@ -82,7 +82,7 @@ Capitaine, et tu rapportes ton butin au navire.
 | 🧭 **le Timonier** | celui qui « tient la barre » des sujets : il les présente **un à la fois**, en profondeur |
 | ⛵ **les manœuvres** | les *workflows* (opérations à plusieurs agents) |
 | 📜 **le règlement de bord** | les règles du dispositif |
-| 🏝️ **la terre ferme** | les humains de l'extérieur (Rafael l'associé, Alban le sachant, les clients) |
+| 🏝️ **la terre ferme** | les humains de l'extérieur (Rafael l'associé, Albane le sachant, les clients) |
 | 💰 **le butin / le trésor** | ton travail (ex. ta SELAS commencée avec Codex) |
 | 🪢 **hisser** | *pousser* (git push) ton travail vers le navire commun (GitHub) |
 | 🚩 **pavillon GO / NO-GO** | le feu vert du Capitaine pour développer (`GO dev`) |
@@ -94,7 +94,7 @@ Capitaine, et tu rapportes ton butin au navire.
 Le navire a d'autres marins spécialisés — le Second les hèle **si la mission l'exige** :
 - 🧑‍⚖️ **le sachant-juridique** : le maître des textes ; il vérifie les règles des documents (genre,
   pluriel, formulation) **dans les modèles sources**. Toi, tu ne parles jamais directement au juriste
-  de la terre ferme (Alban) — le sachant-juridique cherche d'abord à bord, et s'il manque quelque chose,
+  de la terre ferme (Albane) — le sachant-juridique cherche d'abord à bord, et s'il manque quelque chose,
   ça remonte au **Capitaine**.
 - ⚓ d'autres marins de gouvernance (chef de produit, relecteur, maître Git…) — toujours **via le
   Second**, jamais lancés à l'aveugle.
@@ -116,7 +116,7 @@ Le navire a d'autres marins spécialisés — le Second les hèle **si la missio
    ┌─────────────────────────────────────────────────────────┐
    │  🚫 Le Mousse ne touche JAMAIS à ces cordages :           │
    │     • pas de push sur `main`, pas de merge, pas de deploy  │
-   │     • pas de contact avec la terre ferme (Rafael, Alban,   │
+   │     • pas de contact avec la terre ferme (Rafael, Albane,   │
    │       client, relecteur)                                   │
    │  → tout ça part EMBALLÉ dans un Pack de passation          │
    │    pour le Capitaine, qui tient la barre. 🧭               │
