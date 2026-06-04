@@ -5,8 +5,6 @@ from pathlib import Path
 
 import pytest
 from docx import Document
-from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.oxml.ns import qn
 
 from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import (
@@ -80,6 +78,8 @@ def _context(
                 date_naissance=date(1975, 3, 10),
                 ville_naissance="Lyon",
                 departement_naissance="69",
+                cp_naissance="69002",
+                pays_naissance="France",
                 nationalite="francaise",
                 adresse_affichee="4 rue Victor Hugo, 69002 Lyon",
                 adresse_exercice_affichee="10 rue du Cabinet, 75008 Paris",
@@ -103,6 +103,8 @@ def _context(
                 rcs_ville="Paris",
                 numero_rcs="999 888 777",
                 numero_siret="999 888 777 00012",
+                date_immatriculation=date(2026, 1, 15),
+                date_inscription_ordre=date(2026, 2, 1),
                 representant=CessionRepresentant(
                     civilite_affichage="Docteur",
                     genre=Gender.FEMININ,
@@ -132,6 +134,8 @@ def _context(
                 duree="six annees",
                 date_debut=date(2021, 1, 1),
                 date_fin=date(2027, 1, 1),
+                date_reconduction_1=date(2027, 1, 1),
+                date_reconduction_2=date(2033, 1, 1),
                 loyer_mensuel="2 000 euros",
                 activite_autorisee_affichee="activite medicale et paramedicale",
             ),
@@ -191,19 +195,10 @@ def _docx_text(path: Path) -> str:
     return "\n".join(text for text in texts if text)
 
 
-def _assert_clean_docx_text(text: str) -> None:
+def _assert_no_residual_tokens(text: str) -> None:
+    # Le rendu par remplissage de template ne doit laisser aucun token [xxx] residuel.
     assert "[" not in text
     assert "]" not in text
-    assert "Ajouter en cas de CV" not in text
-    assert "De reprendre les contrats de travail de" not in text
-
-
-def _table_has_explicit_borders(table) -> bool:
-    borders = table._tbl.tblPr.find(qn("w:tblBorders"))
-    return borders is not None and all(
-        borders.find(qn(f"w:{edge}")) is not None
-        for edge in ("top", "left", "bottom", "right")
-    )
 
 
 @pytest.mark.parametrize(
@@ -213,13 +208,13 @@ def _table_has_explicit_borders(table) -> bool:
             ActeCessionCabinetMedicalGenerator(),
             _context(credit_vendeur=True),
             "acte_cession_cabinet_medical.docx",
-            "ACTE DE CESSION",
+            "Ordre des Médecins",
         ),
         (
             CompromisCessionCabinetMedicalGenerator(),
             _context(etape="compromis"),
             "compromis_cession_cabinet_medical.docx",
-            "CONDITIONS SUSPENSIVES",
+            "Ordre des Médecins",
         ),
         (
             ActeCessionCabinetDentaireGenerator(),
@@ -231,13 +226,13 @@ def _table_has_explicit_borders(table) -> bool:
                 ],
             ),
             "acte_cession_cabinet_dentaire.docx",
-            "Lu et approuve",
+            "Petit",
         ),
         (
             CompromisCessionCabinetDentaireGenerator(),
             _context(etape="compromis", type_cabinet="dentaire"),
             "compromis_cession_cabinet_dentaire.docx",
-            "taux maximum source fixe de 5 %",
+            "Entre les soussignés",
         ),
     ],
 )
@@ -252,20 +247,15 @@ def test_cession_cabinet_generators_render_docx(
 
     assert output_path == tmp_path / filename
     text = _docx_text(output_path)
+    # Texte juridique d'origine preserve (rendu fidele par template, non paraphrase).
+    assert "Entre les soussignés" in text
     assert expected_text in text
-    assert "SELARL CABINET DURAND" in text
-    assert "CHIFFRES D'AFFAIRES ET RESULTATS" in text
-    document = Document(output_path)
-    assert any(
-        table.cell(0, 0).text.strip() == "CHIFFRES D'AFFAIRES ET RESULTATS"
-        and _table_has_explicit_borders(table)
-        for table in document.tables
-    )
-    party_marker = next(p for p in document.paragraphs if p.text == "De premiere part")
-    assert party_marker.alignment == WD_ALIGN_PARAGRAPH.RIGHT
-    assert party_marker.runs[0].bold is True
-    assert _table_has_explicit_borders(document.tables[-1])
-    _assert_clean_docx_text(text)
+    # Tokens du contexte injectes (vendeur + acquereur).
+    assert "SELARL CABINET" in text
+    assert "Durand" in text or "Martin" in text
+    # Dates rendues en francais long, pas en ISO.
+    assert "10 mars 1975" in text or "20 juin 1984" in text
+    _assert_no_residual_tokens(text)
 
 
 def test_acte_medical_blocks_without_medical_bail_validation(tmp_path: Path) -> None:

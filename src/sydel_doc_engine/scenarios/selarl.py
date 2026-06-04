@@ -106,6 +106,8 @@ def _cession_cabinet_medical_acte() -> CessionContext:
                 "date_naissance": "1975-03-10",
                 "ville_naissance": "Lyon",
                 "departement_naissance": "69",
+                "cp_naissance": "69002",
+                "pays_naissance": "France",
                 "nationalite": "francaise",
                 "adresse_affichee": "4 rue Victor Hugo, 69002 Lyon",
                 "adresse_exercice_affichee": "10 rue du Cabinet, 75008 Paris",
@@ -125,6 +127,8 @@ def _cession_cabinet_medical_acte() -> CessionContext:
                 "rcs_ville": "Paris",
                 "numero_rcs": "999 888 777",
                 "numero_siret": "999 888 777 00012",
+                "date_immatriculation": "2026-01-15",
+                "date_inscription_ordre": "2026-02-01",
                 "representant": {
                     "civilite_affichage": "Docteur",
                     "genre": "feminin",
@@ -154,6 +158,8 @@ def _cession_cabinet_medical_acte() -> CessionContext:
                 "duree": "six annees",
                 "date_debut": "2021-01-01",
                 "date_fin": "2027-01-01",
+                "date_reconduction_1": "2027-01-01",
+                "date_reconduction_2": "2033-01-01",
                 "loyer_mensuel": "2 000 euros",
                 "activite_autorisee_affichee": "activite medicale et paramedicale",
             },
@@ -241,6 +247,8 @@ def _cession_cabinet_dentaire_acte() -> CessionContext:
                 "date_naissance": "1984-06-20",
                 "ville_naissance": "Paris",
                 "departement_naissance": "75",
+                "cp_naissance": "75007",
+                "pays_naissance": "France",
                 "nationalite": "francaise",
                 "adresse_affichee": "4 rue du Bac, 75007 Paris",
                 "adresse_exercice_affichee": "12 avenue des Ternes, 75017 Paris",
@@ -290,6 +298,8 @@ def _cession_cabinet_dentaire_acte() -> CessionContext:
                 "duree": "six annees",
                 "date_debut": "2021-09-01",
                 "date_fin": "2027-09-01",
+                "date_reconduction_1": "2027-09-01",
+                "date_reconduction_2": "2033-09-01",
                 "loyer_mensuel": "2 500 euros",
                 "activite_autorisee_affichee": "activite dentaire et paramedicale",
             },
@@ -317,6 +327,10 @@ def _cession_cabinet_dentaire_acte() -> CessionContext:
                 "pret": {"montant": "280 000", "taux": "4 %", "duree": "sept ans"},
             },
             "scm": {"actif": False},
+            "salaries": [
+                {"civilite_affichage": "Madame", "prenom": "Lea", "nom": "Petit"},
+                {"civilite_affichage": "Monsieur", "prenom": "Noe", "nom": "Robert"},
+            ],
             "date_limite_realisation": "2026-09-30",
             "validations": {
                 "mentions_bail_medical_validees": True,
@@ -483,8 +497,12 @@ def _cession_cabinet_medical_compromis() -> CessionContext:
 
 
 def _cession_cabinet_dentaire_compromis() -> CessionContext:
-    """Compromis de cession dentaire (DOC-012) — mêmes données que l'acte, étape compromis."""
-    return _cession_cabinet_dentaire_acte().model_copy(update={"etape": "compromis"})
+    """Compromis de cession dentaire (DOC-012) — mêmes données que l'acte, étape compromis,
+    sans les salariés (la reprise des contrats de travail est réservée à l'acte dentaire
+    par les règles métier des générateurs)."""
+    return _cession_cabinet_dentaire_acte().model_copy(
+        update={"etape": "compromis", "salaries": []}
+    )
 
 
 # clé de scénario -> paramètres du cas
