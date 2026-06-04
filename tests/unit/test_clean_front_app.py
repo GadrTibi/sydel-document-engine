@@ -210,10 +210,12 @@ def test_clean_front_selarl_cession_cabinet_medical_generates_acte(tmp_path: Pat
 
     assert plan.can_generate is True
     assert "DOC-009" in plan.document_codes
+    assert "DOC-007" in plan.document_codes
 
     result = generate_selarl_dossier(data, tmp_path)
     names = {path.name for path in result.docx_paths}
     assert "acte_cession_cabinet_medical.docx" in names
+    assert "avenant_contrat_bail.docx" in names
 
 
 def test_clean_front_selarl_multi_associes_doc004_limited_plan_is_honest() -> None:

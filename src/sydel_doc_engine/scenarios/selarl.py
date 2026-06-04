@@ -10,7 +10,7 @@ from __future__ import annotations
 from datetime import date
 from typing import Any
 
-from sydel_doc_engine.domain.models import CessionContext
+from sydel_doc_engine.domain.models import BailContext, CessionContext
 from sydel_doc_engine.front_app.data_entry import build_clean_data_entry
 from sydel_doc_engine.front_app.dossier_selection import dossier_type_by_label
 from sydel_doc_engine.front_app.selarl_slice import (
@@ -193,6 +193,39 @@ def _cession_cabinet_medical_acte() -> CessionContext:
     )
 
 
+def _bail_avenant_medecin() -> BailContext:
+    """Avenant au bail pour la cession médicale (exemple lot_03 adapté, locataire médecin)."""
+    return BailContext.model_validate(
+        {
+            "date_avenant": "2026-05-26",
+            "date_signature_origine": "2021-09-01",
+            "societe_en_cours_immatriculation": True,
+            "bailleur_accepte_changement_locataire": True,
+            "bailleur": {
+                "civilite_affichage": "Monsieur",
+                "prenom": "Paul",
+                "nom": "Leroy",
+                "profession": "bailleur",
+                "date_naissance": "1970-01-05",
+                "ville_naissance": "Lyon",
+                "nationalite": "francaise",
+                "adresse_affichee": "8 rue Victor Hugo, 69002 Lyon",
+            },
+            "locataire": {
+                "civilite_affichage": "Docteur",
+                "civilite_courte": "Docteur",
+                "prenom": "Jean",
+                "nom": "Durand",
+                "profession": "medecin",
+                "date_naissance": "1975-03-10",
+                "ville_naissance": "Lyon",
+                "nationalite": "francaise",
+                "adresse_affichee": "4 rue Victor Hugo, 69002 Lyon",
+            },
+        }
+    )
+
+
 # clé de scénario -> paramètres du cas
 SELARL_SCENARIOS: dict[str, dict[str, Any]] = {
     "selarl_medecin_simple": {"profession": PROFESSION_MEDECIN},
@@ -204,6 +237,7 @@ SELARL_SCENARIOS: dict[str, dict[str, Any]] = {
     "selarl_medecin_cession_cabinet_medical": {
         "profession": PROFESSION_MEDECIN,
         "cession": _cession_cabinet_medical_acte,
+        "bail": _bail_avenant_medecin,
     },
 }
 
@@ -215,10 +249,13 @@ def build_selarl_scenario(key: str) -> SelarlSliceInput:
         )
     spec = dict(SELARL_SCENARIOS[key])
     cession_factory = spec.pop("cession", None)
+    bail_factory = spec.pop("bail", None)
     dossier_type = dossier_type_by_label(SELARL_DOSSIER_LABEL)
     kwargs = _base_kwargs(**spec)
     if cession_factory is not None:
         kwargs["cession_context"] = (
             cession_factory() if callable(cession_factory) else cession_factory
         )
+    if bail_factory is not None:
+        kwargs["bail_context"] = bail_factory() if callable(bail_factory) else bail_factory
     return build_clean_data_entry(dossier_type, **kwargs)

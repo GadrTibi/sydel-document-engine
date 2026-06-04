@@ -16,6 +16,7 @@ from sydel_doc_engine.domain.models import (
     Address,
     Apport,
     Associe,
+    BailContext,
     CapitalContext,
     CessionBanque,
     CessionContext,
@@ -64,7 +65,10 @@ from sydel_doc_engine.front_app.field_derivations import (
     number_words_from_value,
 )
 from sydel_doc_engine.front_data import AddressUsage, BusinessRole, build_document_status_for_code
-from sydel_doc_engine.orchestrator.service import CESSION_CABINET_DOCUMENT_IDS
+from sydel_doc_engine.orchestrator.service import (
+    BAIL_AVENANT_DOCUMENT_ID,
+    CESSION_CABINET_DOCUMENT_IDS,
+)
 
 SELARL_V1_BASE_DOC_CODES: Final = (
     "DOC-001",
@@ -202,6 +206,7 @@ class SelarlSliceInput:
     qualite_renoncee: str = "associe"
     date_courrier_avertissement: date | None = None
     cession_context: CessionContext | None = None
+    bail_context: BailContext | None = None
 
     @property
     def has_any_value(self) -> bool:
@@ -249,8 +254,8 @@ def selected_selarl_document_codes(data: SelarlSliceInput) -> tuple[str, ...]:
         for doc_id, (expected_etape, expected_type) in CESSION_CABINET_DOCUMENT_IDS.items():
             if etape == expected_etape and type_cabinet == expected_type:
                 codes.append(doc_id)
-        # DOC-007 (avenant bail) et DOC-008 (appel de fonds) consomment ctx.bail /
-        # ctx.appel (contextes distincts) -> ajoutes dans un sous-bloc cession ulterieur.
+    if data.bail_context is not None:
+        codes.append(BAIL_AVENANT_DOCUMENT_ID)
     return tuple(codes)
 
 
@@ -547,6 +552,7 @@ def build_generation_context(data: SelarlSliceInput) -> DocumentGenerationContex
             scm_cession=False,
         ),
         cession=data.cession_context,
+        bail=data.bail_context,
         personne_signataire=person,
         conjoint=conjoint,
         signature=Signature(
