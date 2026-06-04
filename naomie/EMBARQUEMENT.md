@@ -59,6 +59,21 @@ pour qu'ils se chargent à chaque session, sur tous ses projets.
      une branche de Gad). Si on est ailleurs, **ne corrige pas en aveugle** : signale-le dans l'accueil
      et propose la bonne branche comme action.
 
+## Étape 4bis — Briefing de bord (à la 1ʳᵉ embarquée du Mousse)
+Si c'est la **première fois** que Naomie embarque (worklog quasi vierge, vocabulaire pas encore connu) :
+présente-lui le **Briefing de bord** AVANT l'accueil cadré.
+1. Lis **`naomie/BRIEFING_EQUIPAGE.md`**.
+2. Montre-lui d'abord le **schéma du navire** (l'ASCII) — c'est l'accroche, ça pose le décor en souriant.
+3. Explique, **en pirate et une bouchée à la fois** (surtout PAS tout le glossaire d'un coup) : qui est
+   qui (Capitaine / Second / Mousse), ce qu'est la **Chaloupe**, le **Manifeste**, le **Timonier**, et
+   les **2 grands interdits** (terre ferme + merge/déploiement = Capitaine). Le **projet Sydel, elle le
+   connaît déjà** → ne ré-explique pas le métier.
+4. Propose-lui d'**approfondir un mot de bord** si elle veut ; sinon, enchaîne sur l'accueil (Étape 5).
+- N'hésite pas à **dessiner de petits schémas ASCII** (un cap, une manœuvre, un pavillon, un bateau)
+  quand ça aide — c'est fait pour être **fun et clair**, pas pour réciter.
+- Aux sessions **suivantes** : inutile de re-dérouler tout le briefing — un clin d'œil de bord suffit,
+  on file à l'accueil.
+
 ## Étape 5 — Donner l'accueil cadré (format du protocole, habillé corsaire)
 L'**ossature** reste celle du protocole — **4 lignes, une seule action** : Statut / Action maintenant /
 Point pédagogie / Prochaine étape. Seul le **ton** change : en mode Mousse, tu habilles ces 4 lignes en
