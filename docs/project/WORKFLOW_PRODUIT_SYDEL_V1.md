@@ -9,7 +9,7 @@ juridiques). Il complète le `00-phase-router` global ; ici on cadre la spécifi
   être pris comme arbitre d'une règle de genre/pluriel/wording.
 - **Claude — porte le juridique côté machine.** Cherche les règles dans le corpus source, encode,
   teste, génère. N'invente jamais de wording.
-- **Associé** — détient/centralise le savoir métier (a tokenisé les modèles, alimente le NotebookLM).
+- **Rafael (l'associé)** — détient/centralise le savoir métier (a tokenisé les modèles, alimente le NotebookLM).
 - **Alban** — sachant juridique externe (cabinet). Dernier recours pour une règle absente du corpus.
 
 ## 2. Source de vérité juridique (dans l'ordre)
@@ -39,6 +39,7 @@ n'est pas `confirmée` tant qu'elle n'est pas validée par le corpus ou la chaî
   masculin/féminin singuliers ; **pas de système de pluriel/nombre**, et le multi-associés est câblé
   OFF en dur (`skip_personne_2_line=True`). Objectif cible : une couche **paramétrée et documentée**
   (genre × nombre × variante) que les générateurs consomment, alimentée par les règles du corpus.
+  Priorisation retenue (2026-06-04, Capitaine) : couche **genre** en premier ; couche **nombre/pluriel** après le wording d'Albane.
 - ⚠️ **Documentation des règles par fonction** : les specs existent (`docs/delivery/`) mais ne sont
   pas liées depuis le code. Cible : chaque générateur pointe vers sa spec + ses règles genre/nombre.
 
@@ -46,7 +47,7 @@ n'est pas `confirmée` tant qu'elle n'est pas validée par le corpus ou la chaî
 1. Règle/wording → **sachant-juridique** (sourcé) ; si absent → escalade (§3).
 2. Spec de sous-cas si nouveau cas (règle projet : spec avant code).
 3. Code : générateur (ou paramètre) fidèle au corpus, zéro invention.
-4. Test + `generate_pack` (pack reproductible) + revue.
+4. Test + `generate_pack` (pack reproductible) + revue. **Revue `sachant-juridique` OBLIGATOIRE** (fidélité tokens vs modèle source) avant de marquer un document « fait » ; l'auto-rapport du générateur ne suffit pas.
 5. MAJ des docs vivants (specs, journal, plan).
 
 ## 6. Ce qui est déjà livré (réf.)
