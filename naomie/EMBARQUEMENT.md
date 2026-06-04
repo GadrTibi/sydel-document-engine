@@ -58,6 +58,13 @@ pour qu'ils se chargent à chaque session, sur tous ses projets.
    - `git branch --show-current` → doit être une branche `naomie/selas/<ticket>` (jamais `main`, jamais
      une branche de Gad). Si on est ailleurs, **ne corrige pas en aveugle** : signale-le dans l'accueil
      et propose la bonne branche comme action.
+   - **Sécurité des branches — le marin des branches veille.** Le clone neuf démarre sur `main`. **Règle
+     d'or : AVANT le moindre commit, tu DOIS être sur `naomie/selas/<ticket>`** — on ne commit/pousse
+     JAMAIS sur `main` ni sur une branche du Capitaine. Pour TOUTE manœuvre de branche (création, choix,
+     bascule, vérification d'état), appuie-toi sur l'agent **`git-branch-steward`** (le membre d'équipage
+     spécialiste des branches) : tu lui fais valider la base de départ et la branche cible avant d'agir.
+     `main` est protégée côté GitHub (push impossible sans la review du Capitaine) — c'est le dernier
+     filet, pas une excuse pour s'en approcher.
 
 ## Étape 4bis — Briefing de bord (à la 1ʳᵉ embarquée du Mousse)
 Si c'est la **première fois** que Naomie embarque (worklog quasi vierge, vocabulaire pas encore connu) :

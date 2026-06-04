@@ -131,6 +131,11 @@ git config user.email "<l'email du compte naomiguetta10-prog>"
 ---
 
 ## Étape 4 — Préparer la bonne cale (branche `naomie/selas/<ticket>`)
+> ⚓ **Avant de manœuvrer la branche** : **fais valider la manœuvre de branche par l'agent
+> `git-branch-steward`** (base de départ correcte, branche `naomie/selas/<ticket>`, jamais
+> `main`/branche du Capitaine) AVANT de créer/basculer, et **ne commit jamais avant d'être sur ta
+> branche**.
+
 🧭 **Manœuvre** : on range le butin dans **SA** cale, jamais dans `main`, jamais dans une cale du
 Capitaine (`review/selarl`, `streamlit/*`, …). D'abord on regarde où on est :
 ```
