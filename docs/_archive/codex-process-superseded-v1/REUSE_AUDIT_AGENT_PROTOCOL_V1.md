@@ -36,7 +36,7 @@ Mission :
 3. reperer les conditions metier deja codees ou documentees ;
 4. reperer les generateurs, helpers, tests et mappings reutilisables ;
 5. classer chaque element en decision simple ;
-6. signaler les points qui demandent NotebookLM, Gad, Naomie ou l'associe.
+6. signaler les points qui demandent NotebookLM, Gad, Naomi ou l'associe.
 
 Le sous-agent travaille en lecture seule tant qu'un ticket de modification
 precis n'a pas ete ouvert.
@@ -220,9 +220,9 @@ source de verite globale :
 - `src/sydel_doc_engine/app/front_generation_actions.py` ;
 - `src/sydel_doc_engine/front_app/selarl_slice.py`.
 
-## Integration dans le sprint Naomie
+## Integration dans le sprint Naomi
 
-Quand Naomie ouvre un sprint, Codex doit lancer ou jouer ce role avant le plan de
+Quand Naomi ouvre un sprint, Codex doit lancer ou jouer ce role avant le plan de
 dev.
 
 Si l'environnement permet les sous-agents, Codex lance un sous-agent

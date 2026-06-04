@@ -1,6 +1,6 @@
-# WORKLOG — la Chaloupe (le Mousse / Naomie) · projet Sydel
+# WORKLOG — la Chaloupe (le Mousse / Naomi) · projet Sydel
 
-*Journal du flux du Mousse. Tenu par le second (Claude de Naomie). Source : les traces, pas l'oral.*
+*Journal du flux du Mousse. Tenu par le second (Claude de Naomi). Source : les traces, pas l'oral.*
 Périmètre : **SELAS — à confirmer Capitaine** · Branche : `naomie/selas/<ticket>` · Remote :
 `https://github.com/GadrTibi/sydel-document-engine.git` · Compte Mousse : `naomiguetta10-prog`.
 
@@ -14,7 +14,7 @@ Périmètre : **SELAS — à confirmer Capitaine** · Branche : `naomie/selas/<t
 | 2026-06-04 | armement      | Chaloupe armée — en attente du `GO dev` du Capitaine. Périmètre SELAS à confirmer. | NO-GO dev |
 
 ## Messages du Capitaine à transmettre au Mousse
-*Le second transmet à Naomie puis passe le statut `à transmettre` → `transmis`.*
+*Le second transmet à Naomi puis passe le statut `à transmettre` → `transmis`.*
 
 | Date       | Message                                                                 | Statut         |
 |------------|-------------------------------------------------------------------------|----------------|
@@ -31,9 +31,9 @@ Périmètre : **SELAS — à confirmer Capitaine** · Branche : `naomie/selas/<t
 *Faits horodatés du flux.*
 
 - **2026-06-04** — Pack d'embarquement « la Chaloupe » créé dans le repo (`naomie/` + commande
-  `/embarquer`). Chaloupe prête à être armée à la prochaine session de Naomie. NO-GO dev par défaut.
+  `/embarquer`). Chaloupe prête à être armée à la prochaine session de Naomi. NO-GO dev par défaut.
 - **2026-06-04** — Mission d'ouverture notée : récupérer le travail SELAS commencé avec Codex (non
-  poussé) et le pousser proprement sur `naomie/selas/<ticket>`, commits signés du compte de Naomie,
+  poussé) et le pousser proprement sur `naomie/selas/<ticket>`, commits signés du compte de Naomi,
   puis Pack de passation. En attente confirmation périmètre + `GO dev`.
 - **2026-06-04** — Pack raffiné : ajout du **Ton de bord — mode Mousse (pirate)** (gate « qui va là ? »
   corsaire ; accueil cadré habillé pirate ; interdits durs imagés mais intacts ; garde-fou anti-noyade)

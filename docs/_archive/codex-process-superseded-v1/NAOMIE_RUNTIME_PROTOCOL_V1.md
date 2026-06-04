@@ -1,23 +1,23 @@
-# Naomie runtime protocol V1
+# Naomi runtime protocol V1
 
 Date : 2026-06-01
 
 ## Objet
 
 Ce fichier est le protocole court que Codex doit appliquer dans un nouveau chat
-quand Naomie arrive sur le projet SYDEL.
+quand Naomi arrive sur le projet SYDEL.
 
 Il existe pour eviter deux incidents :
 
-1. Naomie dit seulement `bonjour` ou `je suis Naomie`, et Codex repond comme si
+1. Naomi dit seulement `bonjour` ou `je suis Naomi`, et Codex repond comme si
    aucun sprint n'etait actif ;
-2. Gad parle de Naomie comme superviseur, et Codex declenche a tort le prompt
+2. Gad parle de Naomi comme superviseur, et Codex declenche a tort le prompt
    NotebookLM au lieu de rester en cadrage avec Gad.
 
 ## Regle centrale
 
 ```text
-Naomie + SELAS = sprint actif, phase NotebookLM, NO-GO dev.
+Naomi + SELAS = sprint actif, phase NotebookLM, NO-GO dev.
 ```
 
 Codex doit se comporter comme chef de projet et professeur, pas comme un simple
@@ -26,18 +26,18 @@ assistant qui attend une tache.
 ## Declencheurs
 
 Appliquer ce protocole si l'interlocutrice active est identifiee comme
-Naomie/Naomi, ou si Gad demande explicitement de preparer, simuler ou reprendre
+Naomi/Naomi, ou si Gad demande explicitement de preparer, simuler ou reprendre
 son workflow operationnel.
 
 Declencheurs directs, seulement si ces phrases identifient la personne qui
 parle ou la session active :
 
-- `Naomie` ou `Naomi` comme reponse a la question d'identite ;
-- `je suis Naomie` ou `je suis Naomi` ;
-- `bonjour` dans un chat Naomie ;
+- `Naomi` ou `Naomi` comme reponse a la question d'identite ;
+- `je suis Naomi` ou `je suis Naomi` ;
+- `bonjour` dans un chat Naomi ;
 - `SELAS` ou `CELAS` ;
 - `lancer`, `demarrer` ou `reprendre` le sprint SELAS ;
-- un reproche de Gad indiquant que l'accueil Naomie est mal cadre.
+- un reproche de Gad indiquant que l'accueil Naomi est mal cadre.
 
 Non-declencheurs :
 
@@ -62,7 +62,7 @@ l'identite. Il ne doit pas donner le Prompt NotebookLM par reflexe.
      `https://github.com/GadrTibi/sydel-document-engine.git` ;
    - la branche cible doit etre `codex/naomie-selas-sprint`.
 5. Verifier ou tenter de rejoindre la branche `codex/naomie-selas-sprint`.
-6. S'il existe un message Gad `a transmettre`, le citer a Naomie et marquer la
+6. S'il existe un message Gad `a transmettre`, le citer a Naomi et marquer la
    transmission dans le worklog.
 7. Rester en `NO-GO dev`.
 8. Donner le Prompt NotebookLM 01.
@@ -79,8 +79,8 @@ Codex ne doit pas :
 - demander "quelle tache ?" ;
 - demander "quel ticket ?" ;
 - dire "je suis pret a travailler sur le moteur documentaire" ;
-- demander vaguement a Naomie de fournir une source NotebookLM SELAS ;
-- laisser le worklog Naomie sans mise a jour apres une action tracee ;
+- demander vaguement a Naomi de fournir une source NotebookLM SELAS ;
+- laisser le worklog Naomi sans mise a jour apres une action tracee ;
 - ignorer un message Gad en attente dans le worklog ;
 - utiliser `SELAS-NOTEBOOKLM-RECONCILIATION-001` comme ticket actif ;
 - lancer un audit de reutilisation avant NotebookLM suffisant ;
@@ -106,7 +106,7 @@ Si Codex le rencontre dans une ancienne conversation, il doit le traduire en
 
 ## Reponse obligatoire
 
-Si Naomie dit `bonjour`, `je suis Naomie`, `je reprends le sprint SELAS`, ou
+Si Naomi dit `bonjour`, `je suis Naomi`, `je reprends le sprint SELAS`, ou
 equivalent, repondre avec ce format :
 
 ```text
@@ -143,7 +143,7 @@ Point pedagogie : main est la branche generale ; ton sprint SELAS a une branche 
 Prochaine etape : je gere la branche, puis je te donne le Prompt NotebookLM 01.
 ```
 
-Naomie ne doit pas executer les commandes Git elle-meme.
+Naomi ne doit pas executer les commandes Git elle-meme.
 
 ## Si le dossier s'appelle sydel-document-engine
 
@@ -158,21 +158,21 @@ Bonne branche = codex/naomie-selas-sprint.
 Mauvais contexte = branche main ou branche historique hors sprint SELAS.
 ```
 
-Codex, pas Naomie, doit verifier ces deux points avec Git. Si le remote est
+Codex, pas Naomi, doit verifier ces deux points avec Git. Si le remote est
 correct mais la branche est `main`, Codex doit basculer sur
 `codex/naomie-selas-sprint` avant de continuer. Si le remote n'est pas le depot
 SYDEL, Codex doit bloquer en `NO-GO dev`.
 
 ## Point pedagogie permanent
 
-Chaque reponse a Naomie doit contenir un point pedagogie court.
+Chaque reponse a Naomi doit contenir un point pedagogie court.
 
 But : elle apprend ce que fait le projet, sans porter le risque Git, technique
 ou juridique.
 
 ## Definition de succes
 
-Le protocole est respecte si, apres un simple `bonjour`, Naomie sait :
+Le protocole est respecte si, apres un simple `bonjour`, Naomi sait :
 
 - ou en est le sprint ;
 - qu'aucun dev n'est autorise ;

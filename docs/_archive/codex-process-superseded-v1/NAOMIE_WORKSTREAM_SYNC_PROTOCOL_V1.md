@@ -1,4 +1,4 @@
-# Naomie workstream sync protocol V1
+# Naomi workstream sync protocol V1
 
 Date : 2026-06-02
 
@@ -7,7 +7,7 @@ Date : 2026-06-02
 Ce protocole definit le checkpoint de synchronisation entre :
 
 - le thread Gad ;
-- le thread Naomie ;
+- le thread Naomi ;
 - l'Agent Git/Branch ;
 - l'Agent de tracabilite de flux ;
 - la branche de sprint.
@@ -21,7 +21,7 @@ Un travail termine dans un thread mais non pousse ou non documente est invisible
 pour le rapport boss.
 ```
 
-Donc, quand Naomie ou son agent termine une phase importante, le flux doit
+Donc, quand Naomi ou son agent termine une phase importante, le flux doit
 produire au moins une de ces deux preuves :
 
 1. un commit pousse sur la branche de sprint ;
@@ -34,9 +34,9 @@ Il doit dire : `avancee annoncee, synchronisation manquante`.
 
 Appliquer ce protocole quand :
 
-- Gad dit que Naomie a avance mais que le rapport ne le voit pas ;
-- Naomie dit qu'une phase est terminee ;
-- un agent Codex termine un travail dans le perimetre Naomie ;
+- Gad dit que Naomi a avance mais que le rapport ne le voit pas ;
+- Naomi dit qu'une phase est terminee ;
+- un agent Codex termine un travail dans le perimetre Naomi ;
 - un rapport Gad contredit ce que Gad sait du travail reel ;
 - une branche distante ne montre pas le travail attendu ;
 - un agent a ajoute des protocoles que l'autre thread doit recuperer.
@@ -64,18 +64,18 @@ Responsable de :
 - mettre a jour le dernier curseur Gad ;
 - signaler les trous de sync.
 
-### Orchestrateur Naomie
+### Orchestrateur Naomi
 
 Responsable de :
 
 - lire le checkpoint avant tout rapport Gad ;
-- ne pas confondre `branche sans nouveau commit` et `Naomie n'a rien fait` ;
+- ne pas confondre `branche sans nouveau commit` et `Naomi n'a rien fait` ;
 - conclure `sync manquante` quand le travail est annonce mais absent des traces.
 
-## Checkpoint obligatoire cote thread Naomie
+## Checkpoint obligatoire cote thread Naomi
 
-Quand le flux Naomie avance fortement ou se dit termine, Codex dans le thread
-Naomie doit :
+Quand le flux Naomi avance fortement ou se dit termine, Codex dans le thread
+Naomi doit :
 
 1. lire `docs/project/PROJECT_CONTROL_TOWER_V1.md` ;
 2. lire `docs/project/NAOMIE_WORKSTREAM_SYNC_PROTOCOL_V1.md` ;
@@ -102,7 +102,7 @@ Il doit d'abord consigner l'etat local, puis choisir :
 
 ## Sync packet
 
-Si le push est impossible, le thread Naomie doit produire ce bloc brut :
+Si le push est impossible, le thread Naomi doit produire ce bloc brut :
 
 ```text
 SYNC PACKET - FLUX NAOMIE
@@ -140,11 +140,11 @@ Ce paquet permet au thread Gad de savoir si le probleme est :
 
 ## Recuperation des mises a jour Gad
 
-Quand le thread Gad pousse de nouveaux protocoles, le thread Naomie doit les
+Quand le thread Gad pousse de nouveaux protocoles, le thread Naomi doit les
 recuperer avant de continuer, sauf si des changements locaux non sauvegardes
 rendent le pull risqué.
 
-Ordre sur un thread Naomie propre :
+Ordre sur un thread Naomi propre :
 
 ```powershell
 git fetch origin
@@ -152,17 +152,17 @@ git switch codex/naomie-selas-sprint
 git pull --ff-only origin codex/naomie-selas-sprint
 ```
 
-Si le thread Naomie est sale, Codex doit d'abord faire un checkpoint local ou un
+Si le thread Naomi est sale, Codex doit d'abord faire un checkpoint local ou un
 `Sync packet`. Il ne doit pas ecraser les changements.
 
-## Prompt de sync a donner a Naomie
+## Prompt de sync a donner a Naomi
 
-Si Gad sait que Naomie a avance mais que le thread Gad ne voit rien, Gad peut
-demander a Naomie de coller ce prompt dans sa discussion :
+Si Gad sait que Naomi a avance mais que le thread Gad ne voit rien, Gad peut
+demander a Naomi de coller ce prompt dans sa discussion :
 
 ```text
-Je suis Naomie.
-Sync checkpoint obligatoire pour le flux Naomie SELAS.
+Je suis Naomi.
+Sync checkpoint obligatoire pour le flux Naomi SELAS.
 
 Gad indique que mon travail SELAS est avance jusqu'a attente du retour humain,
 mais le thread Gad ne voit pas cette avancee sur la branche.
@@ -199,9 +199,9 @@ Reste en NO-GO dev sauf GO Gad deja trace.
 Format court :
 
 ```text
-Statut flux Naomie : [projet / sprint / phase annoncee ou inconnue / GO-NO-GO]
+Statut flux Naomi : [projet / sprint / phase annoncee ou inconnue / GO-NO-GO]
 Avancement depuis le dernier point : avancee annoncee par Gad, mais absente des traces publiees.
-Prochaine etape : demander a Naomie un Sync checkpoint ou lire le thread source si accessible.
+Prochaine etape : demander a Naomi un Sync checkpoint ou lire le thread source si accessible.
 Blocage / risque : sync Git/thread manquante ; le rapport boss ne peut pas verifier les livrables.
 Fiabilite : non verifiee tant que commit pousse ou Sync packet absent.
 ```

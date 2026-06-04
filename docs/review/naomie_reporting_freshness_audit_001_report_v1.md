@@ -1,4 +1,4 @@
-# Naomie reporting freshness audit 001
+# Naomi reporting freshness audit 001
 
 Date : 2026-06-02
 
@@ -8,8 +8,8 @@ Ce rapport est historique. Il identifie correctement le probleme
 `PROJECT_STATE_IGNORED + WORKLOG_STALE`, mais son format de rapport a Gad est
 remplace par `docs/project/WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md`.
 
-Desormais, le rapport boss par defaut porte sur le `flux Naomie`, pas sur une
-evaluation personnelle de Naomie. Les distinctions humain / Codex / repo restent
+Desormais, le rapport boss par defaut porte sur le `flux Naomi`, pas sur une
+evaluation personnelle de Naomi. Les distinctions humain / Codex / repo restent
 des preuves internes ou un audit detaille sur demande.
 
 ## Objet

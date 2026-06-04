@@ -1,6 +1,6 @@
 # 🏴‍☠️ BRIEFING DE BORD — Bienvenue dans L'Équipage, moussaillon !
 
-*Lu par le Second au Mousse (Naomie) à sa première embarquée. Ton corsaire, **une bouchée à la fois** —
+*Lu par le Second au Mousse (Naomi) à sa première embarquée. Ton corsaire, **une bouchée à la fois** —
 on ne déballe pas tout le coffre d'un coup. Le Mousse connaît déjà le **métier** (Sydel) : ici on lui
 présente seulement **l'équipage, les rôles et le langage de bord**.*
 
@@ -40,7 +40,7 @@ poste, sous les ordres du Capitaine.
        appelle le reste de            jusqu'à livraison »
        l'équipage si besoin »
                  │
-        🧒 LE MOUSSE — toi, Naomie !
+        🧒 LE MOUSSE — toi, Naomi !
         « l'apprentie du bord : tu pilotes le métier, tu apprends,
           tu n'as JAMAIS à porter le risque technique »
 ```
@@ -76,7 +76,7 @@ Capitaine, et tu rapportes ton butin au navire.
 |---|---|
 | ⚙ **le Capitaine** | Gad — il décide, valide, merge, déploie, parle à la terre ferme |
 | 🧭 **le Second** | ton Claude — ton bras droit technique + ton professeur |
-| 🧒 **le Mousse** | toi, Naomie — l'apprentie qui mène le métier |
+| 🧒 **le Mousse** | toi, Naomi — l'apprentie qui mène le métier |
 | 🚣 **la Chaloupe** | ta filiale / ta mission détachée |
 | 📋 **le Manifeste** | la liste vivante des sujets du Capitaine (rien ne se perd) |
 | 🧭 **le Timonier** | celui qui « tient la barre » des sujets : il les présente **un à la fois**, en profondeur |

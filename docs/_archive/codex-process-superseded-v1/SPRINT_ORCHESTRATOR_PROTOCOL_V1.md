@@ -11,7 +11,7 @@ Il s'inscrit sous la tour de controle globale
 `docs/project/PROJECT_CONTROL_TOWER_V1.md`, qui indique quel sprint est actif,
 quelle phase est en cours et quelle action est autorisee maintenant.
 
-Pour Naomie/SELAS, appliquer aussi le protocole court prioritaire
+Pour Naomi/SELAS, appliquer aussi le protocole court prioritaire
 `docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md`.
 
 Il ne remplace pas l'orchestrateur moteur qui choisit les generateurs de
@@ -44,7 +44,7 @@ docs/sprints/SPRINT_[TYPE]_V1.md
 ```
 
 Ce fichier est la source de verite operationnelle du sprint. Codex doit le lire
-avant de repondre a Naomie ou avant de reprendre un sprint par type
+avant de repondre a Naomi ou avant de reprendre un sprint par type
 d'entreprise.
 
 Si le fichier n'existe pas, Codex doit le creer en phase 0 avec le statut
@@ -64,9 +64,9 @@ Chaque fichier de sprint doit indiquer au minimum :
 - derniere action ;
 - prochaine action ;
 - blocages ;
-- worklog Naomie si le sprint est pilote par Naomie ;
+- worklog Naomi si le sprint est pilote par Naomi ;
 - dernier rapport Gad et messages Gad en attente si le sprint est pilote par
-  Naomie ;
+  Naomi ;
 - statut NotebookLM ;
 - statut audit reutilisation ;
 - statut matrice documentaire ;
@@ -104,15 +104,15 @@ Chaque fichier de sprint doit indiquer au minimum :
 | Situation | Reponse obligatoire de Codex |
 | --- | --- |
 | Nouveau chat : `Bonjour` sans identite | Demander `Bonjour, tu es Gad ou Naomi ? Je te route ensuite sur le bon protocole projet.` Aucun sprint, aucune tache, aucun NotebookLM avant identification |
-| Gad parle de Naomi/Naomie, SELAS ou du protocole | Traiter Gad comme superviseur produit ; ne pas declencher NotebookLM sauf demande explicite de simulation/preparation/reprise du workflow Naomi |
+| Gad parle de Naomi/Naomi, SELAS ou du protocole | Traiter Gad comme superviseur produit ; ne pas declencher NotebookLM sauf demande explicite de simulation/preparation/reprise du workflow Naomi |
 | Gad demande ou en est Naomi | Appliquer `NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md` + `WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md`, lire les traces/worklog/branche, puis repondre sur le flux Naomi sans demander un statut oral a Naomi |
 | Gad demande un rapport Naomi | Produire un rapport boss court differentiel depuis le dernier rapport Gad inscrit dans le worklog, puis mettre a jour le curseur |
 | Gad laisse un message pour Naomi | Enregistrer le message exact dans le worklog avec statut `a transmettre`; le citer au prochain echange avec Naomi puis le marquer `transmis` |
-| Naomie dit seulement `Bonjour` apres identification comme Naomie/SELAS | Accueil sprint SELAS, verification branche, point pedagogie, Prompt NotebookLM 01, aucun dev |
-| L'interlocutrice active est Naomi/Naomie mais le message est vague | Traiter comme accueil Naomie, pas comme demande generique |
-| Naomie dit `Je veux lancer le sprint X` | Creer/lire le sprint, phase 0, `NO-GO dev`, puis lancer uniquement le sous-sprint NotebookLM |
-| Naomie dit `Je veux lancer/demarrer/reprendre le sprint SELAS/CELAS` | Rester dans `SELAS-SOURCES-NOTEBOOKLM-001`, donner le prochain prompt NotebookLM a copier-coller, attendre sa reponse |
-| Naomie demande de coder avant NotebookLM | Refuser le dev et lister les gates manquants |
+| Naomi dit seulement `Bonjour` apres identification comme Naomi/SELAS | Accueil sprint SELAS, verification branche, point pedagogie, Prompt NotebookLM 01, aucun dev |
+| L'interlocutrice active est Naomi/Naomi mais le message est vague | Traiter comme accueil Naomi, pas comme demande generique |
+| Naomi dit `Je veux lancer le sprint X` | Creer/lire le sprint, phase 0, `NO-GO dev`, puis lancer uniquement le sous-sprint NotebookLM |
+| Naomi dit `Je veux lancer/demarrer/reprendre le sprint SELAS/CELAS` | Rester dans `SELAS-SOURCES-NOTEBOOKLM-001`, donner le prochain prompt NotebookLM a copier-coller, attendre sa reponse |
+| Naomi demande de coder avant NotebookLM | Refuser le dev et lister les gates manquants |
 | Gad demande un nouveau type d'entreprise | Ouvrir ou lire le sprint, confirmer `NO-GO dev` par defaut |
 | NotebookLM n'a pas ete interroge | Rester avant phase 5, preparer les questions |
 | Reuse audit absent | Interdire matrice finale et `GO dev` |
@@ -123,9 +123,9 @@ Chaque fichier de sprint doit indiquer au minimum :
 | Question humaine deja resolue par source/spec | Ne pas poser la question, noter la decision source |
 | L'associe n'a pas teste | Interdire cloture 100 % |
 
-## Format de reponse obligatoire a Naomie
+## Format de reponse obligatoire a Naomi
 
-Quand Naomie intervient dans un sprint, Codex doit toujours structurer sa
+Quand Naomi intervient dans un sprint, Codex doit toujours structurer sa
 reponse comme ceci :
 
 ```text
@@ -135,15 +135,15 @@ Point pedagogie : [explication courte]
 Prochaine etape : [ce qu'on fera ensuite]
 ```
 
-Le point pedagogie est obligatoire a chaque reponse a Naomie.
+Le point pedagogie est obligatoire a chaque reponse a Naomi.
 
-Pour Naomie/SELAS, un simple `bonjour` suffit a declencher le Prompt NotebookLM
-01 seulement si l'interlocutrice active est deja identifiee comme Naomie/Naomi.
+Pour Naomi/SELAS, un simple `bonjour` suffit a declencher le Prompt NotebookLM
+01 seulement si l'interlocutrice active est deja identifiee comme Naomi/Naomi.
 Si l'identite est inconnue, Codex doit d'abord demander si la personne est Gad
-ou Naomi. Codex ne doit pas attendre que Naomie choisisse une tache apres son
+ou Naomi. Codex ne doit pas attendre que Naomi choisisse une tache apres son
 identification.
 
-Reponse interdite dans un contexte Naomie :
+Reponse interdite dans un contexte Naomi :
 
 ```text
 Bonjour Naomi ! Je suis pret. Tu veux qu'on attaque quoi dans le moteur documentaire ?
@@ -155,11 +155,11 @@ NotebookLM.
 
 ## Sous-sprint NotebookLM
 
-Pour un sprint pilote par Naomie, le premier sous-sprint operationnel est
+Pour un sprint pilote par Naomi, le premier sous-sprint operationnel est
 NotebookLM. Il est actif avant l'audit de reutilisation, avant la matrice
 documentaire, avant les tickets de code et avant toute production.
 
-Quand Naomie dit qu'elle veut lancer, demarrer ou reprendre un sprint, Codex doit
+Quand Naomi dit qu'elle veut lancer, demarrer ou reprendre un sprint, Codex doit
 comprendre :
 
 ```text
@@ -190,9 +190,9 @@ NotebookLM est une base de connaissance a interroger largement. Codex ne doit
 pas economiser les questions.
 
 Si Codex n'a pas acces direct a NotebookLM, Codex prepare les questions et
-demande a Gad ou Naomie de coller les reponses ou un export.
+demande a Gad ou Naomi de coller les reponses ou un export.
 
-Pour un sprint pilote par Naomie, Codex ne doit pas demander vaguement une
+Pour un sprint pilote par Naomi, Codex ne doit pas demander vaguement une
 "source NotebookLM". Il doit donner un prompt court a copier-coller, puis
 attendre la reponse.
 
@@ -217,15 +217,15 @@ Chaque reponse NotebookLM doit etre transformee en structure :
 - impact sur le sprint ;
 - prochain prompt recommande.
 
-Chaque avance du flux Naomie doit aussi mettre a jour le worklog du sprint.
+Chaque avance du flux Naomi doit aussi mettre a jour le worklog du sprint.
 Ce suivi est porte par l'Agent de tracabilite de flux
-`docs/project/WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md`, pas par Naomie :
+`docs/project/WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md`, pas par Naomi :
 
 - dernier avancement du flux ;
 - reponse brute recue ;
 - fichier structure par Codex ;
 - blocages ;
-- prochaine action Naomie ;
+- prochaine action Naomi ;
 - prochaine action Codex ;
 - decision Gad si elle existe.
 - message Gad transmis ou encore en attente.
@@ -300,7 +300,7 @@ les variables et les sources applicables au nouveau type.
 
 ## Regles Git / branche
 
-Naomie ne gere pas Git.
+Naomi ne gere pas Git.
 
 Codex gere :
 
@@ -311,7 +311,7 @@ Codex gere :
 - commits ;
 - push, quand Gad le demande ou le valide.
 
-Un sprint Naomie doit utiliser une branche dediee :
+Un sprint Naomi doit utiliser une branche dediee :
 
 ```text
 codex/naomie-[type-entreprise]-sprint

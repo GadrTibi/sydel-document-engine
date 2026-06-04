@@ -4,10 +4,10 @@ Date d'ouverture : 2026-06-01
 
 ## Objet
 
-Ce journal doit recevoir les reponses NotebookLM donnees par Naomie pendant le
+Ce journal doit recevoir les reponses NotebookLM donnees par Naomi pendant le
 sprint SELAS.
 
-Regle : Naomie colle la reponse brute dans Codex. Codex ne laisse pas la reponse
+Regle : Naomi colle la reponse brute dans Codex. Codex ne laisse pas la reponse
 dans le chat seulement ; il la restructure ici avant de passer au prompt
 suivant.
 

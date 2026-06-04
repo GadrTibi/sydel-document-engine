@@ -6,8 +6,8 @@ de ces valeurs.* Date : 2026-06-04.
 ## Projet
 - **Projet** : Sydel — moteur de documents juridiques déterministe.
 - **Remote** : `https://github.com/GadrTibi/sydel-document-engine.git`
-- **Compte GitHub de Naomie (le Mousse)** : `naomiguetta10-prog` — commits signés de **son** compte
-  (traçabilité). Naomie est **collaboratrice**, pas mainteneuse : `main` protégée (PR + revue Gad).
+- **Compte GitHub de Naomi (le Mousse)** : `naomiguetta10-prog` — commits signés de **son** compte
+  (traçabilité). Naomi est **collaboratrice**, pas mainteneuse : `main` protégée (PR + revue Gad).
 
 ## Périmètre / type d'entreprise du Mousse
 > ### ⚠️ PÉRIMÈTRE = **SELAS** — **À CONFIRMER PAR LE CAPITAINE**
@@ -38,7 +38,7 @@ règle juridique et ne modifie aucune formulation juridique.
 - Worklog de sprint : **`naomie/worklog/WORKLOG.md`** (rapports, messages du Capitaine, décisions, historique).
 
 ## Mission d'ouverture — récupérer le travail Codex (SELAS)
-Naomie avait **déjà avancé la SELAS avec Codex** mais **n'a pas réussi à push**. Le travail existe
+Naomi avait **déjà avancé la SELAS avec Codex** mais **n'a pas réussi à push**. Le travail existe
 quelque part (local / sandbox Codex / stash / branche orpheline) mais n'est pas sur le remote.
 
 **Première mission du Mousse** = retrouver ce travail et le **pousser proprement** sur sa branche
@@ -46,9 +46,9 @@ quelque part (local / sandbox Codex / stash / branche orpheline) mais n'est pas 
 passation** pour le Capitaine.
 
 **Procédure détaillée pas-à-pas = `naomie/RECUP_CODEX.md`** (béton, ton corsaire, une manœuvre à la
-fois, pédagogie Git à chaque étape). Le second **exécute cette procédure sur la machine de Naomie**,
+fois, pédagogie Git à chaque étape). Le second **exécute cette procédure sur la machine de Naomi**,
 **après** confirmation du périmètre par le Capitaine + `GO dev`. Vue d'ensemble :
-1. **Localiser** la cale où dort le butin (dossier de travail Codex sur le disque de Naomie) ;
+1. **Localiser** la cale où dort le butin (dossier de travail Codex sur le disque de Naomi) ;
    inspecter en **lecture seule** (`git status`, `git log`, `git branch -a`, `git stash list`) — **sans
    rien écraser**. Cas le plus probable = **commits déjà locaux, juste un `push` oublié**.
 2. **Vérifier** le remote (`origin` → repo Sydel) + l'auth/signature du compte `naomiguetta10-prog` ;
@@ -96,9 +96,9 @@ qui filtre. Détail : `equipage/naomie/PROTOCOL.md` §13.
 - Faire **confirmer le périmètre SELAS** par le Capitaine (message worklog / Pack de passation), puis
   enchaîner sur la **récupération du travail Codex**.
 
-## Réponse type quand Naomie arrive (« bonjour »)
+## Réponse type quand Naomi arrive (« bonjour »)
 Accueil cadré — **4 lignes du protocole, habillées corsaire** (le ton pirate ne s'arme qu'après que
-Naomie a confirmé être le Mousse au « qui va là ? »). Exemple :
+Naomi a confirmé être le Mousse au « qui va là ? »). Exemple :
 ```
 🏴‍☠️ Par la barbe du Capitaine — notre Mousse en personne ! Bienvenue à bord, moussaillon. 🦜
 ⚓ Carte du jour (statut) : Sydel · cap sur la SELAS (à confirmer Capitaine) · phase cadrage · pavillon NO-GO dev.

@@ -37,7 +37,7 @@ metier du type.
 | Type | Statut produit reel | Preuves | Lecture autorisee |
 | --- | --- | --- | --- |
 | `SELARL` | `SPRINT_ACTIF` / `PARTIAL` | `docs/project/SELARL_CANONICAL_STATUS_V1.md`, `docs/sprints/SPRINT_SELARL_CLOSING_V1.md`, rapports SELARL, packs 001-004, retours humains 006 | Type en traitement avance. Perimetre simple/regime communautaire en corrections 006 ; non clos a 100 %. |
-| `SELAS` | `SPRINT_ACTIF` / `BLOCKED sync` / `NO-GO dev` | `docs/sprints/SPRINT_SELAS_V1.md`, worklog Naomie, rapport rattrapage, branche `codex/naomie-selas-sprint` | Type en traitement Naomie. Avancee annoncee, mais requalification impossible sans commit pousse ou Sync packet. |
+| `SELAS` | `SPRINT_ACTIF` / `BLOCKED sync` / `NO-GO dev` | `docs/sprints/SPRINT_SELAS_V1.md`, worklog Naomi, rapport rattrapage, branche `codex/naomie-selas-sprint` | Type en traitement Naomi. Avancee annoncee, mais requalification impossible sans commit pousse ou Sync packet. |
 | `SPFPL cession` | `INVENTAIRE_TECHNIQUE` | `src/sydel_doc_engine/domain/case_catalog.py`, `docs/delivery/lot_05_spfpl_*`, tests lot 05 | Non traite comme sprint produit. Ne pas presenter comme type traite. |
 | `SPFPL apport` | `INVENTAIRE_TECHNIQUE` | `src/sydel_doc_engine/domain/case_catalog.py`, `docs/delivery/lot_05_spfpl_*`, tests lot 05 | Non traite comme sprint produit. Ne pas presenter comme type traite. |
 | `SCS` | `INVENTAIRE_TECHNIQUE` | `src/sydel_doc_engine/domain/case_catalog.py`, specs statuts civils, tests statuts civils | Non traite comme sprint produit. |
@@ -65,7 +65,7 @@ Le catalogue moteur connait huit types :
 Reponses autorisees :
 
 - `SELARL est en traitement avance, partiel, en corrections retour humain 006.`
-- `SELAS est en traitement, mais sa requalification depend de la synchronisation Naomie.`
+- `SELAS est en traitement, mais sa requalification depend de la synchronisation Naomi.`
 - `SCI/SCM/SPFPL/SAS/SCS existent dans le catalogue et le moteur, mais n'ont pas ete traitees comme sprints produit.`
 
 Reponses interdites :

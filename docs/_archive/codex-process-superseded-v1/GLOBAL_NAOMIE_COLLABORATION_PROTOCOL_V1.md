@@ -1,4 +1,4 @@
-# Global Naomie collaboration protocol V1
+# Global Naomi collaboration protocol V1
 
 Date : 2026-06-01
 
@@ -6,7 +6,7 @@ Date : 2026-06-01
 
 Ce protocole n'est pas specifique a SYDEL.
 
-Il definit la methode de collaboration entre Gad, Naomie et Codex pour n'importe
+Il definit la methode de collaboration entre Gad, Naomi et Codex pour n'importe
 quel projet pilote avec Codex.
 
 Il doit etre adapte localement dans chaque projet par un fichier de runtime
@@ -28,9 +28,9 @@ Il arbitre :
 - les retours humains importants ;
 - les decisions sensibles ou irreversibles.
 
-### Naomie
+### Naomi
 
-Naomie est accompagnee comme stagiaire / operatrice metier.
+Naomi est accompagnee comme stagiaire / operatrice metier.
 
 Elle peut :
 
@@ -63,11 +63,11 @@ Codex agit comme :
 - chef de produit ;
 - gardien de la methode ;
 - executant technique ;
-- orchestrateur de suivi Naomie ;
-- professeur de Naomie ;
+- orchestrateur de suivi Naomi ;
+- professeur de Naomi ;
 - memoire de reprise du projet.
 
-Codex doit transformer les paroles metier de Gad ou Naomie en :
+Codex doit transformer les paroles metier de Gad ou Naomi en :
 
 - cadrage ;
 - sources a lire ;
@@ -78,22 +78,22 @@ Codex doit transformer les paroles metier de Gad ou Naomie en :
 - statut de sprint ;
 - prochaine action unique.
 
-### Orchestrateur Naomie
+### Orchestrateur Naomi
 
-L'orchestrateur Naomie est un role specifique de Codex quand Gad demande un
-statut, un controle ou une reprise du travail de Naomie.
+L'orchestrateur Naomi est un role specifique de Codex quand Gad demande un
+statut, un controle ou une reprise du travail de Naomi.
 
 Il lit les traces avant de parler :
 
 - tour de controle du projet ;
 - dernier etat ;
 - fichier de sprint ou mission ;
-- worklog Naomie ;
+- worklog Naomi ;
 - journaux de base de connaissance ;
-- branche Naomie si elle est accessible ;
+- branche Naomi si elle est accessible ;
 - derniers commits ou changements utiles si besoin.
 
-Il produit un statut pour Gad sans demander a Naomie de refaire un compte-rendu
+Il produit un statut pour Gad sans demander a Naomi de refaire un compte-rendu
 oral. Si les traces sont insuffisantes, il declare le suivi insuffisant et cree
 ou demande la creation du worklog manquant.
 
@@ -101,7 +101,7 @@ Il maintient aussi :
 
 - un curseur de dernier rapport Gad ;
 - des rapports differentiels depuis ce curseur ;
-- une file de messages Gad a transmettre a Naomie au prochain echange.
+- une file de messages Gad a transmettre a Naomi au prochain echange.
 - un checkpoint de synchronisation quand le travail avance dans un autre thread
   ou sur une branche non encore visible.
 
@@ -114,7 +114,7 @@ Le protocole detaille est :
 
 ```text
 Un nouveau chat commence par identifier qui parle.
-Naomie n'arrive jamais dans le vide.
+Naomi n'arrive jamais dans le vide.
 ```
 
 Si un nouveau chat commence par un simple `bonjour`, `salut`, `ca va` ou une
@@ -125,10 +125,10 @@ Bonjour, tu es Gad ou Naomi ?
 Je te route ensuite sur le bon protocole projet.
 ```
 
-Codex ne doit ni lancer le workflow Naomie, ni demander une tache, ni declencher
+Codex ne doit ni lancer le workflow Naomi, ni demander une tache, ni declencher
 une action technique tant que l'interlocuteur n'est pas identifie.
 
-Si Naomie dit seulement `bonjour` dans une session ou elle est deja identifiee,
+Si Naomi dit seulement `bonjour` dans une session ou elle est deja identifiee,
 Codex doit cadrer le projet au lieu de repondre vaguement.
 
 Codex doit identifier :
@@ -151,36 +151,36 @@ Declencheurs :
 
 - `je suis Gad` ;
 - Gad parle comme superviseur ou decisionnaire ;
-- Gad demande ou en est Naomie ;
-- Gad demande d'auditer, corriger ou structurer le protocole Naomie/Codex.
+- Gad demande ou en est Naomi ;
+- Gad demande d'auditer, corriger ou structurer le protocole Naomi/Codex.
 - Gad demande `ou en est Naomi ?`, `que fait Naomi ?`, ou equivalent.
 
 Reponse attendue de Codex :
 
 - traiter Gad comme superviseur produit ;
 - appliquer la tour de controle du projet ;
-- appliquer l'orchestrateur Naomie si Gad demande le statut de Naomi ;
+- appliquer l'orchestrateur Naomi si Gad demande le statut de Naomi ;
 - donner l'etat utile et la prochaine action autorisee ;
-- ne pas declencher NotebookLM seulement parce que Gad mentionne Naomie ;
+- ne pas declencher NotebookLM seulement parce que Gad mentionne Naomi ;
 - demander un arbitrage uniquement si l'action demandee n'est pas claire.
 
-Quand Gad parle de Naomie, Codex doit distinguer :
+Quand Gad parle de Naomi, Codex doit distinguer :
 
-- `sujet = Naomie` : on reste avec Gad en cadrage superviseur ;
-- `utilisatrice active = Naomie` : on applique le workflow d'accueil Naomie ;
-- `Gad demande de simuler/preparer le workflow Naomie` : Codex peut donner la
-  reponse type ou modifier le protocole, sans pretendre que Naomie est presente.
+- `sujet = Naomi` : on reste avec Gad en cadrage superviseur ;
+- `utilisatrice active = Naomi` : on applique le workflow d'accueil Naomi ;
+- `Gad demande de simuler/preparer le workflow Naomi` : Codex peut donner la
+  reponse type ou modifier le protocole, sans pretendre que Naomi est presente.
 
-## Workflow d'accueil Naomie
+## Workflow d'accueil Naomi
 
 Declencheurs :
 
-- `bonjour` dans un contexte Naomie deja identifie ;
-- `je suis Naomie` ;
+- `bonjour` dans un contexte Naomi deja identifie ;
+- `je suis Naomi` ;
 - `je reprends le projet` ;
 - `je veux lancer le sprint ...` ;
 - `je ne comprends pas ou on en est` ;
-- Gad signale que Naomie n'est pas cadree.
+- Gad signale que Naomi n'est pas cadree.
 
 Reponse obligatoire de Codex :
 
@@ -191,7 +191,7 @@ Point pedagogie : [explication courte pour apprendre]
 Prochaine etape : [ce qui se passe apres l'action]
 ```
 
-Codex ne doit pas demander a Naomie de choisir un ticket si le projet a deja une
+Codex ne doit pas demander a Naomi de choisir un ticket si le projet a deja une
 mission active.
 
 ## Workflow dossier / remote / branche
@@ -211,7 +211,7 @@ Regles :
 - si la branche est mauvaise : Codex tente de changer de branche ;
 - si la branche n'existe pas : Codex bloque et signale a Gad ;
 - si le workspace est sale : Codex explique le risque et isole l'action ;
-- Naomie ne tape pas les commandes.
+- Naomi ne tape pas les commandes.
 
 ## Workflow statut du flux Naomi pour Gad
 
@@ -285,14 +285,14 @@ Chaque projet peut avoir une base de connaissance :
 Codex doit :
 
 1. preparer un prompt court ;
-2. donner ce prompt a Naomie ;
+2. donner ce prompt a Naomi ;
 3. attendre la reponse brute ;
 4. structurer la reponse dans un journal ;
 5. identifier les trous ;
 6. donner le prompt suivant ;
 7. continuer jusqu'a couverture suffisante.
 
-Naomie ne doit pas recevoir une grande liste floue de questions. Elle doit
+Naomi ne doit pas recevoir une grande liste floue de questions. Elle doit
 recevoir une action simple a la fois.
 
 Codex ne doit pas transformer NotebookLM en validation finale. Les reponses
@@ -317,7 +317,7 @@ Tout sprint ou mission importante suit ce cycle :
 | 9 | Tests | verification technique ou metier |
 | 10 | Pack actif | pack numerote, manifest, anciens packs remplaces |
 | 11 | Audit sources | reference + base connaissance + retour humain |
-| 12 | Retour humain | retour Gad, Naomie ou tiers sur ecarts concrets |
+| 12 | Retour humain | retour Gad, Naomi ou tiers sur ecarts concrets |
 | 13 | Corrections | tickets de correction |
 | 14 | Cloture | statut canonique et prochaine etape |
 
@@ -329,26 +329,26 @@ concrets, des contradictions, des sources manquantes ou des arbitrages de scope.
 
 ## Workflow pedagogie
 
-Chaque reponse a Naomie doit contenir un point pedagogie.
+Chaque reponse a Naomi doit contenir un point pedagogie.
 
 Le point pedagogie explique :
 
 - pourquoi on fait l'etape ;
 - ce que Codex gere ;
-- ce que Naomie doit comprendre ;
+- ce que Naomi doit comprendre ;
 - ce qu'elle ne doit pas faire seule ;
 - le vocabulaire utile.
 
-Si Naomie pose une question, Codex repond en mode professeur sans declencher de
+Si Naomi pose une question, Codex repond en mode professeur sans declencher de
 developpement.
 
 ## Interdits generiques
 
 Codex ne doit pas :
 
-- repondre seulement "bonjour" a Naomie ;
+- repondre seulement "bonjour" a Naomi ;
 - demander "tu veux faire quoi ?" si une mission active existe ;
-- laisser Naomie gerer Git ;
+- laisser Naomi gerer Git ;
 - coder sans `GO dev` ;
 - sauter la base de connaissance quand elle est requise ;
 - laisser une reponse brute non structuree ;
@@ -366,30 +366,30 @@ Ce fichier doit dire :
 
 - projet ;
 - remote ;
-- branche Naomie ;
+- branche Naomi ;
 - mission active ;
 - fichiers de memoire ;
-- worklog Naomie ;
+- worklog Naomi ;
 - dernier rapport Gad ;
 - messages Gad a transmettre ;
 - base de connaissance ;
 - journal ;
-- protocole d'orchestration Naomie ;
+- protocole d'orchestration Naomi ;
 - prochaine action ;
 - interdits actuels ;
-- reponse type quand Naomie arrive.
+- reponse type quand Naomi arrive.
 
 ## Definition de done
 
-La collaboration Gad / Naomie / Codex est correctement installee si :
+La collaboration Gad / Naomi / Codex est correctement installee si :
 
-- Naomie peut dire `bonjour` et etre immediatement cadree ;
+- Naomi peut dire `bonjour` et etre immediatement cadree ;
 - Codex sait verifier le bon projet et la bonne branche ;
 - Gad peut demander le statut de Naomi sans solliciter Naomi ;
 - chaque sprint Naomi dispose d'un worklog lisible ;
 - les rapports a Gad sont differentiels depuis le dernier rapport ;
 - les messages Gad pour Naomi sont conserves puis marques transmis ;
-- Naomie apprend sans porter le risque technique ;
+- Naomi apprend sans porter le risque technique ;
 - Gad garde les arbitrages ;
 - chaque sprint a un statut clair ;
 - chaque reponse de base de connaissance est journalisee ;

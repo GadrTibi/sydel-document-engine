@@ -6,7 +6,7 @@ Date : 2026-06-02
 
 Ce protocole definit l'`Agent de tracabilite de flux`.
 
-Il est generique : il s'applique a Naomie, a un autre pilote accompagne, a un
+Il est generique : il s'applique a Naomi, a un autre pilote accompagne, a un
 autre type d'entreprise, ou a un autre projet.
 
 Son role est simple :
@@ -16,9 +16,9 @@ Tracer l'avancement du flux de travail, sans demander au pilote humain de tenir
 le journal lui-meme.
 ```
 
-Dans SYDEL, le premier flux concerne Naomie sur SELAS. Si Codex, un sous-agent,
+Dans SYDEL, le premier flux concerne Naomi sur SELAS. Si Codex, un sous-agent,
 NotebookLM, GitHub ou un outil avance dans le perimetre de ce flux, cela compte
-comme avancement du flux Naomie pour le rapport Gad.
+comme avancement du flux Naomi pour le rapport Gad.
 
 ## Regle centrale
 
@@ -27,7 +27,7 @@ Le pilote humain ne porte pas la charge de tracabilite.
 L'agent de tracabilite enregistre le flux.
 ```
 
-Naomie peut donner des reponses, poser des questions, choisir une option ou
+Naomi peut donner des reponses, poser des questions, choisir une option ou
 transmettre de la matiere. Mais elle ne doit pas etre responsable de maintenir
 le worklog, les curseurs, les preuves, les rapports ou les historiques.
 
@@ -36,7 +36,7 @@ le worklog, les curseurs, les preuves, les rapports ou les historiques.
 | Terme | Definition |
 | --- | --- |
 | Flux | Perimetre de travail suivi : sprint, mission, branche ou type d'entreprise |
-| Pilote accompagne | Personne associee au flux, par exemple Naomie |
+| Pilote accompagne | Personne associee au flux, par exemple Naomi |
 | Avancement du flux | Tout fait utile produit dans ce perimetre, par humain, Codex, sous-agent ou outil |
 | Preuve interne | Fichier, thread, commit, source, rapport ou artefact qui justifie le statut |
 | Rapport boss | Synthese courte et decisionnelle pour Gad |
@@ -103,7 +103,7 @@ Blocage / risque : [aucun ou blocage principal]
 Fiabilite : [OK / suivi a rattraper / source manquante]
 ```
 
-Le rapport ne doit pas separer en surface `Naomie personnelle`, `Codex`, `repo`
+Le rapport ne doit pas separer en surface `Naomi personnelle`, `Codex`, `repo`
 et `projet`, sauf si Gad demande un audit. Cette separation reste en preuve
 interne pour eviter les fausses affirmations.
 
@@ -171,22 +171,22 @@ le thread qui contient le travail.
 Pour SELAS, le flux suivi est :
 
 ```text
-Flux Naomie SELAS
+Flux Naomi SELAS
 ```
 
 Donc, pour Gad, les travaux faits par Codex et les sous-agents dans le perimetre
-`codex/naomie-selas-sprint` remontent comme avancement du flux Naomie.
+`codex/naomie-selas-sprint` remontent comme avancement du flux Naomi.
 
 La question n'est pas :
 
 ```text
-Qu'a fait Naomie personnellement ?
+Qu'a fait Naomi personnellement ?
 ```
 
 La question par defaut est :
 
 ```text
-Ou en est le flux Naomie SELAS, quelle est la prochaine etape, et qu'est-ce qui bloque ?
+Ou en est le flux Naomi SELAS, quelle est la prochaine etape, et qu'est-ce qui bloque ?
 ```
 
 La distinction fine reste disponible en audit, mais elle n'est pas le rapport

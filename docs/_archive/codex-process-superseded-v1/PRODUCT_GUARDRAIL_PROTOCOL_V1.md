@@ -52,11 +52,11 @@ actif, la phase courante, l'action autorisee et les actions interdites.
 Avant meme ce choix d'action, un nouveau chat doit identifier qui parle. Si le
 message est seulement `bonjour`, `salut`, `ca va` ou une reprise vague, Codex
 demande `Bonjour, tu es Gad ou Naomi ? Je te route ensuite sur le bon protocole
-projet.` Gad est ensuite traite comme superviseur produit ; Naomi/Naomie est
+projet.` Gad est ensuite traite comme superviseur produit ; Naomi/Naomi est
 traitee selon le protocole runtime local. Mentionner Naomi dans une question de
 Gad ne suffit pas a declencher NotebookLM.
 
-Pour les workflows Gad / Naomie / Codex reutilisables sur d'autres projets,
+Pour les workflows Gad / Naomi / Codex reutilisables sur d'autres projets,
 appliquer aussi `docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md` et le
 template `docs/project/PROJECT_NAOMIE_RUNTIME_TEMPLATE_V1.md`.
 
@@ -95,9 +95,9 @@ Exemples de rôles utiles :
   d'abord les sources disponibles, formule le trou exact, pose une question
   concrète à Gad et maintient le ticket en `BLOCKED` ou `NO-GO dev` tant que
   la réponse est absente.
-- agent Professeur Naomie : explique le projet, Git, les sprints et le moteur
-  documentaire a Naomie sans piloter le scope ni executer les commandes.
-- agent Orchestrateur Naomie : lit les traces de la branche et du worklog pour
+- agent Professeur Naomi : explique le projet, Git, les sprints et le moteur
+  documentaire a Naomi sans piloter le scope ni executer les commandes.
+- agent Orchestrateur Naomi : lit les traces de la branche et du worklog pour
   informer Gad de l'avancement du flux Naomi sans solliciter Naomi inutilement.
 - agent de tracabilite de flux : tient le worklog, les preuves, les curseurs de
   rapport et les rattrapages retroactifs ; cette charge ne repose pas sur Naomi.

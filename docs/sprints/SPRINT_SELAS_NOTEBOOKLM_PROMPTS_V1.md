@@ -4,7 +4,7 @@ Date : 2026-06-01
 
 ## Objet
 
-Ce fichier contient les prompts courts que Codex doit donner a Naomie pour
+Ce fichier contient les prompts courts que Codex doit donner a Naomi pour
 interroger NotebookLM pendant le sprint SELAS.
 
 Regles :
@@ -16,8 +16,8 @@ Regles :
 - choisir le prompt suivant selon les manques ;
 - rester en `NO-GO dev`.
 
-Le Prompt 01 doit etre donne meme si Naomie dit seulement `bonjour`, des lors
-que Naomie est l'interlocutrice active deja identifiee. Si Gad parle de Naomie,
+Le Prompt 01 doit etre donne meme si Naomi dit seulement `bonjour`, des lors
+que Naomi est l'interlocutrice active deja identifiee. Si Gad parle de Naomi,
 Codex applique l'orchestrateur de suivi et ne declenche pas NotebookLM par
 reflexe. Voir `docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md` et
 `docs/project/NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md`.

@@ -2,7 +2,7 @@
 
 **Recette réutilisable** pour outiller un type d'entreprise (SELARL, SELAS, SPFPL, SCI, SCS, SCP…).
 But : **ne pas re-découvrir à chaque type** ce qu'on a appris. S'applique à **tout** type — SELARL en
-cours **et SELAS de Naomie**. Mis en dur ici exprès. Complète `WORKFLOW_PRODUIT_SYDEL_V1.md`.
+cours **et SELAS de Naomi**. Mis en dur ici exprès. Complète `WORKFLOW_PRODUIT_SYDEL_V1.md`.
 
 > Méta-règle : tout nouvel apprentissage de méthode pendant un type se reverse **ici** (rule 45 —
 > codifier sans qu'on le demande), pour que le type suivant parte plus vite.
@@ -45,4 +45,4 @@ cours **et SELAS de Naomie**. Mis en dur ici exprès. Complète `WORKFLOW_PRODUI
 
 ## 8. Sécurité Git / sessions
 - 1 sprint = 1 branche dédiée (`<type>/...`), jamais `main` sans review du capitaine.
-- Sessions parallèles (ex. SELARL + cockpit Naomie) = **dossiers séparés** ; ne pas éditer la **couche SEL partagée** depuis deux sessions en même temps (risque de collision, déjà constaté SELARL × SELAS).
+- Sessions parallèles (ex. SELARL + cockpit Naomi) = **dossiers séparés** ; ne pas éditer la **couche SEL partagée** depuis deux sessions en même temps (risque de collision, déjà constaté SELARL × SELAS).

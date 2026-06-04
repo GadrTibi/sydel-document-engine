@@ -1,30 +1,30 @@
-# Naomie GitHub onboarding V1
+# Naomi GitHub onboarding V1
 
 Date : 2026-06-01
 
 ## Objet
 
 Ce document est le mode d'emploi pour installer le projet SYDEL sur
-l'ordinateur de Naomie et commencer un sprint sur une branche propre.
+l'ordinateur de Naomi et commencer un sprint sur une branche propre.
 
 Il sert aussi a Gad et Codex pour preparer la branche de depart.
 
 La couche pedagogique associee est definie dans
 `docs/project/NAOMIE_LEARNING_MENTOR_PROTOCOL_V1.md`.
 
-Le suivi operationnel d'un sprint Naomie est defini dans
+Le suivi operationnel d'un sprint Naomi est defini dans
 `docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md`. Pour la SELAS, l'etat actif
 est `docs/sprints/SPRINT_SELAS_V1.md`.
 
-La synchronisation entre le thread Naomie, le thread Gad, le worklog et la
+La synchronisation entre le thread Naomi, le thread Gad, le worklog et la
 branche est definie dans `docs/project/NAOMIE_WORKSTREAM_SYNC_PROTOCOL_V1.md`.
 
 ## Principe operationnel
 
-Naomie ne pilote pas GitHub, Git, les branches, les commits, les push ou les
+Naomi ne pilote pas GitHub, Git, les branches, les commits, les push ou les
 commandes terminal.
 
-Naomie doit seulement :
+Naomi doit seulement :
 
 1. installer les outils demandes par le guide Git ;
 2. donner acces au depot GitHub si necessaire ;
@@ -51,7 +51,7 @@ validations metier sensibles.
 
 ## Couche professeur
 
-Naomie peut demander une explication a tout moment avec :
+Naomi peut demander une explication a tout moment avec :
 
 ```text
 Question professeur : [sa question]
@@ -65,32 +65,32 @@ Question professeur : pourquoi on fait un audit de reutilisation ?
 Question professeur : c'est quoi NO-GO dev ?
 ```
 
-Codex doit alors expliquer sans lancer de dev et sans demander a Naomie
+Codex doit alors expliquer sans lancer de dev et sans demander a Naomi
 d'executer les commandes elle-meme.
 
 ## Regle de depart
 
-Naomie ne doit pas developper sur `main` ni directement sur
+Naomi ne doit pas developper sur `main` ni directement sur
 `track-b/clean-rebuild`.
 
 Le nom du dossier local n'est pas une preuve suffisante. Gad travaille dans un
 worktree appele `sydel-track-b`, tandis qu'un clone standard sur l'ordinateur de
-Naomie peut s'appeler `sydel-document-engine`. Les deux peuvent pointer vers le
+Naomi peut s'appeler `sydel-document-engine`. Les deux peuvent pointer vers le
 meme depot GitHub.
 
-Ce que Codex doit verifier pour Naomie :
+Ce que Codex doit verifier pour Naomi :
 
 - remote : `https://github.com/GadrTibi/sydel-document-engine.git` ;
 - branche active : `codex/naomie-selas-sprint` pour le sprint SELAS.
 
-Si Naomie est dans `sydel-document-engine` mais sur `main`, le dossier peut etre
+Si Naomi est dans `sydel-document-engine` mais sur `main`, le dossier peut etre
 bon mais la branche est mauvaise pour le sprint. Codex doit basculer sur la
 branche de sprint ou bloquer en `NO-GO dev`.
 
 Concretement, elle ne doit pas lancer elle-meme de commandes Git. Si une action
 Git est necessaire, elle demande a Codex de la faire.
 
-Si Naomie pense qu'une phase est terminee, elle ne doit pas seulement le dire
+Si Naomi pense qu'une phase est terminee, elle ne doit pas seulement le dire
 dans le chat. Codex doit produire un checkpoint :
 
 - soit commit + push sur la branche de sprint ;
@@ -116,7 +116,7 @@ codex/naomie-sci-sprint
 
 ## Prealable cote Gad
 
-Avant de lancer Naomie sur une branche distante, Gad doit verifier que la base
+Avant de lancer Naomi sur une branche distante, Gad doit verifier que la base
 du projet est propre :
 
 1. les documents de gouvernance sont relus ;
@@ -124,13 +124,13 @@ du projet est propre :
 3. le checkpoint est pousse sur GitHub ;
 4. le type d'entreprise du sprint est choisi.
 
-Tant que ces quatre points ne sont pas vrais, la branche Naomie peut etre
+Tant que ces quatre points ne sont pas vrais, la branche Naomi peut etre
 preparee en documentation, mais elle ne doit pas devenir la branche de travail
 principale.
 
 ## Creation de la branche par Gad ou Codex
 
-Commandes reservees a Gad ou Codex, pas a Naomie :
+Commandes reservees a Gad ou Codex, pas a Naomi :
 
 ```powershell
 git switch track-b/clean-rebuild
@@ -145,11 +145,11 @@ Si le projet a ete fusionne ailleurs avant le sprint, Gad peut choisir une autre
 branche de base, mais la decision doit etre ecrite dans
 `docs/project/01_EXECUTION_BOARD.md`.
 
-## Installation sur l'ordinateur de Naomie
+## Installation sur l'ordinateur de Naomi
 
 ### 1. Installer les outils
 
-Naomie doit installer ou faire installer :
+Naomi doit installer ou faire installer :
 
 - Git ;
 - Python 3.11 ou plus ;
@@ -157,7 +157,7 @@ Naomie doit installer ou faire installer :
 - un acces GitHub au depot ;
 - VS Code ou un editeur equivalent, optionnel mais recommande.
 
-Apres cette etape, Naomie ne gere plus les commandes. Codex prendra la main dans
+Apres cette etape, Naomi ne gere plus les commandes. Codex prendra la main dans
 le terminal du projet.
 
 Depot GitHub :
@@ -168,10 +168,10 @@ https://github.com/GadrTibi/sydel-document-engine.git
 
 ### 2. Ouvrir Codex et demander l'installation projet
 
-Naomie doit dire a Codex :
+Naomi doit dire a Codex :
 
 ```text
-Je suis Naomie.
+Je suis Naomi.
 J'ai installe Git/Python et j'ai acces au depot GitHub.
 Peux-tu installer le projet SYDEL sur mon ordinateur et te placer sur ma branche de sprint ?
 ```
@@ -197,7 +197,7 @@ git switch codex/naomie-[type-entreprise]-sprint
 ```
 
 Si la branche n'existe pas encore, Codex doit s'arreter et le signaler a Gad.
-Naomie ne doit pas inventer une branche sans type d'entreprise valide.
+Naomi ne doit pas inventer une branche sans type d'entreprise valide.
 
 ### 5. Creer l'environnement Python
 
@@ -234,12 +234,12 @@ Pour ouvrir l'application locale propre Track B :
 
 Si le port 8501 est deja occupe, utiliser 8502 ou 8503.
 
-## Demarrage d'un sprint par Naomie
+## Demarrage d'un sprint par Naomi
 
-Dans Codex, Naomie doit commencer exactement par :
+Dans Codex, Naomi doit commencer exactement par :
 
 ```text
-Je suis Naomie.
+Je suis Naomi.
 Je veux demarrer le sprint [type d'entreprise].
 ```
 
@@ -257,11 +257,11 @@ Le sprint commence toujours en `NO-GO dev`.
 
 ## Travail quotidien sur branche
 
-Naomie ne gere pas la branche au quotidien. Elle ouvre Codex dans le projet et
+Naomi ne gere pas la branche au quotidien. Elle ouvre Codex dans le projet et
 dit :
 
 ```text
-Je suis Naomie.
+Je suis Naomi.
 Je reprends le sprint [type d'entreprise].
 Peux-tu verifier l'etat Git, la branche et les tests avant qu'on continue ?
 ```
@@ -281,10 +281,10 @@ Si Gad a mis a jour la branche de base, commande reservee a Codex :
 git merge origin/track-b/clean-rebuild
 ```
 
-Naomie ne doit jamais utiliser `git reset --hard`. Codex ne doit jamais utiliser
+Naomi ne doit jamais utiliser `git reset --hard`. Codex ne doit jamais utiliser
 de commande destructive sans consigne explicite de Gad.
 
-## Fin de session Naomie
+## Fin de session Naomi
 
 Avant de demander une revue, commandes reservees a Codex :
 
@@ -304,7 +304,7 @@ git push
 
 Le commit doit rester limite au sprint en cours.
 
-## Ce que Naomie ne doit pas faire
+## Ce que Naomi ne doit pas faire
 
 - modifier la source de verite sans decision explicite ;
 - coder un document sans source recue et spec ecrite ;
@@ -316,7 +316,7 @@ Le commit doit rester limite au sprint en cours.
 
 ## Definition d'une branche prete
 
-Une branche Naomie est prete seulement si :
+Une branche Naomi est prete seulement si :
 
 - elle part d'une base projet poussee sur GitHub ;
 - elle porte le nom du type d'entreprise ;

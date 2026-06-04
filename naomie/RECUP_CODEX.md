@@ -1,15 +1,15 @@
 # RECUP_CODEX — récupérer le butin SELAS commencé avec Codex (mission d'ouverture)
 
-*Procédure de bord, exécutée par le **second** (le Claude de Naomie) **sur la machine du Mousse**, une
-manœuvre à la fois, ton corsaire, pédagogie Git à chaque étape. Naomie apprend en faisant.*
+*Procédure de bord, exécutée par le **second** (le Claude de Naomi) **sur la machine du Mousse**, une
+manœuvre à la fois, ton corsaire, pédagogie Git à chaque étape. Naomi apprend en faisant.*
 
 > 🏴‍☠️ **L'histoire** : le Mousse avait déjà commencé à travailler la SELAS avec un autre matelot
 > (Codex), mais le **butin n'a jamais été hissé** sur le navire commun (le remote GitHub). Il dort
-> quelque part sur le disque de Naomie. Notre mission : le **retrouver sans rien casser**, le **ranger
+> quelque part sur le disque de Naomi. Notre mission : le **retrouver sans rien casser**, le **ranger
 > proprement dans la bonne cale** (sa branche), et le **hisser** vers le navire — puis rendre compte au
 > Capitaine.
 
-> ⚓ **Note d'alignement** : Naomie travaille désormais dans un **clone neuf** (base propre + Chaloupe =
+> ⚓ **Note d'alignement** : Naomi travaille désormais dans un **clone neuf** (base propre + Chaloupe =
 > son atelier d'avenir). Pour la récupération, le Second inspecte l'**ANCIEN dossier Codex** qu'elle
 > pointe (lecture seule) et choisit le chemin le plus sûr : (Cas A, le plus probable) pousser sa branche
 > directement depuis l'ancien dossier ; sinon transplanter le travail dans le clone neuf sur
@@ -34,14 +34,14 @@ Le Mousse hisse une branche `naomie/selas/<ticket>`, point. Le reste, c'est le C
 ---
 
 ## Règle d'or de la manœuvre
-**Une seule action à la fois.** Tu donnes UNE commande à Naomie → elle la lance → elle te **recopie la
+**Une seule action à la fois.** Tu donnes UNE commande à Naomi → elle la lance → elle te **recopie la
 sortie brute** → tu lis, tu journalises, tu expliques (le mot du gabier) → manœuvre suivante. Jamais une
 grande liste de commandes d'un coup. **On ne devine rien : on regarde d'abord, on agit ensuite.**
 
 ---
 
 ## Étape 1 — Retrouver la cale où dort le butin (localiser le dossier)
-🧭 **Manœuvre** : demande à Naomie où elle travaillait la SELAS avec Codex — le **dossier sur son
+🧭 **Manœuvre** : demande à Naomi où elle travaillait la SELAS avec Codex — le **dossier sur son
 disque** (souvent quelque chose comme `Desktop\Sydel\...` ou un clone séparé). Fais-lui ouvrir un
 terminal **dans ce dossier**, puis lance :
 ```
@@ -89,7 +89,7 @@ git stash list
 - **Cas D — rien de récupérable proprement** : aucune trace exploitable. → **On ne ment pas** : pas de
   « c'est fait ». On produit un **Sync packet** (état structuré) pour le Capitaine et on s'arrête.
 
-➡️ **Cap suivant** : on vérifie le navire d'attache et le pavillon de Naomie (Étape 3).
+➡️ **Cap suivant** : on vérifie le navire d'attache et le pavillon de Naomi (Étape 3).
 
 ---
 
@@ -100,7 +100,7 @@ git remote -v
 ```
 Le remote `origin` **doit** pointer sur :
 `https://github.com/GadrTibi/sydel-document-engine.git`.
-Vérifie aussi **qui signe** — le compte GitHub de Naomie (le Mousse) est **`naomiguetta10-prog`** :
+Vérifie aussi **qui signe** — le compte GitHub de Naomi (le Mousse) est **`naomiguetta10-prog`** :
 ```
 git config user.name
 git config user.email
@@ -108,7 +108,7 @@ git config user.email
 
 📚 **Le mot du gabier** : le **remote** est l'adresse du navire commun sur GitHub ; `origin` est son
 petit nom par défaut. `user.name` / `user.email` décident **sous quel pavillon** les commits sont signés
-— c'est la **traçabilité** : on veut que le butin du Mousse soit signé du **compte de Naomie**, pas d'un
+— c'est la **traçabilité** : on veut que le butin du Mousse soit signé du **compte de Naomi**, pas d'un
 autre.
 
 🔧 **Si le remote est absent ou faux** (Cas « pas de remote / mauvais remote ») :
@@ -116,13 +116,13 @@ autre.
   `git remote add origin https://github.com/GadrTibi/sydel-document-engine.git`
 - mauvais → on le corrige :
   `git remote set-url origin https://github.com/GadrTibi/sydel-document-engine.git`
-🔧 **Si la signature n'est pas celle de Naomie**, on la pose **pour ce dépôt** (local, pas global) :
+🔧 **Si la signature n'est pas celle de Naomi**, on la pose **pour ce dépôt** (local, pas global) :
 ```
-git config user.name "Naomie Guetta"
+git config user.name "Naomi Guetta"
 git config user.email "<l'email du compte naomiguetta10-prog>"
 ```
 > 🦜 **Authentification** : au moment de hisser (push), GitHub demandera de prouver que c'est bien
-> Naomie. Si ça coince, c'est une histoire de **connexion à son compte** (token / GitHub CLI / cache
+> Naomi. Si ça coince, c'est une histoire de **connexion à son compte** (token / GitHub CLI / cache
 > d'identifiants) — pas une histoire de code. On règle l'auth **avant** de pousser ; on ne contourne
 > jamais en poussant sous un autre compte.
 
@@ -180,7 +180,7 @@ git commit -m "feat(selas): récupération du travail SELAS commencé avec Codex
   `git status` **après** pour vérifier qu'on embarque bien ce qu'on veut, **rien de parasite** (pas de
   secrets, pas de gros fichiers de travail Codex non désirés).
 - `git commit -m "..."` = sceller un **enregistrement** horodaté et signé. Le message décrit le butin en
-  clair. Comme la signature a été réglée à l'Étape 3, ce commit porte le **pavillon de Naomie**.
+  clair. Comme la signature a été réglée à l'Étape 3, ce commit porte le **pavillon de Naomi**.
 
 ➡️ **Cap suivant** : hisser les couleurs (Étape 6).
 

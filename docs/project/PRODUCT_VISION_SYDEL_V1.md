@@ -53,7 +53,7 @@ détaille explicitement que la branche **SELARL** ; les autres structures existe
 | Structure | Nature | État produit (juin 2026) |
 |---|---|---|
 | **SELARL** | Société d'exercice libéral à resp. limitée — pilote | Cas simples + régime communautaire = candidat technique avancé, en attente validation associé ; cessions/SCM câblées sur branche de revue ; multi-associés complet bloqué Albane |
-| **SELAS** | Société d'exercice libéral par actions simplifiée | Modèles présents ; pilotée en parallèle (filière Naomie) ; **seule forme où une personne morale associée est possible** (voir §4) |
+| **SELAS** | Société d'exercice libéral par actions simplifiée | Modèles présents ; pilotée en parallèle (filière Naomi) ; **seule forme où une personne morale associée est possible** (voir §4) |
 | **SPFPL / SPFPLAS** | Société de participations financières (holding de SEL) | Modèles + générateurs présents (statuts, apport, cession parts/actions) ; cadrage produit partiel |
 | **SAS (holding)** | Holding sous forme SAS | Modèles + générateurs présents ; satellites |
 | **SCM** | Société civile de moyens (partage de frais) | Statuts, règlement intérieur, pacte, cession de parts, liste de dépenses ; intervient comme satellite d'une SEL |
@@ -281,7 +281,7 @@ la fidélité juridique avant la vitesse de code** :
    « micro-holding SELAS » comme nouvelle famille ? (bloquant — je n'y touche pas sans ton GO)
 2. **Périmètre V1 produit (Q3).** Le livrable V1 = **SELARL seule d'abord** (puis méthode rejouée
    sur les autres structures), ou plusieurs structures en parallèle dès maintenant (SELAS côté
-   Naomie) ? Cela conditionne ce qu'on déclare « dans le périmètre ».
+   Naomi) ? Cela conditionne ce qu'on déclare « dans le périmètre ».
 3. **Profession cible (H2).** On confirme que la V1 reste **médecins + chirurgiens-dentistes
    uniquement** ? Une autre profession réglementée est-elle envisagée à court terme ?
 4. **Composition du dossier cession SCM (Q2).** Dans l'UI, la cession SCM doit-elle être un dossier

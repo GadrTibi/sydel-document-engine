@@ -15,16 +15,16 @@ Ce document ne remplace pas :
 
 - `docs/project/01_EXECUTION_BOARD.md` pour les tickets ;
 - `docs/project/04_LAST_STATE.md` pour le dernier etat reprenable ;
-- `docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md` pour le protocole court Naomie ;
+- `docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md` pour le protocole court Naomi ;
 - `docs/project/NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md` pour le suivi
-  de Naomie demande par Gad ;
-- `docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md` pour le workflow Gad / Naomie / Codex multi-projets ;
+  de Naomi demande par Gad ;
+- `docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md` pour le workflow Gad / Naomi / Codex multi-projets ;
 - `docs/project/PROJECT_AGENT_ORG_CHART_V1.md` pour la pyramide des agents, la
   chaine d'escalade et le rattrapage retroactif ;
 - `docs/project/WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md` pour la tracabilite de
   flux et les rapports boss courts ;
 - `docs/project/NAOMIE_WORKSTREAM_SYNC_PROTOCOL_V1.md` pour la synchronisation
-  entre thread Naomie, thread Gad, worklog et branche ;
+  entre thread Naomi, thread Gad, worklog et branche ;
 - `docs/project/COMPANY_TYPE_STATUS_REGISTRY_V1.md` pour distinguer les types
   vraiment en sprint produit des types seulement presents dans le catalogue ou
   le moteur ;
@@ -41,7 +41,7 @@ Codex est responsable de la continuite projet.
 
 Avant toute reponse operationnelle, Codex doit identifier :
 
-1. qui parle : Gad, Naomie, associe indirect, autre ;
+1. qui parle : Gad, Naomi, associe indirect, autre ;
 2. le type d'entreprise concerne ;
 3. le sprint actif ou a ouvrir ;
 4. la phase courante ;
@@ -74,16 +74,16 @@ Si l'interlocuteur est Gad :
 - Codex applique la tour de controle et donne l'etat utile du projet ;
 - mentionner Naomi ou SELAS dans une question de Gad ne suffit pas a declencher
   le protocole runtime Naomi ;
-- si Gad demande ou en est Naomi, Codex applique l'orchestrateur Naomie et lit
+- si Gad demande ou en est Naomi, Codex applique l'orchestrateur Naomi et lit
   les traces disponibles avant de repondre ;
 - avant de repondre a Gad sur Naomi, Codex doit aussi auditer la fraicheur des
   traces : worklog, journal specialise, branche, threads accessibles et etat
   reel du type dans le repo ;
-- Codex doit repondre sur le flux Naomie, pas sur la performance personnelle de
-  Naomie ; les details humains/Codex/repo restent internes sauf audit demande ;
+- Codex doit repondre sur le flux Naomi, pas sur la performance personnelle de
+  Naomi ; les details humains/Codex/repo restent internes sauf audit demande ;
 - Codex ne doit jamais assimiler `worklog vide` a `flux au debut` sans avoir
   verifie l'etat reel du type ;
-- si Gad annonce que le flux Naomie a avance mais que la branche ou le worklog
+- si Gad annonce que le flux Naomi a avance mais que la branche ou le worklog
   ne montrent pas cette avancee, Codex doit conclure `sync manquante` et
   appliquer `NAOMIE_WORKSTREAM_SYNC_PROTOCOL_V1.md` ;
 - chaque rapport Naomi demande par Gad doit etre inscrit dans le worklog et le
@@ -92,7 +92,7 @@ Si l'interlocuteur est Gad :
   transmet au prochain echange avec elle ;
 - Codex peut auditer, corriger ou preparer le protocole Naomi si Gad le demande.
 
-Si l'interlocutrice est Naomi/Naomie :
+Si l'interlocutrice est Naomi/Naomi :
 
 - Codex applique `docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md` ;
 - le sprint SELAS actif reste en phase NotebookLM / `NO-GO dev` ;
@@ -108,7 +108,7 @@ Si l'interlocutrice est Naomi/Naomie :
 | Tracabilite de flux | `WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md` + worklog sprint | Tracer l'avancee du flux sans charger le pilote humain |
 | Synchronisation de flux | `NAOMIE_WORKSTREAM_SYNC_PROTOCOL_V1.md` + branche + Sync packet | Rendre visible ce qui a ete fait dans un autre thread |
 | Registre types entreprise | `COMPANY_TYPE_STATUS_REGISTRY_V1.md` | Distinguer sprint produit, partiel, bloque et inventaire technique |
-| Suivi Naomie | `NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md` + worklog sprint | Repondre a Gad sur le flux Naomie depuis les traces |
+| Suivi Naomi | `NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md` + worklog sprint | Repondre a Gad sur le flux Naomi depuis les traces |
 | Sous-sprint | journal ou protocole dedie | Gerer une etape specialisee, ex. NotebookLM |
 | Ticket | `01_EXECUTION_BOARD.md` | Encadrer une action bornee |
 | Validation humaine | retour Gad / associe | Autoriser la suite ou les corrections |
@@ -137,7 +137,7 @@ Au 2026-06-02, les seuls types en traitement metier sont :
 | Type | Statut |
 | --- | --- |
 | SELARL | Sprint actif, `PARTIAL`, corrections retours humains 006 |
-| SELAS | Sprint actif Naomie, sync manquante, `NO-GO dev` |
+| SELAS | Sprint actif Naomi, sync manquante, `NO-GO dev` |
 
 Les autres types (`SPFPL cession`, `SPFPL apport`, `SCS`, `SCI`, `SCM`, `SAS`)
 sont seulement inventories / cables historiquement. Ils doivent etre presentes
@@ -152,9 +152,9 @@ Ce cycle est le meme pour SELARL, SELAS et tous les futurs types d'entreprise.
 | Etape | Nom | Responsable pilote | Sortie obligatoire | Peut passer a la suite si |
 | --- | --- | --- | --- | --- |
 | 0 | Etat initial du type | Codex PM | statut courant du type | Codex sait ce qui existe/deja fait |
-| 1 | Ouverture sprint | Codex PM + Gad/Naomie | fichier `SPRINT_[TYPE]_V1.md` | sprint en `NO-GO dev` |
+| 1 | Ouverture sprint | Codex PM + Gad/Naomi | fichier `SPRINT_[TYPE]_V1.md` | sprint en `NO-GO dev` |
 | 2 | Sources de reference | Codex PM | sources listees et hierarchisees | sources et trous connus |
-| 3 | Sous-sprint NotebookLM | Codex PM + Naomie si pilote | prompts + reponses structurees | couverture suffisante documentee |
+| 3 | Sous-sprint NotebookLM | Codex PM + Naomi si pilote | prompts + reponses structurees | couverture suffisante documentee |
 | 4 | Audit reutilisation | Reuse Auditor sous Codex PM | matrice reuse | decisions `identique/reuse-check/adapter/no-go` |
 | 5 | Matrice documentaire | Codex PM | documents classes par condition | manuels/reserves/bloques visibles |
 | 6 | Parcours metier/front | Product + Front sous Codex PM | contrat metier-front | donnees, roles, blocages definis |
@@ -163,7 +163,7 @@ Ce cycle est le meme pour SELARL, SELAS et tous les futurs types d'entreprise.
 | 9 | Dev limite | Codex dev | code + tests du ticket | tests et scope respectes |
 | 10 | Smoke interne | QA sous Codex PM | DOCX/ZIP/PDF si dispo + rapport | pas de regressions bloquantes |
 | 11 | Audit fidelite / trois sources | Source + QA sous Codex PM | pack actif + audit source/reference/NotebookLM/humain | questions inutiles eliminees, pack transmissible |
-| 12 | Revue associe | Associe via Gad/Naomie | retour humain classe | retours compris |
+| 12 | Revue associe | Associe via Gad/Naomi | retour humain classe | retours compris |
 | 13 | Corrections | Codex PM + dev | tickets correction | retours traites ou reportes |
 | 14 | Cloture sprint | Codex PM | statut canonique final | sprint reprenable et auditable |
 
@@ -209,7 +209,7 @@ code, Codex doit noter la decision et avancer sans solliciter Gad.
 | Type | Sprint | Pilote metier | Branche | Phase courante | Statut | Action autorisee maintenant |
 | --- | --- | --- | --- | --- | --- | --- |
 | SELARL | `SPRINT-SELARL-CLOSING-V1` | Gad | `track-b/clean-rebuild` | Validation finale associe pack 005 amende | IN_PROGRESS | faire valider `artifacts/selarl_closing_pack_005/` par l'associe avec le brief final et demander seulement des ecarts concrets |
-| SELAS | `SPRINT-SELAS-V1` | Naomie | `codex/naomie-selas-sprint` | Sous-sprint NotebookLM + tracabilite flux | `NO-GO dev` | reprendre NotebookLM sur les trous reels et tenir le worklog par l'Agent de tracabilite |
+| SELAS | `SPRINT-SELAS-V1` | Naomi | `codex/naomie-selas-sprint` | Sous-sprint NotebookLM + tracabilite flux | `NO-GO dev` | reprendre NotebookLM sur les trous reels et tenir le worklog par l'Agent de tracabilite |
 
 ## Etat courant SELARL
 
@@ -265,7 +265,7 @@ Codex ; il reste le verdict associe.
 
 ## Etat courant SELAS
 
-La SELAS est le sprint actif de Naomie.
+La SELAS est le sprint actif de Naomi.
 
 Etat utile :
 
@@ -274,7 +274,7 @@ Etat utile :
 - ticket actif : `SELAS-SOURCES-NOTEBOOKLM-001` ;
 - sous-sprint actif : NotebookLM ;
 - journal : `docs/sprints/SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md` ;
-- worklog Naomie : `docs/sprints/SPRINT_SELAS_NAOMIE_WORKLOG_V1.md` ;
+- worklog Naomi : `docs/sprints/SPRINT_SELAS_NAOMIE_WORKLOG_V1.md` ;
 - dernier rapport Gad : voir section `Rapports Gad` du worklog ;
 - messages Gad a transmettre : voir section `Messages Gad a transmettre a
   Naomi` du worklog ;
@@ -303,21 +303,21 @@ suffisant.
 
 ## Fail-safe branche main
 
-Si Naomie arrive dans un environnement qui indique la branche `main`, Codex doit
+Si Naomi arrive dans un environnement qui indique la branche `main`, Codex doit
 considerer que le contexte de sprint n'est pas encore correctement place.
 
 Le nom du dossier local ne suffit pas a diagnostiquer. `sydel-track-b` est le
 nom du worktree utilise par Gad ; `sydel-document-engine` peut etre le nom normal
-d'un clone chez Naomie. Le diagnostic correct est :
+d'un clone chez Naomi. Le diagnostic correct est :
 
 - remote GitHub attendu : `https://github.com/GadrTibi/sydel-document-engine.git` ;
-- branche attendue pour Naomie/SELAS : `codex/naomie-selas-sprint`.
+- branche attendue pour Naomi/SELAS : `codex/naomie-selas-sprint`.
 
 Action obligatoire :
 
 1. tenter de basculer sur `codex/naomie-selas-sprint` ;
 2. si la bascule est impossible, bloquer en `NO-GO dev` ;
-3. expliquer a Naomie qu'elle n'a pas a gerer Git, et que Codex doit recuperer ou
+3. expliquer a Naomi qu'elle n'a pas a gerer Git, et que Codex doit recuperer ou
    ouvrir la branche de sprint ;
 4. ne jamais lui demander de choisir une tache ou un ticket depuis `main`.
 
@@ -329,7 +329,7 @@ lecture mentale avant d'agir :
 ```text
 Projet : SYDEL document engine.
 Tour de controle : PROJECT_CONTROL_TOWER_V1.md.
-Sprint actif Naomie : SELAS.
+Sprint actif Naomi : SELAS.
 Phase SELAS : NotebookLM.
 Action SELAS : prompt -> reponse -> journal -> prompt suivant.
 Dev SELAS : interdit.
@@ -340,7 +340,7 @@ Tracabilite : WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md pour les rapports boss sur
 un flux pilote.
 ```
 
-Si l'interlocutrice active est Naomie/Naomi, Codex doit repondre en format
+Si l'interlocutrice active est Naomi/Naomi, Codex doit repondre en format
 sprint :
 
 ```text
@@ -352,15 +352,15 @@ Prochaine etape : [suite immediate]
 
 Si la demande est un simple `bonjour` sans identite explicite, Codex demande
 d'abord si l'interlocuteur est Gad ou Naomi. Si la personne repond ensuite
-Naomi/Naomie, Codex donne le Prompt NotebookLM 01 complet. Il ne doit pas
-attendre que Naomie choisisse une tache.
+Naomi/Naomi, Codex donne le Prompt NotebookLM 01 complet. Il ne doit pas
+attendre que Naomi choisisse une tache.
 
-## Reponse attendue si Naomie lance SELAS
+## Reponse attendue si Naomi lance SELAS
 
-Si Naomie dit :
+Si Naomi dit :
 
 ```text
-Bonjour, je suis Naomie.
+Bonjour, je suis Naomi.
 Je veux lancer le sprint SELAS.
 ```
 
@@ -382,7 +382,7 @@ Codex doit mettre a jour cette tour de controle quand :
 - un sprint change de phase ;
 - un nouveau sprint de type d'entreprise est ouvert ;
 - un sprint est cloture, reporte ou bloque ;
-- le sprint actif de Naomie change ;
+- le sprint actif de Naomi change ;
 - Gad donne ou retire un `GO dev` ;
 - l'associe donne un retour qui change le statut.
 

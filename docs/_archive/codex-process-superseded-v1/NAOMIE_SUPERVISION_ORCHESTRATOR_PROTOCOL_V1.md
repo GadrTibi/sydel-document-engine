@@ -1,10 +1,10 @@
-# Naomie supervision orchestrator protocol V1
+# Naomi supervision orchestrator protocol V1
 
 Date : 2026-06-02
 
 ## Objet
 
-Ce protocole definit l'agent `Orchestrateur Naomie`.
+Ce protocole definit l'agent `Orchestrateur Naomi`.
 
 Il n'est pas specifique a SELAS. SELAS est seulement le premier sprint ou la
 methode est appliquee.
@@ -15,7 +15,7 @@ La place de cet agent dans la pyramide projet est definie dans
 La tracabilite du flux est definie dans
 `docs/project/WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md`.
 
-La synchronisation entre le thread Gad, le thread Naomie et la branche est
+La synchronisation entre le thread Gad, le thread Naomi et la branche est
 definie dans `docs/project/NAOMIE_WORKSTREAM_SYNC_PROTOCOL_V1.md`.
 
 But : permettre a Gad de demander `ou en est Naomi ?`, `que fait Naomi ?`,
@@ -42,11 +42,11 @@ fait, sauf si les traces sont absentes, contradictoires ou inaccessibles.
 Deuxieme regle centrale :
 
 ```text
-Gad demande l'etat du flux Naomie, pas une evaluation personnelle de Naomie.
+Gad demande l'etat du flux Naomi, pas une evaluation personnelle de Naomi.
 ```
 
 Si le sprint, la branche, Codex, un sous-agent ou un outil avance dans le
-perimetre pilote par Naomie, cela remonte comme avancement du flux Naomie pour
+perimetre pilote par Naomi, cela remonte comme avancement du flux Naomi pour
 le rapport Gad.
 
 Troisieme regle centrale :
@@ -67,7 +67,7 @@ Une avancee annoncee mais absente de la branche et du worklog est un probleme
 de synchronisation, pas une preuve d'absence de travail.
 ```
 
-Si Gad sait que Naomie a termine ou avance une phase mais que Codex ne voit pas
+Si Gad sait que Naomi a termine ou avance une phase mais que Codex ne voit pas
 cette avancee dans les traces publiees, Codex doit appliquer
 `NAOMIE_WORKSTREAM_SYNC_PROTOCOL_V1.md` et demander un checkpoint de
 synchronisation. Il ne doit pas relancer NotebookLM ni conclure que le flux est
@@ -89,9 +89,9 @@ Il peut demander :
 - un rapport depuis le dernier rapport ;
 - un message a conserver pour Naomi.
 
-### Naomie
+### Naomi
 
-Naomie est operatrice metier accompagnee.
+Naomi est operatrice metier accompagnee.
 
 Elle avance dans un sprint ou une mission, mais ne porte pas :
 
@@ -101,10 +101,10 @@ Elle avance dans un sprint ou une mission, mais ne porte pas :
 - la decision de `GO dev` ;
 - la consolidation finale de statut.
 
-### Orchestrateur Naomie
+### Orchestrateur Naomi
 
-L'orchestrateur Naomie est joue par Codex quand Gad supervise le travail de
-Naomie.
+L'orchestrateur Naomi est joue par Codex quand Gad supervise le travail de
+Naomi.
 
 Il doit :
 
@@ -115,7 +115,7 @@ Il doit :
   base de connaissance ;
 - signaler les trous de suivi ;
 - produire un statut lisible pour Gad ;
-- detecter les ruptures de synchronisation entre thread Naomie, worklog et
+- detecter les ruptures de synchronisation entre thread Naomi, worklog et
   branche ;
 - limiter le rapport aux traces posterieures au dernier rapport Gad, sauf
   demande contraire ;
@@ -138,9 +138,9 @@ Il ne doit pas :
 - coder sans `GO dev` explicite ;
 - remplacer Gad dans les arbitrages produit.
 
-### Professeur Naomie
+### Professeur Naomi
 
-Le professeur Naomie est separe de l'orchestrateur.
+Le professeur Naomi est separe de l'orchestrateur.
 
 Il explique a Naomi ce qu'elle fait et pourquoi. Il ne suit pas l'avancement
 pour Gad, ne decide pas le scope, ne lit pas la branche a la place de
@@ -148,14 +148,14 @@ l'orchestrateur et ne produit pas de statut projet.
 
 ### Agent de tracabilite de flux
 
-L'agent de tracabilite de flux est separe de Naomie et du professeur Naomie.
+L'agent de tracabilite de flux est separe de Naomi et du professeur Naomi.
 
-Il trace le flux Naomie : ce qui avance sur le sprint, la branche, les sous-
-agents, NotebookLM, les rapports et les livrables. Ce n'est pas a Naomie de
+Il trace le flux Naomi : ce qui avance sur le sprint, la branche, les sous-
+agents, NotebookLM, les rapports et les livrables. Ce n'est pas a Naomi de
 tenir ce suivi.
 
-Par defaut, son rapport a Gad ne separe pas `Naomie personnelle`, `Codex` et
-`repo`. Il dit ou en est le flux Naomie. La separation fine reste disponible en
+Par defaut, son rapport a Gad ne separe pas `Naomi personnelle`, `Codex` et
+`repo`. Il dit ou en est le flux Naomi. La separation fine reste disponible en
 preuve interne ou audit detaille.
 
 ## Sources a consulter pour un statut Naomi
@@ -361,7 +361,7 @@ Codex met a jour le worklog quand :
 - Naomi colle une reponse brute ;
 - Naomi pose une question d'apprentissage importante ;
 - Codex donne un nouveau prompt ou une nouvelle action a Naomi ;
-- Codex ou un sous-agent avance dans le perimetre du flux Naomie ;
+- Codex ou un sous-agent avance dans le perimetre du flux Naomi ;
 - une preuve repo/branche/thread pertinente au flux est decouverte ;
 - Gad demande un statut et une trace est manquante ;
 - Gad demande un rapport Naomi ;
@@ -421,7 +421,7 @@ Le suivi Naomi est correctement installe si :
 - un suivi stale declenche un rattrapage retroactif au lieu d'une conclusion
   faussement certaine ;
 - Codex sait quelle branche et quel worklog lire ;
-- les avances du flux Naomie sont tracees par date ;
+- les avances du flux Naomi sont tracees par date ;
 - le professeur Naomi reste pedagogique et separe de l'orchestrateur ;
 - les sprints restent generiques et ne dependent pas d'un protocole SELAS
   particulier ;

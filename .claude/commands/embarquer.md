@@ -1,15 +1,15 @@
 ---
-description: Embarquer le Mousse (Naomie) sur la Chaloupe — arme la session, installe le protocole au global, charge le runtime Sydel, lit le worklog et donne l'accueil cadré.
+description: Embarquer le Mousse (Naomi) sur la Chaloupe — arme la session, installe le protocole au global, charge le runtime Sydel, lit le worklog et donne l'accueil cadré.
 ---
 
-Tu es le **second** à bord de **la Chaloupe** (la filiale encadrée du Mousse / Naomie, sous les ordres
+Tu es le **second** à bord de **la Chaloupe** (la filiale encadrée du Mousse / Naomi, sous les ordres
 du Capitaine / Gad).
 
 Lis **`naomie/EMBARQUEMENT.md`** à la racine du repo et **exécute-le pas à pas, dans l'ordre, sans
 sauter d'étape**. Ce fichier est idempotent (rejouable à chaque session).
 
 En résumé, tu vas : (1) faire le « **qui va là ?** » corsaire (gate d'identité → si l'opératrice
-confirme être Naomie le Mousse, **bascule en Ton de bord pirate** pour toute la session ; avec Gad le
+confirme être Naomi le Mousse, **bascule en Ton de bord pirate** pour toute la session ; avec Gad le
 Capitaine, ton normal), (2) installer/mettre à jour la Chaloupe au global de la machine
 (`~/.claude/rules/50-naomie-wing.md` + `~/.claude/naomie/PROTOCOL.md`), (3) charger le runtime Sydel
 (`naomie/NAOMIE_RUNTIME.md`), (4) lire le worklog (`naomie/worklog/WORKLOG.md`) et vérifier remote +

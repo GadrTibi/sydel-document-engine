@@ -78,26 +78,26 @@ reutilisation, une matrice documentaire et un statut canonique.
   `docs/project/WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md` ;
 - protocole de synchronisation de flux disponible dans
   `docs/project/NAOMIE_WORKSTREAM_SYNC_PROTOCOL_V1.md` ;
-- protocole runtime Naomie disponible dans `docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md` ;
-- protocole global Gad/Naomie/Codex disponible dans `docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md` ;
-- template runtime Naomie multi-projets disponible dans `docs/project/PROJECT_NAOMIE_RUNTIME_TEMPLATE_V1.md` ;
-- protocole d'orchestration du suivi Naomie disponible dans
+- protocole runtime Naomi disponible dans `docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md` ;
+- protocole global Gad/Naomi/Codex disponible dans `docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md` ;
+- template runtime Naomi multi-projets disponible dans `docs/project/PROJECT_NAOMIE_RUNTIME_TEMPLATE_V1.md` ;
+- protocole d'orchestration du suivi Naomi disponible dans
   `docs/project/NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md` ;
 - protocole sprint par type d'entreprise disponible dans `docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md` ;
 - orchestrateur de sprint operationnel disponible dans `docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md` ;
 - sprint SELAS ouvert en `NO-GO dev` dans `docs/sprints/SPRINT_SELAS_V1.md` ;
-- sous-sprint NotebookLM SELAS actif : Naomie doit recevoir un prompt court,
+- sous-sprint NotebookLM SELAS actif : Naomi doit recevoir un prompt court,
   le coller dans NotebookLM, puis donner la reponse brute a Codex pour
   structuration et iteration ;
-- worklog Naomie SELAS disponible dans
+- worklog Naomi SELAS disponible dans
   `docs/sprints/SPRINT_SELAS_NAOMIE_WORKLOG_V1.md` pour repondre a Gad depuis
   les traces ;
 - protocole de reutilisation SELARL/global disponible dans `docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md` ;
 - methode SELARL capitalisee pour tous les types d'entreprise : trois sources,
   questions humaines seulement sur trous reels, pack actif, audit fidelite et
   cloture `DONE/PARTIAL/BLOCKED` dans `docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md` ;
-- mode d'emploi branche / installation Naomie disponible dans `docs/project/NAOMIE_GITHUB_ONBOARDING_V1.md` ;
-- couche pedagogique Naomie disponible dans `docs/project/NAOMIE_LEARNING_MENTOR_PROTOCOL_V1.md` ;
+- mode d'emploi branche / installation Naomi disponible dans `docs/project/NAOMIE_GITHUB_ONBOARDING_V1.md` ;
+- couche pedagogique Naomi disponible dans `docs/project/NAOMIE_LEARNING_MENTOR_PROTOCOL_V1.md` ;
 - SELARL V1 de production limitée disponible pour création simple médecin / chirurgien-dentiste ;
 - fin de sprint SELARL structuree dans `docs/sprints/SPRINT_SELARL_CLOSING_V1.md` ;
 - régime communautaire SELARL : `DOC-005` et `DOC-006` générés quand l'option est active ;
@@ -141,14 +141,14 @@ Pour DOC-002, l'adresse de domiciliation est gérée en champ libre :
 4. lire `docs/project/PROJECT_AGENT_ORG_CHART_V1.md` si la demande concerne la chaine d'agents, un statut transverse ou un rattrapage retroactif ;
 5. lire `docs/project/WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md` si Gad demande un rapport boss sur un flux pilote ;
 6. lire `docs/project/NAOMIE_WORKSTREAM_SYNC_PROTOCOL_V1.md` si Gad annonce une avancee absente de la branche ou du worklog ;
-7. si l'interlocutrice active est Naomie/Naomi, appliquer `docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md` et donner le Prompt NotebookLM 01 ;
-8. si l'interlocuteur est Gad, le traiter comme superviseur produit et ne pas declencher NotebookLM seulement parce qu'il parle de Naomie ;
-9. si Gad demande ou en est Naomie, appliquer `docs/project/NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md` et repondre par defaut sur le flux Naomie, format boss court ;
+7. si l'interlocutrice active est Naomi/Naomi, appliquer `docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md` et donner le Prompt NotebookLM 01 ;
+8. si l'interlocuteur est Gad, le traiter comme superviseur produit et ne pas declencher NotebookLM seulement parce qu'il parle de Naomi ;
+9. si Gad demande ou en est Naomi, appliquer `docs/project/NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md` et repondre par defaut sur le flux Naomi, format boss court ;
 10. si le suivi est stale, activer l'Agent de tracabilite de flux et son mode rattrapage retroactif ;
 11. pour tout nouveau type d'entreprise, lire `docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md` ;
 12. pour tout nouveau type d'entreprise, lire `docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md` ;
 13. pour tout nouveau type d'entreprise, lire le fichier actif `docs/sprints/SPRINT_[TYPE]_V1.md` s'il existe ;
-14. si le sprint est pilote par Naomie, lancer d'abord le sous-sprint NotebookLM par prompts courts et attendre les reponses structurees ;
+14. si le sprint est pilote par Naomi, lancer d'abord le sous-sprint NotebookLM par prompts courts et attendre les reponses structurees ;
 15. pour tout nouveau type d'entreprise, appliquer ensuite `docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md` ;
 16. pour toute demande SELARL, lire `docs/project/SELARL_CANONICAL_STATUS_V1.md` ;
 17. pour cloturer la SELARL, lire `docs/sprints/SPRINT_SELARL_CLOSING_V1.md` ;
@@ -168,9 +168,9 @@ Pour DOC-002, l'adresse de domiciliation est gérée en champ libre :
 - docs/project/PROJECT_AGENT_ORG_CHART_V1.md si le ticket concerne la chaine d'agents, un statut transverse ou un rattrapage retroactif
 - docs/project/WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md si le ticket concerne la tracabilite d'un flux pilote ou un rapport boss
 - docs/project/NAOMIE_WORKSTREAM_SYNC_PROTOCOL_V1.md si le ticket concerne une avancee annoncee mais absente de la branche/worklog
-- docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md si l'interlocutrice active est Naomie/Naomi, ou si Gad demande explicitement le workflow Naomie/SELAS
-- docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md pour les workflows multi-projets avec Naomie
-- docs/project/NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md si Gad demande le statut ou le suivi de Naomie
+- docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md si l'interlocutrice active est Naomi/Naomi, ou si Gad demande explicitement le workflow Naomi/SELAS
+- docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md pour les workflows multi-projets avec Naomi
+- docs/project/NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md si Gad demande le statut ou le suivi de Naomi
 - docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md pour tout sprint de type d'entreprise
 - docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md
 - docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md pour tout sprint de type d'entreprise

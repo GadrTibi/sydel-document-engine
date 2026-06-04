@@ -2,7 +2,7 @@
 
 Date : 2026-06-03 · Établie par audit multi-agents (lecture seule) + vérification adverse.
 But : (1) prouver la propreté de la réutilisation (1 document = 1 fonction, variantes par paramètre) ;
-(2) servir de **boussole anti-collision** pour paralléliser plusieurs chantiers (Gad / Naomie /
+(2) servir de **boussole anti-collision** pour paralléliser plusieurs chantiers (Gad / Naomi /
 plusieurs Claude Code) sans casse Git.
 
 ## 1. Constat global (vérifié)

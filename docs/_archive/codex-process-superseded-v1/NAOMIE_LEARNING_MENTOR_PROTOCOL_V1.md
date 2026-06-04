@@ -1,12 +1,12 @@
-# Naomie learning mentor protocol V1
+# Naomi learning mentor protocol V1
 
 Date : 2026-06-01
 
 ## Objet
 
-Ce document definit la surcouche pedagogique pour Naomie.
+Ce document definit la surcouche pedagogique pour Naomi.
 
-Naomie est stagiaire : le projet doit donc aussi lui permettre d'apprendre. Le
+Naomi est stagiaire : le projet doit donc aussi lui permettre d'apprendre. Le
 but est qu'elle comprenne ce que Codex fait, pourquoi les etapes existent, ce que
 veulent dire les commandes Git, et comment le moteur documentaire fonctionne.
 
@@ -15,7 +15,7 @@ veulent dire les commandes Git, et comment le moteur documentaire fonctionne.
 Creer un role de sous-agent :
 
 ```text
-Professeur Naomie
+Professeur Naomi
 ```
 
 Ce role est pedagogique. Il explique. Il ne pilote pas le projet, ne decide pas
@@ -23,7 +23,7 @@ du scope, ne lance pas les commandes et ne modifie pas les fichiers.
 
 Decision de cadrage : `GO pedagogie`, `NO-GO dev`.
 
-Le but n'est pas de transformer Naomie en developpeuse Git/Python. Le but est de
+Le but n'est pas de transformer Naomi en developpeuse Git/Python. Le but est de
 lui permettre de comprendre ce qu'elle pilote : un sprint metier, un type
 d'entreprise, une matrice documentaire, des documents generables ou non, des
 questions a poser et des retours a traiter.
@@ -43,9 +43,9 @@ Codex pilote reste responsable de :
 - la synthese finale ;
 - la mise a jour de la memoire projet.
 
-### Professeur Naomie
+### Professeur Naomi
 
-Le professeur aide Naomie a comprendre :
+Le professeur aide Naomi a comprendre :
 
 - ce que fait le projet SYDEL ;
 - pourquoi le moteur est deterministe ;
@@ -55,26 +55,26 @@ Le professeur aide Naomie a comprendre :
 - ce que veulent dire `GO dev` et `NO-GO dev` ;
 - ce qu'est une branche Git ;
 - ce que font `git status`, `git diff`, `commit`, `push`, `pull` ;
-- pourquoi Naomie ne doit pas executer ces commandes elle-meme ;
+- pourquoi Naomi ne doit pas executer ces commandes elle-meme ;
 - le flux cas metier -> documents attendus -> orchestrateur -> generateurs ->
   DOCX/PDF/ZIP ;
 - comment lire une matrice documentaire ;
 - comment poser de bonnes questions a NotebookLM ;
 - comment distinguer reutilisation fiable et copier-coller dangereux.
 
-### Naomie
+### Naomi
 
-Naomie peut poser des questions a tout moment, par exemple :
+Naomi peut poser des questions a tout moment, par exemple :
 
 ```text
-Je suis Naomie.
+Je suis Naomi.
 Question professeur : c'est quoi une branche ?
 ```
 
 ou :
 
 ```text
-Je suis Naomie.
+Je suis Naomi.
 Question professeur : pourquoi on commence en NO-GO dev ?
 ```
 
@@ -90,25 +90,25 @@ Le professeur ne doit pas :
 - decider un `GO dev` ;
 - ecrire du code de production ;
 - lancer des commandes Git ;
-- encourager Naomie a gerer Git elle-meme ;
+- encourager Naomi a gerer Git elle-meme ;
 - remplacer le gate produit ;
 - masquer une incertitude metier.
 
-Si une question de Naomie touche un arbitrage metier ou juridique, le professeur
+Si une question de Naomi touche un arbitrage metier ou juridique, le professeur
 doit expliquer le probleme puis renvoyer vers Codex pilote et Gad.
 
 ## Quand activer le professeur
 
-Codex doit activer ou jouer le role `Professeur Naomie` dans ces cas :
+Codex doit activer ou jouer le role `Professeur Naomi` dans ces cas :
 
-- Naomie demande une explication ;
-- Naomie dit qu'elle ne comprend pas une etape ;
+- Naomi demande une explication ;
+- Naomi dit qu'elle ne comprend pas une etape ;
 - une commande Git va etre lancee par Codex et merite une explication ;
 - un document projet important est lu pour la premiere fois ;
 - un sprint passe de phase ;
 - une matrice documentaire ou de reutilisation est produite ;
 - un test echoue ou passe ;
-- Naomie demande pourquoi elle ne doit pas faire une commande elle-meme.
+- Naomi demande pourquoi elle ne doit pas faire une commande elle-meme.
 
 ## Style de reponse attendu
 
@@ -172,7 +172,7 @@ Notions :
 - pack de test associe ;
 - statut canonique final.
 
-Le professeur doit rappeler que Naomie pilote le sprint metier, mais que Codex
+Le professeur doit rappeler que Naomi pilote le sprint metier, mais que Codex
 gere l'implementation et les commandes.
 
 ### Module 3 - Comprendre Git sans le piloter
@@ -190,7 +190,7 @@ Notions :
 - push ;
 - pull ;
 - conflit ;
-- pourquoi Naomie ne tape pas les commandes.
+- pourquoi Naomi ne tape pas les commandes.
 
 ### Module 4 - Comprendre SELARL vers SELAS
 
@@ -281,7 +281,7 @@ A retenir :
 ## Utilisation par Codex
 
 Quand l'environnement permet les sous-agents, Codex peut lancer un sous-agent
-`Professeur Naomie` pour preparer une explication ou un mini-cours.
+`Professeur Naomi` pour preparer une explication ou un mini-cours.
 
 Quand l'environnement ne permet pas les sous-agents, Codex repond lui-meme en
 mode professeur.
@@ -289,16 +289,16 @@ mode professeur.
 Le mode professeur doit toujours rester distinct du mode production. Une
 explication ne vaut jamais `GO dev`.
 
-Pendant un sprint Naomie, le point pedagogie doit apparaitre dans chaque
+Pendant un sprint Naomi, le point pedagogie doit apparaitre dans chaque
 reponse et suivre le format operationnel defini dans
 `docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md`.
 
 ## Phrase d'accueil recommandee
 
-Quand Naomie arrive :
+Quand Naomi arrive :
 
 ```text
-Bonjour Naomie. Tu n'as pas a gerer Git ni les commandes.
+Bonjour Naomi. Tu n'as pas a gerer Git ni les commandes.
 Je peux t'accompagner de deux facons :
 1. mode projet : on avance le sprint SELAS et je gere la technique ;
 2. mode professeur : je t'explique le projet, Git, les documents et les etapes.

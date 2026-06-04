@@ -1,10 +1,10 @@
-# Project Naomie runtime template V1
+# Project Naomi runtime template V1
 
 Date : 2026-06-01
 
 ## Objet
 
-Ce template sert a creer le protocole local Naomie d'un projet.
+Ce template sert a creer le protocole local Naomi d'un projet.
 
 Il doit etre recopie dans chaque projet puis rempli avec les informations
 specifiques du projet. Il applique la doctrine globale :
@@ -22,7 +22,7 @@ Role de Codex :
 Remote GitHub attendu :
 Dossier local possible :
 Branche principale :
-Branche Naomie :
+Branche Naomi :
 
 Mission ou sprint actif :
 Phase courante :
@@ -35,9 +35,9 @@ Fichiers de memoire projet :
 - plan :
 - handoff :
 - protocole local :
-- protocole orchestrateur Naomie :
-- protocole sync Naomie :
-- worklog Naomie :
+- protocole orchestrateur Naomi :
+- protocole sync Naomi :
+- worklog Naomi :
 - dernier rapport Gad :
 - messages Gad a transmettre :
 
@@ -52,10 +52,10 @@ Sources a trianguler :
 Prochaine action autorisee :
 Actions interdites :
 
-Reponse type si Naomie dit bonjour :
+Reponse type si Naomi dit bonjour :
 Reponse type si identite inconnue dit bonjour :
 Reponse type si Gad s'identifie :
-Reponse type si Gad demande ou en est Naomie :
+Reponse type si Gad demande ou en est Naomi :
 ```
 
 ## Protocole local minimal
@@ -65,23 +65,23 @@ Chaque projet doit definir au minimum :
 1. comment demander l'identite si un nouveau chat commence par un simple
    `bonjour` ;
 2. comment reconnaitre que Gad est l'interlocuteur superviseur ;
-3. comment reconnaitre que Naomie est l'interlocutrice active ;
+3. comment reconnaitre que Naomi est l'interlocutrice active ;
 4. comment verifier le bon depot ;
 5. comment verifier la bonne branche ;
 6. quel fichier lire pour l'etat courant ;
-7. quelle action donner a Naomie ;
+7. quelle action donner a Naomi ;
 8. quel point pedagogie donner ;
 9. quelles actions sont interdites tant que le gate n'est pas passe.
 10. ou journaliser les reponses de base de connaissance ;
 11. quel pack actif transmettre a un humain ;
 12. quelles questions sont deja resolues par les sources et ne doivent pas etre
     reposees.
-13. ou lire le worklog Naomie ;
-14. comment repondre a Gad sans demander a Naomie un statut oral.
+13. ou lire le worklog Naomi ;
+14. comment repondre a Gad sans demander a Naomi un statut oral.
 15. comment noter le dernier rapport Gad ;
-16. ou conserver les messages Gad a transmettre a Naomie.
+16. ou conserver les messages Gad a transmettre a Naomi.
 17. comment produire un commit/push ou un `Sync packet` quand une phase avance
-    dans le thread Naomie.
+    dans le thread Naomi.
 
 ## Reponse type identite inconnue
 
@@ -99,7 +99,7 @@ Point de controle : [gate, branche, sprint ou decision utile]
 Prochaine etape : [suite immediate]
 ```
 
-## Reponse type statut du flux Naomie pour Gad
+## Reponse type statut du flux Naomi pour Gad
 
 ```text
 Statut flux Naomi : [projet] / [sprint ou mission] / [phase] / [GO ou NO-GO]
@@ -112,7 +112,7 @@ Fiabilite : [OK / suivi a rattraper / source manquante]
 Le rapport detaille, avec branche, sources lues, curseur exact et separation
 Naomi/Codex/outils, est reserve a une demande explicite d'audit.
 
-Si l'avancee est annoncee par Gad ou Naomie mais absente des traces publiees,
+Si l'avancee est annoncee par Gad ou Naomi mais absente des traces publiees,
 repondre `avancee annoncee, synchronisation manquante` et demander le checkpoint
 de `docs/project/NAOMIE_WORKSTREAM_SYNC_PROTOCOL_V1.md`.
 
@@ -123,7 +123,7 @@ Message de Gad :
 "[message exact]"
 ```
 
-Apres transmission, marquer le message `transmis` dans le worklog Naomie.
+Apres transmission, marquer le message `transmis` dans le worklog Naomi.
 
 ## Reponse type generique
 
@@ -177,8 +177,8 @@ Codex doit verifier :
 - statut local ;
 - presence des fichiers de memoire ;
 - presence du fichier runtime local ;
-- presence du protocole orchestrateur Naomie ;
-- presence du worklog Naomie du sprint ;
+- presence du protocole orchestrateur Naomi ;
+- presence du worklog Naomi du sprint ;
 - date du dernier rapport Gad ;
 - messages Gad en attente ;
 - derniere action officielle ;
@@ -186,7 +186,7 @@ Codex doit verifier :
 - pack actif et packs remplaces ;
 - journal des reponses de base de connaissance.
 
-Naomie ne doit pas executer ces commandes elle-meme.
+Naomi ne doit pas executer ces commandes elle-meme.
 
 ## Definition de reprise correcte
 
@@ -197,6 +197,6 @@ peut repondre sans demander a Gad :
 - qui parle ;
 - quelle branche utiliser ;
 - quelle phase est en cours ;
-- quelle action donner a Naomie ;
+- quelle action donner a Naomi ;
 - ce qui est interdit ;
 - quel fichier mettre a jour ensuite.

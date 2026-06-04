@@ -50,18 +50,18 @@ Big Orchestrateur Projet / Codex PM
   |     Methode : docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md
   |     Sortie : docs/sprints/SPRINT_[TYPE]_V1.md
   |
-  +-- Orchestrateur Naomie / supervision Gad
+  +-- Orchestrateur Naomi / supervision Gad
   |     Source : docs/project/NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md
   |     Tracabilite : docs/project/WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md
   |     Sync : docs/project/NAOMIE_WORKSTREAM_SYNC_PROTOCOL_V1.md
   |     Worklog : docs/sprints/SPRINT_[TYPE]_NAOMIE_WORKLOG_V1.md
   |     Sortie : rapport boss court + curseur mis a jour
   |
-  +-- Runtime Naomie / agent operationnel accompagne
+  +-- Runtime Naomi / agent operationnel accompagne
   |     Source : docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md
-  |     Sortie : action unique pour Naomie + point pedagogie
+  |     Sortie : action unique pour Naomi + point pedagogie
   |
-  +-- Professeur Naomie
+  +-- Professeur Naomi
   |     Source : docs/project/NAOMIE_LEARNING_MENTOR_PROTOCOL_V1.md
   |     Sortie : explication pedagogique, jamais GO dev
   |
@@ -92,11 +92,11 @@ Big Orchestrateur Projet / Codex PM
 | 3 | Orchestrateur sprint | `SPRINT_ORCHESTRATOR_PROTOCOL_V1.md` | Quelle phase de sprint ? | gate courant et prochaine action |
 | 3 | Playbook type entreprise | `COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md` | Quelle methode pour un type ? | sources, NotebookLM, reuse, matrice, pack |
 | 3 | Fichier de sprint | `docs/sprints/SPRINT_[TYPE]_V1.md` | Etat exact d'un type | phase, gates, blocages |
-| 4 | Orchestrateur Naomie | `NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md` | Ou en est Naomi ? | rapport Gad + worklog mis a jour |
+| 4 | Orchestrateur Naomi | `NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md` | Ou en est Naomi ? | rapport Gad + worklog mis a jour |
 | 4 | Agent de tracabilite de flux | `WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md` | Ou en est le flux pilote ? | avancement du flux + preuves internes |
 | 4 | Agent de synchronisation de flux | `NAOMIE_WORKSTREAM_SYNC_PROTOCOL_V1.md` | Pourquoi le travail annonce n'est pas visible ? | commit pousse ou Sync packet |
-| 4 | Runtime Naomie | `NAOMIE_RUNTIME_PROTOCOL_V1.md` | Que dire a Naomi maintenant ? | action unique + point pedagogie |
-| 4 | Professeur Naomie | `NAOMIE_LEARNING_MENTOR_PROTOCOL_V1.md` | Comment expliquer sans coder ? | explication pedagogique |
+| 4 | Runtime Naomi | `NAOMIE_RUNTIME_PROTOCOL_V1.md` | Que dire a Naomi maintenant ? | action unique + point pedagogie |
+| 4 | Professeur Naomi | `NAOMIE_LEARNING_MENTOR_PROTOCOL_V1.md` | Comment expliquer sans coder ? | explication pedagogique |
 | 4 | Reuse Auditor | `REUSE_AUDIT_AGENT_PROTOCOL_V1.md` | Que reutiliser sans risque ? | matrice reuse |
 | 4 | Front Information Dedup Agent | `FRONT_INFORMATION_DEDUP_AGENT_PROTOCOL_V1.md` | Est-ce qu'une meme information est redemandee dans le front ? | verdict dedup + tickets de suppression/reuse |
 | 5 | NotebookLM Agent | prompt/log du sprint | Quelles infos la base donne ? | reponse structuree dans journal |
@@ -115,7 +115,7 @@ Quand Gad demande `ou en est Naomi ?`, la chaine obligatoire est :
 
 1. Routeur identite confirme que l'interlocuteur est Gad.
 2. Big Orchestrateur lit la tour de controle.
-3. Orchestrateur Naomie active l'Agent de tracabilite de flux, qui lit :
+3. Orchestrateur Naomi active l'Agent de tracabilite de flux, qui lit :
    - `04_LAST_STATE.md` ;
    - `SPRINT_SELAS_V1.md` ou le sprint actif ;
    - `SPRINT_SELAS_NAOMIE_WORKLOG_V1.md` ;
@@ -131,7 +131,7 @@ Quand Gad demande `ou en est Naomi ?`, la chaine obligatoire est :
    montre, activer le protocole de synchronisation avant de repondre comme si le
    flux n'avait pas avance.
 7. Produire un rapport differentiel depuis le dernier curseur Gad, en parlant
-   du flux Naomie et non de performance personnelle.
+   du flux Naomi et non de performance personnelle.
 8. Mettre a jour le worklog avec le nouveau curseur.
 
 ## Agent de tracabilite et rattrapage retroactif
@@ -145,7 +145,7 @@ de tenir le journal.
 Le rattrapage retroactif est un mode de cet agent. Il reconstruit ce qui a ete
 fait avant que les processus de suivi existent ou quand ils n'ont pas ete tenus.
 
-Pour Gad, le rapport par defaut parle d'un seul niveau : le flux Naomie. Les
+Pour Gad, le rapport par defaut parle d'un seul niveau : le flux Naomi. Les
 details `humain / Codex / repo / outil` restent des preuves internes et ne
 sortent qu'en audit detaille.
 
@@ -186,10 +186,10 @@ technique.
 | --- | --- | --- | --- |
 | Big orchestrateur | OK | Aucun registre pyramidal unique avant ce fichier | Ce document devient le registre |
 | Routage Gad/Naomi | OK | A surveiller dans nouveaux chats | `AGENTS.md` + tour de controle |
-| Suivi flux Naomie | PARTIAL | Rattrapage SELAS 001 produit ; le flux est suivi mais NotebookLM manque | reprendre NotebookLM sur les trous reels |
+| Suivi flux Naomi | PARTIAL | Rattrapage SELAS 001 produit ; le flux est suivi mais NotebookLM manque | reprendre NotebookLM sur les trous reels |
 | Rapport Gad | OK V2 | Rapport boss court defini par `WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md` | statut / avancement / prochaine etape / blocage / fiabilite |
-| Etat reel SELAS | OK | Doit remonter comme avancement du flux Naomie SELAS | garder details en preuve interne |
-| Sync inter-threads | A INSTALLER | Si Naomie avance dans un autre thread sans push, Gad ne voit rien | appliquer `NAOMIE_WORKSTREAM_SYNC_PROTOCOL_V1.md` |
+| Etat reel SELAS | OK | Doit remonter comme avancement du flux Naomi SELAS | garder details en preuve interne |
+| Sync inter-threads | A INSTALLER | Si Naomi avance dans un autre thread sans push, Gad ne voit rien | appliquer `NAOMIE_WORKSTREAM_SYNC_PROTOCOL_V1.md` |
 | NotebookLM SELAS | INCOMPLET | aucune reponse brute structuree | reprendre uniquement sur trous reels |
 | Reuse audit SELAS | BLOQUE | NotebookLM pas assez propre | attendre sortie NotebookLM |
 | Front dedup | OK V1 | Agent dedie ajoute apres retour Gad 2026-06-02 | appliquer avant tout GO dev front |
