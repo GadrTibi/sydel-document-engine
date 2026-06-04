@@ -226,6 +226,142 @@ def _bail_avenant_medecin() -> BailContext:
     )
 
 
+def _cession_cabinet_dentaire_acte() -> CessionContext:
+    """Cession de cabinet dentaire (étape acte) + champs appel de fonds — données type."""
+    return CessionContext.model_validate(
+        {
+            "type_cabinet": "dentaire",
+            "etape": "acte",
+            "vendeur": {
+                "civilite_affichage": "Docteur",
+                "genre": "masculin",
+                "prenom": "Camille",
+                "nom": "Martin",
+                "profession": "chirurgien-dentiste",
+                "date_naissance": "1984-06-20",
+                "ville_naissance": "Paris",
+                "departement_naissance": "75",
+                "nationalite": "francaise",
+                "adresse_affichee": "4 rue du Bac, 75007 Paris",
+                "adresse_exercice_affichee": "12 avenue des Ternes, 75017 Paris",
+                "numero_siren": "321 654 987",
+                "numero_ordre": "ORD-456",
+                "numero_rpps": "20202020202",
+                "ordre_departemental": "Paris",
+                "situation_maritale": "marie",
+                "regime_matrimonial": "communaute reduite aux acquets",
+                "conjoint": {"civilite_affichage": "Madame", "prenom": "Sophie", "nom": "Martin"},
+            },
+            "acquereur": {
+                "denomination_societe": "SELARL CABINET MARTIN",
+                "forme_sociale": "SELARL",
+                "capital_social": "10 000",
+                "siege": {"adresse_affichee": "12 avenue des Ternes, 75017 Paris"},
+                "rcs_ville": "Paris",
+                "numero_rcs": "888 777 666",
+                "numero_siret": "888 777 666 00013",
+                "representant": {
+                    "civilite_affichage": "Docteur",
+                    "genre": "masculin",
+                    "prenom": "Camille",
+                    "nom": "Martin",
+                    "fonction": "gerant",
+                },
+            },
+            "cabinet": {
+                "nature_fonds_liberal": "chirurgien-dentiste",
+                "denomination_ou_adresse_affichee": "Cabinet dentaire des Ternes",
+                "adresse_affichee": "12 avenue des Ternes, 75017 Paris",
+                "adresse_locaux_affichee": "12 avenue des Ternes, 75017 Paris",
+                "telephone": "01 45 00 00 00",
+                "superficie_local": "90 m2",
+                "description_origine_propriete": "Origine de propriete validee manuellement.",
+                "date_origine_propriete": "2019-01-01",
+                "annees_acquisition_patientele": "2019",
+                "prix_origine_propriete": "150 000 euros",
+                "precedent_proprietaire": {
+                    "civilite_affichage": "Docteur",
+                    "prenom": "Henri",
+                    "nom": "Petit",
+                },
+            },
+            "bail_professionnel": {
+                "date_bail": "2021-09-01",
+                "duree": "six annees",
+                "date_debut": "2021-09-01",
+                "date_fin": "2027-09-01",
+                "loyer_mensuel": "2 500 euros",
+                "activite_autorisee_affichee": "activite dentaire et paramedicale",
+            },
+            "exercices": [
+                {"periode": "2023", "chiffre_affaires": "260 000", "resultat": "100 000"},
+                {"periode": "2024", "chiffre_affaires": "270 000", "resultat": "105 000"},
+                {"periode": "2025", "chiffre_affaires": "280 000", "resultat": "110 000"},
+            ],
+            "prix": {
+                "total": "350 000",
+                "total_lettres": "trois cent cinquante mille euros",
+                "elements_corporels": "60 000",
+                "elements_corporels_lettres": "soixante mille euros",
+                "elements_incorporels": "290 000",
+                "elements_incorporels_lettres": "deux cent quatre-vingt-dix mille euros",
+            },
+            "financement": {
+                "banque": {"nom": "BANQUE EXEMPLE"},
+                "destinataire": {
+                    "civilite_affichage": "Monsieur",
+                    "prenom": "Louis",
+                    "nom": "Bernard",
+                },
+                "montant_deblocage": "150 000",
+                "pret": {"montant": "280 000", "taux": "4 %", "duree": "sept ans"},
+            },
+            "scm": {"actif": False},
+            "date_limite_realisation": "2026-09-30",
+            "validations": {
+                "mentions_bail_medical_validees": True,
+                "origine_compromis_medical_validee": True,
+                "date_realisation_compromis_validee": True,
+                "ligne_contrats_travail_medical_supprimee": True,
+                "salaries_dentaire_deux_valides": True,
+            },
+        }
+    )
+
+
+def _bail_avenant_dentaire() -> BailContext:
+    """Avenant au bail pour la cession dentaire (exemple lot_03, locataire chirurgien-dentiste)."""
+    return BailContext.model_validate(
+        {
+            "date_avenant": "2026-05-26",
+            "date_signature_origine": "2021-09-01",
+            "societe_en_cours_immatriculation": True,
+            "bailleur_accepte_changement_locataire": True,
+            "bailleur": {
+                "civilite_affichage": "Monsieur",
+                "prenom": "Paul",
+                "nom": "Leroy",
+                "profession": "bailleur",
+                "date_naissance": "1970-01-05",
+                "ville_naissance": "Lyon",
+                "nationalite": "francaise",
+                "adresse_affichee": "8 rue Victor Hugo, 69002 Lyon",
+            },
+            "locataire": {
+                "civilite_affichage": "Docteur",
+                "civilite_courte": "Docteur",
+                "prenom": "Camille",
+                "nom": "Martin",
+                "profession": "chirurgien-dentiste",
+                "date_naissance": "1984-06-20",
+                "ville_naissance": "Paris",
+                "nationalite": "francaise",
+                "adresse_affichee": "4 rue du Bac, 75007 Paris",
+            },
+        }
+    )
+
+
 # clé de scénario -> paramètres du cas
 SELARL_SCENARIOS: dict[str, dict[str, Any]] = {
     "selarl_medecin_simple": {"profession": PROFESSION_MEDECIN},
@@ -238,6 +374,11 @@ SELARL_SCENARIOS: dict[str, dict[str, Any]] = {
         "profession": PROFESSION_MEDECIN,
         "cession": _cession_cabinet_medical_acte,
         "bail": _bail_avenant_medecin,
+    },
+    "selarl_dentiste_cession_cabinet_dentaire": {
+        "profession": PROFESSION_DENTISTE,
+        "cession": _cession_cabinet_dentaire_acte,
+        "bail": _bail_avenant_dentaire,
     },
 }
 

@@ -66,6 +66,7 @@ from sydel_doc_engine.front_app.field_derivations import (
 )
 from sydel_doc_engine.front_data import AddressUsage, BusinessRole, build_document_status_for_code
 from sydel_doc_engine.orchestrator.service import (
+    APPEL_FONDS_DOCUMENT_ID,
     BAIL_AVENANT_DOCUMENT_ID,
     CESSION_CABINET_DOCUMENT_IDS,
 )
@@ -254,6 +255,8 @@ def selected_selarl_document_codes(data: SelarlSliceInput) -> tuple[str, ...]:
         for doc_id, (expected_etape, expected_type) in CESSION_CABINET_DOCUMENT_IDS.items():
             if etape == expected_etape and type_cabinet == expected_type:
                 codes.append(doc_id)
+        if type_cabinet == "dentaire":
+            codes.append(APPEL_FONDS_DOCUMENT_ID)
     if data.bail_context is not None:
         codes.append(BAIL_AVENANT_DOCUMENT_ID)
     return tuple(codes)

@@ -218,6 +218,23 @@ def test_clean_front_selarl_cession_cabinet_medical_generates_acte(tmp_path: Pat
     assert "avenant_contrat_bail.docx" in names
 
 
+def test_clean_front_selarl_cession_cabinet_dentaire_generates_full_pack(tmp_path: Path) -> None:
+    # Cession dentaire : acte (DOC-011) + avenant bail (DOC-007) + appel de fonds (DOC-008).
+    data = build_selarl_scenario("selarl_dentiste_cession_cabinet_dentaire")
+    dossier_type = dossier_type_by_label("SELARL creation V1")
+
+    plan = build_clean_generation_plan(dossier_type, data)
+
+    assert plan.can_generate is True
+    assert {"DOC-011", "DOC-008", "DOC-007"}.issubset(set(plan.document_codes))
+
+    result = generate_selarl_dossier(data, tmp_path)
+    names = {path.name for path in result.docx_paths}
+    assert "acte_cession_cabinet_dentaire.docx" in names
+    assert "appel_fond_sel.docx" in names
+    assert "avenant_contrat_bail.docx" in names
+
+
 def test_clean_front_selarl_multi_associes_doc004_limited_plan_is_honest() -> None:
     dossier_type = dossier_type_by_label("SELARL creation V1")
     data_entry = _valid_multi_associes_doc004_input()
