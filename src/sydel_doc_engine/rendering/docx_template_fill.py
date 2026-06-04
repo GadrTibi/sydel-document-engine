@@ -26,6 +26,9 @@ from pathlib import Path
 
 from docx import Document
 
+from sydel_doc_engine.domain.enums import Gender
+from sydel_doc_engine.utils.grammar import apply_gender_pairs
+
 _TOKEN_RE = re.compile(r"\[[^\]\[]+\]")
 
 
@@ -33,6 +36,8 @@ def fill_docx_template(
     template_path: Path,
     replacements: dict[str, str],
     output_path: Path,
+    *,
+    gender_pairs: list[tuple[Gender, list[tuple[str, str]]]] | None = None,
 ) -> Path:
     """Charge un modèle .docx tokenisé, remplace les tokens et sauvegarde.
 
@@ -41,6 +46,12 @@ def fill_docx_template(
       ex. `"[denomination_societe]"`). Une clé absente laisse le token en place,
       ce qui déclenche la sécurité anti-trou ci-dessous.
     - `output_path` : chemin du .docx généré (le dossier parent est créé au besoin).
+    - `gender_pairs` : optionnel. Liste de couples `(genre, paires)` appliqués
+      APRÈS le remplissage des tokens et AVANT la sécurité anti-token-résiduel,
+      via `grammar.apply_gender_pairs`. Chaque entrée accorde des chaînes EXACTES
+      figées du modèle selon le `genre` de la BONNE personne (signataire, vendeur,
+      représentant...). Aucune normalisation magique globale : c'est le générateur
+      qui décide quelles paires poser et pour qui.
 
     Lève `ValueError` si un token `[...]` subsiste après remplissage.
     """
@@ -48,6 +59,10 @@ def fill_docx_template(
 
     for paragraph in _iter_all_paragraphs(document):
         _fill_paragraph(paragraph, replacements)
+
+    if gender_pairs:
+        for paragraph in _iter_all_paragraphs(document):
+            _apply_gender_pairs_to_paragraph(paragraph, gender_pairs)
 
     residual = _collect_residual_tokens(document)
     if residual:
@@ -92,6 +107,42 @@ def _fill_paragraph(paragraph, replacements: dict[str, str]) -> None:
     runs[0].text = merged
     for run in runs[1:]:
         run.text = ""
+
+
+def _apply_gender_pairs_to_paragraph(
+    paragraph,
+    gender_pairs: list[tuple[Gender, list[tuple[str, str]]]],
+) -> None:
+    """Accorde en genre les chaînes figées d'un paragraphe (corps + cellules).
+
+    On tente d'abord un accord run par run (préserve la mise en forme). Si une
+    forme à accorder est éclatée sur plusieurs runs (le texte du paragraphe
+    change alors que les runs pris isolément ne changent pas), on bascule sur un
+    accord du texte fusionné réécrit sur le premier run, comme `_fill_paragraph`.
+    """
+    if not paragraph.runs:
+        return
+
+    original_paragraph_text = paragraph.text
+
+    for run in paragraph.runs:
+        text = run.text
+        for genre, pairs in gender_pairs:
+            text = apply_gender_pairs(text, genre, pairs)
+        if text != run.text:
+            run.text = text
+
+    expected_text = original_paragraph_text
+    for genre, pairs in gender_pairs:
+        expected_text = apply_gender_pairs(expected_text, genre, pairs)
+
+    # Si l'accord attendu au niveau du paragraphe n'est pas atteint, c'est qu'une
+    # forme était éclatée sur plusieurs runs : on réécrit le texte fusionné.
+    if paragraph.text != expected_text:
+        runs = paragraph.runs
+        runs[0].text = expected_text
+        for run in runs[1:]:
+            run.text = ""
 
 
 def _every_token_within_single_run(paragraph, runs) -> bool:

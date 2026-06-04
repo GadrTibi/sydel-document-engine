@@ -626,7 +626,7 @@ STATUTS_SELAS_MEDECIN_BLOCKS: tuple[str, ...] = (
     'Elle ne pourra être retirée que sur présentation d’un certificat du greffier attestant l’immatriculation de la société au registre du commerce et des sociétés.',
     'ARTICLE 8 – CAPITAL SOCIAL',
     'Le capital social est fixé à la somme de [capital_lettres] ([capital_social] euros).',
-    'Il est divisé en [nb_actions_lettres] ([nb_actions]) actions d’[valeur_nominale_action_lettres] ([valeur_nominale_action] €) chacune, entièrement libérées, et attribuées en totalité à l’associé unique, [civilite] [prenom] [nom].',
+    'Il est divisé en [nb_actions_lettres] ([nb_actions]) actions d’[valeur_nominale_action_lettres] ([valeur_nominale_action] €) chacune, entièrement libérées, et attribuées en totalité à l’[qualite_associe_article_8], [civilite] [prenom] [nom].',
     'En aucun cas la répartition du capital ne pourra être modifiée dans des conditions qui retireraient la majorité des droits de vote aux associés exerçant dans la société.',
     "Conformément à l’article 44 de l’ordonnance n°2023-77 du 8 février 2023, une fois par an, la société adresse à l'autorité compétente en matière d'agrément ou d'inscription à l'ordre professionnel dont elle relève, un état de la composition de son capital social et des droits de vote afférents, ainsi qu'une version à jour de ses statuts.",
     'ARTICLE 9 - QUALITÉ D’ASSOCIÉ',

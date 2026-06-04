@@ -437,6 +437,60 @@ def test_statuts_sel_applies_female_birth_agreement(tmp_path: Path) -> None:
     _assert_clean(text)
 
 
+def test_statuts_selas_header_agrees_masculine(tmp_path: Path) -> None:
+    # Entete figee au masculin dans les blocs : conservee telle quelle pour un homme.
+    output_path = StatutsSelasMedecinGenerator().generate(
+        _context(overlay="selas_medecin", gender=Gender.MASCULIN),
+        tmp_path,
+    )
+
+    text = _docx_text(output_path)
+
+    assert "LE SOUSSIGNE" in text
+    assert "LA SOUSSIGNÉE" not in text
+    # Ligne d'identification masculine.
+    assert "né le 02/01/1980" in text
+    assert "née le 02/01/1980" not in text
+    _assert_clean(text)
+
+
+def test_statuts_selas_header_agrees_feminine(tmp_path: Path) -> None:
+    # Entete figee au masculin -> accordee au feminin pour une associee.
+    output_path = StatutsSelasMedecinGenerator().generate(
+        _context(overlay="selas_medecin", gender=Gender.FEMININ),
+        tmp_path,
+    )
+
+    text = _docx_text(output_path)
+
+    assert "LA SOUSSIGNÉE" in text
+    assert "LE SOUSSIGNE\xa0:" not in text
+    assert "née le 02/01/1980" in text
+    _assert_clean(text)
+
+
+def test_statuts_selas_article_8_uses_dynamic_associate_label(tmp_path: Path) -> None:
+    # Le bloc fige « à l'associé unique » est remplace par le token dynamique :
+    # masculin -> « associé unique », feminin -> « associée unique ».
+    masc = _docx_text(
+        StatutsSelasMedecinGenerator().generate(
+            _context(overlay="selas_medecin", gender=Gender.MASCULIN),
+            tmp_path / "masc",
+        )
+    )
+    fem = _docx_text(
+        StatutsSelasMedecinGenerator().generate(
+            _context(overlay="selas_medecin", gender=Gender.FEMININ),
+            tmp_path / "fem",
+        )
+    )
+
+    assert "attribuées en totalité à l’associé unique, Docteur Camille Martin." in masc
+    assert "attribuées en totalité à l’associée unique, Docteur Camille Martin." in fem
+    _assert_clean(masc)
+    _assert_clean(fem)
+
+
 def test_statuts_sel_orchestrator_selects_only_requested_overlay() -> None:
     orchestrator = DocumentOrchestrator(build_seed_catalog())
 

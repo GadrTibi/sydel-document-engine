@@ -127,12 +127,21 @@ def test_autorisation_domiciliation_preserves_legal_term(tmp_path: Path) -> None
     assert "99 ans" not in text
 
 
-def test_autorisation_domiciliation_matches_source_opening(tmp_path: Path) -> None:
-    # Le modele source fige l'ouverture « Je soussignée » (texte juridique du
-    # modele, non parametree par le genre). Rendu fidele = on respecte le modele.
+def test_autorisation_domiciliation_opening_agrees_masculine(tmp_path: Path) -> None:
+    # Le modele source fige l'ouverture au feminin (« Je soussignée »). Pour un
+    # signataire masculin, la couche genre doit l'accorder en « Je soussigné ».
     text = _docx_text(_generate(tmp_path, Gender.MASCULIN))
 
-    assert "Je soussignée Monsieur Jean Durand autorise la domiciliation" in text
+    assert "Je soussigné Monsieur Jean Durand autorise la domiciliation" in text
+    assert "Je soussignée Monsieur Jean Durand" not in text
+
+
+def test_autorisation_domiciliation_opening_agrees_feminine(tmp_path: Path) -> None:
+    # Pour une signataire feminine, l'ouverture figee « Je soussignée » du modele
+    # est conservee telle quelle (accord deja correct).
+    text = _docx_text(_generate(tmp_path, Gender.FEMININ))
+
+    assert "Je soussignée Madame Marie Durand autorise la domiciliation" in text
 
 
 def test_autorisation_domiciliation_ignores_free_address_for_wording(

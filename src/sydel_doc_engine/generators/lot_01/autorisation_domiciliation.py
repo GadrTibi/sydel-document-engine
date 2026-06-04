@@ -56,7 +56,20 @@ class AutorisationDomiciliationGenerator:
         replacements = _build_replacements(ctx)
         model_path = _resolve_model_path()
         output_path = output_dir / OUTPUT_FILENAME
-        return fill_docx_template(model_path, replacements, output_path)
+        # Le modele source fige l'ouverture au feminin (« Je soussignée »).
+        # On l'accorde au genre du signataire : pour un homme -> « Je soussigné ».
+        gender_pairs = [
+            (
+                ctx.personne_signataire.genre,
+                [("Je soussigné", "Je soussignée")],
+            )
+        ]
+        return fill_docx_template(
+            model_path,
+            replacements,
+            output_path,
+            gender_pairs=gender_pairs,
+        )
 
 
 def _build_replacements(ctx: DocumentGenerationContext) -> dict[str, str]:

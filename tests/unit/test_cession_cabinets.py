@@ -55,6 +55,8 @@ def _context(
     credit_vendeur: bool = False,
     validations: CessionValidations | None = None,
     salaries: list[CessionSalarie] | None = None,
+    vendeur_genre: Gender = Gender.MASCULIN,
+    representant_genre: Gender = Gender.FEMININ,
 ) -> DocumentGenerationContext:
     return DocumentGenerationContext(
         structure="SELARL",
@@ -71,7 +73,7 @@ def _context(
             etape=etape,
             vendeur=CessionVendeur(
                 civilite_affichage="Docteur",
-                genre=Gender.MASCULIN,
+                genre=vendeur_genre,
                 prenom="Jean",
                 nom="Durand",
                 profession="chirurgien-dentiste" if type_cabinet == "dentaire" else "medecin",
@@ -107,7 +109,7 @@ def _context(
                 date_inscription_ordre=date(2026, 2, 1),
                 representant=CessionRepresentant(
                     civilite_affichage="Docteur",
-                    genre=Gender.FEMININ,
+                    genre=representant_genre,
                     prenom="Alice",
                     nom="Moreau",
                     fonction="gerante",
@@ -285,6 +287,129 @@ def test_acte_dentaire_blocks_single_salary_clause(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="exactement deux salaries"):
         ActeCessionCabinetDentaireGenerator().generate(ctx, tmp_path)
+
+
+_DENT_SALARIES = [
+    CessionSalarie(civilite_affichage="Madame", prenom="Lea", nom="Petit"),
+    CessionSalarie(civilite_affichage="Monsieur", prenom="Noe", nom="Robert"),
+]
+
+
+def test_acte_dentaire_vendeur_masculin_agreement(tmp_path: Path) -> None:
+    # Modele dentaire fige au FEMININ -> vendeur masculin = retour au masculin.
+    ctx = _context(
+        type_cabinet="dentaire",
+        salaries=_DENT_SALARIES,
+        vendeur_genre=Gender.MASCULIN,
+    )
+
+    text = _docx_text(ActeCessionCabinetDentaireGenerator().generate(ctx, tmp_path))
+
+    assert "chirurgien-dentiste, né le 10 mars 1975" in text
+    assert "née le 10 mars 1975" not in text
+    assert "Inscrit au tableau du Conseil départemental" in text
+    assert "Inscrite au tableau du Conseil départemental" not in text
+    # Forme de role invariante conservee.
+    assert "le soussigné de première part" in text
+    _assert_no_residual_tokens(text)
+
+
+def test_acte_dentaire_vendeur_feminin_agreement(tmp_path: Path) -> None:
+    # Modele dentaire deja feminin -> vendeur feminin = conserve tel quel.
+    ctx = _context(
+        type_cabinet="dentaire",
+        salaries=_DENT_SALARIES,
+        vendeur_genre=Gender.FEMININ,
+    )
+
+    text = _docx_text(ActeCessionCabinetDentaireGenerator().generate(ctx, tmp_path))
+
+    assert "chirurgien-dentiste, née le 10 mars 1975" in text
+    assert "Inscrite au tableau du Conseil départemental" in text
+    _assert_no_residual_tokens(text)
+
+
+def test_acte_dentaire_representant_gender_agreement(tmp_path: Path) -> None:
+    # « domicilié(e) en cette qualité » est pilote par le genre du representant.
+    masc = _docx_text(
+        ActeCessionCabinetDentaireGenerator().generate(
+            _context(
+                type_cabinet="dentaire",
+                salaries=_DENT_SALARIES,
+                representant_genre=Gender.MASCULIN,
+            ),
+            tmp_path / "masc",
+        )
+    )
+    fem = _docx_text(
+        ActeCessionCabinetDentaireGenerator().generate(
+            _context(
+                type_cabinet="dentaire",
+                salaries=_DENT_SALARIES,
+                representant_genre=Gender.FEMININ,
+            ),
+            tmp_path / "fem",
+        )
+    )
+
+    assert "domicilié en cette qualité audit siège" in masc
+    assert "domiciliée en cette qualité" not in masc
+    assert "domiciliée en cette qualité audit siège" in fem
+    # « Représentée » accorde la societe (toujours feminin) : jamais touche.
+    assert "Représentée par" in masc
+    assert "Représentée par" in fem
+
+
+def test_compromis_medical_vendeur_feminin_agreement(tmp_path: Path) -> None:
+    # Modele medical fige au MASCULIN -> vendeur feminin = accord au feminin.
+    ctx = _context(
+        etape="compromis",
+        type_cabinet="medical",
+        vendeur_genre=Gender.FEMININ,
+    )
+
+    text = _docx_text(CompromisCessionCabinetMedicalGenerator().generate(ctx, tmp_path))
+
+    assert "medecin, née le 10 mars 1975" in text
+    assert "inscrite au tableau du Conseil départemental" in text
+    # GARDE-FOU : le « Tableau » de la societe (Ordre) ne doit jamais devenir feminin parasite.
+    assert "au Tableau de l’Ordre des Médecins" in text
+    _assert_no_residual_tokens(text)
+
+
+def test_compromis_medical_vendeur_masculin_agreement(tmp_path: Path) -> None:
+    ctx = _context(
+        etape="compromis",
+        type_cabinet="medical",
+        vendeur_genre=Gender.MASCULIN,
+    )
+
+    text = _docx_text(CompromisCessionCabinetMedicalGenerator().generate(ctx, tmp_path))
+
+    assert "medecin, né le 10 mars 1975" in text
+    assert "née le 10 mars 1975" not in text
+    assert "inscrit au tableau du Conseil départemental" in text
+    _assert_no_residual_tokens(text)
+
+
+def test_acte_medical_keeps_inclusive_birth_form(tmp_path: Path) -> None:
+    # L'acte medical fige la forme inclusive « né(e) le » : jamais accordee,
+    # quel que soit le genre du vendeur (aucune paire ne la matche).
+    masc = _docx_text(
+        ActeCessionCabinetMedicalGenerator().generate(
+            _context(credit_vendeur=True, vendeur_genre=Gender.MASCULIN),
+            tmp_path / "masc",
+        )
+    )
+    fem = _docx_text(
+        ActeCessionCabinetMedicalGenerator().generate(
+            _context(credit_vendeur=True, vendeur_genre=Gender.FEMININ),
+            tmp_path / "fem",
+        )
+    )
+
+    assert "né(e) le 10 mars 1975" in masc
+    assert "né(e) le 10 mars 1975" in fem
 
 
 def test_orchestrator_selects_only_requested_cession_cabinet_document() -> None:

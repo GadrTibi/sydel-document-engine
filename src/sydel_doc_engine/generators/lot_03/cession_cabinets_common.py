@@ -11,6 +11,7 @@ from typing import Literal
 
 from docx import Document
 
+from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import (
     Address,
     CessionAcquereur,
@@ -30,6 +31,7 @@ from sydel_doc_engine.domain.models import (
     DocumentContext,
     DocumentGenerationContext,
 )
+from sydel_doc_engine.utils.grammar import apply_gender_pairs
 
 DOCUMENT_CODE = "CODE-CESSION-CAB-001"
 
@@ -92,16 +94,75 @@ def generate_cession_cabinet_docx(
     _validate_context(ctx, variant)
     model_path = _resolve_model_path(variant)
     replacements = _build_cession_replacements(ctx)
+    gender_pairs = _build_cession_gender_pairs(ctx)
     output_path = output_dir / variant.output_filename
-    return render_cession_from_template(model_path, replacements, output_path)
+    return render_cession_from_template(
+        model_path,
+        replacements,
+        output_path,
+        gender_pairs=gender_pairs,
+    )
+
+
+# Paires d'accord en genre des modeles de cession, pilotees par la BONNE personne.
+# Chaines EXACTES figees relevees dans project/source_documents/lot_03/ :
+#  - Acte dentaire : fige au FEMININ ("née le", "Inscrite au tableau",
+#    "domiciliée en cette qualité").
+#  - Compromis dentaire / medical : fige au MASCULIN ("né le", "inscrit au tableau",
+#    "domicilié en cette qualité").
+#  - Acte medical : "né(e) le" inclusif (non touche : aucune paire ne le matche).
+# JAMAIS de regex de terminaison : uniquement ces chaines litterales ancrees.
+# "désigné" (role/invariant) et "Représentée" (la societe, toujours feminin) ne
+# sont PAS dans les paires : on n'y touche pas.
+_CESSION_VENDEUR_PAIRS: list[tuple[str, str]] = [
+    ("né le ", "née le "),
+    ("Inscrit au tableau", "Inscrite au tableau"),
+    ("inscrit au tableau", "inscrite au tableau"),
+]
+_CESSION_REPRESENTANT_PAIRS: list[tuple[str, str]] = [
+    ("domicilié en cette qualité", "domiciliée en cette qualité"),
+]
+
+
+def _build_cession_gender_pairs(
+    ctx: DocumentGenerationContext,
+) -> list[tuple[Gender, list[tuple[str, str]]]]:
+    """Construit les couples (genre, paires) d'accord pour la cession.
+
+    Le genre vendeur pilote l'identification (« né le », « inscrit au tableau »).
+    Le genre du representant de l'acquereur pilote « domicilié en cette qualite ».
+    Un genre absent (None, non capture cote front) -> on n'accorde pas cette
+    personne et le modele source reste fige tel quel (pas de devinette).
+    """
+    pairs: list[tuple[Gender, list[tuple[str, str]]]] = []
+    cession = ctx.cession
+    if cession is None:
+        return pairs
+    vendeur = cession.vendeur
+    if vendeur is not None and vendeur.genre is not None:
+        pairs.append((vendeur.genre, _CESSION_VENDEUR_PAIRS))
+    acquereur = cession.acquereur
+    representant = acquereur.representant if acquereur is not None else None
+    if representant is not None and representant.genre is not None:
+        pairs.append((representant.genre, _CESSION_REPRESENTANT_PAIRS))
+    return pairs
 
 
 def render_cession_from_template(
     model_path: Path,
     replacements: dict[str, str],
     output_path: Path,
+    *,
+    gender_pairs: list[tuple[Gender, list[tuple[str, str]]]] | None = None,
 ) -> Path:
     """Charge le modele tokenise et remplace chaque token [xxx] run par run.
+
+    `gender_pairs` (optionnel) : liste de couples `(genre, paires)` appliques
+    APRES le remplacement des tokens et AVANT la securite anti-token-residuel,
+    via `grammar.apply_gender_pairs` (corps des paragraphes + cellules de
+    tableaux). Chaque entree accorde des chaines EXACTES figees du modele selon
+    le `genre` de la BONNE personne (vendeur, representant...). C'est le
+    generateur qui pilote les paires : aucune normalisation magique globale.
 
     Securite anti-trou : si un token [...] subsiste apres remplacement, leve
     ValueError en listant les tokens residuels (un token oublie = un test rouge).
@@ -118,6 +179,10 @@ def render_cession_from_template(
                     text = text.replace(token, value)
             if text != run.text:
                 run.text = text
+
+    if gender_pairs:
+        for paragraph in _iter_all_paragraphs(document):
+            _apply_gender_pairs_to_paragraph(paragraph, gender_pairs)
 
     residual = _collect_residual_tokens(document)
     if residual:
@@ -137,6 +202,39 @@ def _iter_all_paragraphs(document):
         for row in table.rows:
             for cell in row.cells:
                 yield from cell.paragraphs
+
+
+def _apply_gender_pairs_to_paragraph(
+    paragraph,
+    gender_pairs: list[tuple[Gender, list[tuple[str, str]]]],
+) -> None:
+    """Accorde en genre les chaines figees d'un paragraphe (corps + cellules).
+
+    Accord d'abord run par run (preserve la mise en forme). Si une forme a
+    accorder est eclatee sur plusieurs runs (le texte attendu du paragraphe n'est
+    pas atteint), on reecrit le texte fusionne sur le premier run.
+    """
+    if not paragraph.runs:
+        return
+
+    original_paragraph_text = paragraph.text
+
+    for run in paragraph.runs:
+        text = run.text
+        for genre, pairs in gender_pairs:
+            text = apply_gender_pairs(text, genre, pairs)
+        if text != run.text:
+            run.text = text
+
+    expected_text = original_paragraph_text
+    for genre, pairs in gender_pairs:
+        expected_text = apply_gender_pairs(expected_text, genre, pairs)
+
+    if paragraph.text != expected_text:
+        runs = paragraph.runs
+        runs[0].text = expected_text
+        for run in runs[1:]:
+            run.text = ""
 
 
 def _collect_residual_tokens(document) -> set[str]:

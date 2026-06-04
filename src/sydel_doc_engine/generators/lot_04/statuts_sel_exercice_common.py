@@ -23,6 +23,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_statuts_title_box,
     new_document,
 )
+from sydel_doc_engine.utils.grammar import apply_gender_pairs
 
 DOCUMENT_CODE = "CODE-STATUTS-SEL-001"
 STRUCTURE_SELARL = "SELARL"
@@ -427,15 +428,33 @@ def replace_placeholders(text: str, replacements: dict[str, str]) -> str:
     return rendered
 
 
+# Paires d'accord en genre des statuts SEL, pilotees par le genre de l'associe.
+# Chaque paire = (forme_masculin, forme_feminin), chaine EXACTE telle que figee
+# dans les blocs sources (cf. *_BLOCKS de statuts_sel_exercice_templates.py).
+# JAMAIS de regex de terminaison : uniquement ces chaines litterales ancrees.
+#  - "LE SOUSSIGNE\xa0:" -> "LA SOUSSIGNEE\xa0:" : l'entete figee au masculin doit
+#    s'accorder pour une associee (insecable avant les deux-points conserve).
+#  - "ne le " -> "nee le " : la date de naissance dans la ligne d'identification.
+# Les variantes mojibake (nÃ©) couvrent un eventuel rendu Word mal encode.
+_STATUTS_GENDER_PAIRS: list[tuple[str, str]] = [
+    ("LE SOUSSIGNE\xa0:", "LA SOUSSIGNÉE\xa0:"),
+    (", né le ", ", née le "),
+    ("né le ", "née le "),
+    (", nÃ© le ", ", nÃ©e le "),
+    ("nÃ© le ", "nÃ©e le "),
+]
+
+
 def apply_gender_variants(text: str, associate: Associe) -> str:
-    if associate.genre != Gender.FEMININ:
-        return text
-    return (
-        text.replace(", né le ", ", née le ")
-        .replace("Né le ", "Née le ")
-        .replace(", nÃ© le ", ", nÃ©e le ")
-        .replace("NÃ© le ", "NÃ©e le ")
-    )
+    """Accorde l'entete et la ligne de naissance des statuts selon l'associe.
+
+    Remplace l'ancienne logique unidirectionnelle (masc->fem sur « né le »
+    seulement) par un accord BIDIRECTIONNEL pilote par `associate.genre` via
+    `grammar.apply_gender_pairs`. Pour un homme, l'entete masculine « LE
+    SOUSSIGNE » et « né le » des blocs sont laissees telles quelles ; pour une
+    femme, elles deviennent « LA SOUSSIGNÉE » et « née le ».
+    """
+    return apply_gender_pairs(text, associate.genre, _STATUTS_GENDER_PAIRS)
 
 
 def dentiste_multi_associes_partial_blocks(
