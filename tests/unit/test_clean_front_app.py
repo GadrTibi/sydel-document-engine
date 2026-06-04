@@ -235,6 +235,23 @@ def test_clean_front_selarl_cession_cabinet_dentaire_generates_full_pack(tmp_pat
     assert "avenant_contrat_bail.docx" in names
 
 
+def test_clean_front_selarl_cession_scm_generates_scm_docs(tmp_path: Path) -> None:
+    # Cession de parts de SCM : PV AGE (DOC-031) + courrier SDE (DOC-032) + acte (DOC-033).
+    data = build_selarl_scenario("selarl_dentiste_cession_scm")
+    dossier_type = dossier_type_by_label("SELARL creation V1")
+
+    plan = build_clean_generation_plan(dossier_type, data)
+
+    assert plan.can_generate is True
+    assert {"DOC-031", "DOC-032", "DOC-033"}.issubset(set(plan.document_codes))
+
+    result = generate_selarl_dossier(data, tmp_path)
+    names = {path.name for path in result.docx_paths}
+    assert "pv_age_cession_parts_scm.docx" in names
+    assert "courrier_sde_cession_scm.docx" in names
+    assert "acte_cession_parts_scm.docx" in names
+
+
 def test_clean_front_selarl_multi_associes_doc004_limited_plan_is_honest() -> None:
     dossier_type = dossier_type_by_label("SELARL creation V1")
     data_entry = _valid_multi_associes_doc004_input()

@@ -43,6 +43,7 @@ from sydel_doc_engine.domain.models import (
     RegimeCommunautaireRenonciation,
     ReunionContext,
     ReunionPresident,
+    ScmCessionContext,
     Signature,
     SpfplConjoint,
     SpfplOrdre,
@@ -208,6 +209,7 @@ class SelarlSliceInput:
     date_courrier_avertissement: date | None = None
     cession_context: CessionContext | None = None
     bail_context: BailContext | None = None
+    scm_cession_context: ScmCessionContext | None = None
 
     @property
     def has_any_value(self) -> bool:
@@ -259,6 +261,8 @@ def selected_selarl_document_codes(data: SelarlSliceInput) -> tuple[str, ...]:
             codes.append(APPEL_FONDS_DOCUMENT_ID)
     if data.bail_context is not None:
         codes.append(BAIL_AVENANT_DOCUMENT_ID)
+    if data.scm_cession_context is not None:
+        codes.extend(("DOC-031", "DOC-032", "DOC-033"))
     return tuple(codes)
 
 
@@ -552,10 +556,11 @@ def build_generation_context(data: SelarlSliceInput) -> DocumentGenerationContex
             derogation=False,
             site_distinct=False,
             cession=data.cession_context is not None,
-            scm_cession=False,
+            scm_cession=data.scm_cession_context is not None,
         ),
         cession=data.cession_context,
         bail=data.bail_context,
+        scm_cession=data.scm_cession_context,
         personne_signataire=person,
         conjoint=conjoint,
         signature=Signature(

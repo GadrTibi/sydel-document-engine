@@ -10,7 +10,7 @@ from __future__ import annotations
 from datetime import date
 from typing import Any
 
-from sydel_doc_engine.domain.models import BailContext, CessionContext
+from sydel_doc_engine.domain.models import BailContext, CessionContext, ScmCessionContext
 from sydel_doc_engine.front_app.data_entry import build_clean_data_entry
 from sydel_doc_engine.front_app.dossier_selection import dossier_type_by_label
 from sydel_doc_engine.front_app.selarl_slice import (
@@ -362,6 +362,116 @@ def _bail_avenant_dentaire() -> BailContext:
     )
 
 
+def _scm_cession_selarl() -> ScmCessionContext:
+    """Cession de parts de SCM par une SELARL (exemple lot_05 adapté en variante SELARL)."""
+    return ScmCessionContext.model_validate(
+        {
+            "variante_structure": "selarl",
+            "scm_cedee": {
+                "denomination": "SCM CABINET CENTRAL",
+                "forme_juridique": "Societe Civile de Moyens",
+                "capital_social": "3 000",
+                "siege": {"adresse_affichee": "12 rue des Soins, 75008 Paris"},
+                "ville_rcs": "Paris",
+                "numero_rcs": "900 111 222",
+                "nb_parts_total": 300,
+                "valeur_nominale_part": "10",
+                "plage_parts_total": "1 a 300",
+                "cogerants": [
+                    "Monsieur Paul Bernard",
+                    "Monsieur Jean Dupont",
+                    "Madame Anne Martin",
+                ],
+            },
+            "cessionnaire": {
+                "denomination": "SELARL CABINET DUPONT",
+                "forme_juridique": "SELARL",
+                "capital_social": "10 000",
+                "siege": {"adresse_affichee": "20 avenue des Praticiens, 75008 Paris"},
+                "ville_rcs": "Paris",
+                "representant": {
+                    "civilite_affichage": "Monsieur",
+                    "civilite_courte": "M.",
+                    "prenom": "Jean",
+                    "nom": "Dupont",
+                    "fonction": "gerant",
+                },
+            },
+            "cedant": {
+                "civilite_affichage": "Monsieur",
+                "prenom": "Jean",
+                "nom": "Dupont",
+                "profession": "chirurgien-dentiste",
+                "profession_reglementee_pluriel": "chirurgiens-dentistes",
+                "date_naissance": "1er janvier 1980",
+                "ville_naissance": "Paris",
+                "departement_naissance": "75",
+                "nationalite": "francaise",
+                "adresse_affichee": "1 rue du Cedant, 75008 Paris",
+                "situation_maritale": "marie",
+                "ordre": {"departemental": "Paris", "numero": "12345"},
+                "numero_rpps": "10000000001",
+                "conjoint": {"civilite_affichage": "Madame", "prenom": "Claire", "nom": "Dupont"},
+            },
+            "agrement": {
+                "date_pv": "15 mai 2026",
+                "date_pv_lettres": "deux mille vingt-six, le quinze mai",
+                "delai_mois": "3",
+                "date_limite": "15 aout 2026",
+            },
+            "associes_presents": [
+                {"civilite_affichage": "Monsieur", "prenom": "Paul", "nom": "Bernard",
+                 "parts": {"nb": 100, "plage": "1 a 100"}},
+                {"civilite_affichage": "Monsieur", "prenom": "Jean", "nom": "Dupont",
+                 "parts": {"nb": 100, "plage": "101 a 200"}},
+                {"civilite_affichage": "Madame", "prenom": "Anne", "nom": "Martin",
+                 "parts": {"nb": 100, "plage": "201 a 300"}},
+            ],
+            "associes_avant_cession": [
+                {"civilite_affichage": "Monsieur", "prenom": "Paul", "nom": "Bernard",
+                 "parts": {"nb": 100, "plage": "1 a 100"}},
+                {"civilite_affichage": "Monsieur", "prenom": "Jean", "nom": "Dupont",
+                 "parts": {"nb": 100, "plage": "101 a 200"}},
+                {"civilite_affichage": "Madame", "prenom": "Anne", "nom": "Martin",
+                 "parts": {"nb": 100, "plage": "201 a 300"}},
+            ],
+            "associes_apres_cession": [
+                {"civilite_affichage": "Monsieur", "prenom": "Paul", "nom": "Bernard",
+                 "parts": {"nb": 100, "plage": "1 a 100"}},
+                {"civilite_affichage": "Monsieur", "prenom": "Jean", "nom": "Dupont",
+                 "parts": {"nb": 50, "plage": "101 a 150"}},
+                {"type_personne": "personne_morale", "denomination": "SELARL CABINET DUPONT",
+                 "forme_juridique": "SELARL", "parts": {"nb": 50, "plage": "151 a 200"}},
+                {"civilite_affichage": "Madame", "prenom": "Anne", "nom": "Martin",
+                 "parts": {"nb": 100, "plage": "201 a 300"}},
+            ],
+            "signataires_pv": ["M. Jean Dupont", "M. Paul Bernard", "Mme Anne Martin"],
+            "parts_cedees": {"nb": 50, "plage": "151 a 200"},
+            "prix": {
+                "unitaire": "100",
+                "unitaire_lettres": "cent",
+                "global": "5 000",
+                "global_lettres": "cinq mille",
+            },
+            "paiement_mode": "pret_bancaire",
+            "credit_vendeur": {"actif": False},
+            "enregistrement": {
+                "service": "SERVICE DEPARTEMENTAL DE L'ENREGISTREMENT",
+                "centre_finances_publiques": "Centre des finances publiques de Paris",
+                "adresse_service": "6 rue Paganini",
+                "cp_ville_service": "75020 Paris",
+                "nombre_exemplaires": "3",
+                "montant_droits": "150",
+            },
+            "signataire_sde": {"prenom": "Sarah", "nom": "Durand"},
+            "nombre_exemplaires_lettres": "trois",
+            "prestataire_signature_electronique": "DocuSign",
+            "date_acte_affichee": "15 mai 2026",
+            "representant_cessionnaire_confirme": True,
+        }
+    )
+
+
 # clé de scénario -> paramètres du cas
 SELARL_SCENARIOS: dict[str, dict[str, Any]] = {
     "selarl_medecin_simple": {"profession": PROFESSION_MEDECIN},
@@ -380,6 +490,10 @@ SELARL_SCENARIOS: dict[str, dict[str, Any]] = {
         "cession": _cession_cabinet_dentaire_acte,
         "bail": _bail_avenant_dentaire,
     },
+    "selarl_dentiste_cession_scm": {
+        "profession": PROFESSION_DENTISTE,
+        "scm_cession": _scm_cession_selarl,
+    },
 }
 
 
@@ -391,6 +505,7 @@ def build_selarl_scenario(key: str) -> SelarlSliceInput:
     spec = dict(SELARL_SCENARIOS[key])
     cession_factory = spec.pop("cession", None)
     bail_factory = spec.pop("bail", None)
+    scm_cession_factory = spec.pop("scm_cession", None)
     dossier_type = dossier_type_by_label(SELARL_DOSSIER_LABEL)
     kwargs = _base_kwargs(**spec)
     if cession_factory is not None:
@@ -399,4 +514,8 @@ def build_selarl_scenario(key: str) -> SelarlSliceInput:
         )
     if bail_factory is not None:
         kwargs["bail_context"] = bail_factory() if callable(bail_factory) else bail_factory
+    if scm_cession_factory is not None:
+        kwargs["scm_cession_context"] = (
+            scm_cession_factory() if callable(scm_cession_factory) else scm_cession_factory
+        )
     return build_clean_data_entry(dossier_type, **kwargs)
