@@ -3,6 +3,10 @@
 Date : 2026-06-04. Ce document fixe **comment on travaille** sur Sydel (moteur de documents
 juridiques). Il complète le `00-phase-router` global ; ici on cadre la spécificité **produit**.
 
+> 🧭 **Recette de bout en bout pour outiller un type d'entreprise** (sources → cartographie → fidélité →
+> règles → couches genre/nombre/PM → vérif → gate juridique → pièges) : **`PLAYBOOK_TYPE_ENTREPRISE_V1.md`**.
+> Réutilisable SELARL **et SELAS**. Tout nouvel apprentissage de méthode s'y reverse (rule 45).
+
 ## 1. Rôles
 - **Gad — capitaine, côté CODE / dev / orchestration.** Tranche le produit, le scope, la technique,
   les priorités, les merges. **Ne tranche PAS le contenu juridique** des documents et ne doit jamais
