@@ -69,4 +69,5 @@ en attente de validation Albane. Outil : `scripts/generate_pack.py` + `scenarios
 |---|---|---|---|---|
 | 2026-06-03 | — | Plan créé | ✅ | 7d12e6f |
 | 2026-06-03 | Bloc 1 cession cabinet | Spec de sous-cas rédigée (avant code) | ✅ | docs/delivery/selarl_cession_cabinet_subform_spec_v1.md |
-| 2026-06-03 | Bloc 1 cession cabinet | Câblage front (SelarlSliceInput + build_generation_context + codes + sous-formulaire + scénario + tests) | ⏳ À FAIRE (reprise) | — |
+| 2026-06-04 | Bloc 1 cession cabinet | Câblage front : `cession_context` sur `SelarlSliceInput` + `build_generation_context` (ctx.cession + `dossier_options.cession`) + `selected_selarl_document_codes` + scénario `selarl_medecin_cession_cabinet_medical` + test positif. **Acte DOC-009 (cession cabinet médical) généré** (pack OK, 306 tests verts) | ✅ | (voir commit) |
+| 2026-06-04 | Bloc 1 cession cabinet | **Sous-bloc reporté** : bail DOC-007 + appel de fonds DOC-008 (consomment `ctx.bail` / `ctx.appel` — contextes DISTINCTS, pas dans `CessionContext`) + sous-formulaire interactif `shell.py` + scénario dentaire. Placeholder `nombre_pages_lettres="vingt"` à remplacer par saisie réelle | ⏳ À FAIRE (sous-bloc) | — |

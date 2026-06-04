@@ -18,6 +18,7 @@ from sydel_doc_engine.domain.models import (
     Associe,
     CapitalContext,
     CessionBanque,
+    CessionContext,
     Company,
     CompanyInscriptionOrdre,
     DecisionContext,
@@ -63,6 +64,7 @@ from sydel_doc_engine.front_app.field_derivations import (
     number_words_from_value,
 )
 from sydel_doc_engine.front_data import AddressUsage, BusinessRole, build_document_status_for_code
+from sydel_doc_engine.orchestrator.service import CESSION_CABINET_DOCUMENT_IDS
 
 SELARL_V1_BASE_DOC_CODES: Final = (
     "DOC-001",
@@ -79,6 +81,10 @@ SELARL_V1_REGIME_AVERTISSEMENT_CODE: Final = "DOC-006"
 PROFESSION_MEDECIN: Final = "medecin"
 PROFESSION_DENTISTE: Final = "chirurgien_dentiste"
 SELARL_V1_PROFESSIONS: Final = (PROFESSION_MEDECIN, PROFESSION_DENTISTE)
+
+# Placeholder : le nombre de pages de l'acte de cession est saisi dans le
+# sous-formulaire cession (a cabler). Valeur type en attendant.
+CESSION_DOCUMENT_PAGES_LETTRES_DEFAUT: Final = "vingt"
 
 FRONT_DATA_ROLE_SCOPE: Final = (
     BusinessRole.PRATICIEN.value,
@@ -195,6 +201,7 @@ class SelarlSliceInput:
     conjoint_nom: str = ""
     qualite_renoncee: str = "associe"
     date_courrier_avertissement: date | None = None
+    cession_context: CessionContext | None = None
 
     @property
     def has_any_value(self) -> bool:
@@ -236,6 +243,14 @@ def selected_selarl_document_codes(data: SelarlSliceInput) -> tuple[str, ...]:
                 SELARL_V1_REGIME_AVERTISSEMENT_CODE,
             )
         )
+    if data.cession_context is not None:
+        etape = (data.cession_context.etape or "").strip().lower()
+        type_cabinet = (data.cession_context.type_cabinet or "").strip().lower()
+        for doc_id, (expected_etape, expected_type) in CESSION_CABINET_DOCUMENT_IDS.items():
+            if etape == expected_etape and type_cabinet == expected_type:
+                codes.append(doc_id)
+        # DOC-007 (avenant bail) et DOC-008 (appel de fonds) consomment ctx.bail /
+        # ctx.appel (contextes distincts) -> ajoutes dans un sous-bloc cession ulterieur.
     return tuple(codes)
 
 
@@ -287,8 +302,8 @@ def validate_selarl_input(data: SelarlSliceInput) -> tuple[str, ...]:
         blockers.append("Derogations hors perimetre V1 : aucun DOC-013/DOC-014 genere.")
     if data.site_distinct:
         blockers.append("Site distinct hors perimetre V1 : traitement manuel requis.")
-    if data.cession:
-        blockers.append("Cession hors perimetre V1.")
+    if data.cession and data.cession_context is None:
+        blockers.append("Cession demandee mais donnees cession manquantes.")
     if data.scm:
         blockers.append("SCM hors perimetre V1.")
 
@@ -528,9 +543,10 @@ def build_generation_context(data: SelarlSliceInput) -> DocumentGenerationContex
             associe_unique=not _is_multi_associes_simple(data),
             derogation=False,
             site_distinct=False,
-            cession=False,
+            cession=data.cession_context is not None,
             scm_cession=False,
         ),
+        cession=data.cession_context,
         personne_signataire=person,
         conjoint=conjoint,
         signature=Signature(
@@ -615,6 +631,11 @@ def build_generation_context(data: SelarlSliceInput) -> DocumentGenerationContex
         ),
         document=DocumentContext(
             nombre_exemplaires_lettres=data.signature_nombre_exemplaires,
+            nombre_pages_lettres=(
+                CESSION_DOCUMENT_PAGES_LETTRES_DEFAUT
+                if data.cession_context is not None
+                else None
+            ),
             signataire=DocumentSignataire(prenom=data.prenom, nom=data.nom),
         ),
         emprunt=Emprunt(actif=False),

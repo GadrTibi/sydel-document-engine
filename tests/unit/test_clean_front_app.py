@@ -21,6 +21,7 @@ from sydel_doc_engine.front_app.selarl_slice import (
 )
 from sydel_doc_engine.orchestrator.service import DocumentOrchestrator
 from sydel_doc_engine.registry.catalog import build_seed_catalog
+from sydel_doc_engine.scenarios.selarl import build_selarl_scenario
 
 
 def test_clean_front_routes_are_minimal() -> None:
@@ -183,6 +184,8 @@ def test_clean_front_selarl_regime_ui_never_exposes_conjoint_address_fields() ->
 
 
 def test_clean_front_selarl_slice_blocks_out_of_scope_cases() -> None:
+    # La cession est desormais SUPPORTEE quand les donnees cession sont fournies
+    # (cession_context). Demander la cession (flag) sans donnees reste bloque.
     dossier_type = dossier_type_by_label("SELARL creation V1")
     data_entry = build_clean_data_entry(
         dossier_type,
@@ -195,7 +198,22 @@ def test_clean_front_selarl_slice_blocks_out_of_scope_cases() -> None:
     plan = build_clean_generation_plan(dossier_type, data_entry)
 
     assert plan.can_generate is False
-    assert "Cession hors perimetre V1." in plan.blockers
+    assert "Cession demandee mais donnees cession manquantes." in plan.blockers
+
+
+def test_clean_front_selarl_cession_cabinet_medical_generates_acte(tmp_path: Path) -> None:
+    # Cession avec donnees (scenario fige) -> l'acte de cession cabinet medical est generable.
+    data = build_selarl_scenario("selarl_medecin_cession_cabinet_medical")
+    dossier_type = dossier_type_by_label("SELARL creation V1")
+
+    plan = build_clean_generation_plan(dossier_type, data)
+
+    assert plan.can_generate is True
+    assert "DOC-009" in plan.document_codes
+
+    result = generate_selarl_dossier(data, tmp_path)
+    names = {path.name for path in result.docx_paths}
+    assert "acte_cession_cabinet_medical.docx" in names
 
 
 def test_clean_front_selarl_multi_associes_doc004_limited_plan_is_honest() -> None:
