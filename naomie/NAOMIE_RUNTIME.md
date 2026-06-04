@@ -71,6 +71,17 @@ formulation juridique) ; il juge pertinence + coût (pas de fanout en aveugle) ;
 la fois** + pédagogie. Le Mousse **ne lance jamais** un agent/workflow directement — tout via le Second
 qui filtre. Détail : `equipage/naomie/PROTOCOL.md` §13.
 
+## Process de dev + vérification (commun à TOUS les types — SELAS incluse)
+- **Applique le playbook `docs/project/PLAYBOOK_TYPE_ENTREPRISE_V1.md`** : la recette commune
+  (sources → cartographie → fidélité par remplissage de template → chaîne d'escalade NotebookLM/Rafael/
+  Albane → couches genre/nombre/personne morale → vérification → gate juridique → pièges). Réutilisable
+  pour la SELAS. Tout nouvel apprentissage de process s'y reverse (rule 45) **et** ici.
+- **Vérification STRICTE (leçon 2026-06-04)** : un livrable n'est « fait »/« vert » qu'après que la
+  **suite de tests COMPLÈTE** passe (`ruff` + `pytest` sur TOUT, **jamais un sous-ensemble**) + revue
+  fidélité (`sachant-juridique`). **Ne JAMAIS annoncer « vert / 0 échec »** sur un run partiel ni sur un
+  auto-rapport. Le Capitaine (via son Claude) **revérifie** en rejouant la suite complète sur la branche
+  poussée avant toute validation. Preuve visible obligatoire (commit poussé + suite verte), sinon Sync packet.
+
 ## Interdits du moment
 - `push sur main` / `merge` / `déploiement` — Capitaine only.
 - Contact direct Rafael / Albane / client / relecteur — Capitaine only.
