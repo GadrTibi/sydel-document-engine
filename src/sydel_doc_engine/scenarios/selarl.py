@@ -48,11 +48,11 @@ def _base_kwargs(
         "adresse_voie": "rue Test",
         "adresse_cp": "75001",
         "adresse_ville": "Paris",
-        "situation_maritale": "marie" if is_married else "celibataire",
+        "situation_maritale": "marié" if is_married else "célibataire",
         "regime_matrimonial": (
-            "regime de communaute"
+            "régime de communauté"
             if regime_communautaire
-            else "separation de biens"
+            else "séparation de biens"
             if married_separation
             else ""
         ),
@@ -77,8 +77,8 @@ def _base_kwargs(
         "depot_banque_nom": "Banque Test",
         "depot_banque_adresse": "30 boulevard Banque, 75009 Paris",
         "exercice_debut": "1er janvier",
-        "exercice_fin": "31 decembre",
-        "exercice_cloture_premier": "31 decembre 2026",
+        "exercice_fin": "31 décembre",
+        "exercice_cloture_premier": "31 décembre 2026",
     }
     if profession == PROFESSION_DENTISTE or regime_communautaire or married_separation:
         kwargs.update(
@@ -102,21 +102,21 @@ def _cession_cabinet_medical_acte() -> CessionContext:
                 "genre": "masculin",
                 "prenom": "Jean",
                 "nom": "Durand",
-                "profession": "medecin",
+                "profession": "médecin",
                 "date_naissance": "1975-03-10",
                 "ville_naissance": "Lyon",
                 "departement_naissance": "69",
                 "cp_naissance": "69002",
                 "pays_naissance": "France",
-                "nationalite": "francaise",
+                "nationalite": "française",
                 "adresse_affichee": "4 rue Victor Hugo, 69002 Lyon",
                 "adresse_exercice_affichee": "10 rue du Cabinet, 75008 Paris",
                 "numero_siren": "123 456 789",
                 "numero_ordre": "ORD-123",
                 "numero_rpps": "10101010101",
                 "ordre_departemental": "Paris",
-                "situation_maritale": "marie",
-                "regime_matrimonial": "communaute reduite aux acquets",
+                "situation_maritale": "marié",
+                "regime_matrimonial": "communauté réduite aux acquêts",
                 "conjoint": {"civilite_affichage": "Madame", "prenom": "Claire", "nom": "Durand"},
             },
             "acquereur": {
@@ -134,19 +134,19 @@ def _cession_cabinet_medical_acte() -> CessionContext:
                     "genre": "feminin",
                     "prenom": "Alice",
                     "nom": "Moreau",
-                    "fonction": "gerante",
+                    "fonction": "gérante",
                 },
             },
             "cabinet": {
-                "nature_fonds_liberal": "medecin generaliste",
+                "nature_fonds_liberal": "médecin généraliste",
                 "adresse_affichee": "10 rue du Cabinet, 75008 Paris",
                 "adresse_locaux_affichee": "10 rue du Cabinet, 75008 Paris",
                 "telephone": "01 44 00 00 00",
-                "superficie_local": "80 m2",
-                "description_origine_propriete": "Origine de propriete validee manuellement.",
+                "superficie_local": "80",
+                "description_origine_propriete": "Origine de propriété validée manuellement.",
                 "date_origine_propriete": "2020-01-01",
                 "annees_acquisition_patientele": "2020",
-                "prix_origine_propriete": "120 000 euros",
+                "prix_origine_propriete": "120 000",
                 "precedent_proprietaire": {
                     "civilite_affichage": "Docteur",
                     "prenom": "Paul",
@@ -155,13 +155,13 @@ def _cession_cabinet_medical_acte() -> CessionContext:
             },
             "bail_professionnel": {
                 "date_bail": "2021-01-01",
-                "duree": "six annees",
+                "duree": "six années",
                 "date_debut": "2021-01-01",
                 "date_fin": "2027-01-01",
                 "date_reconduction_1": "2027-01-01",
                 "date_reconduction_2": "2033-01-01",
-                "loyer_mensuel": "2 000 euros",
-                "activite_autorisee_affichee": "activite medicale et paramedicale",
+                "loyer_mensuel": "2 000",
+                "activite_autorisee_affichee": "activité médicale et paramédicale",
             },
             "exercices": [
                 {"periode": "2023", "chiffre_affaires": "210 000", "resultat": "80 000"},
@@ -181,9 +181,11 @@ def _cession_cabinet_medical_acte() -> CessionContext:
                 "credit_vendeur": {
                     "actif": True,
                     "montant": "60 000",
-                    "duree": "vingt-quatre mois",
-                    "taux": "3 %",
-                    "majoration_interet_retard": "2 points",
+                    # le modèle écrit "ans" ; unité crédit-vendeur (ans vs mois)
+                    # à confirmer métier (escalade)
+                    "duree": "deux",
+                    "taux": "3",
+                    "majoration_interet_retard": "2",
                 },
             },
             "scm": {"actif": True, "nb_parts_a_ceder": "10"},
@@ -214,7 +216,7 @@ def _bail_avenant_medecin() -> BailContext:
                 "profession": "bailleur",
                 "date_naissance": "1970-01-05",
                 "ville_naissance": "Lyon",
-                "nationalite": "francaise",
+                "nationalite": "française",
                 "adresse_affichee": "8 rue Victor Hugo, 69002 Lyon",
             },
             "locataire": {
@@ -222,10 +224,10 @@ def _bail_avenant_medecin() -> BailContext:
                 "civilite_courte": "Docteur",
                 "prenom": "Jean",
                 "nom": "Durand",
-                "profession": "medecin",
+                "profession": "médecin",
                 "date_naissance": "1975-03-10",
                 "ville_naissance": "Lyon",
-                "nationalite": "francaise",
+                "nationalite": "française",
                 "adresse_affichee": "4 rue Victor Hugo, 69002 Lyon",
             },
         }
@@ -249,15 +251,15 @@ def _cession_cabinet_dentaire_acte() -> CessionContext:
                 "departement_naissance": "75",
                 "cp_naissance": "75007",
                 "pays_naissance": "France",
-                "nationalite": "francaise",
+                "nationalite": "française",
                 "adresse_affichee": "4 rue du Bac, 75007 Paris",
                 "adresse_exercice_affichee": "12 avenue des Ternes, 75017 Paris",
                 "numero_siren": "321 654 987",
                 "numero_ordre": "ORD-456",
                 "numero_rpps": "20202020202",
                 "ordre_departemental": "Paris",
-                "situation_maritale": "marie",
-                "regime_matrimonial": "communaute reduite aux acquets",
+                "situation_maritale": "marié",
+                "regime_matrimonial": "communauté réduite aux acquêts",
                 "conjoint": {"civilite_affichage": "Madame", "prenom": "Sophie", "nom": "Martin"},
             },
             "acquereur": {
@@ -273,7 +275,7 @@ def _cession_cabinet_dentaire_acte() -> CessionContext:
                     "genre": "masculin",
                     "prenom": "Camille",
                     "nom": "Martin",
-                    "fonction": "gerant",
+                    "fonction": "gérant",
                 },
             },
             "cabinet": {
@@ -282,11 +284,11 @@ def _cession_cabinet_dentaire_acte() -> CessionContext:
                 "adresse_affichee": "12 avenue des Ternes, 75017 Paris",
                 "adresse_locaux_affichee": "12 avenue des Ternes, 75017 Paris",
                 "telephone": "01 45 00 00 00",
-                "superficie_local": "90 m2",
-                "description_origine_propriete": "Origine de propriete validee manuellement.",
+                "superficie_local": "90",
+                "description_origine_propriete": "Origine de propriété validée manuellement.",
                 "date_origine_propriete": "2019-01-01",
                 "annees_acquisition_patientele": "2019",
-                "prix_origine_propriete": "150 000 euros",
+                "prix_origine_propriete": "150 000",
                 "precedent_proprietaire": {
                     "civilite_affichage": "Docteur",
                     "prenom": "Henri",
@@ -295,13 +297,13 @@ def _cession_cabinet_dentaire_acte() -> CessionContext:
             },
             "bail_professionnel": {
                 "date_bail": "2021-09-01",
-                "duree": "six annees",
+                "duree": "six années",
                 "date_debut": "2021-09-01",
                 "date_fin": "2027-09-01",
                 "date_reconduction_1": "2027-09-01",
                 "date_reconduction_2": "2033-09-01",
-                "loyer_mensuel": "2 500 euros",
-                "activite_autorisee_affichee": "activite dentaire et paramedicale",
+                "loyer_mensuel": "2 500",
+                "activite_autorisee_affichee": "activité dentaire et paramédicale",
             },
             "exercices": [
                 {"periode": "2023", "chiffre_affaires": "260 000", "resultat": "100 000"},
@@ -328,8 +330,8 @@ def _cession_cabinet_dentaire_acte() -> CessionContext:
             },
             "scm": {"actif": False},
             "salaries": [
-                {"civilite_affichage": "Madame", "prenom": "Lea", "nom": "Petit"},
-                {"civilite_affichage": "Monsieur", "prenom": "Noe", "nom": "Robert"},
+                {"civilite_affichage": "Madame", "prenom": "Léa", "nom": "Petit"},
+                {"civilite_affichage": "Monsieur", "prenom": "Noé", "nom": "Robert"},
             ],
             "date_limite_realisation": "2026-09-30",
             "validations": {
@@ -358,7 +360,7 @@ def _bail_avenant_dentaire() -> BailContext:
                 "profession": "bailleur",
                 "date_naissance": "1970-01-05",
                 "ville_naissance": "Lyon",
-                "nationalite": "francaise",
+                "nationalite": "française",
                 "adresse_affichee": "8 rue Victor Hugo, 69002 Lyon",
             },
             "locataire": {
@@ -369,7 +371,7 @@ def _bail_avenant_dentaire() -> BailContext:
                 "profession": "chirurgien-dentiste",
                 "date_naissance": "1984-06-20",
                 "ville_naissance": "Paris",
-                "nationalite": "francaise",
+                "nationalite": "française",
                 "adresse_affichee": "4 rue du Bac, 75007 Paris",
             },
         }

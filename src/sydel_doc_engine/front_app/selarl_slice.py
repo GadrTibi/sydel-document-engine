@@ -528,8 +528,8 @@ def build_generation_context(data: SelarlSliceInput) -> DocumentGenerationContex
     company = Company(
         forme_sociale="SELARL",
         forme_sociale_affichage="SELARL",
-        forme_sociale_libelle_long="Societe d'exercice liberal a responsabilite limitee",
-        forme_sociale_complete="societe d'exercice liberal a responsabilite limitee",
+        forme_sociale_libelle_long="Société d'exercice libéral à responsabilité limitée",
+        forme_sociale_complete="société d'exercice libéral à responsabilité limitée",
         forme_sociale_abregee="SELARL",
         denomination=data.denomination,
         denomination_courte=data.denomination,
@@ -1093,7 +1093,7 @@ def _needs_conjoint(data: SelarlSliceInput) -> bool:
 
 
 def _is_married(data: SelarlSliceInput) -> bool:
-    return "marie" in data.situation_maritale.casefold()
+    return "mari" in data.situation_maritale.casefold()
 
 
 def _spfpl_conjoint(data: SelarlSliceInput) -> SpfplConjoint:
