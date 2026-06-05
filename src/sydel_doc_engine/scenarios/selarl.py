@@ -139,6 +139,7 @@ def _cession_cabinet_medical_acte() -> CessionContext:
             },
             "cabinet": {
                 "nature_fonds_liberal": "médecin généraliste",
+                "denomination_ou_adresse_affichee": "Cabinet médical de Wagram",
                 "adresse_affichee": "10 rue du Cabinet, 75008 Paris",
                 "adresse_locaux_affichee": "10 rue du Cabinet, 75008 Paris",
                 "telephone": "01 44 00 00 00",
@@ -179,6 +180,13 @@ def _cession_cabinet_medical_acte() -> CessionContext:
                 "elements_incorporels_lettres": "deux cent cinquante mille euros",
             },
             "financement": {
+                "banque": {"nom": "BANQUE EXEMPLE"},
+                "destinataire": {
+                    "civilite_affichage": "Monsieur",
+                    "prenom": "Louis",
+                    "nom": "Bernard",
+                },
+                "montant_deblocage": "240 000",
                 "pret": {"montant": "240 000", "taux": "4 %", "duree": "sept ans"},
                 "credit_vendeur": {
                     "actif": True,

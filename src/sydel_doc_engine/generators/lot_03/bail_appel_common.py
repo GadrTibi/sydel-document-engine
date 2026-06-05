@@ -72,8 +72,7 @@ def validate_appel_fonds_context(ctx: DocumentGenerationContext) -> None:
             f"{DOCUMENT_CODE}."
         )
     require_cession_enabled(ctx)
-    if cabinet_type(ctx) != CABINET_DENTAIRE:
-        raise ValueError(
-            "cession.type_cabinet doit etre dentaire pour l'appel de fonds "
-            f"{DOCUMENT_CODE}."
-        )
+    # L'appel de fonds est un document COMMUN a toute cession (section « Si cession »
+    # des Documents a generer par cas) : medical comme dentaire. On valide donc seulement
+    # que le type de cabinet est connu et supporte, sans le restreindre au dentaire.
+    cabinet_type(ctx)

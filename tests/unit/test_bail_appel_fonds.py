@@ -186,11 +186,18 @@ def test_appel_fond_sel_generates_dentaire_request(tmp_path: Path) -> None:
     _assert_no_source_placeholders(text)
 
 
-def test_appel_fond_sel_blocks_medical_cabinet(tmp_path: Path) -> None:
+def test_appel_fond_sel_generates_medical_request(tmp_path: Path) -> None:
+    # L'appel de fonds est un document commun « Si cession » : il doit etre genere
+    # pour une cession MEDICALE, avec « cabinet medical » (et non plus « dentaire »).
     ctx = _context(type_cabinet="medical")
 
-    with pytest.raises(ValueError, match="dentaire"):
-        AppelFondSelGenerator().generate(ctx, tmp_path)
+    output_path = AppelFondSelGenerator().generate(ctx, tmp_path)
+
+    assert output_path == tmp_path / "appel_fond_sel.docx"
+    text = _docx_text(output_path)
+    assert "cabinet médical exploité au Cabinet dentaire des Ternes" in text
+    assert "cabinet dentaire exploité" not in text
+    _assert_no_source_placeholders(text)
 
 
 def test_avenant_contrat_bail_blocks_already_registered_company(tmp_path: Path) -> None:
@@ -210,27 +217,33 @@ def test_orchestrator_selects_bail_batch_for_selarl_dentaire() -> None:
     assert {"DOC-007", "DOC-008"}.issubset(selected_ids)
 
 
-@pytest.mark.parametrize(
-    ("structure", "type_cabinet"),
-    [
-        ("SELAS", "dentaire"),
-        ("SELARL", "medical"),
-    ],
-)
-def test_orchestrator_excludes_appel_fonds_when_scope_is_not_dentaire_selarl(
-    structure: str,
-    type_cabinet: str,
-) -> None:
+def test_orchestrator_selects_appel_fonds_for_selarl_medical() -> None:
+    # L'appel de fonds (DOC-008) est commun a toute cession SELARL : il doit etre
+    # selectionne pour une cession MEDICALE, pas seulement dentaire.
     orchestrator = DocumentOrchestrator(build_seed_catalog())
 
     selected_ids = {
         document.doc_id
         for document in orchestrator.select_documents_for_context(
-            _context(structure, type_cabinet=type_cabinet),
+            _context("SELARL", type_cabinet="medical"),
         )
     }
 
-    assert "DOC-007" in selected_ids
+    assert {"DOC-007", "DOC-008"}.issubset(selected_ids)
+
+
+@pytest.mark.parametrize("type_cabinet", ["dentaire", "medical"])
+def test_orchestrator_excludes_appel_fonds_for_non_selarl(type_cabinet: str) -> None:
+    # L'appel de fonds SEL reste borne a la structure SELARL : exclu pour SELAS.
+    orchestrator = DocumentOrchestrator(build_seed_catalog())
+
+    selected_ids = {
+        document.doc_id
+        for document in orchestrator.select_documents_for_context(
+            _context("SELAS", type_cabinet=type_cabinet),
+        )
+    }
+
     assert "DOC-008" not in selected_ids
 
 

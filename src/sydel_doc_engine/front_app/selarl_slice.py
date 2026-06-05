@@ -238,7 +238,9 @@ def selected_selarl_document_codes(data: SelarlSliceInput) -> tuple[str, ...]:
         for doc_id, (expected_etape, expected_type) in CESSION_CABINET_DOCUMENT_IDS.items():
             if etape == expected_etape and type_cabinet == expected_type:
                 codes.append(doc_id)
-        if type_cabinet == "dentaire":
+        # Appel de fonds = document commun « Si cession » : present pour toute cession
+        # (medical comme dentaire), des que le type de cabinet est renseigne.
+        if type_cabinet:
             codes.append(APPEL_FONDS_DOCUMENT_ID)
     if data.bail_context is not None:
         codes.append(BAIL_AVENANT_DOCUMENT_ID)

@@ -210,11 +210,14 @@ def test_clean_front_selarl_cession_cabinet_medical_generates_acte(tmp_path: Pat
     assert plan.can_generate is True
     assert "DOC-009" in plan.document_codes
     assert "DOC-007" in plan.document_codes
+    # Appel de fonds (DOC-008) = document commun « Si cession », present aussi en medical.
+    assert "DOC-008" in plan.document_codes
 
     result = generate_selarl_dossier(data, tmp_path)
     names = {path.name for path in result.docx_paths}
     assert "acte_cession_cabinet_medical.docx" in names
     assert "avenant_contrat_bail.docx" in names
+    assert "appel_fond_sel.docx" in names
 
 
 def test_clean_front_selarl_cession_cabinet_dentaire_generates_full_pack(tmp_path: Path) -> None:
