@@ -4,6 +4,28 @@
 
 ---
 
+## 2026-06-05 (5) — Livraison : le workflow « développer un type d'entreprise » (A→Z)
+
+Le Capitaine a livré la **méthode définitive** pour outiller un type d'entreprise de bout en bout
+(moteur **+ interface Streamlit**). Trois fichiers viennent d'arriver sur ta branche :
+- `docs/project/WORKFLOW_TYPE_ENTREPRISE_V1.md` — le **workflow maître** (phases 0→9, UI comprise).
+- `.claude/commands/type-entreprise.md` — la **commande exécutable** `/type-entreprise`.
+- `docs/project/PLAYBOOK_TYPE_ENTREPRISE_V1.md` — pointe désormais vers ce workflow.
+
+**Ce que ça change pour toi :**
+- C'est désormais **LA méthode** pour tout type d'entreprise, de A à Z, **interface Streamlit comprise**.
+  Pour outiller un type : **`/type-entreprise <TYPE>`**.
+- La **SELARL** est l'**exemple de référence intégré** : chaque phase pointe le fichier réel à copier.
+- Ta **SELAS doit s'aligner sur ce cap** : mêmes phases, mêmes garde-fous — **fidélité** (remplissage de
+  template, jamais de paraphrase juridique), **escalade NotebookLM-avant-Rafael**, **suite COMPLÈTE verte
+  vérifiée toi-même** (jamais un sous-ensemble), **UI tous-cas + bouton données de test**, **gate juridique**.
+- **Méta-règle** : toute nouvelle leçon de méthode que tu trouves sur la SELAS se **reverse** dans
+  `WORKFLOW_TYPE_ENTREPRISE_V1.md` (remontée via le cockpit / le Capitaine), pour enrichir la méthode des
+  types suivants.
+
+**Rappels (inchangés)** : pas de merge ni de push sur `main`, pas de déploiement, pas de contact humain
+externe (Rafael / Albane / client) — tout passe par le Capitaine. Le cockpit gouverne.
+
 ## 2026-06-05 (3) — Changement de TON uniquement (l'équipage reste)
 
 Décision du Capitaine : on retire **seulement la façon de parler pirate**, **pas l'équipage**.
