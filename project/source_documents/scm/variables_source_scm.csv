@@ -1,0 +1,158 @@
+variable,description
+[civilite],civilite de la personne
+[prenom],prenom de la personne
+[nom],nom de la personne
+[date_naissance],date de naissance
+[ville_naissance],ville de naissance
+[nationalite],nationalite de la personne
+[num_voie_perso],numero de voie personnelle
+[voie_perso],nom de voie personnelle
+[cp_perso],code postal personnel
+[ville_perso],ville personnelle
+[nom_pere],nom complet du pere
+[nom_mere],nom complet de la mere
+[situation_maritale],situation maritale
+[nom_conjoint],nom complet du conjoint
+[telephone],telephone de la personne
+[email],email de la personne
+[statut_residence],statut de residence principale
+[denomination_societe],nom de la societe
+[forme_sociale],forme sociale de la societe
+[capital_social],montant du capital social
+[capital_lettres],capital social en lettres
+[nb_actions],nombre total actions
+[montant_sous],montant de la souscription
+[num_voie_siege],numero de voie du siege
+[voie_siege],nom de voie du siege
+[cp_siege],code postal du siege
+[ville_siege],ville du siege social
+[ville_rcs],ville du RCS
+[nom_banque],nom de la banque
+[adresse_banque],adresse de la banque
+[date_signature],date de signature
+[lieu_signature],lieu de signature
+[date_cloture_exercice_1],date de cloture du premier exercice
+[debut_exercice],date de debut exercice social
+[fin_exercice],date de fin exercice social
+[fonction_dirigeant],fonction du dirigeant
+[qualite_associe],qualite de l associe
+[signature],signature de la personne
+[adresse_bailleur],adresse bailleur
+[adresse_locataire],adresse locataire
+[adresse_locaux],adresse locaux
+[adresse_perso_personne_2],adresse perso personne 2
+[adresse_personne_1],adresse personne 1
+[adresse_personne_2],adresse personne 2
+[adresse_responsable],adresse responsable
+[adresse_siege],adresse siege
+[adresse_siege_societe_1],adresse siege societe 1
+[adresse_siege_societe_2],adresse siege societe 2
+[adresse_siege_societe_3],adresse siege societe 3
+[adresse_vendeur],adresse vendeur
+[annee_reference_charges],annee reference charges
+[apport_lettres_personne_2],apport lettres personne 2
+[apport_lettres_societe_1],apport lettres societe 1
+[apport_societe_1],apport societe 1
+[b],b
+[capital_social_societe_1],capital social societe 1
+[capital_social_societe_2],capital social societe 2
+[capital_social_societe_3],capital social societe 3
+[civilite_bailleur],civilite bailleur
+[civilite_locataire],civilite locataire
+[civilite_personne_1],civilite personne 1
+[civilite_personne_2],civilite personne 2
+[civilite_representant_societe_1],civilite representant societe 1
+[civilite_representant_societe_2],civilite representant societe 2
+[civilite_vendeur],civilite vendeur
+[date_acte_mariage_personne_2],date acte mariage personne 2
+[date_attribution_responsabilites],date attribution responsabilites
+[date_bail],date bail
+[date_cloture_exercice],date cloture exercice
+[date_effet_contrat],date effet contrat
+[date_effet_reglement],date effet reglement
+[date_fin_gestion_administrative],date fin gestion administrative
+[date_mariage_personne_2],date mariage personne 2
+[date_naissance_bailleur],date naissance bailleur
+[date_naissance_locataire],date naissance locataire
+[date_naissance_personne_1],date naissance personne 1
+[date_naissance_personne_2],date naissance personne 2
+[date_naissance_vendeur],date naissance vendeur
+[date_promesse_vente],date promesse vente
+[date_reiteration_vente],date reiteration vente
+[denomination_ancien_locataire],denomination ancien locataire
+[denomination_societe_1],denomination societe 1
+[denomination_societe_2],denomination societe 2
+[denomination_societe_3],denomination societe 3
+[denomination_societe_courte],denomination societe courte
+[departement_naissance_personne_1],departement naissance personne 1
+[departement_naissance_personne_2],departement naissance personne 2
+[duree_societe],duree societe
+[fonction_personne_1],fonction personne 1
+[fonction_representant_societe_1],fonction representant societe 1
+[fonction_representant_societe_2],fonction representant societe 2
+[forme_sociale_societe_1],forme sociale societe 1
+[forme_sociale_societe_2],forme sociale societe 2
+[forme_sociale_societe_3],forme sociale societe 3
+[h],h
+[identite_praticien_1],identite praticien 1
+[identite_praticien_2],identite praticien 2
+[identite_representant_societe_1],identite representant societe 1
+[identite_representant_societe_2],identite representant societe 2
+[montant_prix_vente],montant prix vente
+[nationalite_bailleur],nationalite bailleur
+[nationalite_locataire],nationalite locataire
+[nationalite_personne_1],nationalite personne 1
+[nationalite_personne_2],nationalite personne 2
+[nationalite_vendeur],nationalite vendeur
+[nb_parts],nb parts
+[nb_parts_personne_2],nb parts personne 2
+[nb_parts_sociales],nb parts sociales
+[nom_bailleur],nom bailleur
+[nom_conjoint_personne_2],nom conjoint personne 2
+[nom_locataire],nom locataire
+[nom_notaire],nom notaire
+[nom_personne_1],nom personne 1
+[nom_personne_2],nom personne 2
+[nom_representant_societe_1],nom representant societe 1
+[nom_representant_societe_2],nom representant societe 2
+[nom_vendeur],nom vendeur
+[nombre_exemplaires],nombre exemplaires
+[numero_avenant],numero avenant
+[numero_rcs],numero rcs
+[numero_rcs_societe_1],numero rcs societe 1
+[numero_rcs_societe_2],numero rcs societe 2
+[numero_rcs_societe_3],numero rcs societe 3
+[prenom_bailleur],prenom bailleur
+[prenom_locataire],prenom locataire
+[prenom_notaire],prenom notaire
+[prenom_personne_1],prenom personne 1
+[prenom_personne_2],prenom personne 2
+[prenom_representant_societe_1],prenom representant societe 1
+[prenom_representant_societe_2],prenom representant societe 2
+[prenom_vendeur],prenom vendeur
+[profession_associes],profession associes
+[profession_bailleur],profession bailleur
+[profession_locataire],profession locataire
+[profession_personne_2],profession personne 2
+[profession_societe_1],profession societe 1
+[regime_matrimonial_personne_2],regime matrimonial personne 2
+[seuil_depense_commune],seuil depense commune
+[signature_bailleur],signature bailleur
+[situation_maritale_personne_1],situation maritale personne 1
+[situation_maritale_personne_2],situation maritale personne 2
+[situation_maritale_vendeur],situation maritale vendeur
+[telephone_praticien_1],telephone praticien 1
+[telephone_praticien_2],telephone praticien 2
+[titre_representant_societe_1],titre representant societe 1
+[titre_representant_societe_2],titre representant societe 2
+[valeur_nominale_part],valeur nominale part
+[ville_naissance_bailleur],ville naissance bailleur
+[ville_naissance_locataire],ville naissance locataire
+[ville_naissance_personne_1],ville naissance personne 1
+[ville_naissance_personne_2],ville naissance personne 2
+[ville_notaire],ville notaire
+[ville_rcs_societe_1],ville rcs societe 1
+[ville_rcs_societe_2],ville rcs societe 2
+[ville_rcs_societe_3],ville rcs societe 3
+[ville_tribunal],ville tribunal
+[w],w
