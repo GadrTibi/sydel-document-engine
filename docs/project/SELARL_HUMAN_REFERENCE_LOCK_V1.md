@@ -12,14 +12,16 @@ Ce document verrouille les corrections humaines explicites à reprendre pour le 
 
 Correction humaine :
 
-> dans les locaux du cabinet au [num_voie_siege] [voie_siege], [cp_siege] [ville_siege] pour 99 ans.
+> dans les locaux du cabinet au [num_voie_siege] [voie_siege], [cp_siege] [ville_siege] pour une durée indéterminée.
 
-Amendement 2026-06-03 :
+Correction 2026-06-05 (retour à la source primaire) :
 
-- l'ancien libelle `pour une duree indeterminee` est remplace par `pour 99 ans`
-  apres retour associe transmis par Gad ;
-- ce point a ete corrige dans `DOC-002` et controle dans
-  `docs/review/selarl_returns_006_incident_generalized_audit_001_report_v1.md`.
+- l'amendement du 2026-06-03 (`pour 99 ans`) était **ERRONÉ** : il contredisait la source humaine
+  primaire `Retours humains .docx` (31/05), qui dit explicitement « …[ville_siege] **pour une durée
+  indéterminée**. » pour l'autorisation de domiciliation.
+- la domiciliation est donc rétablie à **« pour une durée indéterminée »** (`DOC-002`).
+- ⚠️ Ne pas confondre : le « 99 ans » concerne la **DURÉE DE LA SOCIÉTÉ** (statuts art. 6, figée en dur
+  d'après le retour 006), **pas** la domiciliation.
 
 Mapping moteur :
 

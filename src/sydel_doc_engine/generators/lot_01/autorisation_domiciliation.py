@@ -47,7 +47,7 @@ class AutorisationDomiciliationGenerator:
 
     Rendu fidèle par remplissage du modèle source tokenisé
     (autorisation_domiciliation_transforme.docx) : le texte juridique figé du
-    modèle est conservé tel quel (dont « pour 99 ans »), seuls les
+    modèle est conservé tel quel (dont « pour une durée indéterminée »), seuls les
     tokens `[variable]` sont remplacés par les valeurs du contexte. Aucune prose
     n'est paraphrasée ni inventée.
     """
