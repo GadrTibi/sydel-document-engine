@@ -31,7 +31,7 @@ STATUTS_SELARL_DENTISTE_BLOCKS: tuple[str, ...] = (
     'ARTICLE 5 - LIEU(X) D’EXERCICE ',
     'Le lieu d’exercice de la société est situé au [adresse_lieu_exercice]. Il constitue le lieu d’exercice unique de la société',
     'ARTICLE 6 - DUREE DE VIE',
-    "La durée de la Société est fixée à [duree_societe] à compter de la date d'immatriculation au Registre du Commerce et des Sociétés, sauf les cas de prorogation ou de dissolution anticipée.",
+    "La durée de la Société est fixée à 99 ans à compter de la date d'immatriculation au Registre du Commerce et des Sociétés, sauf les cas de prorogation ou de dissolution anticipée.",
     "Cette immatriculation ne peut intervenir qu'après inscription de la Société au tableau de l'ordre des [profession_reglementee_pluriel].",
     "Un an au moins avant la date d'expiration de la Société, la gérance doit provoquer une réunion de la collectivité des associés à l'effet de décider, dans les conditions requises pour les décisions collectives extraordinaires, si la Société doit être prorogée. Toute décision de proroger la Société doit être transmise au Conseil départemental de l'ordre des [profession_reglementee_pluriel] par lettre recommandée avec demande d'avis de réception.",
     'ARTICLE 7 – APPORTS ',

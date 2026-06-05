@@ -12,7 +12,6 @@ from sydel_doc_engine.generators.lot_04.statuts_sel_exercice_common import (
     common_replacements,
     render_statuts_sel_docx,
     required_associe_unique,
-    required_company,
     required_text,
     validate_sel_context,
 )
@@ -32,7 +31,6 @@ class StatutsSelarlDentisteGenerator:
             expected_structure=STRUCTURE_SELARL,
             expected_overlay=OVERLAY_SELARL_DENTISTE,
         )
-        company = required_company(ctx)
         associate = required_associe_unique(ctx)
         replacements = common_replacements(
             ctx,
@@ -48,7 +46,9 @@ class StatutsSelarlDentisteGenerator:
         )
         replacements.update(
             {
-                "[duree_societe]": required_text(company.duree, "societe.duree"),
+                # La durée SELARL dentiste est figée en dur à « 99 ans » dans le
+                # template (décision Rafael 2026-06-05) : plus de token
+                # [duree_societe] à remplacer côté dentiste.
                 "[prestataire_signature_electronique]": required_text(
                     ctx.signature.prestataire_signature_electronique,
                     "signature.prestataire_signature_electronique",

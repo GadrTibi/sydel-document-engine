@@ -108,24 +108,26 @@ def test_autorisation_domiciliation_contains_essential_texts(tmp_path: Path) -> 
     assert "AUTORISATION DE DOMICILIATION" in text
     # Phrase fidele au modele tokenise corrige (retour humain LOCK V1) : adresse
     # complete du cabinet/siege « du cabinet au [num_voie] [voie], [cp] [ville] » ;
-    # terme juridique « pour une durée indéterminée » conserve (et non « pour 99 ans »).
+    # duree SELARL figee en dur « pour 99 ans » (decision Rafael 2026-06-05,
+    # remplace l'ancien « pour une durée indéterminée »).
     assert (
         "autorise la domiciliation de DURAND CONSEIL au capital de 1 000 € "
         "en cours de formation, dans les locaux du cabinet au 80 avenue Marceau, "
-        "75008 Paris, pour une durée indéterminée."
+        "75008 Paris, pour 99 ans."
     ) in text
     assert "Fait à Paris" in text
     assert "Le 12 mai 2026" in text
     assert "Monsieur Jean Durand" in text
 
 
-def test_autorisation_domiciliation_preserves_legal_term(tmp_path: Path) -> None:
+def test_autorisation_domiciliation_duree_99_ans(tmp_path: Path) -> None:
     text = _docx_text(_generate(tmp_path))
 
-    # Garde-fou anti-derive : le terme juridique du modele doit rester intact
-    # et l'ancienne paraphrase « 99 ans » ne doit jamais reapparaitre.
-    assert "pour une durée indéterminée." in text
-    assert "99 ans" not in text
+    # Garde-fou anti-derive (decision Rafael 2026-06-05) : la duree SELARL est
+    # figee en dur a « 99 ans » ; l'ancien « durée indéterminée » ne doit jamais
+    # reapparaitre.
+    assert "pour 99 ans." in text
+    assert "durée indéterminée" not in text
 
 
 def test_autorisation_domiciliation_opening_agrees_masculine(tmp_path: Path) -> None:
