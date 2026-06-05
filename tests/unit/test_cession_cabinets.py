@@ -121,10 +121,9 @@ def _context(
                 adresse_locaux_affichee="10 rue du Cabinet, 75008 Paris",
                 telephone="01 44 00 00 00",
                 superficie_local="80 m2",
-                description_origine_propriete="Origine de propriete validee manuellement.",
                 date_origine_propriete=date(2020, 1, 1),
                 annees_acquisition_patientele="2020",
-                prix_origine_propriete="120 000 euros",
+                prix_origine_propriete="120 000",
                 precedent_proprietaire=CessionPrecedentProprietaire(
                     civilite_affichage="Docteur",
                     prenom="Paul",
@@ -158,8 +157,10 @@ def _context(
                 pret=CessionPret(montant="240 000", taux="4 %", duree="sept ans"),
                 credit_vendeur=CessionCreditVendeur(
                     actif=credit_vendeur,
+                    # Regle NotebookLM : unite du credit-vendeur = ANNEES (« Trois ans »).
+                    # Le wording du modele rend « [duree_credit_vendeur] ans ».
+                    duree="trois",
                     montant="60 000",
-                    duree="vingt-quatre mois",
                     taux="3 %",
                     majoration_interet_retard="2 points",
                 ),
@@ -279,13 +280,145 @@ def test_credit_vendeur_blocks_outside_medical_acte(tmp_path: Path) -> None:
         CompromisCessionCabinetMedicalGenerator().generate(ctx, tmp_path)
 
 
-def test_acte_dentaire_blocks_single_salary_clause(tmp_path: Path) -> None:
+def test_credit_vendeur_duree_rendered_in_years(tmp_path: Path) -> None:
+    # FIX 4 : l'unite de duree du credit-vendeur est l'annee (« ... ans »).
+    ctx = _context(credit_vendeur=True)
+
+    text = _docx_text(ActeCessionCabinetMedicalGenerator().generate(ctx, tmp_path))
+
+    assert "dans un délai maximum de trois ans" in text
+    assert "Au terme du délai de trois ans" in text
+    assert "mois" not in text.split("crédit-vendeur à hauteur")[1].split("intérêt annuel")[0]
+    _assert_no_residual_tokens(text)
+
+
+def test_origine_propriete_describes_vendeur_created_by_default(tmp_path: Path) -> None:
+    # FIX 1 : l'origine decrit le VENDEUR (cedant) ; defaut « cree ».
+    for generator, etape in (
+        (ActeCessionCabinetMedicalGenerator(), "acte"),
+        (CompromisCessionCabinetMedicalGenerator(), "compromis"),
+    ):
+        ctx = _context(etape=etape, credit_vendeur=(etape == "acte"))
+        text = _docx_text(generator.generate(ctx, tmp_path / etape))
+        # Sujet = vendeur (Docteur Jean Durand), pas l'acquereur (Alice Moreau).
+        assert "Docteur Jean Durand est propriétaire des éléments constitutifs du cabinet" in text
+        assert "pour l’avoir régulièrement créé le 1 janvier 2020." in text
+        assert "Alice Moreau est propriétaire" not in text
+        _assert_no_residual_tokens(text)
+
+
+def test_origine_propriete_purchased_describes_vendeur(tmp_path: Path) -> None:
+    # FIX 1 : variante « achete » -> origine via achat anterieur du vendeur.
+    ctx = _context(credit_vendeur=True)
+    ctx.cession.cabinet.origine_propriete_mode = "achete"
+    text = _docx_text(ActeCessionCabinetMedicalGenerator().generate(ctx, tmp_path))
+
+    assert "Docteur Jean Durand est propriétaire des éléments constitutifs du cabinet" in text
+    assert "pour les avoir régulièrement acquis auprès de Docteur Paul Bernard" in text
+    # Wording source « au prix de <prix> euros » : la donnee porte le seul montant.
+    assert "au prix de 120 000 euros." in text
+    _assert_no_residual_tokens(text)
+
+
+def test_origine_propriete_complex_case_blocks_without_validation(tmp_path: Path) -> None:
+    # GARDE-FOU souplesse : une origine COMPLEXE (mode non standard) bloque tant
+    # qu'un texte libre valide a la main n'est pas fourni.
+    ctx = _context(credit_vendeur=True)
+    ctx.cession.cabinet.origine_propriete_mode = "succession"
+
+    with pytest.raises(ValueError, match="origine_propriete_mode"):
+        ActeCessionCabinetMedicalGenerator().generate(ctx, tmp_path)
+
+
+def test_origine_propriete_complex_case_renders_free_text_when_validated(tmp_path: Path) -> None:
+    # Cas COMPLEXE valide : texte libre rendu tel quel (relecture humaine).
+    ctx = _context(credit_vendeur=True)
+    ctx.cession.cabinet.origine_propriete_mode = "succession"
+    ctx.cession.cabinet.description_origine_propriete = (
+        "Le vendeur a recueilli le cabinet par voie de succession de son père en 2015."
+    )
+    ctx.cession.validations.origine_propriete_complexe_validee = True
+
+    text = _docx_text(ActeCessionCabinetMedicalGenerator().generate(ctx, tmp_path))
+
+    assert "par voie de succession de son père en 2015." in text
+    _assert_no_residual_tokens(text)
+
+
+def test_medical_models_have_no_dentaire_leak(tmp_path: Path) -> None:
+    # FIX 2 : aucune mention « dentaire » dans les cessions MEDICALES.
+    acte = _docx_text(
+        ActeCessionCabinetMedicalGenerator().generate(_context(credit_vendeur=True), tmp_path / "a")
+    )
+    compromis = _docx_text(
+        CompromisCessionCabinetMedicalGenerator().generate(
+            _context(etape="compromis"), tmp_path / "c"
+        )
+    )
+    for text in (acte, compromis):
+        lowered = text.lower()
+        assert "dentaire" not in lowered
+        assert "dentiste" not in lowered
+        assert "stomatologue" not in lowered
+        # Le wording medical propre est conserve.
+        assert "cabinet médical" in lowered
+
+
+def test_acte_dentaire_salaries_zero_renders_neant(tmp_path: Path) -> None:
+    # Regle NotebookLM : 0 salarie -> convention systeme "Néant".
+    ctx = _context(type_cabinet="dentaire", salaries=[])
+
+    text = _docx_text(ActeCessionCabinetDentaireGenerator().generate(ctx, tmp_path))
+
+    assert "Néant." in text
+    assert "De reprendre les contrats de travail de" not in text
+    _assert_no_residual_tokens(text)
+
+
+def test_acte_dentaire_salaries_one_renders_single(tmp_path: Path) -> None:
+    # Regle NotebookLM : 1 salarie -> liste a un element (poste optionnel rendu).
     ctx = _context(
         type_cabinet="dentaire",
-        salaries=[CessionSalarie(civilite_affichage="Madame", prenom="Lea", nom="Petit")],
+        salaries=[
+            CessionSalarie(
+                civilite_affichage="Madame", prenom="Lea", nom="Petit", poste="assistante dentaire"
+            )
+        ],
     )
 
-    with pytest.raises(ValueError, match="exactement deux salaries"):
+    text = _docx_text(ActeCessionCabinetDentaireGenerator().generate(ctx, tmp_path))
+
+    assert "De reprendre les contrats de travail de Madame Lea Petit" in text
+    assert "en qualité de assistante dentaire" in text
+    assert " et de " not in text.split("contrats de travail de")[1].split(".")[0]
+    _assert_no_residual_tokens(text)
+
+
+def test_acte_dentaire_salaries_three_renders_full_list(tmp_path: Path) -> None:
+    # Regle NotebookLM : N salaries -> liste complete (assouplissement 0/1/N).
+    ctx = _context(
+        type_cabinet="dentaire",
+        salaries=[
+            CessionSalarie(civilite_affichage="Madame", prenom="Lea", nom="Petit"),
+            CessionSalarie(civilite_affichage="Monsieur", prenom="Noe", nom="Robert"),
+            CessionSalarie(civilite_affichage="Madame", prenom="Ines", nom="Faure"),
+        ],
+    )
+
+    text = _docx_text(ActeCessionCabinetDentaireGenerator().generate(ctx, tmp_path))
+
+    assert "Madame Lea Petit, Monsieur Noe Robert et de Madame Ines Faure" in text
+    _assert_no_residual_tokens(text)
+
+
+def test_acte_dentaire_salary_requires_complete_identity(tmp_path: Path) -> None:
+    # Garde-fou : un salarie liste doit avoir civilite/prenom/nom (identite complete).
+    ctx = _context(
+        type_cabinet="dentaire",
+        salaries=[CessionSalarie(civilite_affichage="Madame", prenom="Lea")],
+    )
+
+    with pytest.raises(ValueError, match="salaries"):
         ActeCessionCabinetDentaireGenerator().generate(ctx, tmp_path)
 
 

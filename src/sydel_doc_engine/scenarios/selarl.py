@@ -143,7 +143,9 @@ def _cession_cabinet_medical_acte() -> CessionContext:
                 "adresse_locaux_affichee": "10 rue du Cabinet, 75008 Paris",
                 "telephone": "01 44 00 00 00",
                 "superficie_local": "80",
-                "description_origine_propriete": "Origine de propriété validée manuellement.",
+                # Origine de propriete (regle NotebookLM) : decrit le VENDEUR ;
+                # defaut "cree" si le praticien n'a pas achete son cabinet.
+                "origine_propriete_mode": "cree",
                 "date_origine_propriete": "2020-01-01",
                 "annees_acquisition_patientele": "2020",
                 "prix_origine_propriete": "120 000",
@@ -181,10 +183,10 @@ def _cession_cabinet_medical_acte() -> CessionContext:
                 "credit_vendeur": {
                     "actif": True,
                     "montant": "60 000",
-                    # le modèle écrit "ans" ; unité crédit-vendeur (ans vs mois)
-                    # à confirmer métier (escalade)
-                    "duree": "deux",
-                    "taux": "3",
+                    # Regle NotebookLM : unite du credit-vendeur = ANNEES
+                    # (« Trois ans »). Le modele rend « [duree_credit_vendeur] ans ».
+                    "duree": "trois",
+                    "taux": "5",
                     "majoration_interet_retard": "2",
                 },
             },

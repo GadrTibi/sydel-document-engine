@@ -43,6 +43,18 @@ SUPPORTED_STRUCTURES = {"SELARL", "SELAS"}
 SUPPORTED_ETAPES = {ACTE, COMPROMIS}
 SUPPORTED_CABINET_TYPES = {MEDICAL, DENTAIRE}
 
+# Origine de propriete (regle NotebookLM) : la clause decrit le VENDEUR (cedant),
+# comment il est devenu proprietaire. Deux variantes standard ; defaut = "cree"
+# si le praticien n'a pas achete son cabinet. Tout autre cas = COMPLEXE -> texte
+# libre saisi a la main + validation explicite (souplesse / relecture humaine).
+ORIGINE_MODE_CREE = "cree"
+ORIGINE_MODE_ACHETE = "achete"
+SUPPORTED_ORIGINE_MODES = {ORIGINE_MODE_CREE, ORIGINE_MODE_ACHETE}
+
+# Convention systeme : une liste vide (0 element) se rend "Néant", a l'image des
+# apports en nature inexistants. Utilisee pour la reprise des salaries (0/1/N).
+NEANT = "Néant."
+
 # Dossier des modeles Word tokenises, resolu independamment du cwd.
 # parents[4] depuis src/sydel_doc_engine/generators/lot_03/ = racine du repo.
 _SOURCE_MODELS_DIR = (
@@ -339,6 +351,9 @@ def _build_cession_replacements(ctx: DocumentGenerationContext) -> dict[str, str
         put("[civilite_precedent_proprietaire]", precedent.civilite_affichage)
         put("[prenom_precedent_proprietaire]", precedent.prenom)
         put("[nom_precedent_proprietaire]", precedent.nom)
+    # Origine de propriete (modeles MEDICAUX) : phrase decrivant le VENDEUR,
+    # variante creee/achetee (defaut "cree"), ou texte libre pour un cas complexe.
+    put("[origine_propriete_phrase]", _build_origine_propriete_phrase(cession))
 
     # --- Bail professionnel ---
     put("[date_bail]", _french_date(bail.date_bail))
@@ -373,13 +388,9 @@ def _build_cession_replacements(ctx: DocumentGenerationContext) -> dict[str, str
     # --- Conditions suspensives (compromis) ---
     put("[date_realisation_limite]", _french_date(cession.date_limite_realisation))
 
-    # --- Salaries (acte dentaire) ---
-    for index in (0, 1):
-        if index < len(cession.salaries):
-            salarie = cession.salaries[index]
-            put(f"[civilite_salarie_{index + 1}]", salarie.civilite_affichage)
-            put(f"[prenom_salarie_{index + 1}]", salarie.prenom)
-            put(f"[nom_salarie_{index + 1}]", salarie.nom)
+    # --- Salaries (acte dentaire) : reprise 0 / 1 / N (regle NotebookLM) ---
+    # 0 salarie -> "Néant" (convention systeme) ; 1..N -> liste nom/prenom/poste.
+    put("[clause_reprise_salaries]", _build_clause_reprise_salaries(cession.salaries))
     # [date_entree_jouissance] (dentaire) : source choisie = date de debut du bail
     # professionnel (entree en jouissance des locaux). A confirmer cote metier.
     put("[date_entree_jouissance]", _french_date(bail.date_debut))
@@ -446,6 +457,93 @@ def _person_label(
     return " ".join(parts)
 
 
+def _build_origine_propriete_phrase(cession: CessionContext) -> str | None:
+    """Construit la clause d'origine de propriete des modeles MEDICAUX.
+
+    Regle NotebookLM : la clause decrit le VENDEUR (cedant) — comment il est
+    devenu proprietaire. Deux variantes standard, defaut "cree" :
+      - "cree"   -> "... pour l'avoir regulierement cree le <date>."
+      - "achete" -> "... pour l'avoir regulierement acquis aupres de <precedent>,
+                     le <date> au prix de <prix> euros."
+    Un cas COMPLEXE (mode non standard) est porte par le texte libre
+    `cabinet.description_origine_propriete`, sous garde-fou de validation manuelle
+    (cf. `_validate_origine_propriete`). On reutilise le wording deja valide des
+    modeles dentaires (meme sujet vendeur) : aucune reecriture libre.
+    """
+    cabinet = cession.cabinet or CessionCabinet()
+    vendeur = cession.vendeur or CessionVendeur()
+
+    mode = (cabinet.origine_propriete_mode or ORIGINE_MODE_CREE).strip().lower()
+    sujet = _person_label(vendeur.civilite_affichage, vendeur.prenom, vendeur.nom)
+    description = (cabinet.description_origine_propriete or "").strip()
+
+    # Cas COMPLEXE / non standard -> texte libre saisi a la main (relecture humaine).
+    if mode not in SUPPORTED_ORIGINE_MODES:
+        return description or None
+
+    if sujet is None:
+        # Identite vendeur incomplete -> on ne devine pas, on laisse le token
+        # en place (anti-trou) sauf si un texte libre a ete fourni.
+        return description or None
+
+    date_origine = _french_date(cabinet.date_origine_propriete)
+
+    if mode == ORIGINE_MODE_CREE:
+        if date_origine is None:
+            return description or None
+        phrase = (
+            f"{sujet} est propriétaire des éléments constitutifs du cabinet "
+            f"pour l’avoir régulièrement créé le {date_origine}."
+        )
+    else:  # ORIGINE_MODE_ACHETE
+        precedent = cabinet.precedent_proprietaire
+        precedent_label = (
+            _person_label(precedent.civilite_affichage, precedent.prenom, precedent.nom)
+            if precedent is not None
+            else None
+        )
+        prix = (cabinet.prix_origine_propriete or "").strip()
+        if date_origine is None or precedent_label is None or not prix:
+            return description or None
+        phrase = (
+            f"{sujet} est propriétaire des éléments constitutifs du cabinet "
+            f"pour les avoir régulièrement acquis auprès de {precedent_label}, "
+            f"le {date_origine} au prix de {prix} euros."
+        )
+
+    # Complement libre eventuel (precisions metier) appose tel quel.
+    if description:
+        phrase = f"{phrase} {description}"
+    return phrase
+
+
+def _build_clause_reprise_salaries(salaries: list[CessionSalarie]) -> str:
+    """Construit la clause de reprise des contrats de travail (acte dentaire).
+
+    Regle NotebookLM : 0 salarie -> "Néant" (convention systeme) ; 1..N salaries
+    -> "De reprendre les contrats de travail de <liste>." ou chaque salarie est
+    "Civilite Prenom Nom" (+ ", en qualite de <poste>" si le poste est saisi).
+    Reutilise le wording de clause existant du modele ; "Néant" applique la
+    convention systeme (aucune clause "néant" dediee dans le modele source).
+    """
+    if not salaries:
+        return NEANT
+
+    labels: list[str] = []
+    for index, salarie in enumerate(salaries):
+        label = _salarie_label(salarie, index)
+        poste = (salarie.poste or "").strip()
+        if poste:
+            label = f"{label}, en qualité de {poste}"
+        labels.append(label)
+
+    if len(labels) == 1:
+        liste = labels[0]
+    else:
+        liste = ", ".join(labels[:-1]) + f" et de {labels[-1]}"
+    return f"De reprendre les contrats de travail de {liste}."
+
+
 def _address_label(address: Address | None) -> str | None:
     if address is None:
         return None
@@ -503,6 +601,7 @@ def _validate_context(
     _validate_arbitrage_blocks(cession, variant, validations)
     _validate_financement(cession, variant, financement)
     _validate_salaries(cession, variant, validations)
+    _validate_origine_propriete(cession, variant, cabinet, validations)
 
     return _CessionData(
         ctx=ctx,
@@ -604,19 +703,51 @@ def _validate_salaries(
     variant: CessionCabinetVariant,
     validations: CessionValidations,
 ) -> None:
+    # Reprise des salaries rendue uniquement par l'acte dentaire (seul modele
+    # portant la clause). Regle NotebookLM : 0 -> "Néant" ; 1..N -> liste.
     if variant.etape == ACTE and variant.type_cabinet == DENTAIRE:
-        if cession.salaries:
-            if len(cession.salaries) != 2 or not validations.salaries_dentaire_deux_valides:
-                raise ValueError(
-                    "cession.salaries doit contenir exactement deux salaries valides pour "
-                    f"l'acte dentaire {DOCUMENT_CODE}."
-                )
-            for index, salarie in enumerate(cession.salaries):
-                _salarie_label(salarie, index)
+        # 0..N accepte. Chaque salarie liste doit avoir une identite complete
+        # (civilite/prenom/nom). Le poste reste optionnel.
+        for index, salarie in enumerate(cession.salaries):
+            _salarie_label(salarie, index)
         return
     if cession.salaries:
         raise ValueError(
-            f"cession.salaries est rendu uniquement pour l'acte dentaire en V1 {DOCUMENT_CODE}."
+            f"cession.salaries est rendu uniquement pour l'acte dentaire {DOCUMENT_CODE}."
+        )
+
+
+def _validate_origine_propriete(
+    cession: CessionContext,
+    variant: CessionCabinetVariant,
+    cabinet: CessionCabinet,
+    validations: CessionValidations,
+) -> None:
+    """Garde-fou origine de propriete pour les modeles MEDICAUX (token construit).
+
+    Souplesse cas COMPLEXE : un mode d'origine non standard (ni "cree" ni
+    "achete", ex. succession / apport / demembrement) DOIT etre saisi en texte
+    libre (`cabinet.description_origine_propriete`) ET valide a la main
+    (`validations.origine_propriete_complexe_validee`). Le moteur n'emet pas une
+    origine devinee. Les modeles dentaires gardent leur clause figee (non
+    concernes par le token construit).
+    """
+    if variant.type_cabinet != MEDICAL:
+        return
+
+    mode = (cabinet.origine_propriete_mode or ORIGINE_MODE_CREE).strip().lower()
+    if mode in SUPPORTED_ORIGINE_MODES:
+        return
+
+    # Cas complexe : exiger texte libre + validation manuelle (relecture humaine).
+    description = (cabinet.description_origine_propriete or "").strip()
+    if not description or not validations.origine_propriete_complexe_validee:
+        raise ValueError(
+            "cession.cabinet.origine_propriete_mode non standard "
+            f"({cabinet.origine_propriete_mode!r}) : fournir "
+            "cession.cabinet.description_origine_propriete ET "
+            "cession.validations.origine_propriete_complexe_validee=True pour "
+            f"{DOCUMENT_CODE}."
         )
 
 
@@ -678,9 +809,12 @@ def _required_cabinet(cabinet: CessionCabinet | None) -> CessionCabinet:
         ("cession.cabinet.adresse_affichee", cabinet.adresse_affichee),
         ("cession.cabinet.adresse_locaux_affichee", cabinet.adresse_locaux_affichee),
         ("cession.cabinet.telephone", cabinet.telephone),
-        ("cession.cabinet.description_origine_propriete", cabinet.description_origine_propriete),
     ]:
         _required_value(value, field_name)
+    # description_origine_propriete n'est plus un token autonome : la clause
+    # d'origine medicale est construite a partir des donnees vendeur (mode
+    # cree/achete). Le texte libre n'est exige que pour un cas COMPLEXE
+    # (cf. _validate_origine_propriete).
     return cabinet
 
 
