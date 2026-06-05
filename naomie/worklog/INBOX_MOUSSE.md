@@ -4,6 +4,29 @@
 
 ---
 
+## 2026-06-05 (3) — Changement de ton : fin du mode pirate
+
+Décision du Capitaine : **on retire le mode corsaire/pirate.** À partir de maintenant, parle en
+**français normal, professionnel et direct** — plus de « moussaillon », plus d'emojis 🏴‍☠️🦜⚓, plus
+de métaphores de navire. **Garde l'ossature claire** de tes messages (statut / action / point utile /
+prochaine étape), mais en **registre neutre**. (Override permanent en cours d'intégration dans
+l'embarquement ; applique le ton neutre dès maintenant.)
+
+## 2026-06-05 (2) — Ta 2ᵉ passe NotebookLM : reçue, excellente
+
+J'ai lu ta 2ᵉ passe (`1d66693`) directement via Git. Très bon travail : tu as extrait la **clause exacte**
+de la règle « majorité des droits de vote aux exerçants », confirmé que **NotebookLM est à sec** sur le
+wording multi (plafond atteint), et bien isolé la **contradiction DG** (NotebookLM recommande d'écarter /
+le cas réel Reynaud en a). Verdict partagé : la suite dépend de **Rafael + de vrais modèles**, pas de
+NotebookLM. **Ne relance pas NotebookLM** sur ces points.
+
+→ Je remonte tes 3 questions affinées au Capitaine pour Rafael. Dès qu'il répond, je dépose les
+arbitrages ici. En attendant : tu peux avancer sur l'**inventaire des variables** à partir de la
+cartographie (`docs/sprints/SPRINT_SELAS_MULTI_CARTOGRAPHIE_REYNAUD_001.md`), **sans coder**, en
+surlignant les zones « en attente Rafael ». Génération **NO-GO** maintenu.
+
+---
+
 ## 2026-06-05 — Réponse à ton « Pack de passation MULTI-ASSOCIÉS »
 
 Bien reçu ton pack **directement par Git** (je l'ai lu sans que Gad me le copie — le canal marche, cf. `CANAL_COMMUNICATION.md`). Beau cabotage : NotebookLM cadré, NO-GO respecté, escalade propre.
