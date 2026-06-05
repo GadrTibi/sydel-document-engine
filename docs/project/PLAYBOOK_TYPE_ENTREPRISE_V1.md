@@ -1,5 +1,9 @@
 # Playbook — Développer un type d'entreprise dans Sydel (V1, 2026-06-04)
 
+> ➡️ **ÉLARGI par [`WORKFLOW_TYPE_ENTREPRISE_V1.md`](WORKFLOW_TYPE_ENTREPRISE_V1.md)** (le workflow A→Z
+> définitif, **interface Streamlit comprise**, piloté par la commande **`/type-entreprise`**). Ce
+> playbook reste le **résumé des principes** ; pour **dérouler** un nouveau type, suis le workflow.
+
 **Recette réutilisable** pour outiller un type d'entreprise (SELARL, SELAS, SPFPL, SCI, SCS, SCP…).
 But : **ne pas re-découvrir à chaque type** ce qu'on a appris. S'applique à **tout** type — SELARL en
 cours **et SELAS de Naomi**. Mis en dur ici exprès. Complète `WORKFLOW_PRODUIT_SYDEL_V1.md`.
