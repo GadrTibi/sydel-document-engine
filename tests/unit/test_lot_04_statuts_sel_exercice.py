@@ -232,58 +232,6 @@ def test_statuts_selarl_dentiste_generates_unique_associate_docx(tmp_path: Path)
     _assert_clean(text)
 
 
-def test_statuts_selarl_dentiste_generates_multi_associes_partial_docx(
-    tmp_path: Path,
-) -> None:
-    ctx = _context(overlay="selarl_dentiste")
-    ctx.metadata["selarl_dentiste_multi_associes_statuts_partial"] = "true"
-    ctx.associes[0].profession = "chirurgien-dentiste"
-    ctx.associes[0].profession_reglementee = "chirurgien-dentiste"
-    ctx.associes[0].profession_reglementee_pluriel = "chirurgiens-dentistes"
-    ctx.associes[0].ordre.professionnel = "Ordre des chirurgiens-dentistes"
-    ctx.associes[0].nb_parts = 60
-    ctx.associes[0].nb_parts_lettres = "soixante"
-    ctx.associes[0].apport_numeraire = "600"
-    ctx.associes[0].apport_numeraire_lettres = "six cents"
-    ctx.associes.append(
-        Associe(
-            genre=Gender.FEMININ,
-            civilite_affichage="Madame",
-            prenom="Claire",
-            nom="Leroy",
-            nb_parts=40,
-            profession="chirurgien-dentiste",
-            profession_reglementee="chirurgien-dentiste",
-            profession_reglementee_pluriel="chirurgiens-dentistes",
-            apport_numeraire="400",
-            apport_numeraire_lettres="quatre cents",
-            nb_parts_lettres="quarante",
-        )
-    )
-    ctx.capital.nombre_titres_total = 100
-    ctx.capital.nb_parts_total = 100
-    ctx.capital.nombre_titres_total_lettres = "cent"
-    ctx.capital.valeur_nominale_titre = "10"
-    ctx.societe.capital_social = "1000"
-    ctx.societe.capital_social_lettres = "mille"
-
-    output_path = StatutsSelarlDentisteGenerator().generate(ctx, tmp_path)
-
-    text = _docx_text(output_path)
-
-    assert output_path.name == "statuts_selarl_chirurgien_dentiste.docx"
-    assert "Docteur Camille Martin apporte à la Société la somme de 600." in text
-    assert "Madame Claire Leroy apporte à la Société la somme de 400." in text
-    assert "Total des apports en numéraire : ci- 1000." in text
-    assert "a été déposée par les associés conformément à la loi" in text
-    assert "à Docteur Camille Martin, soixante parts sociales" in text
-    assert "à Madame Claire Leroy, quarante parts sociales" in text
-    assert "Camille Martin" in text
-    assert "Claire Leroy" in text
-    assert "l’associé unique" not in text
-    _assert_clean(text)
-
-
 def test_statuts_selarl_medecin_skips_personne_2_source_alias(tmp_path: Path) -> None:
     output_path = StatutsSelarlMedecinGenerator().generate(
         _context(overlay="selarl_medecin"),
@@ -407,6 +355,17 @@ def test_statuts_sel_blocks_multi_associes(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="multi-associes"):
         StatutsSelarlMedecinGenerator().generate(ctx, tmp_path)
+
+
+def test_statuts_selarl_dentiste_blocks_multi_associes(tmp_path: Path) -> None:
+    # SELARL = unipersonnelle (decision Gad 2026-06-04) : deux associes -> ValueError,
+    # meme si l'ancien flag PARTIAL est present dans metadata (sous-cas abandonne).
+    ctx = _context(overlay="selarl_dentiste")
+    ctx.metadata["selarl_dentiste_multi_associes_statuts_partial"] = "true"
+    ctx.associes.append(_associate())
+
+    with pytest.raises(ValueError, match="multi-associes"):
+        StatutsSelarlDentisteGenerator().generate(ctx, tmp_path)
 
 
 def test_statuts_selas_blocks_partial_second_lieu(tmp_path: Path) -> None:

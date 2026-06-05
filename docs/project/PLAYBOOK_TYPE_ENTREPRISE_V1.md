@@ -7,6 +7,11 @@ cours **et SELAS de Naomi**. Mis en dur ici exprès. Complète `WORKFLOW_PRODUIT
 > Méta-règle : tout nouvel apprentissage de méthode pendant un type se reverse **ici** (rule 45 —
 > codifier sans qu'on le demande), pour que le type suivant parte plus vite.
 
+> ⛔ ABANDONNÉ pour la SELARL (décision Gad 2026-06-04) — La **SELARL reste unipersonnelle** : les
+> couches/variantes « multi-associés » et « personne morale associée » évoquées ci-dessous **ne
+> s'appliquent pas à la SELARL**. Elles **restent valables** pour la **SELAS** (multi-actionnaire,
+> micro-holding) et les autres types (SCP/SCI/SCS/SPFPL).
+
 ## 0. Sources (avant tout code)
 - Récupérer les modèles tokenisés du type dans le Drive **« Documents avec variables »** (toutes structures).
 - **Dédupliquer** (un seul exemplaire par document) + **ranger par structure** dans `project/source_documents/lot_*` (du plus courant au moins courant).

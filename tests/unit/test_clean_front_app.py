@@ -15,7 +15,6 @@ from sydel_doc_engine.front_app.routing import clean_front_routes
 from sydel_doc_engine.front_app.selarl_slice import (
     PROFESSION_DENTISTE,
     PROFESSION_MEDECIN,
-    SelarlAdditionalAssocieInput,
     build_generation_context,
     generate_selarl_dossier,
 )
@@ -276,155 +275,6 @@ def test_clean_front_selarl_cession_compromis_generates(tmp_path: Path) -> None:
         assert filename in names
 
 
-def test_clean_front_selarl_multi_associes_doc004_limited_plan_is_honest() -> None:
-    dossier_type = dossier_type_by_label("SELARL creation V1")
-    data_entry = _valid_multi_associes_doc004_input()
-
-    plan = build_clean_generation_plan(dossier_type, data_entry)
-
-    assert plan.can_generate is True
-    assert plan.reason == "Pret pour generation DOC-004 multi-associes limite."
-    assert plan.document_codes == ("DOC-004",)
-    assert any("DOC-004 uniquement" in warning for warning in plan.warnings)
-    rows = {row.doc_code: row for row in plan.document_rows}
-    assert rows["DOC-004"].status == "generable"
-    assert rows["DOC-016/DOC-017"].status == "hors_scope"
-    assert rows["DOC-031/DOC-032/DOC-033"].status == "hors_scope"
-
-
-def test_clean_front_selarl_dentist_multi_associes_partial_plan_is_honest() -> None:
-    dossier_type = dossier_type_by_label("SELARL creation V1")
-    data_entry = _valid_dentist_multi_associes_statuts_partial_input()
-
-    plan = build_clean_generation_plan(dossier_type, data_entry)
-
-    assert plan.can_generate is True
-    assert plan.reason == "Pret pour generation dentiste multi-associes PARTIAL."
-    assert plan.document_codes == ("DOC-004", "DOC-016")
-    assert any("DOC-016 dentiste PARTIAL" in warning for warning in plan.warnings)
-    rows = {row.doc_code: row for row in plan.document_rows}
-    assert rows["DOC-004"].status == "generable"
-    assert rows["DOC-016"].status == "partial"
-    assert rows["DOC-031/DOC-032/DOC-033"].status == "hors_scope"
-
-
-def test_clean_front_selarl_multi_associes_doc004_context_maps_associes_and_president() -> None:
-    ctx = build_generation_context(_valid_multi_associes_doc004_input())
-
-    assert ctx.dossier_options is not None
-    assert ctx.dossier_options.associe_unique is False
-    assert [associe.nb_parts for associe in ctx.associes] == [60, 40]
-    assert [associe.prenom for associe in ctx.associes] == ["Jean", "Claire"]
-    assert ctx.reunion is not None
-    assert ctx.reunion.president is not None
-    assert ctx.reunion.president.prenom_president_seance == "Claire"
-    assert ctx.reunion.president.nom_personne_seance == "Leroy"
-    assert ctx.dirigeant_nomine is not None
-    assert ctx.dirigeant_nomine.prenom == "Jean"
-    assert ctx.dirigeant_nomine.ref_associe_index == 0
-
-
-def test_clean_front_selarl_dentist_multi_associes_partial_context_maps_statuts() -> None:
-    ctx = build_generation_context(_valid_dentist_multi_associes_statuts_partial_input())
-
-    assert ctx.dossier_options is not None
-    assert ctx.dossier_options.associe_unique is False
-    assert ctx.metadata["selarl_dentiste_multi_associes_statuts_partial"] == "true"
-    assert ctx.statuts_sel is not None
-    assert ctx.statuts_sel.overlay == "selarl_dentiste"
-    assert [associe.nb_parts for associe in ctx.associes] == [60, 40]
-    assert [associe.apport_numeraire for associe in ctx.associes] == ["600", "400"]
-    assert [associe.nb_parts_lettres for associe in ctx.associes] == [
-        "soixante",
-        "quarante",
-    ]
-    assert ctx.reunion is not None
-    assert ctx.reunion.president is not None
-    assert ctx.reunion.president.prenom_president_seance == "Claire"
-
-
-def test_clean_front_selarl_multi_associes_doc004_generation_smoke(tmp_path: Path) -> None:
-    generated = generate_selarl_dossier(
-        _valid_multi_associes_doc004_input(),
-        tmp_path / "selarl-multi-doc004",
-    )
-
-    assert len(generated.docx_paths) == 1
-    assert generated.docx_paths[0].name == "pv_nomination_gerant.docx"
-    assert generated.zip_path.exists()
-
-    text = _docx_text(generated.docx_paths[0])
-    assert "En cours d’immatriculation" in text
-    assert "DE L’ASSEMBLEE GENERALE" in text
-    assert "Les associés de la SELARL MARTIN" in text
-    assert "SELARL SELARL" not in text
-    assert "Sont présents ou représentés :" in text
-    assert "Monsieur Jean Martin, détenant 60 parts," in text
-    assert "Madame Claire Leroy, détenant 40 parts," in text
-    assert (
-        "Les associés présents ou représentés disposent ensemble de la totalité des parts "
-        "sociales. Cet ensemble est habilité à prendre des décisions."
-    ) in text
-    assert "Madame Claire Leroy préside la séance." in text
-    assert "· Nomination du gérant" in text
-    assert "Cette résolution est adoptée à l’unanimité" in text
-    assert "EXTRAORDINAIRE" not in text
-    assert "RCS de Paris" not in text
-    assert "[" not in text
-    assert "]" not in text
-
-
-def test_clean_front_selarl_dentist_multi_associes_partial_generation_smoke(
-    tmp_path: Path,
-) -> None:
-    generated = generate_selarl_dossier(
-        _valid_dentist_multi_associes_statuts_partial_input(),
-        tmp_path / "selarl-dentiste-multi-partial",
-    )
-
-    names = {path.name for path in generated.docx_paths}
-    assert len(generated.docx_paths) == 2
-    assert names == {
-        "pv_nomination_gerant.docx",
-        "statuts_selarl_chirurgien_dentiste.docx",
-    }
-    assert generated.zip_path.exists()
-
-    combined_text = "\n".join(_docx_text(path) for path in generated.docx_paths)
-    assert "Madame Claire Leroy préside la séance." in combined_text
-    assert "Monsieur Jean Martin apporte à la Société la somme de 600." in combined_text
-    assert "Madame Claire Leroy apporte à la Société la somme de 400." in combined_text
-    assert "à Monsieur Jean Martin, soixante parts sociales" in combined_text
-    assert "à Madame Claire Leroy, quarante parts sociales" in combined_text
-    assert "a été déposée par les associés conformément à la loi" in combined_text
-    assert "Cette résolution est adoptée à l’unanimité" in combined_text
-    assert "[" not in combined_text
-    assert "]" not in combined_text
-
-
-def test_clean_front_selarl_multi_associes_doc004_blocks_incoherent_parts() -> None:
-    dossier_type = dossier_type_by_label("SELARL creation V1")
-    data_entry = _valid_multi_associes_doc004_input(
-        associe_principal_nb_parts=50,
-        additional_associes=(
-            SelarlAdditionalAssocieInput(
-                civilite="Madame",
-                prenom="Claire",
-                nom="Leroy",
-                nb_parts=40,
-            ),
-        ),
-    )
-
-    plan = build_clean_generation_plan(dossier_type, data_entry)
-
-    assert plan.can_generate is False
-    assert (
-        "La somme des parts des associes doit correspondre au nombre total de parts."
-        in plan.blockers
-    )
-
-
 def test_clean_front_selarl_context_selects_only_expected_engine_docs() -> None:
     ctx = build_generation_context(_valid_selarl_input(PROFESSION_DENTISTE))
     selected = DocumentOrchestrator(build_seed_catalog()).select_documents_for_context(ctx)
@@ -609,7 +459,8 @@ def test_clean_front_streamlit_surface_is_not_legacy() -> None:
     ]
     assert app.selectbox(key="clean_dossier_type").label == "Type de dossier"
     assert app.selectbox(key="clean_dossier_type").value == "SELARL creation V1"
-    assert app.selectbox(key="selarl_case_mode").label == "Cas SELARL"
+    assert app.selectbox(key="selarl_profession").label == "Profession"
+    assert not any(str(widget.key) == "selarl_case_mode" for widget in app.selectbox)
     assert app.button(key="clean_generate_test_data").label == "Generer des donnees de test"
     assert app.button(key="clean_generate_dossier").disabled is True
     assert app.button(key="selarl_signature_date_today").label == "Aujourd'hui"
@@ -653,45 +504,19 @@ def test_clean_front_streamlit_surface_is_not_legacy() -> None:
     )
 
 
-def test_clean_front_streamlit_exposes_limited_multi_associes_doc004_case() -> None:
+def test_clean_front_streamlit_no_longer_exposes_multi_associes_case() -> None:
+    # SELARL = unipersonnelle (decision Gad 2026-06-04) : aucun selecteur de cas multi,
+    # aucun champ de sous-formulaire multi-associes ne doit subsister dans le wizard.
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=120)
 
-    app.selectbox(key="selarl_case_mode").set_value(
-        "SELARL multi-associes simple (limite DOC-004)"
-    )
-    app = app.run(timeout=120)
-
-    assert any("Sous-cas limite" in item.value for item in app.info)
-    assert app.number_input(key="selarl_doc004_associes_count").label == (
-        "Nombre d'associes pour DOC-004"
-    )
-    assert app.number_input(key="selarl_doc004_associe_1_parts").label == (
-        "Parts de l'associe 1 / gerant unique"
-    )
-    assert app.text_input(key="selarl_doc004_associe_2_prenom").label == "Prenom associe 2"
-    assert app.selectbox(key="selarl_doc004_president_index").label == "President de seance"
-    assert not any(item.label == "Documents regime de la communaute" for item in app.checkbox)
-
-
-def test_clean_front_streamlit_exposes_dentist_multi_associes_partial_case() -> None:
-    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=120)
-
-    app.selectbox(key="selarl_profession").set_value("Chirurgien-dentiste")
-    app = app.run(timeout=120)
-    app.selectbox(key="selarl_case_mode").set_value(
-        "SELARL dentiste multi-associes simple (PARTIAL statuts)"
-    )
-    app = app.run(timeout=120)
-
-    assert any("DOC-016 dentiste PARTIAL" in item.value for item in app.info)
-    assert app.number_input(key="selarl_doc004_associes_count").label == (
-        "Nombre d'associes pour le sous-cas"
-    )
-    assert (
-        app.selectbox(key="selarl_doc004_president_index").label
-        == "President de seance"
-    )
-    assert not any(item.label == "Documents regime de la communaute" for item in app.checkbox)
+    assert not any(str(widget.key) == "selarl_case_mode" for widget in app.selectbox)
+    multi_keys = [
+        str(widget.key)
+        for group in (app.number_input, app.selectbox, app.text_input)
+        for widget in group
+        if "doc004" in str(widget.key)
+    ]
+    assert multi_keys == []
 
 
 def test_clean_front_streamlit_random_data_button_prefills_generable_case(
@@ -767,50 +592,6 @@ def _valid_selarl_input(
         dossier_type,
         **values,
     )
-
-
-def _valid_multi_associes_doc004_input(**overrides):
-    dossier_type = dossier_type_by_label("SELARL creation V1")
-    kwargs = {
-        **_valid_selarl_kwargs(PROFESSION_MEDECIN),
-        "dossier_unipersonnel": False,
-        "multi_associes_doc004_limited": True,
-        "regime_communautaire": False,
-        "associe_principal_nb_parts": 60,
-        "additional_associes": (
-            SelarlAdditionalAssocieInput(
-                civilite="Madame",
-                prenom="Claire",
-                nom="Leroy",
-                nb_parts=40,
-            ),
-        ),
-        "president_seance_associe_index": 1,
-    }
-    kwargs.update(overrides)
-    return build_clean_data_entry(dossier_type, **kwargs)
-
-
-def _valid_dentist_multi_associes_statuts_partial_input(**overrides):
-    dossier_type = dossier_type_by_label("SELARL creation V1")
-    kwargs = {
-        **_valid_selarl_kwargs(PROFESSION_DENTISTE),
-        "dossier_unipersonnel": False,
-        "dentist_multi_associes_statuts_partial": True,
-        "regime_communautaire": False,
-        "associe_principal_nb_parts": 60,
-        "additional_associes": (
-            SelarlAdditionalAssocieInput(
-                civilite="Madame",
-                prenom="Claire",
-                nom="Leroy",
-                nb_parts=40,
-            ),
-        ),
-        "president_seance_associe_index": 1,
-    }
-    kwargs.update(overrides)
-    return build_clean_data_entry(dossier_type, **kwargs)
 
 
 def _valid_selarl_kwargs(

@@ -149,7 +149,9 @@ def test_avenant_contrat_bail_generates_source_wording_and_signature_table(
     assert "Avenant n°1 au bail du 14/05/2026" in text
     assert "ARTICLE 1 : changement de locataire" in text
     assert "les démarches seront finies" in text
-    assert text.count("Le nouveau locataire") == 2
+    assert "Le Bailleur" in text
+    assert "L’ancien locataire" in text
+    assert text.count("Le nouveau locataire") == 1
     document = Document(output_path)
     assert abs(document.sections[0].top_margin - Cm(1.75)) < 300
     assert abs(document.sections[0].bottom_margin - Cm(0.5)) < 300

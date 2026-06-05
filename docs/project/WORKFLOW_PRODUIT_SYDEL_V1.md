@@ -37,6 +37,11 @@ Règle d'or : **jamais d'invention de wording.** Une règle `dérivée` (extrapo
 n'est pas `confirmée` tant qu'elle n'est pas validée par le corpus ou la chaîne humaine.
 
 ## 4. Principe d'architecture (la « base solide »)
+
+> ⛔ ABANDONNÉ (décision Gad 2026-06-04) — SELARL reste unipersonnelle. Le « multi-associés » évoqué
+> ci-dessous n'est plus un objectif **pour la SELARL** (la couche nombre/pluriel reste pertinente pour
+> la SELAS multi-actionnaire et les autres formes, pas pour la SELARL).
+
 - ✅ **Une fonction (générateur) par document** + un moteur partagé + remplacement de tokens
   (`[variable]`). Déjà en place (`generators/lot_*` + `*_common.py`). **À conserver.**
 - ⚠️ **Couche genre + nombre à consolider** : aujourd'hui `utils/grammar.py` ne couvre que 3 cas
@@ -64,6 +69,10 @@ Voir `SELARL_COMPLETION_PLAN_V1.md` : SELARL création + cession cabinet (DOC-00
   **escaladé à Rafael** (message 2026-06-04). **Ne pas inventer.**
 - **règles de genre d'usage** (« Docteur » au féminin, article devant civilité) : idem escaladées à Rafael.
 - formulaire UI cession/SCM (gated par la définition de « SELARL terminée », Q6 Gad).
+
+> ⛔ ABANDONNÉ / SUPERSÉDÉ (décision Gad 2026-06-04) — SELARL reste unipersonnelle. La ligne D1
+> ci-dessous (associé personne morale + multi-associés en SELARL) est **superseded** : elle n'oriente
+> plus le produit. L'associé personne morale **en SELAS** via micro-holding n'est pas concerné.
 
 **D1 tranché (2026-06-04, NotebookLM)** : une **personne morale PEUT être associée d'une SELARL** — le
 canon « société associée » est **correct** (pas une dérive), et le multi-associés doit la gérer ; les

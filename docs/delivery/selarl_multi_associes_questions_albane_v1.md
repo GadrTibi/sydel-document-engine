@@ -1,5 +1,9 @@
 # Statuts SELARL multi-associés complets — spec de sous-cas + questions pour Albane
 
+> ⛔ ABANDONNÉ (décision Gad 2026-06-04) — SELARL reste unipersonnelle. Ce sous-cas (statuts SELARL
+> multi-associés) n'est plus un objectif produit ; document conservé pour mémoire uniquement. Ne plus
+> poser ces questions à Albane pour la SELARL. (La SELAS multi-actionnaire n'est pas concernée.)
+
 **Statut : BLOQUÉ — en attente de la référence légale ligne-par-ligne d'Albane.**
 Bloc « non codable sans Albane » du `SELARL_COMPLETION_PLAN_V1`. Ce document **ne code rien** :
 il cadre le sous-cas et liste les **questions précises** à trancher avec Albane (via l'associé).

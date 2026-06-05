@@ -91,6 +91,11 @@ détaille explicitement que la branche **SELARL** ; les autres structures existe
 
 **Hors périmètre (manuel ou non couvert en V1) :**
 - Dérogations et formulaire site distinct → **manuels** (à remplir à la main), affichés comme tels.
+
+> ⛔ ABANDONNÉ (décision Gad 2026-06-04) — SELARL reste unipersonnelle. Les puces multi-associés et
+> associé personne morale **SELARL** ci-dessous sont conservées pour mémoire mais ne sont plus un
+> objectif produit. (La SELAS multi-actionnaire et la micro-holding en SELAS restent valables.)
+
 - **Statuts SELARL multi-associés complets** (préambule/comparution/signatures pluriels, co-gérance,
   quorum/majorité non unanime, président de séance externe, associé absent) → **bloqués** en attente
   du wording ligne-par-ligne d'Albane (cf. `docs/delivery/selarl_multi_associes_questions_albane_v1.md`).
@@ -155,6 +160,11 @@ détaille explicitement que la branche **SELARL** ; les autres structures existe
 Format : intention attendue → comportement actuel → impact → sévérité → action recommandée.
 
 ### D1. Associé personne morale en SELARL (dérive juridique majeure)
+
+> ⛔ ABANDONNÉ (décision Gad 2026-06-04) — SELARL reste unipersonnelle. La dérive est désormais sans
+> objet **pour la SELARL** (plus de multi-associés ni d'associé personne morale SELARL). La possibilité
+> d'un associé personne morale **en SELAS** via micro-holding reste valable et hors de cette abandon.
+
 - **Intention (canon V3).** Le PV de nomination du gérant et la matrice SELARL prévoient un
   **associé personne morale** dans une SELARL (variables `denomination_societe_1`,
   `nb_parts_societe_1`). Le code suit ce canon.

@@ -34,7 +34,6 @@ from sydel_doc_engine.front_app.generation import (
 from sydel_doc_engine.front_app.selarl_slice import (
     PROFESSION_DENTISTE,
     PROFESSION_MEDECIN,
-    SelarlAdditionalAssocieInput,
     generate_selarl_dossier,
 )
 
@@ -64,10 +63,7 @@ def _render_dossier_type_selection() -> DossierTypeOption:
     if st.button("Generer des donnees de test", key="clean_generate_test_data"):
         _prefill_random_selarl_data()
         st.success("Donnees de test coherentes pre-remplies.")
-    st.caption(
-        "Perimetre actif : SELARL unipersonnelle de production, DOC-004 multi-associes "
-        "limite ou statuts dentiste PARTIAL."
-    )
+    st.caption("Perimetre actif : SELARL unipersonnelle de production.")
     return dossier_type_by_label(selected_label)
 
 
@@ -239,16 +235,7 @@ def _render_data_entry_zone(dossier_type: DossierTypeOption) -> CleanDataEntry:
     praticien = _render_praticien(
         regime_communautaire=bool(qualification["regime_communautaire"])
     )
-    societe = _render_societe(
-        multi_associes_simple=bool(
-            qualification["multi_associes_doc004_limited"]
-            or qualification["dentist_multi_associes_statuts_partial"]
-        ),
-        dentist_multi_associes_statuts_partial=bool(
-            qualification["dentist_multi_associes_statuts_partial"]
-        ),
-        praticien=praticien,
-    )
+    societe = _render_societe(praticien=praticien)
     ordre_mandataire = _render_ordre_mandataire()
     generation_context = _render_generation_context(societe)
     conjoint = _render_conjoint(
@@ -274,59 +261,18 @@ def _render_qualification() -> dict[str, object]:
         ("Medecin", "Chirurgien-dentiste"),
         key="selarl_profession",
     )
-    case_options = [
-        "SELARL unipersonnelle production",
-        "SELARL multi-associes simple (limite DOC-004)",
-    ]
-    if profession_label == "Chirurgien-dentiste":
-        case_options.append("SELARL dentiste multi-associes simple (PARTIAL statuts)")
-    case_label = st.selectbox(
-        "Cas SELARL",
-        tuple(case_options),
-        key="selarl_case_mode",
-    )
-    dentist_multi_associes_statuts_partial = "PARTIAL statuts" in case_label
-    multi_associes_doc004_limited = case_label.startswith("SELARL multi-associes")
-    multi_associes_simple = (
-        multi_associes_doc004_limited or dentist_multi_associes_statuts_partial
-    )
     col_a, col_b, col_c = st.columns(3)
-    if multi_associes_simple:
-        dossier_unipersonnel = False
-        col_a.caption(
-            "Plusieurs associes : DOC-004 + DOC-016 PARTIAL."
-            if dentist_multi_associes_statuts_partial
-            else "Plusieurs associes : DOC-004 uniquement."
-        )
-        col_b.caption("Gerant unique rattache au praticien.")
-        col_c.caption(
-            "Statuts multi-associes PARTIAL."
-            if dentist_multi_associes_statuts_partial
-            else "Statuts multi-associes non generes."
-        )
-        regime_communautaire = False
-    else:
-        dossier_unipersonnel = col_a.checkbox(
-            "Dossier unipersonnel",
-            value=True,
-            key="selarl_dossier_unipersonnel",
-        )
-        regime_communautaire = col_b.checkbox(
-            "Documents regime de la communaute",
-            value=False,
-            key="selarl_regime_communautaire",
-        )
-        col_c.caption("Active DOC-005 et DOC-006.")
-    if multi_associes_doc004_limited:
-        st.info(
-            "Sous-cas limite : DOC-004 uniquement, gerant unique, president choisi "
-            "parmi les associes, unanimite totale."
-        )
-    if dentist_multi_associes_statuts_partial:
-        st.info(
-            "Sous-cas limite : DOC-004 et DOC-016 dentiste PARTIAL, gerant unique, "
-            "president choisi parmi les associes, unanimite totale."
-        )
+    dossier_unipersonnel = col_a.checkbox(
+        "Dossier unipersonnel",
+        value=True,
+        key="selarl_dossier_unipersonnel",
+    )
+    regime_communautaire = col_b.checkbox(
+        "Documents regime de la communaute",
+        value=False,
+        key="selarl_regime_communautaire",
+    )
+    col_c.caption("Active DOC-005 et DOC-006.")
 
     st.markdown("**Cas hors perimetre V1**")
     out_a, out_b, out_c, out_d = st.columns(4)
@@ -344,8 +290,6 @@ def _render_qualification() -> dict[str, object]:
             PROFESSION_DENTISTE if profession_label == "Chirurgien-dentiste" else PROFESSION_MEDECIN
         ),
         "dossier_unipersonnel": dossier_unipersonnel,
-        "multi_associes_doc004_limited": multi_associes_doc004_limited,
-        "dentist_multi_associes_statuts_partial": dentist_multi_associes_statuts_partial,
         "regime_communautaire": regime_communautaire,
         "derogation": derogation,
         "site_distinct": site_distinct,
@@ -429,8 +373,6 @@ def _render_praticien(*, regime_communautaire: bool) -> dict[str, object]:
 
 def _render_societe(
     *,
-    multi_associes_simple: bool,
-    dentist_multi_associes_statuts_partial: bool,
     praticien: dict[str, object],
 ) -> dict[str, object]:
     st.markdown("**Fiche Societe**")
@@ -456,17 +398,6 @@ def _render_societe(
         st.caption(f"Valeur nominale calculee : {valeur_nominale_part} EUR")
     else:
         st.caption("Valeur nominale calculee automatiquement apres capital et parts.")
-    multi_associes_data: dict[str, object] = {
-        "associe_principal_nb_parts": int(nb_parts_total),
-        "additional_associes": (),
-        "president_seance_associe_index": 0,
-    }
-    if multi_associes_simple:
-        multi_associes_data = _render_multi_associes_simple_block(
-            nb_parts_total=int(nb_parts_total),
-            praticien=praticien,
-            include_statuts=dentist_multi_associes_statuts_partial,
-        )
     ville_rcs = st.text_input("RCS (ville)", key="selarl_ville_rcs")
 
     st.markdown("Siege social")
@@ -482,7 +413,6 @@ def _render_societe(
             "duree": "99 ans",
             "nb_parts_total": int(nb_parts_total),
             "valeur_nominale_part": valeur_nominale_part,
-            **multi_associes_data,
             "ville_rcs": ville_rcs,
             "siege_num_voie": str(praticien.get("adresse_num_voie") or ""),
             "siege_voie": str(praticien.get("adresse_voie") or ""),
@@ -496,101 +426,12 @@ def _render_societe(
         "duree": "99 ans",
         "nb_parts_total": int(nb_parts_total),
         "valeur_nominale_part": valeur_nominale_part,
-        **multi_associes_data,
         "ville_rcs": ville_rcs,
         "siege_num_voie": adr_a.text_input("Numero", key="selarl_siege_num_voie"),
         "siege_voie": adr_b.text_input("Voie", key="selarl_siege_voie"),
         "siege_cp": adr_c.text_input("Code postal", key="selarl_siege_cp"),
         "siege_ville": adr_d.text_input("Ville", key="selarl_siege_ville"),
     }
-
-
-def _render_multi_associes_simple_block(
-    *,
-    nb_parts_total: int,
-    praticien: dict[str, object],
-    include_statuts: bool,
-) -> dict[str, object]:
-    st.markdown(
-        "**Associes pour DOC-004 et DOC-016 PARTIAL**"
-        if include_statuts
-        else "**Associes pour DOC-004 limite**"
-    )
-    st.caption(
-        "Tous les associes saisis ici sont reputes presents ou representes et "
-        "detiennent ensemble la totalite des parts."
-    )
-    associes_count = st.number_input(
-        "Nombre d'associes pour le sous-cas"
-        if include_statuts
-        else "Nombre d'associes pour DOC-004",
-        min_value=2,
-        max_value=6,
-        step=1,
-        value=2,
-        key="selarl_doc004_associes_count",
-    )
-    principal_default = nb_parts_total if nb_parts_total > 0 else 1
-    principal_parts = st.number_input(
-        "Parts de l'associe 1 / gerant unique",
-        min_value=1,
-        step=1,
-        value=principal_default,
-        key="selarl_doc004_associe_1_parts",
-    )
-    additional_associes: list[SelarlAdditionalAssocieInput] = []
-    for index in range(2, int(associes_count) + 1):
-        col_a, col_b, col_c, col_d = st.columns(4)
-        civilite = col_a.selectbox(
-            f"Civilite associe {index}",
-            ("Monsieur", "Madame"),
-            key=f"selarl_doc004_associe_{index}_civilite",
-        )
-        prenom = col_b.text_input(
-            f"Prenom associe {index}",
-            key=f"selarl_doc004_associe_{index}_prenom",
-        )
-        nom = col_c.text_input(
-            f"Nom associe {index}",
-            key=f"selarl_doc004_associe_{index}_nom",
-        )
-        nb_parts = col_d.number_input(
-            f"Parts associe {index}",
-            min_value=1,
-            step=1,
-            value=1,
-            key=f"selarl_doc004_associe_{index}_parts",
-        )
-        additional_associes.append(
-            SelarlAdditionalAssocieInput(
-                civilite=civilite,
-                prenom=prenom,
-                nom=nom,
-                nb_parts=int(nb_parts),
-            )
-        )
-
-    labels = [_associe_label(1, praticien.get("prenom"), praticien.get("nom"))]
-    labels.extend(
-        _associe_label(index, associe.prenom, associe.nom)
-        for index, associe in enumerate(additional_associes, start=2)
-    )
-    president_index = st.selectbox(
-        "President de seance",
-        list(range(len(labels))),
-        format_func=lambda index: labels[index],
-        key="selarl_doc004_president_index",
-    )
-    return {
-        "associe_principal_nb_parts": int(principal_parts),
-        "additional_associes": tuple(additional_associes),
-        "president_seance_associe_index": int(president_index),
-    }
-
-
-def _associe_label(index: int, prenom: object, nom: object) -> str:
-    full_name = f"{prenom or ''} {nom or ''}".strip()
-    return f"Associe {index}" if not full_name else f"Associe {index} - {full_name}"
 
 
 def _render_ordre_mandataire() -> dict[str, object]:

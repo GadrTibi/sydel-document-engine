@@ -12,6 +12,10 @@ d'une PM associée sont connus (dénomination, forme, capital, RCS, SIREN, nb pa
 ---
 
 ## P0 — Multi-associés PERSONNES PHYSIQUES (cœur SELARL bloquant)
+
+> ⛔ ABANDONNÉ (décision Gad 2026-06-04) — SELARL reste unipersonnelle. Q1 à Q6 ne sont plus à poser
+> pour la SELARL ; conservées pour mémoire. (La SELAS multi-actionnaire n'est pas concernée par cet abandon.)
+
 1. **[NotebookLM]** Wording exact de la **comparution** des statuts SELARL à **plusieurs associés physiques** (« LES SOUSSIGNÉS … qu'ils ont décidé d'instituer ») + structure de répétition (un bloc identité par associé).
 2. **[NotebookLM]** Wording exact de **l'article 7 (Apports)** en multi-associés (une ligne d'apport par associé + « Total des apports en numéraire » ; tableau ?).
 3. **[NotebookLM]** Wording exact de **l'article 8 (Capital / répartition)** en multi-associés (« réparties entre les associés comme suit » + tableau ; phrase qui remplace « attribuées en totalité à … associé unique »).
@@ -26,12 +30,21 @@ d'une PM associée sont connus (dénomination, forme, capital, RCS, SIREN, nb pa
 10. **[Gad]** Confirmer qu'on **capture le genre** (ou le dérive de la civilité) pour : associé(s), gérant(s), vendeur, cédant, représentant, conjoint, salarié(s), destinataire.
 
 ## P1 — Associé PERSONNE MORALE dans les statuts (wording)
+
+> ⛔ ABANDONNÉ (décision Gad 2026-06-04) — SELARL reste unipersonnelle. Q11 à Q17 (associé personne
+> morale + gérance plurielle) ne sont plus à poser **pour la SELARL** ; conservées pour mémoire.
+> (L'associé personne morale **en SELAS** via micro-holding reste valable et hors de cet abandon.)
+
 11. **[NotebookLM/Albane]** Existe-t-il un **wording de référence** pour une associée PM en comparution (« La société X, [forme], au capital de…, RCS…, représentée par … en sa qualité de … ») ? (NotebookLM = NON TROUVÉ — Albane peut-il fournir, ou personnalisation manuelle ?)
 12. **[NotebookLM/Albane]** Si bloc PM généré : wording de sa **ligne de répartition (art.8)** + **signature** (« Pour la société X, [représentant], [fonction] ») ?
 13. **[Gad]** À défaut de wording : pour une PM, le moteur **(a)** génère via gabarit interne, **(b)** laisse un emplacement à compléter, ou **(c)** PM hors périmètre des statuts générés ?
 > Gabarit existant : SCM, SCS, PV agrément SPFPL présentent déjà une associée PM — voir Q40.
 
 ## P1 — Gérance (co-gérance / pluralité)
+
+> ⛔ ABANDONNÉ (décision Gad 2026-06-04) — SELARL reste unipersonnelle (gérant unique). Q14 à Q17
+> (co-gérance / pluralité) ne sont plus à poser pour la SELARL ; conservées pour mémoire.
+
 14. **[NotebookLM]** Wording de **nomination de plusieurs gérants** (statuts art.16 + PV) — « sont nommés gérants … » + bloc par gérant.
 15. **[NotebookLM]** **Pouvoirs en co-gérance** (art.17) : « ensemble » ou « séparément » ? formulation + paramétrage.
 16. **[NotebookLM]** **Art.18 (Responsabilité) — vérifier l'inversion** : le modèle écrit « deviendrait **UNI**personnelle … solidairement en cas de pluralité de gérants ». Déclencheur correct = « pluripersonnelle » ? Donner l'alinéa correct. *(bug source probable)*
