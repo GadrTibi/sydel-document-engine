@@ -1,5 +1,10 @@
 # Sprint SELAS V1
 
+> ⚠️ **REPRISE 2026-06-05 — NOUVELLE DIRECTION : statuts SELAS MULTI-ASSOCIÉS (2 à 5).**
+> L'unipersonnel V1 (actionnaire unique) est **mis de côté** (conservé, pas en code).
+> **Avant toute manœuvre, lire** [`SPRINT_SELAS_REPRISE_MULTI_ASSOCIES_001.md`](SPRINT_SELAS_REPRISE_MULTI_ASSOCIES_001.md).
+> Génération SELAS toujours **NO-GO** (attente arbitrage Rafael).
+
 Date d'ouverture : 2026-06-01
 
 ## Identite sprint
