@@ -49,15 +49,27 @@ pour qu'ils se chargent à chaque session, sur tous ses projets.
 2. Retiens en particulier : **périmètre = SELAS (À CONFIRMER par le Capitaine)** et branche
    **`naomie/selas/<ticket>`** (jamais `main`, jamais une branche de Gad).
 
-## Étape 4 — Lire le worklog + vérifier remote & branche
+## Étape 4 — Synchroniser, lire le worklog, vérifier remote & branche
+0. **Pull-first — se synchroniser AVANT de lire (réflexe obligatoire).** Avant toute lecture de l'état
+   ou du worklog, se placer sur la **branche de travail du Mousse** et récupérer le travail du Capitaine :
+   - `git fetch origin` ;
+   - si la branche courante n'est **pas** `naomie/selas/<ticket>` (typiquement on s'est retrouvé sur
+     `main`) → **basculer activement dessus** : `git checkout naomie/selas/<ticket>`. On ne **reste
+     jamais** sur `main` ni sur une branche de Gad — c'est l'erreur à corriger, pas à « signaler sans
+     agir » ;
+   - `git pull --ff-only` pour récupérer la dernière version poussée par le Capitaine ;
+   - s'il y a du **travail local non poussé** → le **préserver** (commit signé du Mousse, ou `stash`),
+     **jamais** d'écrasement ni de `reset --hard` en aveugle.
+   - But : le Mousse repart **toujours** sur la dernière version du Capitaine. **Même réflexe à chaque
+     « reprends » et chaque fois qu'on attend un retour du Capitaine**, pas seulement à l'ouverture.
 1. Lis **`naomie/worklog/WORKLOG.md`**. Cherche un **message du Capitaine à transmettre**
    (statut `à transmettre`). S'il y en a un → transmets-le à Naomie, puis bascule-le en `transmis`
    dans le worklog.
-2. Vérifie l'état Git **sans rien pousser** :
+2. Vérifie l'état Git :
    - `git remote -v` → doit pointer sur `https://github.com/GadrTibi/sydel-document-engine.git`.
    - `git branch --show-current` → doit être une branche `naomie/selas/<ticket>` (jamais `main`, jamais
-     une branche de Gad). Si on est ailleurs, **ne corrige pas en aveugle** : signale-le dans l'accueil
-     et propose la bonne branche comme action.
+     une branche de Gad). Après l'étape 0 c'est déjà le cas ; si ce n'est pas le cas, **bascule** (ne
+     reste pas sur `main`).
 
 ## Étape 4bis — Briefing de bord (à la 1ʳᵉ embarquée du Mousse)
 Si c'est la **première fois** que Naomie embarque (worklog quasi vierge, vocabulaire pas encore connu) :
