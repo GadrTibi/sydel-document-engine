@@ -328,3 +328,120 @@ libéré partiellement (1/2, 1/4) [non trouvé] · ⑤ apports en industrie ou n
 > de blocage (majorité) par défaut [non trouvé] ; ③ clause d'agrément des héritiers par défaut [non
 > trouvé] ; ④ mention de libération partielle du capital (1/2, 1/4) [non trouvé] ; ⑤ apports en industrie
 > ou numéraire seul en V1 [non trouvé].
+
+---
+
+## REPRISE 2026-06-05 — Direction MULTI-ASSOCIÉS (2 à 5) · note Capitaine 9ac5853
+**Nouvelle cible** : statuts SELAS **multi-associés (2 à 5)** ; unipersonnel **rangé** (pas en code). Socle
+(DNC, domiciliation, procuration, Ordre, schéma front) **réutilisable** ; ce sont **les statuts** qui passent
+multi. **NO-GO génération** maintenu. Réf : `docs/sprints/SPRINT_SELAS_REPRISE_MULTI_ASSOCIES_001.md`.
+
+**Règle de flux (nouvelle)** : Mousse cadre les questions → **NotebookLM d'abord** → si insuffisant, Mousse
+**formule la question pour Rafael** → **Capitaine** (seul à transmettre) → Rafael → Capitaine → Mousse.
+
+### Blocage matière : `.docx` Reynaud absent (2026-06-05)
+Le cas réel `Statuts SELAS DU DR ISABELLE REYNAUD.docx` (à tokeniser) **n'est PAS sur le disque** de Naomie
+(recherche exhaustive : aucun fichier « reynaud », plus récent `.docx` = 2026-06-02). → **À fournir par le
+Capitaine** (données réelles patiente — ne jamais versionner le doc réel, seulement le modèle tokenisé).
+Cartographie des variables **en attente du fichier**. Entre-temps : boucle NotebookLM Q-B/Q-C/Q-D.
+
+### Boucle NotebookLM multi-associés
+#### Q-B — Directeur Général aux côtés du Président ? · 2026-06-05
+**Résultat : « non trouvé » côté NotebookLM → escalade Rafael (via Capitaine), ne pas insister.**
+- DG **non défini / non détaillé** dans les modèles & transcriptions ; sources centrées sur le **Président**
+  (terme obligatoire en SELAS, remplace « Gérant »).
+- **Obligatoire : non** ; **fréquence : non trouvée**. Le périmètre privilégié visait un **Président unique**.
+- Nomination d'un dirigeant : **dans les statuts** ou par **PV de nomination** ; infos mini = nom, prénom,
+  téléphone ; **pouvoirs = clause « ultra personnalisée »** (pas de règle type pour un DG).
+- **Question formulée pour RAFAEL (via Capitaine)** : *« Pour des statuts SELAS multi-associés (2–5)
+  médecins, faut-il gérer les Directeurs Généraux (le cas réel Reynaud en prévoit, art. 15), ou les laisser
+  hors de ce premier jet ? Si on les gère : règles types de nomination et de pouvoirs ? »* (+ sous-points
+  NotebookLM « non trouvés » : DG par un associé non-exerçant/personne morale ? signatures actes Ordre par
+  les deux dirigeants ? lien DG ↔ actions de préférence ?)
+
+**Réponse brute Q-B (verbatim, collée par Naomie) :**
+> Le terme de Directeur Général n'est pas défini ni détaillé dans les modèles/transcriptions ; les sources
+> se concentrent sur le **Président** (terme obligatoire en SELAS, remplaçant « Gérant »). Caractère
+> obligatoire : **non trouvé** (le périmètre V1 privilégiait un **Président unique**). Fréquence : **non
+> trouvé**. Nomination d'un dirigeant : dans les **statuts** ou par **PV de nomination** ; infos mini = nom,
+> prénom, téléphone ; pouvoirs = clause **« ultra personnalisée »**. En résumé, rôle de DG **non trouvé**
+> dans les modèles types ; le système identifie d'abord « qui sont les dirigeants » et gère la substitution
+> « Gérant » → « Président ». [5 questions de suite proposées, majoritairement « non trouvé ».]
+
+#### Q-C — Un associé peut-il être une personne morale ? · 2026-06-05
+**Résultat : OUI — possible et courant (réponse riche). Décision de périmètre du 1ᵉʳ jet = Capitaine.**
+- **Personne morale associée = possible/courant** (ex. détention 25 % par une entité tierce).
+- **Holdings** : **SPFPL** (Société de Participations Financières de Professions Libérales) = holding
+  **spécifique/obligatoire** pour détenir les titres d'une SEL santé ; **micro-holding (société civile)** =
+  véhicule pour intégrer la famille (conjoint, enfants). Schéma : SCI (immobilier) ↔ micro-holding ↔ SPFPL.
+- **Catégories d'associés** : **exerçant** (le praticien qui exerce ici) vs **non-exerçant** (médecin
+  n'exerçant pas ici, personnes physiques tierces conjoint/enfants, **personnes morales** SPFPL/micro-holding).
+- **⚠️ RÈGLE DURE (garde-fou candidat, à valider Rafael)** : la répartition du capital **ne peut jamais
+  retirer la MAJORITÉ DES DROITS DE VOTE aux associés EXERÇANTS**.
+- **Dissociation droits** : actions de préférence possibles pour non-exerçants → **1 % d'actions ≠ 1 % du
+  résultat** ; le moteur doit distinguer **droits de vote** et **droits financiers** dans la répartition.
+- **Contrôle ordinal** : l'Ordre contrôle ces montages, exige souvent de **consulter les projets d'actes
+  avant signature**.
+- **Impact moteur (si personne morale autorisée au 1ᵉʳ jet)** : collecter raison sociale, type de holding
+  (SPFPL / société civile), représentant, qualité exerçant/non-exerçant ; + garde-fou majorité exerçants.
+- **À ESCALADER (décision périmètre, Capitaine)** : accepte-t-on les **associés personnes morales dès le
+  premier jet multi**, ou on se limite aux **médecins personnes physiques** (le reste réutilisant le socle) ?
+- **Limite de sourcing** : plus fournie que d'habitude, mais toujours **sans citation précise** → la **règle
+  dure (majorité exerçants)** et le périmètre **à confirmer Rafael** avant d'en faire des règles du moteur.
+
+**Réponse brute Q-C (verbatim, collée par Naomie) :**
+> Il est possible et courant qu'une **personne morale** soit associée d'une SELAS de médecins (cœur des
+> stratégies de restructuration patrimoniale du cabinet).
+> **1. Détention par personne morale** : possible (ex. 25 % par une entité tierce) ; **SPFPL** = holding
+> spécifique **obligatoire** pour détenir les parts/actions d'une SEL ; **micro-holding (société civile)**
+> pour intégrer la famille ; schéma SCI ↔ micro-holding ↔ SPFPL.
+> **2. Exerçant / non-exerçant** : exerçant = le praticien ; non-exerçant = médecin n'exerçant pas ici,
+> personnes physiques tierces (conjoint, enfants), **personnes morales** (SPFPL, micro-holding).
+> **3. Encadrement du capital** : la répartition ne peut jamais retirer la **majorité des droits de vote aux
+> associés exerçants** ; **actions de préférence** possibles pour non-exerçants (décorréler capital / droits
+> financiers / vote) ; **1 % des actions ≠ 1 % du résultat** ; l'Ordre contrôle strictement et consulte
+> souvent les projets d'actes avant signature.
+> En résumé, la SELAS peut être rattachée à des personnes morales (SPFPL, micro-holding) pour optimiser la
+> circulation des revenus.
+
+#### Q-D — Modèle de référence unique, ou plusieurs ? · 2026-06-05
+**Résultat : PAS de modèle unique. Trame de base par profession, déclinée à la main ; multi = « ultra
+personnalisé ». → 1 cas (Reynaud) ne suffit pas : signalement Capitaine (autres modèles via Rafael).**
+- **Hiérarchie** : socle = **modèle par profession** (médecin ≠ dentiste : contraintes ordinales
+  différentes) → **trame de base** déclinée/adaptée manuellement par dossier.
+- **Nombre** : ~**60 % des dossiers = unipersonnel** (le plus simple) ; le multi (2–5) est jugé
+  **« impossible »** à couvrir par multiplication de modèles fixes (trop de combinaisons).
+- **Changements unipersonnel → multi** : (a) **décisions collectives** (quorum/majorité) au lieu de la
+  décision d'associé unique ; (b) **clauses d'agrément** indispensables et complexes ; (c) **Art. 8 Capital**
+  réécrit : **numérotation précise des actions par associé** (ex. « actions n°1 à 100 ») ; (d)
+  **pluralisation** de tout l'acte (« les associés », « les soussignés »).
+- **Genre** : **Président → Présidente** ; accords **Soussigné(e) / Associé(e) / Né(e)** ; cas des duos
+  (deux messieurs / deux dames / couple mixte). *(Conforte Q1.)*
+- **Verdict métier** : moteur = automatiser la **base** (noms, parts, genre, pluriel, agrément, décisions
+  collectives) ; les juristes gardent une **« souplesse »** de finition manuelle sur brouillon Word.
+- **À ESCALADER (Capitaine → Rafael)** : le doc Reynaud est **un exemple**, pas LE référent ; il **manque
+  des modèles** couvrant 2/3/4/5 associés et les genres → demander d'autres modèles tokenisables.
+
+**Réponse brute Q-D (verbatim, collée par Naomie) :**
+> Pas de modèle statique unique. Hiérarchie : **un modèle par profession** (médecin/dentiste, contraintes
+> ordinales différentes) ; une **trame de base** déclinée/adaptée manuellement. ~**60 % des dossiers sont
+> unipersonnels** (le plus simple) ; les cas 2–5 associés sont jugés **« impossibles »** à couvrir par
+> multiplication de modèles fixes.
+> **Changements 2–5 associés** : décisions **collectives** (quorum/majorité) ; **clauses d'agrément**
+> indispensables/complexes ; **Art. 8** réécrit avec **numérotation précise des actions** par associé
+> (ex. « actions n°1 à 100 ») ; **pluralisation** (« les associés », « les soussignés »).
+> **Genre** : « Président » → « Présidente » ; accords « Soussigné(e) », « Associé(e) », « Né(e) » ; duos
+> (deux messieurs / deux dames / couple mixte).
+> **Verdict** : multi = rédaction **« ultra personnalisée »** ; le moteur automatise la base (noms, parts,
+> genre) mais les juristes gardent une **souplesse** de correction manuelle sur brouillon Word.
+
+---
+
+### 🏁 Fin de trio cadrage multi-associés (Q-B/C/D) — 2026-06-05
+- **Q-B (Directeurs Généraux)** : NotebookLM « non trouvé » → **question Rafael**.
+- **Q-C (associé personne morale)** : **OUI possible/courant** (SPFPL, micro-holding) + **règle dure**
+  (majorité droits de vote aux exerçants) ; **décision de périmètre du 1ᵉʳ jet = Capitaine**.
+- **Q-D (modèles)** : pas de référent unique ; **manque de modèles** multi → **signalement Capitaine**.
+- **Blocage matière** : `.docx` Reynaud **absent** du disque → **à fournir par le Capitaine**.
+- **Bundle pour Rafael / Capitaine** : `naomie/worklog/PACK_PASSATION_MULTI_ASSOCIES_2026-06-05.md`.
+- **NO-GO génération** maintenu. Aucune ligne de code écrite (cadrage uniquement).
