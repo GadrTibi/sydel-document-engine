@@ -7,6 +7,11 @@ from pathlib import Path
 
 import streamlit as st
 
+from sydel_doc_engine.domain.models import (
+    BailContext,
+    CessionContext,
+    ScmCessionContext,
+)
 from sydel_doc_engine.front_app.data_entry import (
     CleanDataEntry,
     build_clean_data_entry,
@@ -35,6 +40,10 @@ from sydel_doc_engine.front_app.selarl_slice import (
     PROFESSION_DENTISTE,
     PROFESSION_MEDECIN,
     generate_selarl_dossier,
+)
+from sydel_doc_engine.scenarios.selarl import (
+    cession_fixture_for_profession,
+    scm_cession_fixture,
 )
 
 ARTIFACTS_DIR = Path("artifacts") / "track_b_selarl_v1"
@@ -71,7 +80,11 @@ def _prefill_random_selarl_data() -> None:
     person = random.choice(_test_people())
     company = random.choice(_test_companies())
     capital, parts = random.choice(((1000, 100), (2000, 200), (5000, 500), (10000, 1000)))
-    profession_label = random.choice(("Medecin", "Chirurgien-dentiste"))
+    # Respecte la profession deja choisie dans le wizard pour que la cession
+    # preremplie soit coherente (medical vs dentaire) ; defaut Medecin.
+    profession_label = st.session_state.get("selarl_profession") or "Medecin"
+    if profession_label not in ("Medecin", "Chirurgien-dentiste"):
+        profession_label = "Medecin"
     regime_communautaire = profession_label == "Chirurgien-dentiste" or random.choice(
         (False, True)
     )
@@ -83,14 +96,18 @@ def _prefill_random_selarl_data() -> None:
         else random.choice(tuple(item for item in MATRIMONIAL_STATUS_PRESETS if item != "Marie(e)"))
     )
 
+    profession_key = (
+        PROFESSION_DENTISTE if profession_label == "Chirurgien-dentiste" else PROFESSION_MEDECIN
+    )
+
     values = {
         "selarl_profession": profession_label,
         "selarl_dossier_unipersonnel": True,
         "selarl_regime_communautaire": regime_communautaire,
         "selarl_derogation": False,
         "selarl_site_distinct": False,
-        "selarl_cession": False,
-        "selarl_scm": False,
+        "selarl_cession": True,
+        "selarl_scm": True,
         "selarl_dossier_reference": f"TEST-SELARL-{dossier_suffix}",
         "selarl_civilite": person["civilite"],
         "selarl_prenom": person["prenom"],
@@ -136,8 +153,95 @@ def _prefill_random_selarl_data() -> None:
         "selarl_conjoint_prenom": random.choice(("Claire", "Sophie", "Nadia")),
         "selarl_conjoint_nom": person["nom"],
     }
+    values.update(_cession_prefill_values(profession_key))
+    values.update(_scm_cession_prefill_values())
     st.session_state.update(values)
     st.session_state.pop(GENERATED_DOSSIER_STATE_KEY, None)
+
+
+def _cession_prefill_values(profession: str) -> dict[str, object]:
+    """Cles `selarl_cession_*` prereremplies depuis la fixture scenario adaptee.
+
+    Source unique de verite : la meme fixture que `_render_cession_form` utilise
+    comme base. Un clic = cession testable et generable.
+    """
+    cession, _bail = cession_fixture_for_profession(profession)
+    payload = cession.model_dump(by_alias=True)
+    vendeur = payload.get("vendeur") or {}
+    acquereur = payload.get("acquereur") or {}
+    siege = acquereur.get("siege") or {}
+    cabinet = payload.get("cabinet") or {}
+    bail = payload.get("bail_professionnel") or {}
+    prix = payload.get("prix") or {}
+    financement = payload.get("financement") or {}
+    banque = financement.get("banque") or {}
+    pret = financement.get("pret") or {}
+    credit = financement.get("credit_vendeur") or {}
+
+    prefill: dict[str, object] = {
+        "selarl_cession_meta_type_cabinet": payload.get("type_cabinet") or "medical",
+        "selarl_cession_meta_etape": payload.get("etape") or "acte",
+        "selarl_cession_vendeur_civilite": vendeur.get("civilite_affichage") or "",
+        "selarl_cession_vendeur_prenom": vendeur.get("prenom") or "",
+        "selarl_cession_vendeur_nom": vendeur.get("nom") or "",
+        "selarl_cession_vendeur_numero_ordre": vendeur.get("numero_ordre") or "",
+        "selarl_cession_vendeur_numero_rpps": vendeur.get("numero_rpps") or "",
+        "selarl_cession_vendeur_adresse": vendeur.get("adresse_affichee") or "",
+        "selarl_cession_acquereur_denomination": acquereur.get("denomination_societe") or "",
+        "selarl_cession_acquereur_rcs_ville": acquereur.get("rcs_ville") or "",
+        "selarl_cession_acquereur_numero_rcs": acquereur.get("numero_rcs") or "",
+        "selarl_cession_acquereur_siege": siege.get("adresse_affichee") or "",
+        "selarl_cession_cabinet_nature": cabinet.get("nature_fonds_liberal") or "",
+        "selarl_cession_cabinet_denomination": (
+            cabinet.get("denomination_ou_adresse_affichee") or ""
+        ),
+        "selarl_cession_cabinet_adresse": cabinet.get("adresse_affichee") or "",
+        "selarl_cession_bail_duree": bail.get("duree") or "",
+        "selarl_cession_bail_loyer": bail.get("loyer_mensuel") or "",
+        "selarl_cession_bail_activite": bail.get("activite_autorisee_affichee") or "",
+        "selarl_cession_prix_total": prix.get("total") or "",
+        "selarl_cession_prix_total_lettres": prix.get("total_lettres") or "",
+        "selarl_cession_prix_corporels": prix.get("elements_corporels") or "",
+        "selarl_cession_prix_incorporels": prix.get("elements_incorporels") or "",
+        "selarl_cession_financement_banque": banque.get("nom") or "",
+        "selarl_cession_financement_deblocage": financement.get("montant_deblocage") or "",
+        "selarl_cession_financement_pret_montant": pret.get("montant") or "",
+        "selarl_cession_financement_credit_actif": bool(credit.get("actif")),
+        "selarl_cession_financement_credit_montant": credit.get("montant") or "",
+        "selarl_cession_financement_credit_duree": credit.get("duree") or "",
+        "selarl_cession_financement_credit_taux": credit.get("taux") or "",
+    }
+    for index, exercice in enumerate(payload.get("exercices") or []):
+        prefill[f"selarl_cession_exercice_{index}_periode"] = exercice.get("periode") or ""
+        prefill[f"selarl_cession_exercice_{index}_ca"] = exercice.get("chiffre_affaires") or ""
+        prefill[f"selarl_cession_exercice_{index}_resultat"] = exercice.get("resultat") or ""
+    for index, salarie in enumerate(payload.get("salaries") or []):
+        prefill[f"selarl_cession_salarie_{index}_civilite"] = (
+            salarie.get("civilite_affichage") or ""
+        )
+        prefill[f"selarl_cession_salarie_{index}_prenom"] = salarie.get("prenom") or ""
+        prefill[f"selarl_cession_salarie_{index}_nom"] = salarie.get("nom") or ""
+    return prefill
+
+
+def _scm_cession_prefill_values() -> dict[str, object]:
+    """Cles `selarl_cession_scm_*` prereremplies depuis la fixture SCM."""
+    payload = scm_cession_fixture().model_dump(by_alias=True)
+    scm_cedee = payload.get("scm_cedee") or {}
+    cedant = payload.get("cedant") or {}
+    parts_cedees = payload.get("parts_cedees") or {}
+    prix = payload.get("prix") or {}
+    return {
+        "selarl_cession_scm_cedee_denomination": scm_cedee.get("denomination") or "",
+        "selarl_cession_scm_cedee_rcs_ville": scm_cedee.get("ville_rcs") or "",
+        "selarl_cession_scm_cedee_numero_rcs": scm_cedee.get("numero_rcs") or "",
+        "selarl_cession_scm_cedant_civilite": cedant.get("civilite_affichage") or "",
+        "selarl_cession_scm_cedant_prenom": cedant.get("prenom") or "",
+        "selarl_cession_scm_cedant_nom": cedant.get("nom") or "",
+        "selarl_cession_scm_parts_plage": parts_cedees.get("plage") or "",
+        "selarl_cession_scm_prix_global": prix.get("global") or "",
+        "selarl_cession_scm_prix_global_lettres": prix.get("global_lettres") or "",
+    }
 
 
 def _test_people() -> tuple[dict[str, str], ...]:
@@ -243,6 +347,11 @@ def _render_data_entry_zone(dossier_type: DossierTypeOption) -> CleanDataEntry:
         regime_communautaire=qualification["regime_communautaire"],
         situation_maritale=praticien["situation_maritale"],
     )
+    cession_context, bail_context = _render_cession_form(
+        bool(qualification["cession"]),
+        str(qualification["profession"]),
+    )
+    scm_cession_context = _render_scm_cession_form(bool(qualification["scm"]))
     return build_clean_data_entry(
         dossier_type,
         **qualification,
@@ -251,6 +360,9 @@ def _render_data_entry_zone(dossier_type: DossierTypeOption) -> CleanDataEntry:
         **ordre_mandataire,
         **generation_context,
         **conjoint,
+        cession_context=cession_context,
+        bail_context=bail_context,
+        scm_cession_context=scm_cession_context,
     )
 
 
@@ -581,6 +693,358 @@ def _render_conjoint(
         "qualite_renoncee": qualite_renoncee,
         "date_courrier_avertissement": date_courrier_avertissement,
     }
+
+
+CESSION_TYPE_LABELS: dict[str, str] = {"medical": "medical", "dentaire": "dentaire"}
+CESSION_ETAPE_LABELS: dict[str, str] = {"acte": "acte", "compromis": "compromis"}
+
+
+def _cession_default_type(profession: str) -> str:
+    return "dentaire" if profession == PROFESSION_DENTISTE else "medical"
+
+
+def _seed_default(key: str, default: object) -> None:
+    if key not in st.session_state:
+        st.session_state[key] = default
+
+
+def _cession_text(
+    container: object,
+    label: str,
+    *,
+    section: str,
+    field: str,
+    default: str,
+) -> str:
+    key = f"selarl_cession_{section}_{field}"
+    _seed_default(key, default)
+    value = container.text_input(label, key=key)
+    return str(value).strip()
+
+
+def _render_cession_form(cession: bool, profession: str) -> tuple[
+    CessionContext | None, BailContext | None
+]:
+    """Sous-formulaire de saisie CESSION (cabinet medical / dentaire).
+
+    Retourne (None, None) si la cession n'est pas demandee. Sinon, construit un
+    `CessionContext` complet et valide en fusionnant les saisies sur la fixture
+    scenario adaptee a la profession (medical / dentaire), ainsi que l'avenant
+    de bail associe (DOC-007). Les champs profonds non exposes restent ceux de
+    la fixture, garantissant une generation sans token residuel ; les valeurs de
+    test prerempissent les cles, l'utilisateur peut editer.
+    """
+    if not cession:
+        return None, None
+
+    st.markdown("**Cession de cabinet**")
+    base_cession, base_bail = cession_fixture_for_profession(profession)
+    payload = base_cession.model_dump(by_alias=True)
+
+    with st.expander("Type & etape", expanded=True):
+        col_a, col_b = st.columns(2)
+        type_default = _cession_default_type(profession)
+        type_options = tuple(CESSION_TYPE_LABELS)
+        type_key = "selarl_cession_meta_type_cabinet"
+        _seed_default(type_key, type_default)
+        type_cabinet = col_a.selectbox(
+            "Type de cabinet",
+            type_options,
+            key=type_key,
+        )
+        etape_key = "selarl_cession_meta_etape"
+        _seed_default(etape_key, "acte")
+        etape = col_b.selectbox(
+            "Etape",
+            tuple(CESSION_ETAPE_LABELS),
+            key=etape_key,
+        )
+    payload["type_cabinet"] = type_cabinet
+    payload["etape"] = etape
+
+    vendeur = payload.setdefault("vendeur", {})
+    with st.expander("Vendeur"):
+        col_a, col_b, col_c = st.columns(3)
+        vendeur["civilite_affichage"] = _cession_text(
+            col_a, "Civilite", section="vendeur", field="civilite",
+            default=str(vendeur.get("civilite_affichage") or ""),
+        )
+        vendeur["prenom"] = _cession_text(
+            col_b, "Prenom", section="vendeur", field="prenom",
+            default=str(vendeur.get("prenom") or ""),
+        )
+        vendeur["nom"] = _cession_text(
+            col_c, "Nom", section="vendeur", field="nom",
+            default=str(vendeur.get("nom") or ""),
+        )
+        col_d, col_e = st.columns(2)
+        vendeur["numero_ordre"] = _cession_text(
+            col_d, "Numero Ordre", section="vendeur", field="numero_ordre",
+            default=str(vendeur.get("numero_ordre") or ""),
+        )
+        vendeur["numero_rpps"] = _cession_text(
+            col_e, "Numero RPPS", section="vendeur", field="numero_rpps",
+            default=str(vendeur.get("numero_rpps") or ""),
+        )
+        vendeur["adresse_affichee"] = _cession_text(
+            st, "Adresse personnelle (affichee)", section="vendeur", field="adresse",
+            default=str(vendeur.get("adresse_affichee") or ""),
+        )
+
+    acquereur = payload.setdefault("acquereur", {})
+    with st.expander("Acquereur (societe)"):
+        acquereur["denomination_societe"] = _cession_text(
+            st, "Denomination societe", section="acquereur", field="denomination",
+            default=str(acquereur.get("denomination_societe") or ""),
+        )
+        col_a, col_b = st.columns(2)
+        acquereur["rcs_ville"] = _cession_text(
+            col_a, "RCS (ville)", section="acquereur", field="rcs_ville",
+            default=str(acquereur.get("rcs_ville") or ""),
+        )
+        acquereur["numero_rcs"] = _cession_text(
+            col_b, "Numero RCS", section="acquereur", field="numero_rcs",
+            default=str(acquereur.get("numero_rcs") or ""),
+        )
+        siege = acquereur.setdefault("siege", {}) or {}
+        siege["adresse_affichee"] = _cession_text(
+            st, "Siege (adresse affichee)", section="acquereur", field="siege",
+            default=str(siege.get("adresse_affichee") or ""),
+        )
+        acquereur["siege"] = siege
+
+    cabinet = payload.setdefault("cabinet", {})
+    with st.expander("Cabinet"):
+        cabinet["nature_fonds_liberal"] = _cession_text(
+            st, "Nature du fonds liberal", section="cabinet", field="nature",
+            default=str(cabinet.get("nature_fonds_liberal") or ""),
+        )
+        cabinet["denomination_ou_adresse_affichee"] = _cession_text(
+            st, "Denomination ou adresse", section="cabinet", field="denomination",
+            default=str(cabinet.get("denomination_ou_adresse_affichee") or ""),
+        )
+        cabinet["adresse_affichee"] = _cession_text(
+            st, "Adresse cabinet", section="cabinet", field="adresse",
+            default=str(cabinet.get("adresse_affichee") or ""),
+        )
+
+    bail = payload.setdefault("bail_professionnel", {}) or {}
+    with st.expander("Bail professionnel"):
+        col_a, col_b = st.columns(2)
+        bail["duree"] = _cession_text(
+            col_a, "Duree du bail", section="bail", field="duree",
+            default=str(bail.get("duree") or ""),
+        )
+        bail["loyer_mensuel"] = _cession_text(
+            col_b, "Loyer mensuel", section="bail", field="loyer",
+            default=str(bail.get("loyer_mensuel") or ""),
+        )
+        bail["activite_autorisee_affichee"] = _cession_text(
+            st, "Activite autorisee", section="bail", field="activite",
+            default=str(bail.get("activite_autorisee_affichee") or ""),
+        )
+    payload["bail_professionnel"] = bail
+
+    exercices = list(payload.get("exercices") or [])
+    with st.expander("Exercices (3)"):
+        for index in range(3):
+            existing = exercices[index] if index < len(exercices) else {}
+            col_a, col_b, col_c = st.columns(3)
+            periode = _cession_text(
+                col_a, f"Periode {index + 1}", section="exercice", field=f"{index}_periode",
+                default=str(existing.get("periode") or ""),
+            )
+            ca = _cession_text(
+                col_b, f"CA {index + 1}", section="exercice", field=f"{index}_ca",
+                default=str(existing.get("chiffre_affaires") or ""),
+            )
+            resultat = _cession_text(
+                col_c, f"Resultat {index + 1}", section="exercice", field=f"{index}_resultat",
+                default=str(existing.get("resultat") or ""),
+            )
+            if index < len(exercices):
+                exercices[index] = {
+                    "periode": periode,
+                    "chiffre_affaires": ca,
+                    "resultat": resultat,
+                }
+    payload["exercices"] = exercices
+
+    prix = payload.setdefault("prix", {}) or {}
+    with st.expander("Prix"):
+        col_a, col_b = st.columns(2)
+        prix["total"] = _cession_text(
+            col_a, "Prix total", section="prix", field="total",
+            default=str(prix.get("total") or ""),
+        )
+        prix["total_lettres"] = _cession_text(
+            col_b, "Prix total (lettres)", section="prix", field="total_lettres",
+            default=str(prix.get("total_lettres") or ""),
+        )
+        col_c, col_d = st.columns(2)
+        prix["elements_corporels"] = _cession_text(
+            col_c, "Elements corporels", section="prix", field="corporels",
+            default=str(prix.get("elements_corporels") or ""),
+        )
+        prix["elements_incorporels"] = _cession_text(
+            col_d, "Elements incorporels", section="prix", field="incorporels",
+            default=str(prix.get("elements_incorporels") or ""),
+        )
+    payload["prix"] = prix
+
+    financement = payload.setdefault("financement", {}) or {}
+    with st.expander("Financement"):
+        banque = financement.setdefault("banque", {}) or {}
+        banque["nom"] = _cession_text(
+            st, "Banque", section="financement", field="banque",
+            default=str(banque.get("nom") or ""),
+        )
+        financement["banque"] = banque
+        col_a, col_b = st.columns(2)
+        financement["montant_deblocage"] = _cession_text(
+            col_a, "Montant deblocage", section="financement", field="deblocage",
+            default=str(financement.get("montant_deblocage") or ""),
+        )
+        pret = financement.setdefault("pret", {}) or {}
+        pret["montant"] = _cession_text(
+            col_b, "Montant pret", section="financement", field="pret_montant",
+            default=str(pret.get("montant") or ""),
+        )
+        financement["pret"] = pret
+        credit_default = financement.get("credit_vendeur") or {}
+        credit_key = "selarl_cession_financement_credit_actif"
+        _seed_default(credit_key, bool(credit_default.get("actif")))
+        credit_actif = st.checkbox("Credit-vendeur", key=credit_key)
+        if credit_actif:
+            col_c, col_d, col_e = st.columns(3)
+            credit = {
+                "actif": True,
+                "montant": _cession_text(
+                    col_c, "Montant credit-vendeur", section="financement",
+                    field="credit_montant",
+                    default=str(credit_default.get("montant") or ""),
+                ),
+                "duree": _cession_text(
+                    col_d, "Duree credit-vendeur (annees)", section="financement",
+                    field="credit_duree",
+                    default=str(credit_default.get("duree") or ""),
+                ),
+                "taux": _cession_text(
+                    col_e, "Taux credit-vendeur", section="financement",
+                    field="credit_taux",
+                    default=str(credit_default.get("taux") or ""),
+                ),
+                "majoration_interet_retard": str(
+                    credit_default.get("majoration_interet_retard") or ""
+                ),
+            }
+            financement["credit_vendeur"] = credit
+        else:
+            financement["credit_vendeur"] = None
+    payload["financement"] = financement
+
+    if type_cabinet == "dentaire":
+        salaries = list(payload.get("salaries") or [])
+        with st.expander("Salaries (cabinet dentaire)"):
+            for index in range(max(2, len(salaries))):
+                existing = salaries[index] if index < len(salaries) else {}
+                col_a, col_b, col_c = st.columns(3)
+                civilite = _cession_text(
+                    col_a, f"Civilite salarie {index + 1}", section="salarie",
+                    field=f"{index}_civilite",
+                    default=str(existing.get("civilite_affichage") or ""),
+                )
+                prenom = _cession_text(
+                    col_b, f"Prenom salarie {index + 1}", section="salarie",
+                    field=f"{index}_prenom",
+                    default=str(existing.get("prenom") or ""),
+                )
+                nom = _cession_text(
+                    col_c, f"Nom salarie {index + 1}", section="salarie",
+                    field=f"{index}_nom",
+                    default=str(existing.get("nom") or ""),
+                )
+                if index < len(salaries):
+                    salaries[index] = {
+                        "civilite_affichage": civilite,
+                        "prenom": prenom,
+                        "nom": nom,
+                        "poste": existing.get("poste"),
+                    }
+        payload["salaries"] = salaries
+
+    cession_context = CessionContext.model_validate(payload)
+    return cession_context, base_bail
+
+
+def _render_scm_cession_form(scm: bool) -> ScmCessionContext | None:
+    """Sous-formulaire de cession de parts de SCM standalone (DOC-031/032/033).
+
+    Plus court que la cession de cabinet : reutilise la fixture SCM comme base
+    complete et expose les champs cles. Retourne None si non demande.
+    """
+    if not scm:
+        return None
+
+    st.markdown("**Cession de parts de SCM**")
+    base = scm_cession_fixture()
+    payload = base.model_dump(by_alias=True)
+
+    scm_cedee = payload.setdefault("scm_cedee", {}) or {}
+    with st.expander("SCM cedee", expanded=True):
+        scm_cedee["denomination"] = _cession_text(
+            st, "Denomination SCM", section="scm_cedee", field="denomination",
+            default=str(scm_cedee.get("denomination") or ""),
+        )
+        col_a, col_b = st.columns(2)
+        scm_cedee["ville_rcs"] = _cession_text(
+            col_a, "RCS (ville)", section="scm_cedee", field="rcs_ville",
+            default=str(scm_cedee.get("ville_rcs") or ""),
+        )
+        scm_cedee["numero_rcs"] = _cession_text(
+            col_b, "Numero RCS", section="scm_cedee", field="numero_rcs",
+            default=str(scm_cedee.get("numero_rcs") or ""),
+        )
+    payload["scm_cedee"] = scm_cedee
+
+    cedant = payload.setdefault("cedant", {}) or {}
+    with st.expander("Cedant"):
+        col_a, col_b, col_c = st.columns(3)
+        cedant["civilite_affichage"] = _cession_text(
+            col_a, "Civilite", section="scm_cedant", field="civilite",
+            default=str(cedant.get("civilite_affichage") or ""),
+        )
+        cedant["prenom"] = _cession_text(
+            col_b, "Prenom", section="scm_cedant", field="prenom",
+            default=str(cedant.get("prenom") or ""),
+        )
+        cedant["nom"] = _cession_text(
+            col_c, "Nom", section="scm_cedant", field="nom",
+            default=str(cedant.get("nom") or ""),
+        )
+    payload["cedant"] = cedant
+
+    parts_cedees = payload.setdefault("parts_cedees", {}) or {}
+    prix = payload.setdefault("prix", {}) or {}
+    with st.expander("Parts cedees & prix"):
+        col_a, col_b = st.columns(2)
+        plage = _cession_text(
+            col_a, "Plage parts cedees", section="scm_parts", field="plage",
+            default=str(parts_cedees.get("plage") or ""),
+        )
+        parts_cedees["plage"] = plage
+        prix["global"] = _cession_text(
+            col_b, "Prix global", section="scm_prix", field="global",
+            default=str(prix.get("global") or ""),
+        )
+        prix["global_lettres"] = _cession_text(
+            st, "Prix global (lettres)", section="scm_prix", field="global_lettres",
+            default=str(prix.get("global_lettres") or ""),
+        )
+    payload["parts_cedees"] = parts_cedees
+    payload["prix"] = prix
+
+    return ScmCessionContext.model_validate(payload)
 
 
 def _render_generation_zone(data_entry: CleanDataEntry, plan: CleanGenerationPlan) -> None:

@@ -17,10 +17,15 @@ from sydel_doc_engine.front_app.selarl_slice import (
     PROFESSION_MEDECIN,
     build_generation_context,
     generate_selarl_dossier,
+    selected_selarl_document_codes,
 )
 from sydel_doc_engine.orchestrator.service import DocumentOrchestrator
 from sydel_doc_engine.registry.catalog import build_seed_catalog
-from sydel_doc_engine.scenarios.selarl import build_selarl_scenario
+from sydel_doc_engine.scenarios.selarl import (
+    build_selarl_scenario,
+    cession_fixture_for_profession,
+    scm_cession_fixture,
+)
 
 
 def test_clean_front_routes_are_minimal() -> None:
@@ -252,6 +257,175 @@ def test_clean_front_selarl_cession_scm_generates_scm_docs(tmp_path: Path) -> No
     assert "pv_age_cession_parts_scm.docx" in names
     assert "courrier_sde_cession_scm.docx" in names
     assert "acte_cession_parts_scm.docx" in names
+
+
+def test_cession_context_medical_selects_acte_bail_appel_fonds() -> None:
+    # (a) cession_context medical + bail -> DOC-009 (acte medical) + DOC-007 (bail)
+    # + DOC-008 (appel de fonds).
+    cession, bail = cession_fixture_for_profession(PROFESSION_MEDECIN)
+    data_entry = _valid_selarl_input(
+        PROFESSION_MEDECIN,
+        cession=True,
+        cession_context=cession,
+        bail_context=bail,
+    )
+
+    codes = selected_selarl_document_codes(data_entry)
+
+    assert "DOC-009" in codes
+    assert "DOC-007" in codes
+    assert "DOC-008" in codes
+    assert "DOC-011" not in codes
+
+
+def test_cession_context_dentaire_selects_acte_and_appel_fonds() -> None:
+    # (a) cession_context dentaire -> DOC-011 (acte dentaire) + DOC-008 (appel de fonds).
+    cession, bail = cession_fixture_for_profession(PROFESSION_DENTISTE)
+    data_entry = _valid_selarl_input(
+        PROFESSION_DENTISTE,
+        cession=True,
+        cession_context=cession,
+        bail_context=bail,
+    )
+
+    codes = selected_selarl_document_codes(data_entry)
+
+    assert "DOC-011" in codes
+    assert "DOC-008" in codes
+    assert "DOC-009" not in codes
+
+
+def test_scm_cession_context_selects_scm_docs() -> None:
+    # (c) scm_cession_context -> DOC-031 / DOC-032 / DOC-033.
+    data_entry = _valid_selarl_input(
+        PROFESSION_DENTISTE,
+        scm=True,
+        scm_cession_context=scm_cession_fixture(),
+    )
+
+    codes = selected_selarl_document_codes(data_entry)
+
+    assert {"DOC-031", "DOC-032", "DOC-033"}.issubset(set(codes))
+
+
+def test_scm_flag_without_data_is_blocked() -> None:
+    # Le garde-fou reste : SCM coche sans donnees -> bloque (pas de generation muette).
+    dossier_type = dossier_type_by_label("SELARL creation V1")
+    data_entry = build_clean_data_entry(
+        dossier_type,
+        **{**_valid_selarl_kwargs(PROFESSION_MEDECIN), "scm": True},
+    )
+
+    plan = build_clean_generation_plan(dossier_type, data_entry)
+
+    assert plan.can_generate is False
+    assert any("SCM" in blocker for blocker in plan.blockers)
+
+
+def test_clean_front_ui_prefill_generates_cession_medical_without_residual_tokens(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    # (b) Chemin UI complet : profession medecin, bouton de test (active la cession +
+    # prereremplit selarl_cession_*), generation -> acte cession medical + appel de fonds
+    # + bail, sans aucun token [xxx] residuel.
+    _assert_ui_prefill_cession_generates(
+        tmp_path,
+        monkeypatch,
+        profession_label="Medecin",
+        expected_doc="acte_cession_cabinet_medical.docx",
+    )
+
+
+def test_clean_front_ui_prefill_generates_cession_dentaire_without_residual_tokens(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    # (b) Chemin UI complet pour le cabinet dentaire (acte dentaire + salaries).
+    _assert_ui_prefill_cession_generates(
+        tmp_path,
+        monkeypatch,
+        profession_label="Chirurgien-dentiste",
+        expected_doc="acte_cession_cabinet_dentaire.docx",
+    )
+
+
+def _assert_ui_prefill_cession_generates(
+    tmp_path: Path,
+    monkeypatch,
+    *,
+    profession_label: str,
+    expected_doc: str,
+) -> None:
+    from sydel_doc_engine.front_app import shell
+
+    monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-cession")
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
+    app.selectbox(key="selarl_profession").set_value(profession_label)
+    app = app.run(timeout=180)
+
+    app.button(key="clean_generate_test_data").click()
+    app = app.run(timeout=180)
+
+    assert app.checkbox(key="selarl_cession").value is True
+    assert app.checkbox(key="selarl_scm").value is True
+    assert not any("Blocage" in item.value for item in app.caption)
+    assert app.button(key="clean_generate_dossier").disabled is False
+
+    app.button(key="clean_generate_dossier").click()
+    app = app.run(timeout=180)
+
+    download_labels = [item.label for item in app.get("download_button")]
+    assert f"Telecharger {expected_doc}" in download_labels
+    assert "Telecharger appel_fond_sel.docx" in download_labels
+    assert "Telecharger avenant_contrat_bail.docx" in download_labels
+    assert "Telecharger pv_age_cession_parts_scm.docx" in download_labels
+
+    generated = app.session_state["clean_generated_dossier"]
+    combined_text = "\n".join(
+        _docx_text(Path(path)) for path in generated["docx_paths"]
+    )
+    assert "[" not in combined_text
+    assert "]" not in combined_text
+
+
+def test_clean_front_ui_creation_only_unchanged(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    # (d) Sans cession ni SCM : la creation seule genere toujours les 6 documents,
+    # inchangee par le cablage du sous-formulaire.
+    dossier_type = dossier_type_by_label("SELARL creation V1")
+    data_entry = _valid_selarl_input(PROFESSION_MEDECIN)
+
+    plan = build_clean_generation_plan(dossier_type, data_entry)
+    generated = generate_selarl_dossier(data_entry, tmp_path / "creation-only")
+
+    assert plan.can_generate is True
+    assert plan.document_codes == (
+        "DOC-001",
+        "DOC-002",
+        "DOC-003",
+        "DOC-004",
+        "DOC-034",
+        "DOC-017",
+    )
+    assert data_entry.cession_context is None
+    assert data_entry.scm_cession_context is None
+    assert len(generated.docx_paths) == 6
+
+
+def test_clean_front_cession_form_returns_none_without_flag() -> None:
+    # Le sous-formulaire ne rend rien et renvoie (None, None) quand la cession
+    # n'est pas demandee -> aucun expander parasite dans le wizard de base.
+    from sydel_doc_engine.front_app import shell
+
+    cession_context, bail_context = shell._render_cession_form(False, PROFESSION_MEDECIN)
+    scm_context = shell._render_scm_cession_form(False)
+
+    assert cession_context is None
+    assert bail_context is None
+    assert scm_context is None
 
 
 def test_clean_front_selarl_cession_compromis_generates(tmp_path: Path) -> None:

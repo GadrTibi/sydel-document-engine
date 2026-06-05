@@ -552,6 +552,24 @@ SELARL_SCENARIOS: dict[str, dict[str, Any]] = {
 }
 
 
+def cession_fixture_for_profession(profession: str) -> tuple[CessionContext, BailContext]:
+    """Fixture cession (acte) + avenant bail adaptee a la profession du praticien.
+
+    Reutilisee par le front pour (a) prereremplir le sous-formulaire cession et
+    (b) fournir un `CessionContext` complet et valide a fusionner avec les
+    saisies utilisateur. Medecin -> cabinet medical, chirurgien-dentiste ->
+    cabinet dentaire.
+    """
+    if profession == PROFESSION_DENTISTE:
+        return _cession_cabinet_dentaire_acte(), _bail_avenant_dentaire()
+    return _cession_cabinet_medical_acte(), _bail_avenant_medecin()
+
+
+def scm_cession_fixture() -> ScmCessionContext:
+    """Fixture de cession de parts de SCM par une SELARL (DOC-031/032/033)."""
+    return _scm_cession_selarl()
+
+
 def build_selarl_scenario(key: str) -> SelarlSliceInput:
     if key not in SELARL_SCENARIOS:
         raise KeyError(

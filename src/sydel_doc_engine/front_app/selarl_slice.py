@@ -288,8 +288,8 @@ def validate_selarl_input(data: SelarlSliceInput) -> tuple[str, ...]:
         blockers.append("Site distinct hors perimetre V1 : traitement manuel requis.")
     if data.cession and data.cession_context is None:
         blockers.append("Cession demandee mais donnees cession manquantes.")
-    if data.scm:
-        blockers.append("SCM hors perimetre V1.")
+    if data.scm and data.scm_cession_context is None:
+        blockers.append("Cession de parts SCM demandee mais donnees SCM manquantes.")
 
     blockers.extend(_missing_text_blockers(data))
     if data.date_naissance is None:
@@ -571,22 +571,23 @@ def _document_rows(
                 message="Non genere : document conditionnel du regime communautaire.",
             )
         )
-    rows.extend(
-        (
-            SelarlDocumentRow(
-                doc_code="DOC-013/DOC-014",
-                label="Derogations",
-                status="hors_v1",
-                message="Manuel / hors perimetre SELARL V1.",
-            ),
+    rows.append(
+        SelarlDocumentRow(
+            doc_code="DOC-013/DOC-014",
+            label="Derogations",
+            status="hors_v1",
+            message="Manuel / hors perimetre SELARL V1.",
+        )
+    )
+    if data.scm_cession_context is None:
+        rows.append(
             SelarlDocumentRow(
                 doc_code="DOC-031/DOC-032/DOC-033",
                 label="SCM et cession de parts SCM",
                 status="hors_v1",
-                message="Non expose dans cette slice.",
-            ),
+                message="Non expose : activez SCM et fournissez les donnees.",
+            )
         )
-    )
     return tuple(rows)
 
 
