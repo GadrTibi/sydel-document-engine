@@ -19,16 +19,20 @@
   le modèle tokenisé** sera versionné. La **cartographie des variables** est en attente de ce fichier.
 
 ## 3. Questions à transmettre à Rafael (NotebookLM insuffisant ou décision de périmètre)
-- **Q-B — Directeurs Généraux** *(NotebookLM : « non trouvé »)* : pour des statuts SELAS multi-associés
-  (2–5) médecins, faut-il **gérer les Directeurs Généraux** (le cas Reynaud en prévoit, art. 15), ou les
-  laisser **hors de ce premier jet** ? Si on les gère : règles types de **nomination** et de **pouvoirs** ?
+- **Q-B — Directeurs Généraux** *(NotebookLM : « non trouvé » sur les règles ; **recommande** d'écarter les
+  DG du 1ᵉʳ jet, par simplicité)* : ⚠️ **contradiction à trancher** — le **cas réel Reynaud A des DG
+  (art. 15)**, mais les modèles types n'en parlent pas. Faut-il **gérer les DG** dans ce premier jet, ou les
+  **laisser de côté** (et tokeniser Reynaud sans son bloc DG) ? Si on les gère : règles de **nomination**
+  (statuts ou PV) et de **pouvoirs** (NotebookLM : pouvoirs = rédaction manuelle, pas de règle type) ?
   (Sous-points « non trouvés » : un associé non-exerçant/personne morale peut-il être DG ? actes Ordre
   signés par les deux dirigeants ou le seul Président ? lien DG ↔ actions de préférence ?)
 - **Q-C — Associé personne morale (décision de périmètre)** : NotebookLM confirme que c'est **possible et
   courant** (SPFPL holding obligatoire santé ; micro-holding société civile pour la famille). **Accepte-t-on
   les associés personnes morales dès le 1ᵉʳ jet multi**, ou se limite-t-on aux **médecins personnes
-  physiques** ? → À confirmer aussi : la **règle dure** « la répartition ne peut jamais retirer la
-  **majorité des droits de vote aux associés exerçants** » (à inscrire comme garde-fou du moteur ?).
+  physiques** ? → À confirmer aussi la **règle dure**, dont NotebookLM donne la **clause exacte (Art. 8,
+  verbatim source cabinet)** — à valider comme **clause fixe / garde-fou** du moteur :
+  > « En aucun cas la répartition du capital ne pourra être modifiée dans des conditions qui retireraient la
+  > majorité des droits de vote aux associés exerçant dans la société. »
 - **Q-D — Modèles manquants** : il n'existe **pas de modèle de référence unique** ; le multi est
   « ultra personnalisé ». Le doc Reynaud est **un exemple**, pas LE référent. → Peut-on obtenir **d'autres
   modèles** couvrant **2 / 3 / 4 / 5 associés** et **les genres**, pour cadrer la trame de base ?

@@ -445,3 +445,32 @@ personnalisé ». → 1 cas (Reynaud) ne suffit pas : signalement Capitaine (aut
 - **Blocage matière** : `.docx` Reynaud **absent** du disque → **à fournir par le Capitaine**.
 - **Bundle pour Rafael / Capitaine** : `naomie/worklog/PACK_PASSATION_MULTI_ASSOCIES_2026-06-05.md`.
 - **NO-GO génération** maintenu. Aucune ligne de code écrite (cadrage uniquement).
+
+### Raffinement NotebookLM Q-B/C/D (2ᵉ passe, 2026-06-05) — relancé par Naomie
+**Q-B (DG)** : NotebookLM **recommande d'écarter les DG du 1ᵉʳ jet** (priorité simplicité, 60 % unipersonnel,
+focus « Gérant »→« Président », DG = « ultra personnalisé »). Si intégrés : nomination statuts **ou** PV ;
+données mini nom/prénom/tél ; pouvoirs = rédaction manuelle. **Toujours [non trouvé]** : terme « DG » jamais
+explicite, répartition pouvoirs Président/DG, fréquence. → ⚠️ **NotebookLM *recommande*, ne *décide* pas** ;
+or le **cas réel Reynaud A des DG (art. 15)** → **contradiction à trancher par le Capitaine/Rafael**, Q-B
+**reste ouverte**.
+
+**Q-C (personne morale)** : confirmé **fréquent/central** (SPFPL holding obligatoire + micro-holding société
+civile ; ex. 25 % ; fiche « Société » avec champs sociétés reliées/filiales ; minoritaires conjoint/enfants
+en actions de préférence). 🎯 **PÉPITE — clause exacte de la règle dure (Art. 8), verbatim source cabinet** :
+> « En aucun cas la répartition du capital ne pourra être modifiée dans des conditions qui retireraient la
+> majorité des droits de vote aux associés exerçant dans la société. »
+→ Exploitable comme **clause fixe** du moteur (sous validation Rafael). Reste une **décision de périmètre**
+(accepter personne morale dès le 1ᵉʳ jet ?) = Capitaine.
+
+**Q-D (modèles)** : reconfirme **aucun modèle multi prêt à l'emploi** dans les sources ; règles de
+transformation (LES SOUSSIGNÉS, Art. 8 numéroté, quorum/majorité, accords genre + **Apporteur(se)**, duos).
+**Point actionnable** : il faudra faire **valider par un expert** une **formule de sommation des apports** +
+un **tableau de répartition dynamique à N lignes** — **inexistants dans les sources**. → confirme que le
+**wording multi déterministe ne viendra PAS de NotebookLM** (plafond atteint) mais des **vrais modèles +
+validation humaine**.
+
+**Verdict du Second (satisfaisant ?)** : **bonne matière, plafond NotebookLM atteint** — on a tout extrait,
+Q-C donne même la clause exacte. **MAIS pas “suffisant pour coder”** : (1) Q-B/Q-C portent des **décisions de
+périmètre** que NotebookLM ne tranche pas (et Q-B **contredit** le cas réel) → **Rafael/Capitaine** ; (2) Q-D
+**confirme** que le wording multi n'existe pas dans les sources → **vrais modèles + validation humaine**
+requis. **Ne pas relancer NotebookLM** sur ces points.
