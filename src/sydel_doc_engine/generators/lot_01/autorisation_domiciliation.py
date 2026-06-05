@@ -87,6 +87,8 @@ def _build_replacements(ctx: DocumentGenerationContext) -> dict[str, str]:
     denomination_societe = _required_text(company.denomination, "societe.denomination")
     capital_social = _required_text(company.capital, "societe.capital")
     siege = _required_siege(company.siege)
+    num_voie_siege = _required_text(siege.num_voie, "societe.siege.num_voie")
+    voie_siege = _required_text(siege.voie, "societe.siege.voie")
     cp_siege = _required_text(siege.cp, "societe.siege.cp")
     ville_siege = _required_text(siege.ville, "societe.siege.ville")
     lieu_signature = _required_text(ctx.signature.lieu, "signature.lieu")
@@ -98,6 +100,8 @@ def _build_replacements(ctx: DocumentGenerationContext) -> dict[str, str]:
         "[nom]": nom,
         "[denomination_societe]": denomination_societe,
         "[capital_social]": capital_social,
+        "[num_voie_siege]": num_voie_siege,
+        "[voie_siege]": voie_siege,
         "[cp_siege]": cp_siege,
         "[ville_siege]": ville_siege,
         "[lieu_signature]": lieu_signature,

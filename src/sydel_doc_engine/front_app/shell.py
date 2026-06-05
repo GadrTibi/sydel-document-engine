@@ -556,7 +556,7 @@ def _render_conjoint(
             "conjoint_genre": derive_gender_from_civilite("Madame"),
             "conjoint_prenom": "",
             "conjoint_nom": "",
-            "qualite_renoncee": "associe",
+            "qualite_renoncee": "associé",
             "date_courrier_avertissement": None,
         }
 
@@ -569,7 +569,7 @@ def _render_conjoint(
     )
     conjoint_prenom = col_c.text_input("Prenom conjoint", key="selarl_conjoint_prenom")
     conjoint_nom = col_d.text_input("Nom conjoint", key="selarl_conjoint_nom")
-    qualite_renoncee = "associe"
+    qualite_renoncee = "associé"
     date_courrier_avertissement = None
     if regime_communautaire:
         date_courrier_avertissement = date.today()

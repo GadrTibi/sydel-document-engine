@@ -190,7 +190,7 @@ class SelarlSliceInput:
     conjoint_genre: Gender = Gender.FEMININ
     conjoint_prenom: str = ""
     conjoint_nom: str = ""
-    qualite_renoncee: str = "associe"
+    qualite_renoncee: str = "associé"
     date_courrier_avertissement: date | None = None
     cession_context: CessionContext | None = None
     bail_context: BailContext | None = None

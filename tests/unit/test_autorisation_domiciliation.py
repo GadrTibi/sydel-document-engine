@@ -106,12 +106,13 @@ def test_autorisation_domiciliation_contains_essential_texts(tmp_path: Path) -> 
 
     # Le titre vit dans le tableau d'en-tete du modele source.
     assert "AUTORISATION DE DOMICILIATION" in text
-    # Phrase fidele au modele tokenise : aucune paraphrase, terme juridique
-    # « pour une durée indéterminée » conserve (et non « pour 99 ans »).
+    # Phrase fidele au modele tokenise corrige (retour humain LOCK V1) : adresse
+    # complete du cabinet/siege « du cabinet au [num_voie] [voie], [cp] [ville] » ;
+    # terme juridique « pour une durée indéterminée » conserve (et non « pour 99 ans »).
     assert (
         "autorise la domiciliation de DURAND CONSEIL au capital de 1 000 € "
-        "en cours de formation, dans les locaux situés  Paris 75008 Paris, "
-        "pour une durée indéterminée."
+        "en cours de formation, dans les locaux du cabinet au 80 avenue Marceau, "
+        "75008 Paris, pour une durée indéterminée."
     ) in text
     assert "Fait à Paris" in text
     assert "Le 12 mai 2026" in text
@@ -152,9 +153,9 @@ def test_autorisation_domiciliation_ignores_free_address_for_wording(
     text = _docx_text(_generate(tmp_path, adresse_domiciliation_affichee=adresse))
 
     # L'adresse libre de domiciliation n'est pas injectee : le modele s'appuie
-    # sur la ville et le code postal du siege de la societe.
+    # sur l'adresse complete du siege/cabinet de la societe.
     assert adresse not in text
-    assert "dans les locaux situés  Paris 75008 Paris," in text
+    assert "dans les locaux du cabinet au 80 avenue Marceau, 75008 Paris," in text
 
 
 def test_autorisation_domiciliation_uses_company_seat_city(
@@ -162,10 +163,10 @@ def test_autorisation_domiciliation_uses_company_seat_city(
 ) -> None:
     text = _docx_text(_generate(tmp_path))
 
-    # Le modele utilise ville + code postal du siege ([ville_siege] [cp_siege]
-    # [ville_siege]), pas l'adresse de domiciliation libre ni la rue complete.
+    # Le modele utilise l'adresse complete du siege ([num_voie_siege] [voie_siege],
+    # [cp_siege] [ville_siege]), pas l'adresse de domiciliation libre.
     assert "15 rue du Libre, Lyon 69002" not in text
-    assert "Paris 75008 Paris" in text
+    assert "80 avenue Marceau, 75008 Paris" in text
 
 
 def test_autorisation_domiciliation_does_not_use_signature_image(tmp_path: Path) -> None:

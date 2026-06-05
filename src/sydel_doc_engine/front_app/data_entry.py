@@ -116,7 +116,7 @@ def _derive_hidden_values(values: dict[str, Any]) -> None:
 
     values["duree"] = "99 ans"
     values["signature_nombre_exemplaires"] = "4"
-    values["qualite_renoncee"] = "associe"
+    values["qualite_renoncee"] = "associé"
 
     exemplaires_words = number_words_from_value(values.get("signature_nombre_exemplaires"))
     if exemplaires_words:
