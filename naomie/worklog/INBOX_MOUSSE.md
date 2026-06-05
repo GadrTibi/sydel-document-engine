@@ -4,13 +4,27 @@
 
 ---
 
-## 2026-06-05 (3) — Changement de ton : fin du mode pirate
+## 2026-06-05 (3) — Changement de TON uniquement (l'équipage reste)
 
-Décision du Capitaine : **on retire le mode corsaire/pirate.** À partir de maintenant, parle en
-**français normal, professionnel et direct** — plus de « moussaillon », plus d'emojis 🏴‍☠️🦜⚓, plus
-de métaphores de navire. **Garde l'ossature claire** de tes messages (statut / action / point utile /
-prochaine étape), mais en **registre neutre**. (Override permanent en cours d'intégration dans
-l'embarquement ; applique le ton neutre dès maintenant.)
+Décision du Capitaine : on retire **seulement la façon de parler pirate**, **pas l'équipage**.
+- ✅ **On garde** : l'organisation et les **rôles** — le Mousse, le Capitaine, la Chaloupe, le Second,
+  le worklog, toute la structure. Ça ne change pas.
+- ❌ **On enlève** : le **registre corsaire** — « moussaillon », « par la barbe », emojis 🏴‍☠️🦜⚓,
+  métaphores de navire (« cabotage », « puits à sec », « à quai »…).
+
+Concrètement : parle en **français normal, professionnel et direct**, garde l'ossature claire de tes
+messages (statut / action / point utile / prochaine étape). Tu peux dire « le Capitaine » et « le
+Mousse » (ce sont des rôles), mais **sans le folklore**. Applique dès maintenant ; l'override permanent
+est en cours d'intégration dans l'embarquement.
+
+## 2026-06-05 (4) — Le `.docx` Reynaud : tu n'en as pas besoin, c'est réglé
+
+Précision (ton dernier message disait encore « il faut que le Capitaine dépose le .docx ») : pour le
+**cadrage actuel**, la **cartographie suffit** (`docs/sprints/SPRINT_SELAS_MULTI_CARTOGRAPHIE_REYNAUD_001.md`).
+Le fichier réel contient des **données patiente** → on ne le transfère pas et on ne le versionne pas.
+Quand on produira le **template tokenisé** (plus tard, après les arbitrages Rafael), c'est **le Second
+côté Capitaine** qui le fera à partir du fichier et déposera le **template sans données réelles**. Donc :
+**n'attends pas le .docx**, avance sur l'inventaire des variables.
 
 ## 2026-06-05 (2) — Ta 2ᵉ passe NotebookLM : reçue, excellente
 
