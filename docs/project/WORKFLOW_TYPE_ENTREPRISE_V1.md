@@ -12,6 +12,11 @@ EURL…), **moteur ET interface Streamlit comprise**, jusqu'à un produit testab
 > (sans qu'on le demande), pour que le type suivant parte encore plus vite. Ce doc **remplace et
 > élargit** `PLAYBOOK_TYPE_ENTREPRISE_V1.md` (gardé comme résumé des principes).
 
+> **MAJ 2026-06-07 — leçons du 1ᵉʳ round UAT Rafael (SELARL) intégrées** : ① fidélité de **mise en
+> forme** + **logo header** (le from-scratch les perdait), ② **messages UI en français métier** (un cas
+> manuel = **warning, pas blocker**), ③ **complétude des clauses nommées** (mettre le nom des personnes,
+> ex. conjoint), ④ **passe « pré-shot UAT »** avant livraison. Objectif : boucle UAT quasi vide.
+
 > **Exécution.** Ce workflow est piloté par la commande **`/type-entreprise <TYPE>`**
 > (`.claude/commands/type-entreprise.md`), qui déroule les phases ci-dessous avec les bons agents et
 > s'arrête aux jalons PM / juridique. On peut aussi le suivre à la main.
@@ -75,6 +80,19 @@ EURL…), **moteur ET interface Streamlit comprise**, jusqu'à un produit testab
 **Objectif :** chaque document se génère fidèlement depuis le modèle.
 - **Un générateur par document** dans `generators/lot_*/` + un module **partagé** `*_common.py` ;
   remplissage via `fill_docx_template` ; **sécurité anti-token-résiduel** (lève si un `[token]` reste).
+- **⚠️ FIDÉLITÉ DE MISE EN FORME — PRÉFÉRER le template-fill (leçon UAT Rafael).** La fidélité, ce
+  n'est pas que le wording : c'est aussi la **mise en forme**. Le **template-fill préserve
+  AUTOMATIQUEMENT** la forme du modèle (logo, alignements, puces/tirets, gras/souligné, positionnement,
+  images). Un générateur **from-scratch** doit **REPRODUIRE TOUT** ce que contient le modèle d'origine —
+  pas seulement le texte : **logo du header**, **alignements** (bloc à droite, montant centré),
+  **puces/tirets** des listes, **gras/souligné** (objets, titres), positionnement (signataire à droite…),
+  et **toutes les images embarquées** (`word/media/`). Le from-scratch SELARL en avait perdu plusieurs →
+  autant de remarques UAT 100 % évitables. **Si from-scratch : ouvrir le modèle d'origine et lister sa
+  forme AVANT de coder.**
+- **Logo SYDEL** : il vit dans le **header des modèles d'origine** ; tout from-scratch l'oublie. Helper
+  partagé prêt : `rendering/docx_builder.add_header_logo(document, alignment=…)` (asset
+  `assets/logo_sydel.png`, extrait du modèle). À appeler après `new_document()` dans **chaque** générateur
+  from-scratch (alignement selon le modèle/retour : appel de fonds = droite, courrier SDE = gauche).
 - **Ranger par lot logique** : la cession de **cabinet** vit dans son lot (réf. SELARL `lot_03`), la
   cession de parts d'une **société satellite** (SCM) dans **son propre lot** (réf. `lot_05`) — pas
   mélangées.
@@ -142,6 +160,11 @@ bouton « données de test » préremplit **tout** (1 clic = dossier complet tes
 5. **Étendre le bouton « données de test »** : il préremplit **les clés de CE cas** depuis la **fixture
    scénario** (helper public `…_fixture_for_*`), en respectant la profession choisie. **Conserver le
    libellé exact du bouton** et tout le préremplissage existant.
+6. **Messages UI en FRANÇAIS MÉTIER, jamais en jargon dev (leçon UAT Rafael).** Aucun code interne
+   (`DOC-013`, « périmètre V1 »…) visible par l'utilisateur. Un cas **hors scope / manuel** (formulaire
+   « à remplir à la main ») = un **warning informatif CLAIR**, **PAS un blocker** qui empêche de générer
+   le reste du dossier. Réserver les **blockers** aux **vraies données manquantes** (cas coché sans
+   données). Réf. SELARL : dérogation/site distinct → warnings (pas blockers) dans `validate_selarl_input`.
 
 **Réf. SELARL :** `front_app/shell.py` (`_render_cession_form`, `_render_scm_cession_form`,
 `_prefill_random_selarl_data`), `front_app/selarl_slice.py`
@@ -158,6 +181,12 @@ bouton « données de test » préremplit **tout** (1 clic = dossier complet tes
   token résiduel**, **création seule intacte**, masculin/féminin.
 - Générer et **ouvrir les DOCX** des cas clés (preuve), vérifier « 0 crochet `[` résiduel ».
 - **Revue de fidélité** (`functional-reviewer` / agent `sachant-juridique`) vs modèle source.
+- **🔎 Passe « PRÉ-SHOT UAT » (l'œil de Rafael, AVANT Rafael)** : relis chaque doc généré comme l'associé
+  le ferait en test, **à côté du modèle d'origine**, et coche : **logo** présent + bien placé ?
+  **alignements** (droite/centre) conformes ? **puces/tirets** sur les listes ? **gras/souligné** sur les
+  objets/titres ? **noms de personnes COMPLETS** dans les clauses (ex. conjoint dans « marié à … ») ?
+  **messages en français métier** (zéro code interne) ? Tout ce qui se **voit à l'œil** doit matcher le
+  modèle. But : que Rafael n'ait **rien** à remonter en mise en forme — la boucle UAT doit être quasi vide.
 - **Vérifier la BRANCHE** (`git branch --show-current`) **avant** de committer ; `add` explicite ; push
   sur la branche du type (pas `main`).
 
@@ -201,6 +230,10 @@ bouton « données de test » préremplit **tout** (1 clic = dossier complet tes
 - [ ] Garde-fous : cas coché sans données = bloqué ; pas de génération muette.
 - [ ] `ruff` clean + **suite complète verte** (chiffres), **vérifiée soi-même**, sur la **bonne branche**.
 - [ ] **Revue de fidélité** faite (pas d'auto-rapport).
+- [ ] **Passe pré-shot UAT** faite : logo, alignements, puces/tirets, gras/souligné, noms de personnes
+      complets, messages en français métier — conformes au modèle d'origine (rien à récolter en UAT).
+- [ ] **From-scratch** : tout générateur from-scratch reproduit la mise en forme + le logo du modèle
+      (sinon → template-fill).
 - [ ] **Décisions ratifiées** au journal (codes stables) ; leçons reversées dans ce workflow.
 - [ ] **Gate juridique** : points pour Rafael épuisés côté NotebookLM ; génération NO-GO tant que non
       validée par l'humain.

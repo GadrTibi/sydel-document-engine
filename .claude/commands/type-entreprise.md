@@ -42,10 +42,15 @@ phase, copie/adapte les fichiers `Réf. SELARL` cités là-bas. Ne réinvente pa
    bâti sur la fixture (→ contexte Pydantic toujours valide) + câblage (`…_context`, codes, génération) +
    garde-fou (coché sans données = bloqué) + **étendre le bouton « Generer des donnees de test »** pour
    préremplir ce cas depuis la fixture. **Standard : tous les cas du canon générables depuis l'UI, 1 clic
-   de données de test, 0 token résiduel.**
+   de données de test, 0 token résiduel.** **Messages UI en français métier (zéro code interne type
+   DOC-0xx) ; un cas manuel/hors-scope = WARNING, pas blocker. Fidélité de FORME : un générateur
+   from-scratch reproduit logo (header, helper `docx_builder.add_header_logo`) + alignements +
+   puces/tirets + gras/souligné du modèle — sinon préférer le template-fill.**
 7. **Vérification** — toi-même : ruff + suite complète verte + génération **via le chemin UI** sans token
-   résiduel + création seule intacte + revue fidélité (`functional-reviewer`/`sachant-juridique`). Vérifie
-   la branche, `add` explicite, push sur `<type>/…`.
+   résiduel + création seule intacte + revue fidélité (`functional-reviewer`/`sachant-juridique`) +
+   **passe pré-shot UAT** (relire chaque doc à côté du modèle : logo, alignements, puces/tirets,
+   gras/souligné, **noms de personnes complets**, messages métier). Vérifie la branche, `add` explicite,
+   push sur `<type>/…`.
 8. **Gate juridique** — génération **NO-GO** tant que Rafael/Albane n'a pas validé le wording ; produire le
    **Pack de passation** (points épuisés côté NotebookLM) ; 🚦 tests sur la branche `<type>/…` (Streamlit
    Cloud pointé sur cette branche, **pas** un merge `main`).
