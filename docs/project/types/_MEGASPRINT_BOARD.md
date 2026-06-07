@@ -9,6 +9,14 @@
 
 Types du sprint (EURL hors périmètre) : **SELAS · SPFPL · SCM · SCI · SCS · SCP · SAS**.
 
+> ⚠️ **GOUVERNANCE CODEX (Gad, 2026-06-07).** Une grande partie de l'app a été bâtie par **Codex**
+> depuis le seul doc « Documents à générer », **avant NotebookLM** : les moteurs par type
+> (`statuts_*`, commits **mai 2026**) existent mais **ne sont pas validés**. **L'app ne garde QUE** ce
+> que Claude Code + Gad ont **développé/validé ensemble** (réf. SELARL) ou de l'antérieur
+> **explicitement validé**. Donc « le moteur existe / les tests passent » **≠ prêt** : chaque type
+> passe une **passe d'audit de fidélité** (sortie Codex vs synthèse NotebookLM + modèle source +
+> Rafael) avant câblage/livraison. Détail : [[governance-codex-suspect-until-validated]].
+
 ---
 
 ## Deux voies, en roulement
@@ -22,8 +30,11 @@ Types du sprint (EURL hors périmètre) : **SELAS · SPFPL · SCM · SCI · SCS 
     (comble le NON TROUVÉ que NotebookLM ne donne pas) + bâtir UNE FOIS la couche commune :
     substitution (parts/actions, gérant/président), multi (LES SOUSSIGNÉS, répartition numérotée,
     PV d'AG), personne morale associée, couche genre, registre, slice front + déroulante auto-extensible.
-  - **B1 (parallélisé, après B0) — Une sous-équipe par type.** Générateurs/scénarios/UI disjoints,
-    sur le wording **confirmé** ; tout NON TROUVÉ est **parqué en TODO** → un seul message Rafael.
+  - **B0.5 (par type, AVANT câblage) — Audit de fidélité du moteur Codex.** Comparer la sortie du
+    moteur existant au modèle source tokenisé + à la synthèse NotebookLM ; lister divergences. Garder
+    ce qui est fidèle, **rebâtir le reste**. Aucun moteur Codex non audité ne passe en B1.
+  - **B1 (parallélisé, après B0 + audit) — Une sous-équipe par type.** Câblage front + générateurs
+    **validés** ; tout NON TROUVÉ ou divergence non tranchée est **parqué en TODO** → un message Rafael.
   - **Gate** : « fait » par type = passe **pré-shot UAT** + **validation Rafael**. Rien ne merge sur
     `main` ni ne se déploie sans GO Gad.
 
