@@ -570,6 +570,31 @@ def build_seed_catalog() -> list[DocumentDefinition]:
             notes="Statuts SEL d'exercice V1, overlay SELAS medecin associe unique.",
         ),
         DocumentDefinition(
+            doc_id="DOC-044",
+            canonical_name="Statuts SELAS multi",
+            generator_name="generate_statuts_selas_multi",
+            lot=4,
+            category=DocumentCategory.SPECIFIQUE,
+            structures=["SELAS"],
+            general_condition="dossier.structure == SELAS",
+            specific_conditions=[
+                "statuts_selas_multi fourni explicitement",
+                "2 a 5 associes dont au moins une personne physique exercante",
+                "associe personne morale et Directeur General optionnels",
+                "vocabulaire actions / President (jamais parts / gerant)",
+            ],
+            dynamic_associates=True,
+            grammar_variants=False,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path="project/source_documents/lot_04/Statuts_SELAS_multi_modele.docx",
+            specification_path="docs/project/types/SELAS/REYNAUD_TOKENISATION_NOTES.md",
+            notes=(
+                "SELAS multi V1 (statuts de creation) lue depuis le modele tokenise Reynaud ; "
+                "wording feminin source conserve, divergences (Art.15 DG nominatif, genre) "
+                "documentees."
+            ),
+        ),
+        DocumentDefinition(
             doc_id="DOC-019",
             canonical_name="Statuts SCS",
             generator_name="generate_statuts_scs",

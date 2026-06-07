@@ -1,0 +1,497 @@
+from __future__ import annotations
+
+from datetime import date
+from pathlib import Path
+
+from docx import Document
+
+from sydel_doc_engine.domain.models import (
+    Address,
+    DocumentGenerationContext,
+    StatutsCivilsAssocie,
+    StatutsSelasMultiContext,
+    StatutsSelasMultiPresident,
+)
+from sydel_doc_engine.rendering.docx_builder import (
+    add_paragraph,
+    add_statuts_article_heading,
+    add_statuts_body_paragraph,
+    add_statuts_hanging_list_item,
+    add_statuts_part_heading,
+    add_statuts_signature_block,
+    add_statuts_title_box,
+    new_document,
+)
+
+DOCUMENT_CODE = "CODE-STATUTS-SELAS-MULTI-001"
+STRUCTURE_SELAS = "SELAS"
+MAX_ASSOCIES = 5
+MIN_ASSOCIES = 2
+
+SOURCE_NAME = "Statuts_SELAS_multi_modele.docx"
+
+# Indices de paragraphes (0-based, python-docx) des blocs DYNAMIQUES a reinjecter selon le
+# nombre reel d'associes. En dehors de ces fenetres, le moteur rend le paragraphe source
+# tel quel (boilerplate) en substituant les placeholders societe. Cf.
+# docs/project/types/SELAS/REYNAUD_TOKENISATION_NOTES.md.
+COMPARUTION_SLICE = (16, 20)
+APPORTS_SLICE = (72, 74)
+CAPITAL_SLICE = (88, 94)
+PRESIDENT_SLICE = (221, 223)
+SIGNATURE_SLICE = (510, 511)
+
+# Le modele source vit avec un titre encadre "STATUTS" dans une TABLE (non iteree par
+# python-docx). On le restaure avant "LES SOUSSIGNEES" (para 14), comme les statuts civils.
+STATUTS_TITLE_BOX_BEFORE = 14
+
+
+class StatutsSelasMultiGenerator:
+    """Generateur SELAS multi (statuts de creation) lisant le modele tokenise et reinjectant
+    les blocs dynamiques (comparution N, apports N, repartition capital N en actions,
+    designation du President, ligne de signature N), 2 a 5 associes dont au moins une
+    personne physique exercante et un eventuel associe personne morale."""
+
+    def generate(self, ctx: DocumentGenerationContext, output_dir: Path) -> Path:
+        data = _ResolvedSelasMulti.from_context(ctx)
+        source_doc = Document(_source_path())
+        output_doc = new_document()
+        output_doc.sections[0].footer.paragraphs[0].text = (
+            f"{data.denomination} - Statuts constitutifs"
+        )
+
+        replacements = data.common_replacements()
+        skip_until = -1
+        for index, paragraph in enumerate(source_doc.paragraphs):
+            if index < skip_until:
+                continue
+            if index == STATUTS_TITLE_BOX_BEFORE:
+                add_statuts_title_box(output_doc, "STATUTS")
+            if index == COMPARUTION_SLICE[0]:
+                _add_comparution_block(output_doc, data)
+                skip_until = COMPARUTION_SLICE[1]
+                continue
+            if index == APPORTS_SLICE[0]:
+                _add_apports_block(output_doc, data)
+                skip_until = APPORTS_SLICE[1]
+                continue
+            if index == CAPITAL_SLICE[0]:
+                _add_capital_block(output_doc, data)
+                skip_until = CAPITAL_SLICE[1]
+                continue
+            if index == PRESIDENT_SLICE[0]:
+                _add_president_block(output_doc, data)
+                skip_until = PRESIDENT_SLICE[1]
+                continue
+            if index == SIGNATURE_SLICE[0]:
+                _add_signature_line(output_doc, data)
+                skip_until = SIGNATURE_SLICE[1]
+                continue
+
+            text = paragraph.text.strip()
+            if not text:
+                continue
+            rendered = _replace_placeholders(text, replacements)
+            _add_rendered_paragraph(output_doc, rendered)
+
+        full_text = "\n".join(paragraph.text for paragraph in output_doc.paragraphs)
+        if "[" in full_text or "]" in full_text:
+            raise ValueError(f"placeholder source residuel dans le rendu {DOCUMENT_CODE}.")
+
+        output_dir.mkdir(parents=True, exist_ok=True)
+        output_path = output_dir / "statuts_selas_multi.docx"
+        output_doc.save(output_path)
+        return output_path
+
+
+class _ResolvedSelasMulti:
+    def __init__(
+        self,
+        *,
+        selas: StatutsSelasMultiContext,
+        denomination: str,
+        adresse_siege: str,
+        signature_lieu: str,
+        signature_date: str,
+        associes: list[StatutsCivilsAssocie],
+        president: StatutsCivilsAssocie,
+    ) -> None:
+        self.selas = selas
+        self.denomination = denomination
+        self.adresse_siege = adresse_siege
+        self.signature_lieu = signature_lieu
+        self.signature_date = signature_date
+        self.associes = associes
+        self.president = president
+
+    @classmethod
+    def from_context(cls, ctx: DocumentGenerationContext) -> _ResolvedSelasMulti:
+        if ctx.structure != STRUCTURE_SELAS:
+            raise ValueError(f"dossier.structure doit etre {STRUCTURE_SELAS} pour {DOCUMENT_CODE}.")
+        if ctx.statuts_selas_multi is None:
+            raise ValueError(f"statuts_selas_multi est obligatoire pour {DOCUMENT_CODE}.")
+        if ctx.societe is None or ctx.societe.siege is None:
+            raise ValueError(f"societe.siege est obligatoire pour {DOCUMENT_CODE}.")
+        selas = ctx.statuts_selas_multi
+        associes = list(selas.associes)
+        _validate_associes(associes, selas)
+        president = _resolve_president(associes, selas.president)
+        return cls(
+            selas=selas,
+            denomination=_required_text(ctx.societe.denomination, "societe.denomination"),
+            adresse_siege=_address_display(ctx.societe.siege, "societe.siege"),
+            signature_lieu=_required_text(ctx.signature.lieu, "signature.lieu"),
+            signature_date=_format_display_date(ctx.signature.date, "signature.date"),
+            associes=associes,
+            president=president,
+        )
+
+    def common_replacements(self) -> dict[str, str]:
+        selas = self.selas
+        return {
+            "[denomination_societe]": self.denomination,
+            "[profession_reglementee]": _required_text(
+                selas.profession_reglementee,
+                "statuts_selas_multi.profession_reglementee",
+            ),
+            "[profession_reglementee_pluriel]": _required_text(
+                selas.profession_reglementee_pluriel,
+                "statuts_selas_multi.profession_reglementee_pluriel",
+            ),
+            "[capital_social]": _required_text(
+                selas.capital_social,
+                "statuts_selas_multi.capital_social",
+            ),
+            "[capital_lettres]": _required_text(
+                selas.capital_social_lettres,
+                "statuts_selas_multi.capital_social_lettres",
+            ),
+            "[nb_actions]": str(
+                _required_int(selas.nb_actions_total, "statuts_selas_multi.nb_actions_total")
+            ),
+            "[nb_actions_lettres]": _required_text(
+                selas.nb_actions_total_lettres,
+                "statuts_selas_multi.nb_actions_total_lettres",
+            ),
+            "[valeur_nominale_action]": _required_text(
+                selas.valeur_nominale_action,
+                "statuts_selas_multi.valeur_nominale_action",
+            ),
+            "[valeur_nominale_action_lettres]": _required_text(
+                selas.valeur_nominale_action_lettres,
+                "statuts_selas_multi.valeur_nominale_action_lettres",
+            ),
+            "[adresse_siege]": self.adresse_siege,
+            "[adresse_lieu_exercice]": _required_text(
+                selas.adresse_lieu_exercice,
+                "statuts_selas_multi.adresse_lieu_exercice",
+            ),
+            "[nom_banque]": _required_text(
+                selas.banque_nom,
+                "statuts_selas_multi.banque_nom",
+            ),
+            "[adresse_banque]": _required_text(
+                selas.banque_adresse,
+                "statuts_selas_multi.banque_adresse",
+            ),
+            "[date_cloture_premier_exercice]": _required_text(
+                selas.date_cloture_premier_exercice,
+                "statuts_selas_multi.date_cloture_premier_exercice",
+            ),
+            "[lieu_signature]": self.signature_lieu,
+            "[date_signature]": self.signature_date,
+        }
+
+
+# --- Blocs dynamiques (wording reproduit A L'IDENTIQUE du modele source) ---
+
+
+def _add_comparution_block(document, data: _ResolvedSelasMulti) -> None:
+    profession_pluriel = _required_text(
+        data.selas.profession_reglementee_pluriel,
+        "statuts_selas_multi.profession_reglementee_pluriel",
+    )
+    for associe in data.associes:
+        if _is_morale(associe):
+            _add_morale_comparution(document, associe)
+        else:
+            _add_physical_comparution(document, associe, profession_pluriel)
+
+
+def _add_physical_comparution(
+    document,
+    associe: StatutsCivilsAssocie,
+    profession_pluriel: str,
+) -> None:
+    # Source para 16 : "[civilite] [prenoms] [nom], [profession] [qualif], nee le [date] a
+    # [ville] ([dep]), de nationalite [nat], demeurant [adresse], [situation]."
+    add_paragraph(
+        document,
+        f"{_person_label(associe)}, "
+        f"{_required_text(associe.profession, 'associes[].profession')} "
+        f"{_required_text(associe.qualification_principale, 'associes[].qualification_principale')}, "
+        f"née le {_format_display_date(associe.date_naissance, 'associes[].date_naissance')} "
+        f"à {_required_text(associe.ville_naissance, 'associes[].ville_naissance')} "
+        f"({_required_text(associe.departement_naissance, 'associes[].departement_naissance')}), "
+        f"de nationalité {_required_text(associe.nationalite, 'associes[].nationalite')}, "
+        f"demeurant {_person_address(associe)}, "
+        f"{_required_text(associe.situation_maritale, 'associes[].situation_maritale')}.",
+    )
+    # Source para 17 : "Inscrite au tableau du conseil de l'ordre des [profession_pluriel] du
+    # [ordre_dep] sous le numero departemental [numero_ordre], et sous le numero RPPS [rpps]."
+    add_paragraph(
+        document,
+        "Inscrite au tableau du conseil de l’ordre des "
+        f"{profession_pluriel} "
+        f"du {_required_text(associe.ordre_departemental, 'associes[].ordre_departemental')} "
+        "sous le numéro départemental "
+        f"{_required_text(associe.numero_ordre, 'associes[].numero_ordre')}, "
+        "et sous le numéro RPPS "
+        f"{_required_text(associe.numero_rpps, 'associes[].numero_rpps')}.",
+    )
+
+
+def _add_morale_comparution(document, associe: StatutsCivilsAssocie) -> None:
+    # Source para 19 : "La [denomination], [forme_sociale], au capital de [capital] euros dont le
+    # siege social est situe au [adresse], immatriculee au RCS de [ville_rcs] sous le numero
+    # [numero_rcs], representee par son representant legal, [civilite] [prenoms] [nom]."
+    representant = associe.representant
+    if representant is None:
+        raise ValueError(
+            f"associes[].representant est obligatoire pour une personne morale {DOCUMENT_CODE}."
+        )
+    add_paragraph(
+        document,
+        f"La {_required_text(associe.denomination, 'associes[].denomination')}, "
+        f"{_required_text(associe.forme_juridique, 'associes[].forme_juridique')}, "
+        f"au capital de {_required_text(associe.capital_social, 'associes[].capital_social')} euros "
+        f"dont le siège social est situé au {_address_display(associe.siege, 'associes[].siege')}, "
+        f"immatriculée au RCS de {_required_text(associe.ville_rcs, 'associes[].ville_rcs')} "
+        f"sous le numéro {_required_text(associe.numero_rcs, 'associes[].numero_rcs')}, "
+        "représentée par son représentant légal, "
+        f"{_required_text(representant.civilite_affichage, 'associes[].representant.civilite_affichage')} "
+        f"{_required_text(representant.prenom, 'associes[].representant.prenom')} "
+        f"{_required_text(representant.nom, 'associes[].representant.nom')}.",
+    )
+
+
+def _add_apports_block(document, data: _ResolvedSelasMulti) -> None:
+    for associe in data.associes:
+        apport = associe.apport
+        if apport is None:
+            raise ValueError(f"associes[].apport est obligatoire pour {DOCUMENT_CODE}.")
+        montant = _required_text(apport.montant, "associes[].apport.montant")
+        montant_lettres = _required_text(
+            apport.montant_lettres, "associes[].apport.montant_lettres"
+        )
+        if _is_morale(associe):
+            # Source para 73 : "La [denomination], apporte a la societe la somme de [lettres]
+            # ([montant]) euros." (point final present pour la personne morale).
+            add_paragraph(
+                document,
+                f"La {_required_text(associe.denomination, 'associes[].denomination')}, "
+                f"apporte à la société la somme de {montant_lettres} ({montant}) euros.",
+            )
+        else:
+            # Source para 72 : "[civilite] [prenoms] [nom], apporte a la societe la somme de
+            # [lettres] ([montant]) euros" (pas de point final pour la personne physique).
+            add_paragraph(
+                document,
+                f"{_person_label(associe)}, apporte à la société la somme de "
+                f"{montant_lettres} ({montant}) euros",
+            )
+
+
+def _add_capital_block(document, data: _ResolvedSelasMulti) -> None:
+    for associe in data.associes:
+        nb_actions = _required_int(associe.nb_actions, "associes[].nb_actions")
+        nb_actions_lettres = _required_text(
+            associe.nb_actions_lettres, "associes[].nb_actions_lettres"
+        )
+        qualite = _required_text(associe.qualite_capital, "associes[].qualite_capital")
+        if _is_morale(associe):
+            # Source para 92 : "La [denomination], [qualite], detient [lettres] actions\t\t".
+            add_paragraph(
+                document,
+                f"La {_required_text(associe.denomination, 'associes[].denomination')}, "
+                f"{qualite}, détient {nb_actions_lettres} actions\t\t",
+            )
+        else:
+            # Source para 88 : "[civilite] [prenoms] [nom], [qualite], detient [lettres] actions ".
+            add_paragraph(
+                document,
+                f"{_person_label(associe)}, {qualite}, détient {nb_actions_lettres} actions ",
+            )
+        # Source paras 89 / 93 : "Ci\t\t\t\t\t\t\t\t\t\t[nb] actions" (dix tabulations).
+        add_paragraph(document, f"Ci\t\t\t\t\t\t\t\t\t\t{nb_actions} actions")
+
+
+def _add_president_block(document, data: _ResolvedSelasMulti) -> None:
+    president = data.president
+    # Source para 221 : "[civilite] [prenoms] [nom]" puis para 222 : "Demeurant [adresse].".
+    add_paragraph(document, _person_label(president))
+    add_paragraph(document, f"Demeurant {_person_address(president)}.")
+
+
+def _add_signature_line(document, data: _ResolvedSelasMulti) -> None:
+    # Source para 510 : "[prenoms_personne_1] [nom_personne_1]\t\t\t\t\t\t[denomination_associe_1]".
+    # Generalise N : on aligne les etiquettes courtes des signataires separees par six
+    # tabulations, dans l'ordre des associes (physique = prenoms + nom ; morale = denomination).
+    labels = [_signature_short_label(a) for a in data.associes if a.est_signataire]
+    add_statuts_signature_block(document, ["\t\t\t\t\t\t".join(labels)])
+
+
+# --- Resolution / validation ---
+
+
+def _validate_associes(
+    associes: list[StatutsCivilsAssocie],
+    selas: StatutsSelasMultiContext,
+) -> None:
+    if len(associes) < MIN_ASSOCIES:
+        raise ValueError(
+            f"la SELAS multi requiert au moins {MIN_ASSOCIES} associes pour {DOCUMENT_CODE}."
+        )
+    if len(associes) > MAX_ASSOCIES:
+        raise ValueError(
+            f"la SELAS multi est limitee a {MAX_ASSOCIES} associes pour {DOCUMENT_CODE}."
+        )
+    physiques = [a for a in associes if not _is_morale(a)]
+    if not physiques:
+        raise ValueError(
+            "au moins un associe personne physique exercant est obligatoire "
+            f"pour {DOCUMENT_CODE}."
+        )
+    total_actions = sum(_required_int(a.nb_actions, "associes[].nb_actions") for a in associes)
+    expected_actions = _required_int(selas.nb_actions_total, "statuts_selas_multi.nb_actions_total")
+    if total_actions != expected_actions:
+        raise ValueError(
+            "la somme des actions des associes doit correspondre a "
+            f"statuts_selas_multi.nb_actions_total pour {DOCUMENT_CODE}."
+        )
+
+
+def _resolve_president(
+    associes: list[StatutsCivilsAssocie],
+    president: StatutsSelasMultiPresident | None,
+) -> StatutsCivilsAssocie:
+    physiques = [a for a in associes if not _is_morale(a)]
+    if president is None:
+        return physiques[0]
+    if president.ref_associe_index is not None:
+        if not 0 <= president.ref_associe_index < len(associes):
+            raise ValueError(
+                "statuts_selas_multi.president.ref_associe_index hors bornes "
+                f"pour {DOCUMENT_CODE}."
+            )
+        candidate = associes[president.ref_associe_index]
+        if _is_morale(candidate):
+            raise ValueError(
+                "le President SELAS doit etre une personne physique exercante "
+                f"pour {DOCUMENT_CODE}."
+            )
+        return candidate
+    if president.nom:
+        for associe in physiques:
+            if associe.nom == president.nom and (
+                president.prenoms is None or (associe.prenoms or associe.prenom) == president.prenoms
+            ):
+                return associe
+        raise ValueError(
+            "statuts_selas_multi.president ne correspond a aucun associe physique "
+            f"pour {DOCUMENT_CODE}."
+        )
+    return physiques[0]
+
+
+# --- Helpers ---
+
+
+def _source_path() -> Path:
+    path = Path("project/source_documents/lot_04") / SOURCE_NAME
+    if not path.exists():
+        raise ValueError(f"source DOCX introuvable pour {DOCUMENT_CODE}: {path}")
+    return path
+
+
+def _add_rendered_paragraph(document, text: str) -> None:
+    if text == "STATUTS":
+        add_statuts_title_box(document, text)
+    elif text.startswith("TITRE "):
+        add_statuts_part_heading(document, text)
+    elif text.startswith("ARTICLE ") or text.startswith("Article "):
+        add_statuts_article_heading(document, text, left_indent_cm=0.25)
+    elif text.startswith("- "):
+        add_statuts_hanging_list_item(document, text[2:])
+    elif text.startswith("-\t"):
+        add_statuts_hanging_list_item(document, text[2:])
+    else:
+        add_statuts_body_paragraph(document, text)
+
+
+def _replace_placeholders(text: str, replacements: dict[str, str]) -> str:
+    rendered = text
+    for placeholder, value in replacements.items():
+        rendered = rendered.replace(placeholder, value)
+    return rendered
+
+
+def _person_label(associe: StatutsCivilsAssocie) -> str:
+    prenoms = associe.prenoms or associe.prenom
+    return (
+        f"{_required_text(associe.civilite_affichage, 'associes[].civilite_affichage')} "
+        f"{_required_text(prenoms, 'associes[].prenoms')} "
+        f"{_required_text(associe.nom, 'associes[].nom')}"
+    )
+
+
+def _signature_short_label(associe: StatutsCivilsAssocie) -> str:
+    if _is_morale(associe):
+        return _required_text(associe.denomination, "associes[].denomination")
+    prenoms = associe.prenoms or associe.prenom
+    return (
+        f"{_required_text(prenoms, 'associes[].prenoms')} "
+        f"{_required_text(associe.nom, 'associes[].nom')}"
+    )
+
+
+def _person_address(associe: StatutsCivilsAssocie) -> str:
+    if associe.adresse_personnelle_affichee:
+        return associe.adresse_personnelle_affichee.strip()
+    return _address_display(associe.adresse_personnelle, "associes[].adresse_personnelle")
+
+
+def _is_morale(associe: StatutsCivilsAssocie) -> bool:
+    return associe.type_personne == "personne_morale"
+
+
+def _required_text(value: str | None, field_name: str) -> str:
+    if value is None or not str(value).strip():
+        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+    return str(value).strip()
+
+
+def _required_int(value: int | None, field_name: str) -> int:
+    if value is None:
+        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+    return value
+
+
+def _format_display_date(value: date | str | None, field_name: str) -> str:
+    if value is None:
+        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+    if isinstance(value, date):
+        return value.strftime("%d/%m/%Y")
+    return _required_text(value, field_name)
+
+
+def _address_display(address: Address | None, field_name: str) -> str:
+    if address is None:
+        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+    if address.adresse_affichee:
+        return address.adresse_affichee.strip()
+    return (
+        f"{_required_text(address.num_voie, f'{field_name}.num_voie')} "
+        f"{_required_text(address.voie, f'{field_name}.voie')} - "
+        f"{_required_text(address.cp, f'{field_name}.cp')} "
+        f"{_required_text(address.ville, f'{field_name}.ville')}"
+    )

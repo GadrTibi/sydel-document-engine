@@ -61,6 +61,9 @@ from sydel_doc_engine.generators.lot_04.statuts_selarl_medecin import (
 from sydel_doc_engine.generators.lot_04.statuts_selas_medecin import (
     StatutsSelasMedecinGenerator,
 )
+from sydel_doc_engine.generators.lot_04.statuts_selas_multi import (
+    StatutsSelasMultiGenerator,
+)
 from sydel_doc_engine.generators.lot_04.statuts_spfpl_apport import (
     StatutsSpfplApportGenerator,
 )
@@ -140,6 +143,7 @@ STATUTS_SEL_DOCUMENTS = {
     "DOC-017": ("SELARL", "selarl_medecin"),
     "DOC-018": ("SELAS", "selas_medecin"),
 }
+STATUTS_SELAS_MULTI_DOCUMENT_ID = "DOC-044"
 STATUTS_CIVILS_DOCUMENT_TYPES = {
     "DOC-019": "scs",
     "DOC-020": "sci",
@@ -193,6 +197,7 @@ def build_generator_registry() -> dict[str, DocumentGenerator]:
         "DOC-016": StatutsSelarlDentisteGenerator(),
         "DOC-017": StatutsSelarlMedecinGenerator(),
         "DOC-018": StatutsSelasMedecinGenerator(),
+        "DOC-044": StatutsSelasMultiGenerator(),
         "DOC-019": StatutsScsGenerator(),
         "DOC-020": StatutsSciGenerator(),
         "DOC-021": StatutsSciIrisGenerator(),
@@ -288,6 +293,8 @@ def _document_enabled_for_context(
             return _statuts_sas_enabled(ctx)
         if document.doc_id in STATUTS_SPFPL_DOCUMENT_TYPES:
             return _statuts_spfpl_enabled(ctx, STATUTS_SPFPL_DOCUMENT_TYPES[document.doc_id])
+        if document.doc_id == STATUTS_SELAS_MULTI_DOCUMENT_ID:
+            return _statuts_selas_multi_enabled(ctx)
         if document.doc_id in STATUTS_SEL_DOCUMENTS:
             return _statuts_sel_enabled(ctx, STATUTS_SEL_DOCUMENTS[document.doc_id])
         if document.doc_id in STATUTS_CIVILS_DOCUMENT_TYPES:
@@ -391,6 +398,10 @@ def _statuts_spfpl_enabled(
     if expected_operation == "apport" and not ctx.dossier_options.apport:
         return False
     return _operation_spfpl_is(ctx, expected_operation)
+
+
+def _statuts_selas_multi_enabled(ctx: DocumentGenerationContext) -> bool:
+    return ctx.structure == "SELAS" and ctx.statuts_selas_multi is not None
 
 
 def _statuts_civils_enabled(ctx: DocumentGenerationContext, statuts_type: str) -> bool:

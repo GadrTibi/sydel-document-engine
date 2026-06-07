@@ -660,6 +660,15 @@ class StatutsCivilsAssocie(BaseModel):
     apport: StatutsCivilsApport | None = None
     parts: StatutsCivilsParts | None = None
     est_signataire: bool = True
+    # Champs OPTIONNELS additifs pour les SEL d'exercice multi (SELAS). Non utilises par
+    # les statuts civils (SCS/SCI/SCI IRIS/SCM) -> aucun impact sur ces generateurs.
+    qualification_principale: str | None = None
+    ordre_departemental: str | None = None
+    numero_ordre: str | None = None
+    numero_rpps: str | None = None
+    qualite_capital: str | None = None
+    nb_actions: int | None = None
+    nb_actions_lettres: str | None = None
 
 
 class StatutsCivilsCapitalDepot(BaseModel):
@@ -697,6 +706,35 @@ class StatutsCivilsContext(BaseModel):
     date_cloture_premier_exercice: str | None = None
     nombre_exemplaires_lettres: str | None = None
     denomination_cabinet_mandataire: str | None = None
+
+
+class StatutsSelasMultiPresident(BaseModel):
+    # Le president SELAS multi est une personne physique associee exercante. On le rattache
+    # par index dans la liste des associes (defaut 0), ou par nom/prenom explicites.
+    ref_associe_index: int | None = None
+    civilite_affichage: str | None = None
+    prenoms: str | None = None
+    nom: str | None = None
+    adresse_personnelle_affichee: str | None = None
+
+
+class StatutsSelasMultiContext(BaseModel):
+    # Contexte dedie SELAS multi (statuts de creation). Self-contained : il ne reutilise
+    # PAS la validation des statuts civils pour ne pas risquer de casser SCS/SCI/SCM.
+    profession_reglementee: str | None = None
+    profession_reglementee_pluriel: str | None = None
+    capital_social: str | None = None
+    capital_social_lettres: str | None = None
+    nb_actions_total: int | None = None
+    nb_actions_total_lettres: str | None = None
+    valeur_nominale_action: str | None = None
+    valeur_nominale_action_lettres: str | None = None
+    adresse_lieu_exercice: str | None = None
+    banque_nom: str | None = None
+    banque_adresse: str | None = None
+    date_cloture_premier_exercice: str | None = None
+    associes: list[StatutsCivilsAssocie] = Field(default_factory=list)
+    president: StatutsSelasMultiPresident | None = None
 
 
 class RegimeCommunautaireAvertissement(BaseModel):
@@ -1082,4 +1120,5 @@ class DocumentGenerationContext(BaseModel):
     commissaire_aux_apports: ProfessionalEntity | None = None
     document: DocumentContext | None = None
     statuts_civils: StatutsCivilsContext | None = None
+    statuts_selas_multi: StatutsSelasMultiContext | None = None
     metadata: dict[str, str] = Field(default_factory=dict)

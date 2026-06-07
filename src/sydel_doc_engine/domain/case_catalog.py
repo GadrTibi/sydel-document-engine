@@ -254,6 +254,14 @@ CATALOG_DOCUMENTS: tuple[CatalogDocument, ...] = (
         DocumentAvailability.GENERATABLE,
     ),
     CatalogDocument(
+        "statuts_selas_multi",
+        "Statuts SELAS multi",
+        "Statuts_SELAS_multi_modele.docx",
+        "DOC-044",
+        DocumentAvailability.GENERATABLE,
+        "Statuts SELAS 2 a 5 associes (dont personne morale) lus depuis le modele Reynaud.",
+    ),
+    CatalogDocument(
         "derogation_cumul_selarl_salariee",
         "Demande de derogation cumul SELARL salariee",
         "Demande_derogation_cumul_SELARL_salariee.doc",
@@ -542,6 +550,12 @@ CATALOG_OCCURRENCES: tuple[DocumentOccurrence, ...] = (
         "statuts_selas_medecin",
         "Statuts medecin",
         (condition("profession", "medecin"),),
+    ),
+    DocumentOccurrence(
+        CaseType.SELAS,
+        "statuts_selas_multi",
+        "Si plusieurs associes",
+        (condition("multi_associes"),),
     ),
     DocumentOccurrence(
         CaseType.SELAS,
