@@ -69,6 +69,28 @@ def new_document(
     return document
 
 
+_SYDEL_LOGO_PATH = Path(__file__).resolve().parent.parent / "assets" / "logo_sydel.png"
+
+
+def add_header_logo(
+    document: Any,
+    *,
+    alignment: WD_ALIGN_PARAGRAPH = WD_ALIGN_PARAGRAPH.LEFT,
+    width_cm: float = 4.5,
+) -> None:
+    """Insere le logo SYDEL (en-tete de marque) dans le header de la page.
+
+    Les generateurs from-scratch reconstruisent le corps du document en code et ont perdu
+    le logo qui vivait dans le header des modeles .docx d'origine (retour UAT Rafael) :
+    ce helper le retablit. L'image source est `assets/logo_sydel.png` (extrait du modele).
+    """
+    header = document.sections[0].header
+    header.is_linked_to_previous = False
+    paragraph = header.paragraphs[0] if header.paragraphs else header.add_paragraph()
+    paragraph.alignment = alignment
+    paragraph.add_run().add_picture(str(_SYDEL_LOGO_PATH), width=Cm(width_cm))
+
+
 def apply_style_profile(
     document: Any,
     style_profile: SydelDocxStyleProfile = DEFAULT_STYLE_PROFILE,

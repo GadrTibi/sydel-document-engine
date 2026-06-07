@@ -18,6 +18,7 @@ from sydel_doc_engine.generators.lot_05.scm_cession_common import (
 )
 from sydel_doc_engine.rendering.docx_builder import (
     add_framed_title,
+    add_hyphen_list_item,
     add_paragraph,
     add_signature_table,
     new_document,
@@ -115,19 +116,33 @@ class PvAgeCessionScmGenerator:
                 "préside la séance en qualité de gérant associé."
             ),
         )
-        for text in [
+        add_body_paragraph(
+            document,
             "Le Président dépose et met à la disposition des associés les documents suivants :",
+        )
+        # Liste A (puces tiret) : documents deposes par le President (retour UAT Rafael).
+        for item in [
             "Les copies des convocations des associés ;",
             "Un exemplaire du compromis de cession des parts sociales ;",
             "Le rapport de la gérance ;",
             "Le texte des résolutions proposées.",
+        ]:
+            add_hyphen_list_item(document, item, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY)
+        for text in [
             "Le Président déclare que tous les documents prévus par la réglementation et les statuts ont bien été adressés aux associés avec la convocation.",
             "Ils ont été tenus à leur disposition au siège social pendant le délai de quinze jours ayant précédé l'assemblée.",
             "L'assemblée lui donne acte de ses déclarations et reconnaît la validité de la convocation.",
             "Puis le Président rappelle l'ordre du jour :",
+        ]:
+            add_body_paragraph(document, text)
+        # Liste B (puces tiret) : ordre du jour (retour UAT Rafael).
+        for item in [
             "Lecture du rapport de la gérance ;",
             f"Agrément d'un nouvel associé, la {required_text(cessionnaire.denomination, 'scm_cession.cessionnaire.denomination')} ;",
             "Modification corrélative des statuts.",
+        ]:
+            add_hyphen_list_item(document, item, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY)
+        for text in [
             "Le président donne lecture aux associés du rapport de la gérance.",
             "Une discussion sans débat s'engage entre les associés.",
             "Plus personne ne demandant la parole, le Président met successivement aux voix les résolutions inscrites à l'ordre du jour.",

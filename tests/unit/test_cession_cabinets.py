@@ -545,6 +545,21 @@ def test_acte_medical_keeps_inclusive_birth_form(tmp_path: Path) -> None:
     assert "né(e) le 10 mars 1975" in fem
 
 
+def test_acte_medical_renders_conjoint_prenom_and_nom(tmp_path: Path) -> None:
+    # Retour UAT Rafael (DOC-009) : la clause de situation maritale doit afficher
+    # le PRENOM ET le NOM du conjoint (« marié(e) à Prenom Nom, sous le régime... »).
+    text = _docx_text(
+        ActeCessionCabinetMedicalGenerator().generate(
+            _context(credit_vendeur=True),
+            tmp_path,
+        )
+    )
+
+    # Conjoint = Claire Durand, regime = communaute reduite aux acquets (cf. _context).
+    assert "marie à Claire Durand, sous le régime de communaute reduite aux acquets" in text
+    _assert_no_residual_tokens(text)
+
+
 def test_orchestrator_selects_only_requested_cession_cabinet_document() -> None:
     orchestrator = DocumentOrchestrator(build_seed_catalog())
 

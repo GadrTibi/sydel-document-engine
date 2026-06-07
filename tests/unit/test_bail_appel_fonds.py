@@ -183,6 +183,11 @@ def test_appel_fond_sel_generates_dentaire_request(tmp_path: Path) -> None:
     assert amount.alignment == WD_ALIGN_PARAGRAPH.CENTER
     signature = next(p for p in document.paragraphs if p.text == "Camille Martin")
     assert signature.alignment == WD_ALIGN_PARAGRAPH.RIGHT
+    # Retour UAT Rafael (DOC-008) : bloc banque + lieu/date aligne a DROITE.
+    banque = next(p for p in document.paragraphs if p.text == "BANQUE EXEMPLE")
+    assert banque.alignment == WD_ALIGN_PARAGRAPH.RIGHT
+    lieu_date = next(p for p in document.paragraphs if p.text.startswith("Paris, le"))
+    assert lieu_date.alignment == WD_ALIGN_PARAGRAPH.RIGHT
     _assert_no_source_placeholders(text)
 
 

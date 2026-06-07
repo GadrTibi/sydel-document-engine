@@ -26,6 +26,7 @@ from sydel_doc_engine.generators.lot_03.bail_appel_common import (
 )
 from sydel_doc_engine.rendering.docx_builder import (
     add_centered_amount,
+    add_header_logo,
     add_italic_instruction,
     add_paragraph,
     add_right_aligned_lines,
@@ -58,6 +59,8 @@ class AppelFondSelGenerator:
         signataire = _required_signataire(_required_document_context(ctx.document).signataire)
 
         docx = new_document()
+        # Logo SYDEL en header, aligne a DROITE (retour UAT Rafael DOC-008).
+        add_header_logo(docx, alignment=WD_ALIGN_PARAGRAPH.RIGHT)
         nom_banque = required_text(
             financement.banque.nom if financement.banque else None,
             "cession.financement.banque.nom",
@@ -73,13 +76,15 @@ class AppelFondSelGenerator:
             "cession.acquereur.denomination_societe",
         )
 
-        add_paragraph(docx, nom_banque)
+        # Bloc banque + lieu/date aligne a DROITE (retour UAT Rafael DOC-008).
+        add_paragraph(docx, nom_banque, alignment=WD_ALIGN_PARAGRAPH.RIGHT)
         add_paragraph(
             docx,
             (
                 f"{required_text(ctx.signature.lieu, 'signature.lieu')}, le "
                 f"{format_display_date(ctx.signature.date, 'signature.date')}"
             ),
+            alignment=WD_ALIGN_PARAGRAPH.RIGHT,
         )
         add_italic_instruction(
             docx,
