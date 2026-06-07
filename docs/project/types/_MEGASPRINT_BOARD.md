@@ -45,13 +45,21 @@ Types du sprint (EURL hors périmètre) : **SELAS · SPFPL · SCM · SCI · SCS 
 | Type | Voie A — NotebookLM | Voie B — Build | Bloquant / décision |
 | :--- | :--- | :--- | :--- |
 | SELARL | — (réf, fini) | **livré + mergé main** | — |
-| SELAS | ✅ rangé (`6b6d413`) | readiness en cours | **scope multi+PM+DG vs V1 unique → GO Gad** ; tokeniser Reynaud (Downloads) |
-| SPFPL | ✅ rangé (`915218c`) | readiness en cours | toujours SPFPLAS ; tokeniser 33 modèles ; Rafael (apport) |
-| SCM | ✅ rangé (`3d72507`) | readiness en cours | carte cas→docs (Rafael) ; clé répartition dépenses |
-| SCI | prompts donnés (collage en cours) | readiness en cours | canon V1 vs V2/V3 ; modèle Lettre option IS (Rafael) |
-| SCS | à venir | readiness en cours | canon V1 only |
-| SCP | à venir | readiness en cours | — |
-| SAS | à venir | readiness en cours | — |
+| SELAS | ✅ rangé (`6b6d413`) | readiness + **audit fidélité** en cours | **scope multi+PM+DG vs V1 unique → GO Gad** ; tokeniser Reynaud (Downloads) |
+| SPFPL | ✅ rangé (`915218c`) | readiness + **audit fidélité** en cours | toujours SPFPLAS ; tokeniser modèles ; Rafael (apport) |
+| SCM | ✅ rangé (`3d72507`) | readiness + **audit fidélité** en cours | carte cas→docs (Rafael) ; clé répartition dépenses |
+| SCI | ✅ rangé (`736e89b`) | readiness + **audit fidélité** en cours | canon tranché (SCI maintenue) ; modèle Lettre option IS (Rafael) |
+| SCS | ⏳ **partiel : 1-10 rangé (`d8980ec`)** ; 11-13 en attente (limite NLM) | readiness + **audit fidélité** en cours | wording multi (modèle + Rafael) ; nature civile/immo à confirmer |
+| SCP | ⛔ **non commencé** (NLM) | readiness faite | **GO/NO-GO produit (Gad+Rafael)** — classé hors moteur courant au canon |
+| SAS | ⛔ **non commencé** (NLM) | readiness faite | passe NLM jamais faite ; génération NO-GO sans Rafael |
+
+### NotebookLM — reste à faire (limite journalière atteinte 2026-06-07)
+- **SCS** : 3 prompts (11 PP-vs-société, 12 multi-commanditaires, 13 répartition apports/parts) —
+  **non bloquants** (le wording multi vient du modèle source + Rafael).
+- **SCP** : passe complète, **19 prompts** (dont 1 décisif « nature réelle de la SCP » + 3 Rafael).
+  ⚠️ GO/NO-GO produit requis avant build.
+- **SAS** : passe complète, **11 prompts**.
+- **Reste donc : 2 types pleins (SCP, SAS) + le reliquat SCS (3).** Reprise à la réinitialisation NLM.
 
 ---
 
