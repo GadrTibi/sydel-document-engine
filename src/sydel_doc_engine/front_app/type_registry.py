@@ -1,0 +1,127 @@
+"""Registre central des types d'entreprise selectionnables au front.
+
+C'est la SOURCE DE VERITE de ce que la deroulante `dossier_selection` propose et
+de la facon dont `shell` route la saisie + la generation. Auto-extensible : pour
+ajouter un type, on enregistre une `RegisteredType` ici (label, structure, module
+de slice) sans toucher au reste du front.
+
+Garde-fou SELARL : l'entree SELARL est conservee a l'identique, en PREMIERE
+position, structure `SELARL`, generation activee. Le front SELARL existant
+(valide client) continue de passer par son chemin dedie (`selarl_slice`) ; le
+registre ne fait que le declarer comme premiere option.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Final
+
+
+@dataclass(frozen=True)
+class RegisteredType:
+    """Un type d'entreprise expose au front.
+
+    - ``key`` : cle stable (clé de session / routing).
+    - ``label`` : libelle affiche dans la deroulante.
+    - ``structure`` : structure metier (route le moteur ; SELARL conserve sa
+      valeur historique).
+    - ``slice_module`` : module ``front_app.<...>_slice`` portant le rendu + la
+      generation du type. ``None`` pour SELARL (chemin historique dedie).
+    - ``generation_enabled`` : la generation reelle est-elle ouverte ?
+    - ``status`` : etiquette d'etat (informative).
+    """
+
+    key: str
+    label: str
+    structure: str
+    slice_module: str | None
+    generation_enabled: bool
+    status: str
+
+
+# Ordre = ordre d'affichage. SELARL TOUJOURS en premier (defaut historique).
+REGISTERED_TYPES: Final[tuple[RegisteredType, ...]] = (
+    RegisteredType(
+        key="selarl_v1",
+        label="SELARL creation V1",
+        structure="SELARL",
+        slice_module=None,
+        generation_enabled=True,
+        status="bounded_vertical_slice",
+    ),
+    RegisteredType(
+        key="scm_v1",
+        label="SCM creation V1",
+        structure="SCM",
+        slice_module="sydel_doc_engine.front_app.scm_slice",
+        generation_enabled=True,
+        status="moteur_teste",
+    ),
+    RegisteredType(
+        key="sci_v1",
+        label="SCI creation V1",
+        structure="SCI",
+        slice_module="sydel_doc_engine.front_app.sci_slice",
+        generation_enabled=True,
+        status="moteur_teste",
+    ),
+    RegisteredType(
+        key="sci_iris_v1",
+        label="SCI IRIS creation V1",
+        structure="SCI IRIS",
+        slice_module="sydel_doc_engine.front_app.sci_iris_slice",
+        generation_enabled=True,
+        status="moteur_teste",
+    ),
+    RegisteredType(
+        key="scs_v1",
+        label="SCS creation V1",
+        structure="SCS",
+        slice_module="sydel_doc_engine.front_app.scs_slice",
+        generation_enabled=True,
+        status="moteur_teste",
+    ),
+    RegisteredType(
+        key="sas_spfpl_medecins_v1",
+        label="SAS SPFPL medecins creation V1",
+        structure="SAS",
+        slice_module="sydel_doc_engine.front_app.sas_slice",
+        generation_enabled=True,
+        status="moteur_teste",
+    ),
+    RegisteredType(
+        key="spfpl_cession_v1",
+        label="SPFPL cession creation V1",
+        structure="SPFPL cession",
+        slice_module="sydel_doc_engine.front_app.spfpl_cession_slice",
+        generation_enabled=True,
+        status="moteur_teste",
+    ),
+    RegisteredType(
+        key="spfpl_apport_v1",
+        label="SPFPL apport creation V1",
+        structure="SPFPL apport",
+        slice_module="sydel_doc_engine.front_app.spfpl_apport_slice",
+        generation_enabled=True,
+        status="moteur_teste",
+    ),
+    RegisteredType(
+        key="selas_multi_v1",
+        label="SELAS multi-associes creation V1",
+        structure="SELAS",
+        slice_module="sydel_doc_engine.front_app.selas_multi_slice",
+        generation_enabled=True,
+        status="moteur_teste",
+    ),
+)
+
+
+def registered_types() -> tuple[RegisteredType, ...]:
+    return REGISTERED_TYPES
+
+
+def registered_type_by_key(key: str) -> RegisteredType:
+    for item in REGISTERED_TYPES:
+        if item.key == key:
+            return item
+    raise KeyError(f"Unknown registered type: {key}")

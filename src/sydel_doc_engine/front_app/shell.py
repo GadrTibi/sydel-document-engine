@@ -54,12 +54,18 @@ DOCX_MIME_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml
 def render_clean_front() -> None:
     st.title("SYDEL Track B")
     st.caption(
-        "Front clean Track B : slice SELARL V1 bornee, sans ecrans legacy ni outils internes."
+        "Front clean Track B : creation multi-types (SELARL, SCM, SCI, SCI IRIS, SCS, SAS, "
+        "SPFPL, SELAS), sans ecrans legacy ni outils internes."
     )
     dossier_type = _render_dossier_type_selection()
-    data_entry = _render_data_entry_zone(dossier_type)
-    generation_plan = build_clean_generation_plan(dossier_type, data_entry)
-    _render_generation_zone(data_entry, generation_plan)
+    # SELARL = chemin historique EXACT (front valide client) : on ne touche a rien.
+    if dossier_type.structure == "SELARL":
+        data_entry = _render_data_entry_zone(dossier_type)
+        generation_plan = build_clean_generation_plan(dossier_type, data_entry)
+        _render_generation_zone(data_entry, generation_plan)
+        return
+    # Tous les autres types : routage vers leur slice dedie.
+    _render_typed_dossier(dossier_type)
 
 
 def _render_dossier_type_selection() -> DossierTypeOption:
@@ -69,11 +75,15 @@ def _render_dossier_type_selection() -> DossierTypeOption:
         dossier_type_labels(),
         key="clean_dossier_type",
     )
-    if st.button("Generer des donnees de test", key="clean_generate_test_data"):
-        _prefill_random_selarl_data()
-        st.success("Donnees de test coherentes pre-remplies.")
-    st.caption("Perimetre actif : SELARL unipersonnelle de production.")
-    return dossier_type_by_label(selected_label)
+    selected = dossier_type_by_label(selected_label)
+    if selected.structure == "SELARL":
+        if st.button("Generer des donnees de test", key="clean_generate_test_data"):
+            _prefill_random_selarl_data()
+            st.success("Donnees de test coherentes pre-remplies.")
+        st.caption("Perimetre actif : SELARL unipersonnelle de production.")
+    else:
+        st.caption(f"Perimetre actif : {selected.label} ({selected.structure}).")
+    return selected
 
 
 def _prefill_random_selarl_data() -> None:
@@ -1090,6 +1100,101 @@ def _render_generation_zone(data_entry: CleanDataEntry, plan: CleanGenerationPla
 def _output_dir(dossier_reference: str) -> Path:
     slug = re.sub(r"[^A-Za-z0-9_.-]+", "_", dossier_reference).strip("._")
     return ARTIFACTS_DIR / (slug or "selarl_v1")
+
+
+# --- Routage des types non-SELARL --------------------------------------------
+
+TYPED_GENERATED_STATE_KEY = "clean_typed_generated_dossier"
+
+
+def _render_typed_dossier(dossier_type: DossierTypeOption) -> None:
+    """Rendu generique pour tout type non-SELARL : form -> plan -> generation.
+
+    Route par structure vers le slice dedie (registre `type_registry`). Chaque
+    slice expose `render_*_form`, `build_*_plan`, `generate_dossier`.
+    """
+    from sydel_doc_engine.front_app import (
+        civil_statuts_slice,
+        sas_slice,
+        selas_multi_slice,
+        spfpl_slice,
+    )
+
+    structure = dossier_type.structure
+    if structure in civil_statuts_slice.CIVIL_TYPE_BY_STRUCTURE:
+        payload = civil_statuts_slice.render_civil_form(structure)
+        plan = civil_statuts_slice.build_civil_plan(payload)
+        generate = civil_statuts_slice.generate_dossier
+    elif structure == "SAS":
+        payload = sas_slice.render_sas_form()
+        plan = sas_slice.build_sas_plan(payload)
+        generate = sas_slice.generate_dossier
+    elif structure in spfpl_slice.OPERATION_BY_STRUCTURE:
+        payload = spfpl_slice.render_spfpl_form(structure)
+        plan = spfpl_slice.build_spfpl_plan(payload)
+        generate = spfpl_slice.generate_dossier
+    elif structure == "SELAS":
+        payload = selas_multi_slice.render_selas_form()
+        plan = selas_multi_slice.build_selas_plan(payload)
+        generate = selas_multi_slice.generate_dossier
+    else:
+        st.warning("Type de dossier non branche dans le front clean.")
+        return
+
+    _render_typed_generation_zone(dossier_type, payload, plan, generate)
+
+
+def _render_typed_generation_zone(
+    dossier_type: DossierTypeOption,
+    payload: dict,
+    plan,
+    generate,
+) -> None:
+    st.subheader("Generation")
+    for warning in getattr(plan, "warnings", ()):  # type: ignore[arg-type]
+        st.info(warning)
+    if plan.can_generate:
+        st.success(plan.reason)
+    else:
+        st.warning(plan.reason)
+    for blocker in list(plan.blockers)[:8]:
+        st.caption(f"Blocage : {blocker}")
+    if len(plan.blockers) > 8:
+        st.caption(f"{len(plan.blockers) - 8} autres champs requis.")
+
+    st.markdown("Documents")
+    for code in plan.document_codes:
+        st.caption(f"{code} - inclus dans {dossier_type.label}.")
+
+    generation_disabled = not (plan.can_generate and dossier_type.generation_enabled)
+    if not dossier_type.generation_enabled:
+        st.warning("Generation desactivee pour ce type (en attente de validation metier).")
+
+    if st.button(
+        "Generer le dossier",
+        key="clean_typed_generate_dossier",
+        disabled=generation_disabled,
+        type="primary",
+    ):
+        try:
+            result = generate(payload, _typed_output_dir(dossier_type))
+        except Exception as exc:  # noqa: BLE001 — on remonte l'erreur moteur a l'UI
+            st.error(f"Generation bloquee par le moteur : {exc}")
+            return
+        st.session_state[TYPED_GENERATED_STATE_KEY] = {
+            "output_dir": str(result.output_dir),
+            "zip_path": str(result.zip_path),
+            "docx_paths": [str(path) for path in result.docx_paths],
+        }
+
+    generated_dossier = st.session_state.get(TYPED_GENERATED_STATE_KEY)
+    if isinstance(generated_dossier, dict):
+        _render_generated_dossier_downloads(generated_dossier)
+
+
+def _typed_output_dir(dossier_type: DossierTypeOption) -> Path:
+    slug = re.sub(r"[^A-Za-z0-9_.-]+", "_", dossier_type.key).strip("._")
+    return ARTIFACTS_DIR / (slug or "typed")
 
 
 def _render_generated_dossier_downloads(generated_dossier: dict[str, object]) -> None:
