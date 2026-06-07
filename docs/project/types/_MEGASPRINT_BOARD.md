@@ -40,6 +40,12 @@ Types du sprint (EURL hors périmètre) : **SELAS · SPFPL · SCM · SCI · SCS 
 
 ---
 
+> ⚠️ **CORRECTION 2026-06-07.** Les « modèles manquants » signalés par les readiness B0 (Lettre option
+> IS SCI, Liste dépenses .docx SCM, PV gérant…) étaient **FAUX** — l'audit B0 tournait sur le mauvais
+> clone (main, `lot_01-05` seulement). **Tous les modèles sont présents** dans `project/source_documents/<type>/`.
+> Seul réellement absent : modèle SELAS **multi « Reynaud »** (Gad l'a dans Downloads). Voir
+> `_RAFAEL_PACKET_V1.md` + [[trap-false-missing-from-wrong-clone]].
+
 ## État par type
 
 | Type | Voie A — NotebookLM | Voie B — Build | Bloquant / décision |
