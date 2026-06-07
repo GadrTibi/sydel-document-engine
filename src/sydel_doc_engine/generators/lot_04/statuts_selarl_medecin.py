@@ -79,4 +79,8 @@ class StatutsSelarlMedecinGenerator:
             skip_personne_2_line=True,
             title_box_bordered=False,
             annex_page_break=True,
+            # Restaure le pied de page non vide du modele source medecin
+            # (pagination PAGE + ligne « Statuts <denomination> », Roboto 8 pt).
+            # Le dentiste a un footer source vide -> ne passe pas ce parametre.
+            footer_medecin_denomination=replacements["[denomination_societe]"],
         )

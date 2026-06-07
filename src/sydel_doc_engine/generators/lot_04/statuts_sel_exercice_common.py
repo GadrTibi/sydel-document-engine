@@ -2,9 +2,13 @@ from __future__ import annotations
 
 from datetime import date
 from pathlib import Path
+from typing import Any
 from unicodedata import normalize
 
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
+from docx.shared import Pt
 
 from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import (
@@ -344,6 +348,63 @@ def add_exercice_replacements(
         replacements["[adresse_lieu_exercice]"] = first_lieu_exercice(ctx)
 
 
+# Police du pied de page des modeles SEL : Roboto 8 pt (= sz 16 demi-points dans
+# le XML source footer1/footer3.xml du modele SELARL medecin).
+_FOOTER_FONT_NAME = "Roboto"
+_FOOTER_FONT_SIZE_PT = 8
+
+
+def _add_page_number_field(paragraph: Any) -> None:
+    """Insere un champ Word `PAGE` (numerotation dynamique) dans un paragraphe.
+
+    Reproduit la sequence de runs `fldChar begin / instrText PAGE /
+    fldChar separate / fldChar end` du footer source du modele SELARL medecin.
+    Le champ s'evalue a l'ouverture/impression Word (et au passage LibreOffice
+    -> PDF), exactement comme dans le .docx d'origine.
+    """
+    run = paragraph.add_run()
+    run.font.name = _FOOTER_FONT_NAME
+    run.font.size = Pt(_FOOTER_FONT_SIZE_PT)
+
+    begin = OxmlElement("w:fldChar")
+    begin.set(qn("w:fldCharType"), "begin")
+    instr = OxmlElement("w:instrText")
+    instr.set(qn("xml:space"), "preserve")
+    instr.text = "PAGE"
+    separate = OxmlElement("w:fldChar")
+    separate.set(qn("w:fldCharType"), "separate")
+    end = OxmlElement("w:fldChar")
+    end.set(qn("w:fldCharType"), "end")
+    for element in (begin, instr, separate, end):
+        run._r.append(element)
+
+
+def _add_selarl_medecin_footer(docx: Any, denomination: str) -> None:
+    """Restaure le pied de page du modele source SELARL medecin.
+
+    Le modele source (`footer1.xml` / `footer3.xml`) porte DEUX paragraphes,
+    Roboto 8 pt :
+      1. un champ `PAGE` (pagination) aligne a droite ;
+      2. la ligne « Statuts <denomination> » alignee a gauche.
+    Le generateur from-scratch repartait d'un document vierge -> footer vide
+    (perte de fidelite, audit _SELARL_FIDELITY_RECHECK_V1.md). On le repose ici.
+    Pose uniquement pour le medecin : le modele dentiste a un footer source vide.
+    """
+    footer = docx.sections[0].footer
+    footer.is_linked_to_previous = False
+
+    page_paragraph = footer.paragraphs[0] if footer.paragraphs else footer.add_paragraph()
+    page_paragraph.text = ""
+    page_paragraph.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    _add_page_number_field(page_paragraph)
+
+    label_paragraph = footer.add_paragraph()
+    label_paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    label_run = label_paragraph.add_run(f"Statuts {denomination}")
+    label_run.font.name = _FOOTER_FONT_NAME
+    label_run.font.size = Pt(_FOOTER_FONT_SIZE_PT)
+
+
 def render_statuts_sel_docx(
     blocks: tuple[str, ...],
     replacements: dict[str, str],
@@ -354,6 +415,7 @@ def render_statuts_sel_docx(
     render_selas_second_lieu: bool = False,
     title_box_bordered: bool = True,
     annex_page_break: bool = False,
+    footer_medecin_denomination: str | None = None,
 ) -> Path:
     docx = new_document()
     signature_mode = False
@@ -397,6 +459,8 @@ def render_statuts_sel_docx(
     full_text = "\n".join(paragraph.text for paragraph in docx.paragraphs)
     if "[" in full_text or "]" in full_text:
         raise ValueError(f"placeholder source residuel dans le rendu {DOCUMENT_CODE}.")
+    if footer_medecin_denomination is not None:
+        _add_selarl_medecin_footer(docx, footer_medecin_denomination)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     docx.save(output_path)
     return output_path
