@@ -81,10 +81,21 @@ en-tête/footer/styles/tables nativement) + corriger les blocs dynamiques. Chant
 
 ---
 
-## Décisions fonctionnelles en attente (Gad uniquement)
+## Décisions RATIFIÉES (Rafael via Gad, 2026-06-07)
 
-- **SELAS scope** : multi 2-5 + personne morale associée + DG **supersede** le périmètre V1
-  « actionnaire unique ». À ratifier **avant** de figer le build SELAS (pas avant le socle B0).
+- **PÉRIMÈTRE V1 = CRÉATION UNIQUEMENT** pour tous les types (« que création »). Pas de cession /
+  dissolution / transfert / entrée-sortie d'associé en V1. → allège massivement le build.
+- **SELAS** : cible **confirmée** = **multi 2-5 + associé personne morale + DG** (supersede l'unipersonnel
+  V1). Reste à récupérer le **modèle Reynaud** (Gad/Downloads) pour le wording multi.
+- **SCP** : **parquée, hors V1** (« tu n'as pas à t'occuper de ça »). Ne pas builder.
+
+### En attente Rafael (non bloquant — je build et je flague)
+- **SPFPL** : correction vocabulaire PV « cession » rédigés en « apport » → « laisse moi checker ».
+- **SCI** : associé personne morale en SCI standard → « laisse moi vérifier avec les juristes ».
+
+### Volet global (en attente GO Gad + coordination instance lead)
+- Porter l'**INTEL GATE** dans la règle 20 (`~/.claude`), section « projets **avec associé** » (pas tous
+  les projets) — pour qu'il vaille sur les autres projets Gad+Rafael (CRM…).
 
 ## Escalades métier (Rafael, groupées — jamais Gad)
 
