@@ -329,6 +329,15 @@ def test_statuts_selas_medecin_generates_without_second_lieu_by_default(
     assert "Societe d'exercice liberal par actions simplifiee" in text
     assert "President" in text
     assert "nom_lieu_exercice_2" not in text
+    # Ligne d'identite nominative : la clause matrimoniale passe par le token
+    # composite [situation_matrimoniale_statuts] (pas de double article "de la la")
+    # et l'inscription a l'Ordre est elidee ("de l'Ordre", pas "du Ordre").
+    assert "de la la" not in text
+    assert "du Ordre" not in text
+    assert (
+        "marié sous le régime de la communauté avec Madame Alice Martin, "
+        "inscrit au Tableau de l’Ordre des medecins sous le numéro RPPS 10000000001."
+    ) in text
     _assert_clean(text)
 
 

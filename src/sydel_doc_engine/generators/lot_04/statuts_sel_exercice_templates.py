@@ -592,7 +592,7 @@ STATUTS_SELAS_MEDECIN_BLOCKS: tuple[str, ...] = (
     'Au capital de [capital_social] €',
     'Siège social\xa0: [adresse_siege]',
     'LE SOUSSIGNE\xa0:',
-    '[civilite] [prenom] [nom], [profession_reglementee] [qualification_principale], né le [date_naissance] à [ville_naissance] ([departement_naissance]), de nationalité [nationalite], demeurant [adresse_personnelle], [situation_maritale] sous le régime de la [regime_matrimonial] avec [civilite_conjoint] [nom_conjoint], inscrit au Tableau du [ordre_professionnel] sous le numéro RPPS [numero_rpps].',
+    '[civilite] [prenom] [nom], [profession_reglementee] [qualification_principale], né le [date_naissance] à [ville_naissance] ([departement_naissance]), de nationalité [nationalite], demeurant [adresse_personnelle], [situation_matrimoniale_statuts], inscrit au Tableau [inscription_ordre_professionnel] sous le numéro RPPS [numero_rpps].',
     'ARTICLE 1 - FORME',
     'La société constituée au titre des présentes est une [forme_sociale] régie par les dispositions suivantes :',
     'les articles R. 4113-1 et suivants du code de la santé publique ;',

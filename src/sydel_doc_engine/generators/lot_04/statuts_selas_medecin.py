@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from sydel_doc_engine.domain.models import DocumentGenerationContext
+from sydel_doc_engine.domain.models import Associe, DocumentGenerationContext
 from sydel_doc_engine.generators.lot_04.statuts_sel_exercice_common import (
     DOCUMENT_CODE,
     OVERLAY_SELAS_MEDECIN,
@@ -25,6 +25,34 @@ from sydel_doc_engine.generators.lot_04.statuts_sel_exercice_templates import (
 
 OUTPUT_FILENAME = "statuts_selas_medecin.docx"
 
+# Voyelles + « h » muet déclenchant l'élision « de l' » (au lieu de « du »)
+# devant le nom de l'Ordre dans la ligne d'identité SELAS mono. Le modèle source
+# SELAS porte « inscrit au Tableau du [ordre_professionnel] » : avec un nom
+# d'ordre commençant par une voyelle (« Ordre des médecins »...), « du Ordre »
+# est agrammatical. On corrige UNIQUEMENT l'élision, sans toucher au wording du
+# nom de l'Ordre lui-même (fidélité au libellé saisi par l'opérateur).
+_ELISION_INITIALS = set("aàâäeéèêëiîïoôöuùûüyhAÀÂÄEÉÈÊËIÎÏOÔÖUÙÛÜYH")
+
+
+def _ordre_professionnel_inscription(associate: Associe) -> str:
+    """Connecteur « du / de l' » + nom de l'Ordre, avec élision correcte.
+
+    Le bloc source SELAS dit « inscrit au Tableau [token] ». Le token rend
+    « de l'Ordre des médecins » (élision devant voyelle/h muet) ou « du Conseil… »
+    (consonne), pour ne plus produire « du Ordre ». Le nom de l'Ordre provient de
+    `associes[0].ordre.professionnel` (saisie opérateur) et n'est jamais réécrit.
+    """
+    if associate.ordre is None:
+        raise ValueError(f"associes[0].ordre est obligatoire pour {DOCUMENT_CODE}.")
+    nom_ordre = required_text(
+        associate.ordre.professionnel,
+        "associes[0].ordre.professionnel",
+    )
+    first_char = nom_ordre[0]
+    if first_char in _ELISION_INITIALS:
+        return f"de l’{nom_ordre}"
+    return f"du {nom_ordre}"
+
 
 class StatutsSelasMedecinGenerator:
     """Generateur from-scratch des statuts SELAS medecin V1."""
@@ -40,6 +68,9 @@ class StatutsSelasMedecinGenerator:
         replacements = common_replacements(ctx, title_type="actions")
         add_conjoint_replacements(replacements, associate)
         add_ordre_replacements(replacements, associate)
+        replacements["[inscription_ordre_professionnel]"] = _ordre_professionnel_inscription(
+            associate
+        )
         add_depot_replacements(replacements, ctx, require_address=True)
         add_exercice_replacements(
             replacements,

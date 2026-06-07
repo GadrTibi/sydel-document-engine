@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
@@ -28,6 +29,14 @@ from sydel_doc_engine.rendering.docx_builder import (
 
 DOCUMENT_CODE = "CODE-STATUTS-CIVILS-CORE-001"
 MAX_ASSOCIES = 6
+
+# Marqueur editorial interne du modele source SCI (fin Art. 31, source para 547) :
+# "... jusqu'au [date]. A RETIRER SI LA SOCIETE EST A L'IR". C'est une INSTRUCTION INTERNE de
+# redaction, pas du texte juridique destine au client -> on la retire de la sortie tout en gardant
+# la clause qu'elle annote. Ancree sur "A RETIRER" jusqu'a la fin du paragraphe (tolerant a
+# l'apostrophe droite/typographique et a la casse). NB : un eventuel conditionnement IR/IS de la
+# clause elle-meme est une decision METIER, non tranchee ici (cf. _PASSE2_VERIFICATION_REPORT sect.3).
+_EDITORIAL_MARKER_RE = re.compile(r"\s*A RETIRER SI LA SOCIETE EST A L.IR\s*$", re.IGNORECASE)
 
 
 @dataclass(frozen=True)
@@ -78,7 +87,11 @@ SCI_IRIS_TEMPLATE = StatutsCivilTemplate(
     associate_slice=(24, 42),
     apport_slice=(95, 109),
     capital_slice=(120, 131),
-    signature_slice=(629, 636),
+    # Source para 626 = "A [lieu], le [date]" est AVANT l'ancien debut de slice (629) -> il etait
+    # rendu par le chemin source PUIS re-rendu par _add_signature_block => date en double. On etend
+    # le debut a 626 pour que la ligne date source soit englobee (skip) et rendue une seule fois par
+    # le bloc signature. Cf. _PASSE2_VERIFICATION_REPORT.md sect.4.
+    signature_slice=(626, 636),
 )
 
 
@@ -124,6 +137,9 @@ def generate_statuts_civil_docx(
         if not text:
             continue
         rendered = _replace_placeholders(text, replacements)
+        rendered = _strip_editorial_marker(rendered)
+        if not rendered:
+            continue
         _add_rendered_paragraph(output_doc, rendered)
         if template.expected_type == "sci_iris" and index == 561:
             _add_resultat_groupes_block(output_doc, data)
@@ -390,8 +406,8 @@ def _add_capital_block(document, data: _ResolvedStatutsCivil) -> None:
                 document,
                 "A concurrence de "
                 f"{_required_text(parts.nb_lettres, 'associes[].parts.nb_lettres')} parts, "
-                f"ci {parts.nb} parts Numerotees de "
-                f"{_required_int(parts.debut, 'associes[].parts.debut')} a "
+                f"ci\t{parts.nb} parts Numérotées de "
+                f"{_required_int(parts.debut, 'associes[].parts.debut')} à "
                 f"{_required_int(parts.fin, 'associes[].parts.fin')}.",
             )
         else:
@@ -476,7 +492,7 @@ def _add_signature_block(document, data: _ResolvedStatutsCivil) -> None:
         add_paragraph(document, f"A {data.signature_lieu}, le {data.signature_date}")
     signers = [_signature_label(a) for a in data.associes if a.est_signataire]
     if data.template.expected_type == "scs":
-        add_statuts_signature_grid(document, signers, mention="Lu et approuve")
+        add_statuts_signature_grid(document, signers, mention="Lu et approuvé")
         return
     for signer in signers:
         add_statuts_signature_block(
@@ -502,12 +518,12 @@ def _add_resultat_groupes_block(document, data: _ResolvedStatutsCivil) -> None:
             group.quote_part_resultat_exceptionnel,
             "statuts_civils.resultat_groupes_parts[].quote_part_resultat_exceptionnel",
         )
-        rows.append((f"Parts {parts_debut} a {parts_fin}", quote_part))
+        rows.append((f"Parts numérotées de {parts_debut} à {parts_fin}", quote_part))
     if data.statuts.resultat_quote_part_exceptionnel_total:
         rows.append(("Total", data.statuts.resultat_quote_part_exceptionnel_total))
     add_statuts_matrix_table(
         document,
-        ("Groupe de parts", "Quote-part de résultat exceptionnel"),
+        ("Groupe de parts", "Quote-part du résultat exceptionnel"),
         rows,
     )
 
@@ -546,17 +562,17 @@ def _add_apport_line(
 
 def _add_physical_identity(document, associe: StatutsCivilsAssocie) -> None:
     gender = associe.genre or Gender.MASCULIN
-    born = "Nee" if gender == Gender.FEMININ else "Ne"
+    born = "Née" if gender == Gender.FEMININ else "Né"
     add_paragraph(document, _signature_label(associe))
     add_paragraph(
         document,
         f"{born} le {_format_display_date(associe.date_naissance, 'associes[].date_naissance')} "
-        f"a {_required_text(associe.ville_naissance, 'associes[].ville_naissance')} "
+        f"à {_required_text(associe.ville_naissance, 'associes[].ville_naissance')} "
         f"({_required_text(associe.departement_naissance, 'associes[].departement_naissance')})",
     )
     add_paragraph(
         document,
-        f"De nationalite {_required_text(associe.nationalite, 'associes[].nationalite')}",
+        f"De nationalité {_required_text(associe.nationalite, 'associes[].nationalite')}",
     )
     add_paragraph(
         document,
@@ -726,6 +742,11 @@ def _replace_placeholders(text: str, replacements: dict[str, str]) -> str:
     for placeholder, value in replacements.items():
         rendered = rendered.replace(placeholder, value)
     return rendered
+
+
+def _strip_editorial_marker(text: str) -> str:
+    """Retire le marqueur editorial interne SCI sans toucher a la clause annotee."""
+    return _EDITORIAL_MARKER_RE.sub("", text).rstrip()
 
 
 def _required_text(value: str | None, field_name: str) -> str:

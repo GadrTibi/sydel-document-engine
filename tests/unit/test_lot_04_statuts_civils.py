@@ -265,7 +265,9 @@ def test_statuts_scs_generates_roles_and_lu_approuve(tmp_path: Path) -> None:
     # Preambule capital SCS reintroduit (source para 63).
     assert "Le capital social effectif est fixé à" in text
     assert "lesquelles sont attribuées aux associés comme suit" in text
-    assert "Lu et approuve" in text
+    # Mention signature SCS reaccentuee (source : "Lu et approuvé").
+    assert "Lu et approuvé" in signature_table_text
+    assert "Lu et approuve" not in signature_table_text
     assert "Monsieur Jean Durand" in signature_table_text
     assert "Monsieur Alice Martin" in signature_table_text
     _assert_clean(text)
@@ -322,7 +324,12 @@ def test_statuts_sci_iris_generates_morale_and_result_groups(tmp_path: Path) -> 
     assert output_path.name == "statuts_sci_iris.docx"
     assert "SCI IRIS" in text
     assert "SEL IRIS, representee par Monsieur Jean Durand" in text
-    assert "Parts 1 a 40" in matrix_table_text
+    # En-tete + lignes du tableau resultat reaccentues, fideles au modele source IRIS
+    # ("Quote-part du résultat exceptionnel", "Parts numérotées de [debut] à [fin]").
+    assert "Quote-part du résultat exceptionnel" in matrix_table_text
+    assert "Parts numérotées de 1 à 40" in matrix_table_text
+    assert "Parts numérotées de 41 à 100" in matrix_table_text
+    assert "Parts 1 a 40" not in matrix_table_text
     assert "40 %" in matrix_table_text
     assert "Total" in matrix_table_text
     assert "100 %" in matrix_table_text
