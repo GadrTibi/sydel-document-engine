@@ -282,10 +282,9 @@ def validate_selarl_input(data: SelarlSliceInput) -> tuple[str, ...]:
         blockers.append("Profession hors perimetre SELARL V1.")
     if not data.dossier_unipersonnel:
         blockers.append("La V1 ne couvre que le dossier unipersonnel.")
-    if data.derogation:
-        blockers.append("Derogations hors perimetre V1 : aucun DOC-013/DOC-014 genere.")
-    if data.site_distinct:
-        blockers.append("Site distinct hors perimetre V1 : traitement manuel requis.")
+    # Derogation / site distinct : NON bloquants. Les formulaires de derogation sont a remplir
+    # a la main (modeles "A REMPLIR A LA MAIN") -> on ne bloque pas la generation du reste du
+    # dossier ; on informe via un warning clair (cf. _warning_messages).
     if data.cession and data.cession_context is None:
         blockers.append("Cession demandee mais donnees cession manquantes.")
     if data.scm and data.scm_cession_context is None:
@@ -574,9 +573,9 @@ def _document_rows(
     rows.append(
         SelarlDocumentRow(
             doc_code="DOC-013/DOC-014",
-            label="Derogations",
+            label="Formulaires de derogation",
             status="hors_v1",
-            message="Manuel / hors perimetre SELARL V1.",
+            message="A remplir a la main (non genere automatiquement par l'outil).",
         )
     )
     if data.scm_cession_context is None:
@@ -597,6 +596,18 @@ def _warning_messages(data: SelarlSliceInput) -> tuple[str, ...]:
     ]
     if data.regime_communautaire:
         warnings.append("Regime communautaire actif : DOC-005 et DOC-006 seront generes.")
+    if data.derogation:
+        warnings.append(
+            "Demande de derogation cochee : le formulaire de derogation (cumul d'activite) est "
+            "a remplir a la main, il n'est pas genere automatiquement. Le reste du dossier est "
+            "genere normalement."
+        )
+    if data.site_distinct:
+        warnings.append(
+            "Site distinct coche : le formulaire de derogation pour exercer sur plusieurs sites "
+            "est a remplir a la main, il n'est pas genere automatiquement. Le reste du dossier "
+            "est genere normalement."
+        )
     return tuple(warnings)
 
 

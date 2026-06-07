@@ -205,6 +205,32 @@ def test_clean_front_selarl_slice_blocks_out_of_scope_cases() -> None:
     assert "Cession demandee mais donnees cession manquantes." in plan.blockers
 
 
+def test_clean_front_selarl_slice_derogation_warns_without_blocking() -> None:
+    # Derogation / site distinct ne bloquent plus le dossier : les formulaires de derogation
+    # sont a remplir a la main -> surfaces en warning clair (sans jargon DOC-013 / perimetre V1).
+    dossier_type = dossier_type_by_label("SELARL creation V1")
+    data_entry = build_clean_data_entry(
+        dossier_type,
+        **{
+            **_valid_selarl_kwargs(PROFESSION_MEDECIN),
+            "derogation": True,
+            "site_distinct": True,
+        },
+    )
+
+    plan = build_clean_generation_plan(dossier_type, data_entry)
+
+    assert plan.can_generate is True
+    assert not any(
+        "DOC-013" in blocker or "hors perimetre" in blocker.lower()
+        for blocker in plan.blockers
+    )
+    assert any(
+        "derogation" in warning.lower() and "a la main" in warning.lower()
+        for warning in plan.warnings
+    )
+
+
 def test_clean_front_selarl_cession_cabinet_medical_generates_acte(tmp_path: Path) -> None:
     # Cession avec donnees (scenario fige) -> l'acte de cession cabinet medical est generable.
     data = build_selarl_scenario("selarl_medecin_cession_cabinet_medical")
