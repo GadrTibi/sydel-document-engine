@@ -303,7 +303,7 @@ def _add_apport_block(document, data: _ResolvedStatutsCivil) -> None:
         )
         add_paragraph(document, "Associes commandites :", bold=True)
         for associe in _associes_by_role(data.associes, "commandite"):
-            _add_apport_line(document, associe)
+            _add_apport_line(document, associe, expected_type=data.template.expected_type)
         total_commandites = _required_text(
             data.statuts.total_apports_commandites,
             "statuts_civils.total_apports_commandites",
@@ -314,10 +314,12 @@ def _add_apport_block(document, data: _ResolvedStatutsCivil) -> None:
         )
         add_paragraph(document, "Associes commanditaires :", bold=True)
         for associe in _associes_by_role(data.associes, "commanditaire"):
-            _add_apport_line(document, associe, commanditaire=True)
+            _add_apport_line(
+                document, associe, expected_type=data.template.expected_type, commanditaire=True
+            )
     else:
         for associe in data.associes:
-            _add_apport_line(document, associe)
+            _add_apport_line(document, associe, expected_type=data.template.expected_type)
     capital_social = _required_text(data.statuts.capital_social, "statuts_civils.capital_social")
     add_paragraph(
         document,
@@ -430,6 +432,7 @@ def _add_apport_line(
     document,
     associe: StatutsCivilsAssocie,
     *,
+    expected_type: str,
     commanditaire: bool = False,
 ) -> None:
     apport = associe.apport
@@ -441,12 +444,19 @@ def _add_apport_line(
         if commanditaire
         else apport.montant_lettres
     )
-    add_paragraph(document, f"- {_signature_label(associe)} apporte,")
-    add_paragraph(
-        document,
-        f"la somme de {_required_text(montant_lettres, 'associes[].apport.montant_lettres')}, "
-        f"{_required_text(montant, 'associes[].apport.montant')}",
-    )
+    montant = _required_text(montant, "associes[].apport.montant")
+    montant_lettres = _required_text(montant_lettres, "associes[].apport.montant_lettres")
+    if expected_type in {"sci", "sci_iris"}:
+        # Modele source SCI (para 97-99) : "[label]" / "La somme de [lettres] euros," / "ci<TAB>[montant] euros".
+        # L'ancien format "- [label] apporte, / la somme de [lettres], [montant]" etait le format SCS,
+        # croise par erreur sur la SCI (ni "euros", ni "ci", "apporte" invente).
+        add_paragraph(document, _signature_label(associe))
+        add_paragraph(document, f"La somme de {montant_lettres} euros,")
+        add_paragraph(document, f"ci\t{montant} euros")
+    else:
+        # Format SCS (para 43-44), inchange.
+        add_paragraph(document, f"- {_signature_label(associe)} apporte,")
+        add_paragraph(document, f"la somme de {montant_lettres}, {montant}")
 
 
 def _add_physical_identity(document, associe: StatutsCivilsAssocie) -> None:
