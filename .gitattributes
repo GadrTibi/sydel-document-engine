@@ -1,4 +1,9 @@
+# Normalise toutes les fins de ligne des fichiers texte en LF dans le dépôt
+# (corrige l'incohérence CRLF/LF qui produisait de faux gros diffs entre branches).
+* text=auto
+
 *.docx binary
 *.xlsx binary
 *.doc binary
 *.pdf binary
+*.bundle binary

@@ -112,31 +112,31 @@ Gad peut arbitrer le produit, le metier, les priorites et les decisions de
 scope. Quand Gad demande d'accelerer, Codex doit quand meme proteger le projet :
 si le metier n'est pas defini, le resultat reste `NO-GO dev`.
 
-### Naomie
+### Naomi
 
-Naomie doit s'identifier avant de commencer un sprint :
+Naomi doit s'identifier avant de commencer un sprint :
 
 ```text
-Je suis Naomie.
+Je suis Naomi.
 Je veux demarrer le sprint [type d'entreprise].
 ```
 
-Quand Naomie conduit le sprint, Codex doit la guider etape par etape. Codex ne
+Quand Naomi conduit le sprint, Codex doit la guider etape par etape. Codex ne
 doit pas sauter directement au dev. Chaque etape doit produire une sortie simple
 a valider avant de passer a la suivante.
 
-Si Naomie dit qu'elle veut lancer, demarrer ou reprendre le sprint, Codex doit
+Si Naomi dit qu'elle veut lancer, demarrer ou reprendre le sprint, Codex doit
 demarrer le sous-sprint NotebookLM, pas le developpement. Codex donne un seul
-prompt court a copier-coller dans NotebookLM, attend la reponse brute de Naomie,
+prompt court a copier-coller dans NotebookLM, attend la reponse brute de Naomi,
 la structure dans le journal du sprint, puis choisit le prompt suivant selon les
 trous. Cette boucle continue jusqu'a ce que Codex considere les informations
 suffisantes pour passer a l'audit de reutilisation.
 
-Si Naomie travaille depuis son ordinateur, elle doit suivre
+Si Naomi travaille depuis son ordinateur, elle doit suivre
 `docs/project/NAOMIE_GITHUB_ONBOARDING_V1.md`. Elle ne gere pas Git elle-meme :
 Codex gere la branche, les commandes, les tests et les checkpoints.
 
-Naomie peut aussi demander une explication a tout moment selon
+Naomi peut aussi demander une explication a tout moment selon
 `docs/project/NAOMIE_LEARNING_MENTOR_PROTOCOL_V1.md`, par exemple avec
 `Question professeur : ...`.
 
@@ -157,7 +157,7 @@ Objectif : savoir qui pilote et quel type d'entreprise est ouvert.
 
 Sorties obligatoires :
 
-- identite du pilote : Gad ou Naomie ;
+- identite du pilote : Gad ou Naomi ;
 - type d'entreprise cible ;
 - date d'ouverture du sprint ;
 - decision initiale : `NO-GO dev` par defaut.
@@ -196,17 +196,17 @@ questions.
 
 Si Codex a acces directement a NotebookLM, il doit interroger NotebookLM. Si
 Codex n'a pas acces direct, il doit preparer les questions, puis demander a Gad
-ou Naomie de coller les reponses ou un export.
+ou Naomi de coller les reponses ou un export.
 
 Regle : aucune reponse NotebookLM ne remplace une source de verite ou un retour
 humain. NotebookLM sert a explorer, comparer, detecter les cas, les exceptions et
 les contradictions.
 
-Pour Naomie, cette phase se pilote comme un sous-sprint :
+Pour Naomi, cette phase se pilote comme un sous-sprint :
 
 1. Codex donne un prompt court ;
-2. Naomie copie ce prompt dans NotebookLM ;
-3. Naomie colle la reponse NotebookLM dans Codex ;
+2. Naomi copie ce prompt dans NotebookLM ;
+3. Naomi colle la reponse NotebookLM dans Codex ;
 4. Codex structure la reponse dans le journal ;
 5. Codex identifie les trous ;
 6. Codex donne le prompt suivant ;
@@ -502,7 +502,7 @@ Chaque sprint doit creer ou mettre a jour un document de ce format :
 # Sprint [TYPE ENTREPRISE] V1
 
 Date d'ouverture :
-Pilote : Gad / Naomie
+Pilote : Gad / Naomi
 Type d'entreprise :
 Decision initiale : NO-GO dev
 
@@ -583,11 +583,11 @@ Pour chaque reponse :
 ## Prochaine recommandation
 ```
 
-## Checklist Naomie
+## Checklist Naomi
 
-Naomie doit suivre cette checklist dans l'ordre :
+Naomi doit suivre cette checklist dans l'ordre :
 
-1. dire explicitement `Je suis Naomie` ;
+1. dire explicitement `Je suis Naomi` ;
 2. nommer le type d'entreprise du sprint ;
 3. lire avec Codex le statut projet courant ;
 4. recevoir de Codex le prompt NotebookLM courant ;

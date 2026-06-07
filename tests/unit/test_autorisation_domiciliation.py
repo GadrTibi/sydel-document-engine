@@ -104,52 +104,69 @@ def test_autorisation_domiciliation_creates_docx(tmp_path: Path) -> None:
 def test_autorisation_domiciliation_contains_essential_texts(tmp_path: Path) -> None:
     text = _docx_text(_generate(tmp_path))
 
+    # Le titre vit dans le tableau d'en-tete du modele source.
     assert "AUTORISATION DE DOMICILIATION" in text
+    # Phrase fidele au modele tokenise corrige (retour humain LOCK V1) : adresse
+    # complete du cabinet/siege « du cabinet au [num_voie] [voie], [cp] [ville] » ;
+    # terme juridique « pour une durée indéterminée » conserve (et non « pour 99 ans »).
     assert (
-        "Je soussigné Monsieur Jean Durand autorise la domiciliation de la Société "
-        "DURAND CONSEIL au capital de 1 000 € en cours de formation, dans les locaux "
-        "du cabinet au 80 avenue Marceau, 75008 Paris pour 99 ans."
+        "autorise la domiciliation de DURAND CONSEIL au capital de 1 000 € "
+        "en cours de formation, dans les locaux du cabinet au 80 avenue Marceau, "
+        "75008 Paris, pour une durée indéterminée."
     ) in text
     assert "Fait à Paris" in text
-    assert "Le 12/05/2026" in text
+    assert "Le 12 mai 2026" in text
     assert "Monsieur Jean Durand" in text
 
 
-def test_autorisation_domiciliation_uses_feminine_agreement(tmp_path: Path) -> None:
-    text = _docx_text(_generate(tmp_path, Gender.FEMININ))
+def test_autorisation_domiciliation_preserves_legal_term(tmp_path: Path) -> None:
+    text = _docx_text(_generate(tmp_path))
 
-    assert "Je soussignée Madame Marie Durand" in text
+    # Garde-fou anti-derive : le terme juridique du modele doit rester intact
+    # et l'ancienne paraphrase « 99 ans » ne doit jamais reapparaitre.
+    assert "pour une durée indéterminée." in text
+    assert "99 ans" not in text
 
 
-def test_autorisation_domiciliation_uses_masculine_agreement(tmp_path: Path) -> None:
+def test_autorisation_domiciliation_opening_agrees_masculine(tmp_path: Path) -> None:
+    # Le modele source fige l'ouverture au feminin (« Je soussignée »). Pour un
+    # signataire masculin, la couche genre doit l'accorder en « Je soussigné ».
     text = _docx_text(_generate(tmp_path, Gender.MASCULIN))
 
-    assert "Je soussigné Monsieur Jean Durand" in text
+    assert "Je soussigné Monsieur Jean Durand autorise la domiciliation" in text
     assert "Je soussignée Monsieur Jean Durand" not in text
 
 
-def test_autorisation_domiciliation_ignores_free_address_for_cabinet_wording(
+def test_autorisation_domiciliation_opening_agrees_feminine(tmp_path: Path) -> None:
+    # Pour une signataire feminine, l'ouverture figee « Je soussignée » du modele
+    # est conservee telle quelle (accord deja correct).
+    text = _docx_text(_generate(tmp_path, Gender.FEMININ))
+
+    assert "Je soussignée Madame Marie Durand autorise la domiciliation" in text
+
+
+def test_autorisation_domiciliation_ignores_free_address_for_wording(
     tmp_path: Path,
 ) -> None:
     adresse = "Bâtiment B, 4 impasse des Tests, Marseille 13002"
 
     text = _docx_text(_generate(tmp_path, adresse_domiciliation_affichee=adresse))
 
+    # L'adresse libre de domiciliation n'est pas injectee : le modele s'appuie
+    # sur l'adresse complete du siege/cabinet de la societe.
     assert adresse not in text
-    assert (
-        "dans les locaux du cabinet au 80 avenue Marceau, 75008 Paris "
-        "pour 99 ans."
-    ) in text
+    assert "dans les locaux du cabinet au 80 avenue Marceau, 75008 Paris," in text
 
 
-def test_autorisation_domiciliation_uses_company_seat_as_cabinet_address(
+def test_autorisation_domiciliation_uses_company_seat_city(
     tmp_path: Path,
 ) -> None:
     text = _docx_text(_generate(tmp_path))
 
+    # Le modele utilise l'adresse complete du siege ([num_voie_siege] [voie_siege],
+    # [cp_siege] [ville_siege]), pas l'adresse de domiciliation libre.
     assert "15 rue du Libre, Lyon 69002" not in text
     assert "80 avenue Marceau, 75008 Paris" in text
-    assert "Paris 75008" not in text
 
 
 def test_autorisation_domiciliation_does_not_use_signature_image(tmp_path: Path) -> None:
@@ -165,8 +182,9 @@ def test_autorisation_domiciliation_uses_signature_paragraphs_without_table(
 ) -> None:
     document = Document(_generate(tmp_path))
 
+    # Le modele source porte un unique tableau (l'en-tete de titre encadre).
     assert len(document.tables) == 1
     paragraphs = [paragraph.text for paragraph in document.paragraphs if paragraph.text]
     assert "Fait à Paris" in paragraphs
-    assert "Le 12/05/2026" in paragraphs
+    assert "Le 12 mai 2026" in paragraphs
     assert "Monsieur Jean Durand" in paragraphs

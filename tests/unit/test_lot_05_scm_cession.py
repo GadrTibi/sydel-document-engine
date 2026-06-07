@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 from docx import Document
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import (
@@ -284,3 +285,39 @@ def test_acte_blocks_incomplete_credit_vendeur(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="credit_vendeur.taux"):
         ActeCessionPartsScmGenerator().generate(ctx, tmp_path)
+
+
+def test_pv_age_renders_hyphen_bullets_on_two_lists(tmp_path: Path) -> None:
+    # Retour UAT Rafael (DOC-031) : les 2 listes (documents deposes + ordre du
+    # jour) doivent etre rendues en puces tiret « - ... », texte inchange.
+    ctx = _base_context("SELARL")
+    document = Document(PvAgeCessionScmGenerator().generate(ctx, tmp_path))
+    para_texts = [p.text for p in document.paragraphs]
+
+    # Liste A (documents deposes) : chaque item prefixe d'un tiret.
+    assert "- Les copies des convocations des associés ;" in para_texts
+    assert "- Un exemplaire du compromis de cession des parts sociales ;" in para_texts
+    assert "- Le rapport de la gérance ;" in para_texts
+    assert "- Le texte des résolutions proposées." in para_texts
+    # Liste B (ordre du jour) : chaque item prefixe d'un tiret.
+    assert "- Lecture du rapport de la gérance ;" in para_texts
+    assert "- Agrément d'un nouvel associé, la SELARL CABINET DUPONT ;" in para_texts
+    assert "- Modification corrélative des statuts." in para_texts
+    # Garde-fou : les phrases hors liste ne sont PAS transformees en puces.
+    assert (
+        "Le Président dépose et met à la disposition des associés les documents suivants :"
+        in para_texts
+    )
+
+
+def test_courrier_sde_objet_bold_underline_and_signataire_right(tmp_path: Path) -> None:
+    # Retour UAT Rafael (DOC-032) : objet en gras + souligne, signataire a droite.
+    ctx = _base_context("SELARL")
+    document = Document(CourrierSdeCessionScmGenerator().generate(ctx, tmp_path))
+
+    objet = next(p for p in document.paragraphs if p.text.startswith("Objet :"))
+    assert objet.runs[0].bold is True
+    assert objet.runs[0].underline is True
+
+    signataire = next(p for p in document.paragraphs if p.text == "Sarah Durand")
+    assert signataire.alignment == WD_ALIGN_PARAGRAPH.RIGHT

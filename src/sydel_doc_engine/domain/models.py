@@ -270,6 +270,7 @@ class CessionSalarie(BaseModel):
     civilite_affichage: str | None = None
     prenom: str | None = None
     nom: str | None = None
+    poste: str | None = None
 
 
 class CessionAccessibiliteCabinetDentaire(BaseModel):
@@ -282,6 +283,10 @@ class CessionValidations(BaseModel):
     date_realisation_compromis_validee: bool = False
     ligne_contrats_travail_medical_supprimee: bool = False
     salaries_dentaire_deux_valides: bool = False
+    # Garde-fou cas COMPLEXE : une origine de propriete non standard (ni "cree"
+    # ni "achete" simple, ex. succession, apport, demembrement) doit etre saisie
+    # en texte libre (cabinet.description_origine_propriete) ET validee a la main.
+    origine_propriete_complexe_validee: bool = False
 
 
 class CessionFinancement(BaseModel):
@@ -299,6 +304,9 @@ class CessionCabinet(BaseModel):
     adresse_locaux_affichee: str | None = None
     telephone: str | None = None
     superficie_local: str | None = None
+    # Mode d'origine de propriete du VENDEUR (cedant) : "cree" (defaut) ou
+    # "achete". Tout autre cas = COMPLEXE -> texte libre + validation manuelle.
+    origine_propriete_mode: str | None = None
     description_origine_propriete: str | None = None
     date_origine_propriete: date | str | None = None
     annees_acquisition_patientele: str | None = None

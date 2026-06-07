@@ -1,5 +1,10 @@
 # Track B SELARL multi-associes front contract V1
 
+> ⛔ ABANDONNÉ (décision Gad 2026-06-04) — SELARL reste unipersonnelle. Ce contrat de front
+> multi-associés SELARL n'est plus un objectif produit ; document conservé pour mémoire uniquement.
+> Le code correspondant (sous-cas multi DOC-004 + dentiste PARTIAL) a été retiré du front et des
+> générateurs. (La SELAS multi-actionnaire n'est pas concernée.)
+
 Ticket : `TRACK-B-SELARL-MULTI-ASSOCIES-SOURCE-CONTRACT-006`
 
 Statut : contrat source uniquement. Aucun code, aucun front, aucun generateur et aucun wording juridique ne sont modifies par ce document.

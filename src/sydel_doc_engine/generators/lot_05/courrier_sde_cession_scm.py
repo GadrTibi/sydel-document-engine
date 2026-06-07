@@ -13,6 +13,7 @@ from sydel_doc_engine.generators.lot_05.scm_cession_common import (
     validate_courrier_sde_context,
 )
 from sydel_doc_engine.rendering.docx_builder import (
+    add_header_logo,
     add_letter_place_date,
     add_paragraph,
     new_document,
@@ -32,6 +33,8 @@ class CourrierSdeCessionScmGenerator:
             raise ValueError("scm_cession.enregistrement et signataire_sde sont obligatoires.")
 
         document = new_document()
+        # Logo SYDEL en header, aligne a GAUCHE (retour UAT Rafael DOC-032).
+        add_header_logo(document, alignment=WD_ALIGN_PARAGRAPH.LEFT)
         if ctx.structure == "SELAS":
             for line in [
                 required_text(enregistrement.service, "scm_cession.enregistrement.service"),
@@ -54,9 +57,13 @@ class CourrierSdeCessionScmGenerator:
             document,
             f"{ctx.signature.lieu}, le {format_display_date(ctx.signature.date, 'signature.date')}",
         )
-        add_body_paragraph(
+        # Objet en gras + souligne (retour UAT Rafael DOC-032).
+        add_paragraph(
             document,
             "Objet : Enregistrement actes de cession des parts de la société SCM",
+            alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
+            bold=True,
+            underline=True,
         )
         add_body_paragraph(document, "Madame, Monsieur,")
         exemplaires = (
@@ -94,13 +101,14 @@ class CourrierSdeCessionScmGenerator:
             document,
             "Je vous prie d'agréer, Madame, Monsieur, mes salutations distinguées.",
         )
+        # Signataire aligne a DROITE (retour UAT Rafael DOC-032).
         add_paragraph(
             document,
             (
                 f"{required_text(signataire.prenom, 'scm_cession.signataire_sde.prenom')} "
                 f"{required_text(signataire.nom, 'scm_cession.signataire_sde.nom')}"
             ),
-            alignment=WD_ALIGN_PARAGRAPH.LEFT,
+            alignment=WD_ALIGN_PARAGRAPH.RIGHT,
         )
         return save_clean_document(document, output_dir, OUTPUT_FILENAME)
 

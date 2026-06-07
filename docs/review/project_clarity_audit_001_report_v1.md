@@ -22,7 +22,7 @@ La seule lecture propre au 2026-06-02 est :
 | Type | Statut reel |
 | --- | --- |
 | `SELARL` | En traitement avance, `PARTIAL`, corrections retours humains 006 en cours |
-| `SELAS` | En traitement, pilote Naomie, sync manquante, `NO-GO dev` tant que preuve absente |
+| `SELAS` | En traitement, pilote Naomi, sync manquante, `NO-GO dev` tant que preuve absente |
 | `SPFPL cession` | Non traite en sprint produit ; inventaire technique seulement |
 | `SPFPL apport` | Non traite en sprint produit ; inventaire technique seulement |
 | `SCS` | Non traite en sprint produit ; inventaire technique seulement |

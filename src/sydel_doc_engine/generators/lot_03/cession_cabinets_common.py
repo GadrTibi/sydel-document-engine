@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
+import glob
+import re
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 from typing import Literal
 
-from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx import Document
 
+from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import (
     Address,
     CessionAcquereur,
@@ -28,16 +31,7 @@ from sydel_doc_engine.domain.models import (
     DocumentContext,
     DocumentGenerationContext,
 )
-from sydel_doc_engine.rendering.docx_builder import (
-    add_bordered_data_table,
-    add_framed_section_title,
-    add_framed_title,
-    add_hyphen_list_item,
-    add_paragraph,
-    add_party_marker,
-    add_signature_table,
-    new_document,
-)
+from sydel_doc_engine.utils.grammar import apply_gender_pairs
 
 DOCUMENT_CODE = "CODE-CESSION-CAB-001"
 
@@ -48,6 +42,52 @@ DENTAIRE = "dentaire"
 SUPPORTED_STRUCTURES = {"SELARL", "SELAS"}
 SUPPORTED_ETAPES = {ACTE, COMPROMIS}
 SUPPORTED_CABINET_TYPES = {MEDICAL, DENTAIRE}
+
+# Origine de propriete (regle NotebookLM) : la clause decrit le VENDEUR (cedant),
+# comment il est devenu proprietaire. Deux variantes standard ; defaut = "cree"
+# si le praticien n'a pas achete son cabinet. Tout autre cas = COMPLEXE -> texte
+# libre saisi a la main + validation explicite (souplesse / relecture humaine).
+ORIGINE_MODE_CREE = "cree"
+ORIGINE_MODE_ACHETE = "achete"
+SUPPORTED_ORIGINE_MODES = {ORIGINE_MODE_CREE, ORIGINE_MODE_ACHETE}
+
+# Convention systeme : une liste vide (0 element) se rend "Néant", a l'image des
+# apports en nature inexistants. Utilisee pour la reprise des salaries (0/1/N).
+NEANT = "Néant."
+
+# Dossier des modeles Word tokenises, resolu independamment du cwd.
+# parents[4] depuis src/sydel_doc_engine/generators/lot_03/ = racine du repo.
+_SOURCE_MODELS_DIR = (
+    Path(__file__).resolve().parents[4] / "project" / "source_documents" / "lot_03"
+)
+
+# Motif glob par variante (etape, type_cabinet) -> motif robuste aux accents/apostrophes.
+_MODEL_GLOB_BY_VARIANT: dict[tuple[str, str], str] = {
+    (ACTE, MEDICAL): "Acte*cession*m*dical*.docx",
+    (ACTE, DENTAIRE): "Acte*cession*dentaire*.docx",
+    (COMPROMIS, MEDICAL): "Compromis*cession*m*dical*.docx",
+    (COMPROMIS, DENTAIRE): "Compromis*cession*dentaire*.docx",
+}
+
+# Mois francais accentues pour un rendu fidele "10 mars 1975".
+_MONTHS_FR = (
+    "",
+    "janvier",
+    "février",
+    "mars",
+    "avril",
+    "mai",
+    "juin",
+    "juillet",
+    "août",
+    "septembre",
+    "octobre",
+    "novembre",
+    "décembre",
+)
+
+_ISO_DATE_RE = re.compile(r"^(\d{4})-(\d{2})-(\d{2})$")
+_TOKEN_RE = re.compile(r"\[[^\]\[]+\]")
 
 
 @dataclass(frozen=True)
@@ -62,29 +102,461 @@ def generate_cession_cabinet_docx(
     output_dir: Path,
     variant: CessionCabinetVariant,
 ) -> Path:
-    data = _validate_context(ctx, variant)
-
-    docx = new_document()
-    _add_title(docx, variant)
-    _add_parties(docx, data)
-    _add_objet(docx, data, variant)
-    _add_declarations(docx)
-    _add_consistance(docx, data, variant)
-    _add_origine_propriete(docx, data, variant)
-    _add_bail(docx, data, variant)
-    _add_exercices(docx, data)
-    _add_situation_generale(docx, data, variant)
-    _add_prix(docx, data)
-    _add_financement(docx, data, variant)
-    _add_conditions(docx, data, variant)
-    _add_droits_et_formalites(docx, data, variant)
-    _add_signature(docx, data, variant)
-    _add_annexes(docx, data)
-
-    output_dir.mkdir(parents=True, exist_ok=True)
+    # Validation metier conservee (regles credit-vendeur / SCM = acte medical uniquement, etc.).
+    _validate_context(ctx, variant)
+    model_path = _resolve_model_path(variant)
+    replacements = _build_cession_replacements(ctx)
+    gender_pairs = _build_cession_gender_pairs(ctx)
     output_path = output_dir / variant.output_filename
-    docx.save(output_path)
+    return render_cession_from_template(
+        model_path,
+        replacements,
+        output_path,
+        gender_pairs=gender_pairs,
+    )
+
+
+# Paires d'accord en genre des modeles de cession, pilotees par la BONNE personne.
+# Chaines EXACTES figees relevees dans project/source_documents/lot_03/ :
+#  - Acte dentaire : fige au FEMININ ("née le", "Inscrite au tableau",
+#    "domiciliée en cette qualité").
+#  - Compromis dentaire / medical : fige au MASCULIN ("né le", "inscrit au tableau",
+#    "domicilié en cette qualité").
+#  - Acte medical : "né(e) le" inclusif (non touche : aucune paire ne le matche).
+# JAMAIS de regex de terminaison : uniquement ces chaines litterales ancrees.
+# "désigné" (role/invariant) et "Représentée" (la societe, toujours feminin) ne
+# sont PAS dans les paires : on n'y touche pas.
+_CESSION_VENDEUR_PAIRS: list[tuple[str, str]] = [
+    ("né le ", "née le "),
+    ("Inscrit au tableau", "Inscrite au tableau"),
+    ("inscrit au tableau", "inscrite au tableau"),
+]
+_CESSION_REPRESENTANT_PAIRS: list[tuple[str, str]] = [
+    ("domicilié en cette qualité", "domiciliée en cette qualité"),
+]
+
+
+def _build_cession_gender_pairs(
+    ctx: DocumentGenerationContext,
+) -> list[tuple[Gender, list[tuple[str, str]]]]:
+    """Construit les couples (genre, paires) d'accord pour la cession.
+
+    Le genre vendeur pilote l'identification (« né le », « inscrit au tableau »).
+    Le genre du representant de l'acquereur pilote « domicilié en cette qualite ».
+    Un genre absent (None, non capture cote front) -> on n'accorde pas cette
+    personne et le modele source reste fige tel quel (pas de devinette).
+    """
+    pairs: list[tuple[Gender, list[tuple[str, str]]]] = []
+    cession = ctx.cession
+    if cession is None:
+        return pairs
+    vendeur = cession.vendeur
+    if vendeur is not None and vendeur.genre is not None:
+        pairs.append((vendeur.genre, _CESSION_VENDEUR_PAIRS))
+    acquereur = cession.acquereur
+    representant = acquereur.representant if acquereur is not None else None
+    if representant is not None and representant.genre is not None:
+        pairs.append((representant.genre, _CESSION_REPRESENTANT_PAIRS))
+    return pairs
+
+
+def render_cession_from_template(
+    model_path: Path,
+    replacements: dict[str, str],
+    output_path: Path,
+    *,
+    gender_pairs: list[tuple[Gender, list[tuple[str, str]]]] | None = None,
+) -> Path:
+    """Charge le modele tokenise et remplace chaque token [xxx] run par run.
+
+    `gender_pairs` (optionnel) : liste de couples `(genre, paires)` appliques
+    APRES le remplacement des tokens et AVANT la securite anti-token-residuel,
+    via `grammar.apply_gender_pairs` (corps des paragraphes + cellules de
+    tableaux). Chaque entree accorde des chaines EXACTES figees du modele selon
+    le `genre` de la BONNE personne (vendeur, representant...). C'est le
+    generateur qui pilote les paires : aucune normalisation magique globale.
+
+    Securite anti-trou : si un token [...] subsiste apres remplacement, leve
+    ValueError en listant les tokens residuels (un token oublie = un test rouge).
+    """
+    document = Document(str(model_path))
+
+    for paragraph in _iter_all_paragraphs(document):
+        for run in paragraph.runs:
+            text = run.text
+            if "[" not in text:
+                continue
+            for token, value in replacements.items():
+                if token in text:
+                    text = text.replace(token, value)
+            if text != run.text:
+                run.text = text
+
+    if gender_pairs:
+        for paragraph in _iter_all_paragraphs(document):
+            _apply_gender_pairs_to_paragraph(paragraph, gender_pairs)
+
+    residual = _collect_residual_tokens(document)
+    if residual:
+        joined = ", ".join(sorted(residual))
+        raise ValueError(
+            f"Tokens non remplaces dans {model_path.name} pour {DOCUMENT_CODE} : {joined}."
+        )
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    document.save(str(output_path))
     return output_path
+
+
+def _iter_all_paragraphs(document):
+    yield from document.paragraphs
+    for table in document.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                yield from cell.paragraphs
+
+
+def _apply_gender_pairs_to_paragraph(
+    paragraph,
+    gender_pairs: list[tuple[Gender, list[tuple[str, str]]]],
+) -> None:
+    """Accorde en genre les chaines figees d'un paragraphe (corps + cellules).
+
+    Accord d'abord run par run (preserve la mise en forme). Si une forme a
+    accorder est eclatee sur plusieurs runs (le texte attendu du paragraphe n'est
+    pas atteint), on reecrit le texte fusionne sur le premier run.
+    """
+    if not paragraph.runs:
+        return
+
+    original_paragraph_text = paragraph.text
+
+    for run in paragraph.runs:
+        text = run.text
+        for genre, pairs in gender_pairs:
+            text = apply_gender_pairs(text, genre, pairs)
+        if text != run.text:
+            run.text = text
+
+    expected_text = original_paragraph_text
+    for genre, pairs in gender_pairs:
+        expected_text = apply_gender_pairs(expected_text, genre, pairs)
+
+    if paragraph.text != expected_text:
+        runs = paragraph.runs
+        runs[0].text = expected_text
+        for run in runs[1:]:
+            run.text = ""
+
+
+def _collect_residual_tokens(document) -> set[str]:
+    residual: set[str] = set()
+    for paragraph in _iter_all_paragraphs(document):
+        for match in _TOKEN_RE.findall(paragraph.text):
+            residual.add(match)
+    return residual
+
+
+def _resolve_model_path(variant: CessionCabinetVariant) -> Path:
+    pattern = _MODEL_GLOB_BY_VARIANT[(variant.etape, variant.type_cabinet)]
+    matches = glob.glob(str(_SOURCE_MODELS_DIR / pattern))
+    if not matches:
+        raise ValueError(
+            f"Modele introuvable pour {variant.etape}/{variant.type_cabinet} "
+            f"(motif {pattern}) dans {_SOURCE_MODELS_DIR}."
+        )
+    return Path(matches[0])
+
+
+# ---------------------------------------------------------------------------
+# Construction du dictionnaire token -> valeur
+# ---------------------------------------------------------------------------
+
+
+def _build_cession_replacements(ctx: DocumentGenerationContext) -> dict[str, str]:
+    cession = ctx.cession
+    if cession is None:
+        raise ValueError(f"cession est obligatoire pour {DOCUMENT_CODE}.")
+    vendeur = cession.vendeur or CessionVendeur()
+    conjoint = vendeur.conjoint or CessionConjoint()
+    acquereur = cession.acquereur or CessionAcquereur()
+    representant = acquereur.representant or CessionRepresentant()
+    cabinet = cession.cabinet or CessionCabinet()
+    precedent = cabinet.precedent_proprietaire
+    bail = cession.bail_professionnel or CessionBailProfessionnel()
+    prix = cession.prix or CessionPrix()
+    financement = cession.financement or CessionFinancement()
+    credit_vendeur = financement.credit_vendeur or CessionCreditVendeur()
+    pret = financement.pret or CessionPret()
+    document = ctx.document or DocumentContext()
+    signature = ctx.signature
+
+    replacements: dict[str, str] = {}
+
+    def put(token: str, value: object | None) -> None:
+        # Les valeurs None ne sont PAS injectees -> token preserve -> anti-trou (etape 1.3).
+        if value is None:
+            return
+        replacements[token] = str(value)
+
+    # --- Vendeur ---
+    put("[civilite_vendeur]", vendeur.civilite_affichage)
+    put("[prenom_vendeur]", vendeur.prenom)
+    put("[nom_vendeur]", vendeur.nom)
+    put("[profession_vendeur]", vendeur.profession)
+    put("[date_naissance_vendeur]", _french_date(vendeur.date_naissance))
+    put("[ville_naissance_vendeur]", vendeur.ville_naissance)
+    put("[departement_naissance_vendeur]", vendeur.departement_naissance)
+    put("[cp_naissance_vendeur]", vendeur.cp_naissance)
+    put("[pays_naissance_vendeur]", vendeur.pays_naissance)
+    put("[nationalite_vendeur]", vendeur.nationalite)
+    put("[adresse_vendeur]", vendeur.adresse_affichee)
+    put("[adresse_exercice_vendeur]", vendeur.adresse_exercice_affichee)
+    put("[numero_siren_vendeur]", vendeur.numero_siren)
+    put("[numero_ordre_vendeur]", vendeur.numero_ordre)
+    put("[numero_rpps_vendeur]", vendeur.numero_rpps)
+    put("[ordre_departemental_vendeur]", vendeur.ordre_departemental)
+    put("[situation_maritale_vendeur]", vendeur.situation_maritale)
+    put("[regime_matrimonial_vendeur]", vendeur.regime_matrimonial)
+    put("[civilite_conjoint_vendeur]", conjoint.civilite_affichage)
+    put("[prenom_conjoint_vendeur]", conjoint.prenom)
+    put("[nom_conjoint_vendeur]", conjoint.nom)
+
+    # --- Acquereur ---
+    put("[denomination_societe_acquereur]", acquereur.denomination_societe)
+    put("[forme_sociale_acquereur]", acquereur.forme_sociale)
+    put("[capital_social_acquereur]", acquereur.capital_social)
+    put("[adresse_siege_acquereur]", _address_label(acquereur.siege))
+    put("[ville_rcs_acquereur]", acquereur.rcs_ville)
+    put("[numero_rcs_acquereur]", acquereur.numero_rcs)
+    put("[numero_siret_acquereur]", acquereur.numero_siret)
+    put("[date_immatriculation_acquereur]", _french_date(acquereur.date_immatriculation))
+    put("[date_inscription_ordre_acquereur]", _french_date(acquereur.date_inscription_ordre))
+    put("[civilite_acquereur_representant]", representant.civilite_affichage)
+    put("[prenom_acquereur_representant]", representant.prenom)
+    put("[nom_acquereur_representant]", representant.nom)
+    put("[fonction_acquereur_representant]", representant.fonction)
+
+    # --- Cabinet ---
+    put("[adresse_cabinet]", cabinet.adresse_affichee)
+    put("[adresse_locaux]", cabinet.adresse_locaux_affichee)
+    put("[telephone_cabinet]", cabinet.telephone)
+    put("[superficie_local]", cabinet.superficie_local)
+    put("[nature_fonds_liberal]", cabinet.nature_fonds_liberal)
+    put("[description_origine_propriete]", cabinet.description_origine_propriete)
+    put("[date_origine_propriete]", _french_date(cabinet.date_origine_propriete))
+    put("[annees_acquisition_patientele]", cabinet.annees_acquisition_patientele)
+    put("[prix_origine_propriete]", cabinet.prix_origine_propriete)
+    if precedent is not None:
+        put("[civilite_precedent_proprietaire]", precedent.civilite_affichage)
+        put("[prenom_precedent_proprietaire]", precedent.prenom)
+        put("[nom_precedent_proprietaire]", precedent.nom)
+    # Origine de propriete (modeles MEDICAUX) : phrase decrivant le VENDEUR,
+    # variante creee/achetee (defaut "cree"), ou texte libre pour un cas complexe.
+    put("[origine_propriete_phrase]", _build_origine_propriete_phrase(cession))
+
+    # --- Bail professionnel ---
+    put("[date_bail]", _french_date(bail.date_bail))
+    put("[duree_bail]", bail.duree)
+    put("[date_debut_bail]", _french_date(bail.date_debut))
+    put("[date_fin_bail]", _french_date(bail.date_fin))
+    put("[date_reconduction_bail_1]", _french_date(bail.date_reconduction_1))
+    put("[date_reconduction_bail_2]", _french_date(bail.date_reconduction_2))
+    put("[loyer_mensuel]", bail.loyer_mensuel)
+
+    # --- Prix ---
+    put("[prix_cession]", prix.total)
+    put("[prix_cession_lettres]", prix.total_lettres)
+    put("[prix_elements_corporels]", prix.elements_corporels)
+    put("[prix_elements_corporels_lettres]", prix.elements_corporels_lettres)
+    put("[prix_elements_incorporels]", prix.elements_incorporels)
+    put("[prix_elements_incorporels_lettres]", prix.elements_incorporels_lettres)
+
+    # --- Financement : credit-vendeur (acte medical) et pret (compromis) ---
+    put("[montant_credit_vendeur]", credit_vendeur.montant)
+    put("[duree_credit_vendeur]", credit_vendeur.duree)
+    put("[taux_credit_vendeur]", credit_vendeur.taux)
+    put("[majoration_interet_retard]", credit_vendeur.majoration_interet_retard)
+    put("[montant_pret]", pret.montant)
+    put("[taux_pret]", pret.taux)
+    put("[duree_pret]", pret.duree)
+
+    # --- SCM (acte medical) ---
+    if cession.scm is not None:
+        put("[nb_parts_scm_a_ceder]", cession.scm.nb_parts_a_ceder)
+
+    # --- Conditions suspensives (compromis) ---
+    put("[date_realisation_limite]", _french_date(cession.date_limite_realisation))
+
+    # --- Salaries (acte dentaire) : reprise 0 / 1 / N (regle NotebookLM) ---
+    # 0 salarie -> "Néant" (convention systeme) ; 1..N -> liste nom/prenom/poste.
+    put("[clause_reprise_salaries]", _build_clause_reprise_salaries(cession.salaries))
+    # [date_entree_jouissance] (dentaire) : source choisie = date de debut du bail
+    # professionnel (entree en jouissance des locaux). A confirmer cote metier.
+    put("[date_entree_jouissance]", _french_date(bail.date_debut))
+
+    # --- Exercices ---
+    for index in (0, 1, 2):
+        if index < len(cession.exercices):
+            exercice = cession.exercices[index]
+            put(f"[exercice_{index + 1}]", exercice.periode)
+            put(f"[chiffre_affaires_{index + 1}]", exercice.chiffre_affaires)
+            put(f"[resultat_{index + 1}]", exercice.resultat)
+
+    # --- Document / signature ---
+    put("[lieu_signature]", signature.lieu)
+    put("[date_signature]", _french_date(signature.date))
+    put("[nombre_exemplaires_lettres]", document.nombre_exemplaires_lettres)
+    put("[nombre_pages_lettres]", document.nombre_pages_lettres)
+    put("[signature_vendeur]", _person_label(vendeur.civilite_affichage, vendeur.prenom, vendeur.nom))
+    put(
+        "[signature_acquereur]",
+        _person_label(representant.civilite_affichage, representant.prenom, representant.nom),
+    )
+
+    return replacements
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+
+def _french_date(value: date | str | None) -> str | None:
+    """Formate une date en francais long (ex. "10 mars 1975").
+
+    - date -> jour mois annee en francais ;
+    - str ISO "YYYY-MM-DD" -> parsee puis formatee FR ;
+    - autre str -> renvoyee telle quelle ;
+    - None -> None (laisse le token en place pour l'anti-trou).
+    """
+    if value is None:
+        return None
+    if isinstance(value, date):
+        return f"{value.day} {_MONTHS_FR[value.month]} {value.year}"
+    text = value.strip()
+    match = _ISO_DATE_RE.match(text)
+    if match is not None:
+        year, month, day = (int(part) for part in match.groups())
+        try:
+            parsed = date(year, month, day)
+        except ValueError:
+            return text
+        return f"{parsed.day} {_MONTHS_FR[parsed.month]} {parsed.year}"
+    return text
+
+
+def _person_label(
+    civilite: str | None,
+    prenom: str | None,
+    nom: str | None,
+) -> str | None:
+    parts = [part for part in (civilite, prenom, nom) if part]
+    if not parts:
+        return None
+    return " ".join(parts)
+
+
+def _build_origine_propriete_phrase(cession: CessionContext) -> str | None:
+    """Construit la clause d'origine de propriete des modeles MEDICAUX.
+
+    Regle NotebookLM : la clause decrit le VENDEUR (cedant) — comment il est
+    devenu proprietaire. Deux variantes standard, defaut "cree" :
+      - "cree"   -> "... pour l'avoir regulierement cree le <date>."
+      - "achete" -> "... pour l'avoir regulierement acquis aupres de <precedent>,
+                     le <date> au prix de <prix> euros."
+    Un cas COMPLEXE (mode non standard) est porte par le texte libre
+    `cabinet.description_origine_propriete`, sous garde-fou de validation manuelle
+    (cf. `_validate_origine_propriete`). On reutilise le wording deja valide des
+    modeles dentaires (meme sujet vendeur) : aucune reecriture libre.
+    """
+    cabinet = cession.cabinet or CessionCabinet()
+    vendeur = cession.vendeur or CessionVendeur()
+
+    mode = (cabinet.origine_propriete_mode or ORIGINE_MODE_CREE).strip().lower()
+    sujet = _person_label(vendeur.civilite_affichage, vendeur.prenom, vendeur.nom)
+    description = (cabinet.description_origine_propriete or "").strip()
+
+    # Cas COMPLEXE / non standard -> texte libre saisi a la main (relecture humaine).
+    if mode not in SUPPORTED_ORIGINE_MODES:
+        return description or None
+
+    if sujet is None:
+        # Identite vendeur incomplete -> on ne devine pas, on laisse le token
+        # en place (anti-trou) sauf si un texte libre a ete fourni.
+        return description or None
+
+    date_origine = _french_date(cabinet.date_origine_propriete)
+
+    if mode == ORIGINE_MODE_CREE:
+        if date_origine is None:
+            return description or None
+        phrase = (
+            f"{sujet} est propriétaire des éléments constitutifs du cabinet "
+            f"pour l’avoir régulièrement créé le {date_origine}."
+        )
+    else:  # ORIGINE_MODE_ACHETE
+        precedent = cabinet.precedent_proprietaire
+        precedent_label = (
+            _person_label(precedent.civilite_affichage, precedent.prenom, precedent.nom)
+            if precedent is not None
+            else None
+        )
+        prix = (cabinet.prix_origine_propriete or "").strip()
+        if date_origine is None or precedent_label is None or not prix:
+            return description or None
+        phrase = (
+            f"{sujet} est propriétaire des éléments constitutifs du cabinet "
+            f"pour les avoir régulièrement acquis auprès de {precedent_label}, "
+            f"le {date_origine} au prix de {prix} euros."
+        )
+
+    # Complement libre eventuel (precisions metier) appose tel quel.
+    if description:
+        phrase = f"{phrase} {description}"
+    return phrase
+
+
+def _build_clause_reprise_salaries(salaries: list[CessionSalarie]) -> str:
+    """Construit la clause de reprise des contrats de travail (acte dentaire).
+
+    Regle NotebookLM : 0 salarie -> "Néant" (convention systeme) ; 1..N salaries
+    -> "De reprendre les contrats de travail de <liste>." ou chaque salarie est
+    "Civilite Prenom Nom" (+ ", en qualite de <poste>" si le poste est saisi).
+    Reutilise le wording de clause existant du modele ; "Néant" applique la
+    convention systeme (aucune clause "néant" dediee dans le modele source).
+    """
+    if not salaries:
+        return NEANT
+
+    labels: list[str] = []
+    for index, salarie in enumerate(salaries):
+        label = _salarie_label(salarie, index)
+        poste = (salarie.poste or "").strip()
+        if poste:
+            label = f"{label}, en qualité de {poste}"
+        labels.append(label)
+
+    if len(labels) == 1:
+        liste = labels[0]
+    else:
+        liste = ", ".join(labels[:-1]) + f" et de {labels[-1]}"
+    return f"De reprendre les contrats de travail de {liste}."
+
+
+def _address_label(address: Address | None) -> str | None:
+    if address is None:
+        return None
+    if address.adresse_affichee:
+        return address.adresse_affichee
+    parts = [address.num_voie, address.voie, address.cp, address.ville]
+    joined = " ".join(part for part in parts if part)
+    return joined or None
+
+
+# ---------------------------------------------------------------------------
+# Validation metier (inchangee dans son intention : conserve les regles ratifiees)
+# ---------------------------------------------------------------------------
 
 
 @dataclass(frozen=True)
@@ -129,6 +601,7 @@ def _validate_context(
     _validate_arbitrage_blocks(cession, variant, validations)
     _validate_financement(cession, variant, financement)
     _validate_salaries(cession, variant, validations)
+    _validate_origine_propriete(cession, variant, cabinet, validations)
 
     return _CessionData(
         ctx=ctx,
@@ -230,19 +703,51 @@ def _validate_salaries(
     variant: CessionCabinetVariant,
     validations: CessionValidations,
 ) -> None:
+    # Reprise des salaries rendue uniquement par l'acte dentaire (seul modele
+    # portant la clause). Regle NotebookLM : 0 -> "Néant" ; 1..N -> liste.
     if variant.etape == ACTE and variant.type_cabinet == DENTAIRE:
-        if cession.salaries:
-            if len(cession.salaries) != 2 or not validations.salaries_dentaire_deux_valides:
-                raise ValueError(
-                    "cession.salaries doit contenir exactement deux salaries valides pour "
-                    f"l'acte dentaire {DOCUMENT_CODE}."
-                )
-            for index, salarie in enumerate(cession.salaries):
-                _salarie_label(salarie, index)
+        # 0..N accepte. Chaque salarie liste doit avoir une identite complete
+        # (civilite/prenom/nom). Le poste reste optionnel.
+        for index, salarie in enumerate(cession.salaries):
+            _salarie_label(salarie, index)
         return
     if cession.salaries:
         raise ValueError(
-            f"cession.salaries est rendu uniquement pour l'acte dentaire en V1 {DOCUMENT_CODE}."
+            f"cession.salaries est rendu uniquement pour l'acte dentaire {DOCUMENT_CODE}."
+        )
+
+
+def _validate_origine_propriete(
+    cession: CessionContext,
+    variant: CessionCabinetVariant,
+    cabinet: CessionCabinet,
+    validations: CessionValidations,
+) -> None:
+    """Garde-fou origine de propriete pour les modeles MEDICAUX (token construit).
+
+    Souplesse cas COMPLEXE : un mode d'origine non standard (ni "cree" ni
+    "achete", ex. succession / apport / demembrement) DOIT etre saisi en texte
+    libre (`cabinet.description_origine_propriete`) ET valide a la main
+    (`validations.origine_propriete_complexe_validee`). Le moteur n'emet pas une
+    origine devinee. Les modeles dentaires gardent leur clause figee (non
+    concernes par le token construit).
+    """
+    if variant.type_cabinet != MEDICAL:
+        return
+
+    mode = (cabinet.origine_propriete_mode or ORIGINE_MODE_CREE).strip().lower()
+    if mode in SUPPORTED_ORIGINE_MODES:
+        return
+
+    # Cas complexe : exiger texte libre + validation manuelle (relecture humaine).
+    description = (cabinet.description_origine_propriete or "").strip()
+    if not description or not validations.origine_propriete_complexe_validee:
+        raise ValueError(
+            "cession.cabinet.origine_propriete_mode non standard "
+            f"({cabinet.origine_propriete_mode!r}) : fournir "
+            "cession.cabinet.description_origine_propriete ET "
+            "cession.validations.origine_propriete_complexe_validee=True pour "
+            f"{DOCUMENT_CODE}."
         )
 
 
@@ -304,9 +809,12 @@ def _required_cabinet(cabinet: CessionCabinet | None) -> CessionCabinet:
         ("cession.cabinet.adresse_affichee", cabinet.adresse_affichee),
         ("cession.cabinet.adresse_locaux_affichee", cabinet.adresse_locaux_affichee),
         ("cession.cabinet.telephone", cabinet.telephone),
-        ("cession.cabinet.description_origine_propriete", cabinet.description_origine_propriete),
     ]:
         _required_value(value, field_name)
+    # description_origine_propriete n'est plus un token autonome : la clause
+    # d'origine medicale est construite a partir des donnees vendeur (mode
+    # cree/achete). Le texte libre n'est exige que pour un cas COMPLEXE
+    # (cf. _validate_origine_propriete).
     return cabinet
 
 
@@ -359,581 +867,13 @@ def _required_exercices(exercices: list[CessionExercice]) -> list[CessionExercic
     return exercices
 
 
-def _add_title(docx, variant: CessionCabinetVariant) -> None:
-    title = "ACTE DE CESSION" if variant.etape == ACTE else "COMPROMIS DE CESSION"
-    cabinet = "CABINET MEDICAL" if variant.type_cabinet == MEDICAL else "CABINET DENTAIRE"
-    add_framed_title(docx, [title, cabinet])
-
-
-def _add_parties(docx, data: _CessionData) -> None:
-    add_paragraph(docx, "Entre les soussignes :", bold=True)
-    add_paragraph(
-        docx,
-        _vendeur_full_line(data.vendeur),
-        alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
-    )
-    add_paragraph(docx, "Ci-apres designe le vendeur ou le soussigne de premiere part", bold=True, underline=True)
-    add_party_marker(docx, "De premiere part")
-
-    add_paragraph(
-        docx,
-        _required_text(
-            data.acquereur.denomination_societe, "cession.acquereur.denomination_societe"
-        ),
-    )
-    add_paragraph(
-        docx,
-        (
-            f"{_required_text(data.acquereur.forme_sociale, 'cession.acquereur.forme_sociale')} "
-            f"au capital de {_required_text(data.acquereur.capital_social, 'cession.acquereur.capital_social')} euros"
-        ),
-    )
-    add_paragraph(docx, f"Ayant son siege au {_address_label(data.acquereur.siege)}")
-    rcs_line = (
-        f"Immatriculee ou en cours d'immatriculation au RCS de "
-        f"{_required_text(data.acquereur.rcs_ville, 'cession.acquereur.rcs_ville')}"
-    )
-    if data.acquereur.numero_rcs:
-        rcs_line += f" sous le numero {data.acquereur.numero_rcs}"
-    if data.acquereur.numero_siret:
-        rcs_line += f" {data.acquereur.numero_siret}"
-    add_paragraph(docx, rcs_line)
-    add_paragraph(
-        docx,
-        (
-            "Representee par son "
-            f"{_required_text(data.representant.fonction, 'cession.acquereur.representant.fonction')}, "
-            f"{_representant_label(data.representant)}, domicilie en cette qualite audit siege."
-        ),
-    )
-    add_paragraph(docx, "Ci-apres designe l'acquereur ou le soussigne de seconde part", bold=True, underline=True)
-    add_party_marker(docx, "De deuxieme part")
-    add_paragraph(docx, "Il a ete declare fait et convenu ce qui suit :", bold=True, underline=True)
-
-
-def _add_objet(docx, data: _CessionData, variant: CessionCabinetVariant) -> None:
-    _add_section_title(docx, "OBJET DU CONTRAT")
-    if variant.etape == ACTE:
-        fonds = (
-            "fonds liberal de medecin"
-            if variant.type_cabinet == MEDICAL
-            else f"fonds liberal de {_required_text(data.vendeur.profession, 'cession.vendeur.profession')}"
-        )
-        text = (
-            "Par les presentes, le vendeur cede et transporte en s'obligeant a toutes les "
-            "garanties ordinaires de fait et de droit les plus etendues, au cessionnaire, "
-            f"qui accepte, le {fonds} dont il est proprietaire, exploite au "
-            f"{_required_text(data.cabinet.adresse_affichee, 'cession.cabinet.adresse_affichee')}."
-        )
-    else:
-        nature = (
-            _required_text(
-                data.cabinet.nature_fonds_liberal, "cession.cabinet.nature_fonds_liberal"
-            )
-            if variant.type_cabinet == MEDICAL
-            else _required_text(data.vendeur.profession, "cession.vendeur.profession")
-        )
-        text = (
-            "Par les presentes, le promettant promet de vendre, sous les garanties ordinaires "
-            "de droit et de faits en pareille matiere, au beneficiaire qui accepte et s'engage "
-            f"a acquerir le fonds liberal de {nature} attache aux locaux situes a "
-            f"{_required_text(data.cabinet.adresse_locaux_affichee, 'cession.cabinet.adresse_locaux_affichee')}."
-        )
-    add_paragraph(docx, text, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY)
-    add_paragraph(
-        docx,
-        "La presente convention a pour objet de determiner les conditions de la cession a "
-        "l'acquereur du fonds liberal appartenant au vendeur, et de fixer les modalites dans "
-        "lesquelles aura lieu le transfert de propriete et de jouissance.",
-        alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
-    )
-
-
-def _add_declarations(docx) -> None:
-    _add_section_title(docx, "DECLARATIONS DES PARTIES")
-    for text in [
-        "que leur etat civil et leur existence juridique est conforme a celui ou celle indique en tete des presentes,",
-        "qu'elles ne sont pas susceptibles d'etre l'objet de poursuites ou de mesures pouvant entrainer la confiscation totale ou partielle de leurs biens,",
-        "qu'elles ont la pleine capacite juridique pour s'obliger aux presentes,",
-        "qu'aucune restriction legale, judiciaire ou contractuelle ne fait obstacle a la cession.",
-    ]:
-        add_hyphen_list_item(docx, text, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY)
-
-
-def _add_consistance(docx, data: _CessionData, variant: CessionCabinetVariant) -> None:
-    _add_section_title(docx, "DECLARATION DU VENDEUR - CONSISTANCE DU FONDS LIBERAL")
-    cabinet_label = "cabinet medical" if variant.type_cabinet == MEDICAL else "cabinet dentaire"
-    add_paragraph(
-        docx,
-        (
-            f"Le vendeur declare etre proprietaire du {cabinet_label} exploite a "
-            f"{_required_text(data.cabinet.adresse_affichee, 'cession.cabinet.adresse_affichee')}."
-        ),
-        alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
-    )
-    for text in [
-        "la patientele et les fichiers attaches au fonds liberal cede,",
-        "les dossiers, archives et informations patients, dans le respect des regles professionnelles applicables,",
-        "le droit au bail ou le droit d'exercer dans les lieux selon la source du document,",
-        f"la ligne telephonique {_required_text(data.cabinet.telephone, 'cession.cabinet.telephone')},",
-        "les instruments, materiel professionnel, meubles et objets mobiliers servant a l'exploitation,",
-        "les contrats, marches, traites et conventions passes dans le cadre de l'activite liberale.",
-    ]:
-        add_hyphen_list_item(docx, text, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY)
-
-
-def _add_origine_propriete(
-    docx,
-    data: _CessionData,
-    variant: CessionCabinetVariant,
-) -> None:
-    _add_section_title(docx, "SUR L'ORIGINE DE PROPRIETE")
-    if variant.etape == ACTE and variant.type_cabinet == MEDICAL:
-        add_paragraph(
-            docx,
-            (
-                "Le vendeur declare avoir acquis ou cree la patientele en "
-                f"{_required_text(data.cabinet.annees_acquisition_patientele, 'cession.cabinet.annees_acquisition_patientele')}. "
-                f"{_required_text(data.cabinet.description_origine_propriete, 'cession.cabinet.description_origine_propriete')}"
-            ),
-            alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
-        )
-        return
-    if variant.etape == ACTE and variant.type_cabinet == DENTAIRE:
-        previous = data.cabinet.precedent_proprietaire
-        if previous is None:
-            raise ValueError(
-                "cession.cabinet.precedent_proprietaire est obligatoire pour l'acte dentaire."
-            )
-        add_paragraph(
-            docx,
-            (
-                "Le vendeur declare avoir acquis le fonds liberal aupres de "
-                f"{_person_label(previous.civilite_affichage, previous.prenom, previous.nom, 'cession.cabinet.precedent_proprietaire')} "
-                f"le {_display_date(data.cabinet.date_origine_propriete, 'cession.cabinet.date_origine_propriete')}, "
-                f"moyennant le prix de {_required_text(data.cabinet.prix_origine_propriete, 'cession.cabinet.prix_origine_propriete')}."
-            ),
-            alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
-        )
-        return
-    add_paragraph(
-        docx,
-        (
-            "L'origine de propriete est rendue selon les informations manuelles validees du "
-            f"contexte : {_required_text(data.cabinet.description_origine_propriete, 'cession.cabinet.description_origine_propriete')}"
-        ),
-        alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
-    )
-
-
-def _add_bail(docx, data: _CessionData, variant: CessionCabinetVariant) -> None:
-    _add_section_title(docx, "DROIT AU BAIL")
-    add_paragraph(
-        docx,
-        (
-            "Le fonds liberal est exploite dans des locaux faisant l'objet d'un bail "
-            f"professionnel en date du {_display_date(data.bail.date_bail, 'cession.bail_professionnel.date_bail')}, "
-            f"d'une duree de {_required_text(data.bail.duree, 'cession.bail_professionnel.duree')}."
-        ),
-        alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
-    )
-    if data.bail.date_debut or data.bail.date_fin:
-        add_paragraph(
-            docx,
-            (
-                "La periode du bail est renseignee du "
-                f"{_display_date(data.bail.date_debut, 'cession.bail_professionnel.date_debut')} "
-                f"au {_display_date(data.bail.date_fin, 'cession.bail_professionnel.date_fin')}."
-            ),
-            alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
-        )
-    if data.bail.loyer_mensuel:
-        add_paragraph(docx, f"Le loyer mensuel est de {data.bail.loyer_mensuel}.")
-    add_paragraph(
-        docx,
-        (
-            "L'activite autorisee par le bail est la suivante : "
-            f"{_required_text(data.bail.activite_autorisee_affichee, 'cession.bail_professionnel.activite_autorisee_affichee')}."
-        ),
-        alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
-    )
-    if variant.type_cabinet == MEDICAL:
-        add_paragraph(
-            docx,
-            "La mention medicale du bail a ete rendue uniquement apres validation explicite du contexte.",
-            italic=True,
-        )
-
-
-def _add_exercices(docx, data: _CessionData) -> None:
-    _add_section_title(docx, "CHIFFRES D'AFFAIRES ET RESULTATS")
-    headers = ["Exercice", "Chiffre d'affaires", "Resultat"]
-    rows = [
-        [
-            _required_text(exercice.periode, "cession.exercices[].periode"),
-            _required_text(
-                exercice.chiffre_affaires,
-                "cession.exercices[].chiffre_affaires",
-            ),
-            _required_text(exercice.resultat, "cession.exercices[].resultat"),
-        ]
-        for exercice in data.exercices
-    ]
-    add_bordered_data_table(docx, headers, rows)
-
-
-def _add_situation_generale(
-    docx,
-    data: _CessionData,
-    variant: CessionCabinetVariant,
-) -> None:
-    _add_section_title(docx, "SITUATION GENERALE ET LIBRE DISPOSITION")
-    profession = (
-        "medecin"
-        if variant.type_cabinet == MEDICAL
-        else _required_text(
-            data.vendeur.profession,
-            "cession.vendeur.profession",
-        )
-    )
-    for text in [
-        "le vendeur a la libre disposition et la pleine propriete du materiel cede,",
-        "aucune saisie, confiscation, location, pret ou reserve de propriete ne greve le fonds liberal,",
-        "le materiel est declare en bon fonctionnement,",
-        "le cabinet respecte les normes de salubrite, hygiene et securite applicables,",
-        "l'acquereur declare ne connaitre aucun obstacle a l'exercice de la profession de "
-        + profession
-        + ".",
-    ]:
-        add_hyphen_list_item(docx, text, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY)
-
-
-def _add_prix(docx, data: _CessionData) -> None:
-    _add_section_title(docx, "PRIX")
-    add_paragraph(
-        docx,
-        (
-            "La presente cession est consentie et acceptee moyennant le prix principal de "
-            f"{_required_text(data.prix.total_lettres, 'cession.prix.total_lettres')} "
-            f"({_required_text(data.prix.total, 'cession.prix.total')} euros)."
-        ),
-        alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
-    )
-    for text in [
-        (
-            "elements corporels : "
-            f"{_required_text(data.prix.elements_corporels_lettres, 'cession.prix.elements_corporels_lettres')} "
-            f"({_required_text(data.prix.elements_corporels, 'cession.prix.elements_corporels')} euros)"
-        ),
-        (
-            "elements incorporels : "
-            f"{_required_text(data.prix.elements_incorporels_lettres, 'cession.prix.elements_incorporels_lettres')} "
-            f"({_required_text(data.prix.elements_incorporels, 'cession.prix.elements_incorporels')} euros)"
-        ),
-    ]:
-        add_hyphen_list_item(docx, text)
-
-
-def _add_financement(
-    docx,
-    data: _CessionData,
-    variant: CessionCabinetVariant,
-) -> None:
-    if variant.etape == ACTE:
-        _add_section_title(docx, "PAIEMENT DU PRIX")
-        if variant.type_cabinet == MEDICAL:
-            add_paragraph(docx, "Le prix est paye au moyen d'un pret bancaire.")
-            _add_credit_vendeur(docx, data.financement.credit_vendeur)
-        else:
-            add_paragraph(docx, "Le prix est paye comptant par l'acquereur.")
-        return
-
-    _add_section_title(docx, "CONDITIONS SUSPENSIVES")
-    pret = _required_pret(data.financement.pret)
-    if variant.type_cabinet == MEDICAL:
-        add_paragraph(
-            docx,
-            (
-                "La realisation des presentes est soumise a l'obtention d'un pret d'un montant "
-                f"de {_required_text(pret.montant, 'cession.financement.pret.montant')}, "
-                f"au taux de {_required_text(pret.taux, 'cession.financement.pret.taux')} "
-                f"et pour une duree de {_required_text(pret.duree, 'cession.financement.pret.duree')}."
-            ),
-            alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
-        )
-    else:
-        add_paragraph(
-            docx,
-            (
-                "La realisation des presentes est soumise a l'obtention d'un pret d'un montant "
-                f"de {_required_text(pret.montant, 'cession.financement.pret.montant')}, "
-                "au taux maximum source fixe de 5 %."
-            ),
-            alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
-        )
-    add_paragraph(
-        docx,
-        (
-            "La cession devra etre regularisee au plus tard le "
-            f"{_display_date(data.cession.date_limite_realisation, 'cession.date_limite_realisation')}."
-        ),
-        alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
-    )
-
-
-def _add_credit_vendeur(docx, credit_vendeur: CessionCreditVendeur | None) -> None:
-    if credit_vendeur is None or not credit_vendeur.actif:
-        return
-    add_paragraph(
-        docx,
-        (
-            "Un credit-vendeur est stipule pour un montant de "
-            f"{_required_text(credit_vendeur.montant, 'cession.financement.credit_vendeur.montant')}, "
-            f"une duree de {_required_text(credit_vendeur.duree, 'cession.financement.credit_vendeur.duree')}, "
-            f"au taux de {_required_text(credit_vendeur.taux, 'cession.financement.credit_vendeur.taux')}."
-        ),
-        alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
-    )
-    add_paragraph(
-        docx,
-        (
-            "La majoration d'interet de retard est fixee a "
-            f"{_required_text(credit_vendeur.majoration_interet_retard, 'cession.financement.credit_vendeur.majoration_interet_retard')}."
-        ),
-        alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
-    )
-
-
-def _add_conditions(
-    docx,
-    data: _CessionData,
-    variant: CessionCabinetVariant,
-) -> None:
-    _add_section_title(docx, "CONDITIONS")
-    for text in [
-        "le vendeur garantit les enonciations relatives a l'origine de propriete et a la consistance du fonds,",
-        "le vendeur remet a l'acquereur les dossiers, fichiers et justificatifs necessaires,",
-        "l'acquereur prend le fichier et les dossiers patients dans l'etat ou ils se trouvent,",
-        "l'acquereur supporte les frais, droits et honoraires des presentes.",
-    ]:
-        add_hyphen_list_item(docx, text, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY)
-    if data.cession.scm is not None and data.cession.scm.actif:
-        add_hyphen_list_item(
-            docx,
-            (
-                "l'acquereur reprend la clause manuelle de cession de parts SCM pour "
-                f"{_required_text(data.cession.scm.nb_parts_a_ceder, 'cession.scm.nb_parts_a_ceder')} parts."
-            ),
-            alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
-        )
-    if variant.etape == ACTE and variant.type_cabinet == DENTAIRE and data.cession.salaries:
-        add_paragraph(docx, "L'acquereur reprend les contrats de travail des salaries suivants :")
-        for salarie in data.cession.salaries:
-            add_hyphen_list_item(docx, _salarie_label(salarie, 0))
-    if variant.type_cabinet == DENTAIRE:
-        accessibilite = data.cession.accessibilite_cabinet_dentaire
-        if accessibilite and accessibilite.information_requise:
-            _add_section_title(docx, "ACCESSIBILITE DES CABINETS DENTAIRES")
-            add_paragraph(
-                docx,
-                accessibilite.information_requise,
-                alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
-            )
-
-
-def _add_droits_et_formalites(
-    docx,
-    data: _CessionData,
-    variant: CessionCabinetVariant,
-) -> None:
-    _add_section_title(docx, "DROITS, FRAIS ET FORMALITES")
-    add_paragraph(
-        docx, "Les droits d'enregistrement sont acquittes conformement aux textes applicables."
-    )
-    add_paragraph(
-        docx, "Les frais, droits et honoraires des presentes sont a la charge de l'acquereur."
-    )
-    ordre = (
-        "Conseil departemental de l'Ordre des Medecins"
-        if variant.type_cabinet == MEDICAL
-        else "Conseil departemental de l'Ordre des Chirurgiens-Dentistes"
-    )
-    add_paragraph(docx, f"Le present contrat sera communique au {ordre}.")
-    if variant.etape == ACTE:
-        _add_section_title(docx, "TRANSFERT DE PROPRIETE")
-        add_paragraph(
-            docx,
-            "L'acquereur aura la propriete et la jouissance du fonds liberal selon les modalites des presentes.",
-            alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
-        )
-    if variant.type_cabinet == DENTAIRE:
-        _add_section_title(docx, "CONCILIATION ORDINALE")
-        add_paragraph(
-            docx,
-            (
-                "Tout differend relatif aux presentes sera prealablement soumis au President "
-                "du Conseil departemental competent."
-            ),
-            alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
-        )
-    _add_section_title(docx, "ELECTION DE DOMICILE - ATTRIBUTION DE JURIDICTION")
-    add_paragraph(
-        docx,
-        "Pour l'execution des presentes, les parties font election de domicile en leur domicile ou siege respectif.",
-        alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
-    )
-
-
-def _add_signature(
-    docx,
-    data: _CessionData,
-    variant: CessionCabinetVariant,
-) -> None:
-    add_paragraph(
-        docx,
-        (
-            f"Fait a {_required_text(data.ctx.signature.lieu, 'signature.lieu')}, le "
-            f"{_display_date(data.ctx.signature.date, 'signature.date')}, en "
-            f"{_required_text(data.document.nombre_exemplaires_lettres, 'document.nombre_exemplaires_lettres')} exemplaires."
-        ),
-    )
-    if variant.type_cabinet == DENTAIRE and variant.etape == ACTE:
-        add_paragraph(docx, "Lu et approuve", italic=True)
-    add_signature_table(
-        docx,
-        [
-            [
-                f"Le vendeur : {_vendeur_label(data.vendeur)}",
-                f"L'acquereur : {_required_text(data.acquereur.denomination_societe, 'cession.acquereur.denomination_societe')}",
-            ]
-        ],
-    )
-
-
-def _add_annexes(docx, data: _CessionData) -> None:
-    annexes = data.document.annexes or [
-        "ETAT DES ELEMENTS CORPORELS CEDES",
-        "COPIE 2035 AMORTISSEMENTS",
-    ]
-    _add_section_title(docx, "ANNEXES")
-    for annexe in annexes:
-        add_hyphen_list_item(docx, annexe)
-
-
-def _required_pret(pret: CessionPret | None) -> CessionPret:
-    if pret is None:
-        raise ValueError(f"cession.financement.pret est obligatoire pour {DOCUMENT_CODE}.")
-    _required_text(pret.montant, "cession.financement.pret.montant")
-    return pret
-
-
-def _section_label(title: str) -> str:
-    return title
-
-
-def _add_section_title(docx, title: str) -> None:
-    add_framed_section_title(docx, _section_label(title))
-
-
-def _vendeur_full_line(vendeur: CessionVendeur) -> str:
-    birth_place = _required_text(vendeur.ville_naissance, "cession.vendeur.ville_naissance")
-    if vendeur.departement_naissance:
-        birth_place += f" ({vendeur.departement_naissance})"
-    elif vendeur.cp_naissance:
-        birth_place += f" {vendeur.cp_naissance}"
-    elif vendeur.pays_naissance:
-        birth_place += f" ({vendeur.pays_naissance})"
-    line = (
-        f"{_vendeur_label(vendeur)}, "
-        f"{_required_text(vendeur.profession, 'cession.vendeur.profession')}, "
-        f"ne(e) le {_display_date(vendeur.date_naissance, 'cession.vendeur.date_naissance')} "
-        f"a {birth_place}, de nationalite "
-        f"{_required_text(vendeur.nationalite, 'cession.vendeur.nationalite')}, demeurant "
-        f"{_required_text(vendeur.adresse_affichee, 'cession.vendeur.adresse_affichee')}"
-    )
-    if vendeur.adresse_exercice_affichee:
-        line += f", et exercant au {vendeur.adresse_exercice_affichee}"
-    if vendeur.numero_siren:
-        line += f", inscrit au repertoire SIREN sous le numero {vendeur.numero_siren}"
-    if vendeur.numero_ordre:
-        line += (
-            f", inscrit au tableau du Conseil departemental sous le numero {vendeur.numero_ordre}"
-        )
-    if vendeur.numero_rpps:
-        line += f", inscrit sous le numero RPPS {vendeur.numero_rpps}"
-    line += f", {_required_text(vendeur.situation_maritale, 'cession.vendeur.situation_maritale')}"
-    if vendeur.conjoint is not None:
-        line += f" avec {_conjoint_label(vendeur.conjoint)}"
-    if vendeur.regime_matrimonial:
-        line += f", sous le regime de {vendeur.regime_matrimonial}"
-    return line + "."
-
-
-def _vendeur_label(vendeur: CessionVendeur) -> str:
-    return _person_label(
-        vendeur.civilite_affichage,
-        vendeur.prenom,
-        vendeur.nom,
-        "cession.vendeur",
-    )
-
-
-def _representant_label(representant: CessionRepresentant) -> str:
-    return _person_label(
-        representant.civilite_affichage,
-        representant.prenom,
-        representant.nom,
-        "cession.acquereur.representant",
-    )
-
-
-def _conjoint_label(conjoint: CessionConjoint) -> str:
-    return _person_label(
-        conjoint.civilite_affichage,
-        conjoint.prenom,
-        conjoint.nom,
-        "cession.vendeur.conjoint",
-    )
-
-
 def _salarie_label(salarie: CessionSalarie, index: int) -> str:
     field_name = f"cession.salaries[{index}]"
-    return _person_label(
-        salarie.civilite_affichage,
-        salarie.prenom,
-        salarie.nom,
-        field_name,
-    )
-
-
-def _person_label(
-    civilite: str | None,
-    prenom: str | None,
-    nom: str | None,
-    field_name: str,
-) -> str:
     return (
-        f"{_required_text(civilite, f'{field_name}.civilite_affichage')} "
-        f"{_required_text(prenom, f'{field_name}.prenom')} "
-        f"{_required_text(nom, f'{field_name}.nom')}"
+        f"{_required_text(salarie.civilite_affichage, f'{field_name}.civilite_affichage')} "
+        f"{_required_text(salarie.prenom, f'{field_name}.prenom')} "
+        f"{_required_text(salarie.nom, f'{field_name}.nom')}"
     )
-
-
-def _address_label(address: Address | None) -> str | None:
-    if address is None:
-        return None
-    if address.adresse_affichee:
-        return address.adresse_affichee
-    parts = [address.num_voie, address.voie, address.cp, address.ville]
-    return " ".join(part for part in parts if part)
-
-
-def _display_date(value: date | str | None, field_name: str) -> str:
-    if value is None:
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
-    if isinstance(value, date):
-        return value.strftime("%d/%m/%Y")
-    return _required_text(value, field_name)
 
 
 def _required_value(value: date | str | None, field_name: str) -> date | str:

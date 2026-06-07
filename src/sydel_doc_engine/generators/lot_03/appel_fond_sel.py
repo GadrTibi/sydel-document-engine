@@ -15,7 +15,10 @@ from sydel_doc_engine.domain.models import (
     DocumentSignataire,
 )
 from sydel_doc_engine.generators.lot_03.bail_appel_common import (
+    CABINET_DENTAIRE,
+    CABINET_MEDICAL,
     DOCUMENT_CODE,
+    cabinet_type,
     format_display_date,
     required_cession,
     required_text,
@@ -23,6 +26,7 @@ from sydel_doc_engine.generators.lot_03.bail_appel_common import (
 )
 from sydel_doc_engine.rendering.docx_builder import (
     add_centered_amount,
+    add_header_logo,
     add_italic_instruction,
     add_paragraph,
     add_right_aligned_lines,
@@ -32,6 +36,13 @@ from sydel_doc_engine.rendering.docx_builder import (
 
 OUTPUT_FILENAME = "appel_fond_sel.docx"
 
+# Libelle d'affichage du type de cabinet dans le corps de la lettre. Le type interne est
+# normalise ("dentaire"/"medical") ; ici on rend la forme accentuee attendue dans le texte.
+_CABINET_TYPE_LABELS = {
+    CABINET_DENTAIRE: "dentaire",
+    CABINET_MEDICAL: "médical",
+}
+
 
 class AppelFondSelGenerator:
     """Generateur from-scratch de l'appel de fonds SEL."""
@@ -39,6 +50,7 @@ class AppelFondSelGenerator:
     def generate(self, ctx: DocumentGenerationContext, output_dir: Path) -> Path:
         validate_appel_fonds_context(ctx)
         cession = required_cession(ctx)
+        cabinet_type_label = _CABINET_TYPE_LABELS[cabinet_type(ctx)]
         financement = _required_financement(cession.financement)
         destinataire = _required_destinataire(financement.destinataire)
         cabinet = _required_cabinet(cession.cabinet)
@@ -47,6 +59,8 @@ class AppelFondSelGenerator:
         signataire = _required_signataire(_required_document_context(ctx.document).signataire)
 
         docx = new_document()
+        # Logo SYDEL en header, aligne a DROITE (retour UAT Rafael DOC-008).
+        add_header_logo(docx, alignment=WD_ALIGN_PARAGRAPH.RIGHT)
         nom_banque = required_text(
             financement.banque.nom if financement.banque else None,
             "cession.financement.banque.nom",
@@ -62,13 +76,15 @@ class AppelFondSelGenerator:
             "cession.acquereur.denomination_societe",
         )
 
-        add_paragraph(docx, nom_banque)
+        # Bloc banque + lieu/date aligne a DROITE (retour UAT Rafael DOC-008).
+        add_paragraph(docx, nom_banque, alignment=WD_ALIGN_PARAGRAPH.RIGHT)
         add_paragraph(
             docx,
             (
                 f"{required_text(ctx.signature.lieu, 'signature.lieu')}, le "
                 f"{format_display_date(ctx.signature.date, 'signature.date')}"
             ),
+            alignment=WD_ALIGN_PARAGRAPH.RIGHT,
         )
         add_italic_instruction(
             docx,
@@ -97,7 +113,7 @@ class AppelFondSelGenerator:
         add_paragraph(
             docx,
             (
-                "pour la cession du cabinet dentaire exploité au "
+                f"pour la cession du cabinet {cabinet_type_label} exploité au "
                 f"{cabinet_label} de {vendeur_label} à la Société {acquereur_label}."
             ),
             alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,

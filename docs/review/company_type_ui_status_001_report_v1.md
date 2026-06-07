@@ -85,5 +85,5 @@ Resultat : OK, 42 tests passes.
 ## Prochaine action recommandee
 
 Poursuivre `SELARL-RETURNS-006-PV-001` si Gad continue les corrections SELARL en
-parallele, ou attendre un Sync packet/commit pousse de Naomie avant toute
+parallele, ou attendre un Sync packet/commit pousse de Naomi avant toute
 requalification SELAS.

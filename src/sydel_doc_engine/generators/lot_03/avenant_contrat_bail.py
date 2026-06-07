@@ -249,8 +249,7 @@ def _add_signature_table(docx) -> None:
     add_signature_table(
         docx,
         [
-            ["Le Bailleur", "L\u2019ancien locataire"],
-            ["Le nouveau locataire", "Le nouveau locataire"],
+            ["Le Bailleur", "L\u2019ancien locataire", "Le nouveau locataire"],
         ],
         style_profile=BAIL_COMPACT_STYLE_PROFILE,
     )

@@ -23,6 +23,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_statuts_title_box,
     new_document,
 )
+from sydel_doc_engine.utils.grammar import apply_gender_pairs
 
 DOCUMENT_CODE = "CODE-STATUTS-SEL-001"
 STRUCTURE_SELARL = "SELARL"
@@ -30,9 +31,6 @@ STRUCTURE_SELAS = "SELAS"
 OVERLAY_SELARL_DENTISTE = "selarl_dentiste"
 OVERLAY_SELARL_MEDECIN = "selarl_medecin"
 OVERLAY_SELAS_MEDECIN = "selas_medecin"
-_DENTISTE_APPORT_UNIQUE_BLOCK = (
-    "[civilite] [prenom] [nom] apporte à la Société la somme de [montant_apport].   "
-)
 
 
 def required_text(value: str | None, field_name: str) -> str:
@@ -65,18 +63,10 @@ def validate_sel_context(
         raise ValueError(f"dossier.structure doit etre {expected_structure} pour {DOCUMENT_CODE}.")
     if ctx.statuts_sel is not None and ctx.statuts_sel.overlay != expected_overlay:
         raise ValueError(f"statuts_sel.overlay doit etre {expected_overlay} pour {DOCUMENT_CODE}.")
-    multi_partial = is_selarl_dentiste_multi_associes_partial(ctx)
-    if len(ctx.associes) != 1 and not multi_partial:
+    if len(ctx.associes) != 1:
         raise ValueError(
             f"les statuts SEL multi-associes sont bloques en V1 pour {DOCUMENT_CODE}."
         )
-    if multi_partial and expected_overlay != OVERLAY_SELARL_DENTISTE:
-        raise ValueError(
-            "le mode statuts multi-associes PARTIAL est limite a DOC-016 "
-            f"pour {DOCUMENT_CODE}."
-        )
-    if multi_partial:
-        _validate_multi_associate_capital(ctx)
     if ctx.capital_souscription and len(ctx.capital_souscription.souscripteurs) > 1:
         raise ValueError(
             f"les statuts SEL multi-associes sont bloques en V1 pour {DOCUMENT_CODE}."
@@ -106,14 +96,9 @@ def common_replacements(
     ctx: DocumentGenerationContext,
     *,
     title_type: str,
-    allow_multi_associes_partial: bool = False,
 ) -> dict[str, str]:
     company = required_company(ctx)
-    associate = (
-        required_associe_principal(ctx)
-        if allow_multi_associes_partial
-        else required_associe_unique(ctx)
-    )
+    associate = required_associe_unique(ctx)
     replacements = {
         "[denomination_societe]": required_text(company.denomination, "societe.denomination"),
         "[adresse_siege]": address_display(company.siege, "societe.siege"),
@@ -170,10 +155,7 @@ def common_replacements(
         "[lieu_signature]": required_text(ctx.signature.lieu, "signature.lieu"),
         "[date_signature]": format_display_date(ctx.signature.date, "signature.date"),
     }
-    if allow_multi_associes_partial:
-        _validate_multi_associate_capital(ctx)
-    else:
-        _validate_unique_associate_capital(ctx, associate)
+    _validate_unique_associate_capital(ctx, associate)
     return replacements
 
 
@@ -427,72 +409,33 @@ def replace_placeholders(text: str, replacements: dict[str, str]) -> str:
     return rendered
 
 
+# Paires d'accord en genre des statuts SEL, pilotees par le genre de l'associe.
+# Chaque paire = (forme_masculin, forme_feminin), chaine EXACTE telle que figee
+# dans les blocs sources (cf. *_BLOCKS de statuts_sel_exercice_templates.py).
+# JAMAIS de regex de terminaison : uniquement ces chaines litterales ancrees.
+#  - "LE SOUSSIGNE\xa0:" -> "LA SOUSSIGNEE\xa0:" : l'entete figee au masculin doit
+#    s'accorder pour une associee (insecable avant les deux-points conserve).
+#  - "ne le " -> "nee le " : la date de naissance dans la ligne d'identification.
+# Les variantes mojibake (nÃ©) couvrent un eventuel rendu Word mal encode.
+_STATUTS_GENDER_PAIRS: list[tuple[str, str]] = [
+    ("LE SOUSSIGNE\xa0:", "LA SOUSSIGNÉE\xa0:"),
+    (", né le ", ", née le "),
+    ("né le ", "née le "),
+    (", nÃ© le ", ", nÃ©e le "),
+    ("nÃ© le ", "nÃ©e le "),
+]
+
+
 def apply_gender_variants(text: str, associate: Associe) -> str:
-    if associate.genre != Gender.FEMININ:
-        return text
-    return (
-        text.replace(", né le ", ", née le ")
-        .replace("Né le ", "Née le ")
-        .replace(", nÃ© le ", ", nÃ©e le ")
-        .replace("NÃ© le ", "NÃ©e le ")
-    )
+    """Accorde l'entete et la ligne de naissance des statuts selon l'associe.
 
-
-def dentiste_multi_associes_partial_blocks(
-    blocks: tuple[str, ...],
-    ctx: DocumentGenerationContext,
-) -> tuple[str, ...]:
-    rendered_blocks: list[str] = []
-    for block in blocks:
-        if block == _DENTISTE_APPORT_UNIQUE_BLOCK:
-            rendered_blocks.extend(_multi_associes_apport_lines(ctx))
-        elif block == "Total des apports en numéraire : ci- [montant_apport].":
-            rendered_blocks.append("Total des apports en numéraire : ci- [capital_social].")
-        elif block.startswith("Cette somme de [montant_apport_lettres]"):
-            rendered_blocks.append(
-                "Cette somme de [capital_lettres] a été déposée par les associés "
-                "conformément à la loi, au crédit d’un compte ouvert au nom de la société "
-                "en formation dans les livres de la banque [nom_banque]."
-            )
-        elif block.startswith(
-            "à [civilite] [prenom] [nom], [nb_parts_total_lettres] parts sociales"
-        ):
-            rendered_blocks.extend(_multi_associes_capital_lines(ctx))
-        elif block == "[prenom] [nom]":
-            rendered_blocks.extend(
-                f"{required_text(associate.prenom, 'associes[].prenom')} "
-                f"{required_text(associate.nom, 'associes[].nom')}"
-                for associate in ctx.associes
-            )
-        else:
-            rendered_blocks.append(block)
-    return tuple(rendered_blocks)
-
-
-def _multi_associes_apport_lines(ctx: DocumentGenerationContext) -> list[str]:
-    return [
-        (
-            f"{required_text(associate.civilite_affichage, 'associes[].civilite_affichage')} "
-            f"{required_text(associate.prenom, 'associes[].prenom')} "
-            f"{required_text(associate.nom, 'associes[].nom')} apporte à la Société "
-            "la somme de "
-            f"{required_text(associate.apport_numeraire, 'associes[].apport_numeraire')}."
-        )
-        for associate in ctx.associes
-    ]
-
-
-def _multi_associes_capital_lines(ctx: DocumentGenerationContext) -> list[str]:
-    return [
-        (
-            f"à {required_text(associate.civilite_affichage, 'associes[].civilite_affichage')} "
-            f"{required_text(associate.prenom, 'associes[].prenom')} "
-            f"{required_text(associate.nom, 'associes[].nom')}, "
-            f"{required_text(associate.nb_parts_lettres, 'associes[].nb_parts_lettres')} "
-            f"parts sociales en pleine propriété, ci \t{associate.nb_parts} parts  "
-        )
-        for associate in ctx.associes
-    ]
+    Remplace l'ancienne logique unidirectionnelle (masc->fem sur « né le »
+    seulement) par un accord BIDIRECTIONNEL pilote par `associate.genre` via
+    `grammar.apply_gender_pairs`. Pour un homme, l'entete masculine « LE
+    SOUSSIGNE » et « né le » des blocs sont laissees telles quelles ; pour une
+    femme, elles deviennent « LA SOUSSIGNÉE » et « née le ».
+    """
+    return apply_gender_pairs(text, associate.genre, _STATUTS_GENDER_PAIRS)
 
 
 def required_company(ctx: DocumentGenerationContext) -> Company:
@@ -507,16 +450,6 @@ def required_associe_unique(ctx: DocumentGenerationContext) -> Associe:
             f"les statuts SEL multi-associes sont bloques en V1 pour {DOCUMENT_CODE}."
         )
     return ctx.associes[0]
-
-
-def required_associe_principal(ctx: DocumentGenerationContext) -> Associe:
-    if not ctx.associes:
-        raise ValueError(f"associes[0] est obligatoire pour {DOCUMENT_CODE}.")
-    return ctx.associes[0]
-
-
-def is_selarl_dentiste_multi_associes_partial(ctx: DocumentGenerationContext) -> bool:
-    return ctx.metadata.get("selarl_dentiste_multi_associes_statuts_partial") == "true"
 
 
 def address_display(address: Address | None, field_name: str) -> str:
@@ -616,20 +549,6 @@ def _validate_unique_associate_capital(
     if associate.nb_parts != total:
         raise ValueError(
             "associes[0].nb_parts doit etre coherent avec "
-            f"capital.nombre_titres_total pour {DOCUMENT_CODE}."
-        )
-
-
-def _validate_multi_associate_capital(ctx: DocumentGenerationContext) -> None:
-    if len(ctx.associes) < 2:
-        raise ValueError(
-            "les statuts SEL multi-associes PARTIAL exigent au moins deux associes "
-            f"pour {DOCUMENT_CODE}."
-        )
-    total = capital_titles_total(ctx)
-    if sum(associate.nb_parts for associate in ctx.associes) != total:
-        raise ValueError(
-            "la somme des parts des associes doit etre coherente avec "
             f"capital.nombre_titres_total pour {DOCUMENT_CODE}."
         )
 

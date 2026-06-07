@@ -232,58 +232,6 @@ def test_statuts_selarl_dentiste_generates_unique_associate_docx(tmp_path: Path)
     _assert_clean(text)
 
 
-def test_statuts_selarl_dentiste_generates_multi_associes_partial_docx(
-    tmp_path: Path,
-) -> None:
-    ctx = _context(overlay="selarl_dentiste")
-    ctx.metadata["selarl_dentiste_multi_associes_statuts_partial"] = "true"
-    ctx.associes[0].profession = "chirurgien-dentiste"
-    ctx.associes[0].profession_reglementee = "chirurgien-dentiste"
-    ctx.associes[0].profession_reglementee_pluriel = "chirurgiens-dentistes"
-    ctx.associes[0].ordre.professionnel = "Ordre des chirurgiens-dentistes"
-    ctx.associes[0].nb_parts = 60
-    ctx.associes[0].nb_parts_lettres = "soixante"
-    ctx.associes[0].apport_numeraire = "600"
-    ctx.associes[0].apport_numeraire_lettres = "six cents"
-    ctx.associes.append(
-        Associe(
-            genre=Gender.FEMININ,
-            civilite_affichage="Madame",
-            prenom="Claire",
-            nom="Leroy",
-            nb_parts=40,
-            profession="chirurgien-dentiste",
-            profession_reglementee="chirurgien-dentiste",
-            profession_reglementee_pluriel="chirurgiens-dentistes",
-            apport_numeraire="400",
-            apport_numeraire_lettres="quatre cents",
-            nb_parts_lettres="quarante",
-        )
-    )
-    ctx.capital.nombre_titres_total = 100
-    ctx.capital.nb_parts_total = 100
-    ctx.capital.nombre_titres_total_lettres = "cent"
-    ctx.capital.valeur_nominale_titre = "10"
-    ctx.societe.capital_social = "1000"
-    ctx.societe.capital_social_lettres = "mille"
-
-    output_path = StatutsSelarlDentisteGenerator().generate(ctx, tmp_path)
-
-    text = _docx_text(output_path)
-
-    assert output_path.name == "statuts_selarl_chirurgien_dentiste.docx"
-    assert "Docteur Camille Martin apporte à la Société la somme de 600." in text
-    assert "Madame Claire Leroy apporte à la Société la somme de 400." in text
-    assert "Total des apports en numéraire : ci- 1000." in text
-    assert "a été déposée par les associés conformément à la loi" in text
-    assert "à Docteur Camille Martin, soixante parts sociales" in text
-    assert "à Madame Claire Leroy, quarante parts sociales" in text
-    assert "Camille Martin" in text
-    assert "Claire Leroy" in text
-    assert "l’associé unique" not in text
-    _assert_clean(text)
-
-
 def test_statuts_selarl_medecin_skips_personne_2_source_alias(tmp_path: Path) -> None:
     output_path = StatutsSelarlMedecinGenerator().generate(
         _context(overlay="selarl_medecin"),
@@ -409,6 +357,17 @@ def test_statuts_sel_blocks_multi_associes(tmp_path: Path) -> None:
         StatutsSelarlMedecinGenerator().generate(ctx, tmp_path)
 
 
+def test_statuts_selarl_dentiste_blocks_multi_associes(tmp_path: Path) -> None:
+    # SELARL = unipersonnelle (decision Gad 2026-06-04) : deux associes -> ValueError,
+    # meme si l'ancien flag PARTIAL est present dans metadata (sous-cas abandonne).
+    ctx = _context(overlay="selarl_dentiste")
+    ctx.metadata["selarl_dentiste_multi_associes_statuts_partial"] = "true"
+    ctx.associes.append(_associate())
+
+    with pytest.raises(ValueError, match="multi-associes"):
+        StatutsSelarlDentisteGenerator().generate(ctx, tmp_path)
+
+
 def test_statuts_selas_blocks_partial_second_lieu(tmp_path: Path) -> None:
     ctx = _context(overlay="selas_medecin")
     ctx.exercice_social.lieux.append(ExerciceLieu(nom="Cabinet secondaire"))
@@ -435,6 +394,60 @@ def test_statuts_sel_applies_female_birth_agreement(tmp_path: Path) -> None:
 
     assert "nÃ©e le" in text or "née le" in text
     _assert_clean(text)
+
+
+def test_statuts_selas_header_agrees_masculine(tmp_path: Path) -> None:
+    # Entete figee au masculin dans les blocs : conservee telle quelle pour un homme.
+    output_path = StatutsSelasMedecinGenerator().generate(
+        _context(overlay="selas_medecin", gender=Gender.MASCULIN),
+        tmp_path,
+    )
+
+    text = _docx_text(output_path)
+
+    assert "LE SOUSSIGNE" in text
+    assert "LA SOUSSIGNÉE" not in text
+    # Ligne d'identification masculine.
+    assert "né le 02/01/1980" in text
+    assert "née le 02/01/1980" not in text
+    _assert_clean(text)
+
+
+def test_statuts_selas_header_agrees_feminine(tmp_path: Path) -> None:
+    # Entete figee au masculin -> accordee au feminin pour une associee.
+    output_path = StatutsSelasMedecinGenerator().generate(
+        _context(overlay="selas_medecin", gender=Gender.FEMININ),
+        tmp_path,
+    )
+
+    text = _docx_text(output_path)
+
+    assert "LA SOUSSIGNÉE" in text
+    assert "LE SOUSSIGNE\xa0:" not in text
+    assert "née le 02/01/1980" in text
+    _assert_clean(text)
+
+
+def test_statuts_selas_article_8_uses_dynamic_associate_label(tmp_path: Path) -> None:
+    # Le bloc fige « à l'associé unique » est remplace par le token dynamique :
+    # masculin -> « associé unique », feminin -> « associée unique ».
+    masc = _docx_text(
+        StatutsSelasMedecinGenerator().generate(
+            _context(overlay="selas_medecin", gender=Gender.MASCULIN),
+            tmp_path / "masc",
+        )
+    )
+    fem = _docx_text(
+        StatutsSelasMedecinGenerator().generate(
+            _context(overlay="selas_medecin", gender=Gender.FEMININ),
+            tmp_path / "fem",
+        )
+    )
+
+    assert "attribuées en totalité à l’associé unique, Docteur Camille Martin." in masc
+    assert "attribuées en totalité à l’associée unique, Docteur Camille Martin." in fem
+    _assert_clean(masc)
+    _assert_clean(fem)
 
 
 def test_statuts_sel_orchestrator_selects_only_requested_overlay() -> None:

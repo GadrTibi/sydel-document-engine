@@ -331,13 +331,13 @@ def _cession_bail_enabled(ctx: DocumentGenerationContext) -> bool:
 
 
 def _appel_fonds_enabled(ctx: DocumentGenerationContext) -> bool:
+    # L'appel de fonds SEL appartient a la section commune « Si cession » : il est genere
+    # pour TOUTE cession SELARL (medical comme dentaire), pas seulement le dentaire.
     if not _cession_bail_enabled(ctx):
         return False
     if ctx.structure != "SELARL":
         return False
-    if ctx.cession is None or ctx.cession.type_cabinet is None:
-        return False
-    return ctx.cession.type_cabinet.strip().lower() == "dentaire"
+    return ctx.cession is not None and ctx.cession.type_cabinet is not None
 
 
 def _cession_cabinet_enabled(doc_id: str, ctx: DocumentGenerationContext) -> bool:

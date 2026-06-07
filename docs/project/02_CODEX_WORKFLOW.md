@@ -11,9 +11,9 @@
 8. docs/project/PROJECT_AGENT_ORG_CHART_V1.md si le ticket concerne la chaine d'agents, un statut transverse ou un rattrapage retroactif
 9. docs/project/WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md si le ticket concerne la tracabilite d'un flux pilote ou un rapport boss
 10. docs/project/NAOMIE_WORKSTREAM_SYNC_PROTOCOL_V1.md si le ticket concerne une avancee annoncee mais absente de la branche/worklog ou une sync inter-threads
-11. docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md si l'interlocutrice active est Naomie/Naomi, ou si Gad demande explicitement le workflow Naomie/SELAS
-12. docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md si le ticket formalise un workflow Naomie multi-projets
-13. docs/project/NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md si Gad demande le statut ou le suivi de Naomie
+11. docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md si l'interlocutrice active est Naomi/Naomi, ou si Gad demande explicitement le workflow Naomi/SELAS
+12. docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md si le ticket formalise un workflow Naomi multi-projets
+13. docs/project/NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md si Gad demande le statut ou le suivi de Naomi
 14. docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise
 15. docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise
 16. docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise
@@ -53,15 +53,15 @@ Il ne doit pas lancer NotebookLM, demander une tache ou inferer un sprint avant
 cette identification.
 
 Si l'interlocuteur est Gad, Codex le traite comme superviseur produit et
-decisionnaire. Mentionner Naomi, Naomie, SELAS ou le protocole d'accueil dans
-une question de Gad ne declenche pas automatiquement le runtime Naomie.
+decisionnaire. Mentionner Naomi, Naomi, SELAS ou le protocole d'accueil dans
+une question de Gad ne declenche pas automatiquement le runtime Naomi.
 
 Si Gad demande `ou en est Naomi ?`, `que fait Naomi ?` ou un statut equivalent,
 Codex doit appliquer `docs/project/NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md`
 et lire les traces disponibles : tour de controle, dernier etat, fichier de
 sprint, worklog Naomi, journal de base de connaissance, branche Naomi si
 accessible. Il ne demande pas a Naomi un statut oral sauf blocage explicite.
-Le rapport doit porter sur le flux Naomie, pas sur une evaluation personnelle.
+Le rapport doit porter sur le flux Naomi, pas sur une evaluation personnelle.
 Si ces traces sont stale, Codex active l'Agent de tracabilite de flux et son
 mode de rattrapage retroactif.
 Pour un nouveau type d'entreprise, Codex doit aussi appliquer
@@ -70,7 +70,7 @@ Pour un nouveau type d'entreprise, Codex doit aussi appliquer
 `docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md`.
 
 Si un fichier `docs/sprints/SPRINT_[TYPE]_V1.md` existe, il devient l'etat
-operationnel du sprint. Si Naomie ou Gad ouvre un sprint et que ce fichier
+operationnel du sprint. Si Naomi ou Gad ouvre un sprint et que ce fichier
 n'existe pas, Codex doit le creer en phase 0 avec `NO-GO dev` avant toute autre
 action.
 
@@ -91,12 +91,12 @@ Pour un sprint de type d'entreprise, le sous-agent prioritaire est
 `Reuse Auditor` : il compare le besoin au travail déjà fait côté SELARL et aux
 registres globaux avant tout `GO dev`.
 
-Si le sprint est pilote par Naomie, verifier aussi
+Si le sprint est pilote par Naomi, verifier aussi
 `docs/project/NAOMIE_GITHUB_ONBOARDING_V1.md` avant toute consigne Git ou setup
-local. Naomie ne doit pas executer les commandes Git elle-meme ; Codex gere ces
+local. Naomi ne doit pas executer les commandes Git elle-meme ; Codex gere ces
 operations dans le terminal du projet.
 
-Si l'interlocutrice active est Naomie/Naomi et que le message est seulement
+Si l'interlocutrice active est Naomi/Naomi et que le message est seulement
 `Bonjour`, Codex doit traiter le message comme un accueil de sprint, pas comme
 une demande generique. Il doit lire `docs/sprints/SPRINT_SELAS_V1.md`, verifier
 la branche `codex/naomie-selas-sprint`, repondre avec `Statut sprint`,
@@ -105,25 +105,25 @@ NotebookLM 01 complet, et rester en `NO-GO dev`. Le protocole court prioritaire
 est `docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md`.
 
 Pour le sprint SELAS, Codex doit ensuite donner un prompt court depuis
-`docs/sprints/SPRINT_SELAS_NOTEBOOKLM_PROMPTS_V1.md`. Quand Naomie colle une
+`docs/sprints/SPRINT_SELAS_NOTEBOOKLM_PROMPTS_V1.md`. Quand Naomi colle une
 reponse NotebookLM, Codex doit la structurer dans
 `docs/sprints/SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md` avant de poser le prompt
 suivant. Il ne doit pas demander vaguement une "source NotebookLM SELAS" sans
 donner le prompt exact a utiliser.
 
-Si Naomie dit `je veux lancer le sprint SELAS`, `je veux demarrer le sprint
+Si Naomi dit `je veux lancer le sprint SELAS`, `je veux demarrer le sprint
 SELAS`, `je reprends le sprint SELAS`, ou une variante phonetique `CELAS`,
 Codex doit comprendre : `lancer = lancer le sous-sprint NotebookLM`. La seule
-action utilisateur demandee a Naomie est alors de copier-coller le prompt
+action utilisateur demandee a Naomi est alors de copier-coller le prompt
 NotebookLM courant, puis de rapporter la reponse brute. Codex ne doit pas
 passer en production, generation, matrice, audit de reutilisation ou code avant
 que le journal NotebookLM soit suffisamment rempli.
 
-Si Naomie pose une question d'apprentissage, appliquer
+Si Naomi pose une question d'apprentissage, appliquer
 `docs/project/NAOMIE_LEARNING_MENTOR_PROTOCOL_V1.md`. Le mode professeur explique
 mais ne vaut jamais `GO dev`.
 
-Pour un workflow Naomie non specifique a SYDEL, appliquer
+Pour un workflow Naomi non specifique a SYDEL, appliquer
 `docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md`, appliquer
 `docs/project/NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md` pour le suivi, puis
 creer un protocole local a partir de
@@ -158,7 +158,7 @@ Pour un nouveau type d'entreprise, Codex doit aussi appliquer
 `docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md`.
 
 Si un fichier `docs/sprints/SPRINT_[TYPE]_V1.md` existe, il devient l'etat
-operationnel du sprint. Si Naomie ou Gad ouvre un sprint et que ce fichier
+operationnel du sprint. Si Naomi ou Gad ouvre un sprint et que ce fichier
 n'existe pas, Codex doit le creer en phase 0 avec `NO-GO dev` avant toute autre
 action.
 
@@ -179,12 +179,12 @@ Pour un sprint de type d'entreprise, le sous-agent prioritaire est
 `Reuse Auditor` : il compare le besoin au travail déjà fait côté SELARL et aux
 registres globaux avant tout `GO dev`.
 
-Si le sprint est pilote par Naomie, verifier aussi
+Si le sprint est pilote par Naomi, verifier aussi
 `docs/project/NAOMIE_GITHUB_ONBOARDING_V1.md` avant toute consigne Git ou setup
-local. Naomie ne doit pas executer les commandes Git elle-meme ; Codex gere ces
+local. Naomi ne doit pas executer les commandes Git elle-meme ; Codex gere ces
 operations dans le terminal du projet.
 
-Si le contexte indique Naomie/Naomi et que le message est seulement `Bonjour`,
+Si le contexte indique Naomi/Naomi et que le message est seulement `Bonjour`,
 Codex doit traiter le message comme un accueil de sprint, pas comme une demande
 generique. Il doit lire `docs/sprints/SPRINT_SELAS_V1.md`, verifier la branche
 `codex/naomie-selas-sprint`, repondre avec `Statut sprint`, `Action maintenant`,
@@ -193,25 +193,25 @@ rester en `NO-GO dev`. Le protocole court prioritaire est
 `docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md`.
 
 Pour le sprint SELAS, Codex doit ensuite donner un prompt court depuis
-`docs/sprints/SPRINT_SELAS_NOTEBOOKLM_PROMPTS_V1.md`. Quand Naomie colle une
+`docs/sprints/SPRINT_SELAS_NOTEBOOKLM_PROMPTS_V1.md`. Quand Naomi colle une
 reponse NotebookLM, Codex doit la structurer dans
 `docs/sprints/SPRINT_SELAS_NOTEBOOKLM_LOG_V1.md` avant de poser le prompt
 suivant. Il ne doit pas demander vaguement une "source NotebookLM SELAS" sans
 donner le prompt exact a utiliser.
 
-Si Naomie dit `je veux lancer le sprint SELAS`, `je veux demarrer le sprint
+Si Naomi dit `je veux lancer le sprint SELAS`, `je veux demarrer le sprint
 SELAS`, `je reprends le sprint SELAS`, ou une variante phonetique `CELAS`,
 Codex doit comprendre : `lancer = lancer le sous-sprint NotebookLM`. La seule
-action utilisateur demandee a Naomie est alors de copier-coller le prompt
+action utilisateur demandee a Naomi est alors de copier-coller le prompt
 NotebookLM courant, puis de rapporter la reponse brute. Codex ne doit pas
 passer en production, generation, matrice, audit de reutilisation ou code avant
 que le journal NotebookLM soit suffisamment rempli.
 
-Si Naomie pose une question d'apprentissage, appliquer
+Si Naomi pose une question d'apprentissage, appliquer
 `docs/project/NAOMIE_LEARNING_MENTOR_PROTOCOL_V1.md`. Le mode professeur explique
 mais ne vaut jamais `GO dev`.
 
-Pour un workflow Naomie non specifique a SYDEL, appliquer
+Pour un workflow Naomi non specifique a SYDEL, appliquer
 `docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md` puis creer un protocole
 local a partir de `docs/project/PROJECT_NAOMIE_RUNTIME_TEMPLATE_V1.md`.
 
@@ -309,14 +309,14 @@ Lis d'abord :
 - docs/project/PROJECT_AGENT_ORG_CHART_V1.md si le ticket concerne la chaine d'agents, un statut transverse ou un rattrapage retroactif
 - docs/project/WORKSTREAM_TRACE_AGENT_PROTOCOL_V1.md si le ticket concerne la tracabilite d'un flux pilote ou un rapport boss
 - docs/project/NAOMIE_WORKSTREAM_SYNC_PROTOCOL_V1.md si le ticket concerne une avancee annoncee mais absente de la branche/worklog
-- docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md si l'interlocutrice active est Naomie/Naomi, ou si Gad demande explicitement le workflow Naomie/SELAS
-- docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md si le ticket concerne un workflow Naomie global
-- docs/project/NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md si Gad demande le statut ou le suivi de Naomie
+- docs/project/NAOMIE_RUNTIME_PROTOCOL_V1.md si l'interlocutrice active est Naomi/Naomi, ou si Gad demande explicitement le workflow Naomi/SELAS
+- docs/project/GLOBAL_NAOMIE_COLLABORATION_PROTOCOL_V1.md si le ticket concerne un workflow Naomi global
+- docs/project/NAOMIE_SUPERVISION_ORCHESTRATOR_PROTOCOL_V1.md si Gad demande le statut ou le suivi de Naomi
 - docs/project/SPRINT_ORCHESTRATOR_PROTOCOL_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise
 - docs/project/COMPANY_TYPE_SPRINT_PLAYBOOK_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise
 - docs/project/REUSE_AUDIT_AGENT_PROTOCOL_V1.md si le ticket ouvre ou suit un sprint de type d'entreprise
 - docs/sprints/SPRINT_[TYPE]_V1.md si le sprint existe
-- docs/project/NAOMIE_LEARNING_MENTOR_PROTOCOL_V1.md si Naomie pose une question d'apprentissage
+- docs/project/NAOMIE_LEARNING_MENTOR_PROTOCOL_V1.md si Naomi pose une question d'apprentissage
 - docs/project/SELARL_CANONICAL_STATUS_V1.md si le ticket touche la SELARL
 - docs/sprints/SPRINT_SELARL_CLOSING_V1.md si le ticket touche la cloture SELARL
 - docs/project/PRODUCT_GUARDRAIL_PROTOCOL_V1.md

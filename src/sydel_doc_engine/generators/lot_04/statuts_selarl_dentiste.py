@@ -10,12 +10,8 @@ from sydel_doc_engine.generators.lot_04.statuts_sel_exercice_common import (
     add_exercice_replacements,
     add_ordre_replacements,
     common_replacements,
-    dentiste_multi_associes_partial_blocks,
-    is_selarl_dentiste_multi_associes_partial,
     render_statuts_sel_docx,
-    required_associe_principal,
     required_associe_unique,
-    required_company,
     required_text,
     validate_sel_context,
 )
@@ -35,15 +31,10 @@ class StatutsSelarlDentisteGenerator:
             expected_structure=STRUCTURE_SELARL,
             expected_overlay=OVERLAY_SELARL_DENTISTE,
         )
-        multi_partial = is_selarl_dentiste_multi_associes_partial(ctx)
-        company = required_company(ctx)
-        associate = (
-            required_associe_principal(ctx) if multi_partial else required_associe_unique(ctx)
-        )
+        associate = required_associe_unique(ctx)
         replacements = common_replacements(
             ctx,
             title_type="parts_sociales",
-            allow_multi_associes_partial=multi_partial,
         )
         add_ordre_replacements(replacements, associate)
         add_depot_replacements(replacements, ctx, require_address=False)
@@ -55,20 +46,17 @@ class StatutsSelarlDentisteGenerator:
         )
         replacements.update(
             {
-                "[duree_societe]": required_text(company.duree, "societe.duree"),
+                # La durée SELARL dentiste est figée en dur à « 99 ans » dans le
+                # template (décision Rafael 2026-06-05) : plus de token
+                # [duree_societe] à remplacer côté dentiste.
                 "[prestataire_signature_electronique]": required_text(
                     ctx.signature.prestataire_signature_electronique,
                     "signature.prestataire_signature_electronique",
                 ),
             }
         )
-        blocks = (
-            dentiste_multi_associes_partial_blocks(STATUTS_SELARL_DENTISTE_BLOCKS, ctx)
-            if multi_partial
-            else STATUTS_SELARL_DENTISTE_BLOCKS
-        )
         return render_statuts_sel_docx(
-            blocks,
+            STATUTS_SELARL_DENTISTE_BLOCKS,
             replacements,
             output_dir / OUTPUT_FILENAME,
             associate=associate,

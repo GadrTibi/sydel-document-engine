@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date
-from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Final
 
@@ -16,8 +15,10 @@ from sydel_doc_engine.domain.models import (
     Address,
     Apport,
     Associe,
+    BailContext,
     CapitalContext,
     CessionBanque,
+    CessionContext,
     Company,
     CompanyInscriptionOrdre,
     DecisionContext,
@@ -41,6 +42,7 @@ from sydel_doc_engine.domain.models import (
     RegimeCommunautaireRenonciation,
     ReunionContext,
     ReunionPresident,
+    ScmCessionContext,
     Signature,
     SpfplConjoint,
     SpfplOrdre,
@@ -58,11 +60,15 @@ from sydel_doc_engine.front_app.field_derivations import (
     DEFAULT_TITRE_AFFICHAGE,
     calculate_nominal_value,
     date_to_french_words,
-    derive_gender_from_civilite,
     format_grouped_numeric_value,
     number_words_from_value,
 )
 from sydel_doc_engine.front_data import AddressUsage, BusinessRole, build_document_status_for_code
+from sydel_doc_engine.orchestrator.service import (
+    APPEL_FONDS_DOCUMENT_ID,
+    BAIL_AVENANT_DOCUMENT_ID,
+    CESSION_CABINET_DOCUMENT_IDS,
+)
 
 SELARL_V1_BASE_DOC_CODES: Final = (
     "DOC-001",
@@ -79,6 +85,10 @@ SELARL_V1_REGIME_AVERTISSEMENT_CODE: Final = "DOC-006"
 PROFESSION_MEDECIN: Final = "medecin"
 PROFESSION_DENTISTE: Final = "chirurgien_dentiste"
 SELARL_V1_PROFESSIONS: Final = (PROFESSION_MEDECIN, PROFESSION_DENTISTE)
+
+# Placeholder : le nombre de pages de l'acte de cession est saisi dans le
+# sous-formulaire cession (a cabler). Valeur type en attendant.
+CESSION_DOCUMENT_PAGES_LETTRES_DEFAUT: Final = "vingt"
 
 FRONT_DATA_ROLE_SCOPE: Final = (
     BusinessRole.PRATICIEN.value,
@@ -109,24 +119,12 @@ class SelarlDocumentRow:
 
 
 @dataclass(frozen=True)
-class SelarlAdditionalAssocieInput:
-    civilite: str = ""
-    prenom: str = ""
-    nom: str = ""
-    nb_parts: int = 0
-
-
-@dataclass(frozen=True)
 class SelarlSliceInput:
     dossier_type_key: str
     dossier_reference: str = ""
     profession: str = PROFESSION_MEDECIN
     dossier_unipersonnel: bool = True
-    multi_associes_doc004_limited: bool = False
-    dentist_multi_associes_statuts_partial: bool = False
     regime_communautaire: bool = False
-    derogation: bool = False
-    site_distinct: bool = False
     cession: bool = False
     scm: bool = False
     civilite: str = ""
@@ -155,9 +153,6 @@ class SelarlSliceInput:
     capital_social_lettres: str = ""
     duree: str = "99 ans"
     nb_parts_total: int = 0
-    associe_principal_nb_parts: int = 0
-    additional_associes: tuple[SelarlAdditionalAssocieInput, ...] = ()
-    president_seance_associe_index: int = 0
     nb_parts_total_lettres: str = ""
     valeur_nominale_part: str = ""
     valeur_nominale_part_lettres: str = ""
@@ -193,8 +188,11 @@ class SelarlSliceInput:
     conjoint_genre: Gender = Gender.FEMININ
     conjoint_prenom: str = ""
     conjoint_nom: str = ""
-    qualite_renoncee: str = "associe"
+    qualite_renoncee: str = "associé"
     date_courrier_avertissement: date | None = None
+    cession_context: CessionContext | None = None
+    bail_context: BailContext | None = None
+    scm_cession_context: ScmCessionContext | None = None
 
     @property
     def has_any_value(self) -> bool:
@@ -224,10 +222,6 @@ class SelarlSlicePlan:
 
 
 def selected_selarl_document_codes(data: SelarlSliceInput) -> tuple[str, ...]:
-    if data.dentist_multi_associes_statuts_partial:
-        return ("DOC-004", SELARL_V1_DENTISTE_STATUTS_CODE)
-    if data.multi_associes_doc004_limited:
-        return ("DOC-004",)
     codes = [*SELARL_V1_BASE_DOC_CODES, _statuts_code(data.profession)]
     if data.regime_communautaire:
         codes.extend(
@@ -236,6 +230,20 @@ def selected_selarl_document_codes(data: SelarlSliceInput) -> tuple[str, ...]:
                 SELARL_V1_REGIME_AVERTISSEMENT_CODE,
             )
         )
+    if data.cession_context is not None:
+        etape = (data.cession_context.etape or "").strip().lower()
+        type_cabinet = (data.cession_context.type_cabinet or "").strip().lower()
+        for doc_id, (expected_etape, expected_type) in CESSION_CABINET_DOCUMENT_IDS.items():
+            if etape == expected_etape and type_cabinet == expected_type:
+                codes.append(doc_id)
+        # Appel de fonds = document commun « Si cession » : present pour toute cession
+        # (medical comme dentaire), des que le type de cabinet est renseigne.
+        if type_cabinet:
+            codes.append(APPEL_FONDS_DOCUMENT_ID)
+    if data.bail_context is not None:
+        codes.append(BAIL_AVENANT_DOCUMENT_ID)
+    if data.scm_cession_context is not None:
+        codes.extend(("DOC-031", "DOC-032", "DOC-033"))
     return tuple(codes)
 
 
@@ -258,13 +266,7 @@ def build_selarl_plan(data: SelarlSliceInput) -> SelarlSlicePlan:
     return SelarlSlicePlan(
         can_generate=True,
         status="ready",
-        reason=(
-            "Pret pour generation dentiste multi-associes PARTIAL."
-            if data.dentist_multi_associes_statuts_partial
-            else "Pret pour generation DOC-004 multi-associes limite."
-            if data.multi_associes_doc004_limited
-            else "Pret pour generation SELARL V1 bornee."
-        ),
+        reason="Pret pour generation SELARL V1 bornee.",
         document_codes=document_codes,
         document_rows=rows,
         blockers=(),
@@ -273,24 +275,17 @@ def build_selarl_plan(data: SelarlSliceInput) -> SelarlSlicePlan:
 
 
 def validate_selarl_input(data: SelarlSliceInput) -> tuple[str, ...]:
-    if data.dentist_multi_associes_statuts_partial:
-        return _validate_dentist_multi_associes_statuts_partial_input(data)
-    if data.multi_associes_doc004_limited:
-        return _validate_multi_associes_doc004_input(data)
-
     blockers: list[str] = []
     if data.profession not in SELARL_V1_PROFESSIONS:
         blockers.append("Profession hors perimetre SELARL V1.")
     if not data.dossier_unipersonnel:
         blockers.append("La V1 ne couvre que le dossier unipersonnel.")
-    if data.derogation:
-        blockers.append("Derogations hors perimetre V1 : aucun DOC-013/DOC-014 genere.")
-    if data.site_distinct:
-        blockers.append("Site distinct hors perimetre V1 : traitement manuel requis.")
-    if data.cession:
-        blockers.append("Cession hors perimetre V1.")
-    if data.scm:
-        blockers.append("SCM hors perimetre V1.")
+    # Derogation / site distinct : hors outil. Les formulaires sont a remplir a la main
+    # (retour associe Rafael) et ne sont plus exposes dans l'interface ; rien a valider ici.
+    if data.cession and data.cession_context is None:
+        blockers.append("Cession demandee mais donnees cession manquantes.")
+    if data.scm and data.scm_cession_context is None:
+        blockers.append("Cession de parts SCM demandee mais donnees SCM manquantes.")
 
     blockers.extend(_missing_text_blockers(data))
     if data.date_naissance is None:
@@ -328,118 +323,6 @@ def validate_selarl_input(data: SelarlSliceInput) -> tuple[str, ...]:
             )
         )
     return tuple(dict.fromkeys(blockers))
-
-
-def _validate_dentist_multi_associes_statuts_partial_input(
-    data: SelarlSliceInput,
-) -> tuple[str, ...]:
-    blockers = list(_validate_multi_associes_doc004_input(data))
-    if data.profession != PROFESSION_DENTISTE:
-        blockers.append(
-            "Le sous-cas statuts multi-associes PARTIAL est limite au chirurgien-dentiste."
-        )
-    if data.regime_communautaire:
-        blockers.append(
-            "Regime communautaire hors perimetre du sous-cas dentiste multi-associes PARTIAL."
-        )
-    blockers.extend(_missing_text_blockers(data))
-    blockers.extend(
-        _missing_for_fields(
-            data,
-            (
-                ("conjoint_civilite", "Civilite du conjoint requise pour DOC-016."),
-                ("conjoint_prenom", "Prenom du conjoint requis pour DOC-016."),
-                ("conjoint_nom", "Nom du conjoint requis pour DOC-016."),
-            ),
-        )
-    )
-    return tuple(dict.fromkeys(blockers))
-
-
-def _validate_multi_associes_doc004_input(data: SelarlSliceInput) -> tuple[str, ...]:
-    blockers: list[str] = []
-    if data.profession not in SELARL_V1_PROFESSIONS:
-        blockers.append("Profession hors perimetre SELARL DOC-004 limite.")
-    if data.regime_communautaire:
-        blockers.append("Regime communautaire hors perimetre du sous-cas DOC-004 limite.")
-    if data.derogation:
-        blockers.append("Derogations hors perimetre du sous-cas DOC-004 limite.")
-    if data.site_distinct:
-        blockers.append("Site distinct hors perimetre du sous-cas DOC-004 limite.")
-    if data.cession:
-        blockers.append("Cession hors perimetre du sous-cas DOC-004 limite.")
-    if data.scm:
-        blockers.append("SCM hors perimetre du sous-cas DOC-004 limite.")
-
-    blockers.extend(_missing_doc004_text_blockers(data))
-    if data.date_naissance is None:
-        blockers.append("Date de naissance du gerant unique requise pour DOC-004.")
-    if data.signature_date is None:
-        blockers.append("Date de signature requise pour DOC-004.")
-    if data.decision_date is None:
-        blockers.append("Date de decision requise pour DOC-004.")
-    if data.nb_parts_total < 1:
-        blockers.append("Nombre total de parts requis et superieur a zero pour DOC-004.")
-    if data.associe_principal_nb_parts < 1:
-        blockers.append("Parts de l'associe gerant requises et superieures a zero.")
-    if not data.additional_associes:
-        blockers.append("Au moins un deuxieme associe est requis pour le sous-cas multi-associes.")
-
-    associes = _doc004_associe_parts(data)
-    if len(associes) < 2:
-        blockers.append("Le sous-cas DOC-004 limite exige au moins deux associes.")
-    for index, associe in enumerate(data.additional_associes, start=2):
-        if not associe.civilite.strip():
-            blockers.append(f"Civilite de l'associe {index} requise.")
-        if not associe.prenom.strip():
-            blockers.append(f"Prenom de l'associe {index} requis.")
-        if not associe.nom.strip():
-            blockers.append(f"Nom de l'associe {index} requis.")
-        if associe.nb_parts < 1:
-            blockers.append(f"Parts de l'associe {index} requises et superieures a zero.")
-
-    if associes and sum(associes) != data.nb_parts_total:
-        blockers.append(
-            "La somme des parts des associes doit correspondre au nombre total de parts."
-        )
-    if not 0 <= data.president_seance_associe_index < max(len(associes), 1):
-        blockers.append("President de seance invalide : choisir un associe existant.")
-    return tuple(dict.fromkeys(blockers))
-
-
-def _is_multi_associes_simple(data: SelarlSliceInput) -> bool:
-    return data.multi_associes_doc004_limited or data.dentist_multi_associes_statuts_partial
-
-
-def _doc004_associe_parts(data: SelarlSliceInput) -> list[int]:
-    return [
-        data.associe_principal_nb_parts,
-        *(associe.nb_parts for associe in data.additional_associes),
-    ]
-
-
-def _missing_doc004_text_blockers(data: SelarlSliceInput) -> list[str]:
-    doc004_fields = (
-        ("dossier_reference", "Reference dossier requise."),
-        ("civilite", "Civilite du gerant unique requise."),
-        ("prenom", "Prenom du gerant unique requis."),
-        ("nom", "Nom du gerant unique requis."),
-        ("ville_naissance", "Ville de naissance du gerant unique requise."),
-        ("departement_naissance", "Departement de naissance du gerant unique requis."),
-        ("nationalite", "Nationalite du gerant unique requise."),
-        ("adresse_num_voie", "Numero de voie du gerant unique requis."),
-        ("adresse_voie", "Voie du gerant unique requise."),
-        ("adresse_cp", "Code postal du gerant unique requis."),
-        ("adresse_ville", "Ville du gerant unique requise."),
-        ("denomination", "Denomination sociale requise."),
-        ("capital_social", "Capital social requis."),
-        ("siege_num_voie", "Numero de voie du siege requis."),
-        ("siege_voie", "Voie du siege requise."),
-        ("siege_cp", "Code postal du siege requis."),
-        ("siege_ville", "Ville du siege requise."),
-        ("signature_lieu", "Lieu de signature requis."),
-    )
-    return _missing_for_fields(data, doc004_fields)
 
 
 def build_generation_context(data: SelarlSliceInput) -> DocumentGenerationContext:
@@ -501,8 +384,8 @@ def build_generation_context(data: SelarlSliceInput) -> DocumentGenerationContex
     company = Company(
         forme_sociale="SELARL",
         forme_sociale_affichage="SELARL",
-        forme_sociale_libelle_long="Societe d'exercice liberal a responsabilite limitee",
-        forme_sociale_complete="societe d'exercice liberal a responsabilite limitee",
+        forme_sociale_libelle_long="Société d'exercice libéral à responsabilité limitée",
+        forme_sociale_complete="société d'exercice libéral à responsabilité limitée",
         forme_sociale_abregee="SELARL",
         denomination=data.denomination,
         denomination_courte=data.denomination,
@@ -525,12 +408,15 @@ def build_generation_context(data: SelarlSliceInput) -> DocumentGenerationContex
         structure="SELARL",
         dossier_options=DossierOptions(
             regime_communautaire=data.regime_communautaire,
-            associe_unique=not _is_multi_associes_simple(data),
+            associe_unique=True,
             derogation=False,
             site_distinct=False,
-            cession=False,
-            scm_cession=False,
+            cession=data.cession_context is not None,
+            scm_cession=data.scm_cession_context is not None,
         ),
+        cession=data.cession_context,
+        bail=data.bail_context,
+        scm_cession=data.scm_cession_context,
         personne_signataire=person,
         conjoint=conjoint,
         signature=Signature(
@@ -615,15 +501,17 @@ def build_generation_context(data: SelarlSliceInput) -> DocumentGenerationContex
         ),
         document=DocumentContext(
             nombre_exemplaires_lettres=data.signature_nombre_exemplaires,
+            nombre_pages_lettres=(
+                CESSION_DOCUMENT_PAGES_LETTRES_DEFAUT
+                if data.cession_context is not None
+                else None
+            ),
             signataire=DocumentSignataire(prenom=data.prenom, nom=data.nom),
         ),
         emprunt=Emprunt(actif=False),
         metadata={
             "front_slice": "track_b_selarl_v1",
             "dossier_reference": data.dossier_reference,
-            "selarl_dentiste_multi_associes_statuts_partial": (
-                "true" if data.dentist_multi_associes_statuts_partial else "false"
-            ),
         },
     )
 
@@ -659,86 +547,6 @@ def _document_rows(
     blockers: tuple[str, ...],
 ) -> tuple[SelarlDocumentRow, ...]:
     generated_status = "blocked" if blockers else "generable"
-    if data.dentist_multi_associes_statuts_partial:
-        return (
-            SelarlDocumentRow(
-                doc_code="DOC-004",
-                label=build_document_status_for_code("DOC-004").doc_label,
-                status=generated_status,
-                message=(
-                    "PV multi-associes simple : gerant unique, unanimite totale."
-                    if not blockers
-                    else "Bloque par donnees ou scope du sous-cas multi-associes."
-                ),
-            ),
-            SelarlDocumentRow(
-                doc_code="DOC-016",
-                label=build_document_status_for_code("DOC-016").doc_label,
-                status="partial" if not blockers else "blocked",
-                message=(
-                    "Statuts dentiste multi-associes PARTIAL : apports/capital/repartition "
-                    "cables, lock complet non revendique."
-                    if not blockers
-                    else "Bloque par donnees requises pour DOC-016."
-                ),
-            ),
-            SelarlDocumentRow(
-                doc_code="DOC-001/DOC-002/DOC-003/DOC-034",
-                label="Pack SELARL unipersonnel",
-                status="hors_scope",
-                message="Non generes dans ce sous-cas statuts PARTIAL.",
-            ),
-            SelarlDocumentRow(
-                doc_code="DOC-005/DOC-006",
-                label="Regime communautaire",
-                status="hors_scope",
-                message="Non couvert par le sous-cas dentiste multi-associes simple.",
-            ),
-            SelarlDocumentRow(
-                doc_code="DOC-031/DOC-032/DOC-033",
-                label="Cession / SCM",
-                status="hors_scope",
-                message="Cession et SCM restent hors perimetre.",
-            ),
-        )
-    if data.multi_associes_doc004_limited:
-        return (
-            SelarlDocumentRow(
-                doc_code="DOC-004",
-                label=build_document_status_for_code("DOC-004").doc_label,
-                status=generated_status,
-                message=(
-                    "PV multi-associes limite : gerant unique, unanimite totale."
-                    if not blockers
-                    else "Bloque par donnees ou scope du sous-cas DOC-004 limite."
-                ),
-            ),
-            SelarlDocumentRow(
-                doc_code="DOC-016/DOC-017",
-                label="Statuts SELARL multi-associes",
-                status="hors_scope",
-                message="Non generes : statuts multi-associes non verrouilles.",
-            ),
-            SelarlDocumentRow(
-                doc_code="DOC-001/DOC-002/DOC-003/DOC-034",
-                label="Pack SELARL unipersonnel",
-                status="hors_scope",
-                message="Non generes dans ce sous-cas limite a DOC-004.",
-            ),
-            SelarlDocumentRow(
-                doc_code="DOC-005/DOC-006",
-                label="Regime communautaire",
-                status="hors_scope",
-                message="Non couvert par le sous-cas DOC-004 multi-associes limite.",
-            ),
-            SelarlDocumentRow(
-                doc_code="DOC-031/DOC-032/DOC-033",
-                label="Cession / SCM",
-                status="hors_scope",
-                message="Cession et SCM restent hors perimetre.",
-            ),
-        )
-
     rows = [
         SelarlDocumentRow(
             doc_code=code,
@@ -759,40 +567,19 @@ def _document_rows(
                 message="Non genere : document conditionnel du regime communautaire.",
             )
         )
-    rows.extend(
-        (
-            SelarlDocumentRow(
-                doc_code="DOC-013/DOC-014",
-                label="Derogations",
-                status="hors_v1",
-                message="Manuel / hors perimetre SELARL V1.",
-            ),
+    if data.scm_cession_context is None:
+        rows.append(
             SelarlDocumentRow(
                 doc_code="DOC-031/DOC-032/DOC-033",
                 label="SCM et cession de parts SCM",
                 status="hors_v1",
-                message="Non expose dans cette slice.",
-            ),
+                message="Non expose : activez SCM et fournissez les donnees.",
+            )
         )
-    )
     return tuple(rows)
 
 
 def _warning_messages(data: SelarlSliceInput) -> tuple[str, ...]:
-    if data.dentist_multi_associes_statuts_partial:
-        return (
-            "Sous-cas limite : DOC-004 LOCKED et DOC-016 dentiste PARTIAL.",
-            "Statuts multi-associes complets, plusieurs gerants, president externe, "
-            "cession, SCM et votes non unanimes restent hors scope.",
-            "Le president de seance doit etre choisi parmi les associes existants.",
-        )
-    if data.multi_associes_doc004_limited:
-        return (
-            "Sous-cas limite : generation de DOC-004 uniquement.",
-            "Statuts multi-associes, plusieurs gerants, cession, SCM et votes non "
-            "unanimes restent hors scope.",
-            "Le president de seance doit etre choisi parmi les associes existants.",
-        )
     warnings = [
         "SELARL V1 bornee : creation medecin ou chirurgien-dentiste, associe unique uniquement.",
     ]
@@ -931,73 +718,27 @@ def _context_associes(
     profession_label: str,
     profession_plural: str,
 ) -> list[Associe]:
-    associes = [
+    return [
         _associe(
             data,
             address,
             profession_label,
             profession_plural,
-            nb_parts=_primary_associe_nb_parts(data),
+            nb_parts=data.nb_parts_total,
         )
     ]
-    if _is_multi_associes_simple(data):
-        valeur_nominale_part = data.valeur_nominale_part or calculate_nominal_value(
-            data.capital_social,
-            data.nb_parts_total,
-        )
-        associes.extend(
-            Associe(
-                genre=derive_gender_from_civilite(additional.civilite),
-                civilite_affichage=additional.civilite,
-                prenom=additional.prenom,
-                nom=additional.nom,
-                nb_parts=additional.nb_parts,
-                profession=profession_label,
-                profession_reglementee=profession_label,
-                profession_reglementee_pluriel=profession_plural,
-                qualification_principale=profession_label,
-                qualite="associe",
-                apport_numeraire=_parts_amount(additional.nb_parts, valeur_nominale_part),
-                apport_numeraire_lettres=number_words_from_value(
-                    _parts_amount(additional.nb_parts, valeur_nominale_part)
-                ),
-                nb_parts_lettres=number_words_from_value(additional.nb_parts),
-            )
-            for additional in data.additional_associes
-        )
-    return associes
-
-
-def _primary_associe_nb_parts(data: SelarlSliceInput) -> int:
-    if _is_multi_associes_simple(data):
-        return data.associe_principal_nb_parts
-    return data.nb_parts_total
-
-
-def _parts_amount(nb_parts: int, valeur_nominale_part: str) -> str:
-    try:
-        amount = Decimal(str(valeur_nominale_part).replace(" ", "").replace(",", "."))
-    except InvalidOperation:
-        return ""
-    total = amount * Decimal(nb_parts)
-    if total == total.to_integral_value():
-        return format_grouped_numeric_value(str(int(total)))
-    return format(total.normalize(), "f").replace(".", ",")
 
 
 def _reunion_president(
     data: SelarlSliceInput,
     associes: list[Associe],
 ) -> ReunionPresident:
-    president_index = (
-        data.president_seance_associe_index if _is_multi_associes_simple(data) else 0
-    )
-    president = associes[president_index]
+    president = associes[0]
     return ReunionPresident(
         civilite_affichage=president.civilite_affichage,
         prenom=president.prenom,
         nom=president.nom,
-        qualite="associe" if _is_multi_associes_simple(data) else "associe unique",
+        qualite="associe unique",
         civilite_president_seance=president.civilite_affichage,
         prenom_president_seance=president.prenom,
         nom_personne_seance=president.nom,
@@ -1012,11 +753,7 @@ def _associe(
     *,
     nb_parts: int,
 ) -> Associe:
-    apport_montant = data.capital_social
-    if _is_multi_associes_simple(data):
-        apport_montant = _parts_amount(nb_parts, data.valeur_nominale_part)
-    else:
-        apport_montant = format_grouped_numeric_value(apport_montant)
+    apport_montant = format_grouped_numeric_value(data.capital_social)
     return Associe(
         genre=data.genre,
         civilite_affichage=data.civilite,
@@ -1052,13 +789,11 @@ def _associe(
 
 
 def _needs_conjoint(data: SelarlSliceInput) -> bool:
-    if data.multi_associes_doc004_limited and not data.dentist_multi_associes_statuts_partial:
-        return False
     return data.profession == PROFESSION_DENTISTE or data.regime_communautaire or _is_married(data)
 
 
 def _is_married(data: SelarlSliceInput) -> bool:
-    return "marie" in data.situation_maritale.casefold()
+    return "mari" in data.situation_maritale.casefold()
 
 
 def _spfpl_conjoint(data: SelarlSliceInput) -> SpfplConjoint:

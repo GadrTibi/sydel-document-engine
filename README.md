@@ -78,13 +78,7 @@ python -m pip install -U pip
 python -m pip install -e ".[dev]"
 pytest
 ruff check .
-streamlit run src/sydel_doc_engine/app/streamlit_app.py
-```
-
-Nouveau front Track B propre :
-
-```bash
-python -m streamlit run src/sydel_doc_engine/front_app/app.py
+streamlit run src/sydel_doc_engine/front_app/app.py
 ```
 
 ## Ordre de travail recommandé à partir de ce dépôt
