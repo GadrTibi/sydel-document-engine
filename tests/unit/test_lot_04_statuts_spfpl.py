@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 from docx import Document
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import (
@@ -163,6 +164,14 @@ def _assert_clean(text: str) -> None:
     assert "]" not in text
 
 
+def _para_by_text(document: Document, needle: str):
+    return next(p for p in document.paragraphs if needle in p.text)
+
+
+def _paras_by_prefix(document: Document, prefix: str) -> list:
+    return [p for p in document.paragraphs if p.text.strip().startswith(prefix)]
+
+
 def test_statuts_spfpl_cession_generates_source_overlay_without_signature_date(
     tmp_path: Path,
 ) -> None:
@@ -194,6 +203,43 @@ def test_statuts_spfpl_cession_generates_source_overlay_without_signature_date(
     assert any(run.italic for run in acceptance.runs)
     _assert_clean(text)
 
+    # FORME (FIDELITY_AUDIT_V1, volet 2) : la mise en forme doit coller au modele source DOCX.
+    # FIX-F1 / STYLE-1 : bloc de titre centre (denomination en gras via Heading 3 source).
+    denomination = document.paragraphs[0]
+    assert denomination.text.strip() == "SPFPL MARTIN"
+    assert denomination.alignment == WD_ALIGN_PARAGRAPH.CENTER
+    assert denomination.runs[0].bold is True
+    for needle in ("Société de Participations", "Au capital de", "Siège social"):
+        assert _para_by_text(document, needle).alignment == WD_ALIGN_PARAGRAPH.CENTER
+    # FIX-F4 / STYLE-5 : "STATUTS" centre, gras, taille 12.
+    statuts = _para_by_text(document, "STATUTS")
+    assert statuts.alignment == WD_ALIGN_PARAGRAPH.CENTER
+    assert statuts.runs[0].bold is True
+    assert statuts.runs[0].font.size is not None and statuts.runs[0].font.size.pt == 12
+    # FIX-F2 / STYLE-2 : "Le soussigné :" souligne.
+    soussigne = _para_by_text(document, "Le soussigné")
+    assert soussigne.runs[0].underline is True
+    # FIX-F3 / STYLE-3 : la ligne d'identite est en gras (run unique incl. le tiret), JUSTIFY.
+    identites = _paras_by_prefix(document, "- Docteur Camille Andre Martin")
+    assert len(identites) == 2  # soussigne + nomination Président
+    for identite in identites:
+        assert identite.alignment == WD_ALIGN_PARAGRAPH.JUSTIFY
+        assert identite.runs[0].bold is True
+    # FIX-F3 / STYLE-4 : lignes de capital / total (Art. 6 & 8) en gras.
+    total_apports = _para_by_text(document, "Total des apports")
+    assert total_apports.runs[0].bold is True
+    # Art. 8 (cession) : "- Le Docteur ... actions" → identite en gras, bourrage de points non gras.
+    repartition = next(
+        p
+        for p in document.paragraphs
+        if p.text.strip().startswith("- Le Docteur Camille Martin")
+        and p.text.strip().endswith("actions")
+    )
+    assert repartition.runs[0].bold is True
+    assert repartition.runs[-1].bold in (False, None)
+    total_actions = _para_by_text(document, "Total des actions composant")
+    assert total_actions.runs[0].bold is True
+
 
 def test_statuts_spfpl_apport_generates_nature_overlay_and_signature_date(
     tmp_path: Path,
@@ -212,6 +258,31 @@ def test_statuts_spfpl_apport_generates_nature_overlay_and_signature_date(
     assert "Le 14/05/2026" in text
     assert "Ouverture d'un compte bancaire auprès de la Banque" not in text
     _assert_clean(text)
+
+    document = Document(output_path)
+    # FORME (FIDELITY_AUDIT_V1, volet 2) — meme exigences que la cession, sur le modele apport.
+    denomination = document.paragraphs[0]
+    assert denomination.text.strip() == "SPFPL MARTIN"
+    assert denomination.alignment == WD_ALIGN_PARAGRAPH.CENTER
+    assert denomination.runs[0].bold is True
+    for needle in ("Société par actions", "Société de Participations", "Siège social"):
+        assert _para_by_text(document, needle).alignment == WD_ALIGN_PARAGRAPH.CENTER
+    statuts = _para_by_text(document, "STATUTS")
+    assert statuts.alignment == WD_ALIGN_PARAGRAPH.CENTER
+    assert statuts.runs[0].bold is True
+    assert statuts.runs[0].font.size is not None and statuts.runs[0].font.size.pt == 12
+    assert _para_by_text(document, "Le soussigné").runs[0].underline is True
+    identites = _paras_by_prefix(document, "- Docteur Camille Martin")
+    assert len(identites) == 2
+    for identite in identites:
+        assert identite.alignment == WD_ALIGN_PARAGRAPH.JUSTIFY
+        assert identite.runs[0].bold is True
+    # Art. 8 apport : repartition et total des actions en gras (source idx127/128).
+    assert _para_by_text(document, "- Le Docteur Camille Martin").runs[0].bold is True
+    assert _para_by_text(document, "Total des actions composant").runs[0].bold is True
+    # Art. 6 apport : les totaux d'apports ne sont PAS en gras dans la source (pas d'ajout).
+    assert _para_by_text(document, "Total des apports en nature").runs[0].bold in (False, None)
+    assert _para_by_text(document, "Total des apports réalisés").runs[0].bold in (False, None)
 
 
 def test_statuts_spfpl_blocks_multi_associes(tmp_path: Path) -> None:

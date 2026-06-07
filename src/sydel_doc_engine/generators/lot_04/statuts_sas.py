@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from datetime import date
 from pathlib import Path
 
@@ -39,7 +40,7 @@ class StatutsSasGenerator:
         data = _ResolvedStatutsSas.from_context(ctx)
         document = new_document()
         footer = document.sections[0].footer.paragraphs[0]
-        footer.text = f"{data.denomination} - Statuts constitutifs"
+        footer.text = f"{data.denomination} – Statuts constitutifs"
 
         add_centered_block(
             document,
@@ -500,12 +501,41 @@ def _article(document, title: str) -> None:
     add_statuts_article_heading(document, title)
 
 
+def _sub_article(document, title: str) -> None:
+    """Sous-article (ex. "Article 9.1", "ARTICLE 13-1 - ...") : gras SANS soulignement.
+
+    Source STATUTS_SAS_SPFPL_medecins_modele.docx : les sous-articles sont en gras
+    mais non soulignes, contrairement aux articles principaux (gras + souligne).
+    """
+    add_statuts_article_heading(document, title, underline=False)
+
+
+def _underline_label(document, text: str) -> None:
+    """Intitule souligne non gras (ex. "NOMINATION ET POUVOIRS", "REMUNERATION").
+
+    Source : ces intitules de l'article 12 sont soulignes mais non gras.
+    """
+    add_paragraph(document, text, underline=True)
+
+
+# Sous-article principal numerote "Article 9.1", "Article 10.2"... (A majuscule, rticle minuscule)
+_SUB_ARTICLE_RE = re.compile(r"^Article \d")
+# Sous-article "ARTICLE 13-1 - ..." (tiret colle au numero), distinct de "ARTICLE 13 - ..."
+_DASHED_SUB_ARTICLE_RE = re.compile(r"^ARTICLE \d+-\d")
+# Intitules souligne-non-gras de l'article 12 (source : underline only)
+_UNDERLINE_LABELS = frozenset({"NOMINATION ET POUVOIRS", "REMUNERATION"})
+
+
 def _paragraphs(document, paragraphs: list[str]) -> None:
     for paragraph in paragraphs:
         if paragraph.startswith("- "):
             add_statuts_hanging_list_item(document, paragraph[2:])
             continue
-        if paragraph.startswith("ARTICLE "):
+        if paragraph in _UNDERLINE_LABELS:
+            _underline_label(document, paragraph)
+        elif _DASHED_SUB_ARTICLE_RE.match(paragraph) or _SUB_ARTICLE_RE.match(paragraph):
+            _sub_article(document, paragraph)
+        elif paragraph.startswith("ARTICLE "):
             _article(document, paragraph)
         else:
             add_statuts_body_paragraph(document, paragraph)

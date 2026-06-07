@@ -149,10 +149,43 @@ def test_statuts_sas_generates_spfpl_medecins_unique_shareholder_docx(
     assert "Le Docteur Camille Martin 120 actions" in text
     assert "L’Associé Unique, Monsieur Camille Martin" in text
     assert "BANQUE EXEMPLE" in text
-    assert "SPFPL MARTIN - Statuts constitutifs" in text
+    assert "SPFPL MARTIN – Statuts constitutifs" in text
     assert any(run.underline for run in article_1.runs)
     assert any(run.italic for run in acceptance.runs)
     _assert_clean(text)
+
+
+def test_statuts_sas_heading_formatting_matches_source(tmp_path: Path) -> None:
+    """Fidelite de FORME au modele STATUTS_SAS_SPFPL_medecins_modele.docx.
+
+    Source :
+    - articles principaux ("ARTICLE 1 - FORME", "ARTICLE 13 - DIRECTEURS GENERAUX") :
+      gras + souligne ;
+    - sous-articles ("Article 9.1", "ARTICLE 13-1 - DESIGNATION") : gras SANS souligne ;
+    - intitules article 12 ("NOMINATION ET POUVOIRS", "REMUNERATION") : souligne SANS gras.
+    """
+    document = Document(StatutsSasGenerator().generate(_context(), tmp_path))
+    by_text = {p.text.strip(): p for p in document.paragraphs}
+
+    def fmt(label: str) -> tuple[bool, bool]:
+        runs = by_text[label].runs
+        return (
+            any(bool(run.bold) for run in runs),
+            any(bool(run.underline) for run in runs),
+        )
+
+    # Article principal : gras + souligne
+    assert fmt("ARTICLE 1 - FORME") == (True, True)
+    assert fmt("ARTICLE 13 - DIRECTEURS GENERAUX") == (True, True)
+    # Sous-article numerote : gras, non souligne
+    assert fmt("Article 9.1 Augmentation du capital") == (True, False)
+    assert fmt("Article 10.1 Clause d’agrément") == (True, False)
+    # Sous-article a tiret : gras, non souligne (et NON traite comme article principal)
+    assert fmt("ARTICLE 13-1 - DESIGNATION") == (True, False)
+    assert fmt("ARTICLE 13-4 - REMUNERATION") == (True, False)
+    # Intitules article 12 : souligne, non gras
+    assert fmt("NOMINATION ET POUVOIRS") == (False, True)
+    assert fmt("REMUNERATION") == (False, True)
 
 
 def test_statuts_sas_is_selected_only_for_confirmed_spfpl_medecins_context() -> None:

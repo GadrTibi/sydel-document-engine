@@ -4,6 +4,7 @@ from datetime import date
 from pathlib import Path
 
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.shared import Pt
 
 from sydel_doc_engine.domain.models import (
     ApportTitres,
@@ -14,6 +15,7 @@ from sydel_doc_engine.domain.models import (
     SpfplPerson,
 )
 from sydel_doc_engine.rendering.docx_builder import (
+    STATUTS_SPFPL_COMPACT_STYLE_PROFILE,
     add_paragraph,
     add_statuts_article_heading,
     add_statuts_body_paragraph,
@@ -154,32 +156,81 @@ def render_statuts_docx(
     replacements: dict[str, str],
     output_path: Path,
 ) -> Path:
-    docx = new_document()
+    # FORME (FIDELITY_AUDIT_V1, FIX-F4 / STYLE-6) : les deux DOCX source SPFPL ont des marges
+    # compactes (haut 2.82 / bas 0 / gauche 0.74). Le profil compact existant en est l'image la
+    # plus proche cote moteur ; on le cable ici plutot que le DEFAULT (marges 2.5) jamais fidele.
+    docx = new_document(style_profile=STATUTS_SPFPL_COMPACT_STYLE_PROFILE)
+    style_profile = STATUTS_SPFPL_COMPACT_STYLE_PROFILE
+    title_block_count = _title_block_count(blocks, replacements)
     index = 0
     while index < len(blocks):
         block = blocks[index]
         text = replace_placeholders(block, replacements)
-        if text == "STATUTS" or _is_major_heading(text):
-            if _is_major_heading(text):
-                add_statuts_part_heading(docx, text, mode="boxed")
-            else:
-                add_paragraph(docx, text, alignment=WD_ALIGN_PARAGRAPH.CENTER, bold=True)
+        if index < title_block_count:
+            # FIX-F1 / STYLE-1 : bloc de titre (denomination / sous-titre / capital / siege)
+            # centre dans la source ; la 1re ligne (denomination) est en gras (style Heading 3).
+            add_paragraph(
+                docx,
+                text,
+                alignment=WD_ALIGN_PARAGRAPH.CENTER,
+                bold=(index == 0),
+                style_profile=style_profile,
+            )
+        elif text == "STATUTS":
+            # FIX-F4 / STYLE-5 : "STATUTS" est en Heading 3 taille 12 dans la source (run sz=12).
+            paragraph = add_paragraph(
+                docx,
+                text,
+                alignment=WD_ALIGN_PARAGRAPH.CENTER,
+                bold=True,
+                style_profile=style_profile,
+            )
+            paragraph.runs[0].font.size = Pt(12)
+        elif _is_major_heading(text):
+            add_statuts_part_heading(docx, text, mode="boxed", style_profile=style_profile)
         elif text.startswith("ARTICLE "):
-            add_statuts_article_heading(docx, text, underline=False)
+            add_statuts_article_heading(docx, text, underline=False, style_profile=style_profile)
         elif text.startswith("Fait à ") or text.startswith("Fait a "):
             signature_lines, mention_lines, index = _collect_signature_lines(
                 blocks,
                 replacements,
                 index,
             )
-            add_statuts_signature_block(docx, signature_lines, mention_lines=mention_lines)
+            add_statuts_signature_block(
+                docx,
+                signature_lines,
+                mention_lines=mention_lines,
+                style_profile=style_profile,
+            )
             continue
+        elif _is_soussigne_line(block):
+            # FIX-F2 / STYLE-2 : "Le soussigne :" est souligne dans la source (JUSTIFY + souligne).
+            add_paragraph(
+                docx,
+                text,
+                alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
+                underline=True,
+                style_profile=style_profile,
+            )
+        elif _is_identity_line(block):
+            # FIX-F3 / STYLE-3 : la ligne d'identite "- [civilite] [prenom(s)] [nom]" est en gras
+            # (run unique incl. le tiret) et JUSTIFY dans la source, pas un item de liste.
+            add_paragraph(
+                docx,
+                text,
+                alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
+                bold=True,
+                style_profile=style_profile,
+            )
+        elif block in _BOLD_CAPITAL_BLOCKS:
+            # FIX-F3 / STYLE-4 : lignes de capital / total (Art. 6 & 8) en gras dans la source.
+            _add_bold_segments_paragraph(docx, block, replacements, style_profile=style_profile)
         elif text.startswith("- "):
-            add_statuts_hanging_list_item(docx, text[2:])
+            add_statuts_hanging_list_item(docx, text[2:], style_profile=style_profile)
         elif _looks_like_numbered_list_item(text):
-            add_statuts_hanging_list_item(docx, text, marker=None)
+            add_statuts_hanging_list_item(docx, text, marker=None, style_profile=style_profile)
         else:
-            add_statuts_body_paragraph(docx, text)
+            add_statuts_body_paragraph(docx, text, style_profile=style_profile)
         index += 1
 
     full_text = "\n".join(paragraph.text for paragraph in docx.paragraphs)
@@ -188,6 +239,74 @@ def render_statuts_docx(
     output_path.parent.mkdir(parents=True, exist_ok=True)
     docx.save(output_path)
     return output_path
+
+
+# --- FORME : routage de mise en forme fidele au modele source (FIDELITY_AUDIT_V1, volet 2) ---
+#
+# Les segments de gras sont decoupes EXACTEMENT sur les frontieres de runs des DOCX source
+# (python-docx), pas inventes. Chaque entree mappe un bloc-source brut vers la suite ordonnee de
+# segments (is_bold, fragment-de-template) ; chaque fragment est ensuite substitue puis ajoute en
+# run distinct, ce qui reproduit le decoupage gras / non-gras du modele.
+#
+# Cession Art. 8 : "- Le Docteur [prenom] [nom]" en gras, le bourrage de points et "[nb] actions"
+# non gras (source : runs idx116 / idx117). Apport Art. 8 : ligne entiere en gras (source idx127 /
+# idx128). Cession Art. 6 "Total des apports\t..." : ligne entiere en gras (source idx106).
+_BOLD_CAPITAL_SEGMENTS: dict[str, tuple[tuple[bool, str], ...]] = {
+    # Cession Art. 6 — total des apports (run unique en gras dans la source)
+    "Total des apports\t\t\t\t\t\t\t\t\t[montant_apport]": (
+        (True, "Total des apports\t\t\t\t\t\t\t\t\t[montant_apport]"),
+    ),
+    # Cession Art. 8 — repartition (gras sur l'identite uniquement)
+    "- Le Docteur [prenom] [nom]………………………………………….…….………..[nb_actions] actions": (
+        (True, "- Le Docteur [prenom] [nom]"),
+        (False, "………………………………………….…….………..[nb_actions] actions"),
+    ),
+    # Art. 8 — total des actions (chaine IDENTIQUE cession/apport). Source apport idx128 : ligne
+    # entiere en gras ; source cession idx117 : gras sauf le bourrage de points (leader dots).
+    # On retient le gras de ligne entiere : exact pour l'apport, et pour la cession la seule
+    # difference porte sur des points de conduite (gras imperceptible) — pas d'invention.
+    "Total des actions composant le capital social……………………………. [nb_actions] actions": (
+        (True, "Total des actions composant le capital social……………………………. [nb_actions] actions"),
+    ),
+    # Apport Art. 8 — repartition (ligne entiere en gras dans la source)
+    "- Le Docteur [prenom] [nom]………………………………………….……………..[nb_actions] actions": (
+        (True, "- Le Docteur [prenom] [nom]………………………………………….……………..[nb_actions] actions"),
+    ),
+}
+_BOLD_CAPITAL_BLOCKS = frozenset(_BOLD_CAPITAL_SEGMENTS)
+
+
+def _title_block_count(blocks: tuple[str, ...], replacements: dict[str, str]) -> int:
+    """Nombre de blocs de titre (avant "STATUTS") a centrer (FIX-F1)."""
+    for index, block in enumerate(blocks):
+        if replace_placeholders(block, replacements) == "STATUTS":
+            return index
+    return 0
+
+
+def _is_soussigne_line(block: str) -> bool:
+    return block.startswith("Le soussigné")
+
+
+def _is_identity_line(block: str) -> bool:
+    return block.startswith("- [civilite] ") and block.rstrip().endswith("[nom]")
+
+
+def _add_bold_segments_paragraph(
+    docx,  # noqa: ANN001 - type docx interne python-docx
+    block: str,
+    replacements: dict[str, str],
+    *,
+    style_profile,  # noqa: ANN001
+):
+    paragraph = docx.add_paragraph()
+    paragraph.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+    paragraph.paragraph_format.space_before = Pt(0)
+    paragraph.paragraph_format.space_after = Pt(style_profile.standard_space_after_pt)
+    for is_bold, fragment in _BOLD_CAPITAL_SEGMENTS[block]:
+        run = paragraph.add_run(replace_placeholders(fragment, replacements))
+        run.bold = is_bold
+    return paragraph
 
 
 def replace_placeholders(text: str, replacements: dict[str, str]) -> str:
