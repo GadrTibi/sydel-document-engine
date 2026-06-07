@@ -45,11 +45,11 @@ Types du sprint (EURL hors périmètre) : **SELAS · SPFPL · SCM · SCI · SCS 
 | Type | Voie A — NotebookLM | Voie B — Build | Bloquant / décision |
 | :--- | :--- | :--- | :--- |
 | SELARL | — (réf, fini) | **livré + mergé main** | — |
-| SELAS | ✅ rangé (`6b6d413`) | readiness + **audit fidélité** en cours | **scope multi+PM+DG vs V1 unique → GO Gad** ; tokeniser Reynaud (Downloads) |
-| SPFPL | ✅ rangé (`915218c`) | readiness + **audit fidélité** en cours | toujours SPFPLAS ; tokeniser modèles ; Rafael (apport) |
-| SCM | ✅ rangé (`3d72507`) | readiness + **audit fidélité** en cours | carte cas→docs (Rafael) ; clé répartition dépenses |
-| SCI | ✅ rangé (`736e89b`) | readiness + **audit fidélité** en cours | canon tranché (SCI maintenue) ; modèle Lettre option IS (Rafael) |
-| SCS | ⏳ **partiel : 1-10 rangé (`d8980ec`)** ; 11-13 en attente (limite NLM) | readiness + **audit fidélité** en cours | wording multi (modèle + Rafael) ; nature civile/immo à confirmer |
+| SELAS | ✅ rangé (`6b6d413`) | **audit ✅** : FOND keep (verbatim, 0 invention) · FORME fix (footers/gras/centrage) · **incomplet** (unipersonnel) | **scope multi+PM+DG → GO Gad** ; tokeniser Reynaud |
+| SPFPL | ✅ rangé (`915218c`) | **audit ✅** : FOND keep (0 invention) · FORME fix | toujours SPFPLAS ; Rafael (satellites apport) |
+| SCM | ✅ rangé (`3d72507`) | **audit ✅** : FOND keep +2 fix · FORME fix **(⚠️ LOGO SYDEL perdu)** | carte cas→docs (Rafael) ; clé répartition dépenses |
+| SCI | ✅ rangé (`736e89b`) | **audit ✅** : FOND fix (blocs réinjectés inventent ; plain-SCI wording croisé) · FORME fix | **PM en SCI standard : moteur bloque, NLM l'autorise → Rafael** ; Lettre option IS |
+| SCS | ⏳ partiel (`d8980ec`) ; 11-13 attente NLM | **audit ✅** : FOND fix (blocs inventent/suppriment) · FORME fix (titre encadré perdu) | wording multi (modèle + Rafael) ; nature civile confirmée par audit |
 | SCP | ⛔ **non commencé** (NLM) | readiness faite | **GO/NO-GO produit (Gad+Rafael)** — classé hors moteur courant au canon |
 | SAS | ⛔ **non commencé** (NLM) | readiness faite | passe NLM jamais faite ; génération NO-GO sans Rafael |
 
