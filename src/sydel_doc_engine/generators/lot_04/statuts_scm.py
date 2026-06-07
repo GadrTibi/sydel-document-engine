@@ -206,7 +206,7 @@ def _add_apport_block(document, data: _ResolvedStatutsScm) -> None:
         apport = _required_apport(associe)
         add_paragraph(
             document,
-            f"{_signature_label(associe)} apporte à la Société la somme de "
+            f"{_apport_label(associe)} apporte à la Société la somme de "
             f"{_required_text(apport.montant_lettres, 'associes[].apport.montant_lettres')}",
         )
         add_paragraph(
@@ -246,7 +246,7 @@ def _add_apport_block(document, data: _ResolvedStatutsScm) -> None:
 def _add_capital_block(document, data: _ResolvedStatutsScm) -> None:
     for associe in data.associes:
         parts = _required_parts(associe)
-        add_paragraph(document, f"{_signature_label(associe)} {parts.nb} parts")
+        add_paragraph(document, f"{_entity_label(associe)} {parts.nb} parts")
     add_paragraph(
         document,
         "Total du nombre de parts composant le capital social : "
@@ -443,6 +443,33 @@ def _signature_label(associe: StatutsCivilsAssocie) -> str:
         f"{_required_text(prenoms, 'associes[].prenoms')} "
         f"{_required_text(associe.nom, 'associes[].nom')}"
     )
+
+
+def _entity_label(associe: StatutsCivilsAssocie) -> str:
+    """Designation de l'associe dans les blocs apports / parts.
+
+    Le modele source (paras 81 et 95) n'y porte QUE la denomination de la personne
+    morale (sans representant) et l'identite de la personne physique. Le wording
+    "representee par ..." n'existe, dans le modele, qu'en comparution (para 30) et
+    en signature. On l'aligne donc strictement sur la source.
+    """
+    if _is_morale(associe):
+        return _required_text(associe.denomination, "associes[].denomination")
+    prenoms = associe.prenoms or associe.prenom
+    return (
+        f"{_required_text(associe.civilite_affichage, 'associes[].civilite_affichage')} "
+        f"{_required_text(prenoms, 'associes[].prenoms')} "
+        f"{_required_text(associe.nom, 'associes[].nom')}"
+    )
+
+
+def _apport_label(associe: StatutsCivilsAssocie) -> str:
+    """Sujet de la ligne d'apport. Source para 81 : "La [denomination] apporte ..."
+    pour une personne morale ; para 84 : identite nue pour une personne physique.
+    """
+    if _is_morale(associe):
+        return f"La {_entity_label(associe)}"
+    return _entity_label(associe)
 
 
 def _is_morale(associe: StatutsCivilsAssocie) -> bool:

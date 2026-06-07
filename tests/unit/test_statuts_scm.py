@@ -135,7 +135,15 @@ def test_statuts_scm_generates_dynamic_associates_apports_parts_and_signatures(
 
     assert output_path.name == "statuts_scm.docx"
     assert "Article 4 ‐ Objet social" in text
-    assert "SELARL DURAND, représentée par Monsieur Jean Durand 70 parts" in text
+    # Ligne d'apport personne morale : le modele source (para 81) porte "La [denomination]
+    # apporte ..." SANS representant ("representee par ..." n'existe qu'en comparution).
+    assert "La SELARL DURAND apporte à la Société la somme de sept cents euros" in text
+    # Ligne de repartition des parts personne morale : source (para 95) = "[denomination][nb]
+    # parts", denomination NUE, sans representant.
+    assert "SELARL DURAND 70 parts" in text
+    # Aucun "representee par ..." ne doit polluer les lignes d'apport / de parts (D1 + D2).
+    assert "SELARL DURAND, représentée par Monsieur Jean Durand apporte" not in text
+    assert "SELARL DURAND, représentée par Monsieur Jean Durand 70 parts" not in text
     assert "Madame Alice Martin 50 parts" in text
     assert "ci- 500." in text
     assert "510" not in text

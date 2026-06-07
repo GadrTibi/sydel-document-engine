@@ -41,6 +41,7 @@ class StatutsCivilTemplate:
     capital_slice: tuple[int, int]
     signature_slice: tuple[int, int] | None = None
     append_signatures_after: int | None = None
+    statuts_title_box_before: int | None = None
 
 
 SCS_TEMPLATE = StatutsCivilTemplate(
@@ -52,6 +53,10 @@ SCS_TEMPLATE = StatutsCivilTemplate(
     apport_slice=(43, 58),
     capital_slice=(63, 76),
     append_signatures_after=253,
+    # FORME : le titre encadre "STATUTS" du modele source vit dans une TABLE (cellule T0), entre
+    # le bloc d'en-tete (paras 1-5) et "LES SOUSSIGNES" (para 12). Le moteur n'itere que les
+    # paragraphes source -> il ne le voit pas. On le restaure en l'injectant avant le para 12.
+    statuts_title_box_before=12,
 )
 
 SCI_TEMPLATE = StatutsCivilTemplate(
@@ -93,6 +98,11 @@ def generate_statuts_civil_docx(
     for index, paragraph in enumerate(source_doc.paragraphs):
         if index < skip_until:
             continue
+        if (
+            template.statuts_title_box_before is not None
+            and index == template.statuts_title_box_before
+        ):
+            add_statuts_title_box(output_doc, "STATUTS")
         if index == template.associate_slice[0]:
             _add_associate_block(output_doc, data)
             skip_until = template.associate_slice[1]
@@ -298,32 +308,58 @@ def _add_associate_block(document, data: _ResolvedStatutsCivil) -> None:
 
 def _add_apport_block(document, data: _ResolvedStatutsCivil) -> None:
     if data.template.expected_type == "scs":
-        add_paragraph(
-            document, "Le capital social est constitue par les apports en numeraires suivants :"
-        )
-        add_paragraph(document, "Associes commandites :", bold=True)
-        for associe in _associes_by_role(data.associes, "commandite"):
-            _add_apport_line(document, associe, expected_type=data.template.expected_type)
-        total_commandites = _required_text(
-            data.statuts.total_apports_commandites,
-            "statuts_civils.total_apports_commandites",
-        )
-        add_paragraph(
-            document,
-            f"Le montant total verse par le commandite est de {total_commandites}.",
-        )
-        add_paragraph(document, "Associes commanditaires :", bold=True)
-        for associe in _associes_by_role(data.associes, "commanditaire"):
-            _add_apport_line(
-                document, associe, expected_type=data.template.expected_type, commanditaire=True
-            )
-    else:
-        for associe in data.associes:
-            _add_apport_line(document, associe, expected_type=data.template.expected_type)
+        _add_apport_block_scs(document, data)
+        return
+    for associe in data.associes:
+        _add_apport_line(document, associe, expected_type=data.template.expected_type)
     capital_social = _required_text(data.statuts.capital_social, "statuts_civils.capital_social")
+    # SCI / SCI IRIS : total fidele "SOIT AU TOTAL [capital] euros" (source SCI para 110,
+    # SCI IRIS para 108). La clause de depot est deja presente dans le modele source (SCI para 111,
+    # SCI IRIS para 110) et n'est PAS couverte par la slice apport -> elle est rendue fidelement,
+    # accents compris, par le chemin source standard. Cf. _CIVILS_FIX_SPEC_V1.md.
     add_paragraph(
         document,
         f"SOIT AU TOTAL {capital_social} euros",
+    )
+
+
+def _add_apport_block_scs(document, data: _ResolvedStatutsCivil) -> None:
+    # SCS (source paras 41-57 ; slice (43,58)).
+    # L'en-tete "Le capital social est constitue par les apports en numeraires suivants : /
+    # Associes commandites :" est le paragraphe source 41, HORS slice -> il est deja rendu
+    # fidelement (accents compris) par le chemin source standard. Le bloc ne le reduplique PAS.
+    for associe in _associes_by_role(data.associes, "commandite"):
+        _add_apport_line(document, associe, expected_type="scs")
+    total_commandites = _required_text(
+        data.statuts.total_apports_commandites,
+        "statuts_civils.total_apports_commandites",
+    )
+    # Source para 49 : "Le montant total verse par le commandite est de \t\t\t  [total]."
+    add_paragraph(
+        document,
+        f"Le montant total versé par le commandité est de \t\t\t  {total_commandites}.",
+    )
+    # Source para 51 : "Associé commanditaire\xa0:" (singulier, accent, NBSP avant deux-points).
+    add_paragraph(document, "Associé commanditaire :")
+    commanditaires = _associes_by_role(data.associes, "commanditaire")
+    for associe in commanditaires:
+        _add_apport_line(document, associe, expected_type="scs", commanditaire=True)
+    # Source para 56 : "Le montant total verse par le commanditaire est de \t\t\t   [montant]."
+    total_commanditaires = _format_amount_total(commanditaires, commanditaire=True)
+    add_paragraph(
+        document,
+        f"Le montant total versé par le commanditaire est de \t\t\t   {total_commanditaires}.",
+    )
+    capital_social = _required_text(data.statuts.capital_social, "statuts_civils.capital_social")
+    # Source para 57 : "Total des apports en numeraires\xa0: \t\t\t\t\t  [capital]" (NBSP avant
+    # les deux-points) puis depot SCS.
+    add_paragraph(
+        document,
+        f"Total des apports en numéraires : \t\t\t\t\t  {capital_social}",
+    )
+    capital_lettres = _required_text(
+        data.statuts.capital_social_lettres,
+        "statuts_civils.capital_social_lettres",
     )
     depot = data.statuts.capital_depot
     banque_nom = _required_text(
@@ -336,15 +372,16 @@ def _add_apport_block(document, data: _ResolvedStatutsCivil) -> None:
     )
     add_paragraph(
         document,
-        "Les associes declarent et reconnaissent que la somme liberee, d'un montant de "
-        f"{capital_social} euros, "
-        "a ete deposee integralement et avant ce jour, au credit d'un compte ouvert, "
-        "au nom de la societe en formation, a la banque "
+        f"Cette somme de {capital_lettres} ({capital_social}) a été intégralement versée dès avant "
+        "ce jour à un compte ouvert au nom de la Société en formation, à la Banque "
         f"{banque_nom}, {banque_adresse}.",
     )
 
 
 def _add_capital_block(document, data: _ResolvedStatutsCivil) -> None:
+    if data.template.expected_type == "scs":
+        _add_capital_block_scs(document, data)
+        return
     for associe in data.associes:
         parts = _required_parts(associe)
         add_paragraph(document, _signature_label(associe))
@@ -357,17 +394,6 @@ def _add_capital_block(document, data: _ResolvedStatutsCivil) -> None:
                 f"{_required_int(parts.debut, 'associes[].parts.debut')} a "
                 f"{_required_int(parts.fin, 'associes[].parts.fin')}.",
             )
-        elif data.template.expected_type == "scs":
-            qualite = f", {parts.qualite_associe}" if parts.qualite_associe else ""
-            add_paragraph(document, f"- {_signature_label(associe)}{qualite},")
-            add_paragraph(
-                document,
-                "Proprietaire de "
-                f"{_required_text(parts.nb_lettres, 'associes[].parts.nb_lettres')} parts sociales "
-                f"{parts.nb} parts sociales",
-            )
-            if parts.plage_affichee:
-                add_paragraph(document, f"Numerotees de {parts.plage_affichee}")
         else:
             # SCI plain : le modele source (Modele statuts SCI.docx, para 120-121) rend
             # "[label]" puis "A concurrence de [lettres] parts, ci<TAB>[nb] parts " (sans
@@ -384,6 +410,64 @@ def _add_capital_block(document, data: _ResolvedStatutsCivil) -> None:
         document,
         "SOIT AU TOTAL "
         f"{_required_int(data.statuts.nb_parts_total, 'statuts_civils.nb_parts_total')} parts",
+    )
+
+
+def _add_capital_block_scs(document, data: _ResolvedStatutsCivil) -> None:
+    # SCS (source paras 63-75 ; slice (63,76)).
+    # Preambule source para 63 (capital effectif + division + numerotation + attribution) :
+    # actuellement supprime par l'ancien rendu -> reintroduit fidelement (accents compris).
+    capital_social = _required_text(data.statuts.capital_social, "statuts_civils.capital_social")
+    capital_lettres = _required_text(
+        data.statuts.capital_social_lettres,
+        "statuts_civils.capital_social_lettres",
+    )
+    nb_parts_total = _required_int(data.statuts.nb_parts_total, "statuts_civils.nb_parts_total")
+    nb_parts_total_lettres = _required_text(
+        data.statuts.nb_parts_total_lettres,
+        "statuts_civils.nb_parts_total_lettres",
+    )
+    valeur_nominale_part = _required_text(
+        data.statuts.valeur_nominale_part,
+        "statuts_civils.valeur_nominale_part",
+    )
+    valeur_nominale_part_lettres = _required_text(
+        data.statuts.valeur_nominale_part_lettres,
+        "statuts_civils.valeur_nominale_part_lettres",
+    )
+    plage_parts_total = _required_text(
+        data.statuts.plage_parts_totale,
+        "statuts_civils.plage_parts_totale",
+    )
+    add_paragraph(
+        document,
+        f"Le capital social effectif est fixé à {capital_lettres}({capital_social}) euros. "
+        f"Il est divisé en {nb_parts_total_lettres} ({nb_parts_total}) parts sociales de "
+        f"{valeur_nominale_part_lettres} ({valeur_nominale_part}) euro chacune de valeur nominale, "
+        f"numérotées de {plage_parts_total}, lesquelles sont attribuées aux associés comme suit :",
+    )
+    for associe in data.associes:
+        parts = _required_parts(associe)
+        # Source paras 63 (suite) / 67 / 71 : "- [label], [qualite],".
+        qualite = f", {parts.qualite_associe}" if parts.qualite_associe else ""
+        add_paragraph(document, f"- {_signature_label(associe)}{qualite},")
+        # Source paras 64 / 68 / 72 : "Proprietaire de [lettres] parts sociales<TAB>[nb] parts
+        # sociales " (TAB entre lettres et nombre, espace final).
+        add_paragraph(
+            document,
+            "Propriétaire de "
+            f"{_required_text(parts.nb_lettres, 'associes[].parts.nb_lettres')} parts sociales\t"
+            f"{parts.nb} parts sociales ",
+        )
+        # Source paras 65 / 69 / 73 : "Numerotees de [plage]".
+        if parts.plage_affichee:
+            add_paragraph(document, f"Numérotées de {parts.plage_affichee}")
+    # Source para 75 : "Total des parts sociales\xa0composant le capital\xa0:\t\t\t[nb] parts
+    # sociales" (NBSP apres "sociales" et avant les deux-points).
+    add_paragraph(
+        document,
+        f"Total des parts sociales composant le capital :\t\t\t{nb_parts_total} parts "
+        "sociales",
     )
 
 
@@ -454,9 +538,10 @@ def _add_apport_line(
         add_paragraph(document, f"La somme de {montant_lettres} euros,")
         add_paragraph(document, f"ci\t{montant} euros")
     else:
-        # Format SCS (para 43-44), inchange.
+        # Format SCS source para 43-44 : "- [label] apporte," puis
+        # "la somme de [lettres], <TAB>[montant]" (virgule + espace + TAB).
         add_paragraph(document, f"- {_signature_label(associe)} apporte,")
-        add_paragraph(document, f"la somme de {montant_lettres}, {montant}")
+        add_paragraph(document, f"la somme de {montant_lettres}, \t{montant}")
 
 
 def _add_physical_identity(document, associe: StatutsCivilsAssocie) -> None:
@@ -744,6 +829,24 @@ def _last_part_number(associes: list[StatutsCivilsAssocie]) -> int:
     if values:
         return max(values)
     return sum(_required_int(_required_parts(a).nb, "associes[].parts.nb") for a in associes)
+
+
+def _format_amount_total(
+    associes: list[StatutsCivilsAssocie],
+    *,
+    commanditaire: bool = False,
+) -> str:
+    # Source para 56 : "Le montant total verse par le commanditaire est de ... [montant]".
+    # Pour un commanditaire unique, c'est son montant ; pour plusieurs, leur somme (montant total).
+    total = 0
+    for associe in associes:
+        apport = _required_apport(associe)
+        if commanditaire:
+            montant = apport.montant_commanditaire or apport.montant
+        else:
+            montant = apport.montant
+        total += _amount_to_int(montant)
+    return str(total)
 
 
 def _amount_to_int(value: str | None) -> int:

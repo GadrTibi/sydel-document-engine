@@ -246,8 +246,25 @@ def test_statuts_scs_generates_roles_and_lu_approuve(tmp_path: Path) -> None:
     )
 
     assert output_path.name == "statuts_scs.docx"
-    assert "Associes commandites" in text
-    assert "Associes commanditaires" in text
+    # En-tete apport (source para 41, accents) rendu par le chemin source, non reduplique.
+    assert "Associés commandités" in text
+    assert text.count("Associés commandités") == 1
+    # Commanditaire : singulier + accent + NBSP avant deux-points (source para 51).
+    assert "Associé commanditaire :" in text
+    assert "Associes commandites" not in text
+    assert "Associes commanditaires" not in text
+    # Totaux fideles SCS (source paras 49/56/57/75, NBSP source compris), pas "SOIT AU TOTAL".
+    assert "Le montant total versé par le commandité est de" in text
+    assert "Le montant total versé par le commanditaire est de" in text
+    assert "Total des apports en numéraires :" in text
+    assert "Total des parts sociales composant le capital :" in text
+    assert "SOIT AU TOTAL" not in text
+    # Depot SCS (source para 57).
+    assert "Cette somme de" in text
+    assert "a été intégralement versée dès avant ce jour" in text
+    # Preambule capital SCS reintroduit (source para 63).
+    assert "Le capital social effectif est fixé à" in text
+    assert "lesquelles sont attribuées aux associés comme suit" in text
     assert "Lu et approuve" in text
     assert "Monsieur Jean Durand" in signature_table_text
     assert "Monsieur Alice Martin" in signature_table_text
