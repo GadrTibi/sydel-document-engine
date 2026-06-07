@@ -44,7 +44,7 @@ Types du sprint (EURL hors périmètre) : **SELAS · SPFPL · SCM · SCI · SCS 
 
 | Type | Voie A — NotebookLM | Voie B — Build | Bloquant / décision |
 | :--- | :--- | :--- | :--- |
-| SELARL | — (réf, fini) | **livré + mergé main** | — |
+| SELARL | — (réf, fini) | **livré + mergé main** · re-audit fond+forme ✅ (`_SELARL_FIDELITY_RECHECK_V1.md`) : FOND fidèle (épinglé par test), FORME 95 % | durcissements à folder dans le fix systémique : footer médecin (pagination + « Statuts [dénom] ») ; tests dentiste + page de titre ; alignement dentiste (cosmétique) |
 | SELAS | ✅ rangé (`6b6d413`) | **audit ✅** : FOND keep (verbatim, 0 invention) · FORME fix (footers/gras/centrage) · **incomplet** (unipersonnel) | **scope multi+PM+DG → GO Gad** ; tokeniser Reynaud |
 | SPFPL | ✅ rangé (`915218c`) | **audit ✅** : FOND keep (0 invention) · FORME fix | toujours SPFPLAS ; Rafael (satellites apport) |
 | SCM | ✅ rangé (`3d72507`) | **audit ✅** : FOND keep +2 fix · FORME fix **(⚠️ LOGO SYDEL perdu)** | carte cas→docs (Rafael) ; clé répartition dépenses |
@@ -60,6 +60,18 @@ Types du sprint (EURL hors périmètre) : **SELAS · SPFPL · SCM · SCI · SCS 
   ⚠️ GO/NO-GO produit requis avant build.
 - **SAS** : passe complète, **11 prompts**.
 - **Reste donc : 2 types pleins (SCP, SAS) + le reliquat SCS (3).** Reprise à la réinitialisation NLM.
+
+### Fix track (suite Voie B) — issu des audits de fidélité
+**Cause racine commune (6 types + SELARL) :** rendu **from-scratch via `docx_builder`** au lieu de
+préserver le modèle source → perte logo/footer/gras/centrage/tableaux + blocs réinjectés qui
+inventent/suppriment/désaccentuent. **Fix systémique = préserver la source** (remplissage qui conserve
+en-tête/footer/styles/tables nativement) + corriger les blocs dynamiques. Chantier à router proprement
+(branche dédiée + plan + revue), preuve d'abord sur **1 type (SCM, cas logo)**.
+- **SCM** : restaurer le **logo SYDEL** (appeler `add_header_logo`) ; 2 fix fond (« représentée par… » sur-spécifié).
+- **SCI** : branche plain-SCI a un **wording croisé/inventé** (« Propriétaire de … parts … parts ») → réaligner sur le modèle ; désaccentuation des blocs réinjectés ; **PM en SCI standard** : moteur bloque alors que NLM autorise → Rafael.
+- **SCS** : blocs réinjectés **inventent** (« SOIT AU TOTAL… ») / **suppriment** des clauses source ; **titre encadré « STATUTS » perdu** (le moteur n'itère pas les `tables` source).
+- **SPFPL / SELAS** : restaurer la mise en forme source (footers/gras/centrage) ; SELAS reste **incomplet** (multi → Reynaud + Rafael).
+- **SELARL (durcissement)** : footer médecin (pagination + « Statuts [dénom] ») ; tests dentiste + page de titre ; alignement dentiste.
 
 ---
 
