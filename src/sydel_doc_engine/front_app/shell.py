@@ -104,8 +104,6 @@ def _prefill_random_selarl_data() -> None:
         "selarl_profession": profession_label,
         "selarl_dossier_unipersonnel": True,
         "selarl_regime_communautaire": regime_communautaire,
-        "selarl_derogation": False,
-        "selarl_site_distinct": False,
         "selarl_cession": True,
         "selarl_scm": True,
         "selarl_dossier_reference": f"TEST-SELARL-{dossier_suffix}",
@@ -386,12 +384,10 @@ def _render_qualification() -> dict[str, object]:
     )
     col_c.caption("Active DOC-005 et DOC-006.")
 
-    st.markdown("**Cas hors perimetre V1**")
-    out_a, out_b, out_c, out_d = st.columns(4)
-    derogation = out_a.checkbox("Derogation", value=False, key="selarl_derogation")
-    site_distinct = out_b.checkbox("Site distinct", value=False, key="selarl_site_distinct")
-    cession = out_c.checkbox("Cession", value=False, key="selarl_cession")
-    scm = out_d.checkbox("SCM", value=False, key="selarl_scm")
+    st.markdown("**Operations complementaires**")
+    out_a, out_b = st.columns(2)
+    cession = out_a.checkbox("Cession", value=False, key="selarl_cession")
+    scm = out_b.checkbox("SCM", value=False, key="selarl_scm")
 
     return {
         "dossier_reference": st.text_input(
@@ -403,8 +399,6 @@ def _render_qualification() -> dict[str, object]:
         ),
         "dossier_unipersonnel": dossier_unipersonnel,
         "regime_communautaire": regime_communautaire,
-        "derogation": derogation,
-        "site_distinct": site_distinct,
         "cession": cession,
         "scm": scm,
     }

@@ -125,8 +125,6 @@ class SelarlSliceInput:
     profession: str = PROFESSION_MEDECIN
     dossier_unipersonnel: bool = True
     regime_communautaire: bool = False
-    derogation: bool = False
-    site_distinct: bool = False
     cession: bool = False
     scm: bool = False
     civilite: str = ""
@@ -282,9 +280,8 @@ def validate_selarl_input(data: SelarlSliceInput) -> tuple[str, ...]:
         blockers.append("Profession hors perimetre SELARL V1.")
     if not data.dossier_unipersonnel:
         blockers.append("La V1 ne couvre que le dossier unipersonnel.")
-    # Derogation / site distinct : NON bloquants. Les formulaires de derogation sont a remplir
-    # a la main (modeles "A REMPLIR A LA MAIN") -> on ne bloque pas la generation du reste du
-    # dossier ; on informe via un warning clair (cf. _warning_messages).
+    # Derogation / site distinct : hors outil. Les formulaires sont a remplir a la main
+    # (retour associe Rafael) et ne sont plus exposes dans l'interface ; rien a valider ici.
     if data.cession and data.cession_context is None:
         blockers.append("Cession demandee mais donnees cession manquantes.")
     if data.scm and data.scm_cession_context is None:
@@ -570,14 +567,6 @@ def _document_rows(
                 message="Non genere : document conditionnel du regime communautaire.",
             )
         )
-    rows.append(
-        SelarlDocumentRow(
-            doc_code="DOC-013/DOC-014",
-            label="Formulaires de derogation",
-            status="hors_v1",
-            message="A remplir a la main (non genere automatiquement par l'outil).",
-        )
-    )
     if data.scm_cession_context is None:
         rows.append(
             SelarlDocumentRow(
@@ -596,18 +585,6 @@ def _warning_messages(data: SelarlSliceInput) -> tuple[str, ...]:
     ]
     if data.regime_communautaire:
         warnings.append("Regime communautaire actif : DOC-005 et DOC-006 seront generes.")
-    if data.derogation:
-        warnings.append(
-            "Demande de derogation cochee : le formulaire de derogation (cumul d'activite) est "
-            "a remplir a la main, il n'est pas genere automatiquement. Le reste du dossier est "
-            "genere normalement."
-        )
-    if data.site_distinct:
-        warnings.append(
-            "Site distinct coche : le formulaire de derogation pour exercer sur plusieurs sites "
-            "est a remplir a la main, il n'est pas genere automatiquement. Le reste du dossier "
-            "est genere normalement."
-        )
     return tuple(warnings)
 
 
