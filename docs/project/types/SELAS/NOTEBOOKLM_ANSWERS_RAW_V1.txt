@@ -1,0 +1,418 @@
+**Non trouvé**.
+
+Les sources fournies ne contiennent pas le wording **exact** de la clause de **comparution** pour une SELAS à **plusieurs associés** (le bloc commençant par « LES SOUSSIGNÉS... »). 
+
+Voici les précisions extraites des sources concernant ce passage :
+
+*   **Modèle existant (Unipersonnel uniquement)** : Le seul texte exact disponible dans les sources concerne l'associé unique : « **LE SOUSSIGNE : Monsieur [Identité]... A établi ainsi qu'il suit les statuts de la Société d’exercice libéral à responsabilité limitée de [Profession] qu'il a décidé d'instituer :** ».
+*   **Indice sur la pluralité** : Les sources indiquent que pour le cas multi-associés, le formalisme doit changer pour mentionner que « **les associés présents... forment le capital** » et qu'ils « **discutent entre eux** », mais le paragraphe contractuel complet n'est pas reproduit.
+*   **Bloc Identité (Variables)** : Bien que le texte exact de répétition soit absent, les sources listent les **informations obligatoires** devant composer le bloc identité de chaque associé :
+    *   **Civilité / Nom et Prénom** ;
+    *   **Date et lieu de naissance** ;
+    *   **Nationalité** ;
+    *   **Adresse du domicile** ;
+    *   **Profession** (avec mention de l'inscription au tableau du Conseil de l'Ordre et numéro RPPS pour les libéraux) ;
+    *   **Situation matrimoniale** (et régime).
+
+Les experts soulignent dans les transcriptions que la rédaction pour plusieurs associés est « **ultra personnalisée** » et qu'il est « **impossible de faire autant de modèles qu'il faut** » de manière figée, ce qui explique l'absence d'un bloc type « LES SOUSSIGNÉS » prêt à l'emploi dans les documents de travail.
+
+D'après les sources de ce notebook, le wording exact pour les clauses en présence de **plusieurs associés** est le suivant :
+
+### **(a) Article 7 — APPORTS**
+*   **Wording exact multi-associés : NON TROUVÉ.**
+*   **Indice source :** La **Source 5 (Slide 5)** présente uniquement le modèle pour un associé unique : « Le Docteur [Nom Prénom], apporte à la société la somme de [Montant numérique] ([MONTANT EN LETTRES]) euros. ». 
+*   Les transcriptions confirment que pour le cas multi-associés, le texte doit être adapté pour lister chaque apporteur, mais la ligne de sommation « total des apports » n'est pas reproduite textuellement dans les documents fournis.
+
+### **(b) Article 8 — CAPITAL SOCIAL / RÉPARTITION**
+*   **Wording exact de la phrase d'intro multi-associés : NON TROUVÉ.**
+*   **Wording pour associé unique (pour comparaison) :** « Il est divisé en [Nombre] ([NOMBRE EN LETTRES]) parts sociales [actions en SELAS] de [Valeur] ([VALEUR EN LETTRES]) chacune, intégralement libérées, souscrites et attribuées **en totalité à l'associé unique** : ».
+*   **Phrase de remplacement :** Pour plusieurs associés, les sources indiquent que la mention de l'associé unique disparaît au profit d'une répartition par numérotation précise. Le wording exact de la phrase d'intro n'est pas cité, mais le contenu technique doit mentionner par exemple : « **actions n°1 à 10 inclus** » pour identifier les droits de chaque associé.
+*   **Forme de la liste de répartition :** Selon la **Source 5 (Slide 5)**, la présentation suit ce format (en adaptant "parts" par "actions" pour une SELAS) :
+    > « - [Civilité Nom Prénom] : [Nombre] actions
+    > 
+    > **Soit au total : [Total] actions** »
+
+### **Notes importantes pour le moteur documentaire**
+*   **Substitution terminologique :** En SELAS, il est impératif de remplacer systématiquement le mot « parts » ou « parts sociales » par le mot « **actions** », identifié comme le terme le plus récurrent à adapter.
+*   **Numérotation :** La répartition pour plusieurs associés est jugée « ultra personnalisée » et doit permettre de distinguer les numéros d'actions pour gérer les pourcentages de détention.
+*   **Majorité de contrôle :** Une clause de protection doit subsister à la fin de l'Article 8 : « En aucun cas la répartition du capital ne pourra être modifiée dans des conditions qui retireraient la majorité des droits de vote aux associés exerçant dans la société. ».
+
+
+D'après les sources de ce notebook, voici les informations concernant la présence d'une personne morale comme associée d'une SELAS :
+
+### **Détention par une personne morale**
+**OUI**, une SELAS peut avoir une personne morale comme associée. Les sources indiquent explicitement : « tu peux avoir ce cas 25 % d'une société médical [...] associé personne morale ». Il est également précisé qu'il peut s'agir d'une **SPFPL** (holding spécifique obligatoire) ou d'une « société civile micro-holding ».
+
+### **Wording dans les statuts**
+Malgré la confirmation de cette possibilité technique, le **wording exact** pour une personne morale est **non trouvé** dans les sources pour les sections suivantes :
+
+*   **Comparution : NON TROUVÉ.**
+    Le modèle de statuts présenté dans les sources ne montre que la comparution d'une **personne physique** associée unique : « LE SOUSSIGNE : Monsieur Patrick LELLOUCHE... ». Les sources précisent que pour les cas complexes incluant des personnes morales, la rédaction est considérée comme « ultra personnalisée » et nécessite souvent une intervention manuelle sur Word.
+*   **Ligne de répartition du capital : NON TROUVÉ.**
+    L'exemple de tableau de répartition disponible ne mentionne que des personnes physiques (ex: « - Monsieur Lyes LADJOUZI : 1.000 parts »). Bien que le système doive collecter la dénomination et le SIREN pour une société associée, la formulation exacte de la ligne n'est pas fournie.
+*   **Bloc de signature : NON TROUVÉ.**
+    Les sources mentionnent que les signatures de la « SM » (société) ou de la « SFP » doivent être présentes (« les signatures elles se mettent... signature de la SM là c'est là »), mais le texte exact du bloc (« Pour la société X... ») n'est pas reproduit.
+
+**Indice source :** Les transcriptions soulignent que pour ces configurations pluri-associés ou morales, il est « impossible de faire autant de modèles qu'il faut » et que les juristes du cabinet adaptent ces passages « à la main » à partir d'une trame de base.
+
+**Non trouvé**.
+
+Les sources de ce NotebookLM ne contiennent pas le **wording exact** de l'article des statuts concernant les **Directeurs Généraux (DG)**, ni le texte d'un **PV de nomination** spécifique pour cette fonction.
+
+Voici les indices et les manques identifiés dans les sources :
+
+*   **Wording des statuts et du PV : NON TROUVÉ.** 
+    Les modèles de statuts fournis se limitent aux deux premières pages d'une **SELARL à associé unique**,. Pour une SELAS, les sources mentionnent uniquement le remplacement du terme « Gérant » par celui de « **Président** »,. L'article instituant un DG, ses pouvoirs ou la durée de son mandat n'est pas reproduit.
+*   **Caractère obligatoire ou optionnel : NON TROUVÉ.** 
+    Les sources n'indiquent pas explicitement si la nomination d'un DG est obligatoire ou optionnelle. Elles précisent toutefois que dans une SELAS, il y a un « **président qui est majoritaire** » et que « **potentiellement il y en a un qui règne tout** », ce qui suggère une structure centrée sur la présidence.
+*   **Indice sur la nomination :** La source indique que le PV de nomination d'un dirigeant (mentionné pour un gérant) n'est pas systématique car il peut être nommé directement « **dans les statuts** ».
+*   **Indice sur les données :** Pour tout « **dirigeant** », les informations minimales à collecter pour le dossier sont le **nom, prénom et numéro de téléphone**.
+
+En résumé, les documents disponibles se concentrent sur le cas d'usage « jeune diplômé » ou associé unique, laissant la gestion des Directeurs Généraux dans la catégorie des rédactions « **ultra personnalisées** » traitées manuellement.
+
+
+D'après les sources de ce notebook, voici les informations concernant les actes de décision pour une SELAS à plusieurs associés :
+
+### **Forme de l'acte de décision**
+Lorsqu'une SELAS passe de l'unipersonnel au pluripersonnel, la forme de l'acte change radicalement :
+*   **Pour un associé unique** : L'acte est une simple « **décision de l'associé unique** ». Le formalisme est réduit : « l'associé unique de la société a pris les décisions. C'est beaucoup plus court évidemment t'as moins de formalisme t'es tout seul ».
+*   **Pour plusieurs associés** : L'acte prend la forme d'un **Procès-Verbal (PV)** d'assemblée générale. Le formalisme légal est décrit comme « beaucoup plus long et complexe ».
+
+### **Wording du Procès-Verbal (PV)**
+Le wording **EXACT** et complet du PV (incluant la convocation, le quorum et l'ordre du jour) est **non trouvé** dans les sources. Cependant, les transcriptions fournissent des segments de phrases obligatoires pour le formalisme multi-associés :
+
+*   Mention de présence : « **les associés présents...** » ;
+*   Constat du capital : « **ils forment le capital** » ;
+*   Déroulement : « **les associés discutent entre eux** » ;
+*   Dépôt des pièces : « **on doit déposer les documents obligatoires** ».
+
+### **Liste des résolutions**
+La liste exhaustive des résolutions de constitution n'est pas fournie sous forme de bloc unique. Les sources mentionnent néanmoins les éléments suivants :
+
+1.  **Nomination du dirigeant** : Le « **PV de nomination** » du Président (ou gérant en SELARL) est un document à éditer. Il est précisé que cette nomination n'est pas systématique par PV car elle peut être faite directement « **dans les statuts** ».
+2.  **Agrément** : La résolution d'« **agrément d'un nouvel associé** » est citée comme une résolution type pour le cas pluri-associés.
+3.  **Modifications et Pouvoirs** : Les résolutions de « **modification des statuts** » et de « **pouvoirs** » (pour les formalités) sont également mentionnées.
+
+**Informations non trouvées :**
+*   Le wording exact de la convocation et du quorum : **non trouvé**.
+*   La liste précise des résolutions spécifiques à la *constitution* (reprise des actes, frais de constitution, etc.) : **non trouvé**.
+*   Le wording concernant la nomination d'un Directeur Général (DG) dans un PV : **non trouvé** (les sources se concentrent sur le Président en SELAS).
+
+**Indice source :** Les transcriptions indiquent que pour les cas à plusieurs associés, les juristes utilisent des menus déroulants ou adaptent les modèles « à la main » car les configurations sont trop nombreuses pour être figées dans un modèle unique.
+
+
+D'après les sources de ce NotebookLM, les informations concernant le wording exact du bloc de signatures pour une SELAS à plusieurs associés sont les suivantes :
+
+### **Wording du bloc de signatures (Plusieurs associés)**
+*   **Wording exact : Non trouvé.** 
+*   Les sources fournies ne reproduisent pas la page finale des statuts contenant le bloc contractuel de signature pour une structure pluri-associés.
+*   Les transcriptions soulignent que la gestion de la **pluralité des associés** est considérée comme une rédaction **« ultra personnalisée »** qui est souvent finalisée manuellement, ce qui explique l'absence d'une trame de signature figée dans les documents de besoins.
+
+### **Mentions et modalités de signature**
+*   **Mention manuscrite (« Lu et approuvé ») : Non trouvé.** 
+*   Une source mentionne avoir effectué un changement de **« mention »** dans les modèles, mais le texte exact de cette mention n'est pas précisé.
+*   **Une signature par associé :** Les sources confirment que le système doit prévoir la place pour les signatures des différents intervenants, notamment lorsqu'il y a des **« associés minoritaires »** ou des duos d'associés.
+*   **Ordre des signataires : Non trouvé.** Les documents ne précisent pas d'ordre protocolaire entre le Président, les associés exerçants et les associés non-exerçants.
+
+### **Signature d'une personne morale associée**
+*   **Forme « Pour la société X... » : Non trouvé.** 
+*   Les sources confirment techniquement la présence d'une signature pour la **« SM »** (Société Médicale ou personne morale associée) ou la **« SFP »** (SPFPL) tout en bas du document.
+*   Cependant, le texte juridique exact permettant d'identifier le représentant légal agissant pour le compte de la société associée n'est pas présent dans les trames types fournies.
+
+**Indice source :** L'un des experts du cabinet précise que pour les signatures en SELAS, le mot qui subit le plus de modifications systématiques est **« actions »** (au lieu de parts), et que le terme **« Président »** doit apparaître en lieu et place de « Gérant ».
+
+
+D'après les sources de ce NotebookLM, il est confirmé que le passage à plusieurs associés (de 2 à 5) nécessite l'ajout ou la modification de clauses spécifiques, mais le **wording exact** de ces articles de statuts est en grande partie **non trouvé** car ces configurations sont qualifiées d'« ultra personnalisées » et difficiles à figer dans un modèle unique.
+
+Voici l'état des informations pour chaque clause demandée :
+
+### 1. Organisation des décisions collectives
+Le formalisme des décisions change radicalement dès qu'il y a plus d'un associé.
+*   **Condition de déclenchement :** Passage du caractère unipersonnel au caractère pluripersonnel de la société.
+*   **Wording partiel identifié :** Les sources ne donnent pas l'article complet, mais précisent que le texte doit désormais mentionner que « **les associés présents... forment le capital** » et que « **les associés discutent entre eux** ».
+*   **Comparaison avec l'associé unique :** Pour un seul associé, le wording est : « **l'associé unique de la société a pris les décisions. C'est beaucoup plus court évidemment t'as moins de formalisme t'es tout seul** ».
+
+### 2. Clause d'agrément
+*   **Wording exact : Non trouvé.**
+*   **Indices sources :** Les sources mentionnent l'existence d'une résolution d'« **agrément d'un nouvel associé** » et la nécessité d'un « **PV d'agrément** », notamment pour l'entrée d'une holding (SPFPL) au capital. Cependant, le texte de la clause statutaire régissant cet agrément (délais, majorité requise) n'est pas présent dans les documents.
+
+### 3. Clause de protection (Majorité de contrôle)
+Bien que présente dans le modèle à associé unique, cette clause prend toute son importance à plusieurs associés :
+*   **Wording exact :** « **En aucun cas la répartition du capital ne pourra être modifiée dans des conditions qui retireraient la majorité des droits de vote aux associés exerçant dans la société.** ».
+*   **Condition de déclenchement :** Toute modification de la répartition du capital.
+
+### 4. Droit de préemption et Clauses d'exclusion
+*   **Wording exact : Non trouvé.**
+*   **Statut :** Ces termes n'apparaissent pas dans les modèles de statuts ou les transcriptions techniques fournis.
+
+### 5. Clauses de distinction des droits (Multi-associés)
+Les sources soulignent que pour plusieurs associés, il faut intégrer des mécanismes absents ou simplifiés en unipersonnel :
+*   **Actions de préférence :** Utilisées pour permettre à des associés non-exerçants (conjoint, enfants via micro-holding) d'entrer au capital avec des droits spécifiques.
+*   **Décorrélation capital/résultat :** Le wording doit permettre de préciser que « **1 % des parts ne donne pas forcément droit à 1 % du résultat de la société** ». Le système doit donc gérer séparément les « **droits de vote** » et les « **droits financiers** ».
+
+En résumé, pour un moteur documentaire, les sources indiquent que ces clauses doivent être gérées avec « souplesse » (souvent par une rédaction manuelle sur Word), car le cabinet considère qu'il est « **impossible de faire autant de modèles qu'il faut** » pour couvrir toutes les combinaisons de 2 à 5 associés.
+
+
+D'après les sources de ce NotebookLM, la nomination du dirigeant (Président en SELAS ou Gérant en SELARL) lors de la création peut s'effectuer de deux manières :
+
+1.  **Dans les statuts** : Il est possible de désigner le premier dirigeant directement via une clause dans les statuts.
+2.  **Par un acte / PV séparé** : Il existe également un document spécifique intitulé « **PV de nomination** » qui figure dans la liste des documents à éditer lors d'une création.
+
+### Cas d'application
+Le choix entre les deux méthodes n'est pas systématique. Selon les sources, cela « **dépend comment sont faits les statuts que tu vas sélectionner** ». Si les statuts types choisis ne contiennent pas de clause de désignation, l'édition d'un PV de nomination séparé devient nécessaire.
+
+### Wording exact
+*   **Wording de la clause dans les statuts : Non trouvé.**
+*   **Wording de l'acte / PV de nomination : Non trouvé.**
+
+Bien que le « PV de nomination » soit identifié comme un document à automatiser, son contenu textuel précis n'est pas reproduit dans les documents de travail fournis. Les sources précisent néanmoins que pour tout dirigeant, les informations minimales à collecter sont le **nom, le prénom et le numéro de téléphone**.
+
+
+**Non trouvé**.
+
+Les sources de ce NotebookLM ne contiennent pas le wording exact de la **Déclaration de Non-Condamnation (DNC)**, ni l'indication explicite concernant l'exigence de la filiation (noms et prénoms des parents).
+
+Voici les précisions identifiées dans les sources concernant ce document :
+
+*   **Mention de la filiation : Non trouvé.** Les listes d'informations à demander au client ou pour la fiche client détaillent le nom, le prénom, la date et le lieu de naissance, la nationalité, l'adresse, la profession et le régime matrimonial, mais ne mentionnent à aucun moment les noms des parents (filiation).
+*   **Wording EXACT de la DNC : Non trouvé.** Les sources confirment que la DNC est un « **document à éditer** » obligatoire lors d'une création et qu'elle est désignée sous le terme de « **déclaration sur l'honneur d'une condamnation** ». Cependant, le texte intégral de ce modèle n'est pas reproduit dans les documents de travail.
+*   **Champs et variables :** Bien que le texte complet manque, les sources indiquent que pour tout formulaire ou document à éditer (incluant potentiellement la DNC), le système doit être capable de pré-remplir l'identité du dirigeant (nom, prénom, date/lieu de naissance) et son adresse. Les informations minimales requises pour identifier un dirigeant dans le système sont son **nom, son prénom et son numéro de téléphone**.
+
+**Indice source :** Dans les transcriptions, il est précisé que la DNC fait partie du « lot » de documents transverses (avec la procuration et les statuts) nécessaires pour constituer le dossier de création d'une SELAS.
+
+
+D'après les sources de ce NotebookLM, voici les informations concernant l'acte lié au régime communautaire d'un associé :
+
+### **Titre exact et wording de l'acte**
+*   **Titre exact :** Les sources ne mentionnent pas de titre contractuel formel unique. Elles font référence à ce document sous les termes de « **renonciation** » ou de « **renonciation au fait d'être associé** ». Dans l'interface du futur moteur documentaire, cet acte est simplement désigné par le bouton « **communauté** » dans la liste des documents à éditer.
+*   **Wording exact : Non trouvé.** Le texte intégral de la clause ou de l'acte de renonciation n'est pas reproduit dans les sources fournies. Les experts précisent qu'il s'agit d'un des formulaires qui « ne sont pas du tout faits » ou stabilisés dans les trames actuelles.
+
+### **Effet juridique et distinction SELAS (actions) / SELARL (parts)**
+Les sources apportent une précision technique majeure sur l'adaptation de ce document lors du passage d'une SELARL à une SELAS :
+
+*   **Substitution terminologique :** La différence principale réside dans le vocabulaire utilisé. En SELAS, il est impératif de remplacer systématiquement le terme « **parts sociales** » par celui d' « **actions** ». 
+*   **Fréquence de modification :** Les sources soulignent que le mot « **actions** » est « **le mot qui revient le plus dans tous les [documents]** » et qu'il constitue le pivot de l'adaptation des modèles juridiques du cabinet pour les SELAS.
+*   **Règle de gestion :** Pour les associés mariés sous le régime de la communauté, le document (renonciation) est classé comme « **facultatif** » dans l'arborescence générale, mais il devient nécessaire en fonction de la situation matrimoniale spécifique renseignée dans la fiche client.
+
+### **Informations non trouvées**
+*   Le texte juridique détaillant si l'effet de la revendication de la qualité d'actionnaire (SELAS) diffère légalement de celui d'associé (SELARL) n'est pas explicité ; les sources se limitent à la gestion du changement de terminologie (« parts » vs « actions »).
+*   L'existence d'un formalisme de signature spécifique pour le conjoint (mention manuscrite ou autre) n'est pas mentionnée.
+
+***
+
+**Sources citées :**
+*   Transcription Atelier audit 1 - part 3.
+*   Transcription Atelier cartographie des cas.
+*   Document "Besoins Sydel (juridique).pdf", Slide 7 (Page fiche création).
+*   Transcription Texte collé (Atelier audit).
+*   Transcription Texte collé (Détails juridiques).
+*   Transcription Texte collé (Détails terminologiques).
+
+
+D'après les sources de ce carnet de notes, il n'existe pas de document complet présentant les statuts types d'une SELAS. Les sources fournissent principalement le modèle d'une SELARL et précisent les **règles de substitution terminologique** systématiques pour passer en SELAS.
+
+Voici les éléments de wording identifiés qui diffèrent entre les deux formes :
+
+### 1. Article 1 — Forme sociale
+*   **Wording exact SELAS : Non trouvé.**
+*   **Wording source (Indice de substitution) :** Les sources indiquent que pour une SELAS, il faut écrire « **par actions simplifiée** » au lieu de « à responsabilité limitée ».
+*   **Modèle SELARL (pour référence) :** « La Société est une société d'exercice libéral à responsabilité limitée de [Profession] (SELARL)... ».
+
+### 2. Article 8 — Capital social (Parts vs Actions)
+*   **Wording exact SELAS : Non trouvé.**
+*   **Règle de substitution :** Le mot qui revient le plus dans tous les documents lors du passage en SELAS est « **actions** » au lieu de « parts sociales ».
+*   **Modèle SELARL (pour référence) :** « Il est divisé en [Nombre] ([NOMBRE EN LETTRES]) **parts sociales** de [Valeur] ([VALEUR EN LETTRES]) chacune... ». En SELAS, la phrase devient : « Le capital est divisé en [nombre de] **parts ou d’actions** ».
+
+### 3. Article Direction (Président vs Gérant)
+*   **Wording exact SELAS : Non trouvé.**
+*   **Règle de substitution :** Dans une SELAS, on ne parle plus de Gérant mais de « **Président** ».
+*   **Cas du Directeur Général (DG) :** Les sources mentionnent la possibilité de nommer un président majoritaire, mais le wording d'un article spécifique sur le DG est **non trouvé**.
+
+### 4. Article Décisions (Collectives vs Associé Unique)
+Les sources distinguent le wording selon le nombre d'associés, ce qui est particulièrement structurant en SELAS :
+
+*   **Cas de l'associé unique :** « **L'associé unique de la société a pris les décisions** ».
+*   **Cas de plusieurs associés (2 à 5) :** Le wording doit inclure les mentions suivantes : « **les associés présents... ils forment le capital** » et « **les associés discutent entre eux** ».
+*   **Référence source :** Transcription « Texte collé », paragraphe.
+
+### 5. Clause de protection (Majorité)
+Cette clause est maintenue mais adaptée en termes de vocabulaire :
+*   **Wording source :** « En aucun cas la répartition du capital ne pourra être modifiée dans des conditions qui retireraient la majorité des **droits de vote** aux associés exerçant dans la société ».
+*   **Note technique :** En SELAS, le système doit impérativement distinguer les « **droits de vote** » des « **droits financiers** ».
+
+***
+
+**Ce qui n'est pas trouvé dans les sources :**
+*   Le texte intégral et définitif des articles 1, 7 et 8 spécifiquement rédigés pour une SELAS (les sources ne contiennent que les 2 premières pages d'un modèle SELARL).
+*   Le wording de la clause de nomination du premier Président dans les statuts.
+*   Les clauses d'agrément ou de préemption spécifiques aux SELAS pluri-associés.
+
+
+D'après les sources fournies, voici les informations concernant la **Procuration** et la **Demande d'inscription à l'Ordre** pour une SELAS :
+
+### 1. La Procuration
+*   **Wording exact : Non trouvé** (les sources confirment l'existence du document dans le lot des pièces obligatoires, mais le texte intégral n'est pas reproduit).
+*   **Mentions qui changent par rapport à la SELARL :**
+    *   **Le titre du dirigeant** : Le terme « Gérant » doit être systématiquement remplacé par celui de « **Président** ».
+    *   **La forme sociale** : La mention « Société d'exercice libéral à responsabilité limitée » est remplacée par « **Société d’exercice libéral par actions simplifiée** ».
+    *   **La terminologie des titres** : On ne parle plus de « parts sociales » mais d’« **actions** ». Les sources précisent que c’est « le mot qui revient le plus dans tous les documents » lors du passage en SELAS.
+*   **Mandataire : Non trouvé** (le wording désignant le mandataire n'est pas présent dans les extraits).
+
+### 2. La Demande d’inscription à l’Ordre
+*   **Wording exact : Non trouvé** (le modèle complet n'est pas fourni).
+*   **Mentions et clauses spécifiques identifiées :**
+    *   **Lieux d'exercice** : Le document doit impérativement préciser la situation du praticien concernant ses lieux d'exercice avec la formulation suivante : « **soit j'exerce ailleurs, je précise, j'exerce ailleurs, j'exerce nulle ailleurs** ».
+    *   **Spécificité Médecin** : Pour un médecin, la demande d'inscription est plus complexe que pour un dentiste car il faut ajouter une pièce supplémentaire : « **si c'est un médecin, il faut que je rajoute un questionnaire parce que j'ai pas besoin pour un dentiste** ».
+    *   **Nature du document** : Bien que les documents soient adaptés à la SELAS, la source indique que la demande d'inscription peut rester très proche du modèle SELARL (« pourraient être identiques dans la base ») à condition de basculer les variables de rôle et de forme sociale.
+
+### Résumé des éléments non trouvés (Sources insuffisantes)
+*   Le texte contractuel complet de la **procuration** (bloc de mandat) [Non trouvé].
+*   Le formulaire type de la **demande d'inscription** dans son intégralité [Non trouvé].
+*   L'identité précise ou le wording désignant le **mandataire** dans la procuration [Non trouvé].
+
+
+D'après les sources de ce NotebookLM, voici les informations concernant l'attestation de dépôt de capital et la liste des souscripteurs pour une SELAS :
+
+### **1. Wording de l'Attestation de dépôt de capital**
+Le wording **EXACT** du document autonome d'attestation n'est **non trouvé** dans les sources. Toutefois, le contenu de cette attestation est repris mot pour mot dans l'**Article 7 (Apports)** des statuts types fournis, qui sert de base au moteur :
+
+*   **Wording source :** « **Cette somme a été déposée par l’associé [unique/les associés] sur un compte ouvert au nom de la société dans les livres de la banque [NOM DE LA BANQUE], [ADRESSE DE LA BANQUE]. Elle ne pourra être retirée que sur présentation d’un certificat du greffier attestant l’immatriculation de la société au registre du commerce et des sociétés.** ».
+*   **Champs requis identifiés :**
+    *   **Identité de la banque** (Nom et adresse complète).
+    *   **Montant du capital** (en chiffres et en lettres).
+    *   **Nature de l'apport** (numéraire).
+
+### **2. Wording de la Liste des souscripteurs**
+Le wording **EXACT** d'un document intitulé "Liste des souscripteurs" est **non trouvé**. Les sources présentent cette liste sous la forme de la répartition du capital au sein de l'**Article 8** des statuts :
+
+*   **Structure de la liste :**
+    > « **Il est divisé en [Nombre] ([NOMBRE EN LETTRES]) [actions] de [Valeur] ([VALEUR EN LETTRES]) chacune, intégralement libérées, souscrites et attribuées de la façon suivante :**
+    > *   **[Civilité Nom Prénom] : [Nombre] actions**
+    > 
+    > **Soit au total : [Total] actions** ».
+*   **Champs requis :**
+    *   **Division en actions** : Nombre total et valeur nominale de chaque action.
+    *   **Identité des souscripteurs** : Nom, prénom (et civilité).
+    *   **Nombre d'actions** : Précision de la numérotation (ex: « **actions n°1 à 10 inclus** ») pour les cas multi-associés.
+
+### **3. Articulation des pièces**
+Les sources indiquent une approche hybride pour l'articulation de ces documents :
+
+*   **Pièces distinctes dans l'interface :** Dans la "Page fiche création", l'**attestation sur le K** (capital) apparaît comme un bouton de document à éditer distinct des statuts.
+*   **Fusion opérationnelle :** Une transcription d'atelier précise : « **C'est un document obligatoire, mais en fait je l'ai fusionné avec un autre parce que ça reprend globalement les mêmes éléments. Mais je l'ai appelé quand même pareil...** ».
+*   **Usage :** L'attestation et la liste sont indispensables pour que la banque accepte le dépôt des fonds et pour les formalités au greffe et à l'Ordre.
+
+### **Informations non trouvées**
+*   Le wording spécifique du document de la banque (certificat de dépôt) n'est pas fourni car il dépend de l'établissement bancaire.
+*   La distinction juridique entre la liste des souscripteurs et l'état de répartition du capital n'est pas traitée ; les deux semblent être générés à partir des mêmes variables de l'Article 8.
+
+***
+**Sources citées :**
+* Besoins Sydel (juridique).pdf (Slides 1, 5, 8).
+* Transcription Atelier audit 1 - part 3.
+* Transcription Texte collé (Détails juridiques).
+
+
+D'après les sources fournies, voici la liste des termes à proscrire dans les documents d'une **SELAS** et les substitutions obligatoires à effectuer pour le moteur documentaire :
+
+### 1. Substitutions terminologiques générales
+Ces changements s'appliquent à **tous les documents** (Statuts, Procuration, PV, etc.) car le terme "actions" est identifié comme « le mot qui revient le plus dans tous les documents » lors du passage en SELAS.
+
+*   **NE PAS ÉCRIRE :** "Parts sociales" ou "Parts"
+    *   **TERME CORRECT :** **Actions**.
+*   **NE PAS ÉCRIRE :** "Gérant"
+    *   **TERME CORRECT :** **Président**.
+*   **NE PAS ÉCRIRE :** "Société d'exercice libéral à responsabilité limitée" (ou "SELARL")
+    *   **TERME CORRECT :** **Société d’exercice libéral par actions simplifiée** (ou **SELAS**).
+
+---
+
+### 2. Substitutions document par document
+
+#### **Statuts**
+*   **Forme sociale :** Remplacer "à responsabilité limitée" par **"par actions simplifiée"**.
+*   **Capital social (Article 8) :** Remplacer "parts sociales" par **"actions"**.
+    *   *Wording source :* « Le capital est divisé en nombre de parts ou d’actions ».
+*   **Organe de direction :** Remplacer "Gérant" par **"Président"**.
+
+#### **Procuration**
+*   **Mandat :** Remplacer systématiquement "Gérant" par **"Président"**.
+    *   *Wording source :* « si toi tu veux prendre une procuration et tu vois président pour gérant à l'me c'est, tu peux avoir la c'est juste y a plus de [mots] ».
+
+#### **PV de nomination**
+*   **Titre de l'acte :** Doit devenir un PV de nomination du **Président**.
+*   **Corps du texte :** Substitution de "Gérant" par **"Président"**.
+
+#### **Cession de titres**
+*   **Titre de l'opération :** Remplacer "Cession de parts" par **Cession d'actions** (déduit de la règle générale de substitution "parts" vs "actions").
+
+---
+
+### 3. Informations non trouvées
+*   **Gérance :** Le terme exact remplaçant le substantif "Gérance" (ex: "pendant la durée de la gérance") n'est pas explicitement cité dans les sources, bien que le rôle soit celui de **Président** [Non trouvé].
+*   **Cession de parts (wording exact) :** Bien que la substitution de "parts" par "actions" soit requise, le wording exact d'un acte intitulé "Cession d'actions" n'est pas présent dans les sources (les modèles fournis sont des modèles de cession de parts de SELARL ou SCM) [Non trouvé].
+*   **Associés vs Actionnaires :** Les sources continuent d'utiliser le terme **"Associés"** même pour les SELAS (« les associés de la société ça va être associé l'unique »), le terme "actionnaires" n'étant pas imposé comme substitution par les experts du cabinet.
+
+
+D’après les sources et l’historique de notre conversation, voici la table d’accord de genre pour un moteur documentaire de SELAS. Les sources soulignent que la personnalisation du genre est une priorité pour éviter les corrections manuelles,.
+
+### Table d'accord de genre (piloté par la civilité)
+
+| Terme Masculin | Terme Féminin | Source / Indice |
+| :--- | :--- | :--- |
+| **Président** | **Présidente** | Historique conversation & Source, (substitution de "Gérant"). |
+| **Directeur Général** | **Non trouvé** | Le terme DG est absent des modèles types actuels [Turn 4]. |
+| **Associé** | **Associée** | Source, (besoin de personnaliser le « ée »). |
+| **Soussigné** | **Soussignée** | Source (besoin de personnaliser le « ée »). |
+| **Né** | **Née** | Source (besoin de personnaliser le « ée »). |
+| **Le Docteur** | **Non trouvé** | Source (seule la forme "Le Docteur" est présente). |
+
+### Précisions sur les termes spécifiques
+
+*   **Le / La Docteur(e) : Non trouvé.** 
+    L'article 7 des modèles de statuts utilise exclusivement la forme masculine : « **Le Docteur [Nom Prénom]** ». Les sources ne précisent pas si le cabinet utilise "La Docteur", "La Docteure" ou une reformulation pour les femmes.
+*   **Président / Présidente :** 
+    Les sources indiquent qu'il faut impérativement « **féminiser le document** » si l'associé est une femme. Il a été précédemment établi que le terme « Président » doit devenir « **Présidente** » dans ce cas [Turn 3].
+*   **Directeur Général : Non trouvé.** 
+    Comme indiqué précédemment, les fonctions de DG ne sont pas encore intégrées dans les trames de base automatisées par le cabinet, la priorité étant donnée au Président [Turn 4].
+*   **Règle de personnalisation du « ée » :** 
+    Le cabinet identifie comme un « problème » majeur à résoudre le besoin de personnaliser systématiquement la terminaison en « **ée** » pour le féminin dans tous les actes.
+
+**Indice source :** Les transcriptions d'ateliers confirment que pour les duos d'associés, le système doit savoir s'il s'agit de « **deux messieurs** » ou de « **deux dames** » pour accorder l'intégralité du texte.
+
+
+D'après les sources de ce carnet de notes, le passage d'une structure unipersonnelle à une SELAS à plusieurs associés (2 à 5) impose des transformations de nombre systématiques pour assurer la cohérence juridique.
+
+Voici les passages identifiés où le singulier doit être remplacé par le pluriel :
+
+### 1. Bloc de Comparution (Introduction)
+*   **Singulier (Source 5, Slide 4) :** « **LE SOUSSIGNE :** [Identité] »
+*   **Pluriel attendu (Source 45, 105) :** « **LES SOUSSIGNÉS :** [Liste des identités] ». Les sources précisent qu'il faut « féminiser le la pluricité des associés ».
+*   **Singulier (Source 5, Slide 4) :** « ...statuts de la Société [...] qu'**il** a décidé d'instituer : »
+*   **Pluriel attendu (Source 105) :** « ...qu'**ils ont** décidé d'instituer : ». Ce passage est déduit de la mention selon laquelle les associés « discutent entre eux » pour prendre les décisions.
+
+### 2. Article 7 — APPORTS
+*   **Singulier (Source 5, Slide 5) :** « Cette somme a été déposée par **l'associé unique**... »
+*   **Pluriel attendu (Source 105) :** « Cette somme a été déposée par **les associés**... ». La transcription confirme que le texte doit refléter que « les associés présents [...] forment le capital ».
+
+### 3. Article 8 — CAPITAL SOCIAL / RÉPARTITION
+*   **Singulier (Source 5, Slide 5) :** « ...souscrites et attribuées **en totalité à l'associé unique :** »
+*   **Pluriel attendu (Source 45, 105) :** Ce bloc est remplacé par une liste de répartition. Le singulier disparaît au profit de : « ...**réparties entre les associés de la façon suivante :** ». 
+*   Les sources indiquent qu'il faut alors utiliser des « **numérotations [...] assez précises** » au pluriel, par exemple : « **actions n°1 à 10 inclus** ».
+
+### 4. Actes de décision (Procès-Verbaux)
+Le formalisme change totalement de nature entre le singulier et le pluriel :
+*   **Singulier (Source 105) :** « **l'associé unique de la société a pris les décisions.** »
+*   **Pluriel attendu (Source 105) :** « **les associés présents [...] forment le capital** » et « **les associés discutent entre eux.** ».
+
+### 5. Terminaisons et accords de genre-nombre
+Les sources insistent sur la nécessité d'automatiser les accords en « **ée(s)** » et « **s** » :
+*   **Singulier (Source 4, 45) :** « Associé(e) », « Soussigné(e) », « Né(e) »
+*   **Pluriel attendu (Source 45, 49) :** « **Associé(e)s** », « **Soussigné(e)s** », « **Né(e)s** ». Les experts notent que le système doit savoir s'il y a « deux messieurs », « deux dames » ou un mélange pour accorder correctement.
+
+---
+
+**Informations non trouvées dans les sources :**
+*   **Le wording exact de la phrase de liaison** pour le pluriel à l'Article 1 (Forme) : « La Société peut devenir pluripersonnelle » est présent [Source 5, Slide 4], mais la version plurielle d'origine n'est pas citée.
+*   **L'accord de "Président" au pluriel :** Bien que le rôle de Président remplace celui de Gérant [Source 88], le wording exact pour une co-présidence ou plusieurs dirigeants n'est pas fourni (les sources se concentrent sur un Président majoritaire [Source 33]).
+*   **Le pluriel de la clause de signature :** Le texte exact (« Pour les sociétés X et Y, les soussignés... ») est **non trouvé**.
