@@ -67,7 +67,7 @@ préserver le modèle source → perte logo/footer/gras/centrage/tableaux + bloc
 inventent/suppriment/désaccentuent. **Fix systémique = préserver la source** (remplissage qui conserve
 en-tête/footer/styles/tables nativement) + corriger les blocs dynamiques. Chantier à router proprement
 (branche dédiée + plan + revue), preuve d'abord sur **1 type (SCM, cas logo)**.
-- **SCM** : restaurer le **logo SYDEL** (appeler `add_header_logo`) ; 2 fix fond (« représentée par… » sur-spécifié).
+- **SCM** : ✅ **logo SYDEL restauré** (`082ccdc`, vérifié : présent + 36 tests verts) ; reste 2 fix fond (« représentée par… » sur-spécifié) + reste forme.
 - **SCI** : branche plain-SCI a un **wording croisé/inventé** (« Propriétaire de … parts … parts ») → réaligner sur le modèle ; désaccentuation des blocs réinjectés ; **PM en SCI standard** : moteur bloque alors que NLM autorise → Rafael.
 - **SCS** : blocs réinjectés **inventent** (« SOIT AU TOTAL… ») / **suppriment** des clauses source ; **titre encadré « STATUTS » perdu** (le moteur n'itère pas les `tables` source).
 - **SPFPL / SELAS** : restaurer la mise en forme source (footers/gras/centrage) ; SELAS reste **incomplet** (multi → Reynaud + Rafael).
