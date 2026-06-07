@@ -355,7 +355,7 @@ def _add_capital_block(document, data: _ResolvedStatutsCivil) -> None:
                 f"{_required_int(parts.debut, 'associes[].parts.debut')} a "
                 f"{_required_int(parts.fin, 'associes[].parts.fin')}.",
             )
-        else:
+        elif data.template.expected_type == "scs":
             qualite = f", {parts.qualite_associe}" if parts.qualite_associe else ""
             add_paragraph(document, f"- {_signature_label(associe)}{qualite},")
             add_paragraph(
@@ -366,6 +366,18 @@ def _add_capital_block(document, data: _ResolvedStatutsCivil) -> None:
             )
             if parts.plage_affichee:
                 add_paragraph(document, f"Numerotees de {parts.plage_affichee}")
+        else:
+            # SCI plain : le modele source (Modele statuts SCI.docx, para 120-121) rend
+            # "[label]" puis "A concurrence de [lettres] parts, ci<TAB>[nb] parts " (sans
+            # numerotation). L'ancien rendu "- [label], / Proprietaire de [lettres] parts
+            # sociales [nb] parts sociales" etait un wording INVENTE (croise depuis la SCS),
+            # absent du modele SCI -> remplace par le wording source verifie.
+            add_paragraph(
+                document,
+                "A concurrence de "
+                f"{_required_text(parts.nb_lettres, 'associes[].parts.nb_lettres')} parts, "
+                f"ci\t{parts.nb} parts ",
+            )
     add_paragraph(
         document,
         "SOIT AU TOTAL "
