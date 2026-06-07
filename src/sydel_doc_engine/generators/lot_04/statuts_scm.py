@@ -14,6 +14,7 @@ from sydel_doc_engine.domain.models import (
     StatutsCivilsContext,
 )
 from sydel_doc_engine.rendering.docx_builder import (
+    add_header_logo,
     add_paragraph,
     add_statuts_article_heading,
     add_statuts_body_paragraph,
@@ -41,6 +42,9 @@ class StatutsScmGenerator:
         data = _ResolvedStatutsScm.from_context(ctx)
         source_doc = Document(SOURCE_PATH)
         output_doc = new_document()
+        # Le modele source SCM porte le logo SYDEL en en-tete (aligne a gauche) ; le rendu
+        # from-scratch le perdait (audit fidelite 2026-06-07). On le restaure a l'identique.
+        add_header_logo(output_doc, alignment=WD_ALIGN_PARAGRAPH.LEFT)
         output_doc.sections[0].footer.paragraphs[0].text = (
             f"{data.denomination} - Statuts constitutifs"
         )
