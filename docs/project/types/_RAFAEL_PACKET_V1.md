@@ -31,6 +31,24 @@ le strict résiduel. Arbitrages produit/métier réels :
   mono existe). **Action Gad** : il est dans `Downloads` → le déposer pour tokenisation (neutralisé,
   jamais committé avec données réelles). Ce n'est pas une demande Rafael.
 
+## Ajouts 2026-06-08 (sources épuisées — vraies questions de pratique)
+
+> Modèle SELAS multi « Reynaud » = **RÉSOLU** (tokenisé/neutralisé, DOC-044 livré). Le seul élément
+> « absent » du repo ne l'est plus.
+
+Deux docs que le **canon liste comme systématiques** mais que je n'ai **pas** pu câbler sans ton
+arbitrage de pratique (j'ai d'abord vérifié le code — ce ne sont pas des questions techniques) :
+
+1. **SCM — pacte d'associés / contrat à frais communs / règlement intérieur / liste des dépenses
+   communes.** Le canon les met dans le bundle SCM. **Question pratique** : les produit-on
+   **systématiquement à la constitution** d'une SCM, ou sont-ce des actes **distincts / ultérieurs**
+   (signés à part, pas dans le dossier de création) ? (Impact : on les met dans le dossier auto ou
+   on les laisse en option.)
+2. **SPFPL — note d'information.** Le canon la liste pour cession ET apport. Techniquement elle décrit
+   l'**opération** (titres apportés/cédés, société cible). **Question pratique** : en création V1,
+   recueille-t-on déjà les détails de l'opération pour produire la note, ou la note se fait-elle
+   **après**, une fois l'opération réalisée ?
+
 ## À relayer à Rafael MAINTENANT
 Une **rétractation** honnête (les docs sont là, mon erreur) — pas une nouvelle liste de demandes.
-Les arbitrages ci-dessus partiront **plus tard**, précis, une fois les modèles tokenisés.
+Les arbitrages ci-dessus partiront **groupés**, précis, une fois les modèles tokenisés.

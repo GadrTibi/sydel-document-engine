@@ -38,14 +38,21 @@ mise en service dépend d'un arbitrage que je ne peux pas trancher seul. Les **g
 vérifiés). Statut : **prêts à auditer puis câbler derrière un toggle OFF dès confirmation.**
 
 1. **SCM — 4 satellites** : pacte d'associés (DOC-026), contrat à frais communs (DOC-027), règlement
-   intérieur (DOC-028), liste des dépenses communes (DOC-030). Ce qu'il faut pour les fermer :
-   (a) **Rafael** — sont-ils produits **systématiquement à la création** d'une SCM, ou sont-ce des
-   actes distincts ? (le canon dit systématique ; à confirmer côté pratique) ; (b) audit de fidélité
-   du générateur Codex ; (c) le modèle « liste dépenses » est un `.doc` ancien format (à reconvertir).
-2. **SPFPL — note d'information (DOC-037)** : le canon la liste pour cession ET apport. Le code l'a
-   écartée en jugeant qu'elle exige le **roster de la société cible** (donnée d'opération non saisie
-   à la création du holding). À trancher : (a) **Rafael** — la note est-elle générable à la création
-   ou attend-elle l'opération ? (b) audit de fidélité du générateur Codex.
+   intérieur (DOC-028), liste des dépenses communes (DOC-030). **Diagnostic vérifié cette nuit** : les
+   générateurs Codex reconstruisent le texte **from-scratch depuis des blocs codés en dur**
+   (`*_BLOCKS`), **pas** par remplissage du modèle source tokenisé → **risque de fidélité** (wording
+   potentiellement paraphrasé) : notre principe interdit de livrer ça tel quel. De plus ils exigent
+   une **SCM à 2 associés** (le slice SCM actuel ne collecte qu'un fondateur unique) + de la config
+   (ville du tribunal, locaux, dates frais communs, RI). **Donc PAS « buildable » en l'état.** Pour
+   les fermer : (a) **Rafael** — produits **systématiquement à la création** d'une SCM, ou actes
+   distincts ? ; (b) **audit de fidélité bloc-vs-modèle** puis bascule en remplissage du modèle
+   source ; (c) front SCM multi-associés + champs de config.
+2. **SPFPL — note d'information (DOC-037)** : le canon la liste pour cession ET apport. **Diagnostic
+   vérifié** : le générateur lit `ctx.cession_parts`, `ctx.operation_titres` et la **société cible**
+   = **données d'OPÉRATION**, non saisies à la création du holding. Donc non générable à partir des
+   seules données de création. À trancher : **Rafael** — en V1 « création », collecte-t-on les détails
+   de l'opération (cession/apport) pour émettre aussi la note, ou la note est-elle hors V1 ? (+ audit
+   de fidélité du générateur Codex le moment venu).
 
 → Ces 2 points partent dans le **paquet Rafael** (métier, groupé — jamais toi sur le métier) et
 l'audit de fidélité des générateurs est lancé en parallèle (constructif, sans décision métier).
