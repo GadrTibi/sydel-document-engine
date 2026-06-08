@@ -98,9 +98,10 @@ en-tête/footer/styles/tables nativement) + corriger les blocs dynamiques. Chant
   V1). Reste à récupérer le **modèle Reynaud** (Gad/Downloads) pour le wording multi.
 - **SCP** : **parquée, hors V1** (« tu n'as pas à t'occuper de ça »). Ne pas builder.
 - **SCI standard + associé personne morale = AUTORISÉ** (Rafael, 2026-06-08) : « oui, une SCI classique
-  peut avoir une autre société comme associée » (fréquent : SCI → micro-holding → SPFPL). → **débloquer
-  `_validate_sci`** (qui interdisait la PM). Wording d'identité morale = bloc civils existant (SCM/IRIS) ;
-  fidélité exacte du wording reste à confirmer sur le modèle. **À appliquer post-sprint (collision tree).**
+  peut avoir une autre société comme associée » (fréquent : SCI → micro-holding → SPFPL). ✅ **APPLIQUÉ
+  2026-06-08** (`21e93e0`) : 3 verrous levés (moteur `_validate_sci` + `_validate_associes` + front),
+  rendu via `_add_morale_identity` (= SCM/IRIS), test SCI+PM propre, 366 verts. **Reste : fidélité
+  EXACTE du wording PM en SCI à confirmer Rafael/Albane** (pas de modèle source SCI-avec-PM observé).
 
 ### En attente Rafael (non bloquant — je build et je flague)
 - **SPFPL** : correction vocabulaire PV « cession » rédigés en « apport » → « laisse moi checker ».

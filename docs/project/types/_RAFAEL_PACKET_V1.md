@@ -40,10 +40,18 @@ Deux docs que le **canon liste comme systématiques** mais que je n'ai **pas** p
 arbitrage de pratique (j'ai d'abord vérifié le code — ce ne sont pas des questions techniques) :
 
 1. **SCM — pacte d'associés / contrat à frais communs / règlement intérieur / liste des dépenses
-   communes.** Le canon les met dans le bundle SCM. **Question pratique** : les produit-on
-   **systématiquement à la constitution** d'une SCM, ou sont-ce des actes **distincts / ultérieurs**
-   (signés à part, pas dans le dossier de création) ? (Impact : on les met dans le dossier auto ou
-   on les laisse en option.)
+   communes.** Le canon les met dans le bundle SCM. Audit fait : les modèles sont **fidèles**
+   (transcription verbatim du source). **Mais l'examen du wording prouve que leur place n'est pas
+   « jour de constitution »** uniformément — d'où une vraie question pratique :
+   - le **pacte** imprime « immatriculée au RCS … sous le n° **[numéro RCS de la SCM]** » → suppose la
+     SCM **déjà immatriculée** (le n° n'existe pas le jour de la constitution) ;
+   - la **liste des dépenses** laisse le n° **en blanc à remplir** → compatible constitution ;
+   - **contrat frais communs** + **règlement intérieur** décrivent un accord entre les **sociétés
+     d'exercice des praticiens** (chaque membre via sa propre structure) + leurs **locaux** → données
+     qui ne sont pas celles de la SCM elle-même.
+   **Question** : ces 4 actes sont-ils produits **à la constitution** (avec n° RCS à compléter ensuite)
+   ou **après immatriculation** / **séparément** ? Et le frais-communs/RI se fait-il entre les **SEL des
+   praticiens** ? (Je ne devine ni le n° RCS, ni la pratique, ni le modèle des membres.)
 2. **SPFPL — note d'information.** Le canon la liste pour cession ET apport. Techniquement elle décrit
    l'**opération** (titres apportés/cédés, société cible). **Question pratique** : en création V1,
    recueille-t-on déjà les détails de l'opération pour produire la note, ou la note se fait-elle
