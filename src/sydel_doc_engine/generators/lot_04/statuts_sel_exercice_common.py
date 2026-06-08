@@ -27,7 +27,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_statuts_title_box,
     new_document,
 )
-from sydel_doc_engine.utils.grammar import apply_gender_pairs
+from sydel_doc_engine.utils.grammar import apply_gender_pairs, euro_word
 
 DOCUMENT_CODE = "CODE-STATUTS-SEL-001"
 STRUCTURE_SELARL = "SELARL"
@@ -152,6 +152,8 @@ def common_replacements(
         "[nb_actions]": str(capital_titles_total(ctx)),
         "[valeur_nominale_part]": capital_title_value(ctx, title_type),
         "[valeur_nominale_action]": capital_title_value(ctx, title_type),
+        # Accord « euro »/« euros » de la valeur nominale (1 euro vs 10 euros).
+        "[euro_nominal_word]": euro_word(capital_title_value(ctx, title_type)),
         "[montant_apport]": apport_amount(ctx, associate),
         "[montant_apport_lettres]": apport_amount_letters(ctx, associate),
         "[apport_personne_1]": apport_amount(ctx, associate),

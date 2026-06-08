@@ -315,6 +315,17 @@ def test_statuts_selarl_medecin_matches_source_docx_line_by_line(
     assert generated_article == source_article
 
 
+def test_statuts_selarl_medecin_pluralizes_euros_for_value_two_or_more(tmp_path: Path) -> None:
+    # Bug Rafael 2026-06-08 : « 10 euro » sans s. La valeur nominale des parts >= 2
+    # doit donner « euros ». La SELARL de reference (valeur 1) reste « 1 euro »
+    # (cf. test ligne-par-ligne ci-dessus : sortie inchangee, prod-safe).
+    ctx = _context(overlay="selarl_medecin")
+    ctx.capital.valeur_nominale_titre = "10"
+    text = _docx_text(StatutsSelarlMedecinGenerator().generate(ctx, tmp_path))
+    assert "parts de 10 euros chacune" in text
+    assert "10 euro chacune" not in text
+
+
 def test_statuts_selas_medecin_generates_without_second_lieu_by_default(
     tmp_path: Path,
 ) -> None:
