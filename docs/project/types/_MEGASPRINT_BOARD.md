@@ -46,6 +46,15 @@ Types du sprint (EURL hors périmètre) : **SELAS · SPFPL · SCM · SCI · SCS 
 > Seul réellement absent : modèle SELAS **multi « Reynaud »** (Gad l'a dans Downloads). Voir
 > `_RAFAEL_PACKET_V1.md` + [[trap-false-missing-from-wrong-clone]].
 
+> ✅ **MISE À JOUR 2026-06-08 (fin de nuit).** **Bundle de CRÉATION complet par type câblé selon le
+> canon V1** (commits `98b2b9f` bundles + `87f50fb` conditionnels), plus seulement les statuts.
+> Vérifié **end-to-end** (les tests génèrent chaque `.docx` + assert zéro placeholder `[`/`]`) :
+> **suite 366 verts**. Conformité au canon = ✅ pour SELARL/SELAS/SPFPL(×2)/SCS/SCI/SCI IRIS/SAS.
+> **2 groupes systématiques du canon tenus en réserve** (générateurs Codex non audités + arbitrage
+> métier requis, jamais abandonnés en silence) : **SCM 4 satellites** (DOC-026/027/028/030) et
+> **SPFPL note d'info** (DOC-037). Conditionnels OFF-par-défaut : régime communautaire (SELAS/SPFPL),
+> option IS (SCI/SCI IRIS). Détail : `_RAPPORT_MATIN_2026-06-08.md` §0/§0bis.
+
 ## État par type
 
 | Type | Voie A — NotebookLM | Voie B — Build | Bloquant / décision |
