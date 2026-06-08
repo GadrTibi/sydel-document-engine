@@ -285,10 +285,205 @@ def _prefill_scm_test_data() -> None:
     st.session_state.pop(GENERATED_DOSSIER_STATE_KEY, None)
 
 
+def _civil_society_prefill(
+    prefix: str,
+    *,
+    denomination: str,
+    forme_sociale: str,
+) -> dict[str, object]:
+    """Cles societe + signataire communes a un dossier civil de test (fictif)."""
+    return {
+        f"{prefix}_denomination": denomination,
+        f"{prefix}_forme_sociale": forme_sociale,
+        f"{prefix}_capital_social": "1000",
+        f"{prefix}_nb_parts_total": 100,
+        f"{prefix}_valeur_nominale_part": "10",
+        f"{prefix}_duree_societe": "99",
+        f"{prefix}_siege_num": "10",
+        f"{prefix}_siege_voie": "rue de la Paix",
+        f"{prefix}_siege_cp": "75002",
+        f"{prefix}_siege_ville": "Paris",
+        f"{prefix}_ville_rcs": "Paris",
+        f"{prefix}_banque_nom": "BANQUE EXEMPLE",
+        f"{prefix}_banque_adresse": "1 rue Banque, 75009 Paris",
+        f"{prefix}_date_cloture_premier_exercice": "31 decembre 2026",
+        f"{prefix}_signature_lieu": "Paris",
+        f"{prefix}_signature_date": "15/05/2026",
+        f"{prefix}_signataire_nom_pere": "Pierre Durand",
+        f"{prefix}_signataire_nom_mere": "Anne Durand",
+        f"{prefix}_signataire_adresse_num": "1",
+        f"{prefix}_signataire_adresse_voie": "rue Exemple",
+        f"{prefix}_signataire_adresse_cp": "75000",
+        f"{prefix}_signataire_adresse_ville": "Paris",
+        f"{prefix}_signataire_fonction": "gerant",
+        f"{prefix}_signataire_titre": "Docteur",
+        f"{prefix}_decision_date": "15/05/2026",
+    }
+
+
+def _civil_pp_associe_prefill(
+    prefix: str,
+    index: int,
+    *,
+    civilite: str,
+    prenom: str,
+    nom: str,
+    ville: str,
+    departement: str,
+    naissance: str,
+    adresse: str,
+    apport: str,
+    nb: int,
+    debut: int,
+    fin: int,
+    role: str | None = None,
+) -> dict[str, object]:
+    p = f"{prefix}_associe_{index}"
+    values: dict[str, object] = {
+        f"{p}_type": "personne_physique",
+        f"{p}_civilite": civilite,
+        f"{p}_prenom": prenom,
+        f"{p}_nom": nom,
+        f"{p}_date_naissance": naissance,
+        f"{p}_ville_naissance": ville,
+        f"{p}_departement_naissance": departement,
+        f"{p}_nationalite": "francaise",
+        f"{p}_situation_maritale": "celibataire",
+        f"{p}_profession": "Medecin",
+        f"{p}_adresse": adresse,
+        f"{p}_apport_montant": apport,
+        f"{p}_nb_titres": nb,
+        f"{p}_parts_debut": debut,
+        f"{p}_parts_fin": fin,
+    }
+    if role is not None:
+        values[f"{p}_role"] = role
+    return values
+
+
+def _civil_pm_associe_prefill(
+    prefix: str,
+    index: int,
+    *,
+    denomination: str,
+    forme_juridique: str,
+    capital: str,
+    siege: str,
+    numero_rcs: str,
+    ville_rcs: str,
+    rep_prenom: str,
+    rep_nom: str,
+    apport: str,
+    nb: int,
+    debut: int,
+    fin: int,
+) -> dict[str, object]:
+    p = f"{prefix}_associe_{index}"
+    return {
+        f"{p}_type": "personne_morale",
+        f"{p}_denomination": denomination,
+        f"{p}_forme_juridique": forme_juridique,
+        f"{p}_capital_social": capital,
+        f"{p}_siege": siege,
+        f"{p}_numero_rcs": numero_rcs,
+        f"{p}_ville_rcs": ville_rcs,
+        f"{p}_profession": "Medecin",
+        f"{p}_rep_civilite": "Monsieur",
+        f"{p}_rep_prenom": rep_prenom,
+        f"{p}_rep_nom": rep_nom,
+        f"{p}_rep_fonction": "gerant",
+        f"{p}_apport_montant": apport,
+        f"{p}_nb_titres": nb,
+        f"{p}_parts_debut": debut,
+        f"{p}_parts_fin": fin,
+    }
+
+
+def _commit_civil_prefill(values: dict[str, object]) -> None:
+    st.session_state.update(values)
+    st.session_state.pop(GENERATED_DOSSIER_STATE_KEY, None)
+
+
+def _prefill_sci_test_data() -> None:
+    """SCI de creation fictive (2 associes physiques)."""
+    values = _civil_society_prefill(
+        "sci", denomination="SCI EXEMPLE", forme_sociale="societe civile immobiliere"
+    )
+    values["sci_nb_associes"] = 2
+    values.update(
+        _civil_pp_associe_prefill(
+            "sci", 0, civilite="Monsieur", prenom="Jean", nom="Durand", ville="Paris",
+            departement="75", naissance="1 janvier 1980",
+            adresse="1 rue Exemple, 75000 Paris", apport="400", nb=40, debut=1, fin=40,
+        )
+    )
+    values.update(
+        _civil_pp_associe_prefill(
+            "sci", 1, civilite="Madame", prenom="Alice", nom="Martin", ville="Lyon",
+            departement="69", naissance="2 fevrier 1982",
+            adresse="2 rue Exemple, 69000 Lyon", apport="600", nb=60, debut=41, fin=100,
+        )
+    )
+    _commit_civil_prefill(values)
+
+
+def _prefill_sci_iris_test_data() -> None:
+    """SCI IRIS de creation fictive (1 societe associee + 1 associe physique)."""
+    values = _civil_society_prefill(
+        "sci_iris", denomination="SCI IRIS EXEMPLE",
+        forme_sociale="societe civile immobiliere",
+    )
+    values["sci_iris_nb_associes"] = 2
+    values.update(
+        _civil_pm_associe_prefill(
+            "sci_iris", 0, denomination="SEL EXEMPLE", forme_juridique="SELARL",
+            capital="1 000 euros", siege="2 rue Pro, 75000 Paris",
+            numero_rcs="900 000 001", ville_rcs="Paris", rep_prenom="Jean", rep_nom="Durand",
+            apport="400", nb=40, debut=1, fin=40,
+        )
+    )
+    values.update(
+        _civil_pp_associe_prefill(
+            "sci_iris", 1, civilite="Madame", prenom="Alice", nom="Martin", ville="Lyon",
+            departement="69", naissance="2 fevrier 1982",
+            adresse="2 rue Exemple, 69000 Lyon", apport="600", nb=60, debut=41, fin=100,
+        )
+    )
+    _commit_civil_prefill(values)
+
+
+def _prefill_scs_test_data() -> None:
+    """SCS de creation fictive (1 commandite + 1 commanditaire)."""
+    values = _civil_society_prefill(
+        "scs", denomination="SCS EXEMPLE", forme_sociale="societe en commandite simple"
+    )
+    values["scs_nb_associes"] = 2
+    values.update(
+        _civil_pp_associe_prefill(
+            "scs", 0, civilite="Monsieur", prenom="Jean", nom="Durand", ville="Paris",
+            departement="75", naissance="1 janvier 1980",
+            adresse="1 rue Exemple, 75000 Paris", apport="600", nb=60, debut=1, fin=60,
+            role="commandite",
+        )
+    )
+    values.update(
+        _civil_pp_associe_prefill(
+            "scs", 1, civilite="Madame", prenom="Alice", nom="Martin", ville="Lyon",
+            departement="69", naissance="2 fevrier 1982",
+            adresse="2 rue Exemple, 69000 Lyon", apport="400", nb=40, debut=61, fin=100,
+            role="commanditaire",
+        )
+    )
+    _commit_civil_prefill(values)
+
+
 # Boutons "donnees de test" par type (calques sur le bouton SELARL). Etendu type
 # par type au fur et a mesure de la validation.
 _TYPED_TEST_DATA_PREFILL = {
     "SCM": _prefill_scm_test_data,
+    "SCI": _prefill_sci_test_data,
+    "SCI IRIS": _prefill_sci_iris_test_data,
+    "SCS": _prefill_scs_test_data,
 }
 
 

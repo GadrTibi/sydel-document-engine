@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import date
 from pathlib import Path
 
+import pytest
 from docx import Document
 
 from sydel_doc_engine.domain.enums import Gender
@@ -883,14 +884,25 @@ def test_front_routes_to_sci_slice_and_generates(tmp_path: Path, monkeypatch) ->
     assert "Telecharger le dossier ZIP" in download_labels
 
 
-def test_scm_test_data_button_prefills_and_generates(tmp_path: Path, monkeypatch) -> None:
+@pytest.mark.parametrize(
+    "label, statuts_name",
+    [
+        ("SCM creation V1", "statuts_scm.docx"),
+        ("SCI creation V1", "statuts_sci.docx"),
+        ("SCI IRIS creation V1", "statuts_sci_iris.docx"),
+        ("SCS creation V1", "statuts_scs.docx"),
+    ],
+)
+def test_civil_test_data_button_generates(
+    tmp_path: Path, monkeypatch, label: str, statuts_name: str
+) -> None:
     from streamlit.testing.v1 import AppTest
 
     from sydel_doc_engine.front_app import shell
 
-    monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-scm")
+    monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-civil")
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
-    app.selectbox(key="clean_dossier_type").set_value("SCM creation V1")
+    app.selectbox(key="clean_dossier_type").set_value(label)
     app = app.run(timeout=180)
 
     # Le bouton "donnees de test" remplit le dossier sans saisie manuelle.
@@ -908,5 +920,5 @@ def test_scm_test_data_button_prefills_and_generates(tmp_path: Path, monkeypatch
     app = app.run(timeout=180)
 
     download_labels = [item.label for item in app.get("download_button")]
-    assert "Telecharger statuts_scm.docx" in download_labels
+    assert f"Telecharger {statuts_name}" in download_labels
     assert "Telecharger le dossier ZIP" in download_labels
