@@ -531,6 +531,167 @@ def _prefill_sas_test_data() -> None:
     _commit_civil_prefill(values)
 
 
+def _spfpl_prefill_values(prefix: str) -> dict[str, object]:
+    """Dossier SPFPL de creation fictif (associe unique medecin), prefixe par parcours."""
+    return {
+        f"{prefix}_denomination": "SPFPL MARTIN",
+        f"{prefix}_siege": "10 rue de la Paix, 75002 Paris",
+        f"{prefix}_siege_num": "10",
+        f"{prefix}_siege_voie": "rue de la Paix",
+        f"{prefix}_siege_cp": "75002",
+        f"{prefix}_siege_ville": "Paris",
+        f"{prefix}_capital_social": "60000",
+        f"{prefix}_valeur_nominale_action": "100",
+        f"{prefix}_ville_rcs": "Paris",
+        f"{prefix}_civilite": "Docteur",
+        f"{prefix}_prenom": "Camille",
+        f"{prefix}_prenoms": "Camille Andre",
+        f"{prefix}_nom": "Martin",
+        f"{prefix}_genre_label": "Monsieur",
+        f"{prefix}_date_naissance": "02/01/1980",
+        f"{prefix}_ville_naissance": "Paris",
+        f"{prefix}_departement_naissance": "75",
+        f"{prefix}_nationalite": "francaise",
+        f"{prefix}_regime_matrimonial": "la communaute legale",
+        f"{prefix}_adresse": "5 rue Royale, 75008 Paris",
+        f"{prefix}_adresse_num": "5",
+        f"{prefix}_adresse_voie": "rue Royale",
+        f"{prefix}_adresse_cp": "75008",
+        f"{prefix}_adresse_ville": "Paris",
+        f"{prefix}_nom_pere": "Pierre Martin",
+        f"{prefix}_nom_mere": "Anne Martin",
+        f"{prefix}_conjoint_civilite": "Madame",
+        f"{prefix}_conjoint_prenom": "Alice",
+        f"{prefix}_conjoint_nom": "Martin",
+        f"{prefix}_ordre_departement": "Paris",
+        f"{prefix}_numero_ordre": "12345",
+        f"{prefix}_numero_rpps": "10000000001",
+        f"{prefix}_ordre_conseil": "Conseil departemental",
+        f"{prefix}_ordre_adresse_ligne_1": "1 rue de l'Ordre",
+        f"{prefix}_ordre_cp": "75008",
+        f"{prefix}_ordre_ville": "Paris",
+        f"{prefix}_banque_nom": "BANQUE EXEMPLE",
+        f"{prefix}_banque_adresse": "1 boulevard Haussmann, 75009 Paris",
+        f"{prefix}_apport_montant": "60000",
+        f"{prefix}_apport_nb_parts": 60,
+        f"{prefix}_apport_plage": "41 a 100",
+        f"{prefix}_apport_valeur_globale": "60000",
+        f"{prefix}_cible_denomination": "SELARL CABINET MARTIN",
+        f"{prefix}_cible_siege": "12 avenue des Ternes, 75017 Paris",
+        f"{prefix}_cible_ville_rcs": "Paris",
+        f"{prefix}_cible_numero_rcs": "900 000 001",
+        f"{prefix}_cible_forme": "SELARL",
+        f"{prefix}_exercice_debut": "1er janvier",
+        f"{prefix}_exercice_fin": "31 decembre",
+        f"{prefix}_date_cloture": "31 decembre 2026",
+        f"{prefix}_signature_lieu": "Paris",
+        f"{prefix}_signature_date": "14/05/2026",
+        f"{prefix}_decision_date": "14/05/2026",
+    }
+
+
+def _prefill_spfpl_cession_test_data() -> None:
+    _commit_civil_prefill(_spfpl_prefill_values("spfpl_cession"))
+
+
+def _prefill_spfpl_apport_test_data() -> None:
+    _commit_civil_prefill(_spfpl_prefill_values("spfpl_apport"))
+
+
+def _selas_associe_prefill(
+    index: int,
+    *,
+    civilite: str,
+    prenoms: str,
+    nom: str,
+    ville: str,
+    departement: str,
+    nationalite_ordre: str,
+    numero_ordre: str,
+    numero_rpps: str,
+    qualite: str,
+    nb_actions: int,
+    apport: str,
+) -> dict[str, object]:
+    p = f"selas_associe_{index}"
+    return {
+        f"{p}_type": "personne_physique",
+        f"{p}_nb_actions": nb_actions,
+        f"{p}_montant": apport,
+        f"{p}_civilite": civilite,
+        f"{p}_prenoms": prenoms,
+        f"{p}_nom": nom,
+        f"{p}_date_naissance": "1 janvier 1980",
+        f"{p}_ville_naissance": ville,
+        f"{p}_departement": departement,
+        f"{p}_nationalite": "francaise",
+        f"{p}_profession": "Docteur",
+        f"{p}_adresse": f"10 rue Exemple, {departement}000 {ville}",
+        f"{p}_situation": "celibataire",
+        f"{p}_qualification": "Medecin generaliste",
+        f"{p}_ordre_dep": nationalite_ordre,
+        f"{p}_numero_ordre": numero_ordre,
+        f"{p}_numero_rpps": numero_rpps,
+        f"{p}_qualite": qualite,
+    }
+
+
+def _prefill_selas_test_data() -> None:
+    """SELAS multi de creation fictive (2 associes medecins exercants, somme = total)."""
+    values: dict[str, object] = {
+        "selas_denomination": "SELAS EXEMPLE",
+        "selas_siege": "5 place du Centre, 69000 Lyon",
+        "selas_siege_num": "5",
+        "selas_siege_voie": "place du Centre",
+        "selas_siege_cp": "69000",
+        "selas_siege_ville": "Lyon",
+        "selas_profession_reglementee": "medecin",
+        "selas_profession_reglementee_pluriel": "medecins",
+        "selas_capital_social": "1000",
+        "selas_nb_actions_total": 100,
+        "selas_valeur_nominale_action": "10",
+        "selas_ville_rcs": "Lyon",
+        "selas_adresse_lieu_exercice": "5 place du Centre, 69000 Lyon",
+        "selas_banque_nom": "BANQUE EXEMPLE",
+        "selas_banque_adresse": "1 rue Banque, 69009 Lyon",
+        "selas_date_cloture": "31 decembre 2026",
+        "selas_signature_lieu": "Lyon",
+        "selas_signature_date": "15/05/2026",
+        "selas_signataire_nom_pere": "Pierre Durand",
+        "selas_signataire_nom_mere": "Anne Durand",
+        "selas_signataire_adresse_num": "10",
+        "selas_signataire_adresse_voie": "rue Exemple",
+        "selas_signataire_adresse_cp": "69000",
+        "selas_signataire_adresse_ville": "Lyon",
+        "selas_signataire_nationalite": "francaise",
+        "selas_signataire_titre": "Docteur",
+        "selas_signataire_date_naissance": "01/01/1980",
+        "selas_decision_date": "15/05/2026",
+        "selas_ordre_conseil": "Conseil departemental",
+        "selas_ordre_departement": "Rhone",
+        "selas_ordre_adresse_ligne_1": "1 rue de l'Ordre",
+        "selas_ordre_cp": "69002",
+        "selas_ordre_ville": "Lyon",
+        "selas_ordre_numero": "69-12345",
+        "selas_nb_associes": 2,
+    }
+    values.update(
+        _selas_associe_prefill(
+            0, civilite="Monsieur", prenoms="Jean", nom="Durand", ville="Lyon",
+            departement="69", nationalite_ordre="Rhone", numero_ordre="69-12345",
+            numero_rpps="10100000001", qualite="associe exercant", nb_actions=60, apport="600",
+        )
+    )
+    values.update(
+        _selas_associe_prefill(
+            1, civilite="Madame", prenoms="Alice", nom="Martin", ville="Paris",
+            departement="75", nationalite_ordre="Paris", numero_ordre="75-67890",
+            numero_rpps="10100000002", qualite="associee exercante", nb_actions=40, apport="400",
+        )
+    )
+    _commit_civil_prefill(values)
+
+
 # Boutons "donnees de test" par type (calques sur le bouton SELARL). Etendu type
 # par type au fur et a mesure de la validation.
 _TYPED_TEST_DATA_PREFILL = {
@@ -539,6 +700,9 @@ _TYPED_TEST_DATA_PREFILL = {
     "SCI IRIS": _prefill_sci_iris_test_data,
     "SCS": _prefill_scs_test_data,
     "SAS": _prefill_sas_test_data,
+    "SPFPL cession": _prefill_spfpl_cession_test_data,
+    "SPFPL apport": _prefill_spfpl_apport_test_data,
+    "SELAS": _prefill_selas_test_data,
 }
 
 

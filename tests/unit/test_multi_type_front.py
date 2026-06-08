@@ -892,6 +892,9 @@ def test_front_routes_to_sci_slice_and_generates(tmp_path: Path, monkeypatch) ->
         ("SCI IRIS creation V1", "statuts_sci_iris.docx"),
         ("SCS creation V1", "statuts_scs.docx"),
         ("SAS SPFPL medecins creation V1", "statuts_sas_spfpl_medecins.docx"),
+        ("SPFPL cession creation V1", "statuts_spfpl_cession.docx"),
+        ("SPFPL apport creation V1", "statuts_spfpl_apport.docx"),
+        ("SELAS multi-associes creation V1", "statuts_selas_multi.docx"),
     ],
 )
 def test_typed_test_data_button_generates(
