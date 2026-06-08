@@ -110,9 +110,9 @@ def test_autorisation_domiciliation_contains_essential_texts(tmp_path: Path) -> 
     # complete du cabinet/siege « du cabinet au [num_voie] [voie], [cp] [ville] » ;
     # terme juridique « pour une durée indéterminée » conserve (et non « pour 99 ans »).
     assert (
-        "autorise la domiciliation de DURAND CONSEIL au capital de 1 000 € "
+        "autorise la domiciliation de la DURAND CONSEIL au capital de 1 000 "
         "en cours de formation, dans les locaux du cabinet au 80 avenue Marceau, "
-        "75008 Paris, pour une durée indéterminée."
+        "75008 Paris pour une durée indéterminée."
     ) in text
     assert "Fait à Paris" in text
     assert "Le 12 mai 2026" in text
@@ -155,7 +155,10 @@ def test_autorisation_domiciliation_ignores_free_address_for_wording(
     # L'adresse libre de domiciliation n'est pas injectee : le modele s'appuie
     # sur l'adresse complete du siege/cabinet de la societe.
     assert adresse not in text
-    assert "dans les locaux du cabinet au 80 avenue Marceau, 75008 Paris," in text
+    assert (
+        "dans les locaux du cabinet au 80 avenue Marceau, 75008 Paris "
+        "pour une durée indéterminée."
+    ) in text
 
 
 def test_autorisation_domiciliation_uses_company_seat_city(
@@ -167,6 +170,20 @@ def test_autorisation_domiciliation_uses_company_seat_city(
     # [cp_siege] [ville_siege]), pas l'adresse de domiciliation libre.
     assert "15 rue du Libre, Lyon 69002" not in text
     assert "80 avenue Marceau, 75008 Paris" in text
+
+
+def test_autorisation_domiciliation_has_no_red_runs(tmp_path: Path) -> None:
+    # Regression (bug remonte 2026-06-08) : l'ancien modele coloriait des variables
+    # en rouge ; le modele a jour (reference Drive) est propre -> aucune variable
+    # generee ne doit ressortir en rouge dans le document.
+    document = Document(_generate(tmp_path))
+    for paragraph in document.paragraphs:
+        for run in paragraph.runs:
+            color = run.font.color
+            rgb = None if color is None else color.rgb
+            assert rgb is None or str(rgb) == "000000", (
+                f"variable rendue en rouge : {run.text!r} ({rgb})"
+            )
 
 
 def test_autorisation_domiciliation_does_not_use_signature_image(tmp_path: Path) -> None:
@@ -185,6 +202,7 @@ def test_autorisation_domiciliation_uses_signature_paragraphs_without_table(
     # Le modele source porte un unique tableau (l'en-tete de titre encadre).
     assert len(document.tables) == 1
     paragraphs = [paragraph.text for paragraph in document.paragraphs if paragraph.text]
-    assert "Fait à Paris" in paragraphs
+    assert "Fait à Paris, " in paragraphs
     assert "Le 12 mai 2026" in paragraphs
-    assert "Monsieur Jean Durand" in paragraphs
+    # Modele a jour (Drive) : la ligne de signature est « [prenom] [nom] » (sans civilite).
+    assert "Jean Durand" in paragraphs
