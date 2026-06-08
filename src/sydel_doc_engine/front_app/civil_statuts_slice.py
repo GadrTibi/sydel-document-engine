@@ -28,6 +28,7 @@ from sydel_doc_engine.app.ui_runtime import (
 from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import (
     Address,
+    CentreImpots,
     Company,
     DocumentGenerationContext,
     DossierOptions,
@@ -54,6 +55,10 @@ CIVIL_TYPE_BY_STRUCTURE: dict[str, tuple[str, str]] = {
     "SCM": ("scm", "DOC-025"),
 }
 
+# Lettre d'option IS (canon « Si IS ») : conditionnel CREATION pour SCI / SCI IRIS.
+DOC_OPTION_IS = "DOC-022"
+OPTION_IS_STRUCTURES: tuple[str, ...] = ("SCI", "SCI IRIS")
+
 # Bundle de CREATION par type (canon : statuts du type + tronc commun
 # DNC/domiciliation/procuration + PV nomination gerant ; la SCM ajoute la demande
 # d'inscription a l'ordre). Les cas non-creation (cession SCM, etc.) sont hors V1.
@@ -65,10 +70,18 @@ CIVIL_TYPE_BY_STRUCTURE: dict[str, tuple[str, str]] = {
 # ne peut etre inventee. Voir manques[].
 
 
-def _creation_bundle_codes(structure: str, statuts_code: str) -> tuple[str, ...]:
+def _creation_bundle_codes(
+    structure: str,
+    statuts_code: str,
+    *,
+    option_is: bool = False,
+) -> tuple[str, ...]:
     codes: list[str] = [statuts_code, *cc.TRONC_COMMUN_CODES, cc.DOC_PV_NOMINATION_GERANT]
     if structure == "SCM":
         codes.append(cc.DOC_DEMANDE_INSCRIPTION_ORDRE)
+    # Conditionnel canon « Si IS » (SCI / SCI IRIS) : lettre d'option IS (DOC-022).
+    if option_is and structure in OPTION_IS_STRUCTURES:
+        codes.append(DOC_OPTION_IS)
     return tuple(dict.fromkeys(codes))
 
 
@@ -233,19 +246,62 @@ def _render_common_docs_form(structure: str, prefix: str) -> dict[str, object]:
                 "ordre_numero": ordre_numero,
             }
         )
+    if structure in OPTION_IS_STRUCTURES:
+        common.update(_render_option_is_form(prefix))
     return common
+
+
+def _render_option_is_form(prefix: str) -> dict[str, object]:
+    """Conditionnel canon « Si IS » (SCI / SCI IRIS) : lettre d'option IS (DOC-022).
+
+    Toggle + centre des impots requis par le generateur de la lettre + SIREN de
+    la societe. Inactif -> aucun document ajoute, bundle de base inchange.
+    """
+    option_key = f"{prefix}_option_is"
+    if option_key not in st.session_state:
+        st.session_state[option_key] = False
+    actif = st.checkbox(
+        "Option IS (ajoute la lettre d'option pour l'impot sur les societes)",
+        key=option_key,
+    )
+    if not actif:
+        return {"option_is": False}
+    st.caption("Centre des impots destinataire (lettre d'option IS)")
+    siren = _text(st, prefix, "siren", "SIREN de la societe")
+    col_a, col_b = st.columns(2)
+    impots_service = _text(col_a, prefix, "impots_service", "Service")
+    impots_centre = _text(col_b, prefix, "impots_centre", "Centre")
+    impots_ligne_1 = _text(st, prefix, "impots_adresse_ligne_1", "Adresse (ligne 1)")
+    impots_ligne_2 = _text(st, prefix, "impots_adresse_ligne_2", "Adresse (ligne 2)")
+    col_c, col_d = st.columns(2)
+    impots_cp = _text(col_c, prefix, "impots_cp", "CP")
+    impots_ville = _text(col_d, prefix, "impots_ville", "Ville")
+    return {
+        "option_is": True,
+        "siren": siren,
+        "impots_service": impots_service,
+        "impots_centre": impots_centre,
+        "impots_adresse_ligne_1": impots_ligne_1,
+        "impots_adresse_ligne_2": impots_ligne_2,
+        "impots_cp": impots_cp,
+        "impots_ville": impots_ville,
+    }
 
 
 def build_civil_plan(payload: dict[str, object]) -> CivilSlicePlan:
     structure = str(payload["structure"])
     _statuts_type, doc_code = CIVIL_TYPE_BY_STRUCTURE[structure]
-    document_codes = _creation_bundle_codes(structure, doc_code)
+    option_is = bool(payload.get("option_is")) and structure in OPTION_IS_STRUCTURES
+    document_codes = _creation_bundle_codes(structure, doc_code, option_is=option_is)
     blockers = _validate(payload)
-    warnings = (
+    warnings_list = [
         f"{structure} : bundle de creation (statuts + tronc commun + PV gerant"
         + (" + demande ordre + satellites SCM" if structure == "SCM" else "")
         + "). Le moteur valide la coherence des parts / du capital.",
-    )
+    ]
+    if option_is:
+        warnings_list.append("Option IS active : la lettre d'option IS (DOC-022) sera generee.")
+    warnings = tuple(warnings_list)
     if blockers:
         return CivilSlicePlan(
             can_generate=False,
@@ -346,7 +402,28 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:
         if "commandite" not in roles or "commanditaire" not in roles:
             blockers.append("SCS : au moins un commandite ET un commanditaire requis.")
     blockers.extend(_validate_common_docs(payload, structure))
+    blockers.extend(_validate_option_is(payload, structure))
     return tuple(dict.fromkeys(blockers))
+
+
+def _validate_option_is(payload: dict[str, object], structure: str) -> list[str]:
+    """Champs requis par la lettre d'option IS (DOC-022) quand l'option est active."""
+    if not bool(payload.get("option_is")) or structure not in OPTION_IS_STRUCTURES:
+        return []
+    blockers: list[str] = []
+    required = (
+        ("siren", "SIREN de la societe requis (option IS)."),
+        ("impots_service", "Service du centre des impots requis (option IS)."),
+        ("impots_centre", "Centre des impots requis (option IS)."),
+        ("impots_adresse_ligne_1", "Adresse (ligne 1) du centre des impots requise (option IS)."),
+        ("impots_adresse_ligne_2", "Adresse (ligne 2) du centre des impots requise (option IS)."),
+        ("impots_cp", "Code postal du centre des impots requis (option IS)."),
+        ("impots_ville", "Ville du centre des impots requise (option IS)."),
+    )
+    for field, message in required:
+        if not str(payload.get(field) or "").strip():
+            blockers.append(message)
+    return blockers
 
 
 def _validate_common_docs(payload: dict[str, object], structure: str) -> list[str]:
@@ -460,6 +537,10 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
     if structure == "SCI IRIS":
         _apply_iris_result_groups(statuts_civils, associes)
 
+    option_is = bool(payload.get("option_is")) and structure in OPTION_IS_STRUCTURES
+    if option_is:
+        _apply_option_is_qualite_associe(associes)
+
     common = _common_docs_input(payload, structure)
     company = Company(
         denomination=str(payload.get("denomination") or ""),
@@ -473,12 +554,14 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         siege=siege,
         ville_rcs=str(payload.get("ville_rcs") or ""),
         nb_parts_total=nb_parts,
+        siren=str(payload.get("siren") or "") if option_is else None,
     )
 
     pv_associes = _pv_associes(associes)
     ctx = DocumentGenerationContext(
         structure=structure,
-        dossier_options=_dossier_options(structure),
+        dossier_options=_dossier_options(structure, option_is=option_is),
+        impots=_centre_impots(payload) if option_is else None,
         personne_signataire=cc.founder_person(common),
         signature=Signature(
             lieu=str(payload.get("signature_lieu") or ""),
@@ -541,11 +624,45 @@ def _pv_associes(associes: list[StatutsCivilsAssocie]) -> list:
     return mapped
 
 
-def _dossier_options(structure: str) -> DossierOptions:
+def _dossier_options(structure: str, *, option_is: bool = False) -> DossierOptions:
     return DossierOptions(
         associe_unique=False,
         scm_satellites=structure == "SCM",
+        option_is=option_is,
     )
+
+
+def _centre_impots(payload: dict[str, object]) -> CentreImpots:
+    """Centre des impots destinataire de la lettre d'option IS (DOC-022).
+
+    Mapping direct des saisies utilisateur ; aucune valeur inventee.
+    """
+    return CentreImpots(
+        service=str(payload.get("impots_service") or ""),
+        centre=str(payload.get("impots_centre") or ""),
+        adresse_ligne_1=str(payload.get("impots_adresse_ligne_1") or ""),
+        adresse_ligne_2=str(payload.get("impots_adresse_ligne_2") or ""),
+        cp=str(payload.get("impots_cp") or ""),
+        ville=str(payload.get("impots_ville") or ""),
+    )
+
+
+def _apply_option_is_qualite_associe(associes: list[StatutsCivilsAssocie]) -> None:
+    """Renseigne la qualite d'associe attendue par DOC-022 pour les personnes
+    physiques sans qualite explicite.
+
+    La lettre d'option IS decrit chaque associe « ... qualite, detenant N parts ».
+    Pour une SCI / SCI IRIS l'associe physique est un simple associe ; on derive la
+    seule variante grammaticale genre (associe / associee) documentee au canon,
+    sans inventer de regle metier. Une qualite deja saisie n'est jamais ecrasee.
+    """
+    for associe in associes:
+        if associe.type_personne != "personne_physique" or associe.parts is None:
+            continue
+        if str(associe.parts.qualite_associe or "").strip():
+            continue
+        feminin = associe.genre == Gender.FEMININ
+        associe.parts.qualite_associe = "associée" if feminin else "associé"
 
 
 def _common_docs_input(payload: dict[str, object], structure: str) -> cc.CommonDocsInput:

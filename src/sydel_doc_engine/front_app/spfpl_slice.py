@@ -42,6 +42,9 @@ from sydel_doc_engine.domain.models import (
     OrdreProfessionnel,
     Person,
     ProfessionalEntity,
+    RegimeCommunautaire,
+    RegimeCommunautaireAvertissement,
+    RegimeCommunautaireRenonciation,
     ReunionContext,
     ReunionPresident,
     Signature,
@@ -83,13 +86,21 @@ OPERATION_BY_STRUCTURE: dict[str, tuple[str, str]] = {
 #     et le detail des titres apportes en lettres.
 
 
-def _creation_bundle_codes(statuts_code: str) -> tuple[str, ...]:
-    return (
+def _creation_bundle_codes(
+    statuts_code: str,
+    *,
+    regime_communautaire: bool = False,
+) -> tuple[str, ...]:
+    codes = [
         statuts_code,
         *cc.TRONC_COMMUN_CODES,
         cc.DOC_PV_NOMINATION_GERANT,
         cc.DOC_DEMANDE_INSCRIPTION_ORDRE,
-    )
+    ]
+    # Conditionnel canon « Si regime communautaire » (DOC-005 + DOC-006).
+    if regime_communautaire:
+        codes.extend(cc.REGIME_COMMUNAUTAIRE_CODES)
+    return tuple(codes)
 
 
 @dataclass(frozen=True)
@@ -172,6 +183,13 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
     )
     conjoint_prenom = _t(col_p, prefix, "conjoint_prenom", "Prenom conjoint")
     conjoint_nom = _t(col_q, prefix, "conjoint_nom", "Nom conjoint")
+    regime_key = f"{prefix}_regime_communautaire"
+    if regime_key not in st.session_state:
+        st.session_state[regime_key] = False
+    regime_communautaire = st.checkbox(
+        "Regime communautaire (ajoute lettre de renonciation + avertissement au conjoint)",
+        key=regime_key,
+    )
 
     st.markdown("Ordre")
     col_r, col_s, col_t = st.columns(3)
@@ -249,8 +267,10 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
         "nom_mere": nom_mere,
         "decision_date": decision_date,
         "conjoint_civilite": conjoint_civilite,
+        "conjoint_genre": derive_gender_from_civilite(conjoint_civilite),
         "conjoint_prenom": conjoint_prenom,
         "conjoint_nom": conjoint_nom,
+        "regime_communautaire": regime_communautaire,
         "ordre_departement": ordre_departement,
         "numero_ordre": numero_ordre,
         "numero_rpps": numero_rpps,
@@ -284,12 +304,19 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
 def build_spfpl_plan(payload: dict[str, object]) -> SpfplSlicePlan:
     structure = str(payload["structure"])
     _operation, doc_code = OPERATION_BY_STRUCTURE[structure]
-    document_codes = _creation_bundle_codes(doc_code)
+    regime_communautaire = bool(payload.get("regime_communautaire"))
+    document_codes = _creation_bundle_codes(
+        doc_code,
+        regime_communautaire=regime_communautaire,
+    )
     blockers = _validate(payload)
-    warnings = (
+    warnings = [
         f"{structure} V1 = associe unique (multi-associes bloque par le moteur). Bundle de "
         "creation : statuts + tronc commun + PV gerant + demande ordre + note d'information.",
-    )
+    ]
+    if regime_communautaire:
+        warnings.append("Regime communautaire actif : DOC-005 et DOC-006 seront generes.")
+    warnings = tuple(warnings)
     if blockers:
         return SpfplSlicePlan(
             can_generate=False,
@@ -424,12 +451,20 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
     )
     cible_capital = str(payload.get("cible_capital") or "")
     nb_apportees = nb_parts
+    regime_communautaire_actif = bool(payload.get("regime_communautaire"))
     ctx = DocumentGenerationContext(
         structure=structure,
         dossier_options=DossierOptions(
             apport=is_apport,
             cession=not is_apport,
             associe_unique=True,
+            regime_communautaire=regime_communautaire_actif,
+        ),
+        conjoint=(
+            _conjoint_person(payload, adresse_perso) if regime_communautaire_actif else None
+        ),
+        regime_communautaire=(
+            _regime_communautaire(payload) if regime_communautaire_actif else None
         ),
         personne_signataire=Person(
             genre=payload.get("genre") or Gender.MASCULIN,
@@ -456,6 +491,12 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
             forme_sociale="SPFPL",
             forme_sociale_affichage="SPFPL",
             forme_sociale_abregee="SPFPL",
+            forme_sociale_complete=(
+                "société de participations financières de professions libérales"
+            ),
+            forme_sociale_libelle_long=(
+                "Société de participations financières de professions libérales"
+            ),
             denomination=str(payload.get("denomination") or ""),
             denomination_courte=str(payload.get("denomination") or ""),
             capital=capital,
@@ -584,6 +625,38 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         metadata={"front_slice": f"track_b_spfpl_{operation}_v1"},
     )
     return ctx
+
+
+def _conjoint_person(payload: dict[str, object], signataire_address: Address) -> Person:
+    """Conjoint (renonciation DOC-005 + avertissement DOC-006).
+
+    L'avertissement adresse le conjoint au domicile du foyer ; on reutilise
+    l'adresse personnelle structuree de l'actionnaire, deja saisie.
+    """
+    return Person(
+        genre=payload.get("conjoint_genre") or Gender.FEMININ,
+        civilite=str(payload.get("conjoint_civilite") or "Madame"),
+        prenom=str(payload.get("conjoint_prenom") or ""),
+        nom=str(payload.get("conjoint_nom") or ""),
+        adresse_perso=signataire_address,
+        adresse_personnelle_affichee=signataire_address.adresse_affichee,
+    )
+
+
+def _regime_communautaire(payload: dict[str, object]) -> RegimeCommunautaire:
+    """Mappe les saisies vers le contexte du conditionnel regime communautaire."""
+    signature_date = payload.get("signature_date")
+    return RegimeCommunautaire(
+        avertissement=RegimeCommunautaireAvertissement(date_signature=signature_date),
+        renonciation=RegimeCommunautaireRenonciation(
+            lieu_signature=str(payload.get("signature_lieu") or ""),
+            date_signature=signature_date,
+            nombre_exemplaires_lettres="quatre",
+        ),
+        date_courrier_avertissement=signature_date,
+        regime_matrimonial=str(payload.get("regime_matrimonial") or ""),
+        qualite_renoncee="associé",
+    )
 
 
 def _spfpl_ordre_professionnel(payload: dict[str, object]) -> OrdreProfessionnel:

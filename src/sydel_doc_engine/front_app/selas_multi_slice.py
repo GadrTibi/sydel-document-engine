@@ -22,6 +22,7 @@ from sydel_doc_engine.app.ui_runtime import (
 from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import (
     Address,
+    Apport,
     Associe,
     CapitalContext,
     Company,
@@ -31,6 +32,9 @@ from sydel_doc_engine.domain.models import (
     Domiciliation,
     DossierOptions,
     Person,
+    RegimeCommunautaire,
+    RegimeCommunautaireAvertissement,
+    RegimeCommunautaireRenonciation,
     ReunionContext,
     ReunionPresident,
     Signature,
@@ -61,6 +65,16 @@ SELAS_BUNDLE_CODES: tuple[str, ...] = (
     cc.DOC_PV_NOMINATION_GERANT,
     cc.DOC_DEMANDE_INSCRIPTION_ORDRE,
 )
+
+
+def _selas_document_codes(payload: dict[str, object]) -> tuple[str, ...]:
+    """Bundle SELAS de creation, augmente du conditionnel canon « Si regime
+    communautaire » (DOC-005 renonciation + DOC-006 avertissement) quand le
+    toggle est actif. Toggle inactif -> bundle de base inchange."""
+    codes = list(SELAS_BUNDLE_CODES)
+    if bool(payload.get("regime_communautaire")):
+        codes.extend(cc.REGIME_COMMUNAUTAIRE_CODES)
+    return tuple(codes)
 
 
 @dataclass(frozen=True)
@@ -177,7 +191,8 @@ def _render_common_docs_form() -> dict[str, object]:
     ordre_cp = _t(col_l, "ordre_cp", "CP ordre")
     ordre_ville = _t(col_m, "ordre_ville", "Ville ordre")
     ordre_numero = _t(st, "ordre_numero", "Numero d'inscription")
-    return {
+    regime = _render_regime_communautaire_form()
+    common = {
         "signataire_nom_pere": nom_pere,
         "signataire_nom_mere": nom_mere,
         "signataire_adresse_num": adr_num,
@@ -194,6 +209,43 @@ def _render_common_docs_form() -> dict[str, object]:
         "ordre_cp": ordre_cp,
         "ordre_ville": ordre_ville,
         "ordre_numero": ordre_numero,
+    }
+    common.update(regime)
+    return common
+
+
+def _render_regime_communautaire_form() -> dict[str, object]:
+    """Conditionnel canon « Si regime communautaire » (DOC-005 + DOC-006).
+
+    Toggle + saisies conjoint requises par les generateurs de renonciation et
+    d'avertissement. Inactif -> aucun document ajoute, bundle de base inchange.
+    """
+    regime_key = f"{PREFIX}_regime_communautaire"
+    if regime_key not in st.session_state:
+        st.session_state[regime_key] = False
+    actif = st.checkbox(
+        "Regime communautaire (ajoute lettre de renonciation + avertissement au conjoint)",
+        key=regime_key,
+    )
+    if not actif:
+        return {"regime_communautaire": False}
+    st.caption("Conjoint (lettres de renonciation / avertissement)")
+    col_a, col_b, col_c = st.columns(3)
+    conjoint_civilite = col_a.selectbox(
+        "Civilite conjoint",
+        ("Madame", "Monsieur"),
+        key=f"{PREFIX}_conjoint_civilite",
+    )
+    conjoint_prenom = _t(col_b, "conjoint_prenom", "Prenom conjoint")
+    conjoint_nom = _t(col_c, "conjoint_nom", "Nom conjoint")
+    regime_matrimonial = _t(st, "regime_matrimonial", "Regime matrimonial")
+    return {
+        "regime_communautaire": True,
+        "conjoint_civilite": conjoint_civilite,
+        "conjoint_genre": derive_gender_from_civilite(conjoint_civilite),
+        "conjoint_prenom": conjoint_prenom,
+        "conjoint_nom": conjoint_nom,
+        "regime_matrimonial": regime_matrimonial,
     }
 
 
@@ -341,26 +393,29 @@ def _apport(montant: str):
 
 def build_selas_plan(payload: dict[str, object]) -> SelasSlicePlan:
     blockers = _validate(payload)
-    warnings = (
+    document_codes = _selas_document_codes(payload)
+    warnings = [
         "SELAS multi V1 : 2 a 5 associes, vocabulaire actions. Bundle de creation : statuts "
         "+ tronc commun + PV gerant + demande ordre. Le moteur exige la coherence des actions.",
-    )
+    ]
+    if bool(payload.get("regime_communautaire")):
+        warnings.append("Regime communautaire actif : DOC-005 et DOC-006 seront generes.")
     if blockers:
         return SelasSlicePlan(
             can_generate=False,
             status="blocked",
             reason=blockers[0],
-            document_codes=SELAS_BUNDLE_CODES,
+            document_codes=document_codes,
             blockers=blockers,
-            warnings=warnings,
+            warnings=tuple(warnings),
         )
     return SelasSlicePlan(
         can_generate=True,
         status="ready",
         reason="Pret pour generation SELAS multi V1 (bundle de creation).",
-        document_codes=SELAS_BUNDLE_CODES,
+        document_codes=document_codes,
         blockers=(),
-        warnings=warnings,
+        warnings=tuple(warnings),
     )
 
 
@@ -421,7 +476,24 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:
                     f"Somme des actions ({total}) != total declare ({nb_actions_total})."
                 )
     blockers.extend(_validate_common_docs(payload))
+    blockers.extend(_validate_regime_communautaire(payload))
     return tuple(dict.fromkeys(blockers))
+
+
+def _validate_regime_communautaire(payload: dict[str, object]) -> list[str]:
+    """Saisies conjoint requises par DOC-005 / DOC-006 quand le regime est actif."""
+    if not bool(payload.get("regime_communautaire")):
+        return []
+    blockers: list[str] = []
+    required = (
+        ("conjoint_prenom", "Prenom du conjoint requis (regime communautaire)."),
+        ("conjoint_nom", "Nom du conjoint requis (regime communautaire)."),
+        ("regime_matrimonial", "Regime matrimonial requis (regime communautaire)."),
+    )
+    for field, message in required:
+        if not str(payload.get(field) or "").strip():
+            blockers.append(message)
+    return blockers
 
 
 def _validate_common_docs(payload: dict[str, object]) -> list[str]:
@@ -514,10 +586,15 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         qualification_principale=profession,
     )
 
+    regime_communautaire_actif = bool(payload.get("regime_communautaire"))
     return DocumentGenerationContext(
         structure="SELAS",
-        dossier_options=DossierOptions(associe_unique=False),
+        dossier_options=DossierOptions(
+            associe_unique=False,
+            regime_communautaire=regime_communautaire_actif,
+        ),
         personne_signataire=signataire,
+        conjoint=_conjoint_person(payload, adresse_perso) if regime_communautaire_actif else None,
         signature=Signature(
             lieu=str(payload.get("signature_lieu") or ""),
             date=payload.get("signature_date"),
@@ -527,6 +604,8 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
             forme_sociale="SELAS",
             forme_sociale_affichage="SELAS",
             forme_sociale_abregee="SELAS",
+            forme_sociale_complete="société d'exercice libéral par actions simplifiée",
+            forme_sociale_libelle_long="Société d'exercice libéral par actions simplifiée",
             denomination=str(payload.get("denomination") or ""),
             denomination_courte=str(payload.get("denomination") or ""),
             capital=capital,
@@ -536,6 +615,11 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
             ville_rcs=str(payload.get("ville_rcs") or ""),
             nb_parts_total=nb_actions_total,
         ),
+        apport=Apport(
+            montant=capital,
+            montant_lettres=number_words_from_value(capital),
+        ),
+        regime_communautaire=_regime_communautaire(payload) if regime_communautaire_actif else None,
         domiciliation=Domiciliation(
             adresse_domiciliation_affichee=siege_struct.adresse_affichee,
         ),
@@ -623,6 +707,38 @@ def _selas_ordre(payload: dict[str, object]):
             cp=str(payload.get("ordre_cp") or ""),
             ville=str(payload.get("ordre_ville") or ""),
         ),
+    )
+
+
+def _conjoint_person(payload: dict[str, object], signataire_address: Address) -> Person:
+    """Conjoint (renonciation DOC-005 + avertissement DOC-006).
+
+    L'avertissement adresse le conjoint au domicile du foyer ; on reutilise
+    l'adresse personnelle structuree du signataire, deja saisie.
+    """
+    return Person(
+        genre=payload.get("conjoint_genre") or Gender.FEMININ,
+        civilite=str(payload.get("conjoint_civilite") or "Madame"),
+        prenom=str(payload.get("conjoint_prenom") or ""),
+        nom=str(payload.get("conjoint_nom") or ""),
+        adresse_perso=signataire_address,
+        adresse_personnelle_affichee=signataire_address.adresse_affichee,
+    )
+
+
+def _regime_communautaire(payload: dict[str, object]) -> RegimeCommunautaire:
+    """Mappe les saisies vers le contexte du conditionnel regime communautaire."""
+    signature_date = payload.get("signature_date")
+    return RegimeCommunautaire(
+        avertissement=RegimeCommunautaireAvertissement(date_signature=signature_date),
+        renonciation=RegimeCommunautaireRenonciation(
+            lieu_signature=str(payload.get("signature_lieu") or ""),
+            date_signature=signature_date,
+            nombre_exemplaires_lettres="quatre",
+        ),
+        date_courrier_avertissement=signature_date,
+        regime_matrimonial=str(payload.get("regime_matrimonial") or ""),
+        qualite_renoncee="associé",
     )
 
 

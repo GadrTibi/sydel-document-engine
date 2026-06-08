@@ -203,6 +203,87 @@ def test_sci_slice_generates_clean(tmp_path: Path) -> None:
     _assert_bundle_clean(generated, _TRONC_DOCS | {"statuts_sci.docx"})
 
 
+# Centre des impots requis par la lettre d'option IS (DOC-022) ; saisies utilisateur.
+_OPTION_IS_INPUTS = {
+    "option_is": True,
+    "siren": "900 000 001",
+    "impots_service": "SIE",
+    "impots_centre": "Centre des Finances Publiques",
+    "impots_adresse_ligne_1": "1 rue des Impots",
+    "impots_adresse_ligne_2": "BP 100",
+    "impots_cp": "75002",
+    "impots_ville": "Paris",
+}
+
+
+def test_sci_option_is_off_keeps_base_bundle(tmp_path: Path) -> None:
+    payload = _civil_base(
+        "SCI",
+        "sci",
+        [_pp("Jean", "Durand", 40, 1, 40, 400), _pp("Alice", "Martin", 60, 41, 100, 600)],
+    )
+    payload["option_is"] = False
+    plan = css.build_civil_plan(payload)
+    assert plan.can_generate is True
+    assert "DOC-022" not in plan.document_codes
+    generated = css.generate_dossier(payload, tmp_path / "sci-is-off")
+    names = {p.name for p in generated.docx_paths}
+    assert "lettre_option_is.docx" not in names
+
+
+def test_sci_option_is_on_adds_lettre_option_is(tmp_path: Path) -> None:
+    payload = _civil_base(
+        "SCI",
+        "sci",
+        [_pp("Jean", "Durand", 40, 1, 40, 400), _pp("Alice", "Martin", 60, 41, 100, 600)],
+    )
+    payload.update(_OPTION_IS_INPUTS)
+    plan = css.build_civil_plan(payload)
+    assert plan.can_generate is True
+    assert plan.document_codes == (
+        "DOC-020",
+        "DOC-001",
+        "DOC-002",
+        "DOC-003",
+        "DOC-004",
+        "DOC-022",
+    )
+    generated = css.generate_dossier(payload, tmp_path / "sci-is-on")
+    _assert_bundle_clean(
+        generated,
+        _TRONC_DOCS | {"statuts_sci.docx", "lettre_option_is.docx"},
+    )
+
+
+def test_sci_iris_option_is_on_adds_lettre_option_is(tmp_path: Path) -> None:
+    payload = _civil_base(
+        "SCI IRIS",
+        "sci_iris",
+        [_pm(40, 1, 40, 400), _pp("Alice", "Martin", 60, 41, 100, 600)],
+    )
+    payload.update(_OPTION_IS_INPUTS)
+    plan = css.build_civil_plan(payload)
+    assert plan.can_generate is True
+    assert "DOC-022" in plan.document_codes
+    generated = css.generate_dossier(payload, tmp_path / "iris-is-on")
+    _assert_bundle_clean(
+        generated,
+        _TRONC_DOCS | {"statuts_sci_iris.docx", "lettre_option_is.docx"},
+    )
+
+
+def test_sci_option_is_on_requires_centre_des_impots() -> None:
+    payload = _civil_base(
+        "SCI",
+        "sci",
+        [_pp("Jean", "Durand", 40, 1, 40, 400), _pp("Alice", "Martin", 60, 41, 100, 600)],
+    )
+    payload["option_is"] = True  # toggle ON mais aucune saisie centre des impots
+    plan = css.build_civil_plan(payload)
+    assert plan.can_generate is False
+    assert any("option IS" in b for b in plan.blockers)
+
+
 def test_scm_slice_generates_clean(tmp_path: Path) -> None:
     payload = _civil_base(
         "SCM",
@@ -432,6 +513,60 @@ def test_spfpl_apport_slice_generates_clean(tmp_path: Path) -> None:
     _assert_bundle_clean(generated, _SPFPL_BUNDLE_TRONC | {"statuts_spfpl_apport.docx"})
 
 
+_REGIME_DOCS = {
+    "lettre_renonciation_associe.docx",
+    "lettre_avertissement_conjoint.docx",
+}
+
+
+def test_spfpl_regime_off_keeps_base_bundle(tmp_path: Path) -> None:
+    payload = _spfpl_payload("SPFPL cession")
+    payload["regime_communautaire"] = False
+    plan = spfpl_slice.build_spfpl_plan(payload)
+    assert plan.can_generate is True
+    assert "DOC-005" not in plan.document_codes
+    assert "DOC-006" not in plan.document_codes
+    generated = spfpl_slice.generate_dossier(payload, tmp_path / "spfpl-regime-off")
+    names = {p.name for p in generated.docx_paths}
+    assert not (_REGIME_DOCS & names)
+
+
+def test_spfpl_cession_regime_on_adds_regime_docs(tmp_path: Path) -> None:
+    payload = _spfpl_payload("SPFPL cession")
+    payload["regime_communautaire"] = True
+    plan = spfpl_slice.build_spfpl_plan(payload)
+    assert plan.can_generate is True
+    assert plan.document_codes == (
+        "DOC-035",
+        "DOC-001",
+        "DOC-002",
+        "DOC-003",
+        "DOC-004",
+        "DOC-034",
+        "DOC-005",
+        "DOC-006",
+    )
+    generated = spfpl_slice.generate_dossier(payload, tmp_path / "spfpl-cession-regime")
+    _assert_bundle_clean(
+        generated,
+        _SPFPL_BUNDLE_TRONC | {"statuts_spfpl_cession.docx"} | _REGIME_DOCS,
+    )
+
+
+def test_spfpl_apport_regime_on_adds_regime_docs(tmp_path: Path) -> None:
+    payload = _spfpl_payload("SPFPL apport")
+    payload["regime_communautaire"] = True
+    plan = spfpl_slice.build_spfpl_plan(payload)
+    assert plan.can_generate is True
+    assert "DOC-005" in plan.document_codes
+    assert "DOC-006" in plan.document_codes
+    generated = spfpl_slice.generate_dossier(payload, tmp_path / "spfpl-apport-regime")
+    _assert_bundle_clean(
+        generated,
+        _SPFPL_BUNDLE_TRONC | {"statuts_spfpl_apport.docx"} | _REGIME_DOCS,
+    )
+
+
 def _selas_payload():
     phys = StatutsCivilsAssocie(
         type_personne="personne_physique",
@@ -540,6 +675,67 @@ def test_selas_blocks_incoherent_actions_sum() -> None:
     plan = selas_multi_slice.build_selas_plan(payload)
     assert plan.can_generate is False
     assert any("Somme des actions" in b for b in plan.blockers)
+
+
+# Saisies conjoint requises par DOC-005 / DOC-006 (regime communautaire).
+_SELAS_REGIME_INPUTS = {
+    "regime_communautaire": True,
+    "conjoint_civilite": "Monsieur",
+    "conjoint_genre": Gender.MASCULIN,
+    "conjoint_prenom": "Paul",
+    "conjoint_nom": "Durand",
+    "regime_matrimonial": "la communaute legale",
+}
+
+
+def test_selas_regime_off_keeps_base_bundle(tmp_path: Path) -> None:
+    payload = _selas_payload()
+    payload["regime_communautaire"] = False
+    plan = selas_multi_slice.build_selas_plan(payload)
+    assert plan.can_generate is True
+    assert "DOC-005" not in plan.document_codes
+    assert "DOC-006" not in plan.document_codes
+    generated = selas_multi_slice.generate_dossier(payload, tmp_path / "selas-regime-off")
+    names = {p.name for p in generated.docx_paths}
+    assert not (_REGIME_DOCS & names)
+
+
+def test_selas_regime_on_adds_regime_docs(tmp_path: Path) -> None:
+    payload = _selas_payload()
+    payload.update(_SELAS_REGIME_INPUTS)
+    plan = selas_multi_slice.build_selas_plan(payload)
+    assert plan.can_generate is True
+    assert plan.document_codes == (
+        "DOC-044",
+        "DOC-001",
+        "DOC-002",
+        "DOC-003",
+        "DOC-004",
+        "DOC-034",
+        "DOC-005",
+        "DOC-006",
+    )
+    generated = selas_multi_slice.generate_dossier(payload, tmp_path / "selas-regime-on")
+    _assert_bundle_clean(
+        generated,
+        {
+            "statuts_selas_multi.docx",
+            "declaration_non_condamnation.docx",
+            "autorisation_domiciliation.docx",
+            "procuration.docx",
+            "pv_nomination_gerant.docx",
+            "demande_inscription_ordre.docx",
+        }
+        | _REGIME_DOCS,
+    )
+
+
+def test_selas_regime_on_requires_conjoint() -> None:
+    payload = _selas_payload()
+    payload["regime_communautaire"] = True  # toggle ON sans saisies conjoint
+    plan = selas_multi_slice.build_selas_plan(payload)
+    assert plan.can_generate is False
+    assert any("regime communautaire" in b.casefold() for b in plan.blockers)
 
 
 # --- Surface UI Streamlit -----------------------------------------------------
