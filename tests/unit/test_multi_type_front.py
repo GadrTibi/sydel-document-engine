@@ -336,11 +336,25 @@ def test_sci_iris_slice_generates_clean(tmp_path: Path) -> None:
     _assert_bundle_clean(generated, _TRONC_DOCS | {"statuts_sci_iris.docx"})
 
 
-def test_sci_blocks_personne_morale() -> None:
-    payload = _civil_base("SCI", "sci", [_pm(100, 1, 100, 1000)])
+def test_sci_standard_allows_personne_morale(tmp_path: Path) -> None:
+    # Ratifie Rafael 2026-06-08 : une SCI classique peut avoir une societe comme
+    # associee (SCI -> micro-holding -> SPFPL). Le moteur ne bloque plus ; l'identite
+    # morale est rendue proprement (meme machinerie que SCM / SCI IRIS).
+    payload = _civil_base(
+        "SCI",
+        "sci",
+        [_pm(40, 1, 40, 400), _pp("Alice", "Martin", 60, 41, 100, 600)],
+    )
     plan = css.build_civil_plan(payload)
-    assert plan.can_generate is False
-    assert any("personne morale" in b.casefold() for b in plan.blockers)
+    assert plan.can_generate is True
+    assert plan.document_codes == ("DOC-020", "DOC-001", "DOC-002", "DOC-003", "DOC-004")
+    generated = css.generate_dossier(payload, tmp_path / "sci_pm")
+    _assert_bundle_clean(generated, _TRONC_DOCS | {"statuts_sci.docx"})
+    statuts_text = _docx_text(
+        next(p for p in generated.docx_paths if p.name == "statuts_sci.docx")
+    )
+    # L'identite morale de l'associe societe apparait dans les statuts.
+    assert "SEL IRIS" in statuts_text
 
 
 def test_civil_blocks_incoherent_parts_sum() -> None:

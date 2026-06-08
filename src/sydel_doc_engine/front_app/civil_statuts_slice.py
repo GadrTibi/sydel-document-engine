@@ -351,10 +351,7 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:
     if not isinstance(associes, list) or not associes:
         blockers.append("Au moins un associe requis.")
     else:
-        if structure == "SCI" and any(
-            a.type_personne == "personne_morale" for a in associes
-        ):
-            blockers.append("SCI : personne morale hors perimetre V1 (bloque par le moteur).")
+        # SCI standard + associe personne morale = AUTORISE (ratifie Rafael 2026-06-08).
         if structure == "SCI IRIS" and not any(
             a.type_personne == "personne_morale" for a in associes
         ):

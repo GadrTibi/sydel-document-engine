@@ -35,7 +35,8 @@ MAX_ASSOCIES = 6
 # redaction, pas du texte juridique destine au client -> on la retire de la sortie tout en gardant
 # la clause qu'elle annote. Ancree sur "A RETIRER" jusqu'a la fin du paragraphe (tolerant a
 # l'apostrophe droite/typographique et a la casse). NB : un eventuel conditionnement IR/IS de la
-# clause elle-meme est une decision METIER, non tranchee ici (cf. _PASSE2_VERIFICATION_REPORT sect.3).
+# clause elle-meme est une decision METIER, non tranchee ici
+# (cf. _PASSE2_VERIFICATION_REPORT sect.3).
 _EDITORIAL_MARKER_RE = re.compile(r"\s*A RETIRER SI LA SOCIETE EST A L.IR\s*$", re.IGNORECASE)
 
 
@@ -547,9 +548,10 @@ def _add_apport_line(
     montant = _required_text(montant, "associes[].apport.montant")
     montant_lettres = _required_text(montant_lettres, "associes[].apport.montant_lettres")
     if expected_type in {"sci", "sci_iris"}:
-        # Modele source SCI (para 97-99) : "[label]" / "La somme de [lettres] euros," / "ci<TAB>[montant] euros".
-        # L'ancien format "- [label] apporte, / la somme de [lettres], [montant]" etait le format SCS,
-        # croise par erreur sur la SCI (ni "euros", ni "ci", "apporte" invente).
+        # Modele source SCI (para 97-99) : "[label]" / "La somme de [lettres] euros," /
+        # "ci<TAB>[montant] euros". L'ancien format "- [label] apporte, / la somme de
+        # [lettres], [montant]" etait le format SCS, croise par erreur sur la SCI
+        # (ni "euros", ni "ci", "apporte" invente).
         add_paragraph(document, _signature_label(associe))
         add_paragraph(document, f"La somme de {montant_lettres} euros,")
         add_paragraph(document, f"ci\t{montant} euros")
@@ -615,11 +617,9 @@ def _validate_associes(
         raise ValueError(f"les statuts civils sont limites a 6 associes pour {DOCUMENT_CODE}.")
     for associe in associes:
         _required_parts(associe)
-        if _is_morale(associe) and template.expected_type == "sci":
-            raise ValueError(
-                "les associes personnes morales SCI sont hors source observee V1 "
-                f"pour {DOCUMENT_CODE}."
-            )
+        # SCI standard + associe personne morale = AUTORISE (ratifie Rafael 2026-06-08) :
+        # rendu via _add_morale_identity, comme SCM / SCI IRIS. (Ancien garde « hors
+        # source observee V1 » leve : Rafael confirme le schema SCI -> holding -> SPFPL.)
 
 
 def _validate_capital_totals(
@@ -653,9 +653,14 @@ def _validate_scs(statuts: StatutsCivilsContext, associes: list[StatutsCivilsAss
 
 
 def _validate_sci(associes: list[StatutsCivilsAssocie]) -> None:
-    for associe in associes:
-        if _is_morale(associe):
-            raise ValueError(f"les personnes morales SCI sont bloquees en V1 pour {DOCUMENT_CODE}.")
+    # SCI standard + associe personne morale = AUTORISE (ratifie Rafael 2026-06-08 :
+    # une SCI classique peut avoir une autre societe comme associee, schema frequent
+    # SCI -> micro-holding -> SPFPL). Aucune contrainte specifique ici : l'identite
+    # morale est rendue par _add_morale_identity (qui exige forme/capital/siege/RCS/
+    # representant et leve une erreur claire si un champ manque), exactement comme pour
+    # SCM et SCI IRIS. La fidelite exacte du wording reste a confirmer par Rafael/Albane.
+    _ = associes
+    return None
 
 
 def _validate_sci_iris(
