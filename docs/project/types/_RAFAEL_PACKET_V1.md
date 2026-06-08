@@ -49,9 +49,11 @@ arbitrage de pratique (j'ai d'abord vérifié le code — ce ne sont pas des que
    - **contrat frais communs** + **règlement intérieur** décrivent un accord entre les **sociétés
      d'exercice des praticiens** (chaque membre via sa propre structure) + leurs **locaux** → données
      qui ne sont pas celles de la SCM elle-même.
-   **Question** : ces 4 actes sont-ils produits **à la constitution** (avec n° RCS à compléter ensuite)
-   ou **après immatriculation** / **séparément** ? Et le frais-communs/RI se fait-il entre les **SEL des
-   praticiens** ? (Je ne devine ni le n° RCS, ni la pratique, ni le modèle des membres.)
+   **⚠️ NotebookLM a déjà répondu** (synthèse SCM) : ces 4 actes = « **opérations juridiques DISTINCTES,
+   hors bloc création** ». Ce n'est donc plus une question ouverte mais un **conflit canon ↔ NotebookLM** :
+   le canon les liste en SCM, NotebookLM les dit hors création. **Confirme** : on les **exclut du dossier
+   de création** (traités comme actes distincts plus tard), c'est bien ça ? Seul vrai résiduel non tranché :
+   le contrat frais-communs / RI se signe-t-il entre les **SEL des praticiens** ou entre les personnes ?
 2. **SPFPL — note d'information.** Le canon la liste pour cession ET apport. Techniquement elle décrit
    l'**opération** (titres apportés/cédés, société cible). **Question pratique** : en création V1,
    recueille-t-on déjà les détails de l'opération pour produire la note, ou la note se fait-elle
