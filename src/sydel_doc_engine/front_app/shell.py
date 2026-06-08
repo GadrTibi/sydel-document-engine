@@ -477,6 +477,60 @@ def _prefill_scs_test_data() -> None:
     _commit_civil_prefill(values)
 
 
+def _prefill_sas_test_data() -> None:
+    """SAS (SPFPL medecins) de creation fictive — actionnaire unique masculin (V1)."""
+    values: dict[str, object] = {
+        "sas_denomination": "SPFPL MARTIN",
+        "sas_siege": "10 rue de la Paix, 75002 Paris",
+        "sas_siege_num": "10",
+        "sas_siege_voie": "rue de la Paix",
+        "sas_siege_cp": "75002",
+        "sas_siege_ville": "Paris",
+        "sas_capital_social": "12000",
+        "sas_nb_actions_total": 120,
+        "sas_valeur_nominale_action": "100",
+        "sas_apports_nature_montant": "10000",
+        "sas_apports_numeraire_montant": "2000",
+        "sas_civilite": "Docteur",
+        "sas_prenom": "Camille",
+        "sas_nom": "Martin",
+        "sas_genre_label": "Monsieur",
+        "sas_qualification_principale": "Medecin cardiologue",
+        "sas_date_naissance": "2 janvier 1980",
+        "sas_date_naissance_iso": "02/01/1980",
+        "sas_ville_naissance": "Paris",
+        "sas_departement_naissance": "75",
+        "sas_nationalite": "francaise",
+        "sas_regime_matrimonial": "la communaute legale",
+        "sas_adresse": "5 rue Royale, 75008 Paris",
+        "sas_adresse_num": "5",
+        "sas_adresse_voie": "rue Royale",
+        "sas_adresse_cp": "75008",
+        "sas_adresse_ville": "Paris",
+        "sas_nom_pere": "Pierre Martin",
+        "sas_nom_mere": "Anne Martin",
+        "sas_conjoint_civilite": "Madame",
+        "sas_conjoint_prenom": "Alice",
+        "sas_conjoint_nom": "Martin",
+        "sas_ordre_departement": "Paris",
+        "sas_numero_ordre": "12345",
+        "sas_numero_rpps": "10000000001",
+        "sas_cible_denomination": "SELARL CABINET MARTIN",
+        "sas_cible_forme": "SELARL",
+        "sas_cible_siege": "12 avenue des Ternes, 75017 Paris",
+        "sas_cible_ville_rcs": "Paris",
+        "sas_cible_numero_rcs": "900 000 001",
+        "sas_apport_nb_parts": 50,
+        "sas_banque_nom": "BANQUE EXEMPLE",
+        "sas_signature_lieu": "Paris",
+        "sas_exercice_debut": "1er janvier",
+        "sas_exercice_fin": "31 decembre",
+        "sas_date_cloture": "31 decembre 2026",
+        "sas_signature_date": "14/05/2026",
+    }
+    _commit_civil_prefill(values)
+
+
 # Boutons "donnees de test" par type (calques sur le bouton SELARL). Etendu type
 # par type au fur et a mesure de la validation.
 _TYPED_TEST_DATA_PREFILL = {
@@ -484,6 +538,7 @@ _TYPED_TEST_DATA_PREFILL = {
     "SCI": _prefill_sci_test_data,
     "SCI IRIS": _prefill_sci_iris_test_data,
     "SCS": _prefill_scs_test_data,
+    "SAS": _prefill_sas_test_data,
 }
 
 

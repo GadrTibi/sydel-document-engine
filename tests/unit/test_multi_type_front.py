@@ -891,9 +891,10 @@ def test_front_routes_to_sci_slice_and_generates(tmp_path: Path, monkeypatch) ->
         ("SCI creation V1", "statuts_sci.docx"),
         ("SCI IRIS creation V1", "statuts_sci_iris.docx"),
         ("SCS creation V1", "statuts_scs.docx"),
+        ("SAS SPFPL medecins creation V1", "statuts_sas_spfpl_medecins.docx"),
     ],
 )
-def test_civil_test_data_button_generates(
+def test_typed_test_data_button_generates(
     tmp_path: Path, monkeypatch, label: str, statuts_name: str
 ) -> None:
     from streamlit.testing.v1 import AppTest
