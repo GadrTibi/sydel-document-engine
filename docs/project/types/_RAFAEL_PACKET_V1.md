@@ -56,6 +56,17 @@ arbitrage de pratique (j'ai d'abord vérifié le code — ce ne sont pas des que
    l'**opération** (titres apportés/cédés, société cible). **Question pratique** : en création V1,
    recueille-t-on déjà les détails de l'opération pour produire la note, ou la note se fait-elle
    **après**, une fois l'opération réalisée ?
+3. **SAS + SELAS — « parts sociales » / « gérant » dans des modèles en actions/Président.** Vérifié :
+   le wording est **identique modèle source ↔ généré** (le moteur est donc fidèle, il ne l'invente
+   pas). Les modèles SAS et SELAS multi contiennent, mot pour mot :
+   - Art. 4 (siège) : « … que par décision d'un ou plusieurs associés représentant plus de la moitié
+     des **parts sociales** ou par décision du **gérant** seul. »
+   - SELAS Art. 23 : « S'il décide de conserver ses **parts sociales** … La mesure lui est notifiée
+     par le **gérant** … » + rachat des **parts sociales**.
+   Or une SAS/SELAS est en **actions** avec un **Président** (pas de parts sociales ni de gérant).
+   **Question** : ces modèles ont-ils été adaptés d'un modèle SEL/civil sans corriger ces clauses
+   (à corriger dans le `.docx` source : actions / Président), ou est-ce voulu ? Je **ne corrige pas
+   une formulation juridique en douce** — je te le remonte.
 
 ## À relayer à Rafael MAINTENANT
 Une **rétractation** honnête (les docs sont là, mon erreur) — pas une nouvelle liste de demandes.

@@ -1,7 +1,7 @@
 # Rapport du matin — nuit du 2026-06-07 → 08 (état FINAL)
 
 > Branche `sprint/engine-completion` (clone `-claude`). **Rien sur `main`, rien déployé, zéro donnée
-> réelle versionnée.** Suite complète **366 verts** (PYTHONPATH forcé sur le bon clone, ordre
+> réelle versionnée.** Suite complète **374 verts** (PYTHONPATH forcé sur le bon clone, ordre
 > déterministe). Tout est réversible et soumis à ta validation. Bar honnête : **bâti +
 > auto-vérifié techniquement end-to-end** ; la **justesse juridique** reste la revue Rafael/Albane
 > (que tu avais prévue). Ce rapport remplace la version de 01:11 (qui datait d'avant les bundles).
@@ -75,15 +75,23 @@ résiduel.** Détail : `_PASSE2_VERIFICATION_REPORT.md`.
 2. **Paquet Rafael (métier, groupé)** : les 2 réserves ci-dessus (satellites SCM, note d'info SPFPL)
    + les arbitrages déjà listés dans `_RAFAEL_PACKET_V1.md` (PM en SCI standard, vocabulaire
    cession/apport, genre/DG SELAS…).
-3. **Défauts du MODÈLE SOURCE** (moteur fidèle, c'est le `.docx` qui a un résidu) : SAS Art.4 + SELAS
-   multi Art.4/23 « parts/gérant » dans un acte en actions/Président → corriger le modèle ou confirmer.
+3. **Défauts du MODÈLE SOURCE — CONFIRMÉ moteur fidèle** : SAS Art.4 + SELAS multi Art.4/23 portent
+   « parts sociales » / « gérant » alors qu'une SAS/SELAS est en actions/Président. Vérifié : le
+   wording est **identique source ↔ généré** → le moteur reproduit fidèlement, il n'invente rien.
+   C'est le **`.docx` source** (modèles adaptés d'un modèle SEL sans corriger ces clauses). Wording
+   exact + question dans `_RAFAEL_PACKET_V1.md` §3. Je ne corrige pas une formulation juridique seul.
 
-## 4. Dette technique restante (déterministe, planifiable — non bloquante)
-- Généraliser un **test ligne-par-ligne** par type (seul SELARL médecin l'a → la CI ne verrouille pas
-  encore la fidélité fine des autres).
-- TAB→espace sur certains totaux (SCI/IRIS/SAS) ; footer SELARL pages paires/première (limite python-docx).
-- **Consolider les deux clones** (l'editable install pointe vers `main` → toute vérif force
-  `PYTHONPATH=…/-claude/src`). À régler proprement post-sprint.
+## 4. Renforcement fidélité fait cette nuit + dette restante
+- ✅ **Verrou de fidélité STRUCTURELLE par type ajouté** (`test_statuts_structural_fidelity.py`, 8/8) :
+  toutes les en-têtes d'articles/titres du modèle source présentes dans le généré, comptes exacts,
+  accents préservés → protège les 8 types contre la régression « clause/article perdu ou altéré ».
+  **374 tests verts** au total.
+- Reste (dette planifiable) : **généraliser le verrou ligne-par-ligne complet** (égalité du corps des
+  articles) — seul SELARL médecin l'a ; le verrou structurel le complète mais ne couvre pas la
+  paraphrase intra-article. TAB→espace sur certains totaux ; footer SELARL pages paires (python-docx).
+  Désaccentuation de la famille SPFPL from-scratch (`note_information`, actes de cession) — hors V1
+  création, à nettoyer quand cette famille sera validée. **Consolider les deux clones** (editable
+  install → `main` ; toute vérif force `PYTHONPATH=…/-claude/src`).
 
 ## Verdict global
 **Le moteur génère, pour chaque type V1, le bundle de création conforme au canon — sauf 2 groupes
