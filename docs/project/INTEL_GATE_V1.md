@@ -5,7 +5,15 @@
 > questionne une de ces sources. But : ne jamais demander ce qu'on a déjà, ni la mauvaise question à
 > la mauvaise source. (Né de 3 ratés 2026-06-07 où Gad « passait pour un con » devant Rafael.)
 
-## Le gate — 4 étapes, dans l'ordre, AVANT toute question
+## Le gate — étapes, dans l'ordre, AVANT toute question / tout build
+
+**0. SOURCE DÉSIGNÉE INCOMPLÈTE → ALERTE IMMÉDIATE (ne jamais contourner en silence).**
+Si une **source de vérité désignée** (canon, doc « X à générer par cas », fichier principal) **ne
+contient pas l'info attendue** → le **remonter à Gad tout de suite** : « la source X est incomplète,
+il manque Y, tu as une autre version ? ». **Interdit** de contourner en silence (déduire d'autres
+sources, inférer, demander à Rafael à la place) avant que Gad ait confirmé qu'il n'y a pas mieux.
+(Incident 2026-06-08 : canon V3 SELARL-only contourné en silence → bundle de docs par cas manquant.)
+
 
 **1. INVENTAIRE D'ABORD (a-t-on déjà la réponse ?)**
 Chercher dans nos propres actifs avant de demander à qui que ce soit :
