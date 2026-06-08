@@ -267,12 +267,12 @@ def _render_common_docs_form(structure: str, prefix: str) -> dict[str, object]:
         )
         # Satellites SCM (pacte + liste depenses, generes si 2 associes) : ville du
         # tribunal de commerce competent + mention RCS de la SCM (qui n'est pas encore
-        # immatriculee a la constitution -> saisie libre, ex. « en cours d'immatriculation »).
+        # immatriculee a la constitution -> saisie libre, ex. « en cours de constitution »).
         st.markdown("Satellites SCM (pacte d'associes / liste des depenses communes)")
         col_p, col_q = st.columns(2)
         pacte_ville_tribunal = _text(col_p, prefix, "pacte_ville_tribunal", "Ville du tribunal")
         societe_numero_rcs = _text(
-            col_q, prefix, "societe_numero_rcs", "N° RCS SCM (ou 'en cours d'immatriculation')"
+            col_q, prefix, "societe_numero_rcs", "N° RCS SCM (ou 'en cours de constitution')"
         )
         common.update(
             {
@@ -441,7 +441,7 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:
             blockers.append("Ville du tribunal requise (pacte d'associes SCM).")
         if not str(payload.get("societe_numero_rcs") or "").strip():
             blockers.append(
-                "N° RCS de la SCM requis pour le pacte (ou « en cours d'immatriculation »)."
+                "N° RCS de la SCM requis pour le pacte (ou « en cours de constitution »)."
             )
     blockers.extend(_validate_common_docs(payload, structure))
     blockers.extend(_validate_option_is(payload, structure))

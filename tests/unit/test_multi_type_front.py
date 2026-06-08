@@ -169,7 +169,7 @@ def _civil_base(structure, statuts_type, associes):
                 "ordre_numero": "ORD-1",
                 # Satellites SCM (pacte + liste depenses, generes a 2 associes).
                 "pacte_ville_tribunal": "Paris",
-                "societe_numero_rcs": "en cours d'immatriculation",
+                "societe_numero_rcs": "en cours de constitution",
             }
         )
     return payload

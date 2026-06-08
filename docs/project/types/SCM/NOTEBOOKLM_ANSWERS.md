@@ -119,6 +119,27 @@ associées**. Droits de vote ≠ droits financiers (1 % parts ≠ 1 % résultat)
 
 ---
 
+## Compléments satellites — passe 2026-06-08 (après décision Rafael « ils font partie du dossier SCM »)
+
+ACQUIS (sourcé NotebookLM) :
+- **Mention RCS à la constitution** : le corpus emploie « **en cours de constitution** » pour une
+  structure non encore immatriculée → adopté comme défaut du champ RCS du pacte (remplace l'ancien
+  « en cours d'immatriculation », qui était une supposition). Une fois le Kbis obtenu : « immatriculée
+  au RCS de … ».
+- **Parties du contrat frais communs / RI = les SEL** : quand le praticien passe en société, c'est sa
+  **SEL (personne morale)** qui détient les parts de la SCM. Donc les parties = les SEL associées
+  (confirme le modèle `parties_frais_communs` = sociétés). Utile pour câbler DOC-027/028.
+
+NON TROUVÉ → Rafael (bloque la fin du câblage frais communs + RI) :
+- **Moment de signature** des satellites : avant ou après l'immatriculation de la SCM ? (NotebookLM ne tranche pas.)
+- **Clé de répartition des dépenses communes** (prorata parts / temps d'occupation / patients), **seuil**
+  de dépense exigeant l'unanimité, **année de référence** des charges : NON TROUVÉ → décision Rafael.
+
+CÂBLÉ à date : pacte d'associés (DOC-026) + liste des dépenses communes (DOC-030) pour SCM à 2 associés.
+DOC-027 (frais communs) + DOC-028 (RI) en attente du résiduel Rafael ci-dessus.
+
+---
+
 ## Réponses brutes
 
 Capturées **verbatim** dans `NOTEBOOKLM_ANSWERS_RAW_V1.txt`. Ne pas reformuler : le brut fait foi.
