@@ -881,3 +881,32 @@ def test_front_routes_to_sci_slice_and_generates(tmp_path: Path, monkeypatch) ->
     download_labels = [item.label for item in app.get("download_button")]
     assert "Telecharger statuts_sci.docx" in download_labels
     assert "Telecharger le dossier ZIP" in download_labels
+
+
+def test_scm_test_data_button_prefills_and_generates(tmp_path: Path, monkeypatch) -> None:
+    from streamlit.testing.v1 import AppTest
+
+    from sydel_doc_engine.front_app import shell
+
+    monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-scm")
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
+    app.selectbox(key="clean_dossier_type").set_value("SCM creation V1")
+    app = app.run(timeout=180)
+
+    # Le bouton "donnees de test" remplit le dossier sans saisie manuelle.
+    test_data_button = next(b for b in app.button if "test_data" in str(b.key))
+    test_data_button.click()
+    app = app.run(timeout=180)
+
+    generate_button = next(
+        b for b in app.button if str(b.key) == "clean_typed_generate_dossier"
+    )
+    assert generate_button.disabled is False
+    assert not any("Blocage" in item.value for item in app.caption)
+
+    generate_button.click()
+    app = app.run(timeout=180)
+
+    download_labels = [item.label for item in app.get("download_button")]
+    assert "Telecharger statuts_scm.docx" in download_labels
+    assert "Telecharger le dossier ZIP" in download_labels

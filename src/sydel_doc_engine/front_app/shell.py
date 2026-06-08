@@ -82,6 +82,13 @@ def _render_dossier_type_selection() -> DossierTypeOption:
             st.success("Donnees de test coherentes pre-remplies.")
         st.caption("Perimetre actif : SELARL unipersonnelle de production.")
     else:
+        prefill = _TYPED_TEST_DATA_PREFILL.get(selected.structure)
+        if prefill is not None and st.button(
+            "Generer des donnees de test",
+            key=f"clean_test_data_{selected.structure}".replace(" ", "_"),
+        ):
+            prefill()
+            st.success("Donnees de test coherentes pre-remplies.")
         st.caption(f"Perimetre actif : {selected.label} ({selected.structure}).")
     return selected
 
@@ -165,6 +172,124 @@ def _prefill_random_selarl_data() -> None:
     values.update(_scm_cession_prefill_values())
     st.session_state.update(values)
     st.session_state.pop(GENERATED_DOSSIER_STATE_KEY, None)
+
+
+def _scm_associe_prefill_values(
+    index: int,
+    *,
+    civilite: str,
+    prenom: str,
+    nom: str,
+    ville: str,
+    departement: str,
+    naissance: str,
+    adresse: str,
+    apport: str,
+    nb: int,
+    debut: int,
+    fin: int,
+) -> dict[str, object]:
+    """Cles session_state d'un associe SCM (personne physique) pour le prefill."""
+    p = f"scm_associe_{index}"
+    return {
+        f"{p}_type": "personne_physique",
+        f"{p}_civilite": civilite,
+        f"{p}_prenom": prenom,
+        f"{p}_nom": nom,
+        f"{p}_date_naissance": naissance,
+        f"{p}_ville_naissance": ville,
+        f"{p}_departement_naissance": departement,
+        f"{p}_nationalite": "francaise",
+        f"{p}_situation_maritale": "celibataire",
+        f"{p}_profession": "Medecin",
+        f"{p}_adresse": adresse,
+        f"{p}_apport_montant": apport,
+        f"{p}_nb_titres": nb,
+        f"{p}_parts_debut": debut,
+        f"{p}_parts_fin": fin,
+    }
+
+
+def _prefill_scm_test_data() -> None:
+    """Pre-remplit un dossier SCM de creation FICTIF et coherent (2 associes medecins).
+
+    Donnees d'exemple uniquement (aucune donnee reelle). Somme des parts = total.
+    """
+    values: dict[str, object] = {
+        "scm_denomination": "SCM DES DOCTEURS EXEMPLE",
+        "scm_forme_sociale": "societe civile de moyens",
+        "scm_capital_social": "1000",
+        "scm_nb_parts_total": 100,
+        "scm_valeur_nominale_part": "10",
+        "scm_duree_societe": "99",
+        "scm_siege_num": "10",
+        "scm_siege_voie": "rue de la Paix",
+        "scm_siege_cp": "75002",
+        "scm_siege_ville": "Paris",
+        "scm_ville_rcs": "Paris",
+        "scm_banque_nom": "BANQUE EXEMPLE",
+        "scm_banque_adresse": "1 rue Banque, 75009 Paris",
+        "scm_date_cloture_premier_exercice": "31 decembre 2026",
+        "scm_signature_lieu": "Paris",
+        "scm_signature_date": "15/05/2026",
+        "scm_signataire_nom_pere": "Pierre Durand",
+        "scm_signataire_nom_mere": "Anne Durand",
+        "scm_signataire_adresse_num": "1",
+        "scm_signataire_adresse_voie": "rue Exemple",
+        "scm_signataire_adresse_cp": "75000",
+        "scm_signataire_adresse_ville": "Paris",
+        "scm_signataire_fonction": "gerant",
+        "scm_signataire_titre": "Docteur",
+        "scm_decision_date": "15/05/2026",
+        "scm_ordre_conseil": "Conseil departemental de l'Ordre des medecins",
+        "scm_ordre_departement": "75",
+        "scm_ordre_adresse_ligne_1": "1 rue de l'Ordre",
+        "scm_ordre_cp": "75008",
+        "scm_ordre_ville": "Paris",
+        "scm_ordre_numero": "ORD-12345",
+        "scm_nb_associes": 2,
+    }
+    values.update(
+        _scm_associe_prefill_values(
+            0,
+            civilite="Monsieur",
+            prenom="Jean",
+            nom="Durand",
+            ville="Paris",
+            departement="75",
+            naissance="1 janvier 1980",
+            adresse="1 rue Exemple, 75000 Paris",
+            apport="700",
+            nb=70,
+            debut=1,
+            fin=70,
+        )
+    )
+    values.update(
+        _scm_associe_prefill_values(
+            1,
+            civilite="Madame",
+            prenom="Alice",
+            nom="Martin",
+            ville="Lyon",
+            departement="69",
+            naissance="2 fevrier 1982",
+            adresse="2 rue Exemple, 69000 Lyon",
+            apport="300",
+            nb=30,
+            debut=71,
+            fin=100,
+        )
+    )
+    st.session_state.update(values)
+    st.session_state.pop(GENERATED_DOSSIER_STATE_KEY, None)
+
+
+# Boutons "donnees de test" par type (calques sur le bouton SELARL). Etendu type
+# par type au fur et a mesure de la validation.
+_TYPED_TEST_DATA_PREFILL = {
+    "SCM": _prefill_scm_test_data,
+}
 
 
 def _cession_prefill_values(profession: str) -> dict[str, object]:
