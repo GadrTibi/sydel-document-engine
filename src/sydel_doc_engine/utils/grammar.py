@@ -1,6 +1,26 @@
 from __future__ import annotations
 
+import re
+
 from sydel_doc_engine.domain.enums import Gender
+
+
+def euro_word(value: object) -> str:
+    """Accord en nombre du mot « euro » selon un MONTANT.
+
+    Règle française : « euro » au singulier pour un montant strictement inférieur
+    à 2 (0 euro, 1 euro, 1,50 euro) ; « euros » au pluriel à partir de 2.
+
+    Robuste aux formats de saisie : « 10 », « 1 000 », « 10,00 », « 100 € ». On
+    raisonne sur la PARTIE ENTIÈRE (avant la virgule décimale française), tous
+    séparateurs/symboles retirés. Si la valeur est illisible, on renvoie le
+    pluriel (cas le plus courant et le moins risqué).
+    """
+    integer_part = re.sub(r"\D", "", str(value or "").split(",")[0])
+    if not integer_part:
+        # Aucun chiffre exploitable -> pluriel par defaut (cas le plus courant).
+        return "euros"
+    return "euro" if abs(int(integer_part)) < 2 else "euros"
 
 
 def subject_line(genre: Gender) -> str:

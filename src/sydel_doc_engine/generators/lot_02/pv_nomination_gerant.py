@@ -27,6 +27,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_spacer,
     new_document,
 )
+from sydel_doc_engine.utils.grammar import euro_word
 
 OUTPUT_FILENAME = "pv_nomination_gerant.docx"
 DOCUMENT_CODE = "CODE-PV-001"
@@ -411,7 +412,8 @@ def _add_introduction(
     )
     common = (
         f"de la {company_designation}, au capital de {_capital_social(company)}, "
-        f"composé de {nb_parts_total} parts de {valeur_nominale} euro chacune, "
+        f"composé de {nb_parts_total} parts de {valeur_nominale} "
+        f"{euro_word(valeur_nominale)} chacune, "
     )
     text = f"Les associés {common}se sont réunis au siège social."
     _add_paragraph(document, text, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY)

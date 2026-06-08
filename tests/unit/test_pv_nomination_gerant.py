@@ -61,6 +61,7 @@ def _context(
     *,
     associes: list[Associe] | None = None,
     emprunt_actif: bool = False,
+    valeur_nominale_part: str = "1",
 ) -> DocumentGenerationContext:
     associes = associes or _associes()
     return DocumentGenerationContext(
@@ -95,7 +96,7 @@ def _context(
         ),
         capital=CapitalContext(
             nb_parts_total=sum(associe.nb_parts for associe in associes),
-            valeur_nominale_part="1",
+            valeur_nominale_part=valeur_nominale_part,
         ),
         associes=associes,
         dirigeant_nomine=DirigeantNomine(
@@ -196,6 +197,11 @@ def test_pv_nomination_gerant_repeats_two_associes(tmp_path: Path) -> None:
 
     assert "Les associés de la Société civile immobilière SCI TEST" in text
     assert "composé de 100 parts de 1 euro chacune, se sont réunis au siège social." in text
+    # Pluriel « euros » des que la valeur nominale est >= 2 (bug remonte Rafael 2026-06-08 :
+    # « 10 euro » sans s). Singulier conserve a 1 euro (cf. assertion ci-dessus).
+    plural_text = _docx_text(_generate(tmp_path / "valeur10", _context(valeur_nominale_part="10")))
+    assert "composé de 100 parts de 10 euros chacune" in plural_text
+    assert "10 euro chacune" not in plural_text
     assert "Sont présents ou représentés :" in text
     assert "Madame Alice Durand, détenant 60 parts," in text
     assert "Monsieur Bruno Martin, détenant 40 parts," in text

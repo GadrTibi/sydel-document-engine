@@ -4,9 +4,32 @@ from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.utils.grammar import (
     apply_gender_pairs,
     birth_label,
+    euro_word,
     filiation_label,
     subject_line,
 )
+
+
+def test_euro_word_singulier_sous_deux() -> None:
+    # « euro » au singulier pour 0 et 1 (montant < 2).
+    assert euro_word("0") == "euro"
+    assert euro_word("1") == "euro"
+    assert euro_word(1) == "euro"
+
+
+def test_euro_word_pluriel_des_deux() -> None:
+    # « euros » au pluriel a partir de 2 (le bug remonte par Rafael : « 10 euro »).
+    assert euro_word("2") == "euros"
+    assert euro_word("10") == "euros"
+    assert euro_word("100") == "euros"
+    assert euro_word("1 000") == "euros"  # separateur de milliers tolere
+    assert euro_word("10,00") == "euros"  # decimale francaise toleree
+
+
+def test_euro_word_illisible_defaut_pluriel() -> None:
+    # Valeur non parsable -> pluriel (cas le plus courant, le moins risque).
+    assert euro_word("") == "euros"
+    assert euro_word(None) == "euros"
 
 
 def test_subject_line_masculin() -> None:

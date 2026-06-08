@@ -26,6 +26,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_statuts_title_box,
     new_document,
 )
+from sydel_doc_engine.utils.grammar import euro_word
 
 DOCUMENT_CODE = "CODE-STATUTS-CIVILS-CORE-001"
 MAX_ASSOCIES = 6
@@ -460,7 +461,8 @@ def _add_capital_block_scs(document, data: _ResolvedStatutsCivil) -> None:
         document,
         f"Le capital social effectif est fixé à {capital_lettres}({capital_social}) euros. "
         f"Il est divisé en {nb_parts_total_lettres} ({nb_parts_total}) parts sociales de "
-        f"{valeur_nominale_part_lettres} ({valeur_nominale_part}) euro chacune de valeur nominale, "
+        f"{valeur_nominale_part_lettres} ({valeur_nominale_part}) "
+        f"{euro_word(valeur_nominale_part)} chacune de valeur nominale, "
         f"numérotées de {plage_parts_total}, lesquelles sont attribuées aux associés comme suit :",
     )
     for associe in data.associes:

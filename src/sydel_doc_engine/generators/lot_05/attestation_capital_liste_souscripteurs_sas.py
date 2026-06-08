@@ -28,6 +28,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_paragraph,
     new_document,
 )
+from sydel_doc_engine.utils.grammar import euro_word
 
 OUTPUT_FILENAME = "attestation_capital_liste_souscripteurs_sas.docx"
 
@@ -66,7 +67,7 @@ class AttestationCapitalListeSouscripteursSasGenerator:
         add_paragraph(
             document,
             f"Nombre d'actions : {data.nb_actions_total} actions d'un montant "
-            f"d'{data.valeur_nominale_action} euro chacune",
+            f"d'{data.valeur_nominale_action} {euro_word(data.valeur_nominale_action)} chacune",
         )
         add_paragraph(
             document,
