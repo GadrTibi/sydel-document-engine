@@ -97,7 +97,9 @@ en-tête/footer/styles/tables nativement) + corriger les blocs dynamiques. Chant
 - **PÉRIMÈTRE V1 = CRÉATION UNIQUEMENT** pour tous les types (« que création »). Pas de cession /
   dissolution / transfert / entrée-sortie d'associé en V1. → allège massivement le build.
 - **SELAS** : cible **confirmée** = **multi 2-5 + associé personne morale + DG** (supersede l'unipersonnel
-  V1). Reste à récupérer le **modèle Reynaud** (Gad/Downloads) pour le wording multi.
+  V1). Modèle = **Reynaud** (récupéré). ✅ **Décision Gad 2026-06-08** : face à la version SELAS du dossier
+  Drive « Documents avec variables » (wording différent, 72,9 % de similarité), **on GARDE Reynaud** comme
+  référence des statuts SELAS multi. Le générateur SELAS reste inchangé ; la version Drive n'est pas adoptée.
 - **SCP** : **parquée, hors V1** (« tu n'as pas à t'occuper de ça »). Ne pas builder.
 - **SCI standard + associé personne morale = AUTORISÉ** (Rafael, 2026-06-08) : « oui, une SCI classique
   peut avoir une autre société comme associée » (fréquent : SCI → micro-holding → SPFPL). ✅ **APPLIQUÉ
