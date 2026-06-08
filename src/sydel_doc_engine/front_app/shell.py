@@ -248,6 +248,9 @@ def _prefill_scm_test_data() -> None:
         "scm_ordre_ville": "Paris",
         "scm_ordre_numero": "ORD-12345",
         "scm_nb_associes": 2,
+        # Satellites SCM (pacte + liste depenses, generes a 2 associes).
+        "scm_pacte_ville_tribunal": "Paris",
+        "scm_societe_numero_rcs": "en cours d'immatriculation",
     }
     values.update(
         _scm_associe_prefill_values(

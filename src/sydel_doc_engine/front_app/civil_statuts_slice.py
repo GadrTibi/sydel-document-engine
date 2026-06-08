@@ -32,7 +32,9 @@ from sydel_doc_engine.domain.models import (
     Company,
     DocumentGenerationContext,
     DossierOptions,
+    PacteAssociesScmContext,
     Person,
+    ScmSatellitesOptions,
     Signature,
     StatutsCivilsAssocie,
     StatutsCivilsCapitalDepot,
@@ -63,11 +65,15 @@ OPTION_IS_STRUCTURES: tuple[str, ...] = ("SCI", "SCI IRIS")
 # DNC/domiciliation/procuration + PV nomination gerant ; la SCM ajoute la demande
 # d'inscription a l'ordre). Les cas non-creation (cession SCM, etc.) sont hors V1.
 #
-# Satellites SCM (DOC-026 pacte / DOC-030 liste depenses / DOC-027 frais communs /
-# DOC-028 reglement interieur) : NON inclus dans le bundle automatique. Les
-# generateurs exigent l'identite juridique des DEUX societes d'exercice partenaires
-# (denomination, forme, capital, RCS) qui n'est pas une saisie de la creation SCM et
-# ne peut etre inventee. Voir manques[].
+# Satellites SCM (decision RAFAEL 2026-06-08 : ils FONT PARTIE du dossier SCM).
+# Cables pour une SCM A EXACTEMENT 2 ASSOCIES (contrainte dure des generateurs) :
+#   - DOC-030 liste des depenses communes (societe + 2 associes) ;
+#   - DOC-026 pacte d'associes (+ ville du tribunal + mention RCS de la SCM).
+# DOC-027 (contrat a frais communs) + DOC-028 (reglement interieur) restent HORS bundle :
+# ils exigent l'identite des 2 societes d'exercice partenaires (SEL) + locaux + praticiens,
+# donnee/structure a confirmer Rafael avant cablage. Voir _RAFAEL_PACKET_V1.md.
+DOC_PACTE_ASSOCIES_SCM = "DOC-026"
+DOC_LISTE_DEPENSES_SCM = "DOC-030"
 
 
 def _creation_bundle_codes(
@@ -75,14 +81,27 @@ def _creation_bundle_codes(
     statuts_code: str,
     *,
     option_is: bool = False,
+    scm_satellites_pair: bool = False,
 ) -> tuple[str, ...]:
     codes: list[str] = [statuts_code, *cc.TRONC_COMMUN_CODES, cc.DOC_PV_NOMINATION_GERANT]
     if structure == "SCM":
         codes.append(cc.DOC_DEMANDE_INSCRIPTION_ORDRE)
+        # Satellites SCM (Rafael) : pacte + liste depenses, si exactement 2 associes.
+        if scm_satellites_pair:
+            codes.append(DOC_LISTE_DEPENSES_SCM)
+            codes.append(DOC_PACTE_ASSOCIES_SCM)
     # Conditionnel canon « Si IS » (SCI / SCI IRIS) : lettre d'option IS (DOC-022).
     if option_is and structure in OPTION_IS_STRUCTURES:
         codes.append(DOC_OPTION_IS)
     return tuple(dict.fromkeys(codes))
+
+
+def _scm_satellites_pair_active(payload: dict[str, object]) -> bool:
+    """Les satellites pacte + liste depenses se generent pour une SCM a 2 associes."""
+    if str(payload.get("structure")) != "SCM":
+        return False
+    associes = payload.get("associes") or []
+    return isinstance(associes, list) and len(associes) == 2
 
 
 @dataclass(frozen=True)
@@ -246,6 +265,21 @@ def _render_common_docs_form(structure: str, prefix: str) -> dict[str, object]:
                 "ordre_numero": ordre_numero,
             }
         )
+        # Satellites SCM (pacte + liste depenses, generes si 2 associes) : ville du
+        # tribunal de commerce competent + mention RCS de la SCM (qui n'est pas encore
+        # immatriculee a la constitution -> saisie libre, ex. « en cours d'immatriculation »).
+        st.markdown("Satellites SCM (pacte d'associes / liste des depenses communes)")
+        col_p, col_q = st.columns(2)
+        pacte_ville_tribunal = _text(col_p, prefix, "pacte_ville_tribunal", "Ville du tribunal")
+        societe_numero_rcs = _text(
+            col_q, prefix, "societe_numero_rcs", "N° RCS SCM (ou 'en cours d'immatriculation')"
+        )
+        common.update(
+            {
+                "pacte_ville_tribunal": pacte_ville_tribunal,
+                "societe_numero_rcs": societe_numero_rcs,
+            }
+        )
     if structure in OPTION_IS_STRUCTURES:
         common.update(_render_option_is_form(prefix))
     return common
@@ -292,7 +326,10 @@ def build_civil_plan(payload: dict[str, object]) -> CivilSlicePlan:
     structure = str(payload["structure"])
     _statuts_type, doc_code = CIVIL_TYPE_BY_STRUCTURE[structure]
     option_is = bool(payload.get("option_is")) and structure in OPTION_IS_STRUCTURES
-    document_codes = _creation_bundle_codes(structure, doc_code, option_is=option_is)
+    scm_pair = _scm_satellites_pair_active(payload)
+    document_codes = _creation_bundle_codes(
+        structure, doc_code, option_is=option_is, scm_satellites_pair=scm_pair
+    )
     blockers = _validate(payload)
     warnings_list = [
         f"{structure} : bundle de creation (statuts + tronc commun + PV gerant"
@@ -398,6 +435,14 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:
         roles = {a.role_statutaire for a in associes if isinstance(associes, list)}
         if "commandite" not in roles or "commanditaire" not in roles:
             blockers.append("SCS : au moins un commandite ET un commanditaire requis.")
+    if _scm_satellites_pair_active(payload):
+        # Satellites SCM (pacte + liste depenses) generes -> champs requis.
+        if not str(payload.get("pacte_ville_tribunal") or "").strip():
+            blockers.append("Ville du tribunal requise (pacte d'associes SCM).")
+        if not str(payload.get("societe_numero_rcs") or "").strip():
+            blockers.append(
+                "N° RCS de la SCM requis pour le pacte (ou « en cours d'immatriculation »)."
+            )
     blockers.extend(_validate_common_docs(payload, structure))
     blockers.extend(_validate_option_is(payload, structure))
     return tuple(dict.fromkeys(blockers))
@@ -550,6 +595,7 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         capital_variable=True,
         siege=siege,
         ville_rcs=str(payload.get("ville_rcs") or ""),
+        numero_rcs=str(payload.get("societe_numero_rcs") or "") or None,
         nb_parts_total=nb_parts,
         siren=str(payload.get("siren") or "") if option_is else None,
     )
@@ -578,6 +624,15 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
     )
     if structure == "SCM":
         ctx.ordre = cc.ordre_professionnel(common)
+        # Satellites SCM (Rafael 2026-06-08) : pacte + liste depenses, si 2 associes.
+        if _scm_satellites_pair_active(payload):
+            ctx.scm_satellites = ScmSatellitesOptions(
+                pacte_associes=True,
+                liste_depenses_communes=True,
+            )
+            ctx.pacte_associes = PacteAssociesScmContext(
+                ville_tribunal=str(payload.get("pacte_ville_tribunal") or "") or None,
+            )
     return ctx
 
 

@@ -167,6 +167,9 @@ def _civil_base(structure, statuts_type, associes):
                 "ordre_cp": "75008",
                 "ordre_ville": "Paris",
                 "ordre_numero": "ORD-1",
+                # Satellites SCM (pacte + liste depenses, generes a 2 associes).
+                "pacte_ville_tribunal": "Paris",
+                "societe_numero_rcs": "en cours d'immatriculation",
             }
         )
     return payload
@@ -293,6 +296,8 @@ def test_scm_slice_generates_clean(tmp_path: Path) -> None:
     )
     plan = css.build_civil_plan(payload)
     assert plan.can_generate is True
+    # SCM a 2 associes : le bundle inclut les satellites pacte (DOC-026) + liste
+    # des depenses communes (DOC-030), decision Rafael 2026-06-08.
     assert plan.document_codes == (
         "DOC-025",
         "DOC-001",
@@ -300,11 +305,19 @@ def test_scm_slice_generates_clean(tmp_path: Path) -> None:
         "DOC-003",
         "DOC-004",
         "DOC-034",
+        "DOC-030",
+        "DOC-026",
     )
     generated = css.generate_dossier(payload, tmp_path / "scm")
     _assert_bundle_clean(
         generated,
-        _TRONC_DOCS | {"statuts_scm.docx", "demande_inscription_ordre.docx"},
+        _TRONC_DOCS
+        | {
+            "statuts_scm.docx",
+            "demande_inscription_ordre.docx",
+            "pacte_associes_scm.docx",
+            "liste_depenses_communes_scm.docx",
+        },
     )
 
 

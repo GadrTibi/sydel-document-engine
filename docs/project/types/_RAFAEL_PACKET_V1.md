@@ -39,21 +39,24 @@ le strict résiduel. Arbitrages produit/métier réels :
 Deux docs que le **canon liste comme systématiques** mais que je n'ai **pas** pu câbler sans ton
 arbitrage de pratique (j'ai d'abord vérifié le code — ce ne sont pas des questions techniques) :
 
-1. **SCM — pacte d'associés / contrat à frais communs / règlement intérieur / liste des dépenses
-   communes.** Le canon les met dans le bundle SCM. Audit fait : les modèles sont **fidèles**
-   (transcription verbatim du source). **Mais l'examen du wording prouve que leur place n'est pas
-   « jour de constitution »** uniformément — d'où une vraie question pratique :
-   - le **pacte** imprime « immatriculée au RCS … sous le n° **[numéro RCS de la SCM]** » → suppose la
-     SCM **déjà immatriculée** (le n° n'existe pas le jour de la constitution) ;
-   - la **liste des dépenses** laisse le n° **en blanc à remplir** → compatible constitution ;
-   - **contrat frais communs** + **règlement intérieur** décrivent un accord entre les **sociétés
-     d'exercice des praticiens** (chaque membre via sa propre structure) + leurs **locaux** → données
-     qui ne sont pas celles de la SCM elle-même.
-   **⚠️ NotebookLM a déjà répondu** (synthèse SCM) : ces 4 actes = « **opérations juridiques DISTINCTES,
-   hors bloc création** ». Ce n'est donc plus une question ouverte mais un **conflit canon ↔ NotebookLM** :
-   le canon les liste en SCM, NotebookLM les dit hors création. **Confirme** : on les **exclut du dossier
-   de création** (traités comme actes distincts plus tard), c'est bien ça ? Seul vrai résiduel non tranché :
-   le contrat frais-communs / RI se signe-t-il entre les **SEL des praticiens** ou entre les personnes ?
+1. **SCM — satellites.** ✅ **Rafael a tranché 2026-06-08** : pacte / liste dépenses / contrat frais
+   communs / RI **font partie du dossier SCM** (le canon l'emporte sur la note NotebookLM « opérations
+   distinctes »). **FAIT** : pacte d'associés (DOC-026) + liste des dépenses communes (DOC-030) **câblés**
+   (SCM à 2 associés, générés propres). **Restent ces points pour finir** :
+   - **Pacte — n° RCS de la SCM** : le pacte imprime « immatriculée au RCS … sous le n° … » mais la SCM
+     n'a **pas encore de n° RCS** le jour de la constitution. J'ai mis un **champ libre** (défaut « en
+     cours d'immatriculation »). **Confirme le wording exact** de la mention, ou le pacte se signe-t-il
+     **après** immatriculation (vrai n°) ?
+   - **Règle des 2 associés** : le pacte ET la liste des dépenses exigent **exactement 2 associés** (les
+     modèles sont bâtis pour 2). **Une SCM peut-elle en avoir 1 ou 3+ ?** Si oui, il faut généraliser les
+     modèles (aujourd'hui : satellites générés **seulement si 2 associés**).
+   - **Wording « chirurgien-dentiste / cabinet dentaire »** figé dans le pacte (verbatim du modèle) :
+     OK pour **toute** SCM (médecin…) ou spécifique dentaire ?
+   - **Contrat frais communs (DOC-027) + RI (DOC-028) — PAS encore câblés** : ils décrivent un accord
+     entre les **sociétés d'exercice des praticiens** (chaque membre via sa **propre SEL**) + leurs
+     **locaux**. Confirme : c'est bien **entre les SEL** (et non les personnes) ? Et **collecte-t-on
+     l'identité de ces 2 SEL** (dénomination, RCS, représentant) **à la création de la SCM** ? Dès ta
+     confirmation, je câble ces 2 derniers.
 2. **SPFPL — note d'information.** Le canon la liste pour cession ET apport. Techniquement elle décrit
    l'**opération** (titres apportés/cédés, société cible). **Question pratique** : en création V1,
    recueille-t-on déjà les détails de l'opération pour produire la note, ou la note se fait-elle

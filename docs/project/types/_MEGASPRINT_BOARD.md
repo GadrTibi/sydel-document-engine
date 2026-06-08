@@ -52,9 +52,13 @@ Types du sprint (EURL hors périmètre) : **SELAS · SPFPL · SCM · SCI · SCS 
 > **suite 366 verts**. Conformité au canon = ✅ pour SELARL/SELAS/SPFPL(×2)/SCS/SCI/SCI IRIS/SAS.
 > **2 groupes systématiques du canon tenus en réserve** (jamais abandonnés en silence) : **SCM 4
 > satellites** (DOC-026/027/028/030) et **SPFPL note d'info** (DOC-037). ⚠️ **Correction 2026-06-08 :
-> NotebookLM (synthèse SCM) dit déjà que les satellites = « opérations DISTINCTES, hors bloc
-> création »** → conflit canon (qui les liste) ↔ NotebookLM (hors création), à confirmer Rafael ;
-> ce n'est pas une question ouverte « systématiques ? » comme écrit plus tôt. Conditionnels OFF-par-défaut : régime communautaire (SELAS/SPFPL),
+> NotebookLM (synthèse SCM) dit que les satellites = « opérations DISTINCTES, hors bloc création »**
+> → conflit canon (qui les liste) ↔ NotebookLM.
+> ✅ **TRANCHÉ par RAFAEL 2026-06-08** : les 4 satellites SCM (pacte d'associés, liste dépenses
+> communes, contrat frais communs, règlement intérieur) **FONT PARTIE du dossier SCM** (« il manque
+> ces docs sur la SCM »). Le canon l'emporte sur la note NotebookLM. → **à CÂBLER dans la génération
+> SCM** (générateurs Codex déjà fidèles, audit OK ; reste : collecte des données + bundle + tests).
+> DOC-037 note SPFPL reste en attente Rafael (création vs après opération). Conditionnels OFF-par-défaut : régime communautaire (SELAS/SPFPL),
 > option IS (SCI/SCI IRIS). Détail : `_RAPPORT_MATIN_2026-06-08.md` §0/§0bis.
 
 ## État par type
