@@ -21,15 +21,26 @@ from sydel_doc_engine.app.ui_runtime import (
 )
 from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import (
+    Address,
+    Associe,
+    CapitalContext,
     Company,
+    DecisionContext,
+    DirigeantNomine,
     DocumentGenerationContext,
+    Domiciliation,
+    DossierOptions,
     Person,
+    ReunionContext,
+    ReunionPresident,
     Signature,
     StatutsCivilsAssocie,
     StatutsSelasMultiContext,
     StatutsSelasMultiPresident,
 )
+from sydel_doc_engine.front_app import common_creation as cc
 from sydel_doc_engine.front_app.field_derivations import (
+    date_to_french_words,
     derive_gender_from_civilite,
     format_french_date,
     number_words_from_value,
@@ -39,6 +50,17 @@ from sydel_doc_engine.front_app.field_derivations import (
 STRUCTURE = "SELAS"
 DOC_CODE = "DOC-044"
 PREFIX = "selas"
+
+# Bundle de creation SELAS multi (canon) : statuts multi-associes + tronc commun
+# (DNC / domiciliation / procuration) + PV nomination gerant + demande
+# d'inscription a l'ordre. Le signataire / gerant des documents communs = le
+# premier associe physique (designe president par defaut).
+SELAS_BUNDLE_CODES: tuple[str, ...] = (
+    DOC_CODE,
+    *cc.TRONC_COMMUN_CODES,
+    cc.DOC_PV_NOMINATION_GERANT,
+    cc.DOC_DEMANDE_INSCRIPTION_ORDRE,
+)
 
 
 @dataclass(frozen=True)
@@ -87,6 +109,13 @@ def render_selas_form() -> dict[str, object]:
     banque_adresse = _t(col_k, "banque_adresse", "Adresse banque")
     date_cloture = _t(st, "date_cloture", "Cloture du premier exercice")
 
+    st.caption("Siege social (adresse structuree, pour la domiciliation / procuration)")
+    col_sa, col_sb, col_sc, col_sd = st.columns(4)
+    siege_num = _t(col_sa, "siege_num", "No")
+    siege_voie = _t(col_sb, "siege_voie", "Voie")
+    siege_cp = _t(col_sc, "siege_cp", "CP")
+    siege_ville = _t(col_sd, "siege_ville", "Ville")
+
     st.markdown("**Signature**")
     col_l, col_m = st.columns(2)
     signature_lieu = _t(col_l, "signature_lieu", "Lieu de signature")
@@ -94,10 +123,15 @@ def render_selas_form() -> dict[str, object]:
         signature_date = _date("signature_date", "Date de signature")
 
     associes = _render_selas_associes()
+    common = _render_common_docs_form()
 
-    return {
+    payload: dict[str, object] = {
         "denomination": denomination,
         "siege": siege,
+        "siege_num": siege_num,
+        "siege_voie": siege_voie,
+        "siege_cp": siege_cp,
+        "siege_ville": siege_ville,
         "profession_reglementee": profession,
         "profession_reglementee_pluriel": profession_pluriel,
         "capital_social": capital,
@@ -111,6 +145,55 @@ def render_selas_form() -> dict[str, object]:
         "signature_lieu": signature_lieu,
         "signature_date": signature_date,
         "associes": associes,
+    }
+    payload.update(common)
+    return payload
+
+
+def _render_common_docs_form() -> dict[str, object]:
+    """Signataire / president (documents communs : DNC, procuration, PV, ordre)."""
+    st.markdown("**President / signataire (documents communs)**")
+    col_a, col_b = st.columns(2)
+    nom_pere = _t(col_a, "signataire_nom_pere", "Nom du pere (declaration)")
+    nom_mere = _t(col_b, "signataire_nom_mere", "Nom de la mere (declaration)")
+    st.caption("Adresse personnelle du president (declaration / procuration)")
+    col_c, col_d, col_e, col_f = st.columns(4)
+    adr_num = _t(col_c, "signataire_adresse_num", "No")
+    adr_voie = _t(col_d, "signataire_adresse_voie", "Voie")
+    adr_cp = _t(col_e, "signataire_adresse_cp", "CP")
+    adr_ville = _t(col_f, "signataire_adresse_ville", "Ville")
+    col_g, col_h = st.columns(2)
+    nationalite = _t(col_g, "signataire_nationalite", "Nationalite")
+    titre = _t(col_h, "signataire_titre", "Titre d'affichage") or "Docteur"
+    with st.container():
+        date_naissance_iso = _date("signataire_date_naissance", "Date naissance (JJ/MM/AAAA)")
+    decision_date = _date("decision_date", "Date de decision (PV gerant)")
+    st.markdown("Ordre professionnel (demande d'inscription)")
+    col_i, col_j = st.columns(2)
+    ordre_conseil = _t(col_i, "ordre_conseil", "Conseil departemental")
+    ordre_dep = _t(col_j, "ordre_departement", "Departement ordre")
+    col_k, col_l, col_m = st.columns(3)
+    ordre_ligne = _t(col_k, "ordre_adresse_ligne_1", "Adresse ordre")
+    ordre_cp = _t(col_l, "ordre_cp", "CP ordre")
+    ordre_ville = _t(col_m, "ordre_ville", "Ville ordre")
+    ordre_numero = _t(st, "ordre_numero", "Numero d'inscription")
+    return {
+        "signataire_nom_pere": nom_pere,
+        "signataire_nom_mere": nom_mere,
+        "signataire_adresse_num": adr_num,
+        "signataire_adresse_voie": adr_voie,
+        "signataire_adresse_cp": adr_cp,
+        "signataire_adresse_ville": adr_ville,
+        "signataire_nationalite": nationalite,
+        "signataire_titre": titre,
+        "signataire_date_naissance": date_naissance_iso,
+        "decision_date": decision_date,
+        "ordre_conseil": ordre_conseil,
+        "ordre_departement": ordre_dep,
+        "ordre_adresse_ligne_1": ordre_ligne,
+        "ordre_cp": ordre_cp,
+        "ordre_ville": ordre_ville,
+        "ordre_numero": ordre_numero,
     }
 
 
@@ -259,23 +342,23 @@ def _apport(montant: str):
 def build_selas_plan(payload: dict[str, object]) -> SelasSlicePlan:
     blockers = _validate(payload)
     warnings = (
-        "SELAS multi V1 : 2 a 5 associes, vocabulaire actions. Le moteur exige la coherence "
-        "(somme des actions = total, au moins 2 associes).",
+        "SELAS multi V1 : 2 a 5 associes, vocabulaire actions. Bundle de creation : statuts "
+        "+ tronc commun + PV gerant + demande ordre. Le moteur exige la coherence des actions.",
     )
     if blockers:
         return SelasSlicePlan(
             can_generate=False,
             status="blocked",
             reason=blockers[0],
-            document_codes=(DOC_CODE,),
+            document_codes=SELAS_BUNDLE_CODES,
             blockers=blockers,
             warnings=warnings,
         )
     return SelasSlicePlan(
         can_generate=True,
         status="ready",
-        reason="Pret pour generation SELAS multi V1.",
-        document_codes=(DOC_CODE,),
+        reason="Pret pour generation SELAS multi V1 (bundle de creation).",
+        document_codes=SELAS_BUNDLE_CODES,
         blockers=(),
         warnings=warnings,
     )
@@ -337,7 +420,38 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:
                 blockers.append(
                     f"Somme des actions ({total}) != total declare ({nb_actions_total})."
                 )
+    blockers.extend(_validate_common_docs(payload))
     return tuple(dict.fromkeys(blockers))
+
+
+def _validate_common_docs(payload: dict[str, object]) -> list[str]:
+    blockers: list[str] = []
+    required = (
+        ("siege_num", "No de voie du siege requis (domiciliation)."),
+        ("siege_voie", "Voie du siege requise (domiciliation)."),
+        ("siege_cp", "Code postal du siege requis (domiciliation)."),
+        ("siege_ville", "Ville du siege requise (domiciliation)."),
+        ("signataire_nom_pere", "Nom du pere du president requis (declaration)."),
+        ("signataire_nom_mere", "Nom de la mere du president requis (declaration)."),
+        ("signataire_adresse_num", "No de voie du president requis (declaration)."),
+        ("signataire_adresse_voie", "Voie du president requise (declaration)."),
+        ("signataire_adresse_cp", "Code postal du president requis (declaration)."),
+        ("signataire_adresse_ville", "Ville du president requise (declaration)."),
+        ("signataire_nationalite", "Nationalite du president requise (declaration)."),
+        ("ordre_conseil", "Conseil departemental de l'ordre requis (demande inscription)."),
+        ("ordre_departement", "Departement d'inscription a l'ordre requis (demande inscription)."),
+        ("ordre_adresse_ligne_1", "Adresse de l'ordre requise (demande inscription)."),
+        ("ordre_cp", "Code postal de l'ordre requis (demande inscription)."),
+        ("ordre_ville", "Ville de l'ordre requise (demande inscription)."),
+    )
+    for field, message in required:
+        if not str(payload.get(field) or "").strip():
+            blockers.append(message)
+    if payload.get("signataire_date_naissance") is None:
+        blockers.append("Date de naissance du president requise (declaration).")
+    if payload.get("decision_date") is None:
+        blockers.append("Date de decision requise (PV nomination gerant).")
+    return blockers
 
 
 def _named(associe: StatutsCivilsAssocie) -> bool:
@@ -355,28 +469,115 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         0,
     )
     signataire_associe = associes[president_index] if associes else None
-    signataire = Person(
-        genre=(signataire_associe.genre if signataire_associe else None) or Gender.FEMININ,
-        civilite=(signataire_associe.civilite_affichage if signataire_associe else "Madame"),
-        prenom=(signataire_associe.prenom if signataire_associe else ""),
-        nom=(signataire_associe.nom if signataire_associe else ""),
+    genre = (signataire_associe.genre if signataire_associe else None) or Gender.FEMININ
+    civilite = signataire_associe.civilite_affichage if signataire_associe else "Madame"
+    prenom = signataire_associe.prenom if signataire_associe else ""
+    nom = signataire_associe.nom if signataire_associe else ""
+    profession = (
+        (signataire_associe.qualification_principale or signataire_associe.profession)
+        if signataire_associe
+        else ""
+    ) or ""
+    adresse_perso = Address(
+        num_voie=str(payload.get("signataire_adresse_num") or ""),
+        voie=str(payload.get("signataire_adresse_voie") or ""),
+        cp=str(payload.get("signataire_adresse_cp") or ""),
+        ville=str(payload.get("signataire_adresse_ville") or ""),
+        adresse_affichee=_struct_display(payload, "signataire_adresse"),
+    )
+    siege_struct = Address(
+        num_voie=str(payload.get("siege_num") or ""),
+        voie=str(payload.get("siege_voie") or ""),
+        cp=str(payload.get("siege_cp") or ""),
+        ville=str(payload.get("siege_ville") or ""),
+        adresse_affichee=str(payload.get("siege") or "") or _struct_display(payload, "siege"),
     )
     capital = str(payload.get("capital_social") or "")
     nb_actions_total = int(payload.get("nb_actions_total") or 0)
     valeur_action = str(payload.get("valeur_nominale_action") or "")
+    titre = str(payload.get("signataire_titre") or "Docteur")
+
+    signataire = Person(
+        genre=genre,
+        civilite=civilite,
+        prenom=prenom,
+        nom=nom,
+        titre_affichage=titre,
+        adresse_perso=adresse_perso,
+        adresse_personnelle_affichee=adresse_perso.adresse_affichee,
+        date_naissance=payload.get("signataire_date_naissance"),
+        ville_naissance=(signataire_associe.ville_naissance if signataire_associe else "") or "",
+        nationalite=str(payload.get("signataire_nationalite") or ""),
+        nom_pere=str(payload.get("signataire_nom_pere") or ""),
+        nom_mere=str(payload.get("signataire_nom_mere") or ""),
+        fonction_dirigeant="président",
+        qualification_principale=profession,
+    )
 
     return DocumentGenerationContext(
         structure="SELAS",
+        dossier_options=DossierOptions(associe_unique=False),
         personne_signataire=signataire,
         signature=Signature(
             lieu=str(payload.get("signature_lieu") or ""),
             date=payload.get("signature_date"),
+            nombre_exemplaires="quatre",
         ),
         societe=Company(
-            denomination=str(payload.get("denomination") or ""),
             forme_sociale="SELAS",
-            siege=_address(str(payload.get("siege") or "")),
+            forme_sociale_affichage="SELAS",
+            forme_sociale_abregee="SELAS",
+            denomination=str(payload.get("denomination") or ""),
+            denomination_courte=str(payload.get("denomination") or ""),
+            capital=capital,
+            capital_social=capital,
+            capital_variable=True,
+            siege=siege_struct,
             ville_rcs=str(payload.get("ville_rcs") or ""),
+            nb_parts_total=nb_actions_total,
+        ),
+        domiciliation=Domiciliation(
+            adresse_domiciliation_affichee=siege_struct.adresse_affichee,
+        ),
+        mandataire=cc.default_mandataire(),
+        ordre=_selas_ordre(payload),
+        capital=CapitalContext(
+            nb_parts_total=nb_actions_total,
+            valeur_nominale_part=valeur_action,
+            nb_parts_representees=nb_actions_total,
+            montant=capital,
+            type_titre="actions",
+        ),
+        dirigeant_nomine=DirigeantNomine(
+            genre=genre,
+            civilite_affichage=civilite,
+            prenom=prenom,
+            nom=nom,
+            date_naissance=payload.get("signataire_date_naissance"),
+            ville_naissance=(signataire_associe.ville_naissance if signataire_associe else "")
+            or "",
+            departement_naissance=(
+                signataire_associe.departement_naissance if signataire_associe else ""
+            )
+            or "",
+            nationalite=str(payload.get("signataire_nationalite") or ""),
+            adresse_personnelle=adresse_perso,
+            fonction_affichage="président",
+            ref_associe_index=president_index,
+        ),
+        associes=_selas_pv_associes(associes),
+        decision=DecisionContext(date=_display_date(payload.get("decision_date"))),
+        reunion=ReunionContext(
+            date_lettres=date_to_french_words(payload.get("decision_date")),
+            president=ReunionPresident(
+                civilite_affichage=civilite,
+                prenom=prenom,
+                nom=nom,
+                qualite="président",
+                civilite_president_seance=civilite,
+                prenom_president_seance=prenom,
+                nom_personne_seance=nom,
+            ),
         ),
         statuts_selas_multi=StatutsSelasMultiContext(
             profession_reglementee=str(payload.get("profession_reglementee") or ""),
@@ -398,6 +599,75 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         ),
         metadata={"front_slice": "track_b_selas_multi_v1"},
     )
+
+
+def _selas_ordre(payload: dict[str, object]):
+    from sydel_doc_engine.domain.models import OrdreAddress, OrdreProfessionnel
+
+    ligne_1 = str(payload.get("ordre_adresse_ligne_1") or "")
+    cp = str(payload.get("ordre_cp") or "")
+    ville = str(payload.get("ordre_ville") or "")
+    bloc = f"{ligne_1}\n{cp} {ville}"
+    pluriel = str(payload.get("profession_reglementee_pluriel") or "")
+    return OrdreProfessionnel(
+        conseil_departemental_libelle=str(payload.get("ordre_conseil") or ""),
+        departement_inscription=str(payload.get("ordre_departement") or ""),
+        destinataire_appel="Monsieur le Président",
+        profession_signataire_affichee=str(payload.get("profession_reglementee") or ""),
+        profession_ligne_destinataire=pluriel,
+        profession_reglementee_pluriel=pluriel,
+        adresse_affichee=bloc,
+        adresse_bloc_affiche=bloc,
+        adresse=OrdreAddress(
+            ligne_1=str(payload.get("ordre_adresse_ligne_1") or ""),
+            cp=str(payload.get("ordre_cp") or ""),
+            ville=str(payload.get("ordre_ville") or ""),
+        ),
+    )
+
+
+def _selas_pv_associes(associes: list[StatutsCivilsAssocie]) -> list[Associe]:
+    mapped: list[Associe] = []
+    for associe in associes:
+        nb = associe.nb_actions or 0
+        if associe.type_personne == "personne_morale":
+            mapped.append(
+                Associe(
+                    genre=Gender.MASCULIN,
+                    civilite_affichage="",
+                    prenom="",
+                    nom=associe.denomination or "",
+                    nb_parts=nb,
+                    nb_parts_lettres=number_words_from_value(nb),
+                )
+            )
+            continue
+        mapped.append(
+            Associe(
+                genre=associe.genre or Gender.MASCULIN,
+                civilite_affichage=associe.civilite_affichage or "Monsieur",
+                prenom=associe.prenom or associe.prenoms or "",
+                nom=associe.nom or "",
+                nb_parts=nb,
+                nb_parts_lettres=number_words_from_value(nb),
+                profession=associe.profession or "",
+                profession_reglementee=associe.profession or "",
+            )
+        )
+    return mapped
+
+
+def _struct_display(payload: dict[str, object], prefix: str) -> str:
+    return (
+        f"{payload.get(prefix + '_num', '')} {payload.get(prefix + '_voie', '')}, "
+        f"{payload.get(prefix + '_cp', '')} {payload.get(prefix + '_ville', '')}"
+    ).strip(" ,")
+
+
+def _display_date(value) -> str | None:
+    if value is None:
+        return None
+    return value.strftime("%d/%m/%Y")
 
 
 def generate_dossier(payload: dict[str, object], output_dir: Path) -> GeneratedDossier:

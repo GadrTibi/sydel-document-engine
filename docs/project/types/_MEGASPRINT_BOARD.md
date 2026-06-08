@@ -88,10 +88,13 @@ en-tête/footer/styles/tables nativement) + corriger les blocs dynamiques. Chant
 - **SELAS** : cible **confirmée** = **multi 2-5 + associé personne morale + DG** (supersede l'unipersonnel
   V1). Reste à récupérer le **modèle Reynaud** (Gad/Downloads) pour le wording multi.
 - **SCP** : **parquée, hors V1** (« tu n'as pas à t'occuper de ça »). Ne pas builder.
+- **SCI standard + associé personne morale = AUTORISÉ** (Rafael, 2026-06-08) : « oui, une SCI classique
+  peut avoir une autre société comme associée » (fréquent : SCI → micro-holding → SPFPL). → **débloquer
+  `_validate_sci`** (qui interdisait la PM). Wording d'identité morale = bloc civils existant (SCM/IRIS) ;
+  fidélité exacte du wording reste à confirmer sur le modèle. **À appliquer post-sprint (collision tree).**
 
 ### En attente Rafael (non bloquant — je build et je flague)
 - **SPFPL** : correction vocabulaire PV « cession » rédigés en « apport » → « laisse moi checker ».
-- **SCI** : associé personne morale en SCI standard → « laisse moi vérifier avec les juristes ».
 
 ### Volet global (en attente GO Gad + coordination instance lead)
 - Porter l'**INTEL GATE** dans la règle 20 (`~/.claude`), section « projets **avec associé** » (pas tous

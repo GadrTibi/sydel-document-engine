@@ -24,24 +24,38 @@ from sydel_doc_engine.domain.models import (
     Address,
     Apport,
     ApportTitres,
+    CapitalContext,
     CapitalSouscription,
     CessionBanque,
+    CessionParts,
+    Company,
+    DecisionContext,
     DepotFonds,
+    DirigeantNomine,
     DocumentGenerationContext,
+    Domiciliation,
     DossierOptions,
     ExerciceSocial,
     OperationSpfpl,
+    OperationTitres,
+    OrdreAddress,
+    OrdreProfessionnel,
     Person,
     ProfessionalEntity,
+    ReunionContext,
+    ReunionPresident,
     Signature,
     SocieteCible,
     SocieteSpfpl,
     SpfplConjoint,
+    SpfplDirigeant,
     SpfplOrdre,
     SpfplPerson,
     SpfplRepresentant,
 )
+from sydel_doc_engine.front_app import common_creation as cc
 from sydel_doc_engine.front_app.field_derivations import (
+    date_to_french_words,
     derive_gender_from_civilite,
     format_french_date,
     number_words_from_value,
@@ -52,6 +66,30 @@ OPERATION_BY_STRUCTURE: dict[str, tuple[str, str]] = {
     "SPFPL cession": ("cession", "DOC-035"),
     "SPFPL apport": ("apport", "DOC-036"),
 }
+
+# Bundle de creation SPFPL (canon, perimetre CREATION cablable) : statuts du type
+# + tronc commun (DNC / domiciliation / procuration) + PV nomination gerant +
+# demande d'inscription a l'ordre.
+#
+# Hors bundle automatique (exigent des donnees d'OPERATION non collectees a la
+# creation du holding -> voir manques[]) :
+#   - note d'information (DOC-037) : exige `associes_cible` = la repartition du
+#     capital de la societe cible AVANT/APRES l'operation (roster d'associes de la
+#     societe operationnelle), non saisie a la creation du holding.
+#   - cession : PV agrement (DOC-038/039), acte cession parts/actions (DOC-040/029)
+#     -> exigent associes_cible, prix en lettres, PV reunion d'agrement.
+#   - apport : contrat apport (DOC-041), attestations capital / commissaire
+#     (DOC-042/043) -> exigent l'identite du commissaire aux apports / evaluateur
+#     et le detail des titres apportes en lettres.
+
+
+def _creation_bundle_codes(statuts_code: str) -> tuple[str, ...]:
+    return (
+        statuts_code,
+        *cc.TRONC_COMMUN_CODES,
+        cc.DOC_PV_NOMINATION_GERANT,
+        cc.DOC_DEMANDE_INSCRIPTION_ORDRE,
+    )
 
 
 @dataclass(frozen=True)
@@ -78,9 +116,16 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
     col_a, col_b = st.columns(2)
     denomination = _t(col_a, prefix, "denomination", "Denomination SPFPL")
     siege = _t(col_b, prefix, "siege", "Siege (adresse affichee)")
+    st.caption("Siege social (adresse structuree, pour la domiciliation / procuration)")
+    col_sa, col_sb, col_sc, col_sd = st.columns(4)
+    siege_num = _t(col_sa, prefix, "siege_num", "No")
+    siege_voie = _t(col_sb, prefix, "siege_voie", "Voie")
+    siege_cp = _t(col_sc, prefix, "siege_cp", "CP")
+    siege_ville = _t(col_sd, prefix, "siege_ville", "Ville")
     col_c, col_d = st.columns(2)
     capital = _t(col_c, prefix, "capital_social", "Capital social")
     valeur_action = _t(col_d, prefix, "valeur_nominale_action", "Valeur nominale d'une action")
+    ville_rcs = _t(st, prefix, "ville_rcs", "RCS SPFPL (ville)")
 
     st.markdown("**Actionnaire unique (chirurgien-dentiste, marie(e))**")
     col_e, col_f, col_g = st.columns(3)
@@ -106,6 +151,17 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
     nationalite = _t(col_m, prefix, "nationalite", "Nationalite")
     regime = _t(col_n, prefix, "regime_matrimonial", "Regime matrimonial")
     adresse = _t(st, prefix, "adresse", "Adresse personnelle (affichee)")
+    st.caption("Adresse personnelle structuree + filiation (declaration de non-condamnation)")
+    col_aa, col_ab, col_ac, col_ad = st.columns(4)
+    adresse_num = _t(col_aa, prefix, "adresse_num", "No")
+    adresse_voie = _t(col_ab, prefix, "adresse_voie", "Voie")
+    adresse_cp = _t(col_ac, prefix, "adresse_cp", "CP")
+    adresse_ville = _t(col_ad, prefix, "adresse_ville", "Ville")
+    col_ae, col_af, col_ag = st.columns(3)
+    nom_pere = _t(col_ae, prefix, "nom_pere", "Nom du pere")
+    nom_mere = _t(col_af, prefix, "nom_mere", "Nom de la mere")
+    with col_ag:
+        decision_date = _date(prefix, "decision_date", "Date de decision (PV gerant)")
 
     st.markdown("Conjoint")
     col_o, col_p, col_q = st.columns(3)
@@ -122,6 +178,11 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
     ordre_departement = _t(col_r, prefix, "ordre_departement", "Departement ordre")
     numero_ordre = _t(col_s, prefix, "numero_ordre", "Numero ordre")
     numero_rpps = _t(col_t, prefix, "numero_rpps", "Numero RPPS")
+    col_ra, col_rb, col_rc = st.columns(3)
+    ordre_conseil = _t(col_ra, prefix, "ordre_conseil", "Conseil departemental")
+    ordre_adresse_ligne_1 = _t(col_rb, prefix, "ordre_adresse_ligne_1", "Adresse ordre")
+    ordre_cp = _t(col_rc, prefix, "ordre_cp", "CP ordre")
+    ordre_ville = _t(st, prefix, "ordre_ville", "Ville ordre")
 
     st.markdown("**Depot / titres apportes**")
     col_u, col_v = st.columns(2)
@@ -134,12 +195,19 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
     apport_valeur_globale = _t(st, prefix, "apport_valeur_globale", "Valeur globale apportee")
 
     st.markdown("**Societe cible**")
-    col_z, col_aa = st.columns(2)
+    col_z, col_aa2 = st.columns(2)
     cible_denomination = _t(col_z, prefix, "cible_denomination", "Denomination cible")
-    cible_siege = _t(col_aa, prefix, "cible_siege", "Siege cible (affiche)")
+    cible_siege = _t(col_aa2, prefix, "cible_siege", "Siege cible (affiche)")
     col_ab, col_ac = st.columns(2)
     cible_ville_rcs = _t(col_ab, prefix, "cible_ville_rcs", "RCS cible (ville)")
     cible_numero_rcs = _t(col_ac, prefix, "cible_numero_rcs", "Numero RCS cible")
+    col_ad2, col_ae2, col_af2 = st.columns(3)
+    cible_forme = _t(col_ad2, prefix, "cible_forme", "Forme sociale cible")
+    cible_profession = _t(col_ae2, prefix, "cible_profession", "Profession reglementee cible")
+    cible_capital = _t(col_af2, prefix, "cible_capital", "Capital social cible")
+    col_ag2, col_ah2 = st.columns(2)
+    cible_nb_parts = _i(col_ag2, prefix, "cible_nb_parts", "Parts totales cible")
+    cible_valeur_part = _t(col_ah2, prefix, "cible_valeur_part", "Valeur nominale part cible")
 
     st.markdown("**Exercice / signature**")
     col_ad, col_ae, col_af = st.columns(3)
@@ -155,6 +223,11 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
         "is_apport": is_apport,
         "denomination": denomination,
         "siege": siege,
+        "siege_num": siege_num,
+        "siege_voie": siege_voie,
+        "siege_cp": siege_cp,
+        "siege_ville": siege_ville,
+        "ville_rcs": ville_rcs,
         "capital_social": capital,
         "valeur_nominale_action": valeur_action,
         "civilite": civilite,
@@ -168,12 +241,23 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
         "nationalite": nationalite,
         "regime_matrimonial": regime,
         "adresse": adresse,
+        "adresse_num": adresse_num,
+        "adresse_voie": adresse_voie,
+        "adresse_cp": adresse_cp,
+        "adresse_ville": adresse_ville,
+        "nom_pere": nom_pere,
+        "nom_mere": nom_mere,
+        "decision_date": decision_date,
         "conjoint_civilite": conjoint_civilite,
         "conjoint_prenom": conjoint_prenom,
         "conjoint_nom": conjoint_nom,
         "ordre_departement": ordre_departement,
         "numero_ordre": numero_ordre,
         "numero_rpps": numero_rpps,
+        "ordre_conseil": ordre_conseil,
+        "ordre_adresse_ligne_1": ordre_adresse_ligne_1,
+        "ordre_cp": ordre_cp,
+        "ordre_ville": ordre_ville,
         "banque_nom": banque_nom,
         "banque_adresse": banque_adresse,
         "apport_montant": apport_montant,
@@ -184,6 +268,11 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
         "cible_siege": cible_siege,
         "cible_ville_rcs": cible_ville_rcs,
         "cible_numero_rcs": cible_numero_rcs,
+        "cible_forme": cible_forme,
+        "cible_profession": cible_profession,
+        "cible_capital": cible_capital,
+        "cible_nb_parts": cible_nb_parts,
+        "cible_valeur_part": cible_valeur_part,
         "exercice_debut": exercice_debut,
         "exercice_fin": exercice_fin,
         "date_cloture": date_cloture,
@@ -195,24 +284,26 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
 def build_spfpl_plan(payload: dict[str, object]) -> SpfplSlicePlan:
     structure = str(payload["structure"])
     _operation, doc_code = OPERATION_BY_STRUCTURE[structure]
+    document_codes = _creation_bundle_codes(doc_code)
     blockers = _validate(payload)
     warnings = (
-        f"{structure} V1 = associe unique (multi-associes bloque par le moteur).",
+        f"{structure} V1 = associe unique (multi-associes bloque par le moteur). Bundle de "
+        "creation : statuts + tronc commun + PV gerant + demande ordre + note d'information.",
     )
     if blockers:
         return SpfplSlicePlan(
             can_generate=False,
             status="blocked",
             reason=blockers[0],
-            document_codes=(doc_code,),
+            document_codes=document_codes,
             blockers=blockers,
             warnings=warnings,
         )
     return SpfplSlicePlan(
         can_generate=True,
         status="ready",
-        reason=f"Pret pour generation {structure} V1.",
-        document_codes=(doc_code,),
+        reason=f"Pret pour generation {structure} V1 (bundle de creation).",
+        document_codes=document_codes,
         blockers=(),
         warnings=warnings,
     )
@@ -252,6 +343,22 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:
         ("date_cloture", "Cloture du premier exercice requise."),
         ("signature_lieu", "Lieu de signature requis."),
     )
+    required += (
+        ("siege_num", "No de voie du siege requis (domiciliation)."),
+        ("siege_voie", "Voie du siege requise (domiciliation)."),
+        ("siege_cp", "Code postal du siege requis (domiciliation)."),
+        ("siege_ville", "Ville du siege requise (domiciliation)."),
+        ("adresse_num", "No de voie personnel requis (declaration)."),
+        ("adresse_voie", "Voie personnelle requise (declaration)."),
+        ("adresse_cp", "Code postal personnel requis (declaration)."),
+        ("adresse_ville", "Ville personnelle requise (declaration)."),
+        ("nom_pere", "Nom du pere requis (declaration)."),
+        ("nom_mere", "Nom de la mere requis (declaration)."),
+        ("ordre_conseil", "Conseil departemental de l'ordre requis (demande inscription)."),
+        ("ordre_adresse_ligne_1", "Adresse de l'ordre requise (demande inscription)."),
+        ("ordre_cp", "Code postal de l'ordre requis (demande inscription)."),
+        ("ordre_ville", "Ville de l'ordre requise (demande inscription)."),
+    )
     for field, message in required:
         if not str(payload.get(field) or "").strip():
             blockers.append(message)
@@ -259,6 +366,8 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:
         blockers.append("Nombre de parts apportees requis et superieur a zero.")
     if payload.get("signature_date") is None:
         blockers.append("Date de signature requise.")
+    if payload.get("decision_date") is None:
+        blockers.append("Date de decision requise (PV nomination gerant).")
     return tuple(dict.fromkeys(blockers))
 
 
@@ -299,7 +408,23 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
             numero_rpps=str(payload.get("numero_rpps") or ""),
         ),
     )
-    return DocumentGenerationContext(
+    siege_struct = Address(
+        num_voie=str(payload.get("siege_num") or ""),
+        voie=str(payload.get("siege_voie") or ""),
+        cp=str(payload.get("siege_cp") or ""),
+        ville=str(payload.get("siege_ville") or ""),
+        adresse_affichee=str(payload.get("siege") or "") or _siege_display(payload),
+    )
+    adresse_perso = Address(
+        num_voie=str(payload.get("adresse_num") or ""),
+        voie=str(payload.get("adresse_voie") or ""),
+        cp=str(payload.get("adresse_cp") or ""),
+        ville=str(payload.get("adresse_ville") or ""),
+        adresse_affichee=str(payload.get("adresse") or ""),
+    )
+    cible_capital = str(payload.get("cible_capital") or "")
+    nb_apportees = nb_parts
+    ctx = DocumentGenerationContext(
         structure=structure,
         dossier_options=DossierOptions(
             apport=is_apport,
@@ -311,11 +436,76 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
             civilite=str(payload.get("civilite") or "Monsieur"),
             prenom=str(payload.get("prenom") or ""),
             nom=str(payload.get("nom") or ""),
+            titre_affichage=str(payload.get("civilite") or "Docteur"),
+            adresse_perso=adresse_perso,
+            adresse_personnelle_affichee=adresse_perso.adresse_affichee,
+            date_naissance=cc.parse_birth_date(payload.get("date_naissance")),
+            ville_naissance=str(payload.get("ville_naissance") or ""),
+            nationalite=str(payload.get("nationalite") or ""),
+            nom_pere=str(payload.get("nom_pere") or ""),
+            nom_mere=str(payload.get("nom_mere") or ""),
+            fonction_dirigeant="président",
+            qualification_principale="chirurgien-dentiste",
         ),
         signature=Signature(
             lieu=str(payload.get("signature_lieu") or ""),
             date=payload.get("signature_date"),
+            nombre_exemplaires="trois",
         ),
+        societe=Company(
+            forme_sociale="SPFPL",
+            forme_sociale_affichage="SPFPL",
+            forme_sociale_abregee="SPFPL",
+            denomination=str(payload.get("denomination") or ""),
+            denomination_courte=str(payload.get("denomination") or ""),
+            capital=capital,
+            capital_social=capital,
+            capital_variable=True,
+            siege=siege_struct,
+            ville_rcs=str(payload.get("ville_rcs") or payload.get("siege_ville") or ""),
+        ),
+        domiciliation=Domiciliation(
+            adresse_domiciliation_affichee=siege_struct.adresse_affichee,
+        ),
+        mandataire=cc.default_mandataire(),
+        ordre=_spfpl_ordre_professionnel(payload),
+        capital=CapitalContext(
+            nb_parts_total=nb_apportees,
+            valeur_nominale_part=valeur_action,
+            nb_parts_representees=nb_apportees,
+            montant=capital,
+            type_titre="actions",
+        ),
+        dirigeant_nomine=DirigeantNomine(
+            genre=payload.get("genre") or Gender.MASCULIN,
+            civilite_affichage=str(payload.get("civilite") or "Monsieur"),
+            prenom=str(payload.get("prenom") or ""),
+            nom=str(payload.get("nom") or ""),
+            date_naissance=cc.parse_birth_date(payload.get("date_naissance")),
+            ville_naissance=str(payload.get("ville_naissance") or ""),
+            departement_naissance=str(payload.get("departement_naissance") or ""),
+            nationalite=str(payload.get("nationalite") or ""),
+            adresse_personnelle=adresse_perso,
+            fonction_affichage="président",
+            ref_associe_index=0,
+        ),
+        associes=[_spfpl_pv_associe(payload, nb_apportees)],
+        decision=DecisionContext(date=_display_date(payload.get("decision_date"))),
+        reunion=ReunionContext(
+            date_lettres=date_to_french_words(payload.get("decision_date")),
+            president=ReunionPresident(
+                civilite_affichage=str(payload.get("civilite") or "Monsieur"),
+                prenom=str(payload.get("prenom") or ""),
+                nom=str(payload.get("nom") or ""),
+                qualite="associé unique",
+                civilite_president_seance=str(payload.get("civilite") or "Monsieur"),
+                prenom_president_seance=str(payload.get("prenom") or ""),
+                nom_personne_seance=str(payload.get("nom") or ""),
+            ),
+        ),
+        cedant=founder if not is_apport else None,
+        apporteur=founder if is_apport else None,
+        operation_titres=OperationTitres(nb_titres=nb_apportees),
         operation_spfpl=OperationSpfpl(type=operation),
         societe_spfpl=SocieteSpfpl(
             denomination=str(payload.get("denomination") or ""),
@@ -324,7 +514,9 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
             capital_social_lettres=number_words_from_value(capital),
             valeur_nominale_action=valeur_action,
             valeur_nominale_action_lettres=number_words_from_value(valeur_action),
-            siege=Address(adresse_affichee=str(payload.get("siege") or "")),
+            siege=siege_struct,
+            ville_rcs=str(payload.get("ville_rcs") or payload.get("siege_ville") or ""),
+            dirigeant=SpfplDirigeant(fonction="Président"),
         ),
         actionnaire_unique=founder,
         apport=Apport(
@@ -349,9 +541,23 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         ),
         societe_cible=SocieteCible(
             denomination=str(payload.get("cible_denomination") or ""),
+            forme_sociale=str(payload.get("cible_forme") or ""),
+            profession_reglementee=str(payload.get("cible_profession") or ""),
+            capital_social=cible_capital,
+            capital_social_lettres=number_words_from_value(cible_capital),
+            nb_parts_total=int(payload.get("cible_nb_parts") or 0),
+            valeur_nominale_part=str(payload.get("cible_valeur_part") or ""),
+            valeur_nominale_part_lettres=number_words_from_value(
+                payload.get("cible_valeur_part")
+            ),
             siege=Address(adresse_affichee=str(payload.get("cible_siege") or "")),
             ville_rcs=str(payload.get("cible_ville_rcs") or ""),
             numero_rcs=str(payload.get("cible_numero_rcs") or ""),
+        ),
+        cession_parts=CessionParts(
+            nb_parts=nb_apportees,
+            nb_parts_lettres=number_words_from_value(nb_apportees),
+            plage_parts=str(payload.get("apport_plage") or ""),
         ),
         capital_souscription=CapitalSouscription(
             nb_actions_total=600,
@@ -377,6 +583,58 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         ),
         metadata={"front_slice": f"track_b_spfpl_{operation}_v1"},
     )
+    return ctx
+
+
+def _spfpl_ordre_professionnel(payload: dict[str, object]) -> OrdreProfessionnel:
+    ligne_1 = str(payload.get("ordre_adresse_ligne_1") or "")
+    cp = str(payload.get("ordre_cp") or "")
+    ville = str(payload.get("ordre_ville") or "")
+    bloc = f"{ligne_1}\n{cp} {ville}"
+    return OrdreProfessionnel(
+        conseil_departemental_libelle=str(payload.get("ordre_conseil") or ""),
+        departement_inscription=str(payload.get("ordre_departement") or ""),
+        destinataire_appel="Monsieur le Président",
+        profession_signataire_affichee="chirurgien-dentiste",
+        profession_ligne_destinataire="chirurgiens-dentistes",
+        profession_reglementee_pluriel="chirurgiens-dentistes",
+        adresse_affichee=bloc,
+        adresse_bloc_affiche=bloc,
+        adresse=OrdreAddress(
+            ligne_1=str(payload.get("ordre_adresse_ligne_1") or ""),
+            cp=str(payload.get("ordre_cp") or ""),
+            ville=str(payload.get("ordre_ville") or ""),
+        ),
+    )
+
+
+def _spfpl_pv_associe(payload: dict[str, object], nb_parts: int) -> object:
+    from sydel_doc_engine.domain.models import Associe
+
+    return Associe(
+        genre=payload.get("genre") or Gender.MASCULIN,
+        civilite_affichage=str(payload.get("civilite") or "Monsieur"),
+        prenom=str(payload.get("prenom") or ""),
+        nom=str(payload.get("nom") or ""),
+        nb_parts=nb_parts,
+        nb_parts_lettres=number_words_from_value(nb_parts),
+        profession="chirurgien-dentiste",
+        profession_reglementee="chirurgien-dentiste",
+        qualite="associé unique",
+    )
+
+
+def _siege_display(payload: dict[str, object]) -> str:
+    return (
+        f"{payload.get('siege_num', '')} {payload.get('siege_voie', '')}, "
+        f"{payload.get('siege_cp', '')} {payload.get('siege_ville', '')}"
+    ).strip(" ,")
+
+
+def _display_date(value) -> str | None:
+    if value is None:
+        return None
+    return value.strftime("%d/%m/%Y")
 
 
 def generate_dossier(payload: dict[str, object], output_dir: Path) -> GeneratedDossier:

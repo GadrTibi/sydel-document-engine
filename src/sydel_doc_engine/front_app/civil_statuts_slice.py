@@ -30,6 +30,7 @@ from sydel_doc_engine.domain.models import (
     Address,
     Company,
     DocumentGenerationContext,
+    DossierOptions,
     Person,
     Signature,
     StatutsCivilsAssocie,
@@ -37,6 +38,7 @@ from sydel_doc_engine.domain.models import (
     StatutsCivilsContext,
     StatutsCivilsGroupeParts,
 )
+from sydel_doc_engine.front_app import common_creation as cc
 from sydel_doc_engine.front_app.associe_repeater import RepeaterConfig, render_associe_repeater
 from sydel_doc_engine.front_app.field_derivations import (
     format_french_date,
@@ -44,13 +46,30 @@ from sydel_doc_engine.front_app.field_derivations import (
     parse_french_date,
 )
 
-# Mapping structure -> (type statuts civils, doc_code).
+# Mapping structure -> (type statuts civils, doc_code statuts).
 CIVIL_TYPE_BY_STRUCTURE: dict[str, tuple[str, str]] = {
     "SCI": ("sci", "DOC-020"),
     "SCI IRIS": ("sci_iris", "DOC-021"),
     "SCS": ("scs", "DOC-019"),
     "SCM": ("scm", "DOC-025"),
 }
+
+# Bundle de CREATION par type (canon : statuts du type + tronc commun
+# DNC/domiciliation/procuration + PV nomination gerant ; la SCM ajoute la demande
+# d'inscription a l'ordre). Les cas non-creation (cession SCM, etc.) sont hors V1.
+#
+# Satellites SCM (DOC-026 pacte / DOC-030 liste depenses / DOC-027 frais communs /
+# DOC-028 reglement interieur) : NON inclus dans le bundle automatique. Les
+# generateurs exigent l'identite juridique des DEUX societes d'exercice partenaires
+# (denomination, forme, capital, RCS) qui n'est pas une saisie de la creation SCM et
+# ne peut etre inventee. Voir manques[].
+
+
+def _creation_bundle_codes(structure: str, statuts_code: str) -> tuple[str, ...]:
+    codes: list[str] = [statuts_code, *cc.TRONC_COMMUN_CODES, cc.DOC_PV_NOMINATION_GERANT]
+    if structure == "SCM":
+        codes.append(cc.DOC_DEMANDE_INSCRIPTION_ORDRE)
+    return tuple(dict.fromkeys(codes))
 
 
 @dataclass(frozen=True)
@@ -131,7 +150,9 @@ def render_civil_form(structure: str) -> dict[str, object]:
         )
     )
 
-    return {
+    common = _render_common_docs_form(structure, prefix)
+
+    payload: dict[str, object] = {
         "structure": structure,
         "statuts_type": statuts_type,
         "denomination": denomination,
@@ -152,22 +173,85 @@ def render_civil_form(structure: str) -> dict[str, object]:
         "signature_date": signature_date,
         "associes": associes,
     }
+    payload.update(common)
+    return payload
+
+
+def _render_common_docs_form(structure: str, prefix: str) -> dict[str, object]:
+    """Saisie du signataire / gerant pour les documents communs du bundle.
+
+    Les statuts collectent deja l'identite de chaque associe ; ces champs
+    additionnels sont ceux que les generateurs communs exigent UNIQUEMENT pour le
+    signataire (DNC : filiation + adresse structuree ; demande d'inscription a
+    l'ordre pour la SCM). Le signataire = premier associe physique.
+    """
+
+    st.markdown("**Signataire / gerant (documents communs)**")
+    col_a, col_b = st.columns(2)
+    nom_pere = _text(col_a, prefix, "signataire_nom_pere", "Nom du pere (declaration)")
+    nom_mere = _text(col_b, prefix, "signataire_nom_mere", "Nom de la mere (declaration)")
+    st.caption("Adresse personnelle du signataire (declaration / procuration)")
+    col_c, col_d, col_e, col_f = st.columns(4)
+    adr_num = _text(col_c, prefix, "signataire_adresse_num", "No")
+    adr_voie = _text(col_d, prefix, "signataire_adresse_voie", "Voie")
+    adr_cp = _text(col_e, prefix, "signataire_adresse_cp", "CP")
+    adr_ville = _text(col_f, prefix, "signataire_adresse_ville", "Ville")
+    col_g, col_h = st.columns(2)
+    fonction = _text(col_g, prefix, "signataire_fonction", "Fonction (ex: gerant)") or "gérant"
+    titre = _text(col_h, prefix, "signataire_titre", "Titre d'affichage") or "Docteur"
+    decision_date = _date_input(prefix, "decision_date", "Date de decision (PV gerant)")
+
+    common: dict[str, object] = {
+        "signataire_nom_pere": nom_pere,
+        "signataire_nom_mere": nom_mere,
+        "signataire_adresse_num": adr_num,
+        "signataire_adresse_voie": adr_voie,
+        "signataire_adresse_cp": adr_cp,
+        "signataire_adresse_ville": adr_ville,
+        "signataire_fonction": fonction,
+        "signataire_titre": titre,
+        "decision_date": decision_date,
+    }
+
+    if structure == "SCM":
+        st.markdown("Ordre professionnel (demande d'inscription)")
+        col_i, col_j = st.columns(2)
+        ordre_conseil = _text(col_i, prefix, "ordre_conseil", "Conseil departemental")
+        ordre_dep = _text(col_j, prefix, "ordre_departement", "Departement ordre")
+        col_k, col_l, col_m = st.columns(3)
+        ordre_ligne = _text(col_k, prefix, "ordre_adresse_ligne_1", "Adresse ordre")
+        ordre_cp = _text(col_l, prefix, "ordre_cp", "CP ordre")
+        ordre_ville = _text(col_m, prefix, "ordre_ville", "Ville ordre")
+        ordre_numero = _text(st, prefix, "ordre_numero", "Numero d'inscription")
+        common.update(
+            {
+                "ordre_conseil": ordre_conseil,
+                "ordre_departement": ordre_dep,
+                "ordre_adresse_ligne_1": ordre_ligne,
+                "ordre_cp": ordre_cp,
+                "ordre_ville": ordre_ville,
+                "ordre_numero": ordre_numero,
+            }
+        )
+    return common
 
 
 def build_civil_plan(payload: dict[str, object]) -> CivilSlicePlan:
     structure = str(payload["structure"])
     _statuts_type, doc_code = CIVIL_TYPE_BY_STRUCTURE[structure]
+    document_codes = _creation_bundle_codes(structure, doc_code)
     blockers = _validate(payload)
     warnings = (
-        f"{structure} : creation, slice sur patron SELARL. Le moteur valide la coherence "
-        "des parts / du capital.",
+        f"{structure} : bundle de creation (statuts + tronc commun + PV gerant"
+        + (" + demande ordre + satellites SCM" if structure == "SCM" else "")
+        + "). Le moteur valide la coherence des parts / du capital.",
     )
     if blockers:
         return CivilSlicePlan(
             can_generate=False,
             status="blocked",
             reason=blockers[0],
-            document_codes=(doc_code,),
+            document_codes=document_codes,
             blockers=blockers,
             warnings=warnings,
             target_engine_adapter="front_app.civil_statuts_slice",
@@ -175,8 +259,8 @@ def build_civil_plan(payload: dict[str, object]) -> CivilSlicePlan:
     return CivilSlicePlan(
         can_generate=True,
         status="ready",
-        reason=f"Pret pour generation {structure} V1.",
-        document_codes=(doc_code,),
+        reason=f"Pret pour generation {structure} V1 (bundle de creation).",
+        document_codes=document_codes,
         blockers=(),
         warnings=warnings,
         target_engine_adapter="front_app.civil_statuts_slice",
@@ -261,7 +345,58 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:
         roles = {a.role_statutaire for a in associes if isinstance(associes, list)}
         if "commandite" not in roles or "commanditaire" not in roles:
             blockers.append("SCS : au moins un commandite ET un commanditaire requis.")
+    blockers.extend(_validate_common_docs(payload, structure))
     return tuple(dict.fromkeys(blockers))
+
+
+def _validate_common_docs(payload: dict[str, object], structure: str) -> list[str]:
+    """Champs requis par les documents communs du bundle (DNC, procuration, PV)."""
+    blockers: list[str] = []
+    required = (
+        ("signataire_nom_pere", "Nom du pere du signataire requis (declaration)."),
+        ("signataire_nom_mere", "Nom de la mere du signataire requis (declaration)."),
+        ("signataire_adresse_num", "No de voie du signataire requis (declaration)."),
+        ("signataire_adresse_voie", "Voie du signataire requise (declaration)."),
+        ("signataire_adresse_cp", "Code postal du signataire requis (declaration)."),
+        ("signataire_adresse_ville", "Ville du signataire requise (declaration)."),
+    )
+    for field_name, message in required:
+        if not str(payload.get(field_name) or "").strip():
+            blockers.append(message)
+    if payload.get("decision_date") is None:
+        blockers.append("Date de decision requise (PV nomination gerant).")
+    signataire = _signataire_associe(payload)
+    if signataire is not None:
+        for field_name, name in (
+            ("date_naissance", "date de naissance"),
+            ("ville_naissance", "ville de naissance"),
+            ("departement_naissance", "departement de naissance"),
+            ("nationalite", "nationalite"),
+        ):
+            if not str(getattr(signataire, field_name) or "").strip():
+                blockers.append(f"Signataire : {name} requise (documents communs).")
+    if structure == "SCM":
+        ordre_required = (
+            ("ordre_conseil", "Conseil departemental de l'ordre requis (SCM)."),
+            ("ordre_departement", "Departement d'inscription a l'ordre requis (SCM)."),
+            ("ordre_adresse_ligne_1", "Adresse de l'ordre requise (SCM)."),
+            ("ordre_cp", "Code postal de l'ordre requis (SCM)."),
+            ("ordre_ville", "Ville de l'ordre requise (SCM)."),
+        )
+        for field_name, message in ordre_required:
+            if not str(payload.get(field_name) or "").strip():
+                blockers.append(message)
+    return blockers
+
+
+def _signataire_associe(payload: dict[str, object]) -> StatutsCivilsAssocie | None:
+    associes = payload.get("associes") or []
+    if not isinstance(associes, list):
+        return None
+    for associe in associes:
+        if associe.type_personne == "personne_physique":
+            return associe
+    return associes[0] if associes else None
 
 
 def _associe_named(associe: StatutsCivilsAssocie) -> bool:
@@ -282,7 +417,6 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         ville=str(payload.get("siege_ville") or ""),
         adresse_affichee=_siege_display(payload),
     )
-    signataire = _first_physique_or_default(associes)
     capital = str(payload.get("capital_social") or "")
     nb_parts = int(payload.get("nb_parts_total") or 0)
 
@@ -326,23 +460,163 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
     if structure == "SCI IRIS":
         _apply_iris_result_groups(statuts_civils, associes)
 
-    return DocumentGenerationContext(
+    common = _common_docs_input(payload, structure)
+    company = Company(
+        denomination=str(payload.get("denomination") or ""),
+        denomination_courte=str(payload.get("denomination") or ""),
+        forme_sociale=str(payload.get("forme_sociale") or structure),
+        forme_sociale_affichage=structure,
+        forme_juridique=str(payload.get("forme_sociale") or structure),
+        capital=capital,
+        capital_social=capital,
+        capital_variable=True,
+        siege=siege,
+        ville_rcs=str(payload.get("ville_rcs") or ""),
+        nb_parts_total=nb_parts,
+    )
+
+    pv_associes = _pv_associes(associes)
+    ctx = DocumentGenerationContext(
         structure=structure,
-        personne_signataire=signataire,
+        dossier_options=_dossier_options(structure),
+        personne_signataire=cc.founder_person(common),
         signature=Signature(
             lieu=str(payload.get("signature_lieu") or ""),
             date=payload.get("signature_date"),
+            nombre_exemplaires=common.signature_nombre_exemplaires,
         ),
-        societe=Company(
-            denomination=str(payload.get("denomination") or ""),
-            denomination_courte=str(payload.get("denomination") or ""),
-            forme_sociale=str(payload.get("forme_sociale") or structure),
-            siege=siege,
-            ville_rcs=str(payload.get("ville_rcs") or ""),
-        ),
+        societe=company,
+        domiciliation=cc.domiciliation(siege),
         statuts_civils=statuts_civils,
+        mandataire=cc.default_mandataire(),
+        decision=cc.decision_context(common),
+        reunion=cc.reunion_context(common),
+        capital=cc.capital_context(common),
+        dirigeant_nomine=cc.dirigeant_nomine(common),
+        associes=pv_associes,
         metadata={"front_slice": f"track_b_{statuts_type}_v1"},
     )
+    if structure == "SCM":
+        ctx.ordre = cc.ordre_professionnel(common)
+    return ctx
+
+
+def _pv_associes(associes: list[StatutsCivilsAssocie]) -> list:
+    """Associes du PV nomination gerant (TOUS presents, parts = totalite).
+
+    Le PV liste tous les associes presents/representes et exige que la somme de
+    leurs parts egale le capital. On mappe les associes des statuts (sans inventer
+    de donnee) ; une personne morale est rendue par sa denomination.
+    """
+    from sydel_doc_engine.domain.models import Associe
+
+    mapped: list[Associe] = []
+    for associe in associes:
+        nb_parts = (associe.parts.nb if associe.parts else 0) or 0
+        if associe.type_personne == "personne_morale":
+            label = associe.denomination or ""
+            mapped.append(
+                Associe(
+                    genre=Gender.MASCULIN,
+                    civilite_affichage="",
+                    prenom="",
+                    nom=label,
+                    nb_parts=nb_parts,
+                    nb_parts_lettres=number_words_from_value(nb_parts),
+                )
+            )
+            continue
+        mapped.append(
+            Associe(
+                genre=associe.genre or Gender.MASCULIN,
+                civilite_affichage=associe.civilite_affichage or "Monsieur",
+                prenom=associe.prenom or associe.prenoms or "",
+                nom=associe.nom or "",
+                nb_parts=nb_parts,
+                nb_parts_lettres=number_words_from_value(nb_parts),
+                profession=associe.profession or "",
+                profession_reglementee=associe.profession or "",
+            )
+        )
+    return mapped
+
+
+def _dossier_options(structure: str) -> DossierOptions:
+    return DossierOptions(
+        associe_unique=False,
+        scm_satellites=structure == "SCM",
+    )
+
+
+def _common_docs_input(payload: dict[str, object], structure: str) -> cc.CommonDocsInput:
+    signataire = _signataire_associe(payload)
+    profession = ""
+    profession_pluriel = ""
+    genre = Gender.MASCULIN
+    civilite = "Monsieur"
+    prenom = ""
+    nom = ""
+    date_naissance = None
+    ville_naissance = ""
+    departement_naissance = ""
+    nationalite = ""
+    if signataire is not None:
+        genre = signataire.genre or Gender.MASCULIN
+        civilite = signataire.civilite_affichage or "Monsieur"
+        prenom = signataire.prenom or signataire.prenoms or ""
+        nom = signataire.nom or ""
+        profession = signataire.profession or signataire.qualification_principale or ""
+        date_naissance = cc.parse_birth_date(signataire.date_naissance)
+        ville_naissance = signataire.ville_naissance or ""
+        departement_naissance = signataire.departement_naissance or ""
+        nationalite = signataire.nationalite or ""
+    founder = cc.FounderIdentity(
+        genre=genre,
+        civilite=civilite,
+        prenom=prenom,
+        nom=nom,
+        titre_affichage=str(payload.get("signataire_titre") or "Docteur"),
+        fonction_dirigeant=str(payload.get("signataire_fonction") or "gérant"),
+        date_naissance=date_naissance,
+        ville_naissance=ville_naissance,
+        departement_naissance=departement_naissance,
+        nationalite=nationalite,
+        nom_pere=str(payload.get("signataire_nom_pere") or ""),
+        nom_mere=str(payload.get("signataire_nom_mere") or ""),
+        adresse_num_voie=str(payload.get("signataire_adresse_num") or ""),
+        adresse_voie=str(payload.get("signataire_adresse_voie") or ""),
+        adresse_cp=str(payload.get("signataire_adresse_cp") or ""),
+        adresse_ville=str(payload.get("signataire_adresse_ville") or ""),
+        qualification_principale=profession,
+        profession_pluriel=profession_pluriel,
+    )
+    return cc.CommonDocsInput(
+        founder=founder,
+        capital_social=str(payload.get("capital_social") or ""),
+        nb_parts_total=int(payload.get("nb_parts_total") or 0),
+        valeur_nominale_part=str(payload.get("valeur_nominale_part") or ""),
+        siege=cc.CompanyAddress(
+            num_voie=str(payload.get("siege_num") or ""),
+            voie=str(payload.get("siege_voie") or ""),
+            cp=str(payload.get("siege_cp") or ""),
+            ville=str(payload.get("siege_ville") or ""),
+        ),
+        signature_lieu=str(payload.get("signature_lieu") or ""),
+        signature_date=payload.get("signature_date"),
+        decision_date=payload.get("decision_date"),
+        signature_nombre_exemplaires="quatre",
+        ordre=cc.OrdreInput(
+            conseil_departemental_libelle=str(payload.get("ordre_conseil") or ""),
+            departement_inscription=str(payload.get("ordre_departement") or ""),
+            adresse_ligne_1=str(payload.get("ordre_adresse_ligne_1") or ""),
+            cp=str(payload.get("ordre_cp") or ""),
+            ville=str(payload.get("ordre_ville") or ""),
+            numero=str(payload.get("ordre_numero") or ""),
+        ),
+        type_titre="parts sociales",
+    )
+
+
 
 
 def generate_dossier(payload: dict[str, object], output_dir: Path) -> GeneratedDossier:

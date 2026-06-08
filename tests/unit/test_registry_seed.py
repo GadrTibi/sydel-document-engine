@@ -25,6 +25,7 @@ def test_seed_catalog_pv_nomination_gerant_scope_excludes_sas() -> None:
         "SPFPL apport",
         "SCS",
         "SCI",
+        "SCI IRIS",
         "SCM",
     }
     assert "SAS" not in pv_document.structures

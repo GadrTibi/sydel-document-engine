@@ -22,15 +22,20 @@ from sydel_doc_engine.app.ui_runtime import (
 from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import (
     Address,
+    ApportTitres,
     CapitalSouscripteur,
     CapitalSouscription,
     CessionBanque,
+    Company,
     DepotFonds,
     DocumentGenerationContext,
+    Domiciliation,
     DossierOptions,
     ExerciceSocial,
     Person,
+    RemunerationPresident,
     Signature,
+    SocieteCible,
     SocieteSpfpl,
     SpfplConjoint,
     SpfplOrdre,
@@ -38,6 +43,7 @@ from sydel_doc_engine.domain.models import (
     StatutsPresident,
     StatutsSas,
 )
+from sydel_doc_engine.front_app import common_creation as cc
 from sydel_doc_engine.front_app.field_derivations import (
     derive_gender_from_civilite,
     format_french_date,
@@ -48,6 +54,21 @@ from sydel_doc_engine.front_app.field_derivations import (
 STRUCTURE = "SAS"
 DOC_CODE = "DOC-015"
 PREFIX = "sas"
+
+# Bundle de creation SAS / SPFPL medecins (canon) : statuts + tronc commun
+# (DNC / domiciliation / procuration) + attestation sur le capital / liste des
+# souscripteurs (DOC-024, rendu une seule fois) + PV remuneration president
+# (DOC-023). La SAS V1 = actionnaire unique medecin, president non remunere
+# jusqu'a la cloture du premier exercice (seul cas couvert par la source).
+SAS_DOC_STATUTS = "DOC-015"
+SAS_DOC_ATTESTATION_CAPITAL = "DOC-024"
+SAS_DOC_PV_REMUNERATION = "DOC-023"
+SAS_BUNDLE_CODES: tuple[str, ...] = (
+    SAS_DOC_STATUTS,
+    *cc.TRONC_COMMUN_CODES,
+    SAS_DOC_ATTESTATION_CAPITAL,
+    SAS_DOC_PV_REMUNERATION,
+)
 
 
 @dataclass(frozen=True)
@@ -67,10 +88,19 @@ def render_sas_form() -> dict[str, object]:
     col_a, col_b = st.columns(2)
     denomination = _t(col_a, "denomination", "Denomination")
     siege = _t(col_b, "siege", "Siege (adresse affichee)")
+    st.caption("Siege social (adresse structuree, pour la domiciliation / procuration)")
+    col_sa, col_sb, col_sc, col_sd = st.columns(4)
+    siege_num = _t(col_sa, "siege_num", "No")
+    siege_voie = _t(col_sb, "siege_voie", "Voie")
+    siege_cp = _t(col_sc, "siege_cp", "CP")
+    siege_ville = _t(col_sd, "siege_ville", "Ville")
     col_c, col_d, col_e = st.columns(3)
     capital = _t(col_c, "capital_social", "Capital social")
     nb_actions = _i(col_d, "nb_actions_total", "Nombre total d'actions")
     valeur_action = _t(col_e, "valeur_nominale_action", "Valeur nominale d'une action")
+    col_an, col_ai = st.columns(2)
+    apports_nature = _t(col_an, "apports_nature_montant", "Apports en nature (montant)")
+    apports_numeraire = _t(col_ai, "apports_numeraire_montant", "Apports en numeraire (montant)")
 
     st.markdown("**Actionnaire unique / president (medecin, marie(e))**")
     col_f, col_g, col_h = st.columns(3)
@@ -96,6 +126,17 @@ def render_sas_form() -> dict[str, object]:
     nationalite = _t(col_n, "nationalite", "Nationalite")
     regime = _t(col_o, "regime_matrimonial", "Regime matrimonial (ex: la communaute legale)")
     adresse_perso = _t(st, "adresse", "Adresse personnelle (affichee)")
+    st.caption("Adresse personnelle structuree + filiation (declaration de non-condamnation)")
+    col_aa, col_ab, col_ac, col_ad = st.columns(4)
+    adresse_num = _t(col_aa, "adresse_num", "No")
+    adresse_voie = _t(col_ab, "adresse_voie", "Voie")
+    adresse_cp = _t(col_ac, "adresse_cp", "CP")
+    adresse_ville = _t(col_ad, "adresse_ville", "Ville")
+    col_ae, col_af, col_ag = st.columns(3)
+    nom_pere = _t(col_ae, "nom_pere", "Nom du pere")
+    nom_mere = _t(col_af, "nom_mere", "Nom de la mere")
+    with col_ag:
+        date_naissance_iso = _date(PREFIX, "date_naissance_iso", "Date naissance (JJ/MM/AAAA)")
 
     st.markdown("Conjoint")
     col_p, col_q, col_r = st.columns(3)
@@ -113,6 +154,16 @@ def render_sas_form() -> dict[str, object]:
     numero_ordre = _t(col_t, "numero_ordre", "Numero ordre")
     numero_rpps = _t(col_u, "numero_rpps", "Numero RPPS")
 
+    st.markdown("**Societe cible (participations apportees en nature)**")
+    col_ca, col_cb = st.columns(2)
+    cible_denomination = _t(col_ca, "cible_denomination", "Denomination cible")
+    cible_forme = _t(col_cb, "cible_forme", "Forme sociale cible")
+    cible_siege = _t(st, "cible_siege", "Siege cible (affiche)")
+    col_cc, col_cd, col_ce = st.columns(3)
+    cible_ville_rcs = _t(col_cc, "cible_ville_rcs", "RCS cible (ville)")
+    cible_numero_rcs = _t(col_cd, "cible_numero_rcs", "Numero RCS cible")
+    apport_nb_parts = _i(col_ce, "apport_nb_parts", "Parts cible apportees")
+
     st.markdown("**Depot / exercice / signature**")
     col_v, col_w = st.columns(2)
     banque_nom = _t(col_v, "banque_nom", "Banque depot")
@@ -126,26 +177,45 @@ def render_sas_form() -> dict[str, object]:
     return {
         "denomination": denomination,
         "siege": siege,
+        "siege_num": siege_num,
+        "siege_voie": siege_voie,
+        "siege_cp": siege_cp,
+        "siege_ville": siege_ville,
         "capital_social": capital,
         "nb_actions_total": nb_actions,
         "valeur_nominale_action": valeur_action,
+        "apports_nature_montant": apports_nature,
+        "apports_numeraire_montant": apports_numeraire,
         "civilite": civilite,
         "prenom": prenom,
         "nom": nom,
         "genre": derive_gender_from_civilite(genre_label),
         "qualification_principale": qualification,
         "date_naissance": date_naissance,
+        "date_naissance_iso": date_naissance_iso,
         "ville_naissance": ville_naissance,
         "departement_naissance": departement_naissance,
         "nationalite": nationalite,
         "regime_matrimonial": regime,
         "adresse": adresse_perso,
+        "adresse_num": adresse_num,
+        "adresse_voie": adresse_voie,
+        "adresse_cp": adresse_cp,
+        "adresse_ville": adresse_ville,
+        "nom_pere": nom_pere,
+        "nom_mere": nom_mere,
         "conjoint_civilite": conjoint_civilite,
         "conjoint_prenom": conjoint_prenom,
         "conjoint_nom": conjoint_nom,
         "ordre_departement": ordre_departement,
         "numero_ordre": numero_ordre,
         "numero_rpps": numero_rpps,
+        "cible_denomination": cible_denomination,
+        "cible_forme": cible_forme,
+        "cible_siege": cible_siege,
+        "cible_ville_rcs": cible_ville_rcs,
+        "cible_numero_rcs": cible_numero_rcs,
+        "apport_nb_parts": apport_nb_parts,
         "banque_nom": banque_nom,
         "signature_lieu": signature_lieu,
         "exercice_debut": exercice_debut,
@@ -158,23 +228,23 @@ def render_sas_form() -> dict[str, object]:
 def build_sas_plan(payload: dict[str, object]) -> SasSlicePlan:
     blockers = _validate(payload)
     warnings = (
-        "SAS V1 = SPFPL medecins, actionnaire unique marie(e). Wording feminin / non marie "
-        "verrouille par la source (bloque par le moteur).",
+        "SAS V1 = SPFPL medecins, actionnaire unique marie(e). Bundle de creation : statuts "
+        "+ tronc commun + attestation capital + PV remuneration president (non remunere V1).",
     )
     if blockers:
         return SasSlicePlan(
             can_generate=False,
             status="blocked",
             reason=blockers[0],
-            document_codes=(DOC_CODE,),
+            document_codes=SAS_BUNDLE_CODES,
             blockers=blockers,
             warnings=warnings,
         )
     return SasSlicePlan(
         can_generate=True,
         status="ready",
-        reason="Pret pour generation SAS / SPFPL medecins V1.",
-        document_codes=(DOC_CODE,),
+        reason="Pret pour generation SAS / SPFPL medecins V1 (bundle de creation).",
+        document_codes=SAS_BUNDLE_CODES,
         blockers=(),
         warnings=warnings,
     )
@@ -207,13 +277,44 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:
         ("exercice_fin", "Fin d'exercice requise."),
         ("date_cloture", "Cloture du premier exercice requise."),
     )
+    required += (
+        ("siege_num", "No de voie du siege requis (domiciliation)."),
+        ("siege_voie", "Voie du siege requise (domiciliation)."),
+        ("siege_cp", "Code postal du siege requis (domiciliation)."),
+        ("siege_ville", "Ville du siege requise (domiciliation)."),
+        ("adresse_num", "No de voie personnel requis (declaration)."),
+        ("adresse_voie", "Voie personnelle requise (declaration)."),
+        ("adresse_cp", "Code postal personnel requis (declaration)."),
+        ("adresse_ville", "Ville personnelle requise (declaration)."),
+        ("nom_pere", "Nom du pere requis (declaration)."),
+        ("nom_mere", "Nom de la mere requis (declaration)."),
+        ("apports_nature_montant", "Montant des apports en nature requis (attestation capital)."),
+        (
+            "apports_numeraire_montant",
+            "Montant des apports en numeraire requis (attestation capital).",
+        ),
+        ("cible_denomination", "Denomination de la societe cible requise (attestation capital)."),
+        ("cible_forme", "Forme de la societe cible requise (attestation capital)."),
+        ("cible_siege", "Siege de la societe cible requis (attestation capital)."),
+        ("cible_ville_rcs", "RCS (ville) de la societe cible requis (attestation capital)."),
+        ("cible_numero_rcs", "Numero RCS de la societe cible requis (attestation capital)."),
+    )
     for field, message in required:
         if not str(payload.get(field) or "").strip():
             blockers.append(message)
     if int(payload.get("nb_actions_total") or 0) < 1:
         blockers.append("Nombre total d'actions requis et superieur a zero.")
+    if int(payload.get("apport_nb_parts") or 0) < 1:
+        blockers.append("Nombre de parts cible apportees requis (attestation capital).")
     if payload.get("signature_date") is None:
         blockers.append("Date de signature requise.")
+    if payload.get("date_naissance_iso") is None:
+        blockers.append("Date de naissance (JJ/MM/AAAA) requise (declaration).")
+    if (payload.get("genre") or Gender.MASCULIN) != Gender.MASCULIN:
+        blockers.append(
+            "SAS V1 : le PV de remuneration president est verrouille au president masculin "
+            "par la source ; actionnaire feminin hors perimetre."
+        )
     return tuple(dict.fromkeys(blockers))
 
 
@@ -227,6 +328,7 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         nom=str(payload.get("nom") or ""),
         genre=payload.get("genre") or Gender.MASCULIN,
         profession=profession,
+        qualite_associe="actionnaire unique",
         qualification_principale=str(payload.get("qualification_principale") or ""),
         date_naissance=str(payload.get("date_naissance") or ""),
         ville_naissance=str(payload.get("ville_naissance") or ""),
@@ -247,22 +349,66 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         ),
         nb_actions=nb_actions,
     )
+    siege_struct = Address(
+        num_voie=str(payload.get("siege_num") or ""),
+        voie=str(payload.get("siege_voie") or ""),
+        cp=str(payload.get("siege_cp") or ""),
+        ville=str(payload.get("siege_ville") or ""),
+        adresse_affichee=str(payload.get("siege") or "")
+        or _siege_display(payload),
+    )
+    adresse_perso = Address(
+        num_voie=str(payload.get("adresse_num") or ""),
+        voie=str(payload.get("adresse_voie") or ""),
+        cp=str(payload.get("adresse_cp") or ""),
+        ville=str(payload.get("adresse_ville") or ""),
+        adresse_affichee=str(payload.get("adresse") or ""),
+    )
+    apports_nature = str(payload.get("apports_nature_montant") or "")
+    apports_numeraire = str(payload.get("apports_numeraire_montant") or "")
     return DocumentGenerationContext(
         structure="SAS",
-        dossier_options=DossierOptions(associe_unique=True),
+        dossier_options=DossierOptions(associe_unique=True, apport=True),
         personne_signataire=Person(
             genre=payload.get("genre") or Gender.MASCULIN,
             civilite=str(payload.get("civilite") or "Monsieur"),
             prenom=str(payload.get("prenom") or ""),
             nom=str(payload.get("nom") or ""),
+            titre_affichage=str(payload.get("civilite") or "Docteur"),
+            adresse_perso=adresse_perso,
+            adresse_personnelle_affichee=adresse_perso.adresse_affichee,
+            date_naissance=payload.get("date_naissance_iso"),
+            ville_naissance=str(payload.get("ville_naissance") or ""),
+            nationalite=str(payload.get("nationalite") or ""),
+            nom_pere=str(payload.get("nom_pere") or ""),
+            nom_mere=str(payload.get("nom_mere") or ""),
+            fonction_dirigeant="président",
+            qualification_principale=str(payload.get("qualification_principale") or ""),
         ),
         signature=Signature(
             lieu=str(payload.get("signature_lieu") or ""),
             date=payload.get("signature_date"),
+            nombre_exemplaires="trois",
         ),
         statuts_sas=StatutsSas(type="spfpl_medecins", profession=profession),
+        societe=Company(
+            forme_sociale="SAS",
+            forme_sociale_affichage="SAS",
+            denomination=str(payload.get("denomination") or ""),
+            denomination_courte=str(payload.get("denomination") or ""),
+            capital=capital,
+            capital_social=capital,
+            capital_variable=True,
+            siege=siege_struct,
+            ville_rcs=str(payload.get("siege_ville") or ""),
+        ),
+        domiciliation=Domiciliation(
+            adresse_domiciliation_affichee=siege_struct.adresse_affichee,
+        ),
+        mandataire=cc.default_mandataire(),
         societe_spfpl=SocieteSpfpl(
             denomination=str(payload.get("denomination") or ""),
+            forme_sociale="Société par actions simplifiée",
             capital_social=capital,
             capital_social_lettres=number_words_from_value(capital),
             nb_actions_total=nb_actions,
@@ -275,7 +421,8 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
             if number_words_from_value(payload.get("valeur_nominale_action"))
             else str(payload.get("valeur_nominale_action") or ""),
             profession=profession,
-            siege=Address(adresse_affichee=str(payload.get("siege") or "")),
+            ville_rcs=str(payload.get("siege_ville") or ""),
+            siege=siege_struct,
         ),
         actionnaire_unique=actionnaire,
         president=StatutsPresident(
@@ -283,9 +430,22 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
             civilite_affichage=str(payload.get("civilite") or "Docteur"),
             prenom=str(payload.get("prenom") or ""),
             nom=str(payload.get("nom") or ""),
-            adresse_personnelle_affichee=str(payload.get("adresse") or ""),
+            fonction="Président",
+            adresse_personnelle_affichee=adresse_perso.adresse_affichee,
             duree_mandat="illimitee",
         ),
+        remuneration_president=RemunerationPresident(
+            type="absence_remuneration",
+            date_fin_non_remuneree=str(payload.get("date_cloture") or ""),
+        ),
+        societe_cible=SocieteCible(
+            denomination=str(payload.get("cible_denomination") or ""),
+            forme_sociale=str(payload.get("cible_forme") or ""),
+            siege=Address(adresse_affichee=str(payload.get("cible_siege") or "")),
+            ville_rcs=str(payload.get("cible_ville_rcs") or ""),
+            numero_rcs=str(payload.get("cible_numero_rcs") or ""),
+        ),
+        apport_titres=ApportTitres(nb_parts=int(payload.get("apport_nb_parts") or 0)),
         depot_fonds=DepotFonds(
             banque=CessionBanque(nom=str(payload.get("banque_nom") or "")),
             montant=capital,
@@ -298,14 +458,15 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         capital_souscription=CapitalSouscription(
             nb_actions_total=nb_actions,
             valeur_nominale_action=str(payload.get("valeur_nominale_action") or ""),
-            apports_numeraire_montant=capital,
+            apports_nature_montant=apports_nature,
+            apports_numeraire_montant=apports_numeraire,
             souscripteurs=[
                 CapitalSouscripteur(
                     civilite_affichage=str(payload.get("civilite") or "Docteur"),
                     prenom=str(payload.get("prenom") or ""),
                     nom=str(payload.get("nom") or ""),
                     profession=profession,
-                    adresse_personnelle_affichee=str(payload.get("adresse") or ""),
+                    adresse_personnelle_affichee=adresse_perso.adresse_affichee,
                     nb_actions=nb_actions,
                     qualite="actionnaire unique",
                 )
@@ -313,6 +474,13 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         ),
         metadata={"front_slice": "track_b_sas_spfpl_medecins_v1"},
     )
+
+
+def _siege_display(payload: dict[str, object]) -> str:
+    return (
+        f"{payload.get('siege_num', '')} {payload.get('siege_voie', '')}, "
+        f"{payload.get('siege_cp', '')} {payload.get('siege_ville', '')}"
+    ).strip(" ,")
 
 
 def generate_dossier(payload: dict[str, object], output_dir: Path) -> GeneratedDossier:

@@ -126,7 +126,7 @@ def _pm(nb, debut, fin, apport, prof="chirurgien-dentiste"):
 
 
 def _civil_base(structure, statuts_type, associes):
-    return {
+    payload = {
         "structure": structure,
         "statuts_type": statuts_type,
         "denomination": f"{structure} EXEMPLE",
@@ -146,10 +146,48 @@ def _civil_base(structure, statuts_type, associes):
         "signature_lieu": "Paris",
         "signature_date": date(2026, 5, 15),
         "associes": associes,
+        # Documents communs (DNC / procuration / PV gerant) : signataire = 1er physique.
+        "signataire_nom_pere": "Pierre Durand",
+        "signataire_nom_mere": "Anne Durand",
+        "signataire_adresse_num": "1",
+        "signataire_adresse_voie": "rue Exemple",
+        "signataire_adresse_cp": "75000",
+        "signataire_adresse_ville": "Paris",
+        "signataire_fonction": "gerant",
+        "signataire_titre": "Docteur",
+        "decision_date": date(2026, 5, 15),
     }
+    if structure == "SCM":
+        payload.update(
+            {
+                "ordre_conseil": "Conseil departemental",
+                "ordre_departement": "75",
+                "ordre_adresse_ligne_1": "1 rue de l'Ordre",
+                "ordre_cp": "75008",
+                "ordre_ville": "Paris",
+                "ordre_numero": "ORD-1",
+            }
+        )
+    return payload
 
 
 # --- Generation par type (smoke, 0 placeholder residuel) ----------------------
+
+
+def _assert_bundle_clean(generated, expected_names) -> None:
+    names = {p.name for p in generated.docx_paths}
+    assert expected_names <= names
+    for path in generated.docx_paths:
+        _assert_clean(_docx_text(path))
+
+
+# Tronc commun present dans CHAQUE bundle de creation.
+_TRONC_DOCS = {
+    "declaration_non_condamnation.docx",
+    "autorisation_domiciliation.docx",
+    "procuration.docx",
+    "pv_nomination_gerant.docx",
+}
 
 
 def test_sci_slice_generates_clean(tmp_path: Path) -> None:
@@ -160,11 +198,9 @@ def test_sci_slice_generates_clean(tmp_path: Path) -> None:
     )
     plan = css.build_civil_plan(payload)
     assert plan.can_generate is True
-    assert plan.document_codes == ("DOC-020",)
+    assert plan.document_codes == ("DOC-020", "DOC-001", "DOC-002", "DOC-003", "DOC-004")
     generated = css.generate_dossier(payload, tmp_path / "sci")
-    names = {p.name for p in generated.docx_paths}
-    assert "statuts_sci.docx" in names
-    _assert_clean(_docx_text(generated.docx_paths[0]))
+    _assert_bundle_clean(generated, _TRONC_DOCS | {"statuts_sci.docx"})
 
 
 def test_scm_slice_generates_clean(tmp_path: Path) -> None:
@@ -175,10 +211,19 @@ def test_scm_slice_generates_clean(tmp_path: Path) -> None:
     )
     plan = css.build_civil_plan(payload)
     assert plan.can_generate is True
-    assert plan.document_codes == ("DOC-025",)
+    assert plan.document_codes == (
+        "DOC-025",
+        "DOC-001",
+        "DOC-002",
+        "DOC-003",
+        "DOC-004",
+        "DOC-034",
+    )
     generated = css.generate_dossier(payload, tmp_path / "scm")
-    assert "statuts_scm.docx" in {p.name for p in generated.docx_paths}
-    _assert_clean(_docx_text(generated.docx_paths[0]))
+    _assert_bundle_clean(
+        generated,
+        _TRONC_DOCS | {"statuts_scm.docx", "demande_inscription_ordre.docx"},
+    )
 
 
 def test_scs_slice_generates_clean(tmp_path: Path) -> None:
@@ -192,10 +237,9 @@ def test_scs_slice_generates_clean(tmp_path: Path) -> None:
     )
     plan = css.build_civil_plan(payload)
     assert plan.can_generate is True
-    assert plan.document_codes == ("DOC-019",)
+    assert plan.document_codes == ("DOC-019", "DOC-001", "DOC-002", "DOC-003", "DOC-004")
     generated = css.generate_dossier(payload, tmp_path / "scs")
-    assert "statuts_scs.docx" in {p.name for p in generated.docx_paths}
-    _assert_clean(_docx_text(generated.docx_paths[0]))
+    _assert_bundle_clean(generated, _TRONC_DOCS | {"statuts_scs.docx"})
 
 
 def test_sci_iris_slice_generates_clean(tmp_path: Path) -> None:
@@ -206,10 +250,9 @@ def test_sci_iris_slice_generates_clean(tmp_path: Path) -> None:
     )
     plan = css.build_civil_plan(payload)
     assert plan.can_generate is True
-    assert plan.document_codes == ("DOC-021",)
+    assert plan.document_codes == ("DOC-021", "DOC-001", "DOC-002", "DOC-003", "DOC-004")
     generated = css.generate_dossier(payload, tmp_path / "iris")
-    assert "statuts_sci_iris.docx" in {p.name for p in generated.docx_paths}
-    _assert_clean(_docx_text(generated.docx_paths[0]))
+    _assert_bundle_clean(generated, _TRONC_DOCS | {"statuts_sci_iris.docx"})
 
 
 def test_sci_blocks_personne_morale() -> None:
@@ -234,26 +277,45 @@ def _sas_payload():
     return {
         "denomination": "SPFPL MARTIN",
         "siege": "10 rue de la Paix, 75002 Paris",
+        "siege_num": "10",
+        "siege_voie": "rue de la Paix",
+        "siege_cp": "75002",
+        "siege_ville": "Paris",
         "capital_social": "12000",
         "nb_actions_total": 120,
         "valeur_nominale_action": "100",
+        "apports_nature_montant": "10000",
+        "apports_numeraire_montant": "2000",
         "civilite": "Docteur",
         "prenom": "Camille",
         "nom": "Martin",
         "genre": Gender.MASCULIN,
         "qualification_principale": "Medecin cardiologue",
         "date_naissance": "2 janvier 1980",
+        "date_naissance_iso": date(1980, 1, 2),
         "ville_naissance": "Paris",
         "departement_naissance": "75",
         "nationalite": "francaise",
         "regime_matrimonial": "la communaute legale",
         "adresse": "5 rue Royale, 75008 Paris",
+        "adresse_num": "5",
+        "adresse_voie": "rue Royale",
+        "adresse_cp": "75008",
+        "adresse_ville": "Paris",
+        "nom_pere": "Pierre Martin",
+        "nom_mere": "Anne Martin",
         "conjoint_civilite": "Madame",
         "conjoint_prenom": "Alice",
         "conjoint_nom": "Martin",
         "ordre_departement": "Paris",
         "numero_ordre": "12345",
         "numero_rpps": "10000000001",
+        "cible_denomination": "SELARL CABINET MARTIN",
+        "cible_forme": "SELARL",
+        "cible_siege": "12 avenue des Ternes, 75017 Paris",
+        "cible_ville_rcs": "Paris",
+        "cible_numero_rcs": "900 000 001",
+        "apport_nb_parts": 50,
         "banque_nom": "BANQUE EXEMPLE",
         "signature_lieu": "Paris",
         "exercice_debut": "1er janvier",
@@ -267,10 +329,19 @@ def test_sas_slice_generates_clean(tmp_path: Path) -> None:
     payload = _sas_payload()
     plan = sas_slice.build_sas_plan(payload)
     assert plan.can_generate is True
-    assert plan.document_codes == ("DOC-015",)
+    assert plan.document_codes == ("DOC-015", "DOC-001", "DOC-002", "DOC-003", "DOC-024", "DOC-023")
     generated = sas_slice.generate_dossier(payload, tmp_path / "sas")
-    assert "statuts_sas_spfpl_medecins.docx" in {p.name for p in generated.docx_paths}
-    _assert_clean(_docx_text(generated.docx_paths[0]))
+    _assert_bundle_clean(
+        generated,
+        {
+            "statuts_sas_spfpl_medecins.docx",
+            "declaration_non_condamnation.docx",
+            "autorisation_domiciliation.docx",
+            "procuration.docx",
+            "attestation_capital_liste_souscripteurs_sas.docx",
+            "pv_remuneration_president.docx",
+        },
+    )
 
 
 def _spfpl_payload(structure):
@@ -294,12 +365,28 @@ def _spfpl_payload(structure):
         "nationalite": "francaise",
         "regime_matrimonial": "la communaute legale",
         "adresse": "5 rue Royale, 75008 Paris",
+        "adresse_num": "5",
+        "adresse_voie": "rue Royale",
+        "adresse_cp": "75008",
+        "adresse_ville": "Paris",
+        "nom_pere": "Pierre Martin",
+        "nom_mere": "Anne Martin",
+        "decision_date": date(2026, 5, 14),
+        "siege_num": "10",
+        "siege_voie": "rue de la Paix",
+        "siege_cp": "75002",
+        "siege_ville": "Paris",
+        "ville_rcs": "Paris",
         "conjoint_civilite": "Madame",
         "conjoint_prenom": "Alice",
         "conjoint_nom": "Martin",
         "ordre_departement": "Paris",
         "numero_ordre": "12345",
         "numero_rpps": "10000000001",
+        "ordre_conseil": "Conseil departemental",
+        "ordre_adresse_ligne_1": "1 rue de l'Ordre",
+        "ordre_cp": "75008",
+        "ordre_ville": "Paris",
         "banque_nom": "BANQUE EXEMPLE",
         "banque_adresse": "1 boulevard Haussmann, 75009 Paris",
         "apport_montant": "60000",
@@ -318,24 +405,31 @@ def _spfpl_payload(structure):
     }
 
 
+_SPFPL_BUNDLE_TRONC = {
+    "declaration_non_condamnation.docx",
+    "autorisation_domiciliation.docx",
+    "procuration.docx",
+    "pv_nomination_gerant.docx",
+    "demande_inscription_ordre.docx",
+}
+
+
 def test_spfpl_cession_slice_generates_clean(tmp_path: Path) -> None:
     payload = _spfpl_payload("SPFPL cession")
     plan = spfpl_slice.build_spfpl_plan(payload)
     assert plan.can_generate is True
-    assert plan.document_codes == ("DOC-035",)
+    assert plan.document_codes == ("DOC-035", "DOC-001", "DOC-002", "DOC-003", "DOC-004", "DOC-034")
     generated = spfpl_slice.generate_dossier(payload, tmp_path / "spfpl-cession")
-    assert "statuts_spfpl_cession.docx" in {p.name for p in generated.docx_paths}
-    _assert_clean(_docx_text(generated.docx_paths[0]))
+    _assert_bundle_clean(generated, _SPFPL_BUNDLE_TRONC | {"statuts_spfpl_cession.docx"})
 
 
 def test_spfpl_apport_slice_generates_clean(tmp_path: Path) -> None:
     payload = _spfpl_payload("SPFPL apport")
     plan = spfpl_slice.build_spfpl_plan(payload)
     assert plan.can_generate is True
-    assert plan.document_codes == ("DOC-036",)
+    assert plan.document_codes == ("DOC-036", "DOC-001", "DOC-002", "DOC-003", "DOC-004", "DOC-034")
     generated = spfpl_slice.generate_dossier(payload, tmp_path / "spfpl-apport")
-    assert "statuts_spfpl_apport.docx" in {p.name for p in generated.docx_paths}
-    _assert_clean(_docx_text(generated.docx_paths[0]))
+    _assert_bundle_clean(generated, _SPFPL_BUNDLE_TRONC | {"statuts_spfpl_apport.docx"})
 
 
 def _selas_payload():
@@ -384,6 +478,10 @@ def _selas_payload():
     return {
         "denomination": "SELAS EXEMPLE",
         "siege": "5 place du Centre, 69000 Lyon",
+        "siege_num": "5",
+        "siege_voie": "place du Centre",
+        "siege_cp": "69000",
+        "siege_ville": "Lyon",
         "profession_reglementee": "médecin",
         "profession_reglementee_pluriel": "médecins",
         "capital_social": "1000",
@@ -397,6 +495,23 @@ def _selas_payload():
         "signature_lieu": "Lyon",
         "signature_date": date(2026, 5, 15),
         "associes": [phys, mor],
+        # Documents communs : signataire = president (1er physique).
+        "signataire_nom_pere": "Pierre Durand",
+        "signataire_nom_mere": "Anne Durand",
+        "signataire_adresse_num": "10",
+        "signataire_adresse_voie": "rue Exemple",
+        "signataire_adresse_cp": "69000",
+        "signataire_adresse_ville": "Lyon",
+        "signataire_nationalite": "française",
+        "signataire_titre": "Docteur",
+        "signataire_date_naissance": date(1980, 1, 1),
+        "decision_date": date(2026, 5, 15),
+        "ordre_conseil": "Conseil departemental",
+        "ordre_departement": "Rhône",
+        "ordre_adresse_ligne_1": "1 rue de l'Ordre",
+        "ordre_cp": "69002",
+        "ordre_ville": "Lyon",
+        "ordre_numero": "69-12345",
     }
 
 
@@ -404,10 +519,19 @@ def test_selas_multi_slice_generates_clean(tmp_path: Path) -> None:
     payload = _selas_payload()
     plan = selas_multi_slice.build_selas_plan(payload)
     assert plan.can_generate is True
-    assert plan.document_codes == ("DOC-044",)
+    assert plan.document_codes == ("DOC-044", "DOC-001", "DOC-002", "DOC-003", "DOC-004", "DOC-034")
     generated = selas_multi_slice.generate_dossier(payload, tmp_path / "selas")
-    assert "statuts_selas_multi.docx" in {p.name for p in generated.docx_paths}
-    _assert_clean(_docx_text(generated.docx_paths[0]))
+    _assert_bundle_clean(
+        generated,
+        {
+            "statuts_selas_multi.docx",
+            "declaration_non_condamnation.docx",
+            "autorisation_domiciliation.docx",
+            "procuration.docx",
+            "pv_nomination_gerant.docx",
+            "demande_inscription_ordre.docx",
+        },
+    )
 
 
 def test_selas_blocks_incoherent_actions_sum() -> None:
@@ -483,6 +607,16 @@ def test_front_routes_to_sci_slice_and_generates(tmp_path: Path, monkeypatch) ->
         "sci_date_cloture_premier_exercice": "31 decembre 2026",
         "sci_signature_lieu": "Paris",
         "sci_signature_date": "15/05/2026",
+        # Documents communs (signataire = 1er associe physique).
+        "sci_signataire_nom_pere": "Pierre Durand",
+        "sci_signataire_nom_mere": "Anne Durand",
+        "sci_signataire_adresse_num": "1",
+        "sci_signataire_adresse_voie": "rue Exemple",
+        "sci_signataire_adresse_cp": "75000",
+        "sci_signataire_adresse_ville": "Paris",
+        "sci_signataire_fonction": "gerant",
+        "sci_signataire_titre": "Docteur",
+        "sci_decision_date": "15/05/2026",
     }
     for key, value in society.items():
         set_text(key, value)

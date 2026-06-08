@@ -465,6 +465,7 @@ def test_select_documents_for_sci_iris_includes_dedicated_statuts() -> None:
         "DOC-001",
         "DOC-002",
         "DOC-003",
+        "DOC-004",
         "DOC-021",
         "DOC-022",
     ]

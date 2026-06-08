@@ -22,6 +22,7 @@ PV_NOMINATION_GERANT_STRUCTURES: list[str] = [
     "SPFPL apport",
     "SCS",
     "SCI",
+    "SCI IRIS",
     "SCM",
 ]
 
