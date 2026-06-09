@@ -116,9 +116,14 @@ Détail + routage : `_REUNION_2026-06-09_ALBANE_DAVID.md`.
   - **A3** sélecteur de **dirigeant** SELAS (case « Dirigeant » par associé physique ; rôle = « Président »
     seul, DG/DG délégué en attente wording Rafael ; jamais d'index moral transmis au moteur).
   - **A4** champs **DNC / filiation conditionnels** saisis **sous l'associé coché dirigeant** (défaut documenté).
-  - **399 tests `tests/unit` verts**, lint propre, **zéro régression** SELARL / mono-associé.
+  - **A3/A4 étendus aux CIVILS** (SCI / SCI IRIS / SCS / SCM) : gérant **sélectionnable** parmi les associés
+    physiques + DNC sous le gérant désigné (le moteur ne forçait aucune règle « qui gère » → amélioration stricte).
+  - **Audit « variables mal injectées » (retour réunion #7)** : 2 vrais bugs d'injection **corrigés** — SPFPL
+    apport capital dupliqué (« 60000 € 60000euros »), SAS « Le Docteur Docteur ». 3 coquilles de **modèles
+    source** flaguées Rafael (SCM en-tête « 1000euros », SCS « associé commandités », SELARL RCS/SIRET).
+  - **404 tests `tests/unit` verts**, lint propre, **zéro régression** SELARL / mono-associé.
   - **Reste FLAG Rafael** : wording DG/DG délégué · règle DNC (dirigeant seul vs tous) · satellites SCM >2 ·
-    clauses « parts/gérant » des modèles SAS/SELAS. **A5 base de personnes** = ticket dédié (non démarré).
+    coquilles modèles source (SCM/SCS/SELARL ci-dessus). **A5 base de personnes** = mur data/persistance (décision Gad).
 
 ## Décisions RATIFIÉES (Rafael via Gad, 2026-06-07)
 

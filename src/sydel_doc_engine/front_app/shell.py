@@ -232,12 +232,6 @@ def _prefill_scm_test_data() -> None:
         "scm_date_cloture_premier_exercice": "31 decembre 2026",
         "scm_signature_lieu": "Paris",
         "scm_signature_date": "15/05/2026",
-        "scm_signataire_nom_pere": "Pierre Durand",
-        "scm_signataire_nom_mere": "Anne Durand",
-        "scm_signataire_adresse_num": "1",
-        "scm_signataire_adresse_voie": "rue Exemple",
-        "scm_signataire_adresse_cp": "75000",
-        "scm_signataire_adresse_ville": "Paris",
         "scm_signataire_fonction": "gerant",
         "scm_signataire_titre": "Docteur",
         "scm_decision_date": "15/05/2026",
@@ -284,8 +278,25 @@ def _prefill_scm_test_data() -> None:
             fin=100,
         )
     )
+    values.update(_civil_gerant_dnc_prefill("scm", 0))
     st.session_state.update(values)
     st.session_state.pop(GENERATED_DOSSIER_STATE_KEY, None)
+
+
+def _civil_gerant_dnc_prefill(prefix: str, index: int) -> dict[str, object]:
+    """Coche l'associe `index` comme gerant + sa DNC (filiation/adresse), saisies
+    sous lui (reunion 2026-06-09). Donnees fictives. Le gerant designe alimente
+    les cles signataire_* via _collect_gerant_sig."""
+    p = f"{prefix}_associe_{index}"
+    return {
+        f"{p}_is_dirigeant": True,
+        f"{p}_sig_nom_pere": "Pierre Durand",
+        f"{p}_sig_nom_mere": "Anne Durand",
+        f"{p}_sig_adresse_num": "1",
+        f"{p}_sig_adresse_voie": "rue Exemple",
+        f"{p}_sig_adresse_cp": "75000",
+        f"{p}_sig_adresse_ville": "Paris",
+    }
 
 
 def _civil_society_prefill(
@@ -294,7 +305,8 @@ def _civil_society_prefill(
     denomination: str,
     forme_sociale: str,
 ) -> dict[str, object]:
-    """Cles societe + signataire communes a un dossier civil de test (fictif)."""
+    """Cles societe + documents communs (hors identite du gerant) pour un dossier
+    civil de test (fictif). La filiation/adresse du gerant est saisie sous lui."""
     return {
         f"{prefix}_denomination": denomination,
         f"{prefix}_forme_sociale": forme_sociale,
@@ -312,12 +324,6 @@ def _civil_society_prefill(
         f"{prefix}_date_cloture_premier_exercice": "31 decembre 2026",
         f"{prefix}_signature_lieu": "Paris",
         f"{prefix}_signature_date": "15/05/2026",
-        f"{prefix}_signataire_nom_pere": "Pierre Durand",
-        f"{prefix}_signataire_nom_mere": "Anne Durand",
-        f"{prefix}_signataire_adresse_num": "1",
-        f"{prefix}_signataire_adresse_voie": "rue Exemple",
-        f"{prefix}_signataire_adresse_cp": "75000",
-        f"{prefix}_signataire_adresse_ville": "Paris",
         f"{prefix}_signataire_fonction": "gerant",
         f"{prefix}_signataire_titre": "Docteur",
         f"{prefix}_decision_date": "15/05/2026",
@@ -427,6 +433,7 @@ def _prefill_sci_test_data() -> None:
             adresse="2 rue Exemple, 69000 Lyon", apport="600", nb=60, debut=41, fin=100,
         )
     )
+    values.update(_civil_gerant_dnc_prefill("sci", 0))
     _commit_civil_prefill(values)
 
 
@@ -452,6 +459,8 @@ def _prefill_sci_iris_test_data() -> None:
             adresse="2 rue Exemple, 69000 Lyon", apport="600", nb=60, debut=41, fin=100,
         )
     )
+    # Gerant SCI IRIS = associe physique (index 1 ; l'associe 0 est la personne morale).
+    values.update(_civil_gerant_dnc_prefill("sci_iris", 1))
     _commit_civil_prefill(values)
 
 
@@ -477,6 +486,8 @@ def _prefill_scs_test_data() -> None:
             role="commanditaire",
         )
     )
+    # Gerant SCS = le commandite (associe 0).
+    values.update(_civil_gerant_dnc_prefill("scs", 0))
     _commit_civil_prefill(values)
 
 

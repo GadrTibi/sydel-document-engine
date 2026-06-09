@@ -425,7 +425,7 @@ STATUTS_SPFPL_APPORT_BLOCKS: tuple[str, ...] = (
     "Outre leurs apports, les associés pourront verser ou laisser à disposition de la Société toutes sommes dont elle pourrait avoir besoin. Ces sommes sont inscrites au crédit d'un compte ouvert au nom de l'associé.",
     "Les comptes courants ne doivent jamais être débiteurs et la Société a la faculté d'en rembourser tout ou partie, après avis donné par écrit trois mois à l'avance, sauf stipulation contraire.",
     'ARTICLE 8 - CAPITAL SOCIAL',
-    'Le capital social est fixé à la somme de [montant_apports_nature] € [montant_apports_nature]euros, divisé en [nb_actions] actions de [valeur_nominale_part] ([valeur_nominale_part_lettres]) chacune, entièrement libéré et attribué comme suit :',
+    'Le capital social est fixé à la somme de [montant_apports_nature] euros, divisé en [nb_actions] actions de [valeur_nominale_part] ([valeur_nominale_part_lettres]) chacune, entièrement libéré et attribué comme suit :',
     '- Le Docteur [prenom] [nom]………………………………………….……………..[nb_actions] actions',
     'Total des actions composant le capital social……………………………. [nb_actions] actions',
     'ARTICLE 9 - QUALITE D’ASSOCIE',

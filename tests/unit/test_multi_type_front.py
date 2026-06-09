@@ -510,6 +510,45 @@ def test_scm_three_associes_drops_satellites(tmp_path: Path) -> None:
     )
 
 
+# --- A3/A4 civils : selection du gerant + DNC sous le gerant -------------------
+
+
+def test_civil_gerant_selectable_via_index() -> None:
+    # Le gerant civil peut etre un autre associe physique que le 1er.
+    payload = _civil_base(
+        "SCI",
+        "sci",
+        [_pp("Jean", "Durand", 40, 1, 40, 400), _pp("Alice", "Martin", 60, 41, 100, 600)],
+    )
+    payload["gerant_index"] = 1  # Alice Martin gerante
+    ctx = css.build_generation_context(payload)
+    assert ctx.personne_signataire.nom == "Martin"
+
+
+def test_civil_gerant_defaults_to_first_physique_skipping_morale() -> None:
+    # SCI IRIS : associe 0 = personne morale -> le gerant par defaut = 1er associe
+    # PHYSIQUE (index 1), jamais la personne morale.
+    payload = _civil_base(
+        "SCI IRIS",
+        "sci_iris",
+        [_pm(40, 1, 40, 400), _pp("Alice", "Martin", 60, 41, 100, 600)],
+    )
+    ctx = css.build_generation_context(payload)  # pas de gerant_index
+    assert ctx.personne_signataire.nom == "Martin"
+
+
+def test_civil_gerant_index_morale_falls_back() -> None:
+    # Un gerant_index pointant la personne morale retombe sur le 1er physique.
+    payload = _civil_base(
+        "SCI IRIS",
+        "sci_iris",
+        [_pm(40, 1, 40, 400), _pp("Alice", "Martin", 60, 41, 100, 600)],
+    )
+    payload["gerant_index"] = 0  # pointe la personne morale -> fallback index 1
+    ctx = css.build_generation_context(payload)
+    assert ctx.personne_signataire.nom == "Martin"
+
+
 def _sas_payload():
     return {
         "denomination": "SPFPL MARTIN",
@@ -721,6 +760,37 @@ def test_spfpl_apport_regime_on_adds_regime_docs(tmp_path: Path) -> None:
         generated,
         _SPFPL_BUNDLE_TRONC | {"statuts_spfpl_apport.docx"} | _REGIME_DOCS,
     )
+
+
+# --- Regressions « variables mal injectees » (audit 2026-06-09) ---------------
+
+
+def test_spfpl_apport_capital_not_duplicated(tmp_path: Path) -> None:
+    # Le capital (art. 8) ne doit plus etre injecte en double (« 60000 € 60000euros »).
+    payload = _spfpl_payload("SPFPL apport")
+    generated = spfpl_slice.generate_dossier(payload, tmp_path / "spfpl-apport-cap")
+    text = _docx_text(
+        next(p for p in generated.docx_paths if p.name == "statuts_spfpl_apport.docx")
+    )
+    assert "60000euros" not in text  # plus de « euros » colle
+    assert "€ 60000" not in text  # plus de montant duplique apres le €
+    assert "60000 euros" in text  # forme propre
+
+
+def test_sas_attestation_no_double_docteur(tmp_path: Path) -> None:
+    # Le titre « Docteur » ne doit plus etre injecte en double
+    # (« Le Docteur Docteur Camille Martin »).
+    payload = _sas_payload()
+    generated = sas_slice.generate_dossier(payload, tmp_path / "sas-titre")
+    text = _docx_text(
+        next(
+            p
+            for p in generated.docx_paths
+            if p.name == "attestation_capital_liste_souscripteurs_sas.docx"
+        )
+    )
+    assert "Docteur Docteur" not in text
+    assert "Le Docteur Camille Martin a fait" in text
 
 
 def _selas_payload():
@@ -1130,13 +1200,7 @@ def test_front_routes_to_sci_slice_and_generates(tmp_path: Path, monkeypatch) ->
         "sci_date_cloture_premier_exercice": "31 decembre 2026",
         "sci_signature_lieu": "Paris",
         "sci_signature_date": "15/05/2026",
-        # Documents communs (signataire = 1er associe physique).
-        "sci_signataire_nom_pere": "Pierre Durand",
-        "sci_signataire_nom_mere": "Anne Durand",
-        "sci_signataire_adresse_num": "1",
-        "sci_signataire_adresse_voie": "rue Exemple",
-        "sci_signataire_adresse_cp": "75000",
-        "sci_signataire_adresse_ville": "Paris",
+        # Documents communs (hors identite du gerant : fonction/titre/decision).
         "sci_signataire_fonction": "gerant",
         "sci_signataire_titre": "Docteur",
         "sci_decision_date": "15/05/2026",
@@ -1156,6 +1220,13 @@ def test_front_routes_to_sci_slice_and_generates(tmp_path: Path, monkeypatch) ->
         "sci_associe_0_profession": "medecin",
         "sci_associe_0_adresse": "1 rue Exemple, 75000 Paris",
         "sci_associe_0_apport_montant": "400",
+        # DNC du gerant (associe 0, coche « Dirigeant » par defaut) saisie sous lui.
+        "sci_associe_0_sig_nom_pere": "Pierre Durand",
+        "sci_associe_0_sig_nom_mere": "Anne Durand",
+        "sci_associe_0_sig_adresse_num": "1",
+        "sci_associe_0_sig_adresse_voie": "rue Exemple",
+        "sci_associe_0_sig_adresse_cp": "75000",
+        "sci_associe_0_sig_adresse_ville": "Paris",
         "sci_associe_1_prenom": "Alice",
         "sci_associe_1_nom": "Martin",
         "sci_associe_1_date_naissance": "2 fevrier 1982",

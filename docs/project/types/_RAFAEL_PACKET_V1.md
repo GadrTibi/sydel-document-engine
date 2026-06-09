@@ -86,6 +86,17 @@ fournir, **dossier réel à l'appui**, les exemples précis pour chacun :
 → Action Rafael (réunion) : tester **multi-associés**, créer des **cas concrets**, remonter ces erreurs
 avec exemples. Sans cas précis, on ne corrige pas à l'aveugle.
 
+## Audit proactif « variables mal injectées » (2026-06-09) — FAIT avant test
+J'ai généré les 9 types + scanné les 78 documents. **2 vrais bugs d'injection corrigés sans attendre** :
+SPFPL apport (capital dupliqué « 60000 € 60000euros ») et SAS attestation (« Le Docteur Docteur »). Restent
+**3 coquilles de MODÈLES SOURCE** (≠ injection — le moteur reproduit fidèlement le `.docx`), à valider :
+9. **SCM** — en-tête de couverture « Au capital de [capital_social]euros » : « euros » **collé** (espace
+   manquante) dans `Statuts SCM.docx`. Espacement cosmétique d'en-tête — on corrige le modèle ?
+10. **SCS** — « consentement de tous **les associé commandités** » : faute (« associé » au singulier) **verbatim
+   dans le modèle source** `Statuts_SCS_modele.docx`. Coquille du modèle, pas du moteur — on corrige ?
+11. **SELARL** (acte cession) — « RCS … sous le n° 999 888 777 999 888 777 00012 » : n° RCS et SIRET
+   **juxtaposés** sans label (le SIRET reprend les 9 chiffres du RCS → effet de doublon). Ajouter « SIRET : » ?
+
 ## À relayer à Rafael MAINTENANT
 Une **rétractation** honnête (les docs sont là, mon erreur) — pas une nouvelle liste de demandes.
 Les arbitrages ci-dessus partiront **groupés**, précis, une fois les modèles tokenisés.

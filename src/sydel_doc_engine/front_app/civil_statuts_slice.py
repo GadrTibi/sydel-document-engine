@@ -191,8 +191,10 @@ def render_civil_form(structure: str) -> dict[str, object]:
             nb_defaut=CIVIL_NB_MIN_DEFAUT,
             allow_personne_morale=True,
             role_statutaire_options=role_options,
+            collect_dirigeant=True,
         )
     )
+    gerant_index = _derive_gerant_index(associes, prefix)
 
     common = _render_common_docs_form(structure, prefix)
 
@@ -216,42 +218,33 @@ def render_civil_form(structure: str) -> dict[str, object]:
         "signature_lieu": signature_lieu,
         "signature_date": signature_date,
         "associes": associes,
+        "gerant_index": gerant_index,
     }
     payload.update(common)
+    # La DNC / filiation du gerant (saisie sous l'associe coche) alimente les cles
+    # signataire_* lues par les documents communs.
+    payload.update(_collect_gerant_sig(associes, gerant_index, prefix))
     return payload
 
 
 def _render_common_docs_form(structure: str, prefix: str) -> dict[str, object]:
-    """Saisie du signataire / gerant pour les documents communs du bundle.
+    """Documents communs NON lies a l'identite du gerant.
 
-    Les statuts collectent deja l'identite de chaque associe ; ces champs
-    additionnels sont ceux que les generateurs communs exigent UNIQUEMENT pour le
-    signataire (DNC : filiation + adresse structuree ; demande d'inscription a
-    l'ordre pour la SCM). Le signataire = premier associe physique.
+    Les statuts collectent deja l'identite de chaque associe. La filiation +
+    l'adresse personnelle du gerant (declaration de non-condamnation, procuration)
+    sont desormais saisies SOUS l'associe coche « Dirigeant (gerant) »
+    (reunion 2026-06-09 : champs conditionnels au dirigeant). Ce bloc garde la
+    fonction / le titre d'affichage, la date de decision (PV), l'ordre (SCM) et
+    l'option IS.
     """
 
-    st.markdown("**Signataire / gerant (documents communs)**")
-    col_a, col_b = st.columns(2)
-    nom_pere = _text(col_a, prefix, "signataire_nom_pere", "Nom du pere (declaration)")
-    nom_mere = _text(col_b, prefix, "signataire_nom_mere", "Nom de la mere (declaration)")
-    st.caption("Adresse personnelle du signataire (declaration / procuration)")
-    col_c, col_d, col_e, col_f = st.columns(4)
-    adr_num = _text(col_c, prefix, "signataire_adresse_num", "No")
-    adr_voie = _text(col_d, prefix, "signataire_adresse_voie", "Voie")
-    adr_cp = _text(col_e, prefix, "signataire_adresse_cp", "CP")
-    adr_ville = _text(col_f, prefix, "signataire_adresse_ville", "Ville")
+    st.markdown("**Documents communs (decision, gerant)**")
     col_g, col_h = st.columns(2)
     fonction = _text(col_g, prefix, "signataire_fonction", "Fonction (ex: gerant)") or "gérant"
     titre = _text(col_h, prefix, "signataire_titre", "Titre d'affichage") or "Docteur"
     decision_date = _date_input(prefix, "decision_date", "Date de decision (PV gerant)")
 
     common: dict[str, object] = {
-        "signataire_nom_pere": nom_pere,
-        "signataire_nom_mere": nom_mere,
-        "signataire_adresse_num": adr_num,
-        "signataire_adresse_voie": adr_voie,
-        "signataire_adresse_cp": adr_cp,
-        "signataire_adresse_ville": adr_ville,
         "signataire_fonction": fonction,
         "signataire_titre": titre,
         "decision_date": decision_date,
@@ -522,12 +515,67 @@ def _validate_common_docs(payload: dict[str, object], structure: str) -> list[st
 
 def _signataire_associe(payload: dict[str, object]) -> StatutsCivilsAssocie | None:
     associes = payload.get("associes") or []
-    if not isinstance(associes, list):
+    if not isinstance(associes, list) or not associes:
         return None
-    for associe in associes:
-        if associe.type_personne == "personne_physique":
-            return associe
-    return associes[0] if associes else None
+    return associes[_resolve_gerant_index(payload, associes)]
+
+
+def _resolve_gerant_index(
+    payload: dict[str, object], associes: list[StatutsCivilsAssocie]
+) -> int:
+    """Index du gerant (signataire des documents communs).
+
+    Lit `payload["gerant_index"]` (choix UI) ; tombe sur le 1er associe physique
+    si absent / invalide / pointant une personne morale. Garantit un signataire
+    personne physique (les documents communs decrivent une personne physique).
+    """
+    default_index = next(
+        (i for i, a in enumerate(associes) if a.type_personne == "personne_physique"),
+        0,
+    )
+    raw = payload.get("gerant_index")
+    if raw is None:
+        return default_index
+    try:
+        idx = int(raw)
+    except (TypeError, ValueError):
+        return default_index
+    if 0 <= idx < len(associes) and associes[idx].type_personne == "personne_physique":
+        return idx
+    return default_index
+
+
+def _derive_gerant_index(associes: list[StatutsCivilsAssocie], prefix: str) -> int:
+    """Index du gerant = 1er associe PHYSIQUE coche « Dirigeant (gerant) » ; a
+    defaut, le 1er associe physique (historique). Jamais une personne morale."""
+    for i, associe in enumerate(associes):
+        if associe.type_personne != "personne_physique":
+            continue
+        if bool(st.session_state.get(f"{prefix}_associe_{i}_is_dirigeant")):
+            return i
+    return next(
+        (i for i, a in enumerate(associes) if a.type_personne == "personne_physique"),
+        0,
+    )
+
+
+def _collect_gerant_sig(
+    associes: list[StatutsCivilsAssocie], gerant_index: int, prefix: str
+) -> dict[str, object]:
+    """Filiation + adresse du gerant (saisies sous l'associe coche) -> cles
+    signataire_*. L'identite (nom, naissance, nationalite) vient deja de l'associe
+    via _common_docs_input ; on ne mappe ici que la DNC propre au gerant."""
+    if not (0 <= gerant_index < len(associes)):
+        return {}
+    p = f"{prefix}_associe_{gerant_index}"
+    return {
+        "signataire_nom_pere": str(st.session_state.get(f"{p}_sig_nom_pere") or ""),
+        "signataire_nom_mere": str(st.session_state.get(f"{p}_sig_nom_mere") or ""),
+        "signataire_adresse_num": str(st.session_state.get(f"{p}_sig_adresse_num") or ""),
+        "signataire_adresse_voie": str(st.session_state.get(f"{p}_sig_adresse_voie") or ""),
+        "signataire_adresse_cp": str(st.session_state.get(f"{p}_sig_adresse_cp") or ""),
+        "signataire_adresse_ville": str(st.session_state.get(f"{p}_sig_adresse_ville") or ""),
+    }
 
 
 def _associe_named(associe: StatutsCivilsAssocie) -> bool:

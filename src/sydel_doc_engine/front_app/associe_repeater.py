@@ -46,6 +46,10 @@ class RepeaterConfig:
     role_statutaire_options: tuple[str, ...] = ()  # ex: ("commandite", "commanditaire")
     # Pour les SEL d'exercice (SELAS), on collecte des champs ordinaux + qualite capital.
     collect_exercice_fields: bool = False
+    # Pour les types a gerant (civils) : case « Dirigeant (gerant) » par associe
+    # physique + champs DNC (filiation/adresse) saisis SOUS le gerant designe
+    # (reunion 2026-06-09 : champs conditionnels au dirigeant).
+    collect_dirigeant: bool = False
 
 
 def _count_key(config: RepeaterConfig) -> str:
@@ -164,6 +168,29 @@ def _parts_block(
     return apport, parts, nb_titres
 
 
+def _render_dirigeant_civil(prefix: str, index: int) -> None:
+    """Case « Dirigeant (gerant) » + champs DNC du gerant designe (civils).
+
+    Le gerant est un associe ; on le designe par une case et on saisit SOUS lui
+    les champs de la declaration de non-condamnation (filiation + adresse perso
+    structuree). A defaut, le 1er associe physique est gerant (historique). Les
+    champs ne sont demandes que pour le gerant designe (reunion 2026-06-09).
+    """
+    dirigeant_key = f"{prefix}_is_dirigeant"
+    _seed(dirigeant_key, index == 0)
+    if not st.checkbox("Dirigeant (gerant)", key=dirigeant_key):
+        return
+    st.caption("Declaration de non-condamnation du gerant (filiation + adresse personnelle)")
+    col_a, col_b = st.columns(2)
+    _text(prefix, "sig_nom_pere", "Nom du pere", container=col_a)
+    _text(prefix, "sig_nom_mere", "Nom de la mere", container=col_b)
+    col_c, col_d, col_e, col_f = st.columns(4)
+    _text(prefix, "sig_adresse_num", "No", container=col_c)
+    _text(prefix, "sig_adresse_voie", "Voie", container=col_d)
+    _text(prefix, "sig_adresse_cp", "CP", container=col_e)
+    _text(prefix, "sig_adresse_ville", "Ville", container=col_f)
+
+
 def _render_personne_physique(
     config: RepeaterConfig,
     prefix: str,
@@ -193,6 +220,9 @@ def _render_personne_physique(
     adresse = _text(prefix, "adresse", "Adresse personnelle (affichee)")
 
     apport, parts, _nb = _parts_block(config, prefix, role_statutaire)
+
+    if config.collect_dirigeant:
+        _render_dirigeant_civil(prefix, index)
 
     associe = StatutsCivilsAssocie(
         type_personne="personne_physique",

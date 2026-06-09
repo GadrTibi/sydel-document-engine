@@ -90,7 +90,7 @@ class AttestationCapitalListeSouscripteursSasGenerator:
         add_paragraph(document, f"Apports en numéraire : {data.apports_numeraire_montant}")
         add_paragraph(
             document,
-            f"Le Docteur {data.president_nom} a fait la totalité des apports en nature.",
+            f"Le {data.president_nom} a fait la totalité des apports en nature.",
         )
         add_paragraph(
             document,
