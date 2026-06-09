@@ -57,6 +57,18 @@ CIVIL_TYPE_BY_STRUCTURE: dict[str, tuple[str, str]] = {
     "SCM": ("scm", "DOC-025"),
 }
 
+# Bornes du repeater d'associes par type (A1 : nommees, AUCUN changement de valeur).
+# SCI / SCM : 1 associe minimum ; SCI IRIS / SCS : 2 (structures a deux roles ou
+# exigeant une personne morale). Maximum commun = 6.
+CIVIL_NB_MIN_BY_STRUCTURE: dict[str, int] = {
+    "SCI": 1,
+    "SCM": 1,
+    "SCI IRIS": 2,
+    "SCS": 2,
+}
+CIVIL_NB_MIN_DEFAUT = 2
+CIVIL_NB_MAX_ASSOCIES = 6
+
 # Lettre d'option IS (canon « Si IS ») : conditionnel CREATION pour SCI / SCI IRIS.
 DOC_OPTION_IS = "DOC-022"
 OPTION_IS_STRUCTURES: tuple[str, ...] = ("SCI", "SCI IRIS")
@@ -174,9 +186,9 @@ def render_civil_form(structure: str) -> dict[str, object]:
         RepeaterConfig(
             key_prefix=prefix,
             titre_unite="parts",
-            nb_min=1 if structure in {"SCI", "SCM"} else 2,
-            nb_max=6,
-            nb_defaut=2,
+            nb_min=CIVIL_NB_MIN_BY_STRUCTURE.get(structure, CIVIL_NB_MIN_DEFAUT),
+            nb_max=CIVIL_NB_MAX_ASSOCIES,
+            nb_defaut=CIVIL_NB_MIN_DEFAUT,
             allow_personne_morale=True,
             role_statutaire_options=role_options,
         )

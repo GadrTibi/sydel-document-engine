@@ -382,6 +382,134 @@ def test_civil_blocks_incoherent_parts_sum() -> None:
     assert any("Somme des parts" in b for b in plan.blockers)
 
 
+# --- A2 : preuve multi-associes N (3 et 5) ------------------------------------
+# Le socle multi-N est DEJA cable (repeater 1..6, generateurs iterent sur la
+# liste d'associes). Ces tests PROUVENT qu'il tient a 3 et 5 ; ils ne corrigent
+# rien. Si l'un casse -> bug reel a remonter, pas a patcher a l'aveugle.
+
+
+def _names_in(generated, docx_name: str) -> str:
+    return _docx_text(next(p for p in generated.docx_paths if p.name == docx_name))
+
+
+def test_sci_three_associes_generates_clean(tmp_path: Path) -> None:
+    payload = _civil_base(
+        "SCI",
+        "sci",
+        [
+            _pp("Jean", "Durand", 40, 1, 40, 400),
+            _pp("Alice", "Martin", 30, 41, 70, 300),
+            _pp("Paul", "Petit", 30, 71, 100, 300),
+        ],
+    )
+    plan = css.build_civil_plan(payload)
+    assert plan.can_generate is True
+    assert plan.document_codes == ("DOC-020", "DOC-001", "DOC-002", "DOC-003", "DOC-004")
+    generated = css.generate_dossier(payload, tmp_path / "sci3")
+    _assert_bundle_clean(generated, _TRONC_DOCS | {"statuts_sci.docx"})
+    # Les 3 associes apparaissent dans les statuts ET sont listes au PV nomination.
+    statuts_text = _names_in(generated, "statuts_sci.docx")
+    pv_text = _names_in(generated, "pv_nomination_gerant.docx")
+    for nom in ("Durand", "Martin", "Petit"):
+        assert nom in statuts_text
+        assert nom in pv_text
+
+
+def test_sci_five_associes_generates_clean(tmp_path: Path) -> None:
+    payload = _civil_base(
+        "SCI",
+        "sci",
+        [
+            _pp("Jean", "Durand", 20, 1, 20, 200),
+            _pp("Alice", "Martin", 20, 21, 40, 200),
+            _pp("Paul", "Petit", 20, 41, 60, 200),
+            _pp("Marie", "Robert", 20, 61, 80, 200),
+            _pp("Luc", "Bernard", 20, 81, 100, 200),
+        ],
+    )
+    plan = css.build_civil_plan(payload)
+    assert plan.can_generate is True
+    generated = css.generate_dossier(payload, tmp_path / "sci5")
+    _assert_bundle_clean(generated, _TRONC_DOCS | {"statuts_sci.docx"})
+    statuts_text = _names_in(generated, "statuts_sci.docx")
+    for nom in ("Durand", "Martin", "Petit", "Robert", "Bernard"):
+        assert nom in statuts_text
+
+
+def test_scs_three_associes_generates_clean(tmp_path: Path) -> None:
+    payload = _civil_base(
+        "SCS",
+        "scs",
+        [
+            _pp("Jean", "Durand", 40, 1, 40, 400, role="commandite"),
+            _pp("Alice", "Martin", 30, 41, 70, 300, role="commanditaire"),
+            _pp("Paul", "Petit", 30, 71, 100, 300, role="commanditaire"),
+        ],
+    )
+    plan = css.build_civil_plan(payload)
+    assert plan.can_generate is True
+    assert plan.document_codes == ("DOC-019", "DOC-001", "DOC-002", "DOC-003", "DOC-004")
+    generated = css.generate_dossier(payload, tmp_path / "scs3")
+    _assert_bundle_clean(generated, _TRONC_DOCS | {"statuts_scs.docx"})
+    statuts_text = _names_in(generated, "statuts_scs.docx")
+    for nom in ("Durand", "Martin", "Petit"):
+        assert nom in statuts_text
+
+
+def test_sci_iris_three_associes_generates_clean(tmp_path: Path) -> None:
+    # 1 personne morale (contrainte IRIS) + 2 personnes physiques.
+    payload = _civil_base(
+        "SCI IRIS",
+        "sci_iris",
+        [
+            _pm(40, 1, 40, 400),
+            _pp("Alice", "Martin", 30, 41, 70, 300),
+            _pp("Paul", "Petit", 30, 71, 100, 300),
+        ],
+    )
+    plan = css.build_civil_plan(payload)
+    assert plan.can_generate is True
+    assert plan.document_codes == ("DOC-021", "DOC-001", "DOC-002", "DOC-003", "DOC-004")
+    generated = css.generate_dossier(payload, tmp_path / "iris3")
+    # Les groupes de resultat IRIS sont produits sans token residuel pour 3 plages.
+    _assert_bundle_clean(generated, _TRONC_DOCS | {"statuts_sci_iris.docx"})
+
+
+def test_scm_three_associes_drops_satellites(tmp_path: Path) -> None:
+    # Les satellites SCM (pacte DOC-026 + liste depenses DOC-030) sont verrouilles
+    # a EXACTEMENT 2 associes (modeles batis pour 2). A 3, ils disparaissent ; le
+    # bundle de base reste genere proprement. Generaliser >2 = FLAG Rafael.
+    payload = _civil_base(
+        "SCM",
+        "scm",
+        [
+            _pp("Jean", "Durand", 40, 1, 40, 400),
+            _pp("Alice", "Martin", 30, 41, 70, 300),
+            _pp("Paul", "Petit", 30, 71, 100, 300),
+        ],
+    )
+    plan = css.build_civil_plan(payload)
+    assert plan.can_generate is True
+    assert "DOC-026" not in plan.document_codes
+    assert "DOC-030" not in plan.document_codes
+    assert plan.document_codes == (
+        "DOC-025",
+        "DOC-001",
+        "DOC-002",
+        "DOC-003",
+        "DOC-004",
+        "DOC-034",
+    )
+    generated = css.generate_dossier(payload, tmp_path / "scm3")
+    names = {p.name for p in generated.docx_paths}
+    assert "pacte_associes_scm.docx" not in names
+    assert "liste_depenses_communes_scm.docx" not in names
+    _assert_bundle_clean(
+        generated,
+        _TRONC_DOCS | {"statuts_scm.docx", "demande_inscription_ordre.docx"},
+    )
+
+
 def _sas_payload():
     return {
         "denomination": "SPFPL MARTIN",
@@ -766,6 +894,177 @@ def test_selas_regime_on_requires_conjoint() -> None:
     assert any("regime communautaire" in b.casefold() for b in plan.blockers)
 
 
+# --- A2 SELAS : preuve multi-associes N (3 et 5, borne moteur 5) --------------
+
+
+def _selas_phys(prenom, nom, nb_actions, qualite="associé exerçant"):
+    """Associe SELAS personne physique exercante, tous champs requis remplis."""
+    return StatutsCivilsAssocie(
+        type_personne="personne_physique",
+        genre=Gender.MASCULIN,
+        civilite_affichage="Monsieur",
+        prenom=prenom,
+        prenoms=prenom,
+        nom=nom,
+        date_naissance="1 janvier 1980",
+        ville_naissance="Lyon",
+        departement_naissance="69",
+        nationalite="française",
+        profession="Docteur",
+        situation_maritale="célibataire",
+        adresse_personnelle_affichee="10 rue Exemple, 69000 Lyon",
+        qualification_principale="qualifié en médecine générale",
+        ordre_departemental="Rhône",
+        numero_ordre="69-12345",
+        numero_rpps="10100000001",
+        qualite_capital=qualite,
+        nb_actions=nb_actions,
+        nb_actions_lettres=str(nb_actions),
+        apport=StatutsCivilsApport(
+            montant=str(nb_actions * 10), montant_lettres=str(nb_actions * 10)
+        ),
+    )
+
+
+def _selas_payload_n(associes):
+    """Payload SELAS de base, avec une liste d'associes custom (somme actions auto)."""
+    payload = _selas_payload()
+    payload["associes"] = associes
+    payload["nb_actions_total"] = sum(int(a.nb_actions or 0) for a in associes)
+    return payload
+
+
+_SELAS_BUNDLE_NAMES = {
+    "statuts_selas_multi.docx",
+    "declaration_non_condamnation.docx",
+    "autorisation_domiciliation.docx",
+    "procuration.docx",
+    "pv_nomination_gerant.docx",
+    "demande_inscription_ordre.docx",
+}
+
+
+def test_selas_three_associes_generates_clean(tmp_path: Path) -> None:
+    payload = _selas_payload_n(
+        [
+            _selas_phys("Claire", "Durand", 40),
+            _selas_phys("Paul", "Martin", 30),
+            _selas_phys("Marie", "Petit", 30),
+        ]
+    )
+    plan = selas_multi_slice.build_selas_plan(payload)
+    assert plan.can_generate is True
+    assert plan.document_codes == (
+        "DOC-044",
+        "DOC-001",
+        "DOC-002",
+        "DOC-003",
+        "DOC-004",
+        "DOC-034",
+    )
+    generated = selas_multi_slice.generate_dossier(payload, tmp_path / "selas3")
+    _assert_bundle_clean(generated, _SELAS_BUNDLE_NAMES)
+    statuts_text = _docx_text(
+        next(p for p in generated.docx_paths if p.name == "statuts_selas_multi.docx")
+    )
+    for nom in ("Durand", "Martin", "Petit"):
+        assert nom in statuts_text
+
+
+def test_selas_five_associes_generates_clean(tmp_path: Path) -> None:
+    payload = _selas_payload_n(
+        [
+            _selas_phys("Claire", "Durand", 20),
+            _selas_phys("Paul", "Martin", 20),
+            _selas_phys("Marie", "Petit", 20),
+            _selas_phys("Luc", "Robert", 20),
+            _selas_phys("Anne", "Bernard", 20),
+        ]
+    )
+    plan = selas_multi_slice.build_selas_plan(payload)
+    assert plan.can_generate is True
+    generated = selas_multi_slice.generate_dossier(payload, tmp_path / "selas5")
+    _assert_bundle_clean(generated, _SELAS_BUNDLE_NAMES)
+    statuts_text = _docx_text(
+        next(p for p in generated.docx_paths if p.name == "statuts_selas_multi.docx")
+    )
+    for nom in ("Durand", "Martin", "Petit", "Robert", "Bernard"):
+        assert nom in statuts_text
+
+
+# --- A1 : bornes du repeater nommees + alignees sur le moteur -----------------
+
+
+def test_repeater_bounds_are_named_and_aligned() -> None:
+    # A1 : les bornes sont des constantes nommees (pas de litteraux disperses) et
+    # la borne SELAS front est ALIGNEE sur le generateur (un ecart silencieux
+    # casserait la generation). Ce test verrouille les valeurs.
+    from sydel_doc_engine.generators.lot_04.statuts_selas_multi import (
+        MAX_ASSOCIES,
+        MIN_ASSOCIES,
+    )
+
+    assert css.CIVIL_NB_MIN_BY_STRUCTURE == {
+        "SCI": 1,
+        "SCM": 1,
+        "SCI IRIS": 2,
+        "SCS": 2,
+    }
+    assert css.CIVIL_NB_MAX_ASSOCIES == 6
+    assert (selas_multi_slice.SELAS_NB_MIN, selas_multi_slice.SELAS_NB_MAX) == (
+        MIN_ASSOCIES,
+        MAX_ASSOCIES,
+    )
+
+
+# --- A3 : selection du dirigeant (president) SELAS ----------------------------
+
+
+def test_selas_president_defaults_to_first_physique() -> None:
+    # Sans choix UI (payload sans president_index) : le 1er associe physique est
+    # president — comportement historique, non-regression.
+    payload = _selas_payload_n(
+        [
+            _selas_phys("Claire", "Durand", 40),
+            _selas_phys("Paul", "Martin", 30),
+            _selas_phys("Marie", "Petit", 30),
+        ]
+    )
+    ctx = selas_multi_slice.build_generation_context(payload)
+    assert ctx.dirigeant_nomine.ref_associe_index == 0
+    assert ctx.statuts_selas_multi.president.ref_associe_index == 0
+    assert ctx.dirigeant_nomine.nom == "Durand"
+
+
+def test_selas_president_selectable() -> None:
+    # Le dirigeant peut etre un autre associe physique (le 3e ici).
+    payload = _selas_payload_n(
+        [
+            _selas_phys("Claire", "Durand", 40),
+            _selas_phys("Paul", "Martin", 30),
+            _selas_phys("Marie", "Petit", 30),
+        ]
+    )
+    payload["president_index"] = 2
+    ctx = selas_multi_slice.build_generation_context(payload)
+    assert ctx.dirigeant_nomine.ref_associe_index == 2
+    assert ctx.statuts_selas_multi.president.ref_associe_index == 2
+    assert ctx.dirigeant_nomine.nom == "Petit"
+
+
+def test_selas_president_index_morale_falls_back_to_physique() -> None:
+    # Un index pointant une personne morale ne doit JAMAIS atteindre le moteur
+    # (President = personne physique) : on retombe sur le 1er physique.
+    morale = _selas_payload()["associes"][1]
+    morale.nb_actions = 40
+    payload = _selas_payload_n([_selas_phys("Claire", "Durand", 60), morale])
+    payload["president_index"] = 1  # pointe la personne morale
+    ctx = selas_multi_slice.build_generation_context(payload)
+    assert ctx.dirigeant_nomine.ref_associe_index == 0
+    plan = selas_multi_slice.build_selas_plan(payload)
+    assert plan.can_generate is True
+
+
 # --- Surface UI Streamlit -----------------------------------------------------
 
 
@@ -938,4 +1237,56 @@ def test_typed_test_data_button_generates(
 
     download_labels = [item.label for item in app.get("download_button")]
     assert f"Telecharger {statuts_name}" in download_labels
+    assert "Telecharger le dossier ZIP" in download_labels
+
+
+def test_front_selas_change_dirigeant_generates(tmp_path: Path, monkeypatch) -> None:
+    # Reunion 2026-06-09, feature #1 : on peut designer un autre associe que le
+    # premier comme dirigeant ; ses champs DNC se saisissent SOUS lui, et la
+    # generation reussit. Prouve le cablage UI checkbox -> president -> DNC.
+    from streamlit.testing.v1 import AppTest
+
+    from sydel_doc_engine.front_app import shell
+
+    monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selas-dir")
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
+    app.selectbox(key="clean_dossier_type").set_value("SELAS multi-associes creation V1")
+    app = app.run(timeout=180)
+
+    # Prefill (2 associes, dirigeant = associe 0 par defaut).
+    next(b for b in app.button if "test_data" in str(b.key)).click()
+    app = app.run(timeout=180)
+
+    # Designer l'associe 1 comme dirigeant a la place de l'associe 0.
+    app.checkbox(key="selas_associe_0_is_dirigeant").set_value(False)
+    app.checkbox(key="selas_associe_1_is_dirigeant").set_value(True)
+    app = app.run(timeout=180)
+
+    def set_text(key: str, value: str) -> None:
+        for widget in app.text_input:
+            if str(widget.key) == key:
+                widget.set_value(value)
+                return
+        raise KeyError(key)
+
+    # DNC du NOUVEAU dirigeant (associe 1) : apparait sous sa case « Dirigeant ».
+    set_text("selas_associe_1_sig_nom_pere", "Paul Martin")
+    set_text("selas_associe_1_sig_nom_mere", "Marie Martin")
+    set_text("selas_associe_1_sig_adresse_num", "2")
+    set_text("selas_associe_1_sig_adresse_voie", "rue Martin")
+    set_text("selas_associe_1_sig_adresse_cp", "75000")
+    set_text("selas_associe_1_sig_adresse_ville", "Paris")
+    set_text("selas_associe_1_sig_date_naissance", "02/02/1982")
+    app = app.run(timeout=180)
+
+    generate_button = next(
+        b for b in app.button if str(b.key) == "clean_typed_generate_dossier"
+    )
+    assert generate_button.disabled is False
+    assert not any("Blocage" in item.value for item in app.caption)
+    generate_button.click()
+    app = app.run(timeout=180)
+
+    download_labels = [item.label for item in app.get("download_button")]
+    assert "Telecharger statuts_selas_multi.docx" in download_labels
     assert "Telecharger le dossier ZIP" in download_labels

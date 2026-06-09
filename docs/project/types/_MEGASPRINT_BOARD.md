@@ -109,6 +109,16 @@ Détail + routage : `_REUNION_2026-06-09_ALBANE_DAVID.md`.
   cession, désignation dirigeants, infos parentales (DNC), variables mal injectées.
 - **Roadmap dev next** : multi-associés N (généraliser, dont satellites SCM) ; rôles dirigeants
   (Président/DG/DG délégué) ; modèle unique dynamique. **Ne pas builder le vague** ; scoper d'abord.
+- ✅ **LIVRÉ 2026-06-09 (lot constructible, `sprint/engine-completion`)** — journal MULTI-N-1 /
+  DIRIGEANT-1 / DNC-COND-1 ; cadrage `_CADRAGE_LOT_REUNION_2026-06-09.md` ; plan `_PLAN_LOT_REUNION_2026-06-09.md` :
+  - **A2** multi-associés **N prouvé** par tests à **3 et 5** (SCI, SCS, SCI IRIS, SELAS) ; verrou satellites SCM à 2.
+  - **A1** bornes du repeater **nommées** (civils 1–2 → 6 ; SELAS 2 → 5), alignées sur le moteur.
+  - **A3** sélecteur de **dirigeant** SELAS (case « Dirigeant » par associé physique ; rôle = « Président »
+    seul, DG/DG délégué en attente wording Rafael ; jamais d'index moral transmis au moteur).
+  - **A4** champs **DNC / filiation conditionnels** saisis **sous l'associé coché dirigeant** (défaut documenté).
+  - **399 tests `tests/unit` verts**, lint propre, **zéro régression** SELARL / mono-associé.
+  - **Reste FLAG Rafael** : wording DG/DG délégué · règle DNC (dirigeant seul vs tous) · satellites SCM >2 ·
+    clauses « parts/gérant » des modèles SAS/SELAS. **A5 base de personnes** = ticket dédié (non démarré).
 
 ## Décisions RATIFIÉES (Rafael via Gad, 2026-06-07)
 

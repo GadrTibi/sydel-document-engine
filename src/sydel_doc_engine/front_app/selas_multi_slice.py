@@ -55,6 +55,11 @@ STRUCTURE = "SELAS"
 DOC_CODE = "DOC-044"
 PREFIX = "selas"
 
+# Bornes du repeater SELAS (A1 : nommees, AUCUN changement de valeur). Alignees
+# sur le generateur statuts_selas_multi (2 a 5 associes exercants / non exercants).
+SELAS_NB_MIN = 2
+SELAS_NB_MAX = 5
+
 # Bundle de creation SELAS multi (canon) : statuts multi-associes + tronc commun
 # (DNC / domiciliation / procuration) + PV nomination gerant + demande
 # d'inscription a l'ordre. Le signataire / gerant des documents communs = le
@@ -93,11 +98,11 @@ def _count_key() -> str:
 
 
 def _associe_count() -> int:
-    raw = st.session_state.get(_count_key(), 2)
+    raw = st.session_state.get(_count_key(), SELAS_NB_MIN)
     try:
-        return max(2, min(5, int(raw)))
+        return max(SELAS_NB_MIN, min(SELAS_NB_MAX, int(raw)))
     except (TypeError, ValueError):
-        return 2
+        return SELAS_NB_MIN
 
 
 def render_selas_form() -> dict[str, object]:
@@ -136,7 +141,7 @@ def render_selas_form() -> dict[str, object]:
     with col_m:
         signature_date = _date("signature_date", "Date de signature")
 
-    associes = _render_selas_associes()
+    associes, president_index, dirigeant_sig = _render_selas_associes()
     common = _render_common_docs_form()
 
     payload: dict[str, object] = {
@@ -159,28 +164,25 @@ def render_selas_form() -> dict[str, object]:
         "signature_lieu": signature_lieu,
         "signature_date": signature_date,
         "associes": associes,
+        "president_index": president_index,
     }
     payload.update(common)
+    # La DNC / l'identite du dirigeant (saisies sous l'associe coche) alimentent
+    # les cles signataire_* lues par build_generation_context.
+    payload.update(dirigeant_sig)
     return payload
 
 
 def _render_common_docs_form() -> dict[str, object]:
-    """Signataire / president (documents communs : DNC, procuration, PV, ordre)."""
-    st.markdown("**President / signataire (documents communs)**")
-    col_a, col_b = st.columns(2)
-    nom_pere = _t(col_a, "signataire_nom_pere", "Nom du pere (declaration)")
-    nom_mere = _t(col_b, "signataire_nom_mere", "Nom de la mere (declaration)")
-    st.caption("Adresse personnelle du president (declaration / procuration)")
-    col_c, col_d, col_e, col_f = st.columns(4)
-    adr_num = _t(col_c, "signataire_adresse_num", "No")
-    adr_voie = _t(col_d, "signataire_adresse_voie", "Voie")
-    adr_cp = _t(col_e, "signataire_adresse_cp", "CP")
-    adr_ville = _t(col_f, "signataire_adresse_ville", "Ville")
-    col_g, col_h = st.columns(2)
-    nationalite = _t(col_g, "signataire_nationalite", "Nationalite")
-    titre = _t(col_h, "signataire_titre", "Titre d'affichage") or "Docteur"
-    with st.container():
-        date_naissance_iso = _date("signataire_date_naissance", "Date naissance (JJ/MM/AAAA)")
+    """Documents communs NON lies a l'identite du dirigeant.
+
+    La filiation + l'adresse personnelle + la date de naissance du dirigeant
+    (declaration de non-condamnation, procuration) sont desormais saisies SOUS
+    l'associe coche « Dirigeant » (reunion 2026-06-09 : champs conditionnels au
+    dirigeant). Ce bloc ne garde que ce qui n'appartient pas a un associe : date
+    de decision (PV), ordre professionnel, regime communautaire.
+    """
+    st.markdown("**Documents communs (decision, ordre professionnel)**")
     decision_date = _date("decision_date", "Date de decision (PV gerant)")
     st.markdown("Ordre professionnel (demande d'inscription)")
     col_i, col_j = st.columns(2)
@@ -193,15 +195,6 @@ def _render_common_docs_form() -> dict[str, object]:
     ordre_numero = _t(st, "ordre_numero", "Numero d'inscription")
     regime = _render_regime_communautaire_form()
     common = {
-        "signataire_nom_pere": nom_pere,
-        "signataire_nom_mere": nom_mere,
-        "signataire_adresse_num": adr_num,
-        "signataire_adresse_voie": adr_voie,
-        "signataire_adresse_cp": adr_cp,
-        "signataire_adresse_ville": adr_ville,
-        "signataire_nationalite": nationalite,
-        "signataire_titre": titre,
-        "signataire_date_naissance": date_naissance_iso,
         "decision_date": decision_date,
         "ordre_conseil": ordre_conseil,
         "ordre_departement": ordre_dep,
@@ -249,24 +242,31 @@ def _render_regime_communautaire_form() -> dict[str, object]:
     }
 
 
-def _render_selas_associes() -> list[StatutsCivilsAssocie]:
+def _render_selas_associes() -> tuple[list[StatutsCivilsAssocie], int, dict[str, object]]:
     if _count_key() not in st.session_state:
-        st.session_state[_count_key()] = 2
+        st.session_state[_count_key()] = SELAS_NB_MIN
     nombre = _associe_count()
-    st.markdown(f"**Associes ({nombre})** — 2 a 5, exercants / non exercants")
+    st.markdown(
+        f"**Associes ({nombre})** — {SELAS_NB_MIN} a {SELAS_NB_MAX}, exercants / non exercants"
+    )
     cols = st.columns([1, 1, 3])
     if cols[0].button("Ajouter un associe", key=f"{PREFIX}_add"):
-        st.session_state[_count_key()] = min(5, nombre + 1)
+        st.session_state[_count_key()] = min(SELAS_NB_MAX, nombre + 1)
         st.rerun()
     if cols[1].button("Retirer un associe", key=f"{PREFIX}_remove"):
-        st.session_state[_count_key()] = max(2, nombre - 1)
+        st.session_state[_count_key()] = max(SELAS_NB_MIN, nombre - 1)
         st.rerun()
-    cols[2].caption("Le premier associe physique est designe president par defaut.")
+    cols[2].caption(
+        "Cochez le dirigeant (president) sur un associe ; a defaut, le premier "
+        "associe physique est president."
+    )
 
     associes: list[StatutsCivilsAssocie] = []
     for index in range(nombre):
         associes.append(_render_one_associe(index))
-    return associes
+    president_index = _derive_president_index(associes)
+    dirigeant_sig = _collect_dirigeant_sig(associes, president_index)
+    return associes, president_index, dirigeant_sig
 
 
 def _render_one_associe(index: int) -> StatutsCivilsAssocie:
@@ -284,8 +284,99 @@ def _render_one_associe(index: int) -> StatutsCivilsAssocie:
         nb_actions = _is(col_a, f"{prefix}_nb_actions", "Nombre d'actions")
         montant = _ts(col_b, f"{prefix}_montant", "Apport (montant)")
         if type_personne == "personne_morale":
+            # Une personne morale ne peut pas etre president (contrainte moteur) :
+            # aucune case dirigeant. Un flag residuel est ignore a la derivation.
             return _morale(prefix, nb_actions, montant)
+        _render_dirigeant_choice(prefix, index)
         return _physique(prefix, nb_actions, montant)
+
+
+def _render_dirigeant_choice(prefix: str, index: int) -> None:
+    """Case « Dirigeant » + role + champs complementaires pour un associe physique.
+
+    Le role est volontairement limite a « President » : aucun modele source ne
+    porte le wording « Directeur General » / « DG delegue », donc on ne propose
+    pas une fonction dont la clause n'existe pas (FLAG Rafael, _RAFAEL_PACKET_V1
+    §6). Quand le wording sera livre, etendre la liste d'options suffira.
+
+    Reunion 2026-06-09 : les champs complementaires (filiation pour la declaration
+    de non-condamnation, adresse structuree pour la procuration) ne sont demandes
+    QUE pour l'associe coche dirigeant — pas pour les autres associes.
+    """
+    dirigeant_key = f"{prefix}_is_dirigeant"
+    if dirigeant_key not in st.session_state:
+        # Defaut historique : le 1er associe (index 0) est president.
+        st.session_state[dirigeant_key] = index == 0
+    is_dirigeant = st.checkbox("Dirigeant (president)", key=dirigeant_key)
+    if not is_dirigeant:
+        return
+    role_key = f"{prefix}_role_dirigeant"
+    if role_key not in st.session_state:
+        st.session_state[role_key] = "Président"
+    st.selectbox(
+        "Role du dirigeant",
+        ("Président",),
+        key=role_key,
+        help="Directeur General / DG delegue : a venir (wording juridique en attente).",
+    )
+    st.caption("Declaration de non-condamnation du dirigeant (filiation + adresse personnelle)")
+    col_a, col_b = st.columns(2)
+    _ts(col_a, f"{prefix}_sig_nom_pere", "Nom du pere")
+    _ts(col_b, f"{prefix}_sig_nom_mere", "Nom de la mere")
+    col_c, col_d, col_e, col_f = st.columns(4)
+    _ts(col_c, f"{prefix}_sig_adresse_num", "No")
+    _ts(col_d, f"{prefix}_sig_adresse_voie", "Voie")
+    _ts(col_e, f"{prefix}_sig_adresse_cp", "CP")
+    _ts(col_f, f"{prefix}_sig_adresse_ville", "Ville")
+    _date(f"associe_{index}_sig_date_naissance", "Date de naissance (JJ/MM/AAAA)")
+
+
+def _derive_president_index(associes: list[StatutsCivilsAssocie]) -> int:
+    """Index du president = premier associe PHYSIQUE coche « dirigeant ».
+
+    A defaut (aucun coche, ou coche sur une personne morale), retombe sur le
+    premier associe physique — comportement historique. Ne renvoie jamais l'index
+    d'une personne morale (le generateur leverait : President = physique).
+    """
+    for i, associe in enumerate(associes):
+        if associe.type_personne != "personne_physique":
+            continue
+        if bool(st.session_state.get(f"{PREFIX}_associe_{i}_is_dirigeant")):
+            return i
+    return next(
+        (i for i, a in enumerate(associes) if a.type_personne == "personne_physique"),
+        0,
+    )
+
+
+def _collect_dirigeant_sig(
+    associes: list[StatutsCivilsAssocie], president_index: int
+) -> dict[str, object]:
+    """Champs « signataire » (DNC / procuration) du dirigeant -> cles signataire_*.
+
+    L'identite (nom, prenom, ville naissance, nationalite) vient de l'associe
+    lui-meme (zero sursaisie) ; la filiation + l'adresse structuree + la date ISO
+    sont saisies sous la case « Dirigeant ». Mappe vers les cles `signataire_*`
+    deja lues par build_generation_context (qui reste donc inchange).
+    """
+    if not (0 <= president_index < len(associes)):
+        return {}
+    prefix = f"{PREFIX}_associe_{president_index}"
+    dirigeant = associes[president_index]
+    raw_date = st.session_state.get(f"{prefix}_sig_date_naissance")
+    return {
+        "signataire_nom_pere": str(st.session_state.get(f"{prefix}_sig_nom_pere") or ""),
+        "signataire_nom_mere": str(st.session_state.get(f"{prefix}_sig_nom_mere") or ""),
+        "signataire_adresse_num": str(st.session_state.get(f"{prefix}_sig_adresse_num") or ""),
+        "signataire_adresse_voie": str(st.session_state.get(f"{prefix}_sig_adresse_voie") or ""),
+        "signataire_adresse_cp": str(st.session_state.get(f"{prefix}_sig_adresse_cp") or ""),
+        "signataire_adresse_ville": str(
+            st.session_state.get(f"{prefix}_sig_adresse_ville") or ""
+        ),
+        "signataire_nationalite": str(dirigeant.nationalite or ""),
+        "signataire_titre": str(dirigeant.profession or "Docteur"),
+        "signataire_date_naissance": parse_french_date(raw_date),
+    }
 
 
 def _physique(prefix: str, nb_actions: int, montant: str) -> StatutsCivilsAssocie:
@@ -444,8 +535,8 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:
     if payload.get("signature_date") is None:
         blockers.append("Date de signature requise.")
     associes = payload.get("associes") or []
-    if not isinstance(associes, list) or len(associes) < 2:
-        blockers.append("SELAS multi requiert au moins 2 associes.")
+    if not isinstance(associes, list) or len(associes) < SELAS_NB_MIN:
+        blockers.append(f"SELAS multi requiert au moins {SELAS_NB_MIN} associes.")
     else:
         if not any(a.type_personne == "personne_physique" for a in associes):
             blockers.append("Au moins une personne physique (futur president) requise.")
@@ -534,12 +625,35 @@ def _named(associe: StatutsCivilsAssocie) -> bool:
     )
 
 
-def build_generation_context(payload: dict[str, object]) -> DocumentGenerationContext:
-    associes: list[StatutsCivilsAssocie] = list(payload.get("associes") or [])
-    president_index = next(
+def _resolve_president_index(
+    payload: dict[str, object], associes: list[StatutsCivilsAssocie]
+) -> int:
+    """Index du president retenu pour la generation.
+
+    Lit le choix UI `payload["president_index"]` ; tombe sur le premier associe
+    physique si absent / invalide (fixtures historiques, ou index pointant une
+    personne morale). Garantit qu'aucun index moral n'atteint le generateur
+    (qui exige un President personne physique).
+    """
+    default_index = next(
         (i for i, a in enumerate(associes) if a.type_personne == "personne_physique"),
         0,
     )
+    raw = payload.get("president_index")
+    if raw is None:
+        return default_index
+    try:
+        idx = int(raw)
+    except (TypeError, ValueError):
+        return default_index
+    if 0 <= idx < len(associes) and associes[idx].type_personne == "personne_physique":
+        return idx
+    return default_index
+
+
+def build_generation_context(payload: dict[str, object]) -> DocumentGenerationContext:
+    associes: list[StatutsCivilsAssocie] = list(payload.get("associes") or [])
+    president_index = _resolve_president_index(payload, associes)
     signataire_associe = associes[president_index] if associes else None
     genre = (signataire_associe.genre if signataire_associe else None) or Gender.FEMININ
     civilite = signataire_associe.civilite_affichage if signataire_associe else "Madame"
