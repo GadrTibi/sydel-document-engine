@@ -73,6 +73,19 @@ arbitrage de pratique (j'ai d'abord vérifié le code — ce ne sont pas des que
    (à corriger dans le `.docx` source : actions / Président), ou est-ce voulu ? Je **ne corrige pas
    une formulation juridique en douce** — je te le remonte.
 
+## Issus de la réunion 2026-06-09 (Albane × David) — juridique à préciser
+Le débrief signale des points juridiques **sans cas concret** → inactionnables tels quels. Rafael doit
+fournir, **dossier réel à l'appui**, les exemples précis pour chacun :
+4. **Intérêts de retard** : où, quelle clause, quelle formule exacte ?
+5. **Clauses de cession** : lesquelles sont à revoir (et la cession est hors V1 — confirmer le périmètre) ?
+6. **Désignation des dirigeants** : quelle formulation pour Président / DG / DG délégué (cf. nouvelle
+   feature « associé ≠ dirigeant ») ?
+7. **Informations parentales** (déclaration non-condamnation) : quand sont-elles requises, pour qui
+   (seulement le dirigeant ? tout associé ?) ?
+8. **Variables mal injectées** : lesquelles précisément (capture d'écran / doc généré à l'appui) ?
+→ Action Rafael (réunion) : tester **multi-associés**, créer des **cas concrets**, remonter ces erreurs
+avec exemples. Sans cas précis, on ne corrige pas à l'aveugle.
+
 ## À relayer à Rafael MAINTENANT
 Une **rétractation** honnête (les docs sont là, mon erreur) — pas une nouvelle liste de demandes.
 Les arbitrages ci-dessus partiront **groupés**, précis, une fois les modèles tokenisés.

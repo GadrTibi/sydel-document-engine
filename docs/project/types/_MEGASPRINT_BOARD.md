@@ -96,6 +96,20 @@ en-tête/footer/styles/tables nativement) + corriger les blocs dynamiques. Chant
 
 ---
 
+## RÉUNION 2026-06-09 — Rafael × Albane × David (boss) — 1re validation humaine
+Détail + routage : `_REUNION_2026-06-09_ALBANE_DAVID.md`.
+- ✅ **Validation FONCTIONNELLE positive** (Albane + David) : génération docs/logos/variables/féminisation/
+  pluralisation **OK constaté** ; ZIP + téléchargement par doc OK. Validation **juridique fine** = en cours.
+- ✅ **Confirmé** : multi-associés **N (2/3/5+)** (listes dynamiques, le moteur adapte statuts/procurations/
+  PV) ; **associé ≠ dirigeant** → distinguer **Président / DG / DG délégué** + champs dirigeant
+  **conditionnels** (parents, DNC) ; **pas de mise à jour rétroactive** des dossiers historiques.
+- 🔭 **Direction (à confirmer)** : **modèle unique « intelligent »** (conditions/arbres de décision) vs N
+  modèles — partiellement notre approche. **Feature** : **base de données des personnes** (anti-sursaisie).
+- 🩺 **Juridique → Rafael** (vague dans le débrief, attendre cas concrets) : intérêts de retard, clauses de
+  cession, désignation dirigeants, infos parentales (DNC), variables mal injectées.
+- **Roadmap dev next** : multi-associés N (généraliser, dont satellites SCM) ; rôles dirigeants
+  (Président/DG/DG délégué) ; modèle unique dynamique. **Ne pas builder le vague** ; scoper d'abord.
+
 ## Décisions RATIFIÉES (Rafael via Gad, 2026-06-07)
 
 - **PÉRIMÈTRE V1 = CRÉATION UNIQUEMENT** pour tous les types (« que création »). Pas de cession /
