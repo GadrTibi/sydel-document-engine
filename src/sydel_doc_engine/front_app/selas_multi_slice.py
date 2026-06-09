@@ -948,5 +948,9 @@ def _date(field: str, label: str) -> date | None:
         st.session_state[key] = format_french_date(current)
     elif current is None:
         st.session_state[key] = format_french_date(date.today())
+    # Bouton « Aujourd'hui » (comme SELARL) : ecrit la date du jour AVANT que le
+    # text_input soit instancie (sinon Streamlit interdit la modif post-widget).
+    if st.button("Aujourd'hui", key=f"{key}_today"):
+        st.session_state[key] = format_french_date(date.today())
     raw = st.text_input(label, key=key, placeholder="JJ/MM/AAAA")
     return parse_french_date(raw)

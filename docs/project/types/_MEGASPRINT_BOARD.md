@@ -124,6 +124,9 @@ Détail + routage : `_REUNION_2026-06-09_ALBANE_DAVID.md`.
   - **404 tests `tests/unit` verts**, lint propre, **zéro régression** SELARL / mono-associé.
   - **Reste FLAG Rafael** : wording DG/DG délégué · règle DNC (dirigeant seul vs tous) · satellites SCM >2 ·
     coquilles modèles source (SCM/SCS/SELARL ci-dessus). **A5 base de personnes** = mur data/persistance (décision Gad).
+- ✅ **Retour UAT Rafael 2026-06-09** : bouton **« Aujourd'hui »** ajouté sur **toutes les dates de tous les
+  types** (existait déjà en SELARL) — généralisé aux helpers date civils / SELAS / SAS / SPFPL (bouton avant
+  le champ, sans colonnes imbriquées). **405 tests verts**.
 
 ## Décisions RATIFIÉES (Rafael via Gad, 2026-06-07)
 

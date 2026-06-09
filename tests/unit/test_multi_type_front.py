@@ -1361,3 +1361,31 @@ def test_front_selas_change_dirigeant_generates(tmp_path: Path, monkeypatch) -> 
     download_labels = [item.label for item in app.get("download_button")]
     assert "Telecharger statuts_selas_multi.docx" in download_labels
     assert "Telecharger le dossier ZIP" in download_labels
+
+
+def test_front_today_button_fills_date_non_selarl() -> None:
+    # Retour Rafael 2026-06-09 : bouton « Aujourd'hui » sur les dates de TOUS les
+    # types (existait deja en SELARL). Preuve sur SCI (non-SELARL) : presence du
+    # bouton + remplissage effectif de la date du jour.
+    from datetime import date as _date_cls
+
+    from streamlit.testing.v1 import AppTest
+
+    from sydel_doc_engine.front_app.field_derivations import format_french_date
+
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=120)
+    app.selectbox(key="clean_dossier_type").set_value("SCI creation V1")
+    app = app.run(timeout=120)
+
+    today_buttons = [b for b in app.button if str(b.key).endswith("_today")]
+    assert today_buttons  # bouton « Aujourd'hui » present sur les dates SCI
+
+    # Vider la date de signature puis cliquer « Aujourd'hui » -> date du jour.
+    sig_key = "sci_signature_date"
+    next(w for w in app.text_input if str(w.key) == sig_key).set_value("")
+    app = app.run(timeout=120)
+    next(b for b in app.button if str(b.key) == f"{sig_key}_today").click()
+    app = app.run(timeout=120)
+    assert next(w for w in app.text_input if str(w.key) == sig_key).value == (
+        format_french_date(_date_cls.today())
+    )
