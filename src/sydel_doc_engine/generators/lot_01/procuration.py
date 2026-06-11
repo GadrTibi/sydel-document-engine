@@ -20,6 +20,11 @@ OUTPUT_FILENAME = "procuration.docx"
 
 MANDATAIRE_NOM = "SYDEL"
 MANDATAIRE_ADRESSE = "80 avenue Marceau, 75008 PARIS"
+# Modele procuration mis a jour (Albane 2026-06-10) : sous l'adresse SYDEL,
+# ajout du RCS/SIREN et du telephone. Constantes SYDEL (RCS = SIREN 788 531 432,
+# tel verifie depuis la signature de David Elgrably « 01 53 81 43 03 »).
+MANDATAIRE_RCS = "RCS PARIS 788 531 432"
+MANDATAIRE_TEL = "0153814303"
 
 MANDATE_PARAGRAPH_1 = (
     "De pour moi et en mon nom faire tous dépôts, immatriculations, modifications, radiations "
@@ -74,6 +79,9 @@ class ProcurationGenerator:
         )
         _add_paragraph(document, "Donne par les présentes pouvoir à :")
         _add_mandataire_block(document)
+        # Aération demandée par Albane (2026-06-10) : un espace après le bloc
+        # mandataire avant le corps du mandat.
+        add_spacer(document, space_after_pt=6)
         for text in (MANDATE_PARAGRAPH_1, MANDATE_PARAGRAPH_2, MANDATE_PARAGRAPH_3):
             _add_paragraph(document, text, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY)
         _add_paragraph(document, LEGAL_EFFECT_PARAGRAPH)
@@ -168,6 +176,8 @@ def _add_mandataire_block(document) -> None:
         [
             (MANDATAIRE_NOM, True, False),
             (MANDATAIRE_ADRESSE, False, True),
+            (MANDATAIRE_RCS, False, False),
+            (MANDATAIRE_TEL, False, False),
         ],
         space_after_pt=0,
     )

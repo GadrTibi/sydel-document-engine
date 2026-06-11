@@ -218,7 +218,11 @@ def test_statuts_selarl_dentiste_generates_unique_associate_docx(tmp_path: Path)
         "12 avenue de la Republique, 75011 Paris. Il constitue le lieu d’exercice unique "
         "de la société"
     ) in text
-    assert "Total des apports en numéraire : ci- 1 000." in text
+    # Retour Albane 2026-06-10 : « euros » ajouté art. 7 (chiffres + lettres) et art. 8
+    # des statuts DENTISTE (le bloc médecin l'avait déjà).
+    assert "apporte à la Société la somme de 1 000 euros." in text
+    assert "Total des apports en numéraire : ci- 1 000 euros." in text
+    assert "Le capital social est fixé à la somme de mille euros." in text
     assert (
         "à Docteur Camille Martin, mille parts sociales en pleine propriété, ci"
     ) in text

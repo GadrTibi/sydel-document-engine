@@ -126,8 +126,9 @@ def test_procuration_contains_essential_texts(tmp_path: Path) -> None:
     ) in text
     assert "L’exécution de ce mandat vaudra décharge au mandataire." in text
     assert "Fait pour servir et valoir ce que de droit." in text
-    assert "RCS PARIS 788 531 432" not in text
-    assert "0153814303" not in text
+    # Modele procuration MAJ (Albane 2026-06-10) : RCS/SIREN + tel sous SYDEL.
+    assert "RCS PARIS 788 531 432" in text
+    assert "0153814303" in text
     assert "Fait à Paris" in text
     assert "Le 12/05/2026" in text
     assert "Jean Durand" in text
@@ -178,9 +179,13 @@ def test_procuration_contains_exact_sydel_block(tmp_path: Path) -> None:
     paragraphs = _document_paragraphs(_generate(tmp_path))
 
     start = paragraphs.index("SYDEL")
-    assert paragraphs[start : start + 2] == [
+    # Bloc mandataire MAJ (Albane 2026-06-10) : RCS/SIREN + telephone ajoutes
+    # sous l'adresse SYDEL (modele d'avril fourni par Albane).
+    assert paragraphs[start : start + 4] == [
         "SYDEL",
         "80 avenue Marceau, 75008 PARIS",
+        "RCS PARIS 788 531 432",
+        "0153814303",
     ]
 
 
