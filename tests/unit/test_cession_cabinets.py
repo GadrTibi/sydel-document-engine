@@ -705,3 +705,39 @@ def test_acte_medical_scm_clause_removed_when_inactive(tmp_path: Path) -> None:
 
     assert "parts sociales lui appartenant au sein de la Société civile de Moyens" not in text
     _assert_no_residual_tokens(text)
+
+
+def test_compromis_dentaire_renders_pret_taux_and_duree(tmp_path: Path) -> None:
+    # Retour Rafael 2026-06-11 : le compromis dentaire expose desormais le taux
+    # ET la duree du pret (variable absente du modele source d'origine, calquee
+    # sur le compromis medical). Rempli -> injecte ; aucun token residuel.
+    ctx = _context(etape="compromis", type_cabinet="dentaire")
+    ctx = _with_cession_updates(
+        ctx,
+        financement=ctx.cession.financement.model_copy(
+            update={"pret": CessionPret(montant="280 000", taux="4 %", duree="sept ans")}
+        ),
+    )
+
+    text = _docx_text(CompromisCessionCabinetDentaireGenerator().generate(ctx, tmp_path))
+
+    assert "au taux maximum de 4 % l’an hors assurance" in text
+    assert "amortissable sur une période minimum de sept ans" in text
+    _assert_no_residual_tokens(text)
+
+
+def test_compromis_dentaire_pret_taux_vide_ne_bloque_pas(tmp_path: Path) -> None:
+    # Ticket 3.1 : taux / duree du pret vides -> zone a completer a la main,
+    # generation NON bloquee, aucun token residuel.
+    ctx = _context(etape="compromis", type_cabinet="dentaire")
+    ctx = _with_cession_updates(
+        ctx,
+        financement=ctx.cession.financement.model_copy(
+            update={"pret": CessionPret(montant="280 000", taux="", duree="")}
+        ),
+    )
+
+    text = _docx_text(CompromisCessionCabinetDentaireGenerator().generate(ctx, tmp_path))
+
+    _assert_no_residual_tokens(text)
+    assert "au taux maximum de" in text
