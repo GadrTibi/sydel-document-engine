@@ -150,9 +150,19 @@ Détail + routage : `_REUNION_2026-06-09_ALBANE_DAVID.md`.
 - Porter l'**INTEL GATE** dans la règle 20 (`~/.claude`), section « projets **avec associé** » (pas tous
   les projets) — pour qu'il vaille sur les autres projets Gad+Rafael (CRM…).
 
-## Escalades métier (Rafael, groupées — jamais Gad)
+## Manifeste — sujets parqués (hors lettre de mission, décision à venir)
+
+- **Sauvegarde / reprise d'un dossier** (réf. dossier) — demandé par **Albane** (10/06) pour ne pas
+  retaper. **Hors lettre de mission.** Gad en discute avec son **associé Rafael** pour décider si on le
+  fait pour le client (SYDEL). **Non construit.** (Touche persistance/stockage — design + RGPD à cadrer
+  si GO.) Source : `docs/review/selarl_human_returns_007_albane_2026-06-10_raw_v1.md`.
+
+## Escalades métier — vers Albane (sachant juridique, côté client), en direct
+
+> Casting (maj 2026-06-11) : **Albane** = Direction Juridique SYDEL = arbitre métier (reçue EN DIRECT) ;
+> **David** = client décideur ; **Rafael** = associé de Gad (build/scope, plus le relais).
 
 - SELAS : wording multi/personne morale/DG (après modèle Reynaud).
 - SPFPL : parcours apport (objet, report 150-0 B ter, conditions suspensives) après les 33 modèles.
-- SCM : carte cas→docs, clé de répartition des dépenses, inscription Ordre SCM, pluriel (Albane).
+- SCM : carte cas→docs, clé de répartition des dépenses, inscription Ordre SCM, pluriel.
 - SCI : version canon qui fait foi, modèle « Lettre d'option IS ».
