@@ -87,7 +87,9 @@ def _build_replacements(ctx: DocumentGenerationContext) -> dict[str, str]:
     denomination_societe = _required_text(company.denomination, "societe.denomination")
     capital_social = _required_text(company.capital, "societe.capital")
     siege = _required_siege(company.siege)
-    num_voie_siege = _required_text(siege.num_voie, "societe.siege.num_voie")
+    # Numero de voie optionnel (champ fusionne « Numero et voie », retours
+    # client 2026-06-11) : un siege sans numero (lieu-dit) reste valide.
+    num_voie_siege = (siege.num_voie or "").strip()
     voie_siege = _required_text(siege.voie, "societe.siege.voie")
     cp_siege = _required_text(siege.cp, "societe.siege.cp")
     ville_siege = _required_text(siege.ville, "societe.siege.ville")

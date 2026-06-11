@@ -208,8 +208,12 @@ def matrimonial_regime_display(associate: Associe) -> str:
     normalized = _normalized_text(value)
     if "communaute" in normalized and "legale" in normalized:
         return "la communauté légale"
+    if "communaute" in normalized and "universelle" in normalized:
+        return "la communauté universelle"
     if "communaute" in normalized:
         return "la communauté"
+    if "participation" in normalized and "acquet" in normalized:
+        return "la participation aux acquêts"
     for prefix in ("sous le régime de ", "sous le regime de ", "régime de ", "regime de "):
         if value.lower().startswith(prefix):
             return value[len(prefix) :].strip()
@@ -248,8 +252,12 @@ def statuts_sel_matrimonial_regime(associate: Associe) -> str:
     normalized = _normalized_text(value)
     if "separation" in normalized and "bien" in normalized:
         return "la séparation de biens"
+    if "communaute" in normalized and "universelle" in normalized:
+        return "la communauté universelle"
     if "communaute" in normalized:
         return "la communauté"
+    if "participation" in normalized and "acquet" in normalized:
+        return "la participation aux acquêts"
     return matrimonial_regime_display(associate)
 
 
@@ -314,10 +322,11 @@ def add_depot_replacements(
         "depot_fonds.banque.nom",
     )
     if require_address:
-        replacements["[adresse_banque]"] = required_text(
-            ctx.depot_fonds.banque.adresse_affichee,
-            "depot_fonds.banque.adresse_affichee",
-        )
+        # Retours client 2026-06-11 (ticket 3.2) : l'adresse de la banque ne
+        # bloque plus la generation — vide, elle laisse une zone a completer.
+        replacements["[adresse_banque]"] = (
+            ctx.depot_fonds.banque.adresse_affichee or ""
+        ).strip()
 
 
 def add_exercice_replacements(

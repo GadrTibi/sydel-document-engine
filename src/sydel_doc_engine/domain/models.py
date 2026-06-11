@@ -244,6 +244,11 @@ class CessionBailProfessionnel(BaseModel):
     date_reconduction_2: date | str | None = None
     loyer_mensuel: str | None = None
     activite_autorisee_affichee: str | None = None
+    # Descriptif libre du local (retours client 2026-06-11, ticket 2.5) :
+    # texte libre du redacteur. Rempli -> remplace la phrase figee « Les locaux
+    # sont composes... » du modele ; vide -> la phrase est supprimee (jamais de
+    # phrase incomplete, jamais bloquant).
+    descriptif_local: str | None = None
 
 
 class CessionExercice(BaseModel):

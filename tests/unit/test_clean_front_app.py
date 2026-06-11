@@ -168,7 +168,11 @@ def test_clean_front_selarl_medecin_separation_de_biens_blocks_without_conjoint(
 def test_clean_front_selarl_regime_ui_never_exposes_conjoint_address_fields() -> None:
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=120)
 
-    app.checkbox(key="selarl_regime_communautaire").set_value(True)
+    # Retours client 2026-06-11 : le regime de la communaute est derive de la
+    # situation matrimoniale (plus de case a cocher dediee).
+    app.selectbox(key="selarl_situation_maritale").set_value(
+        "Marie(e) sous le regime legal / communaute"
+    )
     app.run(timeout=120)
 
     conjoint_address_labels = [
@@ -420,8 +424,15 @@ def test_clean_front_cession_form_returns_none_without_flag() -> None:
     # n'est pas demandee -> aucun expander parasite dans le wizard de base.
     from sydel_doc_engine.front_app import shell
 
-    cession_context, bail_context = shell._render_cession_form(False, PROFESSION_MEDECIN)
-    scm_context = shell._render_scm_cession_form(False)
+    cession_context, bail_context = shell._render_cession_form(
+        False,
+        PROFESSION_MEDECIN,
+        praticien={},
+        societe={},
+        ordre={},
+        generation={},
+    )
+    scm_context = shell._render_scm_cession_form(False, praticien={})
 
     assert cession_context is None
     assert bail_context is None
@@ -671,9 +682,34 @@ def test_clean_front_streamlit_surface_is_not_legacy() -> None:
     assert app.selectbox(key="selarl_nationalite_choice").label == "Nationalite"
     assert "Portugaise" in app.selectbox(key="selarl_nationalite_choice").options
     assert app.selectbox(key="selarl_situation_maritale").label == "Situation matrimoniale"
+    # Retours client 2026-06-11 (ticket 1.2) : les regimes matrimoniaux sont des
+    # options de la situation matrimoniale ; plus de case a cocher dediee.
+    assert "Marie(e) sous le regime legal / communaute" in app.selectbox(
+        key="selarl_situation_maritale"
+    ).options
+    assert "Marie(e) sous le regime de la separation de biens" in app.selectbox(
+        key="selarl_situation_maritale"
+    ).options
+    assert not any(
+        str(widget.key) == "selarl_regime_communautaire" for widget in app.checkbox
+    )
+    # Ticket 1.1 : libelle « Cession de fonds liberal ».
+    assert any(
+        widget.label == "Cession de fonds liberal"
+        for widget in app.checkbox
+        if str(widget.key) == "selarl_cession"
+    )
+    # Ticket 1.5 : numero et voie fusionnes.
+    assert app.text_input(key="selarl_adresse_voie").label == "Numero et voie"
+    assert not any(
+        str(widget.key) == "selarl_adresse_num_voie" for widget in app.text_input
+    )
+    # Ticket 1.7 : dates d'exercice preremplies dynamiquement (cloture N+1).
+    assert app.text_input(key="selarl_exercice_debut").value == "1er janvier"
+    assert app.text_input(key="selarl_exercice_fin").value == "31 decembre"
     assert (
-        app.checkbox(key="selarl_regime_communautaire").label
-        == "Documents regime de la communaute"
+        app.text_input(key="selarl_exercice_cloture_premier").value
+        == f"31 decembre {date.today().year + 1}"
     )
     assert (
         app.text_input(key="selarl_departement_ordre").label
@@ -865,14 +901,13 @@ def _fill_valid_streamlit_selarl_form(app: AppTest) -> None:
         "selarl_nom_mere": "Anne Martin",
         "selarl_numero_ordre": "ORD-123",
         "selarl_numero_rpps": "10000000001",
-        "selarl_adresse_num_voie": "10",
-        "selarl_adresse_voie": "rue Test",
+        # Numero et voie fusionnes (retours client 2026-06-11, ticket 1.5).
+        "selarl_adresse_voie": "10 rue Test",
         "selarl_adresse_cp": "75001",
         "selarl_adresse_ville": "Paris",
         "selarl_denomination": "SELARL MARTIN",
         "selarl_ville_rcs": "Paris",
-        "selarl_siege_num_voie": "20",
-        "selarl_siege_voie": "avenue du Siege",
+        "selarl_siege_voie": "20 avenue du Siege",
         "selarl_siege_cp": "75002",
         "selarl_siege_ville": "Paris",
         "selarl_departement_ordre": "75",
@@ -893,3 +928,196 @@ def _fill_valid_streamlit_selarl_form(app: AppTest) -> None:
     app.checkbox(key="selarl_ville_naissance_article_au").set_value(False)
     app.number_input(key="selarl_capital_social").set_value(1000)
     app.number_input(key="selarl_nb_parts_total").set_value(100)
+
+
+# ---------------------------------------------------------------------------
+# Retours client 2026-06-11 — ticket SELARL dentiste unipersonnelle + cession
+# ---------------------------------------------------------------------------
+
+
+def test_regime_matrimonial_derivations_cover_new_options() -> None:
+    from sydel_doc_engine.front_app.field_derivations import (
+        MATRIMONIAL_STATUS_PRESETS,
+        regime_communautaire_from_status,
+        regime_matrimonial_from_status,
+    )
+
+    # Ticket 1.2 : les quatre regimes maries sont proposes.
+    married = [item for item in MATRIMONIAL_STATUS_PRESETS if item.startswith("Marie")]
+    assert len(married) == 4
+
+    # Seul le regime legal / communaute declenche DOC-005/DOC-006.
+    assert regime_communautaire_from_status("Marie(e) sous le regime legal / communaute")
+    assert not regime_communautaire_from_status(
+        "Marie(e) sous le regime de la separation de biens"
+    )
+    assert not regime_communautaire_from_status(
+        "Marie(e) sous le regime de la communaute universelle"
+    )
+    assert not regime_communautaire_from_status(
+        "Marie(e) sous le regime de la participation aux acquets"
+    )
+    assert not regime_communautaire_from_status("Celibataire")
+
+    # Le regime injecte dans les statuts suit l'option choisie.
+    assert (
+        regime_matrimonial_from_status(
+            "Marie(e) sous le regime de la communaute universelle", False
+        )
+        == "communaute universelle"
+    )
+    assert (
+        regime_matrimonial_from_status(
+            "Marie(e) sous le regime de la participation aux acquets", False
+        )
+        == "participation aux acquets"
+    )
+    assert (
+        regime_matrimonial_from_status(
+            "Marie(e) sous le regime de la separation de biens", False
+        )
+        == "separation de biens"
+    )
+
+
+def test_split_numero_voie_extracts_leading_number() -> None:
+    from sydel_doc_engine.front_app.field_derivations import split_numero_voie
+
+    assert split_numero_voie("10 rue Test") == ("10", "rue Test")
+    assert split_numero_voie("10 bis avenue Foch") == ("10 bis", "avenue Foch")
+    assert split_numero_voie("Lieu-dit Les Pins") == ("", "Lieu-dit Les Pins")
+    assert split_numero_voie("") == ("", "")
+
+
+def test_clean_front_dentiste_sans_salarie_facultatifs_vides_genere(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    # Cas EXACT du ticket client : dentiste unipersonnel + cession de fonds
+    # liberal, AUCUN salarie, champs facultatifs vides (adresse banque, loyer,
+    # CA/resultat, infos bancaires cession) -> la generation N'EST PAS bloquee,
+    # la phrase salaries est supprimee, aucun token residuel.
+    from sydel_doc_engine.front_app import shell
+
+    monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "dentiste-sans-salarie")
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
+    app.selectbox(key="selarl_profession").set_value("Chirurgien-dentiste")
+    app = app.run(timeout=180)
+
+    _fill_valid_streamlit_selarl_form(app)
+    # Marie sous le regime de la separation de biens : aucune logique
+    # documentaire supplementaire (pas de DOC-005/006), conjoint requis.
+    app.selectbox(key="selarl_situation_maritale").set_value(
+        "Marie(e) sous le regime de la separation de biens"
+    )
+    app = app.run(timeout=180)
+    app.text_input(key="selarl_conjoint_prenom").set_value("Claire")
+    app.text_input(key="selarl_conjoint_nom").set_value("Martin")
+    # Adresse banque NON renseignee (ticket 3.2).
+    app.text_input(key="selarl_depot_banque_adresse").set_value("")
+    app.checkbox(key="selarl_cession").set_value(True)
+    app = app.run(timeout=180)
+
+    # Cession : prix total uniquement ; tout le reste reste vide (3.1).
+    app.text_input(key="selarl_cession_prix_total").set_value("250 000")
+    app = app.run(timeout=180)
+
+    assert app.checkbox(key="selarl_cession_salaries_aucun").value is True
+    assert not any("Blocage" in item.value for item in app.caption)
+    assert app.button(key="clean_generate_dossier").disabled is False
+
+    app.button(key="clean_generate_dossier").click()
+    app = app.run(timeout=180)
+
+    assert [e.value for e in app.error] == []
+    download_labels = [item.label for item in app.get("download_button")]
+    assert "Telecharger acte_cession_cabinet_dentaire.docx" in download_labels
+    assert "Telecharger appel_fond_sel.docx" in download_labels
+    # Pas de documents du regime de la communaute (ticket 1.2).
+    assert "Telecharger lettre_renonciation_associe.docx" not in download_labels
+    assert "Telecharger lettre_avertissement_conjoint.docx" not in download_labels
+
+    generated = app.session_state["clean_generated_dossier"]
+    combined = "\n".join(_docx_text(Path(path)) for path in generated["docx_paths"])
+    assert "[" not in combined
+    assert "]" not in combined
+    acte = next(
+        Path(path)
+        for path in generated["docx_paths"]
+        if "cession_cabinet_dentaire" in Path(path).name
+    )
+    acte_text = _docx_text(acte)
+    # Aucun salarie -> phrase supprimee, pas de « Neant » (tickets 2.12 / 3.3).
+    assert "contrats de travail de" not in acte_text
+    assert "Néant" not in acte_text
+    # Vendeur = associe unique repris automatiquement (ticket 2.1).
+    assert "Jean" in acte_text
+    assert "Martin" in acte_text
+
+
+def test_clean_front_signature_lieu_seeded_from_siege_ville(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    # Ticket 1.6 : le lieu de signature est preremplie avec la ville du siege
+    # social et reste modifiable.
+    from sydel_doc_engine.front_app import shell
+
+    monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "lieu-signature")
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=120)
+    app.text_input(key="selarl_siege_ville").set_value("Lyon")
+    app = app.run(timeout=120)
+
+    assert app.text_input(key="selarl_signature_lieu").value == "Lyon"
+
+    app.text_input(key="selarl_signature_lieu").set_value("Paris")
+    app = app.run(timeout=120)
+    assert app.text_input(key="selarl_signature_lieu").value == "Paris"
+
+
+def test_clean_front_statuts_render_new_marriage_regimes(tmp_path: Path) -> None:
+    # Ticket 1.2 : communaute universelle et participation aux acquets sont
+    # proposes, rendus correctement dans les statuts, SANS DOC-005/DOC-006.
+    for slug, regime, expected in (
+        ("universelle", "communaute universelle", "la communauté universelle"),
+        ("acquets", "participation aux acquets", "la participation aux acquêts"),
+    ):
+        data_entry = _valid_selarl_input(
+            PROFESSION_MEDECIN,
+            married_separation=True,
+            regime_matrimonial=regime,
+        )
+        dossier_type = dossier_type_by_label("SELARL creation V1")
+        plan = build_clean_generation_plan(dossier_type, data_entry)
+        assert plan.can_generate is True
+        assert "DOC-005" not in plan.document_codes
+        assert "DOC-006" not in plan.document_codes
+
+        generated = generate_selarl_dossier(data_entry, tmp_path / slug)
+        statuts_path = next(
+            path for path in generated.docx_paths if path.name.startswith("statuts")
+        )
+        statuts_text = _docx_text(statuts_path)
+        assert (
+            f"marié sous le régime de {expected} avec Madame Claire Martin"
+            in statuts_text
+        )
+
+
+def test_clean_front_banque_adresse_vide_ne_bloque_pas(tmp_path: Path) -> None:
+    # Ticket 3.2 : adresse de banque non renseignee -> generation NON bloquee,
+    # zone vide a completer dans les statuts medecin.
+    data_entry = _valid_selarl_input(PROFESSION_MEDECIN, depot_banque_adresse="")
+    dossier_type = dossier_type_by_label("SELARL creation V1")
+
+    plan = build_clean_generation_plan(dossier_type, data_entry)
+    assert plan.can_generate is True
+    assert not any("banque" in blocker.casefold() for blocker in plan.blockers)
+
+    generated = generate_selarl_dossier(data_entry, tmp_path / "sans-adresse-banque")
+    statuts_path = next(
+        path for path in generated.docx_paths if path.name.startswith("statuts")
+    )
+    statuts_text = _docx_text(statuts_path)
+    assert "[" not in statuts_text
+    assert "]" not in statuts_text

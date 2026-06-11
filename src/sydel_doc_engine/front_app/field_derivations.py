@@ -24,9 +24,17 @@ NATIONALITY_PRESETS: Final = (
     "Luxembourgeoise",
     "Autre",
 )
+# Regimes matrimoniaux explicites (retours client 2026-06-11, ticket SELARL
+# dentiste 1.2) : seul le regime legal / communaute declenche la logique
+# documentaire DOC-005/DOC-006 ; les trois autres regimes maries n'entrainent
+# aucun document complementaire.
+MATRIMONIAL_STATUS_MARRIED_COMMUNAUTE: Final = "Marie(e) sous le regime legal / communaute"
 MATRIMONIAL_STATUS_PRESETS: Final = (
     "Celibataire",
-    "Marie(e)",
+    MATRIMONIAL_STATUS_MARRIED_COMMUNAUTE,
+    "Marie(e) sous le regime de la separation de biens",
+    "Marie(e) sous le regime de la communaute universelle",
+    "Marie(e) sous le regime de la participation aux acquets",
     "Pacs(e)",
     "Divorce(e)",
     "Veuf / veuve",
@@ -73,6 +81,26 @@ _MONTHS: Final = (
     "novembre",
     "decembre",
 )
+
+
+_NUM_VOIE_RE: Final = re.compile(
+    r"^\s*(\d+\s*(?:bis|ter|quater)?)\s+(.+)$",
+    re.IGNORECASE,
+)
+
+
+def split_numero_voie(value: str) -> tuple[str, str]:
+    """Decoupe « 10 rue Test » en (« 10 », « rue Test »).
+
+    Le champ unique « Numero et voie » (retours client 2026-06-11, ticket 1.5)
+    alimente les generateurs qui consomment numero et voie separement. Sans
+    numero en tete (lieu-dit...), tout part dans la voie.
+    """
+    cleaned = (value or "").strip()
+    match = _NUM_VOIE_RE.match(cleaned)
+    if match is None:
+        return "", cleaned
+    return match.group(1).strip(), match.group(2).strip()
 
 
 def derive_gender_from_civilite(civilite: str) -> Gender:
@@ -157,8 +185,25 @@ def regime_matrimonial_from_status(label: str, regime_communautaire: bool) -> st
         return "regime de communaute"
     status = matrimonial_status_value(label)
     if status == "marie":
+        normalized = _normalize_label(label)
+        if "universelle" in normalized:
+            return "communaute universelle"
+        if "participation" in normalized:
+            return "participation aux acquets"
         return "separation de biens"
     return status
+
+
+def regime_communautaire_from_status(label: str) -> bool:
+    """Le regime legal / communaute est le seul a declencher DOC-005/DOC-006.
+
+    Derive du libelle de situation matrimoniale (plus de case a cocher dediee,
+    retours client 2026-06-11).
+    """
+    normalized = _normalize_label(label)
+    return normalized.startswith("marie") and (
+        "legal" in normalized or "communaute" in normalized
+    ) and "universelle" not in normalized
 
 
 def integer_to_french_words(value: int) -> str:

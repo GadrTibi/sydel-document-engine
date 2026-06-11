@@ -113,7 +113,83 @@ def generate_cession_cabinet_docx(
         replacements,
         output_path,
         gender_pairs=gender_pairs,
+        paragraph_overrides=_build_paragraph_overrides(ctx, variant),
+        segment_overrides=_build_segment_overrides(ctx),
     )
+
+
+# Segments matrimoniaux EXACTS des modeles (chaines figees relevees dans
+# project/source_documents/lot_03/). Quand le vendeur n'est PAS marie, le
+# segment complet « ... sous le regime de ... avec ... » est remplace par la
+# seule situation maritale : aucune phrase incomplete (retours client
+# 2026-06-11). Vendeur marie -> tokens remplis normalement.
+_VENDEUR_MARITAL_SEGMENTS: tuple[str, ...] = (
+    (
+        "[situation_maritale_vendeur] sous le régime de [regime_matrimonial_vendeur] "
+        "avec [civilite_conjoint_vendeur] [prenom_conjoint_vendeur] [nom_conjoint_vendeur]."
+    ),
+    (
+        "[situation_maritale_vendeur] à [prenom_conjoint_vendeur] [nom_conjoint_vendeur], "
+        "sous le régime de [regime_matrimonial_vendeur]."
+    ),
+    (
+        "[situation_maritale_vendeur] avec [civilite_conjoint_vendeur] "
+        "[prenom_conjoint_vendeur] [nom_conjoint_vendeur], sous le régime de "
+        "[regime_matrimonial_vendeur], sans contrat de mariage."
+    ),
+)
+
+
+def _build_segment_overrides(ctx: DocumentGenerationContext) -> dict[str, str]:
+    cession = ctx.cession
+    if cession is None:
+        return {}
+    vendeur = cession.vendeur or CessionVendeur()
+    situation = (vendeur.situation_maritale or "").strip()
+    normalized = situation.casefold()
+    if not situation or normalized.startswith("mari"):
+        return {}
+    return {segment: f"{situation}." for segment in _VENDEUR_MARITAL_SEGMENTS}
+
+
+def _build_paragraph_overrides(
+    ctx: DocumentGenerationContext,
+    variant: CessionCabinetVariant,
+) -> dict[str, str | None]:
+    """Surcharges PARAGRAPHE entier, pilotees par token ancre (retours client 2026-06-11).
+
+    token -> texte : le paragraphe contenant le token est remplace par ce texte ;
+    token -> None : le paragraphe est supprime (aucune phrase incomplete).
+    - « Les locaux sont composes d'une piece de [superficie_local]... » : la phrase
+      figee est remplacee par le descriptif libre du local s'il est saisi, sinon
+      supprimee (ticket 2.5 : jamais de phrase automatique imposee).
+    - [clause_reprise_salaries] (acte dentaire) : 0 salarie -> la phrase relative
+      aux salaries est supprimee du document (ticket 2.12/3.3 ; remplace la
+      convention « Neant » anterieure).
+    """
+    overrides: dict[str, str | None] = {}
+    cession = ctx.cession
+    if cession is None:
+        return overrides
+    bail = cession.bail_professionnel or CessionBailProfessionnel()
+    cabinet = cession.cabinet or CessionCabinet()
+    descriptif = (bail.descriptif_local or "").strip()
+    superficie = (cabinet.superficie_local or "").strip()
+    if descriptif:
+        overrides["[superficie_local]"] = descriptif
+    elif not superficie:
+        # Ni descriptif libre ni superficie : la phrase figee est supprimee.
+        # Une superficie renseignee (scenarios existants) conserve la phrase du
+        # modele avec le token remplace.
+        overrides["[superficie_local]"] = None
+    if variant.etape == ACTE and variant.type_cabinet == DENTAIRE and not cession.salaries:
+        overrides["[clause_reprise_salaries]"] = None
+    if variant.etape == ACTE and variant.type_cabinet == MEDICAL:
+        # Pas de reprise de parts SCM -> la clause « De ceder les [...] parts
+        # sociales ... SCM » (paragraphe unique, ancre par token) est supprimee.
+        if cession.scm is None or not cession.scm.actif:
+            overrides["[nb_parts_scm_a_ceder]"] = None
+    return overrides
 
 
 # Paires d'accord en genre des modeles de cession, pilotees par la BONNE personne.
@@ -166,8 +242,22 @@ def render_cession_from_template(
     output_path: Path,
     *,
     gender_pairs: list[tuple[Gender, list[tuple[str, str]]]] | None = None,
+    paragraph_overrides: dict[str, str | None] | None = None,
+    segment_overrides: dict[str, str] | None = None,
 ) -> Path:
     """Charge le modele tokenise et remplace chaque token [xxx] run par run.
+
+    `segment_overrides` (optionnel) : remplacement de SEGMENTS exacts du modele
+    (chaines litterales pouvant contenir plusieurs tokens) AVANT le remplacement
+    token par token. Le paragraphe touche est reecrit sur son premier run.
+    Utilise pour les clauses matrimoniales du vendeur non marie.
+
+    `paragraph_overrides` (optionnel) : surcharges PARAGRAPHE entier appliquees
+    AVANT le remplacement des tokens. Pour chaque token ancre present dans un
+    paragraphe : valeur texte -> le paragraphe est reecrit avec ce texte (mise en
+    forme du premier run conservee) ; valeur None -> le paragraphe est supprime.
+    Permet les clauses « tout ou rien » (descriptif libre du local, phrase
+    salaries) sans jamais laisser de phrase incomplete.
 
     `gender_pairs` (optionnel) : liste de couples `(genre, paires)` appliques
     APRES le remplacement des tokens et AVANT la securite anti-token-residuel,
@@ -180,6 +270,11 @@ def render_cession_from_template(
     ValueError en listant les tokens residuels (un token oublie = un test rouge).
     """
     document = Document(str(model_path))
+
+    if paragraph_overrides:
+        _apply_paragraph_overrides(document, paragraph_overrides)
+    if segment_overrides:
+        _apply_segment_overrides(document, segment_overrides)
 
     for paragraph in _iter_all_paragraphs(document):
         for run in paragraph.runs:
@@ -214,6 +309,57 @@ def _iter_all_paragraphs(document):
         for row in table.rows:
             for cell in row.cells:
                 yield from cell.paragraphs
+
+
+def _apply_segment_overrides(
+    document,
+    segment_overrides: dict[str, str],
+) -> None:
+    """Remplace des segments litteraux multi-tokens dans les paragraphes.
+
+    Le texte fusionne du paragraphe est reecrit sur le premier run (meme
+    strategie de repli que l'accord en genre quand une forme est eclatee).
+    """
+    for paragraph in _iter_all_paragraphs(document):
+        text = paragraph.text
+        if not any(segment in text for segment in segment_overrides):
+            continue
+        for segment, value in segment_overrides.items():
+            text = text.replace(segment, value)
+        if paragraph.runs:
+            paragraph.runs[0].text = text
+            for run in paragraph.runs[1:]:
+                run.text = ""
+        else:
+            paragraph.text = text
+
+
+def _apply_paragraph_overrides(
+    document,
+    paragraph_overrides: dict[str, str | None],
+) -> None:
+    """Reecrit ou supprime les paragraphes contenant un token ancre.
+
+    La suppression retire l'element XML du paragraphe (corps comme cellules) ;
+    la reecriture conserve la mise en forme du premier run.
+    """
+    for paragraph in list(_iter_all_paragraphs(document)):
+        text = paragraph.text
+        for token, override in paragraph_overrides.items():
+            if token not in text:
+                continue
+            if override is None:
+                element = paragraph._element
+                parent = element.getparent()
+                if parent is not None:
+                    parent.remove(element)
+            elif paragraph.runs:
+                paragraph.runs[0].text = override
+                for run in paragraph.runs[1:]:
+                    run.text = ""
+            else:
+                paragraph.text = override
+            break
 
 
 def _apply_gender_pairs_to_paragraph(
@@ -299,6 +445,12 @@ def _build_cession_replacements(ctx: DocumentGenerationContext) -> dict[str, str
             return
         replacements[token] = str(value)
 
+    def put_opt(token: str, value: object | None) -> None:
+        # Champ FACULTATIF (retours client 2026-06-11) : une valeur absente est
+        # rendue comme zone vide a completer a la main, sans bloquer la
+        # generation ni laisser de token residuel.
+        replacements[token] = "" if value is None else str(value)
+
     # --- Vendeur ---
     put("[civilite_vendeur]", vendeur.civilite_affichage)
     put("[prenom_vendeur]", vendeur.prenom)
@@ -306,21 +458,21 @@ def _build_cession_replacements(ctx: DocumentGenerationContext) -> dict[str, str
     put("[profession_vendeur]", vendeur.profession)
     put("[date_naissance_vendeur]", _french_date(vendeur.date_naissance))
     put("[ville_naissance_vendeur]", vendeur.ville_naissance)
-    put("[departement_naissance_vendeur]", vendeur.departement_naissance)
-    put("[cp_naissance_vendeur]", vendeur.cp_naissance)
-    put("[pays_naissance_vendeur]", vendeur.pays_naissance)
+    put_opt("[departement_naissance_vendeur]", vendeur.departement_naissance)
+    put_opt("[cp_naissance_vendeur]", vendeur.cp_naissance)
+    put_opt("[pays_naissance_vendeur]", vendeur.pays_naissance)
     put("[nationalite_vendeur]", vendeur.nationalite)
     put("[adresse_vendeur]", vendeur.adresse_affichee)
-    put("[adresse_exercice_vendeur]", vendeur.adresse_exercice_affichee)
-    put("[numero_siren_vendeur]", vendeur.numero_siren)
-    put("[numero_ordre_vendeur]", vendeur.numero_ordre)
-    put("[numero_rpps_vendeur]", vendeur.numero_rpps)
-    put("[ordre_departemental_vendeur]", vendeur.ordre_departemental)
+    put_opt("[adresse_exercice_vendeur]", vendeur.adresse_exercice_affichee)
+    put_opt("[numero_siren_vendeur]", vendeur.numero_siren)
+    put_opt("[numero_ordre_vendeur]", vendeur.numero_ordre)
+    put_opt("[numero_rpps_vendeur]", vendeur.numero_rpps)
+    put_opt("[ordre_departemental_vendeur]", vendeur.ordre_departemental)
     put("[situation_maritale_vendeur]", vendeur.situation_maritale)
-    put("[regime_matrimonial_vendeur]", vendeur.regime_matrimonial)
-    put("[civilite_conjoint_vendeur]", conjoint.civilite_affichage)
-    put("[prenom_conjoint_vendeur]", conjoint.prenom)
-    put("[nom_conjoint_vendeur]", conjoint.nom)
+    put_opt("[regime_matrimonial_vendeur]", vendeur.regime_matrimonial)
+    put_opt("[civilite_conjoint_vendeur]", conjoint.civilite_affichage)
+    put_opt("[prenom_conjoint_vendeur]", conjoint.prenom)
+    put_opt("[nom_conjoint_vendeur]", conjoint.nom)
 
     # --- Acquereur ---
     put("[denomination_societe_acquereur]", acquereur.denomination_societe)
@@ -328,10 +480,13 @@ def _build_cession_replacements(ctx: DocumentGenerationContext) -> dict[str, str
     put("[capital_social_acquereur]", acquereur.capital_social)
     put("[adresse_siege_acquereur]", _address_label(acquereur.siege))
     put("[ville_rcs_acquereur]", acquereur.rcs_ville)
-    put("[numero_rcs_acquereur]", acquereur.numero_rcs)
-    put("[numero_siret_acquereur]", acquereur.numero_siret)
-    put("[date_immatriculation_acquereur]", _french_date(acquereur.date_immatriculation))
-    put("[date_inscription_ordre_acquereur]", _french_date(acquereur.date_inscription_ordre))
+    put_opt("[numero_rcs_acquereur]", acquereur.numero_rcs)
+    put_opt("[numero_siret_acquereur]", acquereur.numero_siret)
+    put_opt("[date_immatriculation_acquereur]", _french_date(acquereur.date_immatriculation))
+    put_opt(
+        "[date_inscription_ordre_acquereur]",
+        _french_date(acquereur.date_inscription_ordre),
+    )
     put("[civilite_acquereur_representant]", representant.civilite_affichage)
     put("[prenom_acquereur_representant]", representant.prenom)
     put("[nom_acquereur_representant]", representant.nom)
@@ -339,54 +494,55 @@ def _build_cession_replacements(ctx: DocumentGenerationContext) -> dict[str, str
 
     # --- Cabinet ---
     put("[adresse_cabinet]", cabinet.adresse_affichee)
-    put("[adresse_locaux]", cabinet.adresse_locaux_affichee)
-    put("[telephone_cabinet]", cabinet.telephone)
+    put_opt("[adresse_locaux]", cabinet.adresse_locaux_affichee or cabinet.adresse_affichee)
+    put_opt("[telephone_cabinet]", cabinet.telephone)
     put("[superficie_local]", cabinet.superficie_local)
     put("[nature_fonds_liberal]", cabinet.nature_fonds_liberal)
     put("[description_origine_propriete]", cabinet.description_origine_propriete)
-    put("[date_origine_propriete]", _french_date(cabinet.date_origine_propriete))
-    put("[annees_acquisition_patientele]", cabinet.annees_acquisition_patientele)
-    put("[prix_origine_propriete]", cabinet.prix_origine_propriete)
+    put_opt("[date_origine_propriete]", _french_date(cabinet.date_origine_propriete))
+    put_opt("[annees_acquisition_patientele]", cabinet.annees_acquisition_patientele)
+    put_opt("[prix_origine_propriete]", cabinet.prix_origine_propriete)
     if precedent is not None:
-        put("[civilite_precedent_proprietaire]", precedent.civilite_affichage)
-        put("[prenom_precedent_proprietaire]", precedent.prenom)
-        put("[nom_precedent_proprietaire]", precedent.nom)
+        put_opt("[civilite_precedent_proprietaire]", precedent.civilite_affichage)
+        put_opt("[prenom_precedent_proprietaire]", precedent.prenom)
+        put_opt("[nom_precedent_proprietaire]", precedent.nom)
     # Origine de propriete (modeles MEDICAUX) : phrase decrivant le VENDEUR,
     # variante creee/achetee (defaut "cree"), ou texte libre pour un cas complexe.
-    put("[origine_propriete_phrase]", _build_origine_propriete_phrase(cession))
+    # Donnees incompletes -> zone vide a completer a la main (jamais bloquant).
+    put_opt("[origine_propriete_phrase]", _build_origine_propriete_phrase(cession))
 
     # --- Bail professionnel ---
-    put("[date_bail]", _french_date(bail.date_bail))
+    put_opt("[date_bail]", _french_date(bail.date_bail))
     put("[duree_bail]", bail.duree)
-    put("[date_debut_bail]", _french_date(bail.date_debut))
-    put("[date_fin_bail]", _french_date(bail.date_fin))
-    put("[date_reconduction_bail_1]", _french_date(bail.date_reconduction_1))
-    put("[date_reconduction_bail_2]", _french_date(bail.date_reconduction_2))
-    put("[loyer_mensuel]", bail.loyer_mensuel)
+    put_opt("[date_debut_bail]", _french_date(bail.date_debut))
+    put_opt("[date_fin_bail]", _french_date(bail.date_fin))
+    put_opt("[date_reconduction_bail_1]", _french_date(bail.date_reconduction_1))
+    put_opt("[date_reconduction_bail_2]", _french_date(bail.date_reconduction_2))
+    put_opt("[loyer_mensuel]", bail.loyer_mensuel)
 
     # --- Prix ---
     put("[prix_cession]", prix.total)
     put("[prix_cession_lettres]", prix.total_lettres)
-    put("[prix_elements_corporels]", prix.elements_corporels)
-    put("[prix_elements_corporels_lettres]", prix.elements_corporels_lettres)
-    put("[prix_elements_incorporels]", prix.elements_incorporels)
-    put("[prix_elements_incorporels_lettres]", prix.elements_incorporels_lettres)
+    put_opt("[prix_elements_corporels]", prix.elements_corporels)
+    put_opt("[prix_elements_corporels_lettres]", prix.elements_corporels_lettres)
+    put_opt("[prix_elements_incorporels]", prix.elements_incorporels)
+    put_opt("[prix_elements_incorporels_lettres]", prix.elements_incorporels_lettres)
 
     # --- Financement : credit-vendeur (acte medical) et pret (compromis) ---
     put("[montant_credit_vendeur]", credit_vendeur.montant)
     put("[duree_credit_vendeur]", credit_vendeur.duree)
     put("[taux_credit_vendeur]", credit_vendeur.taux)
     put("[majoration_interet_retard]", credit_vendeur.majoration_interet_retard)
-    put("[montant_pret]", pret.montant)
-    put("[taux_pret]", pret.taux)
-    put("[duree_pret]", pret.duree)
+    put_opt("[montant_pret]", pret.montant)
+    put_opt("[taux_pret]", pret.taux)
+    put_opt("[duree_pret]", pret.duree)
 
     # --- SCM (acte medical) ---
     if cession.scm is not None:
         put("[nb_parts_scm_a_ceder]", cession.scm.nb_parts_a_ceder)
 
     # --- Conditions suspensives (compromis) ---
-    put("[date_realisation_limite]", _french_date(cession.date_limite_realisation))
+    put_opt("[date_realisation_limite]", _french_date(cession.date_limite_realisation))
 
     # --- Salaries (acte dentaire) : reprise 0 / 1 / N (regle NotebookLM) ---
     # 0 salarie -> "Néant" (convention systeme) ; 1..N -> liste nom/prenom/poste.
@@ -399,9 +555,9 @@ def _build_cession_replacements(ctx: DocumentGenerationContext) -> dict[str, str
     for index in (0, 1, 2):
         if index < len(cession.exercices):
             exercice = cession.exercices[index]
-            put(f"[exercice_{index + 1}]", exercice.periode)
-            put(f"[chiffre_affaires_{index + 1}]", exercice.chiffre_affaires)
-            put(f"[resultat_{index + 1}]", exercice.resultat)
+            put_opt(f"[exercice_{index + 1}]", exercice.periode)
+            put_opt(f"[chiffre_affaires_{index + 1}]", exercice.chiffre_affaires)
+            put_opt(f"[resultat_{index + 1}]", exercice.resultat)
 
     # --- Document / signature ---
     put("[lieu_signature]", signature.lieu)
@@ -489,7 +645,7 @@ def _build_origine_propriete_phrase(cession: CessionContext) -> str | None:
     date_origine = _french_date(cabinet.date_origine_propriete)
 
     if mode == ORIGINE_MODE_CREE:
-        if date_origine is None:
+        if not date_origine:
             return description or None
         phrase = (
             f"{sujet} est propriétaire des éléments constitutifs du cabinet "
@@ -503,7 +659,7 @@ def _build_origine_propriete_phrase(cession: CessionContext) -> str | None:
             else None
         )
         prix = (cabinet.prix_origine_propriete or "").strip()
-        if date_origine is None or precedent_label is None or not prix:
+        if not date_origine or not precedent_label or not prix:
             return description or None
         phrase = (
             f"{sujet} est propriétaire des éléments constitutifs du cabinet "
@@ -805,12 +961,10 @@ def _required_representant(representant: CessionRepresentant | None) -> CessionR
 def _required_cabinet(cabinet: CessionCabinet | None) -> CessionCabinet:
     if cabinet is None:
         raise ValueError(f"cession.cabinet est obligatoire pour {DOCUMENT_CODE}.")
-    for field_name, value in [
-        ("cession.cabinet.adresse_affichee", cabinet.adresse_affichee),
-        ("cession.cabinet.adresse_locaux_affichee", cabinet.adresse_locaux_affichee),
-        ("cession.cabinet.telephone", cabinet.telephone),
-    ]:
-        _required_value(value, field_name)
+    _required_value(cabinet.adresse_affichee, "cession.cabinet.adresse_affichee")
+    # Telephone et adresse des locaux : champs FACULTATIFS (retours client
+    # 2026-06-11, ticket 3.1) — vides, ils laissent une zone a completer a la
+    # main sans bloquer la generation.
     # description_origine_propriete n'est plus un token autonome : la clause
     # d'origine medicale est construite a partir des donnees vendeur (mode
     # cree/achete). Le texte libre n'est exige que pour un cas COMPLEXE
@@ -821,28 +975,22 @@ def _required_cabinet(cabinet: CessionCabinet | None) -> CessionCabinet:
 def _required_bail(bail: CessionBailProfessionnel | None) -> CessionBailProfessionnel:
     if bail is None:
         raise ValueError(f"cession.bail_professionnel est obligatoire pour {DOCUMENT_CODE}.")
-    for field_name, value in [
-        ("cession.bail_professionnel.date_bail", bail.date_bail),
-        ("cession.bail_professionnel.duree", bail.duree),
-        (
-            "cession.bail_professionnel.activite_autorisee_affichee",
-            bail.activite_autorisee_affichee,
-        ),
-    ]:
-        _required_value(value, field_name)
+    # Retours client 2026-06-11 (ticket 3.1) : seule la duree reste obligatoire
+    # (preremplie « six annees »). Dates et activite vides -> zones a completer
+    # a la main, jamais bloquantes.
+    _required_value(bail.duree, "cession.bail_professionnel.duree")
     return bail
 
 
 def _required_prix(prix: CessionPrix | None) -> CessionPrix:
     if prix is None:
         raise ValueError(f"cession.prix est obligatoire pour {DOCUMENT_CODE}.")
+    # Retours client 2026-06-11 (ticket 3.1) : le prix TOTAL (chiffres + lettres)
+    # reste le strict necessaire d'un acte de cession ; la ventilation
+    # corporels / incorporels vide laisse une zone a completer a la main.
     for field_name, value in [
         ("cession.prix.total", prix.total),
         ("cession.prix.total_lettres", prix.total_lettres),
-        ("cession.prix.elements_corporels", prix.elements_corporels),
-        ("cession.prix.elements_corporels_lettres", prix.elements_corporels_lettres),
-        ("cession.prix.elements_incorporels", prix.elements_incorporels),
-        ("cession.prix.elements_incorporels_lettres", prix.elements_incorporels_lettres),
     ]:
         _required_text(value, field_name)
     return prix
@@ -859,11 +1007,8 @@ def _required_document(document: DocumentContext | None) -> DocumentContext:
 def _required_exercices(exercices: list[CessionExercice]) -> list[CessionExercice]:
     if len(exercices) != 3:
         raise ValueError("cession.exercices doit contenir exactement trois lignes.")
-    for index, exercice in enumerate(exercices):
-        prefix = f"cession.exercices[{index}]"
-        _required_text(exercice.periode, f"{prefix}.periode")
-        _required_text(exercice.chiffre_affaires, f"{prefix}.chiffre_affaires")
-        _required_text(exercice.resultat, f"{prefix}.resultat")
+    # Retours client 2026-06-11 (tickets 2.8 / 3.1) : CA et resultat vides par
+    # defaut et jamais bloquants -> zones a completer a la main dans l'acte.
     return exercices
 
 

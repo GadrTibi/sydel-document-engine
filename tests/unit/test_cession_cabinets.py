@@ -364,13 +364,15 @@ def test_medical_models_have_no_dentaire_leak(tmp_path: Path) -> None:
         assert "cabinet médical" in lowered
 
 
-def test_acte_dentaire_salaries_zero_renders_neant(tmp_path: Path) -> None:
-    # Regle NotebookLM : 0 salarie -> convention systeme "Néant".
+def test_acte_dentaire_salaries_zero_removes_clause(tmp_path: Path) -> None:
+    # Retours client 2026-06-11 (tickets 2.12 / 3.3) : 0 salarie -> la phrase
+    # relative aux salaries est SUPPRIMEE de l'acte (remplace la convention
+    # « Néant » anterieure). Aucune erreur, generation non bloquee.
     ctx = _context(type_cabinet="dentaire", salaries=[])
 
     text = _docx_text(ActeCessionCabinetDentaireGenerator().generate(ctx, tmp_path))
 
-    assert "Néant." in text
+    assert "Néant" not in text
     assert "De reprendre les contrats de travail de" not in text
     _assert_no_residual_tokens(text)
 
@@ -574,3 +576,132 @@ def test_orchestrator_selects_only_requested_cession_cabinet_document() -> None:
     assert "DOC-009" not in selected_ids
     assert "DOC-010" not in selected_ids
     assert "DOC-011" not in selected_ids
+
+
+# ---------------------------------------------------------------------------
+# Retours client 2026-06-11 (ticket SELARL dentiste unipersonnelle + cession)
+# ---------------------------------------------------------------------------
+
+
+def _with_cession_updates(ctx: DocumentGenerationContext, **updates) -> DocumentGenerationContext:
+    return ctx.model_copy(update={"cession": ctx.cession.model_copy(update=updates)})
+
+
+def test_descriptif_local_replaces_fixed_sentence(tmp_path: Path) -> None:
+    # Ticket 2.5 : descriptif libre rempli -> insere tel quel a la place de la
+    # phrase type « Les locaux sont composés d'une pièce de X mètres carrés... ».
+    ctx = _context(credit_vendeur=True)
+    bail = ctx.cession.bail_professionnel.model_copy(
+        update={"descriptif_local": "Les locaux comprennent deux salles de soins et un accueil."}
+    )
+    ctx = _with_cession_updates(ctx, bail_professionnel=bail)
+
+    text = _docx_text(ActeCessionCabinetMedicalGenerator().generate(ctx, tmp_path))
+
+    assert "Les locaux comprennent deux salles de soins et un accueil." in text
+    assert "mètres carrés" not in text
+    _assert_no_residual_tokens(text)
+
+
+def test_descriptif_local_empty_removes_sentence(tmp_path: Path) -> None:
+    # Ticket 2.5 : descriptif vide (et pas de superficie) -> AUCUNE phrase
+    # incomplete, paragraphe supprime, generation non bloquee.
+    ctx = _context(credit_vendeur=True)
+    bail = ctx.cession.bail_professionnel.model_copy(update={"descriptif_local": ""})
+    cabinet = ctx.cession.cabinet.model_copy(update={"superficie_local": None})
+    ctx = _with_cession_updates(ctx, bail_professionnel=bail, cabinet=cabinet)
+
+    text = _docx_text(ActeCessionCabinetMedicalGenerator().generate(ctx, tmp_path))
+
+    assert "Les locaux sont composés" not in text
+    assert "mètres carrés" not in text
+    _assert_no_residual_tokens(text)
+
+
+def test_descriptif_local_absent_keeps_superficie_behaviour(tmp_path: Path) -> None:
+    # Compatibilite scenarios : superficie renseignee sans descriptif -> la
+    # phrase type du modele est conservee avec la superficie injectee.
+    ctx = _context(credit_vendeur=True)
+
+    text = _docx_text(ActeCessionCabinetMedicalGenerator().generate(ctx, tmp_path))
+
+    assert "80 m2 mètres carrés" in text
+    _assert_no_residual_tokens(text)
+
+
+def test_vendeur_celibataire_has_no_marital_remainder(tmp_path: Path) -> None:
+    # Vendeur non marie -> le segment « ... sous le régime de ... avec ... » est
+    # entierement remplace par la seule situation (aucune phrase incomplete).
+    for generator, kwargs, out in (
+        (
+            ActeCessionCabinetDentaireGenerator(),
+            {"type_cabinet": "dentaire", "salaries": _DENT_SALARIES},
+            "dent",
+        ),
+        (ActeCessionCabinetMedicalGenerator(), {"credit_vendeur": True}, "med"),
+        (CompromisCessionCabinetMedicalGenerator(), {"etape": "compromis"}, "comp"),
+    ):
+        ctx = _context(**kwargs)
+        vendeur = ctx.cession.vendeur.model_copy(
+            update={
+                "situation_maritale": "célibataire",
+                "regime_matrimonial": None,
+                "conjoint": None,
+            }
+        )
+        ctx = _with_cession_updates(ctx, vendeur=vendeur)
+
+        text = _docx_text(generator.generate(ctx, tmp_path / out))
+
+        assert "célibataire." in text
+        assert "sous le régime de  " not in text
+        assert "avec  " not in text
+        _assert_no_residual_tokens(text)
+
+
+def test_optional_fields_empty_render_blank_zones(tmp_path: Path) -> None:
+    # Tickets 2.6 / 2.8 / 3.1 : CA / resultat / loyer / pret vides -> zones a
+    # completer a la main, generation NON bloquee, aucun token residuel.
+    ctx = _context(etape="compromis")
+    cession = ctx.cession.model_copy(
+        update={
+            "exercices": [
+                CessionExercice(periode="2023", chiffre_affaires="", resultat=""),
+                CessionExercice(periode="2024", chiffre_affaires="", resultat=""),
+                CessionExercice(periode="2025", chiffre_affaires="", resultat=""),
+            ],
+            "bail_professionnel": ctx.cession.bail_professionnel.model_copy(
+                update={"loyer_mensuel": "", "date_bail": None}
+            ),
+            "financement": ctx.cession.financement.model_copy(
+                update={"pret": CessionPret(montant="", taux="", duree="")}
+            ),
+            "prix": ctx.cession.prix.model_copy(
+                update={
+                    "elements_corporels": "",
+                    "elements_corporels_lettres": "",
+                    "elements_incorporels": "",
+                    "elements_incorporels_lettres": "",
+                }
+            ),
+        }
+    )
+    ctx = ctx.model_copy(update={"cession": cession})
+
+    text = _docx_text(CompromisCessionCabinetMedicalGenerator().generate(ctx, tmp_path))
+
+    _assert_no_residual_tokens(text)
+    # Le prix total (strict necessaire) reste rendu.
+    assert "300 000" in text
+
+
+def test_acte_medical_scm_clause_removed_when_inactive(tmp_path: Path) -> None:
+    # Pas de reprise de parts SCM -> la clause « De céder les ... parts sociales »
+    # est supprimee de l'acte medical (paragraphe ancre par token).
+    ctx = _context(credit_vendeur=True)
+    ctx = _with_cession_updates(ctx, scm=CessionScm(actif=False, nb_parts_a_ceder=None))
+
+    text = _docx_text(ActeCessionCabinetMedicalGenerator().generate(ctx, tmp_path))
+
+    assert "parts sociales lui appartenant au sein de la Société civile de Moyens" not in text
+    _assert_no_residual_tokens(text)

@@ -52,7 +52,7 @@ class AppelFondSelGenerator:
         cession = required_cession(ctx)
         cabinet_type_label = _CABINET_TYPE_LABELS[cabinet_type(ctx)]
         financement = _required_financement(cession.financement)
-        destinataire = _required_destinataire(financement.destinataire)
+        destinataire = financement.destinataire
         cabinet = _required_cabinet(cession.cabinet)
         vendeur = _required_vendeur(cession.vendeur)
         acquereur = _required_acquereur(cession.acquereur)
@@ -61,10 +61,11 @@ class AppelFondSelGenerator:
         docx = new_document()
         # Logo SYDEL en header, aligne a DROITE (retour UAT Rafael DOC-008).
         add_header_logo(docx, alignment=WD_ALIGN_PARAGRAPH.RIGHT)
-        nom_banque = required_text(
-            financement.banque.nom if financement.banque else None,
-            "cession.financement.banque.nom",
-        )
+        # Retours client 2026-06-11 (tickets 2.11 / 3.2) : les informations
+        # bancaires ne bloquent plus la generation. Banque ou destinataire
+        # absents -> lignes omises ; montant absent -> zone vide a completer.
+        banque = financement.banque
+        nom_banque = (banque.nom or "").strip() if banque is not None else ""
         destinataire_label = _destinataire_label(destinataire)
         cabinet_label = required_text(
             cabinet.denomination_ou_adresse_affichee,
@@ -77,7 +78,8 @@ class AppelFondSelGenerator:
         )
 
         # Bloc banque + lieu/date aligne a DROITE (retour UAT Rafael DOC-008).
-        add_paragraph(docx, nom_banque, alignment=WD_ALIGN_PARAGRAPH.RIGHT)
+        if nom_banque:
+            add_paragraph(docx, nom_banque, alignment=WD_ALIGN_PARAGRAPH.RIGHT)
         add_paragraph(
             docx,
             (
@@ -86,10 +88,11 @@ class AppelFondSelGenerator:
             ),
             alignment=WD_ALIGN_PARAGRAPH.RIGHT,
         )
-        add_italic_instruction(
-            docx,
-            f"A l’attention de {destinataire_label}",
-        )
+        if destinataire_label:
+            add_italic_instruction(
+                docx,
+                f"A l’attention de {destinataire_label}",
+            )
         add_subject_heading(docx, "Objet : demande de déblocage des fonds")
         add_paragraph(docx, "Cher Monsieur,")
         add_paragraph(
@@ -103,10 +106,7 @@ class AppelFondSelGenerator:
         add_centered_amount(
             docx,
             [
-                required_text(
-                    financement.montant_deblocage,
-                    "cession.financement.montant_deblocage",
-                ),
+                (financement.montant_deblocage or "").strip(),
                 "€",
             ],
         )
@@ -141,19 +141,7 @@ class AppelFondSelGenerator:
 def _required_financement(financement: CessionFinancement | None) -> CessionFinancement:
     if financement is None:
         raise ValueError(f"cession.financement est obligatoire pour {DOCUMENT_CODE}.")
-    if financement.banque is None:
-        raise ValueError(f"cession.financement.banque est obligatoire pour {DOCUMENT_CODE}.")
     return financement
-
-
-def _required_destinataire(
-    destinataire: CessionDestinataire | None,
-) -> CessionDestinataire:
-    if destinataire is None:
-        raise ValueError(
-            f"cession.financement.destinataire est obligatoire pour {DOCUMENT_CODE}."
-        )
-    return destinataire
 
 
 def _required_cabinet(cabinet: CessionCabinet | None) -> CessionCabinet:
@@ -186,14 +174,14 @@ def _required_signataire(signataire: DocumentSignataire | None) -> DocumentSigna
     return signataire
 
 
-def _destinataire_label(destinataire: CessionDestinataire) -> str:
-    civilite = required_text(
-        destinataire.civilite_affichage,
-        "cession.financement.destinataire.civilite_affichage",
-    )
-    prenom = required_text(destinataire.prenom, "cession.financement.destinataire.prenom")
-    nom = required_text(destinataire.nom, "cession.financement.destinataire.nom")
-    return f"{civilite} {prenom} {nom}"
+def _destinataire_label(destinataire: CessionDestinataire | None) -> str:
+    if destinataire is None:
+        return ""
+    parts = [
+        (part or "").strip()
+        for part in (destinataire.civilite_affichage, destinataire.prenom, destinataire.nom)
+    ]
+    return " ".join(part for part in parts if part)
 
 
 def _vendeur_label(vendeur: CessionVendeur) -> str:

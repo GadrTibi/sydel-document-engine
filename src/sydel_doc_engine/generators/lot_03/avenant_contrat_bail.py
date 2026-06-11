@@ -106,36 +106,50 @@ def _required_document_context(document_context: DocumentContext | None) -> Docu
 
 
 def _required_party(party: BailParty | None, field_name: str) -> BailParty:
+    # Retours client 2026-06-11 (ticket 3.1) : l'identite du LOCATAIRE est
+    # toujours derivee de l'associe unique (nom requis) ; les champs du BAILLEUR
+    # non renseignes sont omis de la ligne de partie au lieu de bloquer.
     if party is None:
         raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
-    required_text(party.civilite_affichage, f"{field_name}.civilite_affichage")
-    required_text(party.prenom, f"{field_name}.prenom")
-    required_text(party.nom, f"{field_name}.nom")
-    required_text(party.profession, f"{field_name}.profession")
-    format_display_date(party.date_naissance, f"{field_name}.date_naissance")
-    required_text(party.ville_naissance, f"{field_name}.ville_naissance")
-    required_text(party.nationalite, f"{field_name}.nationalite")
-    required_text(party.adresse_affichee, f"{field_name}.adresse_affichee")
+    if field_name == "bail.locataire":
+        required_text(party.nom, f"{field_name}.nom")
     return party
 
 
+def _clean(value: str | None) -> str:
+    return (value or "").strip()
+
+
+def _display_date_or_empty(value) -> str:
+    if value is None:
+        return ""
+    if hasattr(value, "strftime"):
+        return value.strftime("%d/%m/%Y")
+    return str(value).strip()
+
+
 def _party_identity(party: BailParty, field_name: str) -> str:
-    return (
-        f"{required_text(party.civilite_affichage, f'{field_name}.civilite_affichage')} "
-        f"{required_text(party.prenom, f'{field_name}.prenom')} "
-        f"{required_text(party.nom, f'{field_name}.nom')}"
-    )
+    parts = [_clean(party.civilite_affichage), _clean(party.prenom), _clean(party.nom)]
+    return " ".join(part for part in parts if part)
 
 
 def _party_full_line(party: BailParty, field_name: str) -> str:
-    return (
-        f"{_party_identity(party, field_name)}, "
-        f"{required_text(party.profession, f'{field_name}.profession')}, né le "
-        f"{format_display_date(party.date_naissance, f'{field_name}.date_naissance')}, à "
-        f"{required_text(party.ville_naissance, f'{field_name}.ville_naissance')} de nationalité "
-        f"{required_text(party.nationalite, f'{field_name}.nationalite')}, demeurant "
-        f"{required_text(party.adresse_affichee, f'{field_name}.adresse_affichee')},"
-    )
+    # Segments composes uniquement a partir des informations saisies : aucun
+    # « ne le , a » incomplet quand un element du bailleur manque.
+    segments = [_party_identity(party, field_name)]
+    if _clean(party.profession):
+        segments.append(_clean(party.profession))
+    naissance = _display_date_or_empty(party.date_naissance)
+    if naissance:
+        ville = _clean(party.ville_naissance)
+        segments.append(f"né le {naissance}" + (f", à {ville}" if ville else ""))
+    elif _clean(party.ville_naissance):
+        segments.append(f"né à {_clean(party.ville_naissance)}")
+    if _clean(party.nationalite):
+        segments.append(f"de nationalité {_clean(party.nationalite)}")
+    if _clean(party.adresse_affichee):
+        segments.append(f"demeurant {_clean(party.adresse_affichee)}")
+    return ", ".join(segment for segment in segments if segment) + ","
 
 
 def _add_article_1(
@@ -145,13 +159,16 @@ def _add_article_1(
     company: Company,
 ) -> None:
     _add_article_title(docx, "ARTICLE 1 : changement de locataire")
+    date_origine = _display_date_or_empty(bail.date_signature_origine)
+    date_segment = f" en date du {date_origine}" if date_origine else ""
+    profession = _clean(locataire.profession)
+    profession_segment = f", ({profession})" if profession else ""
     add_paragraph(
         docx,
         (
-            "Le bail signé en date du "
-            f"{format_display_date(bail.date_signature_origine, 'bail.date_signature_origine')}, "
-            f"a pour locataire {_party_identity(locataire, 'bail.locataire')}, "
-            f"({required_text(locataire.profession, 'bail.locataire.profession')})."
+            f"Le bail signé{date_segment}, "
+            f"a pour locataire {_party_identity(locataire, 'bail.locataire')}"
+            f"{profession_segment}."
         ),
         alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
     )
@@ -175,13 +192,16 @@ def _add_article_1(
 
 def _add_article_2(docx, locataire: BailParty) -> None:
     _add_article_title(docx, "ARTICLE 2 : Responsabilité pour une société en cours de formation")
+    civilite_courte = _clean(locataire.civilite_courte) or _clean(locataire.civilite_affichage)
+    domicile = _clean(locataire.adresse_affichee)
+    domicile_segment = f", domicilié {domicile}" if domicile else ""
     add_paragraph(
         docx,
         (
-            f"Le {required_text(locataire.civilite_courte, 'bail.locataire.civilite_courte')} "
-            f"{required_text(locataire.prenom, 'bail.locataire.prenom')} "
-            f"{required_text(locataire.nom, 'bail.locataire.nom')}, domicilié "
-            f"{required_text(locataire.adresse_affichee, 'bail.locataire.adresse_affichee')}, "
+            f"Le {civilite_courte} "
+            f"{_clean(locataire.prenom)} "
+            f"{required_text(locataire.nom, 'bail.locataire.nom')}"
+            f"{domicile_segment}, "
             "engage sa responsabilité pour tous les actes passés au nom de la société jusqu’à "
             "l’immatriculation au RCS."
         ),

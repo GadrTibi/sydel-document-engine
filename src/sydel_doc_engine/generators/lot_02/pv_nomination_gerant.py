@@ -139,7 +139,8 @@ def _required_display_value(value: date | str | None, field_name: str) -> str:
 def _required_address(address: Address | None, field_name: str) -> Address:
     if address is None:
         raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
-    _required_text(address.num_voie, f"{field_name}.num_voie")
+    # Numero de voie optionnel (champ fusionne « Numero et voie », retours
+    # client 2026-06-11) : une adresse sans numero (lieu-dit) reste valide.
     _required_text(address.voie, f"{field_name}.voie")
     _required_text(address.cp, f"{field_name}.cp")
     _required_text(address.ville, f"{field_name}.ville")
@@ -147,19 +148,19 @@ def _required_address(address: Address | None, field_name: str) -> Address:
 
 
 def _address_inline(address: Address) -> str:
-    num_voie = _required_text(address.num_voie, "adresse.num_voie")
+    num_voie = (address.num_voie or "").strip()
     voie = _required_text(address.voie, "adresse.voie")
     cp = _required_text(address.cp, "adresse.cp")
     ville = _required_text(address.ville, "adresse.ville")
-    return f"{num_voie} {voie}, {cp} {ville}"
+    return f"{num_voie} {voie}, {cp} {ville}".strip()
 
 
 def _address_no_comma(address: Address) -> str:
-    num_voie = _required_text(address.num_voie, "adresse.num_voie")
+    num_voie = (address.num_voie or "").strip()
     voie = _required_text(address.voie, "adresse.voie")
     cp = _required_text(address.cp, "adresse.cp")
     ville = _required_text(address.ville, "adresse.ville")
-    return f"{num_voie} {voie} {cp} {ville}"
+    return f"{num_voie} {voie} {cp} {ville}".strip()
 
 
 def _validated_represented_parts(

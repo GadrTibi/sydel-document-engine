@@ -62,6 +62,7 @@ from sydel_doc_engine.front_app.field_derivations import (
     date_to_french_words,
     format_grouped_numeric_value,
     number_words_from_value,
+    split_numero_voie,
 )
 from sydel_doc_engine.front_data import AddressUsage, BusinessRole, build_document_status_for_code
 from sydel_doc_engine.orchestrator.service import (
@@ -322,7 +323,79 @@ def validate_selarl_input(data: SelarlSliceInput) -> tuple[str, ...]:
                 ),
             )
         )
+    blockers.extend(_cession_blockers(data))
     return tuple(dict.fromkeys(blockers))
+
+
+def _cession_blockers(data: SelarlSliceInput) -> list[str]:
+    """Bloqueurs UTILES de la cession, montres dans le plan avant generation.
+
+    Retours client 2026-06-11 : seuls les champs reellement indispensables
+    bloquent (identite du vendeur, prix total). Tout le reste est facultatif et
+    laisse une zone a completer a la main dans les documents.
+    """
+    cession = data.cession_context
+    if cession is None:
+        return []
+    blockers: list[str] = []
+    vendeur = cession.vendeur
+    if vendeur is None:
+        blockers.append("Cession : identite du vendeur requise.")
+    else:
+        vendor_fields = (
+            (vendeur.civilite_affichage, "civilite du vendeur"),
+            (vendeur.prenom, "prenom du vendeur"),
+            (vendeur.nom, "nom du vendeur"),
+            (vendeur.date_naissance, "date de naissance du vendeur"),
+            (vendeur.ville_naissance, "ville de naissance du vendeur"),
+            (vendeur.nationalite, "nationalite du vendeur"),
+            (vendeur.adresse_affichee, "adresse du vendeur"),
+            (vendeur.situation_maritale, "situation matrimoniale du vendeur"),
+        )
+        for value, label in vendor_fields:
+            if value is None or (isinstance(value, str) and not value.strip()):
+                blockers.append(f"Cession : {label} requis(e).")
+    prix = cession.prix
+    if prix is None or not (prix.total or "").strip():
+        blockers.append("Cession : prix total requis.")
+    elif not (prix.total_lettres or "").strip():
+        blockers.append(
+            "Cession : prix total en lettres requis (montant non entier : saisir a la main)."
+        )
+    for index, salarie in enumerate(cession.salaries):
+        if not all(
+            (value or "").strip()
+            for value in (salarie.civilite_affichage, salarie.prenom, salarie.nom)
+        ):
+            blockers.append(
+                f"Cession : identite complete du salarie {index + 1} requise "
+                "(civilite, prenom, nom)."
+            )
+    etape = (cession.etape or "").strip().lower()
+    type_cabinet = (cession.type_cabinet or "").strip().lower()
+    if etape == "acte" and type_cabinet == "medical":
+        credit = cession.financement.credit_vendeur if cession.financement else None
+        if credit is None or not credit.actif:
+            blockers.append(
+                "Acte medical : la clause credit-vendeur du modele est figee — "
+                "renseigner le credit-vendeur (montant, duree, taux)."
+            )
+        elif not all(
+            (value or "").strip()
+            for value in (
+                credit.montant,
+                credit.duree,
+                credit.taux,
+                credit.majoration_interet_retard,
+            )
+        ):
+            blockers.append(
+                "Credit-vendeur : montant, duree, taux et majoration requis."
+            )
+        scm = cession.scm
+        if scm is not None and scm.actif and not (scm.nb_parts_a_ceder or "").strip():
+            blockers.append("Cession de parts SCM : nombre de parts a ceder requis.")
+    return blockers
 
 
 def build_generation_context(data: SelarlSliceInput) -> DocumentGenerationContext:
@@ -600,8 +673,9 @@ def _missing_text_blockers(data: SelarlSliceInput) -> list[str]:
         ("nationalite", "Nationalite requise."),
         ("nom_pere", "Nom du pere requis pour DOC-001."),
         ("nom_mere", "Nom de la mere requis pour DOC-001."),
-        ("adresse_num_voie", "Numero de voie du praticien requis."),
-        ("adresse_voie", "Voie du praticien requise."),
+        # Numero + voie fusionnes en un seul champ (retours client 2026-06-11,
+        # ticket 1.5) : la valeur complete vit dans adresse_voie.
+        ("adresse_voie", "Numero et voie du praticien requis."),
         ("adresse_cp", "Code postal du praticien requis."),
         ("adresse_ville", "Ville du praticien requise."),
         ("situation_maritale", "Situation matrimoniale requise pour les statuts."),
@@ -611,8 +685,7 @@ def _missing_text_blockers(data: SelarlSliceInput) -> list[str]:
         ("departement_ordre", "Departement d'inscription a l'ordre requis."),
         ("denomination", "Denomination sociale requise."),
         ("capital_social", "Capital social requis."),
-        ("siege_num_voie", "Numero de voie du siege requis."),
-        ("siege_voie", "Voie du siege requise."),
+        ("siege_voie", "Numero et voie du siege requis."),
         ("siege_cp", "Code postal du siege requis."),
         ("siege_ville", "Ville du siege requise."),
         ("ville_rcs", "Ville RCS requise."),
@@ -621,7 +694,8 @@ def _missing_text_blockers(data: SelarlSliceInput) -> list[str]:
         ("ordre_ville", "Ville de l'ordre requise."),
         ("signature_lieu", "Lieu de signature requis."),
         ("depot_banque_nom", "Banque du depot des fonds requise."),
-        ("depot_banque_adresse", "Adresse de la banque requise."),
+        # Adresse de la banque : FACULTATIVE (retours client 2026-06-11, ticket
+        # 3.2) — vide, les statuts laissent une zone a completer a la main.
         ("exercice_debut", "Debut d'exercice social requis."),
         ("exercice_fin", "Fin d'exercice social requise."),
         ("exercice_cloture_premier", "Date de cloture du premier exercice requise."),
@@ -654,6 +728,11 @@ def _display_date(value: date | None) -> str | None:
 
 
 def _address(num_voie: str, voie: str, cp: str, ville: str) -> Address:
+    # Champ unique « Numero et voie » (ticket 1.5) : si le numero n'est pas
+    # fourni separement, il est extrait de la tete de la voie pour alimenter
+    # les generateurs qui consomment numero et voie separement.
+    if not (num_voie or "").strip():
+        num_voie, voie = split_numero_voie(voie)
     display = f"{num_voie} {voie}, {cp} {ville}".strip()
     return Address(
         num_voie=num_voie,

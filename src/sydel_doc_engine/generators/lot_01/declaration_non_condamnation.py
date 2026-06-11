@@ -109,11 +109,13 @@ def _required_date(value: date | None, field_name: str) -> str:
 
 
 def _compose_required_address(address: Address) -> str:
-    num_voie = _required_text(address.num_voie, "personne_signataire.adresse_perso.num_voie")
+    # Numero de voie optionnel (champ fusionne « Numero et voie », retours
+    # client 2026-06-11) : une adresse sans numero (lieu-dit) reste valide.
+    num_voie = (address.num_voie or "").strip()
     voie = _required_text(address.voie, "personne_signataire.adresse_perso.voie")
     cp = _required_text(address.cp, "personne_signataire.adresse_perso.cp")
     ville = _required_text(address.ville, "personne_signataire.adresse_perso.ville")
-    return f"{num_voie} {voie}, {cp} {ville}"
+    return f"{num_voie} {voie}, {cp} {ville}".strip()
 
 
 def _birth_city_prefix(person) -> str:
