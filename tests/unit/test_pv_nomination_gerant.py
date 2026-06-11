@@ -30,6 +30,8 @@ from sydel_doc_engine.generators.lot_02.pv_nomination_gerant import (
 
 def _associes(count: int = 2) -> list[Associe]:
     if count == 1:
+        # Associe unique : identite complete (le PV « decisions de l'associe unique »
+        # decrit l'associe — retour Albane 2026-06-10).
         return [
             Associe(
                 genre=Gender.FEMININ,
@@ -37,6 +39,17 @@ def _associes(count: int = 2) -> list[Associe]:
                 prenom="Alice",
                 nom="Durand",
                 nb_parts=1,
+                profession="médecin",
+                date_naissance=date(1986, 7, 9),
+                ville_naissance="Lyon",
+                departement_naissance="Rhône",
+                nationalite="française",
+                adresse_personnelle=Address(
+                    num_voie="3",
+                    voie="rue des Lilas",
+                    cp="69003",
+                    ville="Lyon",
+                ),
             )
         ]
     return [
@@ -226,21 +239,46 @@ def test_pv_nomination_gerant_repeats_two_associes(tmp_path: Path) -> None:
     assert "Bruno Martin" in paragraphs
 
 
-def test_pv_nomination_gerant_repeats_one_associe_with_singular_variants(
+def test_pv_nomination_gerant_one_associe_is_associe_unique_pv(
     tmp_path: Path,
 ) -> None:
+    # Retour Albane 2026-06-10 : avec UN SEUL associe, le PV est un PV des
+    # DECISIONS DE L'ASSOCIE UNIQUE (juridiquement, une societe a un seul
+    # associe ne tient pas d'assemblee generale). Structure simplifiee + ordre
+    # du jour en tirets.
     ctx = _context(associes=_associes(1))
     text = _docx_text(_generate(tmp_path, ctx))
+    paragraphs = _paragraphs(_generate(tmp_path / "second", ctx))
 
-    assert "Les associés de la Société civile immobilière SCI TEST" in text
-    assert "se sont réunis au siège social." in text
-    assert "Madame Alice Durand, détenant 1 part," in text
+    # Titre + structure associe unique (pas d'assemblee generale, pas de bloc presents).
+    assert "DE L’ASSOCIE UNIQUE" in text
+    assert "ASSEMBLEE GENERALE" not in text
+    assert "Sont présents ou représentés" not in text
+    assert "se sont réunis au siège social" not in text
+    # Identite de l'associe unique.
+    assert "- Madame Alice Durand" in paragraphs
+    assert "Née le 09/07/1986 à Lyon" in text
+    assert "Demeurant 3 rue des Lilas, 69003 Lyon" in text
     assert (
-        "Les associés présents ou représentés disposent ensemble de la totalité des parts "
-        "sociales. Cet ensemble est habilité à prendre des décisions."
+        "Associée unique, propriétaire de toutes les parts de la société SCI TEST "
+        "en cours de formation."
     ) in text
-    assert "· Nomination du gérant" in text
-    assert "- Madame Alice Durand, détenant 1 part," in text
+    assert "À l’issue de la signature des statuts, a pris les décisions suivantes :" in text
+    # Ordre du jour en tirets.
+    assert "- Nomination du gérant" in paragraphs
+    assert "- Pouvoir" in paragraphs
+    # Decisions de l'associe unique (femme -> gerante).
+    assert (
+        "L’associée unique décide de désigner en qualité de gérante Madame Alice Durand, "
+        "médecin de profession, née le 09/07/1986 à Lyon, de nationalité française, "
+        "demeurant 3 rue des Lilas, 69003 Lyon associée unique de la Société."
+    ) in text
+    assert "Sa rémunération sera fixée ultérieurement." in text
+    assert (
+        "au greffe du Tribunal de Commerce de la Société de Paris."
+    ) in text
+    assert "Cette résolution est adoptée à l’unanimité" not in text
+    assert "Bon pour acceptation des fonctions de gérante" in text
 
 
 def test_pv_nomination_gerant_without_emprunt_omits_borrowing_decision(

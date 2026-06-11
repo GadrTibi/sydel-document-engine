@@ -44,24 +44,33 @@ class PvNominationGerantGenerator:
 
     def generate(self, ctx: DocumentGenerationContext, output_dir: Path) -> Path:
         company = _required_company(ctx.societe)
-        capital = _required_capital(ctx.capital)
-        dirigeant = _required_dirigeant(ctx.dirigeant_nomine)
         associes = _required_associes(ctx.associes)
-        represented_associes = _represented_associes(associes)
-        represented_parts = _validated_represented_parts(capital, represented_associes)
-        emprunt = ctx.emprunt or Emprunt(actif=False)
-        bien_immobilier = _required_bien_immobilier(ctx.bien_immobilier, emprunt)
 
-        document = new_document()
-        _add_company_header(document, company, associes)
-        _add_title_and_meeting(document, ctx)
-        _add_introduction(document, company, capital, associes)
-        _add_associes_block(document, represented_associes, represented_parts)
-        _add_order_of_business(document, ctx, dirigeant, emprunt, bien_immobilier)
-        _add_nomination_decision(document, dirigeant)
-        _add_borrowing_decision(document, emprunt, bien_immobilier)
-        _add_powers_decision(document, emprunt)
-        _add_closing_and_signatures(document, ctx, associes, dirigeant)
+        # Retour Albane 2026-06-10 : avec UN SEUL associe, le PV est un PV des
+        # DECISIONS DE L'ASSOCIE UNIQUE (pas d'assemblee generale, pas de bloc
+        # « associes presents »), structure simplifiee du modele qu'elle a fourni.
+        # Les types reellement multi-associes (SCI/SCM/SCS/SELAS...) conservent la
+        # structure AG existante.
+        if len(associes) == 1:
+            document = _build_associe_unique_pv(ctx, company, associes[0])
+        else:
+            capital = _required_capital(ctx.capital)
+            dirigeant = _required_dirigeant(ctx.dirigeant_nomine)
+            represented_associes = _represented_associes(associes)
+            represented_parts = _validated_represented_parts(capital, represented_associes)
+            emprunt = ctx.emprunt or Emprunt(actif=False)
+            bien_immobilier = _required_bien_immobilier(ctx.bien_immobilier, emprunt)
+
+            document = new_document()
+            _add_company_header(document, company, associes)
+            _add_title_and_meeting(document, ctx)
+            _add_introduction(document, company, capital, associes)
+            _add_associes_block(document, represented_associes, represented_parts)
+            _add_order_of_business(document, ctx, dirigeant, emprunt, bien_immobilier)
+            _add_nomination_decision(document, dirigeant)
+            _add_borrowing_decision(document, emprunt, bien_immobilier)
+            _add_powers_decision(document, emprunt)
+            _add_closing_and_signatures(document, ctx, associes, dirigeant)
 
         output_dir.mkdir(parents=True, exist_ok=True)
         output_path = output_dir / OUTPUT_FILENAME
@@ -620,3 +629,155 @@ def _add_closing_and_signatures(
         alignment=WD_ALIGN_PARAGRAPH.CENTER,
         italic=True,
     )
+
+
+# ---------------------------------------------------------------------------
+# PV des decisions de l'ASSOCIE UNIQUE (retour Albane 2026-06-10) : structure
+# simplifiee pour les societes a un seul associe (SELARL unipersonnelle...).
+# « les associes » -> « l'associe », « assemblee generale » -> « associe unique »,
+# pas de bloc « associes presents », ordre du jour en tirets.
+# ---------------------------------------------------------------------------
+
+
+def _fonction_accordee(fonction_affichage: str, genre: Gender) -> str:
+    base = _required_text(fonction_affichage, "dirigeant_nomine.fonction_affichage")
+    if genre == Gender.FEMININ and base.strip().casefold() == "gérant":
+        return "gérante"
+    return base
+
+
+def _build_associe_unique_pv(
+    ctx: DocumentGenerationContext,
+    company: Company,
+    associe: Associe,
+):
+    decision = ctx.decision
+    reunion = ctx.reunion
+    if decision is None:
+        raise ValueError(f"decision est obligatoire pour {DOCUMENT_CODE}.")
+    if reunion is None:
+        raise ValueError(f"reunion est obligatoire pour {DOCUMENT_CODE}.")
+    dirigeant = _required_dirigeant(ctx.dirigeant_nomine)
+
+    # Identite de l'associe unique : on prefere la fiche associe si elle est
+    # complete ; sinon on retombe sur le dirigeant nomme — MEME personne dans une
+    # societe unipersonnelle (les flux SPFPL / civils portent l'identite sur le
+    # dirigeant). La profession reste optionnelle (omise si absente).
+    identity = associe if associe.adresse_personnelle is not None else dirigeant
+    genre = identity.genre
+    associe_word = "Associée" if genre == Gender.FEMININ else "Associé"
+    associe_word_low = associe_word.lower()
+    fonction = _fonction_accordee(dirigeant.fonction_affichage, genre)
+
+    civilite = _required_text(identity.civilite_affichage, "identite.civilite_affichage")
+    prenom = _required_text(identity.prenom, "identite.prenom")
+    nom = _required_text(identity.nom, "identite.nom")
+    address = _required_address(identity.adresse_personnelle, "identite.adresse_personnelle")
+    birth_date = _required_display_value(identity.date_naissance, "identite.date_naissance")
+    birth_city = _required_text(identity.ville_naissance, "identite.ville_naissance")
+    nationality = _required_text(identity.nationalite, "identite.nationalite")
+    profession = (
+        associe.profession
+        or associe.profession_reglementee
+        or associe.qualification_principale
+        or ""
+    ).strip()
+    profession_clause = f"{profession} de profession, " if profession else ""
+    denomination = _required_text(company.denomination, "societe.denomination")
+
+    document = new_document()
+    _add_company_header(document, company, [associe])
+    add_spacer(document)
+    add_framed_title(
+        document,
+        [
+            "PROCES-VERBAL DES DECISIONS",
+            " DE L’ASSOCIE UNIQUE",
+            f" DU {_required_display_value(decision.date, 'decision.date')}",
+        ],
+    )
+    _add_paragraph(
+        document,
+        f"Le {_required_text(reunion.date_lettres, 'reunion.date_lettres')}",
+    )
+
+    # Identite de l'associe unique (bloc « soussigne » simplifie).
+    _add_list_item(document, f"{civilite} {prenom} {nom}")
+    _add_paragraph(document, f"{_ne_label(genre).capitalize()} le {birth_date} à {birth_city}")
+    _add_paragraph(document, f"Demeurant {_address_inline(address)}")
+    _add_paragraph(document, f"De nationalité {nationality}")
+    _add_paragraph(
+        document,
+        (
+            f"{associe_word} unique, propriétaire de toutes les parts de la société "
+            f"{denomination} en cours de formation."
+        ),
+        alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
+    )
+    _add_paragraph(
+        document,
+        "À l’issue de la signature des statuts, a pris les décisions suivantes :",
+    )
+
+    # Ordre du jour en TIRETS (retour Albane : lister / ajouter facilement).
+    _add_list_item(document, _nomination_agenda_label(dirigeant.fonction_affichage))
+    _add_list_item(document, "Pouvoir")
+
+    # PREMIERE DECISION : nomination du gerant (l'associe unique se designe).
+    _add_decision_title(document, "PREMIERE DECISION")
+    _add_paragraph(
+        document,
+        (
+            f"L’{associe_word_low} unique décide de désigner en qualité de {fonction} "
+            f"{civilite} {prenom} {nom}, "
+            f"{profession_clause}{_ne_label(genre)} le {birth_date} à {birth_city}, "
+            f"de nationalité {nationality}, demeurant {_address_inline(address)} "
+            f"{associe_word_low} unique de la Société. Sa rémunération sera fixée ultérieurement."
+        ),
+        alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
+    )
+
+    # DEUXIEME DECISION : pouvoir (formalites au greffe de la ville du RCS).
+    ville_greffe = _required_text(
+        company.ville_rcs or (company.siege.ville if company.siege else None),
+        "societe.ville_rcs",
+    )
+    _add_decision_title(document, "DEUXIEME DECISION")
+    _add_paragraph(
+        document,
+        (
+            f"L’{associe_word_low} unique confère tous les pouvoirs au porteur d’un original à "
+            "l’effet de procéder aux formalités d’enregistrement au greffe du Tribunal de "
+            f"Commerce de la Société de {ville_greffe}."
+        ),
+        alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
+    )
+
+    # Cloture + signature de l'associe (« Bon pour acceptation des fonctions de gerant »).
+    lieu_signature = _required_text(ctx.signature.lieu, "signature.lieu")
+    nombre_exemplaires = _required_text(
+        ctx.signature.nombre_exemplaires,
+        "signature.nombre_exemplaires",
+    )
+    _add_paragraph(
+        document,
+        f"Fait à {lieu_signature} en {nombre_exemplaires} exemplaires",
+        alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
+    )
+    add_spacer(document)
+    add_signature_lines(
+        document,
+        [f"{prenom} {nom}"],
+        alignment=WD_ALIGN_PARAGRAPH.CENTER,
+        bold=True,
+    )
+    _add_paragraph(
+        document,
+        (
+            "Faire précéder la signature de la mention « Bon pour acceptation des fonctions de "
+            f"{fonction} »"
+        ),
+        alignment=WD_ALIGN_PARAGRAPH.CENTER,
+        italic=True,
+    )
+    return document
