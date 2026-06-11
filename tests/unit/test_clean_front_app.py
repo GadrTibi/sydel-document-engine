@@ -1123,3 +1123,41 @@ def test_clean_front_banque_adresse_vide_ne_bloque_pas(tmp_path: Path) -> None:
     statuts_text = _docx_text(statuts_path)
     assert "[" not in statuts_text
     assert "]" not in statuts_text
+
+
+def test_clean_front_demande_ordre_presidente_and_conseiller(tmp_path: Path) -> None:
+    # Retour Albane 2026-06-10 (demande d'inscription a l'ordre) :
+    # - « Madame la Présidente » si la présidente de l'ordre est une femme ;
+    # - nom du conseiller (mandataire) adaptable au lieu de Jordan ELBAZ en dur ;
+    # - CP + ville de l'adresse perso sur une ligne séparée.
+    from dataclasses import replace
+
+    base = build_selarl_scenario("selarl_medecin_simple")
+
+    default_gen = generate_selarl_dossier(base, tmp_path / "defaut")
+    default_doc = next(
+        p for p in default_gen.docx_paths if "demande_inscription_ordre" in p.name
+    )
+    default_text = _docx_text(default_doc)
+    assert "Monsieur le Président" in default_text
+    assert "Jordan ELBAZ" in default_text
+
+    custom = replace(
+        base,
+        ordre_president_feminin=True,
+        mandataire_prenom="Sophie",
+        mandataire_nom="MARTIN",
+    )
+    custom_gen = generate_selarl_dossier(custom, tmp_path / "custom")
+    custom_doc = next(
+        p for p in custom_gen.docx_paths if "demande_inscription_ordre" in p.name
+    )
+    paragraphs = [p.text for p in Document(custom_doc).paragraphs]
+    custom_text = "\n".join(paragraphs)
+    assert "Madame la Présidente" in custom_text
+    assert "Monsieur le Président" not in custom_text
+    assert "Sophie MARTIN" in custom_text
+    assert "Jordan ELBAZ" not in custom_text
+    # Adresse perso sur deux lignes (rue / CP ville).
+    assert "10 rue Test" in paragraphs
+    assert "75001 Paris" in paragraphs

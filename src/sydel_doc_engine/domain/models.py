@@ -33,6 +33,9 @@ class Person(BaseModel):
     date_naissance: date | None = None
     ville_naissance: str | None = None
     ville_naissance_article_au: bool = False
+    # Departement de naissance (retour Albane 2026-06-10 : « ne a {ville}
+    # ({departement}) » dans la DNC). Optionnel.
+    departement_naissance: str | None = None
     nationalite: str | None = None
     nom_pere: str | None = None
     nom_mere: str | None = None

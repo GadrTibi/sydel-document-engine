@@ -11,6 +11,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_legal_reminder,
     add_paragraph,
     add_signature_block,
+    add_spacer,
     new_document,
 )
 from sydel_doc_engine.utils.grammar import birth_label, filiation_label, subject_line
@@ -65,11 +66,19 @@ class DeclarationNonCondamnationGenerator:
 
         document = new_document()
         _add_title(document)
+        # Aération sous le cadre du titre (retour Albane 2026-06-10).
+        add_spacer(document, space_after_pt=10)
         _add_identity_block(
             document,
             subject=f"{subject_line(person.genre)} {civilite} {prenom} {nom}",
-            birth=f"{birth_label(person.genre)} {date_naissance} "
-            f"{_birth_city_prefix(person)} {ville_naissance}.",
+            # Retour Albane 2026-06-10 : « ne le {date} a {ville} ({departement}) »
+            # — plus de point apres la ville, departement entre parentheses (si
+            # renseigne).
+            birth=(
+                f"{birth_label(person.genre)} {date_naissance} "
+                f"{_birth_city_prefix(person)} {ville_naissance}"
+                f"{_birth_department_suffix(person)}"
+            ),
             address=f"demeurant au {adresse_perso}",
             nationality=f"de nationalité {nationalite}",
             filiation_father=f"{filiation_label(person.genre)} {nom_pere}",
@@ -122,6 +131,11 @@ def _birth_city_prefix(person) -> str:
     return "au" if person.ville_naissance_article_au else "\u00e0"
 
 
+def _birth_department_suffix(person) -> str:
+    departement = (getattr(person, "departement_naissance", None) or "").strip()
+    return f" ({departement})" if departement else ""
+
+
 def _format_date(value: date) -> str:
     return value.strftime("%d/%m/%Y")
 
@@ -146,6 +160,8 @@ def _add_identity_block(
     filiation_father: str,
     filiation_mother: str,
 ) -> None:
+    # Bloc identite compact (retour Albane 2026-06-10 : retirer les interlignes
+    # de « je soussigne » jusqu'a « de nationalite » et entre les noms des parents).
     for line, bold in (
         (subject, True),
         (birth, False),
@@ -154,7 +170,7 @@ def _add_identity_block(
         (filiation_father, False),
         (filiation_mother, False),
     ):
-        _add_paragraph(document, line, bold=bold)
+        add_paragraph(document, line, bold=bold, space_after_pt=0)
 
 
 def _add_paragraph(

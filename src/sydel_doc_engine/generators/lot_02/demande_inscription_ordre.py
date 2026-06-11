@@ -142,6 +142,18 @@ def _split_display_lines(value: str | None, field_name: str) -> list[str]:
     return lines
 
 
+def _personal_address_lines(adresse_personnelle: str) -> list[str]:
+    """Adresse personnelle sur deux lignes : « rue » puis « CP ville » (retour
+    Albane 2026-06-10). On coupe sur la PREMIERE virgule (format « num voie, cp
+    ville ») ; sans virgule, l'adresse reste sur une seule ligne.
+    """
+    text = _required_text(adresse_personnelle, "adresse_personnelle")
+    street, separator, rest = text.partition(",")
+    if separator and rest.strip():
+        return [street.strip(), rest.strip()]
+    return [text]
+
+
 def _signataire_name(signataire: Person) -> str:
     titre = _required_text(
         signataire.titre_affichage,
@@ -261,13 +273,16 @@ def _add_header(
     adresse_ordre_lines: list[str],
 ) -> None:
     _add_lines(document, [signataire_name, profession_signataire])
-    _add_lines(document, _split_display_lines(adresse_personnelle, "adresse_personnelle"))
+    # Retour Albane 2026-06-10 : adresse personnelle sur DEUX lignes (rue, puis
+    # CP + ville en dessous) au lieu d'une seule ligne.
+    _add_lines(document, _personal_address_lines(adresse_personnelle))
     add_spacer(document, space_after_pt=10)
+    # Retour Albane 2026-06-10 : nom de l'ordre ALIGNE avec son adresse (meme
+    # retrait, plus de decalage de premiere ligne).
     add_right_indented_block(
         document,
         conseil_lines,
-        left_indent_cm=8.7,
-        first_line_indent_cm=1.2,
+        left_indent_cm=9.7,
         space_after_pt=2,
     )
     add_right_indented_block(
@@ -276,7 +291,7 @@ def _add_header(
         left_indent_cm=9.7,
         space_after_pt=2,
     )
-    add_spacer(document, space_after_pt=12)
+    add_spacer(document, space_after_pt=14)
 
 
 def _add_signature_place_and_subject(document, ctx: DocumentGenerationContext) -> None:
@@ -323,6 +338,8 @@ def _add_body(
         document,
         f"Je donne pouvoir à {mandataire_libelle} pour effectuer les formalités.",
     )
+    # Aération avant la formule de politesse (retour Albane 2026-06-10).
+    add_spacer(document, space_after_pt=8)
     _add_body_paragraph(
         document,
         (

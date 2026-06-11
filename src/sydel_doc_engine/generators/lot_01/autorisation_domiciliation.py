@@ -7,8 +7,14 @@ import re
 from datetime import date
 from pathlib import Path
 
+from docx import Document
+from docx.oxml.ns import qn
+from docx.shared import Pt
+
 from sydel_doc_engine.domain.models import Address, Company, DocumentGenerationContext
 from sydel_doc_engine.rendering.docx_template_fill import fill_docx_template
+
+ROBOTO_FONT = "Roboto"
 
 DOCUMENT_CODE = "DOC-002"
 OUTPUT_FILENAME = "autorisation_domiciliation.docx"
@@ -64,12 +70,18 @@ class AutorisationDomiciliationGenerator:
                 [("Je soussigné", "Je soussignée")],
             )
         ]
-        return fill_docx_template(
+        filled = fill_docx_template(
             model_path,
             replacements,
             output_path,
             gender_pairs=gender_pairs,
         )
+        # Retour Albane 2026-06-10 : police Roboto 10 sur l'autorisation (« le
+        # reste c'est top »). Le modele est une lettre courte SANS titre distinct :
+        # le « titre en 11 » demande par Albane n'a pas de cible ici (a confirmer
+        # avec elle) -> on applique Roboto 10 a tout le corps.
+        _apply_roboto_font(filled, body_size_pt=10)
+        return filled
 
 
 def _build_replacements(ctx: DocumentGenerationContext) -> dict[str, str]:
@@ -109,6 +121,47 @@ def _build_replacements(ctx: DocumentGenerationContext) -> dict[str, str]:
         "[lieu_signature]": lieu_signature,
         "[date_signature]": date_signature,
     }
+
+
+def _set_run_font(run, *, name: str, size_pt: int) -> None:
+    run.font.name = name
+    run.font.size = Pt(size_pt)
+    rpr = run._element.get_or_add_rPr()
+    rfonts = rpr.find(qn("w:rFonts"))
+    if rfonts is None:
+        rfonts = rpr.makeelement(qn("w:rFonts"), {})
+        rpr.insert(0, rfonts)
+    for attr in ("w:ascii", "w:hAnsi", "w:cs", "w:eastAsia"):
+        rfonts.set(qn(attr), name)
+
+
+def _apply_roboto_font(output_path: Path, *, body_size_pt: int) -> None:
+    """Force la police Roboto (taille `body_size_pt`) sur tout le document filled.
+
+    Retour Albane 2026-06-10 (autorisation de domiciliation). On regle le style
+    Normal ET chaque run (pour ecraser une eventuelle police directe du modele).
+    """
+    document = Document(str(output_path))
+    normal = document.styles["Normal"]
+    normal.font.name = ROBOTO_FONT
+    normal.font.size = Pt(body_size_pt)
+    rpr = normal.element.get_or_add_rPr()
+    rfonts = rpr.find(qn("w:rFonts"))
+    if rfonts is None:
+        rfonts = rpr.makeelement(qn("w:rFonts"), {})
+        rpr.insert(0, rfonts)
+    for attr in ("w:ascii", "w:hAnsi", "w:cs", "w:eastAsia"):
+        rfonts.set(qn(attr), ROBOTO_FONT)
+    for paragraph in document.paragraphs:
+        for run in paragraph.runs:
+            _set_run_font(run, name=ROBOTO_FONT, size_pt=body_size_pt)
+    for table in document.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                for paragraph in cell.paragraphs:
+                    for run in paragraph.runs:
+                        _set_run_font(run, name=ROBOTO_FONT, size_pt=body_size_pt)
+    document.save(str(output_path))
 
 
 def _resolve_model_path() -> Path:

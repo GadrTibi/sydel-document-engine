@@ -166,6 +166,9 @@ class SelarlSliceInput:
     ordre_adresse_ligne_1: str = ""
     ordre_cp: str = ""
     ordre_ville: str = ""
+    # Retour Albane 2026-06-10 : « Madame la Présidente » si le president de
+    # l'ordre est une femme (verifie a chaque fois) ; defaut « Monsieur le President ».
+    ordre_president_feminin: bool = False
     mandataire_civilite: str = DEFAULT_MANDATAIRE_CIVILITE
     mandataire_prenom: str = DEFAULT_MANDATAIRE_PRENOM
     mandataire_nom: str = DEFAULT_MANDATAIRE_NOM
@@ -447,6 +450,7 @@ def build_generation_context(data: SelarlSliceInput) -> DocumentGenerationContex
         date_naissance=data.date_naissance,
         ville_naissance=data.ville_naissance,
         ville_naissance_article_au=data.ville_naissance_article_au,
+        departement_naissance=data.departement_naissance,
         nationalite=data.nationalite,
         nom_pere=data.nom_pere,
         nom_mere=data.nom_mere,
@@ -775,7 +779,11 @@ def _ordre(
     return OrdreProfessionnel(
         conseil_departemental_libelle=data.ordre_conseil,
         departement_inscription=data.departement_ordre,
-        destinataire_appel="Monsieur le Président",
+        destinataire_appel=(
+            "Madame la Présidente"
+            if data.ordre_president_feminin
+            else "Monsieur le Président"
+        ),
         profession_signataire_affichee=profession_label,
         profession_ligne_destinataire=profession_plural,
         profession_reglementee_pluriel=profession_plural,

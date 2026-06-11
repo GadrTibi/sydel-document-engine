@@ -23,6 +23,8 @@ from sydel_doc_engine.front_app.dossier_selection import (
     dossier_type_labels,
 )
 from sydel_doc_engine.front_app.field_derivations import (
+    DEFAULT_MANDATAIRE_NOM,
+    DEFAULT_MANDATAIRE_PRENOM,
     DEFAULT_TITRE_AFFICHAGE,
     MATRIMONIAL_STATUS_MARRIED_COMMUNAUTE,
     MATRIMONIAL_STATUS_PRESETS,
@@ -1210,11 +1212,37 @@ def _render_ordre_mandataire() -> dict[str, object]:
     )
     ordre_cp = col_d.text_input("CP ordre", key="selarl_ordre_cp")
     ordre_ville = col_e.text_input("Ville ordre", key="selarl_ordre_ville")
+    # Retour Albane 2026-06-10 : president(e) de l'ordre = femme -> « Madame la
+    # Presidente » dans la demande d'inscription (verifie a chaque fois).
+    ordre_president_feminin = st.checkbox(
+        "La présidente de l'ordre est une femme",
+        value=False,
+        key="selarl_ordre_president_feminin",
+        help="Coche : « Madame la Présidente » au lieu de « Monsieur le Président ».",
+    )
+    # Retour Albane 2026-06-10 : nom du conseiller (mandataire SYDEL) adaptable,
+    # au lieu de « Jordan ELBAZ » en dur.
+    if not st.session_state.get("selarl_mandataire_prenom"):
+        st.session_state["selarl_mandataire_prenom"] = DEFAULT_MANDATAIRE_PRENOM
+    if not st.session_state.get("selarl_mandataire_nom"):
+        st.session_state["selarl_mandataire_nom"] = DEFAULT_MANDATAIRE_NOM
+    col_f, col_g = st.columns(2)
+    mandataire_prenom = col_f.text_input(
+        "Conseiller (prénom)",
+        key="selarl_mandataire_prenom",
+    )
+    mandataire_nom = col_g.text_input(
+        "Conseiller (nom)",
+        key="selarl_mandataire_nom",
+    )
     return {
         "departement_ordre": departement_ordre,
         "ordre_adresse_ligne_1": ordre_adresse_ligne_1,
         "ordre_cp": ordre_cp,
         "ordre_ville": ordre_ville,
+        "ordre_president_feminin": ordre_president_feminin,
+        "mandataire_prenom": mandataire_prenom or DEFAULT_MANDATAIRE_PRENOM,
+        "mandataire_nom": mandataire_nom or DEFAULT_MANDATAIRE_NOM,
     }
 
 

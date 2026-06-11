@@ -95,7 +95,7 @@ def test_declaration_non_condamnation_contains_essential_texts(tmp_path: Path) -
     assert "DECLARATION DE NON CONDAMNATION" in text
     assert "EN APPLICATION DE L’ARTICLE A.123-51 du Code de Commerce" in text
     assert "Je soussigné Monsieur Jean Durand" in text
-    assert "Né le 03/02/1990 à Paris." in text
+    assert "Né le 03/02/1990 à Paris" in text  # Albane 2026-06-10 : plus de point
     assert "de nationalité française" in text
     assert "fils de Monsieur Pierre Durand" in text
     assert "et de Madame Anne Martin" in text
@@ -110,7 +110,7 @@ def test_declaration_non_condamnation_uses_feminine_agreements(tmp_path: Path) -
     text = _docx_text(_generate(tmp_path, Gender.FEMININ))
 
     assert "Je soussignée Madame Marie Durand" in text
-    assert "Née le 03/02/1990 à Paris." in text
+    assert "Née le 03/02/1990 à Paris" in text
     assert "fille de Monsieur Pierre Durand" in text
 
 
@@ -121,7 +121,7 @@ def test_declaration_non_condamnation_can_use_au_before_birth_city(tmp_path: Pat
 
     text = _docx_text(DeclarationNonCondamnationGenerator().generate(ctx, tmp_path))
 
-    assert "Né le 03/02/1990 au Bourget." in text
+    assert "Né le 03/02/1990 au Bourget" in text
     assert "Né le 03/02/1990 à Bourget." not in text
 
 
@@ -167,3 +167,15 @@ def test_declaration_non_condamnation_matches_source_visual_formatting(tmp_path:
     second_reminder_paragraph = _find_paragraph(document, "Les dispositions des deuxième")
     assert second_reminder_paragraph.alignment == WD_ALIGN_PARAGRAPH.JUSTIFY
     assert all(run.italic for run in second_reminder_paragraph.runs if run.text.strip())
+
+
+def test_declaration_non_condamnation_birth_department_in_parentheses(tmp_path: Path) -> None:
+    # Retour Albane 2026-06-10 : « né le {date} à {ville} ({département}) » —
+    # plus de point après la ville, département entre parenthèses s'il est renseigné.
+    ctx = _context()
+    ctx.personne_signataire.departement_naissance = "Seine-Saint-Denis"
+
+    text = _docx_text(DeclarationNonCondamnationGenerator().generate(ctx, tmp_path))
+
+    assert "Né le 03/02/1990 à Paris (Seine-Saint-Denis)" in text
+    assert "à Paris." not in text
