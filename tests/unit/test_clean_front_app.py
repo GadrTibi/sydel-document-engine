@@ -132,7 +132,9 @@ def test_clean_front_selarl_medecin_separation_de_biens_generates_statuts(
     plan = build_clean_generation_plan(dossier_type, data_entry)
     ctx = build_generation_context(data_entry)
     generated = generate_selarl_dossier(data_entry, tmp_path / "selarl-medecin-separation")
-    statuts_path = next(path for path in generated.docx_paths if path.name.lower().startswith("statuts"))
+    statuts_path = next(
+        path for path in generated.docx_paths if path.name.lower().startswith("statuts")
+    )
     statuts_text = _docx_text(statuts_path)
 
     assert plan.can_generate is True
