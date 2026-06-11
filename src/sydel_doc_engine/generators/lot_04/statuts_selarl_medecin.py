@@ -14,6 +14,7 @@ from sydel_doc_engine.generators.lot_04.statuts_sel_exercice_common import (
     render_statuts_sel_docx,
     required_associe_unique,
     required_text,
+    statuts_output_filename,
     validate_sel_context,
 )
 from sydel_doc_engine.generators.lot_04.statuts_sel_exercice_templates import (
@@ -74,7 +75,10 @@ class StatutsSelarlMedecinGenerator:
         return render_statuts_sel_docx(
             STATUTS_SELARL_MEDECIN_BLOCKS,
             replacements,
-            output_dir / OUTPUT_FILENAME,
+            output_dir / statuts_output_filename(
+                ctx.societe.denomination if ctx.societe else None,
+                OUTPUT_FILENAME,
+            ),
             associate=associate,
             skip_personne_2_line=True,
             title_box_bordered=False,

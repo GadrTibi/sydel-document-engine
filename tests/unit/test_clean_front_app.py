@@ -132,7 +132,7 @@ def test_clean_front_selarl_medecin_separation_de_biens_generates_statuts(
     plan = build_clean_generation_plan(dossier_type, data_entry)
     ctx = build_generation_context(data_entry)
     generated = generate_selarl_dossier(data_entry, tmp_path / "selarl-medecin-separation")
-    statuts_path = next(path for path in generated.docx_paths if path.name.startswith("statuts"))
+    statuts_path = next(path for path in generated.docx_paths if path.name.lower().startswith("statuts"))
     statuts_text = _docx_text(statuts_path)
 
     assert plan.can_generate is True
@@ -553,7 +553,8 @@ def test_clean_front_selarl_generation_smoke(tmp_path: Path) -> None:
         "procuration.docx",
         "pv_nomination_gerant.docx",
         "demande_inscription_ordre.docx",
-        "statuts_selarl_medecin.docx",
+        # Retour Albane 2026-06-10 : intitulé du doc = « Statuts {dénomination} ».
+        "Statuts SELARL MARTIN.docx",
     }
     combined_text = "\n".join(_docx_text(path) for path in generated.docx_paths)
     assert "SELARL SELARL" not in combined_text
@@ -581,19 +582,20 @@ def test_clean_front_selarl_medecin_regime_communautaire_generation_smoke(
         "procuration.docx",
         "pv_nomination_gerant.docx",
         "demande_inscription_ordre.docx",
-        "statuts_selarl_medecin.docx",
+        "Statuts SELARL MARTIN.docx",
         "lettre_renonciation_associe.docx",
         "lettre_avertissement_conjoint.docx",
     }
-    assert "statuts_selarl_chirurgien_dentiste.docx" not in names
+    assert "Statuts SEL CHIRURGIEN.docx" not in names
 
     combined_text = "\n".join(_docx_text(path) for path in generated.docx_paths)
     ascii_text = _ascii_text(combined_text)
     assert "[" not in combined_text
     assert "]" not in combined_text
     assert "SELARL SELARL" not in combined_text
-    assert "RCS PARIS 788 531 432" not in combined_text
-    assert "0153814303" not in combined_text
+    # Retour Albane 2026-06-10 : la procuration porte desormais le RCS/SIREN + tel SYDEL.
+    assert "RCS PARIS 788 531 432" in combined_text
+    assert "0153814303" in combined_text
     assert "Société d’exercice libéral à responsabilité limitée de médecin" in combined_text
     assert "Au capital de 1 000 €" in combined_text
     assert "Au capital de 1000" not in combined_text
@@ -783,7 +785,7 @@ def test_clean_front_streamlit_generation_exposes_download_buttons(
         "Telecharger procuration.docx",
         "Telecharger pv_nomination_gerant.docx",
         "Telecharger demande_inscription_ordre.docx",
-        "Telecharger statuts_selarl_medecin.docx",
+        "Telecharger Statuts SELARL MARTIN.docx",
     ]
 
 
@@ -1095,7 +1097,7 @@ def test_clean_front_statuts_render_new_marriage_regimes(tmp_path: Path) -> None
 
         generated = generate_selarl_dossier(data_entry, tmp_path / slug)
         statuts_path = next(
-            path for path in generated.docx_paths if path.name.startswith("statuts")
+            path for path in generated.docx_paths if path.name.lower().startswith("statuts")
         )
         statuts_text = _docx_text(statuts_path)
         assert (
@@ -1116,7 +1118,7 @@ def test_clean_front_banque_adresse_vide_ne_bloque_pas(tmp_path: Path) -> None:
 
     generated = generate_selarl_dossier(data_entry, tmp_path / "sans-adresse-banque")
     statuts_path = next(
-        path for path in generated.docx_paths if path.name.startswith("statuts")
+        path for path in generated.docx_paths if path.name.lower().startswith("statuts")
     )
     statuts_text = _docx_text(statuts_path)
     assert "[" not in statuts_text

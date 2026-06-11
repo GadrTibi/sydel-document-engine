@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from datetime import date
 from pathlib import Path
 from typing import Any
@@ -307,6 +308,20 @@ def add_ordre_replacements(
             ),
         }
     )
+    # Mention d'inscription a l'ordre (retour Albane 2026-06-10, statuts DENTISTE) :
+    # le numero d'inscription a l'ordre est ajoute AVANT le RPPS, mais SEULEMENT
+    # si le champ est renseigne (sinon on garde le seul RPPS). Le bloc medecin
+    # porte deja le numero national dans son texte source ; cette mention sert le
+    # template dentiste via [mention_inscription_ordre_rpps].
+    numero_inscription = (associate.ordre.numero or "").strip()
+    numero_rpps = required_text(associate.ordre.numero_rpps, "associes[0].ordre.numero_rpps")
+    if numero_inscription:
+        replacements["[mention_inscription_ordre_rpps]"] = (
+            f"sous le numéro d’inscription {numero_inscription} "
+            f"et sous le numéro RPPS {numero_rpps}"
+        )
+    else:
+        replacements["[mention_inscription_ordre_rpps]"] = f"sous le numéro RPPS {numero_rpps}"
 
 
 def add_depot_replacements(
@@ -439,6 +454,18 @@ def render_statuts_sel_docx(
             add_statuts_title_box(docx, "STATUTS", bordered=title_box_bordered)
         text = replace_placeholders(block, replacements)
         text = apply_gender_variants(text, associate)
+        # Entete (denomination / forme sociale / capital / siege) centree et
+        # compacte (retour Albane 2026-06-10 : centrer l'entete, reduire les
+        # interlignes). Denomination (index 0) en gras.
+        if index < 4:
+            add_paragraph(
+                docx,
+                text,
+                alignment=WD_ALIGN_PARAGRAPH.CENTER,
+                bold=index == 0,
+                space_after_pt=0,
+            )
+            continue
         if _is_heading(text):
             if text.startswith("ANNEXE"):
                 signature_mode = False
@@ -450,9 +477,15 @@ def render_statuts_sel_docx(
                 add_paragraph(docx, text, alignment=WD_ALIGN_PARAGRAPH.CENTER, bold=True)
         elif text.startswith("ARTICLE "):
             add_statuts_article_heading(docx, text)
+        elif block == "[denomination_societe]":
+            # Article 3 : nom de la societe en gras et centre (retour Albane 2026-06-10).
+            add_paragraph(docx, text, alignment=WD_ALIGN_PARAGRAPH.CENTER, bold=True)
         elif text.startswith("Fait à ") or text.startswith("Fait a "):
             signature_mode = True
-            add_statuts_signature_block(docx, [text])
+            # « Fait a » aligne a GAUCHE (retour Albane 2026-06-10).
+            add_statuts_signature_block(
+                docx, [text], alignment=WD_ALIGN_PARAGRAPH.LEFT
+            )
         elif signature_mode and (
             "Faire précéder" in text
             or "Faire prÃ©cÃ©der" in text
@@ -461,7 +494,11 @@ def render_statuts_sel_docx(
         ):
             add_statuts_signature_block(docx, [], mention_lines=[text])
         elif signature_mode:
-            add_statuts_signature_block(docx, [text])
+            # Nom du client (signataire) en GRAS (retour Albane 2026-06-10).
+            add_statuts_signature_block(docx, [text], bold=True)
+        elif text.startswith("Liste des actes"):
+            # Derniere page : ligne « Liste des actes accomplis... » centree (Albane).
+            add_paragraph(docx, text, alignment=WD_ALIGN_PARAGRAPH.CENTER)
         elif text.startswith("-") or text.startswith("-\t"):
             add_statuts_hanging_list_item(docx, text.lstrip("-\t "))
         else:
@@ -525,6 +562,19 @@ def required_associe_unique(ctx: DocumentGenerationContext) -> Associe:
             f"les statuts SEL multi-associes sont bloques en V1 pour {DOCUMENT_CODE}."
         )
     return ctx.associes[0]
+
+
+def statuts_output_filename(denomination: str | None, fallback: str) -> str:
+    """Nom de fichier des statuts = « Statuts {denomination}.docx » (retour Albane
+    2026-06-10 : mettre d'office le nom dans l'intitule du doc pour eviter le
+    renommage manuel). Denomination vide ou non sanitizable -> fallback historique.
+    """
+    name = (denomination or "").strip()
+    if not name:
+        return fallback
+    safe = re.sub(r"[^\w .\-]+", " ", name, flags=re.UNICODE)
+    safe = re.sub(r"\s+", " ", safe).strip(" .")
+    return f"Statuts {safe}.docx" if safe else fallback
 
 
 def address_display(address: Address | None, field_name: str) -> str:

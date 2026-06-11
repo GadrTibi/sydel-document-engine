@@ -5,12 +5,12 @@ from __future__ import annotations
 
 STATUTS_SELARL_DENTISTE_BLOCKS: tuple[str, ...] = (
     '[denomination_societe]',
-    '[forme_sociale_complete] de [profession_reglementee]',
+    'Société d’exercice libéral à responsabilité limitée de [profession_reglementee]',
     'Au capital de [capital_social] euros',
     'Siège social : [adresse_siege]',
     'LE SOUSSIGNE\xa0:',
-    '[civilite] [prenom] [nom], [profession], né le [date_naissance] à [ville_naissance] ([departement_naissance]), de nationalité [nationalite], demeurant [adresse_personnelle].',
-    'Inscrit au Tableau de l’ordre départemental des [profession_reglementee_pluriel] de [ordre_departemental] sous le numéro RPPS [numero_rpps], [situation_matrimoniale_statuts]. ',
+    '[civilite] [prenom] [nom], [profession], né le [date_naissance] à [ville_naissance] ([departement_naissance]), de nationalité [nationalite], demeurant [adresse_personnelle], [situation_matrimoniale_statuts]',
+    'Inscrit au Tableau de l’ordre départemental des [profession_reglementee_pluriel] de [ordre_departemental] [mention_inscription_ordre_rpps]. ',
     'A établi ainsi qu’il suit les statuts de la [forme_sociale_complete] de [profession_reglementee] qu’il a décidé d’instituer\xa0:',
     'ARTICLE 1 – FORME ',
     "La Société est une société d'exercice libéral à responsabilité limitée de [profession_reglementee_pluriel] (SELARL), régie par les dispositions du Code de commerce relatives aux sociétés commerciales et les lois en vigueur, les dispositions législatives et réglementaires applicables à la profession de [profession_reglementee], notamment l’ordonnance n°2023-77 du 8 février 2023 relative à l'exercice en société des professions libérales réglementées et les présents statuts.",

@@ -204,13 +204,15 @@ def test_statuts_selarl_dentiste_generates_unique_associate_docx(tmp_path: Path)
     )
     article_1 = next(p for p in document.paragraphs if p.text.startswith("ARTICLE 1"))
 
-    assert output_path.name == "statuts_selarl_chirurgien_dentiste.docx"
+    # Retour Albane 2026-06-10 : intitulé du doc = « Statuts {dénomination} ».
+    assert output_path.name == "Statuts SEL MARTIN.docx"
     assert "SEL MARTIN" in text
     assert "Au capital de 1 000 euros" in text
-    assert (
-        "sous le numéro RPPS 10000000001, marié sous le régime de la communauté "
-        "avec Madame Alice Martin."
-    ) in text
+    # Retour Albane 2026-06-10 (DENTISTE) : « marié avec Mme » déplacé juste après
+    # l'adresse du domicile + n° d'inscription à l'ordre ajouté avant le RPPS.
+    assert "marié sous le régime de la communauté avec Madame Alice Martin" in text
+    assert "sous le numéro d’inscription 12345 et sous le numéro RPPS 10000000001" in text
+    assert "sous le numéro RPPS 10000000001, marié" not in text
     assert "marié sous le régime de la communauté légale" not in text
     assert "ARTICLE 5 - LIEU(X) D’EXERCICE" in text
     assert (
@@ -244,7 +246,7 @@ def test_statuts_selarl_medecin_skips_personne_2_source_alias(tmp_path: Path) ->
 
     text = _docx_text(output_path)
 
-    assert output_path.name == "statuts_selarl_medecin.docx"
+    assert output_path.name == "Statuts SEL MARTIN.docx"
     assert "Conseil" in text
     assert "personne_2" not in text
     assert "50 000 euros" in text
