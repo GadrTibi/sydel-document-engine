@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Literal
 
 from docx import Document
+from docx.oxml.ns import qn
 
 from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import (
@@ -271,6 +272,11 @@ def render_cession_from_template(
     """
     document = Document(str(model_path))
 
+    # Retours Albane 9.3 : les modeles source embarquent des commentaires Word
+    # (annotations de relecture). Ils sont strippes a la generation pour ne
+    # jamais fuir dans le document client. No-op si le modele n'en porte pas.
+    _strip_word_comments(document)
+
     if paragraph_overrides:
         _apply_paragraph_overrides(document, paragraph_overrides)
     if segment_overrides:
@@ -309,6 +315,61 @@ def _iter_all_paragraphs(document):
         for row in table.rows:
             for cell in row.cells:
                 yield from cell.paragraphs
+
+
+# Parts de commentaires Word a retirer du package une fois les references nettoyees.
+_COMMENT_PART_SUFFIXES = (
+    "comments.xml",
+    "commentsExtended.xml",
+    "commentsIds.xml",
+    "commentsExtensible.xml",
+)
+# Elements de commentaire references DANS document.xml (corps + tableaux).
+_COMMENT_BODY_TAGS = (
+    "w:commentRangeStart",
+    "w:commentRangeEnd",
+    "w:commentReference",
+)
+
+
+def _strip_word_comments(document) -> None:
+    """Supprime tout commentaire Word herite du modele source (retours 9.3).
+
+    Deux passes complementaires, sinon le DOCX serait corrompu dans Word :
+      1. retirer les elements de reference (commentRangeStart/End +
+         le run d'ancrage portant commentReference) du document.xml ;
+      2. supprimer les parts word/comments*.xml + leurs relations.
+    Entierement no-op si le modele ne porte aucun commentaire.
+    """
+    body = document.element.body
+
+    # 1) Marqueurs de plage : commentRangeStart / commentRangeEnd.
+    for tag in ("w:commentRangeStart", "w:commentRangeEnd"):
+        for node in body.findall(".//" + qn(tag)):
+            parent = node.getparent()
+            if parent is not None:
+                parent.remove(node)
+
+    # 1bis) Le run d'ancrage (w:r contenant w:commentReference) est retire en
+    # entier : c'est un run technique sans texte visible (rPr + commentReference).
+    for ref in body.findall(".//" + qn("w:commentReference")):
+        run = ref.getparent()
+        if run is None or run.tag != qn("w:r"):
+            # Reference hors run attendu : retirer au moins l'element lui-meme.
+            if run is not None:
+                run.remove(ref)
+            continue
+        run_parent = run.getparent()
+        if run_parent is not None:
+            run_parent.remove(run)
+
+    # 2) Relations vers les parts de commentaires. Drop la relation suffit :
+    # une part orpheline (plus referencee) n'est pas re-serialisee a la sauvegarde.
+    main_part = document.part
+    for rel_id, related in list(main_part.related_parts.items()):
+        partname = str(getattr(related, "partname", ""))
+        if partname.endswith(_COMMENT_PART_SUFFIXES):
+            main_part.drop_rel(rel_id)
 
 
 def _apply_segment_overrides(

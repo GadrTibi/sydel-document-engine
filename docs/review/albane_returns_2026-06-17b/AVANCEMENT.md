@@ -4,10 +4,10 @@
 ```
   ┌─ SYDEL · Retours Albane lot 2 · AVANCEMENT ────────────
   │
-  │   GLOBAL   [██████████████████░░░░░░]  36/49  ·  73%
+  │   GLOBAL   [██████████████████░░░░░░]  37/49  ·  76%
   │
   │   ✅  1a· bugs isolés       4/4   [██████████]
-  │   🔨  1b· bugs données P1   8/12  [███████░░░]
+  │   🔨  1b· bugs données P1   9/12  [████████░░]
   │   ✅  2 · formulaires       10/10 [██████████]
   │   🔨  3 · contenu docs      8/14  [██████░░░░]
   │   🔨  4 · mise en forme     6/9   [███████░░░]
@@ -22,7 +22,7 @@
 - [x] **§11** — Autorisation de domiciliation : 'euros' manquant apres le montant du capital
 - [x] **§12.2** — Appel de fonds : montant et symbole euros sur DEUX lignes (add_centered_amount avec liste 
 
-## Vague 1b · bugs données P1 — 8/12
+## Vague 1b · bugs données P1 — 9/12
 - [x] **§13.2** — Cedant SCM : nationalite, adresse, naissance, situation maritale figees sur la FIXTURE (pa
 - [x] **§13.3** — Description SELARL cessionnaire : denomination, CAPITAL, siege, RCS, immat figes sur la FI
 - [x] **§13.x** — Cause racine commune : le sous-formulaire SCM cession demarre d'une fixture de demo et n'o
@@ -34,7 +34,7 @@
 - [ ] **§4.2** — PV SCM : (a) 'Cette resolution est adoptee a l'unanimite' PAS en italique ; (b) zone signa
 - [ ] **§9.1** — Surlignage jaune conservé sur les champs déjà complétés
 - [ ] **§9.2** — « représentée par son gérant » suivi de « Docteur » + mauvaise personne (vendeur au lieu d
-- [ ] **§9.3** — Commentaires Word résiduels (Albane) non supprimés du document généré
+- [x] **§9.3** — Commentaires Word résiduels (Albane) non supprimés du document généré
 
 ## Vague 2 · formulaires — 10/10
 - [x] **§12.1** — Appel de fonds : champ BANQUE present dans le questionnaire (a supprimer des variables)

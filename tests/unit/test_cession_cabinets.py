@@ -204,6 +204,43 @@ def _assert_no_residual_tokens(text: str) -> None:
     assert "]" not in text
 
 
+def _docx_part_names(path: Path) -> set[str]:
+    import zipfile
+
+    with zipfile.ZipFile(path) as archive:
+        return set(archive.namelist())
+
+
+def _docx_document_xml(path: Path) -> str:
+    import zipfile
+
+    with zipfile.ZipFile(path) as archive:
+        return archive.read("word/document.xml").decode("utf-8", "replace")
+
+
+def _docx_highlighted_run_texts(path: Path) -> list[str]:
+    document = Document(path)
+    texts: list[str] = []
+
+    def _scan(paragraphs) -> None:
+        for paragraph in paragraphs:
+            for run in paragraph.runs:
+                if run.font.highlight_color is not None:
+                    texts.append(run.text)
+
+    _scan(document.paragraphs)
+    for table in document.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                _scan(cell.paragraphs)
+    return texts
+
+
+def _docx_paragraph_texts(path: Path) -> list[str]:
+    document = Document(path)
+    return [paragraph.text for paragraph in document.paragraphs]
+
+
 @pytest.mark.parametrize(
     ("generator", "ctx", "filename", "expected_text"),
     [
@@ -741,3 +778,34 @@ def test_compromis_dentaire_pret_taux_vide_ne_bloque_pas(tmp_path: Path) -> None
 
     _assert_no_residual_tokens(text)
     assert "au taux maximum de" in text
+
+
+# ---------------------------------------------------------------------------
+# Retours Albane 2026-06-17b — Compromis de cession (sections 9.x)
+# ---------------------------------------------------------------------------
+
+
+def test_compromis_dentaire_strips_word_comments(tmp_path: Path) -> None:
+    # 9.3 : le modele dentaire embarque des commentaires Word (annotations de
+    # relecture Albane). Le document genere ne doit en porter AUCUN.
+    ctx = _context(etape="compromis", type_cabinet="dentaire")
+    out = CompromisCessionCabinetDentaireGenerator().generate(ctx, tmp_path)
+
+    parts = _docx_part_names(out)
+    assert not any("comment" in name.lower() for name in parts)
+
+    doc_xml = _docx_document_xml(out)
+    assert "commentReference" not in doc_xml
+    assert "commentRangeStart" not in doc_xml
+    assert "commentRangeEnd" not in doc_xml
+
+
+def test_compromis_medical_has_no_comments_noop(tmp_path: Path) -> None:
+    # 9.3 (garde-fou) : le modele medical ne porte aucun commentaire ; le strip
+    # est un no-op et ne casse rien.
+    ctx = _context(etape="compromis", type_cabinet="medical")
+    out = CompromisCessionCabinetMedicalGenerator().generate(ctx, tmp_path)
+
+    parts = _docx_part_names(out)
+    assert not any("comment" in name.lower() for name in parts)
+    _assert_no_residual_tokens(_docx_text(out))
