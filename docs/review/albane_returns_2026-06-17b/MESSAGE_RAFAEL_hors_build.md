@@ -38,6 +38,7 @@ Exporter un formulaire vierge → le remplir hors-outil (Word) → le réimporte
 ## 4. Deux questions purement métier (pour Albane, si tu valides)
 - **SPFPL** « apport » et « cession » : ça concerne **uniquement les dentistes**, ou aussi les médecins ? (je dois libeller les parcours correctement — là c'est ambigu, et il y a déjà un « SPFPL SAS médecin » à côté).
 - **Avenant au bail**, la phrase « a pour locataire ___ » : Albane a proposé soit **« le Dr [Nom] »** soit **« M./Mme [Nom] »** — laquelle elle veut ?
+- **SELARL, article 5 avec DEUX lieux d'exercice** : le modèle SELARL fige « Il constitue le lieu d'exercice **unique** de la société » (incompatible avec 2 lieux). Pour afficher un 2e lieu (ce qu'Albane demande, §2.2), il faut le wording quand il y a 2 lieux. La **SELAS** utilise déjà : « Le lieu d'exercice de la société est situé : [adresse 1] / [nom 2], [adresse 2] ». **On reprend ce même wording pour la SELARL à 2 lieux ?** (le cas 1 lieu reste « unique », inchangé). → confirmation Albane.
 
 ---
 
