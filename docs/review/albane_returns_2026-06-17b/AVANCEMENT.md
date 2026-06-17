@@ -4,13 +4,13 @@
 ```
   ┌─ SYDEL · Retours Albane lot 2 · AVANCEMENT ────────────
   │
-  │   GLOBAL   [███████████████████████░]  46/49  ·  94%
+  │   GLOBAL   [███████████████████████░]  47/49  ·  96%
   │
   │   ✅  1a· bugs isolés       4/4   [██████████]
   │   ✅  1b· bugs données P1   12/12 [██████████]
   │   ✅  2 · formulaires       10/10 [██████████]
   │   🔨  3 · contenu docs      12/14 [█████████░]
-  │   🔨  4 · mise en forme     8/9   [█████████░]
+  │   ✅  4 · mise en forme     9/9   [██████████]
   │
   │   ⏸ hors-build (Rafael/Albane) : 10      ✔ déjà conformes : 5
   └────────────────────────────────────────────────────────
@@ -64,8 +64,8 @@
 - [x] **§9.8** — Signataires : deux fois « Dr [nom] » ; le 2e doit être la SEL acquéreur
 - [x] **§9.9** — Formule finale « vingt pages » au lieu du nombre réel (8 pages)
 
-## Vague 4 · mise en forme — 8/9
-- [ ] **§1** — Aeration generale : Statuts/PV/Procuration/DNC/Appel de fonds aeres ; SCM (PV SCM, acte ce
+## Vague 4 · mise en forme — 9/9
+- [x] **§1** — Aeration generale : Statuts/PV/Procuration/DNC/Appel de fonds aeres ; SCM (PV SCM, acte ce
 - [x] **§10.4** — Cases de signature trop petites (encadre 3 colonnes, ~3 lignes vides)
 - [x] **§13.1** — Acte de cession parts SCM : doc serre (6pt uniforme, zero spacer), signature = add_signatu
 - [x] **§2.1** — Encadre STATUTS SELARL trop petit et trop proche de l'en-tete (table 1x1 sans marge de cel

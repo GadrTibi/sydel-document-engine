@@ -21,10 +21,18 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_hyphen_list_item,
     add_paragraph,
     add_signature_table,
+    add_spacer,
     new_document,
 )
 
 OUTPUT_FILENAME = "pv_age_cession_parts_scm.docx"
+
+# Mise en forme (Albane 2026-06-17, §1) : aerer le PV SCM, juge trop serre.
+# Espace avant chaque grande resolution (meme valeur que l'acte SCM §13.1 pour
+# rester coherent) + spacers entre les grands blocs (entete<->corps, avant la
+# signature). Local au PV : n'affecte ni l'acte ni le courrier SCM.
+_RESOLUTION_SPACE_BEFORE_PT = 12
+_BLOCK_SPACER_PT = 10
 
 
 class PvAgeCessionScmGenerator:
@@ -81,6 +89,8 @@ class PvAgeCessionScmGenerator:
             ],
         )
 
+        # §1 — aeration : espace entre le cadre de titre et le corps du PV.
+        add_spacer(document, space_after_pt=_BLOCK_SPACER_PT)
         add_body_paragraph(
             document,
             f"L'an {required_text(agrement.date_pv_lettres, 'scm_cession.agrement.date_pv_lettres')}",
@@ -149,13 +159,17 @@ class PvAgeCessionScmGenerator:
         ]:
             add_body_paragraph(document, text)
 
-        add_heading(document, "PREMIERE RESOLUTION")
+        add_heading(
+            document, "PREMIERE RESOLUTION", space_before_pt=_RESOLUTION_SPACE_BEFORE_PT
+        )
         add_body_paragraph(document, _agrement_resolution(ctx, cessionnaire.denomination or ""))
         add_body_paragraph(
             document, "Cette résolution est adoptée à l'unanimité.", italic=True
         )
 
-        add_heading(document, "DEUXIEME RESOLUTION")
+        add_heading(
+            document, "DEUXIEME RESOLUTION", space_before_pt=_RESOLUTION_SPACE_BEFORE_PT
+        )
         add_body_paragraph(
             document,
             "L'assemblée générale, compte tenu de la résolution qui précède, et sous réserve de la réalisation définitive de la cession, décide, pour tenir compte de la nouvelle répartition du capital, de modifier l'article 7 des statuts qui sera rédigé ainsi :",
@@ -179,7 +193,9 @@ class PvAgeCessionScmGenerator:
             document, "Cette résolution est adoptée à l'unanimité.", italic=True
         )
 
-        add_heading(document, "TROISIEME RESOLUTION")
+        add_heading(
+            document, "TROISIEME RESOLUTION", space_before_pt=_RESOLUTION_SPACE_BEFORE_PT
+        )
         add_body_paragraph(
             document,
             "L'assemblée générale confère tous pouvoirs au porteur d'une copie ou d'un extrait du présent procès-verbal afin d'accomplir toutes les formalités consécutives aux décisions prises.",
@@ -191,6 +207,8 @@ class PvAgeCessionScmGenerator:
             document,
             "De tout ceci, il a été dressé le présent procès-verbal qui, après lecture, a été signé par la gérance, les associés présents.",
         )
+        # §1 — aeration : espace avant le cadre de signature.
+        add_spacer(document, space_after_pt=_BLOCK_SPACER_PT)
         # §4.2 — cadre de signature agrandi (zone manuscrite/YouSign suffisante),
         # bordures conservees. 2,5 cm de hauteur minimale par ligne de signataires.
         add_signature_table(
