@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
@@ -29,63 +31,115 @@ STRUCTURE_SELAS = "SELAS"
 MAX_ASSOCIES = 5
 MIN_ASSOCIES = 2
 
-SOURCE_NAME = "Statuts_SELAS_multi_modele.docx"
+# --- Profils par profession reglementee --------------------------------------------------
+#
+# Le moteur lit un modele DOCX tokenise et reinjecte, selon le nombre reel d'associes, les
+# blocs DYNAMIQUES (comparution, apports, repartition du capital, designation du President,
+# signatures). En dehors de ces fenetres il rend le paragraphe source tel quel en substituant
+# les placeholders societe. La SOURCE, les fenetres d'index et le wording reinjecte different
+# selon la profession :
+#   - medecin           -> Statuts_SELAS_multi_modele.docx (corpus medecin, 38 articles,
+#                          deontologie medicale) ; comportement HISTORIQUE inchange.
+#   - chirurgien-dentiste -> Statuts_SELAS_dentiste_pluri_modele.docx (corpus dentiste,
+#                          32 articles, R. 4113-1 Code de la sante publique).
+# Cf. docs/project/types/SELAS/REYNAUD_TOKENISATION_NOTES.md.
 
-# Indices de paragraphes (0-based, python-docx) des blocs DYNAMIQUES a reinjecter selon le
-# nombre reel d'associes. En dehors de ces fenetres, le moteur rend le paragraphe source
-# tel quel (boilerplate) en substituant les placeholders societe. Cf.
-# docs/project/types/SELAS/REYNAUD_TOKENISATION_NOTES.md.
+SOURCE_NAME = "Statuts_SELAS_multi_modele.docx"  # retro-compat (medecin) — lu par les tests/audits
+
+# Index de paragraphes (0-based python-docx) des blocs dynamiques — MODELE MEDECIN (inchange).
 COMPARUTION_SLICE = (16, 20)
 APPORTS_SLICE = (72, 74)
 CAPITAL_SLICE = (88, 94)
 PRESIDENT_SLICE = (221, 223)
 SIGNATURE_SLICE = (510, 511)
-
-# Le modele source vit avec un titre encadre "STATUTS" dans une TABLE (non iteree par
+# Le modele medecin vit avec un titre encadre "STATUTS" dans une TABLE (non iteree par
 # python-docx). On le restaure avant "LES SOUSSIGNEES" (para 14), comme les statuts civils.
 STATUTS_TITLE_BOX_BEFORE = 14
+
+
+@dataclass(frozen=True)
+class _SelasProfile:
+    """Parametrage par profession : modele source, fenetres d'index des blocs dynamiques,
+    titre encadre eventuel, et builders de blocs (reproduisant le wording du modele cible)."""
+
+    source_name: str
+    comparution_slice: tuple[int, int]
+    apports_slice: tuple[int, int]
+    capital_slice: tuple[int, int]
+    signature_slice: tuple[int, int]
+    add_comparution: Callable[[object, _ResolvedSelasMulti], None]
+    add_apports: Callable[[object, _ResolvedSelasMulti], None]
+    add_capital: Callable[[object, _ResolvedSelasMulti], None]
+    add_signature: Callable[[object, _ResolvedSelasMulti], None]
+    # Fenetre de designation nominative du President (modele medecin uniquement) ; None pour
+    # le modele dentiste, dont l'article President est entierement generique (jamais nomme).
+    president_slice: tuple[int, int] | None = None
+    add_president: Callable[[object, _ResolvedSelasMulti], None] | None = None
+    # Index avant lequel restaurer le titre encadre "STATUTS" (modele medecin) ; None si le
+    # modele ne porte pas de titre encadre dans une table (cas dentiste, 0 table).
+    title_box_before: int | None = None
+    # Substitutions supplementaires propres au modele : le corpus dentiste porte des VALEURS
+    # CONCRETES d'exemple dans son boilerplate (denomination, siege, banque, ligne capital) la
+    # ou le corpus medecin porte des placeholders [..]. On remplace ces lignes-exemple par les
+    # donnees reelles de la societe. None pour le modele medecin (placeholders deja geres).
+    boilerplate_replacements: Callable[[_ResolvedSelasMulti], dict[str, str]] | None = None
+
+
+def _select_profile(profession_reglementee: str) -> _SelasProfile:
+    profession = (profession_reglementee or "").strip().casefold()
+    if "dentiste" in profession:
+        return _DENTISTE_PROFILE
+    return _MEDECIN_PROFILE
 
 
 class StatutsSelasMultiGenerator:
     """Generateur SELAS multi (statuts de creation) lisant le modele tokenise et reinjectant
     les blocs dynamiques (comparution N, apports N, repartition capital N en actions,
     designation du President, ligne de signature N), 2 a 5 associes dont au moins une
-    personne physique exercante et un eventuel associe personne morale."""
+    personne physique exercante et un eventuel associe personne morale. Le modele source et
+    les fenetres d'index sont choisis selon la profession reglementee (medecin / dentiste)."""
 
     def generate(self, ctx: DocumentGenerationContext, output_dir: Path) -> Path:
         data = _ResolvedSelasMulti.from_context(ctx)
-        source_doc = Document(_source_path())
+        profile = data.profile
+        source_doc = Document(_source_path(profile.source_name))
         output_doc = new_document()
         output_doc.sections[0].footer.paragraphs[0].text = (
             f"{data.denomination} - Statuts constitutifs"
         )
 
         replacements = data.common_replacements()
+        if profile.boilerplate_replacements is not None:
+            replacements = {**replacements, **profile.boilerplate_replacements(data)}
         skip_until = -1
         for index, paragraph in enumerate(source_doc.paragraphs):
             if index < skip_until:
                 continue
-            if index == STATUTS_TITLE_BOX_BEFORE:
+            if profile.title_box_before is not None and index == profile.title_box_before:
                 add_statuts_title_box(output_doc, "STATUTS")
-            if index == COMPARUTION_SLICE[0]:
-                _add_comparution_block(output_doc, data)
-                skip_until = COMPARUTION_SLICE[1]
+            if index == profile.comparution_slice[0]:
+                profile.add_comparution(output_doc, data)
+                skip_until = profile.comparution_slice[1]
                 continue
-            if index == APPORTS_SLICE[0]:
-                _add_apports_block(output_doc, data)
-                skip_until = APPORTS_SLICE[1]
+            if index == profile.apports_slice[0]:
+                profile.add_apports(output_doc, data)
+                skip_until = profile.apports_slice[1]
                 continue
-            if index == CAPITAL_SLICE[0]:
-                _add_capital_block(output_doc, data)
-                skip_until = CAPITAL_SLICE[1]
+            if index == profile.capital_slice[0]:
+                profile.add_capital(output_doc, data)
+                skip_until = profile.capital_slice[1]
                 continue
-            if index == PRESIDENT_SLICE[0]:
-                _add_president_block(output_doc, data)
-                skip_until = PRESIDENT_SLICE[1]
+            if (
+                profile.president_slice is not None
+                and profile.add_president is not None
+                and index == profile.president_slice[0]
+            ):
+                profile.add_president(output_doc, data)
+                skip_until = profile.president_slice[1]
                 continue
-            if index == SIGNATURE_SLICE[0]:
-                _add_signature_line(output_doc, data)
-                skip_until = SIGNATURE_SLICE[1]
+            if index == profile.signature_slice[0]:
+                profile.add_signature(output_doc, data)
+                skip_until = profile.signature_slice[1]
                 continue
 
             text = paragraph.text.strip()
@@ -109,6 +163,7 @@ class _ResolvedSelasMulti:
         self,
         *,
         selas: StatutsSelasMultiContext,
+        profile: _SelasProfile,
         denomination: str,
         adresse_siege: str,
         signature_lieu: str,
@@ -117,6 +172,7 @@ class _ResolvedSelasMulti:
         president: StatutsCivilsAssocie,
     ) -> None:
         self.selas = selas
+        self.profile = profile
         self.denomination = denomination
         self.adresse_siege = adresse_siege
         self.signature_lieu = signature_lieu
@@ -133,11 +189,18 @@ class _ResolvedSelasMulti:
         if ctx.societe is None or ctx.societe.siege is None:
             raise ValueError(f"societe.siege est obligatoire pour {DOCUMENT_CODE}.")
         selas = ctx.statuts_selas_multi
+        profile = _select_profile(
+            _required_text(
+                selas.profession_reglementee,
+                "statuts_selas_multi.profession_reglementee",
+            )
+        )
         associes = list(selas.associes)
         _validate_associes(associes, selas)
         president = _resolve_president(associes, selas.president)
         return cls(
             selas=selas,
+            profile=profile,
             denomination=_required_text(ctx.societe.denomination, "societe.denomination"),
             adresse_siege=_address_display(ctx.societe.siege, "societe.siege"),
             signature_lieu=_required_text(ctx.signature.lieu, "signature.lieu"),
@@ -203,7 +266,7 @@ class _ResolvedSelasMulti:
         }
 
 
-# --- Blocs dynamiques (wording reproduit A L'IDENTIQUE du modele source) ---
+# --- Blocs dynamiques MEDECIN (wording reproduit A L'IDENTIQUE du modele medecin) -----------
 
 
 def _add_comparution_block(document, data: _ResolvedSelasMulti) -> None:
@@ -243,7 +306,8 @@ def _add_physical_comparution(
         document,
         f"{_person_label(associe)}, "
         f"{_required_text(associe.profession, 'associes[].profession')} "
-        f"{_required_text(associe.qualification_principale, 'associes[].qualification_principale')}, "
+        f"{_required_text(associe.qualification_principale, 'associes[].qualification_principale')}"
+        ", "
         f"{ne} le {_format_display_date(associe.date_naissance, 'associes[].date_naissance')} "
         f"à {_required_text(associe.ville_naissance, 'associes[].ville_naissance')} "
         f"({_required_text(associe.departement_naissance, 'associes[].departement_naissance')}), "
@@ -274,16 +338,20 @@ def _add_morale_comparution(document, associe: StatutsCivilsAssocie) -> None:
         raise ValueError(
             f"associes[].representant est obligatoire pour une personne morale {DOCUMENT_CODE}."
         )
+    rep_civilite = _required_text(
+        representant.civilite_affichage, "associes[].representant.civilite_affichage"
+    )
     add_paragraph(
         document,
         f"La {_required_text(associe.denomination, 'associes[].denomination')}, "
         f"{_required_text(associe.forme_juridique, 'associes[].forme_juridique')}, "
-        f"au capital de {_required_text(associe.capital_social, 'associes[].capital_social')} euros "
+        "au capital de "
+        f"{_required_text(associe.capital_social, 'associes[].capital_social')} euros "
         f"dont le siège social est situé au {_address_display(associe.siege, 'associes[].siege')}, "
         f"immatriculée au RCS de {_required_text(associe.ville_rcs, 'associes[].ville_rcs')} "
         f"sous le numéro {_required_text(associe.numero_rcs, 'associes[].numero_rcs')}, "
         "représentée par son représentant légal, "
-        f"{_required_text(representant.civilite_affichage, 'associes[].representant.civilite_affichage')} "
+        f"{rep_civilite} "
         f"{_required_text(representant.prenom, 'associes[].representant.prenom')} "
         f"{_required_text(representant.nom, 'associes[].representant.nom')}.",
     )
@@ -355,6 +423,245 @@ def _add_signature_line(document, data: _ResolvedSelasMulti) -> None:
     add_statuts_signature_block(document, ["\t\t\t\t\t\t".join(labels)])
 
 
+# --- Blocs dynamiques DENTISTE (wording reproduit A L'IDENTIQUE du modele dentiste) ---------
+#
+# Le modele dentiste (Statuts_SELAS_dentiste_pluri_modele.docx, 549 paras, 0 table) porte des
+# valeurs concretes d'exemple dupliquees une fois par associe ("gabarit a repeter"). On les
+# reinjecte par fenetre d'index, avec le wording propre au corpus dentiste :
+#   - comparution : Article 0 (15-23), une SEULE ligne combinee par associe ;
+#   - apports     : Article 6 (71-78), "- Le Docteur X, apporte [LETTRES] euros" + "Ci ... euros",
+#                   puis trait "___________", puis "Total des apports ... [total] euros" ;
+#   - capital     : Article 6 (83-89), "- [civilite] X, [LETTRES] actions" + "Ci ... actions",
+#                   puis ligne tabulee vide, puis "Total des actions composant le capital ...".
+#   - signature   : "Fait a [lieu]" + "Le [date]" + ligne de noms tabulee.
+# Pas de bloc de designation NOMINATIVE du President : l'article President (Art. 19) est
+# entierement generique dans le corpus dentiste (le president n'y est jamais nomme).
+
+
+def _add_comparution_block_dentiste(document, data: _ResolvedSelasMulti) -> None:
+    profession = _required_text(
+        data.selas.profession_reglementee,
+        "statuts_selas_multi.profession_reglementee",
+    )
+    profession_pluriel = _required_text(
+        data.selas.profession_reglementee_pluriel,
+        "statuts_selas_multi.profession_reglementee_pluriel",
+    )
+    for associe in data.associes:
+        if _is_morale(associe):
+            _add_morale_comparution(document, associe)
+        else:
+            _add_physical_comparution_dentiste(document, associe, profession, profession_pluriel)
+
+
+def _add_physical_comparution_dentiste(
+    document,
+    associe: StatutsCivilsAssocie,
+    profession: str,
+    profession_pluriel: str,
+) -> None:
+    # Source para 17 (UNE seule ligne combinee, corpus dentiste) :
+    # "[civilite] [prenoms] [nom], [profession], de nationalite [nat], ne(e) le [date] a
+    #  [ville] ([dep]), [situation], demeurant [adresse], inscrit(e) au tableau de l'Ordre des
+    #  [profession_pluriel] de [ordre_dep] sous le numero national [numero_ordre] et sous le
+    #  numero RPPS [rpps]."
+    # Differences wording vs medecin : "inscrit au tableau DE L'ORDRE DES [pluriel]" (et non
+    # "du conseil de l'ordre"), "numero NATIONAL" (et non "departemental").
+    feminin = _associe_est_feminin(associe)
+    ne = "née" if feminin else "né"
+    inscrit = "inscrite" if feminin else "inscrit"
+    add_paragraph(
+        document,
+        f"{_person_label(associe)}, "
+        f"{profession}, "
+        f"de nationalité {_required_text(associe.nationalite, 'associes[].nationalite')}, "
+        f"{ne} le {_format_display_date(associe.date_naissance, 'associes[].date_naissance')} "
+        f"à {_required_text(associe.ville_naissance, 'associes[].ville_naissance')} "
+        f"({_required_text(associe.departement_naissance, 'associes[].departement_naissance')}), "
+        f"{_required_text(associe.situation_maritale, 'associes[].situation_maritale')}, "
+        f"demeurant {_person_address(associe)}, "
+        f"{inscrit} au tableau de l’Ordre des {profession_pluriel} "
+        f"de {_required_text(associe.ordre_departemental, 'associes[].ordre_departemental')} "
+        "sous le numéro national "
+        f"{_required_text(associe.numero_ordre, 'associes[].numero_ordre')} "
+        f"et sous le numéro RPPS {_required_text(associe.numero_rpps, 'associes[].numero_rpps')}.",
+    )
+
+
+def _add_apports_block_dentiste(document, data: _ResolvedSelasMulti) -> None:
+    capital_social = _required_text(
+        data.selas.capital_social, "statuts_selas_multi.capital_social"
+    )
+    for associe in data.associes:
+        apport = associe.apport
+        if apport is None:
+            raise ValueError(f"associes[].apport est obligatoire pour {DOCUMENT_CODE}.")
+        montant = _required_text(apport.montant, "associes[].apport.montant")
+        montant_lettres = _required_text(
+            apport.montant_lettres, "associes[].apport.montant_lettres"
+        )
+        if _is_morale(associe):
+            # Variante personne morale : "- La [denomination], apporte [LETTRES] euros".
+            add_paragraph(
+                document,
+                f"- La {_required_text(associe.denomination, 'associes[].denomination')}, "
+                f"apporte {montant_lettres} euros ",
+            )
+        else:
+            # Source para 71 : "- Le Docteur [prenoms] [nom], apporte [LETTRES] euros ".
+            add_paragraph(
+                document,
+                f"- {_apporteur_label_dentiste(associe)}, apporte {montant_lettres} euros ",
+            )
+        # Source para 72 : "Ci\t...\t[montant] euros" (onze tabulations).
+        add_paragraph(document, f"Ci\t\t\t\t\t\t\t\t\t\t\t{montant} euros")
+    # Source para 76 : trait separateur "\t...\t___________" (onze tabulations).
+    add_paragraph(document, "\t\t\t\t\t\t\t\t\t\t\t___________")
+    add_paragraph(document, "")
+    # Source para 78 : "Total des apports\t...\t[total] euros" (neuf tabulations).
+    add_paragraph(document, f"Total des apports\t\t\t\t\t\t\t\t\t{capital_social} euros")
+
+
+def _add_capital_block_dentiste(document, data: _ResolvedSelasMulti) -> None:
+    nb_actions_total = _required_int(
+        data.selas.nb_actions_total, "statuts_selas_multi.nb_actions_total"
+    )
+    for associe in data.associes:
+        nb_actions = _required_int(associe.nb_actions, "associes[].nb_actions")
+        nb_actions_lettres = _required_text(
+            associe.nb_actions_lettres, "associes[].nb_actions_lettres"
+        )
+        if _is_morale(associe):
+            # Variante personne morale : "- La [denomination], [LETTRES] actions".
+            add_paragraph(
+                document,
+                f"- La {_required_text(associe.denomination, 'associes[].denomination')}, "
+                f"{nb_actions_lettres} actions ",
+            )
+        else:
+            # Source para 83 : "- [civilite] [prenoms] [nom], [LETTRES] actions ".
+            add_paragraph(document, f"- {_person_label(associe)}, {nb_actions_lettres} actions ")
+        # Source para 84 : "Ci\t...\t[nb] actions" (onze tabulations).
+        add_paragraph(document, f"Ci\t\t\t\t\t\t\t\t\t\t\t{nb_actions} actions")
+    # Source para 88 : ligne de tabulations seule (onze tabulations).
+    add_paragraph(document, "\t\t\t\t\t\t\t\t\t\t\t")
+    # Source para 89 : "Total des actions composant le capital social\xa0: \t...\t[total] actions".
+    add_paragraph(
+        document,
+        f"Total des actions composant le capital social\xa0: \t\t\t\t\t{nb_actions_total} actions",
+    )
+
+
+def _add_signature_line_dentiste(document, data: _ResolvedSelasMulti) -> None:
+    # Source paras 507-512 : "Fait a [lieu]" / "Le [date]" / (espace) / ligne de noms tabulee.
+    add_paragraph(document, f"Fait à {data.signature_lieu}")
+    add_paragraph(document, f"Le {data.signature_date}")
+    add_paragraph(document, "")
+    add_paragraph(document, "\t\t")
+    labels = [_signature_short_label(a) for a in data.associes if a.est_signataire]
+    add_statuts_signature_block(document, ["\t\t\t\t".join(labels)])
+
+
+def _dentiste_boilerplate_replacements(data: _ResolvedSelasMulti) -> dict[str, str]:
+    """Le corpus dentiste porte des valeurs CONCRETES d'exemple dans son boilerplate (la ou le
+    corpus medecin porte des placeholders). On mappe chaque ligne-exemple EXACTE du modele vers
+    sa version remplie avec les donnees reelles de la societe. Strings prouvees par extraction
+    (paras 39 / 55 / 79 / 81 du modele dentiste)."""
+    selas = data.selas
+    capital_social = _required_text(selas.capital_social, "statuts_selas_multi.capital_social")
+    capital_lettres = _required_text(
+        selas.capital_social_lettres, "statuts_selas_multi.capital_social_lettres"
+    )
+    nb_actions = str(
+        _required_int(selas.nb_actions_total, "statuts_selas_multi.nb_actions_total")
+    )
+    valeur_nominale = _required_text(
+        selas.valeur_nominale_action, "statuts_selas_multi.valeur_nominale_action"
+    )
+    valeur_nominale_lettres = _required_text(
+        selas.valeur_nominale_action_lettres,
+        "statuts_selas_multi.valeur_nominale_action_lettres",
+    )
+    banque_nom = _required_text(selas.banque_nom, "statuts_selas_multi.banque_nom")
+    banque_adresse = _required_text(selas.banque_adresse, "statuts_selas_multi.banque_adresse")
+    return {
+        # Para 39 : denomination.
+        "La société est dénommée « Cabinet Dentaire Fuchs & Associés »,": (
+            f"La société est dénommée « {data.denomination} »,"
+        ),
+        # Para 55 : siege social.
+        "Le siège de la société est fixé au 9 rue du Général Chassereau, "
+        "35470 BAIN DE BRETAGNE.": (
+            f"Le siège de la société est fixé au {data.adresse_siege}."
+        ),
+        # Para 79 : depot des fonds (banque).
+        "Cette somme a été déposée au crédit du compte ouvert dans les livres de la "
+        "Banque BPGO, 8 place du parlement de Bretagne, 35000 Rennes.": (
+            "Cette somme a été déposée au crédit du compte ouvert dans les livres de la "
+            f"Banque {banque_nom}, {banque_adresse}."
+        ),
+        # Para 81 : ligne capital social (figure + lettres, nb actions, valeur nominale).
+        # NB : la boucle applique les replacements sur paragraph.text.STRIP() ; l'espace final
+        # apres "\xa0:" du modele disparait -> la cle doit finir par "suit\xa0:" (sans espace).
+        "Le capital social est fixé à la somme de 1.020 € (MILLE VINGT) euros divisé en "
+        "102.000 actions de 0,01 € (UN CENTIME D’EURO) chacune, entièrement libéré et "
+        "attribué comme suit\xa0:": (
+            f"Le capital social est fixé à la somme de {capital_social} € ({capital_lettres}) "
+            f"euros divisé en {nb_actions} actions de {valeur_nominale} € "
+            f"({valeur_nominale_lettres}) chacune, entièrement libéré et attribué comme "
+            "suit\xa0:"
+        ),
+    }
+
+
+def _apporteur_label_dentiste(associe: StatutsCivilsAssocie) -> str:
+    # Corpus dentiste : l'apporteur personne physique est designe "Le Docteur [prenoms] [nom]".
+    prenoms = associe.prenoms or associe.prenom
+    return (
+        f"Le Docteur {_required_text(prenoms, 'associes[].prenoms')} "
+        f"{_required_text(associe.nom, 'associes[].nom')}"
+    )
+
+
+_MEDECIN_PROFILE = _SelasProfile(
+    source_name=SOURCE_NAME,
+    comparution_slice=COMPARUTION_SLICE,
+    apports_slice=APPORTS_SLICE,
+    capital_slice=CAPITAL_SLICE,
+    president_slice=PRESIDENT_SLICE,
+    signature_slice=SIGNATURE_SLICE,
+    add_comparution=_add_comparution_block,
+    add_apports=_add_apports_block,
+    add_capital=_add_capital_block,
+    add_president=_add_president_block,
+    add_signature=_add_signature_line,
+    title_box_before=STATUTS_TITLE_BOX_BEFORE,
+)
+
+# Fenetres d'index DENTISTE — prouvees par extraction du modele
+# Statuts_SELAS_dentiste_pluri_modele.docx (549 paras) :
+#   comparution : paras 17 + 20 (gabarit duplique 2 associes) -> fenetre (17, 21)
+#   apports     : paras 71-78 (apports + Ci + trait + total) -> fenetre (71, 79)
+#   capital     : paras 83-89 (repartition + Ci + ligne tab + total) -> fenetre (83, 90)
+#   signature   : paras 507-512 ("Fait a" + date + ligne noms) -> fenetre (507, 513)
+# Pas de president_slice ni de title_box (0 table dans le modele dentiste).
+_DENTISTE_PROFILE = _SelasProfile(
+    source_name="Statuts_SELAS_dentiste_pluri_modele.docx",
+    comparution_slice=(17, 21),
+    apports_slice=(71, 79),
+    capital_slice=(83, 90),
+    president_slice=None,
+    signature_slice=(507, 513),
+    add_comparution=_add_comparution_block_dentiste,
+    add_apports=_add_apports_block_dentiste,
+    add_capital=_add_capital_block_dentiste,
+    add_president=None,
+    add_signature=_add_signature_line_dentiste,
+    title_box_before=None,
+    boilerplate_replacements=_dentiste_boilerplate_replacements,
+)
+
+
 # --- Resolution / validation ---
 
 
@@ -407,8 +714,9 @@ def _resolve_president(
         return candidate
     if president.nom:
         for associe in physiques:
+            associe_prenoms = associe.prenoms or associe.prenom
             if associe.nom == president.nom and (
-                president.prenoms is None or (associe.prenoms or associe.prenom) == president.prenoms
+                president.prenoms is None or associe_prenoms == president.prenoms
             ):
                 return associe
         raise ValueError(
@@ -421,8 +729,8 @@ def _resolve_president(
 # --- Helpers ---
 
 
-def _source_path() -> Path:
-    path = Path("project/source_documents/lot_04") / SOURCE_NAME
+def _source_path(source_name: str) -> Path:
+    path = Path("project/source_documents/lot_04") / source_name
     if not path.exists():
         raise ValueError(f"source DOCX introuvable pour {DOCUMENT_CODE}: {path}")
     return path
