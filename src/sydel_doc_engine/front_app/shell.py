@@ -806,7 +806,8 @@ def _cession_prefill_values(profession: str) -> dict[str, object]:
         "selarl_cession_prix_total_lettres": "",
         "selarl_cession_prix_corporels": "50 000",
         "selarl_cession_prix_incorporels": "250 000",
-        "selarl_cession_financement_banque": "BANQUE EXEMPLE",
+        # §12.1 : champ « Banque » retire du questionnaire d'appel de fonds (nom
+        # inconnu au remplissage) -> plus de seed de test pour cette cle.
         "selarl_cession_financement_destinataire_civilite": "Monsieur",
         "selarl_cession_financement_destinataire_prenom": "Louis",
         "selarl_cession_financement_destinataire_nom": "Bernard",
@@ -2160,13 +2161,14 @@ def _render_cession_form(
 
     # --- Financement (ticket 2.11) ---
     with st.expander("Financement"):
+        # §12.1 (retours Albane lot 2) : le nom de la banque n'est PAS connu au
+        # moment du remplissage (l'appel de fonds part avant le choix definitif de
+        # la banque). On retire donc la SAISIE « Banque » du questionnaire. La
+        # mention banque reste possible dans le courrier genere, a completer
+        # manuellement ; cote moteur, banque vide => aucune ligne banque parasite.
         st.caption(
-            "La banque n'apparait que dans l'appel de fonds ; aucune information "
-            "bancaire ne bloque la generation."
-        )
-        banque_nom = _cession_text(
-            st, "Banque (appel de fonds, facultatif)",
-            section="financement", field="banque", default="",
+            "Le nom de la banque n'est plus demande ici (inconnu au remplissage) ; "
+            "il se complete a la main sur l'appel de fonds genere si besoin."
         )
         col_a, col_b, col_c = st.columns(3)
         destinataire_civilite = _cession_text(
@@ -2257,7 +2259,10 @@ def _render_cession_form(
                     ),
                 }
         financement_payload = {
-            "banque": {"nom": banque_nom, "adresse_affichee": ""},
+            # §12.1 : banque non saisie -> vide. Le generateur d'appel de fonds
+            # omet la ligne banque quand le nom est vide (pas de placeholder
+            # parasite) ; la mention se complete a la main sur le document.
+            "banque": {"nom": "", "adresse_affichee": ""},
             "destinataire": {
                 "civilite_affichage": destinataire_civilite,
                 "prenom": destinataire_prenom,
