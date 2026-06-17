@@ -435,9 +435,14 @@ def add_statuts_title_box(
         _clear_table_borders(table)
 
     cell = table.cell(0, 0)
+    # Encadre STATUTS agrandi (retour Albane §2.1 : cadre trop petit / trop
+    # proche de l'en-tete). ADDITIF : on AGRANDIT le cadre via des marges de
+    # cellule + un paragraphe plus haut (space_before/after), bordures conservees.
+    _set_cell_margins(cell, top=120, bottom=120, left=160, right=160)
     paragraph = cell.paragraphs[0]
     paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    paragraph.paragraph_format.space_after = Pt(style_profile.compact_space_after_pt)
+    paragraph.paragraph_format.space_before = Pt(style_profile.standard_space_after_pt)
+    paragraph.paragraph_format.space_after = Pt(style_profile.standard_space_after_pt)
     run = paragraph.add_run(text)
     run.bold = True
     run.font.name = style_profile.font_name

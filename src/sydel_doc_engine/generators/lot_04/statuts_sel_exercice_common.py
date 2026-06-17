@@ -22,6 +22,7 @@ from sydel_doc_engine.domain.models import (
 )
 from sydel_doc_engine.rendering.docx_builder import (
     add_paragraph,
+    add_spacer,
     add_statuts_annex_heading,
     add_statuts_article_heading,
     add_statuts_body_paragraph,
@@ -845,6 +846,10 @@ def render_statuts_sel_docx(
             _render_selarl_two_lieux_article_5(docx, replacements, associate)
             continue
         if index == 4:
+            # Aere la 1re page entre l'en-tete (denomination/forme/capital/siege,
+            # index 0-3, tres compact) et l'encadre STATUTS (retour Albane §2.1 :
+            # « trop proche de l'en-tete »). ADDITIF, purement visuel.
+            add_spacer(docx, space_after_pt=10)
             add_statuts_title_box(docx, "STATUTS", bordered=title_box_bordered)
 
         if multi and multi_zones is not None:
