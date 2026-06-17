@@ -24,10 +24,21 @@ from sydel_doc_engine.generators.lot_05.scm_cession_common import (
 from sydel_doc_engine.rendering.docx_builder import (
     add_framed_title,
     add_signature_lines,
+    add_spacer,
     new_document,
 )
 
 OUTPUT_FILENAME = "acte_cession_parts_scm.docx"
+
+# Mise en forme (Albane 2026-06-17, §13.1) : espace avant chaque grande section
+# de l'acte (ORIGINE DE PROPRIETE, DECLARATIONS, CESSION, PRIX, FRAIS...) pour
+# aerer un document juge trop serre. Local a l'acte : n'affecte ni le PV ni le
+# courrier SCM (qui appellent add_heading sans space_before).
+_SECTION_SPACE_BEFORE_PT = 12
+
+
+def _section_heading(document, text: str) -> None:
+    add_heading(document, text, space_before_pt=_SECTION_SPACE_BEFORE_PT)
 
 
 class ActeCessionPartsScmGenerator:
@@ -104,7 +115,7 @@ class ActeCessionPartsScmGenerator:
         )
         add_body_paragraph(document, "Ci-après dénommé « LA SOCIETE »,")
 
-        add_heading(document, "IL EST PREALABLEMENT EXPOSE CE QUI SUIT :")
+        _section_heading(document, "IL EST PREALABLEMENT EXPOSE CE QUI SUIT :")
         add_body_paragraph(
             document,
             (
@@ -130,12 +141,15 @@ class ActeCessionPartsScmGenerator:
         _add_declarations_and_cession(document, scm_cession, cedant_name)
         _add_price_and_payment(document, ctx, scm_cession, cedant_name)
         _add_source_tail(document, ctx, scm_cession)
+        # Aération (§13.1) : espace avant la zone de clôture / signature.
+        add_spacer(document, space_after_pt=12)
         add_body_paragraph(document, f"Fait à {ctx.signature.lieu},")
         add_body_paragraph(
             document,
             f"En {required_text(scm_cession.nombre_exemplaires_lettres, 'scm_cession.nombre_exemplaires_lettres')} exemplaires originaux,",
         )
         add_body_paragraph(document, f"Le {scm_cession.date_acte_affichee or ''}")
+        add_spacer(document, space_after_pt=18)
         add_signature_lines(
             document,
             [
@@ -179,7 +193,7 @@ def _cogerants_display(scm_cession) -> str:
 
 
 def _add_origin_property(document, scm_cession) -> None:
-    add_heading(document, "ORIGINE DE PROPRIETE")
+    _section_heading(document, "ORIGINE DE PROPRIETE")
     add_body_paragraph(
         document,
         "Aux termes des statuts le capital social de la SOCIETE est actuellement détenu comme suit :",
@@ -199,8 +213,8 @@ def _add_origin_property(document, scm_cession) -> None:
 
 
 def _add_declarations_and_cession(document, scm_cession, cedant_name: str) -> None:
-    add_heading(document, "CECI EXPOSE, IL EST CONVENU CE QUI SUIT :")
-    add_heading(document, "DECLARATIONS")
+    _section_heading(document, "CECI EXPOSE, IL EST CONVENU CE QUI SUIT :")
+    _section_heading(document, "DECLARATIONS")
     for text in [
         "Le CEDANT déclare :",
         "- qu'il dispose de la pleine capacité juridique d'aliéner ;",
@@ -209,7 +223,7 @@ def _add_declarations_and_cession(document, scm_cession, cedant_name: str) -> No
         "- que les parts sociales cédées sont des biens propres.",
     ]:
         add_body_paragraph(document, text)
-    add_heading(document, "CESSION")
+    _section_heading(document, "CESSION")
     add_body_paragraph(
         document,
         (
@@ -219,7 +233,7 @@ def _add_declarations_and_cession(document, scm_cession, cedant_name: str) -> No
             f"{required_text(scm_cession.parts_cedees.plage, 'scm_cession.parts_cedees.plage')} inclus."
         ),
     )
-    add_heading(document, "PROPRIÉTÉ - JOUISSANCE")
+    _section_heading(document, "PROPRIÉTÉ - JOUISSANCE")
     for text in [
         "Le cessionnaire sera propriétaire des parts cédées et en aura la jouissance à compter de ce jour.",
         "En conséquence, il aura seul droit à tous les dividendes qui seront mis en distribution sur ces parts après cette date.",
@@ -235,7 +249,7 @@ def _add_price_and_payment(
     cedant_name: str,
 ) -> None:
     prix = scm_cession.prix
-    add_heading(document, "PRIX")
+    _section_heading(document, "PRIX")
     add_body_paragraph(
         document,
         (
@@ -246,7 +260,7 @@ def _add_price_and_payment(
             f"({required_text(prix.global_, 'scm_cession.prix.global')}) euros, payé comptant ce jour à {cedant_name} qui lui reconnaît et lui en donne bonne et valable quittance."
         ),
     )
-    add_heading(document, "PAIEMENT DU PRIX")
+    _section_heading(document, "PAIEMENT DU PRIX")
     add_body_paragraph(document, "Le prix est payé au moyen d'un prêt bancaire, établi par acte séparé, par virement.")
     credit = scm_cession.credit_vendeur
     if credit is not None and credit.actif:
@@ -353,6 +367,6 @@ def _add_source_tail(document, ctx: DocumentGenerationContext, scm_cession) -> N
         ),
     ]
     for heading, paragraphs in sections:
-        add_heading(document, heading)
+        _section_heading(document, heading)
         for text in paragraphs:
             add_body_paragraph(document, text)

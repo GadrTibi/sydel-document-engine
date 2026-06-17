@@ -441,8 +441,17 @@ def add_body_paragraph(document: Any, text: str, *, bold: bool = False) -> None:
     )
 
 
-def add_heading(document: Any, text: str) -> None:
-    add_paragraph(document, text, alignment=WD_ALIGN_PARAGRAPH.CENTER, bold=True)
+def add_heading(document: Any, text: str, *, space_before_pt: int = 0) -> None:
+    # space_before_pt optionnel (defaut 0) : preserve le comportement actuel
+    # pour les appelants existants (PV, courrier). L'acte de cession SCM
+    # l'utilise pour aerer avant chaque grande section (mise en forme §13.1).
+    add_paragraph(
+        document,
+        text,
+        alignment=WD_ALIGN_PARAGRAPH.CENTER,
+        bold=True,
+        space_before_pt=space_before_pt,
+    )
 
 
 def save_clean_document(document: Any, output_dir: Path, output_filename: str) -> Path:
