@@ -38,6 +38,17 @@ POWERS_TEXT = (
     "aux formalités d’enregistrement au greffe du Tribunal de Commerce de la Société."
 )
 
+# Titres ordinaux des decisions (PREMIERE, DEUXIEME, ...). Couvre largement le
+# nombre de decisions possible (jusqu'a 3 dirigeants + emprunt + pouvoirs).
+_DECISION_ORDINALS = (
+    "PREMIERE DECISION",
+    "DEUXIEME DECISION",
+    "TROISIEME DECISION",
+    "QUATRIEME DECISION",
+    "CINQUIEME DECISION",
+    "SIXIEME DECISION",
+)
+
 
 class PvNominationGerantGenerator:
     """Générateur from-scratch du PV nomination gérant."""
@@ -55,22 +66,29 @@ class PvNominationGerantGenerator:
             document = _build_associe_unique_pv(ctx, company, associes[0])
         else:
             capital = _required_capital(ctx.capital)
-            dirigeant = _required_dirigeant(ctx.dirigeant_nomine)
+            # Liste des dirigeants nommes : extension ADDITIVE (modele PV
+            # nominations dirigeants, SELAS). Si `dirigeants_nomines` est fourni,
+            # une decision par dirigeant ; sinon, mode mono historique avec
+            # `dirigeant_nomine` (un seul gerant). Comportement mono inchange.
+            dirigeants = _resolve_dirigeants(ctx)
             represented_associes = _represented_associes(associes)
             represented_parts = _validated_represented_parts(capital, represented_associes)
             emprunt = ctx.emprunt or Emprunt(actif=False)
             bien_immobilier = _required_bien_immobilier(ctx.bien_immobilier, emprunt)
+            titre_word = _titre_word(capital)
 
             document = new_document()
             _add_company_header(document, company, associes)
             _add_title_and_meeting(document, ctx)
             _add_introduction(document, company, capital, associes)
-            _add_associes_block(document, represented_associes, represented_parts)
-            _add_order_of_business(document, ctx, dirigeant, emprunt, bien_immobilier)
-            _add_nomination_decision(document, dirigeant)
-            _add_borrowing_decision(document, emprunt, bien_immobilier)
-            _add_powers_decision(document, emprunt)
-            _add_closing_and_signatures(document, ctx, associes, dirigeant)
+            _add_associes_block(document, represented_associes, represented_parts, titre_word)
+            _add_order_of_business(document, ctx, dirigeants, emprunt, bien_immobilier)
+            ordinal_index = _add_nomination_decisions(document, dirigeants)
+            ordinal_index = _add_borrowing_decision(
+                document, emprunt, bien_immobilier, ordinal_index
+            )
+            _add_powers_decision(document, ordinal_index)
+            _add_closing_and_signatures(document, ctx, associes, dirigeants)
 
         output_dir.mkdir(parents=True, exist_ok=True)
         output_path = output_dir / OUTPUT_FILENAME
@@ -94,6 +112,32 @@ def _required_dirigeant(dirigeant: DirigeantNomine | None) -> DirigeantNomine:
     if dirigeant is None:
         raise ValueError(f"dirigeant_nomine est obligatoire pour {DOCUMENT_CODE}.")
     return dirigeant
+
+
+def _resolve_dirigeants(ctx: DocumentGenerationContext) -> list[DirigeantNomine]:
+    """Liste des dirigeants nommes pour le PV (mode AG multi-associes).
+
+    Extension ADDITIVE (modele PV nominations dirigeants, SELAS) :
+    - `dirigeants_nomines` non vide -> une decision par dirigeant (President,
+      Directeur General, eventuel DG delegue), dans l'ordre fourni ;
+    - sinon -> mode mono historique : un seul gerant porte par `dirigeant_nomine`.
+    """
+    if ctx.dirigeants_nomines:
+        return list(ctx.dirigeants_nomines)
+    return [_required_dirigeant(ctx.dirigeant_nomine)]
+
+
+def _titre_word(capital: CapitalContext) -> str:
+    """Vocabulaire du titre social : « actions » (SELAS) ou « parts » (defaut).
+
+    Determine par `capital.type_titre` (le SELAS multi le positionne a
+    « actions »). Defaut « parts » -> comportement historique inchange pour
+    SELARL / civils.
+    """
+    type_titre = (capital.type_titre or "").strip().lower()
+    if type_titre.startswith("action"):
+        return "action"
+    return "part"
 
 
 def _required_associes(associes: list[Associe]) -> list[Associe]:
@@ -194,8 +238,8 @@ def _validated_represented_parts(
     return represented_parts
 
 
-def _parts_label(nb_parts: int) -> str:
-    return "part" if nb_parts == 1 else "parts"
+def _parts_label(nb_parts: int, titre_word: str = "part") -> str:
+    return titre_word if nb_parts == 1 else f"{titre_word}s"
 
 
 def _nomination_agenda_label(fonction_affichage: str) -> str:
@@ -416,6 +460,17 @@ def _add_introduction(
     denomination = _required_text(company.denomination, "societe.denomination")
     company_designation = _company_designation_for_intro(company, denomination)
     nb_parts_total = _required_positive_int(capital.nb_parts_total, "capital.nb_parts_total")
+    titre_word = _titre_word(capital)
+    if titre_word == "action":
+        # Phrase verbatim du modele PV nominations dirigeants (SELAS) : pas de
+        # clause « de {valeur} euro chacune », « au siege de la Societe ».
+        text = (
+            f"Les associés de la {company_designation}, au capital de "
+            f"{_capital_social(company)}, composé de {nb_parts_total} actions, "
+            "se sont réunis au siège de la Société."
+        )
+        _add_paragraph(document, text, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY)
+        return
     valeur_nominale = _required_text(
         capital.valeur_nominale_part,
         "capital.valeur_nominale_part",
@@ -462,6 +517,7 @@ def _add_associes_block(
     document,
     associes: list[Associe],
     represented_parts: int,
+    titre_word: str = "part",
 ) -> None:
     _add_paragraph(document, "Sont présents ou représentés :")
     for associe in associes:
@@ -469,33 +525,47 @@ def _add_associes_block(
             document,
             (
                 f"{associe.civilite_affichage} {associe.prenom} {associe.nom}, "
-                f"détenant {associe.nb_parts} {_parts_label(associe.nb_parts)},"
+                f"détenant {associe.nb_parts} {_parts_label(associe.nb_parts, titre_word)},"
             ),
         )
-    _add_paragraph(
-        document,
-        (
+    if titre_word == "action":
+        # Clause verbatim du modele PV nominations dirigeants (SELAS).
+        closing = (
+            "Les associés présents ou représentés disposent ensemble la totalité des actions "
+            "formant le capital de la société. L’assemblée est habilitée à prendre les "
+            "décisions extraordinaires."
+        )
+    else:
+        closing = (
             "Les associés présents ou représentés disposent ensemble de la totalité des parts "
             "sociales. Cet ensemble est habilité à prendre des décisions."
-        ),
-        alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
+        )
+    _add_paragraph(document, closing, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY)
+
+
+def _ordinal_title(index: int) -> str:
+    if 0 <= index < len(_DECISION_ORDINALS):
+        return _DECISION_ORDINALS[index]
+    raise ValueError(
+        f"Trop de decisions pour {DOCUMENT_CODE} : pas d'ordinal pour l'index {index}."
     )
 
 
 def _add_order_of_business(
     document,
     ctx: DocumentGenerationContext,
-    dirigeant: DirigeantNomine,
+    dirigeants: list[DirigeantNomine],
     emprunt: Emprunt,
     bien_immobilier: BienImmobilier | None,
 ) -> None:
-    fonction_affichage = _required_text(
-        dirigeant.fonction_affichage,
-        "dirigeant_nomine.fonction_affichage",
-    )
     _add_president_sentence(document, ctx)
     _add_paragraph(document, "Le président rappelle l’ordre du jour :")
-    _add_paragraph(document, f"· {_nomination_agenda_label(fonction_affichage)}")
+    for dirigeant in dirigeants:
+        fonction_affichage = _required_text(
+            dirigeant.fonction_affichage,
+            "dirigeant_nomine.fonction_affichage",
+        )
+        _add_paragraph(document, f"· {_nomination_agenda_label(fonction_affichage)}")
     if emprunt.actif:
         bien_adresse = _address_inline(
             _required_address(
@@ -513,49 +583,81 @@ def _add_order_of_business(
     _add_paragraph(document, "· Pouvoirs")
 
 
-def _add_nomination_decision(document, dirigeant: DirigeantNomine) -> None:
+def _add_nomination_decisions(
+    document,
+    dirigeants: list[DirigeantNomine],
+) -> int:
+    """Une decision de nomination par dirigeant (PREMIERE, DEUXIEME, ...).
+
+    Retourne l'index ordinal de la PROCHAINE decision (emprunt ou pouvoirs).
+    Mono-dirigeant -> une seule decision « PREMIERE DECISION » (inchange).
+
+    Mode modele (modele PV nominations dirigeants, SELAS) : declenche des qu'on
+    a PLUSIEURS dirigeants ou qu'une phrase d'identite verbatim est fournie. Il
+    applique la virgule du modele (« en qualite de Président, pour une duree
+    indeterminee : ») ; le mode mono historique reste sans virgule.
+    """
+    use_model_wording = len(dirigeants) > 1 or any(d.identite_phrase for d in dirigeants)
+    for ordinal_index, dirigeant in enumerate(dirigeants):
+        _add_single_nomination_decision(document, dirigeant, ordinal_index, use_model_wording)
+    return len(dirigeants)
+
+
+def _add_single_nomination_decision(
+    document,
+    dirigeant: DirigeantNomine,
+    ordinal_index: int,
+    use_model_wording: bool,
+) -> None:
     fonction_affichage = _required_text(
         dirigeant.fonction_affichage,
         "dirigeant_nomine.fonction_affichage",
-    )
-    address = _required_address(
-        dirigeant.adresse_personnelle,
-        "dirigeant_nomine.adresse_personnelle",
-    )
-    birth_date = _required_display_value(
-        dirigeant.date_naissance,
-        "dirigeant_nomine.date_naissance",
-    )
-    birth_city = _required_text(
-        dirigeant.ville_naissance,
-        "dirigeant_nomine.ville_naissance",
-    )
-    birth_department = _required_text(
-        dirigeant.departement_naissance,
-        "dirigeant_nomine.departement_naissance",
     )
     nationality = _required_text(
         dirigeant.nationalite,
         "dirigeant_nomine.nationalite",
     )
-    _add_decision_title(document, "PREMIERE DECISION")
+    _add_decision_title(document, _ordinal_title(ordinal_index))
+    separator = ", pour" if use_model_wording else " pour"
     _add_paragraph(
         document,
         (
             "L’assemblée générale décide de désigner en qualité de "
-            f"{fonction_affichage} pour une durée indéterminée :"
+            f"{fonction_affichage}{separator} une durée indéterminée :"
         ),
     )
-    _add_paragraph(
-        document,
-        (
-            f"{dirigeant.civilite_affichage} {dirigeant.prenom} {dirigeant.nom}, "
-            f"{_ne_label(dirigeant.genre)} le {birth_date} à {birth_city} "
-            f"({birth_department}), de nationalité {nationality}, "
-            f"demeurant au {_address_inline(address)}."
-        ),
-        alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
-    )
+    # Phrase d'identite : verbatim du modele si fournie (`identite_phrase`),
+    # sinon reconstruite a partir des champs (comportement historique).
+    if dirigeant.identite_phrase:
+        identite = _required_text(dirigeant.identite_phrase, "dirigeant_nomine.identite_phrase")
+        _add_paragraph(document, identite, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY, bold=True)
+    else:
+        address = _required_address(
+            dirigeant.adresse_personnelle,
+            "dirigeant_nomine.adresse_personnelle",
+        )
+        birth_date = _required_display_value(
+            dirigeant.date_naissance,
+            "dirigeant_nomine.date_naissance",
+        )
+        birth_city = _required_text(
+            dirigeant.ville_naissance,
+            "dirigeant_nomine.ville_naissance",
+        )
+        birth_department = _required_text(
+            dirigeant.departement_naissance,
+            "dirigeant_nomine.departement_naissance",
+        )
+        _add_paragraph(
+            document,
+            (
+                f"{dirigeant.civilite_affichage} {dirigeant.prenom} {dirigeant.nom}, "
+                f"{_ne_label(dirigeant.genre)} le {birth_date} à {birth_city} "
+                f"({birth_department}), de nationalité {nationality}, "
+                f"demeurant au {_address_inline(address)}."
+            ),
+            alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
+        )
     _add_vote_formula(document)
 
 
@@ -563,9 +665,11 @@ def _add_borrowing_decision(
     document,
     emprunt: Emprunt,
     bien_immobilier: BienImmobilier | None,
-) -> None:
+    ordinal_index: int,
+) -> int:
+    """Decision d'emprunt (si actif). Retourne l'index ordinal suivant."""
     if not emprunt.actif:
-        return
+        return ordinal_index
     bien_adresse = _address_inline(
         _required_address(
             bien_immobilier.adresse if bien_immobilier else None,
@@ -573,7 +677,7 @@ def _add_borrowing_decision(
         )
     )
     montant = _required_text(emprunt.montant_max, "emprunt.montant_max")
-    _add_decision_title(document, "DEUXIEME DECISION")
+    _add_decision_title(document, _ordinal_title(ordinal_index))
     _add_paragraph(
         document,
         (
@@ -584,11 +688,11 @@ def _add_borrowing_decision(
         alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
     )
     _add_vote_formula(document)
+    return ordinal_index + 1
 
 
-def _add_powers_decision(document, emprunt: Emprunt) -> None:
-    title = "TROISIEME DECISION" if emprunt.actif else "DEUXIEME DECISION"
-    _add_decision_title(document, title)
+def _add_powers_decision(document, ordinal_index: int) -> None:
+    _add_decision_title(document, _ordinal_title(ordinal_index))
     _add_paragraph(document, POWERS_TEXT, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY)
     _add_vote_formula(document)
 
@@ -597,12 +701,8 @@ def _add_closing_and_signatures(
     document,
     ctx: DocumentGenerationContext,
     associes: list[Associe],
-    dirigeant: DirigeantNomine,
+    dirigeants: list[DirigeantNomine],
 ) -> None:
-    fonction_affichage = _required_text(
-        dirigeant.fonction_affichage,
-        "dirigeant_nomine.fonction_affichage",
-    )
     lieu_signature = _required_text(ctx.signature.lieu, "signature.lieu")
     nombre_exemplaires = _required_text(
         ctx.signature.nombre_exemplaires,
@@ -614,6 +714,14 @@ def _add_closing_and_signatures(
         alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
     )
     add_spacer(document)
+    if len(dirigeants) > 1:
+        _add_multi_dirigeant_signatures(document, dirigeants)
+        return
+    dirigeant = dirigeants[0]
+    fonction_affichage = _required_text(
+        dirigeant.fonction_affichage,
+        "dirigeant_nomine.fonction_affichage",
+    )
     add_signature_lines(
         document,
         [f"{associe.prenom} {associe.nom}" for associe in associes],
@@ -629,6 +737,29 @@ def _add_closing_and_signatures(
         alignment=WD_ALIGN_PARAGRAPH.CENTER,
         italic=True,
     )
+
+
+def _add_multi_dirigeant_signatures(
+    document,
+    dirigeants: list[DirigeantNomine],
+) -> None:
+    """Bloc signatures multi-colonnes du modele PV nominations dirigeants.
+
+    Une colonne par dirigeant (separateur tabulation, comme le modele) : ligne
+    des noms en gras, puis la mention « Bon pour acceptation des fonctions de
+    {fonction} » par dirigeant. Wording verbatim du modele.
+    """
+    sep = "\t\t\t\t"
+    noms = sep.join(f"{d.prenom} {d.nom}" for d in dirigeants)
+    _add_paragraph(document, noms, alignment=WD_ALIGN_PARAGRAPH.CENTER, bold=True)
+    mentions = sep.join(
+        (
+            "(Faire précéder de la mention « Bon pour acceptation des fonctions de "
+            f"{_required_text(d.fonction_affichage, 'dirigeant_nomine.fonction_affichage')} »)"
+        )
+        for d in dirigeants
+    )
+    _add_paragraph(document, mentions, alignment=WD_ALIGN_PARAGRAPH.CENTER, italic=True)
 
 
 # ---------------------------------------------------------------------------

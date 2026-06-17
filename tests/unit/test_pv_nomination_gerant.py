@@ -378,3 +378,219 @@ def test_pv_nomination_gerant_restores_essential_docx_structure(tmp_path: Path) 
     )
     assert acceptance.alignment == WD_ALIGN_PARAGRAPH.CENTER
     assert acceptance.runs[0].italic is True
+
+
+# ---------------------------------------------------------------------------
+# Extension SELAS : nomination de PLUSIEURS dirigeants (President + Directeur
+# General), d'apres le modele PV nominations dirigeants (Albane 2026-06-17).
+# Vocabulaire « actions », une decision par dirigeant, bloc signatures 2 colonnes.
+# ---------------------------------------------------------------------------
+
+
+def _selas_dirigeants() -> list[DirigeantNomine]:
+    president = DirigeantNomine(
+        genre=Gender.MASCULIN,
+        civilite_affichage="Monsieur",
+        prenom="Alain",
+        nom="FEDOROWSKY",
+        date_naissance=date(1980, 2, 20),
+        ville_naissance="RENNES",
+        departement_naissance="35",
+        nationalite="française",
+        adresse_personnelle=Address(
+            num_voie="31B",
+            voie="Boulevard de Sévigné",
+            cp="35700",
+            ville="RENNES",
+        ),
+        fonction_affichage="Président",
+    )
+    directeur_general = DirigeantNomine(
+        genre=Gender.MASCULIN,
+        civilite_affichage="Monsieur",
+        prenom="Jean-Pierre",
+        nom="HUBERMAN",
+        date_naissance=date(1975, 6, 5),
+        ville_naissance="PARIS",
+        departement_naissance="75",
+        nationalite="française",
+        adresse_personnelle=Address(
+            num_voie="2",
+            voie="rue de la Paix",
+            cp="75002",
+            ville="PARIS",
+        ),
+        fonction_affichage="Directeur Général",
+    )
+    return [president, directeur_general]
+
+
+def _selas_associes() -> list[Associe]:
+    return [
+        Associe(
+            genre=Gender.MASCULIN,
+            civilite_affichage="Monsieur",
+            prenom="Alain",
+            nom="FEDOROWSKY",
+            nb_parts=60,
+        ),
+        Associe(
+            genre=Gender.MASCULIN,
+            civilite_affichage="Monsieur",
+            prenom="Jean-Pierre",
+            nom="HUBERMAN",
+            nb_parts=40,
+        ),
+    ]
+
+
+def _selas_context(
+    *, dirigeants: list[DirigeantNomine] | None = None
+) -> DocumentGenerationContext:
+    associes = _selas_associes()
+    ctx = DocumentGenerationContext(
+        personne_signataire=Person(
+            genre=Gender.MASCULIN,
+            civilite="Monsieur",
+            prenom="Alain",
+            nom="FEDOROWSKY",
+        ),
+        societe=Company(
+            forme_sociale="SELAS",
+            forme_sociale_affichage="SELAS",
+            forme_sociale_abregee="SELAS",
+            forme_sociale_complete="société d’exercice libéral par actions simplifiée",
+            denomination="SELAS DENTAIRE",
+            capital_social="1 000",
+            capital_variable=True,
+            siege=Address(num_voie="31B", voie="Boulevard de Sévigné", cp="35700", ville="RENNES"),
+            ville_rcs="Rennes",
+        ),
+        decision=DecisionContext(date="15 juin 2026"),
+        reunion=ReunionContext(
+            date_lettres="quinze juin deux mille vingt-six",
+            president=ReunionPresident(
+                civilite_president_seance="Monsieur",
+                prenom_president_seance="Alain",
+                nom_personne_seance="FEDOROWSKY",
+            ),
+        ),
+        capital=CapitalContext(
+            nb_parts_total=100,
+            valeur_nominale_part="10",
+            type_titre="actions",
+        ),
+        associes=associes,
+        dirigeant_nomine=DirigeantNomine(
+            genre=Gender.MASCULIN,
+            civilite_affichage="Monsieur",
+            prenom="Alain",
+            nom="FEDOROWSKY",
+            date_naissance=date(1980, 2, 20),
+            ville_naissance="RENNES",
+            departement_naissance="35",
+            nationalite="française",
+            adresse_personnelle=Address(
+                num_voie="31B", voie="Boulevard de Sévigné", cp="35700", ville="RENNES"
+            ),
+            fonction_affichage="président",
+        ),
+        signature=Signature(lieu="Rennes", date=date(2026, 6, 15), nombre_exemplaires="quatre"),
+    )
+    if dirigeants is not None:
+        ctx.dirigeants_nomines = dirigeants
+    return ctx
+
+
+def test_pv_nomination_selas_actions_vocabulary(tmp_path: Path) -> None:
+    # Vocabulaire « actions » (SELAS) au lieu de « parts » : intro + bloc associes.
+    ctx = _selas_context(dirigeants=_selas_dirigeants())
+    text = _docx_text(_generate(tmp_path, ctx))
+
+    assert "composé de 100 actions, se sont réunis au siège de la Société." in text
+    assert "Monsieur Alain FEDOROWSKY, détenant 60 actions," in text
+    assert "Monsieur Jean-Pierre HUBERMAN, détenant 40 actions," in text
+    assert (
+        "Les associés présents ou représentés disposent ensemble la totalité des actions "
+        "formant le capital de la société. L’assemblée est habilitée à prendre les "
+        "décisions extraordinaires."
+    ) in text
+    # Pas de vocabulaire « parts » sur le chemin actions.
+    assert "détenant 60 parts" not in text
+    assert "totalité des parts sociales" not in text
+
+
+def test_pv_nomination_selas_president_then_directeur_general(tmp_path: Path) -> None:
+    # PREMIERE DECISION = President, DEUXIEME DECISION = Directeur General,
+    # TROISIEME DECISION = Pouvoirs (modele PV nominations dirigeants).
+    ctx = _selas_context(dirigeants=_selas_dirigeants())
+    text = _docx_text(_generate(tmp_path, ctx))
+    paragraphs = _paragraphs(_generate(tmp_path / "second", ctx))
+
+    # Ordre du jour : une ligne par dirigeant + pouvoirs.
+    assert "· Nomination du Président" in text
+    assert "· Nomination du Directeur Général" in text
+    assert "· Pouvoirs" in text
+
+    # PREMIERE DECISION = President.
+    assert "PREMIERE DECISION" in text
+    assert (
+        "L’assemblée générale décide de désigner en qualité de Président, "
+        "pour une durée indéterminée :"
+    ) in text
+    assert (
+        "Monsieur Alain FEDOROWSKY, né le 20/02/1980 à RENNES (35), "
+        "de nationalité française, demeurant au 31B Boulevard de Sévigné, 35700 RENNES."
+    ) in text
+
+    # DEUXIEME DECISION = Directeur General.
+    assert "DEUXIEME DECISION" in text
+    assert (
+        "L’assemblée générale décide de désigner en qualité de Directeur Général, "
+        "pour une durée indéterminée :"
+    ) in text
+    assert (
+        "Monsieur Jean-Pierre HUBERMAN, né le 05/06/1975 à PARIS (75), "
+        "de nationalité française, demeurant au 2 rue de la Paix, 75002 PARIS."
+    ) in text
+
+    # TROISIEME DECISION = Pouvoirs (sans emprunt).
+    assert "TROISIEME DECISION" in text
+    assert "QUATRIEME DECISION" not in text
+
+    # Deux votes a l'unanimite (un par nomination) + un pour les pouvoirs.
+    assert paragraphs.count(VOTE_FORMULA) == 3
+
+
+def test_pv_nomination_selas_multi_signature_block_two_functions(tmp_path: Path) -> None:
+    # Bloc signatures 2 colonnes : nom + « Bon pour acceptation des fonctions de
+    # Président » / « ... Directeur Général » (mention verbatim du modele).
+    ctx = _selas_context(dirigeants=_selas_dirigeants())
+    text = _docx_text(_generate(tmp_path, ctx))
+
+    assert "Bon pour acceptation des fonctions de Président" in text
+    assert "Bon pour acceptation des fonctions de Directeur Général" in text
+    # Les deux noms sont sur la meme ligne (2 colonnes).
+    assert "Alain FEDOROWSKY" in text and "Jean-Pierre HUBERMAN" in text
+    # Pas de mention « gérant » sur ce chemin SELAS.
+    assert "fonctions de gérant" not in text
+
+
+def test_pv_nomination_selas_single_president_keeps_mono_structure(tmp_path: Path) -> None:
+    # Un SEUL dirigeant (President) -> pas de comma model wording, pas de DEUXIEME
+    # decision de nomination ; mode mono preserve (signature par associes).
+    only_president = _selas_dirigeants()[:1]
+    ctx = _selas_context(dirigeants=only_president)
+    text = _docx_text(_generate(tmp_path, ctx))
+
+    assert "· Nomination du Président" in text
+    assert "Nomination du Directeur Général" not in text
+    assert "PREMIERE DECISION" in text
+    # Sans emprunt ni DG : pouvoirs = DEUXIEME DECISION (mono).
+    assert "DEUXIEME DECISION" in text
+    assert "TROISIEME DECISION" not in text
+    # Mono : pas de virgule modele dans l'intro de la decision.
+    assert (
+        "L’assemblée générale décide de désigner en qualité de Président pour une "
+        "durée indéterminée :"
+    ) in text

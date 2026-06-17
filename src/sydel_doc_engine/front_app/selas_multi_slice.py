@@ -141,7 +141,7 @@ def render_selas_form() -> dict[str, object]:
     with col_m:
         signature_date = _date("signature_date", "Date de signature")
 
-    associes, president_index, dirigeant_sig = _render_selas_associes()
+    associes, president_index, dirigeant_sig, dirigeants_nomines = _render_selas_associes()
     common = _render_common_docs_form()
 
     payload: dict[str, object] = {
@@ -165,6 +165,7 @@ def render_selas_form() -> dict[str, object]:
         "signature_date": signature_date,
         "associes": associes,
         "president_index": president_index,
+        "dirigeants_nomines": dirigeants_nomines,
     }
     payload.update(common)
     # La DNC / l'identite du dirigeant (saisies sous l'associe coche) alimentent
@@ -242,7 +243,9 @@ def _render_regime_communautaire_form() -> dict[str, object]:
     }
 
 
-def _render_selas_associes() -> tuple[list[StatutsCivilsAssocie], int, dict[str, object]]:
+def _render_selas_associes() -> tuple[
+    list[StatutsCivilsAssocie], int, dict[str, object], list[dict[str, object]]
+]:
     if _count_key() not in st.session_state:
         st.session_state[_count_key()] = SELAS_NB_MIN
     nombre = _associe_count()
@@ -257,8 +260,8 @@ def _render_selas_associes() -> tuple[list[StatutsCivilsAssocie], int, dict[str,
         st.session_state[_count_key()] = max(SELAS_NB_MIN, nombre - 1)
         st.rerun()
     cols[2].caption(
-        "Cochez le dirigeant (president) sur un associe ; a defaut, le premier "
-        "associe physique est president."
+        "Cochez le(s) dirigeant(s) sur un associe (President et/ou Directeur General) ; "
+        "a defaut, le premier associe physique est president."
     )
 
     associes: list[StatutsCivilsAssocie] = []
@@ -266,7 +269,48 @@ def _render_selas_associes() -> tuple[list[StatutsCivilsAssocie], int, dict[str,
         associes.append(_render_one_associe(index))
     president_index = _derive_president_index(associes)
     dirigeant_sig = _collect_dirigeant_sig(associes, president_index)
-    return associes, president_index, dirigeant_sig
+    dirigeants_nomines = _build_dirigeants_nomines_payload(associes, president_index)
+    return associes, president_index, dirigeant_sig, dirigeants_nomines
+
+
+def _build_dirigeants_nomines_payload(
+    associes: list[StatutsCivilsAssocie], president_index: int
+) -> list[dict[str, object]]:
+    """Charge utile serialisable des dirigeants nommes pour le PV (President + DG).
+
+    Une entree par dirigeant physique coche, dans l'ordre PV (President d'abord).
+    Chaque entree porte de quoi reconstruire un `DirigeantNomine` cote
+    `build_generation_context`, sans dependre du session_state Streamlit.
+    """
+    payload: list[dict[str, object]] = []
+    for index, role in _collect_dirigeants_nomines_indices(associes, president_index):
+        associe = associes[index]
+        prefix = f"{PREFIX}_associe_{index}"
+        raw_date = st.session_state.get(f"{prefix}_sig_date_naissance")
+        payload.append(
+            {
+                "ref_associe_index": index,
+                "fonction_affichage": role,
+                "civilite_affichage": associe.civilite_affichage or "Monsieur",
+                "prenom": associe.prenom or associe.prenoms or "",
+                "nom": associe.nom or "",
+                "genre": associe.genre or Gender.MASCULIN,
+                # Date de naissance ISO (saisie sous la case Dirigeant) pour la
+                # phrase d'identite du PV ; fallback sur la date « en lettres ».
+                "date_naissance_iso": parse_french_date(raw_date),
+                "date_naissance_affichee": associe.date_naissance,
+                "ville_naissance": associe.ville_naissance,
+                "departement_naissance": associe.departement_naissance,
+                "nationalite": associe.nationalite,
+                # Adresse personnelle structuree (saisie sous la case Dirigeant).
+                "adresse_num": str(st.session_state.get(f"{prefix}_sig_adresse_num") or ""),
+                "adresse_voie": str(st.session_state.get(f"{prefix}_sig_adresse_voie") or ""),
+                "adresse_cp": str(st.session_state.get(f"{prefix}_sig_adresse_cp") or ""),
+                "adresse_ville": str(st.session_state.get(f"{prefix}_sig_adresse_ville") or ""),
+                "adresse_personnelle_affichee": associe.adresse_personnelle_affichee,
+            }
+        )
+    return payload
 
 
 def _render_one_associe(index: int) -> StatutsCivilsAssocie:
@@ -294,10 +338,12 @@ def _render_one_associe(index: int) -> StatutsCivilsAssocie:
 def _render_dirigeant_choice(prefix: str, index: int) -> None:
     """Case « Dirigeant » + role + champs complementaires pour un associe physique.
 
-    Le role est volontairement limite a « President » : aucun modele source ne
-    porte le wording « Directeur General » / « DG delegue », donc on ne propose
-    pas une fonction dont la clause n'existe pas (FLAG Rafael, _RAFAEL_PACKET_V1
-    §6). Quand le wording sera livre, etendre la liste d'options suffira.
+    Le wording « Directeur General » est desormais FOURNI par le modele PV
+    nominations dirigeants (Albane 2026-06-17) : le verrou est leve, on propose
+    « President » ET « Directeur General » (le « DG delegue » reste hors V1, son
+    wording dedie n'etant pas fourni). Le President reste le signataire du tronc
+    commun (DNC / procuration / statuts) ; le Directeur General ajoute une
+    deuxieme decision de nomination au PV.
 
     Reunion 2026-06-09 : les champs complementaires (filiation pour la declaration
     de non-condamnation, adresse structuree pour la procuration) ne sont demandes
@@ -305,9 +351,9 @@ def _render_dirigeant_choice(prefix: str, index: int) -> None:
     """
     dirigeant_key = f"{prefix}_is_dirigeant"
     if dirigeant_key not in st.session_state:
-        # Defaut historique : le 1er associe (index 0) est president.
+        # Defaut historique : le 1er associe (index 0) est dirigeant.
         st.session_state[dirigeant_key] = index == 0
-    is_dirigeant = st.checkbox("Dirigeant (president)", key=dirigeant_key)
+    is_dirigeant = st.checkbox("Dirigeant", key=dirigeant_key)
     if not is_dirigeant:
         return
     role_key = f"{prefix}_role_dirigeant"
@@ -315,9 +361,9 @@ def _render_dirigeant_choice(prefix: str, index: int) -> None:
         st.session_state[role_key] = "Président"
     st.selectbox(
         "Role du dirigeant",
-        ("Président",),
+        ("Président", "Directeur Général"),
         key=role_key,
-        help="Directeur General / DG delegue : a venir (wording juridique en attente).",
+        help="Le Président signe le tronc commun ; le Directeur Général ajoute une décision au PV.",
     )
     st.caption("Declaration de non-condamnation du dirigeant (filiation + adresse personnelle)")
     col_a, col_b = st.columns(2)
@@ -332,21 +378,59 @@ def _render_dirigeant_choice(prefix: str, index: int) -> None:
 
 
 def _derive_president_index(associes: list[StatutsCivilsAssocie]) -> int:
-    """Index du president = premier associe PHYSIQUE coche « dirigeant ».
+    """Index du president = associe PHYSIQUE coche « dirigeant » avec role President.
 
-    A defaut (aucun coche, ou coche sur une personne morale), retombe sur le
-    premier associe physique — comportement historique. Ne renvoie jamais l'index
-    d'une personne morale (le generateur leverait : President = physique).
+    A defaut (aucun President explicite), retombe sur le premier associe physique
+    coche dirigeant, puis sur le premier associe physique — comportement
+    historique. Ne renvoie jamais l'index d'une personne morale (le generateur
+    leverait : President = physique).
     """
+    # 1) Dirigeant physique explicitement « President ».
+    for i, associe in enumerate(associes):
+        if associe.type_personne != "personne_physique":
+            continue
+        if not bool(st.session_state.get(f"{PREFIX}_associe_{i}_is_dirigeant")):
+            continue
+        if _dirigeant_role(i) == "Président":
+            return i
+    # 2) Premier dirigeant physique coche (role non President -> fallback).
     for i, associe in enumerate(associes):
         if associe.type_personne != "personne_physique":
             continue
         if bool(st.session_state.get(f"{PREFIX}_associe_{i}_is_dirigeant")):
             return i
+    # 3) Premier associe physique (historique).
     return next(
         (i for i, a in enumerate(associes) if a.type_personne == "personne_physique"),
         0,
     )
+
+
+def _dirigeant_role(index: int) -> str:
+    return str(st.session_state.get(f"{PREFIX}_associe_{index}_role_dirigeant") or "Président")
+
+
+def _collect_dirigeants_nomines_indices(
+    associes: list[StatutsCivilsAssocie], president_index: int
+) -> list[tuple[int, str]]:
+    """Liste ordonnee (index associe, role) des dirigeants nommes au PV.
+
+    Le President vient toujours en PREMIERE decision ; les autres dirigeants
+    physiques coches (Directeur General) suivent dans l'ordre des associes.
+    Ignore les personnes morales (un dirigeant SELAS est une personne physique).
+    """
+    dirigeants: list[tuple[int, str]] = []
+    if 0 <= president_index < len(associes):
+        dirigeants.append((president_index, "Président"))
+    for i, associe in enumerate(associes):
+        if i == president_index:
+            continue
+        if associe.type_personne != "personne_physique":
+            continue
+        if not bool(st.session_state.get(f"{PREFIX}_associe_{i}_is_dirigeant")):
+            continue
+        dirigeants.append((i, _dirigeant_role(i)))
+    return dirigeants
 
 
 def _collect_dirigeant_sig(
@@ -763,6 +847,7 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
             fonction_affichage="président",
             ref_associe_index=president_index,
         ),
+        dirigeants_nomines=_build_dirigeants_nomines(payload, president_index, adresse_perso),
         associes=_selas_pv_associes(associes),
         decision=DecisionContext(date=_display_date(payload.get("decision_date"))),
         reunion=ReunionContext(
@@ -797,6 +882,57 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         ),
         metadata={"front_slice": "track_b_selas_multi_v1"},
     )
+
+
+def _build_dirigeants_nomines(
+    payload: dict[str, object],
+    president_index: int,
+    president_adresse: Address,
+) -> list[DirigeantNomine]:
+    """Liste des dirigeants nommes au PV (President d'abord, puis DG).
+
+    Reconstruit un `DirigeantNomine` par dirigeant coche, dans l'ordre PV. Le
+    President reutilise l'adresse personnelle structuree deja calculee
+    (signataire) ; les autres dirigeants (Directeur General) utilisent l'adresse
+    structuree saisie sous leur propre case « Dirigeant ». Renvoie [] si l'UI n'a
+    pas alimente la charge utile (fixtures / appels directs) -> le PV retombe sur
+    le mode mono via `dirigeant_nomine`.
+    """
+    raw = payload.get("dirigeants_nomines")
+    if not isinstance(raw, list) or not raw:
+        return []
+    dirigeants: list[DirigeantNomine] = []
+    for entry in raw:
+        if not isinstance(entry, dict):
+            continue
+        index = entry.get("ref_associe_index")
+        if index == president_index:
+            adresse = president_adresse
+        else:
+            adresse = Address(
+                num_voie=str(entry.get("adresse_num") or ""),
+                voie=str(entry.get("adresse_voie") or ""),
+                cp=str(entry.get("adresse_cp") or ""),
+                ville=str(entry.get("adresse_ville") or ""),
+                adresse_affichee=str(entry.get("adresse_personnelle_affichee") or ""),
+            )
+        date_naissance = entry.get("date_naissance_iso") or entry.get("date_naissance_affichee")
+        dirigeants.append(
+            DirigeantNomine(
+                genre=entry.get("genre") or Gender.MASCULIN,
+                civilite_affichage=str(entry.get("civilite_affichage") or "Monsieur"),
+                prenom=str(entry.get("prenom") or ""),
+                nom=str(entry.get("nom") or ""),
+                date_naissance=date_naissance,
+                ville_naissance=str(entry.get("ville_naissance") or "") or None,
+                departement_naissance=str(entry.get("departement_naissance") or "") or None,
+                nationalite=str(entry.get("nationalite") or "") or None,
+                adresse_personnelle=adresse,
+                fonction_affichage=str(entry.get("fonction_affichage") or "Président"),
+                ref_associe_index=index if isinstance(index, int) else None,
+            )
+        )
+    return dirigeants
 
 
 def _selas_ordre(payload: dict[str, object]):

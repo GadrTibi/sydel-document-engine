@@ -832,6 +832,11 @@ class DirigeantNomine(BaseModel):
     fonction_affichage: str = "gérant"
     ref_associe_index: int | None = None
     duree_mandat: str | None = None
+    # Phrase d'identite verbatim du modele PV nominations dirigeants (SELAS),
+    # ex. « ..., marie sous le regime de la separation des biens ..., demeurant ... ».
+    # Optionnel : si fourni, il prime sur la reconstruction par champs dans la
+    # decision multi-dirigeants (fidelite au modele). Aucun impact sur le mono.
+    identite_phrase: str | None = None
 
 
 class DecisionContext(BaseModel):
@@ -1085,6 +1090,11 @@ class DocumentGenerationContext(BaseModel):
     mandataire: Mandataire | None = None
     associes: list[Associe] = Field(default_factory=list)
     dirigeant_nomine: DirigeantNomine | None = None
+    # Extension ADDITIVE (modele PV nominations dirigeants, SELAS) : permet de
+    # nommer PLUSIEURS dirigeants (President, Directeur General, eventuel DG
+    # delegue), chacun = une decision (PREMIERE / DEUXIEME / ...). Vide = mode
+    # mono historique inchange (un seul gerant porte par `dirigeant_nomine`).
+    dirigeants_nomines: list[DirigeantNomine] = Field(default_factory=list)
     decision: DecisionContext | None = None
     reunion: ReunionContext | None = None
     capital: CapitalContext | None = None
