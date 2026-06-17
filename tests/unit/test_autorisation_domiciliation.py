@@ -110,7 +110,7 @@ def test_autorisation_domiciliation_contains_essential_texts(tmp_path: Path) -> 
     # complete du cabinet/siege « du cabinet au [num_voie] [voie], [cp] [ville] » ;
     # terme juridique « pour une durée indéterminée » conserve (et non « pour 99 ans »).
     assert (
-        "autorise la domiciliation de la DURAND CONSEIL au capital de 1 000 "
+        "autorise la domiciliation de la DURAND CONSEIL au capital de 1 000 euros "
         "en cours de formation, dans les locaux du cabinet au 80 avenue Marceau, "
         "75008 Paris pour une durée indéterminée."
     ) in text

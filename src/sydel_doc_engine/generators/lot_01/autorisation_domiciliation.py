@@ -113,7 +113,10 @@ def _build_replacements(ctx: DocumentGenerationContext) -> dict[str, str]:
         "[prenom]": prenom,
         "[nom]": nom,
         "[denomination_societe]": denomination_societe,
-        "[capital_social]": capital_social,
+        # Retour Albane 2026-06-17 (ticket lot 2, §11) : le modele fige
+        # « au capital de [capital_social] en cours de formation » sans unite ;
+        # on suffixe « euros » a la valeur (le token n'apparait qu'a cet endroit).
+        "[capital_social]": f"{capital_social} euros",
         "[num_voie_siege]": num_voie_siege,
         "[voie_siege]": voie_siege,
         "[cp_siege]": cp_siege,

@@ -146,8 +146,12 @@ def test_avenant_contrat_bail_generates_source_wording_and_signature_table(
 
     assert output_path == tmp_path / "avenant_contrat_bail.docx"
     text = _docx_text(output_path)
-    assert "Avenant n°1 au bail du 14/05/2026" in text
+    # §10.1 : la date de l'encadre = date du bail d'origine (date_signature_origine
+    # 2021-09-01), pas la date de signature de l'avenant (14/05/2026).
+    assert "Avenant n°1 au bail du 01/09/2021" in text
     assert "ARTICLE 1 : changement de locataire" in text
+    # §10.3 : « de » apres RCS.
+    assert "au RCS de" in text
     assert "les démarches seront finies" in text
     assert "Le Bailleur" in text
     assert "L’ancien locataire" in text
@@ -179,7 +183,8 @@ def test_appel_fond_sel_generates_dentaire_request(tmp_path: Path) -> None:
     subject = next(p for p in document.paragraphs if p.text.startswith("Objet"))
     assert subject.runs[0].bold is True
     assert subject.runs[0].underline is True
-    amount = next(p for p in document.paragraphs if p.text == "150 000")
+    # §12.2 : montant et euros sur la MEME ligne.
+    amount = next(p for p in document.paragraphs if p.text == "150 000 €")
     assert amount.alignment == WD_ALIGN_PARAGRAPH.CENTER
     signature = next(p for p in document.paragraphs if p.text == "Camille Martin")
     assert signature.alignment == WD_ALIGN_PARAGRAPH.RIGHT

@@ -53,14 +53,15 @@ class AvenantContratBailGenerator:
             )
 
         docx = new_document(style_profile=BAIL_COMPACT_STYLE_PROFILE)
+        # Retour Albane 2026-06-17 (ticket lot 2, §10.1) : la date de l'encadre doit
+        # etre celle du bail d'origine (meme variable que l'article 1), pas la date
+        # de signature de l'avenant.
+        date_bail_origine = format_display_date(
+            bail.date_signature_origine, "bail.date_signature_origine"
+        )
         add_framed_title(
             docx,
-            [
-                (
-                    "Avenant n°1 au bail du "
-                    f"{format_display_date(bail.date_avenant, 'bail.date_avenant')}"
-                )
-            ],
+            [f"Avenant n°1 au bail du {date_bail_origine}"],
             style_profile=BAIL_COMPACT_STYLE_PROFILE,
         )
         _add_parties(docx, bailleur, locataire)
@@ -182,7 +183,8 @@ def _add_article_1(
         (
             "Le présent avenant donne bail à la société "
             f"{required_text(company.denomination, 'societe.denomination')} en cours "
-            "d’immatriculation au RCS "
+            # Retour Albane 2026-06-17 (ticket lot 2, §10.3) : « de » manquant apres RCS.
+            "d’immatriculation au RCS de "
             f"{required_text(company.ville_rcs, 'societe.rcs_ville')}, domiciliée au "
             f"{adresse_siege}."
         ),

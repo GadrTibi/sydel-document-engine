@@ -103,12 +103,11 @@ class AppelFondSelGenerator:
             ),
             alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
         )
+        # Retour Albane 2026-06-17 (ticket lot 2, §12.2) : montant et symbole euros
+        # sur la MEME ligne (un seul element centre, pas deux paragraphes).
         add_centered_amount(
             docx,
-            [
-                (financement.montant_deblocage or "").strip(),
-                "€",
-            ],
+            [f"{(financement.montant_deblocage or '').strip()} €"],
         )
         add_paragraph(
             docx,
