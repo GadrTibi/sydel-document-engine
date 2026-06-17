@@ -28,6 +28,10 @@ from sydel_doc_engine.domain.models import (
     Signature,
     SpfplConjoint,
     SpfplOrdre,
+    StatutsCivilsApport,
+    StatutsCivilsAssocie,
+    StatutsCivilsParts,
+    StatutsCivilsRepresentant,
     StatutsSel,
 )
 from sydel_doc_engine.generators.lot_04.statuts_selarl_dentiste import (
@@ -497,6 +501,214 @@ def test_statuts_sel_orchestrator_ignores_sel_statuts_without_overlay() -> None:
     assert {"DOC-016", "DOC-017", "DOC-018"}.isdisjoint(
         {document.doc_id for document in selected}
     )
+
+
+# --- Multi-associes SELARL (retours V3 2026-06-17) — strictement additif --------------
+
+
+def _membre_pp(
+    *,
+    prenom: str,
+    nom: str,
+    civilite: str = "Monsieur",
+    genre: Gender = Gender.MASCULIN,
+    nb_parts: int,
+    nb_parts_lettres: str,
+    apport: str,
+    apport_lettres: str,
+    profession: str = "medecin",
+    est_signataire: bool = True,
+) -> StatutsCivilsAssocie:
+    return StatutsCivilsAssocie(
+        type_personne="personne_physique",
+        genre=genre,
+        civilite_affichage=civilite,
+        prenom=prenom,
+        nom=nom,
+        date_naissance=date(1980, 1, 2),
+        ville_naissance="Paris",
+        departement_naissance="75",
+        nationalite="francaise",
+        profession=profession,
+        situation_maritale="celibataire",
+        adresse_personnelle_affichee="5 rue Royale, 75008 Paris",
+        ordre_departemental="Paris",
+        numero_ordre="12345",
+        numero_rpps="10000000001",
+        apport=StatutsCivilsApport(montant=apport, montant_lettres=apport_lettres),
+        parts=StatutsCivilsParts(nb=nb_parts, nb_lettres=nb_parts_lettres),
+        est_signataire=est_signataire,
+    )
+
+
+def _membre_pm(
+    *,
+    denomination: str,
+    nb_parts: int,
+    nb_parts_lettres: str,
+    apport: str,
+    apport_lettres: str,
+) -> StatutsCivilsAssocie:
+    return StatutsCivilsAssocie(
+        type_personne="personne_morale",
+        denomination=denomination,
+        forme_juridique="SPFPL",
+        capital_social="10 000",
+        siege=Address(adresse_affichee="2 rue des Lilas, 75009 Paris"),
+        numero_rcs="123 456 789",
+        ville_rcs="Paris",
+        representant=StatutsCivilsRepresentant(
+            civilite_affichage="Monsieur",
+            prenom="Paul",
+            nom="Holding",
+        ),
+        apport=StatutsCivilsApport(montant=apport, montant_lettres=apport_lettres),
+        parts=StatutsCivilsParts(nb=nb_parts, nb_lettres=nb_parts_lettres),
+    )
+
+
+def _multi_context(
+    *,
+    overlay: str,
+    membres: list[StatutsCivilsAssocie],
+) -> DocumentGenerationContext:
+    ctx = _context(overlay=overlay)
+    if overlay == "selarl_dentiste":
+        ctx.associes[0].profession = "chirurgien-dentiste"
+        ctx.associes[0].profession_reglementee = "chirurgien-dentiste"
+        ctx.associes[0].profession_reglementee_pluriel = "chirurgiens-dentistes"
+        ctx.associes[0].ordre.professionnel = "Ordre des chirurgiens-dentistes"
+    ctx.statuts_sel.membres = membres
+    return ctx
+
+
+def test_statuts_selarl_medecin_multi_two_physical_associates(tmp_path: Path) -> None:
+    membres = [
+        _membre_pp(
+            prenom="Camille",
+            nom="Martin",
+            nb_parts=600,
+            nb_parts_lettres="six cents",
+            apport="600",
+            apport_lettres="six cents",
+        ),
+        _membre_pp(
+            prenom="Lea",
+            nom="Bernard",
+            civilite="Madame",
+            genre=Gender.FEMININ,
+            nb_parts=400,
+            nb_parts_lettres="quatre cents",
+            apport="400",
+            apport_lettres="quatre cents",
+        ),
+    ]
+    ctx = _multi_context(overlay="selarl_medecin", membres=membres)
+
+    output_path = StatutsSelarlMedecinGenerator().generate(ctx, tmp_path)
+    text = _docx_text(output_path)
+
+    # Comparution pluriel + une ligne d'identite par membre.
+    assert "LES SOUSSIGNÉS" in text
+    assert "Monsieur Camille Martin, medecin," in text
+    assert "Madame Lea Bernard, medecin," in text
+    # Article 7 : un apport par membre + total.
+    assert "Monsieur Camille Martin apporte à la Société la somme de 600 euros." in text
+    assert "Madame Lea Bernard apporte à la Société la somme de 400 euros." in text
+    # Article 8 : repartition numerotee « 1° ... ; / 2° ... . » (wording ticket V3).
+    assert "1° Camille Martin, détenant 600 parts ;" in text
+    assert "2° Lea Bernard, détenant 400 parts." in text
+    # Signature : un libelle par signataire.
+    assert "Camille Martin" in text
+    assert "Lea Bernard" in text
+    _assert_clean(text)
+
+
+def test_statuts_selarl_dentiste_multi_physical_plus_morale(tmp_path: Path) -> None:
+    membres = [
+        _membre_pp(
+            prenom="Camille",
+            nom="Martin",
+            profession="chirurgien-dentiste",
+            nb_parts=700,
+            nb_parts_lettres="sept cents",
+            apport="700",
+            apport_lettres="sept cents",
+        ),
+        _membre_pm(
+            denomination="HOLDING MEDICA",
+            nb_parts=300,
+            nb_parts_lettres="trois cents",
+            apport="300",
+            apport_lettres="trois cents",
+        ),
+    ]
+    ctx = _multi_context(overlay="selarl_dentiste", membres=membres)
+
+    output_path = StatutsSelarlDentisteGenerator().generate(ctx, tmp_path)
+    text = _docx_text(output_path)
+
+    assert "LES SOUSSIGNÉS" in text
+    # Personne physique : ligne d'identite ; personne morale : ligne d'identification societe.
+    assert "Monsieur Camille Martin, chirurgien-dentiste," in text
+    assert "La HOLDING MEDICA, SPFPL, au capital de 10 000 euros" in text
+    assert "représentée par son représentant légal, Monsieur Paul Holding." in text
+    # Article 7 : apport personne physique + personne morale.
+    assert "Monsieur Camille Martin apporte à la Société la somme de 700 euros." in text
+    assert "La HOLDING MEDICA apporte à la Société la somme de 300 euros." in text
+    # Article 8 : repartition — PM par denomination, PP par prenom/nom (wording V3).
+    assert "1° Camille Martin, détenant 700 parts ;" in text
+    assert "2° HOLDING MEDICA, détenant 300 parts." in text
+    _assert_clean(text)
+
+
+def test_statuts_selarl_multi_requires_total_parts_consistency(tmp_path: Path) -> None:
+    # Calcul auto du nombre d'associes / coherence capital : la somme des parts des
+    # membres doit egaler le capital (1000). Ici 600 + 300 = 900 -> ValueError.
+    membres = [
+        _membre_pp(
+            prenom="Camille",
+            nom="Martin",
+            nb_parts=600,
+            nb_parts_lettres="six cents",
+            apport="600",
+            apport_lettres="six cents",
+        ),
+        _membre_pp(
+            prenom="Lea",
+            nom="Bernard",
+            nb_parts=300,
+            nb_parts_lettres="trois cents",
+            apport="300",
+            apport_lettres="trois cents",
+        ),
+    ]
+    ctx = _multi_context(overlay="selarl_medecin", membres=membres)
+
+    with pytest.raises(ValueError, match="somme des parts"):
+        StatutsSelarlMedecinGenerator().generate(ctx, tmp_path)
+
+
+def test_statuts_selarl_single_member_list_stays_mono(tmp_path: Path) -> None:
+    # Garde-fou retro-compat : une liste membres a 1 element NE declenche PAS le multi
+    # -> sortie mono historique (entete singulier « LE SOUSSIGNE »).
+    ctx = _context(overlay="selarl_medecin")
+    ctx.statuts_sel.membres = [
+        _membre_pp(
+            prenom="Camille",
+            nom="Martin",
+            nb_parts=1000,
+            nb_parts_lettres="mille",
+            apport="1 000",
+            apport_lettres="mille",
+        )
+    ]
+    output_path = StatutsSelarlMedecinGenerator().generate(ctx, tmp_path)
+    text = _docx_text(output_path)
+    assert "LE SOUSSIGNE" in text
+    assert "LES SOUSSIGNÉS" not in text
+    assert "Docteur Camille Martin, associé unique." in text
+    _assert_clean(text)
 
 
 def _article_paragraphs(paragraphs) -> list[str]:

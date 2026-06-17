@@ -7,6 +7,11 @@ from unicodedata import normalize
 from docx import Document
 from streamlit.testing.v1 import AppTest
 
+from sydel_doc_engine.domain.models import (
+    StatutsCivilsApport,
+    StatutsCivilsAssocie,
+    StatutsCivilsParts,
+)
 from sydel_doc_engine.front_app.data_entry import build_clean_data_entry
 from sydel_doc_engine.front_app.dossier_selection import dossier_type_by_label
 from sydel_doc_engine.front_app.generation import build_clean_generation_plan
@@ -789,6 +794,87 @@ def test_clean_front_streamlit_generation_exposes_download_buttons(
         "Telecharger demande_inscription_ordre.docx",
         "Telecharger Statuts SELARL MARTIN.docx",
     ]
+
+
+def test_clean_front_selarl_multi_associes_generates_statuts(tmp_path: Path) -> None:
+    # Retours V3 2026-06-17 (SELARL multi-associes) — ADDITIF. Praticien (60 parts)
+    # + 1 membre additionnel personne physique (40 parts) = 100 parts (= capital).
+    dossier_type = dossier_type_by_label("SELARL creation V1")
+    membre = StatutsCivilsAssocie(
+        type_personne="personne_physique",
+        civilite_affichage="Madame",
+        prenom="Lea",
+        nom="Bernard",
+        profession="medecin",
+        date_naissance="03/04/1985",
+        ville_naissance="Lyon",
+        departement_naissance="69",
+        nationalite="française",
+        situation_maritale="celibataire",
+        adresse_personnelle_affichee="8 rue Centrale, 69001 Lyon",
+        ordre_departemental="69",
+        numero_ordre="ORD-999",
+        numero_rpps="20000000002",
+        apport=StatutsCivilsApport(montant="400", montant_lettres="quatre cents"),
+        parts=StatutsCivilsParts(nb=40, nb_lettres="quarante"),
+    )
+    data = _valid_selarl_input(
+        PROFESSION_MEDECIN,
+        dossier_unipersonnel=False,
+        praticien_nb_parts=60,
+        praticien_apport="600",
+        membres_additionnels=(membre,),
+    )
+
+    plan = build_clean_generation_plan(dossier_type, data)
+    assert plan.can_generate is True, plan.blockers
+
+    result = generate_selarl_dossier(data, tmp_path)
+    statuts = next(p for p in result.docx_paths if "Statuts" in p.name)
+    text = _docx_text(statuts)
+
+    assert "LES SOUSSIGNÉS" in text
+    assert "Madame Lea Bernard" in text
+    assert "1° Jean Martin, détenant 60 parts ;" in text
+    assert "2° Lea Bernard, détenant 40 parts." in text
+
+
+def test_clean_front_selarl_multi_associes_blocks_incoherent_total(tmp_path: Path) -> None:
+    # Somme des parts (praticien 60 + membre 30 = 90) != capital (100 parts) -> bloque.
+    dossier_type = dossier_type_by_label("SELARL creation V1")
+    membre = StatutsCivilsAssocie(
+        type_personne="personne_physique",
+        civilite_affichage="Madame",
+        prenom="Lea",
+        nom="Bernard",
+        parts=StatutsCivilsParts(nb=30, nb_lettres="trente"),
+    )
+    data = _valid_selarl_input(
+        PROFESSION_MEDECIN,
+        dossier_unipersonnel=False,
+        praticien_nb_parts=60,
+        membres_additionnels=(membre,),
+    )
+
+    plan = build_clean_generation_plan(dossier_type, data)
+
+    assert plan.can_generate is False
+    assert any("somme des parts" in blocker for blocker in plan.blockers)
+
+
+def test_clean_front_selarl_unipersonnel_unchanged_without_membres(tmp_path: Path) -> None:
+    # Garde-fou retro-compat : sans membre additionnel, le dossier reste unipersonnel
+    # et byte-equivalent au parcours historique (entete singulier).
+    data = _valid_selarl_input(PROFESSION_MEDECIN)
+    ctx = build_generation_context(data)
+    assert ctx.dossier_options.associe_unique is True
+    assert ctx.statuts_sel.membres == []
+
+    result = generate_selarl_dossier(data, tmp_path)
+    statuts = next(p for p in result.docx_paths if "Statuts" in p.name)
+    text = _docx_text(statuts)
+    assert "LE SOUSSIGNE" in text
+    assert "LES SOUSSIGNÉS" not in text
 
 
 def _valid_selarl_input(

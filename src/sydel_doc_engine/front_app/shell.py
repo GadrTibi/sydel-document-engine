@@ -9,9 +9,14 @@ import streamlit as st
 
 from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import (
+    Address,
     BailContext,
     CessionContext,
     ScmCessionContext,
+    StatutsCivilsApport,
+    StatutsCivilsAssocie,
+    StatutsCivilsParts,
+    StatutsCivilsRepresentant,
 )
 from sydel_doc_engine.front_app.data_entry import (
     CleanDataEntry,
@@ -928,6 +933,10 @@ def _render_data_entry_zone(dossier_type: DossierTypeOption) -> CleanDataEntry:
     qualification = _render_qualification()
     praticien = _render_praticien(profession=str(qualification["profession"]))
     societe = _render_societe(praticien=praticien)
+    membres = _render_selarl_membres(
+        unipersonnel=bool(qualification["dossier_unipersonnel"]),
+        nb_parts_total=societe.get("nb_parts_total"),
+    )
     ordre_mandataire = _render_ordre_mandataire()
     generation_context = _render_generation_context(societe)
     cession_context, bail_context = _render_cession_form(
@@ -947,12 +956,171 @@ def _render_data_entry_zone(dossier_type: DossierTypeOption) -> CleanDataEntry:
         **qualification,
         **praticien,
         **societe,
+        **membres,
         **ordre_mandataire,
         **generation_context,
         cession_context=cession_context,
         bail_context=bail_context,
         scm_cession_context=scm_cession_context,
     )
+
+
+def _render_selarl_membres(
+    *,
+    unipersonnel: bool,
+    nb_parts_total: object,
+) -> dict[str, object]:
+    """Saisie multi-associes SELARL (retours V3 2026-06-17) — ADDITIF.
+
+    N'apparait QUE si « Dossier unipersonnel » est decoche. Collecte la part du
+    praticien (membre #1, signataire) + N membres additionnels (personne physique
+    OU morale). Le nombre d'associes = praticien + membres (tous signataires). En
+    unipersonnel -> dict vide, parcours historique inchange.
+    """
+    if unipersonnel:
+        return {}
+
+    st.markdown("**Associes (multi)**")
+    st.caption(
+        "Le praticien est le 1er associe (signataire). Ajoutez les autres associes "
+        "(personne physique ou morale). La somme des parts doit egaler le nombre "
+        "total de parts du capital."
+    )
+    col_a, col_b = st.columns(2)
+    praticien_nb_parts = int(
+        col_a.number_input(
+            "Parts du praticien",
+            min_value=0,
+            step=1,
+            key="selarl_praticien_nb_parts",
+        )
+    )
+    praticien_apport = col_b.text_input(
+        "Apport du praticien (euros)",
+        key="selarl_praticien_apport",
+    )
+
+    count_key = "selarl_membres_count"
+    if count_key not in st.session_state:
+        st.session_state[count_key] = 1
+    nombre = max(1, min(5, int(st.session_state[count_key])))
+    add_col, remove_col = st.columns(2)
+    if add_col.button("Ajouter un associe", key="selarl_membres_add"):
+        st.session_state[count_key] = min(5, nombre + 1)
+        st.rerun()
+    if remove_col.button("Retirer un associe", key="selarl_membres_remove"):
+        st.session_state[count_key] = max(1, nombre - 1)
+        st.rerun()
+
+    membres: list[StatutsCivilsAssocie] = []
+    for index in range(nombre):
+        membre = _render_one_selarl_membre(index)
+        if membre is not None:
+            membres.append(membre)
+
+    return {
+        "praticien_nb_parts": praticien_nb_parts,
+        "praticien_apport": praticien_apport,
+        "membres_additionnels": tuple(membres),
+    }
+
+
+def _render_one_selarl_membre(index: int) -> StatutsCivilsAssocie | None:
+    prefix = f"selarl_membre_{index}"
+    with st.expander(f"Associe additionnel {index + 2}", expanded=index == 0):
+        type_personne = st.selectbox(
+            "Type d'associe",
+            ("personne_physique", "personne_morale"),
+            key=f"{prefix}_type",
+        )
+        col_p, col_a = st.columns(2)
+        nb_parts = int(
+            col_p.number_input(
+                "Nombre de parts",
+                min_value=0,
+                step=1,
+                key=f"{prefix}_nb_parts",
+            )
+        )
+        apport = col_a.text_input("Apport (euros)", key=f"{prefix}_apport")
+        parts = StatutsCivilsParts(nb=nb_parts, nb_lettres=number_words_from_value(nb_parts))
+        apport_obj = StatutsCivilsApport(
+            montant=apport, montant_lettres=number_words_from_value(apport)
+        )
+        if type_personne == "personne_morale":
+            denomination = st.text_input("Denomination", key=f"{prefix}_denomination")
+            col_b, col_c = st.columns(2)
+            forme = col_b.text_input("Forme juridique", key=f"{prefix}_forme")
+            capital = col_c.text_input("Capital social (euros)", key=f"{prefix}_capital")
+            siege = st.text_input("Siege (adresse affichee)", key=f"{prefix}_siege")
+            col_d, col_e = st.columns(2)
+            numero_rcs = col_d.text_input("Numero RCS", key=f"{prefix}_rcs")
+            ville_rcs = col_e.text_input("Ville RCS", key=f"{prefix}_ville_rcs")
+            st.caption("Representant legal")
+            col_f, col_g, col_h = st.columns(3)
+            rep_civilite = col_f.selectbox(
+                "Civilite rep.", ("Monsieur", "Madame"), key=f"{prefix}_rep_civilite"
+            )
+            rep_prenom = col_g.text_input("Prenom rep.", key=f"{prefix}_rep_prenom")
+            rep_nom = col_h.text_input("Nom rep.", key=f"{prefix}_rep_nom")
+            if not denomination.strip():
+                return None
+            return StatutsCivilsAssocie(
+                type_personne="personne_morale",
+                denomination=denomination,
+                forme_juridique=forme or None,
+                capital_social=capital or None,
+                siege=Address(adresse_affichee=siege) if siege.strip() else None,
+                numero_rcs=numero_rcs or None,
+                ville_rcs=ville_rcs or None,
+                representant=StatutsCivilsRepresentant(
+                    civilite_affichage=rep_civilite,
+                    prenom=rep_prenom or None,
+                    nom=rep_nom or None,
+                ),
+                apport=apport_obj,
+                parts=parts,
+            )
+        col_b, col_c, col_d = st.columns(3)
+        civilite = col_b.selectbox(
+            "Civilite", ("Monsieur", "Madame"), key=f"{prefix}_civilite"
+        )
+        prenom = col_c.text_input("Prenom", key=f"{prefix}_prenom")
+        nom = col_d.text_input("Nom", key=f"{prefix}_nom")
+        col_e, col_f, col_g = st.columns(3)
+        date_naissance = col_e.text_input("Date de naissance", key=f"{prefix}_date_naissance")
+        ville_naissance = col_f.text_input("Ville de naissance", key=f"{prefix}_ville_naissance")
+        dep_naissance = col_g.text_input("Departement naissance", key=f"{prefix}_dep_naissance")
+        col_h, col_i = st.columns(2)
+        nationalite = col_h.text_input("Nationalite", key=f"{prefix}_nationalite")
+        situation = col_i.text_input("Situation matrimoniale", key=f"{prefix}_situation")
+        profession = st.text_input("Profession", key=f"{prefix}_profession")
+        adresse = st.text_input("Adresse personnelle (affichee)", key=f"{prefix}_adresse")
+        col_j, col_k, col_l = st.columns(3)
+        ordre_dep = col_j.text_input("Departement ordre", key=f"{prefix}_ordre_dep")
+        numero_ordre = col_k.text_input("Numero ordre", key=f"{prefix}_numero_ordre")
+        numero_rpps = col_l.text_input("Numero RPPS", key=f"{prefix}_numero_rpps")
+        if not (prenom.strip() and nom.strip()):
+            return None
+        return StatutsCivilsAssocie(
+            type_personne="personne_physique",
+            genre=derive_gender_from_civilite(civilite),
+            civilite_affichage=civilite,
+            prenom=prenom,
+            nom=nom,
+            profession=profession or None,
+            date_naissance=date_naissance or None,
+            ville_naissance=ville_naissance or None,
+            departement_naissance=dep_naissance or None,
+            nationalite=nationalite or None,
+            situation_maritale=situation or None,
+            adresse_personnelle_affichee=adresse or None,
+            ordre_departemental=ordre_dep or None,
+            numero_ordre=numero_ordre or None,
+            numero_rpps=numero_rpps or None,
+            apport=apport_obj,
+            parts=parts,
+        )
 
 
 def _render_qualification() -> dict[str, object]:

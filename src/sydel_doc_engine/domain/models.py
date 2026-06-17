@@ -459,6 +459,13 @@ class StatutsSas(BaseModel):
 class StatutsSel(BaseModel):
     overlay: str | None = None
     profession: str | None = None
+    # Retours V3 2026-06-17 (SELARL multi-associes) : liste OPTIONNELLE de membres
+    # (personne physique OU morale) reutilisant le modele riche `StatutsCivilsAssocie`
+    # (deja employe par la SELAS multi et le repeater). ADDITIF : vide ou a un seul
+    # element -> le rendu SELARL reste le parcours mono historique, byte-identique.
+    # >= 2 membres -> comparution / art. 7 (apports) / art. 8 (repartition capital) /
+    # signature iterent sur la liste (cf. statuts_sel_exercice_common.render_statuts_sel_docx).
+    membres: list[StatutsCivilsAssocie] = Field(default_factory=list)
 
 
 class StatutsPresident(BaseModel):

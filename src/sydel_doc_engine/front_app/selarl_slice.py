@@ -46,6 +46,9 @@ from sydel_doc_engine.domain.models import (
     Signature,
     SpfplConjoint,
     SpfplOrdre,
+    StatutsCivilsApport,
+    StatutsCivilsAssocie,
+    StatutsCivilsParts,
     StatutsSel,
 )
 from sydel_doc_engine.front_app.field_derivations import (
@@ -197,6 +200,18 @@ class SelarlSliceInput:
     cession_context: CessionContext | None = None
     bail_context: BailContext | None = None
     scm_cession_context: ScmCessionContext | None = None
+    # Retours V3 2026-06-17 (SELARL multi-associes) — ADDITIF. `membres_additionnels`
+    # = associes (personne physique OU morale) AJOUTES au praticien principal (lui
+    # toujours membre #1 et signataire). Vide -> parcours unipersonnel historique
+    # inchange. `praticien_nb_parts` = part du praticien quand multi (defaut : tout
+    # le capital, comportement mono).
+    membres_additionnels: tuple[StatutsCivilsAssocie, ...] = ()
+    praticien_nb_parts: int = 0
+    # Apport en euros du praticien quand multi. Vide -> derive du capital total
+    # (cas mono / praticien seul detenteur). TODO V3 : wording exact de la ligne
+    # d'apport par membre a confirmer (le ticket fige la repartition art. 8, pas
+    # le libelle d'apport art. 7) -> parque, non invente.
+    praticien_apport: str = ""
 
     @property
     def has_any_value(self) -> bool:
@@ -211,6 +226,11 @@ class SelarlSliceInput:
                 self.numero_ordre,
             )
         )
+
+    @property
+    def is_multi_associes(self) -> bool:
+        """Dossier multi-associes ssi au moins un membre additionnel au praticien."""
+        return len(self.membres_additionnels) >= 1
 
 
 @dataclass(frozen=True)
@@ -282,8 +302,10 @@ def validate_selarl_input(data: SelarlSliceInput) -> tuple[str, ...]:
     blockers: list[str] = []
     if data.profession not in SELARL_V1_PROFESSIONS:
         blockers.append("Profession hors perimetre SELARL V1.")
-    if not data.dossier_unipersonnel:
-        blockers.append("La V1 ne couvre que le dossier unipersonnel.")
+    if not data.dossier_unipersonnel and not data.is_multi_associes:
+        # Dossier declare non-unipersonnel mais aucun membre additionnel saisi.
+        blockers.append("Dossier multi-associes : ajouter au moins un membre.")
+    blockers.extend(_multi_membres_blockers(data))
     # Derogation / site distinct : hors outil. Les formulaires sont a remplir a la main
     # (retour associe Rafael) et ne sont plus exposes dans l'interface ; rien a valider ici.
     if data.cession and data.cession_context is None:
@@ -328,6 +350,43 @@ def validate_selarl_input(data: SelarlSliceInput) -> tuple[str, ...]:
         )
     blockers.extend(_cession_blockers(data))
     return tuple(dict.fromkeys(blockers))
+
+
+def _multi_membres_blockers(data: SelarlSliceInput) -> list[str]:
+    """Bloqueurs UTILES du multi-associes (retours V3 2026-06-17).
+
+    Le moteur revalide la coherence du capital ; ici on remonte tot, avant
+    generation, les saisies incompletes (identite minimale + parts > 0) et la
+    coherence du total (praticien + membres = capital)."""
+    if not data.is_multi_associes:
+        return []
+    blockers: list[str] = []
+    if data.praticien_nb_parts < 1:
+        blockers.append("Multi-associes : nombre de parts du praticien requis (> 0).")
+    total = data.praticien_nb_parts
+    for index, membre in enumerate(data.membres_additionnels, start=2):
+        nb = (membre.parts.nb if membre.parts else None) or 0
+        total += nb
+        if nb < 1:
+            blockers.append(f"Multi-associes : parts du membre {index} requises (> 0).")
+        if membre.type_personne == "personne_morale":
+            if not (membre.denomination or "").strip():
+                blockers.append(f"Multi-associes : denomination du membre {index} requise.")
+        else:
+            if not all(
+                (value or "").strip()
+                for value in (membre.civilite_affichage, membre.prenom, membre.nom)
+            ):
+                blockers.append(
+                    f"Multi-associes : identite du membre {index} requise "
+                    "(civilite, prenom, nom)."
+                )
+    if data.nb_parts_total and total != data.nb_parts_total:
+        blockers.append(
+            "Multi-associes : la somme des parts (praticien + membres) doit egaler "
+            f"le nombre total de parts ({data.nb_parts_total})."
+        )
+    return blockers
 
 
 def _cession_blockers(data: SelarlSliceInput) -> list[str]:
@@ -485,7 +544,7 @@ def build_generation_context(data: SelarlSliceInput) -> DocumentGenerationContex
         structure="SELARL",
         dossier_options=DossierOptions(
             regime_communautaire=data.regime_communautaire,
-            associe_unique=True,
+            associe_unique=not data.is_multi_associes,
             derogation=False,
             site_distinct=False,
             cession=data.cession_context is not None,
@@ -557,6 +616,7 @@ def build_generation_context(data: SelarlSliceInput) -> DocumentGenerationContex
         statuts_sel=StatutsSel(
             overlay=_statuts_overlay(data.profession),
             profession=profession_label,
+            membres=_statuts_membres(data, person_address, profession_label),
         ),
         depot_fonds=DepotFonds(
             banque=CessionBanque(
@@ -805,15 +865,69 @@ def _context_associes(
     profession_label: str,
     profession_plural: str,
 ) -> list[Associe]:
+    # `ctx.associes` reste l'associe REPRESENTATIF (praticien) — longueur 1 dans tous
+    # les cas. En multi, la liste complete des membres vit dans `statuts_sel.membres`.
+    nb_parts = (
+        data.praticien_nb_parts if data.is_multi_associes else data.nb_parts_total
+    )
     return [
         _associe(
             data,
             address,
             profession_label,
             profession_plural,
-            nb_parts=data.nb_parts_total,
+            nb_parts=nb_parts or data.nb_parts_total,
         )
     ]
+
+
+def _statuts_membres(
+    data: SelarlSliceInput,
+    address: Address,
+    profession_label: str,
+) -> list[StatutsCivilsAssocie]:
+    """Liste complete des membres SELARL (retours V3 2026-06-17). Vide en mono.
+
+    Membre #1 = le praticien principal (toujours signataire), construit depuis la
+    fiche praticien ; suivent les membres additionnels saisis. Le calcul du nombre
+    d'associes decoule de la longueur de cette liste (tous signataires = associes)."""
+    if not data.is_multi_associes:
+        return []
+    praticien = StatutsCivilsAssocie(
+        type_personne="personne_physique",
+        genre=data.genre,
+        civilite_affichage=data.civilite,
+        prenom=data.prenom,
+        nom=data.nom,
+        profession=profession_label,
+        date_naissance=data.date_naissance,
+        ville_naissance=data.ville_naissance or None,
+        departement_naissance=data.departement_naissance or None,
+        nationalite=data.nationalite or None,
+        situation_maritale=data.situation_maritale or None,
+        adresse_personnelle_affichee=address.adresse_affichee,
+        ordre_departemental=data.departement_ordre or None,
+        numero_ordre=data.numero_ordre or None,
+        numero_rpps=data.numero_rpps or None,
+        apport=StatutsCivilsApport(
+            montant=_praticien_apport_montant(data),
+            montant_lettres=number_words_from_value(_praticien_apport_montant(data)),
+        ),
+        parts=StatutsCivilsParts(
+            nb=data.praticien_nb_parts,
+            nb_lettres=number_words_from_value(data.praticien_nb_parts),
+        ),
+        est_signataire=True,
+    )
+    return [praticien, *data.membres_additionnels]
+
+
+def _praticien_apport_montant(data: SelarlSliceInput) -> str:
+    """Apport en euros du praticien. Saisi explicitement, sinon repli sur le capital
+    total (cas praticien seul detenteur). Pas d'invention de calcul parts -> euros."""
+    if (data.praticien_apport or "").strip():
+        return format_grouped_numeric_value(data.praticien_apport)
+    return format_grouped_numeric_value(data.capital_social)
 
 
 def _reunion_president(

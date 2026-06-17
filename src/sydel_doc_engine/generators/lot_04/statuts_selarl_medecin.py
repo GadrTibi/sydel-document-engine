@@ -6,14 +6,16 @@ from sydel_doc_engine.domain.models import DocumentGenerationContext
 from sydel_doc_engine.generators.lot_04.statuts_sel_exercice_common import (
     DOCUMENT_CODE,
     OVERLAY_SELARL_MEDECIN,
+    SELARL_MEDECIN_MULTI_ZONES,
     STRUCTURE_SELARL,
     add_depot_replacements,
     add_exercice_replacements,
     add_ordre_replacements,
     common_replacements,
     render_statuts_sel_docx,
-    required_associe_unique,
+    representative_associe,
     required_text,
+    sel_membres,
     statuts_output_filename,
     validate_sel_context,
 )
@@ -33,7 +35,8 @@ class StatutsSelarlMedecinGenerator:
             expected_structure=STRUCTURE_SELARL,
             expected_overlay=OVERLAY_SELARL_MEDECIN,
         )
-        associate = required_associe_unique(ctx)
+        membres = sel_membres(ctx)
+        associate = representative_associe(ctx)
         replacements = common_replacements(ctx, title_type="parts_sociales")
         add_ordre_replacements(replacements, associate)
         add_depot_replacements(replacements, ctx, require_address=True)
@@ -87,4 +90,6 @@ class StatutsSelarlMedecinGenerator:
             # (pagination PAGE + ligne « Statuts <denomination> », Roboto 8 pt).
             # Le dentiste a un footer source vide -> ne passe pas ce parametre.
             footer_medecin_denomination=replacements["[denomination_societe]"],
+            membres=membres,
+            multi_zones=SELARL_MEDECIN_MULTI_ZONES,
         )

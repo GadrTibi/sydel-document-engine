@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 from typing import Any
@@ -17,6 +18,7 @@ from sydel_doc_engine.domain.models import (
     Associe,
     Company,
     DocumentGenerationContext,
+    StatutsCivilsAssocie,
 )
 from sydel_doc_engine.rendering.docx_builder import (
     add_paragraph,
@@ -58,6 +60,21 @@ def format_display_date(value: date | str | None, field_name: str) -> str:
     return required_text(value, field_name)
 
 
+def is_sel_multi(ctx: DocumentGenerationContext) -> bool:
+    """Le dossier SELARL est multi-associes ssi `statuts_sel.membres` porte >= 2 membres.
+
+    Retours V3 2026-06-17 : sous-cas ADDITIF active explicitement par le PM (contredit
+    SELARL-SCOPE-1 / Albane 05/06). Sans cette liste -> parcours mono historique."""
+    return ctx.statuts_sel is not None and len(ctx.statuts_sel.membres) >= 2
+
+
+def sel_membres(ctx: DocumentGenerationContext) -> list[StatutsCivilsAssocie]:
+    """Liste des membres SELARL si multi (>= 2), sinon liste vide (mono)."""
+    if not is_sel_multi(ctx) or ctx.statuts_sel is None:
+        return []
+    return list(ctx.statuts_sel.membres)
+
+
 def validate_sel_context(
     ctx: DocumentGenerationContext,
     *,
@@ -68,18 +85,51 @@ def validate_sel_context(
         raise ValueError(f"dossier.structure doit etre {expected_structure} pour {DOCUMENT_CODE}.")
     if ctx.statuts_sel is not None and ctx.statuts_sel.overlay != expected_overlay:
         raise ValueError(f"statuts_sel.overlay doit etre {expected_overlay} pour {DOCUMENT_CODE}.")
+    if is_sel_multi(ctx):
+        # Mode multi-associes V3 : la coherence est portee par `statuts_sel.membres`.
+        # `ctx.associes` reste l'associe representatif (entete/articles statiques).
+        _validate_sel_membres(ctx)
+        return
     if len(ctx.associes) != 1:
         raise ValueError(
-            f"les statuts SEL multi-associes sont bloques en V1 pour {DOCUMENT_CODE}."
+            f"les statuts SEL multi-associes requierent statuts_sel.membres pour "
+            f"{DOCUMENT_CODE}."
         )
     if ctx.capital_souscription and len(ctx.capital_souscription.souscripteurs) > 1:
         raise ValueError(
-            f"les statuts SEL multi-associes sont bloques en V1 pour {DOCUMENT_CODE}."
+            f"les statuts SEL multi-associes requierent statuts_sel.membres pour "
+            f"{DOCUMENT_CODE}."
         )
     if ctx.dirigeant_nomine is not None and not _dirigeant_is_unique_associe(ctx):
         raise ValueError(
             "la signature du dirigeant non associe reste manuelle en V1 "
             f"pour {DOCUMENT_CODE}."
+        )
+
+
+def _validate_sel_membres(ctx: DocumentGenerationContext) -> None:
+    """Coherence des membres SELARL multi : au moins un signataire physique, et la
+    somme des parts des membres = nombre de parts du capital (calcul auto du nombre
+    d'associes = tous les signataires, retours V3 2026-06-17)."""
+    if ctx.statuts_sel is None:
+        return
+    membres = ctx.statuts_sel.membres
+    physiques = [m for m in membres if m.type_personne != _MORALE]
+    if not physiques:
+        raise ValueError(
+            "au moins un associe personne physique (praticien) est obligatoire pour "
+            f"les statuts SELARL multi {DOCUMENT_CODE}."
+        )
+    if not any(m.est_signataire for m in membres):
+        raise ValueError(
+            f"au moins un membre signataire est obligatoire pour {DOCUMENT_CODE}."
+        )
+    total_parts = sum(_membre_nb_parts(m) for m in membres)
+    expected = capital_titles_total(ctx)
+    if total_parts != expected:
+        raise ValueError(
+            "la somme des parts des membres doit correspondre a "
+            f"capital.nombre_titres_total pour {DOCUMENT_CODE}."
         )
 
 
@@ -431,6 +481,288 @@ def _add_selarl_medecin_footer(docx: Any, denomination: str) -> None:
     label_run.font.size = Pt(_FOOTER_FONT_SIZE_PT)
 
 
+# ---------------------------------------------------------------------------
+# Multi-associes SELARL (retours V3 2026-06-17) — STRICTEMENT ADDITIF.
+#
+# Decision de gouvernance : ce sous-cas contredit SELARL-SCOPE-1 (SELARL =
+# unipersonnelle) et l'arbitrage Albane du 05/06 ; il est construit sur demande
+# EXPLICITE du PM. Garde-fou DUR : a 0 ou 1 membre, RIEN de ce code ne s'active
+# -> le parcours mono historique reste byte-identique (verrou ligne-par-ligne
+# `test_statuts_selarl_medecin_matches_source_docx_line_by_line`).
+#
+# A >= 2 membres, on intercepte par CONTENU (chaines source exactes, jamais par
+# index fragile) quatre fenetres dynamiques :
+#   - la comparution (« LE SOUSSIGNE : » + ligne(s) d'identite) ;
+#   - l'article 7 (apports) : une ligne par membre + ligne « Total des apports » ;
+#   - l'article 8 (repartition du capital) : liste numerotee « 1° ... ; / 2° ... . » ;
+#   - la ligne de signature (un libelle par signataire).
+# Membre personne morale OU physique (reutilise le modele riche
+# `StatutsCivilsAssocie`, deja employe par la SELAS multi et le repeater).
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class SelMultiZones:
+    """Chaines source EXACTES des blocs dynamiques d'un template SELARL.
+
+    Chaque champ est la string telle qu'elle figure dans le tuple `*_BLOCKS`
+    (prouvee par extraction). A >= 2 membres, le bloc correspondant est
+    intercepte et remplace par la version iteree ; tout le reste du template
+    est rendu a l'identique. None = le template ne porte pas ce bloc separe."""
+
+    soussigne_header: str
+    identite_lines: tuple[str, ...]
+    apport_line: str
+    apport_total_line: str
+    capital_attribution_line: str
+    capital_total_line: str
+    signature_line: str
+
+
+# Ancres des blocs dynamiques — chaines EXACTES des tuples *_BLOCKS
+# (statuts_sel_exercice_templates.py). Si l'une diverge du template, le mode multi
+# n'intercepte plus ce bloc (rendu mono) ; les tests multi le detectent.
+SELARL_MEDECIN_MULTI_ZONES = SelMultiZones(
+    soussigne_header="LE SOUSSIGNE\xa0:",
+    identite_lines=(
+        "[civilite] [prenom] [nom], [profession], né le [date_naissance] à "
+        "[ville_naissance] ([departement_naissance]), de nationalité [nationalite], "
+        "demeurant [adresse_personnelle], inscrit au tableau du Conseil départemental "
+        "de [ville_ordre] sous le numéro national [numero_ordre] et sous le numéro RPPS "
+        "[numero_rpps], [situation_matrimoniale_statuts]. ",
+    ),
+    apport_line=(
+        "Dr [prenom] [nom] apporte à la Société la somme de [capital_lettres] euros "
+        "([capital_social] €)"
+    ),
+    apport_total_line="ci- [capital_social] €.",
+    capital_attribution_line=(
+        "Il est divisé en [nb_parts_total] parts de [valeur_nominale_part] "
+        "[euro_nominal_word] chacune, entièrement souscrites et libérées dans les "
+        "conditions exposées ci-dessus et attribuées en totalité au Docteur [prenom] "
+        "[nom], [qualite_associe_article_8]."
+    ),
+    capital_total_line=(
+        "Total du nombre de parts composant le capital social\xa0: "
+        "……………………………………….[nb_parts_total] parts"
+    ),
+    signature_line="    [prenom_signataire] [nom_signataire]",
+)
+
+SELARL_DENTISTE_MULTI_ZONES = SelMultiZones(
+    soussigne_header="LE SOUSSIGNE\xa0:",
+    identite_lines=(
+        "[civilite] [prenom] [nom], [profession], né le [date_naissance] à "
+        "[ville_naissance] ([departement_naissance]), de nationalité [nationalite], "
+        "demeurant [adresse_personnelle], [situation_matrimoniale_statuts]",
+        "Inscrit au Tableau de l’ordre départemental des [profession_reglementee_pluriel] "
+        "de [ordre_departemental] [mention_inscription_ordre_rpps]. ",
+    ),
+    apport_line=(
+        "[civilite] [prenom] [nom] apporte à la Société la somme de [montant_apport] euros.   "
+    ),
+    apport_total_line="Total des apports en numéraire : ci- [montant_apport] euros.",
+    capital_attribution_line=(
+        "à [civilite] [prenom] [nom], [nb_parts_total_lettres] parts sociales en pleine "
+        "propriété, ci \t[nb_parts_total] parts  "
+    ),
+    capital_total_line=(
+        "Total du nombre de parts composant le capital social : "
+        "………………………………………. [nb_parts_total] parts"
+    ),
+    signature_line="[prenom] [nom]",
+)
+
+
+_MORALE = "personne_morale"
+
+
+def _membre_is_morale(membre: StatutsCivilsAssocie) -> bool:
+    return membre.type_personne == _MORALE
+
+
+def _membre_est_feminin(membre: StatutsCivilsAssocie) -> bool:
+    if membre.genre is not None:
+        return membre.genre == Gender.FEMININ
+    civilite = (membre.civilite_affichage or "").strip().casefold().replace(".", "")
+    return civilite in {"madame", "mme", "mademoiselle", "mlle"}
+
+
+def _membre_person_label(membre: StatutsCivilsAssocie) -> str:
+    prenoms = membre.prenoms or membre.prenom
+    return (
+        f"{required_text(membre.civilite_affichage, 'membres[].civilite_affichage')} "
+        f"{required_text(prenoms, 'membres[].prenom')} "
+        f"{required_text(membre.nom, 'membres[].nom')}"
+    )
+
+
+def _membre_person_address(membre: StatutsCivilsAssocie) -> str:
+    if membre.adresse_personnelle_affichee:
+        return membre.adresse_personnelle_affichee.strip()
+    return address_display(membre.adresse_personnelle, "membres[].adresse_personnelle")
+
+
+def _membre_nb_parts(membre: StatutsCivilsAssocie) -> int:
+    if membre.parts is not None and membre.parts.nb is not None:
+        return membre.parts.nb
+    if membre.nb_actions is not None:
+        return membre.nb_actions
+    raise ValueError(f"membres[].parts.nb est obligatoire pour {DOCUMENT_CODE}.")
+
+
+def _membre_nb_parts_lettres(membre: StatutsCivilsAssocie) -> str:
+    if membre.parts is not None and membre.parts.nb_lettres:
+        return membre.parts.nb_lettres.strip()
+    if membre.nb_actions_lettres:
+        return membre.nb_actions_lettres.strip()
+    raise ValueError(f"membres[].parts.nb_lettres est obligatoire pour {DOCUMENT_CODE}.")
+
+
+def _membre_apport_montant(membre: StatutsCivilsAssocie) -> str:
+    if membre.apport is None or not (membre.apport.montant or "").strip():
+        raise ValueError(f"membres[].apport.montant est obligatoire pour {DOCUMENT_CODE}.")
+    return membre.apport.montant.strip()
+
+
+def _membre_apport_lettres(membre: StatutsCivilsAssocie) -> str:
+    if membre.apport is None or not (membre.apport.montant_lettres or "").strip():
+        raise ValueError(
+            f"membres[].apport.montant_lettres est obligatoire pour {DOCUMENT_CODE}."
+        )
+    return membre.apport.montant_lettres.strip()
+
+
+def _membre_short_label(membre: StatutsCivilsAssocie) -> str:
+    """Libelle court pour la repartition / la signature : denomination (PM) ou
+    « prenom nom » (PP), repris de la mecanique SELAS multi."""
+    if _membre_is_morale(membre):
+        return required_text(membre.denomination, "membres[].denomination")
+    prenoms = membre.prenoms or membre.prenom
+    return (
+        f"{required_text(prenoms, 'membres[].prenom')} "
+        f"{required_text(membre.nom, 'membres[].nom')}"
+    )
+
+
+def _add_multi_comparution(
+    docx: Any,
+    membres: list[StatutsCivilsAssocie],
+    replacements: dict[str, str],
+) -> None:
+    """Comparution multi : « LES SOUSSIGNÉS : » (pluriel) puis une ligne par membre.
+
+    Personne physique : reprend la ligne d'identite source (civilite, profession,
+    naissance, nationalite, domicile, situation matrimoniale, inscription a l'ordre).
+    Personne morale : ligne d'identification societe (denomination, forme, capital,
+    siege, RCS, representant) reprise de la mecanique SELAS multi.
+    """
+    feminin_all = all(_membre_est_feminin(m) for m in membres if not _membre_is_morale(m))
+    header = "LES SOUSSIGNÉES\xa0:" if feminin_all else "LES SOUSSIGNÉS\xa0:"
+    add_paragraph(docx, header)
+    profession_pluriel = replacements.get("[profession_reglementee_pluriel]", "")
+    for membre in membres:
+        if _membre_is_morale(membre):
+            add_statuts_body_paragraph(docx, _multi_morale_identite(membre))
+        else:
+            for line in _multi_physique_identite(membre, profession_pluriel):
+                add_statuts_body_paragraph(docx, line)
+
+
+def _multi_physique_identite(
+    membre: StatutsCivilsAssocie,
+    profession_pluriel: str,
+) -> tuple[str, ...]:
+    feminin = _membre_est_feminin(membre)
+    ne = "née" if feminin else "né"
+    inscrit = "Inscrite" if feminin else "Inscrit"
+    profession = required_text(membre.profession, "membres[].profession")
+    ordre_dep = required_text(membre.ordre_departemental, "membres[].ordre_departemental")
+    identite = (
+        f"{_membre_person_label(membre)}, {profession}, "
+        f"{ne} le {format_display_date(membre.date_naissance, 'membres[].date_naissance')} "
+        f"à {required_text(membre.ville_naissance, 'membres[].ville_naissance')} "
+        f"({required_text(membre.departement_naissance, 'membres[].departement_naissance')}), "
+        f"de nationalité {required_text(membre.nationalite, 'membres[].nationalite')}, "
+        f"demeurant {_membre_person_address(membre)}, "
+        f"{required_text(membre.situation_maritale, 'membres[].situation_maritale')}."
+    )
+    inscription = (
+        f"{inscrit} au tableau de l’ordre des {profession_pluriel} de {ordre_dep} "
+        f"sous le numéro national "
+        f"{required_text(membre.numero_ordre, 'membres[].numero_ordre')} "
+        f"et sous le numéro RPPS "
+        f"{required_text(membre.numero_rpps, 'membres[].numero_rpps')}."
+    )
+    return (identite, inscription)
+
+
+def _multi_morale_identite(membre: StatutsCivilsAssocie) -> str:
+    representant = membre.representant
+    if representant is None:
+        raise ValueError(
+            f"membres[].representant est obligatoire pour une personne morale {DOCUMENT_CODE}."
+        )
+    return (
+        f"La {required_text(membre.denomination, 'membres[].denomination')}, "
+        f"{required_text(membre.forme_juridique, 'membres[].forme_juridique')}, "
+        f"au capital de {required_text(membre.capital_social, 'membres[].capital_social')} euros "
+        f"dont le siège social est situé au {address_display(membre.siege, 'membres[].siege')}, "
+        f"immatriculée au RCS de {required_text(membre.ville_rcs, 'membres[].ville_rcs')} "
+        f"sous le numéro {required_text(membre.numero_rcs, 'membres[].numero_rcs')}, "
+        "représentée par son représentant légal, "
+        f"{required_text(representant.civilite_affichage, 'membres[].representant.civilite')} "
+        f"{required_text(representant.prenom, 'membres[].representant.prenom')} "
+        f"{required_text(representant.nom, 'membres[].representant.nom')}."
+    )
+
+
+def _add_multi_apports(
+    docx: Any,
+    membres: list[StatutsCivilsAssocie],
+    zones: SelMultiZones,
+    replacements: dict[str, str],
+) -> None:
+    """Article 7 : une ligne d'apport par membre, puis « Total des apports »."""
+    for membre in membres:
+        label = (
+            f"La {required_text(membre.denomination, 'membres[].denomination')}"
+            if _membre_is_morale(membre)
+            else _membre_person_label(membre)
+        )
+        add_statuts_body_paragraph(
+            docx,
+            f"{label} apporte à la Société la somme de "
+            f"{_membre_apport_montant(membre)} euros.",
+        )
+    total = replacements.get("[capital_social]", replacements.get("[capital_lettres]", ""))
+    add_statuts_body_paragraph(
+        docx,
+        f"Total des apports en numéraire : ci- {total} euros.",
+    )
+
+
+def _add_multi_capital_attribution(
+    docx: Any,
+    membres: list[StatutsCivilsAssocie],
+) -> None:
+    """Article 8 : liste numerotee de la repartition du capital (wording ticket V3).
+
+    Personne morale : « N° [denomination], détenant [nb] parts ».
+    Personne physique : « N° [prenom] [nom], détenant [nb] parts ».
+    Separateur « ; » entre membres, « . » sur le dernier (retours V3 2026-06-17).
+    """
+    dernier = len(membres) - 1
+    for ordinal, membre in enumerate(membres, start=1):
+        nb_parts = _membre_nb_parts(membre)
+        ponctuation = "." if ordinal - 1 == dernier else " ;"
+        add_statuts_body_paragraph(
+            docx,
+            f"{ordinal}° {_membre_short_label(membre)}, "
+            f"détenant {nb_parts} parts{ponctuation}",
+        )
+
+
 def render_statuts_sel_docx(
     blocks: tuple[str, ...],
     replacements: dict[str, str],
@@ -442,7 +774,18 @@ def render_statuts_sel_docx(
     title_box_bordered: bool = True,
     annex_page_break: bool = False,
     footer_medecin_denomination: str | None = None,
+    membres: list[StatutsCivilsAssocie] | None = None,
+    multi_zones: SelMultiZones | None = None,
 ) -> Path:
+    # Mode multi-associes : actif UNIQUEMENT a partir de 2 membres et si le template
+    # fournit ses ancres (`multi_zones`). A 0/1 membre -> parcours mono inchange.
+    multi = (
+        membres is not None and len(membres) >= 2 and multi_zones is not None
+    )
+    multi_membres: list[StatutsCivilsAssocie] = list(membres) if multi else []
+    # Lignes d'identite source a SAUTER en multi (remplacees par la comparution iteree).
+    skip_identite = set(multi_zones.identite_lines) if multi and multi_zones else set()
+
     docx = new_document()
     signature_mode = False
     for index, block in enumerate(blocks):
@@ -452,6 +795,33 @@ def render_statuts_sel_docx(
             continue
         if index == 4:
             add_statuts_title_box(docx, "STATUTS", bordered=title_box_bordered)
+
+        if multi and multi_zones is not None:
+            # Interception par CONTENU (chaines source exactes) des 4 fenetres dynamiques.
+            if block == multi_zones.soussigne_header:
+                _add_multi_comparution(docx, multi_membres, replacements)
+                continue
+            if block in skip_identite:
+                # Deja rendue dans la comparution iteree ci-dessus.
+                continue
+            if block == multi_zones.apport_line:
+                _add_multi_apports(docx, multi_membres, multi_zones, replacements)
+                continue
+            if block == multi_zones.apport_total_line:
+                # Total deja emis par _add_multi_apports.
+                continue
+            if block == multi_zones.capital_attribution_line:
+                _add_multi_capital_attribution(docx, multi_membres)
+                continue
+            if block == multi_zones.signature_line:
+                signataires = [m for m in multi_membres if m.est_signataire]
+                for membre in signataires:
+                    add_statuts_signature_block(
+                        docx, [_membre_short_label(membre)], bold=True
+                    )
+                signature_mode = True
+                continue
+
         text = replace_placeholders(block, replacements)
         text = apply_gender_variants(text, associate)
         # Entete (denomination / forme sociale / capital / siege) centree et
@@ -559,9 +929,19 @@ def required_company(ctx: DocumentGenerationContext) -> Company:
 def required_associe_unique(ctx: DocumentGenerationContext) -> Associe:
     if len(ctx.associes) != 1:
         raise ValueError(
-            f"les statuts SEL multi-associes sont bloques en V1 pour {DOCUMENT_CODE}."
+            f"les statuts SEL multi-associes requierent statuts_sel.membres pour "
+            f"{DOCUMENT_CODE}."
         )
     return ctx.associes[0]
+
+
+def representative_associe(ctx: DocumentGenerationContext) -> Associe:
+    """Associe representatif pour l'entete et les articles statiques du template.
+
+    En mode multi, `ctx.associes` porte le praticien representatif (longueur 1) et
+    `statuts_sel.membres` porte la liste complete. En mono, c'est l'associe unique.
+    Dans les deux cas on attend exactement un associe representatif dans `ctx.associes`."""
+    return required_associe_unique(ctx)
 
 
 def statuts_output_filename(denomination: str | None, fallback: str) -> str:
@@ -670,6 +1050,10 @@ def _validate_unique_associate_capital(
     ctx: DocumentGenerationContext,
     associate: Associe,
 ) -> None:
+    # En multi-associes, le praticien representatif ne detient qu'une fraction du
+    # capital : la coherence totale est verifiee par `_validate_sel_membres`.
+    if is_sel_multi(ctx):
+        return
     total = capital_titles_total(ctx)
     if associate.nb_parts != total:
         raise ValueError(
