@@ -78,6 +78,8 @@ class ProcurationGenerator:
             ),
         )
         _add_paragraph(document, "Donne par les présentes pouvoir à :")
+        # Aération (Albane 2026-06-17, §5) : espace avant le bloc mandataire.
+        add_spacer(document, space_after_pt=6)
         _add_mandataire_block(document)
         # Aération demandée par Albane (2026-06-10) : un espace après le bloc
         # mandataire avant le corps du mandat.
@@ -171,15 +173,18 @@ def _add_paragraph(
 
 
 def _add_mandataire_block(document) -> None:
+    # Mise en forme (Albane 2026-06-17, §5) : TOUTE la partie sous « SYDEL »
+    # passe en italique (adresse + RCS + telephone) ; « SYDEL » reste le titre
+    # en gras non italique. Bloc legerement aere (space_after_pt > 0).
     add_centered_block(
         document,
         [
             (MANDATAIRE_NOM, True, False),
             (MANDATAIRE_ADRESSE, False, True),
-            (MANDATAIRE_RCS, False, False),
-            (MANDATAIRE_TEL, False, False),
+            (MANDATAIRE_RCS, False, True),
+            (MANDATAIRE_TEL, False, True),
         ],
-        space_after_pt=0,
+        space_after_pt=2,
     )
 
 
