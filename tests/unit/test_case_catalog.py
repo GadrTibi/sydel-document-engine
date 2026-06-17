@@ -21,7 +21,7 @@ def _doc_codes(case_type: str, **conditions: object) -> list[str]:
 def test_case_catalog_documents_mapped_to_existing_registry() -> None:
     registry_codes = {document.doc_id for document in build_seed_catalog()}
 
-    assert len(CATALOG_DOCUMENTS) == 47
+    assert len(CATALOG_DOCUMENTS) == 48
     assert set(mapped_document_codes()) == registry_codes
 
 

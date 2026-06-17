@@ -85,6 +85,9 @@ from sydel_doc_engine.generators.lot_05.attestation_capital_liste_souscripteurs 
 from sydel_doc_engine.generators.lot_05.attestation_capital_liste_souscripteurs_sas import (
     AttestationCapitalListeSouscripteursSasGenerator,
 )
+from sydel_doc_engine.generators.lot_05.attestation_capital_souscripteurs_selas import (
+    AttestationCapitalSouscripteursSelasGenerator,
+)
 from sydel_doc_engine.generators.lot_05.attestation_commissaire_apports import (
     AttestationCommissaireApportsGenerator,
 )
@@ -204,6 +207,7 @@ def build_generator_registry() -> dict[str, DocumentGenerator]:
         "DOC-022": LettreOptionIsGenerator(),
         "DOC-023": PvRemunerationPresidentGenerator(),
         "DOC-024": AttestationCapitalListeSouscripteursSasGenerator(),
+        "DOC-045": AttestationCapitalSouscripteursSelasGenerator(),
         "DOC-037": NoteInformationGenerator(),
         "DOC-038": PvAgrementCessionSpfplAssocieUniqueGenerator(),
         "DOC-039": PvAgrementCessionSpfplPlusieursAssociesGenerator(),

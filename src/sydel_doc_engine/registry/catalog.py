@@ -733,6 +733,32 @@ def build_seed_catalog() -> list[DocumentDefinition]:
             ),
         ),
         DocumentDefinition(
+            doc_id="DOC-045",
+            canonical_name="Attestation capital / liste des souscripteurs SELAS",
+            generator_name="generate_attestation_capital_souscripteurs_selas",
+            lot=5,
+            category=DocumentCategory.SPECIFIQUE,
+            structures=["SELAS"],
+            general_condition="dossier.structure == SELAS",
+            specific_conditions=[
+                "capital_souscription.souscripteurs[] entre 1 et 6",
+                "apports en numeraire (capital SELAS)",
+                "montant numeraire par souscripteur = nb_actions x valeur_nominale",
+            ],
+            dynamic_associates=True,
+            grammar_variants=True,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path=(
+                "docs/review/albane_returns_2026-06-17/"
+                "MODELE_Attestation_capital_liste_souscripteurs.docx"
+            ),
+            notes=(
+                "SELAS multi-souscripteurs (numeraire) ; wording verbatim du modele "
+                "Albane 2026-06-17, une ligne de repartition + une ligne d'apport par "
+                "souscripteur."
+            ),
+        ),
+        DocumentDefinition(
             doc_id="DOC-037",
             canonical_name="Note d'information SPFPL",
             generator_name="generate_note_information_spfpl",

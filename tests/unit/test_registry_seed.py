@@ -3,9 +3,9 @@ from __future__ import annotations
 from sydel_doc_engine.registry.catalog import build_seed_catalog
 
 
-def test_seed_catalog_contains_forty_four_documents() -> None:
+def test_seed_catalog_contains_forty_five_documents() -> None:
     catalog = build_seed_catalog()
-    assert len(catalog) == 44
+    assert len(catalog) == 45
 
 
 def test_seed_catalog_contains_lot_one_to_lot_five_entries() -> None:

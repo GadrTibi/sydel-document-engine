@@ -421,6 +421,14 @@ CATALOG_DOCUMENTS: tuple[CatalogDocument, ...] = (
         "Meme source nominale que SPFPL apport, mais DOC canonique distinct.",
     ),
     CatalogDocument(
+        "attestation_capital_souscripteurs_selas",
+        "Attestation sur le capital / liste des souscripteurs SELAS",
+        "MODELE_Attestation_capital_liste_souscripteurs.docx",
+        "DOC-045",
+        DocumentAvailability.GENERATABLE,
+        "SELAS multi-souscripteurs, apports en numeraire (modele Albane 2026-06-17).",
+    ),
+    CatalogDocument(
         "pv_remuneration_president",
         "PV remuneration president",
         "PV remuneration president - transforme.docx",
@@ -556,6 +564,11 @@ CATALOG_OCCURRENCES: tuple[DocumentOccurrence, ...] = (
         "statuts_selas_multi",
         "Si plusieurs associes",
         (condition("multi_associes"),),
+    ),
+    DocumentOccurrence(
+        CaseType.SELAS,
+        "attestation_capital_souscripteurs_selas",
+        "Liste des souscripteurs (SPFPL / SELAS / SCS)",
     ),
     DocumentOccurrence(
         CaseType.SELAS,
