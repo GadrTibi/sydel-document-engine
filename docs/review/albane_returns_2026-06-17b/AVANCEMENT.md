@@ -4,12 +4,12 @@
 ```
   ┌─ SYDEL · Retours Albane lot 2 · AVANCEMENT ────────────
   │
-  │   GLOBAL   [█████████████░░░░░░░░░░░]  27/49  ·  55%
+  │   GLOBAL   [██████████████░░░░░░░░░░]  28/49  ·  57%
   │
   │   ✅  1a· bugs isolés       4/4   [██████████]
   │   🔨  1b· bugs données P1   4/12  [███░░░░░░░]
   │   ✅  2 · formulaires       10/10 [██████████]
-  │   🔨  3 · contenu docs      4/14  [███░░░░░░░]
+  │   🔨  3 · contenu docs      5/14  [████░░░░░░]
   │   🔨  4 · mise en forme     5/9   [██████░░░░]
   │
   │   ⏸ hors-build (Rafael/Albane) : 10      ✔ déjà conformes : 5
@@ -48,14 +48,14 @@
 - [x] **§SCREEN-1** — Nationalite en champ deroulant (NATIONALITY_PRESETS) a propager depuis la SELARL aux autre
 - [x] **§SCREEN-2** — Valeur nominale d'une action/part toujours calculee auto (capital / nb actions ou parts) -
 
-## Vague 3 · contenu docs — 4/14
+## Vague 3 · contenu docs — 5/14
 - [ ] **§12.3** — Appel de fonds : signe par le CLIENT au lieu du conseiller SYDEL
 - [x] **§17.1** — SELAS unipersonnelle medecin : generateur DOC-018 present mais ORPHELIN (aucun parcours fr
 - [x] **§17.4** — Deroulant SPFPL : libelles n'indiquant pas 'dentiste' et co-libelle 'SAS SPFPL medecins' a
 - [ ] **§4.1** — PV AGE cession SCM (DOC-031) affiche capital/parts/nominal/associes issus de la FIXTURE, j
 - [x] **§5** — Procuration : (a) bloc sous 'SYDEL' partiellement italique seulement (adresse oui, RCS+tel
 - [x] **§8.1** — Bloc destinataire SDE (« Service départemental de l'enregistrement de » + reste à compléte
-- [ ] **§8.2** — Reprendre le modèle client : nom de la SCM via variable dans le corps (« de parts de la SC
+- [x] **§8.2** — Reprendre le modèle client : nom de la SCM via variable dans le corps (« de parts de la SC
 - [ ] **§8.3** — Droits d'enregistrement = montant fixe « 25 » (plus une variable), peut rester en rouge
 - [ ] **§8.4a** — Signataire = SYDEL avec « Clémence » en champ FIXE (pas le client / pas une variable libre
 - [ ] **§8.4b** — Intégrer le pied de page du modèle (coordonnées SYDEL) pour que le SDE puisse contacter SY
