@@ -97,6 +97,11 @@ class DeclarationNonCondamnationGenerator:
             date_signature=_format_date(ctx.signature.date),
             image_path=ctx.signature.image_optionnelle,
         )
+        # Mise en forme (Albane 2026-06-17, §7) : « descendre legerement » le
+        # rappel legal en italique en menageant un espace avant le bloc.
+        # add_legal_reminder est partage (autres docs) -> on aere ici seulement,
+        # sans toucher le helper.
+        add_spacer(document, space_after_pt=12)
         _add_legal_reminder(document)
 
         output_dir.mkdir(parents=True, exist_ok=True)
