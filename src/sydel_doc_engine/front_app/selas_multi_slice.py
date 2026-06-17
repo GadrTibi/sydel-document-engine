@@ -43,7 +43,9 @@ from sydel_doc_engine.domain.models import (
     StatutsSelasMultiPresident,
 )
 from sydel_doc_engine.front_app import common_creation as cc
+from sydel_doc_engine.front_app.associe_repeater import render_nationalite_selectbox
 from sydel_doc_engine.front_app.field_derivations import (
+    calculate_nominal_value,
     date_to_french_words,
     derive_gender_from_civilite,
     format_french_date,
@@ -147,7 +149,15 @@ def render_selas_form(type_key: str = "selas_multi_v1") -> dict[str, object]:
     col_e, col_f, col_g = st.columns(3)
     capital = _t(col_e, "capital_social", "Capital social")
     nb_actions = _i(col_f, "nb_actions_total", "Nombre total d'actions")
-    valeur_action = _t(col_g, "valeur_nominale_action", "Valeur nominale d'une action")
+    # Valeur nominale d'une action : TOUJOURS calculee (capital / nb actions),
+    # jamais saisie (retours Albane 2026-06-17, SCREEN-2). Champ d'affichage seul.
+    valeur_action = calculate_nominal_value(capital, nb_actions)
+    col_g.text_input(
+        "Valeur nominale d'une action (calculee)",
+        value=valeur_action,
+        disabled=True,
+        key=f"{PREFIX}_valeur_nominale_action_display",
+    )
     col_h, col_i = st.columns(2)
     ville_rcs = _t(col_h, "ville_rcs", "RCS (ville)")
     adresse_exercice = _t(col_i, "adresse_lieu_exercice", "Adresse lieu d'exercice")
@@ -507,7 +517,7 @@ def _physique(prefix: str, nb_actions: int, montant: str) -> StatutsCivilsAssoci
     ville_naissance = _ts(col_e, f"{prefix}_ville_naissance", "Ville naissance")
     departement = _ts(col_f, f"{prefix}_departement", "Departement naissance")
     col_g, col_h = st.columns(2)
-    nationalite = _ts(col_g, f"{prefix}_nationalite", "Nationalite")
+    nationalite = render_nationalite_selectbox(prefix, container=col_g)
     profession = _ts(col_h, f"{prefix}_profession", "Profession (ex: Docteur)")
     adresse = _ts(st, f"{prefix}_adresse", "Adresse personnelle (affichee)")
     col_i, col_j = st.columns(2)
@@ -632,7 +642,8 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:
         ("profession_reglementee", "Profession requise."),
         ("profession_reglementee_pluriel", "Profession (pluriel) requise."),
         ("capital_social", "Capital social requis."),
-        ("valeur_nominale_action", "Valeur nominale d'une action requise."),
+        # Valeur nominale : calculee (capital / nb actions), plus saisie (SCREEN-2)
+        # -> on bloque sur capital + nb actions (deja valides), pas sur la valeur.
         ("ville_rcs", "RCS (ville) requis."),
         ("adresse_lieu_exercice", "Adresse du lieu d'exercice requise."),
         ("banque_nom", "Banque requise."),
@@ -794,7 +805,11 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
     )
     capital = str(payload.get("capital_social") or "")
     nb_actions_total = int(payload.get("nb_actions_total") or 0)
-    valeur_action = str(payload.get("valeur_nominale_action") or "")
+    # Valeur nominale d'une action : calculee (capital / nb actions) si non fournie
+    # explicitement (SCREEN-2). Le chemin de test direct peut fournir une valeur.
+    valeur_action = str(
+        payload.get("valeur_nominale_action") or ""
+    ) or calculate_nominal_value(capital, nb_actions_total)
     titre = str(payload.get("signataire_titre") or "Docteur")
 
     signataire = Person(

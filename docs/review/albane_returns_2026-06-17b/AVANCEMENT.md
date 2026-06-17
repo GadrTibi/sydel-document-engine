@@ -4,11 +4,11 @@
 ```
   ┌─ SYDEL · Retours Albane lot 2 · AVANCEMENT ────────────
   │
-  │   GLOBAL   [███░░░░░░░░░░░░░░░░░░░░░]  7/49  ·  14%
+  │   GLOBAL   [███████░░░░░░░░░░░░░░░░░]  15/49  ·  31%
   │
   │   ✅  1a· bugs isolés       4/4   [██████████]
   │   🔨  1b· bugs données P1   3/12  [██░░░░░░░░]
-  │   ⬜  2 · formulaires       0/10  [░░░░░░░░░░]
+  │   🔨  2 · formulaires       8/10  [████████░░]
   │   ⬜  3 · contenu docs      0/14  [░░░░░░░░░░]
   │   ⬜  4 · mise en forme     0/9   [░░░░░░░░░░]
   │
@@ -36,17 +36,17 @@
 - [ ] **§9.2** — « représentée par son gérant » suivi de « Docteur » + mauvaise personne (vendeur au lieu d
 - [ ] **§9.3** — Commentaires Word résiduels (Albane) non supprimés du document généré
 
-## Vague 2 · formulaires — 0/10
+## Vague 2 · formulaires — 8/10
 - [ ] **§12.1** — Appel de fonds : champ BANQUE present dans le questionnaire (a supprimer des variables)
 - [ ] **§14.1** — SPFPL : double saisie adresse (champ affiche libre + grille structuree) pour le siege ET l
-- [ ] **§18.1** — Champ 'Forme sociale (libelle)' libre et inutile dans le questionnaire civil
-- [ ] **§18.2** — Valeur nominale d'une part : champ libre au lieu d'auto-calcul (capital / nb parts)
-- [ ] **§18.3** — Champ 'Duree de la societe' a supprimer (toujours 99 ans)
-- [ ] **§18.4** — Champ 'Lieu de signature' a supprimer (utiliser la ville du siege social)
-- [ ] **§18.5** — Associe gerant : supprimer l'adresse supplementaire (reprendre l'adresse perso) ; supprime
-- [ ] **§18.6** — Profession des associes : demandee/affichee pour toutes les civiles alors que seule la SCM
-- [ ] **§SCREEN-1** — Nationalite en champ deroulant (NATIONALITY_PRESETS) a propager depuis la SELARL aux autre
-- [ ] **§SCREEN-2** — Valeur nominale d'une action/part toujours calculee auto (capital / nb actions ou parts) -
+- [x] **§18.1** — Champ 'Forme sociale (libelle)' libre et inutile dans le questionnaire civil
+- [x] **§18.2** — Valeur nominale d'une part : champ libre au lieu d'auto-calcul (capital / nb parts)
+- [x] **§18.3** — Champ 'Duree de la societe' a supprimer (toujours 99 ans)
+- [x] **§18.4** — Champ 'Lieu de signature' a supprimer (utiliser la ville du siege social)
+- [x] **§18.5** — Associe gerant : supprimer l'adresse supplementaire (reprendre l'adresse perso) ; supprime
+- [x] **§18.6** — Profession des associes : demandee/affichee pour toutes les civiles alors que seule la SCM
+- [x] **§SCREEN-1** — Nationalite en champ deroulant (NATIONALITY_PRESETS) a propager depuis la SELARL aux autre
+- [x] **§SCREEN-2** — Valeur nominale d'une action/part toujours calculee auto (capital / nb actions ou parts) -
 
 ## Vague 3 · contenu docs — 0/14
 - [ ] **§12.3** — Appel de fonds : signe par le CLIENT au lieu du conseiller SYDEL

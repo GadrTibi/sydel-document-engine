@@ -1185,12 +1185,11 @@ def test_front_routes_to_sci_slice_and_generates(tmp_path: Path, monkeypatch) ->
                 return
         raise KeyError(key)
 
+    # forme_sociale derivee (§18.1), valeur nominale calculee (§18.2), duree figee
+    # (§18.3), lieu signature = ville siege (§18.4) : ces champs ne sont plus saisis.
     society = {
         "sci_denomination": "SCI EXEMPLE",
-        "sci_forme_sociale": "societe civile immobiliere",
         "sci_capital_social": "1000",
-        "sci_valeur_nominale_part": "10",
-        "sci_duree_societe": "99",
         "sci_siege_num": "10",
         "sci_siege_voie": "rue de la Paix",
         "sci_siege_cp": "75002",
@@ -1199,8 +1198,6 @@ def test_front_routes_to_sci_slice_and_generates(tmp_path: Path, monkeypatch) ->
         "sci_banque_nom": "BANQUE",
         "sci_banque_adresse": "1 rue Banque, 75009 Paris",
         "sci_date_cloture_premier_exercice": "31 decembre 2026",
-        "sci_signature_lieu": "Paris",
-        "sci_signature_date": "15/05/2026",
         # Documents communs (hors identite du gerant : fonction/titre/decision).
         "sci_signataire_fonction": "gerant",
         "sci_signataire_titre": "Docteur",
@@ -1208,46 +1205,44 @@ def test_front_routes_to_sci_slice_and_generates(tmp_path: Path, monkeypatch) ->
     }
     for key, value in society.items():
         set_text(key, value)
+    set_text("sci_signature_date", "15/05/2026")
     app = app.run(timeout=180)
 
+    # Nationalite = deroulant (§SCREEN-1, cle _choice) ; adresse personnelle
+    # structuree (§18.5) ; profession non demandee hors SCM (§18.6) ; parts debut/fin
+    # derivees (§18.5) ; DNC = noms des parents uniquement.
     associes_text = {
         "sci_associe_0_prenom": "Jean",
         "sci_associe_0_nom": "Durand",
         "sci_associe_0_date_naissance": "1 janvier 1980",
         "sci_associe_0_ville_naissance": "Paris",
         "sci_associe_0_departement_naissance": "75",
-        "sci_associe_0_nationalite": "francaise",
         "sci_associe_0_situation_maritale": "celibataire",
-        "sci_associe_0_profession": "medecin",
-        "sci_associe_0_adresse": "1 rue Exemple, 75000 Paris",
+        "sci_associe_0_adresse_num": "1",
+        "sci_associe_0_adresse_voie": "rue Exemple",
+        "sci_associe_0_adresse_cp": "75000",
+        "sci_associe_0_adresse_ville": "Paris",
         "sci_associe_0_apport_montant": "400",
         # DNC du gerant (associe 0, coche « Dirigeant » par defaut) saisie sous lui.
         "sci_associe_0_sig_nom_pere": "Pierre Durand",
         "sci_associe_0_sig_nom_mere": "Anne Durand",
-        "sci_associe_0_sig_adresse_num": "1",
-        "sci_associe_0_sig_adresse_voie": "rue Exemple",
-        "sci_associe_0_sig_adresse_cp": "75000",
-        "sci_associe_0_sig_adresse_ville": "Paris",
         "sci_associe_1_prenom": "Alice",
         "sci_associe_1_nom": "Martin",
         "sci_associe_1_date_naissance": "2 fevrier 1982",
         "sci_associe_1_ville_naissance": "Lyon",
         "sci_associe_1_departement_naissance": "69",
-        "sci_associe_1_nationalite": "francaise",
         "sci_associe_1_situation_maritale": "celibataire",
-        "sci_associe_1_profession": "medecin",
-        "sci_associe_1_adresse": "2 rue Exemple, 69000 Lyon",
+        "sci_associe_1_adresse_num": "2",
+        "sci_associe_1_adresse_voie": "rue Exemple",
+        "sci_associe_1_adresse_cp": "69000",
+        "sci_associe_1_adresse_ville": "Lyon",
         "sci_associe_1_apport_montant": "600",
     }
     for key, value in associes_text.items():
         set_text(key, value)
     associes_numbers = {
         "sci_associe_0_nb_titres": 40,
-        "sci_associe_0_parts_debut": 1,
-        "sci_associe_0_parts_fin": 40,
         "sci_associe_1_nb_titres": 60,
-        "sci_associe_1_parts_debut": 41,
-        "sci_associe_1_parts_fin": 100,
         "sci_nb_parts_total": 100,
     }
     for key, value in associes_numbers.items():
@@ -1430,3 +1425,107 @@ def test_front_today_button_fills_date_non_selarl() -> None:
     assert next(w for w in app.text_input if str(w.key) == sig_key).value == (
         format_french_date(_date_cls.today())
     )
+
+
+# --- Retours Albane 2026-06-17 : formulaires civils ---------------------------
+
+
+def test_civil_forme_sociale_derived_from_structure() -> None:
+    # §18.1 : la forme sociale (libelle) n'est plus saisie, elle est derivee.
+    assert css.civil_forme_sociale("SCM") == "société civile de moyens"
+    assert css.civil_forme_sociale("SCI") == "société civile"
+    assert css.civil_forme_sociale("SCI IRIS") == "société civile"
+    assert css.civil_forme_sociale("SCS") == "société civile"
+
+
+def test_civil_build_derives_form_fields() -> None:
+    # SCREEN-2 / §18.2 : valeur nominale = capital / nb parts (auto).
+    # §18.1 : forme sociale derivee. §18.3 : duree figee 99. §18.4 : lieu = ville siege.
+    payload = _civil_base(
+        "SCI",
+        "sci",
+        [_pp("Jean", "Durand", 40, 1, 40, 400), _pp("Alice", "Martin", 60, 41, 100, 600)],
+    )
+    # On vide les champs derives du payload : le build doit les recalculer.
+    payload["forme_sociale"] = ""
+    payload["valeur_nominale_part"] = ""
+    payload["signature_lieu"] = ""
+    payload["duree_societe"] = ""
+    ctx = css.build_generation_context(payload)
+    assert ctx.statuts_civils.valeur_nominale_part == "10"  # 1000 / 100
+    assert ctx.statuts_civils.forme_sociale == "société civile"
+    assert ctx.statuts_civils.duree_societe == "99"
+    assert ctx.signature.lieu == payload["siege_ville"]
+
+
+def test_civil_scm_keeps_societe_civile_de_moyens() -> None:
+    # §18.1 : la SCM porte « societe civile de moyens » meme si le payload est vide.
+    payload = _civil_base(
+        "SCM",
+        "scm",
+        [_pp("Jean", "Durand", 70, 1, 70, 700), _pp("Alice", "Martin", 30, 71, 100, 300)],
+    )
+    payload["forme_sociale"] = ""
+    ctx = css.build_generation_context(payload)
+    assert ctx.statuts_civils.forme_sociale == "société civile de moyens"
+
+
+def test_repeater_assigns_cumulative_part_ranges() -> None:
+    # §18.5 : les plages parts debut/fin ne sont plus saisies, elles se derivent de
+    # l'ordre + du nombre de parts (contigues 1..N, sans trou ni chevauchement).
+    from sydel_doc_engine.domain.models import (
+        StatutsCivilsAssocie,
+        StatutsCivilsParts,
+    )
+    from sydel_doc_engine.front_app.associe_repeater import (
+        _assign_cumulative_part_ranges,
+    )
+
+    def _a(nb: int) -> StatutsCivilsAssocie:
+        return StatutsCivilsAssocie(
+            type_personne="personne_physique",
+            parts=StatutsCivilsParts(nb=nb),
+        )
+
+    associes = [_a(40), _a(35), _a(25)]
+    _assign_cumulative_part_ranges(associes)
+    assert [(a.parts.debut, a.parts.fin) for a in associes] == [(1, 40), (41, 75), (76, 100)]
+    assert associes[1].parts.plage_affichee == "41 a 75"
+
+
+def test_repeater_nationalite_dropdown_lowercased() -> None:
+    # §SCREEN-1 : nationalite en deroulant (NATIONALITY_PRESETS), sortie lowercased.
+    from streamlit.testing.v1 import AppTest
+
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=120)
+    app.selectbox(key="clean_dossier_type").set_value("SCI creation V1")
+    app = app.run(timeout=120)
+
+    # Le selectbox de nationalite de l'associe 0 existe (plus de text_input libre).
+    choice = next(
+        s for s in app.selectbox if str(s.key) == "sci_associe_0_nationalite_choice"
+    )
+    assert list(choice.options) == [
+        "Française",
+        "Belge",
+        "Portugaise",
+        "Suisse",
+        "Luxembourgeoise",
+        "Autre",
+    ]
+    assert not any(str(w.key) == "sci_associe_0_nationalite" for w in app.text_input)
+
+
+def test_civil_non_scm_does_not_collect_profession() -> None:
+    # §18.6 : profession demandee uniquement pour la SCM. SCI : pas de champ.
+    from streamlit.testing.v1 import AppTest
+
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=120)
+    app.selectbox(key="clean_dossier_type").set_value("SCI creation V1")
+    app = app.run(timeout=120)
+    assert not any(str(w.key) == "sci_associe_0_profession" for w in app.text_input)
+
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=120)
+    app.selectbox(key="clean_dossier_type").set_value("SCM creation V1")
+    app = app.run(timeout=120)
+    assert any(str(w.key) == "scm_associe_0_profession" for w in app.text_input)

@@ -44,6 +44,7 @@ from sydel_doc_engine.domain.models import (
 from sydel_doc_engine.front_app import common_creation as cc
 from sydel_doc_engine.front_app.associe_repeater import RepeaterConfig, render_associe_repeater
 from sydel_doc_engine.front_app.field_derivations import (
+    calculate_nominal_value,
     format_french_date,
     number_words_from_value,
     parse_french_date,
@@ -56,6 +57,25 @@ CIVIL_TYPE_BY_STRUCTURE: dict[str, tuple[str, str]] = {
     "SCS": ("scs", "DOC-019"),
     "SCM": ("scm", "DOC-025"),
 }
+
+# Libelle de forme sociale DERIVE automatiquement de la structure (§18.1, retours
+# Albane 2026-06-17) : le redacteur ne le saisit plus. La SCM est une societe
+# civile de moyens ; les autres civiles (SCI, SCI IRIS, SCS) sont des societes
+# civiles classiques.
+CIVIL_FORME_SOCIALE_BY_STRUCTURE: dict[str, str] = {
+    "SCM": "société civile de moyens",
+    "SCI": "société civile",
+    "SCI IRIS": "société civile",
+    "SCS": "société civile",
+}
+
+
+def civil_forme_sociale(structure: str) -> str:
+    """Libelle de forme sociale derive de la structure (§18.1).
+
+    SCM -> « societe civile de moyens » ; toute autre civile -> « societe civile ».
+    """
+    return CIVIL_FORME_SOCIALE_BY_STRUCTURE.get(structure, "société civile")
 
 # Bornes du repeater d'associes par type (A1 : nommees, AUCUN changement de valeur).
 # SCI / SCM : 1 associe minimum ; SCI IRIS / SCS : 2 (structures a deux roles ou
@@ -146,15 +166,23 @@ def render_civil_form(structure: str) -> dict[str, object]:
     st.subheader("Donnees a saisir")
     st.markdown(f"**Societe ({structure})**")
 
-    col_a, col_b = st.columns(2)
-    denomination = _text(col_a, prefix, "denomination", "Denomination sociale")
-    forme_sociale = _text(col_b, prefix, "forme_sociale", "Forme sociale (libelle)")
+    # Forme sociale (libelle) : DERIVEE de la structure, plus saisie (§18.1).
+    forme_sociale = civil_forme_sociale(structure)
+    denomination = _text(st, prefix, "denomination", "Denomination sociale")
     col_c, col_d = st.columns(2)
     capital_social = _text(col_c, prefix, "capital_social", "Capital social")
     nb_parts_total = _int(col_d, prefix, "nb_parts_total", "Nombre total de parts")
-    col_e, col_f = st.columns(2)
-    valeur_nominale = _text(col_e, prefix, "valeur_nominale_part", "Valeur nominale d'une part")
-    duree = _text(col_f, prefix, "duree_societe", "Duree (annees)")
+    # Valeur nominale d'une part : TOUJOURS calculee (capital / nb parts), jamais
+    # saisie (retours Albane 2026-06-17, SCREEN-2 / §18.2). Champ d'affichage seul.
+    # Duree de la societe : supprimee du questionnaire, toujours 99 ans (§18.3).
+    valeur_nominale = calculate_nominal_value(capital_social, nb_parts_total)
+    st.text_input(
+        "Valeur nominale d'une part (calculee)",
+        value=valeur_nominale,
+        disabled=True,
+        key=f"{prefix}_valeur_nominale_part_display",
+    )
+    duree = "99"
 
     st.markdown("Siege social")
     col_g, col_h, col_i, col_j = st.columns(4)
@@ -173,10 +201,10 @@ def render_civil_form(structure: str) -> dict[str, object]:
     )
 
     st.markdown("**Signature**")
-    col_m, col_n = st.columns(2)
-    signature_lieu = _text(col_m, prefix, "signature_lieu", "Lieu de signature")
-    with col_n:
-        signature_date = _date_input(prefix, "signature_date", "Date de signature")
+    # Lieu de signature : supprime du questionnaire ; on reprend automatiquement la
+    # ville du siege social (retours Albane 2026-06-17, §18.4).
+    signature_lieu = siege_ville
+    signature_date = _date_input(prefix, "signature_date", "Date de signature")
 
     role_options: tuple[str, ...] = ()
     if structure == "SCS":
@@ -192,6 +220,8 @@ def render_civil_form(structure: str) -> dict[str, object]:
             allow_personne_morale=True,
             role_statutaire_options=role_options,
             collect_dirigeant=True,
+            # Profession demandee UNIQUEMENT pour la SCM (§18.6).
+            collect_profession=structure == "SCM",
         )
     )
     gerant_index = _derive_gerant_index(associes, prefix)
@@ -375,9 +405,10 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:
     nb_parts_total = int(payload.get("nb_parts_total") or 0)
     if nb_parts_total < 1:
         blockers.append("Nombre total de parts requis et superieur a zero.")
-    if not str(payload.get("valeur_nominale_part") or "").strip():
-        blockers.append("Valeur nominale d'une part requise.")
+    # Valeur nominale : calculee (capital / nb parts), plus saisie (§18.2). On bloque
+    # donc sur capital + nb parts (deja valides), jamais sur la valeur elle-meme.
     if not str(payload.get("siege_ville") or "").strip():
+        # Le lieu de signature reprend la ville du siege (§18.4) : bloquer sur siege.
         blockers.append("Ville du siege requise.")
     if not str(payload.get("ville_rcs") or "").strip():
         blockers.append("Ville RCS requise.")
@@ -385,8 +416,6 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:
         blockers.append("Banque de depot des fonds requise.")
     if not str(payload.get("date_cloture_premier_exercice") or "").strip():
         blockers.append("Date de cloture du premier exercice requise.")
-    if not str(payload.get("signature_lieu") or "").strip():
-        blockers.append("Lieu de signature requis.")
     if payload.get("signature_date") is None:
         blockers.append("Date de signature requise.")
     associes = payload.get("associes") or []
@@ -562,19 +591,21 @@ def _derive_gerant_index(associes: list[StatutsCivilsAssocie], prefix: str) -> i
 def _collect_gerant_sig(
     associes: list[StatutsCivilsAssocie], gerant_index: int, prefix: str
 ) -> dict[str, object]:
-    """Filiation + adresse du gerant (saisies sous l'associe coche) -> cles
-    signataire_*. L'identite (nom, naissance, nationalite) vient deja de l'associe
-    via _common_docs_input ; on ne mappe ici que la DNC propre au gerant."""
+    """Filiation du gerant (saisie sous l'associe coche) + adresse REPRISE de
+    l'adresse personnelle du meme associe -> cles signataire_*. L'adresse du gerant
+    n'est plus saisie a part (§18.5) : on reutilise les champs num/voie/cp/ville de
+    son adresse personnelle. L'identite (nom, naissance, nationalite) vient deja de
+    l'associe via _common_docs_input ; on ne mappe ici que la DNC propre au gerant."""
     if not (0 <= gerant_index < len(associes)):
         return {}
     p = f"{prefix}_associe_{gerant_index}"
     return {
         "signataire_nom_pere": str(st.session_state.get(f"{p}_sig_nom_pere") or ""),
         "signataire_nom_mere": str(st.session_state.get(f"{p}_sig_nom_mere") or ""),
-        "signataire_adresse_num": str(st.session_state.get(f"{p}_sig_adresse_num") or ""),
-        "signataire_adresse_voie": str(st.session_state.get(f"{p}_sig_adresse_voie") or ""),
-        "signataire_adresse_cp": str(st.session_state.get(f"{p}_sig_adresse_cp") or ""),
-        "signataire_adresse_ville": str(st.session_state.get(f"{p}_sig_adresse_ville") or ""),
+        "signataire_adresse_num": str(st.session_state.get(f"{p}_adresse_num") or ""),
+        "signataire_adresse_voie": str(st.session_state.get(f"{p}_adresse_voie") or ""),
+        "signataire_adresse_cp": str(st.session_state.get(f"{p}_adresse_cp") or ""),
+        "signataire_adresse_ville": str(st.session_state.get(f"{p}_adresse_ville") or ""),
     }
 
 
@@ -598,10 +629,22 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
     )
     capital = str(payload.get("capital_social") or "")
     nb_parts = int(payload.get("nb_parts_total") or 0)
+    # Valeurs DERIVEES (retours Albane 2026-06-17) : valeur nominale auto-calculee
+    # (§18.2), forme sociale derivee de la structure (§18.1), duree figee a 99 ans
+    # (§18.3), lieu de signature = ville du siege (§18.4). On honore une valeur
+    # explicite deja presente dans le payload (chemin de test direct), sinon on
+    # derive.
+    valeur_nominale_part = str(
+        payload.get("valeur_nominale_part") or ""
+    ) or calculate_nominal_value(capital, nb_parts)
+    forme_sociale = str(payload.get("forme_sociale") or "") or civil_forme_sociale(structure)
+    signature_lieu = str(payload.get("signature_lieu") or "") or str(
+        payload.get("siege_ville") or ""
+    )
 
     statuts_civils = StatutsCivilsContext(
         type=statuts_type,
-        forme_sociale=str(payload.get("forme_sociale") or structure),
+        forme_sociale=forme_sociale,
         mention_capital_variable="a capital variable",
         capital_social=capital,
         capital_social_lettres=number_words_from_value(capital),
@@ -615,13 +658,11 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         else None,
         nb_parts_total=nb_parts,
         nb_parts_total_lettres=number_words_from_value(nb_parts),
-        valeur_nominale_part=str(payload.get("valeur_nominale_part") or ""),
-        valeur_nominale_part_lettres=number_words_from_value(
-            payload.get("valeur_nominale_part")
-        )
-        or str(payload.get("valeur_nominale_part") or ""),
+        valeur_nominale_part=valeur_nominale_part,
+        valeur_nominale_part_lettres=number_words_from_value(valeur_nominale_part)
+        or valeur_nominale_part,
         plage_parts_totale=f"1 a {nb_parts}" if nb_parts else None,
-        duree_societe=str(payload.get("duree_societe") or "99"),
+        duree_societe="99",
         capital_depot=StatutsCivilsCapitalDepot(
             banque_nom=str(payload.get("banque_nom") or ""),
             banque_adresse=str(payload.get("banque_adresse") or ""),
@@ -643,13 +684,18 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
     if option_is:
         _apply_option_is_qualite_associe(associes)
 
-    common = _common_docs_input(payload, structure)
+    common = _common_docs_input(
+        payload,
+        structure,
+        signature_lieu=signature_lieu,
+        valeur_nominale_part=valeur_nominale_part,
+    )
     company = Company(
         denomination=str(payload.get("denomination") or ""),
         denomination_courte=str(payload.get("denomination") or ""),
-        forme_sociale=str(payload.get("forme_sociale") or structure),
+        forme_sociale=forme_sociale,
         forme_sociale_affichage=structure,
-        forme_juridique=str(payload.get("forme_sociale") or structure),
+        forme_juridique=forme_sociale,
         capital=capital,
         capital_social=capital,
         capital_variable=True,
@@ -667,7 +713,7 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         impots=_centre_impots(payload) if option_is else None,
         personne_signataire=cc.founder_person(common),
         signature=Signature(
-            lieu=str(payload.get("signature_lieu") or ""),
+            lieu=signature_lieu,
             date=payload.get("signature_date"),
             nombre_exemplaires=common.signature_nombre_exemplaires,
         ),
@@ -777,7 +823,13 @@ def _apply_option_is_qualite_associe(associes: list[StatutsCivilsAssocie]) -> No
         associe.parts.qualite_associe = "associée" if feminin else "associé"
 
 
-def _common_docs_input(payload: dict[str, object], structure: str) -> cc.CommonDocsInput:
+def _common_docs_input(
+    payload: dict[str, object],
+    structure: str,
+    *,
+    signature_lieu: str = "",
+    valeur_nominale_part: str = "",
+) -> cc.CommonDocsInput:
     signataire = _signataire_associe(payload)
     profession = ""
     profession_pluriel = ""
@@ -823,14 +875,15 @@ def _common_docs_input(payload: dict[str, object], structure: str) -> cc.CommonD
         founder=founder,
         capital_social=str(payload.get("capital_social") or ""),
         nb_parts_total=int(payload.get("nb_parts_total") or 0),
-        valeur_nominale_part=str(payload.get("valeur_nominale_part") or ""),
+        valeur_nominale_part=valeur_nominale_part
+        or str(payload.get("valeur_nominale_part") or ""),
         siege=cc.CompanyAddress(
             num_voie=str(payload.get("siege_num") or ""),
             voie=str(payload.get("siege_voie") or ""),
             cp=str(payload.get("siege_cp") or ""),
             ville=str(payload.get("siege_ville") or ""),
         ),
-        signature_lieu=str(payload.get("signature_lieu") or ""),
+        signature_lieu=signature_lieu or str(payload.get("signature_lieu") or ""),
         signature_date=payload.get("signature_date"),
         decision_date=payload.get("decision_date"),
         signature_nombre_exemplaires="quatre",

@@ -210,6 +210,9 @@ def _scm_associe_prefill_values(
 ) -> dict[str, object]:
     """Cles session_state d'un associe SCM (personne physique) pour le prefill."""
     p = f"scm_associe_{index}"
+    # Adresse structuree (§18.5) + nationalite deroulant (cle _choice) + plus de
+    # parts debut/fin (derivation cumulative). Profession conservee (SCM, §18.6).
+    num, voie, cp, ville_adr = _split_demo_address(adresse)
     return {
         f"{p}_type": "personne_physique",
         f"{p}_civilite": civilite,
@@ -218,14 +221,15 @@ def _scm_associe_prefill_values(
         f"{p}_date_naissance": naissance,
         f"{p}_ville_naissance": ville,
         f"{p}_departement_naissance": departement,
-        f"{p}_nationalite": "francaise",
+        f"{p}_nationalite_choice": "Française",
         f"{p}_situation_maritale": "celibataire",
         f"{p}_profession": "Medecin",
-        f"{p}_adresse": adresse,
+        f"{p}_adresse_num": num,
+        f"{p}_adresse_voie": voie,
+        f"{p}_adresse_cp": cp,
+        f"{p}_adresse_ville": ville_adr,
         f"{p}_apport_montant": apport,
         f"{p}_nb_titres": nb,
-        f"{p}_parts_debut": debut,
-        f"{p}_parts_fin": fin,
     }
 
 
@@ -236,11 +240,8 @@ def _prefill_scm_test_data() -> None:
     """
     values: dict[str, object] = {
         "scm_denomination": "SCM DES DOCTEURS EXEMPLE",
-        "scm_forme_sociale": "societe civile de moyens",
         "scm_capital_social": "1000",
         "scm_nb_parts_total": 100,
-        "scm_valeur_nominale_part": "10",
-        "scm_duree_societe": "99",
         "scm_siege_num": "10",
         "scm_siege_voie": "rue de la Paix",
         "scm_siege_cp": "75002",
@@ -249,7 +250,6 @@ def _prefill_scm_test_data() -> None:
         "scm_banque_nom": "BANQUE EXEMPLE",
         "scm_banque_adresse": "1 rue Banque, 75009 Paris",
         "scm_date_cloture_premier_exercice": "31 decembre 2026",
-        "scm_signature_lieu": "Paris",
         "scm_signature_date": "15/05/2026",
         "scm_signataire_fonction": "gerant",
         "scm_signataire_titre": "Docteur",
@@ -306,15 +306,13 @@ def _civil_gerant_dnc_prefill(prefix: str, index: int) -> dict[str, object]:
     """Coche l'associe `index` comme gerant + sa DNC (filiation/adresse), saisies
     sous lui (reunion 2026-06-09). Donnees fictives. Le gerant designe alimente
     les cles signataire_* via _collect_gerant_sig."""
+    # Adresse du gerant : plus saisie ici (§18.5), reprise de l'adresse personnelle
+    # de l'associe. On ne pose que la filiation + la case dirigeant.
     p = f"{prefix}_associe_{index}"
     return {
         f"{p}_is_dirigeant": True,
         f"{p}_sig_nom_pere": "Pierre Durand",
         f"{p}_sig_nom_mere": "Anne Durand",
-        f"{p}_sig_adresse_num": "1",
-        f"{p}_sig_adresse_voie": "rue Exemple",
-        f"{p}_sig_adresse_cp": "75000",
-        f"{p}_sig_adresse_ville": "Paris",
     }
 
 
@@ -326,13 +324,14 @@ def _civil_society_prefill(
 ) -> dict[str, object]:
     """Cles societe + documents communs (hors identite du gerant) pour un dossier
     civil de test (fictif). La filiation/adresse du gerant est saisie sous lui."""
+    # forme_sociale derivee (§18.1), valeur nominale calculee (§18.2), duree figee
+    # (§18.3), lieu de signature = ville siege (§18.4) : ces champs ne sont plus des
+    # widgets saisis -> plus de cle de prefill pour eux.
+    del forme_sociale
     return {
         f"{prefix}_denomination": denomination,
-        f"{prefix}_forme_sociale": forme_sociale,
         f"{prefix}_capital_social": "1000",
         f"{prefix}_nb_parts_total": 100,
-        f"{prefix}_valeur_nominale_part": "10",
-        f"{prefix}_duree_societe": "99",
         f"{prefix}_siege_num": "10",
         f"{prefix}_siege_voie": "rue de la Paix",
         f"{prefix}_siege_cp": "75002",
@@ -341,7 +340,6 @@ def _civil_society_prefill(
         f"{prefix}_banque_nom": "BANQUE EXEMPLE",
         f"{prefix}_banque_adresse": "1 rue Banque, 75009 Paris",
         f"{prefix}_date_cloture_premier_exercice": "31 decembre 2026",
-        f"{prefix}_signature_lieu": "Paris",
         f"{prefix}_signature_date": "15/05/2026",
         f"{prefix}_signataire_fonction": "gerant",
         f"{prefix}_signataire_titre": "Docteur",
@@ -367,6 +365,10 @@ def _civil_pp_associe_prefill(
     role: str | None = None,
 ) -> dict[str, object]:
     p = f"{prefix}_associe_{index}"
+    # Adresse personnelle STRUCTUREE (§18.5) : on derive num/voie/cp/ville depuis
+    # l'adresse fictive « 1 rue Exemple, 75000 Paris ». parts debut/fin ne sont plus
+    # saisis (derivation cumulative). Nationalite = deroulant (cle _choice).
+    num, voie, cp, ville_adr = _split_demo_address(adresse)
     values: dict[str, object] = {
         f"{p}_type": "personne_physique",
         f"{p}_civilite": civilite,
@@ -375,18 +377,33 @@ def _civil_pp_associe_prefill(
         f"{p}_date_naissance": naissance,
         f"{p}_ville_naissance": ville,
         f"{p}_departement_naissance": departement,
-        f"{p}_nationalite": "francaise",
+        f"{p}_nationalite_choice": "Française",
         f"{p}_situation_maritale": "celibataire",
         f"{p}_profession": "Medecin",
-        f"{p}_adresse": adresse,
+        f"{p}_adresse_num": num,
+        f"{p}_adresse_voie": voie,
+        f"{p}_adresse_cp": cp,
+        f"{p}_adresse_ville": ville_adr,
         f"{p}_apport_montant": apport,
         f"{p}_nb_titres": nb,
-        f"{p}_parts_debut": debut,
-        f"{p}_parts_fin": fin,
     }
     if role is not None:
         values[f"{p}_role"] = role
     return values
+
+
+def _split_demo_address(adresse: str) -> tuple[str, str, str, str]:
+    """Eclate « 1 rue Exemple, 75000 Paris » en (num, voie, cp, ville) pour le prefill.
+
+    Donnees fictives uniquement (bouton « donnees de test »). Best-effort : ce qui
+    ne se parse pas tombe en voie/ville pour rester non bloquant.
+    """
+    rue_part, _, loc_part = adresse.partition(",")
+    rue_part = rue_part.strip()
+    loc_part = loc_part.strip()
+    num, _, voie = rue_part.partition(" ")
+    cp, _, ville = loc_part.partition(" ")
+    return num.strip(), voie.strip(), cp.strip(), ville.strip()
 
 
 def _civil_pm_associe_prefill(
@@ -406,8 +423,9 @@ def _civil_pm_associe_prefill(
     debut: int,
     fin: int,
 ) -> dict[str, object]:
+    # Profession PM : widget SCM uniquement (§18.6) ; parts debut/fin derivees (§18.5).
     p = f"{prefix}_associe_{index}"
-    return {
+    values: dict[str, object] = {
         f"{p}_type": "personne_morale",
         f"{p}_denomination": denomination,
         f"{p}_forme_juridique": forme_juridique,
@@ -415,16 +433,16 @@ def _civil_pm_associe_prefill(
         f"{p}_siege": siege,
         f"{p}_numero_rcs": numero_rcs,
         f"{p}_ville_rcs": ville_rcs,
-        f"{p}_profession": "Medecin",
         f"{p}_rep_civilite": "Monsieur",
         f"{p}_rep_prenom": rep_prenom,
         f"{p}_rep_nom": rep_nom,
         f"{p}_rep_fonction": "gerant",
         f"{p}_apport_montant": apport,
         f"{p}_nb_titres": nb,
-        f"{p}_parts_debut": debut,
-        f"{p}_parts_fin": fin,
     }
+    if prefix == "scm":
+        values[f"{p}_profession"] = "Medecin"
+    return values
 
 
 def _commit_civil_prefill(values: dict[str, object]) -> None:

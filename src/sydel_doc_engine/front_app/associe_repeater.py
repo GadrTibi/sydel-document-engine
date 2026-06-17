@@ -25,6 +25,7 @@ from sydel_doc_engine.domain.models import (
     StatutsCivilsRepresentant,
 )
 from sydel_doc_engine.front_app.field_derivations import (
+    NATIONALITY_PRESETS,
     derive_gender_from_civilite,
     number_words_from_value,
 )
@@ -44,6 +45,10 @@ class RepeaterConfig:
     nb_defaut: int = 2
     allow_personne_morale: bool = True
     role_statutaire_options: tuple[str, ...] = ()  # ex: ("commandite", "commanditaire")
+    # Profession des associes : demandee/affichee UNIQUEMENT pour la SCM (§18.6,
+    # retours Albane 2026-06-17). Les autres civiles (SCI, SCI IRIS, SCS) ne la
+    # collectent plus (le generateur civil generique ne la rend pas).
+    collect_profession: bool = True
     # Pour les SEL d'exercice (SELAS), on collecte des champs ordinaux + qualite capital.
     collect_exercice_fields: bool = False
     # Pour les types a gerant (civils) : case « Dirigeant (gerant) » par associe
@@ -91,7 +96,34 @@ def render_associe_repeater(config: RepeaterConfig) -> list[StatutsCivilsAssocie
     associes: list[StatutsCivilsAssocie] = []
     for index in range(nombre):
         associes.append(_render_one_associe(config, index))
+    _assign_cumulative_part_ranges(associes)
     return associes
+
+
+def _assign_cumulative_part_ranges(associes: list[StatutsCivilsAssocie]) -> None:
+    """Attribue des plages de parts cumulatives a partir du nombre par associe.
+
+    Les champs « parts debut / fin » ne sont plus saisis (§18.5, retours Albane
+    2026-06-17) : la numerotation se derive de l'ordre des associes et de leur
+    nombre de parts. SCI IRIS exige debut/fin (generateur + groupes de resultat) ;
+    on les calcule donc ici, plages contigues 1..N sans trou ni chevauchement.
+    """
+    cursor = 1
+    for associe in associes:
+        if associe.parts is None:
+            continue
+        nb = associe.parts.nb or 0
+        if nb <= 0:
+            associe.parts.debut = None
+            associe.parts.fin = None
+            associe.parts.plage_affichee = None
+            continue
+        debut = cursor
+        fin = cursor + nb - 1
+        associe.parts.debut = debut
+        associe.parts.fin = fin
+        associe.parts.plage_affichee = f"{debut} a {fin}"
+        cursor = fin + 1
 
 
 def _render_one_associe(config: RepeaterConfig, index: int) -> StatutsCivilsAssocie:
@@ -128,6 +160,25 @@ def _text(prefix: str, field: str, label: str, *, container=st) -> str:
     return str(container.text_input(label, key=key)).strip()
 
 
+def render_nationalite_selectbox(prefix: str, *, container=st) -> str:
+    """Nationalite en deroulant (NATIONALITY_PRESETS), patron SELARL (§SCREEN-1).
+
+    Cle `{prefix}_nationalite_choice` (selectbox) + `{prefix}_nationalite_other`
+    (saisie libre si « Autre »). Sortie lowercased pour rester compatible avec le
+    mapping existant (l'associe stocke `nationalite` en minuscules).
+    """
+    choice_key = f"{prefix}_nationalite_choice"
+    _seed(choice_key, NATIONALITY_PRESETS[0])
+    choice = container.selectbox("Nationalite", NATIONALITY_PRESETS, key=choice_key)
+    if choice == "Autre":
+        return _text(prefix, "nationalite_other", "Nationalite autre", container=container)
+    return str(choice).lower()
+
+
+def _render_nationalite(prefix: str, *, container=st) -> str:
+    return render_nationalite_selectbox(prefix, container=container)
+
+
 def _int(prefix: str, field: str, label: str, *, container=st) -> int:
     key = f"{prefix}_{field}"
     _seed(key, 0)
@@ -153,42 +204,42 @@ def _parts_block(
         # SEL d'exercice (SELAS) : titres = actions, qualite capital exercante / non.
         return apport, StatutsCivilsParts(), nb_titres
 
-    col_c, col_d = st.columns(2)
-    debut = _int(prefix, "parts_debut", f"{unite.capitalize()} debut", container=col_c)
-    fin = _int(prefix, "parts_fin", f"{unite.capitalize()} fin", container=col_d)
-    plage = f"{debut} a {fin}" if debut and fin else None
+    # Plages « parts debut / fin » : plus saisies (§18.5) ; derivees ensuite de
+    # l'ordre + du nombre via _assign_cumulative_part_ranges. On ne collecte ici
+    # que les parts souscrites (nb_titres).
     parts = StatutsCivilsParts(
         nb=nb_titres,
         nb_lettres=number_words_from_value(nb_titres),
-        plage_affichee=plage,
-        debut=debut or None,
-        fin=fin or None,
         qualite_associe=role_statutaire,
     )
     return apport, parts, nb_titres
 
 
+def _compose_address_display(num: str, voie: str, cp: str, ville: str) -> str:
+    """Compose « 10 rue de la Paix, 75002 Paris » a partir des champs structures."""
+    rue = f"{num} {voie}".strip()
+    loc = f"{cp} {ville}".strip()
+    parts = [p for p in (rue, loc) if p]
+    return ", ".join(parts)
+
+
 def _render_dirigeant_civil(prefix: str, index: int) -> None:
-    """Case « Dirigeant (gerant) » + champs DNC du gerant designe (civils).
+    """Case « Dirigeant (gerant) » + filiation du gerant designe (civils).
 
     Le gerant est un associe ; on le designe par une case et on saisit SOUS lui
-    les champs de la declaration de non-condamnation (filiation + adresse perso
-    structuree). A defaut, le 1er associe physique est gerant (historique). Les
-    champs ne sont demandes que pour le gerant designe (reunion 2026-06-09).
+    les NOMS DES PARENTS de la declaration de non-condamnation. L'ADRESSE du gerant
+    est REPRISE de l'adresse personnelle deja saisie pour cet associe (§18.5,
+    retours Albane 2026-06-17 : plus d'adresse supplementaire). A defaut, le 1er
+    associe physique est gerant (historique).
     """
     dirigeant_key = f"{prefix}_is_dirigeant"
     _seed(dirigeant_key, index == 0)
     if not st.checkbox("Dirigeant (gerant)", key=dirigeant_key):
         return
-    st.caption("Declaration de non-condamnation du gerant (filiation + adresse personnelle)")
+    st.caption("Declaration de non-condamnation du gerant (noms des parents)")
     col_a, col_b = st.columns(2)
     _text(prefix, "sig_nom_pere", "Nom du pere", container=col_a)
     _text(prefix, "sig_nom_mere", "Nom de la mere", container=col_b)
-    col_c, col_d, col_e, col_f = st.columns(4)
-    _text(prefix, "sig_adresse_num", "No", container=col_c)
-    _text(prefix, "sig_adresse_voie", "Voie", container=col_d)
-    _text(prefix, "sig_adresse_cp", "CP", container=col_e)
-    _text(prefix, "sig_adresse_ville", "Ville", container=col_f)
 
 
 def _render_personne_physique(
@@ -214,10 +265,34 @@ def _render_personne_physique(
     )
 
     col_g, col_h = st.columns(2)
-    nationalite = _text(prefix, "nationalite", "Nationalite", container=col_g)
+    nationalite = _render_nationalite(prefix, container=col_g)
     situation = _text(prefix, "situation_maritale", "Situation matrimoniale", container=col_h)
-    profession = _text(prefix, "profession", "Profession")
-    adresse = _text(prefix, "adresse", "Adresse personnelle (affichee)")
+    # Profession : SCM uniquement (§18.6). Hors SCM, aucun champ ni valeur.
+    profession = _text(prefix, "profession", "Profession") if config.collect_profession else ""
+
+    # Adresse personnelle STRUCTUREE (§18.5) : une seule adresse par associe, reprise
+    # telle quelle pour la DNC du gerant (plus de bloc adresse separe). Le display
+    # affichee alimente les statuts, les champs num/voie/cp/ville la DNC.
+    st.caption("Adresse personnelle")
+    col_an, col_av, col_ac, col_al = st.columns(4)
+    adresse_num = _text(prefix, "adresse_num", "No", container=col_an)
+    adresse_voie = _text(prefix, "adresse_voie", "Voie", container=col_av)
+    adresse_cp = _text(prefix, "adresse_cp", "CP", container=col_ac)
+    adresse_ville = _text(prefix, "adresse_ville", "Ville", container=col_al)
+    adresse_affichee = _compose_address_display(
+        adresse_num, adresse_voie, adresse_cp, adresse_ville
+    )
+    adresse_perso = (
+        Address(
+            num_voie=adresse_num,
+            voie=adresse_voie,
+            cp=adresse_cp,
+            ville=adresse_ville,
+            adresse_affichee=adresse_affichee,
+        )
+        if adresse_affichee
+        else None
+    )
 
     apport, parts, _nb = _parts_block(config, prefix, role_statutaire)
 
@@ -238,7 +313,8 @@ def _render_personne_physique(
         nationalite=nationalite or None,
         profession=profession or None,
         situation_maritale=situation or None,
-        adresse_personnelle_affichee=adresse or None,
+        adresse_personnelle=adresse_perso,
+        adresse_personnelle_affichee=adresse_affichee or None,
         apport=apport,
         parts=parts,
     )
@@ -262,7 +338,12 @@ def _render_personne_morale(
     col_c, col_d = st.columns(2)
     numero_rcs = _text(prefix, "numero_rcs", "Numero RCS", container=col_c)
     ville_rcs = _text(prefix, "ville_rcs", "RCS (ville)", container=col_d)
-    profession = _text(prefix, "profession", "Profession (personne morale)")
+    # Profession : SCM uniquement (§18.6).
+    profession = (
+        _text(prefix, "profession", "Profession (personne morale)")
+        if config.collect_profession
+        else ""
+    )
 
     st.markdown("Representant legal")
     col_e, col_f, col_g, col_h = st.columns(4)
