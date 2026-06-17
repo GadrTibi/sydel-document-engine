@@ -809,3 +809,28 @@ def test_compromis_medical_has_no_comments_noop(tmp_path: Path) -> None:
     parts = _docx_part_names(out)
     assert not any("comment" in name.lower() for name in parts)
     _assert_no_residual_tokens(_docx_text(out))
+
+
+def test_compromis_dentaire_filled_fields_lose_highlight(tmp_path: Path) -> None:
+    # 9.1 : un champ rempli par une vraie valeur perd le surlignage jaune du
+    # modele. Tous champs renseignes -> AUCUN run surligne ne doit subsister.
+    ctx = _context(etape="compromis", type_cabinet="dentaire")
+    out = CompromisCessionCabinetDentaireGenerator().generate(ctx, tmp_path)
+
+    highlighted = _docx_highlighted_run_texts(out)
+    # Aucun run rempli (texte non vide) ne reste surligne.
+    assert [t for t in highlighted if t.strip()] == []
+
+
+def test_compromis_dentaire_empty_optional_field_keeps_highlight(tmp_path: Path) -> None:
+    # 9.1 : une zone laissee VIDE volontairement (option non saisie, ex.
+    # telephone) GARDE le surlignage jaune (mention a completer a la main).
+    ctx = _context(etape="compromis", type_cabinet="dentaire")
+    cabinet = ctx.cession.cabinet.model_copy(update={"telephone": None})
+    ctx = _with_cession_updates(ctx, cabinet=cabinet)
+    out = CompromisCessionCabinetDentaireGenerator().generate(ctx, tmp_path)
+
+    highlighted = _docx_highlighted_run_texts(out)
+    # Le seul run surligne restant est la zone vide a completer (telephone).
+    assert [t for t in highlighted if t.strip()] == []
+    assert any(t == "" for t in highlighted)

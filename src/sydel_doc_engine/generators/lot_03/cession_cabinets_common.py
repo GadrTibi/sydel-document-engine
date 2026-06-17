@@ -285,13 +285,24 @@ def render_cession_from_template(
     for paragraph in _iter_all_paragraphs(document):
         for run in paragraph.runs:
             text = run.text
-            if "[" not in text:
-                continue
-            for token, value in replacements.items():
-                if token in text:
-                    text = text.replace(token, value)
-            if text != run.text:
-                run.text = text
+            had_token = "[" in text
+            if had_token:
+                for token, value in replacements.items():
+                    if token in text:
+                        text = text.replace(token, value)
+                if text != run.text:
+                    run.text = text
+            # 9.1 : retirer le surlignage du modele d'un run REMPLI, sans jamais
+            # toucher une zone encore a completer. Cas, par run :
+            #  - run-token rempli par une vraie valeur (plus de token, texte non
+            #    vide) -> de-surligne (champ complete) ;
+            #  - run-token rendu VIDE (option non saisie) -> GARDE le jaune
+            #    (zone a completer a la main, retours 9.1) ;
+            #  - run statique surligne du modele (jamais de token : ponctuation,
+            #    espace, texte fige) -> de-surligne (ce n'est pas un champ).
+            still_has_token = "[" in run.text
+            if not still_has_token and (run.text.strip() or not had_token):
+                _clear_run_highlight(run)
 
     if gender_pairs:
         for paragraph in _iter_all_paragraphs(document):
@@ -330,6 +341,20 @@ _COMMENT_BODY_TAGS = (
     "w:commentRangeEnd",
     "w:commentReference",
 )
+
+
+def _clear_run_highlight(run) -> None:
+    """Retire le surlignage (w:highlight) d'un run rempli (retours 9.1).
+
+    Supprime l'element w:highlight de rPr s'il existe. No-op si le run n'est pas
+    surligne. Manipulation XML directe : python-docx n'expose pas la suppression
+    propre du highlight (poser AUTO laisserait un w:highlight w:val=\"none\").
+    """
+    rpr = run._element.find(qn("w:rPr"))
+    if rpr is None:
+        return
+    for highlight in rpr.findall(qn("w:highlight")):
+        rpr.remove(highlight)
 
 
 def _strip_word_comments(document) -> None:
