@@ -439,7 +439,9 @@ def test_clean_front_cession_form_returns_none_without_flag() -> None:
         ordre={},
         generation={},
     )
-    scm_context = shell._render_scm_cession_form(False, praticien={})
+    scm_context = shell._render_scm_cession_form(
+        False, praticien={}, societe={}, profession_label="", ordre={}
+    )
 
     assert cession_context is None
     assert bail_context is None

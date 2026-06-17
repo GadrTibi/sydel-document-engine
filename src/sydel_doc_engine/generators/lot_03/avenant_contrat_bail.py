@@ -55,13 +55,17 @@ class AvenantContratBailGenerator:
         docx = new_document(style_profile=BAIL_COMPACT_STYLE_PROFILE)
         # Retour Albane 2026-06-17 (ticket lot 2, §10.1) : la date de l'encadre doit
         # etre celle du bail d'origine (meme variable que l'article 1), pas la date
-        # de signature de l'avenant.
-        date_bail_origine = format_display_date(
-            bail.date_signature_origine, "bail.date_signature_origine"
+        # de signature de l'avenant. Tolere le vide comme l'article 1 (date d'origine
+        # facultative) : pas de date fabriquee, pas de « du » orphelin.
+        date_bail_origine = _display_date_or_empty(bail.date_signature_origine)
+        titre_avenant = (
+            f"Avenant n°1 au bail du {date_bail_origine}"
+            if date_bail_origine
+            else "Avenant n°1 au bail"
         )
         add_framed_title(
             docx,
-            [f"Avenant n°1 au bail du {date_bail_origine}"],
+            [titre_avenant],
             style_profile=BAIL_COMPACT_STYLE_PROFILE,
         )
         _add_parties(docx, bailleur, locataire)

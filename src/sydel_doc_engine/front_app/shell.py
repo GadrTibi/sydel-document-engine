@@ -970,6 +970,9 @@ def _render_data_entry_zone(dossier_type: DossierTypeOption) -> CleanDataEntry:
     scm_cession_context = _render_scm_cession_form(
         bool(qualification["scm"]),
         praticien=praticien,
+        societe=societe,
+        profession_label=str(qualification["profession"]),
+        ordre=ordre_mandataire,
     )
     return build_clean_data_entry(
         dossier_type,
@@ -1549,6 +1552,88 @@ def _personal_address_display(praticien: dict[str, object]) -> str:
         str(praticien.get(key) or "").strip() for key in ("adresse_cp", "adresse_ville")
     ).strip()
     return ", ".join(part for part in (parts_voie, suffix) if part)
+
+
+def _scm_profession_pair(profession_label: str) -> tuple[str, str]:
+    """(singulier, pluriel) de la profession reglementee pour la cession SCM."""
+    if "dentiste" in str(profession_label).casefold():
+        return "chirurgien-dentiste", "chirurgiens-dentistes"
+    return "médecin", "médecins"
+
+
+def _scm_cedant_overrides(
+    praticien: dict[str, object],
+    *,
+    profession_label: str,
+    departement_ordre: str,
+) -> dict[str, object]:
+    """Etat civil du cedant (= associe unique) derive de la fiche praticien.
+
+    Retour Albane lot 2 §13.2 : le sous-formulaire de cession SCM partait d'une
+    fixture de demo, si bien que nationalite / adresse / naissance / situation du
+    cedant restaient des valeurs fictives (cedant suisse affiche francais...). On
+    derive ces champs de la saisie reelle. UNIQUEMENT les valeurs non vides sont
+    renvoyees : un champ absent laisse la valeur de base inchangee (les champs
+    requis du generateur ne sont jamais vides par ce biais). La cle ``ordre`` est
+    un dict PARTIEL a fusionner sur l'ordre de base par l'appelant (sinon une
+    cle manquante ecraserait l'autre)."""
+    singulier, pluriel = _scm_profession_pair(profession_label)
+    candidates: dict[str, object] = {
+        "nationalite": str(praticien.get("nationalite") or ""),
+        "adresse_affichee": _personal_address_display(praticien),
+        "date_naissance": praticien.get("date_naissance"),
+        "ville_naissance": str(praticien.get("ville_naissance") or ""),
+        "departement_naissance": str(praticien.get("departement_naissance") or ""),
+        "situation_maritale": str(praticien.get("situation_maritale") or ""),
+        "numero_rpps": str(praticien.get("numero_rpps") or ""),
+        "profession": singulier,
+        "profession_reglementee_pluriel": pluriel,
+    }
+    overrides: dict[str, object] = {key: value for key, value in candidates.items() if value}
+    ordre = {
+        key: value
+        for key, value in (
+            ("numero", str(praticien.get("numero_ordre") or "")),
+            ("departemental", str(departement_ordre or "")),
+        )
+        if value
+    }
+    if ordre:
+        overrides["ordre"] = ordre
+    conjoint = {
+        key: value
+        for key, value in (
+            ("civilite_affichage", str(praticien.get("conjoint_civilite") or "")),
+            ("prenom", str(praticien.get("conjoint_prenom") or "")),
+            ("nom", str(praticien.get("conjoint_nom") or "")),
+        )
+        if value
+    }
+    if conjoint:
+        overrides["conjoint"] = conjoint
+    return overrides
+
+
+def _scm_cessionnaire_overrides(societe: dict[str, object]) -> dict[str, object]:
+    """Description de la SEL cessionnaire (= societe creee) derivee de la fiche societe.
+
+    Retour Albane lot 2 §13.3 : le capital / siege / denomination du cessionnaire
+    restaient ceux de la fixture (capital 10 000 affiche alors que 1 000 saisi).
+    Valeurs non vides uniquement (preserve le representant deja calcule)."""
+    overrides: dict[str, object] = {}
+    denomination = str(societe.get("denomination") or "")
+    capital = str(societe.get("capital_social") or "")
+    ville_rcs = str(societe.get("ville_rcs") or "")
+    siege = _siege_display(societe)
+    if denomination:
+        overrides["denomination"] = denomination
+    if capital:
+        overrides["capital_social"] = capital
+    if ville_rcs:
+        overrides["ville_rcs"] = ville_rcs
+    if siege:
+        overrides["siege"] = {"adresse_affichee": siege}
+    return overrides
 
 
 def _situation_display(value: str, genre: object) -> str:
@@ -2298,6 +2383,9 @@ def _render_scm_cession_form(
     scm: bool,
     *,
     praticien: dict[str, object],
+    societe: dict[str, object],
+    profession_label: str,
+    ordre: dict[str, object],
 ) -> ScmCessionContext | None:
     """Sous-formulaire de cession de parts de SCM standalone (DOC-031/032/033).
 
@@ -2356,6 +2444,18 @@ def _render_scm_cession_form(
             col_c, "Nom", section="scm_cedant", field="nom",
             default="",
         )
+    # §13.2 : completer le cedant avec l'etat civil REEL (la fixture ne pilote que
+    # civilite/prenom/nom). L'ordre est FUSIONNE (pas remplace) pour ne jamais
+    # vider une cle requise par le generateur.
+    cedant_overrides = _scm_cedant_overrides(
+        praticien,
+        profession_label=profession_label,
+        departement_ordre=str((ordre or {}).get("departement_ordre") or ""),
+    )
+    ordre_override = cedant_overrides.pop("ordre", None)
+    cedant.update(cedant_overrides)
+    if ordre_override:
+        cedant["ordre"] = {**(cedant.get("ordre") or {}), **ordre_override}
     payload["cedant"] = cedant
     # Coherence V1 du wording source : le representant de la SEL cessionnaire
     # EST le cedant (l'associe unique cede ses parts a sa propre SEL).
@@ -2368,6 +2468,9 @@ def _render_scm_cession_form(
     representant["prenom"] = cedant["prenom"]
     representant["nom"] = cedant["nom"]
     cessionnaire["representant"] = representant
+    # §13.3 : la description de la SEL cessionnaire = la societe creee
+    # (denomination / capital / siege / RCS), pas les valeurs de la fixture.
+    cessionnaire.update(_scm_cessionnaire_overrides(societe))
     payload["cessionnaire"] = cessionnaire
 
     parts_cedees = payload.setdefault("parts_cedees", {}) or {}
