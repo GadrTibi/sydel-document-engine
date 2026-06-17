@@ -151,7 +151,9 @@ class PvAgeCessionScmGenerator:
 
         add_heading(document, "PREMIERE RESOLUTION")
         add_body_paragraph(document, _agrement_resolution(ctx, cessionnaire.denomination or ""))
-        add_body_paragraph(document, "Cette résolution est adoptée à l'unanimité")
+        add_body_paragraph(
+            document, "Cette résolution est adoptée à l'unanimité.", italic=True
+        )
 
         add_heading(document, "DEUXIEME RESOLUTION")
         add_body_paragraph(
@@ -173,19 +175,29 @@ class PvAgeCessionScmGenerator:
             document,
             f"Total égal au nombre de parts composant le capital social : {scm_cedee.nb_parts_total} parts ».",
         )
-        add_body_paragraph(document, "Cette résolution est adoptée à l'unanimité.")
+        add_body_paragraph(
+            document, "Cette résolution est adoptée à l'unanimité.", italic=True
+        )
 
         add_heading(document, "TROISIEME RESOLUTION")
         add_body_paragraph(
             document,
             "L'assemblée générale confère tous pouvoirs au porteur d'une copie ou d'un extrait du présent procès-verbal afin d'accomplir toutes les formalités consécutives aux décisions prises.",
         )
-        add_body_paragraph(document, "Cette résolution est adoptée à l'unanimité.")
+        add_body_paragraph(
+            document, "Cette résolution est adoptée à l'unanimité.", italic=True
+        )
         add_body_paragraph(
             document,
             "De tout ceci, il a été dressé le présent procès-verbal qui, après lecture, a été signé par la gérance, les associés présents.",
         )
-        add_signature_table(document, _signature_rows(scm_cession.signataires_pv))
+        # §4.2 — cadre de signature agrandi (zone manuscrite/YouSign suffisante),
+        # bordures conservees. 2,5 cm de hauteur minimale par ligne de signataires.
+        add_signature_table(
+            document,
+            _signature_rows(scm_cession.signataires_pv),
+            min_row_height_cm=2.5,
+        )
 
         return save_clean_document(document, output_dir, OUTPUT_FILENAME)
 

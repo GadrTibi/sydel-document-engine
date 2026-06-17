@@ -417,12 +417,18 @@ def conjoint_display(cedant: ScmCessionCedant) -> str:
     )
 
 
-def add_body_paragraph(document: Any, text: str, *, bold: bool = False) -> None:
+def add_body_paragraph(
+    document: Any, text: str, *, bold: bool = False, italic: bool = False
+) -> None:
+    # italic optionnel (defaut False) : preserve le comportement des appelants
+    # existants. Le PV SCM (DOC-031) l'active pour la mention d'adoption des
+    # resolutions « Cette resolution est adoptee a l'unanimite » (§4.2).
     add_paragraph(
         document,
         text,
         alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
         bold=bold,
+        italic=italic,
     )
 
 

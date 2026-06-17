@@ -322,6 +322,49 @@ def test_pv_age_renders_hyphen_bullets_on_two_lists(tmp_path: Path) -> None:
     )
 
 
+def test_pv_age_adoption_lines_italic_and_signature_frame_enlarged(tmp_path: Path) -> None:
+    # §4.2 — (a) « Cette résolution est adoptée à l'unanimité. » en italique
+    # (3 occurrences, point final harmonisé) ; (b) cadre de signature agrandi
+    # (hauteur de ligne minimale) tout en conservant les bordures.
+    from docx.enum.table import WD_ROW_HEIGHT_RULE
+    from docx.shared import Cm
+
+    ctx = _base_context("SELARL")
+    document = Document(PvAgeCessionScmGenerator().generate(ctx, tmp_path))
+
+    adoption = [
+        p
+        for p in document.paragraphs
+        if p.text == "Cette résolution est adoptée à l'unanimité."
+    ]
+    assert len(adoption) == 3
+    for paragraph in adoption:
+        assert paragraph.runs[0].italic is True
+
+    # le cadre de signature (derniere table) garde des bordures explicites...
+    signature_table = document.tables[-1]
+    assert _table_has_borders(signature_table)
+    # ...et est agrandi via une hauteur de ligne minimale (>= ~2,5 cm).
+    for row in signature_table.rows:
+        assert row.height_rule == WD_ROW_HEIGHT_RULE.AT_LEAST
+        assert row.height >= Cm(2.4)
+
+
+def _table_has_borders(table) -> bool:
+    tbl_pr = table._tbl.tblPr
+    borders = tbl_pr.find(
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}tblBorders"
+    )
+    if borders is None:
+        return False
+    top = borders.find(
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}top"
+    )
+    return top is not None and top.get(
+        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val"
+    ) == "single"
+
+
 def test_courrier_sde_objet_bold_underline_and_signataire_right(tmp_path: Path) -> None:
     # Retour UAT Rafael (DOC-032) : objet en gras + souligne, signataire a droite.
     ctx = _base_context("SELARL")

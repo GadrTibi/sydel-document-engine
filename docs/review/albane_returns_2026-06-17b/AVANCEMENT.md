@@ -4,13 +4,13 @@
 ```
   ┌─ SYDEL · Retours Albane lot 2 · AVANCEMENT ────────────
   │
-  │   GLOBAL   [█████████████████████░░░]  43/49  ·  88%
+  │   GLOBAL   [███████████████████████░]  46/49  ·  94%
   │
   │   ✅  1a· bugs isolés       4/4   [██████████]
-  │   🔨  1b· bugs données P1   11/12 [█████████░]
+  │   ✅  1b· bugs données P1   12/12 [██████████]
   │   ✅  2 · formulaires       10/10 [██████████]
   │   🔨  3 · contenu docs      12/14 [█████████░]
-  │   🔨  4 · mise en forme     6/9   [███████░░░]
+  │   🔨  4 · mise en forme     8/9   [█████████░]
   │
   │   ⏸ hors-build (Rafael/Albane) : 10      ✔ déjà conformes : 5
   └────────────────────────────────────────────────────────
@@ -22,7 +22,7 @@
 - [x] **§11** — Autorisation de domiciliation : 'euros' manquant apres le montant du capital
 - [x] **§12.2** — Appel de fonds : montant et symbole euros sur DEUX lignes (add_centered_amount avec liste 
 
-## Vague 1b · bugs données P1 — 11/12
+## Vague 1b · bugs données P1 — 12/12
 - [x] **§13.2** — Cedant SCM : nationalite, adresse, naissance, situation maritale figees sur la FIXTURE (pa
 - [x] **§13.3** — Description SELARL cessionnaire : denomination, CAPITAL, siege, RCS, immat figes sur la FI
 - [x] **§13.x** — Cause racine commune : le sous-formulaire SCM cession demarre d'une fixture de demo et n'o
@@ -31,7 +31,7 @@
 - [x] **§2.2** — Le contexte moteur SELARL ne porte qu'UN lieu (lieux[0]) — jamais de lieux[1]
 - [x] **§2.2** — Rendu SELARL medecin : Article 5 cable en dur sur le siege, ignore totalement le champ sai
 - [x] **§2.2** — Rendu SELARL dentiste : Article 5 affiche lieux[0] comme lieu UNIQUE, pas de 2e lieu
-- [ ] **§4.2** — PV SCM : (a) 'Cette resolution est adoptee a l'unanimite' PAS en italique ; (b) zone signa
+- [x] **§4.2** — PV SCM : (a) 'Cette resolution est adoptee a l'unanimite' PAS en italique ; (b) zone signa
 - [x] **§9.1** — Surlignage jaune conservé sur les champs déjà complétés
 - [x] **§9.2** — « représentée par son gérant » suivi de « Docteur » + mauvaise personne (vendeur au lieu d
 - [x] **§9.3** — Commentaires Word résiduels (Albane) non supprimés du document généré
@@ -64,14 +64,14 @@
 - [x] **§9.8** — Signataires : deux fois « Dr [nom] » ; le 2e doit être la SEL acquéreur
 - [x] **§9.9** — Formule finale « vingt pages » au lieu du nombre réel (8 pages)
 
-## Vague 4 · mise en forme — 6/9
+## Vague 4 · mise en forme — 8/9
 - [ ] **§1** — Aeration generale : Statuts/PV/Procuration/DNC/Appel de fonds aeres ; SCM (PV SCM, acte ce
 - [x] **§10.4** — Cases de signature trop petites (encadre 3 colonnes, ~3 lignes vides)
 - [x] **§13.1** — Acte de cession parts SCM : doc serre (6pt uniforme, zero spacer), signature = add_signatu
 - [x] **§2.1** — Encadre STATUTS SELARL trop petit et trop proche de l'en-tete (table 1x1 sans marge de cel
 - [x] **§3** — Lettre d'avertissement conjoint : manque d'espace entre 'Fait en quatre exemplaires' et le
-- [ ] **§4.2** — PV SCM: 'Cette resolution est adoptee a l'unanimite' n'est PAS en italique
-- [ ] **§4.2** — Cadre de signature du PV SCM trop petit pour YouSign
+- [x] **§4.2** — PV SCM: 'Cette resolution est adoptee a l'unanimite' n'est PAS en italique
+- [x] **§4.2** — Cadre de signature du PV SCM trop petit pour YouSign
 - [x] **§7** — Declaration de non-condamnation : cadre du haut a aerer ; rappel italique a 'descendre' le
 - [x] **§ARCHI** — Mecanisme d'aeration actuel : SydelDocxStyleProfile + add_spacer + space_before/after par 
 

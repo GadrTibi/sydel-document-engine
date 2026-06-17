@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from docx import Document
-from docx.enum.table import WD_TABLE_ALIGNMENT
+from docx.enum.table import WD_ROW_HEIGHT_RULE, WD_TABLE_ALIGNMENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
@@ -978,6 +978,7 @@ def add_signature_table(
     document: Any,
     labels: Sequence[Sequence[str]],
     *,
+    min_row_height_cm: float | None = None,
     style_profile: SydelDocxStyleProfile = DEFAULT_STYLE_PROFILE,
 ) -> Any:
     if not labels or not labels[0]:
@@ -990,6 +991,14 @@ def add_signature_table(
     for row_index, row in enumerate(labels):
         if len(row) != column_count:
             raise ValueError("Toutes les lignes de signature doivent avoir la meme largeur.")
+        # min_row_height_cm optionnel (defaut None -> aucune contrainte, rendu
+        # inchange pour tous les appelants existants). Quand fourni, agrandit le
+        # cadre de signature pour laisser une zone manuscrite/YouSign suffisante
+        # (§4.2 : cadre du PV SCM trop petit). Bordures conservees.
+        if min_row_height_cm is not None:
+            table_row = table.rows[row_index]
+            table_row.height = Cm(min_row_height_cm)
+            table_row.height_rule = WD_ROW_HEIGHT_RULE.AT_LEAST
         for cell_index, label in enumerate(row):
             cell = table.rows[row_index].cells[cell_index]
             _set_cell_margins(
