@@ -4,12 +4,12 @@
 ```
   ┌─ SYDEL · Retours Albane lot 2 · AVANCEMENT ────────────
   │
-  │   GLOBAL   [████████████████████████]  48/49  ·  98%
+  │   GLOBAL   [████████████████████████]  49/49  ·  100%
   │
   │   ✅  1a· bugs isolés       4/4   [██████████]
   │   ✅  1b· bugs données P1   12/12 [██████████]
   │   ✅  2 · formulaires       10/10 [██████████]
-  │   🔨  3 · contenu docs      13/14 [█████████░]
+  │   ✅  3 · contenu docs      14/14 [██████████]
   │   ✅  4 · mise en forme     9/9   [██████████]
   │
   │   ⏸ hors-build (Rafael/Albane) : 10      ✔ déjà conformes : 5
@@ -48,8 +48,8 @@
 - [x] **§SCREEN-1** — Nationalite en champ deroulant (NATIONALITY_PRESETS) a propager depuis la SELARL aux autre
 - [x] **§SCREEN-2** — Valeur nominale d'une action/part toujours calculee auto (capital / nb actions ou parts) -
 
-## Vague 3 · contenu docs — 13/14
-- [ ] **§12.3** — Appel de fonds : signe par le CLIENT au lieu du conseiller SYDEL
+## Vague 3 · contenu docs — 14/14
+- [x] **§12.3** — Appel de fonds : signe par le CLIENT au lieu du conseiller SYDEL
 - [x] **§17.1** — SELAS unipersonnelle medecin : generateur DOC-018 present mais ORPHELIN (aucun parcours fr
 - [x] **§17.4** — Deroulant SPFPL : libelles n'indiquant pas 'dentiste' et co-libelle 'SAS SPFPL medecins' a
 - [x] **§4.1** — PV AGE cession SCM (DOC-031) affiche capital/parts/nominal/associes issus de la FIXTURE, j

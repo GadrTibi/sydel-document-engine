@@ -10,9 +10,8 @@ from sydel_doc_engine.domain.models import (
     CessionDestinataire,
     CessionFinancement,
     CessionVendeur,
-    DocumentContext,
     DocumentGenerationContext,
-    DocumentSignataire,
+    Mandataire,
 )
 from sydel_doc_engine.generators.lot_03.bail_appel_common import (
     CABINET_DENTAIRE,
@@ -56,7 +55,11 @@ class AppelFondSelGenerator:
         cabinet = _required_cabinet(cession.cabinet)
         vendeur = _required_vendeur(cession.vendeur)
         acquereur = _required_acquereur(cession.acquereur)
-        signataire = _required_signataire(_required_document_context(ctx.document).signataire)
+        # §12.3 — l'appel de fonds est signe par le CONSEILLER SYDEL (le mandataire),
+        # pas par le praticien/client. Le mandataire est deja capture cote front
+        # (ctx.mandataire, defaut « Jordan ELBAZ »). On NE touche pas a
+        # document.signataire (qui reste le praticien, consomme par les statuts).
+        signataire = _required_mandataire(ctx.mandataire)
 
         docx = new_document()
         # Logo SYDEL en header, aligne a DROITE (retour UAT Rafael DOC-008).
@@ -125,8 +128,8 @@ class AppelFondSelGenerator:
             docx,
             [
                 (
-                    f"{required_text(signataire.prenom, 'document.signataire.prenom')} "
-                    f"{required_text(signataire.nom, 'document.signataire.nom')}"
+                    f"{required_text(signataire.prenom, 'mandataire.prenom')} "
+                    f"{required_text(signataire.nom, 'mandataire.nom')}"
                 )
             ],
         )
@@ -161,16 +164,11 @@ def _required_acquereur(acquereur: CessionAcquereur | None) -> CessionAcquereur:
     return acquereur
 
 
-def _required_document_context(document_context: DocumentContext | None) -> DocumentContext:
-    if document_context is None:
-        raise ValueError(f"document est obligatoire pour {DOCUMENT_CODE}.")
-    return document_context
-
-
-def _required_signataire(signataire: DocumentSignataire | None) -> DocumentSignataire:
-    if signataire is None:
-        raise ValueError(f"document.signataire est obligatoire pour {DOCUMENT_CODE}.")
-    return signataire
+def _required_mandataire(mandataire: Mandataire | None) -> Mandataire:
+    # §12.3 — signataire de l'appel de fonds = le conseiller SYDEL (mandataire).
+    if mandataire is None:
+        raise ValueError(f"mandataire est obligatoire pour {DOCUMENT_CODE}.")
+    return mandataire
 
 
 def _destinataire_label(destinataire: CessionDestinataire | None) -> str:

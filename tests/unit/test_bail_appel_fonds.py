@@ -26,6 +26,7 @@ from sydel_doc_engine.domain.models import (
     DocumentGenerationContext,
     DocumentSignataire,
     DossierOptions,
+    Mandataire,
     Person,
     Signature,
 )
@@ -113,6 +114,16 @@ def _context(
             nombre_exemplaires_lettres="quatre",
             signataire=DocumentSignataire(prenom="Camille", nom="Martin"),
         ),
+        # §12.3 — l'appel de fonds est signe par le CONSEILLER SYDEL (mandataire),
+        # pas par le client (« Camille Martin »). document.signataire reste le
+        # praticien (consomme par les statuts).
+        mandataire=Mandataire(
+            civilite_affichage="Monsieur",
+            prenom="Jordan",
+            nom="ELBAZ",
+            fonction="conseiller",
+            cabinet="SYDEL",
+        ),
     )
 
 
@@ -186,8 +197,12 @@ def test_appel_fond_sel_generates_dentaire_request(tmp_path: Path) -> None:
     # §12.2 : montant et euros sur la MEME ligne.
     amount = next(p for p in document.paragraphs if p.text == "150 000 €")
     assert amount.alignment == WD_ALIGN_PARAGRAPH.CENTER
-    signature = next(p for p in document.paragraphs if p.text == "Camille Martin")
+    # §12.3 — signataire = le conseiller SYDEL (mandataire « Jordan ELBAZ »),
+    # PAS le client « Camille Martin » (le client n'apparait plus comme signataire
+    # en bas a droite ; il peut figurer ailleurs dans le corps comme vendeur).
+    signature = next(p for p in document.paragraphs if p.text == "Jordan ELBAZ")
     assert signature.alignment == WD_ALIGN_PARAGRAPH.RIGHT
+    assert not any(p.text == "Camille Martin" for p in document.paragraphs)
     # Retour UAT Rafael (DOC-008) : bloc banque + lieu/date aligne a DROITE.
     banque = next(p for p in document.paragraphs if p.text == "BANQUE EXEMPLE")
     assert banque.alignment == WD_ALIGN_PARAGRAPH.RIGHT
