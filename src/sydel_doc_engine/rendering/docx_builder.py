@@ -10,7 +10,7 @@ from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
-from docx.shared import Cm, Pt
+from docx.shared import Cm, Pt, RGBColor
 
 
 @dataclass(frozen=True)
@@ -660,6 +660,58 @@ def add_spacer(document: Any, *, space_after_pt: int = 0) -> Any:
     paragraph = document.add_paragraph()
     paragraph.paragraph_format.space_after = Pt(space_after_pt)
     return paragraph
+
+
+# Pied de page SYDEL des courriers (coordonnees stables, non saisies).
+# Verbatim extrait du MODELE CLIENT courrier_cession_scm_modele.docx (footer F0-F2) :
+# permet au destinataire (Service Departemental de l'Enregistrement) de contacter SYDEL.
+# Roboto 6,5 pt centre ; ligne siege en bleu gras 315184, lignes legales en gris 808080.
+_SYDEL_FOOTER_FONT_NAME = "Roboto"
+_SYDEL_FOOTER_FONT_SIZE_PT = 6.5
+_SYDEL_FOOTER_BLUE = RGBColor(0x31, 0x51, 0x84)
+_SYDEL_FOOTER_GRAY = RGBColor(0x80, 0x80, 0x80)
+_SYDEL_FOOTER_LINES: tuple[tuple[str, RGBColor, bool], ...] = (
+    (
+        "Siège social : 80 avenue Marceau, 75008 PARIS Tél : 01 53 81 43 03",
+        _SYDEL_FOOTER_BLUE,
+        True,
+    ),
+    (
+        "SYDEL SARL au capital minimum de 500 000€, RCS Paris : 788 531 432 00029, "
+        "Code APE/NAF : 6832 B – Membre de l’Anacofi CIF",
+        _SYDEL_FOOTER_GRAY,
+        False,
+    ),
+    (
+        "ORIAS N°12069007 – TVA intracommunautaire : FR 18 788531432 - "
+        "RC PRO : 2.101.395/OC100000394",
+        _SYDEL_FOOTER_GRAY,
+        False,
+    ),
+)
+
+
+def add_sydel_letter_footer(document: Any) -> None:
+    """Pose le pied de page coordonnees SYDEL sur la 1re section du courrier.
+
+    Texte VERBATIM du modele client (coordonnees stables, non-saisies) pour que
+    le Service Departemental de l'Enregistrement puisse contacter SYDEL (retour
+    Albane lot 2, §8.4b). Reutilisable par d'autres courriers (ex. appel de fonds).
+    """
+    footer = document.sections[0].footer
+    footer.is_linked_to_previous = False
+    for index, (text, color, bold) in enumerate(_SYDEL_FOOTER_LINES):
+        if index < len(footer.paragraphs):
+            paragraph = footer.paragraphs[index]
+        else:
+            paragraph = footer.add_paragraph()
+        paragraph.text = ""
+        paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        run = paragraph.add_run(text)
+        run.bold = bold
+        run.font.name = _SYDEL_FOOTER_FONT_NAME
+        run.font.size = Pt(_SYDEL_FOOTER_FONT_SIZE_PT)
+        run.font.color.rgb = color
 
 
 def add_framed_title(

@@ -215,7 +215,13 @@ def test_scm_cession_selarl_generates_three_clean_docx(tmp_path: Path) -> None:
     assert "à compter de ce jour" in texts["pv_age_cession_parts_scm.docx"]
     assert "dans un délai de" not in texts["pv_age_cession_parts_scm.docx"]
     assert "4 exemplaires" in texts["courrier_sde_cession_scm.docx"]
-    assert "SERVICE DEPARTEMENTAL" not in texts["courrier_sde_cession_scm.docx"]
+    # §8.1 — bloc destinataire SDE rendu pour TOUTES structures (ligne fixe).
+    assert (
+        "Service départemental de l'enregistrement de"
+        in texts["courrier_sde_cession_scm.docx"]
+    )
+    # §8.2 — nom de la SCM imprime dans le corps.
+    assert "de parts de la SCM SCM CABINET CENTRAL" in texts["courrier_sde_cession_scm.docx"]
     assert "chirurgiens-dentistes" in texts["acte_cession_parts_scm.docx"]
     assert "Yousign" in texts["acte_cession_parts_scm.docx"]
     for text in texts.values():
@@ -234,8 +240,14 @@ def test_scm_cession_selas_generates_overlays(tmp_path: Path) -> None:
     acte_text = _docx_text(acte_path)
     assert "dans un délai de 3 mois" in pv_text
     assert "15 août 2026" in pv_text
+    # §8.1 — ligne destinataire fixe presente quelle que soit la structure ;
+    # la valeur saisie du service (quand fournie) suit la ligne fixe.
+    assert "Service départemental de l'enregistrement de" in courrier_text
     assert "SERVICE DEPARTEMENTAL DE L'ENREGISTREMENT" in courrier_text
-    assert "3 exemplaires" in courrier_text
+    # §8.2/§8.3 — nombre d'exemplaires fixe « 4 » et montant droits fixe « 25 ».
+    assert "4 exemplaires" in courrier_text
+    assert "3 exemplaires" not in courrier_text
+    assert "chèque de 25 euros" in courrier_text
     assert "SELAS au capital de 10 000" in acte_text
     assert "président" in acte_text
     assert "DocuSign" in acte_text
@@ -319,5 +331,67 @@ def test_courrier_sde_objet_bold_underline_and_signataire_right(tmp_path: Path) 
     assert objet.runs[0].bold is True
     assert objet.runs[0].underline is True
 
-    signataire = next(p for p in document.paragraphs if p.text == "Sarah Durand")
+    # §8.4a — signataire FIXE SYDEL « Clémence ROUSSEL », aligne a droite.
+    signataire = next(p for p in document.paragraphs if p.text == "Clémence ROUSSEL")
     assert signataire.alignment == WD_ALIGN_PARAGRAPH.RIGHT
+    assert "Sarah Durand" not in "\n".join(p.text for p in document.paragraphs)
+
+
+def test_courrier_sde_montant_droits_fixe_25_en_rouge(tmp_path: Path) -> None:
+    # §8.3 — droits d'enregistrement = montant FIXE « 25 » rendu en rouge.
+    from docx.shared import RGBColor
+
+    ctx = _base_context("SELARL")
+    document = Document(CourrierSdeCessionScmGenerator().generate(ctx, tmp_path))
+
+    paragraph = next(p for p in document.paragraphs if "chèque de 25 euros" in p.text)
+    red_run = next(r for r in paragraph.runs if r.text.strip() == "25")
+    assert red_run.font.color.rgb == RGBColor(0xFF, 0x00, 0x00)
+    # le montant n'est PAS une variable saisie (« 150 » de la fixture absent).
+    assert "150" not in "\n".join(p.text for p in document.paragraphs)
+
+
+def test_courrier_sde_scm_name_highlighted_in_body(tmp_path: Path) -> None:
+    # §8.2 — nom de la SCM imprime dans le corps, surligne jaune (champ a verifier).
+    from docx.enum.text import WD_COLOR_INDEX
+
+    ctx = _base_context("SELARL")
+    document = Document(CourrierSdeCessionScmGenerator().generate(ctx, tmp_path))
+
+    paragraph = next(p for p in document.paragraphs if "de parts de la SCM" in p.text)
+    name_run = next(r for r in paragraph.runs if r.text == "SCM CABINET CENTRAL")
+    assert name_run.font.highlight_color == WD_COLOR_INDEX.YELLOW
+
+
+def test_courrier_sde_footer_contains_sydel_coordinates(tmp_path: Path) -> None:
+    # §8.4b — pied de page coordonnees SYDEL pour contact par le SDE.
+    ctx = _base_context("SELARL")
+    document = Document(CourrierSdeCessionScmGenerator().generate(ctx, tmp_path))
+
+    footer_text = "\n".join(p.text for p in document.sections[0].footer.paragraphs)
+    # Verbatim du modele client : espaces insecables (\xa0) preserves avant les « : ».
+    assert "80 avenue Marceau, 75008 PARIS" in footer_text
+    assert "Tél\xa0: 01 53 81 43 03" in footer_text
+    assert "RCS Paris\xa0: 788\xa0531\xa0432 00029" in footer_text
+    assert "ORIAS N°12069007" in footer_text
+
+
+def test_courrier_sde_destinataire_block_for_selarl_with_placeholders(tmp_path: Path) -> None:
+    # §8.1 — quand la saisie ne fournit pas les lignes service/adresse,
+    # le bloc destinataire reste rendu avec des champs « à compléter » jaunes.
+    from docx.enum.text import WD_COLOR_INDEX
+
+    ctx = _base_context("SELARL")
+    ctx.scm_cession.enregistrement = ScmCessionEnregistrement()
+    document = Document(CourrierSdeCessionScmGenerator().generate(ctx, tmp_path))
+
+    texts = [p.text for p in document.paragraphs]
+    assert "Service départemental de l'enregistrement de" in texts
+    fillable = [
+        p
+        for p in document.paragraphs
+        if p.runs
+        and p.runs[0].font.highlight_color == WD_COLOR_INDEX.YELLOW
+        and "à compléter" in p.text
+    ]
+    assert len(fillable) == 4

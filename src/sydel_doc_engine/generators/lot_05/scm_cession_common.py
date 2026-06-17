@@ -69,31 +69,16 @@ def validate_pv_context(ctx: DocumentGenerationContext) -> ScmCessionContext:
 
 def validate_courrier_sde_context(ctx: DocumentGenerationContext) -> ScmCessionContext:
     scm_cession = validate_scm_cession_enabled(ctx)
-    enregistrement = required_enregistrement(scm_cession)
-    required_text(enregistrement.montant_droits, "scm_cession.enregistrement.montant_droits")
-    signataire = required_signataire_sde(scm_cession)
-    required_text(signataire.prenom, "scm_cession.signataire_sde.prenom")
-    required_text(signataire.nom, "scm_cession.signataire_sde.nom")
+    # §8.2 — le nom de la SCM est desormais imprime dans le corps : on l'exige.
+    scm_cedee = required_scm_cedee(scm_cession)
+    required_text(scm_cedee.denomination, "scm_cession.scm_cedee.denomination")
+    # enregistrement reste un porteur de contexte, mais le bloc destinataire est
+    # rendu en champs « a completer » (§8.1) : ses sous-champs ne sont plus
+    # obligatoires. Le montant des droits est FIXE « 25 » (§8.3) et le signataire
+    # est FIXE « Clémence ROUSSEL » (§8.4a) : ni l'un ni l'autre n'est plus exige.
+    required_enregistrement(scm_cession)
     required_text(ctx.signature.lieu, "signature.lieu")
     format_display_date(ctx.signature.date, "signature.date")
-    if ctx.structure == "SELAS":
-        required_text(enregistrement.service, "scm_cession.enregistrement.service")
-        required_text(
-            enregistrement.centre_finances_publiques,
-            "scm_cession.enregistrement.centre_finances_publiques",
-        )
-        required_text(
-            enregistrement.adresse_service,
-            "scm_cession.enregistrement.adresse_service",
-        )
-        required_text(
-            enregistrement.cp_ville_service,
-            "scm_cession.enregistrement.cp_ville_service",
-        )
-        required_text(
-            enregistrement.nombre_exemplaires,
-            "scm_cession.enregistrement.nombre_exemplaires",
-        )
     return scm_cession
 
 
