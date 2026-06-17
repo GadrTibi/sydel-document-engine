@@ -60,6 +60,32 @@ PREFIX = "selas"
 SELAS_NB_MIN = 2
 SELAS_NB_MAX = 6
 
+# Profession pre-reglee par cle de type enregistre. La SELAS « multi » generique
+# laisse la profession libre (defaut medecin a la saisie) ; la SELAS « dentiste
+# pluripersonnelle » pre-remplit « chirurgien-dentiste » -> le moteur bascule
+# automatiquement sur le corpus statuts dentiste. Cle absente = aucun pre-reglage.
+_PROFESSION_DEFAULTS_BY_TYPE: dict[str, tuple[str, str]] = {
+    "selas_dentiste_pluri_v1": ("chirurgien-dentiste", "chirurgiens-dentistes"),
+}
+
+
+def _apply_type_profession_default(type_key: str) -> None:
+    """Pre-remplit la profession (singulier + pluriel) selon la cle de type.
+
+    N'ecrase JAMAIS une saisie existante : ne pose le defaut que si le champ est
+    encore vide, pour que l'operateur reste libre de corriger. Sans entree pour
+    la cle, ne fait rien (SELAS multi generique inchangee)."""
+    default = _PROFESSION_DEFAULTS_BY_TYPE.get(type_key)
+    if not default:
+        return
+    singulier, pluriel = default
+    prof_key = f"{PREFIX}_profession_reglementee"
+    plur_key = f"{PREFIX}_profession_reglementee_pluriel"
+    if not str(st.session_state.get(prof_key) or "").strip():
+        st.session_state[prof_key] = singulier
+    if not str(st.session_state.get(plur_key) or "").strip():
+        st.session_state[plur_key] = pluriel
+
 # Bundle de creation SELAS multi (canon) : statuts multi-associes + tronc commun
 # (DNC / domiciliation / procuration) + PV nomination gerant + demande
 # d'inscription a l'ordre. Le signataire / gerant des documents communs = le
@@ -105,7 +131,11 @@ def _associe_count() -> int:
         return SELAS_NB_MIN
 
 
-def render_selas_form() -> dict[str, object]:
+def render_selas_form(type_key: str = "selas_multi_v1") -> dict[str, object]:
+    # Cas nomme « SELAS dentiste pluripersonnelle » : pre-regle la profession sur
+    # « chirurgien-dentiste » (le moteur basculera sur le corpus dentiste). Pour
+    # la SELAS multi generique, aucun pre-reglage (profession libre).
+    _apply_type_profession_default(type_key)
     st.subheader("Donnees a saisir")
     st.markdown("**Societe (SELAS d'exercice, vocabulaire actions)**")
     col_a, col_b = st.columns(2)

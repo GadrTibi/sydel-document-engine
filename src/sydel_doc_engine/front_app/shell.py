@@ -93,7 +93,11 @@ def _render_dossier_type_selection() -> DossierTypeOption:
             st.success("Donnees de test coherentes pre-remplies.")
         st.caption("Perimetre actif : SELARL unipersonnelle de production.")
     else:
-        prefill = _TYPED_TEST_DATA_PREFILL.get(selected.structure)
+        # Une cle de type peut surcharger le prefill par defaut de sa structure
+        # (ex. SELAS dentiste pluripersonnelle -> prefill SELAS en dentiste).
+        prefill = _TYPED_TEST_DATA_PREFILL_BY_KEY.get(
+            selected.key
+        ) or _TYPED_TEST_DATA_PREFILL.get(selected.structure)
         if prefill is not None and st.button(
             "Generer des donnees de test",
             key=f"clean_test_data_{selected.structure}".replace(" ", "_"),
@@ -665,8 +669,14 @@ def _selas_associe_prefill(
     }
 
 
-def _prefill_selas_test_data() -> None:
-    """SELAS multi de creation fictive (2 associes medecins exercants, somme = total)."""
+def _prefill_selas_test_data(
+    profession: str = "medecin", profession_pluriel: str = "medecins"
+) -> None:
+    """SELAS multi de creation fictive (2 associes exercants, somme = total).
+
+    La profession est parametrable : « medecin » par defaut (SELAS multi), ou
+    « chirurgien-dentiste » pour le cas nomme SELAS dentiste pluripersonnelle —
+    de sorte que les donnees de test basculent le moteur sur le bon corpus."""
     values: dict[str, object] = {
         "selas_denomination": "SELAS EXEMPLE",
         "selas_siege": "5 place du Centre, 69000 Lyon",
@@ -674,8 +684,8 @@ def _prefill_selas_test_data() -> None:
         "selas_siege_voie": "place du Centre",
         "selas_siege_cp": "69000",
         "selas_siege_ville": "Lyon",
-        "selas_profession_reglementee": "medecin",
-        "selas_profession_reglementee_pluriel": "medecins",
+        "selas_profession_reglementee": profession,
+        "selas_profession_reglementee_pluriel": profession_pluriel,
         "selas_capital_social": "1000",
         "selas_nb_actions_total": 100,
         "selas_valeur_nominale_action": "10",
@@ -733,6 +743,16 @@ _TYPED_TEST_DATA_PREFILL = {
     "SPFPL cession": _prefill_spfpl_cession_test_data,
     "SPFPL apport": _prefill_spfpl_apport_test_data,
     "SELAS": _prefill_selas_test_data,
+}
+
+# Prefill surchargeant le defaut par structure pour une cle de type precise.
+# La SELAS dentiste pluripersonnelle reutilise le prefill SELAS avec la
+# profession chirurgien-dentiste -> donnees de test coherentes avec le corpus
+# dentiste (sinon le prefill par structure remplirait « medecin »).
+_TYPED_TEST_DATA_PREFILL_BY_KEY = {
+    "selas_dentiste_pluri_v1": lambda: _prefill_selas_test_data(
+        "chirurgien-dentiste", "chirurgiens-dentistes"
+    ),
 }
 
 
@@ -2456,7 +2476,9 @@ def _render_typed_dossier(dossier_type: DossierTypeOption) -> None:
         plan = spfpl_slice.build_spfpl_plan(payload)
         generate = spfpl_slice.generate_dossier
     elif structure == "SELAS":
-        payload = selas_multi_slice.render_selas_form()
+        # On passe la cle du type pour que la SELAS « dentiste pluripersonnelle »
+        # pre-regle la profession sur chirurgien-dentiste (corpus dentiste).
+        payload = selas_multi_slice.render_selas_form(dossier_type.key)
         plan = selas_multi_slice.build_selas_plan(payload)
         generate = selas_multi_slice.generate_dossier
     else:

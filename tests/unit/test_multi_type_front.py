@@ -1155,6 +1155,7 @@ def test_front_dropdown_lists_all_types_with_selarl_default() -> None:
         "SPFPL cession creation V1",
         "SPFPL apport creation V1",
         "SELAS multi-associes creation V1",
+        "SELAS dentiste pluripersonnelle creation V1",
     ]
     # Surface SELARL inchangee : aucun expander sur le defaut.
     assert len(app.expander) == 0
@@ -1278,6 +1279,7 @@ def test_front_routes_to_sci_slice_and_generates(tmp_path: Path, monkeypatch) ->
         ("SPFPL cession creation V1", "statuts_spfpl_cession.docx"),
         ("SPFPL apport creation V1", "statuts_spfpl_apport.docx"),
         ("SELAS multi-associes creation V1", "statuts_selas_multi.docx"),
+        ("SELAS dentiste pluripersonnelle creation V1", "statuts_selas_multi.docx"),
     ],
 )
 def test_typed_test_data_button_generates(
@@ -1309,6 +1311,45 @@ def test_typed_test_data_button_generates(
     download_labels = [item.label for item in app.get("download_button")]
     assert f"Telecharger {statuts_name}" in download_labels
     assert "Telecharger le dossier ZIP" in download_labels
+
+
+def test_front_selas_dentiste_pluri_uses_dentiste_corpus(
+    tmp_path: Path, monkeypatch
+) -> None:
+    # Cas NOMME « SELAS dentiste pluripersonnelle » : selectionner l'entree puis
+    # cliquer « donnees de test » et generer doit produire les STATUTS DENTISTE
+    # (corpus chirurgien-dentiste), pas le corpus medecin. Prouve que la cle de
+    # type pre-regle bien la profession et bascule le moteur sur le bon corpus.
+    from streamlit.testing.v1 import AppTest
+
+    from sydel_doc_engine.front_app import shell
+
+    monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selas-dentiste")
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
+    app.selectbox(key="clean_dossier_type").set_value(
+        "SELAS dentiste pluripersonnelle creation V1"
+    )
+    app = app.run(timeout=180)
+
+    next(b for b in app.button if "test_data" in str(b.key)).click()
+    app = app.run(timeout=180)
+
+    generate_button = next(
+        b for b in app.button if str(b.key) == "clean_typed_generate_dossier"
+    )
+    assert generate_button.disabled is False
+    assert not any("Blocage" in item.value for item in app.caption)
+    generate_button.click()
+    app = app.run(timeout=180)
+
+    statuts_files = list(
+        (tmp_path / "ui-selas-dentiste").rglob("statuts_selas_multi.docx")
+    )
+    assert statuts_files, "Statuts SELAS dentiste non generes."
+    text = _docx_text(statuts_files[0])
+    # Marqueurs PROPRES au corpus dentiste (absents du corpus medecin).
+    assert "l’exercice en commun de la profession de chirurgien-dentiste" in text
+    assert "Conseil Départemental de l’Ordre des Chirurgiens-dentistes" in text
 
 
 def test_front_selas_change_dirigeant_generates(tmp_path: Path, monkeypatch) -> None:
