@@ -28,7 +28,7 @@ from sydel_doc_engine.rendering.docx_builder import (
 
 DOCUMENT_CODE = "CODE-STATUTS-SELAS-MULTI-001"
 STRUCTURE_SELAS = "SELAS"
-MAX_ASSOCIES = 5
+MAX_ASSOCIES = 6  # retours 2026-06-17 : SELAS multi 2 a 6 associes
 MIN_ASSOCIES = 2
 
 # --- Profils par profession reglementee --------------------------------------------------

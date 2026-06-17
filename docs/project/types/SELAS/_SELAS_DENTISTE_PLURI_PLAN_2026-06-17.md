@@ -3,6 +3,21 @@
 > Source : lock 008 `docs/review/albane_returns_2026-06-17/` (doc Rafael + 4 modèles).
 > Findings **vérifiés à la main** (pas seulement sous-agent). Branche `sprint/engine-completion`.
 
+## ✅✅ LIVRÉ — 2026-06-17 (chantier SELAS dentiste pluripersonnelle bouclé)
+**Suite complète : 432 verts · ruff propre repo-wide.** Commits sur `sprint/engine-completion` :
+- `78b894e` — **Attestation capital / liste des souscripteurs SELAS** (DOC-045), N souscripteurs en numéraire, accord en genre, câblé catalogue + orchestrator + registry.
+- `ab15e78` — **Statuts SELAS dentiste** : corpus dentiste dédié (`Statuts_SELAS_dentiste_pluri_modele.docx`), sélection source + index par profession (`_SelasProfile`) ; médecin **byte-identique** préservé.
+- `d11f479` — **PV nominations dirigeants** : multi-dirigeants (Président + Directeur Général), une décision/dirigeant (ordinaux dynamiques), signatures 2 colonnes, vocabulaire « actions » ; **verrou DG levé** dans le slice (champ additif `dirigeants_nomines`, mode mono SELARL/civils inchangé).
+- `ee2a4ca` — fix genre comparution SELAS multi (« né/née », « Inscrit/Inscrite »).
+- bornes **SELAS multi 2→6** associés (le cas 1 associé = flux uniperso existant `statuts_selas_medecin`).
+- Procuration SELAS : **déjà fidèle**, rien à faire (P3).
+
+### ⚠️ Points de fidélité à confirmer avec Albane (relevés, NON inventés)
+1. **PV — titre « EXTRAORDINAIRE »** : le modèle dit « ASSEMBLÉE GÉNÉRALE EXTRAORDINAIRE » mais un test existant (chemin SCI/parts) interdit « EXTRAORDINAIRE » → titre laissé « ASSEMBLÉE GÉNÉRALE » (partagé). À trancher si la SELAS doit dire « EXTRAORDINAIRE ».
+2. **PV — clause matrimoniale dans la phrase de nomination** : le modèle montre « marié sous le régime de… » dans l'identité du dirigeant ; le slice ne collecte pas cette donnée → non rendue (champ additif `identite_phrase` en place pour la porter plus tard sans refonte).
+3. **Attestation — token « apport en nature »** du modèle = en réalité montant **numéraire** par souscripteur (capital SELAS = numéraire) → calculé `nb_actions × valeur_nominale`.
+4. **Cas 1 associé SELAS dentiste** : routé vers l'uniperso ; vérifier qu'un uniperso DENTISTE existe (sinon gap mineur).
+
 ## Verdict du lot
 - **Toutes les « corrections V2 »** (textuelles + 15 points du PV) = **DÉJÀ FAITES** (le doc Rafael décrivait un état moteur plus ancien). Vérifié : 15/15 items PV OK, 3 corrections textuelles déjà en place (sous-agent + génération réelle).
 - Le **seul vrai chantier neuf** = **SELAS dentiste pluripersonnelle** (4 modèles joints).

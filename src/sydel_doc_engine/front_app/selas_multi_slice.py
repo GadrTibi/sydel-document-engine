@@ -58,7 +58,7 @@ PREFIX = "selas"
 # Bornes du repeater SELAS (A1 : nommees, AUCUN changement de valeur). Alignees
 # sur le generateur statuts_selas_multi (2 a 5 associes exercants / non exercants).
 SELAS_NB_MIN = 2
-SELAS_NB_MAX = 5
+SELAS_NB_MAX = 6
 
 # Bundle de creation SELAS multi (canon) : statuts multi-associes + tronc commun
 # (DNC / domiciliation / procuration) + PV nomination gerant + demande
