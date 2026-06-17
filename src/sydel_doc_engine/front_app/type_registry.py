@@ -81,9 +81,19 @@ REGISTERED_TYPES: Final[tuple[RegisteredType, ...]] = (
         generation_enabled=True,
         status="moteur_teste",
     ),
+    # Libelles SPFPL clarifies (audit retours Albane lot 2, §17.4) : la deroulante
+    # melait « SAS SPFPL medecins », « SPFPL cession » et « SPFPL apport » sans dire
+    # ni la FORME ni la PROFESSION, d'ou une confusion + un faux doublon. Les
+    # libelles ci-dessous refletent STRICTEMENT ce que le code produit aujourd'hui
+    # (factuel, pas une decision metier) : la SAS = SPFPL medecins (forme SAS,
+    # DOC-015) ; cession/apport = corpus dentiste (profession figee
+    # « chirurgien-dentiste » dans spfpl_slice). Le routing utilise key/structure,
+    # pas le label -> renommage purement cosmetique. La question metier « apport /
+    # cession ouverts aux medecins ? » reste hors code (arbitrage Albane), non
+    # tranchee ici.
     RegisteredType(
         key="sas_spfpl_medecins_v1",
-        label="SAS SPFPL medecins creation V1",
+        label="SPFPL medecins (forme SAS) creation V1",
         structure="SAS",
         slice_module="sydel_doc_engine.front_app.sas_slice",
         generation_enabled=True,
@@ -91,7 +101,7 @@ REGISTERED_TYPES: Final[tuple[RegisteredType, ...]] = (
     ),
     RegisteredType(
         key="spfpl_cession_v1",
-        label="SPFPL cession creation V1",
+        label="SPFPL dentistes - cession creation V1",
         structure="SPFPL cession",
         slice_module="sydel_doc_engine.front_app.spfpl_cession_slice",
         generation_enabled=True,
@@ -99,7 +109,7 @@ REGISTERED_TYPES: Final[tuple[RegisteredType, ...]] = (
     ),
     RegisteredType(
         key="spfpl_apport_v1",
-        label="SPFPL apport creation V1",
+        label="SPFPL dentistes - apport creation V1",
         structure="SPFPL apport",
         slice_module="sydel_doc_engine.front_app.spfpl_apport_slice",
         generation_enabled=True,
