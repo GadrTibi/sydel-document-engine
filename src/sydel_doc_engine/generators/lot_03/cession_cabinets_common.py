@@ -106,7 +106,7 @@ def generate_cession_cabinet_docx(
     # Validation metier conservee (regles credit-vendeur / SCM = acte medical uniquement, etc.).
     _validate_context(ctx, variant)
     model_path = _resolve_model_path(variant)
-    replacements = _build_cession_replacements(ctx)
+    replacements = _build_cession_replacements(ctx, variant)
     gender_pairs = _build_cession_gender_pairs(ctx)
     output_path = output_dir / variant.output_filename
     return render_cession_from_template(
@@ -116,7 +116,109 @@ def generate_cession_cabinet_docx(
         gender_pairs=gender_pairs,
         paragraph_overrides=_build_paragraph_overrides(ctx, variant),
         segment_overrides=_build_segment_overrides(ctx),
+        line_fixes=_build_line_fixes(ctx, variant),
     )
+
+
+# Titre civil (M./Mme) derive du genre, pour les emplacements ou un titre
+# professionnel « Docteur » n'a pas sa place (retours 9.2 : la societe est
+# representee par « M./Mme », jamais « Dr »).
+_CIVIL_TITLE_BY_GENDER = {
+    Gender.MASCULIN: "M.",
+    Gender.FEMININ: "Mme",
+}
+
+
+def _civil_title(genre: Gender | None) -> str | None:
+    if genre is None:
+        return None
+    return _CIVIL_TITLE_BY_GENDER.get(genre)
+
+
+@dataclass(frozen=True)
+class _LineFix:
+    """Correctif de PARAGRAPHE ancre, applique APRES le remplissage des tokens.
+
+    `anchor` : sous-chaine litterale identifiant le paragraphe cible.
+    `pattern` : regex appliquee au texte du paragraphe (apres tokens + genre).
+    `replacement` : remplacement (groupes regex autorises).
+    """
+
+    anchor: str
+    pattern: re.Pattern[str]
+    replacement: str
+
+
+def _build_line_fixes(
+    ctx: DocumentGenerationContext,
+    variant: CessionCabinetVariant,
+) -> list[_LineFix]:
+    """Correctifs post-remplissage des modeles de cession (retours 9.2).
+
+    9.2 — « Représentée par son <fonction>, ... » : le modele COMPROMIS dentaire
+    pointe le VENDEUR (mauvaise personne) et le compromis affiche « Docteur ». On
+    reecrit l'identite du representant de la societe avec un titre CIVIL (M./Mme).
+    Perimetre = compromis (cible du ticket) ; l'acte n'est pas touche.
+
+    (Le bloc signature 9.8 est traite en amont, au niveau des tokens
+    [signature_acquereur]/[signature_vendeur] dans _build_cession_replacements.)
+    """
+    fixes: list[_LineFix] = []
+    cession = ctx.cession
+    if cession is None or variant.etape != COMPROMIS:
+        return fixes
+
+    acquereur = cession.acquereur or CessionAcquereur()
+    representant = acquereur.representant or CessionRepresentant()
+
+    # --- 9.2 : identite du representant dans « Représentée par son/sa ... » ---
+    civil = _civil_title(representant.genre)
+    rep_identity = _person_label(civil, representant.prenom, representant.nom)
+    if rep_identity:
+        # Reecrit ce qui suit « Représentée par sa/son <fonction>, » jusqu'a la
+        # virgule precedant « domicilié(e) en cette qualité ». Insensible a la
+        # personne erronee (vendeur) ou au titre (Docteur) du modele source.
+        fixes.append(
+            _LineFix(
+                anchor="Représentée par s",
+                pattern=re.compile(r"(Représentée par s(?:on|a) [^,]+, ).+?(, domicilié)"),
+                replacement=rf"\g<1>{rep_identity.replace(chr(92), chr(92) * 2)}\g<2>",
+            )
+        )
+
+    return fixes
+
+
+def _societe_signature_label(
+    acquereur: CessionAcquereur,
+    representant: CessionRepresentant,
+) -> str | None:
+    """Libelle de signature de la SOCIETE acquereur (retours 9.8).
+
+    Forme : « Pour la <forme> <denomination>, <fonction> <M./Mme Prenom Nom> ».
+    La societe signe via son representant ; titre CIVIL (M./Mme), pas « Docteur ».
+    """
+    denomination = (acquereur.denomination_societe or "").strip()
+    if not denomination:
+        return None
+    forme = (acquereur.forme_sociale or "").strip()
+    # Eviter « Pour la SELARL SELARL CABINET ... » : la denomination saisie
+    # contient souvent deja la forme sociale en prefixe. On ne re-prefixe la
+    # forme que si elle n'est pas deja en tete de la denomination.
+    if forme and denomination.upper().startswith(forme.upper()):
+        entete = f"Pour la {denomination}"
+    else:
+        entete = f"Pour la {forme} {denomination}" if forme else f"Pour la {denomination}"
+    entete = re.sub(r"\s+", " ", entete).strip()
+
+    civil = _civil_title(representant.genre)
+    rep_identity = _person_label(civil, representant.prenom, representant.nom)
+    fonction = (representant.fonction or "").strip()
+    if rep_identity and fonction:
+        return f"{entete}, {fonction} {rep_identity}"
+    if rep_identity:
+        return f"{entete}, {rep_identity}"
+    return entete
 
 
 # Segments matrimoniaux EXACTS des modeles (chaines figees relevees dans
@@ -245,6 +347,7 @@ def render_cession_from_template(
     gender_pairs: list[tuple[Gender, list[tuple[str, str]]]] | None = None,
     paragraph_overrides: dict[str, str | None] | None = None,
     segment_overrides: dict[str, str] | None = None,
+    line_fixes: list[_LineFix] | None = None,
 ) -> Path:
     """Charge le modele tokenise et remplace chaque token [xxx] run par run.
 
@@ -266,6 +369,11 @@ def render_cession_from_template(
     tableaux). Chaque entree accorde des chaines EXACTES figees du modele selon
     le `genre` de la BONNE personne (vendeur, representant...). C'est le
     generateur qui pilote les paires : aucune normalisation magique globale.
+
+    `line_fixes` (optionnel) : correctifs regex de PARAGRAPHE appliques APRES le
+    remplissage des tokens ET l'accord en genre (donc sur le texte final). Sert
+    aux corrections qui ne peuvent pas etre portees par le modele source (lecture
+    seule) — ex. 9.2 : l'identite du representant dans « Représentée par son... ».
 
     Securite anti-trou : si un token [...] subsiste apres remplacement, leve
     ValueError en listant les tokens residuels (un token oublie = un test rouge).
@@ -307,6 +415,10 @@ def render_cession_from_template(
     if gender_pairs:
         for paragraph in _iter_all_paragraphs(document):
             _apply_gender_pairs_to_paragraph(paragraph, gender_pairs)
+
+    if line_fixes:
+        for paragraph in _iter_all_paragraphs(document):
+            _apply_line_fixes_to_paragraph(paragraph, line_fixes)
 
     residual = _collect_residual_tokens(document)
     if residual:
@@ -395,6 +507,26 @@ def _strip_word_comments(document) -> None:
         partname = str(getattr(related, "partname", ""))
         if partname.endswith(_COMMENT_PART_SUFFIXES):
             main_part.drop_rel(rel_id)
+
+
+def _apply_line_fixes_to_paragraph(paragraph, line_fixes: list[_LineFix]) -> None:
+    """Applique les correctifs regex de paragraphe (texte final, post-tokens).
+
+    Pour chaque fix dont l'ancre est presente, la regex est appliquee au TEXTE
+    FUSIONNE du paragraphe ; si le texte change, il est reecrit sur le premier
+    run (mise en forme du premier run conservee, comme les autres surcharges).
+    """
+    if not paragraph.runs:
+        return
+    text = paragraph.text
+    new_text = text
+    for fix in line_fixes:
+        if fix.anchor in new_text:
+            new_text = fix.pattern.sub(fix.replacement, new_text)
+    if new_text != text:
+        paragraph.runs[0].text = new_text
+        for run in paragraph.runs[1:]:
+            run.text = ""
 
 
 def _apply_segment_overrides(
@@ -505,7 +637,10 @@ def _resolve_model_path(variant: CessionCabinetVariant) -> Path:
 # ---------------------------------------------------------------------------
 
 
-def _build_cession_replacements(ctx: DocumentGenerationContext) -> dict[str, str]:
+def _build_cession_replacements(
+    ctx: DocumentGenerationContext,
+    variant: CessionCabinetVariant,
+) -> dict[str, str]:
     cession = ctx.cession
     if cession is None:
         raise ValueError(f"cession est obligatoire pour {DOCUMENT_CODE}.")
@@ -650,13 +785,42 @@ def _build_cession_replacements(ctx: DocumentGenerationContext) -> dict[str, str
     put("[date_signature]", _french_date(signature.date))
     put("[nombre_exemplaires_lettres]", document.nombre_exemplaires_lettres)
     put("[nombre_pages_lettres]", document.nombre_pages_lettres)
-    put("[signature_vendeur]", _person_label(vendeur.civilite_affichage, vendeur.prenom, vendeur.nom))
-    put(
-        "[signature_acquereur]",
-        _person_label(representant.civilite_affichage, representant.prenom, representant.nom),
-    )
+    _put_signature_tokens(put, variant, vendeur, acquereur, representant)
 
     return replacements
+
+
+def _put_signature_tokens(
+    put,
+    variant: CessionCabinetVariant,
+    vendeur: CessionVendeur,
+    acquereur: CessionAcquereur,
+    representant: CessionRepresentant,
+) -> None:
+    """Remplit les deux tokens du bloc signature.
+
+    9.8 (COMPROMIS) : le modele rend « [signature_acquereur] <TAB> [signature_vendeur] »
+    avec, des deux cotes, une PERSONNE physique « Docteur » (cedant duplique).
+    Correctif : 1er signataire (gauche, [signature_acquereur]) = le CEDANT
+    (vendeur) ; 2e signataire (droite, [signature_vendeur]) = la SEL acquereur
+    (denomination + representant). Les noms de tokens, herites du modele, sont
+    donc volontairement « inverses » par rapport a leur intitule.
+
+    ACTE et autres etapes : comportement d'origine conserve (vendeur a gauche du
+    token vendeur, representant a droite du token acquereur) — hors perimetre 9.8.
+    """
+    vendeur_label = _person_label(vendeur.civilite_affichage, vendeur.prenom, vendeur.nom)
+    representant_label = _person_label(
+        representant.civilite_affichage, representant.prenom, representant.nom
+    )
+    if variant.etape == COMPROMIS:
+        societe_label = _societe_signature_label(acquereur, representant)
+        # Gauche (token acquereur) = cedant ; droite (token vendeur) = societe.
+        put("[signature_acquereur]", vendeur_label)
+        put("[signature_vendeur]", societe_label or representant_label)
+        return
+    put("[signature_vendeur]", vendeur_label)
+    put("[signature_acquereur]", representant_label)
 
 
 # ---------------------------------------------------------------------------

@@ -834,3 +834,98 @@ def test_compromis_dentaire_empty_optional_field_keeps_highlight(tmp_path: Path)
     # Le seul run surligne restant est la zone vide a completer (telephone).
     assert [t for t in highlighted if t.strip()] == []
     assert any(t == "" for t in highlighted)
+
+
+def _representee_line(path: Path) -> str:
+    for text in _docx_paragraph_texts(path):
+        if "Représentée par" in text:
+            return text
+    raise AssertionError("paragraphe « Représentée par » introuvable")
+
+
+@pytest.mark.parametrize(
+    ("generator", "type_cabinet"),
+    [
+        (CompromisCessionCabinetDentaireGenerator(), "dentaire"),
+        (CompromisCessionCabinetMedicalGenerator(), "medical"),
+    ],
+)
+def test_compromis_representee_uses_representant_with_civil_title(
+    generator,
+    type_cabinet: str,
+    tmp_path: Path,
+) -> None:
+    # 9.2 : « Représentée par son <fonction>, ... » doit nommer le REPRESENTANT
+    # (Alice Moreau), pas le vendeur (Jean Durand), avec un titre CIVIL (Mme),
+    # jamais « Docteur ».
+    ctx = _context(
+        etape="compromis", type_cabinet=type_cabinet, representant_genre=Gender.FEMININ
+    )
+    line = _representee_line(generator.generate(ctx, tmp_path))
+
+    assert "Mme Alice Moreau" in line
+    assert "Docteur" not in line
+    assert "Jean Durand" not in line  # plus le vendeur (bug modele dentaire)
+    # L'accord en genre de la societe (« domiciliée ») reste correct.
+    assert "domiciliée en cette qualité" in line
+
+
+def test_compromis_representee_masculin_uses_m_title(tmp_path: Path) -> None:
+    # 9.2 : representant masculin -> « M. » (jamais « Docteur »).
+    ctx = _context(
+        etape="compromis", type_cabinet="dentaire", representant_genre=Gender.MASCULIN
+    )
+    line = _representee_line(
+        CompromisCessionCabinetDentaireGenerator().generate(ctx, tmp_path)
+    )
+
+    assert "M. Alice Moreau" in line
+    assert "Docteur" not in line
+    assert "domicilié en cette qualité" in line
+
+
+def test_acte_dentaire_representee_unchanged(tmp_path: Path) -> None:
+    # 9.2 hors perimetre : l'acte n'est PAS touche par le correctif compromis.
+    ctx = _context(type_cabinet="dentaire", salaries=_DENT_SALARIES)
+    line = _representee_line(ActeCessionCabinetDentaireGenerator().generate(ctx, tmp_path))
+
+    # L'acte conserve son comportement d'origine (modele « sa <fonction> »).
+    assert "Représentée par sa" in line
+
+
+def _signature_line(path: Path) -> str:
+    for text in _docx_paragraph_texts(path):
+        if "\t" in text and ("Durand" in text or "Moreau" in text):
+            return text
+    raise AssertionError("ligne de signature introuvable")
+
+
+@pytest.mark.parametrize(
+    ("generator", "type_cabinet"),
+    [
+        (CompromisCessionCabinetDentaireGenerator(), "dentaire"),
+        (CompromisCessionCabinetMedicalGenerator(), "medical"),
+    ],
+)
+def test_compromis_signatories_cedant_then_societe(
+    generator,
+    type_cabinet: str,
+    tmp_path: Path,
+) -> None:
+    # 9.8 : 1er signataire = cedant (vendeur) ; 2e = la SEL acquereur (societe),
+    # plus deux fois la meme personne « Dr ».
+    ctx = _context(etape="compromis", type_cabinet=type_cabinet)
+    line = _signature_line(generator.generate(ctx, tmp_path))
+
+    left, _, right = line.partition("\t")
+    right = right.strip()
+    # Gauche = le cedant (vendeur).
+    assert left.strip() == "Docteur Jean Durand"
+    # Droite = la societe acquereur (denomination + representant civil), pas une
+    # 2e personne physique « Docteur ».
+    assert right.startswith("Pour la SELARL CABINET DURAND")
+    assert "Mme Alice Moreau" in right
+    # Pas de denomination doublee (« SELARL SELARL »).
+    assert "SELARL SELARL" not in right
+    # Les deux signataires sont DISTINCTS.
+    assert left.strip() != right
