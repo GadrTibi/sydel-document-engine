@@ -126,6 +126,20 @@ REGISTERED_TYPES: Final[tuple[RegisteredType, ...]] = (
         generation_enabled=True,
         status="moteur_teste",
     ),
+    # Cas NOMME « SELAS unipersonnelle medecin » : rebranche le generateur DOC-018
+    # (statuts SELAS medecin from-scratch) qui existait cote moteur mais restait
+    # orphelin (aucun parcours front — audit retours Albane lot 2, §17.1). Slice
+    # dedie unipersonnel (1 associe / President), structure de routage distincte de
+    # la SELAS multi pour ne pas detourner le chemin DOC-044 (>=2 associes). Pas de
+    # version dentiste uni : le modele source dentiste uni n'existe pas (NEEDS_SOURCE_MODEL).
+    RegisteredType(
+        key="selas_uni_medecin_v1",
+        label="SELAS unipersonnelle medecin creation V1",
+        structure="SELAS uni medecin",
+        slice_module="sydel_doc_engine.front_app.selas_uni_medecin_slice",
+        generation_enabled=True,
+        status="moteur_teste",
+    ),
 )
 
 

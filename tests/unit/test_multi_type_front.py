@@ -63,6 +63,7 @@ def test_registry_exposes_all_ready_types() -> None:
         "SPFPL cession",
         "SPFPL apport",
         "SELAS",
+        "SELAS uni medecin",
     } == structures
 
 
@@ -1156,6 +1157,7 @@ def test_front_dropdown_lists_all_types_with_selarl_default() -> None:
         "SPFPL apport creation V1",
         "SELAS multi-associes creation V1",
         "SELAS dentiste pluripersonnelle creation V1",
+        "SELAS unipersonnelle medecin creation V1",
     ]
     # Surface SELARL inchangee : aucun expander sur le defaut.
     assert len(app.expander) == 0
@@ -1529,3 +1531,110 @@ def test_civil_non_scm_does_not_collect_profession() -> None:
     app.selectbox(key="clean_dossier_type").set_value("SCM creation V1")
     app = app.run(timeout=120)
     assert any(str(w.key) == "scm_associe_0_profession" for w in app.text_input)
+
+
+# --- §17.1 : SELAS UNIPERSONNELLE medecin (DOC-018, generateur rebranche) ------
+
+
+def test_selas_uni_medecin_present_in_dropdown() -> None:
+    # §17.1 : le cas etait orphelin (generateur DOC-018 sans entree de menu). Il
+    # doit desormais figurer dans la deroulante, par son nom, generation activee.
+    option = dossier_type_by_label("SELAS unipersonnelle medecin creation V1")
+    assert option.key == "selas_uni_medecin_v1"
+    assert option.structure == "SELAS uni medecin"
+    assert option.generation_enabled is True
+    assert option.slice_module == "sydel_doc_engine.front_app.selas_uni_medecin_slice"
+    # La SELARL reste en premiere position (defaut historique).
+    assert dossier_type_labels()[0] == "SELARL creation V1"
+
+
+def _selas_uni_medecin_payload():
+    return {
+        "denomination": "SELAS MARTIN",
+        "capital_social": "1000",
+        "nb_actions_total": 1000,
+        "duree": "99 ans",
+        "ville_rcs": "Paris",
+        "lieu_exercice_adresse": "12 avenue de la Republique, 75011 Paris",
+        "siege_num": "10",
+        "siege_voie": "rue de la Paix",
+        "siege_cp": "75002",
+        "siege_ville": "Paris",
+        "banque_nom": "BANQUE EXEMPLE",
+        "banque_adresse": "1 boulevard Haussmann, 75009 Paris",
+        "exercice_debut": "1er janvier",
+        "exercice_fin": "31 decembre",
+        "exercice_cloture": "31 decembre 2026",
+        "civilite": "Monsieur",
+        "prenom": "Camille",
+        "nom": "Martin",
+        "date_naissance": date(1980, 1, 2),
+        "ville_naissance": "Paris",
+        "departement_naissance": "75",
+        "nationalite": "francaise",
+        "titre_affichage": "Docteur",
+        "adresse_num": "5",
+        "adresse_voie": "5 rue Royale",
+        "adresse_cp": "75008",
+        "adresse_ville": "Paris",
+        "nom_pere": "Pierre Martin",
+        "nom_mere": "Anne Martin",
+        "situation_maritale": "marie",
+        "regime_matrimonial": "communaute legale",
+        "conjoint_civilite": "Madame",
+        "conjoint_prenom": "Alice",
+        "conjoint_nom": "Martin",
+        "ordre_conseil": "Ordre des medecins",
+        "departement_ordre": "Paris",
+        "numero_ordre": "12345",
+        "numero_rpps": "10000000001",
+        "ordre_ville": "Paris",
+        "ordre_cp": "75008",
+        "ordre_adresse_ligne_1": "1 rue de l'Ordre",
+        "signature_lieu": "Paris",
+        "signature_date": date(2026, 5, 14),
+        "decision_date": date(2026, 5, 14),
+    }
+
+
+def test_selas_uni_medecin_generates_doc018_bundle(tmp_path: Path) -> None:
+    # §17.1 : le bundle de creation expose DOC-018 (statuts SELAS medecin) + tronc
+    # commun. Genere proprement (aucun token residuel) et porte la forme SELAS.
+    from sydel_doc_engine.front_app import selas_uni_medecin_slice as uni
+
+    payload = _selas_uni_medecin_payload()
+    plan = uni.build_selas_uni_medecin_plan(payload)
+    assert plan.can_generate is True
+    assert plan.document_codes == ("DOC-018", "DOC-001", "DOC-002", "DOC-003", "DOC-004", "DOC-034")
+
+    generated = uni.generate_dossier(payload, tmp_path / "selas-uni-medecin")
+    _assert_bundle_clean(
+        generated,
+        {
+            "statuts_selas_medecin.docx",
+            "declaration_non_condamnation.docx",
+            "autorisation_domiciliation.docx",
+            "procuration.docx",
+            "pv_nomination_gerant.docx",
+            "demande_inscription_ordre.docx",
+        },
+    )
+    statuts_text = _docx_text(
+        next(p for p in generated.docx_paths if p.name == "statuts_selas_medecin.docx")
+    )
+    assert "SELAS MARTIN" in statuts_text
+
+
+def test_selas_uni_medecin_context_is_selas_actions() -> None:
+    # §17.1 : le contexte derive du parcours SELARL uni est bien transforme en
+    # SELAS medecin (structure SELAS, overlay selas_medecin, titres = actions,
+    # dirigeant President). Garde-fou anti-detournement du chemin SELARL.
+    from sydel_doc_engine.front_app import selas_uni_medecin_slice as uni
+
+    ctx = uni.build_generation_context(_selas_uni_medecin_payload())
+    assert ctx.structure == "SELAS"
+    assert ctx.statuts_sel.overlay == "selas_medecin"
+    assert ctx.societe.forme_sociale_abregee == "SELAS"
+    assert ctx.capital.type_titre == "actions"
+    assert ctx.dirigeant_nomine.fonction_affichage == "président"
+    assert ctx.dirigeant_nomine.duree_mandat == "illimitée"
