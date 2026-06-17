@@ -350,6 +350,34 @@ def test_pv_age_adoption_lines_italic_and_signature_frame_enlarged(tmp_path: Pat
         assert row.height >= Cm(2.4)
 
 
+def test_pv_age_president_derived_from_last_present_associe(tmp_path: Path) -> None:
+    # §4.1 — le president de seance est derive du DERNIER associe present (gerant
+    # associe), pas d'un index fixe « [2] ». On renomme le dernier present et on
+    # verifie qu'il preside, sans index code en dur.
+    ctx = _base_context("SELARL")
+    ctx.scm_cession.associes_presents[-1] = _associe("Sophie Leroy", 100, "201 à 300")
+    text = _docx_text(PvAgeCessionScmGenerator().generate(ctx, tmp_path))
+
+    assert "Sophie Leroy préside la séance en qualité de gérant associé" in text
+    assert "Anne Martin préside la séance" not in text
+
+
+def test_pv_age_uses_real_scm_data_not_fixture_capital(tmp_path: Path) -> None:
+    # §4.1 — capital / parts / nominal / plage du PV proviennent du contexte
+    # (donc de la saisie front), pas d'une valeur figee. On change le capital et
+    # le nb de parts et on verifie qu'ils s'impriment.
+    ctx = _base_context("SELARL")
+    ctx.scm_cession.scm_cedee.capital_social = "4 500"
+    ctx.scm_cession.scm_cedee.valeur_nominale_part = "15"
+    text = _docx_text(PvAgeCessionScmGenerator().generate(ctx, tmp_path))
+
+    # entete centre (« Au capital de … € ») + corps (« au capital de … euros »)
+    assert "Au capital de 4 500 €" in text
+    assert "au capital de 4 500 euros" in text
+    assert "15 euros chacune" in text
+    assert "3 000" not in text
+
+
 def _table_has_borders(table) -> bool:
     tbl_pr = table._tbl.tblPr
     borders = tbl_pr.find(

@@ -2457,6 +2457,34 @@ def _render_scm_cession_form(
             col_b, "Numero RCS", section="scm_cedee", field="numero_rcs",
             default=str(scm_cedee.get("numero_rcs") or ""),
         )
+        # §4.1 — capital / parts / nominal / plage pilotables (la fixture ne les
+        # exposait pas : capital 3 000, 300 parts, nominal 10, plage 1 a 300
+        # s'imprimaient en dur). On les rend editables, preremplis avec la base.
+        col_c, col_d = st.columns(2)
+        scm_cedee["capital_social"] = _cession_text(
+            col_c, "Capital social SCM", section="scm_cedee", field="capital_social",
+            default=str(scm_cedee.get("capital_social") or ""),
+        )
+        nb_parts_saisi = _cession_text(
+            col_d, "Nombre total de parts", section="scm_cedee", field="nb_parts_total",
+            default=str(scm_cedee.get("nb_parts_total") or ""),
+        )
+        # nb_parts_total est un entier cote modele : on ne remplace la base que
+        # si la saisie est un entier valide, sinon on conserve la valeur de base
+        # (jamais de cle requise videe / cassee).
+        if nb_parts_saisi.isdigit():
+            scm_cedee["nb_parts_total"] = int(nb_parts_saisi)
+        col_e, col_f = st.columns(2)
+        scm_cedee["valeur_nominale_part"] = _cession_text(
+            col_e, "Valeur nominale d'une part", section="scm_cedee",
+            field="valeur_nominale_part",
+            default=str(scm_cedee.get("valeur_nominale_part") or ""),
+        )
+        scm_cedee["plage_parts_total"] = _cession_text(
+            col_f, "Plage totale des parts (ex. 1 a 300)", section="scm_cedee",
+            field="plage_parts_total",
+            default=str(scm_cedee.get("plage_parts_total") or ""),
+        )
     payload["scm_cedee"] = scm_cedee
 
     cedant = payload.setdefault("cedant", {}) or {}

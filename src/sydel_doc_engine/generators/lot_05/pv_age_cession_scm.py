@@ -118,11 +118,20 @@ class PvAgeCessionScmGenerator:
             document,
             "Les associés présents ou représentés disposent ensemble la totalité des parts formant le capital de la société. L'assemblée est habilitée à prendre les décisions extraordinaires.",
         )
-        president = scm_cession.associes_presents[2]
+        # §4.1 — le president de seance (gerant associe) est le DERNIER associe
+        # present, derive du nombre reel d'associes saisis et non d'un index fixe
+        # (l'ancien code codait associes_presents[2], qui levait IndexError des
+        # qu'il y avait moins de 3 associes presents). Conventionnellement, le
+        # gerant associe figure en derniere position de la liste des presents
+        # (rendu byte-identique pour la fixture de demo a 3 associes : [-1] == [2]).
+        if not scm_cession.associes_presents:
+            raise ValueError("scm_cession.associes_presents est obligatoire pour le PV AGE cession SCM.")
+        president_index = len(scm_cession.associes_presents) - 1
+        president = scm_cession.associes_presents[president_index]
         add_body_paragraph(
             document,
             (
-                f"{associe_display(president, 'scm_cession.associes_presents[2]')} "
+                f"{associe_display(president, f'scm_cession.associes_presents[{president_index}]')} "
                 "préside la séance en qualité de gérant associé."
             ),
         )
