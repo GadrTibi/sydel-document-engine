@@ -4,12 +4,12 @@
 ```
   ┌─ SYDEL · Retours Albane lot 2 · AVANCEMENT ────────────
   │
-  │   GLOBAL   [███████████████████░░░░░]  39/49  ·  80%
+  │   GLOBAL   [████████████████████░░░░]  40/49  ·  82%
   │
   │   ✅  1a· bugs isolés       4/4   [██████████]
   │   🔨  1b· bugs données P1   11/12 [█████████░]
   │   ✅  2 · formulaires       10/10 [██████████]
-  │   🔨  3 · contenu docs      8/14  [██████░░░░]
+  │   🔨  3 · contenu docs      9/14  [██████░░░░]
   │   🔨  4 · mise en forme     6/9   [███████░░░]
   │
   │   ⏸ hors-build (Rafael/Albane) : 10      ✔ déjà conformes : 5
@@ -48,7 +48,7 @@
 - [x] **§SCREEN-1** — Nationalite en champ deroulant (NATIONALITY_PRESETS) a propager depuis la SELARL aux autre
 - [x] **§SCREEN-2** — Valeur nominale d'une action/part toujours calculee auto (capital / nb actions ou parts) -
 
-## Vague 3 · contenu docs — 8/14
+## Vague 3 · contenu docs — 9/14
 - [ ] **§12.3** — Appel de fonds : signe par le CLIENT au lieu du conseiller SYDEL
 - [x] **§17.1** — SELAS unipersonnelle medecin : generateur DOC-018 present mais ORPHELIN (aucun parcours fr
 - [x] **§17.4** — Deroulant SPFPL : libelles n'indiquant pas 'dentiste' et co-libelle 'SAS SPFPL medecins' a
@@ -61,7 +61,7 @@
 - [x] **§8.4b** — Intégrer le pied de page du modèle (coordonnées SYDEL) pour que le SDE puisse contacter SY
 - [ ] **§9.4** — Chiffre d'affaires non reporté : table modèle malformée (tokens manquants/dupliqués)
 - [ ] **§9.6** — Titre « DATE PRÉVUE DE RÉALISATION » : « DATE » remplacé par une date (token erroné dans l
-- [ ] **§9.8** — Signataires : deux fois « Dr [nom] » ; le 2e doit être la SEL acquéreur
+- [x] **§9.8** — Signataires : deux fois « Dr [nom] » ; le 2e doit être la SEL acquéreur
 - [ ] **§9.9** — Formule finale « vingt pages » au lieu du nombre réel (8 pages)
 
 ## Vague 4 · mise en forme — 6/9
