@@ -2,6 +2,16 @@
 
 > Rafael tranche build vs Albane. Le reste (~47 corrections) part sans lui.
 
+> **MAJ retour Rafael (2026-06-17)** :
+> - **§16 (édition des modèles) → CLOS, rien à construire.** Albane parle de retoucher les
+>   documents **générés**, *a posteriori, dans Word* — pas d'un éditeur intégré au logiciel.
+>   Or les sorties sont déjà des .docx éditables : aucune dev. (Sur-interprétation de ma part.)
+> - **§15 (export/import du formulaire) → PARQUÉ.** Item flou même pour Rafael ; on ne le
+>   construit pas tant qu'Albane n'a pas exprimé un besoin concret. Pas à la roadmap pour l'instant.
+> - **Restent réellement ouverts** : les **nouvelles formes** (§17 : micro-holding, SARL famille,
+>   SELAS uni dentiste — modèle manquant) et les **2 questions métier** (SPFPL dentistes-only ?,
+>   wording avenant locataire). Ces questions-là, elles, sont pertinentes.
+
 ---
 
 Rafa,
