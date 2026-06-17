@@ -88,6 +88,7 @@ class LettreAvertissementConjointGenerator:
             alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
         )
         add_paragraph(document, "Fait en quatre exemplaires")
+        add_spacer(document, space_after_pt=24)
         _add_apporteur_signature_block(document, ctx)
         add_paragraph(document, _conjoint_line(ctx))
         add_italic_instruction(document, _mention_manuscrite(ctx, company, structure))
