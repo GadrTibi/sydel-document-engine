@@ -5,6 +5,7 @@ from pathlib import Path
 
 from docx import Document
 
+from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import (
     Address,
     DocumentGenerationContext,
@@ -217,30 +218,44 @@ def _add_comparution_block(document, data: _ResolvedSelasMulti) -> None:
             _add_physical_comparution(document, associe, profession_pluriel)
 
 
+def _associe_est_feminin(associe: StatutsCivilsAssocie) -> bool:
+    """Genre de l'associe pour l'accord des comparutions (retour Albane / audit
+    2026-06-17 : « née » et « Inscrite » etaient figes au feminin -> un associe
+    masculin sortait « née … Inscrite »). On prend `associe.genre` ; a defaut on
+    derive de la civilite affichee (« Monsieur » -> masculin)."""
+    if associe.genre is not None:
+        return associe.genre == Gender.FEMININ
+    civilite = (associe.civilite_affichage or "").strip().casefold().replace(".", "")
+    return civilite in {"madame", "mme", "mademoiselle", "mlle"}
+
+
 def _add_physical_comparution(
     document,
     associe: StatutsCivilsAssocie,
     profession_pluriel: str,
 ) -> None:
-    # Source para 16 : "[civilite] [prenoms] [nom], [profession] [qualif], nee le [date] a
+    feminin = _associe_est_feminin(associe)
+    ne = "née" if feminin else "né"
+    inscrit = "Inscrite" if feminin else "Inscrit"
+    # Source para 16 : "[civilite] [prenoms] [nom], [profession] [qualif], ne(e) le [date] a
     # [ville] ([dep]), de nationalite [nat], demeurant [adresse], [situation]."
     add_paragraph(
         document,
         f"{_person_label(associe)}, "
         f"{_required_text(associe.profession, 'associes[].profession')} "
         f"{_required_text(associe.qualification_principale, 'associes[].qualification_principale')}, "
-        f"née le {_format_display_date(associe.date_naissance, 'associes[].date_naissance')} "
+        f"{ne} le {_format_display_date(associe.date_naissance, 'associes[].date_naissance')} "
         f"à {_required_text(associe.ville_naissance, 'associes[].ville_naissance')} "
         f"({_required_text(associe.departement_naissance, 'associes[].departement_naissance')}), "
         f"de nationalité {_required_text(associe.nationalite, 'associes[].nationalite')}, "
         f"demeurant {_person_address(associe)}, "
         f"{_required_text(associe.situation_maritale, 'associes[].situation_maritale')}.",
     )
-    # Source para 17 : "Inscrite au tableau du conseil de l'ordre des [profession_pluriel] du
+    # Source para 17 : "Inscrit(e) au tableau du conseil de l'ordre des [profession_pluriel] du
     # [ordre_dep] sous le numero departemental [numero_ordre], et sous le numero RPPS [rpps]."
     add_paragraph(
         document,
-        "Inscrite au tableau du conseil de l’ordre des "
+        f"{inscrit} au tableau du conseil de l’ordre des "
         f"{profession_pluriel} "
         f"du {_required_text(associe.ordre_departemental, 'associes[].ordre_departemental')} "
         "sous le numéro départemental "

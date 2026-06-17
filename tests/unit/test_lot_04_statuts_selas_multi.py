@@ -269,3 +269,36 @@ def test_selas_multi_rejects_action_total_mismatch(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="somme des actions"):
         StatutsSelasMultiGenerator().generate(ctx, tmp_path)
+
+
+def test_selas_multi_physical_associe_masculin_accorde_ne_et_inscrit(tmp_path: Path) -> None:
+    # Audit 2026-06-17 : « née » et « Inscrite » etaient figes au feminin dans la
+    # comparution -> un associe MASCULIN sortait « née … Inscrite ». Desormais
+    # accorde sur le genre de chaque associe.
+    homme = _physical_associe(
+        prenoms="Paul",
+        nom="Martin",
+        nb_actions=25,
+        montant="250",
+        montant_lettres="deux cent cinquante",
+        qualite="associé exerçant",
+    ).model_copy(update={"genre": Gender.MASCULIN, "civilite_affichage": "Monsieur"})
+    femme = _physical_associe(
+        prenoms="Claire",
+        nom="Durand",
+        nb_actions=75,
+        montant="750",
+        montant_lettres="sept cent cinquante",
+    )
+    ctx = _context(associes=[femme, homme])
+
+    text = _docx_text(StatutsSelasMultiGenerator().generate(ctx, tmp_path))
+
+    # Femme : accord feminin conserve.
+    assert "Madame Claire Durand, Docteur qualifiée en médecine générale, née le" in text
+    assert "Inscrite au tableau du conseil de l’ordre des médecins" in text
+    # Homme : accord masculin (le bug).
+    assert "Monsieur Paul Martin, Docteur qualifiée en médecine générale, né le" in text
+    assert "Inscrit au tableau du conseil de l’ordre des médecins" in text
+    # Pas de « née »/« Inscrite » accole au nom de l'homme.
+    assert "Monsieur Paul Martin, Docteur qualifiée en médecine générale, née le" not in text
