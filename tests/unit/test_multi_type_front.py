@@ -631,7 +631,10 @@ def _spfpl_payload(structure):
         "siege": "10 rue de la Paix, 75002 Paris",
         "capital_social": "60000",
         "valeur_nominale_action": "100",
-        "civilite": "Docteur",
+        # §14.2 : civilite = civilite CIVILE (M./Mme) ; le titre pro « Docteur »
+        # est porte par titre_affichage (automatique pour une SPFPL dentiste).
+        "civilite": "Monsieur",
+        "titre_affichage": "Docteur",
         "prenom": "Camille",
         "prenoms": "Camille Andre",
         "nom": "Martin",
@@ -776,6 +779,48 @@ def test_spfpl_apport_capital_not_duplicated(tmp_path: Path) -> None:
     assert "60000euros" not in text  # plus de « euros » colle
     assert "€ 60000" not in text  # plus de montant duplique apres le €
     assert "60000 euros" in text  # forme propre
+
+
+# --- §14.2 : SPFPL dentiste, « Docteur » automatique (hors deroulante civilite) -
+
+
+def test_spfpl_titre_docteur_automatic_civilite_is_civil() -> None:
+    # §14.2 : la civilite portee au contexte est la civilite CIVILE (M./Mme), et le
+    # titre pro « Docteur » est applique automatiquement (titre_affichage), sans
+    # dependre de la valeur choisie dans la deroulante civilite.
+    payload = _spfpl_payload("SPFPL cession")
+    assert payload["civilite"] == "Monsieur"  # civilite civile, plus « Docteur »
+    ctx = spfpl_slice.build_generation_context(payload)
+    assert ctx.personne_signataire.civilite == "Monsieur"
+    assert ctx.personne_signataire.titre_affichage == "Docteur"
+    # Le dirigeant / president gardent la civilite CIVILE (mutualise SELARL/SELAS).
+    assert ctx.dirigeant_nomine.civilite_affichage == "Monsieur"
+
+
+def test_spfpl_demande_ordre_uses_docteur_title(tmp_path: Path) -> None:
+    # §14.2 : la demande d'inscription a l'ordre (titre_affichage) affiche « Docteur »
+    # automatiquement, meme si la civilite civile est « Monsieur ».
+    payload = _spfpl_payload("SPFPL cession")
+    generated = spfpl_slice.generate_dossier(payload, tmp_path / "spfpl-titre-ordre")
+    text = _docx_text(
+        next(p for p in generated.docx_paths if p.name == "demande_inscription_ordre.docx")
+    )
+    assert "Docteur Camille Martin" in text
+
+
+def test_spfpl_form_civilite_drops_docteur_and_genre_selector() -> None:
+    # §14.2 : la deroulante civilite ne propose plus « Docteur » (M./Mme seulement)
+    # et le selecteur « Genre civil » redondant a disparu.
+    from streamlit.testing.v1 import AppTest
+
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=120)
+    app.selectbox(key="clean_dossier_type").set_value("SPFPL dentistes - cession creation V1")
+    app = app.run(timeout=120)
+
+    civilite_box = next(s for s in app.selectbox if str(s.key) == "spfpl_cession_civilite")
+    assert "Docteur" not in list(civilite_box.options)
+    assert set(civilite_box.options) == {"Monsieur", "Madame"}
+    assert not any(str(s.key) == "spfpl_cession_genre_label" for s in app.selectbox)
 
 
 def test_sas_attestation_no_double_docteur(tmp_path: Path) -> None:

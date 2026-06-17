@@ -4,10 +4,10 @@
 ```
   ┌─ SYDEL · Retours Albane lot 2 · AVANCEMENT ────────────
   │
-  │   GLOBAL   [█████████░░░░░░░░░░░░░░░]  18/49  ·  37%
+  │   GLOBAL   [█████████░░░░░░░░░░░░░░░]  19/49  ·  39%
   │
   │   ✅  1a· bugs isolés       4/4   [██████████]
-  │   🔨  1b· bugs données P1   3/12  [██░░░░░░░░]
+  │   🔨  1b· bugs données P1   4/12  [███░░░░░░░]
   │   🔨  2 · formulaires       9/10  [█████████░]
   │   🔨  3 · contenu docs      2/14  [█░░░░░░░░░]
   │   ⬜  4 · mise en forme     0/9   [░░░░░░░░░░]
@@ -22,11 +22,11 @@
 - [x] **§11** — Autorisation de domiciliation : 'euros' manquant apres le montant du capital
 - [x] **§12.2** — Appel de fonds : montant et symbole euros sur DEUX lignes (add_centered_amount avec liste 
 
-## Vague 1b · bugs données P1 — 3/12
+## Vague 1b · bugs données P1 — 4/12
 - [x] **§13.2** — Cedant SCM : nationalite, adresse, naissance, situation maritale figees sur la FIXTURE (pa
 - [x] **§13.3** — Description SELARL cessionnaire : denomination, CAPITAL, siege, RCS, immat figes sur la FI
 - [x] **§13.x** — Cause racine commune : le sous-formulaire SCM cession demarre d'une fixture de demo et n'o
-- [ ] **§14.2** — SPFPL dentiste : 'Docteur' est une valeur choisie dans la deroulante civilite et se propag
+- [x] **§14.2** — SPFPL dentiste : 'Docteur' est une valeur choisie dans la deroulante civilite et se propag
 - [ ] **§2.2** — Le formulaire SELARL ne capture pas un VRAI 2e lieu : un seul champ qui remplace/ecrase le
 - [ ] **§2.2** — Le contexte moteur SELARL ne porte qu'UN lieu (lieux[0]) — jamais de lieux[1]
 - [ ] **§2.2** — Rendu SELARL medecin : Article 5 cable en dur sur le siege, ignore totalement le champ sai

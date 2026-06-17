@@ -594,11 +594,13 @@ def _spfpl_prefill_values(prefix: str) -> dict[str, object]:
         f"{prefix}_capital_social": "60000",
         f"{prefix}_valeur_nominale_action": "100",
         f"{prefix}_ville_rcs": "Paris",
-        f"{prefix}_civilite": "Docteur",
+        # §14.2 : la civilite SPFPL est desormais la civilite CIVILE (M./Mme) ; le
+        # titre « Docteur » est applique automatiquement (plus de selecteur
+        # « Docteur » ni de selecteur « Genre civil » redondant).
+        f"{prefix}_civilite": "Monsieur",
         f"{prefix}_prenom": "Camille",
         f"{prefix}_prenoms": "Camille Andre",
         f"{prefix}_nom": "Martin",
-        f"{prefix}_genre_label": "Monsieur",
         f"{prefix}_date_naissance": "02/01/1980",
         f"{prefix}_ville_naissance": "Paris",
         f"{prefix}_departement_naissance": "75",

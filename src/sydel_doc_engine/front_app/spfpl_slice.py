@@ -139,21 +139,25 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
     ville_rcs = _t(st, prefix, "ville_rcs", "RCS SPFPL (ville)")
 
     st.markdown("**Actionnaire unique (chirurgien-dentiste, marie(e))**")
+    st.caption(
+        "Le titre « Docteur » est applique automatiquement (l'associe d'une SPFPL "
+        "dentiste est necessairement docteur) ; la civilite ci-dessous est la "
+        "civilite CIVILE (M. / Mme)."
+    )
+    # §14.2 (retours Albane lot 2) : « Docteur » n'est plus une valeur a choisir
+    # (il etait melange avec la civilite civile et se propageait en titre dans les
+    # satellites). On ne garde QUE la civilite civile M./Mme ; le genre en derive
+    # (plus de double selecteur « Genre civil » redondant). Le titre pro « Docteur »
+    # est injecte automatiquement cote moteur (build_generation_context).
     col_e, col_f, col_g = st.columns(3)
     civilite = col_e.selectbox(
-        "Civilite affichee",
-        ("Docteur", "Monsieur", "Madame"),
+        "Civilite (civile)",
+        ("Monsieur", "Madame"),
         key=f"{prefix}_civilite",
     )
     prenom = _t(col_f, prefix, "prenom", "Prenom")
     prenoms = _t(col_g, prefix, "prenoms", "Prenoms complets (etat civil)")
-    col_h, col_i = st.columns(2)
-    nom = _t(col_h, prefix, "nom", "Nom")
-    genre_label = col_i.selectbox(
-        "Genre civil",
-        ("Monsieur", "Madame"),
-        key=f"{prefix}_genre_label",
-    )
+    nom = _t(st, prefix, "nom", "Nom")
     col_j, col_k, col_l = st.columns(3)
     date_naissance = _t(col_j, prefix, "date_naissance", "Date de naissance (JJ/MM/AAAA)")
     ville_naissance = _t(col_k, prefix, "ville_naissance", "Ville de naissance")
@@ -249,10 +253,15 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
         "capital_social": capital,
         "valeur_nominale_action": valeur_action,
         "civilite": civilite,
+        # §14.2 : titre pro automatique (associe SPFPL dentiste = docteur). Plus de
+        # « Docteur » dans la deroulante civilite ; le titre est pose ici.
+        "titre_affichage": "Docteur",
         "prenom": prenom,
         "prenoms": prenoms or prenom,
         "nom": nom,
-        "genre": derive_gender_from_civilite(genre_label),
+        # §14.2 : genre derive de la civilite CIVILE (M./Mme), plus de selecteur
+        # « Genre civil » redondant.
+        "genre": derive_gender_from_civilite(civilite),
         "date_naissance": date_naissance,
         "ville_naissance": ville_naissance,
         "departement_naissance": departement_naissance,
@@ -471,7 +480,10 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
             civilite=str(payload.get("civilite") or "Monsieur"),
             prenom=str(payload.get("prenom") or ""),
             nom=str(payload.get("nom") or ""),
-            titre_affichage=str(payload.get("civilite") or "Docteur"),
+            # §14.2 : titre PRO = « Docteur » automatique (et non la civilite civile
+            # M./Mme), utilise par la demande d'inscription a l'ordre. L'associe
+            # d'une SPFPL dentiste est necessairement docteur.
+            titre_affichage=str(payload.get("titre_affichage") or "Docteur"),
             adresse_perso=adresse_perso,
             adresse_personnelle_affichee=adresse_perso.adresse_affichee,
             date_naissance=cc.parse_birth_date(payload.get("date_naissance")),
