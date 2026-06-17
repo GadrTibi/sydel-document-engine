@@ -6,18 +6,21 @@ from sydel_doc_engine.domain.models import DocumentGenerationContext
 from sydel_doc_engine.generators.lot_04.statuts_sel_exercice_common import (
     DOCUMENT_CODE,
     OVERLAY_SELARL_MEDECIN,
+    SELARL_MEDECIN_ARTICLE_5_BODY,
     SELARL_MEDECIN_MULTI_ZONES,
     STRUCTURE_SELARL,
     add_depot_replacements,
     add_exercice_replacements,
     add_ordre_replacements,
     common_replacements,
+    first_lieu_exercice,
     render_statuts_sel_docx,
     representative_associe,
     required_text,
     sel_membres,
     statuts_output_filename,
     validate_sel_context,
+    validate_selas_second_lieu,
 )
 from sydel_doc_engine.generators.lot_04.statuts_sel_exercice_templates import (
     STATUTS_SELARL_MEDECIN_BLOCKS,
@@ -37,6 +40,7 @@ class StatutsSelarlMedecinGenerator:
         )
         membres = sel_membres(ctx)
         associate = representative_associe(ctx)
+        second_lieu_enabled = validate_selas_second_lieu(ctx)
         replacements = common_replacements(ctx, title_type="parts_sociales")
         add_ordre_replacements(replacements, associate)
         add_depot_replacements(replacements, ctx, require_address=True)
@@ -46,6 +50,25 @@ class StatutsSelarlMedecinGenerator:
             require_debut_fin=False,
             require_lieu=False,
         )
+        # 2e lieu d'exercice (ticket 2.2, ADDITIF) : on n'expose les tokens du
+        # patron SELAS (lieu #1 = siege, lieu #2) QUE si un 2e lieu reel est
+        # saisi. Sans 2e lieu, l'article 5 medecin garde son bloc source
+        # « ...situé au [adresse_siege]... » inchangé (sortie byte-identique).
+        if second_lieu_enabled and ctx.exercice_social is not None:
+            second_lieu = ctx.exercice_social.lieux[1]
+            replacements.update(
+                {
+                    "[adresse_lieu_exercice]": first_lieu_exercice(ctx),
+                    "[nom_lieu_exercice_2]": required_text(
+                        second_lieu.nom,
+                        "exercice_social.lieux[1].nom",
+                    ),
+                    "[adresse_lieu_exercice_2]": required_text(
+                        second_lieu.adresse_affichee,
+                        "exercice_social.lieux[1].adresse_affichee",
+                    ),
+                }
+            )
         if ctx.gerance is None:
             raise ValueError(f"gerance est obligatoire pour {DOCUMENT_CODE}.")
         replacements.update(
@@ -92,4 +115,6 @@ class StatutsSelarlMedecinGenerator:
             footer_medecin_denomination=replacements["[denomination_societe]"],
             membres=membres,
             multi_zones=SELARL_MEDECIN_MULTI_ZONES,
+            render_selas_second_lieu=second_lieu_enabled,
+            selarl_second_lieu_block=SELARL_MEDECIN_ARTICLE_5_BODY,
         )

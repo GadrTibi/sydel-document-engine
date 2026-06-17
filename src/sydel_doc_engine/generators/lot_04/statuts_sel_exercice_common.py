@@ -763,6 +763,45 @@ def _add_multi_capital_attribution(
         )
 
 
+# --- Article 5 SELARL : 2e lieu d'exercice (ticket 2.2, ADDITIF) --------------
+# Blocs source figes de l'article 5 SELARL (corps), interceptes par CONTENU au
+# rendu — meme technique que les `multi_zones`. A UN seul lieu, ces blocs sont
+# rendus tels quels (sortie byte-identique a l'existant). A DEUX lieux, ils sont
+# remplaces par le patron SELAS valide (en-tete + lieu #1 + nom2, adresse2).
+SELARL_DENTISTE_ARTICLE_5_BODY = (
+    "Le lieu d’exercice de la société est situé au [adresse_lieu_exercice]. "
+    "Il constitue le lieu d’exercice unique de la société"
+)
+SELARL_MEDECIN_ARTICLE_5_BODY = (
+    "Le lieu d’exercice de la société est situé au [adresse_siege]. "
+    "Il constitue le lieu d’exercice unique de la société."
+)
+# Patron SELAS valide repris pour le corps de l'article 5 SELARL a 2 lieux.
+# wording art.5 SELARL a 2 lieux repris du patron SELAS valide — A VALIDER Albane
+SELARL_ARTICLE_5_TWO_LIEUX_HEADER = "Le lieu d’exercice de la société est situé : "
+SELARL_ARTICLE_5_TWO_LIEUX_LINE_1 = "[adresse_lieu_exercice]"
+SELARL_ARTICLE_5_TWO_LIEUX_LINE_2 = "[nom_lieu_exercice_2], [adresse_lieu_exercice_2]"
+
+
+def _render_selarl_two_lieux_article_5(
+    docx: Any, replacements: dict[str, str], associate: Associe
+) -> None:
+    """Rend le corps de l'article 5 SELARL avec DEUX lieux (patron SELAS).
+
+    Reproduit la structure validee cote SELAS (en-tete + lieu #1 sur sa propre
+    ligne + « nom2, adresse2 »). Appele uniquement quand un 2e lieu reel est
+    saisi ; le cas 1-lieu garde le bloc source d'origine inchange.
+    """
+    for raw in (
+        SELARL_ARTICLE_5_TWO_LIEUX_HEADER,
+        SELARL_ARTICLE_5_TWO_LIEUX_LINE_1,
+        SELARL_ARTICLE_5_TWO_LIEUX_LINE_2,
+    ):
+        text = replace_placeholders(raw, replacements)
+        text = apply_gender_variants(text, associate)
+        add_statuts_body_paragraph(docx, text)
+
+
 def render_statuts_sel_docx(
     blocks: tuple[str, ...],
     replacements: dict[str, str],
@@ -776,6 +815,7 @@ def render_statuts_sel_docx(
     footer_medecin_denomination: str | None = None,
     membres: list[StatutsCivilsAssocie] | None = None,
     multi_zones: SelMultiZones | None = None,
+    selarl_second_lieu_block: str | None = None,
 ) -> Path:
     # Mode multi-associes : actif UNIQUEMENT a partir de 2 membres et si le template
     # fournit ses ancres (`multi_zones`). A 0/1 membre -> parcours mono inchange.
@@ -792,6 +832,17 @@ def render_statuts_sel_docx(
         if skip_personne_2_line and "[civilite_personne_2]" in block:
             continue
         if "[nom_lieu_exercice_2]" in block and not render_selas_second_lieu:
+            continue
+        # Article 5 SELARL a 2 lieux (ticket 2.2, ADDITIF) : si un 2e lieu est
+        # saisi, le bloc source « ...lieu d'exercice unique... » est remplace par
+        # le patron SELAS valide (en-tete + lieu #1 + nom2, adresse2). Sinon, le
+        # bloc source est rendu tel quel (sortie 1-lieu byte-identique).
+        if (
+            selarl_second_lieu_block is not None
+            and render_selas_second_lieu
+            and block == selarl_second_lieu_block
+        ):
+            _render_selarl_two_lieux_article_5(docx, replacements, associate)
             continue
         if index == 4:
             add_statuts_title_box(docx, "STATUTS", bordered=title_box_bordered)

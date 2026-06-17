@@ -336,6 +336,91 @@ def test_statuts_selarl_medecin_pluralizes_euros_for_value_two_or_more(tmp_path:
     assert "10 euro chacune" not in text
 
 
+def test_statuts_selarl_medecin_single_lieu_keeps_unique_wording(tmp_path: Path) -> None:
+    # Ticket 2.2 ADDITIF : sans 2e lieu (cas actuel = 100% des dossiers), l'article 5
+    # SELARL medecin garde son wording d'origine « ...lieu d'exercice unique... »
+    # et n'expose aucun token de 2e lieu (sortie byte-identique a l'existant).
+    output_path = StatutsSelarlMedecinGenerator().generate(
+        _context(overlay="selarl_medecin"),
+        tmp_path,
+    )
+    text = _docx_text(output_path)
+    assert "Il constitue le lieu d’exercice unique de la société" in text
+    assert "nom_lieu_exercice_2" not in text
+    _assert_clean(text)
+
+
+def test_statuts_selarl_dentiste_single_lieu_keeps_unique_wording(tmp_path: Path) -> None:
+    # Ticket 2.2 ADDITIF : meme garantie cote dentiste sans 2e lieu saisi.
+    ctx = _context(overlay="selarl_dentiste")
+    ctx.associes[0].profession = "chirurgien-dentiste"
+    ctx.associes[0].profession_reglementee = "chirurgien-dentiste"
+    ctx.associes[0].profession_reglementee_pluriel = "chirurgiens-dentistes"
+    ctx.associes[0].ordre.professionnel = "Ordre des chirurgiens-dentistes"
+
+    output_path = StatutsSelarlDentisteGenerator().generate(ctx, tmp_path)
+    text = _docx_text(output_path)
+    assert "Il constitue le lieu d’exercice unique de la société" in text
+    assert "nom_lieu_exercice_2" not in text
+    _assert_clean(text)
+
+
+def test_statuts_selarl_medecin_renders_complete_second_lieu(tmp_path: Path) -> None:
+    # Ticket 2.2 ADDITIF : un 2e lieu reel saisi -> les DEUX lieux apparaissent a
+    # l'article 5 (siege en lieu #1 + 2e lieu nomme), et le mot « unique » disparait.
+    ctx = _context(overlay="selarl_medecin")
+    ctx.exercice_social.lieux.append(
+        ExerciceLieu(
+            nom="Cabinet secondaire",
+            adresse_affichee="20 rue Bleue, 75009 Paris",
+        )
+    )
+
+    output_path = StatutsSelarlMedecinGenerator().generate(ctx, tmp_path)
+    text = _docx_text(output_path)
+
+    # Lieu #1 = lieux[0] (adresse du lieu d'exercice principal de la fixture).
+    assert "12 avenue de la Republique, 75011 Paris" in text
+    # Lieu #2 = nom + adresse saisis.
+    assert "Cabinet secondaire, 20 rue Bleue, 75009 Paris" in text
+    # Le wording « unique » est retire en presence d'un 2e lieu.
+    assert "lieu d’exercice unique" not in text
+    _assert_clean(text)
+
+
+def test_statuts_selarl_dentiste_renders_complete_second_lieu(tmp_path: Path) -> None:
+    # Ticket 2.2 ADDITIF : meme garantie cote dentiste avec un 2e lieu reel.
+    ctx = _context(overlay="selarl_dentiste")
+    ctx.associes[0].profession = "chirurgien-dentiste"
+    ctx.associes[0].profession_reglementee = "chirurgien-dentiste"
+    ctx.associes[0].profession_reglementee_pluriel = "chirurgiens-dentistes"
+    ctx.associes[0].ordre.professionnel = "Ordre des chirurgiens-dentistes"
+    # lieux[0] = siege (12 avenue de la Republique dans la fixture), + 2e lieu.
+    ctx.exercice_social.lieux.append(
+        ExerciceLieu(
+            nom="Cabinet secondaire",
+            adresse_affichee="20 rue Bleue, 75009 Paris",
+        )
+    )
+
+    output_path = StatutsSelarlDentisteGenerator().generate(ctx, tmp_path)
+    text = _docx_text(output_path)
+
+    assert "12 avenue de la Republique, 75011 Paris" in text
+    assert "Cabinet secondaire, 20 rue Bleue, 75009 Paris" in text
+    assert "lieu d’exercice unique" not in text
+    _assert_clean(text)
+
+
+def test_statuts_selarl_blocks_partial_second_lieu(tmp_path: Path) -> None:
+    # Ticket 2.2 : nom OU adresse seul -> ValueError (contrat aligne sur la SELAS).
+    ctx = _context(overlay="selarl_medecin")
+    ctx.exercice_social.lieux.append(ExerciceLieu(nom="Cabinet secondaire"))
+
+    with pytest.raises(ValueError, match="doivent etre fournis ensemble"):
+        StatutsSelarlMedecinGenerator().generate(ctx, tmp_path)
+
+
 def test_statuts_selas_medecin_generates_without_second_lieu_by_default(
     tmp_path: Path,
 ) -> None:

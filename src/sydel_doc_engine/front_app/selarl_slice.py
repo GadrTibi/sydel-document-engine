@@ -189,6 +189,11 @@ class SelarlSliceInput:
     exercice_fin: str = ""
     exercice_cloture_premier: str = ""
     lieu_exercice_adresse: str = ""
+    # 2e lieu d'exercice (ADDITIF, ticket 2.2) : le siege reste TOUJOURS le lieu
+    # #1 ; ces deux champs n'alimentent un lieux[1] que s'ils sont fournis
+    # ENSEMBLE (contrat aligne sur la SELAS, cf. validate_selas_second_lieu).
+    second_lieu_exercice_nom: str = ""
+    second_lieu_exercice_adresse: str = ""
     seuil_achat_materiel: str = DEFAULT_SEUIL_ACHAT_MATERIEL
     seuil_emprunt: str = DEFAULT_SEUIL_EMPRUNT
     conjoint_civilite: str = ""
@@ -629,12 +634,12 @@ def build_generation_context(data: SelarlSliceInput) -> DocumentGenerationContex
             debut=data.exercice_debut,
             fin=data.exercice_fin,
             date_cloture_premier_exercice=data.exercice_cloture_premier,
-            lieux=(
-                ExerciceLieu(
-                    adresse_affichee=data.lieu_exercice_adresse
-                    or company_address.adresse_affichee
-                ),
-            ),
+            # lieux[0] = lieu d'exercice #1 (le siege par defaut ; un
+            # `lieu_exercice_adresse` legacy reste lu en fallback pour
+            # retro-compat -> rendu 1-lieu byte-identique). lieux[1] = 2e lieu
+            # ADDITIF (ticket 2.2), append UNIQUEMENT si nom ET adresse fournis
+            # ensemble (contrat SELAS, cf. validate_selas_second_lieu).
+            lieux=_selarl_lieux_exercice(data, company_address),
         ),
         document=DocumentContext(
             nombre_exemplaires_lettres=data.signature_nombre_exemplaires,
@@ -789,6 +794,30 @@ def _display_date(value: date | None) -> str | None:
     if value is None:
         return None
     return value.strftime("%d/%m/%Y")
+
+
+def _selarl_lieux_exercice(
+    data: SelarlSliceInput, company_address: Address
+) -> tuple[ExerciceLieu, ...]:
+    """Construit les lieux d'exercice SELARL (1 ou 2), ticket 2.2 ADDITIF.
+
+    - lieux[0] = lieu d'exercice #1 : le siege par defaut. Le champ legacy
+      `lieu_exercice_adresse`, s'il est renseigne seul, reste lu en fallback
+      (retro-compat) -> le rendu 1-lieu reste byte-identique a l'existant.
+    - lieux[1] = 2e lieu d'exercice : ajoute UNIQUEMENT si `second_lieu_exercice_nom`
+      ET `second_lieu_exercice_adresse` sont fournis ENSEMBLE (contrat aligne sur
+      la SELAS, cf. validate_selas_second_lieu). Si un seul des deux est saisi,
+      le 2e lieu est ignore cote front (la validation moteur leve si le contexte
+      le porte malgre tout, comme pour la SELAS).
+    """
+    lieu_1 = ExerciceLieu(
+        adresse_affichee=data.lieu_exercice_adresse or company_address.adresse_affichee
+    )
+    nom_2 = (data.second_lieu_exercice_nom or "").strip()
+    adresse_2 = (data.second_lieu_exercice_adresse or "").strip()
+    if nom_2 and adresse_2:
+        return (lieu_1, ExerciceLieu(nom=nom_2, adresse_affichee=adresse_2))
+    return (lieu_1,)
 
 
 def _address(num_voie: str, voie: str, cp: str, ville: str) -> Address:

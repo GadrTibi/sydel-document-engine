@@ -513,6 +513,37 @@ def test_clean_front_selarl_context_derives_hidden_ux_values() -> None:
     assert ctx.exercice_social is not None
     assert ctx.exercice_social.lieux[0].adresse_affichee == "20 avenue du Siege, 75002 Paris"
     assert ctx.associes[0].nb_parts == 100
+    # Ticket 2.2 : sans 2e lieu saisi, exactement UN lieu (le siege) — inchange.
+    assert len(ctx.exercice_social.lieux) == 1
+
+
+def test_clean_front_selarl_second_lieu_appends_lieux_1() -> None:
+    # Ticket 2.2 ADDITIF : un 2e lieu (nom + adresse) ajoute lieux[1] sans toucher
+    # lieux[0] (toujours le siege). Le contexte porte alors DEUX lieux.
+    ctx = build_generation_context(
+        _valid_selarl_input(
+            PROFESSION_MEDECIN,
+            second_lieu_exercice_nom="Cabinet secondaire",
+            second_lieu_exercice_adresse="20 rue Bleue, 75009 Paris",
+        )
+    )
+    assert ctx.exercice_social is not None
+    assert len(ctx.exercice_social.lieux) == 2
+    assert ctx.exercice_social.lieux[0].adresse_affichee == "20 avenue du Siege, 75002 Paris"
+    assert ctx.exercice_social.lieux[1].nom == "Cabinet secondaire"
+    assert ctx.exercice_social.lieux[1].adresse_affichee == "20 rue Bleue, 75009 Paris"
+
+
+def test_clean_front_selarl_partial_second_lieu_ignored() -> None:
+    # Ticket 2.2 : nom OU adresse seul -> pas de 2e lieu cote front (un seul lieu).
+    ctx = build_generation_context(
+        _valid_selarl_input(
+            PROFESSION_MEDECIN,
+            second_lieu_exercice_nom="Cabinet secondaire",
+        )
+    )
+    assert ctx.exercice_social is not None
+    assert len(ctx.exercice_social.lieux) == 1
 
 
 def test_clean_front_selarl_accepts_french_date_strings_outside_streamlit_range() -> None:

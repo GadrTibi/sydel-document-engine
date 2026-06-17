@@ -183,6 +183,8 @@ def _prefill_random_selarl_data() -> None:
         "selarl_exercice_cloture_premier": f"31 decembre {date.today().year + 1}",
         "selarl_autre_lieu_exercice": False,
         "selarl_lieu_exercice_adresse": "",
+        "selarl_second_lieu_exercice_nom": "",
+        "selarl_second_lieu_exercice_adresse": "",
         "selarl_conjoint_civilite": "Madame",
         "selarl_conjoint_prenom": random.choice(("Claire", "Sophie", "Nadia")),
         "selarl_conjoint_nom": person["nom"],
@@ -1390,22 +1392,36 @@ def _render_societe(
             "siege_ville": adr_c.text_input("Ville", key="selarl_siege_ville"),
         }
 
-    # « Autre lieu d'exercice » juste apres l'adresse du siege (ticket 1.8).
+    # « Autre lieu d'exercice » juste apres l'adresse du siege (ticket 1.8 + 2.2).
+    # Le siege reste TOUJOURS le lieu d'exercice #1. La case ajoute un VRAI 2e lieu
+    # (nom + adresse), JAMAIS un remplacement du siege : les champs ne sont plus
+    # pre-remplis avec le siege (sinon doublon). L'article 5 des statuts ne rend
+    # le 2e lieu que si nom ET adresse sont fournis ensemble (contrat SELAS).
     autre_lieu_exercice = st.checkbox(
         "Autre lieu d'exercice ?",
         value=False,
         key="selarl_autre_lieu_exercice",
+        help=(
+            "Le siege reste le lieu d'exercice principal. Cochez pour ajouter un "
+            "2e lieu d'exercice (en plus du siege)."
+        ),
     )
-    lieu_exercice_adresse = ""
+    second_lieu_nom = ""
+    second_lieu_adresse = ""
     if autre_lieu_exercice:
-        siege_display = _siege_display(societe)
-        if not st.session_state.get("selarl_lieu_exercice_adresse"):
-            st.session_state["selarl_lieu_exercice_adresse"] = siege_display
-        lieu_exercice_adresse = st.text_input(
-            "Adresse du lieu d'exercice",
-            key="selarl_lieu_exercice_adresse",
+        second_lieu_nom = st.text_input(
+            "Nom du 2e lieu d'exercice",
+            key="selarl_second_lieu_exercice_nom",
         )
-    societe["lieu_exercice_adresse"] = lieu_exercice_adresse
+        second_lieu_adresse = st.text_input(
+            "Adresse du 2e lieu d'exercice",
+            key="selarl_second_lieu_exercice_adresse",
+        )
+    # Champ legacy conserve pour retro-compat (jamais pre-rempli ici) : le 1er lieu
+    # est desormais toujours derive du siege cote contexte.
+    societe["lieu_exercice_adresse"] = ""
+    societe["second_lieu_exercice_nom"] = second_lieu_nom
+    societe["second_lieu_exercice_adresse"] = second_lieu_adresse
     return societe
 
 
