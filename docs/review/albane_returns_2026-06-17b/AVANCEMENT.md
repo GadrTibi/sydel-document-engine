@@ -4,12 +4,12 @@
 ```
   ┌─ SYDEL · Retours Albane lot 2 · AVANCEMENT ────────────
   │
-  │   GLOBAL   [████████████████████░░░░]  41/49  ·  84%
+  │   GLOBAL   [█████████████████████░░░]  43/49  ·  88%
   │
   │   ✅  1a· bugs isolés       4/4   [██████████]
   │   🔨  1b· bugs données P1   11/12 [█████████░]
   │   ✅  2 · formulaires       10/10 [██████████]
-  │   🔨  3 · contenu docs      10/14 [███████░░░]
+  │   🔨  3 · contenu docs      12/14 [█████████░]
   │   🔨  4 · mise en forme     6/9   [███████░░░]
   │
   │   ⏸ hors-build (Rafael/Albane) : 10      ✔ déjà conformes : 5
@@ -48,7 +48,7 @@
 - [x] **§SCREEN-1** — Nationalite en champ deroulant (NATIONALITY_PRESETS) a propager depuis la SELARL aux autre
 - [x] **§SCREEN-2** — Valeur nominale d'une action/part toujours calculee auto (capital / nb actions ou parts) -
 
-## Vague 3 · contenu docs — 10/14
+## Vague 3 · contenu docs — 12/14
 - [ ] **§12.3** — Appel de fonds : signe par le CLIENT au lieu du conseiller SYDEL
 - [x] **§17.1** — SELAS unipersonnelle medecin : generateur DOC-018 present mais ORPHELIN (aucun parcours fr
 - [x] **§17.4** — Deroulant SPFPL : libelles n'indiquant pas 'dentiste' et co-libelle 'SAS SPFPL medecins' a
@@ -59,8 +59,8 @@
 - [x] **§8.3** — Droits d'enregistrement = montant fixe « 25 » (plus une variable), peut rester en rouge
 - [x] **§8.4a** — Signataire = SYDEL avec « Clémence » en champ FIXE (pas le client / pas une variable libre
 - [x] **§8.4b** — Intégrer le pied de page du modèle (coordonnées SYDEL) pour que le SDE puisse contacter SY
-- [ ] **§9.4** — Chiffre d'affaires non reporté : table modèle malformée (tokens manquants/dupliqués)
-- [ ] **§9.6** — Titre « DATE PRÉVUE DE RÉALISATION » : « DATE » remplacé par une date (token erroné dans l
+- [x] **§9.4** — Chiffre d'affaires non reporté : table modèle malformée (tokens manquants/dupliqués)
+- [x] **§9.6** — Titre « DATE PRÉVUE DE RÉALISATION » : « DATE » remplacé par une date (token erroné dans l
 - [x] **§9.8** — Signataires : deux fois « Dr [nom] » ; le 2e doit être la SEL acquéreur
 - [x] **§9.9** — Formule finale « vingt pages » au lieu du nombre réel (8 pages)
 

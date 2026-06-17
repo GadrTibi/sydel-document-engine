@@ -732,6 +732,21 @@ def test_optional_fields_empty_render_blank_zones(tmp_path: Path) -> None:
     assert "300 000" in text
 
 
+def test_compromis_title_fixed_and_all_ca_years(tmp_path: Path) -> None:
+    # Retours Albane lot 2 §9.6 : le mot « DATE » du titre ne doit plus etre
+    # remplace par une date (token [date_origine_propriete] retire du TITRE du
+    # modele source, conserve au corps pour l'origine de propriete).
+    # §9.4 : les 3 exercices de CA doivent TOUS apparaitre (le modele dupliquait
+    # l'annee 1 = 210 000 et omettait l'annee 2 = 220 000).
+    ctx = _context(etape="compromis")
+    text = _docx_text(CompromisCessionCabinetMedicalGenerator().generate(ctx, tmp_path))
+    assert "DATE PREVUE DE REALISATION" in text
+    assert "210 000" in text
+    assert "220 000" in text  # annee 2 : etait perdue avant le fix du modele
+    assert "230 000" in text
+    _assert_no_residual_tokens(text)
+
+
 def test_acte_medical_scm_clause_removed_when_inactive(tmp_path: Path) -> None:
     # Pas de reprise de parts SCM -> la clause « De céder les ... parts sociales »
     # est supprimee de l'acte medical (paragraphe ancre par token).
