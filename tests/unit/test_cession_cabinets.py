@@ -929,3 +929,32 @@ def test_compromis_signatories_cedant_then_societe(
     assert "SELARL SELARL" not in right
     # Les deux signataires sont DISTINCTS.
     assert left.strip() != right
+
+
+@pytest.mark.parametrize(
+    ("generator", "type_cabinet"),
+    [
+        (CompromisCessionCabinetDentaireGenerator(), "dentaire"),
+        (CompromisCessionCabinetMedicalGenerator(), "medical"),
+    ],
+)
+def test_compromis_pages_count_is_eight_not_twenty(
+    generator,
+    type_cabinet: str,
+    tmp_path: Path,
+) -> None:
+    # 9.9 : le compromis fige « huit pages » (longueur reelle ~8) et non plus
+    # le placeholder « vingt » herite de la constante front.
+    ctx = _context(etape="compromis", type_cabinet=type_cabinet)
+    text = _docx_text(generator.generate(ctx, tmp_path))
+
+    assert "Sur huit pages." in text
+    assert "vingt pages" not in text
+
+
+def test_acte_pages_count_unchanged(tmp_path: Path) -> None:
+    # 9.9 hors perimetre : l'acte conserve la valeur du contexte (non mappee).
+    ctx = _context(credit_vendeur=True)
+    text = _docx_text(ActeCessionCabinetMedicalGenerator().generate(ctx, tmp_path))
+
+    assert "Sur vingt pages." in text

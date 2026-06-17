@@ -56,6 +56,17 @@ SUPPORTED_ORIGINE_MODES = {ORIGINE_MODE_CREE, ORIGINE_MODE_ACHETE}
 # apports en nature inexistants. Utilisee pour la reprise des salaries (0/1/N).
 NEANT = "Néant."
 
+# Nombre de pages (en lettres) du modele, par variante (retours 9.9).
+# Le front fournissait une constante unique « vingt » pour TOUS les docs de
+# cession, fausse pour le compromis (~8 pages). python-docx n'ayant pas de
+# moteur de pagination, on ne peut PAS compter les pages a l'execution : on fige
+# donc la longueur connue de chaque modele, source deterministe et fidele. Une
+# variante non mappee retombe sur la valeur fournie par le contexte.
+_PAGES_LETTRES_BY_VARIANT: dict[tuple[str, str], str] = {
+    (COMPROMIS, DENTAIRE): "huit",
+    (COMPROMIS, MEDICAL): "huit",
+}
+
 # Dossier des modeles Word tokenises, resolu independamment du cwd.
 # parents[4] depuis src/sydel_doc_engine/generators/lot_03/ = racine du repo.
 _SOURCE_MODELS_DIR = (
@@ -784,7 +795,7 @@ def _build_cession_replacements(
     put("[lieu_signature]", signature.lieu)
     put("[date_signature]", _french_date(signature.date))
     put("[nombre_exemplaires_lettres]", document.nombre_exemplaires_lettres)
-    put("[nombre_pages_lettres]", document.nombre_pages_lettres)
+    put("[nombre_pages_lettres]", _nombre_pages_lettres(variant, document))
     _put_signature_tokens(put, variant, vendeur, acquereur, representant)
 
     return replacements
@@ -850,6 +861,22 @@ def _french_date(value: date | str | None) -> str | None:
             return text
         return f"{parsed.day} {_MONTHS_FR[parsed.month]} {parsed.year}"
     return text
+
+
+def _nombre_pages_lettres(
+    variant: CessionCabinetVariant,
+    document: DocumentContext,
+) -> str | None:
+    """Nombre de pages en lettres du document (retours 9.9).
+
+    Priorite a la longueur connue du modele (deterministe, fidele). A defaut de
+    mapping, on retombe sur la valeur du contexte (front) pour ne pas regresser
+    les variantes non visees par le ticket.
+    """
+    fixed = _PAGES_LETTRES_BY_VARIANT.get((variant.etape, variant.type_cabinet))
+    if fixed is not None:
+        return fixed
+    return document.nombre_pages_lettres
 
 
 def _person_label(
