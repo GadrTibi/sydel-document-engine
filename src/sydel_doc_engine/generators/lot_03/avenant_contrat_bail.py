@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from docx.enum.table import WD_ROW_HEIGHT_RULE
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.shared import Cm
 
 from sydel_doc_engine.domain.models import (
     BailContext,
@@ -272,10 +274,17 @@ def _add_article_title(docx, title: str) -> None:
 
 
 def _add_signature_table(docx) -> None:
-    add_signature_table(
+    table = add_signature_table(
         docx,
         [
             ["Le Bailleur", "L\u2019ancien locataire", "Le nouveau locataire"],
         ],
         style_profile=BAIL_COMPACT_STYLE_PROFILE,
     )
+    # Mise en forme (Albane 2026-06-17, \u00a710.4) : agrandir les cases de
+    # signature (compatible signature electronique YouSign) en imposant une
+    # hauteur minimale de ligne. ADDITIF : on garde le tableau borde, on ne
+    # retire aucune bordure.
+    for row in table.rows:
+        row.height = Cm(2.6)
+        row.height_rule = WD_ROW_HEIGHT_RULE.AT_LEAST
