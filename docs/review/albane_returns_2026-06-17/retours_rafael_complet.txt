@@ -1,0 +1,2377 @@
+﻿SELARL
+Docs à générer dans tous les cas
+
+Déclaration sur l’honneur de non condamnation -> Déclaration sur l'honneur de non condamnation.docx
+Autorisation de domiciliation  -> Autorisation de domiciliation.docx -> généré et modifs à faire
+Procuration -> Procuration.docx-> généré qq modifs à faire
+
+SELARL 
+
+PV nomination gérant PV nomination gérant.docx
+Demande d’inscription à l’ordre Demande d'inscription à l'ordre.docx-> ok !
+Si chirurgien dentiste 
+Status chirurgien dentiste - Modele statuts SELARL chirurgien dentiste.docx
+
+Si médecin 
+Statuts dentiste - Modèle statuts SELARL médecins.docx
+
+
+Si site distinct
+Formulaire dérogation procuration  –À REMPLIR À LA MAIN–
+
+Si SCM Cession 
+PV Cession de parts à la SCM -> PV AGE cession part SCM.docx
+Courrier SDE -> Courrier SDE.docx
+Acte de cession SCM -> SELARL -> Acte de cession des parts de la SCM à la SELARL - transforme.docx
+
+Si régime communautaire
+Lettre de renonciation ->  Lettre de renonciation a revendiquer la qualite d'associe.docx
+Lettre d’avertissement -> Lettre d'avertissement au conjoint en cas d'apport d'un bien commun.docx
+
+Si dérogation 
+Formulaire de dérogation pour exercer sur plusieurs sites avec la SEL -> Formulaire de dérogation pour exercer sur plusieurs sites avec la SEL.docx
+Dérogation SEL BNC ->  –À REMPLIR À LA MAIN–
+Dérogation cumul SELARL BNC ->  –À REMPLIR À LA MAIN–
+
+Si cession  
+Avenant contrat de bail -> Avenant Contrat de bail.docx
+Appel de fond SEL -> appel de fond sel.docx
+
+
+- Si cession de cabinet médical 
+Acte de cession d’un cabinet médical -> Acte de cession d_un cabinet médical.docx
+Compromis de cession d’un cabinet médical -> Compromis de cession d_un cabinet médical.docx
+
+- Si cession de cabinet dentaire
+Acte de cession d’un cabinet dentaire -> Acte de cession d'un cabinet dentaire.docx
+Compromis de cession d’un cabinet dentaire -> Compromis de cession d_un cabinet dentaire.docx 
+
+
+________________
+
+
+Voici l'inventaire complet des documents nécessaires et de leurs variables, classés selon les cas définis dans le document « Texte collé ». Les variables listées sont celles qui apparaissent entre crochets [] dans chaque document.
+1. Dans tous les cas
+Documents nécessaires :
+* Déclaration sur l'honneur de non condamnation (Déclaration sur l'honneur de non condamnation.docx)
+   * Variables : [civilite], [prenom], [nom], [date_naissance], [num_voie_perso], [voie_perso], [cp_perso], [ville_perso], [nationalite], [nom_pere], [nom_mere], [lieu_signature], [date_signature].
+* Autorisation de domiciliation (Autorisation de domiciliation.docx)
+   * Variables : [civilite], [prenom], [nom], [denomination_societe], [capital_social], [num_voie_siege], [voie_siege], [cp_siege], [ville_siege], [lieu_signature], [date_signature].
+* Procuration (Procuration.docx)
+   * Variables : [civilite], [prenom], [nom], [num_voie_perso], [voie_perso], [cp_perso], [ville_perso], [fonction_dirigeant], [denomination_societe], [num_voie_siege], [voie_siege], [cp_siege], [ville_siege], [lieu_signature], [date_signature].
+2. Si SELARL
+Documents nécessaires :
+* PV nomination gérant (PV nomination gérant.docx)
+   * Variables : [denomination_societe], [forme_sociale], [capital_social], [num_voie_siege], [voie_siege], [cp_siege], [ville_siege], [date_decision], [date_reunion_lettres], [nb_parts], [valeur_nominale_part], [denomination_societe_1], [nb_parts_societe_1], [prenom_personne_2], [nom_personne_2], [nb_parts_personne_2], [civilite_personne_1], [prenom_personne_1], [nom_personne_1], [profession_personne_1], [date_naissance_personne_1], [ville_naissance_personne_1], [adresse_perso_personne_1], [nationalite_personne_1], [civilite_personne_2], [profession_personne_2], [date_naissance_personne_2], [ville_naissance_personne_2], [adresse_perso_personne_2], [nationalite_personne_2], [lieu_signature].
+* Demande d’inscription à l’ordre (Demande d'inscription à l'ordre.docx)
+   * Variables : [prenom], [nom], [profession_reglementee], [adresse_personnelle], [profession_reglementee_pluriel], [adresse_conseil_ordre], [cp_ordre], [ville_ordre], [lieu_signature], [date_signature], [denomination_societe], [civilite_mandataire], [prenom_mandataire], [nom_mandataire], [fonction_mandataire], [denomination_cabinet_mandataire].
+3. Si chirurgien dentiste
+Documents nécessaires :
+* Statuts chirurgien dentiste (Modele statuts SELARL chirurgien dentiste.docx)
+   * Variables : [denomination_societe], [forme_sociale_complete], [profession_reglementee], [capital_social], [adresse_siege], [civilite], [prenom], [nom], [profession], [date_naissance], [ville_naissance], [departement_naissance], [nationalite], [adresse_personnelle], [profession_reglementee_pluriel], [ordre_departemental], [numero_rpps], [forme_sociale], [adresse_lieu_exercice], [duree_societe], [montant_apport], [montant_apport_lettres], [nom_banque], [capital_lettres], [nb_parts_total], [valeur_nominale_part], [debut_exercice], [fin_exercice], [date_cloture_exercice_1], [prestataire_signature_electronique], [lieu_signature], [date_signature].
+4. Si médecin
+Documents nécessaires :
+* Statuts médecin (Modèle statuts SELARL médecins.docx)
+   * Variables : [denomination_societe], [capital_social], [adresse_siege], [civilite], [prenom], [nom], [profession], [date_naissance], [ville_naissance], [departement_naissance], [nationalite], [adresse_personnelle], [ville_ordre], [numero_ordre], [numero_rpps], [forme_sociale_complete], [capital_lettres], [nom_banque], [adresse_banque], [nb_parts_total], [valeur_nominale_part], [civilite_personne_2], [prenom_personne_2], [nom_personne_2], [seuil_achat_materiel], [seuil_emprunt_gerance], [date_cloture_exercice_1], [lieu_signature], [date_signature], [nombre_exemplaires_lettres], [prenom_signataire], [nom_signataire].
+5. Si site distinct
+* Formulaire dérogation procuration : (Ce document est à remplir à la main et n'est pas fourni dans les sources textuelles afin d'en extraire les variables).
+6. Si SCM
+Documents nécessaires :
+* PV Cession de parts à la SCM (PV AGE cession part SCM.docx)
+   * Variables : [denomination_societe], [capital_social], [adresse_siege], [ville_rcs], [numero_rcs], [date_du_jour], [date_pv_lettres], [nb_parts_total], [valeur_nominale_part], [civilite_personne_1], [prenom_personne_1], [nom_personne_1], [parts_personne_1], [civilite_personne_2], [prenom_personne_2], [nom_personne_2], [parts_personne_2], [civilite_personne_3], [prenom_personne_3], [nom_personne_3], [parts_personne_3], [denomination_societe_nouvel_associe], [plage_parts_total], [plage_parts_personne_1], [plage_parts_personne_2], [plage_parts_societe_nouvel_associe], [civilite_personne_4], [prenom_personne_4], [nom_personne_4], [parts_personne_4], [plage_parts_personne_4].
+* Courrier SDE (Courrier SDE.docx)
+   * Variables : [lieu_signature], [date_signature], [montant_droits_enregistrement], [prenom_signataire], [nom_signataire].
+* Acte de cession des parts de la SCM à la SELARL (Acte de cession des parts de la SCM à la SELARL - transforme.docx)
+   * Variables : [civilite_cedant], [prenom_cedant], [nom_cedant], [profession_cedant], [date_naissance_cedant], [ville_naissance_cedant], [departement_naissance_cedant], [nationalite_cedant], [adresse_cedant], [situation_maritale_cedant], [civilite_conjoint_cedant], [prenom_conjoint_cedant], [nom_conjoint_cedant], [ordre_departemental_cedant], [numero_ordre_cedant], [numero_rpps_cedant], [denomination_societe_cessionnaire], [capital_social_cessionnaire], [adresse_siege_cessionnaire], [ville_rcs_cessionnaire], [denomination_societe_cedee], [nb_parts_cedees], [capital_social_societe_cedee], [nb_parts_total_societe_cedee], [ville_rcs_societe_cedee], [numero_rcs_societe_cedee], [civilite_associe_societe_cedee_1], [prenom_associe_societe_cedee_1], [nom_associe_societe_cedee_1], [civilite_associe_societe_cedee_3], [prenom_associe_societe_cedee_3], [nom_associe_societe_cedee_3], [plage_parts_cedees], [prix_unitaire_part_lettres], [prix_unitaire_part], [prix_global_parts_lettres], [prix_global_parts], [montant_credit_vendeur], [duree_credit_vendeur], [taux_credit_vendeur], [lieu_signature], [nombre_exemplaires_lettres], [civilite_representant_cessionnaire_courte], [prenom_representant_cessionnaire], [nom_representant_cessionnaire].
+7. Si régime communautaire
+Documents nécessaires :
+* Lettre de renonciation à revendiquer la qualité d'associé (Lettre de renonciation a revendiquer la qualite d'associe.docx)
+   * Variables : [lieu_signature], [date_signature], [civilite], [prenom], [nom], [date_du_jour], [denomination_societe], [forme_sociale_complete], [apport_personne_1], [apport_lettres_personne_1], [prenom_conjoint], [nom_conjoint].
+* Lettre d'avertissement au conjoint : (Ce document ne figure pas parmi les sources fournies).
+8. Si dérogation
+Documents nécessaires :
+* Formulaire de dérogation pour exercer sur plusieurs sites avec la SEL (non fourni dans les sources).
+* Dérogation SEL BNC (Indiqué comme étant à remplir à la main).
+* Dérogation cumul SELARL BNC (Indiqué comme étant à remplir à la main).
+9. Si cession (Documents communs)
+Documents nécessaires :
+* Avenant contrat de bail (Avenant Contrat de bail.docx)
+   * Variables : [date_du_jour], [civilite_bailleur], [prenom_bailleur], [nom_bailleur], [profession_bailleur], [date_naissance_bailleur], [ville_naissance_bailleur], [nationalite_bailleur], [adresse_bailleur], [civilite_locataire], [prenom_locataire], [nom_locataire], [profession_locataire], [date_naissance_locataire], [ville_naissance_locataire], [nationalite_locataire], [adresse_locataire], [date_bail], [denomination_societe], [ville_rcs], [adresse_siege], [civilite_courte_locataire], [lieu_signature], [nombre_exemplaires_lettres], [date_signature].
+* Appel de fond SEL (appel de fond sel.docx)
+   * Variables : [nom_banque], [lieu_signature], [date_signature], [civilite_destinataire], [prenom_destinataire], [nom_destinataire], [denomination_societe], [civilite_vendeur], [prenom_vendeur], [nom_vendeur], [denomination_societe_acquereur], [prenom_signataire], [nom_signataire].
+10. Si cession de cabinet médical
+Documents nécessaires :
+* Acte de cession d’un cabinet médical (Acte de cession d_un cabinet médical.docx)
+   * Variables : [civilite_vendeur], [prenom_vendeur], [nom_vendeur], [profession_vendeur], [date_naissance_vendeur], [ville_naissance_vendeur], [departement_naissance_vendeur], [nationalite_vendeur], [adresse_vendeur], [adresse_exercice_vendeur], [numero_siren_vendeur], [ordre_departemental_vendeur], [numero_ordre_vendeur], [situation_maritale_vendeur], [nom_conjoint_vendeur], [regime_matrimonial_vendeur], [denomination_societe_acquereur], [capital_social_acquereur], [adresse_siege_acquereur], [ville_rcs_acquereur], [numero_rcs_acquereur], [numero_siret_acquereur], [fonction_acquereur_representant], [civilite_acquereur_representant], [prenom_acquereur_representant], [nom_acquereur_representant], [adresse_cabinet], [telephone_cabinet], [annees_acquisition_patientele], [description_origine_propriete], [date_bail], [duree_bail], [date_debut_bail], [date_fin_bail], [superficie_local], [date_reconduction_bail_1], [date_reconduction_bail_2], [loyer_mensuel], [exercice_1], [chiffre_affaires_1], [resultat_1], [exercice_2], [chiffre_affaires_2], [resultat_2], [exercice_3], [chiffre_affaires_3], [resultat_3], [prix_cession_lettres], [prix_cession], [prix_elements_corporels_lettres], [prix_elements_corporels], [prix_elements_incorporels_lettres], [prix_elements_incorporels], [montant_credit_vendeur], [duree_credit_vendeur], [taux_credit_vendeur], [majoration_interet_retard], [nb_parts_scm_a_ceder], [date_immatriculation_acquereur], [date_inscription_ordre_acquereur], [lieu_signature], [nombre_exemplaires_lettres], [nombre_pages_lettres], [signature_acquereur], [signature_vendeur].
+* Compromis de cession d’un cabinet médical (Compromis de cession d_un cabinet médical.docx)
+   * Variables : [civilite_vendeur], [prenom_vendeur], [nom_vendeur], [profession_vendeur], [date_naissance_vendeur], [ville_naissance_vendeur], [pays_naissance_vendeur], [nationalite_vendeur], [adresse_vendeur], [adresse_cabinet], [numero_siren_vendeur], [ordre_departemental_vendeur], [numero_ordre_vendeur], [situation_maritale_vendeur], [civilite_conjoint_vendeur], [prenom_conjoint_vendeur], [nom_conjoint_vendeur], [regime_matrimonial_vendeur], [denomination_societe_acquereur], [forme_sociale_acquereur], [capital_social_acquereur], [adresse_siege_acquereur], [ville_rcs_acquereur], [fonction_acquereur_representant], [civilite_acquereur_representant], [prenom_acquereur_representant], [nom_acquereur_representant], [nature_fonds_liberal], [adresse_locaux], [telephone_cabinet], [date_origine_propriete], [date_bail], [duree_bail], [date_debut_bail], [date_fin_bail], [date_reconduction_bail_1], [date_reconduction_bail_2], [superficie_local], [loyer_mensuel], [exercice_1], [chiffre_affaires_1], [resultat_1], [exercice_2], [exercice_3], [chiffre_affaires_3], [resultat_3], [prix_cession_lettres], [prix_cession], [prix_elements_corporels_lettres], [prix_elements_corporels], [prix_elements_incorporels_lettres], [prix_elements_incorporels], [date_realisation_limite], [montant_pret], [taux_pret], [duree_pret], [lieu_signature], [nombre_exemplaires_lettres], [nombre_pages_lettres], [date_signature], [signature_acquereur], [signature_vendeur].
+11. Si cession de cabinet dentaire
+Documents nécessaires :
+* Acte de cession d’un cabinet dentaire (Acte de cession d'un cabinet dentaire.docx)
+   * Variables : [civilite_vendeur], [prenom_vendeur], [nom_vendeur], [profession_vendeur], [date_naissance_vendeur], [ville_naissance_vendeur], [departement_naissance_vendeur], [nationalite_vendeur], [adresse_vendeur], [situation_maritale_vendeur], [regime_matrimonial_vendeur], [civilite_conjoint_vendeur], [prenom_conjoint_vendeur], [nom_conjoint_vendeur], [ordre_departemental_vendeur], [numero_rpps_vendeur], [denomination_societe_acquereur], [forme_sociale_acquereur], [capital_social_acquereur], [adresse_siege_acquereur], [ville_rcs_acquereur], [numero_rcs_acquereur], [fonction_acquereur_representant], [telephone_cabinet], [civilite_precedent_proprietaire], [prenom_precedent_proprietaire], [nom_precedent_proprietaire], [date_origine_propriete], [prix_origine_propriete], [date_bail], [duree_bail], [exercice_1], [chiffre_affaires_1], [resultat_1], [exercice_2], [chiffre_affaires_2], [resultat_2], [exercice_3], [chiffre_affaires_3], [resultat_3], [prix_cession_lettres], [prix_cession], [prix_elements_corporels_lettres], [prix_elements_corporels], [prix_elements_incorporels_lettres], [prix_elements_incorporels], [civilite_salarie_1], [prenom_salarie_1], [nom_salarie_1], [civilite_salarie_2], [prenom_salarie_2], [nom_salarie_2], [date_entree_jouissance], [lieu_signature], [nombre_pages_lettres], [date_signature].
+* Compromis de cession d’un cabinet dentaire (Compromis de cession d_un cabinet dentaire.docx)
+   * Variables : [civilite_vendeur], [prenom_vendeur], [nom_vendeur], [profession_vendeur], [date_naissance_vendeur], [ville_naissance_vendeur], [cp_naissance_vendeur], [nationalite_vendeur], [adresse_vendeur], [adresse_cabinet], [numero_siren_vendeur], [ordre_departemental_vendeur], [numero_ordre_vendeur], [situation_maritale_vendeur], [denomination_societe_acquereur], [forme_sociale_acquereur], [capital_social_acquereur], [ville_rcs_acquereur], [fonction_acquereur_representant], [adresse_locaux], [telephone_cabinet], [date_origine_propriete], [date_bail], [duree_bail], [date_debut_bail], [date_fin_bail], [date_reconduction_bail_1], [date_reconduction_bail_2], [superficie_local], [loyer_mensuel], [chiffre_affaires_1], [resultat_1], [chiffre_affaires_3], [resultat_3], [prix_cession_lettres], [prix_cession], [prix_elements_corporels_lettres], [prix_elements_corporels], [prix_elements_incorporels_lettres], [prix_elements_incorporels], [date_realisation_limite], [montant_pret], [lieu_signature], [nombre_exemplaires_lettres], [nombre_pages_lettres], [date_signature], [signature_acquereur], [signature_vendeur].
+
+
+________________
+
+
+1. Documents nécessaires dans tous les cas
+Déclaration sur l'honneur de non condamnation
+* Comment s'appelle le praticien (ou le dirigeant principal) ? -> [civilite], [prenom], [nom]
+* Quelles sont ses informations de naissance ? -> [date_naissance]
+* Quelle est sa nationalité ? -> [nationalite]
+* Où réside-t-il (adresse personnelle) ? -> [num_voie_perso], [voie_perso], [cp_perso], [ville_perso]
+* Comment s'appellent ses parents ? -> [nom_pere], [nom_mere]
+* Où et quand le document est-il signé ? -> [lieu_signature], [date_signature]
+Autorisation de domiciliation
+* Comment s'appelle le praticien (ou le dirigeant principal) ? -> [civilite], [prenom], [nom]
+* Quel est le nom de la société principale (la SELARL) ? -> [denomination_societe]
+* Quel est le montant de son capital social ? -> [capital_social]
+* Où est situé son siège social ? -> [num_voie_siege], [voie_siege], [cp_siege], [ville_siege]
+* Où et quand le document est-il signé ? -> [lieu_signature], [date_signature]
+Procuration
+* Comment s'appelle le praticien (ou le dirigeant principal) ? -> [civilite], [prenom], [nom]
+* Où réside-t-il (adresse personnelle) ? -> [num_voie_perso], [voie_perso], [cp_perso], [ville_perso]
+* Quelle est sa fonction exacte au sein de la structure ? -> [fonction_dirigeant]
+* Quel est le nom de la société principale (la SELARL) ? -> [denomination_societe]
+* Où est situé son siège social ? -> [num_voie_siege], [voie_siege], [cp_siege], [ville_siege]
+* Où et quand le document est-il signé ? -> [lieu_signature], [date_signature]
+________________
+
+
+2. Si création d'une SELARL
+PV nomination gérant
+* Quel est le nom de la société principale (la SELARL) et sa forme juridique ? -> [denomination_societe], [forme_sociale]
+* Quel est le montant de son capital social et comment est-il découpé (nombre et valeur des parts) ? -> [capital_social], [nb_parts], [valeur_nominale_part]
+* Où est situé son siège social ? -> [num_voie_siege], [voie_siege], [cp_siege], [ville_siege]
+* Où et quand la décision a-t-elle été prise ? -> [date_decision], [date_reunion_lettres], [lieu_signature]
+* Comment s'appelle le premier associé (Personne 1) et quelles sont ses informations ? -> [civilite_personne_1], [prenom_personne_1], [nom_personne_1], [profession_personne_1], [date_naissance_personne_1], [ville_naissance_personne_1], [adresse_perso_personne_1], [nationalite_personne_1]
+* Comment s'appelle le deuxième associé (Personne 2) et quelles sont ses informations ? -> [civilite_personne_2], [prenom_personne_2], [nom_personne_2], [profession_personne_2], [date_naissance_personne_2], [ville_naissance_personne_2], [adresse_perso_personne_2], [nationalite_personne_2], [nb_parts_personne_2]
+* Quel est le nom de la société associée (personne morale) et combien de parts possède-t-elle ? -> [denomination_societe_1], [nb_parts_societe_1]
+Demande d’inscription à l’ordre
+* Comment s'appelle le praticien et où réside-t-il ? -> [prenom], [nom], [adresse_personnelle]
+* Quelle est sa profession exacte ? -> [profession_reglementee], [profession_reglementee_pluriel]
+* Quel est le nom de la société principale (la SELARL) ? -> [denomination_societe]
+* Quels sont l'adresse et le code postal/ville du conseil de l'ordre ? -> [adresse_conseil_ordre], [cp_ordre], [ville_ordre]
+* À quel mandataire confie-t-on les démarches administratives ? -> [civilite_mandataire], [prenom_mandataire], [nom_mandataire], [fonction_mandataire], [denomination_cabinet_mandataire]
+* Où et quand le document est-il signé ? -> [lieu_signature], [date_signature]
+________________
+
+
+3. Si chirurgien-dentiste ou médecin (Statuts)
+Statuts chirurgien-dentiste / Statuts médecin
+* Quel est le nom de la société principale (la SELARL) et sa forme juridique complète ? -> [denomination_societe], [forme_sociale], [forme_sociale_complete]
+* Quel est le montant de son capital social, comment est-il découpé et dans quelle banque est-il déposé ? -> [capital_social], [capital_lettres], [nb_parts_total], [valeur_nominale_part], [nom_banque], [adresse_banque] (pour le médecin)
+* Où est situé son siège social et où se trouve son lieu d'exercice ? -> [adresse_siege], [adresse_lieu_exercice] (pour le dentiste)
+* Quelle est la durée de vie prévue pour la société ? -> [duree_societe] (pour le dentiste)
+* Comment s'appelle le praticien (ou les associés) et quelles sont ses informations personnelles ? -> [civilite], [prenom], [nom], [date_naissance], [ville_naissance], [departement_naissance], [nationalite], [adresse_personnelle], [civilite_personne_2], [prenom_personne_2], [nom_personne_2] (associé 2 pour le médecin)
+* Quelle est sa profession exacte et quels sont ses identifiants professionnels ? -> [profession], [profession_reglementee], [profession_reglementee_pluriel], [ordre_departemental], [numero_ordre], [numero_rpps], [ville_ordre]
+* Quel est le montant de l'apport en capital effectué par cette personne ? -> [montant_apport], [montant_apport_lettres]
+* Quelles sont les dates encadrant le premier exercice comptable ? -> [debut_exercice], [fin_exercice], [date_cloture_exercice_1]
+* Spécifique Médecin : Au-delà de quels montants d'emprunt ou d'achat le gérant doit-il demander l'autorisation aux associés ? -> [seuil_achat_materiel], [seuil_emprunt_gerance]
+* Spécifique Dentiste : Quel prestataire de signature électronique est utilisé ? -> [prestataire_signature_electronique]
+* En combien d'exemplaires le document est-il imprimé et qui le signe ? -> [nombre_exemplaires_lettres], [prenom_signataire], [nom_signataire]
+* Où et quand le document est-il signé ? -> [lieu_signature], [date_signature]
+________________
+
+
+4. Si SCM
+PV Cession de parts à la SCM
+* Quel est le nom de la SCM concernée, quel est son capital social, et où sont situés son siège et son RCS ? -> [denomination_societe], [capital_social], [adresse_siege], [ville_rcs], [numero_rcs]
+* Où et quand la décision a-t-elle été prise ? -> [date_du_jour], [date_pv_lettres]
+* Comment est découpé le capital social de la SCM ? -> [nb_parts_total], [valeur_nominale_part], [plage_parts_total]
+* Comment s'appellent les différents associés actuels et combien de parts possèdent-ils ? -> [civilite_personne_1], [prenom_personne_1], [nom_personne_1], [parts_personne_1], [plage_parts_personne_1], [civilite_personne_2], [prenom_personne_2], [nom_personne_2], [parts_personne_2], [plage_parts_personne_2], [civilite_personne_3], [prenom_personne_3], [nom_personne_3], [parts_personne_3], [civilite_personne_4], [prenom_personne_4], [nom_personne_4], [parts_personne_4], [plage_parts_personne_4]
+* Quel est le nom de la société qui devient le nouvel associé et de quelle à quelle part possède-t-elle ? -> [denomination_societe_nouvel_associe], [plage_parts_societe_nouvel_associe]
+Acte de cession des parts de la SCM à la SELARL
+* Comment s'appelle la personne qui cède ses parts (le cédant) et ses informations ? -> [civilite_cedant], [prenom_cedant], [nom_cedant], [profession_cedant], [date_naissance_cedant], [ville_naissance_cedant], [departement_naissance_cedant], [nationalite_cedant], [adresse_cedant], [situation_maritale_cedant], [civilite_conjoint_cedant], [prenom_conjoint_cedant], [nom_conjoint_cedant], [ordre_departemental_cedant], [numero_ordre_cedant], [numero_rpps_cedant]
+* Quel est le nom de la SELARL cessionnaire ? -> [denomination_societe_cessionnaire], [capital_social_cessionnaire], [adresse_siege_cessionnaire], [ville_rcs_cessionnaire], [civilite_representant_cessionnaire_courte], [prenom_representant_cessionnaire], [nom_representant_cessionnaire]
+* Comment s'appelle la SCM cédée et quelles sont ses caractéristiques légales ? -> [denomination_societe_cedee], [capital_social_societe_cedee], [nb_parts_total_societe_cedee], [ville_rcs_societe_cedee], [numero_rcs_societe_cedee], [civilite_associe_societe_cedee_1], [prenom_associe_societe_cedee_1], [nom_associe_societe_cedee_1], [civilite_associe_societe_cedee_3], [prenom_associe_societe_cedee_3], [nom_associe_societe_cedee_3]
+* Combien de parts de cette SCM sont cédées et de quels numéros à quels numéros ? -> [nb_parts_cedees], [plage_parts_cedees]
+* Quel est le prix d'une part et le prix global de cette cession ? -> [prix_unitaire_part_lettres], [prix_unitaire_part], [prix_global_parts_lettres], [prix_global_parts]
+* Quelles sont les conditions du crédit vendeur (si applicable) ? -> [montant_credit_vendeur], [duree_credit_vendeur], [taux_credit_vendeur]
+* Où et quand le document est-il signé, et en combien d'exemplaires ? -> [lieu_signature], [nombre_exemplaires_lettres]
+Courrier SDE
+* Quel est le montant des droits d'enregistrement à payer aux impôts ? -> [montant_droits_enregistrement]
+* Qui signe le document administratif ? -> [prenom_signataire], [nom_signataire]
+* Où et quand le document est-il signé ? -> [lieu_signature], [date_signature]
+________________
+
+
+5. Si régime communautaire
+Lettre de renonciation à revendiquer la qualité d'associé
+* Comment s'appelle le praticien (qui fait l'apport) ? -> [civilite], [prenom], [nom]
+* Comment s'appelle son conjoint (qui renonce) ? -> [prenom_conjoint], [nom_conjoint]
+* Quel est le nom de la société (la SELARL) et sa forme juridique ? -> [denomination_societe], [forme_sociale_complete]
+* Quel est le montant de l'apport en capital effectué pour s'associer ? -> [apport_personne_1], [apport_lettres_personne_1]
+* Quelle est la date du jour (date du courrier initial d'information) ? -> [date_du_jour]
+* Où et quand ce document de renonciation est-il signé ? -> [lieu_signature], [date_signature]
+________________
+
+
+6. Si Cession de cabinet (Médical ou Dentaire)
+Avenant contrat de bail
+* Comment s'appelle le bailleur ? -> [civilite_bailleur], [prenom_bailleur], [nom_bailleur], [profession_bailleur], [date_naissance_bailleur], [ville_naissance_bailleur], [nationalite_bailleur], [adresse_bailleur]
+* Comment s'appelle l'ancien locataire ? -> [civilite_locataire], [prenom_locataire], [nom_locataire], [profession_locataire], [date_naissance_locataire], [ville_naissance_locataire], [nationalite_locataire], [adresse_locataire], [civilite_courte_locataire]
+* Quelle était la date du bail initial ? -> [date_bail]
+* Quel est le nom de la nouvelle société locataire (la SELARL), où est son siège et son RCS ? -> [denomination_societe], [ville_rcs], [adresse_siege]
+* Où et quand ces documents sont-ils signés (et date d'effet pour l'avenant) ? -> [date_du_jour], [lieu_signature], [date_signature], [nombre_exemplaires_lettres]
+Appel de fond SEL
+* Dans quelle banque sont déposés les fonds de la société ? -> [nom_banque]
+* À qui est adressé l'appel de fond (banquier) et qui le signe ? -> [civilite_destinataire], [prenom_destinataire], [nom_destinataire], [prenom_signataire], [nom_signataire]
+* Qui est le vendeur et l'acquéreur ? -> [civilite_vendeur], [prenom_vendeur], [nom_vendeur], [denomination_societe], [denomination_societe_acquereur]
+* Où et quand le document est-il signé ? -> [lieu_signature], [date_signature]
+Compromis et Acte de cession d'un cabinet (Dentaire / Médical)
+* Comment s'appelle la personne qui cède son cabinet (vendeur) et ses informations ? -> [civilite_vendeur], [prenom_vendeur], [nom_vendeur], [profession_vendeur], [date_naissance_vendeur], [ville_naissance_vendeur], [departement_naissance_vendeur], [pays_naissance_vendeur], [cp_naissance_vendeur], [nationalite_vendeur], [adresse_vendeur], [adresse_exercice_vendeur], [numero_siren_vendeur], [ordre_departemental_vendeur], [numero_ordre_vendeur], [numero_rpps_vendeur], [situation_maritale_vendeur], [regime_matrimonial_vendeur], [civilite_conjoint_vendeur], [prenom_conjoint_vendeur], [nom_conjoint_vendeur]
+* Quel est le nom de la société principale (la SELARL acquéreur) et ses infos ? -> [denomination_societe_acquereur], [forme_sociale_acquereur], [capital_social_acquereur], [adresse_siege_acquereur], [ville_rcs_acquereur], [numero_rcs_acquereur], [numero_siret_acquereur], [fonction_acquereur_representant], [civilite_acquereur_representant], [prenom_acquereur_representant], [nom_acquereur_representant], [date_immatriculation_acquereur], [date_inscription_ordre_acquereur]
+* Quelle est la nature du cabinet cédé, son adresse exacte et son numéro de téléphone ? -> [nature_fonds_liberal], [adresse_cabinet], [adresse_locaux], [telephone_cabinet]
+* Comment et quand le vendeur avait-il initialement acquis ou créé ce cabinet ? -> [annees_acquisition_patientele], [description_origine_propriete], [civilite_precedent_proprietaire], [prenom_precedent_proprietaire], [nom_precedent_proprietaire], [date_origine_propriete], [prix_origine_propriete]
+* Quelles sont les caractéristiques du bail commercial ? -> [date_bail], [duree_bail], [date_debut_bail], [date_fin_bail], [date_reconduction_bail_1], [date_reconduction_bail_2], [superficie_local], [loyer_mensuel]
+* Quels sont les chiffres d'affaires et résultats des 3 dernières années ? -> [exercice_1], [chiffre_affaires_1], [resultat_1], [exercice_2], [chiffre_affaires_2], [resultat_2], [exercice_3], [chiffre_affaires_3], [resultat_3]
+* Quel est le prix total de la cession, et comment se répartit-il ? -> [prix_cession_lettres], [prix_cession], [prix_elements_corporels_lettres], [prix_elements_corporels], [prix_elements_incorporels_lettres], [prix_elements_incorporels]
+* Quelles sont les conditions du prêt bancaire de l'acquéreur (Compromis) ? -> [montant_pret], [taux_pret], [duree_pret]
+* Quelles sont les conditions du crédit vendeur (Acte de cession) ? -> [montant_credit_vendeur], [duree_credit_vendeur], [taux_credit_vendeur], [majoration_interet_retard]
+* Quand l'acquéreur doit-il au plus tard signer l'acte final ou entrer en jouissance ? -> [date_realisation_limite], [date_entree_jouissance]
+* Spécifique Dentaire : Comment s'appellent les salariés dont les contrats sont repris ? -> [civilite_salarie_1], [prenom_salarie_1], [nom_salarie_1], [civilite_salarie_2], [prenom_salarie_2], [nom_salarie_2]
+* Spécifique Médical : Combien de parts de SCM sont cédées en même temps que le cabinet ? -> [nb_parts_scm_a_ceder]
+* En combien d'exemplaires et sur combien de pages le document est-il imprimé ? -> [nombre_exemplaires_lettres], [nombre_pages_lettres]
+* Où et quand le document est-il signé, et où vont signer l'acquéreur et le vendeur ? -> [lieu_signature], [date_signature], [signature_acquereur], [signature_vendeur]
+–
+
+
+
+
+
+
+
+
+
+
+
+
+notebook instructions
+Le praticien exerçant (associé majoritaire +50%) : C'est généralement le client principal (médecin, dentiste, etc.) qui exerce concrètement son activité au sein de la société. Dans une SEL, il y a un président ou gérant qui est très souvent majoritaire.
+Des confrères non exerçants : Il est tout à fait possible d'avoir un autre praticien (par exemple, un autre médecin) qui détient des parts sans exercer lui-même dans ce cabinet.
+La famille et les tiers (associés minoritaires) : Le cabinet intègre très fréquemment le conjoint, les enfants, ou même "n'importe qui" au capital. Les clients de Sydel ont souvent de multiples associés minoritaires qui ne détiennent parfois qu'une infime partie de la société (par exemple 1 % des parts). Des "actions de préférence" peuvent d'ailleurs être utilisées pour ces profils.
+Des personnes morales (des sociétés) : D'autres structures peuvent être associées, en particulier les SPFPL (les holdings obligatoires pour les professions libérales) à qui le praticien apporte ou cède ses parts, ou encore des "micro holdings" patrimoniales.
+
+Les Statuts : C'est le document central. Attention : les statuts doivent obligatoirement être spécifiques à la profession (un modèle pour les dentistes, un pour les médecins, etc.) en raison des contraintes légales différentes
+Le PV de nomination du gérant : Si le gérant n'est pas nommé directement dans les statutsLe "Pot commun" (documents transverses) : Procurations, Déclaration de Non-Condamnation (DNC), et formulaires de demande d'inscription au Conseil de l'Ordre
+Documents conditionnels : Si l'associé est marié sous le régime de la communauté, des formulaires spécifiques (comme l'attestation/renonciation du conjoint) doivent être ajoutés obligatoirement
+Règles de rédaction et Variables métiers
+Pour éviter les erreurs récurrentes (les "coquilles") et automatiser la rédaction, le générateur doit respecter ces règles grammaticales et sémantiques :
+Vocabulaire juridique spécifique à la SELARL : Le logiciel doit impérativement utiliser le terme "Gérant" (et non "Président", qui est réservé à la SELAS) et le terme "Parts sociales" (et non "Actions")
+. Le capital est divisé en parts
+Grammaire : Féminisation intelligente (ex: "née", "associée") et gestion des pluriels selon s'il y a un associé unique (EURL/SELARL unipersonnelle) ou de multiples associés 
+Si le client exerçait auparavant en BNC, la création de la SELARL s'accompagne obligatoirement d'autres opérations juridiques que l'outil doit anticiper :
+La cession de fonds libéral : Le praticien doit revendre son activité (son "fonds de commerce" libéral) à sa nouvelle SELARL. L'outil doit éditer un compromis et un acte de cession de fonds
+SELAS
+Docs à générer dans tous les cas
+
+Déclaration sur l’honneur de non condamnation -> Déclaration sur l'honneur de non condamnation.docx
+Autorisation de domiciliation  -> Autorisation de domiciliation.docx
+Procuration -> Procuration.docx 
+
+
+PV nomination gérant PV nomination gérant.docx
+Demande d’inscription à l’ordre Demande d'inscription à l'ordre.docx
+Déclaration sur l’honneur de non condamnationDéclaration sur l'honneur de non condamnation.docx
+Autorisation de domiciliation Autorisation de domiciliation.docx
+
+Statuts 
+STATUTS -> RÈGLES SI PLUSIEURS ASSOCIÉS 
+(ce qui change dans le doc : en entête après le soussigné on met la liste - 1 ou plusieurs - article 7 et 8 en moyenne avec la liste des associés et à la fin sur la signature)
+
+Statuts médecin -> Statuts_SELAS_medecin.docx
+
+Si régime communautaire
+Lettre de renonciation ->  Lettre de renonciation a revendiquer la qualite d'associe.docx
+Lettre d’avertissement -> Lettre d'avertissement au conjoint en cas d'apport d'un bien commun.docx
+
+
+Si SCM
+PV AGE Cession part SCM-SELASPV AGE cession part SCM - SELAS.docx
+Courrier SDE-SELAS Courrier SDE - SELAS.docx
+Acte de cession des parts de la SCM à la SEL -> Acte_cession_parts_SCM_SEL_modele.docx
+
+Si Cession 
+Avenant contrat de bail -> Avenant Contrat de bail.docx
+
+→Si cabinet médical 
+Acte de cession d’un cabinet médical -> Acte de cession d_un cabinet médical.docx
+Compromis de cession d’un cabinet médical -> Compromis de cession d_un cabinet médical.docx
+
+→Si cabinet dentaire
+Acte de cession d’un cabinet dentaire -> Acte de cession d'un cabinet dentaire.docx
+Compromis de cession d’un cabinet dentaire -> Compromis de cession d_un cabinet dentaire.docx 
+
+Si dérogation 
+Formulaire de dérogation pour exercer sur plusieurs sites avec la SEL -> Formulaire de dérogation pour exercer sur plusieurs sites avec la SEL.docx
+Demande de dérog. cumul SELARL salarié Demande_derogation_cumul_SELARL_salariee.doc
+SPFPL cession
+Docs à générer dans tous les cas
+
+Déclaration sur l’honneur de non condamnation -> Déclaration sur l'honneur de non condamnation.docx
+Autorisation de domiciliation  -> Autorisation de domiciliation.docx
+Procuration -> Procuration.docx
+
+
+Statuts 
+STATUTS -> RÈGLES SI PLUSIEURS ASSOCIÉS 
+(ce qui change dans le doc : en entête après le soussigné on met la liste - 1 ou plusieurs - article 7 et 8 en moyenne avec la liste des associés et à la fin sur la signature)
+
+Statuts SPFPL dentiste cession Statuts_SPFPLAS_dentistes_cession.docx
+
+
+PV nomination gérant PV nomination gérant.docx
+Demande d’inscription à l’ordre Demande d'inscription à l'ordre.docx
+Déclaration sur l’honneur de non condamnationDéclaration sur l'honneur de non condamnation.docx
+Autorisation de domiciliation Autorisation de domiciliation.docx
+
+Note d’informations NOTE D'INFORMATION.docx
+
+
+Si régime communautaire
+Lettre de renonciation ->  Lettre de renonciation a revendiquer la qualite d'associe.docx
+Lettre d’avertissement -> Lettre d'avertissement au conjoint en cas d'apport d'un bien commun.docx
+
+
+Si plusieurs associés
+PV SELARL agrément cession plus. assoc.PV SELARL agrément cession SPFPL - SELARL plusieurs associés - transforme.docx
+
+
+Si associé unique
+PV SELARL agrément cession assoc. unique PV SELARL agrément cession SPFPL - SELARL 1 associé - transforme.docx
+
+Acte de cession de parts
+Acte_cession_SPFPL_tiers_part_modele.docx
+
+Acte de cession d’actions
+
+SPFPL apport
+Docs à générer dans tous les cas
+
+Déclaration sur l’honneur de non condamnation -> Déclaration sur l'honneur de non condamnation.docx
+Autorisation de domiciliation  -> Autorisation de domiciliation.docx
+Procuration -> Procuration.docx
+
+
+Statuts 
+STATUTS -> RÈGLES SI PLUSIEURS ASSOCIÉS 
+(ce qui change dans le doc : en entête après le soussigné on met la liste - 1 ou plusieurs - article 7 et 8 en moyenne avec la liste des associés et à la fin sur la signature)
+
+Statuts SPFPL dentistes apport Statuts SPFPLAS dentistes - apport.docx
+
+
+PV nomination gérant PV nomination gérant.docx
+Demande d’inscription à l’ordre Demande d'inscription à l'ordre.docx
+Déclaration sur l’honneur de non condamnationDéclaration sur l'honneur de non condamnation.docx
+Autorisation de domiciliation Autorisation de domiciliation.docx
+
+Note d’informations NOTE D'INFORMATION.docx
+
+Si régime communautaire
+Lettre de renonciation ->  Lettre de renonciation a revendiquer la qualite d'associe.docx
+Lettre d’avertissement -> Lettre d'avertissement au conjoint en cas d'apport d'un bien commun.docx
+
+
+Apport doc
+Contrat d’apport Contrat d_apport SEL SPFPL.docx
+Attestation sur le capital Attestation sur le capital - apport - liste des souscripteurs.docx
+Attestation nomination comm. aux comptes attestation nomination commissaire aux apports - transforme.docx
+
+SCS
+Statuts SCS → Statuts_SCS_modele.docx
+STATUTS -> RÈGLES SI PLUSIEURS ASSOCIÉS 
+(ce qui change dans le doc : en entête après le soussigné on met la liste - 1 ou plusieurs - article 7 et 8 en moyenne avec la liste des associés et à la fin sur la signature)
+
+
+
+Déclaration sur l’honneur de non condamnation →Déclaration sur l'honneur de non condamnation.docx
+
+
+Autorisation de domiciliation  → Autorisation de domiciliation.docx
+
+
+Procuration → Procuration.docx
+
+
+PV nomination gérant→ PV nomination gérant.docx
+SCI
+STATUTS -> RÈGLES SI PLUSIEURS ASSOCIÉS 
+(ce qui change dans le doc : en entête après le soussigné on met la liste - 1 ou plusieurs - article 7 et 8 en moyenne avec la liste des associés et à la fin sur la signature)
+
+Si SCI 
+Statuts Modèle statuts SCI.docx
+
+
+Si SCI IRIS 
+Statuts Modèle statuts SCI IRIS.docx
+
+Si IS
+Lettre option IS lettre option IS.docx
+
+Déclaration sur l’honneur de non condamnation -> Déclaration sur l'honneur de non condamnation.docx
+Procuration -> Procuration.docx
+Autorisation de domiciliation  -> Autorisation de domiciliation.docx
+
+
+PV nomination gérant PV nomination gérant.docx
+SCM
+STATUTS -> RÈGLES SI PLUSIEURS ASSOCIÉS 
+(ce qui change dans le doc : en entête après le soussigné on met la liste - 1 ou plusieurs - article 7 et 8 en moyenne avec la liste des associés et à la fin sur la signature)
+
+Statuts 
+Statuts SCM.docx
+
+
+Déclaration sur l’honneur de non condamnation -> Déclaration sur l'honneur de non condamnation.docx
+Autorisation de domiciliation  -> Autorisation de domiciliation.docx
+Procuration -> Procuration.docx
+
+
+PV nomination gérant PV nomination gérant.docx
+Demande d’inscription à l’ordre Demande d'inscription à l'ordre.docx
+Déclaration sur l’honneur de non condamnationDéclaration sur l'honneur de non condamnation.docx
+Autorisation de domiciliation Autorisation de domiciliation.docx
+
+Pacte d’associés SCM Pacte d_associés SCM.docx
+liste dépenses communes Liste dépenses communes SCM.doc
+Contrats frais communs CONTRAT FRAIS COMMUNS.docx
+
+
+règlement intérieur de la scté civile de moyens2024 REGLEMENT INTERIEUR DE LA SOCIETE CIVILE DE MOYENS - SCM DES DOCTEURS XX.docx
+SAS
+STATUTS -> RÈGLES SI PLUSIEURS ASSOCIÉS 
+(ce qui change dans le doc : en entête après le soussigné on met la liste - 1 ou plusieurs - article 7 et 8 en moyenne avec la liste des associés et à la fin sur la signature)
+
+Statuts STATUTS_SAS_SPFPL_medecins_modele.docx
+
+
+Déclaration sur l’honneur de non condamnation -> 
+Déclaration sur l'honneur de non condamnation.docx
+
+
+Autorisation de domiciliation  -> Autorisation de domiciliation.docx
+
+
+Procuration -> Procuration.docx
+
+Attestation sur le capital Attestation sur le capital - apport - liste des souscripteurs.docx
+
+PV rémunération président PV remuneration president - transforme.docx
+
+liste des souscripteurs Attestation sur le capital Attestation sur le capital - apport - liste des souscripteurs.docx        
+Règles
+1. Gestion des variables
+Pour les informations comme le chiffre d’affaires ou le montant du prêt, il n’est pas forcément nécessaire d’en faire des variables.
+La logique est la suivante : si l’information n’apparaît qu’une seule fois dans le document, il est aussi simple de la renseigner directement dans le formulaire ou dans l’acte. Cela évite de créer une variable inutile.
+En revanche, même si ce n’est pas une variable, il faut prévoir un champ à remplir manuellement. Ce n’est donc pas du texte fixe à remplacer automatiquement.
+2. Gestion du nombre d’associés
+Certains documents peuvent nécessiter plusieurs versions selon le nombre d’associés, mais cette gestion est très variable selon les cas.
+Il peut y avoir 1, 2, 3, 4, 5 ou 6 associés, notamment dans les statuts. Pour les SEL et SPFPL, il y a rarement beaucoup d’associés, et très souvent un seul. Pour les autres formes, il y en a souvent deux.
+Créer une infinité de modèles selon le nombre d’associés paraît donc compliqué.
+La meilleure solution serait de pouvoir partir d’un même modèle et d’y ajouter autant d’associés que nécessaire, selon le dossier.
+3. Documents concernés par cette gestion des associés
+La gestion du nombre variable d’associés concerne uniquement les documents suivants :
+1. Les statuts de toutes les sociétés
+ Les parties qui changent sont :
+   * l’en-tête, après la mention « le soussigné » ;
+   * la liste des associés, avec un ou plusieurs associés ;
+   * les articles 7 et 8 en moyenne, qui reprennent la liste des associés ;
+   * la partie signature à la fin.
+   2. Le PV de nomination de gérant
+ Il existe un modèle avec plusieurs associés, joint à titre d’exemple.
+   3. La liste des souscripteurs
+ Cela concerne les SPFPL, SELAS et SCS.
+4. Variantes grammaticales à gérer
+Les seules variantes identifiées sont a priori :
+      * le singulier / pluriel ;
+      * le genre masculin / féminin.
+Il n’y a pas d’autres variantes connues à ce stade.
+5. Méthode de validation
+Il serait idéal de faire un test pratique sur une première version.
+STATUTS -> RÈGLES SI PLUSIEURS ASSOCIÉS 
+(ce qui change dans le doc : en entête après le soussigné on met la liste - 1 ou plusieurs - article 7 et 8 en moyenne avec la liste des associés et à la fin sur la signature)
+TICKETS SELARL
+
+
+TICKETS RETOURS V3
+Pour la SELARL, il faut que tu comprennes que tous les membres de la SELARL sont forcément signataires et le praticien est forcément signataire puisqu'une SELARL est forcément composée d'au moins un praticien.
+Explication : Non, le praticien n'est pas nécessairement le seul signataire dans une SELARL, bien qu'il en soit le signataire principal (souvent en tant que gérant et associé majoritaire).
+La liste des signataires dépend directement de la composition de la société :
+      * Présence d'associés multiples : Si la SELARL comporte d'autres associés en plus du praticien principal, ces derniers doivent également signer les documents officiels (comme les statuts ou les actes de cession). Ces associés peuvent être d'autres confrères, le conjoint, ou même les enfants du praticien.
+      * Présence de personnes morales : Il est très fréquent qu'une holding (comme une SPFPL ou une micro-holding patrimoniale) détienne des parts de la SELARL. Dans ce cas, la signature de cette personne morale (par le biais de son représentant) est requise sur les documents.
+Cependant, d'un point de vue purement opérationnel pour le cabinet Sydel : Même si les actes juridiques nécessitent la signature de plusieurs associés (notamment les minoritaires), l'équipe du cabinet applique une règle stricte : elle ne communique et n'interagit directement qu'avec le praticien principal (le client) pour gérer le dossier, et refuse d'être en contact avec les associés minoritaires.
+
+Il faut revoir le document statuts selarl. Il faut pouvoir ajouter un membre à la selarl : 
+Soit personne morale soit personne physique
+On doit pouvoir ajouter autant de personnes morales et physiques que l’on veut. 
+
+Personne morale : 
+Toujours : 1° [denomination_societe_1], détenant [nb_parts_societe_1] parts ;
+Puis adapter les chiffres en fonction des personnes morales à ajouter
+
+Toujours : 2° [prenom_personne_2] [nom_personne_2], détenant [nb_parts_personne_2] parts.
+Puis adapter les chiffres en fonction des personnes morales à ajouter
+
+Ajouter le Calcul automatique du nombre d’associés de la SELARL 
+Correspond à tous les signataires puisqu’ils sont forcément associés si ils signent 
+Enlever la possibilité d’ajouter / enlever des associés une fois les membres déjà ajoutés
+Enlever : le signataire est le premier associé puisque tous les associés sont forcément signataires
+
+Intégrer automatique toutes les personnes (gérant(s) + praticien(s)) dans la liste des associés
+
+Ajouter la possibilité de mettre la date du jour partout ou une date est requise sans avoir à la taper à la main
+Mettre la date au format français JOUR/MOIS/ANNÉE
+
+
+
+
+TICKETS RETOUR V2
+forme sociale affichée = forme sociale -> cette variable correspond à la même chose. Il faut la remplir qu’une seule fois et afficher la réponse aux deux endroits. Quitte à modifier la variable {forme_sociale_affichee} et la remplacer par {forme_sociale}
+
+Capital social -> faut il le remplir en chiffres ? en lettres ?
+si il faut le remplir en lettres,  ya til une possibilité de traduire “30” en “trente” automatiquement ?
+
+Que veut dire capital variable ? Qu’est ce que cela déclenche en plus ? 
+
+Quand le système à besoin d’une variable qui ne revient qu’une fois ou qui semble identique à une autre variable, il faut préciser ce pourquoi on demande cette information, autrement c’est impossible de savoir de quoi on parle. 
+
+
+Dans tous les documents de “Statuts” 
+
+On part désormais du principe que tout le monde est célibataire et que lorsque ce n’est pas le cas, et que la personne est marié, on ajoute le texte suivant dans tous les documents de statuts, peu importe la profession.
+
+Si marié -> rajouter : 
+
+
+[situation_maritale] sous le régime de [regime_matrimonial] avec [civilite_conjoint] [prenom_conjoint] [nom_conjoint]. 
+
+
+juste après : 
+
+
+“[civilite] [prenom] [nom], [profession], né le [date_naissance] à [ville_naissance] ([departement_naissance]), de nationalité [nationalite], demeurant [adresse_personnelle].
+Inscrit au Tableau de l’ordre départemental des [profession_reglementee_pluriel] de [ordre_departemental] sous le numéro RPPS [numero_rpps]. “
+
+
+et juste avant : 
+
+        “A établi ainsi qu’il suit les statuts de la [forme_sociale] de [profession_reglementee] qu’il a        décidé d’instituer :”
+- - - - - 
+
+J’ai effectué des modifications sur les documents suivants, tu dois t’assurer qu’ils sont mis à jour : 
+ Modele statuts SELARL chirurgien dentiste sans communaute.docx
+Modèle statuts SELARL médecins.docx
+appel de fond sel.docx
+
+– 
+pour : forme sociale long : automatiquement remplir dans les documents, selon les cas: 
+SELARL -> Société d’Exercice Libéral à Responsabilité Limitée
+SELAS -> Société d'Exercice Libéral par Actions Simplifiée
+SPFPL -> Société de Participations Financières de Profession Libérale
+
+Ne plus demander de le rédiger ! le système doit le remplir tout seul 
+
+– 
+On nous demande d’indiquer les informations du signataire et on ne sait pas de qui il s’agit.
+CORRECTIONS DOCUMENTAIRE ET .py
+Dans le document “autorisation de domiciliation”, une partie du texte est incorrecte. 
+
+Le document doit être rédigé de la façon suivante :  
+
+
+“dans les locaux du cabinet au [num_voie_siege] [voie_siege], [cp_siege] [ville_siege] pour une durée indéterminée.”
+
+Et non pas : 
+
+“dans les locaux situés au 5 place Bellecour, 69002 Lyon, pour une durée indéterminée.”
+
+
+________________
+
+
+Pour le document “DECLARATION DE NON CONDAMNATION EN APPLICATION DE L’ARTICLE A.123-51 du Code de Commerce”
+
+La partie suivante est incorrecte : 
+“demeurant au 14 boulevard Saint-Felix, Nantes 44000”
+
+Le code postal doit être écrit de façon suivante : “demeurant au [num_voie_perso] [voie_perso], [cp_perso] [ville_perso]”
+
+
+________________
+
+
+Pour le document “lettre de renonciation à la qualité d’associé”
+
+Pour la ville -> Remplacer : “A” par “À” {ville}, juste au-dessus de la date.
+
+
+Autre coquille dans le document : 
+
+“euros dépendant de notre regime de communaute.”
+
+Remplacer par : 
+
+“euros dépendant de notre communauté”
+
+Le mot “regime” doit être retiré.
+
+
+________________
+
+
+Supprimer “RCS PARIS 788 531 432 0153814303” dans le document.
+
+Rajoute : “Fait pour servir et valoir ce que de droit.” 
+Juste après “L’exécution de ce mandat vaudra décharge au mandataire.”
+en sautant une ligne et en revenant à la ligne.
+
+Et juste avant le bloc de signature.
+
+
+________________
+
+
+Pour le PV de nomination de gérant : 
+
+Supprimer “au RCS de Lyon “ après “En cours d’immatriculation “, il n’y a pas de variable à cet endroit.
+
+
+Supprimer “EXTRAORDINAIRE “ après “PROCES-VERBAL DES DECISIONS DE L’ASSEMBLEE GENERALE”
+
+
+On n’a pas besoin de connaître l’heure de la réunion. Supprime la mention de l’heure dans le document et dans le moteur si c’est le cas pour ce document.
+
+Pour ce qui est de : 
+
+“L’associé de la Societe d'exercice liberal a responsabilite limitee SELARL Durand, à capital variable, au capital minimum de 5000 euros, divisé en 500 parts de 10 euro chacune, s’est réuni ce jour au siège de la société.” 
+
+Transforme en :
+“Les associés de la SELARL [denomination_societe], au capital de [capital_social], composé de [nb_parts] parts de [valeur_nominale_part] euro chacune, se sont réunis au siège social.”
+
+((les mots entre crochets sont des variables. Si ces variables ne correspondent pas avec ce que tu as, alors cherche et associe la plus adaptée.
+Ajoute “Sont présents ou représentés :” à la place de “Associés présents ou représentés :”
+Remplace “représentant” par “détenant”
+
+À la fin de la liste des associés ou de l’associé (s’il y en a un seul), 
+remplace : 
+
+“L’associé présent représente 500 parts, soit la totalité du capital.
+A l’issue de la signature des statuts, l’associé s’est réuni pour prendre les décisions suivantes :
+- Nomination du gerant ;
+- Pouvoir.
+”
+
+par : 
+
+“Les associés présents ou représentés disposent ensemble de la totalité des parts sociales. Cet ensemble est habilité à prendre des décisions.
+”
+
+À la suite de “ ”
+
+Ajoute : 
+“[civilite_president_seance] [prenom_president_seance] [nom_personne_seance] préside la séance.
+
+Le président rappelle l’ordre du jour :
+
+
+· Nomination des premiers gérants
+
+
+· Pouvoirs 
+”
+Attention : ces variables n’existaient pas, tu dois les intégrer dans le moteur .py. Ajoute l’option de rattacher un des associés (ou l’associé, s’il y en a un seul) directement en tant que président de séance, de manière à ne pas avoir à retaper ses informations à la main. 
+
+- pour “nomination des gérants” -> s’il n’y a qu’un seul associé, remplacer par “Nomination du gérant”
+
+Ensuite, supprime “extraordinaire “ dans la phrase “L’assemblée générale extraordinaire décide de désigner en qualité de gerant pour une durée indéterminée :”
+
+Ensuite, ajoute “au” après “demeurant”
+
+Ensuite remplace : 
+“Cette résolution, soumise au vote est adoptée à l’unanimité des voix présentes.”
+
+par : 
+“Cette résolution est adoptée à l’unanimité”
+
+Ensuite, remplace 
+“L’assemblée générale extraordinaire confère tous les pouvoirs au porteur d’un original à l’effet de procéder aux formalités d’enregistrement au greffe du Tribunal de Commerce.
+Cette résolution, soumise au vote est adoptée à l’unanimité des voix présentes.
+De tout ce qui a été décidé, il a été dressé le présent procès-verbal qui a été signé après lecture par les associés.
+L’ordre du jour étant épuisé et personne ne demandant plus la parole, la séance est levée.”
+
+
+par : 
+“L’assemblée générale confère tous les pouvoirs au porteur d’un original à l’effet de procéder aux formalités d’enregistrement au greffe du Tribunal de Commerce de la Société.
+
+
+Cette résolution est adoptée à l’unanimité”
+
+
+________________
+
+
+Dans le document “Statuts selarl chirurgien dentiste”
+
+Ajoute “euros” après “Au capital de {capital_social}” 
+-
+Lorsque l’individu est marié sous le régime de la communauté, remplace : 
+“marie sous le régime de regime de communaute avec”
+
+par 
+
+“marié sous le régime de la communauté avec“
+-
+Ensuite pour le reste du document, reprends l’ensemble du texte et veille à ce qu’il corresponde au caractère près au texte ci-après. Tous les mots entre crochets sont des variables, associe les aux variables déjà existantes. Si les variables ne sont pas existantes, fais les correspondre avec celles qui sont le plus proche au niveau de la sémantique.
+
+Le texte contenant l’ensemble des articles : 
+“ARTICLE 1 – FORME 
+
+
+La Société est une société d'exercice libéral à responsabilité limitée de [profession_reglementee_pluriel] (SELARL), régie par les dispositions du Code de commerce relatives aux sociétés commerciales et les lois en vigueur, les dispositions législatives et réglementaires applicables à la profession de [profession_reglementee], notamment l’ordonnance n°2023-77 du 8 février 2023 relative à l'exercice en société des professions libérales réglementées et les présents statuts.
+
+
+A tout moment la présente Société peut devenir pluripersonnelle puis redevenir unipersonnelle par tous moyens compatibles avec la législation concernant ce type de société.
+
+
+
+
+ARTICLE 2 - OBJET SOCIAL 
+
+
+La Société a pour objet l'exercice de la profession de [profession_reglementee],
+
+
+Et généralement, toutes opérations civiles, mobilières, financières ou immobilières, pouvant se rattacher directement ou indirectement à l'objet visé ci-dessus, ou en faciliter l'accomplissement.
+
+
+Elle ne peut accomplir les actes de cette profession que par l'intermédiaire d'un de ses membres ayant qualité pour l'exercer.
+
+
+ARTICLE 3 - DENOMINATION SOCIALE 
+
+
+La société a pour dénomination sociale :
+
+
+[denomination_societe]
+
+
+Tous les actes et documents émanant de la Société et destinés aux tiers doivent indiquer la dénomination sociale précédée ou suivie immédiatement des mots "société d'exercice libéral à responsabilité limitée de [profession_reglementee_pluriel]" ou "SELARL de [profession_reglementee_pluriel] ", le montant du capital social, son siège social et le tableau de la circonscription de l'ordre où la Société est inscrite.
+
+
+Cette dénomination pourra comprendre le nom d'un ou plusieurs associés exerçant leur profession au sein de la Société.
+
+
+En outre, la Société doit indiquer en tête de ses factures, notes de commandes, tarifs, ainsi que sur toutes correspondances et récépissés concernant son activité et signés par elle ou en son nom, le siège du tribunal au greffe duquel elle est immatriculée au Registre du commerce et des sociétés, et le numéro d'immatriculation qu'elle a reçu.
+
+
+ARTICLE 4 - SIEGE SOCIAL 
+
+
+Le siège social est fixé : [adresse_siege]
+
+
+Il pourra être transféré en tout autre endroit de la même ville, du même département ou d’un département limitrophe, par simple décision du gérant et en tout autre lieu en vertu d’une décision extraordinaire des associés.
+
+
+ARTICLE 5 - LIEU(X) D’EXERCICE 
+
+
+Le lieu d’exercice de la société est situé au [adresse_lieu_exercice]. Il constitue le lieu d’exercice unique de la société
+
+
+ARTICLE 6 - DUREE DE VIE
+
+
+La durée de la Société est fixée à [duree_societe] à compter de la date d'immatriculation au Registre du Commerce et des Sociétés, sauf les cas de prorogation ou de dissolution anticipée.
+
+
+Cette immatriculation ne peut intervenir qu'après inscription de la Société au tableau de l'ordre des [profession_reglementee_pluriel].
+
+
+Un an au moins avant la date d'expiration de la Société, la gérance doit provoquer une réunion de la collectivité des associés à l'effet de décider, dans les conditions requises pour les décisions collectives extraordinaires, si la Société doit être prorogée. Toute décision de proroger la Société doit être transmise au Conseil départemental de l'ordre des [profession_reglementee_pluriel] par lettre recommandée avec demande d'avis de réception.
+
+
+ARTICLE 7 – APPORTS 
+
+
+[civilite] [prenom] [nom] apporte à la Société la somme de [montant_apport].   
+
+
+Total des apports en numéraire : ci- [montant_apport].
+
+
+Cette somme de [montant_apport_lettres] a été déposée par l’associé unique conformément à la loi, au crédit d’un compte ouvert au nom de la société en formation dans les livres de la banque [nom_banque].
+
+
+ARTICLE 8 - CAPITAL SOCIAL 
+
+
+Le capital social est fixé à la somme de [capital_lettres].
+
+
+Il est divisé en [nb_parts_total] parts de [valeur_nominale_part] chacune, entièrement souscrites et libérées dans les conditions exposées ci-dessus et attribuées comme suit : 
+
+
+      * à Monsieur [prenom] [nom], mille parts sociales en pleine propriété, ci         1000 parts  
+
+
+Total du nombre de parts composant le capital social : ………………………………………. [nb_parts_total] parts
+
+
+ARTICLE 9 - QUALITE D’ASSOCIE 
+
+
+Associés professionnels exerçant dans la société
+
+
+Conformément aux article 46 et suivants de l’Ordonnance 2023-77 du 8 février 2023, plus de la moitié du capital social et des droits de vote est détenue, soit directement, soit par l'intermédiaire d'une société de participations financières de professions libérales, par des professionnels exerçant au sein de la société, ci-après désignés "associés professionnels".
+
+
+Associés extérieurs
+
+
+Le complément peut être détenu par :
+
+
+      * des personnes physiques ou morales exerçant la profession de [profession_reglementee] en dehors de la Société, ci-après désignés "professionnels extérieurs",
+      * pendant un délai de dix ans, des personnes physiques qui, ayant cessé toute activité professionnelle, ont exercé la profession de [profession_reglementee] au sein de la Société, sous réserve de l’article 54, ci-après désignés "anciens associés professionnels",
+      * les ayants droit des personnes physiques mentionnées ci-dessus, pendant un délai de cinq ans suivant leur décès, ci-après désignés "ayants droit",
+      * une société de participations financières de professions libérales régie par le livre V de l‘ordonnance du 08 février 2023, si les membres de cette société exercent leur profession au sein de la société d'exercice libéral,
+      * des personnes exerçant l’une quelconque de professions libérales de santé à l’exception de la profession de médecin en qualité de spécialiste en stomatologie, en oto-rhino-laryngologie, en radiologie ou en biologie médicale, ou la profession de pharmacien ou de masseur-kinésithérapeute ou d’orthophoniste,
+      * des personnes européennes dont l’activité constitue l’objet social de la société. S’il s’agit d’une personne morale contrôlée, partiellement ou totalement, par une autre personne morale, elle respecte les exigences en matière de détention du capital et des droits de vote prévues par l’Ordonnance susvisée. 
+
+
+Solutions des dépassements des délais
+
+
+Toutes modifications du nombre des parts sociales doivent respecter les conditions visées ci-dessus relatives à la répartition du capital. Dans l’hypothèse où l’une d’entre elles viendrait à ne plus être remplie, la société dispose d’un délai d’un an pour se mettre en conformité avec les dispositions légales.
+
+
+Les dispositions qui précèdent autorisant la détention d’une part de capital par des personnes n’exerçant pas au sein de la société ne peuvent bénéficier aux personnes faisant l’objet d’une interdiction d’exercice de la profession constituant l’objet de la société.
+
+
+ARTICLE 10 – AUGMENTATION ET REDUCTION DE CAPITAL
+
+
+Article 10.1 – Modalités de l’augmentation du capital
+
+
+Le capital social peut, en vertu d’une décision extraordinaire des associés, être augmenté, en une ou plusieurs fois, en représentation d’apports en nature ou en numéraire, ou par incorporation de tout ou partie des bénéfices ou réserves disponibles, au moyen de la création des parts sociales nouvelles ou de l’élévation de la valeur nominale des parts existantes.
+Les parts nouvelles peuvent être créées au pair avec prime ; dans ce cas, la collectivité des associés, par la décision extraordinaire portant augmentation du capital, fixe le montant de la prime et détermine son affectation.
+
+
+Article 10.2 – Souscription en numéraire et apports en nature
+
+
+Le capital social doit être intégralement libéré avant toute souscription de nouvelles parts à libérer en numéraire.
+
+
+En cas d’augmentation de capital par souscription de parts sociales en numéraire, les fonds provenant de la libération des parts sociales doivent faire l’objet d’un dépôt à la Caisse des dépôts et consignations, chez un notaire ou dans une banque.
+
+
+Si l’augmentation de capital est réalisée en tout ou partie au moyen d’apports en nature, l’évaluation de chaque apport en nature doit être faite au vu d’un rapport établi sous sa responsabilité par un Commissaire aux apports désigné à l’unanimité des associés ou à défaut par ordonnance du Président du Tribunal de Commerce à la requête de l’un des Gérants.
+
+
+Les parts représentatives de toute augmentation de capital en numéraire devront être libérées entièrement de leur montant au jour où l’augmentation du capital est devenue définitive.
+
+
+Article 10.3 – Rompus
+
+
+Les augmentations de capital sont réalisées nonobstant l’existence de rompus ; les associés disposant d’un nombre insuffisant de droits de souscription ou d’attribution pour obtenir la délivrance d’un nombre entier de parts sociales nouvelles devront faire leur affaire personnelle de toute acquisition ou cession nécessaire de droits.
+
+
+Article 10.4 – Apporteurs ou acquéreur communs en biens
+
+
+En cas d’apport de biens communs ou d’acquisition de parts au moyen de fonds communs, le conjoint de l’apporteur ou de l’acquéreur peut revendiquer la qualité d’associé à concurrence de la moitié des parts souscrites ou acquises et sous réserve de respecter les conditions de l’article 9 des présents statuts.
+
+
+A cet effet, il doit être informé de cet apport ou de cette acquisition ; justification de cette information doit être donnée dans l’acte d’apport ou d’acquisition.
+L’acceptation ou l’agrément des associés vaut pour les deux époux si la revendication intervient lors de l’apport ou de l’acquisition.
+
+
+Si cette revendication intervient après la réalisation de l’apport ou de l’acquisition des parts, le conjoint doit être agréé dans les conditions ci-après prévues sous l’article « Transmission des parts sociales », l’associé époux de ce conjoint étant exclu du vote et ses parts n’étant pas prises en compte pour le calcul de la majorité.  
+
+
+Article 10.5 – Apporteurs ou acquéreurs liés par un PACS
+
+
+En cas d’apport de biens indivis ou d’acquisition de parts par un tiers souscripteur lié à un PACS, l’acte d’apport ou d’acquisition devra mentionner les dispositions retenues dans le cadre de l’article 515-5 du Code civil.
+
+
+Le (La) partenaire de l’apporteur ou de l’acquéreur lié(e) par un PACS devra être agréé selon les conditions ci-après prévues sous l’article « Transmission des parts sociales » et en respectant les conditions de l’article 9 des présents statuts.
+
+
+Article 10.6 – Droit préférentiel de souscription
+
+
+En cas d’augmentation du capital par voie d’apport en numéraire, chacun des associés a, proportionnellement au nombre de parts qu’il possède, un droit de préférence à la souscription des parts sociales nouvelles représentatives de l’augmentation de capital.
+Le droit de souscription attaché aux parts anciennes peut être cédé, sous réserve de l’agrément du cessionnaire, dans les conditions prévues par l’article « Transmission des parts sociales » des présents statuts.
+
+
+Tout associé peut également renoncer individuellement à son droit préférentiel de souscription, soit en avisant la Société par lettre recommandée avec demande d’avis de réception, qu’il renonce à l’exercer, soit en souscrivant un nombre de parts inférieur au nombre de parts qu’il aurait pu souscrire.
+
+
+De même, les associés peuvent, par décision collective extraordinaire, supprimer le droit préférentiel de souscription.
+Le droit préférentiel de souscription institué ci-dessus sera exercé dans les formes et les délais fixés par la gérance.
+
+
+ARTICLE 11 – REDUCTION DU CAPITAL
+
+
+Le capital social peut être réduit, pour quelque cause et de quelque manière que ce soit, par décision extraordinaire de l’assemblée générale des associés. En aucun cas, cette réduction ne peut porter atteinte à l’égalité des associés.
+
+
+ARTICLE 12 – PERTE AYANT POUR EFFET DE RAMENER LES CAPITAUX PROPRES A UN MONTANT INFERIEUR A LA MOITIE DU CAPITAL SOCIAL
+
+
+Si, du fait de pertes constatées dans les documents comptables, le montant des capitaux propres de la Société devient inférieur à la moitié du capital social, la gérance est tenue, dans les quatre mois qui suivent l’approbation des comptes ayant fait apparaitre ces pertes, de consulter les associés à l’effet de décider, dans les conditions prévues ci-après pour les décisions collectives extraordinaires, s’il y a lieu de prononcer la dissolution de la Société. Si la dissolution n’est pas prononcée à la majorité exigée pour la modification des statuts, la Société est tenue, au plus tard à la clôture du deuxième exercice suivant celui au cours duquel la constatation des pertes est intervenue, et, sous réserve des dispositions relatives au montant minimum du capital, de réduire son capital d’un montant au moins égal à celui des pertes qui n’ont pu être imputées sur les réserves si, dans ce délai, les capitaux propres n’ont pu être reconstitués à concurrence d’une valeur au moins égale à la moitié du capital. 
+Que la dissolution soit ou non décidée, la résolution adoptée par les associés est publiée dans un journal habilité à recevoir des annonces légales dans le département du siège social, déposée au Greffe du tribunal de commerce du lieu du siège social, et inscrite au Registre du Commerce et des Sociétés.
+
+
+A défaut par la gérance ou le Commissaire aux comptes de provoquer une décision, ou si les associés n’ont pu valablement délibérer, tout intéressé peut demander au tribunal de commerce la dissolution de la société. Il en est de même si les dispositions du deuxième alinéa ci-dessus n’ont pas été appliquées. Dans tous les cas, le tribunal peut accorder un délai maximal de six mois pour régulariser la situation. Il ne peut prononcer la dissolution si, au jour où il statue sur le fond, cette régularisation a eu lieu.
+
+
+ARTICLE 13 – DROITS ET OBLIGATIONS DES PARTS SOCIALES
+
+
+      1. Chaque part sociale confère à son propriétaire un droit égal dans les bénéfices sociaux et dans tout l’actif social. Elle donne également le droit de participer aux décisions collectives.
+      2. Les associés ne supportent les pertes qu’à concurrence de leurs apports.
+      3. Chaque associé professionnel exerçant répond sur l’ensemble de son patrimoine des actes professionnels qu’il accomplit. La société est solidairement responsable avec lui.
+      4. Le propriétaire d’une part emporte de plein droit adhésion aux présents statuts et aux décisions prises par la collectivité des associés.
+
+
+ARTICLE 14 - COMPTE COURANT D’ASSOCIES 
+
+
+Tout associé exerçant sa profession au sein de la Société ainsi que ses ayants droit devenus associés peuvent mettre à la disposition de la Société, au titre de comptes d'associés, des sommes dont le montant ne pourra excéder trois fois celui de leur participation au capital.
+
+
+Tout autre associé peut mettre, au même titre, à la disposition de la Société, des sommes dont le montant ne peut excéder celui de sa participation au capital.
+
+
+Ces sommes ne peuvent être retirées, en tout ou partie, qu'après notification à la Société, par lettre recommandée avec demande d'avis de réception, avec un préavis dont la durée ne peut être inférieure à six mois.
+
+
+ARTICLE 15 - TRANSMISSION DES PARTS SOCIALES 
+
+
+Les parts sociales ne peuvent être transmises ou cédées qu’au profit d’une personne qui n’est pas frappée d’une interdiction d’exercer la profession constituant l’objet social. Cette réserve vaut pour tous les cas de transmission ou de cession ci-après prévus.
+
+
+Toutes notifications de demandes, réponses, avis et mises en demeure et sommations sont faites par acte extrajudiciaire ou par lettre recommandée avec demande d’avis de réception.
+
+
+Article 15.1 - Démembrement de parts sociales 
+
+
+En cas de démembrement de propriété des parts sociales, les règles suivantes devront être respectées : 
+      * s’il s’agit d’un démembrement successoral de parts d’associés professionnels, il conviendra de veiller à ce que les règles relatives à la composition du capital social et aux majorités de vote prévues soient respectées ;
+      * en cas de démembrement non successoral de parts d’associés professionnels, l’associé professionnel conservera la totalité des droits de vote afférents aux parts démembrées.
+
+
+Dans les deux cas, le conseil départemental devra être informé du démembrement et de ces conditions par l’associé dont les parts sociales sont démembrées.
+
+
+Article 15.2 - Cession de parts sociales 
+
+
+Agrément
+
+
+Les parts ne peuvent être cédées à quelque titre que ce soit à des tiers étrangers à la Société et même entre associés, entre conjoints, entre ascendants et descendants des associés qu'avec le consentement de la majorité des trois quarts des associés exerçant leur activité au sein de la Société.
+
+
+Ces dispositions sont notamment applicables en cas de vente, donation, apport, fusion, scission, dissolution d'une société après réunion de toutes les parts ou actions en une même main, partage d'une personne morale.
+
+
+Les dispositions légales et réglementaires relatives à la procédure d'agrément et au refus d'agrément sont applicables.
+
+
+La procédure d’agrément est celle fixée par la loi.
+
+
+De même, il est fait application, le cas échéant, des dispositions légales et réglementaires prévues en cas de refus d’agrément.
+
+
+Evaluation des parts
+
+
+À défaut d'accord entre les parties, le prix des parts est fixé dans les conditions prévues à l'article 1843-4 du Code civil, il est payable comptant.
+
+
+En cas de rachat des parts par la société, un délai de paiement qui ne saurait excéder deux ans peut, sur justification, être accordé à la société par décision de justice.
+
+
+Article 15.3 - Transmission par décès 
+
+
+En cas de décès d'un associé professionnel, d'un professionnel externe ou d'un ancien associé professionnel, ses parts sont transmises librement à ses héritiers et ayants droit qui doivent justifier à la société de leur identité et de leurs qualités héréditaires. 
+Toutefois, lorsque, à l’expiration du délai de cinq ans à compter du décès de leur auteur, les héritiers et ayants droit n’ont pas cédé les parts qu’ils détiennent, la société peut, nonobstant leur opposition, décider de réduire son capital et de les racheter. 
+
+
+Les dispositions de l’alinéa qui précède ne sont pas applicables aux héritiers et ayants droit qui, au jour du décès de leur auteur, sont déjà membres de la société ni à ceux qui acquièrent la qualité d’associés professionnels avant l’expiration du délai visé à cet alinéa.
+
+
+En cas de décès d’un ayant droit, ses parts sont librement transmises au profit de toute personne qui est déjà membre de la société.
+
+
+Tous autres héritiers ou ayants droit ne deviennent associés que s’ils reçoivent l’agrément de la majorité des trois-quarts des associés professionnels.
+
+
+Article 15.4 – Liquidation d’une communauté de biens entre époux
+
+
+En cas de dissolution de communauté par le décès du conjoint de l'époux associé et lorsque ce dernier n'obtient pas le droit, lors de la liquidation de la communauté, de conserver la totalité des parts inscrites à son nom, aucun agrément n'est exigé de l'attributaire qui est déjà associé.
+Tous autres attributaires ne deviennent associés que s'ils reçoivent l'agrément de la majorité des trois quarts des associés professionnels. La procédure d'agrément et les conséquences du refus d'agrément sont celles prévues par la loi. Toutefois, le conjoint associé bénéficie d'une priorité de rachat des parts du ou des héritiers ou ayants droits non agréés.
+
+
+En cas de liquidation de communauté du vivant des époux, les parts se transmettent librement lorsque les deux conjoints sont déjà associés. Hormis cette hypothèse, la liquidation ne peut attribuer définitivement au conjoint de l'associé des parts sociales que si ce conjoint est agréé par la majorité des trois quarts des associés professionnels. 
+
+
+Le conjoint non agréé, attributaire de parts, est créancier de la valeur de celles-ci qui lui seront rachetées selon les dispositions prévues à l'alinéa précédent.
+
+
+Si durant la communauté de biens existant entre deux époux, le conjoint de l’époux associé notifie son intention d’être personnellement associé, postérieurement à l’apport ou à l’acquisition de parts effectué par son conjoint associé, conformément aux dispositions de l’article 1832-2 du Code civil, il doit être agréé par une décision prise à la majorité des trois quarts des associés professionnels, l’époux associé, s’il a cette qualité, ne participant pas au vote.
+
+
+Le conjoint doit impérativement remplir les conditions fixées par l’article 9 des présents statuts.
+
+
+Article 15.5 - Nantissement de parts sociales 
+
+
+Tout projet de nantissement de parts sociales doit être signifié à la Société et à chaque associé. Le nantissement doit être agréé par une décision prise à la majorité des trois quarts des associés professionnels.
+
+
+En cas de réalisation forcée des parts nanties et de défaut d'agrément préalable, le cessionnaire devra être agréé par une décision prise à la majorité des trois quarts des associés professionnels.
+
+
+ARTICLE 16 - EXCLUSION DE L’ASSOCIE CHIRURGIEN-DENTISTE EN EXERCICE DANS LA SOCIETE 
+Tout associé professionnel peut être exclu :
+      * Lorsqu’il est frappé d'une mesure disciplinaire entraînant une interdiction d'exercice professionnel ou de dispenser des soins aux assurés sociaux d’une durée égale ou supérieure à trois mois ;
+      * Lorsqu’il contrevient aux règles de fonctionnement de la société et viole les présents statuts ;
+      * Soit en faisant obstacle par son action, à l’adoption des décisions collectives, et paralysant ainsi la gestion de la société conformément à son objet.
+Cette exclusion est décidée par les associés statuant à la majorité des trois quarts des parts sociales, calculée en excluant, outre l'intéressé, les associés ayant fait l'objet d'une sanction pour les mêmes faits ou pour des faits connexes, l’unanimité des autres associés exerçant au sein de la société et habilités à se prononcer en l’espèce devant être recueillie.
+
+
+Aucune décision d'exclusion ne peut être prise si l'associé n'a pas été régulièrement convoqué à l'assemblée générale, quinze jours au moins avant la date prévue et par lettre recommandée avec demande d'avis de réception, et s'il n'a pas été mis à même de présenter sa défense sur les faits précis qui lui sont reprochés.
+
+
+Les parts de l'associé exclu sont soit achetées par un acquéreur agréé par les associés subsistants, soit achetées par la Société, qui doit alors réduire son capital.
+
+
+À défaut d'accord sur le prix de cession des titres ou sur leurs valeurs de rachat, il est recouru à la procédure de l’article 1843-4 du Code civil.
+
+
+En cas d’interdiction temporaire d’exercer ou de dispenser des soins aux assurés sociaux, sauf à être exclu par les autres associés dans les conditions prévues ci-dessus, l’intéressé conserve ses droits et obligations d’associé à l’exclusion de la rémunération liée à l’exercice de son activité professionnelle.
+
+
+ARTICLE 17 – SANCTIONS DISCIPLINAIRES
+
+
+La société est soumise aux dispositions disciplinaires applicables à la profession de [profession_reglementee].
+
+
+Elle ne peut faire l’objet de poursuites disciplinaires indépendamment de celles qui seraient intentées contre un ou plusieurs associés exerçant leurs fonctions en son sein.
+
+
+ARTICLE 18 - CESSATION D’ACTIVITE DE L’ASSOCIE CHIRURGIEN-DENTISTE EN EXERCICE DANS LA SOCIETE 
+
+
+18.1 - Cessation de l'activité professionnelle d'un associé professionnel
+
+
+Tout associé professionnel peut, à la condition d'en informer la Société par lettre recommandée avec demande d'avis de réception, cesser l'activité professionnelle qu'il exerce au sein de la Société. Il doit respecter un délai de trois mois à compter de la notification relative à la cessation d'activité.
+Il avise le Conseil départemental de l'ordre des [profession_reglementee_pluriel] de sa décision.
+
+
+L'associé professionnel qui cesse toute activité professionnelle, sans être frappé d'une interdiction d'exercer sa profession, a la faculté de demeurer associé, avec la qualité d'ancien  associé professionnel pendant une durée de dix années à compter de la date où la cessation de son activité est effective.
+
+
+Toutefois, si sa cessation d'activité a pour effet de réduire la quotité de capital des associés professionnels à une fraction inférieure au minimum légal, il perd, dès la survenance de l'événement, l'exercice des droits attachés aux parts qu'il détient.
+
+
+Ses parts sont alors rachetées à la diligence de la gérance.
+
+
+Lorsque, à l'expiration du délai de dix ans, s'il est applicable, l'ancien associé professionnel n'a pas cédé la totalité des parts qu'il détient, la Société peut, nonobstant son opposition, décider de réduire son capital et de les racheter.
+
+
+Tout associé professionnel qui cesse définitivement d'exercer sa profession au sein de la Société, sans mettre fin à toute activité professionnelle, comme tout associé professionnel frappé d'une interdiction définitive d'exercer la profession, perdent, dès ce moment, l'exercice des droits attachés aux parts qu'ils détiennent. Leurs parts sont rachetées à la diligence de la gérance.
+
+
+18.2 - Cessation de l'activité professionnelle d'un professionnel externe
+
+
+Tout professionnel extérieur frappé d'une interdiction d'exercer sa profession ou cessant définitivement son activité professionnelle perd, dès le jour où l'événement survient, l'exercice des droits attachés aux parts qu'il détient. 
+
+
+Ses parts sont rachetées à la diligence de la gérance.
+
+
+18.3 – Dispositions communes
+
+
+Dans tous les cas où le présent article prévoit la cession obligatoire des parts, il sera fait application des dispositions de l’article 16. En outre, lorsque le rachat est soumis à la diligence de la gérance, il est réalisé soit par les associés restants ou par des tiers, dûment agréés, soit, si l’intéressé y consent, par la société elle-même, qui réduira son capital en conséquence.
+
+
+ARTICLE  19 - GERANCE 
+
+
+La société est administrée par un ou plusieurs gérants, personnes physiques ayant la qualité d’associé exerçant la profession constituant l’objet social au sein de la Société, choisi parmi les associés exerçant leur activité au sein de la société.
+
+
+Le ou les premiers gérants sont nommés par décision des associés aussitôt après la signature des statuts.
+
+
+En cours de vie sociale, le gérant est nommé et révoqué par décision des associés représentant plus de la moitié des parts sociales.
+
+
+Le gérant dispose des pouvoirs les plus étendus pour agir au nom de la Société en toutes circonstances sans avoir à justifier de pouvoirs spéciaux.
+
+
+Dans les rapports entre associés, la gérance peut faire tous les actes de gestion dans l’intérêt de la société.
+
+
+Dans tous les cas, les pouvoirs de la gérance ne doivent jamais s’exercer de telle sorte que les associés ou la société risquent d’être en infraction avec les règles de déontologie. 
+
+
+La rémunération de l'associé gérant se divise en deux parties : une correspondant à la rémunération technique et une autre liée à ses fonctions de gestion. Le montant total de cette rémunération pourra être fixé chaque année dans le procès-verbal d'approbation des comptes. Les Associés, lors de cette assemblée générale, pourront également définir les modalités de prise en charge de cette rémunération ainsi que son traitement comptable et fiscal.
+
+
+ARTICLE 20 – CONVENTIONS REGLEMENTES
+
+
+Les conventions conclues entre la société et l’un de ses gérants ou associés, autres que celles portant sur des opérations courantes conclues à des conditions normales, sont soumises à la procédure d’approbation des associés telle que prévue par la loi. 
+
+
+Lorsque de telles conventions portent sur les conditions dans lesquelles les associés exercent leur profession, seuls les associés exerçant au sein de la société participent aux délibérations comme le prévoit la loi.
+
+
+Ces conventions devront être communiquées par les intéressés au conseil départemental concerné dans le mois suivant leur conclusion, conformément à l’article L 4113-9 du code de la santé publique.
+
+
+ARTICLE 21 - DECISIONS COLLECTIVES DES ASSOCIES 
+
+
+      1. Toutes les décisions collectives doivent être prises en assemblée.
+
+
+      2. Les décisions collectives sont qualifiées d’ordinaires ou d'extraordinaires.
+        Elles sont qualifiées d'extraordinaires lorsqu’elles ont pour objet la modification des statuts.
+        Elles sont qualifiées d’ordinaires dans les autres cas.
+
+
+      3. Les décisions ordinaires doivent être adoptées par un ou plusieurs associés représentant plus de la moitié des parts sociales.
+
+
+Si, en raison d’absence ou d'abstention d'associés, cette majorité n'est pas obtenue à la première consultation, les associés sont convoqués ou consultés une seconde fois et les décisions sont alors prises à la seule majorité des votes émis, quel que soit le nombre des votants, mais à la condition expresse de ne porter que sur les questions ayant fait l'objet de la première consultation.
+
+
+      4. Les décisions extraordinaires ne sont valablement adoptées que si les associés représentés ou présents possèdent au moins le quart des parts sociales.
+A défaut d’avoir atteint ce quorum, une deuxième assemblée doit être convoquée dans les deux mois de la première assemblée, le quorum requis est alors le cinquième des parts sociales.
+
+
+Les modifications statutaires sont décidées à la majorité des deux tiers des parts détenues par les associés présents ou représentés.
+
+
+Toutefois, l’agrément des cessions ou mutations de parts sociales, réglementé par l’article 15.2 des présents statuts, doit être donné à la majorité des trois-quarts des porteurs de parts exerçant au sein de la société.
+De même, la modification statutaire résultant de la suppression du nom du gérant en cas de cessation des fonctions de celui-ci, pour quelque cause que ce soit, est valablement décidée par la majorité des associés représentant plus de trois quarts des parts sociales.
+Par ailleurs, l’augmentation du capital social par incorporation de bénéfices ou de réserves est valablement décidée par les associés représentant seulement la moitié des parts sociales. La transformation de la Société est décidée dans les conditions fixées par l’article 223-43 du Code de commerce.
+
+
+La transformation de la société en société par actions ou en société par actions simplifiée, le changement de nationalité de la société et l’augmentation des engagements des associés exigent l’unanimité de ceux-ci.
+
+
+ARTICLE 22 – ASSEMBLEES GENERALES
+
+
+22.1 – Convocation
+
+
+Les assemblées générales d’associés sont convoquées par la gérance ; à défaut, elles peuvent également être convoquées par le Commissaire aux comptes s’il en existe un.
+La réunion d’une assemblée peut être demandée par un ou plusieurs associés représentant au moins la moitié des parts sociales, ou par 10% des associés détenant au moins 10% des parts sociales.
+
+
+Tout associé peut demander au Président du Tribunal de Commerce statuant par ordonnance de référé, la désignation d’un mandataire chargé de convoquer l’assemblée et de fixer son ordre du jour.
+
+
+Les associés sont convoqués, quinze jours au moins avant la réunion de l’assemblée, par lettre recommandée comportant l’ordre du jour. Dans le cas du décès du gérant unique, le délai de convocation de l’assemblée générale est réduit de 15 à 8 jours.
+
+
+Toute assemblée irrégulièrement convoquée peut être annulée. Toutefois, l’action en nullité n’est pas recevable lorsque tous les associés étaient présents ou représentés, sous réserve qu’ait été respecté leur droit de communication prévu à l’article « Information des associés » des présents statuts.
+
+
+L’assemblée appelée à statuer sur les comptes doit être réunie dans le délai de six mois à compter de la clôture de l’exercice.
+
+
+Lorsque le Commissaire aux comptes convoque l’assemblée des associés, il fixe l’ordre du jour et peut, pour des motifs déterminants, choisir un lieu de réunion autre que celui éventuellement prévu par les statuts mais situé dans le même département. Il expose les motifs de la convocation dans un rapport lu à l’assemblée. 
+
+
+22.2 – Ordre du jour
+
+
+L’ordre du jour de l’assemblée, qui doit être indiqué dans la lettre de convocation, est arrêté par l’auteur de la convocation.
+
+
+Sous réserve des questions diverses qui ne doivent présenter qu’une minime importance, les questions inscrites à l’ordre du jour sont libellées de telle sorte que leur contenu et leur portée apparaissent clairement sans qu’il y ait lieu de se reporter à d’autres documents.
+
+
+22.3 – Participation aux décisions et nombre de voix
+
+
+Tout associé a le droit de participer aux décisions et dispose d’un nombre de voix égal à celui des parts qu’il possède.
+
+
+22.4 – Représentation
+
+
+Chaque associé peut se faire représenter par son conjoint ou par un autre associé, à moins que la Société ne comprenne que les deux époux, ou seulement deux associés. Dans ces deux derniers cas seulement, l’associé peut se faire représenter par une autre personne de son choix. Un associé ne peut constituer un mandataire pour voter du chef d’une partie de ses parts et voter en personne du chef de l’autre partie.
+
+
+Les représentants légaux d’associés juridiquement incapables peuvent participer au vote, même s’ils ne sont pas eux-mêmes associés.
+
+
+Le mandat de représentation d’un associé est donné pour une seule assemblée. Il peut cependant être donné pour deux assemblées tenues le même jour ou dans un délai de sept jours.
+
+
+Le mandat donné pour une assemblée vaut pour les assemblées successives convoquées avec le même ordre du jour.
+
+
+22.5 – Réunion – Présidence 
+
+
+L’assemblée est réunie au lieu indiqué dans la convocation.
+
+
+L’assemblée est présidée par le Gérant ou l’un des Gérants.
+
+
+ARTICLE 23 – CONSULTATION ECRITE
+
+
+A l’appui de la demande de consultation écrite, le texte des résolutions proposées ainsi que les documents nécessaires à l’information des associés sont adressés à ceux-ci par lettre recommandée.
+
+
+Les associés doivent, dans un délai de quinze jours à compter de la date de réception des projets de résolutions, émettre leur vote par écrit. Pendant ledit délai, les associés peuvent demander à la gérance les explications complémentaires qu’ils jugent utiles.
+
+
+Chaque associé dispose d’un nombre de voix égal à celui des parts sociales qu’il possède.
+
+
+Pour chaque résolution, le vote est exprimé par ‘OUI’ ou par ‘NON’. Tout associé qui n’aura pas adressé sa réponse dans le délai fixé ci-dessus sera considéré comme s’étant abstenu.
+
+
+ARTICLE 24 – PROCES-VERBAUX
+
+
+      1. Toute délibération de l’assemblée générale des associés est constatée par un procès-verbal établi et signé par la gérance et, le cas échéant, par le Président de séance.
+Le procès-verbal indique la date et lieu de réunion, les nom, prénoms et qualité du Président de séance, les nom et prénoms des associés présents et représentés avec l’indication du nombre de parts détenues par chacun d’eux, les documents et rapports soumis à l’assemblée, un résumé des débats, les textes des résolutions mises aux voix et le résultat des votes.
+
+
+      2. En cas de consultation écrite, il en est fait mention dans le procès-verbal auquel est annexée la réponse de chaque associé.
+
+
+      3. Les procès-verbaux sont établis sur un registre spécial tenu au siège social, et cotés et paraphés soit par un juge du tribunal de commerce, soit par un juge du tribunal d’instance, soit par le maire de la commune du siège social ou un adjoint au maire, dans les formes ordinaires et sans frais. 
+Toutefois, les procès-verbaux peuvent être établis sur des feuilles mobiles numérotées sans discontinuité, paraphées dans les conditions prévues à l’alinéa précédent et revêtues du sceau de l’autorité qui les a paraphées.
+
+
+      4. Les copies ou extraits des délibérations des associés sont valablement certifiés conforme par un Gérant.
+Au cours de la liquidation de la Société, leur certification est valablement effectuée par un seul Liquidateur.
+
+
+ARTICLE 25 – INFORMATION DES ASSOCIES
+
+
+Le ou les Gérants doivent adresser aux associés, quinze jours au moins avant la date de l’assemblée générale appelée à statuer sur les comptes d’un exercice social, le rapport de gestion, ainsi que les comptes annuels, le texte des résolutions proposées et, le cas échéant, le rapport du ou des Commissaires aux comptes. 
+
+
+A compter de cette communication, tout associé a la faculté de poser par écrit des questions auxquelles le ou les Gérants sont tenus de répondre au cours de l’assemblée.
+
+
+Pendant un délai de quinze jours qui précède l’assemblée, l’inventaire est tenu au siège social à la disposition des associés, qui ne peuvent en prendre copie. 
+
+
+En cas de convocation d’une assemblée autre que celle appelée à statuer sur les comptes d’un exercice, le texte des résolutions, le rapport de la gérance, ainsi que, le cas échéant, celui du ou des Commissaires aux comptes sont adressés aux associés quinze jours au moins avant la date de la réunion. En outre, pendant le même délai, ces mêmes documents sont tenus, au siège social, à la disposition des associés qui peuvent en prendre connaissance ou copie.
+Tout associé a le droit, à toute époque, de prendre, par lui-même et au siège social, connaissance des documents suivants, concernant les trois derniers exercices : comptes annuels, inventaires, rapports soumis aux assemblées et procès-verbaux de ces assemblées. Sauf en ce qui concerne l’inventaire, le droit de prendre connaissance emporte celui de prendre copie. 
+
+
+Une expertise sur une ou plusieurs opérations de gestion peut être demandée par un ou plusieurs associés représentant au moins le dixième du capital social. Le ministère public et le Comité d’entreprise sont habilités à agir aux mêmes fins. 
+
+
+Tout associé non Gérant peut poser, deux fois par exercice, des questions au Gérant sur tout fait de nature à compromettre la continuité de l’exploitation. La réponse du Gérant est communiquée, le cas échéant, aux Commissaires aux comptes.
+
+
+ARTICLE 26 - EXERCICE SOCIAL 
+
+
+L’exercice social a une durée de douze mois. Il commence le [debut_exercice] pour se terminer le [fin_exercice].
+
+
+Exceptionnellement, le premier exercice social comprendra le temps écoulé depuis l’immatriculation de la société au registre du commerce et des sociétés jusqu’au [date_cloture_exercice_1].
+
+
+ARTICLE 27 – COMPTES SOCIAUX
+
+
+A la clôture de chaque exercice, la gérance dresse l’inventaire des divers éléments de l’actif et du passif. Elle établit également les comptes annuels et le rapport de gestion prévus par la loi. 
+
+
+L’assemblée générale annuelle doit se réunir dans les six mois de la date de clôture de l’exercice afin de statuer sur l’approbation des comptes annuels.
+
+
+ARTICLE 28 – COMMISSAIRE AUX COMPTES
+
+
+Un ou plusieurs Commissaires aux comptes, titulaires ou suppléants, peuvent être désignés. Cette désignation est obligatoire lorsque la Société atteint les seuils prévus par la loi.
+
+
+ARTICLE 29 – AFFECTATION DES RESULTATS
+
+
+Le bénéfice distribuable est déterminé conformément à la loi. 
+
+
+Après approbation des comptes annuels et constations de l’existence d’un bénéfice distribuable, l’assemblée générale peut décider de le reporter à nouveau, de l’affecter à des fonds de réserves généraux ou spéciaux ou de le distribuer à titre de dividende. 
+
+
+L'Assemblée Générale annuelle peut décider la distribution de sommes prélevées sur les réserves disponibles. En ce cas, la décision indique expressément les postes de réserves sur lesquels les prélèvements sont effectués. 
+
+
+Toutefois, les dividendes sont prélevés par priorité sur le bénéfice distribuable de l'exercice.
+
+
+ARTICLE 30 – DISSOLUTION – LIQUIDATION
+
+
+La dissolution entraîne la liquidation de la Société effectuée conformément aux dispositions légales.
+
+
+ARTICLE 31 – CONTESTATIONS
+
+
+Toutes contestations qui pourraient surgir concernant l’interprétation ou l’exécution des statuts ou relativement aux affaires sociales, entre les associés et la Société ou entre les associés, pendant la durée de la Société ou de sa liquidation, seront soumises à une procédure de conciliation devant le Président du Conseil départemental conformément à l’article R. 4127-259 du Code de la Santé Publique.
+
+
+ARTICLE 32 - REPRISE DES ACTES 
+
+
+Un état des actes accomplis pour le compte de la société en formation a été annexé aux présents statuts, avec indication pour chacun d’eux de l’engagement qui en résultera pour la société.
+
+
+La signature des présents statuts emporte reprise de ces engagements par la société dès son immatriculation au registre du commerce et des sociétés.
+
+
+
+
+ARTICLE 33 – CONDITION SUSPENSIVE – JOUISSANCE DE LA PERSONNALITE MORALE - POUVOIRS
+
+
+La société ne pourra débuter l’exercice de la profession de [profession_reglementee] qu’après son inscription au tableau de l’Ordre départemental des [profession_reglementee_pluriel].
+
+
+La société ne jouira de sa personnalité morale qu’à compter de son immatriculation au registre du commerce et des sociétés. Cette immatriculation n’est possible qu’après son inscription au Tableau de l’Ordre.
+
+
+Tous pouvoirs sont donnés au porteur d’un original ou copie certifiée conforme des présents statuts à l’effet d’accomplir toutes les formalités de publicités.
+
+
+ARTICLE 34 - CONVENTION SUR LA PREUVE – SIGNATURE ELECTRONIQUE
+
+
+Le présent acte est signé par les Parties au moyen d'un procédé de signature électronique avancée mis en œuvre par un prestataire de services tiers, [prestataire_signature_electronique], qui garantit la sécurité et l'intégrité des copies numériques conformément à l'article 1367 du Code civil et au décret d'application n°2017-1416 du 28 septembre 2017 relatif à la signature électronique, transposant le règlement (UE) n°910/2014 du Parlement européen et du Conseil du 23 juillet 2014 sur l'identification électronique et les services de confiance pour les transactions électroniques au sein du marché intérieur.
+
+
+Les Parties conviennent expressément que le présent acte, signé électroniquement via [prestataire_signature_electronique], (i) constitue l'original, (ii) constitue une preuve littérale au sens de l'article 1316-1 du Code civil français (c'est-à-dire qu’il a la même force probante qu'un document manuscrit signé sur papier et peut être valablement invoqué à l’encontre des Parties et de la Société), (iii) sa signature électronique doit être considérée comme une signature originale, et (iv) peut être produit en justice, comme preuve littérale, en cas de litige, y compris entre les Parties. En conséquence, les Parties reconnaissent que le présent acte signé électroniquement fait preuve de son contenu, de l'identité et du consentement de chaque signataire.
+
+
+Conformément au paragraphe 4 de l'article 1375 du Code civil, le présent acte est établi en un seul exemplaire numérique original, dont une copie sera délivrée à chacune des Parties directement par le prestataire de services tiers, [prestataire_signature_electronique], qui est chargé de la mise en œuvre de la solution de signature électronique avancée dans les conditions prévues par l'article 1367du Code civil et le décret d'application n°2017-1416 du 28 septembre 2017 relatif à la signature électronique.”
+
+
+
+Ticket retours Albane - selarl unipersonnelle
+Statuts :
+
+Quand l’associé est marié, il peut être marié sous le régime de la communauté (déjà pris en compte) mais il peut aussi être marié sous le régime de séparation des biens. Dans ce cas, aucun document n’est généré en plus. Seulement, cela doit être inscrit dans le document de statuts de cette façon : 
+
+“, marié sous le régime de la séparation de biens avec {civilité conjoint} {prénom conjoint} {nom conjoint}.”
+
+Lorsque l’associé est marié sous le régime de la communauté, il faut impérativement rédiger cela : 
+
+
+“, marié sous le régime de la communauté avec {civilité conjoint} {prénom conjoint} {nom conjoint}.”
+
+
+Cette phrase doit être rédigée à la suite de “
+[civilite] [prenom] [nom], [profession], né le [date_naissance] à [ville_naissance] ([departement_naissance]), de nationalité [nationalite], demeurant [adresse_personnelle], inscrit au tableau du Conseil départemental de [ville_ordre] sous le numéro national [numero_ordre] et sous le numéro RPPS [numero_rpps]“
+
+
+      * À l’article 8, le mot ‘associé’ doit toujours être accordé au genre et au nombre de ou des associé(e)(s) correspondant(e)(s).
+
+- Placer l’annexe à la page suivante
+- Mettre un “-” devant “Ouverture… → à la fin du document
+________________
+
+
+
+Document : Déclaration de non condamnation 
+
+Après “Né le {date de naissance}” ajouter “à {ville de naissance}.” 
+Ajouter une case sur le moteur “au” dans le cas on l’on dit “au” avant une ville. 
+Exemple : Né au Bourget - et non pas - né à Bourget.
+
+Cela doit être répercuté dans le document. Si l’utilisateur clique sur la case “au”, alors le document en question affichera “au {ville de naissance” et non pas “à {ville de naissance}. Si la case est laissée décochée, c’est “à {ville de naissance}” qui s’affichera.
+
+
+________________
+
+
+Document : PV nomination gérant : 
+
+Remplacer la forme juridique sous forme d’acronyme par la version rédigée. 
+Exemple : SELARL -> Société d’exercice libéral à responsabilité limitée de médecin
+En dessous de la dénomination sociale
+Au dessus du capital
+
+
+         * Dans les mentions en haut de page, remplacer “Au capital minimum et effectif de 5000 euros” par → “Au capital de {capital social}”
+
+
+
+
+
+________________
+
+
+
+Règles générales : 
+         * Lorsqu’une adresse est inscrite, le code postal doit toujours précéder le nom de la ville. 
+Exemple : 75010 Paris
+         * Supprimer tous les encadrés de signature présents sur tous les documents sans exception
+
+
+
+
+________________
+
+
+Document  : Demande d’inscription à l’Ordre
+
+Pour ce qui est du nom du conseil départemental de l’ordre, seul le nom du département change. 
+
+Dans le document il est écrit, “Conseil départemental de l'Ordre des médecins de la Loire-Atlantique” et la variable demandée est le libellé complet comme suit “Conseil départemental de l'Ordre des médecins de la Loire-Atlantique”. Modifie cela, ajoute comme suit : “Conseil départemental de l'Ordre des {Profession} de {département d’inscription à l’Ordre}”
+
+
+
+
+________________
+
+
+
+
+Document : Lettre d’avertissement au conjoint
+
+Remplacer la forme juridique sous forme d’acronyme par la version rédigée. 
+Exemple : SELARL -> Société d’exercice libéral à responsabilité limitée de médecin
+En dessous de la dénomination sociale
+Au dessus du capital
+
+
+            * → L’adresse du conjoint est identique à celle de l’associé. Supprimer la variable “adresse du conjoint”
+
+
+
+
+
+________________
+
+
+
+Document : Lettre de renonciation à la qualité d’associé
+
+Supprimer la date sur en dessous de la ville, juste au-dessus de l’objet. Laisser tout de même l’espace.
+
+
+
+________________
+
+
+
+Règles et variables moteur : 
+
+
+            * Supprimer la variable “durée sociale”, la durée de vie est toujours de 99 ans. 
+            * Ajouter une case à cocher en dessous du “siège social” de manière à directement reporter l’adresse personnelle dans ce champ. Le bouton doit porter le nom “identique à l’adresse personnelle”. 
+            * Ajoute la nationalité “portugaise”, comme choix de nationalité dans la liste.
+            * Supprime la variable “nombres d’exemplaires’’ Ajoute 4 exemplaires par défaut.
+            * Supprime la variable “qualité renoncée” → il s’agit toujours de celle d’associé
+            * Supprimer la variable “date courrier”, c’est toujours la mm que celle du jour. 
+            * Supprimer les nombres d’exemplaires → le nombre d'exemplaires est toujours de 4.
+
+
+________________
+
+
+Document : procuration 
+
+
+Remplace : 
+“Je soussignée [civilite] [prenom] [nom], demeurant au [num_voie_perso] [voie_perso], [cp_perso] [ville_perso], 
+Agissant en qualité de [fonction_dirigeant] de la [denomination_societe], dont le siège est situé [num_voie_siege] [voie_siege], [cp_siege] [ville_siege],”
+
+par : 
+
+“Je soussignée [civilite] [prenom] [nom], demeurant au [num_voie_perso] [voie_perso], [cp_perso] [ville_perso], agissant en qualité de [fonction_dirigeant] de la [denomination_societe], dont le siège est situé [num_voie_siege] [voie_siege], [cp_siege] [ville_siege],”
+
+→ supprimer la majuscule à “agissant” et faire coller le mot à “[ville_siege]”, en l’éspaçant d’un espace.”
+Tickets retours 22 sivan
+Document : Acte de cession d’un cabinet médical 
+
+-> Mettre le nom et prénom du conjoint dans la phrase : 
+“marié à {Prénom_Nom_Conjoint}, sous le régime de X“
+
+
+Document : pv_age_cession_parts_scm
+
+
+Mise en forme : 
+Mettre des tirets à : 
+“
+            * Les copies des convocations des associés ;
+            * Un exemplaire du compromis de cession des parts sociales ;
+            * Le rapport de la gérance ;
+            * Le texte des résolutions proposées.
+”
+Mets en aussi à : 
+“
+            * Lecture du rapport de la gérance ;
+            * Agrément d'un nouvel associé, la SELARL CABINET DUPONT ;
+            * Modification corrélative des statuts.
+“
+Document : Acte de cession des parts de la SCM à la SELARL -> ok
+
+
+Document appel de fond sel
+Placer le texte suivant à droite : 
+[nom_banque]
+        [lieu_signature], le [date_signature]
+
+
+Ajouter le logo du cabinet en haut à droite du document. Actuellement, il n’est pas présent.
+
+
+Document : Avenant Contrat de bail -> ok
+
+
+Document : courrier_sde_cession_scm
+
+
+Mise en forme : 
+
+Ajoute le logo du cabinet en haut à gauche
+
+
+Mets le texte suivant en gras et souligne le : 
+“Objet : Enregistrement actes de cession des parts de la société SCM”
+
+
+Place “[prenom_signataire] [nom_signataire]” à droite du document, centre le sur la marge de droite.
+
+
+Tickets SCM
+Règles pour tous les documents : 
+N’ajoute jamais de commentaire dans un document. 
+
+Autorisation de domiciliation : 
+Supprime le “au”, juste après la ville, dans la phrase “dans les locaux du cabinet au 10 rue de la Paix, 75002 Paris au, pour une durée indéterminée.” 
+
+
+
+retours albane 11/06/26
+Ticket retour client — SELARL dentiste unipersonnelle avec cession de fonds libéral
+Contexte
+Lors des tests sur le parcours de création d’une SELARL de dentiste unipersonnelle avec cession de fonds libéral, plusieurs ajustements sont nécessaires sur le questionnaire, les valeurs par défaut, les champs obligatoires, la logique documentaire et la génération des documents.
+Objectifs :
+            * rendre le questionnaire plus logique et plus rapide à compléter ;
+            * éviter les saisies redondantes ;
+            * limiter les risques d’erreur liés aux valeurs préremplies ;
+            * ne pas bloquer la génération documentaire sur des champs facultatifs ;
+            * mieux gérer les cas où il n’y a pas de salarié ;
+            * intégrer les précisions client sur les régimes matrimoniaux et le descriptif du local.
+________________
+
+
+1. Questionnaire — Ajustements généraux
+1.1 Libellé “Cession”
+Dans la section “Opérations complémentaires”, remplacer le libellé actuel :
+“Cession”
+par :
+“Cession de fonds libéral”
+________________
+
+
+1.2 Situation matrimoniale — Régimes matrimoniaux
+Dans le champ “Situation matrimoniale”, ajouter les options suivantes dans la liste déroulante :
+            * Marié sous le régime légal / communauté
+            * Marié sous le régime de la séparation de biens
+            * Marié sous le régime de la communauté universelle
+            * Marié sous le régime de la participation aux acquêts
+Règles documentaires associées
+Le client précise qu’il n’y a pas de document supplémentaire à générer selon le type de régime matrimonial, sauf comportement déjà existant pour le régime légal / communauté.
+Comportement attendu :
+            * Si “Marié sous le régime légal / communauté” est sélectionné : conserver le comportement documentaire actuel, notamment les courriers associés si déjà prévus.
+            * Si “Marié sous le régime de la séparation de biens” est sélectionné : ne pas générer de document complémentaire spécifique.
+            * Si “Marié sous le régime de la communauté universelle” est sélectionné : traiter comme la séparation de biens.
+            * Si “Marié sous le régime de la participation aux acquêts” est sélectionné : traiter comme la séparation de biens.
+En pratique, les cas les plus fréquents sont :
+            * régime légal / communauté ;
+            * séparation de biens.
+Les deux autres régimes doivent être proposés dans la liste, mais ne doivent pas déclencher de logique documentaire particulière.
+________________
+
+
+1.3 Informations époux / partenaire
+Dans la même zone que la situation matrimoniale, ajouter les champs suivants lorsque la personne est mariée ou pacsée :
+            * Nom de l’époux / partenaire
+            * Prénom de l’époux / partenaire
+Ces champs existent actuellement plus bas dans le questionnaire, mais ils doivent être rapprochés du régime matrimonial pour plus de cohérence dans la saisie.
+________________
+
+
+1.4 Présentation Ordre / RPPS / Parents
+Modifier la présentation des champs comme suit.
+Sur une même ligne :
+            * Numéro d’Ordre
+            * Numéro RPPS
+Sur la ligne suivante :
+            * Nom et prénom du père
+            * Nom de jeune fille et prénom de la mère
+Renommer les champs comme suit :
+            * “Nom et prénom du père”
+            * “Nom de jeune fille et prénom de la mère”
+________________
+
+
+1.5 Adresse personnelle et adresse du siège social
+Pour l’adresse personnelle et l’adresse du siège social, fusionner les champs “Numéro” et “Voie” en un seul champ.
+Nouveau champ attendu :
+            * Numéro et voie
+Ce champ doit remplacer les deux champs séparés actuels.
+________________
+
+
+1.6 Lieu de signature
+Préremplir par défaut le lieu de signature avec la ville du siège social.
+Le champ doit rester modifiable manuellement.
+________________
+
+
+1.7 Dates d’exercice
+Préremplir les dates suivantes par défaut :
+            * Début d’exercice : 1er janvier
+            * Fin d’exercice : 31 décembre
+            * Date de clôture du premier exercice : 31 décembre de l’année N+1
+Exemple :
+Si le dossier est créé en 2026, la date de clôture du premier exercice doit être :
+31 décembre 2027
+La logique doit donc être dynamique selon l’année de création du dossier.
+________________
+
+
+1.8 Position du champ “Autre lieu d’exercice”
+Déplacer la case ou section “Autre lieu d’exercice” pour qu’elle apparaisse juste après l’adresse du siège social.
+________________
+
+
+2. Cession de fonds libéral / cession de cabinet
+2.1 Vendeur
+Le vendeur est généralement l’associé unique.
+Comportement attendu :
+            * Préremplir le vendeur avec les informations de l’associé unique.
+            * Le champ doit rester modifiable manuellement si un autre vendeur doit être renseigné.
+Option alternative si cela simplifie le formulaire :
+            * supprimer le cadre “Vendeur” si l’information peut être systématiquement reprise depuis l’associé unique.
+________________
+
+
+2.2 Acquéreur
+L’acquéreur est toujours la société en cours de création.
+Comportement attendu :
+Reprendre automatiquement les informations depuis la fiche société :
+            * dénomination sociale ;
+            * adresse du siège social ;
+            * autres informations société déjà disponibles.
+Objectif :
+            * éviter une nouvelle saisie manuelle ;
+            * éviter les incohérences entre la fiche société et la section cession.
+________________
+
+
+2.3 Cadre “Cabinet”
+Le cadre “Cabinet” semble redondant avec des informations déjà disponibles ailleurs.
+À vérifier et, si possible, supprimer ce cadre.
+Les informations suivantes peuvent normalement être reprises depuis des variables existantes :
+            * nature du fonds libéral : variable liée à la profession ;
+            * dénomination : vendeur ou acquéreur selon le contexte documentaire ;
+            * adresse du cabinet : adresse existante déjà renseignée.
+Comportement attendu :
+            * éviter une saisie doublon ;
+            * utiliser les variables existantes dans les documents ;
+            * supprimer le cadre si aucune information spécifique n’est nécessaire.
+________________
+
+
+2.4 Bail professionnel — Date d’effet du bail
+Ajouter un champ dans la section “Bail professionnel” :
+            * Date d’effet du bail
+Ce champ doit être disponible pour insertion dans les documents si nécessaire.
+________________
+
+
+2.5 Bail professionnel — Descriptif libre du local
+Ajouter un champ texte libre dans la section “Bail professionnel”.
+Libellé proposé :
+            * Descriptif libre du local
+Précision client :
+Le descriptif du local dépend fortement des informations disponibles. Il ne faut donc pas créer un système de variables détaillées ou complexes à cet endroit.
+Comportement attendu :
+            * Le rédacteur doit pouvoir saisir librement une phrase ou un paragraphe.
+            * Exemple de contenu possible : “Les locaux sont composés de …”
+            * Si le champ est complété, le texte renseigné est inséré dans l’acte.
+            * Si le champ est vide, rien ne doit être inséré dans l’acte.
+            * Si le champ est vide, aucune phrase incomplète ne doit apparaître.
+            * Si le champ est vide, cela ne doit pas bloquer la génération documentaire.
+À éviter :
+            * ne pas imposer une phrase automatique du type “Les locaux sont composés de …” si le champ est vide ;
+            * ne pas créer de variables détaillées pour la composition du local.
+________________
+
+
+2.6 Loyer mensuel
+Le champ “Loyer mensuel” doit être vide par défaut.
+Raison :
+Éviter qu’un montant par défaut incorrect soit repris dans les documents si le rédacteur oublie de modifier le champ.
+À conserver :
+            * la durée par défaut de 6 ans.
+________________
+
+
+2.7 Période — Année
+Pour le champ “Année” dans la section “Période”, prévoir si possible une liste déroulante dynamique.
+Comportement souhaité :
+            * l’année en cours doit être proposée ;
+            * lorsque l’on passe à l’année suivante, l’année précédente doit rester disponible.
+Exemple :
+En 2027, l’année 2026 doit être disponible dans le déroulé.
+Si la liste dynamique est trop complexe à mettre en place, conserver le fonctionnement actuel.
+________________
+
+
+2.8 Chiffre d’affaires et résultat
+Les champs suivants ne doivent pas être préremplis :
+            * CA 1
+            * Résultat
+Ils doivent être vides par défaut.
+Raison :
+Éviter de laisser dans l’acte des montants par défaut qui ne correspondent pas au dossier.
+________________
+
+
+2.9 Formatage des montants
+Lorsque des montants sont saisis, prévoir si possible un formatage automatique pour améliorer la lisibilité.
+Formats acceptés :
+            * 200.000
+            * 200 000
+Format à éviter :
+            * 200000
+Ce comportement serait utile pour tous les champs de montants, notamment :
+            * capital ;
+            * nombre de parts ;
+            * prix ;
+            * chiffre d’affaires ;
+            * résultat ;
+            * tout autre montant financier.
+Si ce formatage est complexe à mettre en place, ce point peut être traité comme une amélioration secondaire.
+________________
+
+
+2.10 Prix — Montant en chiffres
+Étudier la possibilité de générer automatiquement le montant en chiffres à partir du montant saisi.
+Si ce n’est pas possible simplement, conserver le fonctionnement actuel.
+________________
+
+
+2.11 Financement
+Dans les documents de compromis et d’acte, il n’est pas nécessaire de faire apparaître une banque.
+Ajustements demandés :
+            * supprimer la banque du compromis et de l’acte si elle n’est pas juridiquement nécessaire ;
+            * dans le champ ou libellé “Montant déblocage”, ajouter la mention “minimum” ;
+            * supprimer la variable “Montant du prêt” si elle n’est pas utilisée ou si elle ne correspond à rien dans l’acte.
+Objectif :
+Éviter de bloquer la génération documentaire avec des informations bancaires non indispensables.
+________________
+
+
+2.12 Salariés
+Modifier la gestion des salariés.
+Comportement attendu :
+            * permettre d’ajouter autant de salariés que nécessaire ;
+            * ajouter une option “Aucun salarié” ;
+            * si “Aucun salarié” est coché, supprimer complètement la phrase relative aux salariés dans le document généré ;
+            * si aucun salarié n’est renseigné, ne pas bloquer l’édition des documents ;
+            * si aucun salarié n’est renseigné, ne pas afficher de message d’erreur bloquant ;
+            * vérifier que les champs salariés fonctionnent correctement lorsqu’un ou plusieurs salariés sont ajoutés.
+Problème constaté :
+Le client n’a pas de salarié dans sa situation. Comme aucun champ salarié n’a été complété, un message d’erreur apparaît et bloque l’édition des documents.
+Le client a tenté de remplir les champs pour contourner le blocage, mais cela ne fonctionne pas.
+________________
+
+
+2.13 SCM
+Dans la section SCM, préremplir par défaut le cédant avec l’associé unique.
+Le champ doit rester modifiable manuellement pour conserver de la flexibilité.
+________________
+
+
+3. Génération et édition des documents
+3.1 Champs facultatifs non complétés
+Actuellement, certains champs non complétés bloquent l’édition des documents.
+Exemple constaté :
+            * l’adresse de la banque n’est pas renseignée ;
+            * le rédacteur souhaitait faire compléter cette information par le client lors de la signature ;
+            * l’édition des documents est bloquée.
+Comportement attendu :
+            * permettre l’édition des documents même si certains champs facultatifs ne sont pas complétés ;
+            * limiter les champs réellement obligatoires au strict nécessaire ;
+            * ne pas rendre bloquants les champs non critiques ;
+            * ne pas bloquer la génération documentaire lorsqu’une information peut être complétée ultérieurement à la main.
+________________
+
+
+3.2 Adresse de la banque
+L’adresse de la banque ne doit pas bloquer l’édition des documents.
+Comportement attendu :
+            * rendre ce champ facultatif ;
+            * ou supprimer l’exigence de complétion si la banque n’apparaît pas dans les documents ;
+            * ou permettre la génération documentaire avec une zone vide / à compléter manuellement si nécessaire.
+________________
+
+
+3.3 Erreur liée aux salariés
+Un message d’erreur apparaît lorsqu’il n’y a pas de salarié et que les champs salariés ne sont pas complétés.
+Comportement attendu :
+            * si “Aucun salarié” est sélectionné, aucune information salarié ne doit être exigée ;
+            * la clause ou phrase relative aux salariés doit être supprimée automatiquement dans le document ;
+            * la génération documentaire ne doit pas être bloquée ;
+            * aucun message d’erreur ne doit apparaître dans ce cas.
+________________
+
+
+3.4 Champs salariés impossibles à remplir
+Le client indique avoir tenté de remplir les champs salariés, mais que cela ne fonctionne pas.
+À vérifier :
+            * possibilité d’ajouter un salarié ;
+            * possibilité d’ajouter plusieurs salariés ;
+            * validation correcte des champs salariés ;
+            * absence d’erreur si aucun salarié n’est renseigné ;
+            * insertion correcte des informations salariés dans les documents lorsqu’elles sont renseignées.
+________________
+
+
+4. Critères d’acceptation
+Le ticket sera considéré comme traité lorsque les points suivants seront validés.
+Questionnaire
+            1. Le libellé “Cession” est remplacé par “Cession de fonds libéral”.
+            2. Tous les régimes matrimoniaux demandés sont disponibles dans la liste déroulante.
+            3. Seul le régime légal / communauté conserve le comportement documentaire existant avec les éventuels courriers associés.
+            4. Les régimes séparation de biens, communauté universelle et participation aux acquêts ne déclenchent pas de document supplémentaire.
+            5. Les champs nom et prénom de l’époux / partenaire sont placés à côté de la situation matrimoniale.
+            6. Les champs Numéro d’Ordre et RPPS sont affichés sur une même ligne.
+            7. Les champs relatifs aux parents sont affichés sur la ligne suivante avec les bons libellés.
+            8. Les champs “Numéro” et “Voie” sont fusionnés pour l’adresse personnelle et l’adresse du siège social.
+            9. Le lieu de signature est prérempli avec la ville du siège social et reste modifiable.
+            10. Les dates d’exercice sont préremplies correctement.
+            11. La date de clôture du premier exercice correspond au 31 décembre de l’année N+1.
+            12. Le champ “Autre lieu d’exercice” est placé après l’adresse du siège social.
+Cession de fonds libéral
+            13. Le vendeur est prérempli avec l’associé unique ou repris automatiquement.
+            14. L’acquéreur est repris automatiquement depuis la fiche société.
+            15. Le cadre “Cabinet” est supprimé ou simplifié s’il est redondant.
+            16. La date d’effet du bail est disponible.
+            17. Le champ “Descriptif libre du local” est disponible.
+            18. Le descriptif libre est inséré dans l’acte uniquement s’il est renseigné.
+            19. Si le descriptif libre est vide, aucune phrase incomplète n’est insérée.
+            20. Le loyer mensuel est vide par défaut.
+            21. La durée du bail reste préremplie à 6 ans.
+            22. Les champs CA 1 et Résultat sont vides par défaut.
+            23. Les montants sont formatés lisiblement si le formatage automatique est mis en place.
+            24. La banque n’est pas exigée si elle n’est pas nécessaire dans les documents.
+            25. Le champ ou libellé “Montant déblocage” comporte la mention “minimum”.
+            26. La variable “Montant du prêt” est supprimée si elle n’est pas utile dans l’acte.
+            27. Le cédant SCM est prérempli avec l’associé unique tout en restant modifiable.
+Salariés et génération documentaire
+            28. Il est possible d’ajouter un ou plusieurs salariés.
+            29. Il est possible d’indiquer qu’il n’y a aucun salarié.
+            30. En l’absence de salarié, la phrase relative aux salariés est supprimée du document.
+            31. En l’absence de salarié, aucun message d’erreur ne bloque la génération.
+            32. Les champs salariés fonctionnent correctement lorsqu’ils sont complétés.
+            33. Les documents peuvent être édités même si certains champs facultatifs sont vides.
+            34. L’adresse de la banque non renseignée ne bloque plus l’édition des documents.
+            35. Les champs facultatifs vides ne bloquent pas la génération documentaire.
+
+
+Onglet 19
+Ticket retour client — SELARL dentiste unipersonnelle — Documents générés
+Contexte
+Retour client sur les documents générés dans le parcours SELARL de dentiste unipersonnelle.
+Important : pour pouvoir générer les documents, le client a dû décocher l’option “Cession”. Les documents liés à la cession n’ont donc pas pu être testés à ce stade.
+Les retours ci-dessous concernent les documents générés hors cession.
+Une pièce jointe montre également la mise en page attendue pour le bloc adresse de l’Ordre des chirurgiens-dentistes :
+            * nom de l’Ordre sur plusieurs lignes si nécessaire ;
+            * adresse sur une ligne ;
+            * code postal et ville sur la ligne suivante ;
+            * bloc aligné proprement, avec une présentation compacte et lisible.
+________________
+
+
+1. Statuts
+1.1 Nom du document généré
+Lors de l’édition des statuts, le nom du document doit reprendre automatiquement la dénomination de la société.
+Format attendu :
+“Statuts [dénomination]”
+Exemple :
+“Statuts SELARL DOCTEUR X”
+________________
+
+
+1.2 Mise en page générale des statuts
+Reprendre la mise en page du modèle de statuts d’origine.
+Ajustements attendus :
+            * centrer l’en-tête ;
+            * réduire la taille de l’en-tête ;
+            * supprimer les interlignes excessifs dans l’en-tête ;
+            * agrandir le cadre “Statuts” ;
+            * ajouter des espaces entre la partie “soussigné” et l’article 1 ;
+            * améliorer l’aération générale du document ;
+            * mettre une majuscule à “Société” sur la deuxième ligne de l’en-tête.
+________________
+
+
+1.3 Page 1 — Situation matrimoniale
+Sur la première page, la mention :
+“marié avec Mme …”
+doit apparaître juste après l’adresse du domicile, à la suite de la phrase précédente.
+Objectif : éviter que cette information soit séparée ou placée trop bas dans le document.
+________________
+
+
+1.4 Page 1 — Numéro d’inscription à l’Ordre
+Le numéro RPPS apparaît bien dans le document, mais le numéro d’inscription à l’Ordre n’apparaît pas alors qu’il a été renseigné dans le formulaire.
+Comportement attendu :
+            * afficher le numéro RPPS ;
+            * afficher également le numéro d’inscription à l’Ordre si le champ a été complété dans le formulaire ;
+            * ne rien afficher pour le numéro d’Ordre si le champ est vide.
+________________
+
+
+1.5 Article 3 — Dénomination sociale
+Dans l’article 3, le nom de la société doit être :
+            * en gras ;
+            * centré.
+________________
+
+
+1.6 Article 7 et article 8 — Mention “euros”
+Dans l’article 7, après les montants “1.000”, ajouter la mention “euros”.
+Cela doit être fait :
+            * pour les montants en chiffres ;
+            * pour la partie en lettres située en dessous.
+Dans l’article 8, dans la formulation :
+“fixé à la somme de mille”
+ajouter également :
+“euros”
+Formulation attendue :
+“fixé à la somme de mille euros”
+________________
+
+
+1.7 Avant-dernière page — Signature
+Sur l’avant-dernière page :
+            * la mention “Fait à” doit être alignée à gauche ;
+            * le nom du client doit être en gras.
+________________
+
+
+1.8 Dernière page — Liste des actes
+Sur la dernière page, centrer uniquement la ligne :
+“Liste des actes accomplis pour le compte de la société en formation”
+ou formulation équivalente déjà présente dans le document.
+________________
+
+
+2. PV de nomination de gérant
+2.1 Mise en forme de l’en-tête
+Reprendre la mise en forme de l’en-tête selon le modèle attendu.
+Ajustements attendus :
+            * nom de la société en gras ;
+            * nom centré ;
+            * police 9 ;
+            * suppression des interlignes excessifs ;
+            * ajout d’espaces dans le cadre ;
+            * ajout d’espaces avant et après le cadre pour aérer le document.
+________________
+
+
+2.2 Adapter le modèle à l’associé unique
+Le document généré semble actuellement basé sur un modèle de PV avec plusieurs associés.
+Pour une SELARL unipersonnelle, il faut utiliser une logique “associé unique”.
+Remplacements attendus :
+            * remplacer “les associés” par “l’associé unique” ou “l’associé” selon la phrase ;
+            * remplacer “assemblée générale” par “décisions de l’associé unique” ou formulation équivalente ;
+            * supprimer les développements relatifs aux associés présents ;
+            * supprimer toute notion de pluralité d’associés lorsque la société est unipersonnelle.
+Le client indique qu’un modèle d’associé unique sera transmis ou est joint comme référence.
+________________
+
+
+2.3 Ordre du jour
+Présenter la liste de l’ordre du jour avec des tirets.
+Objectif :
+Permettre au rédacteur d’ajouter facilement une résolution supplémentaire en faisant simplement “Entrée”.
+Format attendu :
+            * Première résolution / premier point
+            * Deuxième résolution / deuxième point
+            * Troisième résolution / troisième point
+________________
+
+
+3. Autorisation de domiciliation
+3.1 Police du document
+Modifier uniquement la police et la taille du document.
+Comportement attendu :
+            * police principale : Roboto 10 ;
+            * titre : Roboto 11.
+Le reste du document est validé par le client.
+________________
+
+
+4. Déclaration de non-condamnation
+4.1 Cadre d’en-tête
+Ajouter de l’espace dans le cadre situé en haut du document :
+            * un espace avant le texte ;
+            * un espace après le texte.
+Objectif : éviter que le texte soit trop collé aux bords du cadre.
+________________
+
+
+4.2 Lieu de naissance
+Dans la mention “né à”, corriger la ponctuation et ajouter le département.
+Comportement attendu :
+            * enlever le point après la ville ;
+            * ajouter le département entre parenthèses après la ville de naissance.
+Exemple attendu :
+“né à Metz (Moselle)”
+et non :
+“né à Metz.”
+________________
+
+
+4.3 Bloc “Je soussigné”
+Supprimer les interlignes excessifs dans la partie allant de :
+“Je soussigné”
+jusqu’à :
+“de nationalité”
+Comportement attendu :
+            * retirer les interlignes inutiles ;
+            * conserver un espacement lisible ;
+            * ne pas trop étirer cette zone du document.
+________________
+
+
+4.4 Noms des parents
+Retirer les interlignes entre les noms des parents.
+Comportement attendu :
+            * les informations relatives aux parents doivent être rapprochées ;
+            * le document doit rester aéré, mais sans interlignes excessifs.
+________________
+
+
+4.5 Rappel en italique
+Le rappel en italique doit être déplacé vers le bas de page.
+Objectif :
+Se rapprocher de la mise en page du modèle d’origine.
+________________
+
+
+5. Demande d’inscription à l’Ordre
+5.1 Bloc adresse de l’Ordre — Mise en page
+La pièce jointe montre le rendu attendu pour le bloc adresse de l’Ordre.
+Comportement attendu :
+            * le nom de l’Ordre doit être aligné proprement ;
+            * si le nom est long, il peut être affiché sur plusieurs lignes ;
+            * le code postal et la ville doivent être sur une ligne distincte ;
+            * le code postal et la ville ne doivent pas être sur la même ligne que la rue ;
+            * le bloc doit être compact et lisible.
+Exemple de rendu attendu d’après la pièce jointe :
+“Conseil départemental de l’Ordre des
+chirurgiens-dentistes de Moselle
+19 rue du Pré Gondé
+57000 METZ”
+________________
+
+
+5.2 Adresse en haut à gauche
+En haut à gauche du document, le code postal et la ville doivent apparaître en dessous de la rue, et non sur la même ligne.
+Format attendu :
+“19 rue du Pré Gondé
+57000 METZ”
+________________
+
+
+5.3 Aération générale du document
+Aérer légèrement le document.
+Ajustements attendus :
+            * ajouter des espaces avant “Objet” ;
+            * mettre le même espacement entre “Monsieur le Président” et le texte situé en dessous ;
+            * mettre le même espacement entre la phrase “Je vous prie d’agréer” et le texte situé au-dessus ;
+            * harmoniser les espaces pour se rapprocher du modèle d’origine.
+________________
+
+
+5.4 Pouvoirs donnés au conseiller
+Actuellement, les pouvoirs sont donnés à :
+“M. Jordan ELBAZ”
+Ce nom doit être dynamique.
+Comportement attendu :
+            * ajouter une variable “Conseiller” ou équivalent dans le formulaire ;
+            * reprendre le nom du conseiller dans la demande d’inscription à l’Ordre ;
+            * ne pas conserver un nom fixe dans le modèle.
+Exemple :
+“Pouvoir est donné à M. / Mme [Nom du conseiller]”
+________________
+
+
+5.5 Civilité du président de l’Ordre
+La formule d’appel ne doit pas être figée sur :
+“Monsieur le Président”
+Il faut pouvoir gérer le cas où la présidence de l’Ordre est assurée par une femme.
+Comportement attendu :
+            * ajouter une variable ou une case à cocher dans le formulaire pour choisir la civilité ;
+            * permettre d’afficher soit :
+            * “Monsieur le Président”
+            * “Madame la Présidente”
+Cette variable doit être reprise dans la demande d’inscription à l’Ordre.
+________________
+
+
+6. Procuration
+6.1 Mise en forme générale
+Les ajustements demandés sont principalement de forme.
+Comportement attendu :
+            * aérer le document ;
+            * ajouter des espaces dans le cadre de procuration ;
+            * ajouter des espaces aux endroits nécessaires pour se rapprocher du modèle d’origine ;
+            * harmoniser la mise en page générale.
+________________
+
+
+6.2 Mise à jour du modèle SYDEL
+Le modèle utilisé semble être une ancienne version.
+Sous l’adresse de SYDEL, ajouter les informations suivantes :
+            * numéro SIREN ;
+            * numéro de téléphone.
+Le client indique que le nouveau modèle Word sera transmis ou est joint comme référence.
+Objectif :
+Mettre à jour le modèle de procuration pour reprendre la version la plus récente.
+________________
+
+
+7. Point de test complémentaire
+Le client a testé le parcours sur un homme.
+Un second test pourra être réalisé après correction sur un dossier concernant une femme, afin de vérifier notamment :
+            * les accords de civilité ;
+            * les formulations genrées ;
+            * les mentions “Monsieur / Madame” ;
+            * les documents liés à l’Ordre ;
+            * les documents associés au gérant / à la gérante.
+Une fois ces corrections validées, les tests pourront être étendus aux autres formes de sociétés.
+________________
+
+
+8. Critères d’acceptation
+Le ticket sera considéré comme traité lorsque les points suivants seront validés.
+Statuts
+            1. Le fichier des statuts est nommé automatiquement “Statuts [dénomination]”.
+            2. L’en-tête des statuts est centré, réduit, sans interlignes excessifs.
+            3. Le cadre “Statuts” est agrandi.
+            4. La deuxième ligne de l’en-tête affiche “Société” avec une majuscule.
+            5. La mention matrimoniale apparaît juste après l’adresse du domicile.
+            6. Le numéro d’inscription à l’Ordre apparaît uniquement si le champ est complété.
+            7. Le nom de la société à l’article 3 est centré et en gras.
+            8. La mention “euros” est ajoutée aux articles 7 et 8 aux endroits nécessaires.
+            9. La mention “Fait à” est alignée à gauche sur l’avant-dernière page.
+            10. Le nom du client est en gras sur l’avant-dernière page.
+            11. La ligne “Liste des actes accomplis…” est centrée sur la dernière page.
+PV de nomination de gérant
+            12. L’en-tête du PV est conforme : nom en gras, centré, police 9, sans interlignes excessifs.
+            13. Le PV est adapté à une société unipersonnelle.
+            14. Les mentions relatives à une pluralité d’associés sont supprimées.
+            15. L’ordre du jour est présenté sous forme de liste avec tirets.
+Autorisation de domiciliation
+            16. Le document est en Roboto 10.
+            17. Le titre est en Roboto 11.
+Déclaration de non-condamnation
+            18. Le cadre d’en-tête contient un espace avant et après le texte.
+            19. Le lieu de naissance n’a plus de point après la ville.
+            20. Le département du lieu de naissance apparaît entre parenthèses.
+            21. Les interlignes excessifs sont retirés dans le bloc “Je soussigné”.
+            22. Les interlignes entre les noms des parents sont retirés.
+            23. Le rappel en italique est positionné en bas de page.
+Demande d’inscription à l’Ordre
+            24. Le bloc adresse de l’Ordre respecte le format attendu de la pièce jointe.
+            25. Le code postal et la ville apparaissent sous la rue.
+            26. Le nom de l’Ordre est correctement aligné.
+            27. Le document est plus aéré.
+            28. Les espaces autour de “Objet”, de la formule d’appel et de la formule de politesse sont harmonisés.
+            29. Le nom du conseiller est dynamique et n’est plus figé sur “M. Jordan ELBAZ”.
+            30. La formule “Monsieur le Président” / “Madame la Présidente” est gérée par variable ou case à cocher.
+Procuration
+            31. Le document est aéré conformément au modèle.
+            32. Le cadre de procuration contient plus d’espace.
+            33. Le modèle SYDEL est mis à jour avec le numéro SIREN et le numéro de téléphone sous l’adresse.
+Tests
+            34. Les corrections sont validées sur un dossier homme.
+            35. Un second test peut être effectué sur un dossier femme pour vérifier les civilités, accords et formulations genrées.
+
+
+ticket retours 1 tamouz
+Ticket — Adaptation des documents pour société à plusieurs associés / dirigeants
+Contexte
+Retour client concernant l’adaptation des documents générés dans le cadre d’une société SELAS comprenant plusieurs associés et plusieurs dirigeants.
+L’objectif est de préciser quels documents restent identiques, quels documents doivent être adaptés, et quelles règles de génération doivent être appliquées selon la structure de la société.
+
+Tout doit être par rapport à ce qui est déjà existant
+________________
+
+
+1. Procuration
+Comportement attendu
+La procuration reste identique au modèle existant.
+Elle doit être signée par le Président de la société dans ce cas.
+À prévoir
+            * Ne pas modifier le contenu du modèle de procuration.
+            * Ne pas générer une procuration par associé ou par dirigeant.
+            * Faire signer la procuration uniquement par le Président.
+Critère d’acceptation
+La procuration générée est identique au modèle actuel et comporte comme signataire le Président de la société.
+________________
+
+
+2. Demande d’inscription à l’Ordre
+Comportement attendu
+La demande d’inscription à l’Ordre doit être adaptée au cas d’une société à plusieurs associés.
+La modification principale consiste à passer d’une rédaction à la première personne du singulier à une rédaction à la première personne du pluriel.
+Exemple de logique rédactionnelle
+Remplacer les formulations de type :
+“Je sollicite…”
+par :
+“Nous sollicitons…”
+Remplacer les formulations de type :
+“Je vous prie…”
+par :
+“Nous vous prions…”
+
+En résumé, dans ce document, les "je" doivent se transformer en "nous" car il s'agit d'une société dirigée par plusieurs personnes.
+À prévoir
+            * Adapter toutes les formulations concernées dans le document.
+            * Conserver le reste du modèle autant que possible.
+            * Utiliser le modèle transmis par le client comme référence si besoin.
+Critère d’acceptation
+La demande d’inscription à l’Ordre est générée avec une rédaction cohérente au pluriel pour une société à plusieurs associés.
+________________
+
+
+3. Déclaration de non-condamnation
+Comportement attendu
+La déclaration de non-condamnation reste identique au modèle utilisé pour les sociétés à plusieurs associés.
+Elle doit être générée pour chaque dirigeant personne physique.
+Règle de génération
+Générer une déclaration de non-condamnation pour chaque dirigeant personne physique, notamment :
+            * le Président ;
+            * le Directeur Général ;
+            * le ou les Directeurs Généraux Délégués, s’il y en a.
+Exclusion
+Ne pas générer de déclaration de non-condamnation pour un dirigeant personne morale.
+Critères d’acceptation
+            * Une déclaration de non-condamnation est générée pour le Président si le Président est une personne physique.
+            * Une déclaration de non-condamnation est générée pour le Directeur Général si le DG est une personne physique.
+            * Une déclaration de non-condamnation est générée pour chaque Directeur Général Délégué si le DGD est une personne physique.
+            * Aucune déclaration de non-condamnation n’est générée pour un dirigeant personne morale.
+            * Chaque déclaration reprend les informations propres au dirigeant concerné.
+________________
+
+
+4. Compromis de cession du cabinet
+Comportement attendu
+Le compromis de cession du cabinet fonctionne comme pour un associé unique.
+Chaque associé cède son propre cabinet à la SELAS.
+À prévoir
+            * Ne pas modifier la logique existante du compromis de cession.
+            * Générer ou gérer la cession selon le principe suivant : chaque associé cède son propre cabinet à la société.
+            * Conserver le modèle actuel si cette logique est déjà couverte.
+Critère d’acceptation
+Le compromis de cession reste conforme au modèle actuel, avec une logique de cession individuelle du cabinet de chaque associé à la SELAS.
+________________
+
+
+5. Autorisation de domiciliation
+Comportement attendu
+L’autorisation de domiciliation reste identique au modèle existant.
+Elle doit être signée par le Président de la société.
+À prévoir
+            * Ne pas modifier le contenu du modèle.
+            * Ne pas générer une autorisation par associé ou par dirigeant.
+            * Faire signer l’autorisation uniquement par le Président.
+Critère d’acceptation
+L’autorisation de domiciliation générée est identique au modèle actuel et comporte comme signataire le Président de la société.
+________________
+
+
+6. Attestation sur le capital / liste des souscripteurs
+Comportement attendu
+L’attestation sur le capital et la liste des souscripteurs changent peu par rapport aux autres modèles.
+La principale adaptation concerne la répartition du capital, qui doit permettre d’afficher plusieurs associés.
+À prévoir
+            * Adapter le tableau ou bloc de répartition pour gérer plusieurs associés.
+            * Afficher pour chaque associé les informations nécessaires, notamment :
+            * nom / dénomination de l’associé ;
+            * nombre de parts ou actions souscrites ;
+            * montant de la souscription ;
+            * pourcentage de détention si cette donnée est utilisée dans le modèle.
+            * Calculer ou afficher correctement le total du capital souscrit.
+            * Utiliser le modèle transmis par le client comme référence.
+Critères d’acceptation
+            * La liste des souscripteurs permet d’afficher plusieurs associés.
+            * Chaque associé apparaît avec sa quote-part de capital.
+            * Les montants et totaux sont cohérents.
+            * Le document reste conforme au modèle transmis par le client.
+            * Le document fonctionne aussi bien avec deux associés qu’avec davantage d’associés.
+________________
+
+
+7. Critères d’acceptation globaux
+Le ticket sera considéré comme traité lorsque :
+            1. La procuration reste identique et est signée par le Président.
+            2. L’autorisation de domiciliation reste identique et est signée par le Président.
+            3. La demande d’inscription à l’Ordre est rédigée au pluriel pour les sociétés à plusieurs associés.
+            4. La déclaration de non-condamnation est générée pour chaque dirigeant personne physique.
+            5. Aucune déclaration de non-condamnation n’est générée pour les dirigeants personnes morales.
+            6. Le compromis de cession conserve la logique actuelle : chaque associé cède son propre cabinet à la SELAS.
+            7. L’attestation sur le capital / liste des souscripteurs gère correctement plusieurs associés.
+            8. Les modèles transmis par le client sont utilisés comme référence pour les documents concernés.

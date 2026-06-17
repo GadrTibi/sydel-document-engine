@@ -5,7 +5,8 @@ Les décisions de **méthode / comportement d'agent** vont au bilan DRH (`method
 
 | Code | Décision | Source | Statut |
 |---|---|---|---|
-| **SELARL-SCOPE-1** | La SELARL est **UNIPERSONNELLE**. Multi-associés + associé personne morale **ABANDONNÉS**. | Gad 2026-06-04 | acté |
+| **SELARL-SCOPE-1** | La SELARL est **UNIPERSONNELLE**. Multi-associés + associé personne morale **ABANDONNÉS**. | Gad 2026-06-04 | **superseded** par SELARL-SCOPE-2 (2026-06-17) |
+| **SELARL-SCOPE-2** | **RÉACTIVATION SELARL multi-associés** : la SELARL doit pouvoir **ajouter des membres** (personne morale ET personne physique, autant que nécessaire) ; nb d'associés auto-calculé = tous les signataires ; intégrer gérant(s) + praticien(s) dans la liste. Statuts : entête après « le soussigné » + liste + art. 7/8 + signatures s'adaptent. **⚠️ Contredit Albane elle-même** (05/06 : « laissons tomber la SELARL à plusieurs associés ») → probable artefact de transcription Rafael ; **GO Gad 2026-06-17 de construire quand même** + question de confirmation préparée pour Albane (ne pas bloquer le build). | TICKETS V3 (Rafael) + GO Gad 2026-06-17 | en cours |
 | **SELARL-D1** | Une personne morale **peut** être associée d'une SELARL (le canon « société associée » est correct légalement, NotebookLM). **Mais hors périmètre V1** (cf. SCOPE-1). | NotebookLM 2026-06-04 | acté → **superseded** par SCOPE-1 pour la V1 |
 | **SELARL-DUR-1** | Durée de la **SOCIÉTÉ** (statuts art. 6) = « **99 ans** », **figée en dur** (pas une variable). | retour humain 006 (02/06) | appliqué |
 | **SELARL-DUR-2** | **Autorisation de domiciliation** = « pour une **durée indéterminée** ». L'amendement « 99 ans » (03/06) était **ERRONÉ** (contredisait la source humaine primaire du 31/05). | Retours humains 31/05 | appliqué |
