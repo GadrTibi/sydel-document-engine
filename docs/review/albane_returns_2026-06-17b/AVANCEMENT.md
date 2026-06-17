@@ -4,11 +4,11 @@
 ```
   ┌─ SYDEL · Retours Albane lot 2 · AVANCEMENT ────────────
   │
-  │   GLOBAL   [████████████░░░░░░░░░░░░]  25/49  ·  51%
+  │   GLOBAL   [█████████████░░░░░░░░░░░]  26/49  ·  53%
   │
   │   ✅  1a· bugs isolés       4/4   [██████████]
   │   🔨  1b· bugs données P1   4/12  [███░░░░░░░]
-  │   🔨  2 · formulaires       9/10  [█████████░]
+  │   ✅  2 · formulaires       10/10 [██████████]
   │   🔨  3 · contenu docs      3/14  [██░░░░░░░░]
   │   🔨  4 · mise en forme     5/9   [██████░░░░]
   │
@@ -36,9 +36,9 @@
 - [ ] **§9.2** — « représentée par son gérant » suivi de « Docteur » + mauvaise personne (vendeur au lieu d
 - [ ] **§9.3** — Commentaires Word résiduels (Albane) non supprimés du document généré
 
-## Vague 2 · formulaires — 9/10
+## Vague 2 · formulaires — 10/10
 - [x] **§12.1** — Appel de fonds : champ BANQUE present dans le questionnaire (a supprimer des variables)
-- [ ] **§14.1** — SPFPL : double saisie adresse (champ affiche libre + grille structuree) pour le siege ET l
+- [x] **§14.1** — SPFPL : double saisie adresse (champ affiche libre + grille structuree) pour le siege ET l
 - [x] **§18.1** — Champ 'Forme sociale (libelle)' libre et inutile dans le questionnaire civil
 - [x] **§18.2** — Valeur nominale d'une part : champ libre au lieu d'auto-calcul (capital / nb parts)
 - [x] **§18.3** — Champ 'Duree de la societe' a supprimer (toujours 99 ans)

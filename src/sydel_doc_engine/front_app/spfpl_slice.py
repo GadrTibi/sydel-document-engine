@@ -124,9 +124,11 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
     is_apport = operation == "apport"
     st.subheader("Donnees a saisir")
     st.markdown(f"**Societe SPFPL ({operation})**")
-    col_a, col_b = st.columns(2)
-    denomination = _t(col_a, prefix, "denomination", "Denomination SPFPL")
-    siege = _t(col_b, prefix, "siege", "Siege (adresse affichee)")
+    denomination = _t(st, prefix, "denomination", "Denomination SPFPL")
+    # §14.1 (retours Albane lot 2) : suppression du champ texte libre « Siege
+    # (adresse affichee) » qui doublonnait la grille structuree ci-dessous.
+    # L'adresse affichee est desormais DERIVEE de la grille (cf. _siege_display),
+    # comme le formulaire SELARL de reference.
     st.caption("Siege social (adresse structuree, pour la domiciliation / procuration)")
     col_sa, col_sb, col_sc, col_sd = st.columns(4)
     siege_num = _t(col_sa, prefix, "siege_num", "No")
@@ -165,7 +167,8 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
     col_m, col_n = st.columns(2)
     nationalite = _t(col_m, prefix, "nationalite", "Nationalite")
     regime = _t(col_n, prefix, "regime_matrimonial", "Regime matrimonial")
-    adresse = _t(st, prefix, "adresse", "Adresse personnelle (affichee)")
+    # §14.1 : suppression du champ texte libre « Adresse personnelle (affichee) »
+    # redondant ; l'adresse affichee est DERIVEE de la grille structuree.
     st.caption("Adresse personnelle structuree + filiation (declaration de non-condamnation)")
     col_aa, col_ab, col_ac, col_ad = st.columns(4)
     adresse_num = _t(col_aa, prefix, "adresse_num", "No")
@@ -244,7 +247,16 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
         "operation": operation,
         "is_apport": is_apport,
         "denomination": denomination,
-        "siege": siege,
+        # §14.1 : « siege » (affichage) derive de la grille structuree, plus de
+        # champ texte libre.
+        "siege": _siege_display(
+            {
+                "siege_num": siege_num,
+                "siege_voie": siege_voie,
+                "siege_cp": siege_cp,
+                "siege_ville": siege_ville,
+            }
+        ),
         "siege_num": siege_num,
         "siege_voie": siege_voie,
         "siege_cp": siege_cp,
@@ -267,7 +279,15 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
         "departement_naissance": departement_naissance,
         "nationalite": nationalite,
         "regime_matrimonial": regime,
-        "adresse": adresse,
+        # §14.1 : « adresse » (affichage) derivee de la grille structuree.
+        "adresse": _adresse_perso_display(
+            {
+                "adresse_num": adresse_num,
+                "adresse_voie": adresse_voie,
+                "adresse_cp": adresse_cp,
+                "adresse_ville": adresse_ville,
+            }
+        ),
         "adresse_num": adresse_num,
         "adresse_voie": adresse_voie,
         "adresse_cp": adresse_cp,
@@ -713,6 +733,16 @@ def _siege_display(payload: dict[str, object]) -> str:
     return (
         f"{payload.get('siege_num', '')} {payload.get('siege_voie', '')}, "
         f"{payload.get('siege_cp', '')} {payload.get('siege_ville', '')}"
+    ).strip(" ,")
+
+
+def _adresse_perso_display(payload: dict[str, object]) -> str:
+    # §14.1 (retours Albane lot 2) : l'adresse personnelle est DERIVEE de la
+    # grille structuree (No/Voie/CP/Ville), comme la SELARL — plus de champ
+    # texte libre « adresse affichee » redondant.
+    return (
+        f"{payload.get('adresse_num', '')} {payload.get('adresse_voie', '')}, "
+        f"{payload.get('adresse_cp', '')} {payload.get('adresse_ville', '')}"
     ).strip(" ,")
 
 
