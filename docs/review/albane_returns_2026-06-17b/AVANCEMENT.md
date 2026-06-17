@@ -4,13 +4,13 @@
 ```
   ┌─ SYDEL · Retours Albane lot 2 · AVANCEMENT ────────────
   │
-  │   GLOBAL   [█████████░░░░░░░░░░░░░░░]  19/49  ·  39%
+  │   GLOBAL   [██████████░░░░░░░░░░░░░░]  20/49  ·  41%
   │
   │   ✅  1a· bugs isolés       4/4   [██████████]
   │   🔨  1b· bugs données P1   4/12  [███░░░░░░░]
   │   🔨  2 · formulaires       9/10  [█████████░]
   │   🔨  3 · contenu docs      2/14  [█░░░░░░░░░]
-  │   ⬜  4 · mise en forme     0/9   [░░░░░░░░░░]
+  │   🔨  4 · mise en forme     1/9   [█░░░░░░░░░]
   │
   │   ⏸ hors-build (Rafael/Albane) : 10      ✔ déjà conformes : 5
   └────────────────────────────────────────────────────────
@@ -64,7 +64,7 @@
 - [ ] **§9.8** — Signataires : deux fois « Dr [nom] » ; le 2e doit être la SEL acquéreur
 - [ ] **§9.9** — Formule finale « vingt pages » au lieu du nombre réel (8 pages)
 
-## Vague 4 · mise en forme — 0/9
+## Vague 4 · mise en forme — 1/9
 - [ ] **§1** — Aeration generale : Statuts/PV/Procuration/DNC/Appel de fonds aeres ; SCM (PV SCM, acte ce
 - [ ] **§10.4** — Cases de signature trop petites (encadre 3 colonnes, ~3 lignes vides)
 - [ ] **§13.1** — Acte de cession parts SCM : doc serre (6pt uniforme, zero spacer), signature = add_signatu
@@ -73,7 +73,7 @@
 - [ ] **§4.2** — PV SCM: 'Cette resolution est adoptee a l'unanimite' n'est PAS en italique
 - [ ] **§4.2** — Cadre de signature du PV SCM trop petit pour YouSign
 - [ ] **§7** — Declaration de non-condamnation : cadre du haut a aerer ; rappel italique a 'descendre' le
-- [ ] **§ARCHI** — Mecanisme d'aeration actuel : SydelDocxStyleProfile + add_spacer + space_before/after par 
+- [x] **§ARCHI** — Mecanisme d'aeration actuel : SydelDocxStyleProfile + add_spacer + space_before/after par 
 
 ## ⏸ Hors-build (suspendu Rafael/Albane/David)
 - [ ] **§10.2** — Article 1 'a pour locataire' sans article devant le titre (Docteur/M.)

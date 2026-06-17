@@ -27,6 +27,12 @@ class SydelDocxStyleProfile:
     notable_space_before_pt: int = 10
     signature_width_cm: float = 7.0
     signature_image_width_cm: float = 4.0
+    # Marges internes des cadres (cellules de tableau 1x1), en dxa/twips (1 pt = 20 dxa).
+    # Additif : aere l'interieur des cadres sans toucher aux bordures.
+    frame_cell_margin_vertical_dxa: int = 100
+    frame_cell_margin_horizontal_dxa: int = 140
+    signature_cell_margin_vertical_dxa: int = 120
+    signature_cell_margin_horizontal_dxa: int = 140
 
 
 DEFAULT_STYLE_PROFILE = SydelDocxStyleProfile()
@@ -668,6 +674,13 @@ def add_framed_title(
     _set_table_borders(table)
 
     cell = table.cell(0, 0)
+    _set_cell_margins(
+        cell,
+        top=style_profile.frame_cell_margin_vertical_dxa,
+        bottom=style_profile.frame_cell_margin_vertical_dxa,
+        left=style_profile.frame_cell_margin_horizontal_dxa,
+        right=style_profile.frame_cell_margin_horizontal_dxa,
+    )
     paragraph = cell.paragraphs[0]
     paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
     for index, line in enumerate(lines):
@@ -693,7 +706,15 @@ def add_framed_section_title(
     table.style = "Table Grid"
     _set_table_borders(table)
 
-    paragraph = table.cell(0, 0).paragraphs[0]
+    cell = table.cell(0, 0)
+    _set_cell_margins(
+        cell,
+        top=style_profile.frame_cell_margin_vertical_dxa,
+        bottom=style_profile.frame_cell_margin_vertical_dxa,
+        left=style_profile.frame_cell_margin_horizontal_dxa,
+        right=style_profile.frame_cell_margin_horizontal_dxa,
+    )
+    paragraph = cell.paragraphs[0]
     paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
     paragraph.paragraph_format.space_after = Pt(style_profile.compact_space_after_pt)
     run = paragraph.add_run(text)
@@ -716,6 +737,13 @@ def add_notice_box(
     table.style = "Table Grid"
     _set_table_borders(table)
     cell = table.cell(0, 0)
+    _set_cell_margins(
+        cell,
+        top=style_profile.frame_cell_margin_vertical_dxa,
+        bottom=style_profile.frame_cell_margin_vertical_dxa,
+        left=style_profile.frame_cell_margin_horizontal_dxa,
+        right=style_profile.frame_cell_margin_horizontal_dxa,
+    )
     for index, line in enumerate(lines):
         paragraph = cell.paragraphs[0] if index == 0 else cell.add_paragraph()
         paragraph.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
@@ -858,6 +886,13 @@ def add_framed_signature_block(
     _set_table_borders(table)
     cell = table.cell(0, 0)
     cell.width = Cm(width_cm or style_profile.signature_width_cm)
+    _set_cell_margins(
+        cell,
+        top=style_profile.signature_cell_margin_vertical_dxa,
+        bottom=style_profile.signature_cell_margin_vertical_dxa,
+        left=style_profile.signature_cell_margin_horizontal_dxa,
+        right=style_profile.signature_cell_margin_horizontal_dxa,
+    )
     _add_signature_cell_content(cell, lines, image_path, style_profile)
     return table
 
@@ -900,6 +935,13 @@ def add_signature_table(
             raise ValueError("Toutes les lignes de signature doivent avoir la meme largeur.")
         for cell_index, label in enumerate(row):
             cell = table.rows[row_index].cells[cell_index]
+            _set_cell_margins(
+                cell,
+                top=style_profile.signature_cell_margin_vertical_dxa,
+                bottom=style_profile.signature_cell_margin_vertical_dxa,
+                left=style_profile.signature_cell_margin_horizontal_dxa,
+                right=style_profile.signature_cell_margin_horizontal_dxa,
+            )
             paragraph = cell.paragraphs[0]
             paragraph.paragraph_format.space_after = Pt(style_profile.compact_space_after_pt)
             paragraph.add_run(label)
@@ -961,6 +1003,41 @@ def _add_signature_cell_content(
         )
     else:
         signature_paragraph.add_run("\n\n\n")
+
+
+def _set_cell_margins(
+    cell: Any,
+    *,
+    top: int = 0,
+    bottom: int = 0,
+    left: int = 0,
+    right: int = 0,
+) -> None:
+    """Set internal cell margins (padding) in dxa/twips via ``w:tcMar``.
+
+    Additif uniquement : aere l'interieur des cadres (cellules de tableau 1x1)
+    sans toucher aux bordures. 1 pt = 20 dxa. Toute valeur a 0 est posee
+    explicitement pour rendre la marge deterministe.
+    """
+    tc_pr = cell._tc.get_or_add_tcPr()
+    existing = tc_pr.find(qn("w:tcMar"))
+    if existing is not None:
+        tc_pr.remove(existing)
+
+    tc_mar = OxmlElement("w:tcMar")
+    for edge, value in (
+        ("top", top),
+        ("start", left),
+        ("left", left),
+        ("bottom", bottom),
+        ("end", right),
+        ("right", right),
+    ):
+        element = OxmlElement(f"w:{edge}")
+        element.set(qn("w:w"), str(value))
+        element.set(qn("w:type"), "dxa")
+        tc_mar.append(element)
+    tc_pr.append(tc_mar)
 
 
 def _set_table_borders(table: Any) -> None:
