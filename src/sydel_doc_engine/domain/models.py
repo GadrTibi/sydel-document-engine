@@ -648,6 +648,20 @@ class StatutsCivilsRepresentant(BaseModel):
     fonction: str | None = None
 
 
+class RegimeCommunautaireAssocie(BaseModel):
+    """Regime communautaire d'UN associe personne physique (SELAS multi, R7).
+
+    Reprend la STRUCTURE SELARL (regime matrimonial + conjoint) validee, portee
+    au niveau de chaque associe au lieu d'un toggle global unique."""
+
+    actif: bool = False
+    regime_matrimonial: str | None = None
+    conjoint_civilite: str | None = None
+    conjoint_genre: Gender | None = None
+    conjoint_prenom: str | None = None
+    conjoint_nom: str | None = None
+
+
 class StatutsCivilsAssocie(BaseModel):
     type_personne: str = "personne_physique"
     role_statutaire: str | None = None
@@ -684,6 +698,13 @@ class StatutsCivilsAssocie(BaseModel):
     qualite_capital: str | None = None
     nb_actions: int | None = None
     nb_actions_lettres: str | None = None
+    # R7 (retours Rafael 2026-06-18) : regime matrimonial communautaire PAR
+    # associe personne physique (SELAS multi). Additif et optionnel ; None ->
+    # associe non concerne. Le conjoint + le regime sont portes ici pour que la
+    # renonciation (DOC-005) + l'avertissement (DOC-006) puissent, a terme, etre
+    # generes UNE FOIS PAR personne concernee. Tant que le moteur n'emet pas par
+    # personne, ce bloc alimente le formulaire et l'agregation (cf. slice SELAS).
+    regime_communautaire_associe: RegimeCommunautaireAssocie | None = None
 
 
 class StatutsCivilsCapitalDepot(BaseModel):

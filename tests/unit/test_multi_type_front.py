@@ -9,6 +9,7 @@ from docx import Document
 from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import (
     Address,
+    RegimeCommunautaireAssocie,
     StatutsCivilsApport,
     StatutsCivilsAssocie,
     StatutsCivilsParts,
@@ -1033,6 +1034,74 @@ def test_selas_regime_on_adds_regime_docs(tmp_path: Path) -> None:
         }
         | _REGIME_DOCS,
     )
+
+
+def _regime_associe(prenom: str, nom: str) -> RegimeCommunautaireAssocie:
+    return RegimeCommunautaireAssocie(
+        actif=True,
+        regime_matrimonial="la communaute legale",
+        conjoint_civilite="Monsieur",
+        conjoint_genre=Gender.MASCULIN,
+        conjoint_prenom=prenom,
+        conjoint_nom=nom,
+    )
+
+
+def test_selas_regime_par_associe_active_les_docs(tmp_path: Path) -> None:
+    # R7 (2026-06-18) : le regime communautaire est porte PAR associe physique.
+    # Toggle global INACTIF mais le 1er associe (president) marie sous communaute
+    # -> DOC-005/006 generes (chemin per-associe), sans toggle global.
+    payload = _selas_payload()
+    payload["regime_communautaire"] = False  # pas de toggle global
+    payload["associes"][0].regime_communautaire_associe = _regime_associe("Paul", "Durand")
+    plan = selas_multi_slice.build_selas_plan(payload)
+    assert plan.can_generate is True
+    assert "DOC-005" in plan.document_codes
+    assert "DOC-006" in plan.document_codes
+    generated = selas_multi_slice.generate_dossier(payload, tmp_path / "selas-regime-assoc")
+    names = {p.name for p in generated.docx_paths}
+    assert _REGIME_DOCS <= names
+
+
+def test_selas_regime_par_associe_valide_le_conjoint(tmp_path: Path) -> None:
+    # R7 : un associe marie sous communaute sans conjoint complet -> blocage.
+    payload = _selas_payload()
+    payload["regime_communautaire"] = False
+    payload["associes"][0].regime_communautaire_associe = RegimeCommunautaireAssocie(
+        actif=True
+    )  # conjoint + regime manquants
+    plan = selas_multi_slice.build_selas_plan(payload)
+    assert plan.can_generate is False
+    assert any("conjoint" in b.lower() for b in plan.blockers)
+
+
+def test_selas_deux_associes_maries_flag_multiplication(tmp_path: Path) -> None:
+    # R7 : 2 associes physiques maries sous communaute -> warning explicite que
+    # le moteur ne genere DOC-005/006 QUE pour le premier (multiplication a faire
+    # cote moteur, supervision requise).
+    payload = _selas_payload()
+    payload["regime_communautaire"] = False
+    # Associe 1 (personne morale dans _selas_payload) remplace par un 2e physique
+    # marie, pour avoir 2 maries. On copie l'associe physique valide existant
+    # (champs etat civil complets) en changeant le nom + le conjoint.
+    phys2 = payload["associes"][0].model_copy(
+        update={
+            "prenom": "Marc",
+            "prenoms": "Marc",
+            "nom": "Petit",
+            "nb_actions": 25,
+            "nb_actions_lettres": "vingt-cinq",
+            "qualite_capital": "associé exerçant",
+            "apport": StatutsCivilsApport(montant="250", montant_lettres="deux cent cinquante"),
+            "regime_communautaire_associe": _regime_associe("Sophie", "Petit"),
+        }
+    )
+    payload["associes"][0].regime_communautaire_associe = _regime_associe("Paul", "Durand")
+    payload["associes"][0].nb_actions = 75
+    payload["associes"][1] = phys2
+    plan = selas_multi_slice.build_selas_plan(payload)
+    assert plan.can_generate is True
+    assert any("2 associes maries" in w and "premier" in w for w in plan.warnings)
 
 
 def test_selas_regime_on_requires_conjoint() -> None:

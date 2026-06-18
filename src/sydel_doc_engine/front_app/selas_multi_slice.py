@@ -33,6 +33,7 @@ from sydel_doc_engine.domain.models import (
     DossierOptions,
     Person,
     RegimeCommunautaire,
+    RegimeCommunautaireAssocie,
     RegimeCommunautaireAvertissement,
     RegimeCommunautaireRenonciation,
     ReunionContext,
@@ -129,12 +130,47 @@ SELAS_BUNDLE_CODES: tuple[str, ...] = (
 )
 
 
+def _associes_maries_communaute(
+    payload: dict[str, object],
+) -> list[StatutsCivilsAssocie]:
+    """Associes personne physique maries sous regime communautaire (R7).
+
+    Lit le bloc per-associe `regime_communautaire_associe.actif`. Ordre du
+    formulaire preserve (le 1er married pilote le DOC-005/006 unique tant que le
+    moteur n'emet pas par personne)."""
+    result: list[StatutsCivilsAssocie] = []
+    for associe in payload.get("associes") or []:
+        if not isinstance(associe, StatutsCivilsAssocie):
+            continue
+        if associe.type_personne != "personne_physique":
+            continue
+        regime = associe.regime_communautaire_associe
+        if regime is not None and regime.actif:
+            result.append(associe)
+    return result
+
+
+def _regime_communautaire_actif(payload: dict[str, object]) -> bool:
+    """Regime communautaire actif au sens generation : toggle global historique
+    OU au moins un associe physique marie sous communaute (R7). Conserve le
+    comportement existant (toggle global) tout en activant le nouveau chemin
+    per-associe."""
+    return bool(payload.get("regime_communautaire")) or bool(
+        _associes_maries_communaute(payload)
+    )
+
+
 def _selas_document_codes(payload: dict[str, object]) -> tuple[str, ...]:
     """Bundle SELAS de creation, augmente du conditionnel canon « Si regime
     communautaire » (DOC-005 renonciation + DOC-006 avertissement) quand le
-    toggle est actif. Toggle inactif -> bundle de base inchange."""
+    regime est actif (toggle global OU au moins un associe physique marie sous
+    communaute, R7). Inactif -> bundle de base inchange.
+
+    LIMITE MOTEUR (R7) : DOC-005/006 ne sont AJOUTES QU'UNE FOIS, meme si
+    plusieurs associes sont maries sous communaute. La generation par-personne
+    reste a faire cote moteur (cf. warning de build_selas_plan)."""
     codes = list(SELAS_BUNDLE_CODES)
-    if bool(payload.get("regime_communautaire")):
+    if _regime_communautaire_actif(payload):
         codes.extend(cc.REGIME_COMMUNAUTAIRE_CODES)
     return tuple(codes)
 
@@ -578,6 +614,7 @@ def _physique(prefix: str, nb_actions: int, montant: str) -> StatutsCivilsAssoci
     numero_ordre = _ts(col_l, f"{prefix}_numero_ordre", "Numero ordre")
     numero_rpps = _ts(col_m, f"{prefix}_numero_rpps", "Numero RPPS")
     qualite = _ts(st, f"{prefix}_qualite", "Qualite au capital (ex: associee exercante)")
+    regime_associe = _render_regime_associe_form(prefix)
 
     return StatutsCivilsAssocie(
         type_personne="personne_physique",
@@ -601,6 +638,43 @@ def _physique(prefix: str, nb_actions: int, montant: str) -> StatutsCivilsAssoci
         nb_actions=nb_actions or None,
         nb_actions_lettres=number_words_from_value(nb_actions) if nb_actions else None,
         apport=_apport(montant),
+        regime_communautaire_associe=regime_associe,
+    )
+
+
+def _render_regime_associe_form(prefix: str) -> RegimeCommunautaireAssocie | None:
+    """Regime matrimonial communautaire PAR associe physique (R7).
+
+    Reprend la STRUCTURE SELARL (toggle + regime matrimonial + conjoint), mais
+    portee au niveau de l'associe au lieu du toggle global unique. Inactif ->
+    None (associe non concerne)."""
+    regime_key = f"{prefix}_regime_communautaire"
+    if regime_key not in st.session_state:
+        st.session_state[regime_key] = False
+    actif = st.checkbox(
+        "Marie(e) sous un regime communautaire "
+        "(ajoute renonciation + avertissement au conjoint pour cet associe)",
+        key=regime_key,
+    )
+    if not actif:
+        return None
+    st.caption("Conjoint de cet associe (lettres de renonciation / avertissement)")
+    col_a, col_b, col_c = st.columns(3)
+    conjoint_civilite = col_a.selectbox(
+        "Civilite conjoint",
+        ("Madame", "Monsieur"),
+        key=f"{prefix}_conjoint_civilite",
+    )
+    conjoint_prenom = _ts(col_b, f"{prefix}_conjoint_prenom", "Prenom conjoint")
+    conjoint_nom = _ts(col_c, f"{prefix}_conjoint_nom", "Nom conjoint")
+    regime_matrimonial = _ts(st, f"{prefix}_regime_matrimonial", "Regime matrimonial")
+    return RegimeCommunautaireAssocie(
+        actif=True,
+        regime_matrimonial=regime_matrimonial or None,
+        conjoint_civilite=conjoint_civilite,
+        conjoint_genre=derive_gender_from_civilite(conjoint_civilite),
+        conjoint_prenom=conjoint_prenom or None,
+        conjoint_nom=conjoint_nom or None,
     )
 
 
@@ -663,8 +737,20 @@ def build_selas_plan(payload: dict[str, object]) -> SelasSlicePlan:
         "SELAS multi V1 : 2 a 5 associes, vocabulaire actions. Bundle de creation : statuts "
         "+ tronc commun + PV gerant + demande ordre. Le moteur exige la coherence des actions.",
     ]
-    if bool(payload.get("regime_communautaire")):
+    if _regime_communautaire_actif(payload):
         warnings.append("Regime communautaire actif : DOC-005 et DOC-006 seront generes.")
+    # R7 : flag de la LIMITE MOTEUR. Le formulaire collecte le regime PAR associe
+    # physique, mais le moteur n'emet encore qu'UN couple DOC-005/006 (pour le 1er
+    # associe marie). Plusieurs maries -> generation par-personne a faire en
+    # supervise (refonte orchestrateur non securisable en additif ici).
+    maries = _associes_maries_communaute(payload)
+    if len(maries) > 1:
+        noms = ", ".join(f"{a.prenoms or a.prenom or ''} {a.nom or ''}".strip() for a in maries)
+        warnings.append(
+            f"ATTENTION (R7) : {len(maries)} associes maries sous communaute detectes "
+            f"({noms}). Le moteur ne genere DOC-005/006 QUE pour le premier "
+            "(generation par-personne a implementer cote moteur, supervision requise)."
+        )
     if blockers:
         return SelasSlicePlan(
             can_generate=False,
@@ -750,18 +836,36 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:
 
 
 def _validate_regime_communautaire(payload: dict[str, object]) -> list[str]:
-    """Saisies conjoint requises par DOC-005 / DOC-006 quand le regime est actif."""
-    if not bool(payload.get("regime_communautaire")):
-        return []
+    """Saisies conjoint requises par DOC-005 / DOC-006 quand le regime est actif.
+
+    Deux sources possibles (R7) : le toggle GLOBAL historique (cles plates) OU
+    le regime PAR associe physique. Chaque source active impose la saisie du
+    conjoint + du regime matrimonial."""
     blockers: list[str] = []
-    required = (
-        ("conjoint_prenom", "Prenom du conjoint requis (regime communautaire)."),
-        ("conjoint_nom", "Nom du conjoint requis (regime communautaire)."),
-        ("regime_matrimonial", "Regime matrimonial requis (regime communautaire)."),
-    )
-    for field, message in required:
-        if not str(payload.get(field) or "").strip():
-            blockers.append(message)
+    if bool(payload.get("regime_communautaire")):
+        required = (
+            ("conjoint_prenom", "Prenom du conjoint requis (regime communautaire)."),
+            ("conjoint_nom", "Nom du conjoint requis (regime communautaire)."),
+            ("regime_matrimonial", "Regime matrimonial requis (regime communautaire)."),
+        )
+        for field, message in required:
+            if not str(payload.get(field) or "").strip():
+                blockers.append(message)
+    # R7 : validation par associe physique marie sous communaute.
+    associes = payload.get("associes") or []
+    for index, associe in enumerate(associes):
+        if not isinstance(associe, StatutsCivilsAssocie):
+            continue
+        regime = associe.regime_communautaire_associe
+        if regime is None or not regime.actif:
+            continue
+        label = f"Associe {index + 1}"
+        if not str(regime.conjoint_prenom or "").strip():
+            blockers.append(f"{label} : prenom du conjoint requis (regime communautaire).")
+        if not str(regime.conjoint_nom or "").strip():
+            blockers.append(f"{label} : nom du conjoint requis (regime communautaire).")
+        if not str(regime.regime_matrimonial or "").strip():
+            blockers.append(f"{label} : regime matrimonial requis (regime communautaire).")
     return blockers
 
 
@@ -883,7 +987,15 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         qualification_principale=profession,
     )
 
-    regime_communautaire_actif = bool(payload.get("regime_communautaire"))
+    regime_communautaire_actif = _regime_communautaire_actif(payload)
+    # R7 : si le toggle global est inactif mais qu'un associe physique est marie
+    # sous communaute, on derive le contexte regime du PREMIER associe marie
+    # (ordre du formulaire). Le moteur n'emet encore qu'UN couple DOC-005/006 ;
+    # build_selas_plan flague la multiplication a faire cote moteur.
+    regime_payload = _effective_regime_payload(payload)
+    # Adresse du foyer pour le conjoint : adresse de l'associe marie pilote si le
+    # chemin per-associe gouverne, sinon adresse du president (toggle global).
+    conjoint_foyer = _conjoint_foyer_address(payload, adresse_perso)
     return DocumentGenerationContext(
         structure="SELAS",
         dossier_options=DossierOptions(
@@ -891,7 +1003,11 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
             regime_communautaire=regime_communautaire_actif,
         ),
         personne_signataire=signataire,
-        conjoint=_conjoint_person(payload, adresse_perso) if regime_communautaire_actif else None,
+        conjoint=(
+            _conjoint_person(regime_payload, conjoint_foyer)
+            if regime_communautaire_actif
+            else None
+        ),
         signature=Signature(
             lieu=str(payload.get("signature_lieu") or ""),
             date=payload.get("signature_date"),
@@ -916,7 +1032,9 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
             montant=capital,
             montant_lettres=number_words_from_value(capital),
         ),
-        regime_communautaire=_regime_communautaire(payload) if regime_communautaire_actif else None,
+        regime_communautaire=(
+            _regime_communautaire(regime_payload) if regime_communautaire_actif else None
+        ),
         domiciliation=Domiciliation(
             adresse_domiciliation_affichee=siege_struct.adresse_affichee,
         ),
@@ -1070,6 +1188,46 @@ def _selas_ordre(payload: dict[str, object]):
             ville=str(payload.get("ordre_ville") or ""),
         ),
     )
+
+
+def _conjoint_foyer_address(payload: dict[str, object], president_address: Address) -> Address:
+    """Adresse du foyer pour le conjoint (R7).
+
+    Toggle global -> adresse du president (historique). Chemin per-associe ->
+    adresse de l'associe marie pilote (1er) si elle est renseignee, sinon repli
+    sur l'adresse du president."""
+    if bool(payload.get("regime_communautaire")):
+        return president_address
+    maries = _associes_maries_communaute(payload)
+    if maries and (maries[0].adresse_personnelle_affichee or "").strip():
+        return Address(adresse_affichee=str(maries[0].adresse_personnelle_affichee or ""))
+    return president_address
+
+
+def _effective_regime_payload(payload: dict[str, object]) -> dict[str, object]:
+    """Payload effectif pour le contexte regime communautaire (R7).
+
+    - Toggle global actif -> payload inchange (comportement historique : conjoint
+      + regime des cles plates `conjoint_*` / `regime_matrimonial`).
+    - Toggle global inactif mais >= 1 associe physique marie sous communaute ->
+      overlay du PREMIER associe marie (ses cles conjoint/regime) sur le payload.
+      Le moteur n'emet qu'UN couple DOC-005/006 ; la generation par-personne
+      reste a faire cote moteur (flag dans build_selas_plan)."""
+    if bool(payload.get("regime_communautaire")):
+        return payload
+    maries = _associes_maries_communaute(payload)
+    if not maries:
+        return payload
+    regime = maries[0].regime_communautaire_associe
+    if regime is None:
+        return payload
+    overlay = dict(payload)
+    overlay["conjoint_civilite"] = regime.conjoint_civilite or "Madame"
+    overlay["conjoint_genre"] = regime.conjoint_genre or Gender.FEMININ
+    overlay["conjoint_prenom"] = regime.conjoint_prenom or ""
+    overlay["conjoint_nom"] = regime.conjoint_nom or ""
+    overlay["regime_matrimonial"] = regime.regime_matrimonial or ""
+    return overlay
 
 
 def _conjoint_person(payload: dict[str, object], signataire_address: Address) -> Person:
