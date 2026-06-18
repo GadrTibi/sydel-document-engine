@@ -182,10 +182,14 @@ def _conseil_departemental_lines(
             ordre.departement_inscription,
             "ordre.departement_inscription",
         )
+        # R6 (retours Rafael 2026-06-18) : connecteur grammatical configurable
+        # (« de » / « du ») avant le departement, pour gerer l'accord. Defaut
+        # « de » = comportement historique (SELARL byte-identique).
+        connecteur = (ordre.connecteur_departement or "de").strip() or "de"
         return [
             (
                 "Conseil départemental de l'Ordre des "
-                f"{profession_ligne_destinataire} de {departement}"
+                f"{profession_ligne_destinataire} {connecteur} {departement}"
             )
         ]
     conseil_libelle = _required_text(

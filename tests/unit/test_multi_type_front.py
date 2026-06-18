@@ -941,6 +941,37 @@ def test_selas_multi_slice_generates_clean(tmp_path: Path) -> None:
     )
 
 
+def test_selas_ordre_conseil_derive_sans_champ_libelle(tmp_path: Path) -> None:
+    # R5 (2026-06-18) : le « Conseil departemental » n'est plus saisi ; le libelle
+    # de la demande d'inscription est derive du departement + connecteur. Sans
+    # ordre_conseil dans le payload (champ supprime), la generation reste propre
+    # et le libelle est reconstruit cote moteur.
+    payload = _selas_payload()
+    payload.pop("ordre_conseil", None)  # champ supprime du formulaire
+    plan = selas_multi_slice.build_selas_plan(payload)
+    assert plan.can_generate is True  # plus de blocage sur ordre_conseil
+    generated = selas_multi_slice.generate_dossier(payload, tmp_path / "selas-ordre-derive")
+    text = _docx_text(
+        next(p for p in generated.docx_paths if p.name == "demande_inscription_ordre.docx")
+    )
+    # Connecteur par defaut « de » (ordre_connecteur absent).
+    assert "Conseil départemental de l'Ordre des médecins de Rhône" in text
+
+
+def test_selas_ordre_connecteur_du(tmp_path: Path) -> None:
+    # R6 (2026-06-18) : le connecteur grammatical « du » remplace « de » avant le
+    # departement de l'ordre dans le libelle derive (gestion de l'accord).
+    payload = _selas_payload()
+    payload.pop("ordre_conseil", None)
+    payload["ordre_connecteur"] = "du"
+    generated = selas_multi_slice.generate_dossier(payload, tmp_path / "selas-ordre-du")
+    text = _docx_text(
+        next(p for p in generated.docx_paths if p.name == "demande_inscription_ordre.docx")
+    )
+    assert "Conseil départemental de l'Ordre des médecins du Rhône" in text
+    assert "des médecins de Rhône" not in text
+
+
 def test_selas_blocks_incoherent_actions_sum() -> None:
     payload = _selas_payload()
     payload["associes"][1].nb_actions = 10  # 75 + 10 != 100

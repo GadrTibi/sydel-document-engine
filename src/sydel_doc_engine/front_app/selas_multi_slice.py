@@ -256,9 +256,13 @@ def _render_common_docs_form() -> dict[str, object]:
     st.markdown("**Documents communs (decision, ordre professionnel)**")
     decision_date = _date("decision_date", "Date de decision (PV gerant)")
     st.markdown("Ordre professionnel (demande d'inscription)")
+    # R5 (retours Rafael 2026-06-18) : « Conseil departemental » supprime du
+    # formulaire (inutile) ; le libelle est derive automatiquement cote moteur.
+    # R6 : connecteur grammatical (« de » / « du ») a cote du departement, pour
+    # gerer l'accord (« ... de Gironde » / « ... du Jura »).
     col_i, col_j = st.columns(2)
-    ordre_conseil = _t(col_i, "ordre_conseil", "Conseil departemental")
-    ordre_dep = _t(col_j, "ordre_departement", "Departement ordre")
+    ordre_dep = _t(col_i, "ordre_departement", "Departement ordre")
+    ordre_connecteur = _render_connecteur_selectbox(col_j)
     col_k, col_l, col_m = st.columns(3)
     ordre_ligne = _t(col_k, "ordre_adresse_ligne_1", "Adresse ordre")
     ordre_cp = _t(col_l, "ordre_cp", "CP ordre")
@@ -267,8 +271,8 @@ def _render_common_docs_form() -> dict[str, object]:
     regime = _render_regime_communautaire_form()
     common = {
         "decision_date": decision_date,
-        "ordre_conseil": ordre_conseil,
         "ordre_departement": ordre_dep,
+        "ordre_connecteur": ordre_connecteur,
         "ordre_adresse_ligne_1": ordre_ligne,
         "ordre_cp": ordre_cp,
         "ordre_ville": ordre_ville,
@@ -276,6 +280,19 @@ def _render_common_docs_form() -> dict[str, object]:
     }
     common.update(regime)
     return common
+
+
+def _render_connecteur_selectbox(container) -> str:
+    """Menu « de » / « du » (R6) : connecteur grammatical place avant le
+    departement de l'ordre dans le libelle derive (gestion de l'accord)."""
+    return str(
+        container.selectbox(
+            "Connecteur (de / du)",
+            ("de", "du"),
+            key=f"{PREFIX}_ordre_connecteur",
+            help="S'affiche avant le departement : « ... de Gironde » / « ... du Jura ».",
+        )
+    )
 
 
 def _render_regime_communautaire_form() -> dict[str, object]:
@@ -762,7 +779,8 @@ def _validate_common_docs(payload: dict[str, object]) -> list[str]:
         ("signataire_adresse_cp", "Code postal du president requis (declaration)."),
         ("signataire_adresse_ville", "Ville du president requise (declaration)."),
         ("signataire_nationalite", "Nationalite du president requise (declaration)."),
-        ("ordre_conseil", "Conseil departemental de l'ordre requis (demande inscription)."),
+        # R5 (2026-06-18) : « Conseil departemental » supprime du formulaire ; le
+        # libelle est derive du departement + connecteur, plus de saisie a valider.
         ("ordre_departement", "Departement d'inscription a l'ordre requis (demande inscription)."),
         ("ordre_adresse_ligne_1", "Adresse de l'ordre requise (demande inscription)."),
         ("ordre_cp", "Code postal de l'ordre requis (demande inscription)."),
@@ -1024,9 +1042,22 @@ def _selas_ordre(payload: dict[str, object]):
     ville = str(payload.get("ordre_ville") or "")
     bloc = f"{ligne_1}\n{cp} {ville}"
     pluriel = str(payload.get("profession_reglementee_pluriel") or "")
+    departement = str(payload.get("ordre_departement") or "")
+    # R6 : connecteur grammatical (« de » / « du ») choisi au formulaire ;
+    # defaut « de » si absent.
+    connecteur = str(payload.get("ordre_connecteur") or "de").strip() or "de"
+    # R5 : le « Conseil departemental » n'est plus saisi -> on derive le libelle
+    # (utilise uniquement par le fallback non-SEL ; pour la SELAS le moteur
+    # reconstruit la ligne a partir du departement + connecteur).
+    conseil_libelle = (
+        f"Conseil Départemental de l'Ordre des {pluriel} {connecteur} {departement}".strip()
+        if pluriel and departement
+        else ""
+    )
     return OrdreProfessionnel(
-        conseil_departemental_libelle=str(payload.get("ordre_conseil") or ""),
-        departement_inscription=str(payload.get("ordre_departement") or ""),
+        conseil_departemental_libelle=conseil_libelle,
+        departement_inscription=departement,
+        connecteur_departement=connecteur,
         destinataire_appel="Monsieur le Président",
         profession_signataire_affichee=str(payload.get("profession_reglementee") or ""),
         profession_ligne_destinataire=pluriel,

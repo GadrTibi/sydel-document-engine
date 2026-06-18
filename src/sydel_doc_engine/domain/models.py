@@ -779,6 +779,11 @@ class OrdreAddress(BaseModel):
 class OrdreProfessionnel(BaseModel):
     conseil_departemental_libelle: str | None = None
     departement_inscription: str | None = None
+    # Connecteur grammatical place AVANT le departement de l'ordre dans le
+    # libelle derive (« de l'Ordre des ... DE Gironde » / « ... DU Jura »).
+    # Defaut « de » = comportement historique byte-identique pour tous les
+    # callers qui ne le renseignent pas (SELARL inchangee). Retours Rafael R6.
+    connecteur_departement: str | None = None
     destinataire_appel: str | None = None
     profession_signataire_affichee: str | None = None
     profession_ligne_destinataire: str | None = None

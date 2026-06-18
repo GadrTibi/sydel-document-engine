@@ -731,8 +731,10 @@ def _prefill_selas_test_data(
         "selas_associe_0_sig_adresse_ville": "Lyon",
         "selas_associe_0_sig_date_naissance": "01/01/1980",
         "selas_decision_date": "15/05/2026",
-        "selas_ordre_conseil": "Conseil departemental",
+        # R5/R6 (2026-06-18) : « Conseil departemental » retire du formulaire ;
+        # le connecteur grammatical (« de » / « du ») le remplace pour l'accord.
         "selas_ordre_departement": "Rhone",
+        "selas_ordre_connecteur": "du",
         "selas_ordre_adresse_ligne_1": "1 rue de l'Ordre",
         "selas_ordre_cp": "69002",
         "selas_ordre_ville": "Lyon",
