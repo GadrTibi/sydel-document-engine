@@ -946,7 +946,9 @@ def test_selas_blocks_incoherent_actions_sum() -> None:
     payload["associes"][1].nb_actions = 10  # 75 + 10 != 100
     plan = selas_multi_slice.build_selas_plan(payload)
     assert plan.can_generate is False
-    assert any("Somme des actions" in b for b in plan.blockers)
+    # R3 (2026-06-18) : message reformule façon Rafael (explicite, sans jargon).
+    assert any("Problème de calcul" in b for b in plan.blockers)
+    assert any("ne correspond pas au nombre total d'actions" in b for b in plan.blockers)
 
 
 # Saisies conjoint requises par DOC-005 / DOC-006 (regime communautaire).

@@ -718,8 +718,11 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:
         if nb_actions_total:
             total = sum((a.nb_actions or 0) for a in associes)
             if total != nb_actions_total:
+                # R3 (retours Rafael 2026-06-18) : message explicite, sans jargon.
                 blockers.append(
-                    f"Somme des actions ({total}) != total declare ({nb_actions_total})."
+                    "Problème de calcul : la somme des actions réparties entre les "
+                    f"associés ({total}) ne correspond pas au nombre total d'actions "
+                    f"({nb_actions_total})."
                 )
     blockers.extend(_validate_common_docs(payload))
     blockers.extend(_validate_regime_communautaire(payload))
