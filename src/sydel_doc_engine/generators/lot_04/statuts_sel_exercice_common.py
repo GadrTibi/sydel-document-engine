@@ -778,7 +778,7 @@ SELARL_MEDECIN_ARTICLE_5_BODY = (
     "Il constitue le lieu d’exercice unique de la société."
 )
 # Patron SELAS valide repris pour le corps de l'article 5 SELARL a 2 lieux.
-# wording art.5 SELARL a 2 lieux repris du patron SELAS valide — A VALIDER Albane
+# wording art.5 SELARL a 2 lieux repris du patron SELAS valide — VALIDE Albane 2026-06-18 (via Rafael)
 SELARL_ARTICLE_5_TWO_LIEUX_HEADER = "Le lieu d’exercice de la société est situé : "
 SELARL_ARTICLE_5_TWO_LIEUX_LINE_1 = "[adresse_lieu_exercice]"
 SELARL_ARTICLE_5_TWO_LIEUX_LINE_2 = "[nom_lieu_exercice_2], [adresse_lieu_exercice_2]"
