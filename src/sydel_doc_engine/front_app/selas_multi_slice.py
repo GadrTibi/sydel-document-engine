@@ -8,9 +8,11 @@ repeater generique en mode "exercice" (actions + qualite capital + ordre).
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
+from unicodedata import combining, normalize
 
 import streamlit as st
 
@@ -52,6 +54,12 @@ from sydel_doc_engine.front_app.field_derivations import (
     format_french_date,
     number_words_from_value,
     parse_french_date,
+)
+from sydel_doc_engine.generators.lot_02.lettre_avertissement_conjoint import (
+    LettreAvertissementConjointGenerator,
+)
+from sydel_doc_engine.generators.lot_02.lettre_renonciation_associe import (
+    LettreRenonciationAssocieGenerator,
 )
 
 STRUCTURE = "SELAS"
@@ -166,12 +174,34 @@ def _selas_document_codes(payload: dict[str, object]) -> tuple[str, ...]:
     regime est actif (toggle global OU au moins un associe physique marie sous
     communaute, R7). Inactif -> bundle de base inchange.
 
-    LIMITE MOTEUR (R7) : DOC-005/006 ne sont AJOUTES QU'UNE FOIS, meme si
-    plusieurs associes sont maries sous communaute. La generation par-personne
-    reste a faire cote moteur (cf. warning de build_selas_plan)."""
+    Codes de PLAN (ce qui SERA produit, pour l'affichage / les assertions). La
+    repartition de fait entre l'orchestrateur generique et la boucle par-associe
+    (R7) est portee par `_orchestrator_codes` / `generate_dossier` : ici on
+    declare simplement que DOC-005/006 font partie du livrable des que le regime
+    est actif, quelle que soit la voie d'emission."""
     codes = list(SELAS_BUNDLE_CODES)
     if _regime_communautaire_actif(payload):
         codes.extend(cc.REGIME_COMMUNAUTAIRE_CODES)
+    return tuple(codes)
+
+
+def _orchestrator_codes(payload: dict[str, object]) -> tuple[str, ...]:
+    """Codes confies a l'orchestrateur generique (1 doc_id -> 1 fichier de nom
+    fixe).
+
+    Le tronc de creation y passe toujours. DOC-005/006 n'y passent QUE par la
+    voie historique du « toggle global » (un seul couple, nom de fichier fixe,
+    byte-identique). Des qu'au moins un associe physique est marie sous
+    communaute via le bloc PAR associe (R7) et que le toggle global est inactif,
+    DOC-005/006 sont RETIRES de l'orchestrateur : ils sont generes par
+    `generate_dossier` une fois PAR associe marie, avec des noms de fichiers
+    distincts (l'orchestrateur ne sait emettre qu'un fichier de nom fixe par
+    code, ce qui ecraserait les couples successifs)."""
+    codes = list(SELAS_BUNDLE_CODES)
+    if bool(payload.get("regime_communautaire")):
+        # Toggle global : chemin historique inchange (un couple, nom fixe).
+        codes.extend(cc.REGIME_COMMUNAUTAIRE_CODES)
+    # Sinon (chemin per-associe), DOC-005/006 sont emis hors orchestrateur.
     return tuple(codes)
 
 
@@ -739,17 +769,16 @@ def build_selas_plan(payload: dict[str, object]) -> SelasSlicePlan:
     ]
     if _regime_communautaire_actif(payload):
         warnings.append("Regime communautaire actif : DOC-005 et DOC-006 seront generes.")
-    # R7 : flag de la LIMITE MOTEUR. Le formulaire collecte le regime PAR associe
-    # physique, mais le moteur n'emet encore qu'UN couple DOC-005/006 (pour le 1er
-    # associe marie). Plusieurs maries -> generation par-personne a faire en
-    # supervise (refonte orchestrateur non securisable en additif ici).
+    # R7 : generation PAR associe marie. Le formulaire collecte le regime par
+    # associe physique ; `generate_dossier` emet desormais un couple DOC-005/006
+    # PAR associe marie sous communaute, avec des fichiers de noms distincts. On
+    # informe simplement l'operateur du nombre de couples produits.
     maries = _associes_maries_communaute(payload)
     if len(maries) > 1:
         noms = ", ".join(f"{a.prenoms or a.prenom or ''} {a.nom or ''}".strip() for a in maries)
         warnings.append(
-            f"ATTENTION (R7) : {len(maries)} associes maries sous communaute detectes "
-            f"({noms}). Le moteur ne genere DOC-005/006 QUE pour le premier "
-            "(generation par-personne a implementer cote moteur, supervision requise)."
+            f"{len(maries)} associes maries sous communaute detectes ({noms}) : un couple "
+            "renonciation + avertissement sera genere POUR CHACUN (fichiers nommes par associe)."
         )
     if blockers:
         return SelasSlicePlan(
@@ -1311,7 +1340,16 @@ def generate_dossier(payload: dict[str, object], output_dir: Path) -> GeneratedD
     if not plan.can_generate:
         raise ValueError(plan.reason)
     ctx = build_generation_context(payload)
-    docx_paths = generate_docx_files_for_document_codes(ctx, output_dir, plan.document_codes)
+    # 1) Tronc commun + statuts (+ DOC-005/006 SI toggle global) via l'orchestrateur
+    #    generique (1 doc_id -> 1 fichier de nom fixe). Contrat orchestrateur intact.
+    docx_paths = generate_docx_files_for_document_codes(
+        ctx, output_dir, _orchestrator_codes(payload)
+    )
+    # 2) R7 : un couple renonciation (DOC-005) + avertissement (DOC-006) PAR associe
+    #    physique marie sous communaute, hors orchestrateur, avec des fichiers de
+    #    noms distincts. Ne s'active QUE par le chemin per-associe (toggle global
+    #    inactif) ; le chemin toggle global reste gere a l'etape 1.
+    docx_paths.extend(_generate_regime_par_associe(payload, ctx, output_dir))
     zip_path = generate_zip_file(output_dir, docx_paths)
     return GeneratedDossier(
         output_dir=output_dir,
@@ -1319,6 +1357,160 @@ def generate_dossier(payload: dict[str, object], output_dir: Path) -> GeneratedD
         pdf_results=[],
         zip_path=zip_path,
     )
+
+
+def _generate_regime_par_associe(
+    payload: dict[str, object],
+    base_ctx: DocumentGenerationContext,
+    output_dir: Path,
+) -> list[Path]:
+    """Emet renonciation + avertissement UNE FOIS PAR associe marie (R7).
+
+    Inactif si le toggle global porte le regime (l'orchestrateur a deja emis le
+    couple unique de nom fixe a l'etape 1) ou si aucun associe physique n'est
+    marie sous communaute. Sinon, pour chaque associe marie, derive un contexte
+    par-associe (renoncant = l'associe, son conjoint, son regime) puis ecrit les
+    deux lettres sous des noms distincts (incluant le nom de l'associe).
+
+    Mecanisme de nommage : les generateurs ont un OUTPUT_FILENAME fixe ; on les
+    laisse ecrire ce nom puis on RENOMME le Path retourne. Avec un seul associe
+    marie, on conserve le nom fixe historique (byte-identique) ; avec plusieurs,
+    on suffixe par le nom de l'associe pour eviter tout ecrasement."""
+    if bool(payload.get("regime_communautaire")):
+        return []
+    maries = _associes_maries_communaute(payload)
+    if not maries:
+        return []
+    suffix_par_associe = len(maries) > 1
+    renonciation_gen = LettreRenonciationAssocieGenerator()
+    avertissement_gen = LettreAvertissementConjointGenerator()
+    produced: list[Path] = []
+    for associe in maries:
+        ctx = _regime_context_for_associe(base_ctx, payload, associe)
+        rendu_renonciation = renonciation_gen.generate(ctx, output_dir)
+        rendu_avertissement = avertissement_gen.generate(ctx, output_dir)
+        if suffix_par_associe:
+            slug = _associe_filename_slug(associe)
+            rendu_renonciation = _rename_with_slug(rendu_renonciation, slug)
+            rendu_avertissement = _rename_with_slug(rendu_avertissement, slug)
+        produced.append(rendu_renonciation)
+        produced.append(rendu_avertissement)
+    return produced
+
+
+def _regime_context_for_associe(
+    base_ctx: DocumentGenerationContext,
+    payload: dict[str, object],
+    associe: StatutsCivilsAssocie,
+) -> DocumentGenerationContext:
+    """Contexte par-associe pour les lettres de regime communautaire (R7).
+
+    Copie le contexte de base (societe / apport / signature partages) en
+    remplacant : le renoncant (`personne_signataire`), son conjoint et le
+    contexte `regime_communautaire` (dates de signature partagees + regime
+    matrimonial de CET associe). Force `dossier_options.regime_communautaire`
+    a vrai pour passer la garde des generateurs."""
+    regime = associe.regime_communautaire_associe
+    apporteur_adresse = _associe_signataire_address(associe, base_ctx.personne_signataire)
+    apporteur = Person(
+        genre=associe.genre or Gender.FEMININ,
+        civilite=associe.civilite_affichage or "Madame",
+        prenom=associe.prenom or associe.prenoms or "",
+        nom=associe.nom or "",
+        titre_affichage=associe.profession or "Docteur",
+        adresse_perso=apporteur_adresse,
+        adresse_personnelle_affichee=apporteur_adresse.adresse_affichee,
+        nationalite=associe.nationalite or None,
+        ville_naissance=associe.ville_naissance or "",
+        fonction_dirigeant="associé",
+        qualification_principale=(
+            associe.qualification_principale or associe.profession or ""
+        ),
+    )
+    conjoint = Person(
+        genre=(regime.conjoint_genre if regime else None) or Gender.FEMININ,
+        civilite=(regime.conjoint_civilite if regime else None) or "Madame",
+        prenom=(regime.conjoint_prenom if regime else None) or "",
+        nom=(regime.conjoint_nom if regime else None) or "",
+        adresse_perso=apporteur_adresse,
+        adresse_personnelle_affichee=apporteur_adresse.adresse_affichee,
+    )
+    signature_date = payload.get("signature_date")
+    regime_ctx = RegimeCommunautaire(
+        avertissement=RegimeCommunautaireAvertissement(date_signature=signature_date),
+        renonciation=RegimeCommunautaireRenonciation(
+            lieu_signature=str(payload.get("signature_lieu") or ""),
+            date_signature=signature_date,
+            nombre_exemplaires_lettres="quatre",
+        ),
+        date_courrier_avertissement=signature_date,
+        regime_matrimonial=(regime.regime_matrimonial if regime else None) or "",
+        qualite_renoncee="associé",
+    )
+    dossier_options = base_ctx.dossier_options or DossierOptions(associe_unique=False)
+    return base_ctx.model_copy(
+        update={
+            "dossier_options": dossier_options.model_copy(
+                update={"regime_communautaire": True}
+            ),
+            "personne_signataire": apporteur,
+            "conjoint": conjoint,
+            "regime_communautaire": regime_ctx,
+        }
+    )
+
+
+def _associe_signataire_address(
+    associe: StatutsCivilsAssocie,
+    president: Person,
+) -> Address:
+    """Adresse structuree du renoncant (apporteur) et donc du foyer du conjoint.
+
+    L'avertissement (DOC-006) exige une adresse STRUCTUREE complete
+    (num_voie / voie / cp / ville). On utilise l'adresse structuree de l'associe
+    si elle est renseignee ; sinon on retombe sur celle du president (le tronc
+    commun garantit qu'elle est complete), pour ne jamais bloquer la generation.
+    """
+    structuree = associe.adresse_personnelle
+    if structuree is not None and all(
+        (getattr(structuree, field) or "").strip()
+        for field in ("num_voie", "voie", "cp", "ville")
+    ):
+        return structuree
+    return president.adresse_perso or Address()
+
+
+def _associe_filename_slug(associe: StatutsCivilsAssocie) -> str:
+    """Slug de nom de fichier base sur le nom de l'associe (R7).
+
+    Inclut le nom de l'associe pour distinguer les couples DOC-005/006 quand
+    plusieurs associes sont maries. Repli sur le prenom puis sur l'index si le
+    nom est vide. Sans accents ni caracteres exotiques (compatibilite OS)."""
+    base = (associe.nom or associe.prenom or associe.prenoms or "associe").strip()
+    normalized = "".join(
+        c for c in normalize("NFKD", base) if not combining(c)
+    )
+    cleaned = re.sub(r"[^A-Za-z0-9]+", "_", normalized).strip("_")
+    return cleaned or "associe"
+
+
+def _rename_with_slug(path: Path, slug: str) -> Path:
+    """Renomme un fichier genere en y insérant le slug de l'associe.
+
+    « lettre_renonciation_associe.docx » -> « lettre_renonciation_associe_Dupont.docx ».
+    En cas de collision improbable (deux associes au meme slug), suffixe un index.
+    """
+    target = path.with_name(f"{path.stem}_{slug}{path.suffix}")
+    if target.exists() and target != path:
+        index = 2
+        while True:
+            candidate = path.with_name(f"{path.stem}_{slug}_{index}{path.suffix}")
+            if not candidate.exists():
+                target = candidate
+                break
+            index += 1
+    path.replace(target)
+    return target
 
 
 def _address(adresse_affichee: str):

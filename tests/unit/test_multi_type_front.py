@@ -1036,12 +1036,17 @@ def test_selas_regime_on_adds_regime_docs(tmp_path: Path) -> None:
     )
 
 
-def _regime_associe(prenom: str, nom: str) -> RegimeCommunautaireAssocie:
+def _regime_associe(
+    prenom: str,
+    nom: str,
+    conjoint_civilite: str = "Monsieur",
+    conjoint_genre: Gender = Gender.MASCULIN,
+) -> RegimeCommunautaireAssocie:
     return RegimeCommunautaireAssocie(
         actif=True,
         regime_matrimonial="la communaute legale",
-        conjoint_civilite="Monsieur",
-        conjoint_genre=Gender.MASCULIN,
+        conjoint_civilite=conjoint_civilite,
+        conjoint_genre=conjoint_genre,
         conjoint_prenom=prenom,
         conjoint_nom=nom,
     )
@@ -1075,17 +1080,18 @@ def test_selas_regime_par_associe_valide_le_conjoint(tmp_path: Path) -> None:
     assert any("conjoint" in b.lower() for b in plan.blockers)
 
 
-def test_selas_deux_associes_maries_flag_multiplication(tmp_path: Path) -> None:
-    # R7 : 2 associes physiques maries sous communaute -> warning explicite que
-    # le moteur ne genere DOC-005/006 QUE pour le premier (multiplication a faire
-    # cote moteur, supervision requise).
+def _selas_payload_deux_maries():
+    """Payload SELAS avec 2 associes physiques maries sous communaute (R7).
+
+    Associe 0 = Claire Durand (conjoint Paul Durand) ; associe 1 = Marc Petit
+    (conjoint Sophie Petit). On remplace la personne morale du payload de base
+    par un 2e physique valide (etat civil complet) pour avoir deux maries."""
     payload = _selas_payload()
     payload["regime_communautaire"] = False
-    # Associe 1 (personne morale dans _selas_payload) remplace par un 2e physique
-    # marie, pour avoir 2 maries. On copie l'associe physique valide existant
-    # (champs etat civil complets) en changeant le nom + le conjoint.
     phys2 = payload["associes"][0].model_copy(
         update={
+            "genre": Gender.MASCULIN,
+            "civilite_affichage": "Monsieur",
             "prenom": "Marc",
             "prenoms": "Marc",
             "nom": "Petit",
@@ -1093,15 +1099,112 @@ def test_selas_deux_associes_maries_flag_multiplication(tmp_path: Path) -> None:
             "nb_actions_lettres": "vingt-cinq",
             "qualite_capital": "associé exerçant",
             "apport": StatutsCivilsApport(montant="250", montant_lettres="deux cent cinquante"),
-            "regime_communautaire_associe": _regime_associe("Sophie", "Petit"),
+            # Conjointe de Marc : Sophie Petit (civilite feminine coherente).
+            "regime_communautaire_associe": _regime_associe(
+                "Sophie", "Petit", conjoint_civilite="Madame", conjoint_genre=Gender.FEMININ
+            ),
         }
     )
     payload["associes"][0].regime_communautaire_associe = _regime_associe("Paul", "Durand")
     payload["associes"][0].nb_actions = 75
     payload["associes"][1] = phys2
+    return payload
+
+
+def test_selas_deux_associes_maries_flag_multiplication(tmp_path: Path) -> None:
+    # R7 : 2 associes physiques maries sous communaute -> warning explicite qu'un
+    # couple DOC-005/006 sera genere POUR CHACUN (generation par-personne).
+    payload = _selas_payload_deux_maries()
     plan = selas_multi_slice.build_selas_plan(payload)
     assert plan.can_generate is True
-    assert any("2 associes maries" in w and "premier" in w for w in plan.warnings)
+    assert any("2 associes maries" in w and "POUR CHACUN" in w for w in plan.warnings)
+
+
+def test_selas_deux_maries_generent_deux_couples_distincts(tmp_path: Path) -> None:
+    # R7 : 2 associes maries -> 2 renonciations + 2 avertissements, fichiers de
+    # noms distincts (suffixes par nom d'associe), chacun avec le BON conjoint.
+    payload = _selas_payload_deux_maries()
+    generated = selas_multi_slice.generate_dossier(payload, tmp_path / "selas-2maries")
+    names = {p.name for p in generated.docx_paths}
+    # Deux couples nommes par associe (le couple historique de nom fixe NE doit
+    # PAS apparaitre quand il y a plusieurs maries).
+    assert "lettre_renonciation_associe_Durand.docx" in names
+    assert "lettre_avertissement_conjoint_Durand.docx" in names
+    assert "lettre_renonciation_associe_Petit.docx" in names
+    assert "lettre_avertissement_conjoint_Petit.docx" in names
+    assert "lettre_renonciation_associe.docx" not in names
+    assert "lettre_avertissement_conjoint.docx" not in names
+    renonciation_count = sum(1 for n in names if n.startswith("lettre_renonciation_associe"))
+    avertissement_count = sum(1 for n in names if n.startswith("lettre_avertissement_conjoint"))
+    assert renonciation_count == 2
+    assert avertissement_count == 2
+    # Le BON conjoint dans le BON fichier (renonciation = signature du conjoint).
+    durand_renonciation = _docx_text(
+        next(p for p in generated.docx_paths if p.name == "lettre_renonciation_associe_Durand.docx")
+    )
+    petit_renonciation = _docx_text(
+        next(p for p in generated.docx_paths if p.name == "lettre_renonciation_associe_Petit.docx")
+    )
+    assert "Paul Durand" in durand_renonciation
+    assert "Sophie Petit" not in durand_renonciation
+    assert "Sophie Petit" in petit_renonciation
+    assert "Paul Durand" not in petit_renonciation
+    # L'apporteur (renoncant) est bien CHAQUE associe dans son propre fichier.
+    assert "Claire Durand" in durand_renonciation
+    assert "Marc Petit" in petit_renonciation
+    # Avertissement : le conjoint destinataire (civilite + nom) et l'apporteur
+    # (civilite prenom nom dans la mention) correspondent a CHAQUE associe.
+    durand_avert = _docx_text(
+        next(
+            p
+            for p in generated.docx_paths
+            if p.name == "lettre_avertissement_conjoint_Durand.docx"
+        )
+    )
+    petit_avert = _docx_text(
+        next(
+            p
+            for p in generated.docx_paths
+            if p.name == "lettre_avertissement_conjoint_Petit.docx"
+        )
+    )
+    # Apporteur correct par fichier (mention manuscrite « ... par {apporteur} »).
+    assert "Madame Claire Durand" in durand_avert
+    assert "Monsieur Marc Petit" in petit_avert
+    # Conjoint destinataire correct (civilite + nom) : Monsieur Durand / Madame Petit.
+    assert "Monsieur Durand" in durand_avert
+    assert "Madame Petit" in petit_avert
+    _assert_bundle_clean(generated, {"statuts_selas_multi.docx"})
+
+
+def test_selas_un_seul_marie_garde_nom_fixe(tmp_path: Path) -> None:
+    # R7 : un SEUL associe marie (chemin per-associe) -> couple unique au nom
+    # FIXE historique (byte-identique avec le toggle global), pas de suffixe.
+    payload = _selas_payload()
+    payload["regime_communautaire"] = False
+    payload["associes"][0].regime_communautaire_associe = _regime_associe("Paul", "Durand")
+    generated = selas_multi_slice.generate_dossier(payload, tmp_path / "selas-1marie")
+    names = {p.name for p in generated.docx_paths}
+    assert "lettre_renonciation_associe.docx" in names
+    assert "lettre_avertissement_conjoint.docx" in names
+    # Pas de fichier suffixe pour un seul marie.
+    assert not any(n.startswith("lettre_renonciation_associe_") for n in names)
+    renonciation = _docx_text(
+        next(p for p in generated.docx_paths if p.name == "lettre_renonciation_associe.docx")
+    )
+    assert "Paul Durand" in renonciation
+    assert "Claire Durand" in renonciation
+
+
+def test_selas_zero_marie_aucun_doc_regime(tmp_path: Path) -> None:
+    # R7 : aucun associe marie + toggle global inactif -> aucun document regime.
+    payload = _selas_payload()
+    payload["regime_communautaire"] = False
+    generated = selas_multi_slice.generate_dossier(payload, tmp_path / "selas-0marie")
+    names = {p.name for p in generated.docx_paths}
+    assert not (_REGIME_DOCS & names)
+    assert not any(n.startswith("lettre_renonciation_associe") for n in names)
+    assert not any(n.startswith("lettre_avertissement_conjoint") for n in names)
 
 
 def test_selas_regime_on_requires_conjoint() -> None:
