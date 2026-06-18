@@ -692,13 +692,16 @@ def _selas_associe_prefill(
 
 
 def _prefill_selas_test_data(
-    profession: str = "medecin", profession_pluriel: str = "medecins"
+    profession: str = "médecin", profession_pluriel: str = "médecins"
 ) -> None:
     """SELAS multi de creation fictive (2 associes exercants, somme = total).
 
-    La profession est parametrable : « medecin » par defaut (SELAS multi), ou
+    La profession est parametrable : « médecin » par defaut (SELAS multi), ou
     « chirurgien-dentiste » pour le cas nomme SELAS dentiste pluripersonnelle —
-    de sorte que les donnees de test basculent le moteur sur le bon corpus."""
+    de sorte que les donnees de test basculent le moteur sur le bon corpus.
+    R1 (2026-06-18) : la profession est desormais un menu deroulant ferme cote
+    formulaire (cle `selas_profession_choice`) ; on seed cette cle pour rester
+    coherent (la valeur DOIT etre une option exacte du menu)."""
     values: dict[str, object] = {
         "selas_denomination": "SELAS EXEMPLE",
         "selas_siege": "5 place du Centre, 69000 Lyon",
@@ -706,8 +709,7 @@ def _prefill_selas_test_data(
         "selas_siege_voie": "place du Centre",
         "selas_siege_cp": "69000",
         "selas_siege_ville": "Lyon",
-        "selas_profession_reglementee": profession,
-        "selas_profession_reglementee_pluriel": profession_pluriel,
+        "selas_profession_choice": profession,
         "selas_capital_social": "1000",
         "selas_nb_actions_total": 100,
         "selas_valeur_nominale_action": "10",

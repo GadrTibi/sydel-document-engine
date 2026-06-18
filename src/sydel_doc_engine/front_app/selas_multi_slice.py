@@ -62,31 +62,60 @@ PREFIX = "selas"
 SELAS_NB_MIN = 2
 SELAS_NB_MAX = 6
 
+# Professions reglementees proposees au menu (retours Rafael 2026-06-18, R1) :
+# l'operateur ne tape plus la profession ni son pluriel ; il choisit dans une
+# liste fermee et le pluriel est derive automatiquement. Le moteur bascule sur
+# le corpus dentiste des que la profession contient « dentiste » (cf.
+# statuts_selas_multi._select_profile), donc « chirurgien-dentiste » -> corpus
+# dentiste, « médecin » -> corpus medecin.
+_PROFESSION_PLURIELS: dict[str, str] = {
+    "chirurgien-dentiste": "chirurgiens-dentistes",
+    "médecin": "médecins",
+}
+_PROFESSION_OPTIONS: tuple[str, ...] = tuple(_PROFESSION_PLURIELS)
+
 # Profession pre-reglee par cle de type enregistre. La SELAS « multi » generique
-# laisse la profession libre (defaut medecin a la saisie) ; la SELAS « dentiste
-# pluripersonnelle » pre-remplit « chirurgien-dentiste » -> le moteur bascule
-# automatiquement sur le corpus statuts dentiste. Cle absente = aucun pre-reglage.
-_PROFESSION_DEFAULTS_BY_TYPE: dict[str, tuple[str, str]] = {
-    "selas_dentiste_pluri_v1": ("chirurgien-dentiste", "chirurgiens-dentistes"),
+# n'a pas de pre-reglage (defaut = 1re option, medecin). La SELAS « dentiste
+# pluripersonnelle » pre-selectionne « chirurgien-dentiste ». Cle absente =
+# aucun pre-reglage.
+_PROFESSION_DEFAULTS_BY_TYPE: dict[str, str] = {
+    "selas_dentiste_pluri_v1": "chirurgien-dentiste",
 }
 
 
-def _apply_type_profession_default(type_key: str) -> None:
-    """Pre-remplit la profession (singulier + pluriel) selon la cle de type.
+def _profession_choice_key() -> str:
+    return f"{PREFIX}_profession_choice"
 
-    N'ecrase JAMAIS une saisie existante : ne pose le defaut que si le champ est
-    encore vide, pour que l'operateur reste libre de corriger. Sans entree pour
-    la cle, ne fait rien (SELAS multi generique inchangee)."""
+
+def _apply_type_profession_default(type_key: str) -> None:
+    """Pre-selectionne la profession au menu selon la cle de type.
+
+    N'ecrase JAMAIS un choix existant : ne pose le defaut que si le selectbox
+    n'a pas encore de valeur en session, pour que l'operateur reste libre de
+    corriger. Sans entree pour la cle, ne fait rien (SELAS multi generique :
+    defaut = 1re option du menu)."""
     default = _PROFESSION_DEFAULTS_BY_TYPE.get(type_key)
     if not default:
         return
-    singulier, pluriel = default
-    prof_key = f"{PREFIX}_profession_reglementee"
-    plur_key = f"{PREFIX}_profession_reglementee_pluriel"
-    if not str(st.session_state.get(prof_key) or "").strip():
-        st.session_state[prof_key] = singulier
-    if not str(st.session_state.get(plur_key) or "").strip():
-        st.session_state[plur_key] = pluriel
+    choice_key = _profession_choice_key()
+    if choice_key not in st.session_state:
+        st.session_state[choice_key] = default
+
+
+def _render_profession_selectbox(container) -> tuple[str, str]:
+    """Menu deroulant « Profession » (R1). Retourne (singulier, pluriel derive).
+
+    Le pluriel n'est plus saisi : il est derive du choix via _PROFESSION_PLURIELS.
+    Le defaut pre-regle par _apply_type_profession_default (cas dentiste) est
+    respecte car il a deja ecrit la cle de session avant le rendu."""
+    choice_key = _profession_choice_key()
+    profession = container.selectbox(
+        "Profession",
+        _PROFESSION_OPTIONS,
+        key=choice_key,
+    )
+    pluriel = _PROFESSION_PLURIELS.get(profession, "")
+    return profession, pluriel
 
 # Bundle de creation SELAS multi (canon) : statuts multi-associes + tronc commun
 # (DNC / domiciliation / procuration) + PV nomination gerant + demande
@@ -143,9 +172,10 @@ def render_selas_form(type_key: str = "selas_multi_v1") -> dict[str, object]:
     col_a, col_b = st.columns(2)
     denomination = _t(col_a, "denomination", "Denomination")
     siege = _t(col_b, "siege", "Siege (adresse affichee)")
-    col_c, col_d = st.columns(2)
-    profession = _t(col_c, "profession_reglementee", "Profession (ex: medecin)")
-    profession_pluriel = _t(col_d, "profession_reglementee_pluriel", "Profession (pluriel)")
+    col_c, _ = st.columns(2)
+    # R1 (retours Rafael 2026-06-18) : profession en menu deroulant ferme ; le
+    # pluriel n'est plus saisi mais derive automatiquement du choix.
+    profession, profession_pluriel = _render_profession_selectbox(col_c)
     col_e, col_f, col_g = st.columns(3)
     capital = _t(col_e, "capital_social", "Capital social")
     nb_actions = _i(col_f, "nb_actions_total", "Nombre total d'actions")
