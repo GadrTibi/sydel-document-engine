@@ -45,6 +45,7 @@ from sydel_doc_engine.domain.models import (
 )
 from sydel_doc_engine.front_app import common_creation as cc
 from sydel_doc_engine.front_app.field_derivations import (
+    calculate_nominal_value,
     derive_gender_from_civilite,
     format_french_date,
     number_words_from_value,
@@ -97,7 +98,15 @@ def render_sas_form() -> dict[str, object]:
     col_c, col_d, col_e = st.columns(3)
     capital = _t(col_c, "capital_social", "Capital social")
     nb_actions = _i(col_d, "nb_actions_total", "Nombre total d'actions")
-    valeur_action = _t(col_e, "valeur_nominale_action", "Valeur nominale d'une action")
+    # Valeur nominale d'une action : TOUJOURS calculee (capital / nb actions),
+    # jamais saisie (retours Rafael 2026-06-18, alignement SELAS). Champ d'affichage seul.
+    valeur_action = calculate_nominal_value(capital, nb_actions)
+    col_e.text_input(
+        "Valeur nominale d'une action (calculee)",
+        value=valeur_action,
+        disabled=True,
+        key="sas_valeur_nominale_action_display",
+    )
     col_an, col_ai = st.columns(2)
     apports_nature = _t(col_an, "apports_nature_montant", "Apports en nature (montant)")
     apports_numeraire = _t(col_ai, "apports_numeraire_montant", "Apports en numeraire (montant)")
