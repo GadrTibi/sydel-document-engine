@@ -448,6 +448,90 @@ def test_clean_front_cession_form_returns_none_without_flag() -> None:
     assert scm_context is None
 
 
+def test_scm_cession_derive_apres_cession_deux_associes() -> None:
+    # §4.1 : derivation deterministe de l'apres-cession a partir des presents.
+    # 2 presents (Paul 40 / Jean 60 = 100). Jean (cedant) cede 20 parts (plage
+    # 81 a 100) a la SEL acquereur. Attendu : Paul inchange (40), Jean reduit
+    # (40, plage residuelle 41 a 80), SEL entrante (20, plage 81 a 100).
+    from sydel_doc_engine.domain.models import (
+        ScmCessionAssocie,
+        ScmCessionPartsAttribution,
+    )
+    from sydel_doc_engine.front_app import shell
+
+    presents = [
+        ScmCessionAssocie(
+            type_personne="personne_physique", civilite_affichage="Monsieur",
+            prenom="Paul", nom="Bernard",
+            parts=ScmCessionPartsAttribution(nb=40, plage="1 a 40"),
+        ),
+        ScmCessionAssocie(
+            type_personne="personne_physique", civilite_affichage="Monsieur",
+            prenom="Jean", nom="Dupont",
+            parts=ScmCessionPartsAttribution(nb=60, plage="41 a 100"),
+        ),
+    ]
+    cedant = {"prenom": "Jean", "nom": "Dupont"}
+    cessionnaire = {"denomination": "SELARL CABINET DUPONT", "forme_juridique": "SELARL"}
+    parts_cedees = {"nb": 20, "plage": "81 a 100"}
+
+    apres = shell._derive_scm_apres_cession(presents, cedant, cessionnaire, parts_cedees)
+
+    assert len(apres) == 3
+    paul, jean, sel = apres
+    assert (paul.prenom, paul.nom, paul.parts.nb, paul.parts.plage) == (
+        "Paul", "Bernard", 40, "1 a 40",
+    )
+    # Cedant reduit : 60 - 20 = 40, plage residuelle = complement (41 a 80).
+    assert (jean.prenom, jean.nom, jean.parts.nb, jean.parts.plage) == (
+        "Jean", "Dupont", 40, "41 a 80",
+    )
+    # SEL acquereur entrante (personne morale) avec les parts cedees.
+    assert sel.type_personne == "personne_morale"
+    assert sel.denomination == "SELARL CABINET DUPONT"
+    assert (sel.parts.nb, sel.parts.plage) == (20, "81 a 100")
+    # Sommes coherentes : 40 + 40 + 20 = 100 = total des presents.
+    assert sum(a.parts.nb for a in apres) == sum(p.parts.nb for p in presents)
+
+    # signataires_pv derive des presents (libelle court).
+    signataires = shell._derive_scm_signataires_pv(presents)
+    assert signataires == ["M. Paul Bernard", "M. Jean Dupont"]
+
+
+def test_scm_cession_cedant_cede_toutes_ses_parts_sort_de_lapres() -> None:
+    # §4.1 : si le cedant cede TOUTES ses parts -> il disparait de l'apres-cession,
+    # remplace par la SEL acquereur (pas de cedant a 0 part).
+    from sydel_doc_engine.domain.models import (
+        ScmCessionAssocie,
+        ScmCessionPartsAttribution,
+    )
+    from sydel_doc_engine.front_app import shell
+
+    presents = [
+        ScmCessionAssocie(
+            type_personne="personne_physique", civilite_affichage="Madame",
+            prenom="Anne", nom="Martin",
+            parts=ScmCessionPartsAttribution(nb=50, plage="1 a 50"),
+        ),
+        ScmCessionAssocie(
+            type_personne="personne_physique", civilite_affichage="Monsieur",
+            prenom="Jean", nom="Dupont",
+            parts=ScmCessionPartsAttribution(nb=50, plage="51 a 100"),
+        ),
+    ]
+    cedant = {"prenom": "Jean", "nom": "Dupont"}
+    cessionnaire = {"denomination": "SELAS CABINET", "forme_juridique": "SELAS"}
+    parts_cedees = {"nb": 50, "plage": "51 a 100"}
+
+    apres = shell._derive_scm_apres_cession(presents, cedant, cessionnaire, parts_cedees)
+
+    noms = [(a.type_personne, a.nom or a.denomination) for a in apres]
+    assert ("personne_physique", "Dupont") not in noms  # cedant sorti
+    assert ("personne_physique", "Martin") in noms  # autre associe garde
+    assert ("personne_morale", "SELAS CABINET") in noms  # SEL entrante
+    assert sum(a.parts.nb for a in apres) == 100
+
+
 def test_clean_front_selarl_cession_compromis_generates(tmp_path: Path) -> None:
     # Compromis de cession : médical (DOC-010) et dentaire (DOC-012), même moteur que l'acte.
     dossier_type = dossier_type_by_label("SELARL creation V1")

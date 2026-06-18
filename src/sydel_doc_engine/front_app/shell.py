@@ -12,7 +12,9 @@ from sydel_doc_engine.domain.models import (
     Address,
     BailContext,
     CessionContext,
+    ScmCessionAssocie,
     ScmCessionContext,
+    ScmCessionPartsAttribution,
     StatutsCivilsApport,
     StatutsCivilsAssocie,
     StatutsCivilsParts,
@@ -869,23 +871,81 @@ def _cession_prefill_values(profession: str) -> dict[str, object]:
 
 
 def _scm_cession_prefill_values(person: dict[str, str]) -> dict[str, object]:
-    """Cles `selarl_cession_scm_*` : fixture SCM + cedant = la personne de test."""
+    """Cles `selarl_cession_scm_*` : fixture SCM + cedant = la personne de test.
+
+    §4.1 : prefill aussi le repeater des associes PRESENTS (3 par defaut, total
+    cohérent avec le capital de la SCM) dont le cedant = la personne de test, plus
+    le nombre de parts cedees. L'apres-cession est derive deterministe a la
+    generation (cedant reduit + SEL acquereur entrante)."""
     payload = scm_cession_fixture().model_dump(by_alias=True)
     scm_cedee = payload.get("scm_cedee") or {}
     parts_cedees = payload.get("parts_cedees") or {}
     prix = payload.get("prix") or {}
-    return {
+    # SCM de demo : 300 parts (100 + 100 + 100) ; cession de 50 parts.
+    nb_total = int(scm_cedee.get("nb_parts_total") or 300)
+    nb_cedees = int(parts_cedees.get("nb") or 50)
+    # Trois presents : le cedant (la personne de test) + deux co-associes de demo,
+    # chacun 1/3 du capital, pour un total egal a nb_total.
+    part = nb_total // 3
+    reste = nb_total - 2 * part  # absorbe l'eventuel reste de division sur le 3e
+    presents = [
+        {
+            "morale": False,
+            "civilite": person["civilite"],
+            "prenom": person["prenom"],
+            "nom": person["nom"],
+            "nb_parts": str(part),
+            "plage": f"1 a {part}",
+        },
+        {
+            "morale": False,
+            "civilite": "Monsieur",
+            "prenom": "Paul",
+            "nom": "Bernard",
+            "nb_parts": str(part),
+            "plage": f"{part + 1} a {2 * part}",
+        },
+        {
+            "morale": False,
+            "civilite": "Madame",
+            "prenom": "Anne",
+            "nom": "Martin",
+            "nb_parts": str(reste),
+            "plage": f"{2 * part + 1} a {nb_total}",
+        },
+    ]
+    values: dict[str, object] = {
         "selarl_cession_scm_cedee_denomination": scm_cedee.get("denomination") or "",
         "selarl_cession_scm_cedee_rcs_ville": scm_cedee.get("ville_rcs") or "",
         "selarl_cession_scm_cedee_numero_rcs": scm_cedee.get("numero_rcs") or "",
+        "selarl_cession_scm_cedee_capital_social": scm_cedee.get("capital_social") or "",
+        "selarl_cession_scm_cedee_nb_parts_total": str(nb_total),
+        "selarl_cession_scm_cedee_valeur_nominale_part": (
+            scm_cedee.get("valeur_nominale_part") or ""
+        ),
+        "selarl_cession_scm_cedee_plage_parts_total": (
+            scm_cedee.get("plage_parts_total") or ""
+        ),
         # Cedant = l'associe unique (ticket 2.13).
         "selarl_cession_scm_cedant_civilite": person["civilite"],
         "selarl_cession_scm_cedant_prenom": person["prenom"],
         "selarl_cession_scm_cedant_nom": person["nom"],
-        "selarl_cession_scm_parts_plage": parts_cedees.get("plage") or "",
+        # Parts cedees : le cedant cede les `nb_cedees` dernieres de sa tranche.
+        "selarl_cession_scm_parts_nb": str(nb_cedees),
+        "selarl_cession_scm_parts_plage": f"{part - nb_cedees + 1} a {part}",
         "selarl_cession_scm_prix_global": prix.get("global") or "",
         "selarl_cession_scm_prix_global_lettres": prix.get("global_lettres") or "",
+        # Repeater des presents.
+        "selarl_cession_scm_presents_count": len(presents),
     }
+    for index, present in enumerate(presents):
+        values[f"selarl_cession_scm_present_{index}_morale"] = present["morale"]
+        values[f"selarl_cession_scm_present_{index}_civilite"] = present["civilite"]
+        values[f"selarl_cession_scm_present_{index}_prenom"] = present["prenom"]
+        values[f"selarl_cession_scm_present_{index}_nom"] = present["nom"]
+        values[f"selarl_cession_scm_present_{index}_nb_parts"] = present["nb_parts"]
+        values[f"selarl_cession_scm_present_{index}_plage"] = present["plage"]
+    return values
 
 
 def _test_people() -> tuple[dict[str, str], ...]:
@@ -2551,14 +2611,20 @@ def _render_scm_cession_form(
     parts_cedees = payload.setdefault("parts_cedees", {}) or {}
     prix = payload.setdefault("prix", {}) or {}
     with st.expander("Parts cedees & prix"):
-        col_a, col_b = st.columns(2)
+        col_a, col_b, col_c = st.columns(3)
+        nb_cedees_saisi = _cession_text(
+            col_a, "Nombre de parts cedees", section="scm_parts", field="nb",
+            default=str(parts_cedees.get("nb") or ""),
+        )
+        if nb_cedees_saisi.isdigit():
+            parts_cedees["nb"] = int(nb_cedees_saisi)
         plage = _cession_text(
-            col_a, "Plage parts cedees", section="scm_parts", field="plage",
+            col_b, "Plage parts cedees (ex. 151 a 200)", section="scm_parts", field="plage",
             default=str(parts_cedees.get("plage") or ""),
         )
         parts_cedees["plage"] = plage
         prix["global"] = _cession_text(
-            col_b, "Prix global", section="scm_prix", field="global",
+            col_c, "Prix global", section="scm_prix", field="global",
             default=str(prix.get("global") or ""),
         )
         prix["global_lettres"] = _cession_text(
@@ -2568,7 +2634,234 @@ def _render_scm_cession_form(
     payload["parts_cedees"] = parts_cedees
     payload["prix"] = prix
 
+    # §4.1 — repeater des associes PRESENTS (plus de fixture 3 presents / 4 apres).
+    # L'apres-cession est DERIVE deterministe (cedant reduit + SEL cessionnaire
+    # entrante), jamais saisi. signataires_pv en derive aussi.
+    presents = _render_scm_cession_associes_presents(scm_cedee)
+    payload["associes_presents"] = [a.model_dump() for a in presents]
+    payload["associes_avant_cession"] = [a.model_dump() for a in presents]
+    apres = _derive_scm_apres_cession(presents, cedant, cessionnaire, parts_cedees)
+    payload["associes_apres_cession"] = [a.model_dump() for a in apres]
+    payload["signataires_pv"] = _derive_scm_signataires_pv(presents)
+
     return ScmCessionContext.model_validate(payload)
+
+
+def _render_scm_cession_associes_presents(
+    scm_cedee: dict[str, object],
+) -> list[ScmCessionAssocie]:
+    """Repeater des associes PRESENTS a l'AGE de cession SCM (§4.1).
+
+    N associes (identite + nb de parts + plage). Le total des parts doit egaler
+    le capital de la SCM (nb_parts_total) ; un avertissement non bloquant le
+    signale sinon. Le dernier associe preside la seance (regle moteur a10ff29)."""
+    with st.expander("Associes presents a l'assemblee", expanded=True):
+        st.caption(
+            "Le total des parts des presents doit egaler le nombre total de parts "
+            "de la SCM. Le dernier associe saisi preside la seance (gerant associe)."
+        )
+        count_key = "selarl_cession_scm_presents_count"
+        _seed_default(count_key, 3)
+        nb_associes = int(
+            st.number_input(
+                "Nombre d'associes presents",
+                min_value=1,
+                step=1,
+                key=count_key,
+            )
+        )
+        presents: list[ScmCessionAssocie] = []
+        for index in range(nb_associes):
+            st.markdown(f"Associe present {index + 1}")
+            morale = st.checkbox(
+                "Personne morale",
+                key=f"selarl_cession_scm_present_{index}_morale",
+            )
+            if morale:
+                col_a, col_b = st.columns(2)
+                denomination = _cession_text(
+                    col_a, "Denomination", section="scm_present", field=f"{index}_denomination",
+                    default="",
+                )
+                forme = _cession_text(
+                    col_b, "Forme juridique", section="scm_present", field=f"{index}_forme",
+                    default="",
+                )
+                identity = {
+                    "type_personne": "personne_morale",
+                    "denomination": denomination or None,
+                    "forme_juridique": forme or None,
+                }
+            else:
+                col_a, col_b, col_c = st.columns(3)
+                civilite = col_a.selectbox(
+                    "Civilite",
+                    ("Monsieur", "Madame"),
+                    key=f"selarl_cession_scm_present_{index}_civilite",
+                )
+                prenom = _cession_text(
+                    col_b, "Prenom", section="scm_present", field=f"{index}_prenom",
+                    default="",
+                )
+                nom = _cession_text(
+                    col_c, "Nom", section="scm_present", field=f"{index}_nom",
+                    default="",
+                )
+                identity = {
+                    "type_personne": "personne_physique",
+                    "civilite_affichage": civilite,
+                    "prenom": prenom or None,
+                    "nom": nom or None,
+                }
+            col_d, col_e = st.columns(2)
+            nb_parts_saisi = _cession_text(
+                col_d, "Nombre de parts", section="scm_present", field=f"{index}_nb_parts",
+                default="",
+            )
+            plage = _cession_text(
+                col_e, "Plage de parts (ex. 1 a 100)", section="scm_present",
+                field=f"{index}_plage", default="",
+            )
+            presents.append(
+                ScmCessionAssocie(
+                    **identity,
+                    parts=ScmCessionPartsAttribution(
+                        nb=int(nb_parts_saisi) if nb_parts_saisi.isdigit() else None,
+                        plage=plage or None,
+                    ),
+                )
+            )
+        total_parts = sum((a.parts.nb or 0) for a in presents if a.parts)
+        nb_total_scm = int(scm_cedee.get("nb_parts_total") or 0)
+        if nb_total_scm and total_parts != nb_total_scm:
+            st.warning(
+                f"Total des parts des presents ({total_parts}) different du nombre "
+                f"total de parts de la SCM ({nb_total_scm}). La generation du PV "
+                "sera bloquee tant que les deux ne coincident pas."
+            )
+    return presents
+
+
+def _scm_same_person(associe: ScmCessionAssocie, cedant: dict[str, object]) -> bool:
+    """Vrai si l'associe present EST le cedant (match prenom + nom, insensible casse)."""
+    if associe.type_personne != "personne_physique":
+        return False
+    prenom = (associe.prenom or "").strip().casefold()
+    nom = (associe.nom or "").strip().casefold()
+    cedant_prenom = str(cedant.get("prenom") or "").strip().casefold()
+    cedant_nom = str(cedant.get("nom") or "").strip().casefold()
+    if not (cedant_prenom or cedant_nom):
+        return False
+    return prenom == cedant_prenom and nom == cedant_nom
+
+
+def _derive_scm_apres_cession(
+    presents: list[ScmCessionAssocie],
+    cedant: dict[str, object],
+    cessionnaire: dict[str, object],
+    parts_cedees: dict[str, object],
+) -> list[ScmCessionAssocie]:
+    """Derive la repartition APRES cession, deterministe (§4.1).
+
+    Regle : le cedant cede `parts_cedees.nb` parts (plage `parts_cedees.plage`) a
+    la SEL cessionnaire (personne morale entrante). Les autres associes sont
+    inchanges. Cas geres :
+      - cedant cede TOUTES ses parts -> retire de l'apres-cession ;
+      - cedant cede une PARTIE -> reduit (nb diminue, plage = complement) ;
+      - la SEL acquereur entre avec les parts cedees (plage = plage cedee).
+    La plage residuelle du cedant est le COMPLEMENT de sa plage initiale moins la
+    plage cedee quand celles-ci sont des intervalles contigus ; sinon on retombe
+    proprement sur un libelle explicite (jamais de placeholder)."""
+    nb_cedees = int(parts_cedees.get("nb") or 0)
+    plage_cedee = str(parts_cedees.get("plage") or "")
+    apres: list[ScmCessionAssocie] = []
+    cessionnaire_present = False
+    for associe in presents:
+        if not _scm_same_person(associe, cedant):
+            apres.append(associe.model_copy(deep=True))
+            continue
+        nb_initial = (associe.parts.nb if associe.parts else None) or 0
+        plage_initiale = (associe.parts.plage if associe.parts else None) or ""
+        reste = nb_initial - nb_cedees
+        if reste > 0:
+            apres.append(
+                associe.model_copy(
+                    deep=True,
+                    update={
+                        "parts": ScmCessionPartsAttribution(
+                            nb=reste,
+                            plage=_complement_plage(plage_initiale, plage_cedee),
+                        )
+                    },
+                )
+            )
+        # reste <= 0 : le cedant a tout cede -> il sort de l'apres-cession.
+    # SEL cessionnaire entrante (personne morale) avec les parts cedees.
+    apres.append(
+        ScmCessionAssocie(
+            type_personne="personne_morale",
+            denomination=str(cessionnaire.get("denomination") or "") or None,
+            forme_juridique=str(cessionnaire.get("forme_juridique") or "") or None,
+            parts=ScmCessionPartsAttribution(
+                nb=nb_cedees or None,
+                plage=plage_cedee or None,
+            ),
+        )
+    )
+    cessionnaire_present = True
+    _ = cessionnaire_present
+    return apres
+
+
+def _parse_plage(plage: str) -> tuple[int, int] | None:
+    """Parse « A a B » / « A à B » / « A-B » en (A, B) ; None si non parsable."""
+    match = re.search(r"(\d+)\s*(?:a|à|-)\s*(\d+)", plage.strip(), flags=re.IGNORECASE)
+    if match is None:
+        return None
+    debut, fin = int(match.group(1)), int(match.group(2))
+    if fin < debut:
+        return None
+    return debut, fin
+
+
+def _complement_plage(plage_initiale: str, plage_cedee: str) -> str:
+    """Plage residuelle du cedant = plage initiale moins la plage cedee (§4.1).
+
+    Cas deterministe simple : la plage cedee est a une EXTREMITE de la plage
+    initiale (debut ou fin) -> le complement est l'autre tranche contigue. Sinon
+    (cas non contigu / non parsable), on retombe sur un libelle explicite base sur
+    la plage initiale, jamais de placeholder ni de plage fausse."""
+    init = _parse_plage(plage_initiale)
+    cedee = _parse_plage(plage_cedee)
+    if init is None or cedee is None:
+        return plage_initiale
+    i_debut, i_fin = init
+    c_debut, c_fin = cedee
+    # Plage cedee a la FIN de la plage initiale : reste = [i_debut, c_debut - 1].
+    if c_fin == i_fin and c_debut > i_debut:
+        return f"{i_debut} a {c_debut - 1}"
+    # Plage cedee au DEBUT de la plage initiale : reste = [c_fin + 1, i_fin].
+    if c_debut == i_debut and c_fin < i_fin:
+        return f"{c_fin + 1} a {i_fin}"
+    # Cas non contigu : on conserve la plage initiale (le nb reste fait foi).
+    return plage_initiale
+
+
+def _derive_scm_signataires_pv(presents: list[ScmCessionAssocie]) -> list[str]:
+    """Signataires du PV = les associes presents (libelle court civilite + nom)."""
+    signataires: list[str] = []
+    for associe in presents:
+        if associe.type_personne == "personne_morale":
+            label = str(associe.denomination or "").strip()
+        else:
+            civ = str(associe.civilite_affichage or "")
+            court = "Mme" if "adame" in civ else "M."
+            prenom = str(associe.prenom or "").strip()
+            nom = str(associe.nom or "").strip()
+            label = " ".join(part for part in (court, prenom, nom) if part)
+        if label:
+            signataires.append(label)
+    return signataires
 
 
 def _render_generation_zone(data_entry: CleanDataEntry, plan: CleanGenerationPlan) -> None:

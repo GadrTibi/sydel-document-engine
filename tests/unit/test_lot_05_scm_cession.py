@@ -277,12 +277,58 @@ def test_pv_blocks_incoherent_parts_after_cession(tmp_path: Path) -> None:
         PvAgeCessionScmGenerator().generate(ctx, tmp_path)
 
 
-def test_pv_blocks_missing_explicit_roles(tmp_path: Path) -> None:
+def test_pv_blocks_incoherent_apres_cession_roster(tmp_path: Path) -> None:
+    # §4.1 : le nombre d'associes apres-cession n'est plus fige (4). Retirer un
+    # associe casse desormais la COHERENCE des parts (somme != nb_parts_total),
+    # qui reste l'invariant bloquant. Le PV refuse toujours un roster incoherent.
     ctx = _base_context("SELARL")
     ctx.scm_cession.associes_apres_cession.pop()
 
-    with pytest.raises(ValueError, match="exactement 4 associes"):
+    with pytest.raises(ValueError, match="totaliser"):
         PvAgeCessionScmGenerator().generate(ctx, tmp_path)
+
+
+def test_pv_accepts_two_associes_presents_coherent(tmp_path: Path) -> None:
+    # §4.1 : roster de N associes accepte tant que les parts totalisent le capital.
+    # Ici 2 presents (60 + 40 = 100) ; apres-cession = cedant reduit (40) +
+    # SEL acquereur entrante (60), total 100. Plus de fixture 3/4 figee.
+    ctx = _base_context("SELARL")
+    scm = ctx.scm_cession
+    scm.scm_cedee.nb_parts_total = 100
+    scm.associes_presents = [
+        ScmCessionAssocie(
+            civilite_affichage="Monsieur", prenom="Paul", nom="Bernard",
+            parts=ScmCessionPartsAttribution(nb=40, plage="1 a 40"),
+        ),
+        ScmCessionAssocie(
+            civilite_affichage="Monsieur", prenom="Jean", nom="Dupont",
+            parts=ScmCessionPartsAttribution(nb=60, plage="41 a 100"),
+        ),
+    ]
+    scm.associes_apres_cession = [
+        ScmCessionAssocie(
+            civilite_affichage="Monsieur", prenom="Paul", nom="Bernard",
+            parts=ScmCessionPartsAttribution(nb=40, plage="1 a 40"),
+        ),
+        ScmCessionAssocie(
+            civilite_affichage="Monsieur", prenom="Jean", nom="Dupont",
+            parts=ScmCessionPartsAttribution(nb=40, plage="41 a 80"),
+        ),
+        ScmCessionAssocie(
+            type_personne="personne_morale", denomination="SELARL CABINET DUPONT",
+            forme_juridique="SELARL",
+            parts=ScmCessionPartsAttribution(nb=20, plage="81 a 100"),
+        ),
+    ]
+    scm.signataires_pv = ["M. Paul Bernard", "M. Jean Dupont"]
+
+    path = PvAgeCessionScmGenerator().generate(ctx, tmp_path)
+    assert path.exists()
+    text = _docx_text(path)
+    assert "Paul Bernard" in text
+    assert "Jean Dupont" in text
+    # Le dernier present (Jean Dupont) preside la seance.
+    assert "préside la séance" in text
 
 
 def test_acte_blocks_incomplete_credit_vendeur(tmp_path: Path) -> None:

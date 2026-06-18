@@ -51,14 +51,14 @@ def validate_pv_context(ctx: DocumentGenerationContext) -> ScmCessionContext:
     required_associes(
         scm_cession.associes_presents,
         "scm_cession.associes_presents",
-        expected_count=3,
+        expected_count=None,
         expected_total=scm_cedee.nb_parts_total,
         require_plage=False,
     )
     required_associes(
         scm_cession.associes_apres_cession,
         "scm_cession.associes_apres_cession",
-        expected_count=4,
+        expected_count=None,
         expected_total=scm_cedee.nb_parts_total,
         require_plage=True,
     )
@@ -90,7 +90,7 @@ def validate_acte_context(ctx: DocumentGenerationContext) -> ScmCessionContext:
     required_associes(
         scm_cession.associes_avant_cession,
         "scm_cession.associes_avant_cession",
-        expected_count=3,
+        expected_count=None,
         expected_total=scm_cedee.nb_parts_total,
         require_plage=False,
     )
@@ -256,11 +256,19 @@ def required_associes(
     associes: list[ScmCessionAssocie],
     field_name: str,
     *,
-    expected_count: int,
+    expected_count: int | None,
     expected_total: int | None,
     require_plage: bool,
 ) -> list[ScmCessionAssocie]:
-    if len(associes) != expected_count:
+    # §4.1 : le nombre d'associes n'est plus fige (3 presents / 4 apres-cession).
+    # `expected_count=None` accepte un roster de taille N coherente (au moins 1) ;
+    # la coherence reelle est portee par `expected_total` (somme des parts ==
+    # nb_parts_total de la SCM) et par la derivation deterministe de l'apres-cession.
+    if not associes:
+        raise ValueError(
+            f"{field_name} doit contenir au moins un associe pour {DOCUMENT_CODE}."
+        )
+    if expected_count is not None and len(associes) != expected_count:
         raise ValueError(
             f"{field_name} doit contenir exactement {expected_count} associes "
             f"pour {DOCUMENT_CODE}."
