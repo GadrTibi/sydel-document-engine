@@ -439,6 +439,9 @@ def _render_dirigeant_choice(prefix: str, index: int) -> None:
     col_a, col_b = st.columns(2)
     _ts(col_a, f"{prefix}_sig_nom_pere", "Nom du pere")
     _ts(col_b, f"{prefix}_sig_nom_mere", "Nom de la mere")
+    # R4 (retours Rafael 2026-06-18) : titre explicite au-dessus des 4 champs
+    # structures d'adresse perso (No / Voie / CP / Ville), sinon ambigus.
+    st.markdown("**Adresse personnelle**")
     col_c, col_d, col_e, col_f = st.columns(4)
     _ts(col_c, f"{prefix}_sig_adresse_num", "No")
     _ts(col_d, f"{prefix}_sig_adresse_voie", "Voie")
