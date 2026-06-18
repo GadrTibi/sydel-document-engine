@@ -594,7 +594,9 @@ def _spfpl_prefill_values(prefix: str) -> dict[str, object]:
         f"{prefix}_siege_cp": "75002",
         f"{prefix}_siege_ville": "Paris",
         f"{prefix}_capital_social": "60000",
-        f"{prefix}_valeur_nominale_action": "100",
+        # Nombre d'actions VARIABLE (defaut 600) ; la valeur nominale est calculee
+        # (60000 / 600 = 100) et affichee en lecture seule, plus de saisie libre.
+        f"{prefix}_nb_actions_total": 600,
         f"{prefix}_ville_rcs": "Paris",
         # §14.2 : la civilite SPFPL est desormais la civilite CIVILE (M./Mme) ; le
         # titre « Docteur » est applique automatiquement (plus de selecteur

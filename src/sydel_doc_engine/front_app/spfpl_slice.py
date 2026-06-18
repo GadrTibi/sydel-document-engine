@@ -58,6 +58,7 @@ from sydel_doc_engine.domain.models import (
 )
 from sydel_doc_engine.front_app import common_creation as cc
 from sydel_doc_engine.front_app.field_derivations import (
+    calculate_nominal_value,
     date_to_french_words,
     derive_gender_from_civilite,
     format_french_date,
@@ -135,9 +136,19 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
     siege_voie = _t(col_sb, prefix, "siege_voie", "Voie")
     siege_cp = _t(col_sc, prefix, "siege_cp", "CP")
     siege_ville = _t(col_sd, prefix, "siege_ville", "Ville")
-    col_c, col_d = st.columns(2)
+    col_c, col_d, col_dd = st.columns(3)
     capital = _t(col_c, prefix, "capital_social", "Capital social")
-    valeur_action = _t(col_d, prefix, "valeur_nominale_action", "Valeur nominale d'une action")
+    # Decision Gad 2026-06-18 : nombre d'actions VARIABLE (defaut 600), aligne sur
+    # le patron SAS/SELAS. La valeur nominale n'est plus saisie librement : elle
+    # est CALCULEE (capital / nb actions) et affichee en lecture seule.
+    nb_actions = _i(col_d, prefix, "nb_actions_total", "Nombre d'actions")
+    valeur_action = calculate_nominal_value(capital, nb_actions)
+    col_dd.text_input(
+        "Valeur nominale d'une action (calculee)",
+        value=valeur_action,
+        disabled=True,
+        key=f"{prefix}_valeur_nominale_action_display",
+    )
     ville_rcs = _t(st, prefix, "ville_rcs", "RCS SPFPL (ville)")
 
     st.markdown("**Actionnaire unique (chirurgien-dentiste, marie(e))**")
@@ -263,6 +274,8 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
         "siege_ville": siege_ville,
         "ville_rcs": ville_rcs,
         "capital_social": capital,
+        "nb_actions_total": nb_actions,
+        # Valeur nominale CALCULEE (capital / nb actions), plus de saisie libre.
         "valeur_nominale_action": valeur_action,
         "civilite": civilite,
         # §14.2 : titre pro automatique (associe SPFPL dentiste = docteur). Plus de
@@ -371,7 +384,6 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:
         ("denomination", "Denomination SPFPL requise."),
         ("siege", "Siege SPFPL requis."),
         ("capital_social", "Capital social requis."),
-        ("valeur_nominale_action", "Valeur nominale d'une action requise."),
         ("prenom", "Prenom de l'actionnaire requis."),
         ("nom", "Nom de l'actionnaire requis."),
         ("date_naissance", "Date de naissance requise."),
@@ -418,6 +430,11 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:
     for field, message in required:
         if not str(payload.get(field) or "").strip():
             blockers.append(message)
+    # Nombre d'actions VARIABLE (defaut 600) : doit etre >= 1 pour deriver une
+    # valeur nominale coherente (capital / nb actions). Remplace l'ancien champ
+    # « valeur nominale » en saisie libre (desormais calculee, non saisissable).
+    if int(payload.get("nb_actions_total") or 600) < 1:
+        blockers.append("Nombre d'actions requis et superieur a zero.")
     if int(payload.get("apport_nb_parts") or 0) < 1:
         blockers.append("Nombre de parts apportees requis et superieur a zero.")
     if payload.get("signature_date") is None:
@@ -433,7 +450,16 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
     is_apport = bool(payload["is_apport"])
     capital = str(payload.get("capital_social") or "")
     nb_parts = int(payload.get("apport_nb_parts") or 0)
-    valeur_action = str(payload.get("valeur_nominale_action") or "")
+    # Nombre d'actions du capital : VARIABLE (defaut 600 = ancien codage en dur,
+    # preserve la sortie byte-identique des dossiers existants). La valeur nominale
+    # derive de capital / nb_actions ; on respecte une valeur deja calculee fournie
+    # par le slice, sinon on la (re)calcule pour les appelants directs.
+    nb_actions_total = int(payload.get("nb_actions_total") or 600)
+    valeur_action = str(
+        payload.get("valeur_nominale_action")
+        or calculate_nominal_value(capital, nb_actions_total)
+        or ""
+    )
 
     founder = SpfplPerson(
         civilite_affichage=str(payload.get("civilite") or "Docteur"),
@@ -633,7 +659,7 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
             plage_parts=str(payload.get("apport_plage") or ""),
         ),
         capital_souscription=CapitalSouscription(
-            nb_actions_total=600,
+            nb_actions_total=nb_actions_total,
             valeur_nominale_action=valeur_action,
         ),
         exercice_social=ExerciceSocial(
