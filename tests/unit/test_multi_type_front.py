@@ -1177,6 +1177,59 @@ def test_selas_deux_maries_generent_deux_couples_distincts(tmp_path: Path) -> No
     _assert_bundle_clean(generated, {"statuts_selas_multi.docx"})
 
 
+def test_selas_deux_maries_adresses_foyer_distinctes(tmp_path: Path) -> None:
+    # R7 (2026-06-18) : chaque associe marie porte SON adresse de foyer structuree
+    # dans son propre avertissement (DOC-006), plus de repli sur l'adresse du
+    # president (residu d63393c). Le president habite « 10 rue Exemple, 69000 Lyon ».
+    payload = _selas_payload_deux_maries()
+    payload["associes"][0].adresse_personnelle = Address(
+        num_voie="3",
+        voie="rue des Lilas",
+        cp="33000",
+        ville="Bordeaux",
+        adresse_affichee="3 rue des Lilas, 33000 Bordeaux",
+    )
+    payload["associes"][1].adresse_personnelle = Address(
+        num_voie="7",
+        voie="avenue du Parc",
+        cp="44000",
+        ville="Nantes",
+        adresse_affichee="7 avenue du Parc, 44000 Nantes",
+    )
+    generated = selas_multi_slice.generate_dossier(payload, tmp_path / "selas-2foyers")
+    durand_avert = _docx_text(
+        next(
+            p
+            for p in generated.docx_paths
+            if p.name == "lettre_avertissement_conjoint_Durand.docx"
+        )
+    )
+    petit_avert = _docx_text(
+        next(
+            p
+            for p in generated.docx_paths
+            if p.name == "lettre_avertissement_conjoint_Petit.docx"
+        )
+    )
+    # Chaque avertissement porte SON foyer (bloc destinataire conjoint).
+    assert "rue des Lilas" in durand_avert
+    assert "33000 Bordeaux" in durand_avert
+    assert "avenue du Parc" in petit_avert
+    assert "44000 Nantes" in petit_avert
+    # Pas de fuite croisee entre les deux foyers.
+    assert "avenue du Parc" not in durand_avert
+    assert "44000 Nantes" not in durand_avert
+    assert "rue des Lilas" not in petit_avert
+    assert "33000 Bordeaux" not in petit_avert
+    # Plus de repli sur l'adresse PERSONNELLE du president (residu d63393c).
+    # Le president habite « 10 rue Exemple, 69000 Lyon » ; « rue Exemple » ne doit
+    # plus apparaitre comme adresse du foyer dans les avertissements per-associe.
+    # (Le siege social de la societe contient « 69000 Lyon » et reste legitime en
+    # en-tete expediteur, donc on ne l'asserte pas.)
+    assert "rue Exemple" not in durand_avert
+    assert "rue Exemple" not in petit_avert
+
+
 def test_selas_un_seul_marie_garde_nom_fixe(tmp_path: Path) -> None:
     # R7 : un SEUL associe marie (chemin per-associe) -> couple unique au nom
     # FIXE historique (byte-identique avec le toggle global), pas de suffixe.

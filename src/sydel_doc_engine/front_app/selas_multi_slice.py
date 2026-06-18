@@ -644,7 +644,7 @@ def _physique(prefix: str, nb_actions: int, montant: str) -> StatutsCivilsAssoci
     numero_ordre = _ts(col_l, f"{prefix}_numero_ordre", "Numero ordre")
     numero_rpps = _ts(col_m, f"{prefix}_numero_rpps", "Numero RPPS")
     qualite = _ts(st, f"{prefix}_qualite", "Qualite au capital (ex: associee exercante)")
-    regime_associe = _render_regime_associe_form(prefix)
+    regime_associe, foyer_address = _render_regime_associe_form(prefix)
 
     return StatutsCivilsAssocie(
         type_personne="personne_physique",
@@ -659,6 +659,10 @@ def _physique(prefix: str, nb_actions: int, montant: str) -> StatutsCivilsAssoci
         nationalite=nationalite or None,
         profession=profession or None,
         situation_maritale=situation or None,
+        # R7 : adresse de foyer STRUCTUREE de l'associe marie (avertissement
+        # DOC-006). Lue par _associe_signataire_address ; si None (incomplete ou
+        # associe non marie), repli historique vers l'adresse du president.
+        adresse_personnelle=foyer_address,
         adresse_personnelle_affichee=adresse or None,
         qualification_principale=qualification or None,
         ordre_departemental=ordre_dep or None,
@@ -672,12 +676,20 @@ def _physique(prefix: str, nb_actions: int, montant: str) -> StatutsCivilsAssoci
     )
 
 
-def _render_regime_associe_form(prefix: str) -> RegimeCommunautaireAssocie | None:
+def _render_regime_associe_form(
+    prefix: str,
+) -> tuple[RegimeCommunautaireAssocie | None, Address | None]:
     """Regime matrimonial communautaire PAR associe physique (R7).
 
     Reprend la STRUCTURE SELARL (toggle + regime matrimonial + conjoint), mais
     portee au niveau de l'associe au lieu du toggle global unique. Inactif ->
-    None (associe non concerne)."""
+    (None, None) (associe non concerne).
+
+    Collecte aussi l'adresse de foyer STRUCTUREE (No/Voie/CP/Ville) de CET
+    associe : l'avertissement au conjoint (DOC-006) est adresse au domicile du
+    foyer. Sans cette saisie structuree, le moteur retombait sur l'adresse du
+    president (residu d63393c) ; avec elle, chaque associe marie porte SON foyer.
+    Retourne l'`Address` structuree (ou None si incomplete -> repli president)."""
     regime_key = f"{prefix}_regime_communautaire"
     if regime_key not in st.session_state:
         st.session_state[regime_key] = False
@@ -687,7 +699,7 @@ def _render_regime_associe_form(prefix: str) -> RegimeCommunautaireAssocie | Non
         key=regime_key,
     )
     if not actif:
-        return None
+        return None, None
     st.caption("Conjoint de cet associe (lettres de renonciation / avertissement)")
     col_a, col_b, col_c = st.columns(3)
     conjoint_civilite = col_a.selectbox(
@@ -698,13 +710,42 @@ def _render_regime_associe_form(prefix: str) -> RegimeCommunautaireAssocie | Non
     conjoint_prenom = _ts(col_b, f"{prefix}_conjoint_prenom", "Prenom conjoint")
     conjoint_nom = _ts(col_c, f"{prefix}_conjoint_nom", "Nom conjoint")
     regime_matrimonial = _ts(st, f"{prefix}_regime_matrimonial", "Regime matrimonial")
-    return RegimeCommunautaireAssocie(
+    st.caption(
+        "Adresse du foyer de cet associe (avertissement au conjoint DOC-006). "
+        "Si laissee vide, l'adresse du president est utilisee."
+    )
+    col_d, col_e, col_f, col_g = st.columns(4)
+    foyer_num = _ts(col_d, f"{prefix}_foyer_adresse_num", "No")
+    foyer_voie = _ts(col_e, f"{prefix}_foyer_adresse_voie", "Voie")
+    foyer_cp = _ts(col_f, f"{prefix}_foyer_adresse_cp", "CP")
+    foyer_ville = _ts(col_g, f"{prefix}_foyer_adresse_ville", "Ville")
+    foyer_address = _foyer_address(foyer_num, foyer_voie, foyer_cp, foyer_ville)
+    regime = RegimeCommunautaireAssocie(
         actif=True,
         regime_matrimonial=regime_matrimonial or None,
         conjoint_civilite=conjoint_civilite,
         conjoint_genre=derive_gender_from_civilite(conjoint_civilite),
         conjoint_prenom=conjoint_prenom or None,
         conjoint_nom=conjoint_nom or None,
+    )
+    return regime, foyer_address
+
+
+def _foyer_address(num: str, voie: str, cp: str, ville: str) -> Address | None:
+    """Adresse de foyer STRUCTUREE par associe (R7) ; None si incomplete.
+
+    L'avertissement DOC-006 exige une adresse complete (num/voie/cp/ville). Si
+    l'un des champs manque, on renvoie None pour laisser le repli vers le
+    president jouer (jamais de generation bloquee ni d'adresse partielle)."""
+    parts = (num.strip(), voie.strip(), cp.strip(), ville.strip())
+    if not all(parts):
+        return None
+    return Address(
+        num_voie=num.strip(),
+        voie=voie.strip(),
+        cp=cp.strip(),
+        ville=ville.strip(),
+        adresse_affichee=f"{num.strip()} {voie.strip()}, {cp.strip()} {ville.strip()}",
     )
 
 
