@@ -235,6 +235,16 @@ def render_selas_uni_medecin_form() -> dict[str, object]:
     ordre_ville = _t(col_ae, "ordre_ville", "Ville ordre")
     ordre_cp = _t(col_af, "ordre_cp", "CP ordre")
     ordre_adresse = _t(st, "ordre_adresse_ligne_1", "Adresse ordre")
+    # Parite gold (Albane 2026-06-10) : « Madame la Presidente » si la presidente de
+    # l'ordre est une femme (demande d'inscription a l'ordre, DOC-034).
+    fem_key = f"{PREFIX}_ordre_president_feminin"
+    if fem_key not in st.session_state:
+        st.session_state[fem_key] = False
+    ordre_president_feminin = st.checkbox(
+        "La présidente de l'ordre est une femme",
+        key=fem_key,
+        help="Coché : « Madame la Présidente » au lieu de « Monsieur le Président ».",
+    )
 
     st.markdown("**Signature / decision**")
     col_ag, col_ah = st.columns(2)
@@ -281,6 +291,7 @@ def render_selas_uni_medecin_form() -> dict[str, object]:
         "conjoint_nom": conjoint_nom,
         "ordre_conseil": ordre_conseil,
         "departement_ordre": departement_ordre,
+        "ordre_president_feminin": ordre_president_feminin,
         "numero_ordre": numero_ordre,
         "numero_rpps": numero_rpps,
         "ordre_ville": ordre_ville,
@@ -358,6 +369,7 @@ def _to_selarl_input(payload: dict[str, object]) -> SelarlSliceInput:
         numero_ordre=str(payload.get("numero_ordre") or ""),
         numero_rpps=str(payload.get("numero_rpps") or ""),
         departement_ordre=str(payload.get("departement_ordre") or ""),
+        ordre_president_feminin=bool(payload.get("ordre_president_feminin")),
         denomination=str(payload.get("denomination") or ""),
         capital_social=str(payload.get("capital_social") or ""),
         duree=str(payload.get("duree") or "99 ans"),

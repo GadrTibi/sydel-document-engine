@@ -269,6 +269,16 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
     ordre_adresse_ligne_1 = _t(col_rb, prefix, "ordre_adresse_ligne_1", "Adresse ordre")
     ordre_cp = _t(col_rc, prefix, "ordre_cp", "CP ordre")
     ordre_ville = _t(st, prefix, "ordre_ville", "Ville ordre")
+    # Parite gold (Albane 2026-06-10) : « Madame la Presidente » si la presidente de
+    # l'ordre est une femme (demande d'inscription a l'ordre).
+    feminin_key = f"{prefix}_ordre_president_feminin"
+    if feminin_key not in st.session_state:
+        st.session_state[feminin_key] = False
+    ordre_president_feminin = st.checkbox(
+        "La présidente de l'ordre est une femme",
+        key=feminin_key,
+        help="Coché : « Madame la Présidente » au lieu de « Monsieur le Président ».",
+    )
     # Parite gold (couche partagee) : conseiller/mandataire SYDEL editable.
     mandataire_prenom, mandataire_nom = mandataire_inputs(prefix)
 
@@ -392,6 +402,7 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
         "ordre_departement": ordre_departement,
         "numero_ordre": numero_ordre,
         "numero_rpps": numero_rpps,
+        "ordre_president_feminin": ordre_president_feminin,
         "mandataire_prenom": mandataire_prenom,
         "mandataire_nom": mandataire_nom,
         "ordre_conseil": ordre_conseil,
@@ -930,7 +941,11 @@ def _spfpl_ordre_professionnel(payload: dict[str, object]) -> OrdreProfessionnel
     return OrdreProfessionnel(
         conseil_departemental_libelle=str(payload.get("ordre_conseil") or ""),
         departement_inscription=str(payload.get("ordre_departement") or ""),
-        destinataire_appel="Monsieur le Président",
+        destinataire_appel=(
+            "Madame la Présidente"
+            if bool(payload.get("ordre_president_feminin"))
+            else "Monsieur le Président"
+        ),
         profession_signataire_affichee="chirurgien-dentiste",
         profession_ligne_destinataire="chirurgiens-dentistes",
         profession_reglementee_pluriel="chirurgiens-dentistes",
