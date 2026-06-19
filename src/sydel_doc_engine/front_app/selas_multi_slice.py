@@ -308,6 +308,13 @@ def render_selas_form(type_key: str = "selas_multi_v1") -> dict[str, object]:
     siege_cp = _t(col_sc, "siege_cp", "CP")
     siege_ville = _t(col_sd, "siege_ville", "Ville")
 
+    # Parite gold (anti double-saisie, RAF-003) : pre-remplir le lieu de signature
+    # avec la ville du siege (modifiable), comme shell.py:1573-1575. Seede AVANT le
+    # widget signature_lieu pour ne pas violer la regle Streamlit post-widget.
+    lieu_key = f"{PREFIX}_signature_lieu"
+    if not st.session_state.get(lieu_key) and siege_ville:
+        st.session_state[lieu_key] = siege_ville
+
     st.markdown("**Signature**")
     col_l, col_m = st.columns(2)
     signature_lieu = _t(col_l, "signature_lieu", "Lieu de signature")
