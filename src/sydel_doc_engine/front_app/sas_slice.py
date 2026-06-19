@@ -52,6 +52,7 @@ from sydel_doc_engine.front_app.field_derivations import (
 )
 from sydel_doc_engine.front_app.front_widgets import (
     date_input_with_today,
+    mandataire_inputs,
     seed_closing_date,
     seed_exercice_dates,
     seed_signature_lieu,
@@ -186,6 +187,8 @@ def render_sas_form() -> dict[str, object]:
     ordre_departement = _t(col_s, "ordre_departement", "Departement ordre")
     numero_ordre = _t(col_t, "numero_ordre", "Numero ordre")
     numero_rpps = _t(col_u, "numero_rpps", "Numero RPPS")
+    # Parite gold (couche partagee) : conseiller/mandataire SYDEL editable.
+    mandataire_prenom, mandataire_nom = mandataire_inputs(PREFIX)
 
     st.markdown("**Societe cible (participations apportees en nature)**")
     col_ca, col_cb = st.columns(2)
@@ -243,6 +246,8 @@ def render_sas_form() -> dict[str, object]:
         "ordre_departement": ordre_departement,
         "numero_ordre": numero_ordre,
         "numero_rpps": numero_rpps,
+        "mandataire_prenom": mandataire_prenom,
+        "mandataire_nom": mandataire_nom,
         "cible_denomination": cible_denomination,
         "cible_forme": cible_forme,
         "cible_siege": cible_siege,
@@ -438,7 +443,10 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         domiciliation=Domiciliation(
             adresse_domiciliation_affichee=siege_struct.adresse_affichee,
         ),
-        mandataire=cc.default_mandataire(),
+        mandataire=cc.default_mandataire(
+            prenom=str(payload.get("mandataire_prenom") or ""),
+            nom=str(payload.get("mandataire_nom") or ""),
+        ),
         societe_spfpl=SocieteSpfpl(
             denomination=str(payload.get("denomination") or ""),
             forme_sociale="Société par actions simplifiée",

@@ -51,6 +51,7 @@ from sydel_doc_engine.front_app.field_derivations import (
 )
 from sydel_doc_engine.front_app.front_widgets import (
     date_input_with_today,
+    mandataire_inputs,
     seed_closing_date,
 )
 
@@ -294,11 +295,15 @@ def _render_common_docs_form(structure: str, prefix: str) -> dict[str, object]:
     fonction = _text(col_g, prefix, "signataire_fonction", "Fonction (ex: gerant)") or "gérant"
     titre = _text(col_h, prefix, "signataire_titre", "Titre d'affichage") or "Docteur"
     decision_date = _date_input(prefix, "decision_date", "Date de decision (PV gerant)")
+    # Parite gold (couche partagee) : conseiller/mandataire SYDEL editable (procuration).
+    mandataire_prenom, mandataire_nom = mandataire_inputs(prefix)
 
     common: dict[str, object] = {
         "signataire_fonction": fonction,
         "signataire_titre": titre,
         "decision_date": decision_date,
+        "mandataire_prenom": mandataire_prenom,
+        "mandataire_nom": mandataire_nom,
     }
 
     if structure == "SCM":
@@ -741,7 +746,10 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         societe=company,
         domiciliation=cc.domiciliation(siege),
         statuts_civils=statuts_civils,
-        mandataire=cc.default_mandataire(),
+        mandataire=cc.default_mandataire(
+            prenom=str(payload.get("mandataire_prenom") or ""),
+            nom=str(payload.get("mandataire_nom") or ""),
+        ),
         decision=cc.decision_context(common),
         reunion=cc.reunion_context(common),
         capital=cc.capital_context(common),

@@ -18,6 +18,8 @@ from datetime import date
 import streamlit as st
 
 from sydel_doc_engine.front_app.field_derivations import (
+    DEFAULT_MANDATAIRE_NOM,
+    DEFAULT_MANDATAIRE_PRENOM,
     format_french_date,
     parse_french_date,
 )
@@ -102,3 +104,20 @@ def seed_signature_lieu(
     modifiable. Anti double-saisie. Ne seede que si la ville du siege est connue."""
     if ville_siege:
         seed_if_empty(f"{prefix}_{field}", ville_siege)
+
+
+def mandataire_inputs(prefix: str) -> tuple[str, str]:
+    """Saisie du conseiller/mandataire SYDEL, editable (defaut « Jordan ELBAZ »,
+    ratifie Albane 2026-06-10 ; parite gold shell.py:1543-1565). Seede les valeurs
+    par defaut, rend 2 champs (prenom / nom), retourne (prenom, nom) avec repli sur
+    le defaut. Cle a passer ensuite a cc.default_mandataire(prenom, nom)."""
+    prenom_key = f"{prefix}_mandataire_prenom"
+    nom_key = f"{prefix}_mandataire_nom"
+    if not st.session_state.get(prenom_key):
+        st.session_state[prenom_key] = DEFAULT_MANDATAIRE_PRENOM
+    if not st.session_state.get(nom_key):
+        st.session_state[nom_key] = DEFAULT_MANDATAIRE_NOM
+    col_a, col_b = st.columns(2)
+    prenom = col_a.text_input("Conseiller (prénom)", key=prenom_key)
+    nom = col_b.text_input("Conseiller (nom)", key=nom_key)
+    return (prenom or DEFAULT_MANDATAIRE_PRENOM, nom or DEFAULT_MANDATAIRE_NOM)
