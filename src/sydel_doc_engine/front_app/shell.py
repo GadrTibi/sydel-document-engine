@@ -1624,24 +1624,13 @@ def _render_generation_context(societe: dict[str, object]) -> dict[str, object]:
 
 
 def _date_input_with_today(label: str, *, key: str, value: date) -> date | None:
-    current_value = st.session_state.get(key)
-    if isinstance(current_value, date):
-        st.session_state[key] = format_french_date(current_value)
-    elif current_value is None:
-        st.session_state[key] = format_french_date(value)
+    # Implementation extraite dans la couche de rendu partagee (front_widgets) pour
+    # que TOUS les types l'heritent au lieu de la dupliquer (cause racine des ecarts
+    # de parite — voir docs/review/METHODE_PARITE_GOLD.md). Le SELARL (3 appels)
+    # reste byte-identique : meme fonction, nom local conserve.
+    from sydel_doc_engine.front_app.front_widgets import date_input_with_today
 
-    button_col, input_col = st.columns([1, 3])
-    if button_col.button("Aujourd'hui", key=f"{key}_today"):
-        st.session_state[key] = format_french_date(date.today())
-    raw_value = input_col.text_input(
-        label,
-        key=key,
-        placeholder="JJ/MM/AAAA",
-    )
-    parsed = parse_french_date(raw_value)
-    if str(raw_value).strip() and parsed is None:
-        input_col.caption("Format attendu : JJ/MM/AAAA")
-    return parsed
+    return date_input_with_today(label, key=key, value=value)
 
 
 def _siege_display(societe: dict[str, object]) -> str:
