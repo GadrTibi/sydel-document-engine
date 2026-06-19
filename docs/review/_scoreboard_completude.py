@@ -4,7 +4,7 @@ ITEMS = [
     ("done", "SELAS — genere ses docs de cession (cablage, verrou test)"),
     ("done", "SELAS uni — regime communautaire (DOC-005/006)"),
     ("done", "SAS — complet vs canon (verifie)"),
-    ("todo", "SPFPL apport — contrat d'apport + 2 attestations"),
+    ("done", "SPFPL apport — contrat d'apport + 2 attestations (DOC-041/042/043)"),
     ("todo", "SPFPL cession — note d'info + PV agrement + actes"),
     ("todo", "SCM — satellites (pacte / depenses / frais communs / reglement)"),
     ("todo", "SCI / SCI IRIS — lettre option IS (conditionnel)"),

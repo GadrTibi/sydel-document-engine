@@ -25,6 +25,7 @@ from sydel_doc_engine.domain.models import (
     Apport,
     ApportTitres,
     CapitalContext,
+    CapitalSouscripteur,
     CapitalSouscription,
     CessionBanque,
     CessionParts,
@@ -70,6 +71,30 @@ OPERATION_BY_STRUCTURE: dict[str, tuple[str, str]] = {
     "SPFPL cession": ("cession", "DOC-035"),
     "SPFPL apport": ("apport", "DOC-036"),
 }
+
+# Documents d'OPERATION apport (canon « Si apport ») — gates moteur sur
+# dossier_options.apport : contrat d'apport (DOC-041) + attestation capital /
+# liste des souscripteurs (DOC-042) + attestation du commissaire aux apports
+# (DOC-043). Ils s'ajoutent au bundle de creation des que l'operation = apport.
+SPFPL_APPORT_OPERATION_CODES: tuple[str, ...] = ("DOC-041", "DOC-042", "DOC-043")
+
+# Activite standard d'une SPFPL (societe de participations financieres de
+# profession liberale) — boilerplate du type, pas une donnee de dossier.
+_SPFPL_ACTIVITE = "participations financières de profession libérale"
+
+# Champs d'une entite professionnelle (commissaire aux apports / evaluateur)
+# collectee dans le sous-formulaire apport.
+_ENTITY_FIELDS: tuple[str, ...] = (
+    "denomination",
+    "forme",
+    "capital",
+    "siege",
+    "ville_rcs",
+    "numero_rcs",
+    "rep_civilite",
+    "rep_prenom",
+    "rep_nom",
+)
 
 # Bundle de creation SPFPL (canon, perimetre CREATION cablable) : statuts du type
 # + tronc commun (DNC / domiciliation / procuration) + PV nomination gerant +
@@ -245,6 +270,30 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
     cible_nb_parts = _i(col_ag2, prefix, "cible_nb_parts", "Parts totales cible")
     cible_valeur_part = _t(col_ah2, prefix, "cible_valeur_part", "Valeur nominale part cible")
 
+    # --- Operation apport (DOC-041 contrat + DOC-042/043 attestations) :
+    # detail des titres apportes + organes de controle (commissaire aux apports
+    # + evaluateur). Rendu UNIQUEMENT pour l'apport ; en cession ces champs
+    # restent vides et ne sont pas lus.
+    apport_nature_titres = "parts sociales"
+    apport_valeur_par_titre = ""
+    commissaire_fields = dict.fromkeys(_ENTITY_FIELDS, "")
+    evaluateur_fields = dict.fromkeys(_ENTITY_FIELDS, "")
+    if is_apport:
+        st.markdown("**Apport en nature — detail & organes de controle**")
+        col_at1, col_at2 = st.columns(2)
+        apport_nature_titres = col_at1.selectbox(
+            "Nature des titres apportes",
+            ("parts sociales", "actions"),
+            key=f"{prefix}_apport_nature_titres",
+        )
+        apport_valeur_par_titre = _t(
+            col_at2, prefix, "apport_valeur_par_titre", "Valeur d'un titre apporte"
+        )
+        st.caption("Commissaire aux apports")
+        commissaire_fields = _render_entity_inputs(prefix, "commissaire")
+        st.caption("Evaluateur de l'apport")
+        evaluateur_fields = _render_entity_inputs(prefix, "evaluateur")
+
     st.markdown("**Exercice / signature**")
     col_ad, col_ae, col_af = st.columns(3)
     exercice_debut = _t(col_ad, prefix, "exercice_debut", "Debut exercice")
@@ -335,6 +384,10 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
         "cible_capital": cible_capital,
         "cible_nb_parts": cible_nb_parts,
         "cible_valeur_part": cible_valeur_part,
+        "apport_nature_titres": apport_nature_titres,
+        "apport_valeur_par_titre": apport_valeur_par_titre,
+        **{f"commissaire_{k}": v for k, v in commissaire_fields.items()},
+        **{f"evaluateur_{k}": v for k, v in evaluateur_fields.items()},
         "exercice_debut": exercice_debut,
         "exercice_fin": exercice_fin,
         "date_cloture": date_cloture,
@@ -345,12 +398,16 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
 
 def build_spfpl_plan(payload: dict[str, object]) -> SpfplSlicePlan:
     structure = str(payload["structure"])
-    _operation, doc_code = OPERATION_BY_STRUCTURE[structure]
+    operation, doc_code = OPERATION_BY_STRUCTURE[structure]
     regime_communautaire = bool(payload.get("regime_communautaire"))
     document_codes = _creation_bundle_codes(
         doc_code,
         regime_communautaire=regime_communautaire,
     )
+    # Operation apport : le bundle de creation est complete par les documents
+    # d'apport (contrat + 2 attestations), comme le canon « Si apport ».
+    if operation == "apport":
+        document_codes = document_codes + SPFPL_APPORT_OPERATION_CODES
     blockers = _validate(payload)
     warnings = [
         f"{structure} V1 = associe unique (multi-associes bloque par le moteur). Bundle de "
@@ -441,6 +498,25 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:
         blockers.append("Date de signature requise.")
     if payload.get("decision_date") is None:
         blockers.append("Date de decision requise (PV nomination gerant).")
+    # Operation apport : les documents DOC-041/042/043 exigent le detail des
+    # titres + les organes de controle (commissaire aux apports + evaluateur) +
+    # la forme/capital de la cible (sinon le generateur leve `required_*`).
+    if bool(payload.get("is_apport")):
+        apport_required = (
+            ("apport_valeur_par_titre", "Valeur d'un titre apporte requise (contrat d'apport)."),
+            ("cible_forme", "Forme sociale de la cible requise (contrat d'apport)."),
+            ("cible_capital", "Capital social de la cible requis (contrat d'apport)."),
+            (
+                "commissaire_denomination",
+                "Denomination du commissaire aux apports requise (attestations).",
+            ),
+            ("commissaire_rep_nom", "Nom du representant du commissaire requis."),
+            ("evaluateur_denomination", "Denomination de l'evaluateur de l'apport requise."),
+            ("evaluateur_rep_nom", "Nom du representant de l'evaluateur requis."),
+        )
+        for field, message in apport_required:
+            if not str(payload.get(field) or "").strip():
+                blockers.append(message)
     return tuple(dict.fromkeys(blockers))
 
 
@@ -460,6 +536,14 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         or calculate_nominal_value(capital, nb_actions_total)
         or ""
     )
+    # Detail des titres apportes (operation apport). La valeur globale est saisie ;
+    # la valeur par titre est saisie (valeur d'un titre de la cible apporte). Les
+    # versions « en lettres » sont DERIVEES, comme partout dans le slice. Le nombre
+    # d'actions SPFPL attribuees en contrepartie = le nombre total d'actions du
+    # holding (l'apporteur, associe unique, recoit toutes les actions).
+    nature_titres = str(payload.get("apport_nature_titres") or "parts sociales")
+    valeur_par_titre = str(payload.get("apport_valeur_par_titre") or "")
+    valeur_globale = str(payload.get("apport_valeur_globale") or "")
 
     founder = SpfplPerson(
         civilite_affichage=str(payload.get("civilite") or "Docteur"),
@@ -611,11 +695,23 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
             forme_sociale="par actions simplifiee",
             capital_social=capital,
             capital_social_lettres=number_words_from_value(capital),
+            # Activite + profession : exiges par le contrat d'apport (DOC-041) et
+            # l'attestation du commissaire (DOC-043). Boilerplate du type SPFPL
+            # dentiste, pas une saisie de dossier.
+            activite=_SPFPL_ACTIVITE,
+            profession="chirurgien-dentiste",
             valeur_nominale_action=valeur_action,
             valeur_nominale_action_lettres=number_words_from_value(valeur_action),
             siege=siege_struct,
             ville_rcs=str(payload.get("ville_rcs") or payload.get("siege_ville") or ""),
+            numero_rcs="en cours",
             dirigeant=SpfplDirigeant(fonction="Président"),
+            representant=SpfplRepresentant(
+                civilite_affichage=str(payload.get("civilite") or "Monsieur"),
+                prenom=str(payload.get("prenom") or ""),
+                nom=str(payload.get("nom") or ""),
+                fonction="Président",
+            ),
         ),
         actionnaire_unique=founder,
         apport=Apport(
@@ -633,8 +729,14 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         apport_titres=ApportTitres(
             nb_parts=nb_parts,
             nb_parts_lettres=number_words_from_value(nb_parts),
+            nature_titres=nature_titres,
             plage_parts=str(payload.get("apport_plage") or ""),
-            valeur_globale=str(payload.get("apport_valeur_globale") or ""),
+            valeur_par_titre=valeur_par_titre,
+            valeur_par_titre_lettres=number_words_from_value(valeur_par_titre),
+            valeur_globale=valeur_globale,
+            valeur_globale_lettres=number_words_from_value(valeur_globale),
+            nb_actions_attribuees=nb_actions_total,
+            nb_actions_attribuees_lettres=number_words_from_value(nb_actions_total),
             valeur_nominale_action=valeur_action,
             valeur_nominale_action_lettres=number_words_from_value(valeur_action),
         ),
@@ -661,24 +763,36 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         capital_souscription=CapitalSouscription(
             nb_actions_total=nb_actions_total,
             valeur_nominale_action=valeur_action,
+            # Apport SPFPL : le capital est constitue par l'apport EN NATURE des
+            # titres de la cible (numeraire = 0). L'apporteur est l'unique
+            # souscripteur et recoit toutes les actions.
+            apports_nature_montant=valeur_globale,
+            apports_numeraire_montant="0 euro",
+            souscripteurs=[
+                CapitalSouscripteur(
+                    civilite_affichage="Docteur",
+                    prenom=str(payload.get("prenom") or ""),
+                    nom=str(payload.get("nom") or ""),
+                    profession="chirurgien-dentiste",
+                    adresse_personnelle_affichee=adresse_perso.adresse_affichee,
+                    nb_actions=nb_actions_total,
+                    qualite="actionnaire unique",
+                )
+            ],
         ),
         exercice_social=ExerciceSocial(
             debut=str(payload.get("exercice_debut") or ""),
             fin=str(payload.get("exercice_fin") or ""),
             date_cloture_premier_exercice=str(payload.get("date_cloture") or ""),
         ),
-        commissaire_aux_apports=ProfessionalEntity(
-            denomination="CAA EXPERTISE",
-            forme_sociale="SAS",
-            capital_social="1 000 euros",
-            siege=Address(adresse_affichee="1 rue Scheffer, 75016 Paris"),
-            ville_rcs="Paris",
-            numero_rcs="948 483 730",
-            representant=SpfplRepresentant(
-                civilite_affichage="Monsieur",
-                prenom="Nabil",
-                nom="Saidi",
-            ),
+        # Organes de controle de l'apport : SAISIS dans le sous-formulaire apport
+        # (plus de valeurs en dur). Chaque dossier a son propre commissaire aux
+        # apports et son evaluateur. None en cession (non lus).
+        commissaire_aux_apports=(
+            _professional_entity(payload, "commissaire") if is_apport else None
+        ),
+        evaluateur_apport=(
+            _professional_entity(payload, "evaluateur") if is_apport else None
         ),
         metadata={"front_slice": f"track_b_spfpl_{operation}_v1"},
     )
@@ -714,6 +828,65 @@ def _regime_communautaire(payload: dict[str, object]) -> RegimeCommunautaire:
         date_courrier_avertissement=signature_date,
         regime_matrimonial=str(payload.get("regime_matrimonial") or ""),
         qualite_renoncee="associé",
+    )
+
+
+def _render_entity_inputs(prefix: str, role: str) -> dict[str, str]:
+    """Saisie d'une entite professionnelle (commissaire aux apports / evaluateur).
+
+    Collecte les champs exiges par `professional_entity_presentation` (denomination,
+    forme, capital, siege, RCS) + son representant (civilite / prenom / nom).
+    """
+    col_a, col_b, col_c = st.columns(3)
+    denomination = _t(col_a, prefix, f"{role}_denomination", "Denomination")
+    forme = _t(col_b, prefix, f"{role}_forme", "Forme sociale")
+    capital = _t(col_c, prefix, f"{role}_capital", "Capital social")
+    siege = _t(st, prefix, f"{role}_siege", "Siege (adresse affichee)")
+    col_d, col_e = st.columns(2)
+    ville_rcs = _t(col_d, prefix, f"{role}_ville_rcs", "RCS (ville)")
+    numero_rcs = _t(col_e, prefix, f"{role}_numero_rcs", "Numero RCS")
+    col_f, col_g, col_h = st.columns(3)
+    rep_civilite = col_f.selectbox(
+        "Civilite representant",
+        ("Monsieur", "Madame"),
+        key=f"{prefix}_{role}_rep_civilite",
+    )
+    rep_prenom = _t(col_g, prefix, f"{role}_rep_prenom", "Prenom representant")
+    rep_nom = _t(col_h, prefix, f"{role}_rep_nom", "Nom representant")
+    return {
+        "denomination": denomination,
+        "forme": forme,
+        "capital": capital,
+        "siege": siege,
+        "ville_rcs": ville_rcs,
+        "numero_rcs": numero_rcs,
+        "rep_civilite": rep_civilite,
+        "rep_prenom": rep_prenom,
+        "rep_nom": rep_nom,
+    }
+
+
+def _professional_entity(payload: dict[str, object], role: str) -> ProfessionalEntity | None:
+    """Construit une entite professionnelle (commissaire / evaluateur) du payload.
+
+    Renvoie None si la denomination n'est pas saisie (le validateur apport bloque
+    alors la generation avec un message explicite).
+    """
+    denomination = str(payload.get(f"{role}_denomination") or "")
+    if not denomination:
+        return None
+    return ProfessionalEntity(
+        denomination=denomination,
+        forme_sociale=str(payload.get(f"{role}_forme") or ""),
+        capital_social=str(payload.get(f"{role}_capital") or ""),
+        siege=Address(adresse_affichee=str(payload.get(f"{role}_siege") or "")),
+        ville_rcs=str(payload.get(f"{role}_ville_rcs") or ""),
+        numero_rcs=str(payload.get(f"{role}_numero_rcs") or ""),
+        representant=SpfplRepresentant(
+            civilite_affichage=str(payload.get(f"{role}_rep_civilite") or ""),
+            prenom=str(payload.get(f"{role}_rep_prenom") or ""),
+            nom=str(payload.get(f"{role}_rep_nom") or ""),
+        ),
     )
 
 

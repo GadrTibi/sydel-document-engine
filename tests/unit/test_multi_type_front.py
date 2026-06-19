@@ -678,6 +678,32 @@ def _spfpl_payload(structure):
         "cible_siege": "12 avenue des Ternes, 75017 Paris",
         "cible_ville_rcs": "Paris",
         "cible_numero_rcs": "900 000 001",
+        "cible_forme": "SELARL",
+        "cible_profession": "chirurgien-dentiste",
+        "cible_capital": "10000",
+        "cible_nb_parts": 100,
+        "cible_valeur_part": "100",
+        # Operation apport (DOC-041/042/043) : detail des titres + organes de controle.
+        "apport_nature_titres": "parts sociales",
+        "apport_valeur_par_titre": "1000",
+        "commissaire_denomination": "CAA EXPERTISE",
+        "commissaire_forme": "SAS",
+        "commissaire_capital": "1 000 euros",
+        "commissaire_siege": "1 rue Scheffer, 75016 Paris",
+        "commissaire_ville_rcs": "Paris",
+        "commissaire_numero_rcs": "948 483 730",
+        "commissaire_rep_civilite": "Monsieur",
+        "commissaire_rep_prenom": "Nabil",
+        "commissaire_rep_nom": "Saidi",
+        "evaluateur_denomination": "EVAL CONSEIL",
+        "evaluateur_forme": "SAS",
+        "evaluateur_capital": "1 000 euros",
+        "evaluateur_siege": "1 rue Scheffer, 75016 Paris",
+        "evaluateur_ville_rcs": "Paris",
+        "evaluateur_numero_rcs": "948 483 730",
+        "evaluateur_rep_civilite": "Madame",
+        "evaluateur_rep_prenom": "Eva",
+        "evaluateur_rep_nom": "Lemoine",
         "exercice_debut": "1er janvier",
         "exercice_fin": "31 decembre",
         "date_cloture": "31 decembre 2026",
@@ -694,6 +720,13 @@ _SPFPL_BUNDLE_TRONC = {
     "demande_inscription_ordre.docx",
 }
 
+# Documents d'operation apport (DOC-041/042/043) ajoutes au bundle de creation.
+_SPFPL_APPORT_DOCS = {
+    "contrat_apport_spfpl.docx",
+    "attestation_capital_liste_souscripteurs.docx",
+    "attestation_commissaire_apports.docx",
+}
+
 
 def test_spfpl_cession_slice_generates_clean(tmp_path: Path) -> None:
     payload = _spfpl_payload("SPFPL cession")
@@ -708,9 +741,24 @@ def test_spfpl_apport_slice_generates_clean(tmp_path: Path) -> None:
     payload = _spfpl_payload("SPFPL apport")
     plan = spfpl_slice.build_spfpl_plan(payload)
     assert plan.can_generate is True
-    assert plan.document_codes == ("DOC-036", "DOC-001", "DOC-002", "DOC-003", "DOC-004", "DOC-034")
+    # L'apport complete le bundle de creation par ses 3 documents d'operation
+    # (contrat d'apport DOC-041 + attestations capital DOC-042 / commissaire DOC-043).
+    assert plan.document_codes == (
+        "DOC-036",
+        "DOC-001",
+        "DOC-002",
+        "DOC-003",
+        "DOC-004",
+        "DOC-034",
+        "DOC-041",
+        "DOC-042",
+        "DOC-043",
+    )
     generated = spfpl_slice.generate_dossier(payload, tmp_path / "spfpl-apport")
-    _assert_bundle_clean(generated, _SPFPL_BUNDLE_TRONC | {"statuts_spfpl_apport.docx"})
+    _assert_bundle_clean(
+        generated,
+        _SPFPL_BUNDLE_TRONC | {"statuts_spfpl_apport.docx"} | _SPFPL_APPORT_DOCS,
+    )
 
 
 _REGIME_DOCS = {
@@ -763,7 +811,7 @@ def test_spfpl_apport_regime_on_adds_regime_docs(tmp_path: Path) -> None:
     generated = spfpl_slice.generate_dossier(payload, tmp_path / "spfpl-apport-regime")
     _assert_bundle_clean(
         generated,
-        _SPFPL_BUNDLE_TRONC | {"statuts_spfpl_apport.docx"} | _REGIME_DOCS,
+        _SPFPL_BUNDLE_TRONC | {"statuts_spfpl_apport.docx"} | _SPFPL_APPORT_DOCS | _REGIME_DOCS,
     )
 
 
