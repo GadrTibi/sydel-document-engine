@@ -51,6 +51,7 @@ from sydel_doc_engine.front_app.field_derivations import (
     calculate_nominal_value,
     date_to_french_words,
     derive_gender_from_civilite,
+    format_numeric_value,
     number_words_from_value,
     parse_french_date,
 )
@@ -280,7 +281,21 @@ def render_selas_form(type_key: str = "selas_multi_v1") -> dict[str, object]:
     # pluriel n'est plus saisi mais derive automatiquement du choix.
     profession, profession_pluriel = _render_profession_selectbox(col_c)
     col_e, col_f, col_g = st.columns(3)
-    capital = _t(col_e, "capital_social", "Capital social")
+    # Capital en number_input (parite gold shell.py:1430-1437) : interdit « 1000 »
+    # brut et le « € » superflu. Pattern _i (seed session_state, pas de value= pour
+    # eviter le warning value+key) ; stocke en chaine formatee pour l'aval.
+    cap_key = f"{PREFIX}_capital_social"
+    if cap_key not in st.session_state:
+        st.session_state[cap_key] = 0
+    capital = format_numeric_value(
+        col_e.number_input(
+            "Capital social (€)",
+            min_value=0,
+            step=100,
+            key=cap_key,
+            help="Montant numerique uniquement.",
+        )
+    )
     nb_actions = _i(col_f, "nb_actions_total", "Nombre total d'actions")
     # Valeur nominale d'une action : TOUJOURS calculee (capital / nb actions),
     # jamais saisie (retours Albane 2026-06-17, SCREEN-2). Champ d'affichage seul.
@@ -396,6 +411,16 @@ def _render_common_docs_form() -> dict[str, object]:
     ordre_cp = _t(col_l, "ordre_cp", "CP ordre")
     ordre_ville = _t(col_m, "ordre_ville", "Ville ordre")
     ordre_numero = _t(st, "ordre_numero", "Numero d'inscription")
+    # Parite gold (retour Albane 2026-06-10, shell.py:1537-1542) : president(e) de
+    # l'ordre = femme -> « Madame la Presidente » dans la demande d'inscription (DOC-034).
+    feminin_key = f"{PREFIX}_ordre_president_feminin"
+    if feminin_key not in st.session_state:
+        st.session_state[feminin_key] = False
+    ordre_president_feminin = st.checkbox(
+        "La présidente de l'ordre est une femme",
+        key=feminin_key,
+        help="Coche : « Madame la Présidente » au lieu de « Monsieur le Président ».",
+    )
     regime = _render_regime_communautaire_form()
     common = {
         "decision_date": decision_date,
@@ -405,6 +430,7 @@ def _render_common_docs_form() -> dict[str, object]:
         "ordre_cp": ordre_cp,
         "ordre_ville": ordre_ville,
         "ordre_numero": ordre_numero,
+        "ordre_president_feminin": ordre_president_feminin,
     }
     common.update(regime)
     return common
@@ -1399,7 +1425,11 @@ def _selas_ordre(payload: dict[str, object]):
         conseil_departemental_libelle=conseil_libelle,
         departement_inscription=departement,
         connecteur_departement=connecteur,
-        destinataire_appel="Monsieur le Président",
+        destinataire_appel=(
+            "Madame la Présidente"
+            if bool(payload.get("ordre_president_feminin"))
+            else "Monsieur le Président"
+        ),
         profession_signataire_affichee=str(payload.get("profession_reglementee") or ""),
         profession_ligne_destinataire=pluriel,
         profession_reglementee_pluriel=pluriel,

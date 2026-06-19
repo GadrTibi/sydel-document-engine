@@ -1661,6 +1661,22 @@ def test_typed_test_data_button_generates(
     assert "Telecharger le dossier ZIP" in download_labels
 
 
+def test_selas_madame_la_presidente_toggle_drives_destinataire() -> None:
+    # Parite gold (RAF-003 / Albane 2026-06-10) : la SELAS doit, comme la SELARL,
+    # adresser « Madame la Presidente » quand la presidente de l'ordre est une femme
+    # (demande d'inscription DOC-034), au lieu de « Monsieur le President » en dur.
+    from sydel_doc_engine.front_app import selas_multi_slice as sms
+
+    base = _selas_payload()
+    assert sms.build_generation_context(base).ordre.destinataire_appel == (
+        "Monsieur le Président"
+    )
+    feminin = {**_selas_payload(), "ordre_president_feminin": True}
+    assert sms.build_generation_context(feminin).ordre.destinataire_appel == (
+        "Madame la Présidente"
+    )
+
+
 def test_selas_cession_codes_flow_into_plan_and_orchestrator() -> None:
     # Completude V2 : la SELAS reutilise les sous-formulaires cession SELARL
     # valides (prefix='selas'). Des qu'un contexte cession/bail/scm est saisi,

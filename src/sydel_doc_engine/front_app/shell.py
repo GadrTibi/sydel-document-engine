@@ -740,7 +740,9 @@ def _prefill_selas_test_data(
         "selas_siege_cp": "69000",
         "selas_siege_ville": "Lyon",
         "selas_profession_choice": profession,
-        "selas_capital_social": "1000",
+        # Capital = number_input cote SELAS (parite gold) -> seed un ENTIER, pas une
+        # chaine (sinon le widget number_input leve).
+        "selas_capital_social": 1000,
         "selas_nb_actions_total": 100,
         "selas_valeur_nominale_action": "10",
         "selas_ville_rcs": "Lyon",
