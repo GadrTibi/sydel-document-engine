@@ -18,6 +18,12 @@ du contexte est strictement celui du parcours SELARL uni deja en production.
 Bundle de creation = statuts SELAS medecin (DOC-018) + tronc commun (DNC /
 domiciliation / procuration / demande ordre) + PV nomination du dirigeant, comme
 les autres parcours de creation SEL.
+
+Conditionnel canon SELAS « Si regime communautaire » : un toggle ajoute au bundle
+la lettre de renonciation (DOC-005) + la lettre d'avertissement au conjoint
+(DOC-006), exactement comme la SELARL le cable. Les deux generateurs existent et
+sont enregistres pour la structure SELAS ; le contexte regime est produit par le
+constructeur SELARL reutilise des que le toggle est actif.
 """
 
 from __future__ import annotations
@@ -57,15 +63,39 @@ TYPE_KEY = "selas_uni_medecin_v1"
 # Code statuts du cas (DOC-018) : statuts SELAS medecin from-scratch.
 SELAS_UNI_MEDECIN_STATUTS_CODE = "DOC-018"
 
-# Bundle de creation = statuts DOC-018 + tronc commun (DNC / domiciliation /
-# procuration) + PV nomination du dirigeant + demande d'inscription a l'ordre.
-# Aligne sur les autres parcours de creation SEL (selas multi, SELARL).
-SELAS_UNI_MEDECIN_BUNDLE_CODES: tuple[str, ...] = (
+# Bundle de creation systematique (canon SELAS « docs a generer dans tous les
+# cas ») = statuts DOC-018 + tronc commun (DNC / domiciliation / procuration) +
+# PV nomination du dirigeant + demande d'inscription a l'ordre. Aligne sur les
+# autres parcours de creation SEL (selas multi, SELARL).
+SELAS_UNI_MEDECIN_BASE_CODES: tuple[str, ...] = (
     SELAS_UNI_MEDECIN_STATUTS_CODE,
     *cc.TRONC_COMMUN_CODES,
     cc.DOC_PV_NOMINATION_GERANT,
     cc.DOC_DEMANDE_INSCRIPTION_ORDRE,
 )
+
+# Bundle nominal (regime non communautaire) conserve sous l'ancien nom pour
+# compatibilite : c'est le bundle de base sans conditionnel.
+SELAS_UNI_MEDECIN_BUNDLE_CODES: tuple[str, ...] = SELAS_UNI_MEDECIN_BASE_CODES
+
+
+def selected_document_codes(payload: dict[str, object]) -> tuple[str, ...]:
+    """Codes du bundle SELAS uni medecin selon les conditionnels du canon.
+
+    Base systematique + conditionnel « Si regime communautaire » (canon SELAS) :
+    lettre de renonciation (DOC-005) + lettre d'avertissement (DOC-006), comme la
+    SELARL le cable. Les deux generateurs existent et sont enregistres pour la
+    structure SELAS (catalog `REGIME_COMMUNAUTAIRE_STRUCTURES`) ; le contexte
+    regime est produit par le constructeur SELARL reutilise des que le toggle est
+    actif. Aucun document existant n'est retire (additif)."""
+    codes = list(SELAS_UNI_MEDECIN_BASE_CODES)
+    if _is_regime_communautaire(payload):
+        codes.extend(cc.REGIME_COMMUNAUTAIRE_CODES)
+    return tuple(codes)
+
+
+def _is_regime_communautaire(payload: dict[str, object]) -> bool:
+    return bool(payload.get("regime_communautaire"))
 
 # Wording SELAS (forme par actions) substitue a la forme SELARL portee par le
 # constructeur de contexte reutilise. Verbatim du modele source SELAS medecin.
@@ -158,6 +188,15 @@ def render_selas_uni_medecin_form() -> dict[str, object]:
     regime_matrimonial = _t(
         col_rm, "regime_matrimonial", "Regime matrimonial (ex: separation de biens)"
     )
+    # Conditionnel canon SELAS « Si regime communautaire » : ajoute la lettre de
+    # renonciation (DOC-005) + la lettre d'avertissement (DOC-006) au bundle. Le
+    # constructeur SELARL reutilise produit alors le contexte regime ; le conjoint
+    # et le regime matrimonial deviennent requis (valide cote SELARL).
+    regime_communautaire = _toggle(
+        st,
+        "regime_communautaire",
+        "Regime communautaire (genere renonciation + avertissement conjoint)",
+    )
     conjoint_civilite, conjoint_prenom, conjoint_nom = _render_conjoint()
 
     st.caption("Filiation + ordre professionnel (declaration / demande inscription)")
@@ -213,6 +252,7 @@ def render_selas_uni_medecin_form() -> dict[str, object]:
         "nom_mere": nom_mere,
         "situation_maritale": situation_maritale,
         "regime_matrimonial": regime_matrimonial,
+        "regime_communautaire": regime_communautaire,
         "conjoint_civilite": conjoint_civilite,
         "conjoint_prenom": conjoint_prenom,
         "conjoint_nom": conjoint_nom,
@@ -265,6 +305,10 @@ def _to_selarl_input(payload: dict[str, object]) -> SelarlSliceInput:
         dossier_reference=denomination or TYPE_KEY,
         profession=PROFESSION_MEDECIN,
         dossier_unipersonnel=True,
+        # Conditionnel canon SELAS « Si regime communautaire » : declenche DOC-005
+        # / DOC-006 cote bundle ET le contexte regime cote constructeur SELARL
+        # reutilise (validation conjoint + regime matrimonial heritee).
+        regime_communautaire=bool(payload.get("regime_communautaire")),
         civilite=civilite,
         genre=derive_gender_from_civilite(civilite),
         prenom=str(payload.get("prenom") or ""),
@@ -365,16 +409,23 @@ def build_selas_uni_medecin_plan(payload: dict[str, object]) -> SelasUniMedecinP
     # contexte SEL d'exercice), via une entree derivee.
     data = _to_selarl_input(payload)
     blockers = list(selarl_slice.validate_selarl_input(data))
-    warnings = (
+    document_codes = selected_document_codes(payload)
+    warnings_list = [
         "SELAS unipersonnelle medecin V1 : associe unique, vocabulaire actions. "
         "Bundle de creation : statuts DOC-018 + tronc commun + PV nomination.",
-    )
+    ]
+    if _is_regime_communautaire(payload):
+        warnings_list.append(
+            "Regime communautaire actif : DOC-005 (renonciation) et DOC-006 "
+            "(avertissement conjoint) seront generes."
+        )
+    warnings = tuple(warnings_list)
     if blockers:
         return SelasUniMedecinPlan(
             can_generate=False,
             status="blocked",
             reason=blockers[0],
-            document_codes=SELAS_UNI_MEDECIN_BUNDLE_CODES,
+            document_codes=document_codes,
             blockers=tuple(blockers),
             warnings=warnings,
         )
@@ -382,7 +433,7 @@ def build_selas_uni_medecin_plan(payload: dict[str, object]) -> SelasUniMedecinP
         can_generate=True,
         status="ready",
         reason="Pret pour generation SELAS unipersonnelle medecin V1 (bundle de creation).",
-        document_codes=SELAS_UNI_MEDECIN_BUNDLE_CODES,
+        document_codes=document_codes,
         blockers=(),
         warnings=warnings,
     )
@@ -426,3 +477,10 @@ def _date(container, field: str, label: str) -> date | None:
         st.session_state[key] = ""
     raw = container.text_input(label, key=key, placeholder="JJ/MM/AAAA")
     return parse_french_date(raw)
+
+
+def _toggle(container, field: str, label: str) -> bool:
+    key = f"{PREFIX}_{field}"
+    if key not in st.session_state:
+        st.session_state[key] = False
+    return bool(container.checkbox(label, key=key))
