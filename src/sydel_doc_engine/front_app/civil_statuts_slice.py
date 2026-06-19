@@ -316,6 +316,16 @@ def _render_common_docs_form(structure: str, prefix: str) -> dict[str, object]:
         ordre_cp = _text(col_l, prefix, "ordre_cp", "CP ordre")
         ordre_ville = _text(col_m, prefix, "ordre_ville", "Ville ordre")
         ordre_numero = _text(st, prefix, "ordre_numero", "Numero d'inscription")
+        # Parite gold (Albane 2026-06-10) : « Madame la Presidente » si la presidente
+        # de l'ordre est une femme (demande d'inscription SCM, DOC-034).
+        fem_key = f"{prefix}_ordre_president_feminin"
+        if fem_key not in st.session_state:
+            st.session_state[fem_key] = False
+        ordre_president_feminin = st.checkbox(
+            "La présidente de l'ordre est une femme",
+            key=fem_key,
+            help="Coché : « Madame la Présidente » au lieu de « Monsieur le Président ».",
+        )
         common.update(
             {
                 "ordre_conseil": ordre_conseil,
@@ -324,6 +334,7 @@ def _render_common_docs_form(structure: str, prefix: str) -> dict[str, object]:
                 "ordre_cp": ordre_cp,
                 "ordre_ville": ordre_ville,
                 "ordre_numero": ordre_numero,
+                "ordre_president_feminin": ordre_president_feminin,
             }
         )
         # Satellites SCM (pacte + liste depenses, generes si 2 associes) : ville du
@@ -923,6 +934,7 @@ def _common_docs_input(
             cp=str(payload.get("ordre_cp") or ""),
             ville=str(payload.get("ordre_ville") or ""),
             numero=str(payload.get("ordre_numero") or ""),
+            ordre_president_feminin=bool(payload.get("ordre_president_feminin")),
         ),
         type_titre="parts sociales",
     )

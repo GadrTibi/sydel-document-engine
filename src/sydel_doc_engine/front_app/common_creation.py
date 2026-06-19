@@ -138,6 +138,7 @@ class OrdreInput:
     cp: str = ""
     ville: str = ""
     numero: str = ""
+    ordre_president_feminin: bool = False
 
 
 @dataclass
@@ -232,7 +233,9 @@ def ordre_professionnel(common: CommonDocsInput) -> OrdreProfessionnel:
     return OrdreProfessionnel(
         conseil_departemental_libelle=o.conseil_departemental_libelle,
         departement_inscription=o.departement_inscription,
-        destinataire_appel="Monsieur le Président",
+        destinataire_appel=(
+            "Madame la Présidente" if o.ordre_president_feminin else "Monsieur le Président"
+        ),
         profession_signataire_affichee=f.qualification_principale,
         profession_ligne_destinataire=f.profession_pluriel or f.qualification_principale,
         profession_reglementee_pluriel=f.profession_pluriel or f.qualification_principale,
