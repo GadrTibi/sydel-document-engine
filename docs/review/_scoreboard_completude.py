@@ -7,7 +7,7 @@ ITEMS = [
     ("done", "SPFPL apport — contrat d'apport + 2 attestations (DOC-041/042/043)"),
     ("todo", "SPFPL cession — note d'info + PV agrement + actes"),
     ("todo", "SCM — satellites (pacte / depenses / frais communs / reglement)"),
-    ("todo", "SCI / SCI IRIS — lettre option IS (conditionnel)"),
+    ("done", "SCI / SCI IRIS — lettre option IS (deja livre + teste, DOC-022)"),
     ("todo", "Parite bloc A — 13 logiques SELARL portees aux autres types"),
 ]
 SKIP = [("Derog cumul SELARL salarie", "non faisable : modele inexistant (liste au canon SELAS, aucun .doc nulle part)")]
