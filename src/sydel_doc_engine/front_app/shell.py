@@ -1815,6 +1815,14 @@ def _seed_default(key: str, default: object) -> None:
         st.session_state[key] = default
 
 
+# Prefixe des cles de session du sous-formulaire cession, parametrable pour
+# reutiliser le sous-formulaire SELARL valide sur d'autres types (SELAS...).
+# Defaut « selarl » => SELARL byte-identique ; « selas » => clefs propres SELAS.
+# Pose par _render_cession_form / _render_scm_cession_form au debut de chaque
+# rendu (Streamlit = mono-thread par session, sans course).
+_CESSION_PREFIX = "selarl"
+
+
 def _cession_text(
     container: object,
     label: str,
@@ -1823,7 +1831,7 @@ def _cession_text(
     field: str,
     default: str,
 ) -> str:
-    key = f"selarl_cession_{section}_{field}"
+    key = f"{_CESSION_PREFIX}_cession_{section}_{field}"
     _seed_default(key, default)
     value = container.text_input(label, key=key)
     return str(value).strip()
@@ -1837,6 +1845,7 @@ def _render_cession_form(
     societe: dict[str, object],
     ordre: dict[str, object],
     generation: dict[str, object],
+    prefix: str = "selarl",
 ) -> tuple[CessionContext | None, BailContext | None]:
     """Sous-formulaire CESSION DE FONDS LIBERAL, pilote par les donnees du dossier.
 
@@ -1848,6 +1857,9 @@ def _render_cession_form(
     """
     if not cession:
         return None, None
+
+    global _CESSION_PREFIX
+    _CESSION_PREFIX = prefix
 
     st.markdown("**Cession de fonds liberal**")
 
@@ -2493,6 +2505,7 @@ def _render_scm_cession_form(
     societe: dict[str, object],
     profession_label: str,
     ordre: dict[str, object],
+    prefix: str = "selarl",
 ) -> ScmCessionContext | None:
     """Sous-formulaire de cession de parts de SCM standalone (DOC-031/032/033).
 
@@ -2503,6 +2516,9 @@ def _render_scm_cession_form(
     """
     if not scm:
         return None
+
+    global _CESSION_PREFIX
+    _CESSION_PREFIX = prefix
 
     st.markdown("**Cession de parts de SCM**")
     base = scm_cession_fixture()
