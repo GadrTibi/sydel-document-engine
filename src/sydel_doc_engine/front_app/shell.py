@@ -1865,14 +1865,14 @@ def _render_cession_form(
 
     with st.expander("Type & etape", expanded=True):
         col_a, col_b = st.columns(2)
-        type_key = "selarl_cession_meta_type_cabinet"
+        type_key = f"{_CESSION_PREFIX}_cession_meta_type_cabinet"
         _seed_default(type_key, _cession_default_type(profession))
         type_cabinet = col_a.selectbox(
             "Type de cabinet",
             tuple(CESSION_TYPE_LABELS),
             key=type_key,
         )
-        etape_key = "selarl_cession_meta_etape"
+        etape_key = f"{_CESSION_PREFIX}_cession_meta_etape"
         _seed_default(etape_key, "acte")
         etape = col_b.selectbox(
             "Etape",
@@ -1898,7 +1898,7 @@ def _render_cession_form(
         vendeur_auto = st.checkbox(
             "Le vendeur est l'associe unique",
             value=True,
-            key="selarl_cession_vendeur_auto",
+            key=f"{_CESSION_PREFIX}_cession_vendeur_auto",
             help="Decocher uniquement si un autre vendeur doit etre renseigne.",
         )
         siren = _cession_text(
@@ -2065,8 +2065,8 @@ def _render_cession_form(
     # --- Cabinet (ticket 2.3 : cadre reduit aux seules infos specifiques) ---
     with st.expander("Cabinet"):
         st.caption(f"Nature du fonds liberal : {profession_label} (derivee de la profession).")
-        if not st.session_state.get("selarl_cession_cabinet_adresse") and siege_display:
-            st.session_state["selarl_cession_cabinet_adresse"] = siege_display
+        if not st.session_state.get(f"{_CESSION_PREFIX}_cession_cabinet_adresse") and siege_display:
+            st.session_state[f"{_CESSION_PREFIX}_cession_cabinet_adresse"] = siege_display
         adresse_cabinet = _cession_text(
             st, "Adresse du cabinet", section="cabinet", field="adresse",
             default=siege_display,
@@ -2077,7 +2077,7 @@ def _render_cession_form(
         )
         st.markdown("Origine de propriete du vendeur")
         if type_cabinet == "medical":
-            mode_key = "selarl_cession_cabinet_origine_mode"
+            mode_key = f"{_CESSION_PREFIX}_cession_cabinet_origine_mode"
             _seed_default(mode_key, "Cabinet cree par le vendeur")
             mode_label = st.selectbox(
                 "Le vendeur a...",
@@ -2153,7 +2153,7 @@ def _render_cession_form(
                 default="",
             )
         )
-        descriptif_key = "selarl_cession_bail_descriptif"
+        descriptif_key = f"{_CESSION_PREFIX}_cession_bail_descriptif"
         _seed_default(descriptif_key, "")
         descriptif_local = str(
             st.text_area(
@@ -2199,7 +2199,7 @@ def _render_cession_form(
         year_options = [str(year) for year in range(current_year, current_year - 11, -1)]
         for index in range(3):
             col_a, col_b, col_c = st.columns(3)
-            periode_key = f"selarl_cession_exercice_{index}_periode"
+            periode_key = f"{_CESSION_PREFIX}_cession_exercice_{index}_periode"
             _seed_default(periode_key, str(current_year - 3 + index))
             if str(st.session_state.get(periode_key)) not in year_options:
                 st.session_state[periode_key] = str(current_year - 3 + index)
@@ -2307,7 +2307,7 @@ def _render_cession_form(
         credit_payload: dict[str, object] | None = None
         scm_payload: dict[str, object] | None = None
         if etape == "acte" and type_cabinet == "medical":
-            credit_key = "selarl_cession_financement_credit_actif"
+            credit_key = f"{_CESSION_PREFIX}_cession_financement_credit_actif"
             _seed_default(credit_key, True)
             credit_actif = st.checkbox(
                 "Credit-vendeur (clause de l'acte medical)",
@@ -2340,7 +2340,7 @@ def _render_cession_form(
                         field="credit_majoration", default="",
                     ),
                 }
-            scm_actif_key = "selarl_cession_scm_clause_actif"
+            scm_actif_key = f"{_CESSION_PREFIX}_cession_scm_clause_actif"
             _seed_default(scm_actif_key, False)
             scm_actif = st.checkbox(
                 "Cession de parts de SCM associee (clause de l'acte medical)",
@@ -2373,7 +2373,7 @@ def _render_cession_form(
     salaries_payload: list[dict[str, object]] = []
     if type_cabinet == "dentaire" and etape == "acte":
         with st.expander("Salaries repris"):
-            aucun_key = "selarl_cession_salaries_aucun"
+            aucun_key = f"{_CESSION_PREFIX}_cession_salaries_aucun"
             _seed_default(aucun_key, True)
             aucun_salarie = st.checkbox("Aucun salarie", key=aucun_key)
             if aucun_salarie:
@@ -2382,7 +2382,7 @@ def _render_cession_form(
                     "la generation n'est pas bloquee."
                 )
             else:
-                nb_key = "selarl_cession_salaries_nb"
+                nb_key = f"{_CESSION_PREFIX}_cession_salaries_nb"
                 _seed_default(nb_key, 1)
                 nb_salaries = st.number_input(
                     "Nombre de salaries repris",
@@ -2579,7 +2579,7 @@ def _render_scm_cession_form(
             ("prenom", str(praticien.get("prenom") or "")),
             ("nom", str(praticien.get("nom") or "")),
         ):
-            key = f"selarl_cession_scm_cedant_{field}"
+            key = f"{_CESSION_PREFIX}_cession_scm_cedant_{field}"
             if not st.session_state.get(key) and value:
                 st.session_state[key] = value
         col_a, col_b, col_c = st.columns(3)
@@ -2676,7 +2676,7 @@ def _render_scm_cession_associes_presents(
             "Le total des parts des presents doit egaler le nombre total de parts "
             "de la SCM. Le dernier associe saisi preside la seance (gerant associe)."
         )
-        count_key = "selarl_cession_scm_presents_count"
+        count_key = f"{_CESSION_PREFIX}_cession_scm_presents_count"
         _seed_default(count_key, 3)
         nb_associes = int(
             st.number_input(
@@ -2691,7 +2691,7 @@ def _render_scm_cession_associes_presents(
             st.markdown(f"Associe present {index + 1}")
             morale = st.checkbox(
                 "Personne morale",
-                key=f"selarl_cession_scm_present_{index}_morale",
+                key=f"{_CESSION_PREFIX}_cession_scm_present_{index}_morale",
             )
             if morale:
                 col_a, col_b = st.columns(2)
@@ -2713,7 +2713,7 @@ def _render_scm_cession_associes_presents(
                 civilite = col_a.selectbox(
                     "Civilite",
                     ("Monsieur", "Madame"),
-                    key=f"selarl_cession_scm_present_{index}_civilite",
+                    key=f"{_CESSION_PREFIX}_cession_scm_present_{index}_civilite",
                 )
                 prenom = _cession_text(
                     col_b, "Prenom", section="scm_present", field=f"{index}_prenom",
