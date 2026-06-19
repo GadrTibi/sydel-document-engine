@@ -40,3 +40,23 @@ Pour un document généré à la fois par la SELARL et par un autre type :
 - **Diff systématique contre le gold** avant de reconstruire quoi que ce soit.
 - Quand j'envoie un type à tester, **annoncer son niveau exact** (documents-complet vs parité-UX-complète) —
   jamais « prêt » implicite. (C'est ce qui a rendu les retours Rafael prévisibles.)
+
+## RÈGLES IMPOSÉES — le « code du bâtiment » (à étudier/questionner, défaut = appliquer)
+Issues de la remise en question 2026-06-19. Toute exception doit être **justifiée et tracée**.
+
+1. **Le gold fait foi : on dérive, on ne reconstruit pas.** Tout type dérive de la SELARL. Un écart
+   non justifié = un bug de parité. On ne réécrit jamais un helper qui existe au gold — on le consomme.
+2. **Couche partagée obligatoire.** Toute commodité de rendu (date, capital, adresse, mandataire…) vit
+   dans `front_widgets.py`, jamais dupliquée par type. Envie de re-coder un helper = signal qu'il doit
+   être partagé.
+3. **Le vert unitaire ne suffit pas → dogfood obligatoire.** Avant « prêt », générer chaque conditionnel
+   (régime, cession, apport…) dans l'UI réelle. Les fixtures pré-remplissent les champs et masquent les
+   chemins « champ vide » (c'est ce qui a laissé passer le bug régime).
+4. **Annoncer le niveau exact.** Jamais « c'est bon » flou. Toujours : documents-complet / parité-UX-
+   complète / partiel (manque X, Y). Un « prêt » implicite fabrique des retours prévisibles.
+5. **Matrice avant retours.** Avant de faire tester, diff le type contre le gold (la matrice) et fermer
+   TOUS les trous connus → les retours du testeur sont du NEUF, pas du déjà-su.
+6. **Un retour fait une fois = appliqué partout.** Le registre des retours : un retour sur un type
+   devient une vérification sur tous les types concernés (pas seulement celui où il a été remonté).
+7. **Ne pas inventer le métier.** Un écart qui touche le juridique (wording, 2e lieu d'une holding…)
+   → question Albane, jamais deviné. Défaut documenté en attendant.
