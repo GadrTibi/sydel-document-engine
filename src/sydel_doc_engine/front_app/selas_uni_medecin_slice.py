@@ -52,6 +52,7 @@ from sydel_doc_engine.front_app.field_derivations import (
 )
 from sydel_doc_engine.front_app.front_widgets import (
     date_input_with_today,
+    mandataire_inputs,
     seed_closing_date,
     seed_exercice_dates,
     seed_signature_lieu,
@@ -245,6 +246,8 @@ def render_selas_uni_medecin_form() -> dict[str, object]:
         key=fem_key,
         help="Coché : « Madame la Présidente » au lieu de « Monsieur le Président ».",
     )
+    # Parite gold (couche partagee) : conseiller/mandataire SYDEL editable.
+    mandataire_prenom, mandataire_nom = mandataire_inputs(PREFIX)
 
     st.markdown("**Signature / decision**")
     col_ag, col_ah = st.columns(2)
@@ -292,6 +295,8 @@ def render_selas_uni_medecin_form() -> dict[str, object]:
         "ordre_conseil": ordre_conseil,
         "departement_ordre": departement_ordre,
         "ordre_president_feminin": ordre_president_feminin,
+        "mandataire_prenom": mandataire_prenom,
+        "mandataire_nom": mandataire_nom,
         "numero_ordre": numero_ordre,
         "numero_rpps": numero_rpps,
         "ordre_ville": ordre_ville,
@@ -370,6 +375,8 @@ def _to_selarl_input(payload: dict[str, object]) -> SelarlSliceInput:
         numero_rpps=str(payload.get("numero_rpps") or ""),
         departement_ordre=str(payload.get("departement_ordre") or ""),
         ordre_president_feminin=bool(payload.get("ordre_president_feminin")),
+        mandataire_prenom=str(payload.get("mandataire_prenom") or ""),
+        mandataire_nom=str(payload.get("mandataire_nom") or ""),
         denomination=str(payload.get("denomination") or ""),
         capital_social=str(payload.get("capital_social") or ""),
         duree=str(payload.get("duree") or "99 ans"),
