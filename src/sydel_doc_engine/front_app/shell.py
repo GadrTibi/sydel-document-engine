@@ -1886,7 +1886,7 @@ def _render_cession_form(
     praticien_nom = str(praticien.get("nom") or "").strip()
     praticien_genre = praticien.get("genre")
     praticien_adresse = _personal_address_display(praticien)
-    situation_label = str(st.session_state.get("selarl_situation_maritale") or "")
+    situation_label = str(st.session_state.get(f"{_CESSION_PREFIX}_situation_maritale") or "")
     conjoint_payload = {
         "civilite_affichage": str(praticien.get("conjoint_civilite") or ""),
         "prenom": str(praticien.get("conjoint_prenom") or ""),
