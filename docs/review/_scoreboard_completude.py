@@ -1,7 +1,7 @@
 import datetime
 ITEMS = [
     ("done", "Socle : sous-formulaire cession reutilisable (byte-identique SELARL)"),
-    ("wip",  "SELAS — genere ses docs de cession (cablage)"),
+    ("done", "SELAS — genere ses docs de cession (cablage, verrou test)"),
     ("done", "SELAS uni — regime communautaire (DOC-005/006)"),
     ("done", "SAS — complet vs canon (verifie)"),
     ("todo", "SPFPL apport — contrat d'apport + 2 attestations"),

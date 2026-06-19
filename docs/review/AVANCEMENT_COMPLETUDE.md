@@ -4,10 +4,10 @@
 ```
   ┌─ SYDEL · Completude V2 (tous types vs canon) ──────────
   │
-  │   GLOBAL   [████████░░░░░░░░░░░░░░░░]  3/9  ·  33%
+  │   GLOBAL   [███████████░░░░░░░░░░░░░]  4/9  ·  44%
   │
   │   ✅  Socle : sous-formulaire cession reutilisable (byte-identique SELARL)
-  │   🔨  SELAS — genere ses docs de cession (cablage)
+  │   ✅  SELAS — genere ses docs de cession (cablage, verrou test)
   │   ✅  SELAS uni — regime communautaire (DOC-005/006)
   │   ✅  SAS — complet vs canon (verifie)
   │   ⬜  SPFPL apport — contrat d'apport + 2 attestations
