@@ -273,6 +273,14 @@ def render_selas_form(type_key: str = "selas_multi_v1") -> dict[str, object]:
     # RAF-006 (parite gold, couche partagee) : cloture du 1er exercice pre-remplie
     # « 31 decembre N+1 », modifiable. Libelle TEXTUEL (comme le gold), pas un picker.
     seed_closing_date(PREFIX)
+    # RAF-003a (parite gold) : si « siege = adresse du president » est coche, recopier
+    # l'adresse du president (memorisee au run precedent sous des cles stables) dans
+    # les champs siege AVANT leur rendu (cross-rerun : le bloc president vient apres).
+    if st.session_state.get(f"{PREFIX}_siege_same_as_president"):
+        for _f in ("num", "voie", "cp", "ville"):
+            _src = st.session_state.get(f"{PREFIX}_president_adresse_{_f}")
+            if _src:
+                st.session_state[f"{PREFIX}_siege_{_f}"] = _src
     st.subheader("Donnees a saisir")
     st.markdown("**Societe (SELAS d'exercice, vocabulaire actions)**")
     col_a, col_b = st.columns(2)
@@ -319,6 +327,11 @@ def render_selas_form(type_key: str = "selas_multi_v1") -> dict[str, object]:
     date_cloture = _t(st, "date_cloture", "Cloture du premier exercice")
 
     st.caption("Siege social (adresse structuree, pour la domiciliation / procuration)")
+    st.checkbox(
+        "Siège social = adresse du président",
+        key=f"{PREFIX}_siege_same_as_president",
+        help="Coché : recopie l'adresse personnelle du président (évite la double saisie).",
+    )
     col_sa, col_sb, col_sc, col_sd = st.columns(4)
     siege_num = _t(col_sa, "siege_num", "No")
     siege_voie = _t(col_sb, "siege_voie", "Voie")
@@ -336,6 +349,13 @@ def render_selas_form(type_key: str = "selas_multi_v1") -> dict[str, object]:
         signature_date = _date("signature_date", "Date de signature")
 
     associes, president_index, dirigeant_sig, dirigeants_nomines = _render_selas_associes()
+    # RAF-003a : memoriser l'adresse structuree du president sous des cles stables
+    # pour que la case « siege = adresse president » puisse la recopier au run suivant
+    # (le bloc president est rendu APRES le siege -> recopie differee d'un run).
+    for _f in ("num", "voie", "cp", "ville"):
+        st.session_state[f"{PREFIX}_president_adresse_{_f}"] = str(
+            dirigeant_sig.get(f"signataire_adresse_{_f}") or ""
+        )
     common = _render_common_docs_form()
     cession_context, bail_context, scm_cession_context = _render_selas_cession(
         associes,
