@@ -595,7 +595,7 @@ def _spfpl_prefill_values(prefix: str) -> dict[str, object]:
         f"{prefix}_siege_voie": "rue de la Paix",
         f"{prefix}_siege_cp": "75002",
         f"{prefix}_siege_ville": "Paris",
-        f"{prefix}_capital_social": "60000",
+        f"{prefix}_capital_social": 60000,
         # Nombre d'actions VARIABLE (defaut 600) ; la valeur nominale est calculee
         # (60000 / 600 = 100) et affichee en lecture seule, plus de saisie libre.
         f"{prefix}_nb_actions_total": 600,

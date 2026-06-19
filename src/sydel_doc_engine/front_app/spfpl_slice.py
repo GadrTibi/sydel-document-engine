@@ -62,9 +62,14 @@ from sydel_doc_engine.front_app.field_derivations import (
     calculate_nominal_value,
     date_to_french_words,
     derive_gender_from_civilite,
-    format_french_date,
+    format_numeric_value,
     number_words_from_value,
-    parse_french_date,
+)
+from sydel_doc_engine.front_app.front_widgets import (
+    date_input_with_today,
+    seed_closing_date,
+    seed_exercice_dates,
+    seed_signature_lieu,
 )
 
 OPERATION_BY_STRUCTURE: dict[str, tuple[str, str]] = {
@@ -148,6 +153,10 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
     operation, _doc = OPERATION_BY_STRUCTURE[structure]
     prefix = _prefix(structure)
     is_apport = operation == "apport"
+    # Parite gold (couche partagee) : pre-remplir exercice (1er janvier / 31 decembre)
+    # + cloture « 31 decembre N+1 », modifiables.
+    seed_exercice_dates(prefix)
+    seed_closing_date(prefix)
     st.subheader("Donnees a saisir")
     st.markdown(f"**Societe SPFPL ({operation})**")
     denomination = _t(st, prefix, "denomination", "Denomination SPFPL")
@@ -161,8 +170,23 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
     siege_voie = _t(col_sb, prefix, "siege_voie", "Voie")
     siege_cp = _t(col_sc, prefix, "siege_cp", "CP")
     siege_ville = _t(col_sd, prefix, "siege_ville", "Ville")
+    # Parite gold : lieu de signature pre-rempli = ville du siege (anti double-saisie).
+    seed_signature_lieu(prefix, siege_ville)
     col_c, col_d, col_dd = st.columns(3)
-    capital = _t(col_c, prefix, "capital_social", "Capital social")
+    # Capital en number_input (parite gold shell.py:1430) : interdit « 1000 » brut et
+    # le « € » superflu. Stocke en chaine formatee pour l'aval.
+    cap_key = f"{prefix}_capital_social"
+    if cap_key not in st.session_state:
+        st.session_state[cap_key] = 0
+    capital = format_numeric_value(
+        col_c.number_input(
+            "Capital social (€)",
+            min_value=0,
+            step=100,
+            key=cap_key,
+            help="Montant numerique uniquement.",
+        )
+    )
     # Decision Gad 2026-06-18 : nombre d'actions VARIABLE (defaut 600), aligne sur
     # le patron SAS/SELAS. La valeur nominale n'est plus saisie librement : elle
     # est CALCULEE (capital / nb actions) et affichee en lecture seule.
@@ -981,15 +1005,6 @@ def _i(container, prefix: str, field: str, label: str) -> int:
 
 
 def _date(prefix: str, field: str, label: str) -> date | None:
-    key = f"{prefix}_{field}"
-    current = st.session_state.get(key)
-    if isinstance(current, date):
-        st.session_state[key] = format_french_date(current)
-    elif current is None:
-        st.session_state[key] = format_french_date(date.today())
-    # Bouton « Aujourd'hui » (comme SELARL) : ecrit la date du jour AVANT que le
-    # text_input soit instancie (sinon Streamlit interdit la modif post-widget).
-    if st.button("Aujourd'hui", key=f"{key}_today"):
-        st.session_state[key] = format_french_date(date.today())
-    raw = st.text_input(label, key=key, placeholder="JJ/MM/AAAA")
-    return parse_french_date(raw)
+    # Consomme la couche de rendu partagee (front_widgets) au lieu de reimplementer
+    # le helper localement (cause racine des ecarts de parite).
+    return date_input_with_today(label, key=f"{prefix}_{field}", value=date.today())
