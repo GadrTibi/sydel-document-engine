@@ -48,8 +48,13 @@ from sydel_doc_engine.front_app.field_derivations import (
     DEFAULT_TITRE_AFFICHAGE,
     calculate_nominal_value,
     derive_gender_from_civilite,
-    format_french_date,
-    parse_french_date,
+    format_numeric_value,
+)
+from sydel_doc_engine.front_app.front_widgets import (
+    date_input_with_today,
+    seed_closing_date,
+    seed_exercice_dates,
+    seed_signature_lieu,
 )
 from sydel_doc_engine.front_app.selarl_slice import (
     PROFESSION_MEDECIN,
@@ -120,10 +125,26 @@ class SelasUniMedecinPlan:
 
 def render_selas_uni_medecin_form() -> dict[str, object]:
     st.subheader("Donnees a saisir")
+    # Parite gold (couche partagee) : exercice (1er janvier / 31 decembre) + cloture
+    # « 31 decembre N+1 » pre-remplis, modifiables.
+    seed_exercice_dates(PREFIX)
+    seed_closing_date(PREFIX, field="exercice_cloture")
     st.markdown("**Societe (SELAS unipersonnelle medecin, vocabulaire actions)**")
     col_a, col_b = st.columns(2)
     denomination = _t(col_a, "denomination", "Denomination")
-    capital = _t(col_b, "capital_social", "Capital social")
+    # Capital en number_input (parite gold) : interdit « 1000 » brut et le « € ».
+    cap_key = f"{PREFIX}_capital_social"
+    if cap_key not in st.session_state:
+        st.session_state[cap_key] = 0
+    capital = format_numeric_value(
+        col_b.number_input(
+            "Capital social (€)",
+            min_value=0,
+            step=100,
+            key=cap_key,
+            help="Montant numerique uniquement.",
+        )
+    )
     col_c, col_d, col_e = st.columns(3)
     nb_actions = _i(col_c, "nb_actions_total", "Nombre total d'actions")
     valeur_action = calculate_nominal_value(capital, nb_actions)
@@ -144,6 +165,8 @@ def render_selas_uni_medecin_form() -> dict[str, object]:
     siege_voie = _t(col_sb, "siege_voie", "Voie")
     siege_cp = _t(col_sc, "siege_cp", "CP")
     siege_ville = _t(col_sd, "siege_ville", "Ville")
+    # Parite gold : lieu de signature pre-rempli = ville du siege (anti double-saisie).
+    seed_signature_lieu(PREFIX, siege_ville)
 
     st.markdown("Depot des fonds")
     col_h, col_i = st.columns(2)
@@ -474,14 +497,11 @@ def _i(container, field: str, label: str) -> int:
 
 
 def _date(container, field: str, label: str) -> date | None:
-    key = f"{PREFIX}_{field}"
-    current = st.session_state.get(key)
-    if isinstance(current, date):
-        st.session_state[key] = format_french_date(current)
-    elif current is None:
-        st.session_state[key] = ""
-    raw = container.text_input(label, key=key, placeholder="JJ/MM/AAAA")
-    return parse_french_date(raw)
+    # Consomme la couche de rendu partagee (front_widgets) : ajoute le bouton
+    # « Aujourd'hui » qui manquait ici, et unifie le rendu (cause racine des ecarts).
+    return date_input_with_today(
+        label, key=f"{PREFIX}_{field}", value=date.today(), container=container
+    )
 
 
 def _toggle(container, field: str, label: str) -> bool:
