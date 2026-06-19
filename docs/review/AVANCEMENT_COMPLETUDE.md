@@ -16,6 +16,6 @@
   │   ⬜  SCI / SCI IRIS — lettre option IS (conditionnel)
   │   ⬜  Parite bloc A — 13 logiques SELARL portees aux autres types
   │
-  │   ⏸  Derog cumul SELARL salarie — bloque (vieux .doc jamais converti -> a m'envoyer)
+  │   ⊘  Derog cumul SELARL salarie — non faisable : modele inexistant (liste au canon SELAS, aucun .doc nulle part)
   └────────────────────────────────────────────────────────
 ```

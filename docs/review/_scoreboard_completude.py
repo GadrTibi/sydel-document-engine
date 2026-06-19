@@ -1,5 +1,4 @@
 import datetime
-# (statut, libelle) — etat honnete du chantier completude V2
 ITEMS = [
     ("done", "Socle : sous-formulaire cession reutilisable (byte-identique SELARL)"),
     ("wip",  "SELAS — genere ses docs de cession (cablage)"),
@@ -11,7 +10,7 @@ ITEMS = [
     ("todo", "SCI / SCI IRIS — lettre option IS (conditionnel)"),
     ("todo", "Parite bloc A — 13 logiques SELARL portees aux autres types"),
 ]
-BLOCKED = [("Derog cumul SELARL salarie", "vieux .doc jamais converti -> a m'envoyer")]
+SKIP = [("Derog cumul SELARL salarie", "non faisable : modele inexistant (liste au canon SELAS, aucun .doc nulle part)")]
 MARK = {"done": "✅", "wip": "🔨", "todo": "⬜"}
 done = sum(1 for s, _ in ITEMS if s == "done")
 tot = len(ITEMS)
@@ -27,8 +26,8 @@ L.append("  │")
 for s, lib in ITEMS:
     L.append(f"  │   {MARK[s]}  {lib}")
 L.append("  │")
-for nom, raison in BLOCKED:
-    L.append(f"  │   ⏸  {nom} — bloque ({raison})")
+for nom, raison in SKIP:
+    L.append(f"  │   ⊘  {nom} — {raison}")
 L.append("  └────────────────────────────────────────────────────────")
 board = "\n".join(L)
 print(board)
