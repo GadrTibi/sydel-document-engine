@@ -209,11 +209,17 @@ def domiciliation(siege: Address) -> Domiciliation:
     return Domiciliation(adresse_domiciliation_affichee=siege.adresse_affichee)
 
 
-def default_mandataire() -> Mandataire:
+def default_mandataire(
+    prenom: str | None = None,
+    nom: str | None = None,
+) -> Mandataire:
+    """Mandataire SYDEL (conseiller). Defaut « Jordan ELBAZ » (ratifie Albane
+    2026-06-10), MAIS prenom/nom surchargeables depuis le formulaire pour que le
+    conseiller soit editable sur TOUS les types (parite gold shell.py:1543-1565)."""
     return Mandataire(
         civilite_affichage=DEFAULT_MANDATAIRE_CIVILITE,
-        prenom=DEFAULT_MANDATAIRE_PRENOM,
-        nom=DEFAULT_MANDATAIRE_NOM,
+        prenom=prenom or DEFAULT_MANDATAIRE_PRENOM,
+        nom=nom or DEFAULT_MANDATAIRE_NOM,
         fonction=DEFAULT_MANDATAIRE_FONCTION,
         cabinet=DEFAULT_MANDATAIRE_CABINET,
     )

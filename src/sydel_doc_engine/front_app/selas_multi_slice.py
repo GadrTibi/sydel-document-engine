@@ -48,6 +48,8 @@ from sydel_doc_engine.domain.models import (
 from sydel_doc_engine.front_app import common_creation as cc
 from sydel_doc_engine.front_app.associe_repeater import render_nationalite_selectbox
 from sydel_doc_engine.front_app.field_derivations import (
+    DEFAULT_MANDATAIRE_NOM,
+    DEFAULT_MANDATAIRE_PRENOM,
     calculate_nominal_value,
     date_to_french_words,
     derive_gender_from_civilite,
@@ -421,6 +423,17 @@ def _render_common_docs_form() -> dict[str, object]:
         key=feminin_key,
         help="Coche : « Madame la Présidente » au lieu de « Monsieur le Président ».",
     )
+    # Parite gold (Albane 2026-06-10, shell.py:1543-1565) : conseiller/mandataire
+    # SYDEL editable (defaut « Jordan ELBAZ »), au lieu d'etre code en dur.
+    mand_prenom_key = f"{PREFIX}_mandataire_prenom"
+    mand_nom_key = f"{PREFIX}_mandataire_nom"
+    if not st.session_state.get(mand_prenom_key):
+        st.session_state[mand_prenom_key] = DEFAULT_MANDATAIRE_PRENOM
+    if not st.session_state.get(mand_nom_key):
+        st.session_state[mand_nom_key] = DEFAULT_MANDATAIRE_NOM
+    col_man_a, col_man_b = st.columns(2)
+    mandataire_prenom = col_man_a.text_input("Conseiller (prénom)", key=mand_prenom_key)
+    mandataire_nom = col_man_b.text_input("Conseiller (nom)", key=mand_nom_key)
     regime = _render_regime_communautaire_form()
     common = {
         "decision_date": decision_date,
@@ -431,6 +444,8 @@ def _render_common_docs_form() -> dict[str, object]:
         "ordre_ville": ordre_ville,
         "ordre_numero": ordre_numero,
         "ordre_president_feminin": ordre_president_feminin,
+        "mandataire_prenom": mandataire_prenom or DEFAULT_MANDATAIRE_PRENOM,
+        "mandataire_nom": mandataire_nom or DEFAULT_MANDATAIRE_NOM,
     }
     common.update(regime)
     return common
@@ -1287,7 +1302,10 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         domiciliation=Domiciliation(
             adresse_domiciliation_affichee=siege_struct.adresse_affichee,
         ),
-        mandataire=cc.default_mandataire(),
+        mandataire=cc.default_mandataire(
+            prenom=str(payload.get("mandataire_prenom") or ""),
+            nom=str(payload.get("mandataire_nom") or ""),
+        ),
         ordre=_selas_ordre(payload),
         capital=CapitalContext(
             nb_parts_total=nb_actions_total,
