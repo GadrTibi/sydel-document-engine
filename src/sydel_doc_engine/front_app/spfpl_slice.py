@@ -58,6 +58,7 @@ from sydel_doc_engine.domain.models import (
     SpfplRepresentant,
 )
 from sydel_doc_engine.front_app import common_creation as cc
+from sydel_doc_engine.front_app.associe_repeater import render_nationalite_selectbox
 from sydel_doc_engine.front_app.field_derivations import (
     calculate_nominal_value,
     date_to_french_words,
@@ -226,7 +227,8 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
     ville_naissance = _t(col_k, prefix, "ville_naissance", "Ville de naissance")
     departement_naissance = _t(col_l, prefix, "departement_naissance", "Departement naissance")
     col_m, col_n = st.columns(2)
-    nationalite = _t(col_m, prefix, "nationalite", "Nationalite")
+    # Parite gold : nationalite en deroulant (NATIONALITY_PRESETS + « Autre »).
+    nationalite = render_nationalite_selectbox(prefix, container=col_m)
     regime = _t(col_n, prefix, "regime_matrimonial", "Regime matrimonial")
     # §14.1 : suppression du champ texte libre « Adresse personnelle (affichee) »
     # redondant ; l'adresse affichee est DERIVEE de la grille structuree.

@@ -44,6 +44,7 @@ from sydel_doc_engine.domain.models import (
     StatutsSas,
 )
 from sydel_doc_engine.front_app import common_creation as cc
+from sydel_doc_engine.front_app.associe_repeater import render_nationalite_selectbox
 from sydel_doc_engine.front_app.field_derivations import (
     calculate_nominal_value,
     derive_gender_from_civilite,
@@ -157,7 +158,8 @@ def render_sas_form() -> dict[str, object]:
     ville_naissance = _t(col_l, "ville_naissance", "Ville de naissance")
     departement_naissance = _t(col_m, "departement_naissance", "Departement naissance")
     col_n, col_o = st.columns(2)
-    nationalite = _t(col_n, "nationalite", "Nationalite")
+    # Parite gold : nationalite en deroulant (NATIONALITY_PRESETS + « Autre »).
+    nationalite = render_nationalite_selectbox(PREFIX, container=col_n)
     regime = _t(col_o, "regime_matrimonial", "Regime matrimonial (ex: la communaute legale)")
     adresse_perso = _t(st, "adresse", "Adresse personnelle (affichee)")
     st.caption("Adresse personnelle structuree + filiation (declaration de non-condamnation)")
