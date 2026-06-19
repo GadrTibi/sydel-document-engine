@@ -1,0 +1,296 @@
+[
+ {
+  "key": "valeur_nominale_part_auto",
+  "label": "Valeur nominale d'une part calculee automatiquement (capital / nb parts), non saisie",
+  "category": "FORM",
+  "selarl_behavior": "La valeur nominale n'est jamais saisie : derivee a la volee par calculate_nominal_value(capital_social, nb_parts_total) et affichee en caption ('Valeur nominale calculee : X EUR', sinon 'calculee automatiquement apres capital et parts'). Dans le contexte, valeur_nominale_part = data.valeur_nominale_part OR calculate_nominal_value(...). Division entiere avec format_numeric_value (entier sans virgule si exact). nb_parts==0 -> chaine vide (pas d'erreur).",
+  "selarl_evidence": "front_app/shell.py:1419-1423 ; front_app/selarl_slice.py:487-490 ; front_app/field_derivations.py:138-143"
+ },
+ {
+  "key": "nationalite_preset_deroulant",
+  "label": "Nationalite en menu deroulant (NATIONALITY_PRESETS) avec option 'Autre' libre",
+  "category": "FORM",
+  "selarl_behavior": "selectbox 'Nationalite' alimente par NATIONALITY_PRESETS (Française, Belge, Portugaise, Suisse, Luxembourgeoise, Autre). Si choix != 'Autre', valeur = label.lower() ; si 'Autre', un text_input libre 'Nationalite autre' apparait. Le prefill de test pioche dans NATIONALITY_PRESETS[:-1] (exclut 'Autre').",
+  "selarl_evidence": "front_app/field_derivations.py:19-26 ; front_app/shell.py:1302-1311 ; front_app/shell.py:156-157"
+ },
+ {
+  "key": "adresse_numero_voie_fusionnes",
+  "label": "Adresse structuree avec champ unique 'Numero et voie' (No fusionne dans la voie), CP/Ville separes",
+  "category": "FORM",
+  "selarl_behavior": "L'UI n'expose qu'UN champ texte 'Numero et voie' (+ CP + Ville) ; adresse_num_voie reste vide cote saisie. Cote contexte, _address() appelle split_numero_voie(voie) pour re-extraire le numero en tete ('10 rue Test' -> ('10','rue Test')) au profit des generateurs qui consomment numero et voie separement ; sans numero en tete (lieu-dit) tout part dans la voie et le numero reste optionnel cote generateurs.",
+  "selarl_evidence": "front_app/shell.py:1390-1393, 1446-1458 ; front_app/selarl_slice.py:823-836 ; front_app/field_derivations.py:92-103"
+ },
+ {
+  "key": "duree_figee_99_ans",
+  "label": "Duree de la societe figee a '99 ans' (pas de saisie)",
+  "category": "FORM",
+  "selarl_behavior": "La duree n'est pas un champ de saisie : la fiche societe la fige en dur a '99 ans' (dans les deux branches siege identique / distinct). SelarlSliceInput.duree defaut '99 ans'. Constate aussi au rendu ('pour 99 ans').",
+  "selarl_evidence": "front_app/shell.py:1436, 1451 ; front_app/selarl_slice.py:158 ; docs/review/selarl_returns_008_main_audit_fix_report_v1.md (Autorisation: 'pour 99 ans')"
+ },
+ {
+  "key": "lieu_signature_auto_ville_siege",
+  "label": "Lieu de signature pre-rempli avec la ville du siege social (modifiable)",
+  "category": "FORM",
+  "selarl_behavior": "Au rendu du bloc Generation, si selarl_signature_lieu est vide et siege_ville renseignee, le lieu de signature est pre-initialise dans st.session_state avec la ville du siege ; reste editable par un text_input.",
+  "selarl_evidence": "front_app/shell.py:1547-1549, 1561"
+ },
+ {
+  "key": "bouton_aujourdhui_dates",
+  "label": "Bouton 'Aujourd'hui' a cote de chaque champ date (format texte JJ/MM/AAAA)",
+  "category": "FORM",
+  "selarl_behavior": "Les dates ne sont pas des date_input natifs mais un helper _date_input_with_today : un bouton 'Aujourd'hui' (key=<key>_today) qui injecte format_french_date(date.today()) + un text_input avec placeholder 'JJ/MM/AAAA' ; parse via parse_french_date, caption 'Format attendu : JJ/MM/AAAA' si saisie invalide. Utilise pour date de naissance, date de signature, date de decision.",
+  "selarl_evidence": "front_app/shell.py:1600-1618, 1286-1290, 1562-1572"
+ },
+ {
+  "key": "profession_medecin_dentiste",
+  "label": "Profession en deroulant Medecin / Chirurgien-dentiste pilotant overlay, statuts et regles",
+  "category": "FORM",
+  "selarl_behavior": "selectbox 'Profession' (Medecin, Chirurgien-dentiste) -> PROFESSION_MEDECIN / PROFESSION_DENTISTE. Pilote : le code statuts (DOC-017 medecin / DOC-016 dentiste), l'overlay (selarl_medecin / selarl_dentiste), le label ('médecin' / 'chirurgien-dentiste') et le pluriel ('médecins' / 'chirurgiens-dentistes'), et l'obligation conjoint (dentiste => conjoint requis).",
+  "selarl_evidence": "front_app/shell.py:1240-1244, 1269-1271 ; front_app/selarl_slice.py:839-860, 1021-1022"
+ },
+ {
+  "key": "donnees_test_prefill",
+  "label": "Bouton 'donnees de test' qui pre-remplit un dossier SELARL complet aleatoire",
+  "category": "FORM",
+  "selarl_behavior": "_prefill_random_selarl_data() remplit tout le formulaire (identite, societe, ordre, dates via format_french_date(date.today()), cession+SCM actives) avec des valeurs aleatoires coherentes ; signature_lieu = ville du siege, dates au format texte FR, cloture 1er exercice = '31 decembre {annee+1}'. Sert de happy-path de demo/test.",
+  "selarl_evidence": "front_app/shell.py:113-192, 797-863"
+ },
+ {
+  "key": "situation_matrimoniale_regime_derive",
+  "label": "Situation matrimoniale en deroulant -> regime matrimonial et regime communautaire derives",
+  "category": "FORM",
+  "selarl_behavior": "selectbox 'Situation matrimoniale' (MATRIMONIAL_STATUS_PRESETS). regime_communautaire_from_status() : seul 'Marie(e) sous le regime legal / communaute' (et pas 'universelle') declenche DOC-005/DOC-006. regime_matrimonial_from_status() derive le libelle (communaute / separation de biens / communaute universelle / participation aux acquets). Plus de case a cocher 'regime communautaire' dediee. caption informe quand DOC-005/006 seront generes.",
+  "selarl_evidence": "front_app/shell.py:1312-1322, 1381-1386 ; front_app/field_derivations.py:31-41, 183-207"
+ },
+ {
+  "key": "genre_derive_civilite",
+  "label": "Genre derive automatiquement de la civilite (Monsieur/Madame)",
+  "category": "FORM",
+  "selarl_behavior": "Le genre n'est pas saisi : derive_gender_from_civilite(civilite) mappe Madame/Mme/Mademoiselle/Mlle -> FEMININ, sinon MASCULIN. Applique au praticien et au conjoint (defaut conjoint = Madame). Pilote les accords (subject_line, 'marié/mariée', etc.).",
+  "selarl_evidence": "front_app/shell.py:1329, 1342, 1371 ; front_app/field_derivations.py:106-110"
+ },
+ {
+  "key": "siege_identique_adresse_perso",
+  "label": "Case 'siege identique a l'adresse personnelle' qui recopie l'adresse du praticien",
+  "category": "FORM",
+  "selarl_behavior": "checkbox 'identique a l'adresse personnelle' : si cochee, le siege reprend num_voie/voie/cp/ville de la fiche praticien sans re-saisie ; sinon, champs siege saisis ('Numero et voie' fusionnes + CP + Ville).",
+  "selarl_evidence": "front_app/shell.py:1427-1459"
+ },
+ {
+  "key": "epoux_conjoint_conditionnel",
+  "label": "Bloc epoux / partenaire affiche conditionnellement (dentiste OU marie/pacse)",
+  "category": "FORM",
+  "selarl_behavior": "Le bloc conjoint (civilite deroulant Madame/Monsieur, prenom, nom) n'apparait que si profession == dentiste OU situation in (marie, pacse). La case conjoint est exigee des que le praticien est marie (pas seulement en regime communautaire) — correction du cas separation de biens.",
+  "selarl_evidence": "front_app/shell.py:1324-1351 ; docs/review/selarl_returns_008_main_audit_fix_report_v1.md"
+ },
+ {
+  "key": "conseiller_mandataire_variable",
+  "label": "Conseiller (mandataire SYDEL) prenom/nom editables, defaut Jordan ELBAZ",
+  "category": "FORM",
+  "selarl_behavior": "Retour Albane 2026-06-10 : le conseiller/mandataire n'est plus 'Jordan ELBAZ' en dur. Deux champs editables 'Conseiller (prénom)'/'Conseiller (nom)' pre-initialises aux defauts DEFAULT_MANDATAIRE_PRENOM='Jordan' / DEFAULT_MANDATAIRE_NOM='ELBAZ' ; cabinet/fonction restent 'SYDEL'/'gérant' par defaut.",
+  "selarl_evidence": "front_app/shell.py:1517-1540 ; front_app/field_derivations.py:10-14"
+ },
+ {
+  "key": "second_lieu_exercice_additif",
+  "label": "2e lieu d'exercice optionnel additif (siege = toujours lieu #1)",
+  "category": "FORM",
+  "selarl_behavior": "checkbox 'Autre lieu d'exercice ?' : le siege reste TOUJOURS le lieu d'exercice #1 ; la case ajoute un VRAI 2e lieu (nom + adresse), jamais un remplacement. lieux[1] n'est genere que si nom ET adresse sont fournis ensemble (contrat aligne sur la SELAS validate_selas_second_lieu) ; sinon ignore. Sortie 1-lieu byte-identique a l'existant.",
+  "selarl_evidence": "front_app/shell.py:1461-1490 ; front_app/selarl_slice.py:799-820"
+ },
+ {
+  "key": "exercice_social_prefill",
+  "label": "Dates d'exercice social pre-remplies (1er janvier / 31 decembre / cloture N+1)",
+  "category": "FORM",
+  "selarl_behavior": "Pre-init session_state : exercice_debut='1er janvier', exercice_fin='31 decembre', cloture premier exercice = '31 decembre {annee courante + 1}' (dynamique). Restent editables (text_input).",
+  "selarl_evidence": "front_app/shell.py:1552-1559, 1581-1586"
+ },
+ {
+  "key": "capital_number_input_format_groupe",
+  "label": "Capital saisi en number_input (entier, pas €) et affiche groupe '1 000' dans les docs",
+  "category": "FORM",
+  "selarl_behavior": "Capital social = number_input entier (min 0, step 100, 'Montant numerique uniquement') ; format_numeric_value cote front. Cote documents, format_grouped_numeric_value affiche '1 000' (espace milliers) ; capital en lettres derive via number_words_from_value. Audit verifie l'absence de '1000' brut dans 'Au capital'.",
+  "selarl_evidence": "front_app/shell.py:1404-1411, 1435, 1450 ; front_app/selarl_slice.py:491, 533-535 ; front_app/field_derivations.py:122-128"
+ },
+ {
+  "key": "nb_exemplaires_fige_quatre",
+  "label": "Nombre d'exemplaires fige a 'quatre' (non saisi)",
+  "category": "FORM",
+  "selarl_behavior": "signature_nombre_exemplaires fige a 'quatre' (constante UI, pas de champ) ; alimente DocumentContext.nombre_exemplaires_lettres et la signature.",
+  "selarl_evidence": "front_app/shell.py:1590 ; front_app/selarl_slice.py:182, 645"
+ },
+ {
+  "key": "validation_somme_parts",
+  "label": "VALIDATION : en multi-associes, somme des parts (praticien + membres) == nombre total",
+  "category": "VALIDATION",
+  "selarl_behavior": "En dossier multi-associes, _multi_membres_blockers exige praticien_nb_parts >= 1, chaque membre parts >= 1, et bloque si total (praticien + membres) != nb_parts_total : 'la somme des parts (praticien + membres) doit egaler le nombre total de parts (N).' Le moteur revalide aussi la coherence capital.",
+  "selarl_evidence": "front_app/selarl_slice.py:360-394"
+ },
+ {
+  "key": "validation_champs_requis_vs_facultatifs",
+  "label": "VALIDATION : champs requis listes explicitement ; facultatifs laissent une zone a completer (jamais de phrase incomplete)",
+  "category": "VALIDATION",
+  "selarl_behavior": "_missing_text_blockers liste les champs requis avec message dedie. Champs explicitement FACULTATIFS : adresse de la banque (ticket 3.2) et adresse 2e lieu — vides, les statuts laissent une zone a completer a la main (pas de trou injecte). Les generateurs levent ValueError sur un champ requis manquant plutot que d'injecter un trou.",
+  "selarl_evidence": "front_app/selarl_slice.py:733-772 ; front_app/shell.py:1575-1579 ; generators/lot_01/autorisation_domiciliation.py:90-91"
+ },
+ {
+  "key": "validation_blocages_explicites_plan",
+  "label": "VALIDATION : blocages remontes AVANT generation, affiches dans le plan",
+  "category": "VALIDATION",
+  "selarl_behavior": "build_selarl_plan agrege blockers + warnings ; status 'blocked'/'ready'. Le panneau Generation liste 'Blocage : <message>' (8 max + 'N autres champs requis') et empeche la generation tant que can_generate est faux. generate_selarl_dossier leve ValueError(plan.reason) si non generable.",
+  "selarl_evidence": "front_app/selarl_slice.py:279-303, 661-664 ; front_app/shell.py:2877-2879"
+ },
+ {
+  "key": "validation_conjoint_dentiste_marie",
+  "label": "VALIDATION : identite conjoint requise si dentiste ou marie ; champs DOC-005 requis si regime communautaire",
+  "category": "VALIDATION",
+  "selarl_behavior": "Si profession dentiste OU _is_married -> civilite/prenom/nom du conjoint requis pour les statuts. Si regime_communautaire -> en plus regime_matrimonial requis (DOC-005). L'adresse du conjoint reste exclue en separation de biens.",
+  "selarl_evidence": "front_app/selarl_slice.py:330-355, 1021-1026"
+ },
+ {
+  "key": "validation_cession_champs_indispensables",
+  "label": "VALIDATION : seuls les champs cession reellement indispensables bloquent (identite vendeur, prix total)",
+  "category": "VALIDATION",
+  "selarl_behavior": "Retours client 2026-06-11 : _cession_blockers exige identite complete du vendeur + prix total (+ prix total en lettres si non entier) + identite des salaries renseignes ; clause credit-vendeur figee bloquante pour acte cabinet medical (montant/duree/taux/majoration). Tout le reste facultatif (zone a completer).",
+  "selarl_evidence": "front_app/selarl_slice.py:397-465"
+ },
+ {
+  "key": "ordre_connecteur_de_du",
+  "label": "ORDRE : connecteur grammatical 'de'/'du' configurable devant le departement (defaut 'de')",
+  "category": "ORDRE",
+  "selarl_behavior": "R6 Rafael 2026-06-18 : la ligne 'Conseil departemental de l'Ordre des {pluriel} {connecteur} {departement}' utilise ordre.connecteur_departement ('de' par defaut, 'du' si fourni) pour gerer l'accord. Defaut 'de' = comportement SELARL historique byte-identique.",
+  "selarl_evidence": "generators/lot_02/demande_inscription_ordre.py:180-194"
+ },
+ {
+  "key": "ordre_madame_presidente",
+  "label": "ORDRE : 'Madame la Présidente' si la presidente de l'ordre est une femme (sinon 'Monsieur le Président')",
+  "category": "ORDRE",
+  "selarl_behavior": "Retour Albane 2026-06-10 : checkbox 'La présidente de l'ordre est une femme' -> destinataire_appel = 'Madame la Présidente', sinon 'Monsieur le Président'. Verifie a chaque dossier. Le destinataire_appel est repris dans l'appel et la formule de politesse.",
+  "selarl_evidence": "front_app/selarl_slice.py:172-174, 870-875 ; front_app/shell.py:1509-1516 ; generators/lot_02/demande_inscription_ordre.py:69-72, 324, 350-352"
+ },
+ {
+  "key": "ordre_conseiller_mandataire_libelle",
+  "label": "ORDRE : mandataire (conseiller) variable injecte dans la formule 'Je donne pouvoir a ...'",
+  "category": "ORDRE",
+  "selarl_behavior": "Le mandataire ('{civilite} {prenom} {nom}, {fonction} du cabinet {cabinet}') alimente 'Je donne pouvoir a {mandataire_libelle} pour effectuer les formalites.' Prenom/nom proviennent des champs Conseiller editables (defaut Jordan ELBAZ), fonction='gérant', cabinet='SYDEL'.",
+  "selarl_evidence": "generators/lot_02/demande_inscription_ordre.py:243-253, 341-343 ; front_app/selarl_slice.py:574-580"
+ },
+ {
+  "key": "ordre_adresse_perso_deux_lignes",
+  "label": "ORDRE : adresse personnelle sur deux lignes (rue, puis CP ville) et bloc ordre aligne sur son adresse",
+  "category": "ORDRE",
+  "selarl_behavior": "Retour Albane 2026-06-10 : adresse personnelle coupee sur la 1re virgule -> [rue, 'CP ville'] (2 lignes). Le nom du conseil de l'ordre est aligne avec son adresse (meme retrait gauche 9.7 cm), aeration avant la politesse.",
+  "selarl_evidence": "generators/lot_02/demande_inscription_ordre.py:145-154, 280-298, 345-346"
+ },
+ {
+  "key": "ordre_numero_inscription_conditionnel",
+  "label": "ORDRE : numero d'inscription a l'ordre conditionnel (passe seulement si renseigne)",
+  "category": "ORDRE",
+  "selarl_behavior": "Le numero d'inscription a l'ordre (numero_ordre) alimente Person.numero_inscription_ordre et SpfplOrdre.numero ; cote membres statuts il est passe en None si vide (or-None). La ligne conseil departemental n'utilise le connecteur+departement que si ordre.departement_inscription est present, sinon fallback sur conseil_departemental_libelle.",
+  "selarl_evidence": "front_app/selarl_slice.py:522, 938-939, 1010-1013 ; generators/lot_02/demande_inscription_ordre.py:180-199"
+ },
+ {
+  "key": "doc_bundle_base_selarl",
+  "label": "DOCUMENT : bundle SELARL de base = DOC-001/002/003/004/034 + statuts (DOC-017 medecin OU DOC-016 dentiste)",
+  "category": "DOCUMENT",
+  "selarl_behavior": "selected_selarl_document_codes part de SELARL_V1_BASE_DOC_CODES (DOC-001 DNC, DOC-002 Autorisation domiciliation, DOC-003 Procuration, DOC-004 PV nomination gerant, DOC-034 Demande inscription ordre) + statuts selon profession (DOC-017 Statuts SELARL medecin / DOC-016 Statuts SELARL chirurgien-dentiste). Aligne au canon V3 'docs a generer dans tous les cas / si SELARL / si medecin / si dentiste'.",
+  "selarl_evidence": "front_app/selarl_slice.py:77-91, 253-254, 839-842 ; project/source_truth/Documents_a_generer_par_cas_V3.docx (sections 1-4)"
+ },
+ {
+  "key": "doc_bundle_regime_communautaire",
+  "label": "DOCUMENT : regime communautaire ajoute DOC-005 (renonciation) + DOC-006 (avertissement conjoint)",
+  "category": "DOCUMENT",
+  "selarl_behavior": "Si regime_communautaire, ajout de DOC-005 (Lettre de renonciation a revendiquer la qualite d'associe) et DOC-006 (Lettre d'avertissement au conjoint en cas d'apport d'un bien commun). Document_rows marque DOC-006 'hors_v1' quand le regime n'est pas actif. Conforme au canon 'Si regime communautaire'.",
+  "selarl_evidence": "front_app/selarl_slice.py:86-87, 255-261, 701-711 ; project/source_truth/Documents_a_generer_par_cas_V3.docx (section 7)"
+ },
+ {
+  "key": "doc_bundle_cession_scm",
+  "label": "DOCUMENT : cession (actes/compromis/bail/appel de fonds) et SCM (DOC-031/032/033) conditionnels",
+  "category": "DOCUMENT",
+  "selarl_behavior": "Si cession_context : ajoute les actes/compromis cabinet selon (etape, type_cabinet) via CESSION_CABINET_DOCUMENT_IDS, + Appel de fonds (commun a toute cession des que type_cabinet renseigne). Si bail_context : Avenant contrat de bail. Si scm_cession_context : DOC-031 (PV AGE cession part SCM), DOC-032 (Courrier SDE), DOC-033 (Acte de cession des parts de la SCM vers SEL). Conforme au canon 'Si SCM / Si cession'.",
+  "selarl_evidence": "front_app/selarl_slice.py:262-276 ; project/source_truth/Documents_a_generer_par_cas_V3.docx (sections 6, 9-11)"
+ },
+ {
+  "key": "doc_titre_statuts_denomination",
+  "label": "DOCUMENT : nom de fichier des statuts = 'Statuts {denomination}.docx'",
+  "category": "DOCUMENT",
+  "selarl_behavior": "Retour Albane 2026-06-10 : statuts_output_filename met d'office la denomination dans l'intitule du fichier ('Statuts {denomination sanitisee}.docx') pour eviter le renommage manuel ; denomination vide -> fallback historique.",
+  "selarl_evidence": "generators/lot_04/statuts_sel_exercice_common.py:1004-1014 ; generators/lot_04/statuts_selarl_medecin.py:103-107"
+ },
+ {
+  "key": "doc_capital_euros_suffixe",
+  "label": "DOCUMENT : 'euros' suffixe apres le capital la ou le modele ne portait pas d'unite",
+  "category": "DOCUMENT",
+  "selarl_behavior": "Retour Albane 2026-06-17 : sur l'autorisation de domiciliation, le modele fige 'au capital de [capital_social] en cours de formation' sans unite -> on suffixe 'euros' a la valeur. PV nomination gerant ajoute 'euros' si absent. Avenant bail corrige 'RCS de' (de manquant). Pattern general d'accord 'euro/euros'.",
+  "selarl_evidence": "generators/lot_01/autorisation_domiciliation.py:116-119 ; generators/lot_02/pv_nomination_gerant.py:266-268 ; generators/lot_03/avenant_contrat_bail.py:192-193 ; generators/lot_04/statuts_sel_exercice_common.py:207-208"
+ },
+ {
+  "key": "doc_rcs_de",
+  "label": "DOCUMENT : 'RCS de {ville}' (connecteur 'de') dans les phrases d'immatriculation",
+  "category": "DOCUMENT",
+  "selarl_behavior": "Retour Albane 2026-06-17 : l'avenant de bail corrige 'd'immatriculation au RCS de {ville_rcs}' ('de' manquant). Meme forme 'immatriculee au RCS de {ville_rcs}' dans les statuts (membres) et la SELAS multi.",
+  "selarl_evidence": "generators/lot_03/avenant_contrat_bail.py:192-194 ; generators/lot_04/statuts_sel_exercice_common.py:712 ; generators/lot_04/statuts_civils_common.py:595"
+ },
+ {
+  "key": "doc_procuration_sydel_rcs_tel_italique",
+  "label": "DOCUMENT : bloc mandataire SYDEL (procuration) avec RCS + telephone, sous-bloc en italique",
+  "category": "DOCUMENT",
+  "selarl_behavior": "Modele procuration maj Albane 2026-06-10/06-17 : sous 'SYDEL' (gras non italique), ajout adresse + 'RCS PARIS 788 531 432' + telephone '0153814303', toute la partie sous SYDEL en italique, bloc legerement aere (space_after 6pt avant/apres, italique adresse/RCS/tel). 'agissant en qualité de' en minuscule dans la phrase d'identite.",
+  "selarl_evidence": "generators/lot_01/procuration.py:21-27, 81-90, 175-188"
+ },
+ {
+  "key": "doc_dnc_conventions",
+  "label": "DOCUMENT : DNC (DOC-001) — ville de naissance apres la date, departement entre parentheses, 'ne au/a', aeration",
+  "category": "DOCUMENT",
+  "selarl_behavior": "Retours Albane 2026-06-10/06-17 : DNC = 'ne le {date} a/au {ville} ({departement})' sans point apres la ville, departement entre parentheses si renseigne, choix 'a'/'au' via case 'au'. Aeration sous le cadre du titre (10pt) et avant le rappel legal italique (12pt). Filiation pere/mere distincte.",
+  "selarl_evidence": "generators/lot_01/declaration_non_condamnation.py:68-105 ; front_app/shell.py:1292-1296"
+ },
+ {
+  "key": "doc_pv_nomination_gerant",
+  "label": "DOCUMENT : PV nomination gerant (DOC-004) — forme juridique redigee, capital groupe, gerant nomine = praticien",
+  "category": "DOCUMENT",
+  "selarl_behavior": "DOC-004 toujours genere (base). Forme juridique redigee en clair, capital '1 000' (groupe) + 'euros', president de seance = associe unique (ReunionPresident derive de l'associe representatif), dirigeant nomine = praticien (fonction 'gérant', ref_associe_index 0). Documents courts : pas de table de signature additionnelle.",
+  "selarl_evidence": "front_app/selarl_slice.py:582-599, 962-975 ; generators/lot_02/pv_nomination_gerant.py:266-268 ; docs/review/selarl_returns_008_main_audit_fix_report_v1.md"
+ },
+ {
+  "key": "doc_statuts_labels_accentues",
+  "label": "DOCUMENT : libelles profession accentues dans les documents ('médecin'/'chirurgien-dentiste', pluriels)",
+  "category": "DOCUMENT",
+  "selarl_behavior": "Les libelles front non accentues (Medecin/Chirurgien-dentiste) sont rendus accentues dans les documents : _profession_label='médecin'/'chirurgien-dentiste', _profession_plural='médecins'/'chirurgiens-dentistes'. Audit verifie l'absence de 'medecin' non accentue dans le texte genere et la ligne 'Conseil departemental de l'Ordre des medecins de 75' accentuee.",
+  "selarl_evidence": "front_app/selarl_slice.py:851-860 ; docs/review/selarl_returns_008_main_audit_fix_report_v1.md"
+ },
+ {
+  "key": "doc_statuts_seuils_gerance_defauts",
+  "label": "DOCUMENT : statuts medecin — seuils gerance (achat materiel / emprunt) avec defauts 5000 / 10000",
+  "category": "DOCUMENT",
+  "selarl_behavior": "Statuts SELARL medecin injectent [seuil_achat_materiel] et [seuil_emprunt_gerance] (au-dela desquels le gerant demande l'autorisation des associes), defauts DEFAULT_SEUIL_ACHAT_MATERIEL='5000' / DEFAULT_SEUIL_EMPRUNT='10000'. Specifique medecin (le dentiste a [prestataire_signature_electronique] a la place, defaut 'Yousign').",
+  "selarl_evidence": "front_app/selarl_slice.py:500-501, 612-615 ; front_app/field_derivations.py:15-17 ; generators/lot_04/statuts_selarl_medecin.py:72-99"
+ },
+ {
+  "key": "format_cadre_titre_statuts_marges",
+  "label": "FORMAT : cadre 'STATUTS' agrandi via marges de cellule (cadre 1x1) et marges internes des cadres",
+  "category": "FORMAT",
+  "selarl_behavior": "Retour Albane §2.1 (cadre trop petit/proche de l'en-tete) : le cadre STATUTS est agrandi par des marges de cellule (top/bottom 120, left/right 160 dxa) sans toucher aux bordures. Profil de style : frame_cell_margin vertical 100 / horizontal 140 dxa, signature_cell_margin 120/140. 1 pt = 20 dxa.",
+  "selarl_evidence": "rendering/docx_builder.py:30-35, 438-441, 731-739"
+ },
+ {
+  "key": "format_aeration_blocs",
+  "label": "FORMAT : aeration (espaces avant/apres) ajoutee aux blocs sur retours Albane",
+  "category": "FORMAT",
+  "selarl_behavior": "Multiples retours Albane 2026-06-10/06-17 codifies en espaceurs : DNC (10pt sous le titre, 12pt avant rappel legal), procuration (6pt avant/apres bloc mandataire, 6pt avant signature), demande ordre (10/14pt blocs, 8pt avant politesse), appel de fonds (montant + symbole euros sur la MEME ligne centree).",
+  "selarl_evidence": "generators/lot_01/declaration_non_condamnation.py:69-104 ; generators/lot_01/procuration.py:81-90 ; generators/lot_02/demande_inscription_ordre.py:283-298, 345-346 ; generators/lot_03/appel_fond_sel.py:109-110"
+ },
+ {
+  "key": "format_police_roboto",
+  "label": "FORMAT : police Roboto forcee (autorisation domiciliation, footer statuts medecin)",
+  "category": "FORMAT",
+  "selarl_behavior": "Retour Albane 2026-06-10 : police Roboto forcee sur tout le document filled de l'autorisation de domiciliation (style Normal + chaque run, ecrase la police directe du modele). Statuts medecin : pied de page non vide restaure (pagination PAGE + 'Statuts <denomination>', Roboto 8pt) ; le dentiste a un footer source vide (parametre non passe).",
+  "selarl_evidence": "generators/lot_01/autorisation_domiciliation.py:141-149 ; generators/lot_04/statuts_selarl_medecin.py:111-115"
+ },
+ {
+  "key": "format_statuts_overlay_borne",
+  "label": "FORMAT : titre STATUTS encadre non borde pour SELARL medecin (title_box_bordered=False), saut de page annexe",
+  "category": "FORMAT",
+  "selarl_behavior": "render_statuts_sel_docx pour le medecin : title_box_bordered=False, annex_page_break=True, skip_personne_2_line=True (mono), footer medecin avec denomination. Le titre encadre 'STATUTS' du modele source vit dans une table (cellule). Sortie byte-identique a l'existant en 1-lieu / mono.",
+  "selarl_evidence": "generators/lot_04/statuts_selarl_medecin.py:101-120 ; generators/lot_04/statuts_civils_common.py:67"
+ }
+]
