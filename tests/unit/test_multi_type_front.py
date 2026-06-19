@@ -1699,9 +1699,13 @@ def test_selas_cession_codes_flow_into_plan_and_orchestrator() -> None:
     }
     plan = sms._selas_document_codes(payload)
     orch = sms._orchestrator_codes(payload)
-    for code in ("DOC-012", "DOC-008", "DOC-007", "DOC-031", "DOC-032", "DOC-033"):
+    for code in ("DOC-012", "DOC-007", "DOC-031", "DOC-032", "DOC-033"):
         assert code in plan, f"{code} absent du plan SELAS"
         assert code in orch, f"{code} absent des codes orchestrateur SELAS"
+    # ANO-008 : l'appel de fonds (DOC-008) est restreint a la SELARL cote moteur et
+    # non clairement requis pour la SELAS au canon -> il ne doit PAS etre inscrit au
+    # plan SELAS (sinon annonce mais jamais genere). Question metier flaggee (Albane).
+    assert "DOC-008" not in plan
     # Sans cession : aucun code cession ajoute (bundle de creation inchange).
     assert sms._cession_codes({}) == ()
 

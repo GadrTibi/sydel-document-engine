@@ -68,7 +68,6 @@ from sydel_doc_engine.generators.lot_02.lettre_renonciation_associe import (
     LettreRenonciationAssocieGenerator,
 )
 from sydel_doc_engine.orchestrator.service import (
-    APPEL_FONDS_DOCUMENT_ID,
     BAIL_AVENANT_DOCUMENT_ID,
     CESSION_CABINET_DOCUMENT_IDS,
 )
@@ -212,8 +211,12 @@ def _cession_codes(payload: dict[str, object]) -> tuple[str, ...]:
         for doc_id, (exp_etape, exp_type) in CESSION_CABINET_DOCUMENT_IDS.items():
             if etape == exp_etape and type_cabinet == exp_type:
                 codes.append(doc_id)
-        if type_cabinet:
-            codes.append(APPEL_FONDS_DOCUMENT_ID)
+        # ANO-008 : l'appel de fonds (DOC-008) est restreint a la SELARL cote moteur
+        # (_appel_fonds_enabled) et n'est PAS clairement requis pour la SELAS au canon.
+        # On ne l'inscrit donc PLUS au plan SELAS (sinon il serait annonce mais jamais
+        # genere -> plan menteur). Question metier flaggee : la SELAS cession doit-elle
+        # generer un appel de fonds comme la SELARL ? -> a confirmer Albane avant d'ouvrir
+        # la porte cote moteur (et de verifier le rendu sur contexte SELAS).
     if bail_ctx is not None:
         codes.append(BAIL_AVENANT_DOCUMENT_ID)
     if scm_ctx is not None:
