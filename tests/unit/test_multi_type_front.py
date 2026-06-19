@@ -1613,6 +1613,34 @@ def test_typed_test_data_button_generates(
     assert "Telecharger le dossier ZIP" in download_labels
 
 
+def test_selas_cession_codes_flow_into_plan_and_orchestrator() -> None:
+    # Completude V2 : la SELAS reutilise les sous-formulaires cession SELARL
+    # valides (prefix='selas'). Des qu'un contexte cession/bail/scm est saisi,
+    # les codes des documents de cession doivent entrer dans le bundle (plan ET
+    # codes confies a l'orchestrateur), comme la SELARL.
+    from sydel_doc_engine.domain.models import (
+        BailContext,
+        CessionContext,
+        ScmCessionContext,
+    )
+    from sydel_doc_engine.front_app import selas_multi_slice as sms
+
+    payload = {
+        "cession_context": CessionContext.model_validate(
+            {"etape": "compromis", "type_cabinet": "dentaire"}
+        ),
+        "bail_context": BailContext(),
+        "scm_cession_context": ScmCessionContext(),
+    }
+    plan = sms._selas_document_codes(payload)
+    orch = sms._orchestrator_codes(payload)
+    for code in ("DOC-012", "DOC-008", "DOC-007", "DOC-031", "DOC-032", "DOC-033"):
+        assert code in plan, f"{code} absent du plan SELAS"
+        assert code in orch, f"{code} absent des codes orchestrateur SELAS"
+    # Sans cession : aucun code cession ajoute (bundle de creation inchange).
+    assert sms._cession_codes({}) == ()
+
+
 def test_front_selas_dentiste_pluri_uses_dentiste_corpus(
     tmp_path: Path, monkeypatch
 ) -> None:

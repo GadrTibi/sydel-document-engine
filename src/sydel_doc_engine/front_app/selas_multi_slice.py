@@ -61,6 +61,11 @@ from sydel_doc_engine.generators.lot_02.lettre_avertissement_conjoint import (
 from sydel_doc_engine.generators.lot_02.lettre_renonciation_associe import (
     LettreRenonciationAssocieGenerator,
 )
+from sydel_doc_engine.orchestrator.service import (
+    APPEL_FONDS_DOCUMENT_ID,
+    BAIL_AVENANT_DOCUMENT_ID,
+    CESSION_CABINET_DOCUMENT_IDS,
+)
 
 STRUCTURE = "SELAS"
 DOC_CODE = "DOC-044"
@@ -182,6 +187,31 @@ def _selas_document_codes(payload: dict[str, object]) -> tuple[str, ...]:
     codes = list(SELAS_BUNDLE_CODES)
     if _regime_communautaire_actif(payload):
         codes.extend(cc.REGIME_COMMUNAUTAIRE_CODES)
+    codes.extend(_cession_codes(payload))
+    return tuple(codes)
+
+
+def _cession_codes(payload: dict[str, object]) -> tuple[str, ...]:
+    """Codes des documents de cession (cabinet medical/dentaire, bail, appel de
+    fonds, cession SCM) selon les contextes saisis. Meme logique que la SELARL :
+    on derive les codes des contextes cession/bail/scm_cession presents dans le
+    payload (sous-formulaires SELARL reutilises en prefix='selas')."""
+    codes: list[str] = []
+    cession_ctx = payload.get("cession_context")
+    bail_ctx = payload.get("bail_context")
+    scm_ctx = payload.get("scm_cession_context")
+    if cession_ctx is not None:
+        etape = (getattr(cession_ctx, "etape", "") or "").strip().lower()
+        type_cabinet = (getattr(cession_ctx, "type_cabinet", "") or "").strip().lower()
+        for doc_id, (exp_etape, exp_type) in CESSION_CABINET_DOCUMENT_IDS.items():
+            if etape == exp_etape and type_cabinet == exp_type:
+                codes.append(doc_id)
+        if type_cabinet:
+            codes.append(APPEL_FONDS_DOCUMENT_ID)
+    if bail_ctx is not None:
+        codes.append(BAIL_AVENANT_DOCUMENT_ID)
+    if scm_ctx is not None:
+        codes.extend(("DOC-031", "DOC-032", "DOC-033"))
     return tuple(codes)
 
 
@@ -202,6 +232,7 @@ def _orchestrator_codes(payload: dict[str, object]) -> tuple[str, ...]:
         # Toggle global : chemin historique inchange (un couple, nom fixe).
         codes.extend(cc.REGIME_COMMUNAUTAIRE_CODES)
     # Sinon (chemin per-associe), DOC-005/006 sont emis hors orchestrateur.
+    codes.extend(_cession_codes(payload))
     return tuple(codes)
 
 
@@ -279,6 +310,21 @@ def render_selas_form(type_key: str = "selas_multi_v1") -> dict[str, object]:
 
     associes, president_index, dirigeant_sig, dirigeants_nomines = _render_selas_associes()
     common = _render_common_docs_form()
+    cession_context, bail_context, scm_cession_context = _render_selas_cession(
+        associes,
+        president_index,
+        dirigeant_sig,
+        denomination=denomination,
+        capital=capital,
+        ville_rcs=ville_rcs,
+        siege_num=siege_num,
+        siege_voie=siege_voie,
+        siege_cp=siege_cp,
+        siege_ville=siege_ville,
+        profession=profession,
+        ordre_departement=str(common.get("ordre_departement") or ""),
+        signature_date=signature_date,
+    )
 
     payload: dict[str, object] = {
         "denomination": denomination,
@@ -302,6 +348,9 @@ def render_selas_form(type_key: str = "selas_multi_v1") -> dict[str, object]:
         "associes": associes,
         "president_index": president_index,
         "dirigeants_nomines": dirigeants_nomines,
+        "cession_context": cession_context,
+        "bail_context": bail_context,
+        "scm_cession_context": scm_cession_context,
     }
     payload.update(common)
     # La DNC / l'identite du dirigeant (saisies sous l'associe coche) alimentent
@@ -1004,6 +1053,92 @@ def _resolve_president_index(
     return default_index
 
 
+def _render_selas_cession(
+    associes: list[StatutsCivilsAssocie],
+    president_index: int,
+    dirigeant_sig: dict[str, object],
+    *,
+    denomination: str,
+    capital: str,
+    ville_rcs: str,
+    siege_num: str,
+    siege_voie: str,
+    siege_cp: str,
+    siege_ville: str,
+    profession: str,
+    ordre_departement: str,
+    signature_date: object,
+):
+    """Cession (cabinet medical/dentaire + bail) + cession de parts SCM pour la
+    SELAS, en REUTILISANT les sous-formulaires SELARL valides (prefix='selas').
+
+    Vendeur par defaut = le president (modifiable dans le sous-formulaire) ;
+    acquereur = la SELAS. Import differe de shell (anti-cycle)."""
+    from sydel_doc_engine.front_app import shell
+
+    pres = (
+        associes[president_index]
+        if associes and 0 <= president_index < len(associes)
+        else None
+    )
+    praticien: dict[str, object] = {
+        "prenom": (pres.prenom or pres.prenoms) if pres else "",
+        "nom": pres.nom if pres else "",
+        "genre": pres.genre if pres else None,
+        "date_naissance": pres.date_naissance if pres else None,
+        "ville_naissance": pres.ville_naissance if pres else None,
+        "departement_naissance": pres.departement_naissance if pres else None,
+        "nationalite": pres.nationalite if pres else None,
+        "numero_ordre": pres.numero_ordre if pres else None,
+        "numero_rpps": pres.numero_rpps if pres else None,
+        "situation_maritale": pres.situation_maritale if pres else None,
+        "adresse_num_voie": str(dirigeant_sig.get("signataire_adresse_num") or ""),
+        "adresse_voie": str(dirigeant_sig.get("signataire_adresse_voie") or ""),
+        "adresse_cp": str(dirigeant_sig.get("signataire_adresse_cp") or ""),
+        "adresse_ville": str(dirigeant_sig.get("signataire_adresse_ville") or ""),
+    }
+    societe: dict[str, object] = {
+        "denomination": denomination,
+        "capital_social": capital,
+        "ville_rcs": ville_rcs,
+        "siege_num_voie": siege_num,
+        "siege_voie": siege_voie,
+        "siege_cp": siege_cp,
+        "siege_ville": siege_ville,
+    }
+    ordre = {"departement_ordre": ordre_departement}
+    generation = {"signature_date": signature_date}
+    # Statut marital du vendeur, lu par le sous-formulaire via la cle prefixee.
+    st.session_state["selas_situation_maritale"] = str(
+        praticien.get("situation_maritale") or ""
+    )
+
+    st.markdown("**Cession (optionnel)**")
+    cession_on = st.checkbox(
+        "Cession de cabinet liberal (medical / dentaire)",
+        key="selas_cession_on",
+    )
+    scm_on = st.checkbox("Cession de parts de SCM", key="selas_scm_cession_on")
+    cession_ctx, bail_ctx = shell._render_cession_form(
+        cession_on,
+        profession,
+        praticien=praticien,
+        societe=societe,
+        ordre=ordre,
+        generation=generation,
+        prefix="selas",
+    )
+    scm_ctx = shell._render_scm_cession_form(
+        scm_on,
+        praticien=praticien,
+        societe=societe,
+        profession_label=profession,
+        ordre=ordre,
+        prefix="selas",
+    )
+    return cession_ctx, bail_ctx, scm_ctx
+
+
 def build_generation_context(payload: dict[str, object]) -> DocumentGenerationContext:
     associes: list[StatutsCivilsAssocie] = list(payload.get("associes") or [])
     president_index = _resolve_president_index(payload, associes)
@@ -1071,7 +1206,12 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         dossier_options=DossierOptions(
             associe_unique=False,
             regime_communautaire=regime_communautaire_actif,
+            cession=payload.get("cession_context") is not None,
+            scm_cession=payload.get("scm_cession_context") is not None,
         ),
+        cession=payload.get("cession_context"),
+        bail=payload.get("bail_context"),
+        scm_cession=payload.get("scm_cession_context"),
         personne_signataire=signataire,
         conjoint=(
             _conjoint_person(regime_payload, conjoint_foyer)
