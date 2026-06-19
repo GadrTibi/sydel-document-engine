@@ -53,6 +53,7 @@ from sydel_doc_engine.front_app.front_widgets import (
     date_input_with_today,
     mandataire_inputs,
     seed_closing_date,
+    siege_same_as_perso_checkbox,
 )
 
 # Mapping structure -> (type statuts civils, doc_code statuts).
@@ -174,6 +175,14 @@ def render_civil_form(structure: str) -> dict[str, object]:
     # N+1 », modifiable. Le modele civil ne consomme QUE la cloture (pas debut/fin) ->
     # on ne seede pas exercice_debut/fin (difference justifiee).
     seed_closing_date(prefix, field="date_cloture_premier_exercice")
+    # RAF-003a : si « siege = adresse perso » coche, recopier l'adresse du gerant
+    # (memorisee au run precedent sous des cles stables) dans le siege AVANT ses
+    # widgets (cross-rerun : le gerant est designe dans le repeater, apres le siege).
+    if st.session_state.get(f"{prefix}_siege_same_as_perso"):
+        for _f in ("num", "voie", "cp", "ville"):
+            _src = st.session_state.get(f"{prefix}_gerant_adresse_{_f}")
+            if _src:
+                st.session_state[f"{prefix}_siege_{_f}"] = _src
 
     # Forme sociale (libelle) : DERIVEE de la structure, plus saisie (§18.1).
     forme_sociale = civil_forme_sociale(structure)
@@ -207,6 +216,7 @@ def render_civil_form(structure: str) -> dict[str, object]:
     duree = "99"
 
     st.markdown("Siege social")
+    siege_same_as_perso_checkbox(prefix)
     col_g, col_h, col_i, col_j = st.columns(4)
     siege_num = _text(col_g, prefix, "siege_num", "No")
     siege_voie = _text(col_h, prefix, "siege_voie", "Voie")
@@ -276,6 +286,12 @@ def render_civil_form(structure: str) -> dict[str, object]:
     # La DNC / filiation du gerant (saisie sous l'associe coche) alimente les cles
     # signataire_* lues par les documents communs.
     payload.update(_collect_gerant_sig(associes, gerant_index, prefix))
+    # RAF-003a : memoriser l'adresse du gerant sous des cles stables pour que la case
+    # « siege = adresse perso » puisse la recopier au run suivant (cas multi-associe).
+    for _gf in ("num", "voie", "cp", "ville"):
+        st.session_state[f"{prefix}_gerant_adresse_{_gf}"] = str(
+            payload.get(f"signataire_adresse_{_gf}") or ""
+        )
     return payload
 
 
