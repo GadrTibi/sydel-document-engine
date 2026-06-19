@@ -1542,7 +1542,6 @@ def test_front_routes_to_sci_slice_and_generates(tmp_path: Path, monkeypatch) ->
     # (§18.3), lieu signature = ville siege (§18.4) : ces champs ne sont plus saisis.
     society = {
         "sci_denomination": "SCI EXEMPLE",
-        "sci_capital_social": "1000",
         "sci_siege_num": "10",
         "sci_siege_voie": "rue de la Paix",
         "sci_siege_cp": "75002",
@@ -1558,6 +1557,8 @@ def test_front_routes_to_sci_slice_and_generates(tmp_path: Path, monkeypatch) ->
     }
     for key, value in society.items():
         set_text(key, value)
+    # Capital social = number_input (parite gold) -> set via set_number.
+    set_number("sci_capital_social", 1000)
     set_text("sci_signature_date", "15/05/2026")
     app = app.run(timeout=180)
 

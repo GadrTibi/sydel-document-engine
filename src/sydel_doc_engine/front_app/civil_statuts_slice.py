@@ -45,9 +45,13 @@ from sydel_doc_engine.front_app import common_creation as cc
 from sydel_doc_engine.front_app.associe_repeater import RepeaterConfig, render_associe_repeater
 from sydel_doc_engine.front_app.field_derivations import (
     calculate_nominal_value,
-    format_french_date,
+    format_numeric_value,
     number_words_from_value,
     parse_french_date,
+)
+from sydel_doc_engine.front_app.front_widgets import (
+    date_input_with_today,
+    seed_closing_date,
 )
 
 # Mapping structure -> (type statuts civils, doc_code statuts).
@@ -165,12 +169,29 @@ def render_civil_form(structure: str) -> dict[str, object]:
     prefix = statuts_type
     st.subheader("Donnees a saisir")
     st.markdown(f"**Societe ({structure})**")
+    # Parite gold (couche partagee) : cloture du 1er exercice pre-remplie « 31 decembre
+    # N+1 », modifiable. Le modele civil ne consomme QUE la cloture (pas debut/fin) ->
+    # on ne seede pas exercice_debut/fin (difference justifiee).
+    seed_closing_date(prefix, field="date_cloture_premier_exercice")
 
     # Forme sociale (libelle) : DERIVEE de la structure, plus saisie (§18.1).
     forme_sociale = civil_forme_sociale(structure)
     denomination = _text(st, prefix, "denomination", "Denomination sociale")
     col_c, col_d = st.columns(2)
-    capital_social = _text(col_c, prefix, "capital_social", "Capital social")
+    # Capital en number_input (parite gold shell.py:1430) : interdit « 1000 » brut et
+    # le « € » superflu. Stocke en chaine formatee pour l'aval.
+    cap_key = f"{prefix}_capital_social"
+    if cap_key not in st.session_state:
+        st.session_state[cap_key] = 0
+    capital_social = format_numeric_value(
+        col_c.number_input(
+            "Capital social (€)",
+            min_value=0,
+            step=100,
+            key=cap_key,
+            help="Montant numerique uniquement.",
+        )
+    )
     nb_parts_total = _int(col_d, prefix, "nb_parts_total", "Nombre total de parts")
     # Valeur nominale d'une part : TOUJOURS calculee (capital / nb parts), jamais
     # saisie (retours Albane 2026-06-17, SCREEN-2 / §18.2). Champ d'affichage seul.
@@ -1006,15 +1027,6 @@ def _int(container, prefix: str, field: str, label: str) -> int:
 
 
 def _date_input(prefix: str, field: str, label: str) -> date | None:
-    key = f"{prefix}_{field}"
-    current = st.session_state.get(key)
-    if isinstance(current, date):
-        st.session_state[key] = format_french_date(current)
-    elif current is None:
-        st.session_state[key] = format_french_date(date.today())
-    # Bouton « Aujourd'hui » (comme SELARL) : ecrit la date du jour AVANT que le
-    # text_input soit instancie (sinon Streamlit interdit la modif post-widget).
-    if st.button("Aujourd'hui", key=f"{key}_today"):
-        st.session_state[key] = format_french_date(date.today())
-    raw = st.text_input(label, key=key, placeholder="JJ/MM/AAAA")
-    return parse_french_date(raw)
+    # Consomme la couche de rendu partagee (front_widgets) au lieu de reimplementer
+    # le helper localement (cause racine des ecarts de parite).
+    return date_input_with_today(label, key=f"{prefix}_{field}", value=date.today())

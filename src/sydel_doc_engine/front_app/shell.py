@@ -244,7 +244,7 @@ def _prefill_scm_test_data() -> None:
     """
     values: dict[str, object] = {
         "scm_denomination": "SCM DES DOCTEURS EXEMPLE",
-        "scm_capital_social": "1000",
+        "scm_capital_social": 1000,
         "scm_nb_parts_total": 100,
         "scm_siege_num": "10",
         "scm_siege_voie": "rue de la Paix",
@@ -334,7 +334,7 @@ def _civil_society_prefill(
     del forme_sociale
     return {
         f"{prefix}_denomination": denomination,
-        f"{prefix}_capital_social": "1000",
+        f"{prefix}_capital_social": 1000,
         f"{prefix}_nb_parts_total": 100,
         f"{prefix}_siege_num": "10",
         f"{prefix}_siege_voie": "rue de la Paix",
