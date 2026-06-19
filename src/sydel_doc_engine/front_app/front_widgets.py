@@ -62,3 +62,43 @@ def date_input_with_today(
     if str(raw_value).strip() and parsed is None:
         target.caption("Format attendu : JJ/MM/AAAA")
     return parsed
+
+
+def seed_if_empty(key: str, value: object) -> None:
+    """Seede `st.session_state[key]` avec `value` s'il est absent/vide.
+
+    A appeler AVANT le widget correspondant (Streamlit interdit la modification de
+    `st.session_state[key]` une fois le widget instancie). Helper de base des
+    pre-remplissages de parite (cloture, dates d'exercice, lieu de signature).
+    """
+    if not st.session_state.get(key):
+        st.session_state[key] = value
+
+
+def seed_closing_date(prefix: str, *, field: str = "date_cloture") -> None:
+    """Pre-remplit la cloture du 1er exercice a « 31 decembre N+1 » (convention gold
+    SELARL-UI-1, shell.py:1582-1585), modifiable. Libelle TEXTUEL, pas un date-picker."""
+    seed_if_empty(f"{prefix}_{field}", f"31 decembre {date.today().year + 1}")
+
+
+def seed_exercice_dates(
+    prefix: str,
+    *,
+    debut_field: str = "exercice_debut",
+    fin_field: str = "exercice_fin",
+) -> None:
+    """Pre-remplit debut='1er janvier' / fin='31 decembre' (gold shell.py:1578-1581)."""
+    seed_if_empty(f"{prefix}_{debut_field}", "1er janvier")
+    seed_if_empty(f"{prefix}_{fin_field}", "31 decembre")
+
+
+def seed_signature_lieu(
+    prefix: str,
+    ville_siege: str,
+    *,
+    field: str = "signature_lieu",
+) -> None:
+    """Pre-remplit le lieu de signature = ville du siege (gold shell.py:1573-1575),
+    modifiable. Anti double-saisie. Ne seede que si la ville du siege est connue."""
+    if ville_siege:
+        seed_if_empty(f"{prefix}_{field}", ville_siege)

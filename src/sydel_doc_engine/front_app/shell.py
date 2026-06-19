@@ -541,7 +541,7 @@ def _prefill_sas_test_data() -> None:
         "sas_siege_voie": "rue de la Paix",
         "sas_siege_cp": "75002",
         "sas_siege_ville": "Paris",
-        "sas_capital_social": "12000",
+        "sas_capital_social": 12000,
         "sas_nb_actions_total": 120,
         "sas_valeur_nominale_action": "100",
         "sas_apports_nature_montant": "10000",

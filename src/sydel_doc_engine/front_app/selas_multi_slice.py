@@ -57,6 +57,10 @@ from sydel_doc_engine.front_app.field_derivations import (
     number_words_from_value,
     parse_french_date,
 )
+from sydel_doc_engine.front_app.front_widgets import (
+    seed_closing_date,
+    seed_signature_lieu,
+)
 from sydel_doc_engine.generators.lot_02.lettre_avertissement_conjoint import (
     LettreAvertissementConjointGenerator,
 )
@@ -266,13 +270,9 @@ def render_selas_form(type_key: str = "selas_multi_v1") -> dict[str, object]:
     # « chirurgien-dentiste » (le moteur basculera sur le corpus dentiste). Pour
     # la SELAS multi generique, aucun pre-reglage (profession libre).
     _apply_type_profession_default(type_key)
-    # RAF-006 (parite gold) : pre-remplir la cloture du 1er exercice a « 31 decembre
-    # N+1 » (convention SELARL-UI-1, shell.py:1582-1585), modifiable. La cloture est
-    # un libelle TEXTUEL (comme le gold), pas un date-picker JJ/MM/AAAA. Seede AVANT
-    # le widget (Streamlit interdit la modif post-widget).
-    cloture_key = f"{PREFIX}_date_cloture"
-    if not st.session_state.get(cloture_key):
-        st.session_state[cloture_key] = f"31 decembre {date.today().year + 1}"
+    # RAF-006 (parite gold, couche partagee) : cloture du 1er exercice pre-remplie
+    # « 31 decembre N+1 », modifiable. Libelle TEXTUEL (comme le gold), pas un picker.
+    seed_closing_date(PREFIX)
     st.subheader("Donnees a saisir")
     st.markdown("**Societe (SELAS d'exercice, vocabulaire actions)**")
     col_a, col_b = st.columns(2)
@@ -325,12 +325,9 @@ def render_selas_form(type_key: str = "selas_multi_v1") -> dict[str, object]:
     siege_cp = _t(col_sc, "siege_cp", "CP")
     siege_ville = _t(col_sd, "siege_ville", "Ville")
 
-    # Parite gold (anti double-saisie, RAF-003) : pre-remplir le lieu de signature
-    # avec la ville du siege (modifiable), comme shell.py:1573-1575. Seede AVANT le
-    # widget signature_lieu pour ne pas violer la regle Streamlit post-widget.
-    lieu_key = f"{PREFIX}_signature_lieu"
-    if not st.session_state.get(lieu_key) and siege_ville:
-        st.session_state[lieu_key] = siege_ville
+    # Parite gold (anti double-saisie, RAF-003, couche partagee) : lieu de signature
+    # pre-rempli = ville du siege, modifiable.
+    seed_signature_lieu(PREFIX, siege_ville)
 
     st.markdown("**Signature**")
     col_l, col_m = st.columns(2)
