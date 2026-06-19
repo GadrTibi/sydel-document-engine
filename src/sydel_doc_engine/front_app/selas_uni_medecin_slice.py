@@ -350,6 +350,11 @@ def _to_selarl_input(payload: dict[str, object]) -> SelarlSliceInput:
         ordre_ville=str(payload.get("ordre_ville") or ""),
         signature_lieu=str(payload.get("signature_lieu") or ""),
         signature_date=payload.get("signature_date"),  # type: ignore[arg-type]
+        # Regime communautaire (DOC-005/006) : sans cette date, le generateur de la
+        # lettre de renonciation bloque (CODE-RC-001). L'adaptateur la defaulte sur la
+        # date de signature, comme TOUS les autres types (SELAS pluri 1469/1627, SPFPL
+        # 828, common_creation 303, SELARL natif data_entry 138). Sinon elle reste None.
+        date_courrier_avertissement=payload.get("signature_date"),  # type: ignore[arg-type]
         decision_date=payload.get("decision_date"),  # type: ignore[arg-type]
         depot_banque_nom=str(payload.get("banque_nom") or ""),
         depot_banque_adresse=str(payload.get("banque_adresse") or ""),

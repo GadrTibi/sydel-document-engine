@@ -2004,6 +2004,28 @@ def test_selas_uni_medecin_generates_doc018_bundle(tmp_path: Path) -> None:
     assert "SELAS MARTIN" in statuts_text
 
 
+def test_selas_uni_medecin_regime_communautaire_generates_doc005_006(tmp_path: Path) -> None:
+    # RAF-001 (regression) : SELAS uni medecin + regime communautaire bloquait la
+    # generation (CODE-RC-001 : date_courrier_avertissement absente de l'adaptateur
+    # SELARL). Aucun test n'exercait ce chemin -> le bug est passe. On verrouille :
+    # regime actif -> DOC-005/006 generes proprement, comme tous les autres types.
+    from sydel_doc_engine.front_app import selas_uni_medecin_slice as uni
+
+    payload = _selas_uni_medecin_payload()
+    payload["regime_communautaire"] = True
+    plan = uni.build_selas_uni_medecin_plan(payload)
+    assert plan.can_generate is True
+    assert "DOC-005" in plan.document_codes
+    assert "DOC-006" in plan.document_codes
+
+    generated = uni.generate_dossier(payload, tmp_path / "selas-uni-medecin-regime")
+    names = {p.name for p in generated.docx_paths}
+    assert "lettre_renonciation_associe.docx" in names
+    assert "lettre_avertissement_conjoint.docx" in names
+    for path in generated.docx_paths:
+        _assert_clean(_docx_text(path))
+
+
 def test_selas_uni_medecin_context_is_selas_actions() -> None:
     # §17.1 : le contexte derive du parcours SELARL uni est bien transforme en
     # SELAS medecin (structure SELAS, overlay selas_medecin, titres = actions,
