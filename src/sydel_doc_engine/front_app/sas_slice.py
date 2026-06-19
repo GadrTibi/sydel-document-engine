@@ -56,7 +56,9 @@ from sydel_doc_engine.front_app.front_widgets import (
     mandataire_inputs,
     seed_closing_date,
     seed_exercice_dates,
+    seed_siege_from_perso,
     seed_signature_lieu,
+    siege_same_as_perso_checkbox,
 )
 
 STRUCTURE = "SAS"
@@ -96,11 +98,14 @@ def render_sas_form() -> dict[str, object]:
     # + cloture « 31 decembre N+1 », modifiables. Seede AVANT les widgets concernes.
     seed_exercice_dates(PREFIX)
     seed_closing_date(PREFIX)
+    # Parite gold (RAF-003a) : recopie siege <- adresse perso si la case est cochee.
+    seed_siege_from_perso(PREFIX)
     st.markdown("**Societe (SPFPL medecins, forme SAS)**")
     col_a, col_b = st.columns(2)
     denomination = _t(col_a, "denomination", "Denomination")
     siege = _t(col_b, "siege", "Siege (adresse affichee)")
     st.caption("Siege social (adresse structuree, pour la domiciliation / procuration)")
+    siege_same_as_perso_checkbox(PREFIX)
     col_sa, col_sb, col_sc, col_sd = st.columns(4)
     siege_num = _t(col_sa, "siege_num", "No")
     siege_voie = _t(col_sb, "siege_voie", "Voie")

@@ -106,6 +106,39 @@ def seed_signature_lieu(
         seed_if_empty(f"{prefix}_{field}", ville_siege)
 
 
+def seed_siege_from_perso(
+    prefix: str,
+    *,
+    perso_fields: tuple[str, ...] = ("adresse_num", "adresse_voie", "adresse_cp", "adresse_ville"),
+    siege_fields: tuple[str, ...] = ("siege_num", "siege_voie", "siege_cp", "siege_ville"),
+) -> None:
+    """Si la case « siege = adresse perso » (cle {prefix}_siege_same_as_perso) est
+    cochee, recopie l'adresse personnelle (cles {prefix}_{perso_field}) dans les
+    champs siege ({prefix}_{siege_field}). Parite gold (shell.py:1453-1470) pour les
+    types MONO-associe (source fixe). A appeler EN HAUT du render, avant les widgets
+    siege (cross-rerun : l'adresse perso peut etre saisie apres le siege)."""
+    if not st.session_state.get(f"{prefix}_siege_same_as_perso"):
+        return
+    for pf, sf in zip(perso_fields, siege_fields, strict=True):
+        src = st.session_state.get(f"{prefix}_{pf}")
+        if src:
+            st.session_state[f"{prefix}_{sf}"] = src
+
+
+def siege_same_as_perso_checkbox(prefix: str) -> bool:
+    """Case « Siege social = adresse personnelle » (anti double-saisie). A rendre a
+    l'emplacement du siege ; la recopie effective est faite par seed_siege_from_perso
+    en haut du render (au run suivant)."""
+    key = f"{prefix}_siege_same_as_perso"
+    if key not in st.session_state:
+        st.session_state[key] = False
+    return st.checkbox(
+        "Siège social = adresse personnelle",
+        key=key,
+        help="Coché : recopie l'adresse personnelle dans le siège (évite la double saisie).",
+    )
+
+
 def mandataire_inputs(prefix: str) -> tuple[str, str]:
     """Saisie du conseiller/mandataire SYDEL, editable (defaut « Jordan ELBAZ »,
     ratifie Albane 2026-06-10 ; parite gold shell.py:1543-1565). Seede les valeurs

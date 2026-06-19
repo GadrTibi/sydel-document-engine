@@ -55,7 +55,9 @@ from sydel_doc_engine.front_app.front_widgets import (
     mandataire_inputs,
     seed_closing_date,
     seed_exercice_dates,
+    seed_siege_from_perso,
     seed_signature_lieu,
+    siege_same_as_perso_checkbox,
 )
 from sydel_doc_engine.front_app.selarl_slice import (
     PROFESSION_MEDECIN,
@@ -130,6 +132,8 @@ def render_selas_uni_medecin_form() -> dict[str, object]:
     # « 31 decembre N+1 » pre-remplis, modifiables.
     seed_exercice_dates(PREFIX)
     seed_closing_date(PREFIX, field="exercice_cloture")
+    # Parite gold (RAF-003a) : recopie siege <- adresse perso si la case est cochee.
+    seed_siege_from_perso(PREFIX)
     st.markdown("**Societe (SELAS unipersonnelle medecin, vocabulaire actions)**")
     col_a, col_b = st.columns(2)
     denomination = _t(col_a, "denomination", "Denomination")
@@ -161,6 +165,7 @@ def render_selas_uni_medecin_form() -> dict[str, object]:
     lieu_exercice = _t(col_g, "lieu_exercice_adresse", "Adresse du lieu d'exercice")
 
     st.caption("Siege social (adresse structuree)")
+    siege_same_as_perso_checkbox(PREFIX)
     col_sa, col_sb, col_sc, col_sd = st.columns(4)
     siege_num = _t(col_sa, "siege_num", "No")
     siege_voie = _t(col_sb, "siege_voie", "Voie")

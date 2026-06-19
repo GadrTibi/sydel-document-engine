@@ -71,7 +71,9 @@ from sydel_doc_engine.front_app.front_widgets import (
     mandataire_inputs,
     seed_closing_date,
     seed_exercice_dates,
+    seed_siege_from_perso,
     seed_signature_lieu,
+    siege_same_as_perso_checkbox,
 )
 
 OPERATION_BY_STRUCTURE: dict[str, tuple[str, str]] = {
@@ -159,6 +161,8 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
     # + cloture « 31 decembre N+1 », modifiables.
     seed_exercice_dates(prefix)
     seed_closing_date(prefix)
+    # Parite gold (RAF-003a) : recopie siege <- adresse perso si la case est cochee.
+    seed_siege_from_perso(prefix)
     st.subheader("Donnees a saisir")
     st.markdown(f"**Societe SPFPL ({operation})**")
     denomination = _t(st, prefix, "denomination", "Denomination SPFPL")
@@ -167,6 +171,7 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
     # L'adresse affichee est desormais DERIVEE de la grille (cf. _siege_display),
     # comme le formulaire SELARL de reference.
     st.caption("Siege social (adresse structuree, pour la domiciliation / procuration)")
+    siege_same_as_perso_checkbox(prefix)
     col_sa, col_sb, col_sc, col_sd = st.columns(4)
     siege_num = _t(col_sa, prefix, "siege_num", "No")
     siege_voie = _t(col_sb, prefix, "siege_voie", "Voie")
