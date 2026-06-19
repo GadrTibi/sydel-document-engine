@@ -23,30 +23,42 @@ from sydel_doc_engine.front_app.field_derivations import (
 )
 
 
-def date_input_with_today(label: str, *, key: str, value: date) -> date | None:
+def date_input_with_today(
+    label: str,
+    *,
+    key: str,
+    value: date,
+    container=None,
+) -> date | None:
     """Champ de date « JJ/MM/AAAA » + bouton « Aujourd'hui » (helper gold partage).
 
     Seede `st.session_state[key]` a `value` si absent (sinon respecte la saisie en
     cours), expose un bouton « Aujourd'hui » qui ecrit la date du jour AVANT que le
     text_input soit instancie (Streamlit interdit la modif post-widget), puis rend
-    le text_input. Layout en colonnes [1, 3] (bouton a gauche, champ a droite) +
-    caption d'erreur de format. Retourne la date parsee ou None.
+    le text_input + une caption d'erreur de format. Retourne la date parsee ou None.
+
+    NESTING-SAFE : rend le bouton AU-DESSUS du champ (pas de `st.columns` interne)
+    pour pouvoir etre appele AUSSI a l'interieur d'une colonne (`with col:` ...),
+    cas frequent dans les slices (ex. selas_multi_slice signature_date). Le param
+    `container` permet de cibler une colonne precise ; par defaut, le contexte
+    Streamlit courant.
     """
+    target = container if container is not None else st
+
     current_value = st.session_state.get(key)
     if isinstance(current_value, date):
         st.session_state[key] = format_french_date(current_value)
     elif current_value is None:
         st.session_state[key] = format_french_date(value)
 
-    button_col, input_col = st.columns([1, 3])
-    if button_col.button("Aujourd'hui", key=f"{key}_today"):
+    if target.button("Aujourd'hui", key=f"{key}_today"):
         st.session_state[key] = format_french_date(date.today())
-    raw_value = input_col.text_input(
+    raw_value = target.text_input(
         label,
         key=key,
         placeholder="JJ/MM/AAAA",
     )
     parsed = parse_french_date(raw_value)
     if str(raw_value).strip() and parsed is None:
-        input_col.caption("Format attendu : JJ/MM/AAAA")
+        target.caption("Format attendu : JJ/MM/AAAA")
     return parsed

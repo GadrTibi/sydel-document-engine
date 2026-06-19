@@ -51,7 +51,6 @@ from sydel_doc_engine.front_app.field_derivations import (
     calculate_nominal_value,
     date_to_french_words,
     derive_gender_from_civilite,
-    format_french_date,
     number_words_from_value,
     parse_french_date,
 )
@@ -264,6 +263,13 @@ def render_selas_form(type_key: str = "selas_multi_v1") -> dict[str, object]:
     # « chirurgien-dentiste » (le moteur basculera sur le corpus dentiste). Pour
     # la SELAS multi generique, aucun pre-reglage (profession libre).
     _apply_type_profession_default(type_key)
+    # RAF-006 (parite gold) : pre-remplir la cloture du 1er exercice a « 31 decembre
+    # N+1 » (convention SELARL-UI-1, shell.py:1582-1585), modifiable. La cloture est
+    # un libelle TEXTUEL (comme le gold), pas un date-picker JJ/MM/AAAA. Seede AVANT
+    # le widget (Streamlit interdit la modif post-widget).
+    cloture_key = f"{PREFIX}_date_cloture"
+    if not st.session_state.get(cloture_key):
+        st.session_state[cloture_key] = f"31 decembre {date.today().year + 1}"
     st.subheader("Donnees a saisir")
     st.markdown("**Societe (SELAS d'exercice, vocabulaire actions)**")
     col_a, col_b = st.columns(2)
@@ -1721,15 +1727,9 @@ def _is(container, key: str, label: str) -> int:
 
 
 def _date(field: str, label: str) -> date | None:
-    key = f"{PREFIX}_{field}"
-    current = st.session_state.get(key)
-    if isinstance(current, date):
-        st.session_state[key] = format_french_date(current)
-    elif current is None:
-        st.session_state[key] = format_french_date(date.today())
-    # Bouton « Aujourd'hui » (comme SELARL) : ecrit la date du jour AVANT que le
-    # text_input soit instancie (sinon Streamlit interdit la modif post-widget).
-    if st.button("Aujourd'hui", key=f"{key}_today"):
-        st.session_state[key] = format_french_date(date.today())
-    raw = st.text_input(label, key=key, placeholder="JJ/MM/AAAA")
-    return parse_french_date(raw)
+    # Consomme la couche de rendu PARTAGEE (front_widgets) au lieu de reimplementer
+    # le helper localement (cause racine des ecarts de parite). Nesting-safe : peut
+    # etre appele a l'interieur d'une colonne (ex. signature_date sous `with col_m`).
+    from sydel_doc_engine.front_app.front_widgets import date_input_with_today
+
+    return date_input_with_today(label, key=f"{PREFIX}_{field}", value=date.today())
