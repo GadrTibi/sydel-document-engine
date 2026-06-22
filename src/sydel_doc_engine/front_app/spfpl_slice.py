@@ -63,6 +63,7 @@ from sydel_doc_engine.front_app.field_derivations import (
     calculate_nominal_value,
     date_to_french_words,
     derive_gender_from_civilite,
+    format_grouped_numeric_value,
     format_numeric_value,
     number_words_from_value,
 )
@@ -86,6 +87,15 @@ OPERATION_BY_STRUCTURE: dict[str, tuple[str, str]] = {
 # liste des souscripteurs (DOC-042) + attestation du commissaire aux apports
 # (DOC-043). Ils s'ajoutent au bundle de creation des que l'operation = apport.
 SPFPL_APPORT_OPERATION_CODES: tuple[str, ...] = ("DOC-041", "DOC-042", "DOC-043")
+
+# Documents d'OPERATION cession (canon « Si cession ») : note d'information (DOC-037),
+# PV d'agrement (DOC-038 si la cible a UN associe reel / DOC-039 si PLUSIEURS), acte de
+# cession de parts (DOC-040). Le PV depend du nombre d'associes REELS de la cible
+# (hors holding acquereur, ajoute automatiquement comme personne morale).
+SPFPL_CESSION_NOTE_CODE = "DOC-037"
+SPFPL_CESSION_ACTE_PARTS_CODE = "DOC-040"
+SPFPL_CESSION_PV_UNIQUE_CODE = "DOC-038"
+SPFPL_CESSION_PV_PLUSIEURS_CODE = "DOC-039"
 
 # Activite standard d'une SPFPL (societe de participations financieres de
 # profession liberale) — boilerplate du type, pas une donnee de dossier.
@@ -342,6 +352,12 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
         st.caption("Evaluateur de l'apport")
         evaluateur_fields = _render_entity_inputs(prefix, "evaluateur")
 
+    # --- Operation cession (DOC-037 note + DOC-038/039 PV agrement + DOC-040 acte) :
+    # repartition des associes de la cible (avant/apres), parts cedees au holding, prix.
+    cession_data: dict[str, object] = {"associes": []}
+    if not is_apport:
+        cession_data = _render_spfpl_cession_cible(prefix)
+
     st.markdown("**Exercice / signature**")
     col_ad, col_ae, col_af = st.columns(3)
     exercice_debut = _t(col_ad, prefix, "exercice_debut", "Debut exercice")
@@ -354,6 +370,7 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
         "structure": structure,
         "operation": operation,
         "is_apport": is_apport,
+        "cession_data": cession_data,
         "denomination": denomination,
         # §14.1 : « siege » (affichage) derive de la grille structuree, plus de
         # champ texte libre.
@@ -459,6 +476,19 @@ def build_spfpl_plan(payload: dict[str, object]) -> SpfplSlicePlan:
     # d'apport (contrat + 2 attestations), comme le canon « Si apport ».
     if operation == "apport":
         document_codes = document_codes + SPFPL_APPORT_OPERATION_CODES
+    elif operation == "cession":
+        # PV agrement : associe unique de la cible (<=1 associe reel) -> DOC-038,
+        # sinon plusieurs associes -> DOC-039.
+        cession_data = payload.get("cession_data") or {}
+        nb_real = len(cession_data.get("associes") or [])  # type: ignore[arg-type]
+        pv_code = (
+            SPFPL_CESSION_PV_UNIQUE_CODE if nb_real <= 1 else SPFPL_CESSION_PV_PLUSIEURS_CODE
+        )
+        document_codes = document_codes + (
+            SPFPL_CESSION_NOTE_CODE,
+            pv_code,
+            SPFPL_CESSION_ACTE_PARTS_CODE,
+        )
     blockers = _validate(payload)
     warnings = [
         f"{structure} V1 = associe unique (multi-associes bloque par le moteur). Bundle de "
@@ -568,6 +598,18 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:
         for field, message in apport_required:
             if not str(payload.get(field) or "").strip():
                 blockers.append(message)
+    if str(payload.get("operation") or "") == "cession":
+        # Operation cession : repartition de la cible + prix + siege cible exiges par
+        # la note d'info (DOC-037), le PV d'agrement (DOC-038/039) et l'acte (DOC-040).
+        cd = payload.get("cession_data") or {}
+        if not (cd.get("associes") or []):  # type: ignore[union-attr]
+            blockers.append("Au moins un associe de la cible requis (cession).")
+        if int(cd.get("nb_cedees") or 0) < 1:  # type: ignore[union-attr]
+            blockers.append("Nombre de parts cedees au holding requis (cession).")
+        if not str(cd.get("prix_unitaire") or "").strip():  # type: ignore[union-attr]
+            blockers.append("Prix par part cedee requis (cession).")
+        if not str(cd.get("cible_siege_num") or "").strip():  # type: ignore[union-attr]
+            blockers.append("Siege structure de la cible requis (cession).")
     return tuple(dict.fromkeys(blockers))
 
 
@@ -604,6 +646,7 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         genre=payload.get("genre") or Gender.MASCULIN,
         profession="chirurgien-dentiste",
         profession_reglementee="chirurgiens-dentistes",
+        profession_reglementee_pluriel="chirurgiens-dentistes",
         date_naissance=str(payload.get("date_naissance") or ""),
         ville_naissance=str(payload.get("ville_naissance") or ""),
         departement_naissance=str(payload.get("departement_naissance") or ""),
@@ -642,12 +685,38 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
     cible_capital = str(payload.get("cible_capital") or "")
     nb_apportees = nb_parts
     regime_communautaire_actif = bool(payload.get("regime_communautaire"))
+    # --- Operation cession : repartition de la cible + pricing (DOC-037/038/039/040).
+    cession_data = payload.get("cession_data") or {}
+    cession_associes_raw = cession_data.get("associes") or []  # type: ignore[union-attr]
+    nb_cedees = int(cession_data.get("nb_cedees") or 0)  # type: ignore[union-attr]
+    prix_unitaire_num = _parse_amount(cession_data.get("prix_unitaire"))  # type: ignore[union-attr]
+    prix_total_num = prix_unitaire_num * nb_cedees
+    associe_unique_cible = len(cession_associes_raw) <= 1
+    if is_apport:
+        cession_parts_obj = CessionParts(
+            nb_parts=nb_apportees,
+            nb_parts_lettres=number_words_from_value(nb_apportees),
+            plage_parts=str(payload.get("apport_plage") or ""),
+        )
+    else:
+        cession_parts_obj = CessionParts(
+            nb_parts=nb_cedees,
+            nb_parts_lettres=number_words_from_value(nb_cedees),
+            plage_parts=str(cession_data.get("plage_cedee") or ""),  # type: ignore[union-attr]
+            prix_unitaire=format_grouped_numeric_value(prix_unitaire_num),
+            prix_unitaire_lettres=_euros_lettres(prix_unitaire_num),
+            prix_total=format_grouped_numeric_value(prix_total_num),
+            prix_total_lettres=_euros_lettres(prix_total_num),
+            nombre_exemplaires_lettres="trois",
+        )
     ctx = DocumentGenerationContext(
         structure=structure,
         dossier_options=DossierOptions(
             apport=is_apport,
             cession=not is_apport,
-            associe_unique=True,
+            # PV d'agrement : en cession, le « associe unique » reflete la CIBLE
+            # (1 associe reel -> DOC-038 ; sinon DOC-039). En apport, sans effet.
+            associe_unique=(True if is_apport else associe_unique_cible),
             regime_communautaire=regime_communautaire_actif,
         ),
         conjoint=(
@@ -730,6 +799,9 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         decision=DecisionContext(date=_display_date(payload.get("decision_date"))),
         reunion=ReunionContext(
             date_lettres=date_to_french_words(payload.get("decision_date")),
+            # Annee en lettres + heure : exigees par le PV d'agrement de cession.
+            annee_lettres=_annee_lettres(payload.get("decision_date")),
+            heure="10 heures",
             president=ReunionPresident(
                 civilite_affichage=str(payload.get("civilite") or "Monsieur"),
                 prenom=str(payload.get("prenom") or ""),
@@ -762,6 +834,12 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
             dirigeant=SpfplDirigeant(fonction="Président"),
             representant=SpfplRepresentant(
                 civilite_affichage=str(payload.get("civilite") or "Monsieur"),
+                # Civilite courte (M./Mme) : exigee par l'acte de cession (DOC-040).
+                civilite_courte=(
+                    "Mme"
+                    if str(payload.get("civilite") or "").strip().lower() == "madame"
+                    else "M."
+                ),
                 prenom=str(payload.get("prenom") or ""),
                 nom=str(payload.get("nom") or ""),
                 fonction="Président",
@@ -797,6 +875,13 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         societe_cible=SocieteCible(
             denomination=str(payload.get("cible_denomination") or ""),
             forme_sociale=str(payload.get("cible_forme") or ""),
+            # Forme complete : exigee par l'acte de cession (DOC-040). Saisie au
+            # sous-formulaire cession ; repli sur la forme courte sinon.
+            forme_sociale_complete=str(
+                cession_data.get("cible_forme_complete")  # type: ignore[union-attr]
+                or payload.get("cible_forme")
+                or ""
+            ),
             profession_reglementee=str(payload.get("cible_profession") or ""),
             capital_social=cible_capital,
             capital_social_lettres=number_words_from_value(cible_capital),
@@ -805,15 +890,18 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
             valeur_nominale_part_lettres=number_words_from_value(
                 payload.get("cible_valeur_part")
             ),
-            siege=Address(adresse_affichee=str(payload.get("cible_siege") or "")),
+            siege=Address(
+                num_voie=str(cession_data.get("cible_siege_num") or ""),  # type: ignore[union-attr]
+                voie=str(cession_data.get("cible_siege_voie") or ""),  # type: ignore[union-attr]
+                cp=str(cession_data.get("cible_siege_cp") or ""),  # type: ignore[union-attr]
+                ville=str(cession_data.get("cible_siege_ville") or ""),  # type: ignore[union-attr]
+                adresse_affichee=str(payload.get("cible_siege") or ""),
+            ),
             ville_rcs=str(payload.get("cible_ville_rcs") or ""),
             numero_rcs=str(payload.get("cible_numero_rcs") or ""),
         ),
-        cession_parts=CessionParts(
-            nb_parts=nb_apportees,
-            nb_parts_lettres=number_words_from_value(nb_apportees),
-            plage_parts=str(payload.get("apport_plage") or ""),
-        ),
+        cession_parts=cession_parts_obj,
+        associes_cible=(_build_associes_cible(payload) if not is_apport else []),
         capital_souscription=CapitalSouscription(
             nb_actions_total=nb_actions_total,
             valeur_nominale_action=valeur_action,
@@ -942,6 +1030,130 @@ def _professional_entity(payload: dict[str, object], role: str) -> ProfessionalE
             nom=str(payload.get(f"{role}_rep_nom") or ""),
         ),
     )
+
+
+def _render_spfpl_cession_cible(prefix: str) -> dict[str, object]:
+    """Sous-formulaire cession SPFPL : repartition des associes de la cible
+    (avant/apres), parts cedees au holding, prix par part, forme complete de la cible.
+    Alimente la note d'info (DOC-037), le PV d'agrement (DOC-038/039) et l'acte (DOC-040)."""
+    st.markdown("**Cession — repartition de la cible & prix**")
+    col_a, col_b, col_c = st.columns(3)
+    nb_cedees = _i(col_a, prefix, "cession_nb_parts_cedees", "Parts cedees au holding")
+    prix_unitaire = _t(
+        col_b, prefix, "cession_prix_unitaire", "Prix par part", hint="ex : 1 000"
+    )
+    plage_cedee = _t(col_c, prefix, "cession_plage_cedee", "Plage parts cedees (ex: 41 a 100)")
+    cible_forme_complete = _t(
+        st,
+        prefix,
+        "cible_forme_complete",
+        "Forme complete de la cible",
+        hint="ex : societe d'exercice liberal a responsabilite limitee",
+    )
+    st.caption("Siege de la cible (adresse structuree, requise par l'acte/PV)")
+    cs1, cs2, cs3, cs4 = st.columns(4)
+    cible_siege_num = _t(cs1, prefix, "cible_siege_num", "No")
+    cible_siege_voie = _t(cs2, prefix, "cible_siege_voie", "Voie")
+    cible_siege_cp = _t(cs3, prefix, "cible_siege_cp", "CP")
+    cible_siege_ville = _t(cs4, prefix, "cible_siege_ville", "Ville")
+    nb_associes = int(
+        st.number_input(
+            "Nombre d'associes de la cible (hors holding acquereur)",
+            min_value=1,
+            max_value=6,
+            step=1,
+            key=f"{prefix}_cession_nb_associes",
+        )
+    )
+    associes: list[dict[str, object]] = []
+    for i in range(nb_associes):
+        st.caption(f"Associe cible {i + 1}")
+        c1, c2, c3 = st.columns(3)
+        civ = c1.selectbox(
+            "Civilite",
+            ("Docteur", "Monsieur", "Madame"),
+            key=f"{prefix}_cession_assoc_{i}_civ",
+        )
+        pre = _t(c2, prefix, f"cession_assoc_{i}_prenom", "Prenom")
+        nom = _t(c3, prefix, f"cession_assoc_{i}_nom", "Nom")
+        c4, c5, c6 = st.columns(3)
+        avant = _i(c4, prefix, f"cession_assoc_{i}_avant", "Parts avant")
+        apres = _i(c5, prefix, f"cession_assoc_{i}_apres", "Parts apres")
+        plage = _t(c6, prefix, f"cession_assoc_{i}_plage", "Plage (ex: 1 a 10)")
+        associes.append(
+            {
+                "civilite": civ,
+                "prenom": pre,
+                "nom": nom,
+                "avant": avant,
+                "apres": apres,
+                "plage": plage,
+            }
+        )
+    return {
+        "nb_cedees": nb_cedees,
+        "prix_unitaire": prix_unitaire,
+        "plage_cedee": plage_cedee,
+        "cible_forme_complete": cible_forme_complete,
+        "cible_siege_num": cible_siege_num,
+        "cible_siege_voie": cible_siege_voie,
+        "cible_siege_cp": cible_siege_cp,
+        "cible_siege_ville": cible_siege_ville,
+        "associes": associes,
+    }
+
+
+def _parse_amount(value: object) -> int:
+    """Parse un montant saisi (« 1 000 », « 1000 ») en entier (espaces/insecables retires)."""
+    raw = str(value or "").replace(" ", "").replace(" ", "").replace("\xa0", "")
+    digits = "".join(c for c in raw if c.isdigit())
+    return int(digits) if digits else 0
+
+
+def _euros_lettres(amount: int) -> str:
+    """Montant en lettres + « euros » (ex. 60000 -> « soixante mille euros »)."""
+    lettres = number_words_from_value(amount)
+    return f"{lettres} euros" if lettres else ""
+
+
+def _annee_lettres(value: object) -> str:
+    """Annee en lettres a partir d'une date (ex. 2026 -> « deux mille vingt-six »)."""
+    if isinstance(value, date):
+        return number_words_from_value(value.year)
+    return ""
+
+
+def _build_associes_cible(payload: dict[str, object]) -> list[object]:
+    """Construit la liste AssocieCible (vendeurs/restants de la cible + holding
+    acquereur en personne morale qui recoit les parts cedees)."""
+    from sydel_doc_engine.domain.models import AssocieCible
+
+    cession_data = payload.get("cession_data") or {}
+    raw = cession_data.get("associes") or []  # type: ignore[union-attr]
+    nb_cedees = int(cession_data.get("nb_cedees") or 0)  # type: ignore[union-attr]
+    associes: list[object] = [
+        AssocieCible(
+            civilite_affichage=str(a.get("civilite") or "Docteur"),
+            prenom=str(a.get("prenom") or ""),
+            nom=str(a.get("nom") or ""),
+            nb_parts_avant=int(a.get("avant") or 0),
+            nb_parts_apres=int(a.get("apres") or 0),
+            plage_parts=str(a.get("plage") or ""),
+        )
+        for a in raw
+    ]
+    # Le holding acquereur (personne morale) recoit les parts cedees.
+    associes.append(
+        AssocieCible(
+            type="personne_morale",
+            denomination=str(payload.get("denomination") or ""),
+            nb_parts_avant=0,
+            nb_parts_apres=nb_cedees,
+            plage_parts=str(cession_data.get("plage_cedee") or ""),  # type: ignore[union-attr]
+            est_present_ou_represente=False,
+        )
+    )
+    return associes
 
 
 def _spfpl_ordre_professionnel(payload: dict[str, object]) -> OrdreProfessionnel:

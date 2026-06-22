@@ -628,6 +628,26 @@ def _spfpl_payload(structure):
         "structure": structure,
         "operation": operation,
         "is_apport": operation == "apport",
+        "cession_data": {
+            "nb_cedees": 60,
+            "prix_unitaire": "1000",
+            "plage_cedee": "41 a 100",
+            "cible_forme_complete": "societe d'exercice liberal a responsabilite limitee",
+            "cible_siege_num": "12",
+            "cible_siege_voie": "avenue des Ternes",
+            "cible_siege_cp": "75017",
+            "cible_siege_ville": "Paris",
+            "associes": [
+                {
+                    "civilite": "Docteur", "prenom": "Camille", "nom": "Martin",
+                    "avant": 70, "apres": 10, "plage": "1 a 10",
+                },
+                {
+                    "civilite": "Docteur", "prenom": "Louise", "nom": "Bernard",
+                    "avant": 30, "apres": 30, "plage": "11 a 40",
+                },
+            ],
+        },
         "denomination": "SPFPL MARTIN",
         "siege": "10 rue de la Paix, 75002 Paris",
         "capital_social": "60000",
@@ -727,14 +747,36 @@ _SPFPL_APPORT_DOCS = {
     "attestation_commissaire_apports.docx",
 }
 
+# Documents d'operation cession : note d'info (DOC-037) + PV d'agrement plusieurs
+# associes (DOC-039, car le payload de test a 2 associes cible) + acte (DOC-040).
+_SPFPL_CESSION_DOCS = {
+    "note_information.docx",
+    "pv_agrement_cession_spfpl_plusieurs_associes.docx",
+    "acte_cession_parts_spfpl.docx",
+}
+
 
 def test_spfpl_cession_slice_generates_clean(tmp_path: Path) -> None:
     payload = _spfpl_payload("SPFPL cession")
     plan = spfpl_slice.build_spfpl_plan(payload)
     assert plan.can_generate is True
-    assert plan.document_codes == ("DOC-035", "DOC-001", "DOC-002", "DOC-003", "DOC-004", "DOC-034")
+    # Creation + documents d'operation cession (note + PV agrement plusieurs + acte).
+    assert plan.document_codes == (
+        "DOC-035",
+        "DOC-001",
+        "DOC-002",
+        "DOC-003",
+        "DOC-004",
+        "DOC-034",
+        "DOC-037",
+        "DOC-039",
+        "DOC-040",
+    )
     generated = spfpl_slice.generate_dossier(payload, tmp_path / "spfpl-cession")
-    _assert_bundle_clean(generated, _SPFPL_BUNDLE_TRONC | {"statuts_spfpl_cession.docx"})
+    _assert_bundle_clean(
+        generated,
+        _SPFPL_BUNDLE_TRONC | {"statuts_spfpl_cession.docx"} | _SPFPL_CESSION_DOCS,
+    )
 
 
 def test_spfpl_apport_slice_generates_clean(tmp_path: Path) -> None:
@@ -793,11 +835,17 @@ def test_spfpl_cession_regime_on_adds_regime_docs(tmp_path: Path) -> None:
         "DOC-034",
         "DOC-005",
         "DOC-006",
+        "DOC-037",
+        "DOC-039",
+        "DOC-040",
     )
     generated = spfpl_slice.generate_dossier(payload, tmp_path / "spfpl-cession-regime")
     _assert_bundle_clean(
         generated,
-        _SPFPL_BUNDLE_TRONC | {"statuts_spfpl_cession.docx"} | _REGIME_DOCS,
+        _SPFPL_BUNDLE_TRONC
+        | {"statuts_spfpl_cession.docx"}
+        | _SPFPL_CESSION_DOCS
+        | _REGIME_DOCS,
     )
 
 
