@@ -66,6 +66,14 @@ j'ajoute UNE ligne ici : `- [AAAA-MM-JJ HH:MM] [TYPE] description (réf : SHA / 
   - **ALB-nationalité-dropdown** = non-bug (même valeur en sortie ; incohérence UX seulement).
 - [~17:45] **BILAN** findings d'audit ÉPUISÉS : tous bloquants + majeurs réels corrigés ; faux positifs écartés (règle 65) ; non-bugs notés. **Seul reste fonctionnel = SELAS conjoint-adresse** (repli président documenté, edge étroit, fix = contexte SELAS multi → passe dédiée).
 
+## 2026-06-22 (suite) — MACHINE bloc-gold + refonte SELAS
+
+- [~18:30] **DÉCISION (Gad)** premisse cadrée : **SELARL = gold valide**, **on retravaille la SELAS** avec la machine bloc-gold. Construire la machine puis la valider en lecture seule sur la SELAS (doit retrouver l'onglet 24 seule).
+- [~18:45] **AUDIT/MÉTHODE** organe 1 de la machine = **audit de fidélité au gold** (`machine-fidelite-selas-vs-selarl`, 17 agents, read-only). Résultat : **9/15 onglet 24 retrouvés seul, 0 faux positif** + **4 bugs net-new (B1-B4)** hors onglet 24. **Limite nommée** : aveugle aux retours qui demandent de S'ÉCARTER du gold (lit « conforme » = « identique au gold »).
+- [~18:55] **AUDIT/MÉTHODE** organe 2 = **conformité à l'intention ratifiée** (`machine-organe2-conformite-intention-selas`, 16 agents, read-only). Rattrape les 6 manques de l'organe 1 (#4,9,12,13,14,15). **Ensemble : 15/15 cernés + 4 bugs.** Aucune décision métier neuve dans le lot (codable sans Albane/David).
+- [~19:00] **DÉCISION** machine validée → backlog figé en canon `docs/review/BACKLOG_REFONTE_SELAS_2026-06-22.md`. Garde-fou d'exécution : **protéger le gold** (changements sur fichiers partagés = conditionnés SELAS) ; **commits locaux, pas de push** (Streamlit auto-deploy + clients testent → fenêtre = Gad).
+- [~19:10] **ACTION** refonte SELAS lot 1 : **#1** (annexe SPFPL — retrait « lettre de mission / acompte Sydel », lignes uniques 374-375) + **B1** (`acquereur.forme_sociale` post-corrigé « SELAS » en cession SELAS multi, gold intact). +2 tests non-régression. **523 verts.**
+
 ## Conneries / incidents Rafael (résumé — détail dans la mémoire privée)
 - **G1** (2026-06-22) : nouvelle remarque sur la SELARL « validée 100 % » et socle de tous les types (confirmé par Rafael : nouvelle remarque, pas régression).
 - **G2** : ne teste pas réellement — preuve : 4 docs sur 7 produits non remarqués (docs non téléchargés).

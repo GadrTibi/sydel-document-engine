@@ -371,8 +371,6 @@ STATUTS_SPFPL_CESSION_BLOCKS: tuple[str, ...] = (
     'ETAT DES ENGAGEMENTS PRIS AVANT',
     'LA CONSTITUTION DE LA SOCIETE',
     "Ouverture d'un compte bancaire auprès de la Banque en vue du dépôt du capital social",
-    'Signature d’une lettre de mission avec le cabinet Sydel pour la création de la Société',
-    'Paiement de l’acompte des honoraires du cabinet Sydel pour la création de la Société',
 )
 
 STATUTS_SPFPL_APPORT_BLOCKS: tuple[str, ...] = (

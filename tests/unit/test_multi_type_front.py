@@ -1987,6 +1987,27 @@ def test_selas_cession_codes_flow_into_plan_and_orchestrator() -> None:
     assert sms._cession_codes({}) == ()
 
 
+def test_selas_cession_acquereur_forme_sociale_corrigee_en_selas() -> None:
+    # B1 (fidelite gold, machine 2026-06-22) : le sous-formulaire de cession PARTAGE
+    # code l'acquereur en « SELARL » (hardcode unipersonnel shell.py:2125). En SELAS,
+    # l'acquereur EST la SELAS creee -> les actes/compromis de cession doivent afficher
+    # « SELAS », pas « SELARL ». Post-correction SELAS-only (gold SELARL intact).
+    from sydel_doc_engine.domain.models import CessionAcquereur, CessionContext
+    from sydel_doc_engine.front_app import selas_multi_slice as sms
+
+    payload = {
+        **_selas_payload(),
+        "cession_context": CessionContext(
+            etape="compromis",
+            type_cabinet="dentaire",
+            acquereur=CessionAcquereur(forme_sociale="SELARL"),
+        ),
+    }
+    ctx = sms.build_generation_context(payload)
+    assert ctx.cession is not None and ctx.cession.acquereur is not None
+    assert ctx.cession.acquereur.forme_sociale == "SELAS"
+
+
 def test_front_selas_dentiste_pluri_uses_dentiste_corpus(
     tmp_path: Path, monkeypatch
 ) -> None:

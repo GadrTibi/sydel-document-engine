@@ -201,6 +201,10 @@ def test_statuts_spfpl_cession_generates_source_overlay_without_signature_date(
     assert "Nomination d’un commissaire aux apports" not in text
     assert "DECISIONS DES ACTIONNAIRES" in table_text
     assert any(run.italic for run in acceptance.runs)
+    # #1 (onglet 24) : l'ANNEXE 1 ne contient plus la lettre de mission ni l'acompte Sydel
+    # (supprimes de tous les statuts ; ne subsistaient que dans le template SPFPL cession).
+    assert "lettre de mission" not in text
+    assert "acompte des honoraires" not in text
     _assert_clean(text)
 
     # FORME (FIDELITY_AUDIT_V1, volet 2) : la mise en forme doit coller au modele source DOCX.

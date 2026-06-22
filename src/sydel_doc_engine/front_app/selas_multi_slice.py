@@ -1277,6 +1277,14 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
     # Adresse du foyer pour le conjoint : adresse de l'associe marie pilote si le
     # chemin per-associe gouverne, sinon adresse du president (toggle global).
     conjoint_foyer = _conjoint_foyer_address(payload, adresse_perso)
+    # B1 (fidelite gold) : le sous-formulaire de cession PARTAGE code l'acquereur en
+    # « SELARL » (shell.py:2125, hardcode unipersonnel). En SELAS, l'acquereur EST la
+    # SELAS creee : on post-corrige sa forme sociale pour que les actes/compromis de
+    # cession affichent « SELAS » (meme principe que selas_uni_medecin_slice pour la
+    # societe). SELAS-only : le gold SELARL reste intact.
+    _cession_ctx = payload.get("cession_context")
+    if _cession_ctx is not None and getattr(_cession_ctx, "acquereur", None) is not None:
+        _cession_ctx.acquereur.forme_sociale = "SELAS"
     return DocumentGenerationContext(
         structure="SELAS",
         dossier_options=DossierOptions(
