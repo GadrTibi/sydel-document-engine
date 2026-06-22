@@ -848,6 +848,14 @@ def _render_source_medecin_paragraph(
         "[nom_signataire]": ctx.document.signataire.nom,
     }
     rendered = paragraph
+    # Correction Albane 2026-06-10 (« "fixé à la somme de mille" il faudrait ajouter "euros" »
+    # / forme cible « de [capital_lettres] euros ») propagee au template medecin (Art. 8) ;
+    # le DOCX source porte encore la coquille « somme [capital_social] euros » -> on aligne
+    # le rendu source sur la correction pour la comparaison ligne-a-ligne.
+    rendered = rendered.replace(
+        "fixé à la somme [capital_social] euros",
+        "fixé à la somme de [capital_lettres] euros",
+    )
     for placeholder, value in replacements.items():
         rendered = rendered.replace(placeholder, value)
     rendered = rendered.replace("associée unique", "associé unique")

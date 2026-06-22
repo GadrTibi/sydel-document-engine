@@ -305,7 +305,7 @@ STATUTS_SELARL_MEDECIN_BLOCKS: tuple[str, ...] = (
     'ci- [capital_social] €.',
     'Cette somme a été intégralement déposée conformément à la loi, au crédit d’un compte ouvert au nom de la société en formation dans les livres de la banque [nom_banque] [adresse_banque].',
     'ARTICLE 8 - CAPITAL SOCIAL ',
-    'Le capital social est fixé à la somme [capital_social] euros.',
+    'Le capital social est fixé à la somme de [capital_lettres] euros.',
     'Il est divisé en [nb_parts_total] parts de [valeur_nominale_part] [euro_nominal_word] chacune, entièrement souscrites et libérées dans les conditions exposées ci-dessus et attribuées en totalité au Docteur [prenom] [nom], [qualite_associe_article_8].',
     '[civilite_personne_2] [prenom_personne_2] [nom_personne_2]\t……………………………………………………….……..[nb_parts_total] parts',
     'Total du nombre de parts composant le capital social\xa0: ……………………………………….[nb_parts_total] parts',

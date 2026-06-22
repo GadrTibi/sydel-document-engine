@@ -55,7 +55,11 @@ j'ajoute UNE ligne ici : `- [AAAA-MM-JJ HH:MM] [TYPE] description (réf : SHA / 
 - [~16:05] **INCIDENT (Rafael) — G4** Rafael demande aux clients (Albane+David) de tester la SCM avant fix confirmé/déployé. Noté grievances G4. Mon avis : ~80% légitime (exposition prématurée + pas de coordination dev). Gad reboote pour mitiger.
 - [~16:20] **ACTION** SAS apports↔capital (majeur) + trace R22-02 SPFPL (différence justifiée marié-only) (`eb0bf70`). 517 verts.
 - [~16:35] **ACTION** Cohérence : PV nomination dit « actions » pour une SELAS (pas « parts ») — ignorait `capital.type_titre` (`cbd8aa1`). 517 verts.
-- [~16:40] **DÉCISION** STOP sur les gaps restants (ALB-numero-ordre, euros art.78, genre-professionnalité, nationalité-dropdown membres, cohérence SELAS conjoint-adresse / SCI IRIS forme) : ils touchent le **GOLD validé** + sont des claims de sous-agents non re-vérifiés → recoupe contre la source/Albane requise avant patch (règle 65, zéro régression gold). Flag, pas précipitation.
+- [~16:40] **DÉCISION** recoupe des gaps restants un par un (règle absolue + « revérifie les sources »).
+- [~17:00] **ACTION** Métier SOURCÉ : SCS gérant=commandité (NotebookLM) + SAS cohérence civilité↔genre (`06a4b1e`). 520 verts.
+- [~17:15] **ACTION** Cohérence : en-tête PV SCI IRIS affiche « SCI » (pas la clé interne « SCI IRIS ») (`a6b52c2`). 521 verts.
+- [~17:25] **RECOUPE (vérifié, flag)** SELAS conjoint-adresse : `_associe_signataire_address` retombe DÉLIBÉRÉMENT (documenté) sur l'adresse du président quand le foyer est vide → imparfait mais pas un crash ; le bon fix (retomber sur l'adresse de l'associé marié) touche le contexte SELAS multi → passe dédiée.
+- [~17:25] **RESTE À FAIRE (touche le GOLD validé, recoupe source requise)** : ALB-numéro-ordre optionnel (propager la logique dentiste), euros art.78 « de » (wording gold), genre-professionnalité SPFPL (civilité→titre), nationalité-dropdown membres SELARL. À traiter en passe dédiée pour zéro régression gold (règle 65).
 
 ## Conneries / incidents Rafael (résumé — détail dans la mémoire privée)
 - **G1** (2026-06-22) : nouvelle remarque sur la SELARL « validée 100 % » et socle de tous les types (confirmé par Rafael : nouvelle remarque, pas régression).
