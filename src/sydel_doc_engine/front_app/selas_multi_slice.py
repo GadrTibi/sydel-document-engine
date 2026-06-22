@@ -1085,7 +1085,24 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:
         blockers.extend(_validate_roles_dirigeants(associes))
     blockers.extend(_validate_common_docs(payload))
     blockers.extend(_validate_regime_communautaire(payload))
+    blockers.extend(_validate_cession_exercices(payload))
     return tuple(dict.fromkeys(blockers))
+
+
+def _validate_cession_exercices(payload: dict[str, object]) -> list[str]:
+    """#13 (onglet 24) : en cession, le chiffre d'affaires et le resultat des
+    exercices ne sont plus facultatifs. On bloque tant qu'un exercice saisi presente
+    un CA ou un resultat vide (n'agit que si une cession de cabinet est active)."""
+    cession = payload.get("cession_context")
+    if cession is None:
+        return []
+    blockers: list[str] = []
+    for i, exercice in enumerate(getattr(cession, "exercices", None) or [], start=1):
+        if not str(getattr(exercice, "chiffre_affaires", "") or "").strip():
+            blockers.append(f"Cession : chiffre d'affaires de l'exercice {i} requis.")
+        if not str(getattr(exercice, "resultat", "") or "").strip():
+            blockers.append(f"Cession : resultat de l'exercice {i} requis.")
+    return blockers
 
 
 def _validate_regime_communautaire(payload: dict[str, object]) -> list[str]:

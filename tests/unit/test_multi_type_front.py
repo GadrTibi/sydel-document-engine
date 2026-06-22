@@ -2022,6 +2022,33 @@ def test_selas_cession_masque_le_bloc_acquereur(tmp_path: Path, monkeypatch) -> 
     )
 
 
+def test_selas_cession_exige_ca_et_resultat_des_exercices() -> None:
+    # #13 (onglet 24) : en cession SELAS, le CA et le resultat des exercices ne sont
+    # plus facultatifs -> un exercice au CA/resultat vide bloque la generation.
+    from sydel_doc_engine.domain.models import CessionContext, CessionExercice
+    from sydel_doc_engine.front_app import selas_multi_slice as sms
+
+    payload = {
+        **_selas_payload(),
+        "cession_context": CessionContext(
+            exercices=[CessionExercice(periode="2024", chiffre_affaires="", resultat="")]
+        ),
+    }
+    blockers = sms.build_selas_plan(payload).blockers
+    assert any("chiffre d'affaires de l'exercice" in b for b in blockers)
+    assert any("resultat de l'exercice" in b for b in blockers)
+
+    payload_ok = {
+        **_selas_payload(),
+        "cession_context": CessionContext(
+            exercices=[
+                CessionExercice(periode="2024", chiffre_affaires="200 000", resultat="50 000")
+            ]
+        ),
+    }
+    assert not any("exercice" in b for b in sms.build_selas_plan(payload_ok).blockers)
+
+
 def test_front_selas_dentiste_pluri_uses_dentiste_corpus(
     tmp_path: Path, monkeypatch
 ) -> None:

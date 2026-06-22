@@ -2288,12 +2288,15 @@ def _render_cession_form(
             if str(st.session_state.get(periode_key)) not in year_options:
                 st.session_state[periode_key] = str(current_year - 3 + index)
             periode = col_a.selectbox(f"Annee {index + 1}", year_options, key=periode_key)
+            # #13 (onglet 24) : en SELAS, le CA et le resultat des exercices ne sont
+            # plus facultatifs (la validation SELAS les exige) -> on retire la mention.
+            opt = "" if prefix == "selas" else " (facultatif)"
             ca = _cession_text(
-                col_b, f"CA {index + 1} (facultatif)",
+                col_b, f"CA {index + 1}{opt}",
                 section="exercice", field=f"{index}_ca", default="",
             )
             resultat = _cession_text(
-                col_c, f"Resultat {index + 1} (facultatif)",
+                col_c, f"Resultat {index + 1}{opt}",
                 section="exercice", field=f"{index}_resultat", default="",
             )
             exercices_payload.append(
