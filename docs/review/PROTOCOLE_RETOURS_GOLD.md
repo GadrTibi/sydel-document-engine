@@ -54,6 +54,12 @@ Cocher **toutes** les cases, pas une de moins :
   `METHODE_PARITE_GOLD.md` (les règles imposées) pour qu'elle devienne un invariant audité.
 
 ## Garde-fous (anti-rechute appris)
+- **Périmètre EXACT de la remarque — zéro extrapolation.** On corrige uniquement ce qui est
+  pointé. Toute extension au-delà (ex. accentuer des données que Rafael n'a PAS pointées,
+  généraliser une règle à des cas non cités) = on n'invente rien, on n'a aucune initiative :
+  on **fait VALIDER par le sachant (Rafael) d'abord** (Gad, 2026-06-22). Si la réponse est déjà
+  dans les sources/modèles → l'utiliser sans demander ; si c'est un choix neuf non sourcé →
+  question à Rafael, jamais une décision unilatérale.
 - **Pas d'opt-in silencieux sur un livrable attendu.** Si le canon dit « ça fait partie du
   dossier », le document se génère et ses champs sont VISIBLES — pas caché derrière une case
   décochée (leçon SCM frais communs / règlement, 2026-06-22 : Rafael « je ne vois pas les champs »).
