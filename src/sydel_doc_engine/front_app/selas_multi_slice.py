@@ -1665,6 +1665,27 @@ def _display_date(value) -> str | None:
     return value.strftime("%d/%m/%Y")
 
 
+def _rename_dnc_with_dirigeant(
+    paths: list[Path], payload: dict[str, object]
+) -> list[Path]:
+    """#2 (onglet 24) : renomme la DNC (DOC-001) en y inserant le NOM DU DIRIGEANT.
+
+    « declaration_non_condamnation.docx » -> « declaration_non_condamnation_Durand.docx ».
+    Le dirigeant retenu = le president (signataire du tronc commun)."""
+    associes = list(payload.get("associes") or [])
+    president_index = _resolve_president_index(payload, associes)
+    if not (0 <= president_index < len(associes)):
+        return paths
+    slug = _associe_filename_slug(associes[president_index])
+    renamed: list[Path] = []
+    for path in paths:
+        if path.name == "declaration_non_condamnation.docx":
+            renamed.append(_rename_with_slug(path, slug))
+        else:
+            renamed.append(path)
+    return renamed
+
+
 def generate_dossier(payload: dict[str, object], output_dir: Path) -> GeneratedDossier:
     plan = build_selas_plan(payload)
     if not plan.can_generate:
@@ -1675,6 +1696,12 @@ def generate_dossier(payload: dict[str, object], output_dir: Path) -> GeneratedD
     docx_paths = generate_docx_files_for_document_codes(
         ctx, output_dir, _orchestrator_codes(payload)
     )
+    # 1bis) #2 (onglet 24) : la DNC porte le NOM DU DIRIGEANT dans son nom de fichier
+    #    (« declaration_non_condamnation_Durand.docx »). On renomme la DNC du president
+    #    (signataire du tronc commun) produite a l'etape 1.
+    #    [METIER A CONFIRMER Albane : si CHAQUE dirigeant (DG inclus) doit deposer SA
+    #    propre DNC, generer une DNC par dirigeant ; non tranche ici.]
+    docx_paths = _rename_dnc_with_dirigeant(docx_paths, payload)
     # 2) R7 : un couple renonciation (DOC-005) + avertissement (DOC-006) PAR associe
     #    physique marie sous communaute, hors orchestrateur, avec des fichiers de
     #    noms distincts. Ne s'active QUE par le chemin per-associe (toggle global

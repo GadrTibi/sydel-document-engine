@@ -1254,17 +1254,17 @@ def test_selas_multi_slice_generates_clean(tmp_path: Path) -> None:
     assert plan.can_generate is True
     assert plan.document_codes == ("DOC-044", "DOC-001", "DOC-002", "DOC-003", "DOC-004", "DOC-034")
     generated = selas_multi_slice.generate_dossier(payload, tmp_path / "selas")
-    _assert_bundle_clean(
-        generated,
-        {
-            "statuts_selas_multi.docx",
-            "declaration_non_condamnation.docx",
-            "autorisation_domiciliation.docx",
-            "procuration.docx",
-            "pv_nomination_gerant.docx",
-            "demande_inscription_ordre.docx",
-        },
-    )
+    _assert_bundle_clean(generated, _SELAS_BUNDLE_NAMES)
+
+
+def test_selas_dnc_filename_carries_dirigeant_name(tmp_path: Path) -> None:
+    # #2 (onglet 24) : la declaration de non-condamnation porte le NOM DU DIRIGEANT
+    # (president, ici « Durand ») dans son nom de fichier.
+    payload = _selas_payload()
+    generated = selas_multi_slice.generate_dossier(payload, tmp_path / "selas-dnc")
+    names = {p.name for p in generated.docx_paths}
+    assert "declaration_non_condamnation_Durand.docx" in names
+    assert "declaration_non_condamnation.docx" not in names
 
 
 def test_selas_ordre_conseil_derive_sans_champ_libelle(tmp_path: Path) -> None:
@@ -1347,18 +1347,7 @@ def test_selas_regime_on_adds_regime_docs(tmp_path: Path) -> None:
         "DOC-006",
     )
     generated = selas_multi_slice.generate_dossier(payload, tmp_path / "selas-regime-on")
-    _assert_bundle_clean(
-        generated,
-        {
-            "statuts_selas_multi.docx",
-            "declaration_non_condamnation.docx",
-            "autorisation_domiciliation.docx",
-            "procuration.docx",
-            "pv_nomination_gerant.docx",
-            "demande_inscription_ordre.docx",
-        }
-        | _REGIME_DOCS,
-    )
+    _assert_bundle_clean(generated, _SELAS_BUNDLE_NAMES | _REGIME_DOCS)
 
 
 def _regime_associe(
@@ -1633,9 +1622,11 @@ def _selas_payload_n(associes):
     return payload
 
 
+# #2 (onglet 24) : la DNC porte le nom du dirigeant (president = « Durand » dans
+# les fixtures) dans son nom de fichier.
 _SELAS_BUNDLE_NAMES = {
     "statuts_selas_multi.docx",
-    "declaration_non_condamnation.docx",
+    "declaration_non_condamnation_Durand.docx",
     "autorisation_domiciliation.docx",
     "procuration.docx",
     "pv_nomination_gerant.docx",
