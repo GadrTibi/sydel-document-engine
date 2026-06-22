@@ -2065,6 +2065,29 @@ def test_selas_cession_genere_acte_et_compromis_ensemble() -> None:
     assert "DOC-009" in codes_med and "DOC-010" in codes_med  # acte + compromis medical
 
 
+def test_selas_cession_vendeur_selectionnable(tmp_path: Path, monkeypatch) -> None:
+    # #11 (onglet 24) : en SELAS, un menu permet de choisir le vendeur du cabinet
+    # parmi les associes ; le wording « associe unique » disparait.
+    from streamlit.testing.v1 import AppTest
+
+    from sydel_doc_engine.front_app import shell
+
+    monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selas-vendeur")
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
+    app.selectbox(key="clean_dossier_type").set_value("SELAS multi-associes creation V1")
+    app = app.run(timeout=180)
+    next(b for b in app.button if "test_data" in str(b.key)).click()
+    app = app.run(timeout=180)
+    app.checkbox(key="selas_cession_on").set_value(True)
+    app = app.run(timeout=180)
+
+    selectbox_keys = {str(s.key) for s in app.selectbox}
+    assert "selas_cession_vendeur_index" in selectbox_keys
+    checkbox_labels = " ".join(str(c.label).lower() for c in app.checkbox)
+    assert "associe unique" not in checkbox_labels
+    assert "associé unique" not in checkbox_labels
+
+
 def test_front_selas_dentiste_pluri_uses_dentiste_corpus(
     tmp_path: Path, monkeypatch
 ) -> None:

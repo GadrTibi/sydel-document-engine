@@ -1972,8 +1972,12 @@ def _render_cession_form(
 
     # --- Vendeur (ticket 2.1 : associe unique par defaut, modifiable) ---
     with st.expander("Vendeur"):
+        # #11 (onglet 24) : en SELAS le vendeur est l'associe choisi au menu ci-dessus
+        # (plus « l'associe unique », faux en multi-associes). Hors SELAS : inchange.
         vendeur_auto = st.checkbox(
-            "Le vendeur est l'associe unique",
+            "Le vendeur est l'associé sélectionné ci-dessus"
+            if prefix == "selas"
+            else "Le vendeur est l'associe unique",
             value=True,
             key=f"{_CESSION_PREFIX}_cession_vendeur_auto",
             help="Decocher uniquement si un autre vendeur doit etre renseigne.",

@@ -1229,27 +1229,6 @@ def _render_selas_cession(
     acquereur = la SELAS. Import differe de shell (anti-cycle)."""
     from sydel_doc_engine.front_app import shell
 
-    pres = (
-        associes[president_index]
-        if associes and 0 <= president_index < len(associes)
-        else None
-    )
-    praticien: dict[str, object] = {
-        "prenom": (pres.prenom or pres.prenoms) if pres else "",
-        "nom": pres.nom if pres else "",
-        "genre": pres.genre if pres else None,
-        "date_naissance": pres.date_naissance if pres else None,
-        "ville_naissance": pres.ville_naissance if pres else None,
-        "departement_naissance": pres.departement_naissance if pres else None,
-        "nationalite": pres.nationalite if pres else None,
-        "numero_ordre": pres.numero_ordre if pres else None,
-        "numero_rpps": pres.numero_rpps if pres else None,
-        "situation_maritale": pres.situation_maritale if pres else None,
-        "adresse_num_voie": str(dirigeant_sig.get("signataire_adresse_num") or ""),
-        "adresse_voie": str(dirigeant_sig.get("signataire_adresse_voie") or ""),
-        "adresse_cp": str(dirigeant_sig.get("signataire_adresse_cp") or ""),
-        "adresse_ville": str(dirigeant_sig.get("signataire_adresse_ville") or ""),
-    }
     societe: dict[str, object] = {
         "denomination": denomination,
         "capital_social": capital,
@@ -1261,15 +1240,59 @@ def _render_selas_cession(
     }
     ordre = {"departement_ordre": ordre_departement}
     generation = {"signature_date": signature_date}
-    # Statut marital du vendeur, lu par le sous-formulaire via la cle prefixee.
-    st.session_state["selas_situation_maritale"] = str(
-        praticien.get("situation_maritale") or ""
-    )
+    physiques = [i for i, a in enumerate(associes) if a.type_personne == "personne_physique"]
 
     st.markdown("**Cession (optionnel)**")
     cession_on = st.checkbox(
         "Cession de cabinet liberal (medical / dentaire)",
         key="selas_cession_on",
+    )
+    # #11 (onglet 24) : le vendeur du cabinet est UN associe SELECTIONNABLE parmi les
+    # associes physiques (plus « l'associe unique »). Par defaut = le president.
+    vendeur_index = president_index
+    if cession_on and physiques:
+        default_i = president_index if president_index in physiques else physiques[0]
+        vendeur_index = st.selectbox(
+            "Associé vendeur du cabinet",
+            physiques,
+            index=physiques.index(default_i),
+            format_func=lambda i: _associe_label(associes[i], i),
+            key="selas_cession_vendeur_index",
+            help="L'associé qui cède son cabinet ; ses informations sont reprises automatiquement.",
+        )
+    vendeur = associes[vendeur_index] if 0 <= vendeur_index < len(associes) else None
+    # Adresse du vendeur : pour le president, on garde la source historique (cles
+    # signataire_*, byte-identique) ; pour un autre associe, son adresse structuree.
+    if vendeur_index == president_index:
+        v_num = str(dirigeant_sig.get("signataire_adresse_num") or "")
+        v_voie = str(dirigeant_sig.get("signataire_adresse_voie") or "")
+        v_cp = str(dirigeant_sig.get("signataire_adresse_cp") or "")
+        v_ville = str(dirigeant_sig.get("signataire_adresse_ville") or "")
+    else:
+        v_adr = vendeur.adresse_personnelle if vendeur else None
+        v_num = str((v_adr.num_voie if v_adr else "") or "")
+        v_voie = str((v_adr.voie if v_adr else "") or "")
+        v_cp = str((v_adr.cp if v_adr else "") or "")
+        v_ville = str((v_adr.ville if v_adr else "") or "")
+    praticien: dict[str, object] = {
+        "prenom": (vendeur.prenom or vendeur.prenoms) if vendeur else "",
+        "nom": vendeur.nom if vendeur else "",
+        "genre": vendeur.genre if vendeur else None,
+        "date_naissance": vendeur.date_naissance if vendeur else None,
+        "ville_naissance": vendeur.ville_naissance if vendeur else None,
+        "departement_naissance": vendeur.departement_naissance if vendeur else None,
+        "nationalite": vendeur.nationalite if vendeur else None,
+        "numero_ordre": vendeur.numero_ordre if vendeur else None,
+        "numero_rpps": vendeur.numero_rpps if vendeur else None,
+        "situation_maritale": vendeur.situation_maritale if vendeur else None,
+        "adresse_num_voie": v_num,
+        "adresse_voie": v_voie,
+        "adresse_cp": v_cp,
+        "adresse_ville": v_ville,
+    }
+    # Statut marital du vendeur, lu par le sous-formulaire via la cle prefixee.
+    st.session_state["selas_situation_maritale"] = str(
+        praticien.get("situation_maritale") or ""
     )
     scm_on = st.checkbox("Cession de parts de SCM", key="selas_scm_cession_on")
     cession_ctx, bail_ctx = shell._render_cession_form(
@@ -1854,6 +1877,13 @@ def _associe_signataire_address(
     ):
         return structuree
     return president.adresse_perso or Address()
+
+
+def _associe_label(associe: StatutsCivilsAssocie, index: int) -> str:
+    """Libelle court d'un associe pour les menus (« Prenom Nom » ; defaut « Associe N »)."""
+    prenom = (associe.prenom or associe.prenoms or "").strip()
+    nom = f"{prenom} {(associe.nom or '').strip()}".strip()
+    return nom or f"Associé {index + 1}"
 
 
 def _associe_filename_slug(associe: StatutsCivilsAssocie) -> str:
