@@ -1944,11 +1944,19 @@ def _render_cession_form(
         col_a, col_b = st.columns(2)
         type_key = f"{_CESSION_PREFIX}_cession_meta_type_cabinet"
         _seed_default(type_key, _cession_default_type(profession))
-        type_cabinet = col_a.selectbox(
-            "Type de cabinet",
-            tuple(CESSION_TYPE_LABELS),
-            key=type_key,
-        )
+        # #10 (onglet 24) : en SELAS, le type de cabinet (medical / dentaire) est
+        # DERIVE de la profession -> plus de menu (la profession le determine deja).
+        # Hors SELAS : menu conserve.
+        if prefix == "selas":
+            type_cabinet = _cession_default_type(profession)
+            st.session_state[type_key] = type_cabinet
+            col_a.caption(f"Type de cabinet : {type_cabinet} (derive de la profession).")
+        else:
+            type_cabinet = col_a.selectbox(
+                "Type de cabinet",
+                tuple(CESSION_TYPE_LABELS),
+                key=type_key,
+            )
         etape_key = f"{_CESSION_PREFIX}_cession_meta_etape"
         _seed_default(etape_key, "acte")
         etape = col_b.selectbox(
