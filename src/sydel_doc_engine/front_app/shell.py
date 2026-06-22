@@ -770,7 +770,6 @@ def _selas_associe_prefill(
         f"{p}_ville_naissance": ville,
         f"{p}_departement": departement,
         f"{p}_nationalite": "francaise",
-        f"{p}_profession": "Docteur",
         f"{p}_adresse_num": "10",
         f"{p}_adresse_voie": "rue Exemple",
         f"{p}_adresse_cp": f"{departement}000",

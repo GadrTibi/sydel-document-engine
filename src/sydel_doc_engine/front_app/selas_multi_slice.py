@@ -818,9 +818,13 @@ def _physique(prefix: str, nb_actions: int, montant: str) -> StatutsCivilsAssoci
     date_naissance = _ts(col_d, f"{prefix}_date_naissance", "Date naissance (ex: 1 janvier 1980)")
     ville_naissance = _ts(col_e, f"{prefix}_ville_naissance", "Ville naissance")
     departement = _ts(col_f, f"{prefix}_departement", "Departement naissance")
-    col_g, col_h = st.columns(2)
-    nationalite = render_nationalite_selectbox(prefix, container=col_g)
-    profession = _ts(col_h, f"{prefix}_profession", "Profession (ex: Docteur)")
+    nationalite = render_nationalite_selectbox(prefix, container=st)
+    # #9 (onglet 24) : le champ « profession » est RETIRE du formulaire (redondant
+    # avec la qualification). Le titre « Docteur » est derive (defaut) pour NE PAS
+    # changer le texte de l'acte (comparution « Docteur [qualification] »).
+    # [QUESTION RAFAEL accumulee (docs/review/QUESTIONS_RAFAEL.md #9) : garder
+    # « Docteur » ou n'afficher que la qualification ? -> defaut le plus sur ici.]
+    profession = "Docteur"
     # #8 / B4 (onglet 24) : adresse personnelle STRUCTUREE saisie UNE SEULE FOIS ici
     # (comme le gold). Elle alimente la comparution (affichage derive), la DNC /
     # procuration du dirigeant ET l'avertissement au conjoint -> plus de re-saisie

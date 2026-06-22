@@ -2090,6 +2090,25 @@ def test_selas_cession_vendeur_selectionnable(tmp_path: Path, monkeypatch) -> No
     assert "associé unique" not in checkbox_labels
 
 
+def test_selas_profession_field_removed(tmp_path: Path, monkeypatch) -> None:
+    # #9 (onglet 24) : le champ « profession » de l'associe est retire du formulaire
+    # (redondant avec la qualification ; titre « Docteur » derive cote moteur ->
+    # comparution inchangee). cf. docs/review/QUESTIONS_RAFAEL.md #9.
+    from streamlit.testing.v1 import AppTest
+
+    from sydel_doc_engine.front_app import shell
+
+    monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selas-prof")
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
+    app.selectbox(key="clean_dossier_type").set_value("SELAS multi-associes creation V1")
+    app = app.run(timeout=180)
+    next(b for b in app.button if "test_data" in str(b.key)).click()
+    app = app.run(timeout=180)
+
+    keys = {str(w.key) for w in app.text_input}
+    assert not any(k.endswith("_profession") for k in keys)
+
+
 def test_front_selas_dentiste_pluri_uses_dentiste_corpus(
     tmp_path: Path, monkeypatch
 ) -> None:
