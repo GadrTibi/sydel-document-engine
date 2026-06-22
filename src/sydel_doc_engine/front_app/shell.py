@@ -899,7 +899,7 @@ def _cession_prefill_values(profession: str) -> dict[str, object]:
         "selarl_cession_bail_duree": "six années",
         "selarl_cession_bail_loyer": "2 000",
         "selarl_cession_bail_descriptif": (
-            "Les locaux sont composes d'une piece principale de 80 m2 avec "
+            "Les locaux sont composés d'une pièce principale de 80 m² avec "
             "jouissance de la salle d'attente et des toilettes."
         ),
         "selarl_cession_prix_total": "300 000",

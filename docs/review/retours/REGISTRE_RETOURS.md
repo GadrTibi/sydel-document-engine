@@ -29,7 +29,7 @@
 
 | id | type | retour (verbatim) | surface / scope attendu | statut |
 |----|------|--------|--------|--------|
-| R22-01 | encodage | SELARL : « ne pas oublier les accents "composés d'une pièce" » | rendu accents (composés) → tout doc/type concerné | ouvert |
+| R22-01 | encodage | SELARL : « ne pas oublier les accents "composés d'une pièce" » | texte libre rendu verbatim (descriptif du local, cession) | **traité** (descriptif prefill accentué « composés d'une pièce principale de 80 m² ») ; **à trancher** : pass accent sur données structurées (nationalité « francaise », situation « marie ») qui suivent le scénario gold ASCII |
 | R22-02 | logique-conditionnelle | SELARL : ne pas mentionner de prétendue épouse quand le client n'est PAS marié sous communauté ; ex. `acte_cession_parts_scm` supprimer « divorcé avec Madame Claire Dupont » (personne jamais mentionnée) | clause conjoint/situation maritale → **TOUS** les docs qui affichent un conjoint | **traité** (helper partagé `mentions_conjoint` ; gardé sur les 2 actes de cession SCM+SPFPL ; statuts SAS = marié-only par design ; statuts SPFPL gardé sur présence conjoint ; +2 tests) |
 | R22-03 | doc-manquant | SCM : « il manque le document Contrat frais communs — il n'est pas généré » + « je ne vois pas de champs correspondants » | DOC-027 + champs inter-SEL **visibles** (mon opt-in décoché = mauvais cap) | **traité** `c2d3498` (visible + actif par défaut, 504 verts) |
 | R22-04 | doc-manquant | SCM : « il manque le document règlement intérieur de la scté civile de moyens — il n'est pas généré » + pas de champs | DOC-028 + champs inter-SEL visibles | **traité** `c2d3498` |
