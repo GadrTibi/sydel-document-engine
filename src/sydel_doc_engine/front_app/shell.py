@@ -771,7 +771,10 @@ def _selas_associe_prefill(
         f"{p}_departement": departement,
         f"{p}_nationalite": "francaise",
         f"{p}_profession": "Docteur",
-        f"{p}_adresse": f"10 rue Exemple, {departement}000 {ville}",
+        f"{p}_adresse_num": "10",
+        f"{p}_adresse_voie": "rue Exemple",
+        f"{p}_adresse_cp": f"{departement}000",
+        f"{p}_adresse_ville": ville,
         f"{p}_situation": "celibataire",
         f"{p}_qualification": "Medecin generaliste",
         f"{p}_ordre_dep": nationalite_ordre,
@@ -814,14 +817,11 @@ def _prefill_selas_test_data(
         "selas_signature_date": "15/05/2026",
         # DNC + identite du dirigeant : saisies SOUS l'associe coche dirigeant
         # (associe 0). La nationalite / le titre derivent de l'associe lui-meme.
+        # DNC + identite du dirigeant : adresse et date sont reprises de l'associe
+        # (saisies une seule fois, #8 / B4) ; seule la filiation reste propre ici.
         "selas_associe_0_is_dirigeant": True,
         "selas_associe_0_sig_nom_pere": "Pierre Durand",
         "selas_associe_0_sig_nom_mere": "Anne Durand",
-        "selas_associe_0_sig_adresse_num": "10",
-        "selas_associe_0_sig_adresse_voie": "rue Exemple",
-        "selas_associe_0_sig_adresse_cp": "69000",
-        "selas_associe_0_sig_adresse_ville": "Lyon",
-        "selas_associe_0_sig_date_naissance": "01/01/1980",
         "selas_decision_date": "15/05/2026",
         # R5/R6 (2026-06-18) : « Conseil departemental » retire du formulaire ;
         # le connecteur grammatical (« de » / « du ») le remplace pour l'accord.

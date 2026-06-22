@@ -563,8 +563,9 @@ def _build_dirigeants_nomines_payload(
     payload: list[dict[str, object]] = []
     for index, role in _collect_dirigeants_nomines_indices(associes, president_index):
         associe = associes[index]
-        prefix = f"{PREFIX}_associe_{index}"
-        raw_date = st.session_state.get(f"{prefix}_sig_date_naissance")
+        # #8 / B4 : identite, adresse structuree et date reprises de l'ASSOCIE
+        # (saisies une seule fois) ; plus aucune lecture des cles `_sig_*`.
+        adresse = associe.adresse_personnelle
         payload.append(
             {
                 "ref_associe_index": index,
@@ -573,18 +574,18 @@ def _build_dirigeants_nomines_payload(
                 "prenom": associe.prenom or associe.prenoms or "",
                 "nom": associe.nom or "",
                 "genre": associe.genre or Gender.MASCULIN,
-                # Date de naissance ISO (saisie sous la case Dirigeant) pour la
+                # Date de naissance ISO derivee du champ texte de l'associe pour la
                 # phrase d'identite du PV ; fallback sur la date « en lettres ».
-                "date_naissance_iso": parse_french_date(raw_date),
+                "date_naissance_iso": _parse_associe_birthdate(associe.date_naissance),
                 "date_naissance_affichee": associe.date_naissance,
                 "ville_naissance": associe.ville_naissance,
                 "departement_naissance": associe.departement_naissance,
                 "nationalite": associe.nationalite,
-                # Adresse personnelle structuree (saisie sous la case Dirigeant).
-                "adresse_num": str(st.session_state.get(f"{prefix}_sig_adresse_num") or ""),
-                "adresse_voie": str(st.session_state.get(f"{prefix}_sig_adresse_voie") or ""),
-                "adresse_cp": str(st.session_state.get(f"{prefix}_sig_adresse_cp") or ""),
-                "adresse_ville": str(st.session_state.get(f"{prefix}_sig_adresse_ville") or ""),
+                # Adresse personnelle structuree de l'associe.
+                "adresse_num": str((adresse.num_voie if adresse else "") or ""),
+                "adresse_voie": str((adresse.voie if adresse else "") or ""),
+                "adresse_cp": str((adresse.cp if adresse else "") or ""),
+                "adresse_ville": str((adresse.ville if adresse else "") or ""),
                 "adresse_personnelle_affichee": associe.adresse_personnelle_affichee,
             }
         )
@@ -643,19 +644,13 @@ def _render_dirigeant_choice(prefix: str, index: int) -> None:
         key=role_key,
         help="Le Président signe le tronc commun ; le Directeur Général ajoute une décision au PV.",
     )
-    st.caption("Declaration de non-condamnation du dirigeant (filiation + adresse personnelle)")
+    # #8 / B4 (onglet 24) : la filiation (parents) est la SEULE info propre au
+    # dirigeant pour la DNC. L'adresse personnelle ET la date de naissance sont
+    # reprises de l'associe (saisies une seule fois plus haut) -> plus de re-saisie.
+    st.caption("Declaration de non-condamnation du dirigeant (filiation des parents)")
     col_a, col_b = st.columns(2)
     _ts(col_a, f"{prefix}_sig_nom_pere", "Nom du pere")
     _ts(col_b, f"{prefix}_sig_nom_mere", "Nom de la mere")
-    # R4 (retours Rafael 2026-06-18) : titre explicite au-dessus des 4 champs
-    # structures d'adresse perso (No / Voie / CP / Ville), sinon ambigus.
-    st.markdown("**Adresse personnelle**")
-    col_c, col_d, col_e, col_f = st.columns(4)
-    _ts(col_c, f"{prefix}_sig_adresse_num", "No")
-    _ts(col_d, f"{prefix}_sig_adresse_voie", "Voie")
-    _ts(col_e, f"{prefix}_sig_adresse_cp", "CP")
-    _ts(col_f, f"{prefix}_sig_adresse_ville", "Ville")
-    _date(f"associe_{index}_sig_date_naissance", "Date de naissance (JJ/MM/AAAA)")
 
 
 def _derive_president_index(associes: list[StatutsCivilsAssocie]) -> int:
@@ -714,6 +709,70 @@ def _collect_dirigeants_nomines_indices(
     return dirigeants
 
 
+def _validate_roles_dirigeants(associes: list[StatutsCivilsAssocie]) -> list[str]:
+    """#7 (onglet 24) : les fonctions de direction ne sont PAS cumulatives.
+
+    Un seul President et un seul Directeur General sont admis (le « DG delegue »
+    multiple reste hors V1, son wording dedie n'etant pas fourni). On bloque donc
+    si plus d'un associe physique coche le meme role de direction."""
+    roles = [
+        _dirigeant_role(i)
+        for i, associe in enumerate(associes)
+        if associe.type_personne == "personne_physique"
+        and bool(st.session_state.get(f"{PREFIX}_associe_{i}_is_dirigeant"))
+    ]
+    blockers: list[str] = []
+    if roles.count("Président") > 1:
+        blockers.append(
+            "Un seul Président est admis : les fonctions de direction ne sont pas cumulatives."
+        )
+    if roles.count("Directeur Général") > 1:
+        blockers.append(
+            "Un seul Directeur Général est admis : les fonctions de direction "
+            "ne sont pas cumulatives."
+        )
+    return blockers
+
+
+_MOIS_NUM = {
+    "janvier": 1, "fevrier": 2, "mars": 3, "avril": 4, "mai": 5, "juin": 6,
+    "juillet": 7, "aout": 8, "septembre": 9, "octobre": 10, "novembre": 11,
+    "decembre": 12,
+}
+
+
+def _parse_associe_birthdate(value: object) -> date | None:
+    """Derive la date de naissance ISO a partir de l'UNIQUE saisie associe.
+
+    L'associe saisit sa date en TEXTE (« 1 janvier 1980 », parite source pour la
+    comparution). La DNC du dirigeant (DOC-001) exige une date reelle : on la derive
+    de ce MEME champ (#8, onglet 24 : plus de double saisie via un picker dedie).
+    Accepte « 1 janvier 1980 », « 1er janvier 1980 » et « JJ/MM/AAAA »."""
+    parsed = parse_french_date(value)
+    if parsed is not None:
+        return parsed
+    if not isinstance(value, str):
+        return None
+    match = re.fullmatch(
+        r"\s*(\d{1,2})\s*(?:er)?\s+([A-Za-zàâäéèêëîïôöûüç]+)\s+(\d{4})\s*",
+        value.strip(),
+        re.IGNORECASE,
+    )
+    if match is None:
+        return None
+    day, month_name, year = match.groups()
+    normalized = "".join(
+        c for c in normalize("NFKD", month_name.lower()) if not combining(c)
+    )
+    month = _MOIS_NUM.get(normalized)
+    if month is None:
+        return None
+    try:
+        return date(int(year), month, int(day))
+    except ValueError:
+        return None
+
+
 def _collect_dirigeant_sig(
     associes: list[StatutsCivilsAssocie], president_index: int
 ) -> dict[str, object]:
@@ -728,19 +787,19 @@ def _collect_dirigeant_sig(
         return {}
     prefix = f"{PREFIX}_associe_{president_index}"
     dirigeant = associes[president_index]
-    raw_date = st.session_state.get(f"{prefix}_sig_date_naissance")
+    # #8 / B4 : adresse + date reprises de l'ASSOCIE (saisies une seule fois) ; seule
+    # la filiation reste propre a la case « Dirigeant ».
+    adresse = dirigeant.adresse_personnelle
     return {
         "signataire_nom_pere": str(st.session_state.get(f"{prefix}_sig_nom_pere") or ""),
         "signataire_nom_mere": str(st.session_state.get(f"{prefix}_sig_nom_mere") or ""),
-        "signataire_adresse_num": str(st.session_state.get(f"{prefix}_sig_adresse_num") or ""),
-        "signataire_adresse_voie": str(st.session_state.get(f"{prefix}_sig_adresse_voie") or ""),
-        "signataire_adresse_cp": str(st.session_state.get(f"{prefix}_sig_adresse_cp") or ""),
-        "signataire_adresse_ville": str(
-            st.session_state.get(f"{prefix}_sig_adresse_ville") or ""
-        ),
+        "signataire_adresse_num": str((adresse.num_voie if adresse else "") or ""),
+        "signataire_adresse_voie": str((adresse.voie if adresse else "") or ""),
+        "signataire_adresse_cp": str((adresse.cp if adresse else "") or ""),
+        "signataire_adresse_ville": str((adresse.ville if adresse else "") or ""),
         "signataire_nationalite": str(dirigeant.nationalite or ""),
         "signataire_titre": str(dirigeant.profession or "Docteur"),
-        "signataire_date_naissance": parse_french_date(raw_date),
+        "signataire_date_naissance": _parse_associe_birthdate(dirigeant.date_naissance),
     }
 
 
@@ -760,7 +819,18 @@ def _physique(prefix: str, nb_actions: int, montant: str) -> StatutsCivilsAssoci
     col_g, col_h = st.columns(2)
     nationalite = render_nationalite_selectbox(prefix, container=col_g)
     profession = _ts(col_h, f"{prefix}_profession", "Profession (ex: Docteur)")
-    adresse = _ts(st, f"{prefix}_adresse", "Adresse personnelle (affichee)")
+    # #8 / B4 (onglet 24) : adresse personnelle STRUCTUREE saisie UNE SEULE FOIS ici
+    # (comme le gold). Elle alimente la comparution (affichage derive), la DNC /
+    # procuration du dirigeant ET l'avertissement au conjoint -> plus de re-saisie
+    # sous la case « Dirigeant » ni de champ de foyer separe.
+    st.markdown("**Adresse personnelle**")
+    adr_a, adr_b, adr_c, adr_d = st.columns(4)
+    adresse_num = _ts(adr_a, f"{prefix}_adresse_num", "No")
+    adresse_voie = _ts(adr_b, f"{prefix}_adresse_voie", "Voie")
+    adresse_cp = _ts(adr_c, f"{prefix}_adresse_cp", "CP")
+    adresse_ville = _ts(adr_d, f"{prefix}_adresse_ville", "Ville")
+    adresse_struct = _structured_address(adresse_num, adresse_voie, adresse_cp, adresse_ville)
+    adresse = adresse_struct.adresse_affichee if adresse_struct else ""
     col_i, col_j = st.columns(2)
     situation = _ts(col_i, f"{prefix}_situation", "Situation matrimoniale")
     qualification = _ts(col_j, f"{prefix}_qualification", "Qualification principale")
@@ -769,7 +839,7 @@ def _physique(prefix: str, nb_actions: int, montant: str) -> StatutsCivilsAssoci
     numero_ordre = _ts(col_l, f"{prefix}_numero_ordre", "Numero ordre")
     numero_rpps = _ts(col_m, f"{prefix}_numero_rpps", "Numero RPPS")
     qualite = _ts(st, f"{prefix}_qualite", "Qualite au capital (ex: associee exercante)")
-    regime_associe, foyer_address = _render_regime_associe_form(prefix)
+    regime_associe = _render_regime_associe_form(prefix)
 
     return StatutsCivilsAssocie(
         type_personne="personne_physique",
@@ -784,10 +854,10 @@ def _physique(prefix: str, nb_actions: int, montant: str) -> StatutsCivilsAssoci
         nationalite=nationalite or None,
         profession=profession or None,
         situation_maritale=situation or None,
-        # R7 : adresse de foyer STRUCTUREE de l'associe marie (avertissement
-        # DOC-006). Lue par _associe_signataire_address ; si None (incomplete ou
-        # associe non marie), repli historique vers l'adresse du president.
-        adresse_personnelle=foyer_address,
+        # #8 / B4 : adresse personnelle STRUCTUREE (saisie une seule fois). Sert la
+        # comparution (affichage derive), la DNC du dirigeant et l'avertissement au
+        # conjoint (foyer = domicile). Repli president supprime : toujours renseignee.
+        adresse_personnelle=adresse_struct,
         adresse_personnelle_affichee=adresse or None,
         qualification_principale=qualification or None,
         ordre_departemental=ordre_dep or None,
@@ -803,18 +873,15 @@ def _physique(prefix: str, nb_actions: int, montant: str) -> StatutsCivilsAssoci
 
 def _render_regime_associe_form(
     prefix: str,
-) -> tuple[RegimeCommunautaireAssocie | None, Address | None]:
+) -> RegimeCommunautaireAssocie | None:
     """Regime matrimonial communautaire PAR associe physique (R7).
 
-    Reprend la STRUCTURE SELARL (toggle + regime matrimonial + conjoint), mais
-    portee au niveau de l'associe au lieu du toggle global unique. Inactif ->
-    (None, None) (associe non concerne).
+    Reprend la STRUCTURE SELARL (toggle + regime matrimonial + conjoint), portee
+    au niveau de l'associe. Inactif -> None (associe non concerne).
 
-    Collecte aussi l'adresse de foyer STRUCTUREE (No/Voie/CP/Ville) de CET
-    associe : l'avertissement au conjoint (DOC-006) est adresse au domicile du
-    foyer. Sans cette saisie structuree, le moteur retombait sur l'adresse du
-    president (residu d63393c) ; avec elle, chaque associe marie porte SON foyer.
-    Retourne l'`Address` structuree (ou None si incomplete -> repli president)."""
+    #8 / B4 (onglet 24) : plus de champ d'adresse de foyer separe. L'avertissement
+    au conjoint (DOC-006) reutilise l'adresse personnelle STRUCTUREE de l'associe
+    (foyer = domicile), saisie une seule fois plus haut."""
     regime_key = f"{prefix}_regime_communautaire"
     if regime_key not in st.session_state:
         st.session_state[regime_key] = False
@@ -824,7 +891,7 @@ def _render_regime_associe_form(
         key=regime_key,
     )
     if not actif:
-        return None, None
+        return None
     st.caption("Conjoint de cet associe (lettres de renonciation / avertissement)")
     col_a, col_b, col_c = st.columns(3)
     conjoint_civilite = col_a.selectbox(
@@ -835,17 +902,7 @@ def _render_regime_associe_form(
     conjoint_prenom = _ts(col_b, f"{prefix}_conjoint_prenom", "Prenom conjoint")
     conjoint_nom = _ts(col_c, f"{prefix}_conjoint_nom", "Nom conjoint")
     regime_matrimonial = _ts(st, f"{prefix}_regime_matrimonial", "Regime matrimonial")
-    st.caption(
-        "Adresse du foyer de cet associe (avertissement au conjoint DOC-006). "
-        "Si laissee vide, l'adresse du president est utilisee."
-    )
-    col_d, col_e, col_f, col_g = st.columns(4)
-    foyer_num = _ts(col_d, f"{prefix}_foyer_adresse_num", "No")
-    foyer_voie = _ts(col_e, f"{prefix}_foyer_adresse_voie", "Voie")
-    foyer_cp = _ts(col_f, f"{prefix}_foyer_adresse_cp", "CP")
-    foyer_ville = _ts(col_g, f"{prefix}_foyer_adresse_ville", "Ville")
-    foyer_address = _foyer_address(foyer_num, foyer_voie, foyer_cp, foyer_ville)
-    regime = RegimeCommunautaireAssocie(
+    return RegimeCommunautaireAssocie(
         actif=True,
         regime_matrimonial=regime_matrimonial or None,
         conjoint_civilite=conjoint_civilite,
@@ -853,15 +910,14 @@ def _render_regime_associe_form(
         conjoint_prenom=conjoint_prenom or None,
         conjoint_nom=conjoint_nom or None,
     )
-    return regime, foyer_address
 
 
-def _foyer_address(num: str, voie: str, cp: str, ville: str) -> Address | None:
-    """Adresse de foyer STRUCTUREE par associe (R7) ; None si incomplete.
+def _structured_address(num: str, voie: str, cp: str, ville: str) -> Address | None:
+    """Adresse personnelle STRUCTUREE de l'associe (#8 / B4) ; None si incomplete.
 
-    L'avertissement DOC-006 exige une adresse complete (num/voie/cp/ville). Si
-    l'un des champs manque, on renvoie None pour laisser le repli vers le
-    president jouer (jamais de generation bloquee ni d'adresse partielle)."""
+    La DNC (DOC-001) et l'avertissement au conjoint (DOC-006) exigent une adresse
+    complete (num/voie/cp/ville). Si un champ manque, on renvoie None : la
+    validation bloque alors « adresse requise » (jamais d'adresse partielle)."""
     parts = (num.strip(), voie.strip(), cp.strip(), ville.strip())
     if not all(parts):
         return None
@@ -1025,6 +1081,8 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:
                     f"associés ({total}) ne correspond pas au nombre total d'actions "
                     f"({nb_actions_total})."
                 )
+        # #7 (onglet 24) : roles de direction non cumulatifs (1 President, 1 DG max).
+        blockers.extend(_validate_roles_dirigeants(associes))
     blockers.extend(_validate_common_docs(payload))
     blockers.extend(_validate_regime_communautaire(payload))
     return tuple(dict.fromkeys(blockers))

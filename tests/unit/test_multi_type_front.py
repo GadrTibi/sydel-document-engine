@@ -2076,14 +2076,11 @@ def test_front_selas_change_dirigeant_generates(tmp_path: Path, monkeypatch) -> 
                 return
         raise KeyError(key)
 
-    # DNC du NOUVEAU dirigeant (associe 1) : apparait sous sa case « Dirigeant ».
+    # DNC du NOUVEAU dirigeant (associe 1) : #8 / B4 — l'adresse et la date sont
+    # reprises de l'associe 1 (deja prefill), SEULE la filiation se saisit sous sa
+    # case « Dirigeant » (plus de re-saisie d'adresse / date).
     set_text("selas_associe_1_sig_nom_pere", "Paul Martin")
     set_text("selas_associe_1_sig_nom_mere", "Marie Martin")
-    set_text("selas_associe_1_sig_adresse_num", "2")
-    set_text("selas_associe_1_sig_adresse_voie", "rue Martin")
-    set_text("selas_associe_1_sig_adresse_cp", "75000")
-    set_text("selas_associe_1_sig_adresse_ville", "Paris")
-    set_text("selas_associe_1_sig_date_naissance", "02/02/1982")
     app = app.run(timeout=180)
 
     generate_button = next(
@@ -2097,6 +2094,51 @@ def test_front_selas_change_dirigeant_generates(tmp_path: Path, monkeypatch) -> 
     download_labels = [item.label for item in app.get("download_button")]
     assert "Telecharger statuts_selas_multi.docx" in download_labels
     assert "Telecharger le dossier ZIP" in download_labels
+
+
+def test_selas_parse_associe_birthdate_handles_french_long_form() -> None:
+    # #8 (onglet 24) : la date de naissance de la DNC est DERIVEE de l'unique champ
+    # texte de l'associe (plus de double saisie via un picker dedie). Le parseur
+    # accepte la forme longue francaise ET « JJ/MM/AAAA ».
+    from datetime import date
+
+    from sydel_doc_engine.front_app import selas_multi_slice as sms
+
+    assert sms._parse_associe_birthdate("1 janvier 1980") == date(1980, 1, 1)
+    assert sms._parse_associe_birthdate("1er janvier 1980") == date(1980, 1, 1)
+    assert sms._parse_associe_birthdate("2 février 1982") == date(1982, 2, 2)
+    assert sms._parse_associe_birthdate("02/02/1982") == date(1982, 2, 2)
+    assert sms._parse_associe_birthdate("") is None
+    assert sms._parse_associe_birthdate("pas une date") is None
+
+
+def test_selas_deux_directeurs_generaux_bloque(tmp_path: Path, monkeypatch) -> None:
+    # #7 (onglet 24) : fonctions de direction non cumulatives -> un seul Directeur
+    # General admis. Deux associes « Directeur General » doivent bloquer la generation.
+    from streamlit.testing.v1 import AppTest
+
+    from sydel_doc_engine.front_app import shell
+
+    monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selas-dg")
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
+    app.selectbox(key="clean_dossier_type").set_value("SELAS multi-associes creation V1")
+    app = app.run(timeout=180)
+    next(b for b in app.button if "test_data" in str(b.key)).click()
+    app = app.run(timeout=180)
+
+    # Associe 1 devient dirigeant, puis les deux dirigeants prennent le role DG.
+    app.checkbox(key="selas_associe_1_is_dirigeant").set_value(True)
+    app = app.run(timeout=180)
+    app.selectbox(key="selas_associe_0_role_dirigeant").set_value("Directeur Général")
+    app.selectbox(key="selas_associe_1_role_dirigeant").set_value("Directeur Général")
+    app = app.run(timeout=180)
+
+    captions = " ".join(item.value for item in app.caption)
+    assert "Un seul Directeur Général est admis" in captions
+    generate_button = next(
+        b for b in app.button if str(b.key) == "clean_typed_generate_dossier"
+    )
+    assert generate_button.disabled is True
 
 
 def test_front_today_button_fills_date_non_selarl() -> None:
