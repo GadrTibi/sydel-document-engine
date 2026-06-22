@@ -6,6 +6,7 @@ from datetime import date
 from pathlib import Path
 
 from docx import Document
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import (
@@ -142,7 +143,7 @@ def generate_statuts_civil_docx(
         rendered = _strip_editorial_marker(rendered)
         if not rendered:
             continue
-        _add_rendered_paragraph(output_doc, rendered)
+        _add_rendered_paragraph(output_doc, rendered, paragraph)
         if template.expected_type == "sci_iris" and index == 561:
             _add_resultat_groupes_block(output_doc, data)
         if (
@@ -314,6 +315,12 @@ class _ResolvedStatutsCivil:
                 statuts.denomination_cabinet_mandataire
             ),
         }
+
+
+def _bold_paragraph(paragraph) -> None:
+    """Met tous les runs d'un paragraphe en gras (lignes d'identite de comparution)."""
+    for run in paragraph.runs:
+        run.bold = True
 
 
 def _add_associate_block(document, data: _ResolvedStatutsCivil) -> None:
@@ -567,7 +574,8 @@ def _add_apport_line(
 def _add_physical_identity(document, associe: StatutsCivilsAssocie) -> None:
     gender = associe.genre or Gender.MASCULIN
     born = "Née" if gender == Gender.FEMININ else "Né"
-    add_paragraph(document, _signature_label(associe))
+    # R22-06 : la ligne d'identite du comparant est en gras dans la source (comparution).
+    _bold_paragraph(add_paragraph(document, _signature_label(associe)))
     add_paragraph(
         document,
         f"{born} le {_format_display_date(associe.date_naissance, 'associes[].date_naissance')} "
@@ -586,7 +594,8 @@ def _add_physical_identity(document, associe: StatutsCivilsAssocie) -> None:
 
 
 def _add_morale_identity(document, associe: StatutsCivilsAssocie) -> None:
-    add_paragraph(document, _signature_label(associe))
+    # R22-06 : la ligne d'identite du comparant est en gras dans la source (comparution).
+    _bold_paragraph(add_paragraph(document, _signature_label(associe)))
     add_paragraph(
         document,
         f"{_required_text(associe.forme_juridique, 'associes[].forme_juridique')} "
@@ -731,7 +740,7 @@ def _source_path(template: StatutsCivilTemplate) -> Path:
     return candidates[0]
 
 
-def _add_rendered_paragraph(document, text: str) -> None:
+def _add_rendered_paragraph(document, text: str, source_paragraph=None) -> None:
     if text == "STATUTS":
         add_statuts_title_box(document, text)
     elif text.startswith("TITRE "):
@@ -741,7 +750,48 @@ def _add_rendered_paragraph(document, text: str) -> None:
     elif text.startswith("- "):
         add_statuts_hanging_list_item(document, text[2:])
     else:
-        add_statuts_body_paragraph(document, text)
+        _add_source_styled_body(document, text, source_paragraph)
+
+
+def _add_source_styled_body(document, text: str, source_paragraph) -> None:
+    """Rend un paragraphe de corps en PRESERVANT la mise en forme de la source.
+
+    R22-06 (Rafael 2026-06-22, « toute la première page ») : l'en-tête (dénomination /
+    forme / capital / siège) est CENTRÉ dans la source, « LES SOUSSIGNES » est en gras
+    souligné, les intitulés sont en gras — le moteur les aplatissait en justifié Normal.
+    On recopie l'alignement + le gras + le souligné de la source au lieu de les perdre.
+    Le corps des articles (justifié, non gras) reste inchangé.
+    """
+    alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+    bold = False
+    underline = False
+    title_like = False
+    if source_paragraph is not None:
+        style_name = (
+            source_paragraph.style.name.lower() if source_paragraph.style else ""
+        )
+        title_like = "title" in style_name
+        src_alignment = source_paragraph.alignment
+        if src_alignment is not None:
+            alignment = src_alignment
+        elif title_like:
+            # Titre source (dénomination) : centré via le style, pas via l'alignement.
+            alignment = WD_ALIGN_PARAGRAPH.CENTER
+        text_runs = [run for run in source_paragraph.runs if run.text.strip()]
+        # Gras/souligné de la source recopiés sur la ligne (intitulés, « LES SOUSSIGNES »,
+        # noms en comparution…). Le corps des articles source n'a aucun run en gras, donc
+        # pas de sur-gras du corps.
+        bold = any(bool(run.bold) for run in text_runs)
+        underline = any(bool(run.underline) for run in text_runs)
+    paragraph = add_statuts_body_paragraph(document, text, alignment=alignment)
+    if title_like:
+        bold = True
+    if bold or underline:
+        for run in paragraph.runs:
+            if bold:
+                run.bold = True
+            if underline:
+                run.underline = True
 
 
 def _replace_placeholders(text: str, replacements: dict[str, str]) -> str:

@@ -178,3 +178,35 @@ def test_statuts_source_headings_all_present(
         f"{statuts_name} : {len(generated_headings)} en-tetes generees "
         f"vs {len(source_headings)} au modele source"
     )
+
+
+def test_statuts_civil_first_page_formatting_matches_source(tmp_path: Path) -> None:
+    # R22-06 (Rafael 2026-06-22, « toute la première page ») : la 1re page des statuts
+    # civils doit respecter la mise en forme de la source -> en-tete CENTRE, « LES
+    # SOUSSIGNES » gras+souligne, identite du comparant en gras. Le moteur partage les
+    # aplatissait en justifie Normal.
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+
+    generated = css.generate_dossier(
+        _civil_base(
+            "SCI IRIS",
+            "sci_iris",
+            [_pm(40, 1, 40, 400), _pp("Alice", "Martin", 60, 41, 100, 600)],
+        ),
+        tmp_path,
+    )
+    doc = Document(_gen_statuts(generated, "statuts_sci_iris.docx"))
+    paras = [p for p in doc.paragraphs if p.text.strip()]
+
+    def find(prefix: str):
+        return next(p for p in paras if _nfc(p.text).strip().startswith(prefix))
+
+    # En-tete CENTRE (forme sociale, capital, siege).
+    assert find("Au Capital").alignment == WD_ALIGN_PARAGRAPH.CENTER
+    assert find("Siège Social").alignment == WD_ALIGN_PARAGRAPH.CENTER
+    # « LES SOUSSIGNES » en gras + souligne.
+    soussignes = find("LES SOUSSIGNES")
+    assert any(r.bold for r in soussignes.runs)
+    assert any(r.underline for r in soussignes.runs)
+    # Identite du comparant (ligne de nom) en gras.
+    assert any(r.bold for r in find("SEL IRIS").runs)
