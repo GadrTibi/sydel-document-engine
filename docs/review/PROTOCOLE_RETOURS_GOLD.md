@@ -54,13 +54,16 @@ Cocher **toutes** les cases, pas une de moins :
   `METHODE_PARITE_GOLD.md` (les règles imposées) pour qu'elle devienne un invariant audité.
 
 ### Phase 6 — RESTITUTION AU PM (message Rafael copier-collable)
-Dès qu'une modif demandée par Rafael est faite ET POUSSÉE, produire pour Gad un message
-**prêt à transférer à Rafael** (Gad ne réécrit rien) :
-- **Court** ; **en puces** s'il y a plusieurs points ; **ton FROID** (demande, zéro politesse).
-- Dans un **BLOC COPIER-COLLABLE** (bloc de code markdown) isolé, pour copier-coller direct.
-- Inclure « **reboot le Streamlit Cloud** » en tête **UNIQUEMENT si j'ai poussé** quelque chose
-  (un push n'est testable qu'après redéploiement). **Si je n'ai PAS poussé → ne pas le dire.**
-- Une seule chose à retester par puce, formulée en ordre (« reteste X »), pas en explication.
+Dès qu'une modif demandée par Rafael est faite ET POUSSÉE, **deux choses distinctes** :
+
+1. **À GAD (hors bloc, une ligne)** : si j'ai poussé → « **reboot le Streamlit Cloud** »
+   (c'est **GAD** qui reboote, jamais Rafael). Si je n'ai RIEN poussé → ne pas le dire.
+
+2. **À RAFAEL (bloc copier-collable)** : message **court**, **FROID** (demande, zéro
+   politesse), **en puces** (une puce = un point), dans un **bloc de code markdown** isolé que
+   Gad transfère tel quel sans rien réécrire. **PAS de ligne reboot dans ce bloc** (c'est
+   l'affaire de Gad). Chaque puce relie le retest à **SA demande + ce que j'ai modifié** :
+   « tu avais demandé/signalé X → fait : Y → reteste ».
 
 ## Garde-fous (anti-rechute appris)
 - **Périmètre EXACT de la remarque — zéro extrapolation.** On corrige uniquement ce qui est
