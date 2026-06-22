@@ -450,6 +450,37 @@ def test_civil_capital_divisible_by_parts_ok(tmp_path: Path) -> None:
     assert not any("divisible" in b for b in plan.blockers)
 
 
+def test_civil_capital_zero_blocks() -> None:
+    # Dogfood 2026-06-22 : « 0 » passait la garde de presence -> capital 0. Doit bloquer.
+    payload = _civil_base(
+        "SCM", "scm", [_pp("Jean", "Durand", 50, 1, 50, 0), _pp("Alice", "Martin", 50, 51, 100, 0)]
+    )
+    payload["capital_social"] = "0"
+    plan = css.build_civil_plan(payload)
+    assert plan.can_generate is False
+    assert any("apital" in b and "superieur a zero" in b for b in plan.blockers)
+
+
+def test_civil_missing_banque_adresse_blocks() -> None:
+    # Dogfood 2026-06-22 : le generateur exige l'adresse de la banque -> bloquer avant crash.
+    payload = _civil_base("SCI", "sci", [_pp("Jean", "Durand", 100, 1, 100, 1000)])
+    payload["banque_adresse"] = ""
+    plan = css.build_civil_plan(payload)
+    assert plan.can_generate is False
+    assert any("anque" in b and "dresse" in b for b in plan.blockers)
+
+
+def test_civil_morale_associe_without_representant_blocks() -> None:
+    # Dogfood 2026-06-22 : associe personne morale sans representant -> can_generate=True
+    # puis ValueError au generateur. Doit bloquer proprement.
+    pm = _pm(50, 1, 50, 500)
+    pm.representant = None
+    payload = _civil_base("SCM", "scm", [pm, _pp("Alice", "Martin", 50, 51, 100, 500)])
+    plan = css.build_civil_plan(payload)
+    assert plan.can_generate is False
+    assert any("representant" in b.lower() for b in plan.blockers)
+
+
 def test_scs_slice_generates_clean(tmp_path: Path) -> None:
     payload = _civil_base(
         "SCS",

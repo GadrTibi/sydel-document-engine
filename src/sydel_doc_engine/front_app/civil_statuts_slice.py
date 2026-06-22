@@ -695,6 +695,10 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:
         blockers.append("Denomination sociale requise.")
     if not str(payload.get("capital_social") or "").strip():
         blockers.append("Capital social requis.")
+    elif _safe_int(payload.get("capital_social")) <= 0:
+        # Dogfood 2026-06-22 : « 0 » passe la garde de presence -> societe « au capital de
+        # 0 euros ». Le capital doit etre strictement positif.
+        blockers.append("Capital social doit etre superieur a zero.")
     nb_parts_total = int(payload.get("nb_parts_total") or 0)
     if nb_parts_total < 1:
         blockers.append("Nombre total de parts requis et superieur a zero.")
@@ -714,6 +718,10 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:
         blockers.append("Ville RCS requise.")
     if not str(payload.get("banque_nom") or "").strip():
         blockers.append("Banque de depot des fonds requise.")
+    if not str(payload.get("banque_adresse") or "").strip():
+        # Dogfood 2026-06-22 : le generateur exige l'adresse de la banque
+        # (capital_depot.banque_adresse) ; sans elle, crash a la generation.
+        blockers.append("Adresse de la banque de depot requise.")
     if not str(payload.get("date_cloture_premier_exercice") or "").strip():
         blockers.append("Date de cloture du premier exercice requise.")
     if payload.get("signature_date") is None:
@@ -747,6 +755,31 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:
                 ):
                     if not str(getattr(associe, field) or "").strip():
                         blockers.append(f"Associe {idx} : {name} requise.")
+            elif associe.type_personne == "personne_morale":
+                # Dogfood 2026-06-22 : le generateur exige l'identite complete de la
+                # personne morale + son representant ; sans eux, crash a la generation.
+                for field, name in (
+                    ("forme_juridique", "forme juridique"),
+                    ("capital_social", "capital social"),
+                    ("numero_rcs", "numero RCS"),
+                    ("ville_rcs", "ville du RCS"),
+                ):
+                    if not str(getattr(associe, field, "") or "").strip():
+                        blockers.append(
+                            f"Associe {idx} (personne morale) : {name} requise."
+                        )
+                siege = getattr(associe, "siege", None)
+                if siege is None or not str(getattr(siege, "adresse_affichee", "") or "").strip():
+                    blockers.append(f"Associe {idx} (personne morale) : siege requis.")
+                rep = getattr(associe, "representant", None)
+                if (
+                    rep is None
+                    or not str(getattr(rep, "prenom", "") or "").strip()
+                    or not str(getattr(rep, "nom", "") or "").strip()
+                ):
+                    blockers.append(
+                        f"Associe {idx} (personne morale) : representant (prenom + nom) requis."
+                    )
         # Coherence dure exigee par le moteur : somme parts = nb_parts_total,
         # somme apports = capital_social. On la SURFACE en blocage front au lieu
         # de la decouvrir a la generation.
