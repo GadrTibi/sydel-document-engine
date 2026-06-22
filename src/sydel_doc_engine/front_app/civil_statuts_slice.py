@@ -461,18 +461,23 @@ def _render_scm_inter_sel(
     """
     if structure != "SCM" or not isinstance(associes, list) or len(associes) != 2:
         return {"inter_sel_active": False}
+    # Retour Rafael R22-03/04 (2026-06-22) : le contrat de frais communs + le reglement
+    # interieur FONT PARTIE du dossier SCM (canon). Champs VISIBLES et generation ACTIVE
+    # par defaut (plus d'opt-in cache : Rafael « je ne vois pas les champs »). La bascule
+    # reste pour le cas rare d'une SCM a 2 praticiens SANS SEL distincte.
     active_key = f"{prefix}_inter_sel_active"
     if active_key not in st.session_state:
-        st.session_state[active_key] = False
+        st.session_state[active_key] = True
+    st.markdown("**Documents inter-SEL — contrat de frais communs + reglement interieur**")
     active = st.checkbox(
-        "Generer aussi les documents inter-SEL (contrat de frais communs + reglement interieur)",
+        "Generer le contrat de frais communs + le reglement interieur "
+        "(decocher si SCM sans SEL distincte)",
         key=active_key,
-        help="A cocher si chaque praticien exerce via sa propre societe (SEL) et partage "
-        "les frais. Laisser decoche pour une SCM simple.",
+        help="Coche par defaut : ces deux documents font partie du dossier SCM a frais "
+        "communs. Decocher seulement si les praticiens n'exercent pas via des SEL distinctes.",
     )
     if not active:
         return {"inter_sel_active": False}
-    st.markdown("**Documents inter-SEL — societes d'exercice (SEL) partenaires**")
     # Le reglement interieur exige la MEME forme sociale pour les 2 SEL (placeholder
     # source unique). On collecte une forme commune.
     forme_commune = _text(

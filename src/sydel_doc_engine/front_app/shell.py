@@ -268,6 +268,29 @@ def _prefill_scm_test_data() -> None:
         # Satellites SCM (pacte + liste depenses, generes a 2 associes).
         "scm_pacte_ville_tribunal": "Paris",
         "scm_societe_numero_rcs": "en cours de constitution",
+        # Documents inter-SEL (R22-03/04) : contrat de frais communs + reglement interieur.
+        # Actifs par defaut ; donnees FICTIVES de la SEL de chaque praticien + parametres.
+        "scm_inter_sel_active": True,
+        "scm_inter_sel_forme": "SELARL",
+        "scm_inter_sel_titre": "Docteur",
+        "scm_inter_sel_1_denomination": "SELARL DOCTEUR DURAND",
+        "scm_inter_sel_1_capital": "1 000 euros",
+        "scm_inter_sel_1_siege": "1 rue Exemple, 75000 Paris",
+        "scm_inter_sel_1_ville_rcs": "Paris",
+        "scm_inter_sel_1_numero_rcs": "900 000 011",
+        "scm_inter_sel_1_telephone": "01 00 00 00 01",
+        "scm_inter_sel_2_denomination": "SELARL DOCTEUR MARTIN",
+        "scm_inter_sel_2_capital": "1 000 euros",
+        "scm_inter_sel_2_siege": "2 rue Exemple, 69000 Lyon",
+        "scm_inter_sel_2_ville_rcs": "Lyon",
+        "scm_inter_sel_2_numero_rcs": "900 000 012",
+        "scm_inter_sel_2_telephone": "04 00 00 00 02",
+        "scm_inter_sel_locaux": "10 rue de la Paix, 75002 Paris",
+        "scm_inter_sel_date_effet": "1er janvier 2027",
+        "scm_inter_sel_seuil": "1 500 euros",
+        "scm_inter_sel_annee_ref": "2027",
+        "scm_inter_sel_date_fin_gestion": "31 decembre 2027",
+        "scm_inter_sel_date_attribution": "1er janvier",
     }
     values.update(
         _scm_associe_prefill_values(

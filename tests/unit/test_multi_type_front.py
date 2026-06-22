@@ -396,12 +396,15 @@ def test_scm_inter_sel_adds_frais_communs_reglement(tmp_path: Path) -> None:
 
 
 def test_scm_inter_sel_off_keeps_base_satellites(tmp_path: Path) -> None:
-    # Opt-in decoche -> pas de docs inter-SEL, bundle satellites de base inchange.
+    # Inter-SEL explicitement inactif (bascule decochee) -> pas de docs inter-SEL, bundle
+    # satellites de base inchange. NB : depuis R22-03/04 le defaut UI est ACTIF ; ce test
+    # couvre le cas ou l'utilisateur decoche (SCM sans SEL distincte).
     payload = _civil_base(
         "SCM",
         "scm",
         [_pp("Jean", "Durand", 50, 1, 50, 500), _pp("Alice", "Martin", 50, 51, 100, 500)],
     )
+    payload["inter_sel_active"] = False
     plan = css.build_civil_plan(payload)
     assert plan.can_generate is True
     assert "DOC-027" not in plan.document_codes
