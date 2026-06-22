@@ -43,6 +43,10 @@ j'ajoute UNE ligne ici : `- [AAAA-MM-JJ HH:MM] [TYPE] description (réf : SHA / 
 - [13:59] **ACTION** garde de divisibilité capital/parts partagée → ferme 2 bloquants + 2 majeurs sur 4 types (`ec45978`). Bug confirmé empiriquement avant fix (règle 65).
 - [~14:00] **INCIDENT (nous)** la passe propagation montre que R22-02 n'avait PAS été propagé aux statuts/apport SPFPL (mon sous-scopage) → à compléter.
 - [14:04] **MÉTHODE** création de ce journal de bord (demande Gad : tracer la totale, rejouer l'histoire, remonter les conneries Rafael).
+- [~14:20] **R-RAFAEL** batch 2026-06-22b : (1) `courrier_sde_cession_scm` retirer surlignage/rouge ; (2) « compromis cession cabinet médical manquant ».
+- [~14:30] **MÉTHODE** RÈGLE ABSOLUE gravée (global 07 + mémoire) : traiter en continu jusqu'à épuisement, sans pause ni « je continue ? ».
+- [~14:40] **ACTION** R22b-01 : rouge + surlignages retirés du courrier SDE (générateur + 3 tests inversés). 509 verts.
+- [~14:45] **INCIDENT (Rafael)** R22b-02 « compromis médical manquant » = NON-BUG vérifié (DOC-010 généré quand étape=compromis ; testé en acte = G2 test partiel).
 
 ## Conneries / incidents Rafael (résumé — détail dans la mémoire privée)
 - **G1** (2026-06-22) : nouvelle remarque sur la SELARL « validée 100 % » et socle de tous les types (confirmé par Rafael : nouvelle remarque, pas régression).

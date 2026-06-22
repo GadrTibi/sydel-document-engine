@@ -2,8 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_COLOR_INDEX
-from docx.shared import RGBColor
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 from sydel_doc_engine.domain.models import DocumentGenerationContext
 from sydel_doc_engine.generators.lot_05.scm_cession_common import (
@@ -26,14 +25,14 @@ OUTPUT_FILENAME = "courrier_sde_cession_scm.docx"
 
 # Ligne FIXE du bloc destinataire (modele client + §8.1). Le reste (nom du
 # service, adresse, CP/ville) est a completer manuellement -> rendu en champs
-# surlignes jaune quand la saisie ne fournit pas la valeur.
+# « ... a completer » SANS surlignage (R22b-01) quand la saisie ne fournit pas la valeur.
 DESTINATAIRE_FIXED_LINE = "Service départemental de l'enregistrement de"
 # Espace blanc au-dessus du bloc destinataire pour le faire tomber dans la
 # fenetre d'enveloppe (haut). Calibre sur le top margin du modele client (~3 cm).
 ENVELOPE_WINDOW_SPACER_PT = 28
 
-# Montant FIXE des droits d'enregistrement (§8.3), rendu en rouge pour
-# adaptation manuelle eventuelle. PAS une variable.
+# Montant FIXE des droits d'enregistrement (§8.3), texte noir standard (R22b-01 :
+# plus de rouge). PAS une variable.
 MONTANT_DROITS_FIXE = "25"
 # Signataire FIXE SYDEL (§8.4a) : PAS le client, PAS une variable libre.
 SIGNATAIRE_SDE_FIXE = "Clémence ROUSSEL"
@@ -112,11 +111,11 @@ class CourrierSdeCessionScmGenerator:
 
 
 def _add_fillable_destinataire_line(document, value, placeholder: str) -> None:
-    """Ligne du bloc destinataire : saisie reelle si fournie, sinon champ jaune.
+    """Ligne du bloc destinataire : saisie reelle si fournie, sinon champ a completer.
 
     Quand la valeur n'est pas saisie (cas SELARL), on rend un libelle de champ
-    surligne jaune (« [Nom du service] ») a completer manuellement, sans token
-    moteur ni placeholder source « [ ] » (qui ferait planter save_clean_document).
+    « [Nom du service] a completer » SANS surlignage (R22b-01), sans token moteur ni
+    placeholder source « [ ] » (qui ferait planter save_clean_document).
     """
     text = value.strip() if isinstance(value, str) else (value or None)
     if text:
@@ -124,8 +123,8 @@ def _add_fillable_destinataire_line(document, value, placeholder: str) -> None:
         return
     paragraph = document.add_paragraph()
     paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
-    run = paragraph.add_run(f"{placeholder} à compléter")
-    run.font.highlight_color = WD_COLOR_INDEX.YELLOW
+    # R22b-01 (Rafael 2026-06-22) : aucun surlignage/couleur sur le texte.
+    paragraph.add_run(f"{placeholder} à compléter")
 
 
 def _add_corps_exemplaires(document, exemplaires: str, denomination: str) -> None:
@@ -135,8 +134,7 @@ def _add_corps_exemplaires(document, exemplaires: str, denomination: str) -> Non
         "Je vous prie de bien vouloir trouver sous ce pli "
         f"{exemplaires} exemplaires de l'acte de cession de parts de la SCM "
     )
-    name_run = paragraph.add_run(denomination)
-    name_run.font.highlight_color = WD_COLOR_INDEX.YELLOW
+    paragraph.add_run(denomination)
     paragraph.add_run(" pour les enregistrer.")
 
 
@@ -144,6 +142,6 @@ def _add_corps_droits(document) -> None:
     paragraph = document.add_paragraph()
     paragraph.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
     paragraph.add_run("Vous trouverez également un chèque de ")
-    montant_run = paragraph.add_run(f"{MONTANT_DROITS_FIXE} ")
-    montant_run.font.color.rgb = RGBColor(0xFF, 0x00, 0x00)
+    # R22b-01 : montant des droits sans couleur rouge (texte noir standard).
+    paragraph.add_run(f"{MONTANT_DROITS_FIXE} ")
     paragraph.add_run("euros correspondants aux droits d'enregistrements.")

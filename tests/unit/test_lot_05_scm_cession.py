@@ -477,30 +477,26 @@ def test_courrier_sde_objet_bold_underline_and_signataire_right(tmp_path: Path) 
     assert "Sarah Durand" not in "\n".join(p.text for p in document.paragraphs)
 
 
-def test_courrier_sde_montant_droits_fixe_25_en_rouge(tmp_path: Path) -> None:
-    # §8.3 — droits d'enregistrement = montant FIXE « 25 » rendu en rouge.
-    from docx.shared import RGBColor
-
+def test_courrier_sde_montant_droits_fixe_25_sans_couleur(tmp_path: Path) -> None:
+    # §8.3 — montant FIXE « 25 ». R22b-01 (Rafael 2026-06-22) : plus de rouge.
     ctx = _base_context("SELARL")
     document = Document(CourrierSdeCessionScmGenerator().generate(ctx, tmp_path))
 
     paragraph = next(p for p in document.paragraphs if "chèque de 25 euros" in p.text)
-    red_run = next(r for r in paragraph.runs if r.text.strip() == "25")
-    assert red_run.font.color.rgb == RGBColor(0xFF, 0x00, 0x00)
+    montant_run = next(r for r in paragraph.runs if r.text.strip() == "25")
+    assert montant_run.font.color.rgb is None
     # le montant n'est PAS une variable saisie (« 150 » de la fixture absent).
     assert "150" not in "\n".join(p.text for p in document.paragraphs)
 
 
-def test_courrier_sde_scm_name_highlighted_in_body(tmp_path: Path) -> None:
-    # §8.2 — nom de la SCM imprime dans le corps, surligne jaune (champ a verifier).
-    from docx.enum.text import WD_COLOR_INDEX
-
+def test_courrier_sde_scm_name_sans_surlignage(tmp_path: Path) -> None:
+    # §8.2 — nom de la SCM dans le corps. R22b-01 : plus de surlignage jaune.
     ctx = _base_context("SELARL")
     document = Document(CourrierSdeCessionScmGenerator().generate(ctx, tmp_path))
 
     paragraph = next(p for p in document.paragraphs if "de parts de la SCM" in p.text)
     name_run = next(r for r in paragraph.runs if r.text == "SCM CABINET CENTRAL")
-    assert name_run.font.highlight_color == WD_COLOR_INDEX.YELLOW
+    assert name_run.font.highlight_color is None
 
 
 def test_courrier_sde_footer_contains_sydel_coordinates(tmp_path: Path) -> None:
@@ -517,21 +513,15 @@ def test_courrier_sde_footer_contains_sydel_coordinates(tmp_path: Path) -> None:
 
 
 def test_courrier_sde_destinataire_block_for_selarl_with_placeholders(tmp_path: Path) -> None:
-    # §8.1 — quand la saisie ne fournit pas les lignes service/adresse,
-    # le bloc destinataire reste rendu avec des champs « à compléter » jaunes.
-    from docx.enum.text import WD_COLOR_INDEX
-
+    # §8.1 — quand la saisie ne fournit pas les lignes service/adresse, le bloc
+    # destinataire reste rendu avec des champs « à compléter » SANS surlignage (R22b-01).
     ctx = _base_context("SELARL")
     ctx.scm_cession.enregistrement = ScmCessionEnregistrement()
     document = Document(CourrierSdeCessionScmGenerator().generate(ctx, tmp_path))
 
     texts = [p.text for p in document.paragraphs]
     assert "Service départemental de l'enregistrement de" in texts
-    fillable = [
-        p
-        for p in document.paragraphs
-        if p.runs
-        and p.runs[0].font.highlight_color == WD_COLOR_INDEX.YELLOW
-        and "à compléter" in p.text
-    ]
+    fillable = [p for p in document.paragraphs if "à compléter" in p.text]
     assert len(fillable) == 4
+    # R22b-01 : aucun surlignage sur ces champs.
+    assert all(all(r.font.highlight_color is None for r in p.runs) for p in fillable)

@@ -37,6 +37,13 @@
 | R22-06 | mise-en-forme | SCI IRIS : « statuts : respecter la mise en forme du texte du document source » → Rafael précise : **« toute la première page »** | moteur de rendu civil PARTAGÉ (SCI/SCI IRIS/SCS/SCM) | **traité** : le moteur préserve désormais l'alignement + gras + souligné de la SOURCE sur l'en-tête/comparution (en-tête centré, « LES SOUSSIGNES » gras+souligné, identité comparant en gras) au lieu d'aplatir en justifié. +1 test fidélité. Profite aux 4 types civils |
 | R22-07 | wording | SCI IRIS : remplacer la variable `[centre_impots]` par « Centre des Finances Publiques » (toujours le même, pas besoin de variable) | tout doc/type utilisant `[centre_impots]` (lettre DOC-022, tous types) | **traité** (figé générateur + champ retiré) |
 
+## Retours Rafael — batch 2026-06-22b (cession)
+
+| id | type | retour (verbatim) | surface / scope | statut |
+|----|------|--------|--------|--------|
+| R22b-01 | mise-en-forme | `courrier_sde_cession_scm` → « retirer tout surlignage ou couleur rouge sur le texte » | générateur courrier SDE (rouge montant + 2 surlignages jaunes ; rouge nulle part ailleurs) | **traité** : rouge + surlignages retirés, imports nettoyés, 3 tests inversés (assertent l'absence) |
+| R22b-02 | doc-manquant (présumé) | « il manque le compromis de cession d'un cabinet médical dans les doc générés » | sélection cession SELARL (étape acte/compromis) | **NON-BUG vérifié** : `selected_selarl_document_codes` retourne **DOC-010** pour (compromis, medical) + test front le génère. Le compromis se génère quand **étape = compromis** ; Rafael a testé en « acte » (défaut). Cas G2 (test partiel) → expliquer, pas de fix |
+
 ## Note de méthode
 RAF-002, 003, 005, 006 recoupent le **bloc A** de `AUDIT_PARITE_SELARL_2026-06-19.md` (parité déjà
 identifiée par notre propre audit, pas encore portée). RAF-001 est un **vrai bug** (non couvert par le
