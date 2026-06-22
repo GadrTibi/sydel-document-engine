@@ -780,6 +780,15 @@ def test_sas_slice_generates_clean(tmp_path: Path) -> None:
     )
 
 
+def test_sas_apports_sum_must_equal_capital() -> None:
+    # Dogfood 2026-06-22 : la somme nature + numeraire doit egaler le capital -> bloque sinon.
+    payload = dict(_sas_payload())
+    payload["apports_numeraire_montant"] = "999999"  # 10000 + 999999 != 12000
+    plan = sas_slice.build_sas_plan(payload)
+    assert plan.can_generate is False
+    assert any("apports" in b.lower() and "capital" in b.lower() for b in plan.blockers)
+
+
 def _spfpl_payload(structure):
     operation = "apport" if "apport" in structure else "cession"
     return {

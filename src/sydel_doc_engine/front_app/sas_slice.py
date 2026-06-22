@@ -296,6 +296,15 @@ def build_sas_plan(payload: dict[str, object]) -> SasSlicePlan:
     )
 
 
+def _amount(value: object) -> int:
+    """Parse un montant affiche (« 12 000 », « 12000 ») en entier ; 0 si invalide."""
+    cleaned = str(value or "").replace(" ", "").replace("\xa0", "").replace(" ", "")
+    try:
+        return int(cleaned or 0)
+    except ValueError:
+        return 0
+
+
 def _validate(payload: dict[str, object]) -> tuple[str, ...]:
     blockers: list[str] = []
     required = (
@@ -359,6 +368,17 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:
         )
     if int(payload.get("apport_nb_parts") or 0) < 1:
         blockers.append("Nombre de parts cible apportees requis (attestation capital).")
+    # Dogfood 2026-06-22 : la somme des apports (nature + numeraire) doit egaler le capital
+    # (exige par l'attestation sur le capital) ; sinon dossier incoherent.
+    capital_int = _amount(payload.get("capital_social"))
+    apports_total = _amount(payload.get("apports_nature_montant")) + _amount(
+        payload.get("apports_numeraire_montant")
+    )
+    if capital_int and apports_total != capital_int:
+        blockers.append(
+            f"Somme des apports nature + numeraire ({apports_total}) "
+            f"!= capital social ({capital_int})."
+        )
     if payload.get("signature_date") is None:
         blockers.append("Date de signature requise.")
     if payload.get("date_naissance_iso") is None:

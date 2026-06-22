@@ -196,6 +196,11 @@ def person_signature(person: SpfplPerson, field_name: str) -> str:
 
 
 def person_identity_sentence(person: SpfplPerson, field_name: str) -> str:
+    # R22-02 / propagation 2026-06-22 : DIFFERENCE JUSTIFIEE (tracee, pas implicite). Le
+    # SPFPL est marie-only par design (le formulaire force « marie(e) » et collecte toujours
+    # le conjoint) ; la regle « conjoint affiche seulement si marie » des actes de cession ne
+    # s'applique donc pas ici (le conjoint est toujours present + l'associe toujours marie).
+    # On garde neanmoins le gate-sur-presence ci-dessous (pas d'affichage si conjoint absent).
     conjoint = person.conjoint
     conjoint_display = ""
     if conjoint is not None:
