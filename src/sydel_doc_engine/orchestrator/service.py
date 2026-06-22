@@ -354,13 +354,19 @@ def _appel_fonds_enabled(ctx: DocumentGenerationContext) -> bool:
 def _cession_cabinet_enabled(doc_id: str, ctx: DocumentGenerationContext) -> bool:
     if not _cession_bail_enabled(ctx):
         return False
-    if ctx.cession is None or ctx.cession.etape is None or ctx.cession.type_cabinet is None:
+    if ctx.cession is None or ctx.cession.type_cabinet is None:
         return False
     expected_etape, expected_type = CESSION_CABINET_DOCUMENT_IDS[doc_id]
-    return (
-        ctx.cession.etape.strip().lower() == expected_etape
-        and ctx.cession.type_cabinet.strip().lower() == expected_type
-    )
+    if ctx.cession.type_cabinet.strip().lower() != expected_type:
+        return False
+    # #14 (onglet 24) : en SELAS, l'acte ET le compromis sont generes ENSEMBLE pour
+    # le type de cabinet (l'etape n'est plus filtrante). Hors SELAS : comportement
+    # historique (l'etape saisie selectionne un seul document).
+    if (ctx.structure or "").strip().upper().startswith("SELAS"):
+        return True
+    if ctx.cession.etape is None:
+        return False
+    return ctx.cession.etape.strip().lower() == expected_etape
 
 
 def _derogation_enabled(ctx: DocumentGenerationContext, derogation_type: str) -> bool:

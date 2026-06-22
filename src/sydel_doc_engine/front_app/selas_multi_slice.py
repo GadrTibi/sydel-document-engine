@@ -206,10 +206,12 @@ def _cession_codes(payload: dict[str, object]) -> tuple[str, ...]:
     bail_ctx = payload.get("bail_context")
     scm_ctx = payload.get("scm_cession_context")
     if cession_ctx is not None:
-        etape = (getattr(cession_ctx, "etape", "") or "").strip().lower()
         type_cabinet = (getattr(cession_ctx, "type_cabinet", "") or "").strip().lower()
-        for doc_id, (exp_etape, exp_type) in CESSION_CABINET_DOCUMENT_IDS.items():
-            if etape == exp_etape and type_cabinet == exp_type:
+        # #14 (onglet 24) : en SELAS, l'ACTE ET le COMPROMIS sont produits ENSEMBLE
+        # pour le type de cabinet -> on ne filtre plus sur l'etape saisie (devenue
+        # indicative ; l'orchestrateur genere les deux, cf. _cession_cabinet_enabled).
+        for doc_id, (_exp_etape, exp_type) in CESSION_CABINET_DOCUMENT_IDS.items():
+            if type_cabinet == exp_type:
                 codes.append(doc_id)
         # ANO-008 : l'appel de fonds (DOC-008) est restreint a la SELARL cote moteur
         # (_appel_fonds_enabled) et n'est PAS clairement requis pour la SELAS au canon.

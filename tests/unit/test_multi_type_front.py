@@ -2049,6 +2049,22 @@ def test_selas_cession_exige_ca_et_resultat_des_exercices() -> None:
     assert not any("exercice" in b for b in sms.build_selas_plan(payload_ok).blockers)
 
 
+def test_selas_cession_genere_acte_et_compromis_ensemble() -> None:
+    # #14 (onglet 24) : en SELAS, l'acte ET le compromis du cabinet sont produits
+    # ENSEMBLE pour le type de cabinet, quelle que soit l'etape saisie.
+    from sydel_doc_engine.domain.models import CessionContext
+    from sydel_doc_engine.front_app import selas_multi_slice as sms
+
+    codes_dent = sms._cession_codes(
+        {"cession_context": CessionContext(etape="compromis", type_cabinet="dentaire")}
+    )
+    assert "DOC-011" in codes_dent and "DOC-012" in codes_dent  # acte + compromis dentaire
+    codes_med = sms._cession_codes(
+        {"cession_context": CessionContext(etape="acte", type_cabinet="medical")}
+    )
+    assert "DOC-009" in codes_med and "DOC-010" in codes_med  # acte + compromis medical
+
+
 def test_front_selas_dentiste_pluri_uses_dentiste_corpus(
     tmp_path: Path, monkeypatch
 ) -> None:
