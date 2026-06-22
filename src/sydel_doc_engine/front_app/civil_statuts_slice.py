@@ -802,6 +802,15 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:
         roles = {a.role_statutaire for a in associes if isinstance(associes, list)}
         if "commandite" not in roles or "commanditaire" not in roles:
             blockers.append("SCS : au moins un commandite ET un commanditaire requis.")
+        # Source NotebookLM (validee) : « legalement seul le commandite gere, le
+        # commanditaire n'est qu'apporteur de capitaux » et « ne s'immisce pas dans la
+        # gestion » -> le gerant designe doit etre un commandite.
+        gerant = _signataire_associe(payload)
+        if gerant is not None and gerant.role_statutaire == "commanditaire":
+            blockers.append(
+                "SCS : le gerant doit etre un associe commandite ; le commanditaire est un "
+                "simple apporteur de capitaux et ne gere pas la societe."
+            )
     if _scm_satellites_pair_active(payload):
         # Satellites SCM (pacte + liste depenses) generes -> champs requis.
         if not str(payload.get("pacte_ville_tribunal") or "").strip():

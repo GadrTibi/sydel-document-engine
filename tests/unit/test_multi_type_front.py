@@ -481,6 +481,22 @@ def test_civil_morale_associe_without_representant_blocks() -> None:
     assert any("representant" in b.lower() for b in plan.blockers)
 
 
+def test_scs_commanditaire_gerant_blocks() -> None:
+    # Source NotebookLM : seul le commandite gere ; un commanditaire designe gerant -> bloque.
+    payload = _civil_base(
+        "SCS",
+        "scs",
+        [
+            _pp("Jean", "Durand", 60, 1, 60, 600, role="commandite"),
+            _pp("Alice", "Martin", 40, 61, 100, 400, role="commanditaire"),
+        ],
+    )
+    payload["gerant_index"] = 1  # le commanditaire designe gerant
+    plan = css.build_civil_plan(payload)
+    assert plan.can_generate is False
+    assert any("commandite" in b.lower() and "gerant" in b.lower() for b in plan.blockers)
+
+
 def test_scs_slice_generates_clean(tmp_path: Path) -> None:
     payload = _civil_base(
         "SCS",
@@ -787,6 +803,17 @@ def test_sas_apports_sum_must_equal_capital() -> None:
     plan = sas_slice.build_sas_plan(payload)
     assert plan.can_generate is False
     assert any("apports" in b.lower() and "capital" in b.lower() for b in plan.blockers)
+
+
+def test_sas_civilite_genre_incoherent_blocks() -> None:
+    # Dogfood 2026-06-22 : civilite genree (« Madame ») incoherente avec le genre (masculin)
+    # -> doc contradictoire (« Madame ... il »). Doit bloquer. « Docteur » reste neutre.
+    payload = dict(_sas_payload())
+    payload["civilite"] = "Madame"
+    payload["genre"] = Gender.MASCULIN
+    plan = sas_slice.build_sas_plan(payload)
+    assert plan.can_generate is False
+    assert any("incoherent" in b.lower() for b in plan.blockers)
 
 
 def _spfpl_payload(structure):

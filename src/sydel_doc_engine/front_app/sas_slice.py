@@ -388,6 +388,17 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:
             "SAS V1 : le PV de remuneration president est verrouille au president masculin "
             "par la source ; actionnaire feminin hors perimetre."
         )
+    # Dogfood 2026-06-22 : la civilite (« Docteur » neutre, ou « Monsieur »/« Madame »
+    # genree) et le genre sont 2 saisies ; quand la civilite est GENREE, elle doit etre
+    # coherente avec le genre (regle etablie derive_gender_from_civilite) -> sinon doc
+    # contradictoire (« Madame ... il »). « Docteur » reste neutre (pas de controle).
+    civilite = str(payload.get("civilite") or "")
+    if civilite in ("Monsieur", "Madame") and derive_gender_from_civilite(civilite) != (
+        payload.get("genre") or Gender.MASCULIN
+    ):
+        blockers.append(
+            "Civilite et genre incoherents (ex: « Madame » avec un genre masculin)."
+        )
     return tuple(dict.fromkeys(blockers))
 
 
