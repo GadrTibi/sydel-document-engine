@@ -278,14 +278,17 @@ def render_selas_form(type_key: str = "selas_multi_v1") -> dict[str, object]:
     # RAF-006 (parite gold, couche partagee) : cloture du 1er exercice pre-remplie
     # « 31 decembre N+1 », modifiable. Libelle TEXTUEL (comme le gold), pas un picker.
     seed_closing_date(PREFIX)
-    # RAF-003a (parite gold) : si « siege = adresse du president » est coche, recopier
-    # l'adresse du president (memorisee au run precedent sous des cles stables) dans
-    # les champs siege AVANT leur rendu (cross-rerun : le bloc president vient apres).
-    if st.session_state.get(f"{PREFIX}_siege_same_as_president"):
-        for _f in ("num", "voie", "cp", "ville"):
-            _src = st.session_state.get(f"{PREFIX}_president_adresse_{_f}")
-            if _src:
-                st.session_state[f"{PREFIX}_siege_{_f}"] = _src
+    # #12 (onglet 24) : si « siege = lieu d'exercice » est coche, recopier l'adresse du
+    # lieu d'exercice (saisie au run precedent) dans les champs siege structures AVANT
+    # leur rendu (cross-rerun). Le lieu d'exercice est UN champ libre -> parse best-effort
+    # « voie, cp ville » (a restructurer en 4 champs au besoin, cf. QUESTIONS_RAFAEL #12).
+    if st.session_state.get(f"{PREFIX}_siege_same_as_lieu_exercice"):
+        _voie, _cp, _ville = _parse_one_line_address(
+            str(st.session_state.get(f"{PREFIX}_adresse_lieu_exercice") or "")
+        )
+        for _f, _val in (("voie", _voie), ("cp", _cp), ("ville", _ville)):
+            if _val:
+                st.session_state[f"{PREFIX}_siege_{_f}"] = _val
     st.subheader("Donnees a saisir")
     st.markdown("**Societe (SELAS d'exercice, vocabulaire actions)**")
     col_a, col_b = st.columns(2)
@@ -335,9 +338,9 @@ def render_selas_form(type_key: str = "selas_multi_v1") -> dict[str, object]:
 
     st.caption("Siege social (adresse structuree, pour la domiciliation / procuration)")
     st.checkbox(
-        "Siège social = adresse du président",
-        key=f"{PREFIX}_siege_same_as_president",
-        help="Coché : recopie l'adresse personnelle du président (évite la double saisie).",
+        "Siège social = même adresse que le lieu d'exercice",
+        key=f"{PREFIX}_siege_same_as_lieu_exercice",
+        help="Coché : recopie l'adresse du lieu d'exercice dans le siège (évite la double saisie).",
     )
     col_sa, col_sb, col_sc, col_sd = st.columns(4)
     siege_num = _t(col_sa, "siege_num", "No")
@@ -916,6 +919,25 @@ def _render_regime_associe_form(
         conjoint_prenom=conjoint_prenom or None,
         conjoint_nom=conjoint_nom or None,
     )
+
+
+def _parse_one_line_address(text: str) -> tuple[str, str, str]:
+    """Parse best-effort une adresse sur UNE ligne -> (voie, cp, ville).
+
+    « 5 place du Centre, 69000 Lyon » -> (« 5 place du Centre », « 69000 », « Lyon »).
+    Sert a recopier le lieu d'exercice (champ libre) dans le siege structure (#12).
+    Tolerant : si le format n'est pas reconnu, renvoie ce qu'il peut (voie = tout)."""
+    parts = [p.strip() for p in (text or "").split(",")]
+    voie = parts[0] if parts else ""
+    cp = ""
+    ville = ""
+    if len(parts) >= 2:
+        match = re.match(r"\s*(\d{4,5})\s+(.+)", parts[1])
+        if match:
+            cp, ville = match.group(1), match.group(2).strip()
+        else:
+            ville = parts[1]
+    return voie, cp, ville
 
 
 def _structured_address(num: str, voie: str, cp: str, ville: str) -> Address | None:

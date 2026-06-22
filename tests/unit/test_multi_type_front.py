@@ -2109,6 +2109,45 @@ def test_selas_profession_field_removed(tmp_path: Path, monkeypatch) -> None:
     assert not any(k.endswith("_profession") for k in keys)
 
 
+def test_selas_parse_one_line_address() -> None:
+    # #12 (onglet 24) : parse best-effort du lieu d'exercice (1 champ) -> siege structure.
+    from sydel_doc_engine.front_app import selas_multi_slice as sms
+
+    assert sms._parse_one_line_address("5 place du Centre, 69000 Lyon") == (
+        "5 place du Centre",
+        "69000",
+        "Lyon",
+    )
+    assert sms._parse_one_line_address("12 rue de la Paix, 75002 Paris") == (
+        "12 rue de la Paix",
+        "75002",
+        "Paris",
+    )
+
+
+def test_selas_siege_meme_adresse_que_lieu_exercice(tmp_path: Path, monkeypatch) -> None:
+    # #12 (onglet 24) : la case « siege = lieu d'exercice » recopie l'adresse du lieu
+    # d'exercice dans les champs siege structures.
+    from streamlit.testing.v1 import AppTest
+
+    from sydel_doc_engine.front_app import shell
+
+    monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selas-siege")
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
+    app.selectbox(key="clean_dossier_type").set_value("SELAS multi-associes creation V1")
+    app = app.run(timeout=180)
+    next(b for b in app.button if "test_data" in str(b.key)).click()
+    app = app.run(timeout=180)
+
+    checkbox_labels = " ".join(str(c.label).lower() for c in app.checkbox)
+    assert "lieu d'exercice" in checkbox_labels
+    app.checkbox(key="selas_siege_same_as_lieu_exercice").set_value(True)
+    app = app.run(timeout=180)
+
+    siege_voie = next(w for w in app.text_input if str(w.key) == "selas_siege_voie").value
+    assert siege_voie == "5 place du Centre"
+
+
 def test_front_selas_dentiste_pluri_uses_dentiste_corpus(
     tmp_path: Path, monkeypatch
 ) -> None:
