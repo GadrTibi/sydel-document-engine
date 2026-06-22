@@ -526,6 +526,20 @@ def test_sci_iris_slice_generates_clean(tmp_path: Path) -> None:
     _assert_bundle_clean(generated, _TRONC_DOCS | {"statuts_sci_iris.docx"})
 
 
+def test_sci_iris_pv_forme_is_sci_not_internal_key(tmp_path: Path) -> None:
+    # Coherence 2026-06-22 : l'en-tete du PV affichait « SCI IRIS » (cle interne) comme
+    # forme au lieu de la forme reelle. Il dit desormais « SCI » ; la denomination reste
+    # « SCI IRIS EXEMPLE ».
+    payload = _civil_base(
+        "SCI IRIS", "sci_iris", [_pm(40, 1, 40, 400), _pp("Alice", "Martin", 60, 41, 100, 600)]
+    )
+    generated = css.generate_dossier(payload, tmp_path / "iris-pv")
+    pv = next(p for p in generated.docx_paths if p.name == "pv_nomination_gerant.docx")
+    paras = [par.text.strip() for par in Document(pv).paragraphs if par.text.strip()]
+    assert "SCI" in paras
+    assert "SCI IRIS" not in paras  # plus la cle interne comme ligne de forme
+
+
 def test_sci_standard_allows_personne_morale(tmp_path: Path) -> None:
     # Ratifie Rafael 2026-06-08 : une SCI classique peut avoir une societe comme
     # associee (SCI -> micro-holding -> SPFPL). Le moteur ne bloque plus ; l'identite

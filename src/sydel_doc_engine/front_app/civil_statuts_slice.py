@@ -1076,7 +1076,10 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         denomination=str(payload.get("denomination") or ""),
         denomination_courte=str(payload.get("denomination") or ""),
         forme_sociale=forme_sociale,
-        forme_sociale_affichage=structure,
+        # Coherence 2026-06-22 : l'en-tete du PV affichait « SCI IRIS » (cle interne, pas une
+        # forme sociale) alors que les statuts disent « societe civile ». « IRIS » est un
+        # variant interne -> la forme reelle affichee est « SCI ».
+        forme_sociale_affichage=("SCI" if structure == "SCI IRIS" else structure),
         forme_juridique=forme_sociale,
         capital=capital,
         capital_social=capital,
