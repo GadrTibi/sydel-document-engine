@@ -59,7 +59,12 @@ j'ajoute UNE ligne ici : `- [AAAA-MM-JJ HH:MM] [TYPE] description (réf : SHA / 
 - [~17:00] **ACTION** Métier SOURCÉ : SCS gérant=commandité (NotebookLM) + SAS cohérence civilité↔genre (`06a4b1e`). 520 verts.
 - [~17:15] **ACTION** Cohérence : en-tête PV SCI IRIS affiche « SCI » (pas la clé interne « SCI IRIS ») (`a6b52c2`). 521 verts.
 - [~17:25] **RECOUPE (vérifié, flag)** SELAS conjoint-adresse : `_associe_signataire_address` retombe DÉLIBÉRÉMENT (documenté) sur l'adresse du président quand le foyer est vide → imparfait mais pas un crash ; le bon fix (retomber sur l'adresse de l'associé marié) touche le contexte SELAS multi → passe dédiée.
-- [~17:25] **RESTE À FAIRE (touche le GOLD validé, recoupe source requise)** : ALB-numéro-ordre optionnel (propager la logique dentiste), euros art.78 « de » (wording gold), genre-professionnalité SPFPL (civilité→titre), nationalité-dropdown membres SELARL. À traiter en passe dédiée pour zéro régression gold (règle 65).
+- [~17:40] **RECOUPE des ALB-gaps un par un (règle 65)** :
+  - **ALB-numéro-ordre** = FAUX POSITIF (le n° d'ordre EST requis en validation → « rendu cassé si vide » impossible).
+  - **ALB-euros art.8** = RÉEL (correction Albane 2026-06-10 non propagée au médecin) → corrigé « de [capital_lettres] euros » + lock ajusté (`7268220`). 521 verts.
+  - **ALB-genre-professionnalité** = non-bug (sortie correcte « Monsieur Camille Martin », propreté de code).
+  - **ALB-nationalité-dropdown** = non-bug (même valeur en sortie ; incohérence UX seulement).
+- [~17:45] **BILAN** findings d'audit ÉPUISÉS : tous bloquants + majeurs réels corrigés ; faux positifs écartés (règle 65) ; non-bugs notés. **Seul reste fonctionnel = SELAS conjoint-adresse** (repli président documenté, edge étroit, fix = contexte SELAS multi → passe dédiée).
 
 ## Conneries / incidents Rafael (résumé — détail dans la mémoire privée)
 - **G1** (2026-06-22) : nouvelle remarque sur la SELARL « validée 100 % » et socle de tous les types (confirmé par Rafael : nouvelle remarque, pas régression).
