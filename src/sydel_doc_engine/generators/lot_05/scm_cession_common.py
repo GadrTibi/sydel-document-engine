@@ -1,6 +1,7 @@
 # ruff: noqa: E501
 from __future__ import annotations
 
+import unicodedata
 from datetime import date
 from pathlib import Path
 from typing import Any
@@ -413,6 +414,21 @@ def cedant_display(cedant: ScmCessionCedant) -> str:
         f"{required_text(cedant.prenom, 'scm_cession.cedant.prenom')} "
         f"{required_text(cedant.nom, 'scm_cession.cedant.nom')}"
     )
+
+
+def mentions_conjoint(situation_maritale: str | None) -> bool:
+    """Le conjoint n'est mentionne QUE pour une personne mariee.
+
+    R22-02 (Rafael 2026-06-22) : ne pas afficher de conjoint fantome quand le client
+    n'est pas marie (« divorce avec Madame X » alors qu'aucune epouse n'existe). On
+    s'aligne sur la garde du gold (statuts SEL) : conjoint affiche seulement si « marie(e) ».
+    Helper PARTAGE par les actes de cession (SCM + SPFPL) pour que la regle soit unique.
+    """
+    if not situation_maritale:
+        return False
+    nfkd = unicodedata.normalize("NFKD", situation_maritale)
+    norm = "".join(c for c in nfkd if not unicodedata.combining(c)).strip().lower()
+    return norm in {"marie", "mariee"} or norm.startswith(("marie ", "mariee "))
 
 
 def conjoint_display(cedant: ScmCessionCedant) -> str:

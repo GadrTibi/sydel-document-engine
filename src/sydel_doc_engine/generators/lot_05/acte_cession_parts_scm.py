@@ -15,6 +15,7 @@ from sydel_doc_engine.generators.lot_05.scm_cession_common import (
     cessionnaire_representant_fonction,
     conjoint_display,
     format_display_date,
+    mentions_conjoint,
     required_text,
     save_clean_document,
     scm_cedee_address_for_acte,
@@ -62,6 +63,16 @@ class ActeCessionPartsScmGenerator:
             raise ValueError("scm_cession est incomplet pour l'acte de cession SCM.")
 
         cedant_name = cedant_display(cedant)
+        # R22-02 : le conjoint n'est mentionne que si le cedant est marie (sinon « divorce
+        # avec Madame X » fantome). Regle partagee mentions_conjoint (gold-aligned).
+        cedant_maritale = required_text(
+            cedant.situation_maritale, "scm_cession.cedant.situation_maritale"
+        )
+        cedant_maritale_clause = (
+            f"{cedant_maritale} avec {conjoint_display(cedant)}"
+            if mentions_conjoint(cedant.situation_maritale)
+            else cedant_maritale
+        )
         document = new_document()
         add_framed_title(document, ["CESSION DES PARTS", "DE LA SOCIETE CIVILE DE MOYENS"])
 
@@ -75,7 +86,7 @@ class ActeCessionPartsScmGenerator:
                 f"({required_text(cedant.departement_naissance, 'scm_cession.cedant.departement_naissance')}), "
                 f"de nationalité {required_text(cedant.nationalite, 'scm_cession.cedant.nationalite')}, "
                 f"demeurant {required_text(cedant.adresse_affichee, 'scm_cession.cedant.adresse_affichee')}, "
-                f"{required_text(cedant.situation_maritale, 'scm_cession.cedant.situation_maritale')} avec {conjoint_display(cedant)}. "
+                f"{cedant_maritale_clause}. "
                 f"Inscrit au Tableau de l'ordre départemental des {_profession_ordre(ctx, cedant)} "
                 f"du {required_text(cedant.ordre.departemental if cedant.ordre else None, 'scm_cession.cedant.ordre.departemental')} "
                 f"sous le numéro {required_text(cedant.ordre.numero if cedant.ordre else None, 'scm_cession.cedant.ordre.numero')} "

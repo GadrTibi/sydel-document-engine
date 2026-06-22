@@ -228,6 +228,29 @@ def test_scm_cession_selarl_generates_three_clean_docx(tmp_path: Path) -> None:
         _assert_clean(text)
 
 
+def test_acte_cession_scm_omits_conjoint_when_not_married(tmp_path: Path) -> None:
+    # R22-02 (Rafael 2026-06-22) : pas de conjoint fantome quand le cedant n'est pas marie.
+    # Cas Rafael : « divorce avec Madame Claire Dupont » alors qu'aucune epouse n'existe. On
+    # garde la donnee conjoint en residu (comme dans son test) pour prouver que le GENERATEUR
+    # ne l'affiche plus.
+    ctx = _base_context("SELARL")
+    ctx.scm_cession.cedant.situation_maritale = "divorcé"
+    acte = ActeCessionPartsScmGenerator().generate(ctx, tmp_path)
+    text = _docx_text(acte)
+    assert "divorcé" in text
+    assert "Claire Dupont" not in text
+    assert "avec Madame" not in text
+    _assert_clean(text)
+
+
+def test_acte_cession_scm_keeps_conjoint_when_married(tmp_path: Path) -> None:
+    # Contre-epreuve : un cedant marie affiche bien son conjoint (comportement gold conserve).
+    ctx = _base_context("SELARL")  # situation_maritale="marié" + conjoint Claire Dupont
+    acte = ActeCessionPartsScmGenerator().generate(ctx, tmp_path)
+    text = _docx_text(acte)
+    assert "marié avec Madame Claire Dupont" in text
+
+
 def test_scm_cession_selas_generates_overlays(tmp_path: Path) -> None:
     ctx = _base_context("SELAS")
 
