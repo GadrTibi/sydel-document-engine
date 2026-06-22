@@ -466,6 +466,17 @@ def build_selas_uni_medecin_plan(payload: dict[str, object]) -> SelasUniMedecinP
     # contexte SEL d'exercice), via une entree derivee.
     data = _to_selarl_input(payload)
     blockers = list(selarl_slice.validate_selarl_input(data))
+    # Dogfood 2026-06-22 : le modele DOC-018 porte les tokens conjoint de maniere
+    # INCONDITIONNELLE (add_conjoint_replacements les exige meme pour un non marie) ;
+    # un conjoint vide passait la validation SELARL (conjoint requis seulement si marie)
+    # puis crashait a la generation. On valide donc toujours la presence du conjoint.
+    for field, name in (
+        ("conjoint_civilite", "civilite du conjoint"),
+        ("conjoint_prenom", "prenom du conjoint"),
+        ("conjoint_nom", "nom du conjoint"),
+    ):
+        if not str(payload.get(field) or "").strip():
+            blockers.append(f"SELAS medecin : {name} requis (le modele DOC-018 l'exige).")
     document_codes = selected_document_codes(payload)
     warnings_list = [
         "SELAS unipersonnelle medecin V1 : associe unique, vocabulaire actions. "

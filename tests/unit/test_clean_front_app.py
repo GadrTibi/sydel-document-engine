@@ -956,6 +956,37 @@ def test_clean_front_selarl_multi_associes_generates_statuts(tmp_path: Path) -> 
     assert "2° Lea Bernard, détenant 40 parts." in text
 
 
+def test_clean_front_selarl_multi_membre_sans_ordre_blocks() -> None:
+    # Dogfood 2026-06-22 : membre additionnel sans inscription a l'ordre (departement /
+    # numero / RPPS) passait la validation puis crashait a la generation. Doit bloquer.
+    membre = StatutsCivilsAssocie(
+        type_personne="personne_physique",
+        civilite_affichage="Madame",
+        prenom="Lea",
+        nom="Bernard",
+        profession="medecin",
+        date_naissance="03/04/1985",
+        ville_naissance="Lyon",
+        departement_naissance="69",
+        nationalite="française",
+        situation_maritale="celibataire",
+        adresse_personnelle_affichee="8 rue Centrale, 69001 Lyon",
+        apport=StatutsCivilsApport(montant="400", montant_lettres="quatre cents"),
+        parts=StatutsCivilsParts(nb=40, nb_lettres="quarante"),
+    )  # SANS ordre_departemental / numero_ordre / numero_rpps
+    data = _valid_selarl_input(
+        PROFESSION_MEDECIN,
+        dossier_unipersonnel=False,
+        praticien_nb_parts=60,
+        praticien_apport="600",
+        membres_additionnels=(membre,),
+    )
+    dossier_type = dossier_type_by_label("SELARL creation V1")
+    plan = build_clean_generation_plan(dossier_type, data)
+    assert plan.can_generate is False
+    assert any(("ordre" in b.lower() or "rpps" in b.lower()) for b in plan.blockers)
+
+
 def test_clean_front_selarl_multi_associes_blocks_incoherent_total(tmp_path: Path) -> None:
     # Somme des parts (praticien 60 + membre 30 = 90) != capital (100 parts) -> bloque.
     dossier_type = dossier_type_by_label("SELARL creation V1")

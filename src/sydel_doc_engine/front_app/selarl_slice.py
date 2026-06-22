@@ -395,6 +395,17 @@ def _multi_membres_blockers(data: SelarlSliceInput) -> list[str]:
                     f"Multi-associes : identite du membre {index} requise "
                     "(civilite, prenom, nom)."
                 )
+            # Dogfood 2026-06-22 : le generateur exige l'inscription a l'ordre du membre
+            # (departement + numero + RPPS) ; sans eux, crash a la generation.
+            for field, name in (
+                ("ordre_departemental", "departement de l'ordre"),
+                ("numero_ordre", "numero d'inscription a l'ordre"),
+                ("numero_rpps", "numero RPPS"),
+            ):
+                if not str(getattr(membre, field, "") or "").strip():
+                    blockers.append(
+                        f"Multi-associes : {name} du membre {index} requis."
+                    )
     if data.nb_parts_total and total != data.nb_parts_total:
         blockers.append(
             "Multi-associes : la somme des parts (praticien + membres) doit egaler "

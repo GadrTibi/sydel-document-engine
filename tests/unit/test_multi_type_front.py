@@ -2252,6 +2252,20 @@ def test_selas_uni_medecin_generates_doc018_bundle(tmp_path: Path) -> None:
     assert "SELAS MARTIN" in statuts_text
 
 
+def test_selas_uni_medecin_empty_conjoint_blocks() -> None:
+    # Dogfood 2026-06-22 : DOC-018 porte les tokens conjoint inconditionnellement ; un
+    # conjoint vide passait la validation SELARL (conjoint requis seulement si marie) puis
+    # crashait a la generation. Doit bloquer proprement.
+    from sydel_doc_engine.front_app import selas_uni_medecin_slice as uni
+
+    payload = _selas_uni_medecin_payload()
+    payload["conjoint_prenom"] = ""
+    payload["conjoint_nom"] = ""
+    plan = uni.build_selas_uni_medecin_plan(payload)
+    assert plan.can_generate is False
+    assert any("conjoint" in b.lower() for b in plan.blockers)
+
+
 def test_selas_uni_medecin_regime_communautaire_generates_doc005_006(tmp_path: Path) -> None:
     # RAF-001 (regression) : SELAS uni medecin + regime communautaire bloquait la
     # generation (CODE-RC-001 : date_courrier_avertissement absente de l'adaptateur
