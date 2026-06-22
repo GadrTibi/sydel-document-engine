@@ -32,9 +32,16 @@ from sydel_doc_engine.domain.models import (
     Company,
     DocumentGenerationContext,
     DossierOptions,
+    FraisCommunsContext,
+    LocauxContext,
     PacteAssociesScmContext,
+    PartieFraisCommuns,
     Person,
+    PraticienScm,
+    ReglementInterieurScmContext,
+    ScmRepresentant,
     ScmSatellitesOptions,
+    ScmSocietePartie,
     Signature,
     StatutsCivilsAssocie,
     StatutsCivilsCapitalDepot,
@@ -107,11 +114,17 @@ OPTION_IS_STRUCTURES: tuple[str, ...] = ("SCI", "SCI IRIS")
 # Cables pour une SCM A EXACTEMENT 2 ASSOCIES (contrainte dure des generateurs) :
 #   - DOC-030 liste des depenses communes (societe + 2 associes) ;
 #   - DOC-026 pacte d'associes (+ ville du tribunal + mention RCS de la SCM).
-# DOC-027 (contrat a frais communs) + DOC-028 (reglement interieur) restent HORS bundle :
-# ils exigent l'identite des 2 societes d'exercice partenaires (SEL) + locaux + praticiens,
-# donnee/structure a confirmer Rafael avant cablage. Voir _RAFAEL_PACKET_V1.md.
+# DOC-027 (contrat a frais communs) + DOC-028 (reglement interieur) sont des satellites
+# INTER-SEL : ils se signent ENTRE les societes d'exercice (SEL) de chaque praticien, pas
+# par la SCM. Ils exigent donc une couche de donnees en plus (identite de la SEL de chaque
+# associe + telephone + parametres du reglement), inexistante dans la creation SCM simple
+# (spec lot_05 SCM-SATELLITES, section 10). Cables en OPT-IN (case decochee par defaut) :
+# tranche le point ouvert n2 de la spec par le defaut conservateur. Personnes (representant
+# de chaque SEL, praticien) DERIVEES des associes SCM deja saisis -- aucune ressaisie.
 DOC_PACTE_ASSOCIES_SCM = "DOC-026"
 DOC_LISTE_DEPENSES_SCM = "DOC-030"
+DOC_CONTRAT_FRAIS_COMMUNS = "DOC-027"
+DOC_REGLEMENT_INTERIEUR_SCM = "DOC-028"
 
 
 def _creation_bundle_codes(
@@ -120,6 +133,7 @@ def _creation_bundle_codes(
     *,
     option_is: bool = False,
     scm_satellites_pair: bool = False,
+    scm_inter_sel: bool = False,
 ) -> tuple[str, ...]:
     codes: list[str] = [statuts_code, *cc.TRONC_COMMUN_CODES, cc.DOC_PV_NOMINATION_GERANT]
     if structure == "SCM":
@@ -128,6 +142,10 @@ def _creation_bundle_codes(
         if scm_satellites_pair:
             codes.append(DOC_LISTE_DEPENSES_SCM)
             codes.append(DOC_PACTE_ASSOCIES_SCM)
+        # Satellites inter-SEL (opt-in) : contrat de frais communs + reglement interieur.
+        if scm_inter_sel:
+            codes.append(DOC_CONTRAT_FRAIS_COMMUNS)
+            codes.append(DOC_REGLEMENT_INTERIEUR_SCM)
     # Conditionnel canon « Si IS » (SCI / SCI IRIS) : lettre d'option IS (DOC-022).
     if option_is and structure in OPTION_IS_STRUCTURES:
         codes.append(DOC_OPTION_IS)
@@ -140,6 +158,13 @@ def _scm_satellites_pair_active(payload: dict[str, object]) -> bool:
         return False
     associes = payload.get("associes") or []
     return isinstance(associes, list) and len(associes) == 2
+
+
+def _scm_inter_sel_active(payload: dict[str, object]) -> bool:
+    """Documents inter-SEL (DOC-027/028) : opt-in, sur une SCM a 2 associes physiques."""
+    if not _scm_satellites_pair_active(payload):
+        return False
+    return bool(payload.get("inter_sel_active"))
 
 
 @dataclass(frozen=True)
@@ -263,6 +288,11 @@ def render_civil_form(structure: str) -> dict[str, object]:
     gerant_index = _derive_gerant_index(associes, prefix)
 
     common = _render_common_docs_form(structure, prefix)
+    # Satellites inter-SEL (opt-in) : DERIVE les personnes des associes deja saisis ;
+    # locaux pre-rempli sur le siege de la SCM (souvent identiques). Rendu ici car les
+    # associes ne sont disponibles qu'apres le repeater.
+    siege_affiche = f"{siege_num} {siege_voie}, {siege_cp} {siege_ville}".strip(" ,")
+    inter_sel = _render_scm_inter_sel(prefix, structure, associes, siege_affiche)
 
     payload: dict[str, object] = {
         "structure": structure,
@@ -287,6 +317,7 @@ def render_civil_form(structure: str) -> dict[str, object]:
         "gerant_index": gerant_index,
     }
     payload.update(common)
+    payload.update(inter_sel)
     # La DNC / filiation du gerant (saisie sous l'associe coche) alimente les cles
     # signataire_* lues par les documents communs.
     payload.update(_collect_gerant_sig(associes, gerant_index, prefix))
@@ -414,13 +445,213 @@ def _render_option_is_form(prefix: str) -> dict[str, object]:
     }
 
 
+def _render_scm_inter_sel(
+    prefix: str,
+    structure: str,
+    associes: list,
+    siege_affiche: str,
+) -> dict[str, object]:
+    """Opt-in : documents inter-SEL (contrat frais communs DOC-027 + reglement DOC-028).
+
+    Ces deux satellites se signent ENTRE les societes d'exercice (SEL) de chaque
+    praticien (pas par la SCM). Off par defaut : tranche le point ouvert n2 de la spec
+    par le defaut conservateur. Les personnes (representant de chaque SEL, praticien)
+    sont DERIVEES des associes SCM deja saisis -- on ne collecte que l'identite de la
+    SEL + le telephone + les parametres du contrat / reglement, jamais inventes.
+    """
+    if structure != "SCM" or not isinstance(associes, list) or len(associes) != 2:
+        return {"inter_sel_active": False}
+    active_key = f"{prefix}_inter_sel_active"
+    if active_key not in st.session_state:
+        st.session_state[active_key] = False
+    active = st.checkbox(
+        "Generer aussi les documents inter-SEL (contrat de frais communs + reglement interieur)",
+        key=active_key,
+        help="A cocher si chaque praticien exerce via sa propre societe (SEL) et partage "
+        "les frais. Laisser decoche pour une SCM simple.",
+    )
+    if not active:
+        return {"inter_sel_active": False}
+    st.markdown("**Documents inter-SEL — societes d'exercice (SEL) partenaires**")
+    # Le reglement interieur exige la MEME forme sociale pour les 2 SEL (placeholder
+    # source unique). On collecte une forme commune.
+    forme_commune = _text(
+        st,
+        prefix,
+        "inter_sel_forme",
+        "Forme des SEL (identique pour les 2 parties)",
+        hint="ex : SELARL — doit etre identique pour les deux parties",
+    )
+    parties: list[dict[str, str]] = []
+    for idx, associe in enumerate(associes, start=1):
+        nom_assoc = (
+            f"{getattr(associe, 'prenom', '') or ''} {getattr(associe, 'nom', '') or ''}".strip()
+        )
+        st.markdown(f"SEL de l'associe {idx} — {nom_assoc or f'associe {idx}'}")
+        col_a, col_b = st.columns(2)
+        denom = _text(col_a, prefix, f"inter_sel_{idx}_denomination", "Denomination de la SEL")
+        capital = _text(
+            col_b,
+            prefix,
+            f"inter_sel_{idx}_capital",
+            "Capital social (affiche)",
+            hint="ex : 1 000 euros",
+        )
+        siege = _text(st, prefix, f"inter_sel_{idx}_siege", "Adresse du siege de la SEL")
+        col_c, col_d, col_e = st.columns(3)
+        ville_rcs = _text(col_c, prefix, f"inter_sel_{idx}_ville_rcs", "RCS (ville)")
+        numero_rcs = _text(col_d, prefix, f"inter_sel_{idx}_numero_rcs", "N° RCS")
+        tel = _text(
+            col_e,
+            prefix,
+            f"inter_sel_{idx}_telephone",
+            "Telephone praticien",
+            hint="ex : 01 23 45 67 89",
+        )
+        parties.append(
+            {
+                "denomination": denom,
+                "capital": capital,
+                "siege": siege,
+                "ville_rcs": ville_rcs,
+                "numero_rcs": numero_rcs,
+                "telephone": tel,
+            }
+        )
+    st.markdown("Parametres communs (contrat de frais communs + reglement interieur)")
+    titre = (
+        _text(st, prefix, "inter_sel_titre", "Titre des representants", hint="ex : Docteur")
+        or "Docteur"
+    )
+    locaux_saisi = _text(
+        st,
+        prefix,
+        "inter_sel_locaux",
+        "Adresse des locaux communs",
+        hint="souvent le siege de la SCM",
+    )
+    date_effet = _text(
+        st,
+        prefix,
+        "inter_sel_date_effet",
+        "Date d'effet du contrat de frais communs",
+        hint="ex : 1er janvier 2027",
+    )
+    col_r1, col_r2 = st.columns(2)
+    seuil = _text(
+        col_r1, prefix, "inter_sel_seuil", "Seuil de depense commune", hint="ex : 1 500 euros"
+    )
+    annee = _text(
+        col_r2, prefix, "inter_sel_annee_ref", "Annee de reference des charges", hint="ex : 2027"
+    )
+    col_r3, col_r4 = st.columns(2)
+    date_fin = _text(
+        col_r3,
+        prefix,
+        "inter_sel_date_fin_gestion",
+        "Fin de gestion administrative",
+        hint="ex : 31 decembre 2027",
+    )
+    date_attrib = _text(
+        col_r4,
+        prefix,
+        "inter_sel_date_attribution",
+        "Attribution des responsabilites",
+        hint="ex : 1er janvier",
+    )
+    return {
+        "inter_sel_active": True,
+        "inter_sel_forme": forme_commune,
+        "inter_sel_titre": titre,
+        "inter_sel_parties": parties,
+        "inter_sel_locaux": locaux_saisi or siege_affiche,
+        "inter_sel_date_effet": date_effet,
+        "inter_sel_seuil": seuil,
+        "inter_sel_annee_ref": annee,
+        "inter_sel_date_fin_gestion": date_fin,
+        "inter_sel_date_attribution": date_attrib,
+    }
+
+
+def _build_inter_sel_context(
+    payload: dict[str, object],
+) -> tuple[
+    list[PartieFraisCommuns],
+    list[PraticienScm],
+    LocauxContext,
+    FraisCommunsContext,
+    ReglementInterieurScmContext,
+]:
+    """Construit les pieces de contexte des docs inter-SEL depuis le payload.
+
+    Les personnes (representant de chaque SEL, praticien) sont DERIVEES des associes
+    SCM (meme personne : le praticien est le gerant de sa SEL et l'associe de la SCM).
+    """
+    parties_data = payload.get("inter_sel_parties") or []
+    associes = payload.get("associes") or []
+    forme = str(payload.get("inter_sel_forme") or "") or None
+    titre = str(payload.get("inter_sel_titre") or "Docteur") or None
+    parties: list[PartieFraisCommuns] = []
+    praticiens: list[PraticienScm] = []
+    for idx, sel in enumerate(parties_data):
+        associe = associes[idx] if idx < len(associes) else None
+        prenom = str(getattr(associe, "prenom", "") or "")
+        nom = str(getattr(associe, "nom", "") or "")
+        civ = str(getattr(associe, "civilite_affichage", "") or "")
+        identite = f"{prenom} {nom}".strip()
+        parties.append(
+            PartieFraisCommuns(
+                societe=ScmSocietePartie(
+                    denomination=str(sel.get("denomination") or "") or None,
+                    forme_juridique=forme,
+                    capital_social=str(sel.get("capital") or "") or None,
+                    siege=Address(adresse_affichee=str(sel.get("siege") or "") or None),
+                    ville_rcs=str(sel.get("ville_rcs") or "") or None,
+                    numero_rcs=str(sel.get("numero_rcs") or "") or None,
+                ),
+                representant=ScmRepresentant(
+                    civilite_affichage=civ or None,
+                    prenom=prenom or None,
+                    nom=nom or None,
+                    identite_affichee=identite or None,
+                    titre_affichage=titre,
+                    fonction="gérant",
+                ),
+            )
+        )
+        praticiens.append(
+            PraticienScm(
+                identite_affichee=identite or None,
+                telephone=str(sel.get("telephone") or "") or None,
+            )
+        )
+    locaux = LocauxContext(adresse_affichee=str(payload.get("inter_sel_locaux") or "") or None)
+    frais = FraisCommunsContext(
+        date_effet_contrat=str(payload.get("inter_sel_date_effet") or "") or None
+    )
+    reglement = ReglementInterieurScmContext(
+        seuil_depense_commune=str(payload.get("inter_sel_seuil") or "") or None,
+        annee_reference_charges=str(payload.get("inter_sel_annee_ref") or "") or None,
+        date_fin_gestion_administrative=(
+            str(payload.get("inter_sel_date_fin_gestion") or "") or None
+        ),
+        date_attribution_responsabilites=str(payload.get("inter_sel_date_attribution") or "")
+        or None,
+    )
+    return parties, praticiens, locaux, frais, reglement
+
+
 def build_civil_plan(payload: dict[str, object]) -> CivilSlicePlan:
     structure = str(payload["structure"])
     _statuts_type, doc_code = CIVIL_TYPE_BY_STRUCTURE[structure]
     option_is = bool(payload.get("option_is")) and structure in OPTION_IS_STRUCTURES
     scm_pair = _scm_satellites_pair_active(payload)
     document_codes = _creation_bundle_codes(
-        structure, doc_code, option_is=option_is, scm_satellites_pair=scm_pair
+        structure,
+        doc_code,
+        option_is=option_is,
+        scm_satellites_pair=scm_pair,
+        scm_inter_sel=_scm_inter_sel_active(payload),
     )
     blockers = _validate(payload)
     warnings_list = [
@@ -534,9 +765,50 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:
             blockers.append(
                 "N° RCS de la SCM requis pour le pacte (ou « en cours de constitution »)."
             )
+    blockers.extend(_validate_inter_sel(payload))
     blockers.extend(_validate_common_docs(payload, structure))
     blockers.extend(_validate_option_is(payload, structure))
     return tuple(dict.fromkeys(blockers))
+
+
+def _validate_inter_sel(payload: dict[str, object]) -> list[str]:
+    """Champs requis par les documents inter-SEL (DOC-027/028) quand l'opt-in est actif."""
+    if not _scm_inter_sel_active(payload):
+        return []
+    blockers: list[str] = []
+    associes = payload.get("associes") or []
+    if isinstance(associes, list) and any(
+        getattr(a, "type_personne", "") == "personne_morale" for a in associes
+    ):
+        blockers.append(
+            "Documents inter-SEL : les 2 associes doivent etre des personnes physiques "
+            "(la SEL de chacun est la partie)."
+        )
+    if not str(payload.get("inter_sel_forme") or "").strip():
+        blockers.append("Forme des SEL requise (documents inter-SEL).")
+    parties = payload.get("inter_sel_parties") or []
+    for i, sel in enumerate(parties if isinstance(parties, list) else [], start=1):
+        for field_name, label in (
+            ("denomination", "denomination"),
+            ("capital", "capital social"),
+            ("siege", "adresse du siege"),
+            ("ville_rcs", "RCS (ville)"),
+            ("numero_rcs", "N° RCS"),
+            ("telephone", "telephone du praticien"),
+        ):
+            if not str(sel.get(field_name) or "").strip():
+                blockers.append(f"SEL {i} : {label} requis (documents inter-SEL).")
+    for field_name, label in (
+        ("inter_sel_locaux", "Adresse des locaux communs"),
+        ("inter_sel_date_effet", "Date d'effet du contrat de frais communs"),
+        ("inter_sel_seuil", "Seuil de depense commune"),
+        ("inter_sel_annee_ref", "Annee de reference des charges"),
+        ("inter_sel_date_fin_gestion", "Date de fin de gestion administrative"),
+        ("inter_sel_date_attribution", "Date d'attribution des responsabilites"),
+    ):
+        if not str(payload.get(field_name) or "").strip():
+            blockers.append(f"{label} requise (documents inter-SEL).")
+    return blockers
 
 
 def _validate_option_is(payload: dict[str, object], structure: str) -> list[str]:
@@ -792,13 +1064,24 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         ctx.ordre = cc.ordre_professionnel(common)
         # Satellites SCM (Rafael 2026-06-08) : pacte + liste depenses, si 2 associes.
         if _scm_satellites_pair_active(payload):
+            inter_sel = _scm_inter_sel_active(payload)
             ctx.scm_satellites = ScmSatellitesOptions(
                 pacte_associes=True,
                 liste_depenses_communes=True,
+                contrat_frais_communs=inter_sel,
+                reglement_interieur=inter_sel,
             )
             ctx.pacte_associes = PacteAssociesScmContext(
                 ville_tribunal=str(payload.get("pacte_ville_tribunal") or "") or None,
             )
+            if inter_sel:
+                (
+                    ctx.parties_frais_communs,
+                    ctx.praticiens,
+                    ctx.locaux,
+                    ctx.frais_communs,
+                    ctx.reglement_interieur,
+                ) = _build_inter_sel_context(payload)
     return ctx
 
 

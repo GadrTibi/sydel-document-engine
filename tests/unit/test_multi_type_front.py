@@ -323,6 +323,109 @@ def test_scm_slice_generates_clean(tmp_path: Path) -> None:
     )
 
 
+# Documents inter-SEL (opt-in) : identite de la SEL de chaque associe + telephone +
+# parametres du contrat de frais communs / reglement interieur. Personnes derivees des
+# associes (pas de ressaisie). Forme sociale IDENTIQUE pour les 2 SEL (contrainte source).
+_SCM_INTER_SEL_INPUTS = {
+    "inter_sel_active": True,
+    "inter_sel_forme": "SELARL",
+    "inter_sel_titre": "Docteur",
+    "inter_sel_parties": [
+        {
+            "denomination": "SEL DOCTEUR DURAND",
+            "capital": "1 000 euros",
+            "siege": "1 rue des Soins, 75001 Paris",
+            "ville_rcs": "Paris",
+            "numero_rcs": "900 000 001",
+            "telephone": "01 00 00 00 01",
+        },
+        {
+            "denomination": "SEL DOCTEUR MARTIN",
+            "capital": "1 000 euros",
+            "siege": "2 rue des Soins, 75002 Paris",
+            "ville_rcs": "Paris",
+            "numero_rcs": "900 000 002",
+            "telephone": "01 00 00 00 02",
+        },
+    ],
+    "inter_sel_locaux": "10 rue de la Paix, 75002 Paris",
+    "inter_sel_date_effet": "1er janvier 2027",
+    "inter_sel_seuil": "1 500 euros",
+    "inter_sel_annee_ref": "2027",
+    "inter_sel_date_fin_gestion": "31 decembre 2027",
+    "inter_sel_date_attribution": "1er janvier",
+}
+
+_SCM_INTER_SEL_DOCS = {"contrat_frais_communs.docx", "reglement_interieur_scm.docx"}
+
+
+def test_scm_inter_sel_adds_frais_communs_reglement(tmp_path: Path) -> None:
+    # Opt-in actif + 2 associes physiques -> le bundle ajoute le contrat de frais
+    # communs (DOC-027) et le reglement interieur (DOC-028).
+    payload = _civil_base(
+        "SCM",
+        "scm",
+        [_pp("Jean", "Durand", 50, 1, 50, 500), _pp("Alice", "Martin", 50, 51, 100, 500)],
+    )
+    payload.update(_SCM_INTER_SEL_INPUTS)
+    plan = css.build_civil_plan(payload)
+    assert plan.can_generate is True
+    assert plan.document_codes == (
+        "DOC-025",
+        "DOC-001",
+        "DOC-002",
+        "DOC-003",
+        "DOC-004",
+        "DOC-034",
+        "DOC-030",
+        "DOC-026",
+        "DOC-027",
+        "DOC-028",
+    )
+    generated = css.generate_dossier(payload, tmp_path / "scm-inter-sel")
+    _assert_bundle_clean(
+        generated,
+        _TRONC_DOCS
+        | {
+            "statuts_scm.docx",
+            "pacte_associes_scm.docx",
+            "liste_depenses_communes_scm.docx",
+        }
+        | _SCM_INTER_SEL_DOCS,
+    )
+
+
+def test_scm_inter_sel_off_keeps_base_satellites(tmp_path: Path) -> None:
+    # Opt-in decoche -> pas de docs inter-SEL, bundle satellites de base inchange.
+    payload = _civil_base(
+        "SCM",
+        "scm",
+        [_pp("Jean", "Durand", 50, 1, 50, 500), _pp("Alice", "Martin", 50, 51, 100, 500)],
+    )
+    plan = css.build_civil_plan(payload)
+    assert plan.can_generate is True
+    assert "DOC-027" not in plan.document_codes
+    assert "DOC-028" not in plan.document_codes
+    generated = css.generate_dossier(payload, tmp_path / "scm-no-inter-sel")
+    names = {p.name for p in generated.docx_paths}
+    assert "contrat_frais_communs.docx" not in names
+    assert "reglement_interieur_scm.docx" not in names
+
+
+def test_scm_inter_sel_blocks_with_personne_morale(tmp_path: Path) -> None:
+    # Opt-in actif mais un associe est une personne morale -> blocage (la SEL de chaque
+    # associe physique est la partie ; une PM ne fournit pas de praticien-representant).
+    payload = _civil_base(
+        "SCM",
+        "scm",
+        [_pm(50, 1, 50, 500), _pp("Alice", "Martin", 50, 51, 100, 500)],
+    )
+    payload.update(_SCM_INTER_SEL_INPUTS)
+    plan = css.build_civil_plan(payload)
+    assert plan.can_generate is False
+    assert any("personnes physiques" in b for b in plan.blockers)
+
+
 def test_scs_slice_generates_clean(tmp_path: Path) -> None:
     payload = _civil_base(
         "SCS",
