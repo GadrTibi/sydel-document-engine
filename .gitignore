@@ -20,3 +20,8 @@ outputs/
 .streamlit/secrets.toml
 
 artifacts/
+
+# Scripts repro temporaires d'agents d'audit (jamais versionnes)
+/_audit_*.py
+/_repro_*.py
+/_tmp_*.py
