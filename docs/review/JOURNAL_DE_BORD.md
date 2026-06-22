@@ -51,7 +51,11 @@ j'ajoute UNE ligne ici : `- [AAAA-MM-JJ HH:MM] [TYPE] description (réf : SHA / 
 - [~15:05] **ACTION** 3 bloquants dogfood civils corrigés (capital=0, banque_adresse, associé PM sans représentant) (`912b89e`). 512 verts.
 - [~15:20] **R-GAD** « reboot fait » (Streamlit) ; les clients tombent sur la version corrigée.
 - [~15:30] **ACTION** bloquants SPFPL cession (chaîne cible) + 0-guard nb_actions (`5178be4`). 514 verts.
-- [~15:50] **ACTION** 2 derniers bloquants dogfood : SELARL multi (Ordre membre) + SELAS uni (conjoint vide). **7/7 bloquants dogfood corrigés.** 516 verts.
+- [~15:50] **ACTION** 2 derniers bloquants dogfood : SELARL multi (Ordre membre) + SELAS uni (conjoint vide). **7/7 bloquants dogfood corrigés.** 516 verts (`b68be80`).
+- [~16:05] **INCIDENT (Rafael) — G4** Rafael demande aux clients (Albane+David) de tester la SCM avant fix confirmé/déployé. Noté grievances G4. Mon avis : ~80% légitime (exposition prématurée + pas de coordination dev). Gad reboote pour mitiger.
+- [~16:20] **ACTION** SAS apports↔capital (majeur) + trace R22-02 SPFPL (différence justifiée marié-only) (`eb0bf70`). 517 verts.
+- [~16:35] **ACTION** Cohérence : PV nomination dit « actions » pour une SELAS (pas « parts ») — ignorait `capital.type_titre` (`cbd8aa1`). 517 verts.
+- [~16:40] **DÉCISION** STOP sur les gaps restants (ALB-numero-ordre, euros art.78, genre-professionnalité, nationalité-dropdown membres, cohérence SELAS conjoint-adresse / SCI IRIS forme) : ils touchent le **GOLD validé** + sont des claims de sous-agents non re-vérifiés → recoupe contre la source/Albane requise avant patch (règle 65, zéro régression gold). Flag, pas précipitation.
 
 ## Conneries / incidents Rafael (résumé — détail dans la mémoire privée)
 - **G1** (2026-06-22) : nouvelle remarque sur la SELARL « validée 100 % » et socle de tous les types (confirmé par Rafael : nouvelle remarque, pas régression).
