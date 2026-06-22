@@ -2275,6 +2275,18 @@ def test_selas_uni_medecin_empty_conjoint_blocks() -> None:
     assert any("conjoint" in b.lower() for b in plan.blockers)
 
 
+def test_selas_uni_medecin_pv_uses_actions_not_parts(tmp_path: Path) -> None:
+    # Coherence 2026-06-22 : une SELAS = societe par actions ; le PV de nomination doit dire
+    # « actions », pas « parts » (il ignorait capital.type_titre='actions').
+    from sydel_doc_engine.front_app import selas_uni_medecin_slice as uni
+
+    generated = uni.generate_dossier(_selas_uni_medecin_payload(), tmp_path / "selas-pv")
+    pv = next(p for p in generated.docx_paths if p.name == "pv_nomination_gerant.docx")
+    text = _docx_text(pv)
+    assert "propriétaire de toutes les actions" in text
+    assert "propriétaire de toutes les parts" not in text
+
+
 def test_selas_uni_medecin_regime_communautaire_generates_doc005_006(tmp_path: Path) -> None:
     # RAF-001 (regression) : SELAS uni medecin + regime communautaire bloquait la
     # generation (CODE-RC-001 : date_courrier_avertissement absente de l'adaptateur

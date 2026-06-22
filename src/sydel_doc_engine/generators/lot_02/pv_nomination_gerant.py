@@ -840,7 +840,10 @@ def _build_associe_unique_pv(
     _add_paragraph(
         document,
         (
-            f"{associe_word} unique, propriétaire de toutes les parts de la société "
+            f"{associe_word} unique, propriétaire de toutes les "
+            # Coherence parts/actions 2026-06-22 : « actions » pour une societe par actions
+            # (SELAS/SAS, capital.type_titre='actions'), « parts » par defaut (SELARL/civils).
+            f"{_titre_word(ctx.capital) if ctx.capital is not None else 'part'}s de la société "
             f"{denomination} en cours de formation."
         ),
         alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
