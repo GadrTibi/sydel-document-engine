@@ -429,6 +429,27 @@ def test_scm_inter_sel_blocks_with_personne_morale(tmp_path: Path) -> None:
     assert any("personnes physiques" in b for b in plan.blockers)
 
 
+def test_civil_capital_not_divisible_by_parts_blocks(tmp_path: Path) -> None:
+    # Dogfood 2026-06-22 : capital non divisible par le nb de parts -> valeur nominale non
+    # entiere (1000/3 = 333.3333... a 28 chiffres dans l'acte). Doit bloquer proprement, pas
+    # generer un document casse. Garde de divisibilite partagee.
+    payload = _civil_base("SCI", "sci", [_pp("Jean", "Durand", 3, 1, 3, 1000)])
+    payload["capital_social"] = "1000"
+    payload["nb_parts_total"] = 3
+    plan = css.build_civil_plan(payload)
+    assert plan.can_generate is False
+    assert any("divisible" in b for b in plan.blockers)
+
+
+def test_civil_capital_divisible_by_parts_ok(tmp_path: Path) -> None:
+    # Contre-epreuve : 999 / 3 = 333 (entier) -> pas de blocage de divisibilite.
+    payload = _civil_base("SCI", "sci", [_pp("Jean", "Durand", 3, 1, 3, 999)])
+    payload["capital_social"] = "999"
+    payload["nb_parts_total"] = 3
+    plan = css.build_civil_plan(payload)
+    assert not any("divisible" in b for b in plan.blockers)
+
+
 def test_scs_slice_generates_clean(tmp_path: Path) -> None:
     payload = _civil_base(
         "SCS",

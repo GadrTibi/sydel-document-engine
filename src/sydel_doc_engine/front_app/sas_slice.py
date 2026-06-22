@@ -49,6 +49,7 @@ from sydel_doc_engine.front_app.field_derivations import (
     calculate_nominal_value,
     derive_gender_from_civilite,
     format_numeric_value,
+    is_capital_divisible,
     number_words_from_value,
 )
 from sydel_doc_engine.front_app.front_widgets import (
@@ -349,6 +350,13 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:
             blockers.append(message)
     if int(payload.get("nb_actions_total") or 0) < 1:
         blockers.append("Nombre total d'actions requis et superieur a zero.")
+    # Dogfood 2026-06-22 : capital non divisible par le nb d'actions -> valeur nominale a
+    # 28 chiffres + lettres cassees. Garde de divisibilite (couche partagee).
+    if not is_capital_divisible(payload.get("capital_social"), payload.get("nb_actions_total")):
+        blockers.append(
+            "Le capital social doit etre divisible par le nombre d'actions "
+            "(la valeur nominale d'une action doit etre un nombre entier)."
+        )
     if int(payload.get("apport_nb_parts") or 0) < 1:
         blockers.append("Nombre de parts cible apportees requis (attestation capital).")
     if payload.get("signature_date") is None:

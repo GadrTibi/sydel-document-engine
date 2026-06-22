@@ -143,6 +143,22 @@ def calculate_nominal_value(capital_social: object, nb_parts_total: object) -> s
     return format_numeric_value(capital / nb_parts)
 
 
+def is_capital_divisible(capital_social: object, nb_parts_total: object) -> bool:
+    """True si le capital est divisible EXACTEMENT par le nombre de parts/actions.
+
+    Garde de robustesse partagee (dogfood 2026-06-22) : une valeur nominale non entiere
+    (ex. 1000 / 3) produit « 333.3333333333333333333333333 » dans l'acte et casse la mise
+    en lettres. On bloque la saisie en amont. Donnees incompletes -> True (la garde de
+    PRESENCE des champs s'en charge ailleurs ; on ne double-signale pas).
+    """
+    capital = _decimal_from_value(capital_social)
+    nb_parts = _decimal_from_value(nb_parts_total)
+    if capital is None or nb_parts is None or nb_parts == 0:
+        return True
+    quotient = capital / nb_parts
+    return quotient == quotient.to_integral_value()
+
+
 def format_french_date(value: date | None) -> str:
     if not isinstance(value, date):
         return ""

@@ -53,6 +53,7 @@ from sydel_doc_engine.front_app.associe_repeater import RepeaterConfig, render_a
 from sydel_doc_engine.front_app.field_derivations import (
     calculate_nominal_value,
     format_numeric_value,
+    is_capital_divisible,
     number_words_from_value,
     parse_french_date,
 )
@@ -699,6 +700,13 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:
         blockers.append("Nombre total de parts requis et superieur a zero.")
     # Valeur nominale : calculee (capital / nb parts), plus saisie (§18.2). On bloque
     # donc sur capital + nb parts (deja valides), jamais sur la valeur elle-meme.
+    # Dogfood 2026-06-22 : capital non divisible par le nb de parts -> valeur nominale a
+    # 28 chiffres dans l'acte + lettres cassees. Garde de divisibilite (couche partagee).
+    if not is_capital_divisible(payload.get("capital_social"), payload.get("nb_parts_total")):
+        blockers.append(
+            "Le capital social doit etre divisible par le nombre de parts "
+            "(la valeur nominale d'une part doit etre un nombre entier)."
+        )
     if not str(payload.get("siege_ville") or "").strip():
         # Le lieu de signature reprend la ville du siege (§18.4) : bloquer sur siege.
         blockers.append("Ville du siege requise.")

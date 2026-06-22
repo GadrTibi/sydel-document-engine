@@ -64,6 +64,7 @@ from sydel_doc_engine.front_app.field_derivations import (
     calculate_nominal_value,
     date_to_french_words,
     format_grouped_numeric_value,
+    is_capital_divisible,
     number_words_from_value,
     split_numero_voie,
 )
@@ -327,6 +328,14 @@ def validate_selarl_input(data: SelarlSliceInput) -> tuple[str, ...]:
         blockers.append("Date de decision requise.")
     if data.nb_parts_total < 1:
         blockers.append("Nombre de parts requis et superieur a zero.")
+    # Dogfood 2026-06-22 : capital non divisible par le nb de parts -> valeur nominale a
+    # 28 chiffres + lettres cassees. Garde de divisibilite (couche partagee ; vaut aussi
+    # pour la SELAS uni medecin qui derive de ce chemin).
+    if not is_capital_divisible(data.capital_social, data.nb_parts_total):
+        blockers.append(
+            "Le capital social doit etre divisible par le nombre de parts "
+            "(la valeur nominale d'une part doit etre un nombre entier)."
+        )
     if data.profession == PROFESSION_DENTISTE or _is_married(data):
         blockers.extend(
             _missing_for_fields(
