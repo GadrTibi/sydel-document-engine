@@ -53,6 +53,15 @@ Cocher **toutes** les cases, pas une de moins :
 - Si la remarque révèle une règle transverse durable → la graver dans
   `METHODE_PARITE_GOLD.md` (les règles imposées) pour qu'elle devienne un invariant audité.
 
+### Phase 6 — RESTITUTION AU PM (message Rafael copier-collable)
+Dès qu'une modif demandée par Rafael est faite ET POUSSÉE, produire pour Gad un message
+**prêt à transférer à Rafael** (Gad ne réécrit rien) :
+- **Court** ; **en puces** s'il y a plusieurs points ; **ton FROID** (demande, zéro politesse).
+- Dans un **BLOC COPIER-COLLABLE** (bloc de code markdown) isolé, pour copier-coller direct.
+- Inclure « **reboot le Streamlit Cloud** » en tête **UNIQUEMENT si j'ai poussé** quelque chose
+  (un push n'est testable qu'après redéploiement). **Si je n'ai PAS poussé → ne pas le dire.**
+- Une seule chose à retester par puce, formulée en ordre (« reteste X »), pas en explication.
+
 ## Garde-fous (anti-rechute appris)
 - **Périmètre EXACT de la remarque — zéro extrapolation.** On corrige uniquement ce qui est
   pointé. Toute extension au-delà (ex. accentuer des données que Rafael n'a PAS pointées,
