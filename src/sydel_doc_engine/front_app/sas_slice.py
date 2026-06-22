@@ -125,7 +125,7 @@ def render_sas_form() -> dict[str, object]:
             min_value=0,
             step=100,
             key=cap_key,
-            help="Montant numerique uniquement.",
+            help="Montant numerique uniquement (ex : 330 000).",
         )
     )
     nb_actions = _i(col_d, "nb_actions_total", "Nombre total d'actions")
@@ -209,7 +209,7 @@ def render_sas_form() -> dict[str, object]:
 
     st.markdown("**Depot / exercice / signature**")
     col_v, col_w = st.columns(2)
-    banque_nom = _t(col_v, "banque_nom", "Banque depot")
+    banque_nom = _t(col_v, "banque_nom", "Banque depot", hint="ex : CIC CHAPEAU ROUGE BORDEAUX")
     signature_lieu = _t(col_w, "signature_lieu", "Lieu de signature")
     col_x, col_y, col_z = st.columns(3)
     exercice_debut = _t(col_x, "exercice_debut", "Debut exercice")
@@ -546,11 +546,11 @@ def generate_dossier(payload: dict[str, object], output_dir: Path) -> GeneratedD
     )
 
 
-def _t(container, field: str, label: str) -> str:
+def _t(container, field: str, label: str, hint: str | None = None) -> str:
     key = f"{PREFIX}_{field}"
     if key not in st.session_state:
         st.session_state[key] = ""
-    return str(container.text_input(label, key=key)).strip()
+    return str(container.text_input(label, key=key, help=hint)).strip()
 
 
 def _i(container, field: str, label: str) -> int:

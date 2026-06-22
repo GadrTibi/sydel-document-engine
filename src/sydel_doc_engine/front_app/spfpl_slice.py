@@ -191,7 +191,7 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
             min_value=0,
             step=100,
             key=cap_key,
-            help="Montant numerique uniquement.",
+            help="Montant numerique uniquement (ex : 330 000).",
         )
     )
     # Decision Gad 2026-06-18 : nombre d'actions VARIABLE (defaut 600), aligne sur
@@ -291,8 +291,12 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
 
     st.markdown("**Depot / titres apportes**")
     col_u, col_v = st.columns(2)
-    banque_nom = _t(col_u, prefix, "banque_nom", "Banque")
-    banque_adresse = _t(col_v, prefix, "banque_adresse", "Adresse banque")
+    banque_nom = _t(
+        col_u, prefix, "banque_nom", "Banque", hint="ex : CIC CHAPEAU ROUGE BORDEAUX"
+    )
+    banque_adresse = _t(
+        col_v, prefix, "banque_adresse", "Adresse banque", hint="ex : 5 place Bellecour, 69002 Lyon"
+    )
     col_w, col_x, col_y = st.columns(3)
     apport_montant = _t(col_w, prefix, "apport_montant", "Montant de l'apport")
     apport_nb_parts = _i(col_x, prefix, "apport_nb_parts", "Nombre de parts apportees")
@@ -1020,11 +1024,11 @@ def generate_dossier(payload: dict[str, object], output_dir: Path) -> GeneratedD
     )
 
 
-def _t(container, prefix: str, field: str, label: str) -> str:
+def _t(container, prefix: str, field: str, label: str, hint: str | None = None) -> str:
     key = f"{prefix}_{field}"
     if key not in st.session_state:
         st.session_state[key] = ""
-    return str(container.text_input(label, key=key)).strip()
+    return str(container.text_input(label, key=key, help=hint)).strip()
 
 
 def _i(container, prefix: str, field: str, label: str) -> int:

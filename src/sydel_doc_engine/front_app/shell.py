@@ -1435,7 +1435,7 @@ def _render_societe(
         step=100,
         value=0,
         key="selarl_capital_social",
-        help="Montant numerique uniquement.",
+        help="Montant numerique uniquement (ex : 330 000).",
     )
     nb_parts_total = st.number_input(
         "Nombre total de parts",

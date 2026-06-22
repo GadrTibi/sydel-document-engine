@@ -306,7 +306,7 @@ def render_selas_form(type_key: str = "selas_multi_v1") -> dict[str, object]:
             min_value=0,
             step=100,
             key=cap_key,
-            help="Montant numerique uniquement.",
+            help="Montant numerique uniquement (ex : 330 000).",
         )
     )
     nb_actions = _i(col_f, "nb_actions_total", "Nombre total d'actions")
@@ -325,8 +325,10 @@ def render_selas_form(type_key: str = "selas_multi_v1") -> dict[str, object]:
 
     st.markdown("Depot des fonds")
     col_j, col_k = st.columns(2)
-    banque_nom = _t(col_j, "banque_nom", "Banque")
-    banque_adresse = _t(col_k, "banque_adresse", "Adresse banque")
+    banque_nom = _t(col_j, "banque_nom", "Banque", hint="ex : CIC CHAPEAU ROUGE BORDEAUX")
+    banque_adresse = _t(
+        col_k, "banque_adresse", "Adresse banque", hint="ex : 5 place Bellecour, 69002 Lyon"
+    )
     date_cloture = _t(st, "date_cloture", "Cloture du premier exercice")
 
     st.caption("Siege social (adresse structuree, pour la domiciliation / procuration)")
@@ -1781,14 +1783,14 @@ def _address(adresse_affichee: str):
     return Address(adresse_affichee=adresse_affichee)
 
 
-def _t(container, field: str, label: str) -> str:
-    return _ts(container, f"{PREFIX}_{field}", label)
+def _t(container, field: str, label: str, hint: str | None = None) -> str:
+    return _ts(container, f"{PREFIX}_{field}", label, hint)
 
 
-def _ts(container, key: str, label: str) -> str:
+def _ts(container, key: str, label: str, hint: str | None = None) -> str:
     if key not in st.session_state:
         st.session_state[key] = ""
-    return str(container.text_input(label, key=key)).strip()
+    return str(container.text_input(label, key=key, help=hint)).strip()
 
 
 def _i(container, field: str, label: str) -> int:

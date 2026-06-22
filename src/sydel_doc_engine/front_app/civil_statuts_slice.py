@@ -199,7 +199,7 @@ def render_civil_form(structure: str) -> dict[str, object]:
             min_value=0,
             step=100,
             key=cap_key,
-            help="Montant numerique uniquement.",
+            help="Montant numerique uniquement (ex : 330 000).",
         )
     )
     nb_parts_total = _int(col_d, prefix, "nb_parts_total", "Nombre total de parts")
@@ -226,8 +226,12 @@ def render_civil_form(structure: str) -> dict[str, object]:
 
     st.markdown("Depot des fonds")
     col_k, col_l = st.columns(2)
-    banque_nom = _text(col_k, prefix, "banque_nom", "Banque")
-    banque_adresse = _text(col_l, prefix, "banque_adresse", "Adresse banque")
+    banque_nom = _text(
+        col_k, prefix, "banque_nom", "Banque", hint="ex : CIC CHAPEAU ROUGE BORDEAUX"
+    )
+    banque_adresse = _text(
+        col_l, prefix, "banque_adresse", "Adresse banque", hint="ex : 5 place Bellecour, 69002 Lyon"
+    )
     date_cloture = _text(
         st, prefix, "date_cloture_premier_exercice", "Cloture du premier exercice"
     )
@@ -1048,11 +1052,11 @@ def _apply_iris_result_groups(
     statuts_civils.resultat_quote_part_exceptionnel_total = "100 %"
 
 
-def _text(container, prefix: str, field: str, label: str) -> str:
+def _text(container, prefix: str, field: str, label: str, hint: str | None = None) -> str:
     key = f"{prefix}_{field}"
     if key not in st.session_state:
         st.session_state[key] = ""
-    return str(container.text_input(label, key=key)).strip()
+    return str(container.text_input(label, key=key, help=hint)).strip()
 
 
 def _int(container, prefix: str, field: str, label: str) -> int:
