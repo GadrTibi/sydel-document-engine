@@ -102,12 +102,18 @@ def _format_date(value: date) -> str:
     return value.strftime("%d/%m/%Y")
 
 
+# Retour Rafael R22-07 (2026-06-22) : le centre est TOUJOURS « Centre des Finances
+# Publiques » (le service + l'adresse portent l'identification). On fige le libelle au
+# lieu d'une variable saisie -> plus de champ « Centre » dans le formulaire.
+CENTRE_FINANCES_PUBLIQUES = "Centre des Finances Publiques"
+
+
 def _add_tax_office_block(document: Any, tax_office: CentreImpots) -> None:
     add_right_indented_block(
         document,
         [
             _required_text(tax_office.service, "impots.service"),
-            _required_text(tax_office.centre, "impots.centre"),
+            CENTRE_FINANCES_PUBLIQUES,
             _required_text(tax_office.adresse_ligne_1, "impots.adresse_ligne_1"),
             _required_text(tax_office.adresse_ligne_2, "impots.adresse_ligne_2"),
             (

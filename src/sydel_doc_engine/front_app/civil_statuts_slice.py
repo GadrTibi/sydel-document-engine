@@ -424,10 +424,10 @@ def _render_option_is_form(prefix: str) -> dict[str, object]:
     if not actif:
         return {"option_is": False}
     st.caption("Centre des impots destinataire (lettre d'option IS)")
+    # R22-07 : le « Centre » est toujours « Centre des Finances Publiques » (figé dans le
+    # generateur) -> plus saisi ici. Seuls le service + l'adresse identifient le destinataire.
     siren = _text(st, prefix, "siren", "SIREN de la societe")
-    col_a, col_b = st.columns(2)
-    impots_service = _text(col_a, prefix, "impots_service", "Service")
-    impots_centre = _text(col_b, prefix, "impots_centre", "Centre")
+    impots_service = _text(st, prefix, "impots_service", "Service des impots des entreprises (SIE)")
     impots_ligne_1 = _text(st, prefix, "impots_adresse_ligne_1", "Adresse (ligne 1)")
     impots_ligne_2 = _text(st, prefix, "impots_adresse_ligne_2", "Adresse (ligne 2)")
     col_c, col_d = st.columns(2)
@@ -437,7 +437,6 @@ def _render_option_is_form(prefix: str) -> dict[str, object]:
         "option_is": True,
         "siren": siren,
         "impots_service": impots_service,
-        "impots_centre": impots_centre,
         "impots_adresse_ligne_1": impots_ligne_1,
         "impots_adresse_ligne_2": impots_ligne_2,
         "impots_cp": impots_cp,
@@ -824,7 +823,6 @@ def _validate_option_is(payload: dict[str, object], structure: str) -> list[str]
     required = (
         ("siren", "SIREN de la societe requis (option IS)."),
         ("impots_service", "Service du centre des impots requis (option IS)."),
-        ("impots_centre", "Centre des impots requis (option IS)."),
         ("impots_adresse_ligne_1", "Adresse (ligne 1) du centre des impots requise (option IS)."),
         ("impots_adresse_ligne_2", "Adresse (ligne 2) du centre des impots requise (option IS)."),
         ("impots_cp", "Code postal du centre des impots requis (option IS)."),
@@ -1141,11 +1139,13 @@ def _dossier_options(structure: str, *, option_is: bool = False) -> DossierOptio
 def _centre_impots(payload: dict[str, object]) -> CentreImpots:
     """Centre des impots destinataire de la lettre d'option IS (DOC-022).
 
-    Mapping direct des saisies utilisateur ; aucune valeur inventee.
+    Mapping direct des saisies utilisateur ; aucune valeur inventee. R22-07 : le centre
+    est fige (« Centre des Finances Publiques ») cote generateur, plus saisi -> on le
+    renseigne ici pour la coherence du modele.
     """
     return CentreImpots(
         service=str(payload.get("impots_service") or ""),
-        centre=str(payload.get("impots_centre") or ""),
+        centre="Centre des Finances Publiques",
         adresse_ligne_1=str(payload.get("impots_adresse_ligne_1") or ""),
         adresse_ligne_2=str(payload.get("impots_adresse_ligne_2") or ""),
         cp=str(payload.get("impots_cp") or ""),

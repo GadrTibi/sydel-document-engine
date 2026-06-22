@@ -111,6 +111,10 @@ def test_lettre_option_is_generates_clean_docx(tmp_path: Path) -> None:
 
     assert output_path.name == "lettre_option_is.docx"
     assert "Service des impots des entreprises" in text
+    # R22-07 : le centre est fige (« Centre des Finances Publiques »), plus la valeur saisie
+    # (« SIE Paris Centre » fournie au contexte est ignoree).
+    assert "Centre des Finances Publiques" in text
+    assert "SIE Paris Centre" not in text
     assert "Demande d'option pour le régime de l'impôt sur les sociétés" in text
     assert "SCI EXEMPLE" in text
     assert "123 456 789" in text

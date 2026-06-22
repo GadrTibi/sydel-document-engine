@@ -477,12 +477,31 @@ def _commit_civil_prefill(values: dict[str, object]) -> None:
     st.session_state.pop(GENERATED_DOSSIER_STATE_KEY, None)
 
 
+def _option_is_prefill(prefix: str) -> dict[str, object]:
+    """Active l'option IS + le centre des impots (lettre DOC-022) dans les donnees de test.
+
+    R22-05 (Rafael 2026-06-22) : la lettre d'option IS existe deja pour SCI / SCI IRIS mais
+    n'etait pas demontree au bouton de test -> Rafael ne la voyait pas. On l'active ici. Le
+    « Centre » n'est plus saisi (R22-07 : fige a « Centre des Finances Publiques »).
+    """
+    return {
+        f"{prefix}_option_is": True,
+        f"{prefix}_siren": "900 000 001",
+        f"{prefix}_impots_service": "Service des impots des entreprises de Paris 8e",
+        f"{prefix}_impots_adresse_ligne_1": "6 rue Paul Baudry",
+        f"{prefix}_impots_adresse_ligne_2": "TSA 00001",
+        f"{prefix}_impots_cp": "75008",
+        f"{prefix}_impots_ville": "Paris",
+    }
+
+
 def _prefill_sci_test_data() -> None:
-    """SCI de creation fictive (2 associes physiques)."""
+    """SCI de creation fictive (2 associes physiques) + option IS (lettre DOC-022)."""
     values = _civil_society_prefill(
         "sci", denomination="SCI EXEMPLE", forme_sociale="societe civile immobiliere"
     )
     values["sci_nb_associes"] = 2
+    values.update(_option_is_prefill("sci"))
     values.update(
         _civil_pp_associe_prefill(
             "sci", 0, civilite="Monsieur", prenom="Jean", nom="Durand", ville="Paris",
@@ -508,6 +527,7 @@ def _prefill_sci_iris_test_data() -> None:
         forme_sociale="societe civile immobiliere",
     )
     values["sci_iris_nb_associes"] = 2
+    values.update(_option_is_prefill("sci_iris"))
     values.update(
         _civil_pm_associe_prefill(
             "sci_iris", 0, denomination="SEL EXEMPLE", forme_juridique="SELARL",
