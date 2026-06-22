@@ -809,6 +809,7 @@ def _spfpl_payload(structure):
         "denomination": "SPFPL MARTIN",
         "siege": "10 rue de la Paix, 75002 Paris",
         "capital_social": "60000",
+        "nb_actions_total": 600,
         "valeur_nominale_action": "100",
         # §14.2 : civilite = civilite CIVILE (M./Mme) ; le titre pro « Docteur »
         # est porte par titre_affichage (automatique pour une SPFPL dentiste).
@@ -935,6 +936,26 @@ def test_spfpl_cession_slice_generates_clean(tmp_path: Path) -> None:
         generated,
         _SPFPL_BUNDLE_TRONC | {"statuts_spfpl_cession.docx"} | _SPFPL_CESSION_DOCS,
     )
+
+
+def test_spfpl_cession_missing_cible_forme_blocks() -> None:
+    # Dogfood 2026-06-22 : forme complete de la cible non validee -> crash a la generation
+    # (note d'info / acte). Doit bloquer proprement.
+    payload = _spfpl_payload("SPFPL cession")
+    payload["cession_data"] = {**payload["cession_data"], "cible_forme_complete": ""}
+    plan = spfpl_slice.build_spfpl_plan(payload)
+    assert plan.can_generate is False
+    assert any("forme" in b.lower() and "cible" in b.lower() for b in plan.blockers)
+
+
+def test_spfpl_nb_actions_zero_blocks() -> None:
+    # Dogfood 2026-06-22 : nb_actions = 0 etait silencieusement remplace par 600 (fantome).
+    # La garde teste desormais la valeur brute -> bloque.
+    payload = _spfpl_payload("SPFPL cession")
+    payload["nb_actions_total"] = 0
+    plan = spfpl_slice.build_spfpl_plan(payload)
+    assert plan.can_generate is False
+    assert any("actions" in b.lower() and "zero" in b.lower() for b in plan.blockers)
 
 
 def test_spfpl_apport_slice_generates_clean(tmp_path: Path) -> None:

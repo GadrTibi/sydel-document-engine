@@ -571,7 +571,9 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:
     # Nombre d'actions VARIABLE (defaut 600) : doit etre >= 1 pour deriver une
     # valeur nominale coherente (capital / nb actions). Remplace l'ancien champ
     # « valeur nominale » en saisie libre (desormais calculee, non saisissable).
-    if int(payload.get("nb_actions_total") or 600) < 1:
+    # Dogfood 2026-06-22 : le « or 600 » NEUTRALISAIT cette garde (un 0 saisi devenait
+    # 600 avant le test) -> 600 actions fantomes. On teste la valeur BRUTE.
+    if int(payload.get("nb_actions_total") or 0) < 1:
         blockers.append("Nombre d'actions requis et superieur a zero.")
     if int(payload.get("apport_nb_parts") or 0) < 1:
         blockers.append("Nombre de parts apportees requis et superieur a zero.")
@@ -610,6 +612,22 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:
             blockers.append("Prix par part cedee requis (cession).")
         if not str(cd.get("cible_siege_num") or "").strip():  # type: ignore[union-attr]
             blockers.append("Siege structure de la cible requis (cession).")
+        # Dogfood 2026-06-22 : la note d'info / le PV / l'acte exigent aussi la FORME
+        # complete de la cible, son siege complet et l'identite de chaque associe cible
+        # (sinon `required_*` leve a la generation alors que le plan disait « pret »).
+        if not str(cd.get("cible_forme_complete") or "").strip():  # type: ignore[union-attr]
+            blockers.append("Forme sociale complete de la cible requise (cession).")
+        if not all(
+            str(cd.get(field) or "").strip()  # type: ignore[union-attr]
+            for field in ("cible_siege_voie", "cible_siege_cp", "cible_siege_ville")
+        ):
+            blockers.append("Adresse complete du siege de la cible requise (voie, CP, ville).")
+        for index, associe in enumerate(cd.get("associes") or [], start=1):  # type: ignore[union-attr]
+            data = associe or {}
+            if not all(str(data.get(key) or "").strip() for key in ("civilite", "prenom", "nom")):
+                blockers.append(
+                    f"Associe cible {index} : civilite, prenom et nom requis (cession)."
+                )
     return tuple(dict.fromkeys(blockers))
 
 
