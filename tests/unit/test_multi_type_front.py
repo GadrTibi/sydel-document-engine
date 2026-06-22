@@ -1999,6 +1999,29 @@ def test_selas_cession_acquereur_forme_sociale_corrigee_en_selas() -> None:
     assert ctx.cession.acquereur.forme_sociale == "SELAS"
 
 
+def test_selas_cession_masque_le_bloc_acquereur(tmp_path: Path, monkeypatch) -> None:
+    # #15 (onglet 24) : en SELAS, l'acquereur EST la societe en cours de creation ->
+    # aucun champ de saisie acquereur (RCS / SIRET / dates) ne doit apparaitre dans le
+    # formulaire de cession (entierement derive de la fiche societe).
+    from streamlit.testing.v1 import AppTest
+
+    from sydel_doc_engine.front_app import shell
+
+    monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selas-cess")
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
+    app.selectbox(key="clean_dossier_type").set_value("SELAS multi-associes creation V1")
+    app = app.run(timeout=180)
+    next(b for b in app.button if "test_data" in str(b.key)).click()
+    app = app.run(timeout=180)
+    app.checkbox(key="selas_cession_on").set_value(True)
+    app = app.run(timeout=180)
+
+    keys = {str(w.key) for w in app.text_input}
+    assert not any("cession_acquereur" in k for k in keys), (
+        "Le bloc acquereur ne doit pas etre saisi en SELAS (#15)."
+    )
+
+
 def test_front_selas_dentiste_pluri_uses_dentiste_corpus(
     tmp_path: Path, monkeypatch
 ) -> None:

@@ -2091,53 +2091,60 @@ def _render_cession_form(
         )
 
     # --- Acquereur (ticket 2.2 : repris automatiquement de la fiche societe) ---
-    with st.expander("Acquereur (societe en cours de creation)"):
-        denomination = str(societe.get("denomination") or "")
-        ville_rcs = str(societe.get("ville_rcs") or "")
-        st.caption(
-            "Repris de la fiche societe : "
-            f"{denomination or 'denomination a completer'} — "
-            f"{siege_display or 'siege a completer'} — RCS {ville_rcs or 'a completer'}."
-        )
-        col_a, col_b = st.columns(2)
-        numero_rcs = _cession_text(
-            col_a, "Numero RCS (des immatriculation, facultatif)",
-            section="acquereur", field="numero_rcs", default="",
-        )
-        numero_siret = _cession_text(
-            col_b, "Numero SIRET (facultatif)",
-            section="acquereur", field="numero_siret", default="",
-        )
-        date_immatriculation = ""
-        date_inscription_ordre = ""
-        if type_cabinet == "medical" and etape == "acte":
-            col_c, col_d = st.columns(2)
-            date_immatriculation = _cession_text(
-                col_c, "Date d'immatriculation (JJ/MM/AAAA, facultatif)",
-                section="acquereur", field="date_immatriculation", default="",
+    denomination = str(societe.get("denomination") or "")
+    ville_rcs = str(societe.get("ville_rcs") or "")
+    numero_rcs = ""
+    numero_siret = ""
+    date_immatriculation = ""
+    date_inscription_ordre = ""
+    # #15 (onglet 24) : en SELAS, l'acquereur EST la societe en cours de creation ->
+    # aucun champ a saisir (denomination / siege / RCS deja derives de la fiche
+    # societe ; RCS/SIRET/dates n'existent pas encore). Le bloc de SAISIE n'est rendu
+    # qu'en dehors de la SELAS (parite gold SELARL preservee).
+    if prefix != "selas":
+        with st.expander("Acquereur (societe en cours de creation)"):
+            st.caption(
+                "Repris de la fiche societe : "
+                f"{denomination or 'denomination a completer'} — "
+                f"{siege_display or 'siege a completer'} — RCS {ville_rcs or 'a completer'}."
             )
-            date_inscription_ordre = _cession_text(
-                col_d, "Date d'inscription a l'ordre (JJ/MM/AAAA, facultatif)",
-                section="acquereur", field="date_inscription_ordre", default="",
+            col_a, col_b = st.columns(2)
+            numero_rcs = _cession_text(
+                col_a, "Numero RCS (des immatriculation, facultatif)",
+                section="acquereur", field="numero_rcs", default="",
             )
-        acquereur_payload = {
-            "denomination_societe": denomination,
-            "forme_sociale": "SELARL",
-            "capital_social": format_grouped_numeric_value(societe.get("capital_social")),
-            "siege": {"adresse_affichee": siege_display},
-            "rcs_ville": ville_rcs,
-            "numero_rcs": numero_rcs,
-            "numero_siret": numero_siret,
-            "date_immatriculation": date_immatriculation,
-            "date_inscription_ordre": date_inscription_ordre,
-            "representant": {
-                "civilite_affichage": DEFAULT_TITRE_AFFICHAGE,
-                "genre": praticien_genre,
-                "prenom": praticien_prenom,
-                "nom": praticien_nom,
-                "fonction": "gérante" if praticien_genre == Gender.FEMININ else "gérant",
-            },
-        }
+            numero_siret = _cession_text(
+                col_b, "Numero SIRET (facultatif)",
+                section="acquereur", field="numero_siret", default="",
+            )
+            if type_cabinet == "medical" and etape == "acte":
+                col_c, col_d = st.columns(2)
+                date_immatriculation = _cession_text(
+                    col_c, "Date d'immatriculation (JJ/MM/AAAA, facultatif)",
+                    section="acquereur", field="date_immatriculation", default="",
+                )
+                date_inscription_ordre = _cession_text(
+                    col_d, "Date d'inscription a l'ordre (JJ/MM/AAAA, facultatif)",
+                    section="acquereur", field="date_inscription_ordre", default="",
+                )
+    acquereur_payload = {
+        "denomination_societe": denomination,
+        "forme_sociale": "SELARL",
+        "capital_social": format_grouped_numeric_value(societe.get("capital_social")),
+        "siege": {"adresse_affichee": siege_display},
+        "rcs_ville": ville_rcs,
+        "numero_rcs": numero_rcs,
+        "numero_siret": numero_siret,
+        "date_immatriculation": date_immatriculation,
+        "date_inscription_ordre": date_inscription_ordre,
+        "representant": {
+            "civilite_affichage": DEFAULT_TITRE_AFFICHAGE,
+            "genre": praticien_genre,
+            "prenom": praticien_prenom,
+            "nom": praticien_nom,
+            "fonction": "gérante" if praticien_genre == Gender.FEMININ else "gérant",
+        },
+    }
 
     # --- Cabinet (ticket 2.3 : cadre reduit aux seules infos specifiques) ---
     with st.expander("Cabinet"):
