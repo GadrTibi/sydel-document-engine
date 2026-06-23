@@ -823,6 +823,25 @@ def test_sas_slice_generates_clean(tmp_path: Path) -> None:
     )
 
 
+def test_sas_live03_accentuates_exercice_months(tmp_path: Path) -> None:
+    """LIVE-03 : un mois saisi sans accent (« 31 decembre ») ressort accentue.
+
+    Les champs de date d'exercice sont des text_input LIBRES : une saisie sans accent
+    partirait verbatim dans le DOCX. La re-accentuation se fait EN AMONT (front), pas dans
+    le generateur (echo fidele du modele). Le payload SAS feed « 31 decembre » / « 31
+    decembre 2026 » -> la sortie DOCX doit contenir « décembre » accentue, jamais « decembre ».
+    """
+    payload = dict(_sas_payload())
+    payload["exercice_fin"] = "31 decembre"
+    payload["date_cloture"] = "31 decembre 2026"
+    generated = sas_slice.generate_dossier(payload, tmp_path / "sas_live03")
+    full_text = "\n".join(_docx_text(p) for p in generated.docx_paths)
+    assert "décembre" in full_text, "LIVE-03 : le mois doit ressortir accentue"
+    assert (
+        "31 decembre" not in full_text
+    ), "LIVE-03 : aucune occurrence sans accent ne doit subsister"
+
+
 def test_sas_apports_sum_must_equal_capital() -> None:
     # Dogfood 2026-06-22 : la somme nature + numeraire doit egaler le capital -> bloque sinon.
     payload = dict(_sas_payload())

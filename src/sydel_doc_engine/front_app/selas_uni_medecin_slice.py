@@ -47,6 +47,7 @@ from sydel_doc_engine.front_app import selarl_slice
 from sydel_doc_engine.front_app.associe_repeater import render_nationalite_selectbox
 from sydel_doc_engine.front_app.field_derivations import (
     DEFAULT_TITRE_AFFICHAGE,
+    accentuate_french_months,
     calculate_nominal_value,
     derive_gender_from_civilite,
     format_numeric_value,
@@ -411,8 +412,12 @@ def _to_selarl_input(payload: dict[str, object]) -> SelarlSliceInput:
         depot_banque_nom=str(payload.get("banque_nom") or ""),
         depot_banque_adresse=str(payload.get("banque_adresse") or ""),
         exercice_debut=str(payload.get("exercice_debut") or ""),
-        exercice_fin=str(payload.get("exercice_fin") or ""),
-        exercice_cloture_premier=str(payload.get("exercice_cloture") or ""),
+        # LIVE-03 : re-accentue les mois saisis librement (« 31 decembre » ->
+        # « 31 décembre ») EN AMONT ; ces champs alimentent l'ExerciceSocial SELARL-uni.
+        exercice_fin=accentuate_french_months(str(payload.get("exercice_fin") or "")),
+        exercice_cloture_premier=accentuate_french_months(
+            str(payload.get("exercice_cloture") or "")
+        ),
         lieu_exercice_adresse=str(payload.get("lieu_exercice_adresse") or ""),
     )
 

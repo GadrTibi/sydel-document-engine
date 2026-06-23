@@ -54,6 +54,7 @@ from sydel_doc_engine.front_app.field_derivations import (
     DEFAULT_MANDATAIRE_NOM,
     DEFAULT_MANDATAIRE_PRENOM,
     MATRIMONIAL_STATUS_PRESETS,
+    accentuate_french_months,
     calculate_nominal_value,
     date_to_french_words,
     derive_gender_from_civilite,
@@ -1556,7 +1557,10 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
             adresse_lieu_exercice=str(payload.get("adresse_lieu_exercice") or ""),
             banque_nom=str(payload.get("banque_nom") or ""),
             banque_adresse=str(payload.get("banque_adresse") or ""),
-            date_cloture_premier_exercice=str(payload.get("date_cloture") or ""),
+            # LIVE-03 : re-accentue le mois saisi librement EN AMONT du generateur.
+            date_cloture_premier_exercice=accentuate_french_months(
+                str(payload.get("date_cloture") or "")
+            ),
             associes=associes,
             president=StatutsSelasMultiPresident(ref_associe_index=president_index),
         ),

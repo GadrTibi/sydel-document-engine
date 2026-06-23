@@ -52,6 +52,7 @@ from sydel_doc_engine.domain.models import (
 from sydel_doc_engine.front_app import common_creation as cc
 from sydel_doc_engine.front_app.associe_repeater import RepeaterConfig, render_associe_repeater
 from sydel_doc_engine.front_app.field_derivations import (
+    accentuate_french_months,
     calculate_nominal_value,
     format_numeric_value,
     is_capital_divisible,
@@ -1050,7 +1051,10 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
             banque_adresse=str(payload.get("banque_adresse") or ""),
         ),
         associes=associes,
-        date_cloture_premier_exercice=str(payload.get("date_cloture_premier_exercice") or ""),
+        # LIVE-03 : re-accentue le mois saisi librement EN AMONT du generateur.
+        date_cloture_premier_exercice=accentuate_french_months(
+            str(payload.get("date_cloture_premier_exercice") or "")
+        ),
         nombre_exemplaires_lettres="trois",
         denomination_cabinet_mandataire="DAAT",
     )

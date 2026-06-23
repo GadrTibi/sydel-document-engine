@@ -47,6 +47,7 @@ from sydel_doc_engine.domain.models import (
 from sydel_doc_engine.front_app import common_creation as cc
 from sydel_doc_engine.front_app.associe_repeater import render_nationalite_selectbox
 from sydel_doc_engine.front_app.field_derivations import (
+    accentuate_french_months,
     calculate_nominal_value,
     derive_gender_from_civilite,
     format_numeric_value,
@@ -523,7 +524,12 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         ),
         remuneration_president=RemunerationPresident(
             type="absence_remuneration",
-            date_fin_non_remuneree=str(payload.get("date_cloture") or ""),
+            # LIVE-03 : meme re-accentuation que date_cloture_premier_exercice ci-dessous
+            # (les deux derivent du meme `date_cloture` brut et le generateur DOC-024 exige
+            # qu'elles restent identiques byte-a-byte — CODE-SAS-SATELLITES-001).
+            date_fin_non_remuneree=accentuate_french_months(
+                str(payload.get("date_cloture") or "")
+            ),
         ),
         societe_cible=SocieteCible(
             denomination=str(payload.get("cible_denomination") or ""),
@@ -539,8 +545,12 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         ),
         exercice_social=ExerciceSocial(
             debut=str(payload.get("exercice_debut") or ""),
-            fin=str(payload.get("exercice_fin") or ""),
-            date_cloture_premier_exercice=str(payload.get("date_cloture") or ""),
+            # LIVE-03 : re-accentue les mois saisis librement (« 31 decembre » ->
+            # « 31 décembre ») EN AMONT du generateur, qui reste un echo fidele du modele.
+            fin=accentuate_french_months(str(payload.get("exercice_fin") or "")),
+            date_cloture_premier_exercice=accentuate_french_months(
+                str(payload.get("date_cloture") or "")
+            ),
         ),
         capital_souscription=CapitalSouscription(
             nb_actions_total=nb_actions,

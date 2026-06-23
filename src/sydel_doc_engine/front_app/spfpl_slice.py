@@ -61,6 +61,7 @@ from sydel_doc_engine.domain.models import (
 from sydel_doc_engine.front_app import common_creation as cc
 from sydel_doc_engine.front_app.associe_repeater import render_nationalite_selectbox
 from sydel_doc_engine.front_app.field_derivations import (
+    accentuate_french_months,
     calculate_nominal_value,
     date_to_french_words,
     derive_gender_from_civilite,
@@ -942,8 +943,12 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         ),
         exercice_social=ExerciceSocial(
             debut=str(payload.get("exercice_debut") or ""),
-            fin=str(payload.get("exercice_fin") or ""),
-            date_cloture_premier_exercice=str(payload.get("date_cloture") or ""),
+            # LIVE-03 : re-accentue les mois saisis librement (« 31 decembre » ->
+            # « 31 décembre ») EN AMONT du generateur, qui reste un echo fidele du modele.
+            fin=accentuate_french_months(str(payload.get("exercice_fin") or "")),
+            date_cloture_premier_exercice=accentuate_french_months(
+                str(payload.get("date_cloture") or "")
+            ),
         ),
         # Organes de controle de l'apport : SAISIS dans le sous-formulaire apport
         # (plus de valeurs en dur). Chaque dossier a son propre commissaire aux
