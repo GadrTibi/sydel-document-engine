@@ -50,12 +50,15 @@ from sydel_doc_engine.front_app.associe_repeater import render_nationalite_selec
 from sydel_doc_engine.front_app.field_derivations import (
     DEFAULT_MANDATAIRE_NOM,
     DEFAULT_MANDATAIRE_PRENOM,
+    MATRIMONIAL_STATUS_PRESETS,
     calculate_nominal_value,
     date_to_french_words,
     derive_gender_from_civilite,
     format_numeric_value,
+    matrimonial_status_value,
     number_words_from_value,
     parse_french_date,
+    regime_communautaire_from_status,
 )
 from sydel_doc_engine.front_app.front_widgets import (
     seed_closing_date,
@@ -318,12 +321,14 @@ def render_selas_form(type_key: str = "selas_multi_v1") -> dict[str, object]:
     nb_actions = _i(col_f, "nb_actions_total", "Nombre total d'actions")
     # Valeur nominale d'une action : TOUJOURS calculee (capital / nb actions),
     # jamais saisie (retours Albane 2026-06-17, SCREEN-2). Champ d'affichage seul.
+    # R13 (Rafael 2026-06-23) : PAS de `key` ici -> sinon Streamlit fige la valeur
+    # initiale (« value= » + « key= » = la 1re valeur, vide tant que capital=0) et
+    # ne la rafraichit jamais. Sans key, le champ affiche la valeur courante recalculee.
     valeur_action = calculate_nominal_value(capital, nb_actions)
     col_g.text_input(
         "Valeur nominale d'une action (calculee)",
         value=valeur_action,
         disabled=True,
-        key=f"{PREFIX}_valeur_nominale_action_display",
     )
     col_h, col_i = st.columns(2)
     ville_rcs = _t(col_h, "ville_rcs", "RCS (ville)")
@@ -462,8 +467,10 @@ def _render_common_docs_form() -> dict[str, object]:
     col_man_a, col_man_b = st.columns(2)
     mandataire_prenom = col_man_a.text_input("Conseiller (prénom)", key=mand_prenom_key)
     mandataire_nom = col_man_b.text_input("Conseiller (nom)", key=mand_nom_key)
-    regime = _render_regime_communautaire_form()
-    common = {
+    # R11 (Rafael 2026-06-23) : plus de case « Régime communautaire » GLOBALE — la
+    # situation matrimoniale PAR associé (menu) pilote désormais le régime + les docs
+    # DOC-005/006. (Le chemin global reste géré côté payload pour les tests directs.)
+    return {
         "decision_date": decision_date,
         "ordre_departement": ordre_dep,
         "ordre_connecteur": ordre_connecteur,
@@ -475,8 +482,6 @@ def _render_common_docs_form() -> dict[str, object]:
         "mandataire_prenom": mandataire_prenom or DEFAULT_MANDATAIRE_PRENOM,
         "mandataire_nom": mandataire_nom or DEFAULT_MANDATAIRE_NOM,
     }
-    common.update(regime)
-    return common
 
 
 def _render_connecteur_selectbox(container) -> str:
@@ -842,6 +847,7 @@ def _physique(prefix: str, nb_actions: int, montant: str) -> StatutsCivilsAssoci
         ("Madame", "Monsieur"),
         key=f"{prefix}_civilite",
     )
+    genre = derive_gender_from_civilite(civilite)
     prenoms = _ts(col_b, f"{prefix}_prenoms", "Prenom(s)")
     nom = _ts(col_c, f"{prefix}_nom", "Nom")
     col_d, col_e, col_f = st.columns(3)
@@ -868,18 +874,23 @@ def _physique(prefix: str, nb_actions: int, montant: str) -> StatutsCivilsAssoci
     adresse_struct = _structured_address(adresse_num, adresse_voie, adresse_cp, adresse_ville)
     adresse = adresse_struct.adresse_affichee if adresse_struct else ""
     col_i, col_j = st.columns(2)
-    situation = _ts(col_i, f"{prefix}_situation", "Situation matrimoniale")
+    # R10/R11 (Rafael 2026-06-23) : situation matrimoniale = MENU (comme la SELARL),
+    # plus de texte libre ni de case « marié sous régime communautaire ». Quand le
+    # régime de la COMMUNAUTÉ est choisi -> champs conjoint + DOC-005/006 générés.
+    situation_label = col_i.selectbox(
+        "Situation matrimoniale", MATRIMONIAL_STATUS_PRESETS, key=f"{prefix}_situation"
+    )
     qualification = _ts(col_j, f"{prefix}_qualification", "Qualification principale")
     col_k, col_l, col_m = st.columns(3)
     ordre_dep = _ts(col_k, f"{prefix}_ordre_dep", "Departement ordre")
     numero_ordre = _ts(col_l, f"{prefix}_numero_ordre", "Numero ordre")
     numero_rpps = _ts(col_m, f"{prefix}_numero_rpps", "Numero RPPS")
     qualite = _ts(st, f"{prefix}_qualite", "Qualite au capital (ex: associee exercante)")
-    regime_associe = _render_regime_associe_form(prefix)
+    regime_associe = _render_conjoint_si_communaute(prefix, situation_label)
 
     return StatutsCivilsAssocie(
         type_personne="personne_physique",
-        genre=derive_gender_from_civilite(civilite),
+        genre=genre,
         civilite_affichage=civilite,
         prenom=prenoms,
         prenoms=prenoms,
@@ -889,7 +900,7 @@ def _physique(prefix: str, nb_actions: int, montant: str) -> StatutsCivilsAssoci
         departement_naissance=departement or None,
         nationalite=nationalite or None,
         profession=profession or None,
-        situation_maritale=situation or None,
+        situation_maritale=_situation_display(situation_label, genre),
         # #8 / B4 : adresse personnelle STRUCTUREE (saisie une seule fois). Sert la
         # comparution (affichage derive), la DNC du dirigeant et l'avertissement au
         # conjoint (foyer = domicile). Repli president supprime : toujours renseignee.
@@ -907,39 +918,42 @@ def _physique(prefix: str, nb_actions: int, montant: str) -> StatutsCivilsAssoci
     )
 
 
-def _render_regime_associe_form(
-    prefix: str,
+def _situation_display(situation_label: str, genre: Gender) -> str:
+    """Affichage genre-resolu de la situation matrimoniale pour la comparution (R10).
+
+    Le menu (MATRIMONIAL_STATUS_PRESETS) porte des libelles « Marie(e) », « Pacs(e) »,
+    etc. ; la comparution SELAS rend `situation_maritale` brut -> on stocke le mot
+    d'etat civil accorde et accentue (comme le `[situation_maritale]` du gold)."""
+    feminin = genre == Gender.FEMININ
+    table = {
+        "marie": "mariée" if feminin else "marié",
+        "pacse": "pacsée" if feminin else "pacsé",
+        "divorce": "divorcée" if feminin else "divorcé",
+        "veuf": "veuve" if feminin else "veuf",
+        "celibataire": "célibataire",
+    }
+    return table.get(matrimonial_status_value(situation_label), "célibataire")
+
+
+def _render_conjoint_si_communaute(
+    prefix: str, situation_label: str
 ) -> RegimeCommunautaireAssocie | None:
-    """Regime matrimonial communautaire PAR associe physique (R7).
-
-    Reprend la STRUCTURE SELARL (toggle + regime matrimonial + conjoint), portee
-    au niveau de l'associe. Inactif -> None (associe non concerne).
-
-    #8 / B4 (onglet 24) : plus de champ d'adresse de foyer separe. L'avertissement
-    au conjoint (DOC-006) reutilise l'adresse personnelle STRUCTUREE de l'associe
-    (foyer = domicile), saisie une seule fois plus haut."""
-    regime_key = f"{prefix}_regime_communautaire"
-    if regime_key not in st.session_state:
-        st.session_state[regime_key] = False
-    actif = st.checkbox(
-        "Marie(e) sous un regime communautaire "
-        "(ajoute renonciation + avertissement au conjoint pour cet associe)",
-        key=regime_key,
-    )
-    if not actif:
+    """Conjoint d'UN associe physique, affiche UNIQUEMENT si la situation matrimoniale
+    choisie est un regime de COMMUNAUTE (R10/R11, Rafael 2026-06-23 : plus de case a
+    cocher — meme logique que la SELARL). Declenche DOC-005 (renonciation) + DOC-006
+    (avertissement). Le regime est la communaute legale (implicite) ; l'avertissement
+    reutilise l'adresse personnelle structuree de l'associe (foyer = domicile)."""
+    if not regime_communautaire_from_status(situation_label):
         return None
-    st.caption("Conjoint de cet associe (lettres de renonciation / avertissement)")
+    st.caption("Conjoint de cet associé (lettres de renonciation / avertissement)")
     col_a, col_b, col_c = st.columns(3)
     conjoint_civilite = col_a.selectbox(
-        "Civilite conjoint",
+        "Civilité conjoint",
         ("Madame", "Monsieur"),
         key=f"{prefix}_conjoint_civilite",
     )
-    conjoint_prenom = _ts(col_b, f"{prefix}_conjoint_prenom", "Prenom conjoint")
+    conjoint_prenom = _ts(col_b, f"{prefix}_conjoint_prenom", "Prénom conjoint")
     conjoint_nom = _ts(col_c, f"{prefix}_conjoint_nom", "Nom conjoint")
-    # R8 (Rafael 2026-06-23) : la case « marié sous un régime communautaire » IMPLIQUE
-    # déjà la communauté -> on ne redemande PAS le régime matrimonial, on le fixe à la
-    # communauté légale (la lettre de renonciation le rend « communauté »).
     return RegimeCommunautaireAssocie(
         actif=True,
         regime_matrimonial="la communauté légale",

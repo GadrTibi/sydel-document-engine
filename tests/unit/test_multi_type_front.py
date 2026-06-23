@@ -2363,6 +2363,48 @@ def test_selas_dnc_une_par_dirigeant(tmp_path: Path, monkeypatch) -> None:
     assert "declaration_non_condamnation_Martin.docx" in names  # DG Associe
 
 
+def test_selas_situation_communaute_genere_docs_conjoint(tmp_path: Path, monkeypatch) -> None:
+    # R10/R11 (Rafael 2026-06-23) : la situation matrimoniale est un MENU ; choisir un
+    # regime de COMMUNAUTE fait apparaitre les champs conjoint et genere la renonciation
+    # (DOC-005) + l'avertissement au conjoint (DOC-006). Plus de case a cocher dediee.
+    from streamlit.testing.v1 import AppTest
+
+    from sydel_doc_engine.front_app import shell
+    from sydel_doc_engine.front_app.field_derivations import (
+        MATRIMONIAL_STATUS_MARRIED_COMMUNAUTE,
+    )
+
+    monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selas-commu")
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
+    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle creation V1")
+    app = app.run(timeout=180)
+    next(b for b in app.button if "test_data" in str(b.key)).click()
+    app = app.run(timeout=180)
+
+    # Associe 0 : choisir le regime de communaute -> les champs conjoint apparaissent.
+    app.selectbox(key="selas_associe_0_situation").set_value(
+        MATRIMONIAL_STATUS_MARRIED_COMMUNAUTE
+    )
+    app = app.run(timeout=180)
+    for w in app.text_input:
+        if str(w.key) == "selas_associe_0_conjoint_prenom":
+            w.set_value("Alex")
+        elif str(w.key) == "selas_associe_0_conjoint_nom":
+            w.set_value("Durand")
+    app = app.run(timeout=180)
+
+    generate_button = next(
+        b for b in app.button if str(b.key) == "clean_typed_generate_dossier"
+    )
+    assert generate_button.disabled is False
+    generate_button.click()
+    app = app.run(timeout=180)
+
+    names = {p.name for p in (tmp_path / "ui-selas-commu").rglob("*.docx")}
+    assert any("renonciation" in n for n in names), names  # DOC-005
+    assert any("avertissement" in n for n in names), names  # DOC-006
+
+
 def test_front_today_button_fills_date_non_selarl() -> None:
     # Retour Rafael 2026-06-09 : bouton « Aujourd'hui » sur les dates de TOUS les
     # types (existait deja en SELARL). Preuve sur SCI (non-SELARL) : presence du

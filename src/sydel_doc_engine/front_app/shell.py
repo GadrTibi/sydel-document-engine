@@ -774,7 +774,7 @@ def _selas_associe_prefill(
         f"{p}_adresse_voie": "rue Exemple",
         f"{p}_adresse_cp": f"{departement}000",
         f"{p}_adresse_ville": ville,
-        f"{p}_situation": "celibataire",
+        f"{p}_situation": "Celibataire",
         f"{p}_qualification": "Medecin generaliste",
         f"{p}_ordre_dep": nationalite_ordre,
         f"{p}_numero_ordre": numero_ordre,
