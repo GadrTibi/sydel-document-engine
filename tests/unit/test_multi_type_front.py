@@ -2222,6 +2222,84 @@ def test_selas_cession_genere_acte_et_compromis_ensemble() -> None:
     assert "DOC-009" in codes_med and "DOC-010" in codes_med  # acte + compromis medical
 
 
+def test_selas_cession_generate_dossier_emits_all_cession_files(tmp_path: Path) -> None:
+    # TACHE A (cablage cession SELAS) : PREUVE de bout en bout que generate_dossier
+    # SELAS EMET reellement les documents de cession quand les contextes sont saisis.
+    # Avant le cablage, le dossier levait « document est obligatoire pour
+    # CODE-CESSION-CAB-001 » (acte/compromis/bail sans `document=`) et n'emettait
+    # JAMAIS DOC-031/032/033 (scm_cession.variante_structure='selarl' != 'SELAS' ->
+    # plan menteur). On reutilise les fixtures cession SELARL VALIDES (memes
+    # generateurs) comme le ferait le sous-formulaire partage.
+    from sydel_doc_engine.front_app import selas_multi_slice as sms
+    from sydel_doc_engine.scenarios.selarl import (
+        PROFESSION_MEDECIN,
+        cession_fixture_for_profession,
+        scm_cession_fixture,
+    )
+
+    cession, bail = cession_fixture_for_profession(PROFESSION_MEDECIN)
+    scm = scm_cession_fixture()
+    # La fixture SCM SELARL porte variante_structure='selarl' ; on PROUVE que le
+    # cablage SELAS la realigne (build_generation_context normalise -> 'selas').
+    assert scm.variante_structure == "selarl"
+    # O24-11 : le modele SCM n'a qu'UN placeholder situation_maritale ; le front y
+    # injecte le libelle COMPLET ACCENTUE (statut genre + « sous le régime de » +
+    # regime). On simule cette injection (ce que fait _scm_cedant_situation_maritale_display).
+    scm.cedant.situation_maritale = "marié sous le régime de la communauté légale"
+
+    payload = {
+        **_selas_payload(),
+        "cession_context": cession,
+        "bail_context": bail,
+        "scm_cession_context": scm,
+    }
+
+    plan = sms.build_selas_plan(payload)
+    assert plan.can_generate is True, plan.reason
+    # Le plan ANNONCE bien les codes de cession (cabinet medical acte+compromis,
+    # bail, SCM DOC-031/032/033).
+    for code in ("DOC-009", "DOC-010", "DOC-007", "DOC-031", "DOC-032", "DOC-033"):
+        assert code in plan.document_codes, f"{code} absent du plan SELAS"
+
+    generated = sms.generate_dossier(payload, tmp_path / "selas-cession")
+    names = {path.name for path in generated.docx_paths}
+    # PREUVE : tous les fichiers de cession sont EMIS (plus de plan menteur, plus de
+    # crash « document est obligatoire »).
+    expected_cession_files = {
+        "acte_cession_cabinet_medical.docx",
+        "compromis_cession_cabinet_medical.docx",
+        "avenant_contrat_bail.docx",
+        "pv_age_cession_parts_scm.docx",
+        "courrier_sde_cession_scm.docx",
+        "acte_cession_parts_scm.docx",
+    }
+    missing = expected_cession_files - names
+    assert not missing, f"Fichiers de cession SELAS manquants : {sorted(missing)}"
+
+    # O24-11 : l'acte SCM emis affiche « marié sous le régime de <regime> avec
+    # <conjoint> » ACCENTUE (le generateur ajoute « avec <conjoint> » via mentions_conjoint).
+    acte_scm = next(p for p in generated.docx_paths if p.name == "acte_cession_parts_scm.docx")
+    texte = _docx_text(acte_scm)
+    assert "marié sous le régime de la communauté légale avec" in texte, (
+        "L'acte SCM doit afficher la situation matrimoniale accentuee + conjoint (O24-11)."
+    )
+
+
+def test_selas_cession_normalise_variante_structure_scm() -> None:
+    # TACHE A : build_generation_context realigne scm_cession.variante_structure sur
+    # la structure du dossier ('selas'), sinon l'orchestrateur n'emet pas la cession
+    # SCM (service._scm_cession_enabled) et le generateur SCM leve.
+    from sydel_doc_engine.front_app import selas_multi_slice as sms
+    from sydel_doc_engine.scenarios.selarl import scm_cession_fixture
+
+    scm = scm_cession_fixture()
+    assert scm.variante_structure == "selarl"
+    payload = {**_selas_payload(), "scm_cession_context": scm}
+    ctx = sms.build_generation_context(payload)
+    assert ctx.scm_cession is not None
+    assert ctx.scm_cession.variante_structure == "selas"
+
+
 def test_selas_cession_vendeur_selectionnable(tmp_path: Path, monkeypatch) -> None:
     # #11 (onglet 24) : en SELAS, un menu permet de choisir le vendeur du cabinet
     # parmi les associes ; le wording « associe unique » disparait.

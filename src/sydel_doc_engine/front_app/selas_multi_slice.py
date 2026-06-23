@@ -30,7 +30,9 @@ from sydel_doc_engine.domain.models import (
     Company,
     DecisionContext,
     DirigeantNomine,
+    DocumentContext,
     DocumentGenerationContext,
+    DocumentSignataire,
     Domiciliation,
     DossierOptions,
     Person,
@@ -86,6 +88,13 @@ from sydel_doc_engine.orchestrator.service import (
 STRUCTURE = "SELAS"
 DOC_CODE = "DOC-044"
 PREFIX = "selas"
+
+# Nombre de pages (en lettres) par defaut de l'acte de cession de cabinet, requis
+# par le generateur cession_cabinets_common (_required_document). Valeur IDENTIQUE
+# au gold SELARL (selarl_slice.CESSION_DOCUMENT_PAGES_LETTRES_DEFAUT = "vingt") :
+# la SELAS reutilise les memes generateurs de cession -> meme defaut. Locale (pas
+# d'import inter-slice) pour garder la slice SELAS autonome.
+CESSION_DOCUMENT_PAGES_LETTRES_DEFAUT = "vingt"
 
 # Bornes du repeater SELAS (A1 : nommees, AUCUN changement de valeur). Alignees
 # sur le generateur statuts_selas_multi (2 a 5 associes exercants / non exercants).
@@ -1479,6 +1488,20 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
     _cession_ctx = payload.get("cession_context")
     if _cession_ctx is not None and getattr(_cession_ctx, "acquereur", None) is not None:
         _cession_ctx.acquereur.forme_sociale = "SELAS"
+    # CABLAGE cession SCM (TACHE A) : le sous-formulaire SCM est REUTILISE de la
+    # SELARL (scm_cession_fixture porte variante_structure='selarl'). Or
+    # l'orchestrateur n'emet DOC-031/032/033 que si
+    # scm_cession.variante_structure == structure du dossier
+    # (service._scm_cession_enabled), et le generateur SCM LEVE si la variante ne
+    # correspond pas (scm_cession_common.validate_scm_cession_enabled). Sur un
+    # dossier SELAS, la variante DOIT donc valoir 'selas', sinon build_selas_plan
+    # ANNONCE la cession SCM mais generate_dossier ne l'emet jamais (plan menteur).
+    # On aligne la variante sur la structure du dossier — comme la post-correction
+    # acquereur=SELAS ci-dessus. Normalise ici (pas dans le rendu du formulaire)
+    # pour couvrir TOUTE source de payload (UI, fixtures, appels directs).
+    _scm_ctx = payload.get("scm_cession_context")
+    if _scm_ctx is not None and getattr(_scm_ctx, "variante_structure", None) is not None:
+        _scm_ctx.variante_structure = "selas"
     return DocumentGenerationContext(
         structure="SELAS",
         dossier_options=DossierOptions(
@@ -1490,6 +1513,24 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         cession=payload.get("cession_context"),
         bail=payload.get("bail_context"),
         scm_cession=payload.get("scm_cession_context"),
+        # CABLAGE cession (TACHE A) : les generateurs de cession de cabinet
+        # (cession_cabinets_common._required_document) ET d'avenant de bail
+        # (avenant_contrat_bail._required_document_context) exigent un `document`
+        # non nul. Sans lui, le dossier SELAS levait « document est obligatoire
+        # pour CODE-CESSION-CAB-001 » et ne generait AUCUN doc de cession. On
+        # alimente le contexte comme le gold SELARL (selarl_slice:685) : nombre de
+        # pages en lettres SEULEMENT si une cession cabinet est demandee (sinon
+        # None, comme la SELARL), exemplaires « quatre » (parite signature SELAS),
+        # signataire = le president. Aucun contenu juridique nouveau (echo fidele).
+        document=DocumentContext(
+            nombre_exemplaires_lettres="quatre",
+            nombre_pages_lettres=(
+                CESSION_DOCUMENT_PAGES_LETTRES_DEFAUT
+                if payload.get("cession_context") is not None
+                else None
+            ),
+            signataire=DocumentSignataire(prenom=prenom, nom=nom),
+        ),
         personne_signataire=signataire,
         conjoint=(
             _conjoint_person(regime_payload, conjoint_foyer)
