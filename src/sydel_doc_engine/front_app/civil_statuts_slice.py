@@ -50,6 +50,9 @@ from sydel_doc_engine.domain.models import (
     StatutsCivilsGroupeParts,
 )
 from sydel_doc_engine.front_app import common_creation as cc
+from sydel_doc_engine.front_app.address_oneline import (
+    parse_address_full as _parse_address_full,
+)
 from sydel_doc_engine.front_app.associe_repeater import RepeaterConfig, render_associe_repeater
 from sydel_doc_engine.front_app.field_derivations import (
     accentuate_french_months,
@@ -204,13 +207,18 @@ def render_civil_form(structure: str) -> dict[str, object]:
     # on ne seede pas exercice_debut/fin (difference justifiee).
     seed_closing_date(prefix, field="date_cloture_premier_exercice")
     # RAF-003a : si « siege = adresse perso » coche, recopier l'adresse du gerant
-    # (memorisee au run precedent sous des cles stables) dans le siege AVANT ses
-    # widgets (cross-rerun : le gerant est designe dans le repeater, apres le siege).
+    # (memorisee au run precedent sous des cles stables) dans le siege AVANT son
+    # widget (cross-rerun : le gerant est designe dans le repeater, apres le siege).
+    # O24-03 : le siege est desormais UN champ une-ligne (`{prefix}_siege_adresse`)
+    # -> on recompose la ligne « N° voie, CP Ville » a partir des composants memorises.
     if st.session_state.get(f"{prefix}_siege_same_as_perso"):
-        for _f in ("num", "voie", "cp", "ville"):
-            _src = st.session_state.get(f"{prefix}_gerant_adresse_{_f}")
-            if _src:
-                st.session_state[f"{prefix}_siege_{_f}"] = _src
+        _g = {
+            _f: str(st.session_state.get(f"{prefix}_gerant_adresse_{_f}") or "")
+            for _f in ("num", "voie", "cp", "ville")
+        }
+        if any(_g.values()):
+            _ligne = f"{_g['num']} {_g['voie']}, {_g['cp']} {_g['ville']}".strip(" ,")
+            st.session_state[f"{prefix}_siege_adresse"] = _ligne
 
     # Forme sociale (libelle) : DERIVEE de la structure, plus saisie (§18.1).
     forme_sociale = civil_forme_sociale(structure)
@@ -244,11 +252,14 @@ def render_civil_form(structure: str) -> dict[str, object]:
 
     st.markdown("Siege social")
     siege_same_as_perso_checkbox(prefix)
-    col_g, col_h, col_i, col_j = st.columns(4)
-    siege_num = _text(col_g, prefix, "siege_num", "No")
-    siege_voie = _text(col_h, prefix, "siege_voie", "Voie")
-    siege_cp = _text(col_i, prefix, "siege_cp", "CP")
-    siege_ville = _text(col_j, prefix, "siege_ville", "Ville")
+    # O24-03 (onglet 24) : siege sur UNE ligne (parse interne -> num/voie/cp/ville
+    # exiges par la domiciliation [num_voie_siege], la DNC et les statuts civils).
+    siege_ligne = _text(st, prefix, "siege_adresse", "Adresse du siège (N° et voie, CP Ville)")
+    _siege_struct = _parse_address_full(siege_ligne)
+    siege_num = _siege_struct.num_voie if _siege_struct else ""
+    siege_voie = _siege_struct.voie if _siege_struct else ""
+    siege_cp = _siege_struct.cp if _siege_struct else ""
+    siege_ville = _siege_struct.ville if _siege_struct else ""
     ville_rcs = _text(st, prefix, "ville_rcs", "RCS (ville)")
 
     st.markdown("Depot des fonds")

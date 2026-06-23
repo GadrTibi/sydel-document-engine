@@ -214,9 +214,9 @@ def _scm_associe_prefill_values(
 ) -> dict[str, object]:
     """Cles session_state d'un associe SCM (personne physique) pour le prefill."""
     p = f"scm_associe_{index}"
-    # Adresse structuree (§18.5) + nationalite deroulant (cle _choice) + plus de
-    # parts debut/fin (derivation cumulative). Profession conservee (SCM, §18.6).
-    num, voie, cp, ville_adr = _split_demo_address(adresse)
+    # Adresse perso sur UNE ligne (O24-03 : plus de num/voie/cp/ville separes ; le
+    # slice reparse en interne). Nationalite deroulant (cle _choice) ; plus de parts
+    # debut/fin (derivation cumulative). Profession conservee (SCM, §18.6).
     return {
         f"{p}_type": "personne_physique",
         f"{p}_civilite": civilite,
@@ -228,10 +228,7 @@ def _scm_associe_prefill_values(
         f"{p}_nationalite_choice": "Française",
         f"{p}_situation_maritale": "celibataire",
         f"{p}_profession": "Medecin",
-        f"{p}_adresse_num": num,
-        f"{p}_adresse_voie": voie,
-        f"{p}_adresse_cp": cp,
-        f"{p}_adresse_ville": ville_adr,
+        f"{p}_adresse": adresse,
         f"{p}_apport_montant": apport,
         f"{p}_nb_titres": nb,
     }
@@ -246,10 +243,8 @@ def _prefill_scm_test_data() -> None:
         "scm_denomination": "SCM DES DOCTEURS EXEMPLE",
         "scm_capital_social": 1000,
         "scm_nb_parts_total": 100,
-        "scm_siege_num": "10",
-        "scm_siege_voie": "rue de la Paix",
-        "scm_siege_cp": "75002",
-        "scm_siege_ville": "Paris",
+        # O24-03 : siege sur UNE ligne (plus de num/voie/cp/ville separes).
+        "scm_siege_adresse": "10 rue de la Paix, 75002 Paris",
         "scm_ville_rcs": "Paris",
         "scm_banque_nom": "BANQUE EXEMPLE",
         "scm_banque_adresse": "1 rue Banque, 75009 Paris",
@@ -359,10 +354,8 @@ def _civil_society_prefill(
         f"{prefix}_denomination": denomination,
         f"{prefix}_capital_social": 1000,
         f"{prefix}_nb_parts_total": 100,
-        f"{prefix}_siege_num": "10",
-        f"{prefix}_siege_voie": "rue de la Paix",
-        f"{prefix}_siege_cp": "75002",
-        f"{prefix}_siege_ville": "Paris",
+        # O24-03 : siege sur UNE ligne (plus de num/voie/cp/ville separes).
+        f"{prefix}_siege_adresse": "10 rue de la Paix, 75002 Paris",
         f"{prefix}_ville_rcs": "Paris",
         f"{prefix}_banque_nom": "BANQUE EXEMPLE",
         f"{prefix}_banque_adresse": "1 rue Banque, 75009 Paris",
@@ -392,10 +385,9 @@ def _civil_pp_associe_prefill(
     role: str | None = None,
 ) -> dict[str, object]:
     p = f"{prefix}_associe_{index}"
-    # Adresse personnelle STRUCTUREE (§18.5) : on derive num/voie/cp/ville depuis
-    # l'adresse fictive « 1 rue Exemple, 75000 Paris ». parts debut/fin ne sont plus
-    # saisis (derivation cumulative). Nationalite = deroulant (cle _choice).
-    num, voie, cp, ville_adr = _split_demo_address(adresse)
+    # Adresse perso sur UNE ligne (O24-03 : plus de num/voie/cp/ville separes ; le
+    # slice reparse en interne). parts debut/fin ne sont plus saisis (derivation
+    # cumulative). Nationalite = deroulant (cle _choice).
     values: dict[str, object] = {
         f"{p}_type": "personne_physique",
         f"{p}_civilite": civilite,
@@ -407,30 +399,13 @@ def _civil_pp_associe_prefill(
         f"{p}_nationalite_choice": "Française",
         f"{p}_situation_maritale": "celibataire",
         f"{p}_profession": "Medecin",
-        f"{p}_adresse_num": num,
-        f"{p}_adresse_voie": voie,
-        f"{p}_adresse_cp": cp,
-        f"{p}_adresse_ville": ville_adr,
+        f"{p}_adresse": adresse,
         f"{p}_apport_montant": apport,
         f"{p}_nb_titres": nb,
     }
     if role is not None:
         values[f"{p}_role"] = role
     return values
-
-
-def _split_demo_address(adresse: str) -> tuple[str, str, str, str]:
-    """Eclate « 1 rue Exemple, 75000 Paris » en (num, voie, cp, ville) pour le prefill.
-
-    Donnees fictives uniquement (bouton « donnees de test »). Best-effort : ce qui
-    ne se parse pas tombe en voie/ville pour rester non bloquant.
-    """
-    rue_part, _, loc_part = adresse.partition(",")
-    rue_part = rue_part.strip()
-    loc_part = loc_part.strip()
-    num, _, voie = rue_part.partition(" ")
-    cp, _, ville = loc_part.partition(" ")
-    return num.strip(), voie.strip(), cp.strip(), ville.strip()
 
 
 def _civil_pm_associe_prefill(
@@ -579,11 +554,8 @@ def _prefill_sas_test_data() -> None:
     """SAS (SPFPL medecins) de creation fictive — actionnaire unique masculin (V1)."""
     values: dict[str, object] = {
         "sas_denomination": "SPFPL MARTIN",
+        # O24-03 : siege sur UNE ligne (le slice reparse num/voie/cp/ville).
         "sas_siege": "10 rue de la Paix, 75002 Paris",
-        "sas_siege_num": "10",
-        "sas_siege_voie": "rue de la Paix",
-        "sas_siege_cp": "75002",
-        "sas_siege_ville": "Paris",
         "sas_capital_social": 12000,
         "sas_nb_actions_total": 120,
         "sas_valeur_nominale_action": "100",
@@ -600,11 +572,8 @@ def _prefill_sas_test_data() -> None:
         "sas_departement_naissance": "75",
         "sas_nationalite_choice": "Française",
         "sas_regime_matrimonial": "la communaute legale",
+        # O24-03 : adresse perso sur UNE ligne (le slice reparse num/voie/cp/ville).
         "sas_adresse": "5 rue Royale, 75008 Paris",
-        "sas_adresse_num": "5",
-        "sas_adresse_voie": "rue Royale",
-        "sas_adresse_cp": "75008",
-        "sas_adresse_ville": "Paris",
         "sas_nom_pere": "Pierre Martin",
         "sas_nom_mere": "Anne Martin",
         "sas_conjoint_civilite": "Madame",
@@ -633,11 +602,8 @@ def _spfpl_prefill_values(prefix: str) -> dict[str, object]:
     """Dossier SPFPL de creation fictif (associe unique medecin), prefixe par parcours."""
     return {
         f"{prefix}_denomination": "SPFPL MARTIN",
+        # O24-03 : siege sur UNE ligne (le slice reparse num/voie/cp/ville).
         f"{prefix}_siege": "10 rue de la Paix, 75002 Paris",
-        f"{prefix}_siege_num": "10",
-        f"{prefix}_siege_voie": "rue de la Paix",
-        f"{prefix}_siege_cp": "75002",
-        f"{prefix}_siege_ville": "Paris",
         f"{prefix}_capital_social": 60000,
         # Nombre d'actions VARIABLE (defaut 600) ; la valeur nominale est calculee
         # (60000 / 600 = 100) et affichee en lecture seule, plus de saisie libre.
@@ -655,11 +621,8 @@ def _spfpl_prefill_values(prefix: str) -> dict[str, object]:
         f"{prefix}_departement_naissance": "75",
         f"{prefix}_nationalite_choice": "Française",
         f"{prefix}_regime_matrimonial": "la communaute legale",
+        # O24-03 : adresse perso sur UNE ligne (le slice reparse num/voie/cp/ville).
         f"{prefix}_adresse": "5 rue Royale, 75008 Paris",
-        f"{prefix}_adresse_num": "5",
-        f"{prefix}_adresse_voie": "rue Royale",
-        f"{prefix}_adresse_cp": "75008",
-        f"{prefix}_adresse_ville": "Paris",
         f"{prefix}_nom_pere": "Pierre Martin",
         f"{prefix}_nom_mere": "Anne Martin",
         f"{prefix}_conjoint_civilite": "Madame",

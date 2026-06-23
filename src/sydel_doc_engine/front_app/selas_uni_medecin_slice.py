@@ -44,6 +44,9 @@ from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import DocumentGenerationContext, SpfplConjoint
 from sydel_doc_engine.front_app import common_creation as cc
 from sydel_doc_engine.front_app import selarl_slice
+from sydel_doc_engine.front_app.address_oneline import (
+    parse_address_full as _parse_address_full,
+)
 from sydel_doc_engine.front_app.associe_repeater import render_nationalite_selectbox
 from sydel_doc_engine.front_app.field_derivations import (
     DEFAULT_TITRE_AFFICHAGE,
@@ -165,13 +168,15 @@ def render_selas_uni_medecin_form() -> dict[str, object]:
     ville_rcs = _t(col_f, "ville_rcs", "RCS (ville)")
     lieu_exercice = _t(col_g, "lieu_exercice_adresse", "Adresse du lieu d'exercice")
 
-    st.caption("Siege social (adresse structuree)")
+    # O24-03 : siege sur UNE ligne (parse interne -> num/voie/cp/ville exiges par la
+    # domiciliation [num_voie_siege] et la procuration).
     siege_same_as_perso_checkbox(PREFIX)
-    col_sa, col_sb, col_sc, col_sd = st.columns(4)
-    siege_num = _t(col_sa, "siege_num", "No")
-    siege_voie = _t(col_sb, "siege_voie", "Voie")
-    siege_cp = _t(col_sc, "siege_cp", "CP")
-    siege_ville = _t(col_sd, "siege_ville", "Ville")
+    siege_ligne = _t(st, "siege", "Adresse du siège (N° et voie, CP Ville)")
+    _siege_struct = _parse_address_full(siege_ligne)
+    siege_num = _siege_struct.num_voie if _siege_struct else ""
+    siege_voie = _siege_struct.voie if _siege_struct else ""
+    siege_cp = _siege_struct.cp if _siege_struct else ""
+    siege_ville = _siege_struct.ville if _siege_struct else ""
     # Parite gold : lieu de signature pre-rempli = ville du siege (anti double-saisie).
     seed_signature_lieu(PREFIX, siege_ville)
 
@@ -208,12 +213,14 @@ def render_selas_uni_medecin_form() -> dict[str, object]:
     nationalite = render_nationalite_selectbox(PREFIX, container=col_s)
     titre_affichage = _t(col_t, "titre_affichage", "Titre (ex: Docteur)") or DEFAULT_TITRE_AFFICHAGE
 
-    st.caption("Adresse personnelle (structuree)")
-    col_u, col_v, col_w, col_x = st.columns(4)
-    adresse_num = _t(col_u, "adresse_num", "No")
-    adresse_voie = _t(col_v, "adresse_voie", "Voie")
-    adresse_cp = _t(col_w, "adresse_cp", "CP")
-    adresse_ville = _t(col_x, "adresse_ville", "Ville")
+    # O24-03 : adresse personnelle sur UNE ligne (parse interne -> num/voie/cp/ville
+    # exiges par la DNC du president).
+    adresse_ligne = _t(st, "adresse", "Adresse personnelle (N° et voie, CP Ville)")
+    _adresse_struct = _parse_address_full(adresse_ligne)
+    adresse_num = _adresse_struct.num_voie if _adresse_struct else ""
+    adresse_voie = _adresse_struct.voie if _adresse_struct else ""
+    adresse_cp = _adresse_struct.cp if _adresse_struct else ""
+    adresse_ville = _adresse_struct.ville if _adresse_struct else ""
 
     st.caption("Situation matrimoniale (clause des statuts)")
     col_sm, col_rm = st.columns(2)

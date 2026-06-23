@@ -1842,10 +1842,8 @@ def test_front_routes_to_sci_slice_and_generates(tmp_path: Path, monkeypatch) ->
     # (§18.3), lieu signature = ville siege (§18.4) : ces champs ne sont plus saisis.
     society = {
         "sci_denomination": "SCI EXEMPLE",
-        "sci_siege_num": "10",
-        "sci_siege_voie": "rue de la Paix",
-        "sci_siege_cp": "75002",
-        "sci_siege_ville": "Paris",
+        # O24-03 : siege sur UNE ligne (plus de champs No/Voie/CP/Ville separes).
+        "sci_siege_adresse": "10 rue de la Paix, 75002 Paris",
         "sci_ville_rcs": "Paris",
         "sci_banque_nom": "BANQUE",
         "sci_banque_adresse": "1 rue Banque, 75009 Paris",
@@ -1872,10 +1870,8 @@ def test_front_routes_to_sci_slice_and_generates(tmp_path: Path, monkeypatch) ->
         "sci_associe_0_ville_naissance": "Paris",
         "sci_associe_0_departement_naissance": "75",
         "sci_associe_0_situation_maritale": "celibataire",
-        "sci_associe_0_adresse_num": "1",
-        "sci_associe_0_adresse_voie": "rue Exemple",
-        "sci_associe_0_adresse_cp": "75000",
-        "sci_associe_0_adresse_ville": "Paris",
+        # O24-03 : adresse personnelle sur UNE ligne.
+        "sci_associe_0_adresse": "1 rue Exemple, 75000 Paris",
         "sci_associe_0_apport_montant": "400",
         # DNC du gerant (associe 0, coche « Dirigeant » par defaut) saisie sous lui.
         "sci_associe_0_sig_nom_pere": "Pierre Durand",
@@ -1886,10 +1882,8 @@ def test_front_routes_to_sci_slice_and_generates(tmp_path: Path, monkeypatch) ->
         "sci_associe_1_ville_naissance": "Lyon",
         "sci_associe_1_departement_naissance": "69",
         "sci_associe_1_situation_maritale": "celibataire",
-        "sci_associe_1_adresse_num": "2",
-        "sci_associe_1_adresse_voie": "rue Exemple",
-        "sci_associe_1_adresse_cp": "69000",
-        "sci_associe_1_adresse_ville": "Lyon",
+        # O24-03 : adresse personnelle sur UNE ligne.
+        "sci_associe_1_adresse": "2 rue Exemple, 69000 Lyon",
         "sci_associe_1_apport_montant": "600",
     }
     for key, value in associes_text.items():
@@ -2174,6 +2168,62 @@ def test_selas_adresses_sur_une_ligne(tmp_path: Path, monkeypatch) -> None:
     assert "selas_ordre_adresse" in keys
     assert "selas_ordre_cp" not in keys
     assert "selas_ordre_ville" not in keys
+
+
+@pytest.mark.parametrize(
+    "label, prefix, has_siege, perso_keys",
+    [
+        # O24-03 (propagation Q4) : siege + adresse perso sur UNE ligne pour TOUS les
+        # types restants (civils via repeater partage, SAS double-saisie, SPFPL).
+        ("SCI creation V1", "sci", True, ("sci_associe_0_adresse",)),
+        ("SCM creation V1", "scm", True, ("scm_associe_0_adresse",)),
+        ("SPFPL medecins (forme SAS) creation V1", "sas", True, ("sas_adresse",)),
+        (
+            "SPFPL dentistes - cession creation V1",
+            "spfpl_cession",
+            True,
+            ("spfpl_cession_adresse",),
+        ),
+    ],
+)
+def test_o24_03_adresses_une_ligne_par_type(
+    tmp_path: Path, monkeypatch, label: str, prefix: str, has_siege: bool, perso_keys
+) -> None:
+    """O24-03 : plus AUCUN champ separe No/Voie/CP/Ville (siege ni perso) ; un champ
+    une-ligne a la place. Verifie les cles de widget apres « donnees de test », puis
+    que la generation reste propre (DOCX sans token residuel)."""
+    from streamlit.testing.v1 import AppTest
+
+    from sydel_doc_engine.front_app import shell
+
+    monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / f"ui-{prefix}")
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
+    app.selectbox(key="clean_dossier_type").set_value(label)
+    app = app.run(timeout=180)
+    next(b for b in app.button if "test_data" in str(b.key)).click()
+    app = app.run(timeout=180)
+
+    keys = {str(w.key) for w in app.text_input}
+    # siege sur UNE ligne (civils : « {prefix}_siege_adresse » ; SAS/SPFPL : « {prefix}_siege »),
+    # aucune cle de composant separee
+    if has_siege:
+        assert f"{prefix}_siege_adresse" in keys or f"{prefix}_siege" in keys
+        for comp in ("siege_num", "siege_voie", "siege_cp", "siege_ville"):
+            assert f"{prefix}_{comp}" not in keys, f"{prefix}_{comp} doit avoir disparu (O24-03)"
+    # adresse personnelle sur UNE ligne, aucune cle de composant separee
+    for pk in perso_keys:
+        assert pk in keys, f"{pk} (champ une-ligne) doit exister"
+        base = pk[: -len("_adresse")]  # ex. « sas » ou « sci_associe_0 »
+        for comp in ("adresse_num", "adresse_voie", "adresse_cp", "adresse_ville"):
+            stray = f"{base}_{comp}"
+            assert stray not in keys, f"{stray} doit avoir disparu (O24-03)"
+
+    # La generation doit rester possible et propre (bouton actif, pas de blocage).
+    generate_button = next(
+        b for b in app.button if str(b.key) == "clean_typed_generate_dossier"
+    )
+    assert generate_button.disabled is False
+    assert not any("Blocage" in item.value for item in app.caption)
 
 
 def test_parse_address_full_tolere_formes_usuelles() -> None:

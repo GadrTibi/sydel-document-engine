@@ -24,6 +24,9 @@ from sydel_doc_engine.domain.models import (
     StatutsCivilsParts,
     StatutsCivilsRepresentant,
 )
+from sydel_doc_engine.front_app.address_oneline import (
+    parse_address_full as _parse_address_full,
+)
 from sydel_doc_engine.front_app.field_derivations import (
     NATIONALITY_PRESETS,
     derive_gender_from_civilite,
@@ -215,12 +218,24 @@ def _parts_block(
     return apport, parts, nb_titres
 
 
-def _compose_address_display(num: str, voie: str, cp: str, ville: str) -> str:
-    """Compose « 10 rue de la Paix, 75002 Paris » a partir des champs structures."""
-    rue = f"{num} {voie}".strip()
-    loc = f"{cp} {ville}".strip()
-    parts = [p for p in (rue, loc) if p]
-    return ", ".join(parts)
+def _oneline_address(
+    prefix: str, field: str, label: str, *, container=st
+) -> Address | None:
+    """O24-03 : UN champ texte d'adresse (« 10 rue de la Paix, 75002 Paris »).
+
+    Remplace les 4 colonnes No/Voie/CP/Ville. Le verbatim client O24-03 exige UNE
+    ligne. Les consommateurs en aval (DNC du gerant via signataire_adresse_*, seed
+    « siege = adresse perso ») lisent encore les cles de session
+    `{prefix}_{field}_num/voie/cp/ville` -> on les RE-ECRIT a partir du parse (parite
+    avec l'ancien comportement, generateurs inchanges). Renvoie l'Address ou None.
+    """
+    raw = _text(prefix, field, label, container=container)
+    struct = _parse_address_full(raw)
+    st.session_state[f"{prefix}_{field}_num"] = struct.num_voie if struct else ""
+    st.session_state[f"{prefix}_{field}_voie"] = struct.voie if struct else ""
+    st.session_state[f"{prefix}_{field}_cp"] = struct.cp if struct else ""
+    st.session_state[f"{prefix}_{field}_ville"] = struct.ville if struct else ""
+    return struct
 
 
 def _render_dirigeant_civil(prefix: str, index: int) -> None:
@@ -271,28 +286,14 @@ def _render_personne_physique(
     profession = _text(prefix, "profession", "Profession") if config.collect_profession else ""
 
     # Adresse personnelle STRUCTUREE (§18.5) : une seule adresse par associe, reprise
-    # telle quelle pour la DNC du gerant (plus de bloc adresse separe). Le display
-    # affichee alimente les statuts, les champs num/voie/cp/ville la DNC.
-    st.caption("Adresse personnelle")
-    col_an, col_av, col_ac, col_al = st.columns(4)
-    adresse_num = _text(prefix, "adresse_num", "No", container=col_an)
-    adresse_voie = _text(prefix, "adresse_voie", "Voie", container=col_av)
-    adresse_cp = _text(prefix, "adresse_cp", "CP", container=col_ac)
-    adresse_ville = _text(prefix, "adresse_ville", "Ville", container=col_al)
-    adresse_affichee = _compose_address_display(
-        adresse_num, adresse_voie, adresse_cp, adresse_ville
+    # telle quelle pour la DNC du gerant. O24-03 : saisie sur UNE LIGNE (parse interne
+    # -> num/voie/cp/ville exiges par la DNC et le seed « siege = adresse perso » qui
+    # lisent encore les cles de session adresse_num/voie/cp/ville).
+    st.caption("Adresse personnelle (N° et voie, CP Ville)")
+    adresse_perso = _oneline_address(
+        prefix, "adresse", "Adresse personnelle (N° et voie, CP Ville)"
     )
-    adresse_perso = (
-        Address(
-            num_voie=adresse_num,
-            voie=adresse_voie,
-            cp=adresse_cp,
-            ville=adresse_ville,
-            adresse_affichee=adresse_affichee,
-        )
-        if adresse_affichee
-        else None
-    )
+    adresse_affichee = adresse_perso.adresse_affichee if adresse_perso else ""
 
     apport, parts, _nb = _parts_block(config, prefix, role_statutaire)
 

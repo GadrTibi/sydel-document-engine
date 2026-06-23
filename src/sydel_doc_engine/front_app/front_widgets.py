@@ -111,14 +111,23 @@ def seed_siege_from_perso(
     *,
     perso_fields: tuple[str, ...] = ("adresse_num", "adresse_voie", "adresse_cp", "adresse_ville"),
     siege_fields: tuple[str, ...] = ("siege_num", "siege_voie", "siege_cp", "siege_ville"),
+    perso_oneline: str = "adresse",
+    siege_oneline: str = "siege",
 ) -> None:
     """Si la case « siege = adresse perso » (cle {prefix}_siege_same_as_perso) est
-    cochee, recopie l'adresse personnelle (cles {prefix}_{perso_field}) dans les
-    champs siege ({prefix}_{siege_field}). Parite gold (shell.py:1453-1470) pour les
-    types MONO-associe (source fixe). A appeler EN HAUT du render, avant les widgets
-    siege (cross-rerun : l'adresse perso peut etre saisie apres le siege)."""
+    cochee, recopie l'adresse personnelle dans le siege. Parite gold (shell.py:1453-1470)
+    pour les types MONO-associe (source fixe). A appeler EN HAUT du render, avant les
+    widgets siege (cross-rerun : l'adresse perso peut etre saisie apres le siege).
+
+    O24-03 : siege et adresse perso sont desormais des champs UNE LIGNE -> on recopie le
+    champ une-ligne `{prefix}_{perso_oneline}` -> `{prefix}_{siege_oneline}`. La recopie
+    legacy des composants ({prefix}_{*_num/voie/cp/ville}) est conservee en best-effort
+    pour les formulaires qui exposent encore des composants."""
     if not st.session_state.get(f"{prefix}_siege_same_as_perso"):
         return
+    src_line = st.session_state.get(f"{prefix}_{perso_oneline}")
+    if src_line:
+        st.session_state[f"{prefix}_{siege_oneline}"] = src_line
     for pf, sf in zip(perso_fields, siege_fields, strict=True):
         src = st.session_state.get(f"{prefix}_{pf}")
         if src:
