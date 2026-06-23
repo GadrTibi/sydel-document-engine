@@ -46,6 +46,9 @@ from sydel_doc_engine.domain.models import (
     StatutsSelasMultiPresident,
 )
 from sydel_doc_engine.front_app import common_creation as cc
+from sydel_doc_engine.front_app.address_oneline import (
+    parse_address_full as _parse_address_full,
+)
 from sydel_doc_engine.front_app.associe_repeater import render_nationalite_selectbox
 from sydel_doc_engine.front_app.field_derivations import (
     DEFAULT_MANDATAIRE_NOM,
@@ -959,62 +962,10 @@ def _render_conjoint_si_communaute(
     )
 
 
-_CP_RE = re.compile(r"\b(\d{5})\b")
-
-
-def _parse_address_full(text: str) -> Address | None:
-    """Parse une adresse saisie sur UNE LIGNE -> Address structuree complete.
-
-    O24-03 (onglet 24) : « Toutes les adresses doivent etre redigees sur une ligne, pas
-    de champ separe pour la rue, la voie, etc.. » La saisie reste UNE ligne mais les
-    generateurs (DOC-001 DNC, domiciliation via [num_voie_siege], regime communautaire,
-    ordre) exigent num_voie/voie/cp/ville separes -> on parse en interne.
-
-    Robustesse (re-Akainu 2026-06-23, MAJEUR O24-03) : le code postal francais fait
-    EXACTEMENT 5 chiffres et clot la chaine (CP + ville en fin). On retient donc le
-    DERNIER groupe de 5 chiffres comme CP, ce qui immunise les voies contenant une
-    annee (« avenue du 8 Mai 1945 » : 1945 = 4 chiffres, jamais pris pour un CP ;
-    « rue du 11 Novembre 1918 » idem). num_voie/voie = tout ce qui precede le CP,
-    ville = tout ce qui suit. Le suffixe bis/ter/quater est detache du numero, en
-    minuscules OU majuscules. Exemples acceptes :
-      « 12 rue de la Paix, 75001 Paris »   « 12, rue de la Paix, 75001 Paris »
-      « 12 rue de la Paix 75001 Paris »    « 10 avenue du 8 Mai 1945, 33700 Merignac »
-      « 12 BIS rue de la Paix 75001 Paris » -> num_voie=« 12 BIS ».
-    -> num_voie/voie / cp=75001 / ville=Paris.
-
-    Validite : num_voie ET voie ET cp ET ville requis (sinon None -> la validation
-    « adresse requise » s'applique). Le numero de tete est REQUIS, en coherence avec
-    _validate_common_docs (siege_num / signataire_adresse_num obligatoires pour la
-    domiciliation et la DNC). Le cas « lieu-dit / place sans numero » est un arbitrage
-    metier en attente d'Albane (docs/review/QUESTIONS_RAFAEL.md) : tant qu'il n'est pas
-    tranche, on garde le comportement historique (numero requis) — pas d'extrapolation."""
-    raw = (text or "").strip()
-    if not raw:
-        return None
-    # CP francais = DERNIER groupe de 5 chiffres ; voie avant, ville apres.
-    cp_matches = list(_CP_RE.finditer(raw))
-    if not cp_matches:
-        return None
-    last = cp_matches[-1]
-    cp = last.group(1)
-    before = raw[: last.start()].strip().rstrip(",").strip()
-    ville = raw[last.end():].strip().lstrip(",").strip()
-    # Numero de tete detache de la voie, separateur espace OU virgule ; suffixe
-    # bis/ter/quater insensible a la casse (« 12 BIS » comme « 12 bis »).
-    m = re.match(r"(\d+\s*(?:bis|ter|quater|[a-z])?)[\s,]+(.*)", before, re.IGNORECASE)
-    if m:
-        num_voie, voie = m.group(1).strip(), m.group(2).strip()
-    else:
-        num_voie, voie = "", before
-    if not (num_voie and voie and cp and ville):
-        return None
-    return Address(
-        num_voie=num_voie,
-        voie=voie,
-        cp=cp,
-        ville=ville,
-        adresse_affichee=f"{num_voie} {voie}, {cp} {ville}",
-    )
+# O24-03 (propagation Q4) — le parser d'adresse une-ligne est extrait dans le golden
+# bloc partage `address_oneline` (appele par TOUS les types). Importe en tete sous l'alias
+# `_parse_address_full` ; les sites d'appel locaux (siege / ordre / adresse perso) restent
+# inchanges. Toute evolution du parsing se fait desormais dans address_oneline, une fois.
 
 
 def _morale(prefix: str, nb_actions: int, montant: str) -> StatutsCivilsAssocie:
