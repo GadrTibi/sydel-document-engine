@@ -6,10 +6,10 @@
 ```
 ┌─ SYDEL · RETOURS CLIENT — compteur de vitesse ──────────────────────────
 │
-│   CORRIGÉS  [████████████████░░░░░░░░]  7/10  ·  O24-01✅ 10✅ 14 03 05 07 · LIVE-03
-│   EN DÉFAUT (à corriger)  [███░░░░░░░░░░░░░░░░░░░░░]   3  ·  O24-11, O24-12, LIVE-02
+│   CORRIGÉS  [████████████████████████]  10/10 ·  tous les défauts Akainu corrigés
+│   re-Akainu OK ✅ : O24-01, O24-10   ·   batch re-Akainu (8 items) EN COURS
 │   VALIDÉ  (Rafael)     [░░░░░░░░░░░░░░░░░░░░░░░░]   0/21  ·   0%   ⚠ rien validé
-│   (✅ = Akainu re-vérifié RIEN À REDIRE ; les autres : corrigés, batch re-Akainu à venir)
+│   RESTE : propagation Q4 (adresses tous types) · O24-04 icône · L5/L6 clarif
 │
 │   ── ONGLET 24 (🔴 = défaut Akainu à corriger) ───────────────────────
 │   ✅ 01 annexe Sydel — Akainu RIEN À REDIRE   ✅ 02 DNC nommée/dirigeant
