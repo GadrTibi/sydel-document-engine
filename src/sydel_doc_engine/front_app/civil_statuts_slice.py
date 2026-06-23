@@ -375,10 +375,17 @@ def _render_common_docs_form(structure: str, prefix: str) -> dict[str, object]:
         col_i, col_j = st.columns(2)
         ordre_conseil = _text(col_i, prefix, "ordre_conseil", "Conseil departemental")
         ordre_dep = _text(col_j, prefix, "ordre_departement", "Departement ordre")
-        col_k, col_l, col_m = st.columns(3)
-        ordre_ligne = _text(col_k, prefix, "ordre_adresse_ligne_1", "Adresse ordre")
-        ordre_cp = _text(col_l, prefix, "ordre_cp", "CP ordre")
-        ordre_ville = _text(col_m, prefix, "ordre_ville", "Ville ordre")
+        # O24-03 : adresse de l'ordre sur UNE ligne (parse interne -> ligne_1/cp/ville),
+        # comme siege/perso/SELAS multi. Remplace les 3 champs separes ; alimente les
+        # MEMES cles -> generateur DOC-034 et gold byte-identique inchanges.
+        _ordre_struct = _parse_address_full(
+            _text(st, prefix, "ordre_adresse", "Adresse de l'ordre (N° et voie, CP Ville)")
+        )
+        ordre_ligne = (
+            f"{_ordre_struct.num_voie} {_ordre_struct.voie}".strip() if _ordre_struct else ""
+        )
+        ordre_cp = _ordre_struct.cp if _ordre_struct else ""
+        ordre_ville = _ordre_struct.ville if _ordre_struct else ""
         ordre_numero = _text(st, prefix, "ordre_numero", "Numero d'inscription")
         # Parite gold (Albane 2026-06-10) : « Madame la Presidente » si la presidente
         # de l'ordre est une femme (demande d'inscription SCM, DOC-034).

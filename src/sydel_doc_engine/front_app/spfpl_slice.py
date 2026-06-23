@@ -289,11 +289,18 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
     ordre_departement = _t(col_r, prefix, "ordre_departement", "Departement ordre")
     numero_ordre = _t(col_s, prefix, "numero_ordre", "Numero ordre")
     numero_rpps = _t(col_t, prefix, "numero_rpps", "Numero RPPS")
-    col_ra, col_rb, col_rc = st.columns(3)
-    ordre_conseil = _t(col_ra, prefix, "ordre_conseil", "Conseil departemental")
-    ordre_adresse_ligne_1 = _t(col_rb, prefix, "ordre_adresse_ligne_1", "Adresse ordre")
-    ordre_cp = _t(col_rc, prefix, "ordre_cp", "CP ordre")
-    ordre_ville = _t(st, prefix, "ordre_ville", "Ville ordre")
+    ordre_conseil = _t(st, prefix, "ordre_conseil", "Conseil departemental")
+    # O24-03 : adresse de l'ordre sur UNE ligne (parse interne -> ligne_1/cp/ville),
+    # comme siege/perso/SELAS. Remplace les 3 champs separes ; alimente les MEMES cles
+    # -> generateur DOC-034 et gold byte-identique inchanges.
+    _ordre_struct = _parse_address_full(
+        _t(st, prefix, "ordre_adresse", "Adresse de l'ordre (N° et voie, CP Ville)")
+    )
+    ordre_adresse_ligne_1 = (
+        f"{_ordre_struct.num_voie} {_ordre_struct.voie}".strip() if _ordre_struct else ""
+    )
+    ordre_cp = _ordre_struct.cp if _ordre_struct else ""
+    ordre_ville = _ordre_struct.ville if _ordre_struct else ""
     # Parite gold (Albane 2026-06-10) : « Madame la Presidente » si la presidente de
     # l'ordre est une femme (demande d'inscription a l'ordre).
     feminin_key = f"{prefix}_ordre_president_feminin"

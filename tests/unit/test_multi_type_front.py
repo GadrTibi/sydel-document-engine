@@ -2272,6 +2272,61 @@ def test_selas_adresses_sur_une_ligne(tmp_path: Path, monkeypatch) -> None:
 
 
 @pytest.mark.parametrize(
+    "label, prefix, oneline_key",
+    [
+        # O24-03 (re-Akainu T4) : adresse de l'ORDRE sur UNE ligne pour les types restants
+        # (SELAS multi deja couvert par test_selas_adresses_sur_une_ligne). Le SELARL suit
+        # sa convention de suffixe « _ligne » (comme siege_ligne / adresse_ligne).
+        ("SELARL creation V1", "selarl", "selarl_ordre_adresse_ligne"),
+        ("SCM creation V1", "scm", "scm_ordre_adresse"),
+        ("SPFPL dentistes - cession creation V1", "spfpl_cession", "spfpl_cession_ordre_adresse"),
+    ],
+)
+def test_ordre_adresse_sur_une_ligne(
+    label, prefix, oneline_key, tmp_path: Path, monkeypatch
+) -> None:
+    # L'adresse de l'ordre est un champ texte UNIQUE ; les anciens champs separes
+    # (« *_ordre_cp » / « *_ordre_ville » / « *_ordre_adresse_ligne_1 ») n'existent plus
+    # comme widgets.
+    from streamlit.testing.v1 import AppTest
+
+    from sydel_doc_engine.front_app import shell
+
+    monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / f"ui-ordre-{prefix}")
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
+    app.selectbox(key="clean_dossier_type").set_value(label)
+    app = app.run(timeout=180)
+    next(b for b in app.button if "test_data" in str(b.key)).click()
+    app = app.run(timeout=180)
+
+    keys = {str(w.key) for w in app.text_input}
+    assert oneline_key in keys
+    assert f"{prefix}_ordre_cp" not in keys
+    assert f"{prefix}_ordre_ville" not in keys
+    assert f"{prefix}_ordre_adresse_ligne_1" not in keys
+
+
+def test_selas_uni_medecin_ordre_adresse_sur_une_ligne(tmp_path: Path, monkeypatch) -> None:
+    # O24-03 (re-Akainu T4) : SELAS unipersonnelle medecin — adresse de l'ordre sur UNE
+    # ligne (pas de bouton de donnees de test pour ce type ; le widget existe des le
+    # rendu du formulaire). Plus de champs separes CP/Ville ordre.
+    from streamlit.testing.v1 import AppTest
+
+    from sydel_doc_engine.front_app import shell
+
+    monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-ordre-selas-uni")
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
+    app.selectbox(key="clean_dossier_type").set_value("SELAS unipersonnelle medecin creation V1")
+    app = app.run(timeout=180)
+
+    keys = {str(w.key) for w in app.text_input}
+    assert "selas_uni_medecin_ordre_adresse" in keys
+    assert "selas_uni_medecin_ordre_cp" not in keys
+    assert "selas_uni_medecin_ordre_ville" not in keys
+    assert "selas_uni_medecin_ordre_adresse_ligne_1" not in keys
+
+
+@pytest.mark.parametrize(
     "label, prefix, has_siege, perso_keys",
     [
         # O24-03 (propagation Q4) : siege + adresse perso sur UNE ligne pour TOUS les

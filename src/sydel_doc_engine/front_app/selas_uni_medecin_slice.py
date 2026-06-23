@@ -249,11 +249,18 @@ def render_selas_uni_medecin_form() -> dict[str, object]:
     ordre_conseil = _t(col_aa, "ordre_conseil", "Conseil departemental (ordre)")
     departement_ordre = _t(col_ab, "departement_ordre", "Departement ordre")
     numero_ordre = _t(col_ac, "numero_ordre", "Numero d'inscription")
-    col_ad, col_ae, col_af = st.columns(3)
-    numero_rpps = _t(col_ad, "numero_rpps", "Numero RPPS")
-    ordre_ville = _t(col_ae, "ordre_ville", "Ville ordre")
-    ordre_cp = _t(col_af, "ordre_cp", "CP ordre")
-    ordre_adresse = _t(st, "ordre_adresse_ligne_1", "Adresse ordre")
+    numero_rpps = _t(st, "numero_rpps", "Numero RPPS")
+    # O24-03 : adresse de l'ordre sur UNE ligne (parse interne -> ligne_1/cp/ville),
+    # comme siege/perso/SELAS multi. Remplace les 3 champs separes ; alimente les MEMES
+    # cles -> generateur DOC-034 et gold byte-identique inchanges.
+    _ordre_struct = _parse_address_full(
+        _t(st, "ordre_adresse", "Adresse de l'ordre (N° et voie, CP Ville)")
+    )
+    ordre_adresse = (
+        f"{_ordre_struct.num_voie} {_ordre_struct.voie}".strip() if _ordre_struct else ""
+    )
+    ordre_cp = _ordre_struct.cp if _ordre_struct else ""
+    ordre_ville = _ordre_struct.ville if _ordre_struct else ""
     # Parite gold (Albane 2026-06-10) : « Madame la Presidente » si la presidente de
     # l'ordre est une femme (demande d'inscription a l'ordre, DOC-034).
     fem_key = f"{PREFIX}_ordre_president_feminin"

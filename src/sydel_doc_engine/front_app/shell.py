@@ -177,9 +177,10 @@ def _prefill_random_selarl_data() -> None:
             f"{company['numero']} {company['voie']}, {company['cp']} {company['ville']}"
         ),
         "selarl_departement_ordre": company["departement_ordre"],
-        "selarl_ordre_adresse_ligne_1": company["ordre_adresse"],
-        "selarl_ordre_cp": company["ordre_cp"],
-        "selarl_ordre_ville": company["ville"],
+        # O24-03 : adresse de l'ordre sur UNE ligne (le slice reparse ligne_1/cp/ville).
+        "selarl_ordre_adresse_ligne": (
+            f"{company['ordre_adresse']}, {company['ordre_cp']} {company['ville']}"
+        ),
         "selarl_signature_lieu": company["ville"],
         "selarl_signature_date": today_text,
         "selarl_decision_date": today_text,
@@ -260,9 +261,8 @@ def _prefill_scm_test_data() -> None:
         "scm_decision_date": "15/05/2026",
         "scm_ordre_conseil": "Conseil departemental de l'Ordre des medecins",
         "scm_ordre_departement": "75",
-        "scm_ordre_adresse_ligne_1": "1 rue de l'Ordre",
-        "scm_ordre_cp": "75008",
-        "scm_ordre_ville": "Paris",
+        # O24-03 : adresse de l'ordre sur UNE ligne (le slice reparse ligne_1/cp/ville).
+        "scm_ordre_adresse": "1 rue de l'Ordre, 75008 Paris",
         "scm_ordre_numero": "ORD-12345",
         "scm_nb_associes": 2,
         # Satellites SCM (pacte + liste depenses, generes a 2 associes).
@@ -637,9 +637,8 @@ def _spfpl_prefill_values(prefix: str) -> dict[str, object]:
         f"{prefix}_numero_ordre": "12345",
         f"{prefix}_numero_rpps": "10000000001",
         f"{prefix}_ordre_conseil": "Conseil departemental",
-        f"{prefix}_ordre_adresse_ligne_1": "1 rue de l'Ordre",
-        f"{prefix}_ordre_cp": "75008",
-        f"{prefix}_ordre_ville": "Paris",
+        # O24-03 : adresse de l'ordre sur UNE ligne (le slice reparse ligne_1/cp/ville).
+        f"{prefix}_ordre_adresse": "1 rue de l'Ordre, 75008 Paris",
         f"{prefix}_banque_nom": "BANQUE EXEMPLE",
         f"{prefix}_banque_adresse": "1 boulevard Haussmann, 75009 Paris",
         f"{prefix}_apport_montant": "60000",
@@ -1552,13 +1551,20 @@ def _render_ordre_mandataire() -> dict[str, object]:
         key="selarl_departement_ordre",
         help="Exemple : Paris, Loire-Atlantique ou le departement ordinal attendu par le dossier.",
     )
-    col_c, col_d, col_e = st.columns(3)
-    ordre_adresse_ligne_1 = col_c.text_input(
-        "Adresse ordre",
-        key="selarl_ordre_adresse_ligne_1",
+    # O24-03 : adresse de l'ordre sur UNE ligne (parse interne -> ligne_1/cp/ville),
+    # comme perso/siege/SELAS. Remplace les 3 champs separes (Adresse / CP / Ville ordre) ;
+    # alimente les MEMES cles -> generateur DOC-034 et gold byte-identique inchanges.
+    _ordre_struct = _parse_address_full(
+        st.text_input(
+            "Adresse de l'ordre (N° et voie, CP Ville)",
+            key="selarl_ordre_adresse_ligne",
+        )
     )
-    ordre_cp = col_d.text_input("CP ordre", key="selarl_ordre_cp")
-    ordre_ville = col_e.text_input("Ville ordre", key="selarl_ordre_ville")
+    ordre_adresse_ligne_1 = (
+        f"{_ordre_struct.num_voie} {_ordre_struct.voie}".strip() if _ordre_struct else ""
+    )
+    ordre_cp = _ordre_struct.cp if _ordre_struct else ""
+    ordre_ville = _ordre_struct.ville if _ordre_struct else ""
     # Retour Albane 2026-06-10 : president(e) de l'ordre = femme -> « Madame la
     # Presidente » dans la demande d'inscription (verifie a chaque fois).
     ordre_president_feminin = st.checkbox(

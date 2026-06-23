@@ -1159,9 +1159,8 @@ def _fill_valid_streamlit_selarl_form(app: AppTest) -> None:
         "selarl_ville_rcs": "Paris",
         "selarl_siege_ligne": "20 avenue du Siege, 75002 Paris",
         "selarl_departement_ordre": "75",
-        "selarl_ordre_adresse_ligne_1": "1 rue de l'Ordre",
-        "selarl_ordre_cp": "75008",
-        "selarl_ordre_ville": "Paris",
+        # O24-03 : adresse de l'ordre sur UNE ligne (le slice reparse ligne_1/cp/ville).
+        "selarl_ordre_adresse_ligne": "1 rue de l'Ordre, 75008 Paris",
         "selarl_signature_lieu": "Paris",
         "selarl_signature_date": "27/05/2026",
         "selarl_decision_date": "27/05/2026",
