@@ -20,6 +20,9 @@ from sydel_doc_engine.domain.models import (
     StatutsCivilsParts,
     StatutsCivilsRepresentant,
 )
+from sydel_doc_engine.front_app.address_oneline import (
+    parse_address_full as _parse_address_full,
+)
 from sydel_doc_engine.front_app.data_entry import (
     CleanDataEntry,
     build_clean_data_entry,
@@ -160,17 +163,19 @@ def _prefill_random_selarl_data() -> None:
         "selarl_numero_rpps": str(random.randint(10000000000, 19999999999)),
         "selarl_nom_pere": person["nom_pere"],
         "selarl_nom_mere": person["nom_mere"],
-        # Numero et voie fusionnes (ticket 1.5).
-        "selarl_adresse_voie": f"{person['adresse_num_voie']} {person['adresse_voie']}",
-        "selarl_adresse_cp": person["adresse_cp"],
-        "selarl_adresse_ville": person["adresse_ville"],
+        # O24-03 : adresse perso sur UNE ligne (le slice reparse num/voie/cp/ville).
+        "selarl_adresse_ligne": (
+            f"{person['adresse_num_voie']} {person['adresse_voie']}".strip()
+            + f", {person['adresse_cp']} {person['adresse_ville']}"
+        ),
         "selarl_denomination": f"SELARL {person['nom']}",
         "selarl_capital_social": capital,
         "selarl_nb_parts_total": parts,
         "selarl_ville_rcs": company["ville"],
-        "selarl_siege_voie": f"{company['numero']} {company['voie']}",
-        "selarl_siege_cp": company["cp"],
-        "selarl_siege_ville": company["ville"],
+        # O24-03 : siege sur UNE ligne (le slice reparse num/voie/cp/ville).
+        "selarl_siege_ligne": (
+            f"{company['numero']} {company['voie']}, {company['cp']} {company['ville']}"
+        ),
         "selarl_departement_ordre": company["departement_ordre"],
         "selarl_ordre_adresse_ligne_1": company["ordre_adresse"],
         "selarl_ordre_cp": company["ordre_cp"],
@@ -1398,9 +1403,13 @@ def _render_praticien(*, profession: str) -> dict[str, object]:
     )
 
     st.markdown("Adresse personnelle")
-    # Numero et voie fusionnes en un seul champ (ticket 1.5) : la valeur vit
-    # dans adresse_voie, adresse_num_voie reste vide.
-    adr_a, adr_b, adr_c = st.columns((2, 1, 1))
+    # O24-03 : adresse personnelle sur UNE ligne (parse interne -> num/voie/cp/ville).
+    # Remplace les 3 champs (Numero et voie / CP / Ville). Le parse alimente les MEMES
+    # cles que l'ancienne grille -> generateur SELARL et gold byte-identique inchanges.
+    _perso_ligne = st.text_input(
+        "Adresse personnelle (N° et voie, CP Ville)", key="selarl_adresse_ligne"
+    )
+    _perso_struct = _parse_address_full(_perso_ligne)
     return {
         "civilite": civilite,
         "genre": derive_gender_from_civilite(civilite),
@@ -1422,10 +1431,10 @@ def _render_praticien(*, profession: str) -> dict[str, object]:
         "numero_ordre": numero_ordre,
         "numero_rpps": numero_rpps,
         **conjoint,
-        "adresse_num_voie": "",
-        "adresse_voie": adr_a.text_input("Numero et voie", key="selarl_adresse_voie"),
-        "adresse_cp": adr_b.text_input("CP", key="selarl_adresse_cp"),
-        "adresse_ville": adr_c.text_input("Ville", key="selarl_adresse_ville"),
+        "adresse_num_voie": _perso_struct.num_voie if _perso_struct else "",
+        "adresse_voie": _perso_struct.voie if _perso_struct else "",
+        "adresse_cp": _perso_struct.cp if _perso_struct else "",
+        "adresse_ville": _perso_struct.ville if _perso_struct else "",
     }
 
 
@@ -1482,8 +1491,13 @@ def _render_societe(
             "siege_ville": str(praticien.get("adresse_ville") or ""),
         }
     else:
-        # Numero et voie fusionnes en un seul champ (ticket 1.5).
-        adr_a, adr_b, adr_c = st.columns((2, 1, 1))
+        # O24-03 : siege sur UNE ligne (parse interne -> num/voie/cp/ville). Remplace les
+        # 3 champs (Numero et voie / CP / Ville) ; memes cles que l'ancienne grille ->
+        # generateur SELARL et gold byte-identique inchanges.
+        _siege_ligne = st.text_input(
+            "Adresse du siège (N° et voie, CP Ville)", key="selarl_siege_ligne"
+        )
+        _siege_struct = _parse_address_full(_siege_ligne)
         societe = {
             "denomination": denomination,
             "capital_social": format_numeric_value(capital_social),
@@ -1491,10 +1505,10 @@ def _render_societe(
             "nb_parts_total": int(nb_parts_total),
             "valeur_nominale_part": valeur_nominale_part,
             "ville_rcs": ville_rcs,
-            "siege_num_voie": "",
-            "siege_voie": adr_a.text_input("Numero et voie", key="selarl_siege_voie"),
-            "siege_cp": adr_b.text_input("Code postal", key="selarl_siege_cp"),
-            "siege_ville": adr_c.text_input("Ville", key="selarl_siege_ville"),
+            "siege_num_voie": _siege_struct.num_voie if _siege_struct else "",
+            "siege_voie": _siege_struct.voie if _siege_struct else "",
+            "siege_cp": _siege_struct.cp if _siege_struct else "",
+            "siege_ville": _siege_struct.ville if _siege_struct else "",
         }
 
     # « Autre lieu d'exercice » juste apres l'adresse du siege (ticket 1.8 + 2.2).

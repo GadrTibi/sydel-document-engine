@@ -842,6 +842,24 @@ def test_sas_live03_accentuates_exercice_months(tmp_path: Path) -> None:
     ), "LIVE-03 : aucune occurrence sans accent ne doit subsister"
 
 
+def test_scm_live03_accentuates_cloture_month(tmp_path: Path) -> None:
+    """LIVE-03 (type civil) : la cloture « 31 decembre 2026 » saisie sans accent ressort
+    accentuee dans le DOCX civil. Verrouille la re-accentuation EN AMONT cote
+    civil_statuts_slice (date_cloture_premier_exercice), independamment de SAS."""
+    payload = _civil_base(
+        "SCM",
+        "scm",
+        [_pp("Jean", "Durand", 60, 1, 60, 600), _pp("Alice", "Martin", 40, 61, 100, 400)],
+    )
+    payload["date_cloture_premier_exercice"] = "31 decembre 2026"
+    generated = css.generate_dossier(payload, tmp_path / "scm_live03")
+    full_text = "\n".join(_docx_text(p) for p in generated.docx_paths)
+    assert "décembre" in full_text, "LIVE-03 : le mois doit ressortir accentue (civil)"
+    assert (
+        "31 decembre" not in full_text
+    ), "LIVE-03 : aucune occurrence sans accent ne doit subsister (civil)"
+
+
 def test_sas_apports_sum_must_equal_capital() -> None:
     # Dogfood 2026-06-22 : la somme nature + numeraire doit egaler le capital -> bloque sinon.
     payload = dict(_sas_payload())
@@ -2177,7 +2195,10 @@ def test_selas_adresses_sur_une_ligne(tmp_path: Path, monkeypatch) -> None:
         # types restants (civils via repeater partage, SAS double-saisie, SPFPL).
         ("SCI creation V1", "sci", True, ("sci_associe_0_adresse",)),
         ("SCM creation V1", "scm", True, ("scm_associe_0_adresse",)),
+        ("SCS creation V1", "scs", True, ("scs_associe_0_adresse",)),
+        ("SCI IRIS creation V1", "sci_iris", True, ("sci_iris_associe_1_adresse",)),
         ("SPFPL medecins (forme SAS) creation V1", "sas", True, ("sas_adresse",)),
+        ("SPFPL dentistes - apport creation V1", "spfpl_apport", True, ("spfpl_apport_adresse",)),
         (
             "SPFPL dentistes - cession creation V1",
             "spfpl_cession",
@@ -2249,6 +2270,35 @@ def test_o24_03_spfpl_cession_cible_siege_une_ligne(tmp_path: Path, monkeypatch)
     )
     assert generate_button.disabled is False
     assert not any("Blocage" in item.value for item in app.caption)
+
+
+def test_o24_03_selarl_adresses_une_ligne(tmp_path: Path, monkeypatch) -> None:
+    """O24-03 : SELARL (type de reference, gold) — adresse perso ET siege sur UNE ligne.
+    Plus aucun champ separe Numero-et-voie / CP / Ville. La conversion alimente les memes
+    cles que l'ancienne grille -> generateur et DOCX gold inchanges (verifie par le test
+    line-by-line dedie)."""
+    from streamlit.testing.v1 import AppTest
+
+    from sydel_doc_engine.front_app import shell
+
+    monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selarl-adresses")
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
+    # SELARL est le type par defaut ; bouton « Generer des donnees de test » dedie.
+    next(b for b in app.button if str(b.key) == "clean_generate_test_data").click()
+    app = app.run(timeout=180)
+
+    keys = {str(w.key) for w in app.text_input}
+    assert "selarl_adresse_ligne" in keys
+    assert "selarl_siege_ligne" in keys
+    for stray in (
+        "selarl_adresse_voie",
+        "selarl_adresse_cp",
+        "selarl_adresse_ville",
+        "selarl_siege_voie",
+        "selarl_siege_cp",
+        "selarl_siege_ville",
+    ):
+        assert stray not in keys, f"{stray} doit avoir disparu (O24-03)"
 
 
 def test_parse_address_full_tolere_formes_usuelles() -> None:

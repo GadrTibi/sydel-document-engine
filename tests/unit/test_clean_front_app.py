@@ -826,11 +826,13 @@ def test_clean_front_streamlit_surface_is_not_legacy() -> None:
         for widget in app.checkbox
         if str(widget.key) == "selarl_cession"
     )
-    # Ticket 1.5 : numero et voie fusionnes.
-    assert app.text_input(key="selarl_adresse_voie").label == "Numero et voie"
-    assert not any(
-        str(widget.key) == "selarl_adresse_num_voie" for widget in app.text_input
+    # O24-03 : adresse personnelle sur UNE ligne (plus de champ voie/CP/Ville separes).
+    assert (
+        app.text_input(key="selarl_adresse_ligne").label
+        == "Adresse personnelle (N° et voie, CP Ville)"
     )
+    for stray in ("selarl_adresse_voie", "selarl_adresse_cp", "selarl_adresse_ville"):
+        assert not any(str(widget.key) == stray for widget in app.text_input), stray
     # Ticket 1.7 : dates d'exercice preremplies dynamiquement (cloture N+1).
     assert app.text_input(key="selarl_exercice_debut").value == "1er janvier"
     assert app.text_input(key="selarl_exercice_fin").value == "31 décembre"
@@ -1140,15 +1142,11 @@ def _fill_valid_streamlit_selarl_form(app: AppTest) -> None:
         "selarl_nom_mere": "Anne Martin",
         "selarl_numero_ordre": "ORD-123",
         "selarl_numero_rpps": "10000000001",
-        # Numero et voie fusionnes (retours client 2026-06-11, ticket 1.5).
-        "selarl_adresse_voie": "10 rue Test",
-        "selarl_adresse_cp": "75001",
-        "selarl_adresse_ville": "Paris",
+        # O24-03 : adresse perso + siege sur UNE ligne (le slice reparse num/voie/cp/ville).
+        "selarl_adresse_ligne": "10 rue Test, 75001 Paris",
         "selarl_denomination": "SELARL MARTIN",
         "selarl_ville_rcs": "Paris",
-        "selarl_siege_voie": "20 avenue du Siege",
-        "selarl_siege_cp": "75002",
-        "selarl_siege_ville": "Paris",
+        "selarl_siege_ligne": "20 avenue du Siege, 75002 Paris",
         "selarl_departement_ordre": "75",
         "selarl_ordre_adresse_ligne_1": "1 rue de l'Ordre",
         "selarl_ordre_cp": "75008",
@@ -1304,7 +1302,8 @@ def test_clean_front_signature_lieu_seeded_from_siege_ville(
 
     monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "lieu-signature")
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=120)
-    app.text_input(key="selarl_siege_ville").set_value("Lyon")
+    # O24-03 : siege sur UNE ligne ; la ville (« Lyon ») est parsee de la ligne unique.
+    app.text_input(key="selarl_siege_ligne").set_value("20 avenue du Siege, 69002 Lyon")
     app = app.run(timeout=120)
 
     assert app.text_input(key="selarl_signature_lieu").value == "Lyon"
