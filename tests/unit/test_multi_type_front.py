@@ -2703,6 +2703,96 @@ def test_selas_cession_cabinet_meme_adresse_lieu_exercice(tmp_path: Path, monkey
     assert cab.value == "7 rue Manuelle, 13000 Marseille"  # saisie manuelle restaurée
 
 
+def test_selas_cession_cabinet_meme_adresse_etat_disabled_aux_3_phases(
+    tmp_path: Path, monkeypatch
+) -> None:
+    # O24-12 (MINEUR 3, re-Akainu T5) : scénario « lieu renseigné » — on asserte EXPLICITEMENT
+    # l'état `disabled` du champ adresse cabinet aux 3 phases (décoché -> coché -> décoché),
+    # pas seulement sa valeur. Coché + lieu renseigné = champ DÉSACTIVÉ (miroir non éditable) ;
+    # décoché = ÉDITABLE.
+    from streamlit.testing.v1 import AppTest
+
+    from sydel_doc_engine.front_app import shell
+
+    monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selas-disabled")
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
+    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle creation V1")
+    app = app.run(timeout=180)
+    next(b for b in app.button if "test_data" in str(b.key)).click()
+    app = app.run(timeout=180)
+    next(
+        w for w in app.text_input if str(w.key) == "selas_adresse_lieu_exercice"
+    ).set_value("99 avenue Distincte, 75001 Paris")
+    app = app.run(timeout=180)
+    app.checkbox(key="selas_cession_on").set_value(True)
+    app = app.run(timeout=180)
+
+    def _cab():
+        return next(
+            w for w in app.text_input if str(w.key) == "selas_cession_cabinet_adresse"
+        )
+
+    # Phase 1 — décoché : champ ÉDITABLE.
+    assert _cab().disabled is False
+    # Phase 2 — coché (lieu renseigné) : champ DÉSACTIVÉ (miroir du lieu d'exercice).
+    app.checkbox(key="selas_cabinet_meme_lieu_exercice").set_value(True)
+    app = app.run(timeout=180)
+    assert _cab().disabled is True
+    assert _cab().value == "99 avenue Distincte, 75001 Paris"
+    # Phase 3 — décoché : champ RE-ÉDITABLE.
+    app.checkbox(key="selas_cabinet_meme_lieu_exercice").set_value(False)
+    app = app.run(timeout=180)
+    assert _cab().disabled is False
+
+
+def test_selas_cession_cabinet_meme_adresse_lieu_vide_reste_editable(
+    tmp_path: Path, monkeypatch
+) -> None:
+    # O24-12 (MINEUR 3, re-Akainu T5) : scénario « lieu d'exercice VIDE ». La case existe
+    # (verbatim « ajouter une case », inconditionnel) mais cocher ne reporte RIEN (rien à
+    # recopier) -> le champ reste ÉDITABLE même coché. Une saisie manuelle survit au cycle
+    # coche -> décoche (jamais écrasée par un report fantôme).
+    from streamlit.testing.v1 import AppTest
+
+    from sydel_doc_engine.front_app import shell
+
+    monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selas-lieu-vide")
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
+    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle creation V1")
+    app = app.run(timeout=180)
+    next(b for b in app.button if "test_data" in str(b.key)).click()
+    app = app.run(timeout=180)
+    # Lieu d'exercice VIDE -> rien à reporter dans l'adresse cabinet.
+    next(
+        w for w in app.text_input if str(w.key) == "selas_adresse_lieu_exercice"
+    ).set_value("")
+    app = app.run(timeout=180)
+    app.checkbox(key="selas_cession_on").set_value(True)
+    app = app.run(timeout=180)
+
+    def _cab():
+        return next(
+            w for w in app.text_input if str(w.key) == "selas_cession_cabinet_adresse"
+        )
+
+    # Phase 1 — décoché : champ ÉDITABLE.
+    assert _cab().disabled is False
+    # Phase 2 — coché mais lieu VIDE : champ reste ÉDITABLE (pas de miroir possible).
+    app.checkbox(key="selas_cabinet_meme_lieu_exercice").set_value(True)
+    app = app.run(timeout=180)
+    assert _cab().disabled is False
+    # Saisie MANUELLE alors que la case est cochée (champ éditable car lieu vide).
+    next(
+        w for w in app.text_input if str(w.key) == "selas_cession_cabinet_adresse"
+    ).set_value("12 rue Saisie, 31000 Toulouse")
+    app = app.run(timeout=180)
+    # Phase 3 — décoché : la saisie manuelle est RETROUVÉE (jamais écrasée).
+    app.checkbox(key="selas_cabinet_meme_lieu_exercice").set_value(False)
+    app = app.run(timeout=180)
+    assert _cab().disabled is False
+    assert _cab().value == "12 rue Saisie, 31000 Toulouse"
+
+
 def test_cession_type_et_label_derives_de_la_profession() -> None:
     # O24-10 (onglet 24) : le menu « type de cabinet » est supprimé, le type + la nature
     # du fonds sont DÉRIVÉS de la profession. Bug Akainu : « chirurgien-dentiste » (tiret,
