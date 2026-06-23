@@ -294,6 +294,57 @@ def test_scm_cession_selas_generates_overlays(tmp_path: Path) -> None:
             assert non_accentue not in low, f"LIVE-03 : « {non_accentue} » non accentué (rendu)"
 
 
+@pytest.mark.parametrize(
+    ("preset_brut", "genre", "attendu_regime"),
+    [
+        (
+            "Marie(e) sous le regime de la separation de biens",
+            Gender.MASCULIN,
+            "marié sous le régime de séparation de biens",
+        ),
+        (
+            "Marie(e) sous le regime de la communaute universelle",
+            Gender.FEMININ,
+            "mariée sous le régime de communauté universelle",
+        ),
+    ],
+)
+def test_scm_cession_acte_selas_situation_cedant_accentuee(
+    tmp_path: Path, monkeypatch, preset_brut, genre, attendu_regime
+) -> None:
+    # O24-11 (MINEUR 2a) : preuve BOUT-EN-BOUT sur le chemin SELAS (prefix='selas').
+    # Le BLOQUANT O24-11 n'etait prouve e2e que sur SELARL. On exerce ici le HELPER
+    # REEL `shell._scm_cedant_situation_maritale_display(prefix="selas")` — exactement
+    # le code que le sous-formulaire de cession SELAS appelle pour poser la situation
+    # du cedant — puis on rend l'acte avec le VRAI generateur et on asserte le libelle
+    # accentue + accorde au genre (2 regimes), et l'absence de « marie sous » nu.
+    from sydel_doc_engine.front_app import shell
+
+    # Le helper lit la valeur collapsee du praticien (genre + statut) ET le libelle BRUT
+    # du preset depuis st.session_state[f"{prefix}_situation_maritale"]. On pose un st
+    # minimal porteur de cette cle (comme le ferait le menu SELAS de l'associe vendeur).
+    class _FakeSt:
+        def __init__(self) -> None:
+            self.session_state = {"selas_situation_maritale": preset_brut}
+
+    monkeypatch.setattr(shell, "st", _FakeSt())
+    praticien = {"situation_maritale": "marie", "genre": genre}
+    situation_complete = shell._scm_cedant_situation_maritale_display(
+        praticien, prefix="selas"
+    )
+    assert situation_complete == attendu_regime  # garde sur la valeur produite par le slice
+
+    ctx = _base_context("SELAS")
+    ctx.scm_cession.cedant.situation_maritale = situation_complete
+    acte = ActeCessionPartsScmGenerator().generate(ctx, tmp_path)
+    acte_text = _docx_text(acte)
+    # Le libelle complet accentue (« <regime> avec <conjoint> ») ressort dans le DOCX.
+    assert f"{attendu_regime} avec Madame Claire Dupont" in acte_text
+    # Aucune fuite de « marie sous » non accentue.
+    assert "marie sous" not in acte_text
+    _assert_clean(acte_text)
+
+
 def test_mois_tables_accentuees_identiques() -> None:
     # re-Akainu tour 2 (NITPICK LIVE-03) : trois tables de noms de mois coexistent (dette de
     # duplication, cf. docs/operations/GOLDEN_BLOCS.md). Tant qu'elles ne sont pas factorisées,

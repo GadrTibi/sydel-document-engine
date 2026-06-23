@@ -1121,6 +1121,37 @@ def test_spfpl_cession_slice_generates_clean(tmp_path: Path) -> None:
     )
 
 
+@pytest.mark.parametrize(
+    ("genre", "civilite", "attendu"),
+    [
+        (Gender.MASCULIN, "Monsieur", "marié"),
+        (Gender.FEMININ, "Madame", "mariée"),
+    ],
+)
+def test_spfpl_cession_acte_situation_cedant_accentuee(
+    tmp_path: Path, genre, civilite, attendu
+) -> None:
+    # O24-11 (MINEUR 2b) : l'acte de cession SPFPL rend cedant.situation_maritale
+    # verbatim. Le slice posait « marie » nu (non accentue, non accorde) -> on prouve
+    # bout-en-bout que la situation ressort ACCENTUEE et accordee au genre, sur les
+    # deux genres, et qu'aucun « marie » nu ne fuit.
+    payload = _spfpl_payload("SPFPL cession")
+    payload["genre"] = genre
+    payload["civilite"] = civilite
+    generated = spfpl_slice.generate_dossier(payload, tmp_path / f"spfpl-cession-{attendu}")
+    acte = next(
+        path for path in generated.docx_paths
+        if "acte_cession_parts_spfpl" in path.name
+    )
+    acte_text = _docx_text(acte)
+    assert f"{attendu} avec Madame Alice Martin" in acte_text
+    # Le « marie » NON accentue (statut nu, suivi d'une virgule ou « avec ») ne doit
+    # plus apparaitre. NB : le reste de la phrase reste un echo fidele non accentue
+    # (« ne le », « a Paris ») — seul le statut matrimonial est accorde/accentue.
+    assert "marie avec" not in acte_text
+    assert "marie sous" not in acte_text
+
+
 def test_spfpl_cession_missing_cible_forme_blocks() -> None:
     # Dogfood 2026-06-22 : forme complete de la cible non validee -> crash a la generation
     # (note d'info / acte). Doit bloquer proprement.

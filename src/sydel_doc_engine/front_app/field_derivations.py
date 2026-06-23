@@ -141,6 +141,24 @@ def derive_gender_from_civilite(civilite: str) -> Gender:
     return Gender.MASCULIN
 
 
+def situation_display(value: str, genre: object) -> str:
+    """Statut matrimonial ACCENTUE et accorde au genre (« marié »/« mariée »).
+
+    Helper partage (O24-11 / MINEUR 2b) : convertit la valeur collapsee non
+    accentuee (« marie », « pacse », « divorce ») posee par les slices en libelle
+    accentue accorde. Une valeur inconnue est renvoyee telle quelle (l'appelant
+    peut deja avoir un libelle propre). Source unique pour shell._situation_display
+    et les slices (SPFPL...) afin de ne jamais laisser fuir un « marie » nu."""
+    feminine = genre == Gender.FEMININ
+    return {
+        "marie": "mariée" if feminine else "marié",
+        "pacse": "pacsée" if feminine else "pacsé",
+        "divorce": "divorcée" if feminine else "divorcé",
+        "veuf": "veuve" if feminine else "veuf",
+        "celibataire": "célibataire",
+    }.get(value, value)
+
+
 def format_numeric_value(value: object) -> str:
     number = _decimal_from_value(value)
     if number is None:

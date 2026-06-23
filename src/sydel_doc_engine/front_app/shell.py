@@ -50,6 +50,7 @@ from sydel_doc_engine.front_app.field_derivations import (
     parse_french_date,
     regime_communautaire_from_status,
     regime_matrimonial_from_status,
+    situation_display,
 )
 from sydel_doc_engine.front_app.generation import (
     CleanGenerationPlan,
@@ -1795,14 +1796,9 @@ def _scm_cessionnaire_overrides(societe: dict[str, object]) -> dict[str, object]
 
 
 def _situation_display(value: str, genre: object) -> str:
-    feminine = genre == Gender.FEMININ
-    return {
-        "marie": "mariée" if feminine else "marié",
-        "pacse": "pacsée" if feminine else "pacsé",
-        "divorce": "divorcée" if feminine else "divorcé",
-        "veuf": "veuve" if feminine else "veuf",
-        "celibataire": "célibataire",
-    }.get(value, value)
+    # Delegue au helper partage field_derivations.situation_display (source unique,
+    # O24-11 / MINEUR 2b) pour ne jamais diverger des slices.
+    return situation_display(value, genre)
 
 
 def _vendeur_regime_label(situation_label: str) -> str:
@@ -2826,9 +2822,9 @@ def _render_scm_cession_form(
     # qu'un placeholder unique et la valeur collapsee posee plus haut perdait le
     # regime + l'accent. Ecrase la valeur collapsee de _scm_cedant_overrides ; pour
     # un non-marie, rend juste le statut accentue (donc jamais de cle videe).
-    situation_display = _scm_cedant_situation_maritale_display(praticien, prefix=prefix)
-    if situation_display:
-        cedant["situation_maritale"] = situation_display
+    situation_complete = _scm_cedant_situation_maritale_display(praticien, prefix=prefix)
+    if situation_complete:
+        cedant["situation_maritale"] = situation_complete
     payload["cedant"] = cedant
     # Coherence V1 du wording source : le representant de la SEL cessionnaire
     # EST le cedant (l'associe unique cede ses parts a sa propre SEL).

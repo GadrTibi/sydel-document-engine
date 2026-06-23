@@ -72,6 +72,7 @@ from sydel_doc_engine.front_app.field_derivations import (
     format_numeric_value,
     is_capital_divisible,
     number_words_from_value,
+    situation_display,
 )
 from sydel_doc_engine.front_app.front_widgets import (
     date_input_with_today,
@@ -664,12 +665,13 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
     valeur_par_titre = str(payload.get("apport_valeur_par_titre") or "")
     valeur_globale = str(payload.get("apport_valeur_globale") or "")
 
+    founder_genre = payload.get("genre") or Gender.MASCULIN
     founder = SpfplPerson(
         civilite_affichage=str(payload.get("civilite") or "Docteur"),
         prenom=str(payload.get("prenom") or ""),
         prenoms=str(payload.get("prenoms") or payload.get("prenom") or ""),
         nom=str(payload.get("nom") or ""),
-        genre=payload.get("genre") or Gender.MASCULIN,
+        genre=founder_genre,
         profession="chirurgien-dentiste",
         profession_reglementee="chirurgiens-dentistes",
         profession_reglementee_pluriel="chirurgiens-dentistes",
@@ -677,7 +679,11 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         ville_naissance=str(payload.get("ville_naissance") or ""),
         departement_naissance=str(payload.get("departement_naissance") or ""),
         nationalite=str(payload.get("nationalite") or ""),
-        situation_maritale="marie",
+        # O24-11 (MINEUR 2b) : statut ACCENTUE et accorde au genre (« marié »/
+        # « mariée ») au lieu du « marie » nu — l'acte de cession d'actions SPFPL
+        # rend cedant.situation_maritale verbatim. Le SPFPL dentiste est marie par
+        # construction (conjoint requis), seul le genre varie.
+        situation_maritale=situation_display("marie", founder_genre),
         regime_matrimonial=str(payload.get("regime_matrimonial") or ""),
         conjoint=SpfplConjoint(
             civilite_affichage=str(payload.get("conjoint_civilite") or "Madame"),
