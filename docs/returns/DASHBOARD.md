@@ -6,18 +6,18 @@
 ```
 ┌─ SYDEL · RETOURS CLIENT — compteur de vitesse ──────────────────────────
 │
-│   PROPRE  (0 défaut)   [█████████░░░░░░░░░░░░░░░░]   8/21  ·  38%
-│   EN DÉFAUT (Akainu)   [███████████░░░░░░░░░░░░░░]  10  ·  bloquant/majeur
+│   AKAINU OK (rien à redire) : O24-01 ✅ (boucle fermée) · O24-10 re-Akainu en cours
+│   EN DÉFAUT (à corriger)  [████████░░░░░░░░░░░░░░░░]   7  ·  bloquant/majeur restants
 │   VALIDÉ  (Rafael)     [░░░░░░░░░░░░░░░░░░░░░░░░]   0/21  ·   0%   ⚠ rien validé
-│   AKAINU  : 8 BLOQUANT · 16 MAJEUR · 18 mineur · 18 nitpick
+│   BLOQUANT restants : O24-03 · O24-14   ·   MAJEUR : O24-05/07/11/12 + LIVE-02/03
 │
 │   ── ONGLET 24 (🔴 = défaut Akainu à corriger) ───────────────────────
-│   🔴 01 annexe Sydel PAS faite (SELAS multi/SCI/IRIS/SCS)   ✅ 02 DNC nommée/dirigeant
+│   ✅ 01 annexe Sydel — Akainu RIEN À REDIRE   ✅ 02 DNC nommée/dirigeant
 │   🔴 03 adresses (ordre 3 champs + double siège + parser KO + propagation)
 │   ⬜ 04 icône copier (décision UI)   🔴 05 valeur nominale (manque SELARL)
 │   ✅ 06 pluri=multi   🔴 07 rôles (DG requalifié Président ; Président pas obligatoire)
 │   ✅ 08 date+adresse 1×   ✅ 09 « (profession) »
-│   🔴 10 menu cession dérivé INVERSE pour dentaire   🔴 11 vendeur (régime+conjoint perdus)
+│   🟢 10 dérivation dentaire corrigée   🔴 11 vendeur (régime+conjoint perdus)
 │   🔴 12 case cabinet (test non-discriminant)   ✅ 13 CA non facultatif
 │   🔴 14 acte+compromis CRASH génération   ✅ 15 acquéreur retiré
 │
