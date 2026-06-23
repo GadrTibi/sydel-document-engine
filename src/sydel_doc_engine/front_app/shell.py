@@ -1491,10 +1491,14 @@ def _render_societe(
         key="selarl_nb_parts_total",
     )
     valeur_nominale_part = calculate_nominal_value(capital_social, nb_parts_total)
-    if valeur_nominale_part:
-        st.caption(f"Valeur nominale calculee : {valeur_nominale_part} EUR")
-    else:
-        st.caption("Valeur nominale calculee automatiquement apres capital et parts.")
+    # O24-05 (onglet 24) : valeur nominale calculée automatiquement ET affichée DANS LE
+    # CHAMP concerné (text_input désactivé), comme les 5 autres types — plus de simple
+    # caption gris. Pas de `key` (sinon « value= » + « key= » fige la valeur initiale).
+    st.text_input(
+        "Valeur nominale d'une part (calculee)",
+        value=valeur_nominale_part,
+        disabled=True,
+    )
     ville_rcs = st.text_input("RCS (ville)", key="selarl_ville_rcs")
 
     st.markdown("Siege social")

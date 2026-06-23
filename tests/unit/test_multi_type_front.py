@@ -2191,6 +2191,21 @@ def test_parse_address_full_tolere_formes_usuelles() -> None:
     assert _parse_address_full("pas une adresse") is None
 
 
+def test_selarl_valeur_nominale_affichee_dans_un_champ(tmp_path: Path, monkeypatch) -> None:
+    # O24-05 (onglet 24) : valeur nominale « calculée automatiquement ET affichée dans le
+    # champ concerné » — y compris SELARL (était un st.caption gris, pas un champ).
+    from streamlit.testing.v1 import AppTest
+
+    from sydel_doc_engine.front_app import shell
+
+    monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selarl-vn")
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
+    app.selectbox(key="clean_dossier_type").set_value("SELARL creation V1")
+    app = app.run(timeout=180)
+    labels = [str(w.label) for w in app.text_input]
+    assert any("Valeur nominale d'une part (calculee)" in s for s in labels), labels
+
+
 def test_selas_cession_cabinet_meme_adresse_lieu_exercice(tmp_path: Path, monkeypatch) -> None:
     # O24-12 (onglet 24) : « adresse du cabinet -> ajouter une case "meme adresse que le
     # lieu d'exercice" et reporter les donnees si cochee ». La case est sur le CABINET
