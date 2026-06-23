@@ -66,20 +66,23 @@ _TENS: Final = {
     50: "cinquante",
     60: "soixante",
 }
+# Règle globale (Rafael 2026-06-23) : les noms de mois en SORTIE sont toujours
+# correctement accentués (février, août, décembre). Les MAPS de parsing (nom -> n°)
+# restent sans accent : le parseur normalise (NFKD) l'entrée avant lookup.
 _MONTHS: Final = (
     "",
     "janvier",
-    "fevrier",
+    "février",
     "mars",
     "avril",
     "mai",
     "juin",
     "juillet",
-    "aout",
+    "août",
     "septembre",
     "octobre",
     "novembre",
-    "decembre",
+    "décembre",
 )
 
 

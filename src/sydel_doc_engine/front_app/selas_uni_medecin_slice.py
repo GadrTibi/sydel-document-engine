@@ -128,8 +128,8 @@ class SelasUniMedecinPlan:
 
 def render_selas_uni_medecin_form() -> dict[str, object]:
     st.subheader("Donnees a saisir")
-    # Parite gold (couche partagee) : exercice (1er janvier / 31 decembre) + cloture
-    # « 31 decembre N+1 » pre-remplis, modifiables.
+    # Parite gold (couche partagee) : exercice (1er janvier / 31 décembre) + cloture
+    # « 31 décembre N+1 » pre-remplis, modifiables.
     seed_exercice_dates(PREFIX)
     seed_closing_date(PREFIX, field="exercice_cloture")
     # Parite gold (RAF-003a) : recopie siege <- adresse perso si la case est cochee.
@@ -187,7 +187,7 @@ def render_selas_uni_medecin_form() -> dict[str, object]:
     st.markdown("Exercice social")
     col_j, col_k, col_l = st.columns(3)
     exercice_debut = _t(col_j, "exercice_debut", "Debut (ex: 1er janvier)")
-    exercice_fin = _t(col_k, "exercice_fin", "Fin (ex: 31 decembre)")
+    exercice_fin = _t(col_k, "exercice_fin", "Fin (ex: 31 décembre)")
     exercice_cloture = _t(col_l, "exercice_cloture", "Cloture du 1er exercice")
 
     st.markdown("**Associe unique / President**")

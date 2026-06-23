@@ -197,7 +197,7 @@ def render_civil_form(structure: str) -> dict[str, object]:
     prefix = statuts_type
     st.subheader("Donnees a saisir")
     st.markdown(f"**Societe ({structure})**")
-    # Parite gold (couche partagee) : cloture du 1er exercice pre-remplie « 31 decembre
+    # Parite gold (couche partagee) : cloture du 1er exercice pre-remplie « 31 décembre
     # N+1 », modifiable. Le modele civil ne consomme QUE la cloture (pas debut/fin) ->
     # on ne seede pas exercice_debut/fin (difference justifiee).
     seed_closing_date(prefix, field="date_cloture_premier_exercice")
@@ -555,7 +555,7 @@ def _render_scm_inter_sel(
         prefix,
         "inter_sel_date_fin_gestion",
         "Fin de gestion administrative",
-        hint="ex : 31 decembre 2027",
+        hint="ex : 31 décembre 2027",
     )
     date_attrib = _text(
         col_r4,

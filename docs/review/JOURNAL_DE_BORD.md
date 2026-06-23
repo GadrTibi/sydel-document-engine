@@ -105,6 +105,8 @@ j'ajoute UNE ligne ici : `- [AAAA-MM-JJ HH:MM] [TYPE] description (réf : SHA / 
 - [~03:20] **ACTION R13** : retrait de la `key` du champ valeur nominale → il affiche la valeur courante recalculée (capital/nb actions).
 - [~03:40] **ACTION R10/R11** : situation matrimoniale = **menu** `MATRIMONIAL_STATUS_PRESETS` (réutilise les helpers gold `matrimonial_status_value` / `regime_communautaire_from_status`) ; quand un régime de COMMUNAUTÉ est choisi → champs conjoint + DOC-005/006 (`_render_conjoint_si_communaute`). **Les DEUX cases régime retirées** (per-associé ET globale `_render_common_docs_form`). `_situation_display` = mot d'état civil accordé/accentué pour la comparution. +1 test (communauté → docs conjoint). **534 verts, ruff propre.** [Flag Rafael : j'ai retiré AUSSI la case globale « Régime communautaire » — dis si tu la voulais.]
 
+- [~04:00] **ACTION R12 + RÈGLE GLOBALE (Gad « modifie de partout + règle globale mois »)** : noms de mois en SORTIE toujours accentués (`_MONTHS` → février/août/décembre ; seeds `front_widgets` → « 31 décembre » ; prefills shell.py « 2 février 1982 », etc.). **Maps de PARSING gardées sans accent** (le parseur normalise NFKD). 2 assertions de form mises à jour. Règle codifiée (mémoire `convention-mois-accentues` + commentaire dans `_MONTHS`). **534 verts, ruff propre.**
+
 ## Conneries / incidents Rafael (résumé — détail dans la mémoire privée)
 - **G1** (2026-06-22) : nouvelle remarque sur la SELARL « validée 100 % » et socle de tous les types (confirmé par Rafael : nouvelle remarque, pas régression).
 - **G2** : ne teste pas réellement — preuve : 4 docs sur 7 produits non remarqués (docs non téléchargés).

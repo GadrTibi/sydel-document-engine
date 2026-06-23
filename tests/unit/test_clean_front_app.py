@@ -832,10 +832,10 @@ def test_clean_front_streamlit_surface_is_not_legacy() -> None:
     )
     # Ticket 1.7 : dates d'exercice preremplies dynamiquement (cloture N+1).
     assert app.text_input(key="selarl_exercice_debut").value == "1er janvier"
-    assert app.text_input(key="selarl_exercice_fin").value == "31 decembre"
+    assert app.text_input(key="selarl_exercice_fin").value == "31 décembre"
     assert (
         app.text_input(key="selarl_exercice_cloture_premier").value
-        == f"31 decembre {date.today().year + 1}"
+        == f"31 décembre {date.today().year + 1}"
     )
     assert (
         app.text_input(key="selarl_departement_ordre").label

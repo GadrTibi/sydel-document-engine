@@ -181,8 +181,8 @@ def _prefill_random_selarl_data() -> None:
         "selarl_depot_banque_nom": random.choice(("BNP Paribas", "CIC", "Credit Agricole")),
         "selarl_depot_banque_adresse": company["banque_adresse"],
         "selarl_exercice_debut": "1er janvier",
-        "selarl_exercice_fin": "31 decembre",
-        "selarl_exercice_cloture_premier": f"31 decembre {date.today().year + 1}",
+        "selarl_exercice_fin": "31 décembre",
+        "selarl_exercice_cloture_premier": f"31 décembre {date.today().year + 1}",
         "selarl_autre_lieu_exercice": False,
         "selarl_lieu_exercice_adresse": "",
         "selarl_second_lieu_exercice_nom": "",
@@ -253,7 +253,7 @@ def _prefill_scm_test_data() -> None:
         "scm_ville_rcs": "Paris",
         "scm_banque_nom": "BANQUE EXEMPLE",
         "scm_banque_adresse": "1 rue Banque, 75009 Paris",
-        "scm_date_cloture_premier_exercice": "31 decembre 2026",
+        "scm_date_cloture_premier_exercice": "31 décembre 2026",
         "scm_signature_date": "15/05/2026",
         "scm_signataire_fonction": "gerant",
         "scm_signataire_titre": "Docteur",
@@ -289,7 +289,7 @@ def _prefill_scm_test_data() -> None:
         "scm_inter_sel_date_effet": "1er janvier 2027",
         "scm_inter_sel_seuil": "1 500 euros",
         "scm_inter_sel_annee_ref": "2027",
-        "scm_inter_sel_date_fin_gestion": "31 decembre 2027",
+        "scm_inter_sel_date_fin_gestion": "31 décembre 2027",
         "scm_inter_sel_date_attribution": "1er janvier",
     }
     values.update(
@@ -316,7 +316,7 @@ def _prefill_scm_test_data() -> None:
             nom="Martin",
             ville="Lyon",
             departement="69",
-            naissance="2 fevrier 1982",
+            naissance="2 février 1982",
             adresse="2 rue Exemple, 69000 Lyon",
             apport="300",
             nb=30,
@@ -366,7 +366,7 @@ def _civil_society_prefill(
         f"{prefix}_ville_rcs": "Paris",
         f"{prefix}_banque_nom": "BANQUE EXEMPLE",
         f"{prefix}_banque_adresse": "1 rue Banque, 75009 Paris",
-        f"{prefix}_date_cloture_premier_exercice": "31 decembre 2026",
+        f"{prefix}_date_cloture_premier_exercice": "31 décembre 2026",
         f"{prefix}_signature_date": "15/05/2026",
         f"{prefix}_signataire_fonction": "gerant",
         f"{prefix}_signataire_titre": "Docteur",
@@ -512,7 +512,7 @@ def _prefill_sci_test_data() -> None:
     values.update(
         _civil_pp_associe_prefill(
             "sci", 1, civilite="Madame", prenom="Alice", nom="Martin", ville="Lyon",
-            departement="69", naissance="2 fevrier 1982",
+            departement="69", naissance="2 février 1982",
             adresse="2 rue Exemple, 69000 Lyon", apport="600", nb=60, debut=41, fin=100,
         )
     )
@@ -539,7 +539,7 @@ def _prefill_sci_iris_test_data() -> None:
     values.update(
         _civil_pp_associe_prefill(
             "sci_iris", 1, civilite="Madame", prenom="Alice", nom="Martin", ville="Lyon",
-            departement="69", naissance="2 fevrier 1982",
+            departement="69", naissance="2 février 1982",
             adresse="2 rue Exemple, 69000 Lyon", apport="600", nb=60, debut=41, fin=100,
         )
     )
@@ -565,7 +565,7 @@ def _prefill_scs_test_data() -> None:
     values.update(
         _civil_pp_associe_prefill(
             "scs", 1, civilite="Madame", prenom="Alice", nom="Martin", ville="Lyon",
-            departement="69", naissance="2 fevrier 1982",
+            departement="69", naissance="2 février 1982",
             adresse="2 rue Exemple, 69000 Lyon", apport="400", nb=40, debut=61, fin=100,
             role="commanditaire",
         )
@@ -622,8 +622,8 @@ def _prefill_sas_test_data() -> None:
         "sas_banque_nom": "BANQUE EXEMPLE",
         "sas_signature_lieu": "Paris",
         "sas_exercice_debut": "1er janvier",
-        "sas_exercice_fin": "31 decembre",
-        "sas_date_cloture": "31 decembre 2026",
+        "sas_exercice_fin": "31 décembre",
+        "sas_date_cloture": "31 décembre 2026",
         "sas_signature_date": "14/05/2026",
     }
     _commit_civil_prefill(values)
@@ -727,8 +727,8 @@ def _spfpl_prefill_values(prefix: str) -> dict[str, object]:
         f"{prefix}_evaluateur_rep_prenom": "Eva",
         f"{prefix}_evaluateur_rep_nom": "Lemoine",
         f"{prefix}_exercice_debut": "1er janvier",
-        f"{prefix}_exercice_fin": "31 decembre",
-        f"{prefix}_date_cloture": "31 decembre 2026",
+        f"{prefix}_exercice_fin": "31 décembre",
+        f"{prefix}_date_cloture": "31 décembre 2026",
         f"{prefix}_signature_lieu": "Paris",
         f"{prefix}_signature_date": "14/05/2026",
         f"{prefix}_decision_date": "14/05/2026",
@@ -811,7 +811,7 @@ def _prefill_selas_test_data(
         "selas_adresse_lieu_exercice": "5 place du Centre, 69000 Lyon",
         "selas_banque_nom": "BANQUE EXEMPLE",
         "selas_banque_adresse": "1 rue Banque, 69009 Lyon",
-        "selas_date_cloture": "31 decembre 2026",
+        "selas_date_cloture": "31 décembre 2026",
         "selas_signature_lieu": "Lyon",
         "selas_signature_date": "15/05/2026",
         # DNC + identite du dirigeant : saisies SOUS l'associe coche dirigeant
@@ -1630,15 +1630,15 @@ def _render_generation_context(societe: dict[str, object]) -> dict[str, object]:
     siege_ville = str(societe.get("siege_ville") or "").strip()
     if not st.session_state.get("selarl_signature_lieu") and siege_ville:
         st.session_state["selarl_signature_lieu"] = siege_ville
-    # Dates d'exercice preremplies, cloture du premier exercice au 31 decembre
+    # Dates d'exercice preremplies, cloture du premier exercice au 31 décembre
     # de l'annee N+1, dynamique selon l'annee du dossier (ticket 1.7).
     if not st.session_state.get("selarl_exercice_debut"):
         st.session_state["selarl_exercice_debut"] = "1er janvier"
     if not st.session_state.get("selarl_exercice_fin"):
-        st.session_state["selarl_exercice_fin"] = "31 decembre"
+        st.session_state["selarl_exercice_fin"] = "31 décembre"
     if not st.session_state.get("selarl_exercice_cloture_premier"):
         st.session_state["selarl_exercice_cloture_premier"] = (
-            f"31 decembre {date.today().year + 1}"
+            f"31 décembre {date.today().year + 1}"
         )
     col_a, col_b = st.columns(2)
     signature_lieu = col_a.text_input("Lieu de signature", key="selarl_signature_lieu")
