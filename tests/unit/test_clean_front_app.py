@@ -618,6 +618,17 @@ def test_clean_front_selarl_second_lieu_appends_lieux_1() -> None:
     assert ctx.exercice_social.lieux[1].adresse_affichee == "20 rue Bleue, 75009 Paris"
 
 
+def test_clean_front_selarl_exercice_debut_accentuates_month() -> None:
+    # LIVE-03 / MINEUR 5 (re-Akainu T4) : le debut d'exercice est un text_input LIBRE ;
+    # un mois saisi sans accent (« 1er aout ») doit ressortir accentue (« 1er août »),
+    # comme fin/cloture. On verrouille la re-accentuation EN AMONT cote selarl_slice.
+    ctx = build_generation_context(
+        _valid_selarl_input(PROFESSION_MEDECIN, exercice_debut="1er aout")
+    )
+    assert ctx.exercice_social is not None
+    assert ctx.exercice_social.debut == "1er août"
+
+
 def test_clean_front_selarl_partial_second_lieu_ignored() -> None:
     # Ticket 2.2 : nom OU adresse seul -> pas de 2e lieu cote front (un seul lieu).
     ctx = build_generation_context(

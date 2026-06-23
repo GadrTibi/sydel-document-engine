@@ -418,9 +418,10 @@ def _to_selarl_input(payload: dict[str, object]) -> SelarlSliceInput:
         decision_date=payload.get("decision_date"),  # type: ignore[arg-type]
         depot_banque_nom=str(payload.get("banque_nom") or ""),
         depot_banque_adresse=str(payload.get("banque_adresse") or ""),
-        exercice_debut=str(payload.get("exercice_debut") or ""),
-        # LIVE-03 : re-accentue les mois saisis librement (« 31 decembre » ->
-        # « 31 décembre ») EN AMONT ; ces champs alimentent l'ExerciceSocial SELARL-uni.
+        # LIVE-03 : re-accentue les mois saisis librement (« 1er aout » -> « 1er août »)
+        # EN AMONT ; ces champs alimentent l'ExerciceSocial SELARL-uni. debut accentue
+        # comme fin/cloture (oubli releve par re-Akainu T4).
+        exercice_debut=accentuate_french_months(str(payload.get("exercice_debut") or "")),
         exercice_fin=accentuate_french_months(str(payload.get("exercice_fin") or "")),
         exercice_cloture_premier=accentuate_french_months(
             str(payload.get("exercice_cloture") or "")

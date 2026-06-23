@@ -832,14 +832,20 @@ def test_sas_live03_accentuates_exercice_months(tmp_path: Path) -> None:
     decembre 2026 » -> la sortie DOCX doit contenir « décembre » accentue, jamais « decembre ».
     """
     payload = dict(_sas_payload())
+    # debut accentue comme fin/cloture (oubli releve par re-Akainu T4) : « 1er aout » -> « août ».
+    payload["exercice_debut"] = "1er aout"
     payload["exercice_fin"] = "31 decembre"
     payload["date_cloture"] = "31 decembre 2026"
     generated = sas_slice.generate_dossier(payload, tmp_path / "sas_live03")
     full_text = "\n".join(_docx_text(p) for p in generated.docx_paths)
     assert "décembre" in full_text, "LIVE-03 : le mois doit ressortir accentue"
+    assert "août" in full_text, "LIVE-03 : le debut d'exercice doit ressortir accentue"
     assert (
         "31 decembre" not in full_text
     ), "LIVE-03 : aucune occurrence sans accent ne doit subsister"
+    assert (
+        "1er aout" not in full_text
+    ), "LIVE-03 : le debut d'exercice sans accent ne doit pas subsister"
 
 
 def test_scm_live03_accentuates_cloture_month(tmp_path: Path) -> None:
@@ -858,6 +864,40 @@ def test_scm_live03_accentuates_cloture_month(tmp_path: Path) -> None:
     assert (
         "31 decembre" not in full_text
     ), "LIVE-03 : aucune occurrence sans accent ne doit subsister (civil)"
+
+
+def test_scm_inter_sel_live03_accentuates_three_free_dates(tmp_path: Path) -> None:
+    """LIVE-03 (BLOQUANT re-Akainu T4) : les 3 dates inter-SEL a saisie libre
+    (date_effet / date_fin_gestion / date_attribution) ressortent accentuees dans
+    contrat_frais_communs.docx et reglement_interieur_scm.docx. On force les 3 mois
+    accentuables (aout / fevrier / decembre) saisis SANS accent."""
+    payload = _civil_base(
+        "SCM",
+        "scm",
+        [_pp("Jean", "Durand", 50, 1, 50, 500), _pp("Alice", "Martin", 50, 51, 100, 500)],
+    )
+    payload.update(_SCM_INTER_SEL_INPUTS)
+    payload["inter_sel_date_effet"] = "1er aout 2027"
+    payload["inter_sel_date_fin_gestion"] = "28 fevrier 2028"
+    payload["inter_sel_date_attribution"] = "31 decembre 2027"
+
+    generated = css.generate_dossier(payload, tmp_path / "scm-inter-sel-live03")
+    targets = {
+        p.name: _docx_text(p)
+        for p in generated.docx_paths
+        if p.name in {"contrat_frais_communs.docx", "reglement_interieur_scm.docx"}
+    }
+    assert set(targets) == {"contrat_frais_communs.docx", "reglement_interieur_scm.docx"}
+    contrat = targets["contrat_frais_communs.docx"]
+    reglement = targets["reglement_interieur_scm.docx"]
+    # date_effet -> contrat_frais_communs
+    assert "août" in contrat
+    assert "aout" not in contrat
+    # date_fin_gestion + date_attribution -> reglement_interieur_scm
+    assert "février" in reglement
+    assert "décembre" in reglement
+    assert "fevrier" not in reglement
+    assert "decembre" not in reglement
 
 
 def test_sas_apports_sum_must_equal_capital() -> None:

@@ -667,9 +667,10 @@ def build_generation_context(data: SelarlSliceInput) -> DocumentGenerationContex
             montant=capital_social_display,
         ),
         exercice_social=ExerciceSocial(
-            debut=data.exercice_debut,
-            # LIVE-03 : re-accentue les mois saisis librement (« 31 decembre » -> « 31 décembre »)
+            # LIVE-03 : re-accentue les mois saisis librement (« 1er aout » -> « 1er août »)
             # EN AMONT du generateur, qui reste un echo fidele du modele de reference.
+            # debut accentue comme fin/cloture (oubli releve par re-Akainu T4).
+            debut=accentuate_french_months(data.exercice_debut),
             fin=accentuate_french_months(data.exercice_fin),
             date_cloture_premier_exercice=accentuate_french_months(
                 data.exercice_cloture_premier

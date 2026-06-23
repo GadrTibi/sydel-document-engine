@@ -554,9 +554,10 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
             montant=capital,
         ),
         exercice_social=ExerciceSocial(
-            debut=str(payload.get("exercice_debut") or ""),
-            # LIVE-03 : re-accentue les mois saisis librement (« 31 decembre » ->
-            # « 31 décembre ») EN AMONT du generateur, qui reste un echo fidele du modele.
+            # LIVE-03 : re-accentue les mois saisis librement (« 1er aout » -> « 1er août »)
+            # EN AMONT du generateur, qui reste un echo fidele du modele. debut accentue
+            # comme fin/cloture (oubli releve par re-Akainu T4).
+            debut=accentuate_french_months(str(payload.get("exercice_debut") or "")),
             fin=accentuate_french_months(str(payload.get("exercice_fin") or "")),
             date_cloture_premier_exercice=accentuate_french_months(
                 str(payload.get("date_cloture") or "")

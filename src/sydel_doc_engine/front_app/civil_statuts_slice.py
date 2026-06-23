@@ -643,17 +643,24 @@ def _build_inter_sel_context(
             )
         )
     locaux = LocauxContext(adresse_affichee=str(payload.get("inter_sel_locaux") or "") or None)
+    # LIVE-03 : ces 3 dates sont des text_input LIBRES (« 1er aout 2026 ») ; sans
+    # re-accentuation EN AMONT, « aout »/« fevrier »/« decembre » partent verbatim dans
+    # contrat_frais_communs.docx et reglement_interieur_scm.docx. On accentue ici comme
+    # les autres dates de sortie a saisie libre (convention Rafael 2026-06-23).
     frais = FraisCommunsContext(
-        date_effet_contrat=str(payload.get("inter_sel_date_effet") or "") or None
+        date_effet_contrat=(
+            accentuate_french_months(str(payload.get("inter_sel_date_effet") or "")) or None
+        )
     )
     reglement = ReglementInterieurScmContext(
         seuil_depense_commune=str(payload.get("inter_sel_seuil") or "") or None,
         annee_reference_charges=str(payload.get("inter_sel_annee_ref") or "") or None,
         date_fin_gestion_administrative=(
-            str(payload.get("inter_sel_date_fin_gestion") or "") or None
+            accentuate_french_months(str(payload.get("inter_sel_date_fin_gestion") or "")) or None
         ),
-        date_attribution_responsabilites=str(payload.get("inter_sel_date_attribution") or "")
-        or None,
+        date_attribution_responsabilites=(
+            accentuate_french_months(str(payload.get("inter_sel_date_attribution") or "")) or None
+        ),
     )
     return parties, praticiens, locaux, frais, reglement
 
