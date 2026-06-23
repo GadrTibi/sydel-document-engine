@@ -88,6 +88,16 @@ j'ajoute UNE ligne ici : `- [AAAA-MM-JJ HH:MM] [TYPE] description (réf : SHA / 
 - [~20:00] **ACTION** refonte SELAS **#2** (onglet 24) : la DNC porte le NOM DU DIRIGEANT dans son nom de fichier (`declaration_non_condamnation_Durand.docx`) — renommage de la DNC du président produite par l'orchestrateur. **[MÉTIER À CONFIRMER Albane :** si CHAQUE dirigeant (DG inclus) doit déposer SA propre DNC → générer une par dirigeant ; non tranché ici, no-extrapolation.] 4 tests SELAS alignés + 1 test dédié. **525 verts.**
 - [~19:45] **AUDIT (règle 65) — B2 = FAUX POSITIF de l'organe 1.** La comparution SELAS multi (`statuts_selas_multi._add_physical_comparution`, « Source para 16 ») rend `[situation_maritale]` **brut par conception de SA source** (≠ le template gold sel_exercice qui injecte la clause conjoint). Le conjoint **est** bien utilisé là où la source SELAS l'exige (DOC-005/006 renonciation/avertissement via `_conjoint_person`). Injecter le conjoint dans la comparution **dévierait** de la source SELAS → on ne touche pas. C'est précisément la limite nommée de l'organe 1 (gold = seule vérité). **B2 non corrigé : par décision de source, pas par oubli.**
 
+## 2026-06-23 (nuit) — CAMPAGNE FIX AKAINU (boucle fix → re-Akainu jusqu'à RIEN À REDIRE)
+
+- [~] **AUDIT** Sweep Akainu (18 auditeurs) sur les retours « traités » : **8 BLOQUANT + 16 MAJEUR**, 10 retours re-ouverts. Le carnet déclarait O24-01 « propagé tous types » = FAUX (prouvé sur DOCX régénérés). Verdict : `AKAINU_VERDICT_2026-06-23.md`.
+- [~] **MÉTHODE** (Gad) : boucle `fix → Akainu → fix` jusqu'à RIEN À REDIRE codifiée (règle 66 + GATE 4 Operating Model). + règle Q4 propagation (un retour se propage à tous les cas concernés). + dashboard à chaque complétion.
+- [~] **FIX O24-01** (annexe Sydel) : golden-bloc — prédicat partagé `annexe_filter.is_creation_fee_annexe_line` dans les 3 boucles de rendu + garde `_assert_clean`. **re-Akainu RIEN À REDIRE** (12 DOCX régénérés, ligne « compte bancaire » conservée). `dc530c8`.
+- [~] **FIX O24-10** (dérivation profession→type) : `"dentiste" in casefold()` (tiret vs underscore) → dentaire produit du dentaire (DOC-011/012). **re-Akainu RIEN À REDIRE**. `be7ee6c`.
+- [~] **FIX LIVE-03** (mois accentués) : fixture prod `scm_cession` « 15 aout » → « août » + test sur la vraie fixture (le test existant la masquait). `8e14d7c`.
+- [~] **DETTE (latente, hors prod)** : course de fichiers sur le rename DNC (`rename_dnc_with_signataire`, `path.replace`) en exécution pytest **parallèle** (passe en séquentiel ; chaque dossier prod a son output_dir → pas un bug prod). À durcir si la CI passe en `-n`.
+- [~] **RESTE** (bloquant/majeur) : O24-03, O24-14 (bloquant) ; O24-05/07/11/12, LIVE-02 (majeur).
+
 ## 2026-06-23 (soir) — TEST GRANDEUR NATURE : retours traités VIA la machine (WF-RETOUR)
 
 - [~] **R-GAD** : feu vert pour traiter les retours onglet 24 + live AVEC la machine (Operating Model) ; les résultats diront si la machine a marché.
