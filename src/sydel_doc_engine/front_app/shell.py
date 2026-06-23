@@ -1901,10 +1901,11 @@ def _cession_text(
     section: str,
     field: str,
     default: str,
+    disabled: bool = False,
 ) -> str:
     key = f"{_CESSION_PREFIX}_cession_{section}_{field}"
     _seed_default(key, default)
-    value = container.text_input(label, key=key)
+    value = container.text_input(label, key=key, disabled=disabled)
     return str(value).strip()
 
 
@@ -2176,6 +2177,7 @@ def _render_cession_form(
         # la valeur du cabinet AVANT report : à la transition décoché→coché on sauvegarde la
         # saisie courante, à coché→décoché on la RESTAURE (re-Akainu tour 2, MINEUR O24-12 :
         # une adresse saisie manuellement ne doit pas être écrasée par le siège à la décoche).
+        cabinet_locked = False
         if prefix == "selas":
             prev_key = f"{_CESSION_PREFIX}_cabinet_meme_lieu_exercice_prev"
             before_key = f"{_CESSION_PREFIX}_cabinet_adresse_avant_report"
@@ -2190,6 +2192,7 @@ def _render_cession_form(
                     # Décoché → coché : on mémorise la valeur saisie avant de la remplacer.
                     st.session_state[before_key] = str(st.session_state.get(cab_key) or "")
                 st.session_state[cab_key] = lieu_exercice
+                cabinet_locked = True
             elif was_checked and not checked:
                 # Coché → décoché : on restaure la saisie d'avant report (siège à défaut).
                 st.session_state[cab_key] = (
@@ -2198,9 +2201,13 @@ def _render_cession_form(
             st.session_state[prev_key] = checked
         elif not st.session_state.get(cab_key) and siege_display:
             st.session_state[cab_key] = siege_display
+        # O24-12 (re-Akainu tour 3, NITPICK) : quand la case est cochée, le champ adresse du
+        # cabinet est un MIROIR du lieu d'exercice -> on le DÉSACTIVE pour qu'une saisie manuelle
+        # à l'état coché ne soit pas silencieusement écrasée par le report au rerun suivant.
+        # Décocher le réactive (avec restauration de la saisie d'avant report, cf. ci-dessus).
         adresse_cabinet = _cession_text(
             st, "Adresse du cabinet", section="cabinet", field="adresse",
-            default=siege_display,
+            default=siege_display, disabled=cabinet_locked,
         )
         telephone_cabinet = _cession_text(
             st, "Telephone du cabinet (facultatif)", section="cabinet", field="telephone",
@@ -2721,7 +2728,13 @@ def _render_scm_cession_form(
 
     cedant = payload.setdefault("cedant", {}) or {}
     with st.expander("Cedant"):
-        st.caption("Preremplie avec l'associe unique ; modifiable si besoin.")
+        # O24-11 (re-Akainu tour 3, MINEUR) : en SELAS multi-associes le cedant est le vendeur
+        # SELECTIONNE parmi plusieurs associes — « l'associe unique » y est FAUX (comme la
+        # legende bail, deja conditionnee sur le prefixe). + accents corriges.
+        if prefix == "selas":
+            st.caption("Préremplie avec l'associé sélectionné ci-dessus ; modifiable si besoin.")
+        else:
+            st.caption("Préremplie avec l'associé unique ; modifiable si besoin.")
         # Preremplissage vivant : tant que le champ est vide, il suit la fiche
         # praticien ; une saisie manuelle prend le dessus.
         for field, value in (

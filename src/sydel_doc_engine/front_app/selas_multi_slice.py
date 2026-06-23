@@ -1323,13 +1323,11 @@ def _render_selas_cession(
     v_situation_raw = str(
         st.session_state.get(f"{PREFIX}_associe_{vendeur_index}_situation") or ""
     )
-    # Source d'AFFICHAGE seulement : a defaut de libelle brut, on collapse via la situation
-    # deja accentuee du vendeur (« marie »/« mariee »). Cette source ne sert JAMAIS a deriver
-    # le regime (re-Akainu tour 2, MINEUR O24-11 : la valeur collapsee a perdu separation/
-    # universelle/participation -> _vendeur_regime_label la mal-deriverait en communaute legale).
-    v_situation_display_src = v_situation_raw or (
-        (vendeur.situation_maritale or "") if vendeur else ""
-    )
+    # Affichage : matrimonial_status_value(v_situation_raw) -> 'marie'/'pacse'/... pour
+    # _situation_display cote sous-formulaire. PAS de repli vers vendeur.situation_maritale
+    # (re-Akainu tour 3, NITPICK O24-11) : cette valeur est DEJA accentuee (« marié ») et
+    # matrimonial_status_value la mal-deriverait en 'celibataire' (pas de NFKD). En UI reelle
+    # v_situation_raw est toujours renseigne (le selectbox situation a un defaut « Celibataire »).
     # Conjoint du vendeur : lu directement depuis les cles de session de l'associe choisi
     # (captees pour tout associe MARIE, cf. _render_conjoint_si_communaute), donc present
     # meme hors communaute legale ou regime_communautaire_associe est None (MAJEUR O24-11).
@@ -1344,7 +1342,7 @@ def _render_selas_cession(
         "nationalite": vendeur.nationalite if vendeur else None,
         "numero_ordre": vendeur.numero_ordre if vendeur else None,
         "numero_rpps": vendeur.numero_rpps if vendeur else None,
-        "situation_maritale": matrimonial_status_value(v_situation_display_src),
+        "situation_maritale": matrimonial_status_value(v_situation_raw),
         "conjoint_civilite": str(
             st.session_state.get(f"{v_conj_prefix}_conjoint_civilite") or ""
         ),

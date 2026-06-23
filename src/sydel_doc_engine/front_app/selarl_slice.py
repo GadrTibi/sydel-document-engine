@@ -62,6 +62,7 @@ from sydel_doc_engine.front_app.field_derivations import (
     DEFAULT_SEUIL_ACHAT_MATERIEL,
     DEFAULT_SEUIL_EMPRUNT,
     DEFAULT_TITRE_AFFICHAGE,
+    accentuate_french_months,
     calculate_nominal_value,
     date_to_french_words,
     format_grouped_numeric_value,
@@ -667,8 +668,12 @@ def build_generation_context(data: SelarlSliceInput) -> DocumentGenerationContex
         ),
         exercice_social=ExerciceSocial(
             debut=data.exercice_debut,
-            fin=data.exercice_fin,
-            date_cloture_premier_exercice=data.exercice_cloture_premier,
+            # LIVE-03 : re-accentue les mois saisis librement (« 31 decembre » -> « 31 décembre »)
+            # EN AMONT du generateur, qui reste un echo fidele du modele de reference.
+            fin=accentuate_french_months(data.exercice_fin),
+            date_cloture_premier_exercice=accentuate_french_months(
+                data.exercice_cloture_premier
+            ),
             # lieux[0] = lieu d'exercice #1 (le siege par defaut ; un
             # `lieu_exercice_adresse` legacy reste lu en fallback pour
             # retro-compat -> rendu 1-lieu byte-identique). lieux[1] = 2e lieu

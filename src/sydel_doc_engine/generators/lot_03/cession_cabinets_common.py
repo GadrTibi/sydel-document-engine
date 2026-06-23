@@ -776,9 +776,16 @@ def _build_cession_replacements(
     # --- Conditions suspensives (compromis) ---
     put_opt("[date_realisation_limite]", _french_date(cession.date_limite_realisation))
 
-    # --- Salaries (acte dentaire) : reprise 0 / 1 / N (regle NotebookLM) ---
+    # --- Salaries (acte dentaire UNIQUEMENT) : reprise 0 / 1 / N (regle NotebookLM) ---
     # 0 salarie -> "Néant" (convention systeme) ; 1..N -> liste nom/prenom/poste.
-    put("[clause_reprise_salaries]", _build_clause_reprise_salaries(cession.salaries))
+    # re-Akainu tour 3 (MINEUR O24-14) : on ne CONSTRUIT la clause (et donc on ne valide les
+    # salaries via _salarie_label/_required_text) QUE pour l'acte dentaire — seul modele portant
+    # le token. Les autres variants (compromis, acte medical) partagent le MEME contexte (salaries
+    # de l'acte, generes ENSEMBLE en SELAS) mais n'ont pas cette clause : la construire ferait
+    # lever sur un salarie incomplet et crasherait le bundle. Le RENDU est ainsi aligne sur la
+    # VALIDATION (_validate_salaries), qui ne valide deja que l'acte dentaire.
+    if variant.etape == ACTE and variant.type_cabinet == DENTAIRE:
+        put("[clause_reprise_salaries]", _build_clause_reprise_salaries(cession.salaries))
     # [date_entree_jouissance] (dentaire) : source choisie = date de debut du bail
     # professionnel (entree en jouissance des locaux). A confirmer cote metier.
     put("[date_entree_jouissance]", _french_date(bail.date_debut))

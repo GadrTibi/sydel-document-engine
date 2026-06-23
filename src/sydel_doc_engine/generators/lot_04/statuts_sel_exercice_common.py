@@ -404,6 +404,11 @@ def add_exercice_replacements(
 ) -> None:
     if ctx.exercice_social is None:
         raise ValueError(f"exercice_social est obligatoire pour {DOCUMENT_CODE}.")
+    # LIVE-03 : la re-accentuation des mois saisis librement se fait EN AMONT (a la saisie
+    # front, cf. front_app accentuate_french_months) — PAS ici. Le generateur reste un echo
+    # FIDELE du contexte (le test de parite ligne-a-ligne avec le modele source l'exige : le
+    # modele de reference SELARL contient « 31 decembre » sans accent — typo source a faire
+    # trancher par Albane, cf. QUESTIONS_RAFAEL.md ; on ne modifie pas le gold ici).
     if require_debut_fin:
         replacements.update(
             {

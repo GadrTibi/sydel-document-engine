@@ -86,6 +86,34 @@ _MONTHS: Final = (
 )
 
 
+_MONTH_ACCENT_FIXES: Final = (
+    (re.compile(r"\baout\b", re.IGNORECASE), "août"),
+    (re.compile(r"\bf[ée]vrier\b", re.IGNORECASE), "février"),
+    (re.compile(r"\bd[ée]cembre\b", re.IGNORECASE), "décembre"),
+)
+
+
+def accentuate_french_months(text: str) -> str:
+    """Re-accentue les noms de mois mal saisis dans une chaine de SORTIE (LIVE-03).
+
+    « 31 decembre 2026 » -> « 31 décembre 2026 ». Les champs de date d'exercice sont des
+    text_input LIBRES : une saisie sans accent partirait verbatim dans le DOCX. On re-accentue
+    DONC EN AMONT (a la construction du contexte cote front), pas dans le generateur (qui doit
+    rester un echo fidele du modele de reference SELARL — il contient « 31 decembre » sans
+    accent, typo source a faire trancher par Albane). Seuls les 3 mois a accent sont concernes
+    (aout/fevrier/decembre) ; insensible a la casse, preserve la capitale initiale, idempotent.
+    Convention globale Rafael 2026-06-23 (cf. _MONTHS pour les sorties derivees d'un objet date)."""
+    if not text:
+        return text
+    out = text
+    for pattern, accented in _MONTH_ACCENT_FIXES:
+        out = pattern.sub(
+            lambda m, a=accented: a.capitalize() if m.group(0)[:1].isupper() else a,
+            out,
+        )
+    return out
+
+
 _NUM_VOIE_RE: Final = re.compile(
     r"^\s*(\d+\s*(?:bis|ter|quater)?)\s+(.+)$",
     re.IGNORECASE,
