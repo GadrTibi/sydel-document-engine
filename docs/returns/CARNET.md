@@ -44,5 +44,6 @@
 
 - **Reste à faire** (Statut ≠ TRAITÉ/VALIDÉ) : **`O24-03` propagation tous types** (adresses une ligne hors SELAS) ; `O24-04` (icône copier, **tous types**, UI) ; `LIVE-05`/`LIVE-06` (CLARIF).
 - **Règle de propagation (Q4 triage, Gad 2026-06-23)** : un retour universel se propage à TOUS les cas concernés ; O24-01/02/05 déjà propagés ; O24-06→15 = SELAS-pluri structurel (pas de propagation).
-- **En attente validation Rafael** (TRAITÉ, `Validé = ⬜`) : O24-01 à 03, 05 à 15 + LIVE-01/02/03/04.
+- **🔴 DÉFAUTS Akainu — RE-OUVERTS (PAS traités)** : `O24-01`, `O24-03`, `O24-05`, `O24-07`, `O24-10`, `O24-11`, `O24-12`, `O24-14`, `LIVE-02`, `LIVE-03` — 8 bloquant + 16 majeur. Détail : `AKAINU_VERDICT_2026-06-23.md`. (Mes « traité » sur ces items étaient FAUX — Akainu l'a prouvé sur DOCX régénérés.)
+- **En attente validation Rafael** (traité ET 0 défaut Akainu) : `O24-02`, `O24-06`, `O24-08`, `O24-09`, `O24-13`, `O24-15` + `LIVE-01`, `LIVE-04`.
 - **VALIDÉ** : aucun → le carnet reste plein (Rafael doit retester `sprint/engine-completion`).
