@@ -2152,10 +2152,17 @@ def _render_cession_form(
         # la valeur du cabinet AVANT report : à la transition décoché→coché on sauvegarde la
         # saisie courante, à coché→décoché on la RESTAURE (re-Akainu tour 2, MINEUR O24-12 :
         # une adresse saisie manuellement ne doit pas être écrasée par le siège à la décoche).
+        # O24-12 (re-Akainu tour 4, RE-SCOPE règle 12 — 3e perte de saisie sur l'ancien design).
+        # Design propre : la SAISIE MANUELLE vit dans `manual_key` (jamais écrasée par le report)
+        # et le champ visible (cab_key) est piloté par l'état de la case :
+        #  - cochée + lieu d'exercice renseigné -> MIROIR du lieu, champ DÉSACTIVÉ ;
+        #  - sinon (décochée, OU cochée mais lieu vide) -> ÉDITABLE, valeur = saisie manuelle.
+        # À la transition coché→décoché on restaure `manual_key` (siège à défaut). En mode éditable
+        # on resynchronise `manual_key` APRÈS le widget -> la saisie survit à tout cycle coche/décoche.
         cabinet_locked = False
         if prefix == "selas":
             prev_key = f"{_CESSION_PREFIX}_cabinet_meme_lieu_exercice_prev"
-            before_key = f"{_CESSION_PREFIX}_cabinet_adresse_avant_report"
+            manual_key = f"{_CESSION_PREFIX}_cabinet_adresse_manuelle"
             was_checked = bool(st.session_state.get(prev_key))
             checked = st.checkbox(
                 "Adresse du cabinet = même adresse que le lieu d'exercice",
@@ -2163,27 +2170,22 @@ def _render_cession_form(
                 help="Coché : reporte l'adresse du lieu d'exercice dans l'adresse du cabinet.",
             )
             if checked and lieu_exercice:
-                if not was_checked:
-                    # Décoché → coché : on mémorise la valeur saisie avant de la remplacer.
-                    st.session_state[before_key] = str(st.session_state.get(cab_key) or "")
-                st.session_state[cab_key] = lieu_exercice
+                st.session_state[cab_key] = lieu_exercice  # miroir non éditable
                 cabinet_locked = True
             elif was_checked and not checked:
-                # Coché → décoché : on restaure la saisie d'avant report (siège à défaut).
-                st.session_state[cab_key] = (
-                    st.session_state.get(before_key) or siege_display
-                )
+                # Coché → décoché : restaurer la dernière saisie manuelle (siège à défaut).
+                st.session_state[cab_key] = st.session_state.get(manual_key) or siege_display
             st.session_state[prev_key] = checked
         elif not st.session_state.get(cab_key) and siege_display:
             st.session_state[cab_key] = siege_display
-        # O24-12 (re-Akainu tour 3, NITPICK) : quand la case est cochée, le champ adresse du
-        # cabinet est un MIROIR du lieu d'exercice -> on le DÉSACTIVE pour qu'une saisie manuelle
-        # à l'état coché ne soit pas silencieusement écrasée par le report au rerun suivant.
-        # Décocher le réactive (avec restauration de la saisie d'avant report, cf. ci-dessus).
         adresse_cabinet = _cession_text(
             st, "Adresse du cabinet", section="cabinet", field="adresse",
             default=siege_display, disabled=cabinet_locked,
         )
+        if prefix == "selas" and not cabinet_locked:
+            # En mode éditable, la valeur courante du champ EST la saisie manuelle ->
+            # on la mémorise pour qu'elle survive à un futur report (coche).
+            st.session_state[manual_key] = adresse_cabinet
         telephone_cabinet = _cession_text(
             st, "Telephone du cabinet (facultatif)", section="cabinet", field="telephone",
             default="",
