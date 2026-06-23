@@ -6,20 +6,20 @@
 ```
 ┌─ SYDEL · RETOURS CLIENT — compteur de vitesse ──────────────────────────
 │
-│   CORRIGÉS  [████████████████████████]  tour 1 (10) + tour 2 (5 MAJEUR racine)
-│   re-Akainu T1 OK ✅ : O24-01,10 · LIVE-02   ·   re-Akainu T2 (7 items) EN COURS
-│   T2 racine committé 1702638 (545 verts) : O24-03,07,11,12 + 05,14 + LIVE-03
+│   CORRIGÉS  [████████████████████████]  T1(10) + T2(5 MAJEUR) + T3(3 MAJEUR+résidus)
+│   re-Akainu OK ✅ : O24-01,07,10 · LIVE-02   ·   re-Akainu T3 (6 items) EN COURS
+│   T3 racine committé a152bf4 (550 verts) : O24-03,11,14 MAJEUR + 05,12,LIVE-03
 │   VALIDÉ  (Rafael)     [░░░░░░░░░░░░░░░░░░░░░░░░]   0/21  ·   0%   ⚠ rien validé
 │   RESTE : propagation Q4 (adresses tous types) · O24-04 icône · L5/L6 clarif
 │
-│   ── ONGLET 24 (✅=Akainu OK · 🟢=corrigé, batch en cours · ⬜=à faire) ──
+│   ── ONGLET 24 (✅=Akainu OK · 🟢=corrigé, re-Akainu en cours · ⬜=à faire) ──
 │   ✅ 01 annexe Sydel (Akainu OK)        ✅ 02 DNC nommée/dirigeant
-│   🟢 03 adresses 1 ligne SELAS (ordre+siège+parser)   ⬜ 04 icône copier (décision UI)
-│   🟢 05 valeur nominale SELARL          ✅ 06 pluri=multi   ✅ 08 date+adresse 1×
-│   🟢 07 Président obligatoire           ✅ 09 « (profession) »
-│   ✅ 10 dérivation dentaire (Akainu OK) 🟢 11 vendeur (régime+conjoint repris)
-│   🟢 12 case cabinet (test discriminant) ✅ 13 CA non facultatif
-│   🟢 14 acte+compromis (crash résolu)   ✅ 15 acquéreur retiré
+│   🟢 03 adresses 1 ligne (numéro requis)  ⬜ 04 icône copier (décision UI)
+│   🟢 05 valeur nominale (+ SCM cédée)   ✅ 06 pluri=multi   ✅ 08 date+adresse 1×
+│   ✅ 07 Président (racine, Akainu OK)    ✅ 09 « (profession) »
+│   ✅ 10 dérivation dentaire (Akainu OK) 🟢 11 vendeur (régime+conjoint, PACS exclu)
+│   🟢 12 case cabinet (édition préservée) ✅ 13 CA non facultatif
+│   🟢 14 acte+compromis (salariés tolérés) ✅ 15 acquéreur retiré
 │
 │   ── RETOURS LIVE ───────────────────────────────────────────────────
 │   ✅ L1 situation=menu   🟢 L2 case régime morte supprimée   🟢 L3 mois accentués   ✅ L4 choix étape

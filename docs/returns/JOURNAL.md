@@ -144,6 +144,10 @@ j'ajoute UNE ligne ici : `- [AAAA-MM-JJ HH:MM] [TYPE] description (réf : SHA / 
 - [~T2] **ACTION** corrections **à la racine** (`1702638`) : O24-03 parser (CP = dernier groupe de 5 chiffres) ; O24-07 plus de requalification DG→Président ; O24-11 conjoint capté tout régime marié + dissociation situation/régime ; O24-12 case cabinet réversible. Tests durcis (cas-limites, cardinalité rôles, dissociation, acte+compromis ensemble). **545 verts, ruff propre.**
 - [~T2] **Q-RAFAEL** (accumulées, jamais demandées à Gad) : Président obligatoire en SELAS ? cumul Président+DG+DGA ? numéro de voie optionnel ? wording case cabinet ? « SELARL » figé dans les modèles de cession SELAS → `QUESTIONS_RAFAEL.md`.
 - [~T2] **AUDIT** re-Akainu tour 2 relancé sur les 7 items re-corrigés (objectif RIEN À REDIRE).
+- [~T2-verdict] **AUDIT (re-Akainu tour 2)** : O24-07 = RIEN À REDIRE (fermé ✅). 6 autres = DEFAUTS, dont 3 MAJEUR : O24-03 (incohérence parser↔validateur sur le numéro — issue de MON extrapolation « numéro optionnel »), O24-11 (PACS capté mais droppé à l'acte — MON extrapolation), O24-14 (VRAI bug : salariés repris → compromis crashe dans le bundle). + MINEUR/NITPICK (SCM valeur nominale, édition cabinet, tables mois).
+- [~T3] **ACTION** corrections tour 2 (`a152bf4`) : O24-03 REVERT numéro requis (verbatim-exact, cohérent validateur) ; O24-11 PACS retiré + fallback régime corrigé ; O24-14 le compromis IGNORE les salariés du contexte partagé (plus de crash) ; O24-05 SCM valeur nominale auto-calc ; O24-12 édition manuelle cabinet préservée ; LIVE-03 garde DOCX + parité mois. **550 verts, ruff propre.** Leçon : ne pas extrapoler hors verbatim (numéro, PACS) — mémoire `feedback-fixes-racine-pas-surface`.
+- [~T3] **Q-RAFAEL** ajoutées : lieu-dit sans numéro (O24-03), périmètre PACS (O24-11) → `QUESTIONS_RAFAEL.md`.
+- [~T3] **AUDIT** re-Akainu tour 3 relancé sur les 6 items résiduels (objectif RIEN À REDIRE).
 
 ## Conneries / incidents Rafael (résumé — détail dans la mémoire privée)
 - **G1** (2026-06-22) : nouvelle remarque sur la SELARL « validée 100 % » et socle de tous les types (confirmé par Rafael : nouvelle remarque, pas régression).
