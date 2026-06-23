@@ -136,6 +136,15 @@ j'ajoute UNE ligne ici : `- [AAAA-MM-JJ HH:MM] [TYPE] description (réf : SHA / 
 
 - [~04:00] **ACTION R12 + RÈGLE GLOBALE (Gad « modifie de partout + règle globale mois »)** : noms de mois en SORTIE toujours accentués (`_MONTHS` → février/août/décembre ; seeds `front_widgets` → « 31 décembre » ; prefills shell.py « 2 février 1982 », etc.). **Maps de PARSING gardées sans accent** (le parseur normalise NFKD). 2 assertions de form mises à jour. Règle codifiée (mémoire `convention-mois-accentues` + commentaire dans `_MONTHS`). **534 verts, ruff propre.**
 
+## 2026-06-23 — machine des retours + boucle Akainu (perfectionnement avant reprise)
+
+- [~T1] **AUDIT (Akainu, gate règle 66)** : passe adversariale sur les 18 retours « traités » → 10 défauts RE-OUVERTS (traité ≠ validé). Corrigés un par un en boucle fix→Akainu.
+- [~T1] **ACTION** 10 défauts corrigés ; O24-01 (annexe Sydel) + O24-10 (dérivation dentaire) + LIVE-02 re-Akainu = RIEN À REDIRE. Registre golden-blocs créé (`docs/operations/GOLDEN_BLOCS.md`).
+- [~T2] **AUDIT (batch re-Akainu, 8 items)** : re-vérification adversariale par RÉGÉNÉRATION réelle → **5 MAJEUR** prouvés (mes fixes O24-07/11/12 = surface UI, pas racine ; + régression que J'avais introduite sur O24-03 : le parser prenait « 8 Mai 1945 » pour un CP). Vindication de la boucle : Akainu a attrapé avant Rafael.
+- [~T2] **ACTION** corrections **à la racine** (`1702638`) : O24-03 parser (CP = dernier groupe de 5 chiffres) ; O24-07 plus de requalification DG→Président ; O24-11 conjoint capté tout régime marié + dissociation situation/régime ; O24-12 case cabinet réversible. Tests durcis (cas-limites, cardinalité rôles, dissociation, acte+compromis ensemble). **545 verts, ruff propre.**
+- [~T2] **Q-RAFAEL** (accumulées, jamais demandées à Gad) : Président obligatoire en SELAS ? cumul Président+DG+DGA ? numéro de voie optionnel ? wording case cabinet ? « SELARL » figé dans les modèles de cession SELAS → `QUESTIONS_RAFAEL.md`.
+- [~T2] **AUDIT** re-Akainu tour 2 relancé sur les 7 items re-corrigés (objectif RIEN À REDIRE).
+
 ## Conneries / incidents Rafael (résumé — détail dans la mémoire privée)
 - **G1** (2026-06-22) : nouvelle remarque sur la SELARL « validée 100 % » et socle de tous les types (confirmé par Rafael : nouvelle remarque, pas régression).
 - **G2** : ne teste pas réellement — preuve : 4 docs sur 7 produits non remarqués (docs non téléchargés).

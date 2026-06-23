@@ -6,8 +6,9 @@
 ```
 ┌─ SYDEL · RETOURS CLIENT — compteur de vitesse ──────────────────────────
 │
-│   CORRIGÉS  [████████████████████████]  10/10 ·  tous les défauts Akainu corrigés
-│   re-Akainu OK ✅ : O24-01, O24-10   ·   batch re-Akainu (8 items) EN COURS
+│   CORRIGÉS  [████████████████████████]  tour 1 (10) + tour 2 (5 MAJEUR racine)
+│   re-Akainu T1 OK ✅ : O24-01,10 · LIVE-02   ·   re-Akainu T2 (7 items) EN COURS
+│   T2 racine committé 1702638 (545 verts) : O24-03,07,11,12 + 05,14 + LIVE-03
 │   VALIDÉ  (Rafael)     [░░░░░░░░░░░░░░░░░░░░░░░░]   0/21  ·   0%   ⚠ rien validé
 │   RESTE : propagation Q4 (adresses tous types) · O24-04 icône · L5/L6 clarif
 │
