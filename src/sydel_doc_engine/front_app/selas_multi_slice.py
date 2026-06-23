@@ -2043,7 +2043,14 @@ def _rename_with_slug(path: Path, slug: str) -> Path:
     « lettre_renonciation_associe.docx » -> « lettre_renonciation_associe_Dupont.docx ».
     En cas de collision improbable (deux associes au meme slug), suffixe un index.
     """
-    target = path.with_name(f"{path.stem}_{slug}{path.suffix}")
+    # Idempotence (re-Akainu tour 6, MINEUR O24-05) : si la source a deja ete consommee
+    # (renommee par un run anterieur / etat FS perime / race Windows), ne JAMAIS lever de
+    # FileNotFoundError -> retenir la cible deja produite, sinon le chemin tel quel. (Meme
+    # robustesse que ui_runtime.rename_dnc_with_signataire ; cause de la flakiness ~20 %.)
+    base_target = path.with_name(f"{path.stem}_{slug}{path.suffix}")
+    if not path.exists():
+        return base_target if base_target.exists() else path
+    target = base_target
     if target.exists() and target != path:
         index = 2
         while True:
