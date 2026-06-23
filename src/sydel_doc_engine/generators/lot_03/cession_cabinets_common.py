@@ -1066,8 +1066,11 @@ def _validate_selection(cession: CessionContext, variant: CessionCabinetVariant)
     if etape not in SUPPORTED_ETAPES:
         supported = ", ".join(sorted(SUPPORTED_ETAPES))
         raise ValueError(f"cession.etape doit etre dans [{supported}] pour {DOCUMENT_CODE}.")
-    if etape != variant.etape:
-        raise ValueError(f"cession.etape doit etre {variant.etape} pour {variant.output_filename}.")
+    # O24-14 (onglet 24) : en SELAS, l'acte ET le compromis sont produits ENSEMBLE. Le
+    # document genere est determine par le VARIANT (variant.etape pilote modele + contenu),
+    # jamais par cession.etape. La SELECTION cote orchestrateur (_cession_cabinet_enabled)
+    # a deja choisi les bons documents -> on ne leve plus sur un mismatch
+    # cession.etape/variant.etape (sinon le compromis crashe quand cession.etape='acte').
 
 
 def _validate_arbitrage_blocks(

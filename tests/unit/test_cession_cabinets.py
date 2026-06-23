@@ -298,6 +298,17 @@ def test_cession_cabinet_generators_render_docx(
     _assert_no_residual_tokens(text)
 
 
+def test_o24_14_compromis_genere_meme_si_cession_etape_acte(tmp_path: Path) -> None:
+    # O24-14 (onglet 24) : en SELAS l'acte ET le compromis sont produits ENSEMBLE, donc le
+    # compromis est généré alors que cession.etape est forcée à 'acte'. Avant le fix,
+    # _validate_selection levait « cession.etape doit etre compromis pour compromis_... ».
+    # Le document est piloté par le VARIANT (variant.etape), pas par cession.etape.
+    ctx = _context(etape="acte", type_cabinet="dentaire")
+    output_path = CompromisCessionCabinetDentaireGenerator().generate(ctx, tmp_path)
+    assert output_path == tmp_path / "compromis_cession_cabinet_dentaire.docx"
+    assert output_path.exists()
+
+
 def test_acte_medical_blocks_without_medical_bail_validation(tmp_path: Path) -> None:
     ctx = _context(
         validations=CessionValidations(

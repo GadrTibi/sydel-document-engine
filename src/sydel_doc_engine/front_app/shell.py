@@ -2398,7 +2398,9 @@ def _render_cession_form(
             )
         )
         pret_payload: dict[str, str] = {"montant": "", "taux": "", "duree": ""}
-        if etape == "compromis":
+        # O24-14 : en SELAS le compromis est produit en plus de l'acte -> on expose ses
+        # champs propres (prêt) même si l'étape affichée est 'acte'.
+        if etape == "compromis" or prefix == "selas":
             col_d, col_e, col_f = st.columns(3)
             pret_payload = {
                 "montant": _format_montant(
@@ -2528,7 +2530,7 @@ def _render_cession_form(
                     )
 
     date_limite_realisation = ""
-    if etape == "compromis":
+    if etape == "compromis" or prefix == "selas":  # O24-14 : compromis produit aussi en SELAS
         date_limite_realisation = _cession_text(
             st, "Date limite de realisation (JJ/MM/AAAA, facultatif)",
             section="meta", field="date_limite", default="",
