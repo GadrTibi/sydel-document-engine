@@ -45,6 +45,11 @@ def _docx_text(path: Path) -> str:
 def _assert_clean(text: str) -> None:
     assert "[" not in text
     assert "]" not in text
+    # O24-01 (onglet 24) : les 2 items frais de cabinet de création (« lettre de mission » /
+    # « acompte des honoraires ») sont retirés de l'annexe de TOUS les statuts, partout.
+    low = text.lower()
+    assert "lettre de mission" not in low, "O24-01 : 'lettre de mission' (frais cabinet création) à retirer"
+    assert "acompte des honoraires" not in low, "O24-01 : 'acompte des honoraires' (frais cabinet création) à retirer"
 
 
 # --- Registre + deroulante ----------------------------------------------------

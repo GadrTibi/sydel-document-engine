@@ -15,6 +15,7 @@ from sydel_doc_engine.domain.models import (
     StatutsSelasMultiContext,
     StatutsSelasMultiPresident,
 )
+from sydel_doc_engine.generators.lot_04.annexe_filter import is_creation_fee_annexe_line
 from sydel_doc_engine.rendering.docx_builder import (
     add_paragraph,
     add_statuts_article_heading,
@@ -146,6 +147,8 @@ class StatutsSelasMultiGenerator:
             if not text:
                 continue
             rendered = _replace_placeholders(text, replacements)
+            if is_creation_fee_annexe_line(rendered):  # O24-01 : annexe sans frais cabinet création
+                continue
             _add_rendered_paragraph(output_doc, rendered)
 
         full_text = "\n".join(paragraph.text for paragraph in output_doc.paragraphs)

@@ -13,6 +13,7 @@ from sydel_doc_engine.domain.models import (
     StatutsCivilsAssocie,
     StatutsCivilsContext,
 )
+from sydel_doc_engine.generators.lot_04.annexe_filter import is_creation_fee_annexe_line
 from sydel_doc_engine.rendering.docx_builder import (
     add_header_logo,
     add_paragraph,
@@ -74,7 +75,10 @@ class StatutsScmGenerator:
             text = paragraph.text.strip()
             if not text:
                 continue
-            _add_rendered_paragraph(output_doc, _replace_placeholders(text, replacements))
+            rendered = _replace_placeholders(text, replacements)
+            if is_creation_fee_annexe_line(rendered):  # O24-01 : annexe sans frais cabinet création
+                continue
+            _add_rendered_paragraph(output_doc, rendered)
 
         full_text = "\n".join(paragraph.text for paragraph in output_doc.paragraphs)
         if "[" in full_text or "]" in full_text:

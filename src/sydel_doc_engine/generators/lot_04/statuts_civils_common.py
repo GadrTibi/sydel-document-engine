@@ -15,6 +15,7 @@ from sydel_doc_engine.domain.models import (
     StatutsCivilsAssocie,
     StatutsCivilsContext,
 )
+from sydel_doc_engine.generators.lot_04.annexe_filter import is_creation_fee_annexe_line
 from sydel_doc_engine.rendering.docx_builder import (
     add_paragraph,
     add_statuts_article_heading,
@@ -142,6 +143,8 @@ def generate_statuts_civil_docx(
         rendered = _replace_placeholders(text, replacements)
         rendered = _strip_editorial_marker(rendered)
         if not rendered:
+            continue
+        if is_creation_fee_annexe_line(rendered):  # O24-01 : annexe sans frais cabinet création
             continue
         _add_rendered_paragraph(output_doc, rendered, paragraph)
         if template.expected_type == "sci_iris" and index == 561:
