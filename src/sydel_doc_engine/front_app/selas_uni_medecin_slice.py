@@ -157,7 +157,6 @@ def render_selas_uni_medecin_form() -> dict[str, object]:
         "Valeur nominale d'une action (calculee)",
         value=valeur_action,
         disabled=True,
-        key=f"{PREFIX}_valeur_nominale_action_display",
     )
     duree = _t(col_e, "duree", "Duree de la societe (ex: 99 ans)") or "99 ans"
     col_f, col_g = st.columns(2)

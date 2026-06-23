@@ -237,7 +237,6 @@ def render_civil_form(structure: str) -> dict[str, object]:
         "Valeur nominale d'une part (calculee)",
         value=valeur_nominale,
         disabled=True,
-        key=f"{prefix}_valeur_nominale_part_display",
     )
     duree = "99"
 

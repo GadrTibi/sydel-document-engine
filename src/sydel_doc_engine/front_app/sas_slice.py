@@ -137,7 +137,6 @@ def render_sas_form() -> dict[str, object]:
         "Valeur nominale d'une action (calculee)",
         value=valeur_action,
         disabled=True,
-        key="sas_valeur_nominale_action_display",
     )
     col_an, col_ai = st.columns(2)
     apports_nature = _t(col_an, "apports_nature_montant", "Apports en nature (montant)")

@@ -213,7 +213,6 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
         "Valeur nominale d'une action (calculee)",
         value=valeur_action,
         disabled=True,
-        key=f"{prefix}_valeur_nominale_action_display",
     )
     ville_rcs = _t(st, prefix, "ville_rcs", "RCS SPFPL (ville)")
 
