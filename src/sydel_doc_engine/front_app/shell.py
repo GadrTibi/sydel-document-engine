@@ -39,6 +39,7 @@ from sydel_doc_engine.front_app.field_derivations import (
     MATRIMONIAL_STATUS_MARRIED_COMMUNAUTE,
     MATRIMONIAL_STATUS_PRESETS,
     NATIONALITY_PRESETS,
+    accentuate_french_months,
     calculate_nominal_value,
     derive_gender_from_civilite,
     format_french_date,
@@ -1736,7 +1737,9 @@ def _scm_cedant_overrides(
     candidates: dict[str, object] = {
         "nationalite": str(praticien.get("nationalite") or ""),
         "adresse_affichee": _personal_address_display(praticien),
-        "date_naissance": praticien.get("date_naissance"),
+        # LIVE-03 : date de naissance saisie libre -> mois re-accentues en amont.
+        # Une vraie `date` (saisie via date_input) est preservee telle quelle.
+        "date_naissance": _accentuate_date_value(praticien.get("date_naissance")),
         "ville_naissance": str(praticien.get("ville_naissance") or ""),
         "departement_naissance": str(praticien.get("departement_naissance") or ""),
         "situation_maritale": str(praticien.get("situation_maritale") or ""),
@@ -1914,6 +1917,41 @@ def _cession_text(
     return str(value).strip()
 
 
+def _accentuate_date_value(value: object) -> object:
+    """Re-accentue les mois d'une date saisie en TEXTE libre (LIVE-03).
+
+    Une vraie `date` (saisie via un date_input) est renvoyee TELLE QUELLE : le
+    generateur la formate deja avec les mois accentues (_MONTHS_FR). Seules les
+    saisies str (« 1er aout 2021 ») sont re-accentuees en amont. None / vide :
+    renvoye intact (l'anti-trou du generateur s'en charge)."""
+    if isinstance(value, str):
+        return accentuate_french_months(value)
+    return value
+
+
+def _cession_date(
+    container: object,
+    label: str,
+    *,
+    section: str,
+    field: str,
+    default: str = "",
+) -> str:
+    """Champ date a saisie LIBRE du sous-formulaire cession/bail (LIVE-03).
+
+    Identique a `_cession_text` mais re-accentue les mois (« 1er aout 2021 » ->
+    « 1er août 2021 ») AVANT injection dans le contexte. La saisie verbatim
+    partirait sinon non accentuee dans le DOCX : le generateur (_french_date /
+    _display_date_or_empty) reste un echo fidele du modele et ne corrige rien.
+    Une saisie ISO (JJ/MM/AAAA) est intacte (aucun nom de mois a accentuer).
+    """
+    return accentuate_french_months(
+        _cession_text(
+            container, label, section=section, field=field, default=default
+        )
+    )
+
+
 def _render_cession_form(
     cession: bool,
     profession: str,
@@ -1978,6 +2016,11 @@ def _render_cession_form(
     praticien_nom = str(praticien.get("nom") or "").strip()
     praticien_genre = praticien.get("genre")
     praticien_adresse = _personal_address_display(praticien)
+    # LIVE-03 : la date de naissance de la fiche praticien est un text_input LIBRE.
+    # On re-accentue les mois EN AMONT (le generateur reste un echo fidele du modele
+    # — cf. _french_date / _display_date_or_empty). Reutilise pour le vendeur auto et
+    # pour le locataire du bail. Une vraie `date` (date_input) est preservee telle quelle.
+    praticien_date_naissance = _accentuate_date_value(praticien.get("date_naissance"))
     situation_label = str(st.session_state.get(f"{_CESSION_PREFIX}_situation_maritale") or "")
     conjoint_payload = {
         "civilite_affichage": str(praticien.get("conjoint_civilite") or ""),
@@ -2014,7 +2057,7 @@ def _render_cession_form(
                 "prenom": praticien_prenom,
                 "nom": praticien_nom,
                 "profession": profession_label,
-                "date_naissance": praticien.get("date_naissance"),
+                "date_naissance": praticien_date_naissance,
                 "ville_naissance": str(praticien.get("ville_naissance") or ""),
                 "departement_naissance": str(praticien.get("departement_naissance") or ""),
                 "nationalite": str(praticien.get("nationalite") or ""),
@@ -2036,9 +2079,9 @@ def _render_cession_form(
             prenom = _cession_text(col_b, "Prenom", section="vendeur", field="prenom", default="")
             nom = _cession_text(col_c, "Nom", section="vendeur", field="nom", default="")
             col_d, col_e, col_f = st.columns(3)
-            date_naissance = _cession_text(
+            date_naissance = _cession_date(
                 col_d, "Date de naissance (JJ/MM/AAAA)",
-                section="vendeur", field="date_naissance", default="",
+                section="vendeur", field="date_naissance",
             )
             ville_naissance = _cession_text(
                 col_e, "Ville de naissance", section="vendeur", field="ville_naissance",
@@ -2138,13 +2181,13 @@ def _render_cession_form(
             )
             if type_cabinet == "medical" and etape == "acte":
                 col_c, col_d = st.columns(2)
-                date_immatriculation = _cession_text(
+                date_immatriculation = _cession_date(
                     col_c, "Date d'immatriculation (JJ/MM/AAAA, facultatif)",
-                    section="acquereur", field="date_immatriculation", default="",
+                    section="acquereur", field="date_immatriculation",
                 )
-                date_inscription_ordre = _cession_text(
+                date_inscription_ordre = _cession_date(
                     col_d, "Date d'inscription a l'ordre (JJ/MM/AAAA, facultatif)",
-                    section="acquereur", field="date_inscription_ordre", default="",
+                    section="acquereur", field="date_inscription_ordre",
                 )
     acquereur_payload = {
         "denomination_societe": denomination,
@@ -2235,9 +2278,9 @@ def _render_cession_form(
             # La clause du modele dentaire decrit une acquisition : les champs
             # ci-dessous alimentent ses tokens (vides -> zones a completer).
             origine_mode = "achete"
-        date_origine = _cession_text(
+        date_origine = _cession_date(
             st, "Date d'origine de propriete (JJ/MM/AAAA, facultatif)",
-            section="cabinet", field="origine_date", default="",
+            section="cabinet", field="origine_date",
         )
         precedent_payload: dict[str, str] | None = None
         prix_origine = ""
@@ -2281,13 +2324,13 @@ def _render_cession_form(
     # --- Bail professionnel (tickets 2.4 / 2.5 / 2.6) ---
     with st.expander("Bail professionnel"):
         col_a, col_b = st.columns(2)
-        date_bail = _cession_text(
+        date_bail = _cession_date(
             col_a, "Date du bail (JJ/MM/AAAA, facultatif)",
-            section="bail", field="date_bail", default="",
+            section="bail", field="date_bail",
         )
-        date_effet = _cession_text(
+        date_effet = _cession_date(
             col_b, "Date d'effet du bail (JJ/MM/AAAA, facultatif)",
-            section="bail", field="date_effet", default="",
+            section="bail", field="date_effet",
         )
         col_c, col_d = st.columns(2)
         duree_bail = _cession_text(
@@ -2568,9 +2611,9 @@ def _render_cession_form(
 
     date_limite_realisation = ""
     if etape == "compromis" or prefix == "selas":  # O24-14 : compromis produit aussi en SELAS
-        date_limite_realisation = _cession_text(
+        date_limite_realisation = _cession_date(
             st, "Date limite de realisation (JJ/MM/AAAA, facultatif)",
-            section="meta", field="date_limite", default="",
+            section="meta", field="date_limite",
         )
 
     # --- Avenant de bail (DOC-007) : bailleur a renseigner, locataire derive ---
@@ -2644,7 +2687,7 @@ def _render_cession_form(
                 "prenom": praticien_prenom,
                 "nom": praticien_nom,
                 "profession": profession_label,
-                "date_naissance": praticien.get("date_naissance"),
+                "date_naissance": praticien_date_naissance,
                 "ville_naissance": str(praticien.get("ville_naissance") or ""),
                 "nationalite": str(praticien.get("nationalite") or ""),
                 "adresse_affichee": praticien_adresse,

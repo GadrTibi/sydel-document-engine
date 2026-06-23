@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from datetime import date
 from pathlib import Path
 from unicodedata import normalize
@@ -398,6 +399,46 @@ def _assert_ui_prefill_cession_generates(
     )
     assert "[" not in combined_text
     assert "]" not in combined_text
+
+
+def test_clean_front_cession_libre_dates_have_accented_months(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    # LIVE-03 : les dates a SAISIE LIBRE du sous-formulaire cession/bail
+    # (date du bail, date d'origine de propriete, date de naissance vendeur)
+    # doivent ressortir avec les mois ACCENTUES dans le DOCX, meme si l'operateur
+    # saisit « aout » sans accent. Le generateur reste un echo fidele : la
+    # re-accentuation se fait EN AMONT (front, _render_cession_form).
+    from sydel_doc_engine.front_app import shell
+
+    monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-cession-accents")
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
+    app.selectbox(key="selarl_profession").set_value("Medecin")
+    app = app.run(timeout=180)
+
+    app.button(key="clean_generate_test_data").click()
+    app = app.run(timeout=180)
+    assert app.checkbox(key="selarl_cession").value is True
+
+    # Saisies LIBRES non accentuees (« 1er aout 2021 ») sur les dates du bail et de
+    # l'origine de propriete (toutes deux passees par _cession_date, comme la date de
+    # naissance vendeur a saisie libre — meme helper).
+    app.text_input(key="selarl_cession_bail_date_bail").set_value("1er aout 2021")
+    app.text_input(key="selarl_cession_cabinet_origine_date").set_value("3 aout 2019")
+    app = app.run(timeout=180)
+
+    app.button(key="clean_generate_dossier").click()
+    app = app.run(timeout=180)
+    assert [e.value for e in app.error] == []
+
+    generated = app.session_state["clean_generated_dossier"]
+    combined = "\n".join(_docx_text(Path(path)) for path in generated["docx_paths"])
+
+    # Mois ACCENTUE present (date du bail + date d'origine de propriete).
+    assert "août" in combined
+    # Plus aucune occurrence du mois « aout » NON accentue (toutes re-accentuees).
+    assert re.search(r"\baout\b", combined) is None
 
 
 def test_clean_front_ui_creation_only_unchanged(
