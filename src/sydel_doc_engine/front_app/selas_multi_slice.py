@@ -93,13 +93,11 @@ _PROFESSION_PLURIELS: dict[str, str] = {
 }
 _PROFESSION_OPTIONS: tuple[str, ...] = tuple(_PROFESSION_PLURIELS)
 
-# Profession pre-reglee par cle de type enregistre. La SELAS « multi » generique
-# n'a pas de pre-reglage (defaut = 1re option, medecin). La SELAS « dentiste
-# pluripersonnelle » pre-selectionne « chirurgien-dentiste ». Cle absente =
-# aucun pre-reglage.
-_PROFESSION_DEFAULTS_BY_TYPE: dict[str, str] = {
-    "selas_dentiste_pluri_v1": "chirurgien-dentiste",
-}
+# Profession pre-reglee par cle de type enregistre. Retours Rafael 2026-06-23 :
+# le cas unique « SELAS pluripersonnelle » choisit la profession DANS le cas ->
+# AUCUN pre-reglage (defaut = 1re option du menu ; le moteur bascule sur le corpus
+# dentiste/medecin selon le choix). Le dict reste pour une eventuelle extension.
+_PROFESSION_DEFAULTS_BY_TYPE: dict[str, str] = {}
 
 
 def _profession_choice_key() -> str:
@@ -271,9 +269,9 @@ def _associe_count() -> int:
 
 
 def render_selas_form(type_key: str = "selas_multi_v1") -> dict[str, object]:
-    # Cas nomme « SELAS dentiste pluripersonnelle » : pre-regle la profession sur
-    # « chirurgien-dentiste » (le moteur basculera sur le corpus dentiste). Pour
-    # la SELAS multi generique, aucun pre-reglage (profession libre).
+    # Retours Rafael 2026-06-23 : cas unique « SELAS pluripersonnelle » a profession
+    # LIBRE (choisie au menu) -> plus aucun pre-reglage par cle (le moteur bascule sur
+    # le corpus dentiste/medecin selon le choix). L'appel reste pour extension future.
     _apply_type_profession_default(type_key)
     # RAF-006 (parite gold, couche partagee) : cloture du 1er exercice pre-remplie
     # « 31 decembre N+1 », modifiable. Libelle TEXTUEL (comme le gold), pas un picker.
@@ -622,12 +620,12 @@ def _render_one_associe(index: int) -> StatutsCivilsAssocie:
 def _render_dirigeant_choice(prefix: str, index: int) -> None:
     """Case « Dirigeant » + role + champs complementaires pour un associe physique.
 
-    Le wording « Directeur General » est desormais FOURNI par le modele PV
-    nominations dirigeants (Albane 2026-06-17) : le verrou est leve, on propose
-    « President » ET « Directeur General » (le « DG delegue » reste hors V1, son
-    wording dedie n'etant pas fourni). Le President reste le signataire du tronc
-    commun (DNC / procuration / statuts) ; le Directeur General ajoute une
-    deuxieme decision de nomination au PV.
+    Retours Rafael 2026-06-23 : chaque associe choisit UN role parmi President,
+    Directeur General et Directeur General Associe (ce dernier MANQUAIT). Cardinalite
+    (onglet 24) : 1 President, 1 Directeur General, plusieurs DG Associes. Le President
+    reste le signataire du tronc commun (DNC / procuration / statuts) ; le DG et les
+    DG Associes ajoutent chacun une decision de nomination au PV (le PV rend le role
+    de facon generique).
 
     Reunion 2026-06-09 : les champs complementaires (filiation pour la declaration
     de non-condamnation, adresse structuree pour la procuration) ne sont demandes
@@ -645,9 +643,12 @@ def _render_dirigeant_choice(prefix: str, index: int) -> None:
         st.session_state[role_key] = "Président"
     st.selectbox(
         "Role du dirigeant",
-        ("Président", "Directeur Général"),
+        ("Président", "Directeur Général", "Directeur Général Associé"),
         key=role_key,
-        help="Le Président signe le tronc commun ; le Directeur Général ajoute une décision au PV.",
+        help=(
+            "Le Président signe le tronc commun ; le Directeur Général et le Directeur "
+            "Général Associé ajoutent chacun une décision de nomination au PV."
+        ),
     )
     # #8 / B4 (onglet 24) : la filiation (parents) est la SEULE info propre au
     # dirigeant pour la DNC. L'adresse personnelle ET la date de naissance sont
@@ -715,11 +716,11 @@ def _collect_dirigeants_nomines_indices(
 
 
 def _validate_roles_dirigeants(associes: list[StatutsCivilsAssocie]) -> list[str]:
-    """#7 (onglet 24) : les fonctions de direction ne sont PAS cumulatives.
+    """#7 (onglet 24) : cardinalite des roles de direction.
 
-    Un seul President et un seul Directeur General sont admis (le « DG delegue »
-    multiple reste hors V1, son wording dedie n'etant pas fourni). On bloque donc
-    si plus d'un associe physique coche le meme role de direction."""
+    Un seul President et un seul Directeur General sont admis ; les Directeurs
+    Generaux Associes peuvent etre PLUSIEURS (retours Rafael 2026-06-23). On bloque
+    donc seulement si plus d'un associe coche « President » ou « Directeur General »."""
     roles = [
         _dirigeant_role(i)
         for i, associe in enumerate(associes)

@@ -863,14 +863,10 @@ _TYPED_TEST_DATA_PREFILL = {
 }
 
 # Prefill surchargeant le defaut par structure pour une cle de type precise.
-# La SELAS dentiste pluripersonnelle reutilise le prefill SELAS avec la
-# profession chirurgien-dentiste -> donnees de test coherentes avec le corpus
-# dentiste (sinon le prefill par structure remplirait « medecin »).
-_TYPED_TEST_DATA_PREFILL_BY_KEY = {
-    "selas_dentiste_pluri_v1": lambda: _prefill_selas_test_data(
-        "chirurgien-dentiste", "chirurgiens-dentistes"
-    ),
-}
+# Retours Rafael 2026-06-23 : le cas SELAS pluripersonnelle unique (cle
+# `selas_multi_v1`) utilise le prefill SELAS par defaut (medecin) ; la profession
+# (dont chirurgien-dentiste) se choisit dans le formulaire. Plus de surcharge par cle.
+_TYPED_TEST_DATA_PREFILL_BY_KEY: dict[str, object] = {}
 
 
 def _cession_prefill_values(profession: str) -> dict[str, object]:

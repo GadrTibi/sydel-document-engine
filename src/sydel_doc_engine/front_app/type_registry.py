@@ -115,22 +115,14 @@ REGISTERED_TYPES: Final[tuple[RegisteredType, ...]] = (
         generation_enabled=True,
         status="moteur_teste",
     ),
+    # Retours Rafael 2026-06-23 : un SEUL cas SELAS pluripersonnelle (la profession
+    # est choisie DANS le cas -> plus de « dentiste » dans le nom). L'ancien
+    # « SELAS multi-associes creation V1 » est supprime ; l'ancien « SELAS dentiste
+    # pluripersonnelle » est fusionne ici. La cle interne reste `selas_multi_v1`
+    # (deja en profession libre, corpus dentiste/medecin pilote par la profession).
     RegisteredType(
         key="selas_multi_v1",
-        label="SELAS multi-associes creation V1",
-        structure="SELAS",
-        slice_module="sydel_doc_engine.front_app.selas_multi_slice",
-        generation_enabled=True,
-        status="moteur_teste",
-    ),
-    # Cas NOMME « SELAS dentiste pluripersonnelle » : meme slice/moteur que la
-    # SELAS multi (structure SELAS), mais la profession est pre-reglee sur
-    # « chirurgien-dentiste » -> le moteur bascule sur le corpus statuts dentiste
-    # (Statuts_SELAS_dentiste_pluri_modele.docx). Existe pour qu'Albane retrouve
-    # le cas par son nom dans la deroulante, comme la SELARL dentiste.
-    RegisteredType(
-        key="selas_dentiste_pluri_v1",
-        label="SELAS dentiste pluripersonnelle creation V1",
+        label="SELAS pluripersonnelle creation V1",
         structure="SELAS",
         slice_module="sydel_doc_engine.front_app.selas_multi_slice",
         generation_enabled=True,

@@ -1774,8 +1774,7 @@ def test_front_dropdown_lists_all_types_with_selarl_default() -> None:
         "SPFPL medecins (forme SAS) creation V1",
         "SPFPL dentistes - cession creation V1",
         "SPFPL dentistes - apport creation V1",
-        "SELAS multi-associes creation V1",
-        "SELAS dentiste pluripersonnelle creation V1",
+        "SELAS pluripersonnelle creation V1",
         "SELAS unipersonnelle medecin creation V1",
     ]
     # Surface SELARL inchangee : aucun expander sur le defaut.
@@ -1895,8 +1894,7 @@ def test_front_routes_to_sci_slice_and_generates(tmp_path: Path, monkeypatch) ->
         ("SPFPL medecins (forme SAS) creation V1", "statuts_sas_spfpl_medecins.docx"),
         ("SPFPL dentistes - cession creation V1", "statuts_spfpl_cession.docx"),
         ("SPFPL dentistes - apport creation V1", "statuts_spfpl_apport.docx"),
-        ("SELAS multi-associes creation V1", "statuts_selas_multi.docx"),
-        ("SELAS dentiste pluripersonnelle creation V1", "statuts_selas_multi.docx"),
+        ("SELAS pluripersonnelle creation V1", "statuts_selas_multi.docx"),
     ],
 )
 def test_typed_test_data_button_generates(
@@ -2009,7 +2007,7 @@ def test_selas_cession_masque_le_bloc_acquereur(tmp_path: Path, monkeypatch) -> 
 
     monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selas-cess")
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
-    app.selectbox(key="clean_dossier_type").set_value("SELAS multi-associes creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle creation V1")
     app = app.run(timeout=180)
     next(b for b in app.button if "test_data" in str(b.key)).click()
     app = app.run(timeout=180)
@@ -2074,7 +2072,7 @@ def test_selas_cession_vendeur_selectionnable(tmp_path: Path, monkeypatch) -> No
 
     monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selas-vendeur")
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
-    app.selectbox(key="clean_dossier_type").set_value("SELAS multi-associes creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle creation V1")
     app = app.run(timeout=180)
     next(b for b in app.button if "test_data" in str(b.key)).click()
     app = app.run(timeout=180)
@@ -2100,7 +2098,7 @@ def test_selas_profession_field_removed(tmp_path: Path, monkeypatch) -> None:
 
     monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selas-prof")
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
-    app.selectbox(key="clean_dossier_type").set_value("SELAS multi-associes creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle creation V1")
     app = app.run(timeout=180)
     next(b for b in app.button if "test_data" in str(b.key)).click()
     app = app.run(timeout=180)
@@ -2134,7 +2132,7 @@ def test_selas_siege_meme_adresse_que_lieu_exercice(tmp_path: Path, monkeypatch)
 
     monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selas-siege")
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
-    app.selectbox(key="clean_dossier_type").set_value("SELAS multi-associes creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle creation V1")
     app = app.run(timeout=180)
     next(b for b in app.button if "test_data" in str(b.key)).click()
     app = app.run(timeout=180)
@@ -2151,22 +2149,24 @@ def test_selas_siege_meme_adresse_que_lieu_exercice(tmp_path: Path, monkeypatch)
 def test_front_selas_dentiste_pluri_uses_dentiste_corpus(
     tmp_path: Path, monkeypatch
 ) -> None:
-    # Cas NOMME « SELAS dentiste pluripersonnelle » : selectionner l'entree puis
-    # cliquer « donnees de test » et generer doit produire les STATUTS DENTISTE
-    # (corpus chirurgien-dentiste), pas le corpus medecin. Prouve que la cle de
-    # type pre-regle bien la profession et bascule le moteur sur le bon corpus.
+    # Cas unique « SELAS pluripersonnelle » (retours Rafael 2026-06-23) : la profession
+    # se choisit DANS le formulaire. En selectionnant « chirurgien-dentiste », la
+    # generation doit produire les STATUTS DENTISTE (corpus dentiste), pas medecin.
     from streamlit.testing.v1 import AppTest
 
     from sydel_doc_engine.front_app import shell
 
     monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selas-dentiste")
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
-    app.selectbox(key="clean_dossier_type").set_value(
-        "SELAS dentiste pluripersonnelle creation V1"
-    )
+    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle creation V1")
     app = app.run(timeout=180)
 
     next(b for b in app.button if "test_data" in str(b.key)).click()
+    app = app.run(timeout=180)
+
+    # Choisir la profession dentiste dans le formulaire -> bascule le moteur sur le
+    # corpus dentiste (plus de pre-reglage par cle de type).
+    app.selectbox(key="selas_profession_choice").set_value("chirurgien-dentiste")
     app = app.run(timeout=180)
 
     generate_button = next(
@@ -2197,7 +2197,7 @@ def test_front_selas_change_dirigeant_generates(tmp_path: Path, monkeypatch) -> 
 
     monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selas-dir")
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
-    app.selectbox(key="clean_dossier_type").set_value("SELAS multi-associes creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle creation V1")
     app = app.run(timeout=180)
 
     # Prefill (2 associes, dirigeant = associe 0 par defaut).
@@ -2261,7 +2261,7 @@ def test_selas_deux_directeurs_generaux_bloque(tmp_path: Path, monkeypatch) -> N
 
     monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selas-dg")
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
-    app.selectbox(key="clean_dossier_type").set_value("SELAS multi-associes creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle creation V1")
     app = app.run(timeout=180)
     next(b for b in app.button if "test_data" in str(b.key)).click()
     app = app.run(timeout=180)
@@ -2279,6 +2279,39 @@ def test_selas_deux_directeurs_generaux_bloque(tmp_path: Path, monkeypatch) -> N
         b for b in app.button if str(b.key) == "clean_typed_generate_dossier"
     )
     assert generate_button.disabled is True
+
+
+def test_selas_role_directeur_general_associe(tmp_path: Path, monkeypatch) -> None:
+    # R3 (Rafael 2026-06-23) : le role « Directeur Général Associé » MANQUAIT ; il doit
+    # etre proposable. Un Président + un Directeur Général Associé ne bloque pas (les
+    # DG Associes peuvent etre plusieurs, contrairement au President et au DG uniques).
+    from streamlit.testing.v1 import AppTest
+
+    from sydel_doc_engine.front_app import shell
+
+    monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selas-dga")
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
+    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle creation V1")
+    app = app.run(timeout=180)
+    next(b for b in app.button if "test_data" in str(b.key)).click()
+    app = app.run(timeout=180)
+
+    # Associe 1 devient dirigeant ; le role « Directeur Général Associé » est propose.
+    app.checkbox(key="selas_associe_1_is_dirigeant").set_value(True)
+    app = app.run(timeout=180)
+    role_sb = next(
+        s for s in app.selectbox if str(s.key) == "selas_associe_1_role_dirigeant"
+    )
+    assert "Directeur Général Associé" in list(role_sb.options)
+    role_sb.set_value("Directeur Général Associé")
+    app = app.run(timeout=180)
+
+    # Président (associe 0) + DG Associé (associe 1) -> pas de blocage.
+    assert not any("Directeur Général" in item.value for item in app.caption)
+    generate_button = next(
+        b for b in app.button if str(b.key) == "clean_typed_generate_dossier"
+    )
+    assert generate_button.disabled is False
 
 
 def test_front_today_button_fills_date_non_selarl() -> None:
