@@ -317,6 +317,44 @@ def test_o24_14_compromis_genere_meme_si_cession_etape_acte(tmp_path: Path) -> N
     _assert_no_residual_tokens(compromis_text)
 
 
+def test_o24_14_compromis_tolere_salaries_partages_avec_acte(tmp_path: Path) -> None:
+    # re-Akainu tour 2 (MAJEUR O24-14) : en SELAS, l'acte ET le compromis partagent UN SEUL
+    # contexte. Si l'acte dentaire porte des salariés repris (clause propre à l'acte), le
+    # compromis recoit le même contexte → il doit les IGNORER, pas lever. Avant le fix,
+    # _validate_salaries crashait le compromis → tout le bundle « acte + compromis » échouait.
+    ctx = _context(
+        etape="acte",
+        type_cabinet="dentaire",
+        salaries=[
+            CessionSalarie(civilite_affichage="Madame", prenom="Lea", nom="Petit"),
+            CessionSalarie(civilite_affichage="Monsieur", prenom="Noe", nom="Robert"),
+        ],
+    )
+    # l'acte rend la clause salariés ; le compromis ne doit PAS lever malgré les salariés.
+    acte_path = ActeCessionCabinetDentaireGenerator().generate(ctx, tmp_path)
+    compromis_path = CompromisCessionCabinetDentaireGenerator().generate(ctx, tmp_path)
+    assert acte_path.exists() and compromis_path.exists()
+    acte_text = _docx_text(acte_path)
+    assert "Petit" in acte_text and "Robert" in acte_text  # clause salariés sur l'acte
+    _assert_no_residual_tokens(_docx_text(compromis_path))
+
+
+def test_o24_11_acte_retranscrit_regime_et_conjoint_du_vendeur(tmp_path: Path) -> None:
+    # re-Akainu tour 2 (MINEUR O24-11) : preuve END-TO-END (DOCX) que le verbatim « toutes les
+    # informations du vendeur retranscrites » est honoré dans l'acte — régime matrimonial ET
+    # conjoint présents, sans artefact « Marie(e) » du libellé brut ni token résiduel. (Le
+    # branchement SELAS context-building — valeur collapsée pour l'affichage, libellé brut pour
+    # le régime — est verrouillé par le test unitaire de dissociation situation/régime.)
+    ctx = _context()  # vendeur marié (communauté réduite), conjoint Madame Claire Durand
+    text = _docx_text(ActeCessionCabinetMedicalGenerator().generate(ctx, tmp_path))
+    assert "Claire Durand" in text  # conjoint du vendeur retranscrit dans l'acte
+    assert "communaute reduite aux acquets" in text  # régime matrimonial retranscrit (fixture)
+    # pas d'artefact du LIBELLE BRUT du menu situation (« Marie(e) sous le regime ... » doublé) :
+    assert "Marie(e)" not in text
+    assert text.count("sous le régime") <= 1  # régime jamais doublé (« ... régime ... régime ... »)
+    _assert_no_residual_tokens(text)
+
+
 def test_acte_medical_blocks_without_medical_bail_validation(tmp_path: Path) -> None:
     ctx = _context(
         validations=CessionValidations(

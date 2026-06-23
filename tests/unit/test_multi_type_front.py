@@ -2184,14 +2184,19 @@ def test_parse_address_full_tolere_formes_usuelles() -> None:
         "Mérignac",
     )
     assert a.adresse_affichee == "10 avenue du 8 Mai 1945, 33700 Mérignac"
-    a = _parse_address_full("rue du 11 Novembre 1918, 69100 Villeurbanne")
+    a = _parse_address_full("5 rue du 11 Novembre 1918, 69100 Villeurbanne")
     assert a is not None and a.cp == "69100" and a.ville == "Villeurbanne"
 
-    # re-Akainu (MINEUR O24-03) : adresse SANS numéro de tête (lieu-dit, place) = valide
-    # (le numéro n'est pas requis ; seuls voie/cp/ville le sont).
-    a = _parse_address_full("Lieu-dit Le Bourg, 12340 Bozouls")
-    assert a is not None
-    assert (a.num_voie, a.voie, a.cp, a.ville) == ("", "Lieu-dit Le Bourg", "12340", "Bozouls")
+    # re-Akainu tour 2 (NITPICK O24-03) : suffixe bis/ter/quater détaché du numéro, en
+    # MAJUSCULES comme en minuscules.
+    a = _parse_address_full("12 BIS rue de la Paix 75001 Paris")
+    assert a is not None and a.num_voie == "12 BIS" and a.voie == "rue de la Paix"
+
+    # re-Akainu tour 2 (MAJEUR O24-03) : le numéro de tête est REQUIS (cohérence avec
+    # _validate_common_docs qui exige siege_num / signataire_adresse_num). Une adresse sans
+    # numéro (lieu-dit, place) renvoie None tant qu'Albane n'a pas tranché ce périmètre
+    # (docs/review/QUESTIONS_RAFAEL.md) — pas d'extrapolation.
+    assert _parse_address_full("Lieu-dit Le Bourg, 12340 Bozouls") is None
 
     assert _parse_address_full("") is None
     assert _parse_address_full("pas une adresse") is None
@@ -2223,6 +2228,36 @@ def test_selarl_valeur_nominale_affichee_dans_un_champ(tmp_path: Path, monkeypat
     )
     assert vn.value == "10"
     assert vn.disabled is True
+
+
+def test_selarl_scm_cedee_valeur_nominale_calculee(tmp_path: Path, monkeypatch) -> None:
+    # re-Akainu tour 2 (MINEUR O24-05) : « valeur nominale calculée ET affichée » s'applique
+    # AUSSI à la SCM cédée (sous-formulaire de cession), pas seulement aux 6 types principaux.
+    # Le champ devient désactivé + auto-calculé (capital SCM / nb parts SCM), plus de saisie libre.
+    from streamlit.testing.v1 import AppTest
+
+    from sydel_doc_engine.front_app import shell
+
+    monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selarl-scm-vn")
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
+    app.selectbox(key="clean_dossier_type").set_value("SELARL creation V1")
+    app = app.run(timeout=180)
+    app.checkbox(key="selarl_scm").set_value(True)
+    app = app.run(timeout=180)
+    # le champ valeur nominale de la SCM cédée : désactivé + auto-calculé (label distinct de
+    # la valeur nominale de la société pour éviter un DuplicateWidgetID).
+    scm_vn = next(
+        w for w in app.text_input
+        if "Valeur nominale d'une part de SCM (calculee)" in str(w.label)
+    )
+    assert scm_vn.disabled is True
+    # SCM cédée préremplie (capital 3 000 / 300 parts) -> valeur nominale 10 affichée.
+    assert scm_vn.value == "10"
+    # plus aucun champ « Valeur nominale d'une part » LIBRE (éditable) ne subsiste.
+    assert not any(
+        str(w.label).strip().startswith("Valeur nominale d'une part") and not w.disabled
+        for w in app.text_input
+    )
 
 
 def test_selas_cession_vendeur_regime_complet(tmp_path: Path, monkeypatch) -> None:
@@ -2279,6 +2314,28 @@ def test_selas_vendeur_situation_dissociee_du_regime() -> None:
     assert "(e)" not in affiche and "regime" not in affiche.lower()
 
 
+def test_selas_pacs_n_affiche_pas_conjoint(tmp_path: Path, monkeypatch) -> None:
+    # re-Akainu tour 2 (MAJEUR O24-11) : le PACS est EXCLU de la capture conjoint. L'acte de
+    # cession n'a pas de segment « pacsé avec [conjoint] » → capter le partenaire ferait
+    # disparaître une donnée saisie (jamais retranscrite). Choisir « Pacs(e) » ne doit donc
+    # PAS afficher les champs conjoint (seul le mariage les déclenche).
+    from streamlit.testing.v1 import AppTest
+
+    from sydel_doc_engine.front_app import shell
+
+    monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selas-pacs")
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
+    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle creation V1")
+    app = app.run(timeout=180)
+    next(b for b in app.button if "test_data" in str(b.key)).click()
+    app = app.run(timeout=180)
+    app.selectbox(key="selas_associe_0_situation").set_value("Pacs(e)")
+    app = app.run(timeout=180)
+    keys = {str(w.key) for w in app.text_input}
+    assert "selas_associe_0_conjoint_prenom" not in keys
+    assert "selas_associe_0_conjoint_nom" not in keys
+
+
 def test_selas_cession_cabinet_meme_adresse_lieu_exercice(tmp_path: Path, monkeypatch) -> None:
     # O24-12 (onglet 24) : « adresse du cabinet -> ajouter une case "meme adresse que le
     # lieu d'exercice" et reporter les donnees si cochee ». La case est sur le CABINET
@@ -2317,6 +2374,20 @@ def test_selas_cession_cabinet_meme_adresse_lieu_exercice(tmp_path: Path, monkey
     app = app.run(timeout=180)
     cab = next(w for w in app.text_input if str(w.key) == "selas_cession_cabinet_adresse")
     assert cab.value == "5 place du Centre, 69000 Lyon"
+    # re-Akainu tour 2 (MINEUR O24-12) : une adresse saisie MANUELLEMENT ne doit pas être perdue
+    # à la décoche -> saisie manuelle, coche (report), décoche : on RETROUVE la saisie manuelle.
+    next(
+        w for w in app.text_input if str(w.key) == "selas_cession_cabinet_adresse"
+    ).set_value("7 rue Manuelle, 13000 Marseille")
+    app = app.run(timeout=180)
+    app.checkbox(key="selas_cabinet_meme_lieu_exercice").set_value(True)
+    app = app.run(timeout=180)
+    cab = next(w for w in app.text_input if str(w.key) == "selas_cession_cabinet_adresse")
+    assert cab.value == "99 avenue Distincte, 75001 Paris"  # report écrase l'affichage
+    app.checkbox(key="selas_cabinet_meme_lieu_exercice").set_value(False)
+    app = app.run(timeout=180)
+    cab = next(w for w in app.text_input if str(w.key) == "selas_cession_cabinet_adresse")
+    assert cab.value == "7 rue Manuelle, 13000 Marseille"  # saisie manuelle restaurée
 
 
 def test_cession_type_et_label_derives_de_la_profession() -> None:

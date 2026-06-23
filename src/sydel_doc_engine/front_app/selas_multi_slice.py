@@ -280,7 +280,7 @@ def render_selas_form(type_key: str = "selas_multi_v1") -> dict[str, object]:
     # le corpus dentiste/medecin selon le choix). L'appel reste pour extension future.
     _apply_type_profession_default(type_key)
     # RAF-006 (parite gold, couche partagee) : cloture du 1er exercice pre-remplie
-    # « 31 decembre N+1 », modifiable. Libelle TEXTUEL (comme le gold), pas un picker.
+    # « 31 décembre N+1 », modifiable. Libelle TEXTUEL (comme le gold), pas un picker.
     seed_closing_date(PREFIX)
     st.subheader("Donnees a saisir")
     st.markdown("**Societe (SELAS d'exercice, vocabulaire actions)**")
@@ -916,19 +916,24 @@ def _render_conjoint_si_communaute(
 ) -> RegimeCommunautaireAssocie | None:
     """Conjoint d'UN associe physique.
 
-    Affiche le sous-formulaire conjoint (civilite/prenom/nom) pour TOUT associe
-    marie ou pacse (re-Akainu 2026-06-23, MAJEUR O24-11 : le conjoint du vendeur
-    doit figurer a l'acte de cession pour TOUS les regimes maries — separation,
-    communaute universelle, participation aux acquets —, pas seulement la
-    communaute legale, comme le fait deja la SELARL via is_married_or_pacse). Les
-    coordonnees vivent dans les cles de session `{prefix}_conjoint_*` et sont lues
-    telles quelles par le sous-formulaire de cession.
+    Affiche le sous-formulaire conjoint (civilite/prenom/nom) pour tout associe
+    MARIE (re-Akainu 2026-06-23, MAJEUR O24-11 : le conjoint du vendeur doit figurer
+    a l'acte de cession pour TOUS les regimes maries — separation, communaute
+    universelle, participation aux acquets —, pas seulement la communaute legale,
+    comme le fait deja la SELARL). Les coordonnees vivent dans les cles de session
+    `{prefix}_conjoint_*` et sont lues telles quelles par le sous-formulaire de cession.
+
+    PERIMETRE PACS (re-Akainu tour 2, MAJEUR O24-11) : le PACS est VOLONTAIREMENT EXCLU.
+    Le verbatim O24-11 vise le vendeur MARIE, et l'acte de cession ne porte pas de
+    segment « pacse avec [conjoint] » -> capter le partenaire pacse ferait disparaitre
+    une donnee saisie (jamais retranscrite). On s'aligne donc sur « marie » uniquement ;
+    le perimetre PACS est un arbitrage Albane en attente (docs/review/QUESTIONS_RAFAEL.md).
 
     En revanche, l'objet RegimeCommunautaireAssocie — qui DECLENCHE DOC-005
     (renonciation) + DOC-006 (avertissement) — n'est retourne QUE pour la
     communaute LEGALE (R10/R11, Rafael 2026-06-23) : les autres regimes maries
     n'entrainent aucun document complementaire."""
-    if matrimonial_status_value(situation_label) not in ("marie", "pacse"):
+    if matrimonial_status_value(situation_label) != "marie":
         return None
     st.caption("Conjoint de cet associé (figure à l'acte ; lettres si communauté légale)")
     col_a, col_b, col_c = st.columns(3)
@@ -970,15 +975,19 @@ def _parse_address_full(text: str) -> Address | None:
     DERNIER groupe de 5 chiffres comme CP, ce qui immunise les voies contenant une
     annee (« avenue du 8 Mai 1945 » : 1945 = 4 chiffres, jamais pris pour un CP ;
     « rue du 11 Novembre 1918 » idem). num_voie/voie = tout ce qui precede le CP,
-    ville = tout ce qui suit. Exemples acceptes :
+    ville = tout ce qui suit. Le suffixe bis/ter/quater est detache du numero, en
+    minuscules OU majuscules. Exemples acceptes :
       « 12 rue de la Paix, 75001 Paris »   « 12, rue de la Paix, 75001 Paris »
       « 12 rue de la Paix 75001 Paris »    « 10 avenue du 8 Mai 1945, 33700 Merignac »
-      « Lieu-dit Le Bourg, 12340 Bozouls » (numero de tete optionnel)
+      « 12 BIS rue de la Paix 75001 Paris » -> num_voie=« 12 BIS ».
     -> num_voie/voie / cp=75001 / ville=Paris.
-    None si voie/cp/ville manquent -> la validation « adresse requise » s'applique.
-    NB (re-Akainu MINEUR O24-03) : le numero de tete n'est PAS requis pour la
-    validite (lieu-dit / place sans numero acceptes) ; seuls voie+cp+ville le sont
-    (a confirmer Albane, cf. docs/review/QUESTIONS_RAFAEL.md)."""
+
+    Validite : num_voie ET voie ET cp ET ville requis (sinon None -> la validation
+    « adresse requise » s'applique). Le numero de tete est REQUIS, en coherence avec
+    _validate_common_docs (siege_num / signataire_adresse_num obligatoires pour la
+    domiciliation et la DNC). Le cas « lieu-dit / place sans numero » est un arbitrage
+    metier en attente d'Albane (docs/review/QUESTIONS_RAFAEL.md) : tant qu'il n'est pas
+    tranche, on garde le comportement historique (numero requis) — pas d'extrapolation."""
     raw = (text or "").strip()
     if not raw:
         return None
@@ -990,39 +999,21 @@ def _parse_address_full(text: str) -> Address | None:
     cp = last.group(1)
     before = raw[: last.start()].strip().rstrip(",").strip()
     ville = raw[last.end():].strip().lstrip(",").strip()
-    # Numero de tete (optionnel) detache de la voie, separateur espace OU virgule.
-    m = re.match(r"(\d+\s*(?:bis|ter|quater|[A-Za-z])?)[\s,]+(.*)", before)
+    # Numero de tete detache de la voie, separateur espace OU virgule ; suffixe
+    # bis/ter/quater insensible a la casse (« 12 BIS » comme « 12 bis »).
+    m = re.match(r"(\d+\s*(?:bis|ter|quater|[a-z])?)[\s,]+(.*)", before, re.IGNORECASE)
     if m:
         num_voie, voie = m.group(1).strip(), m.group(2).strip()
     else:
         num_voie, voie = "", before
-    if not (voie and cp and ville):
+    if not (num_voie and voie and cp and ville):
         return None
-    street = f"{num_voie} {voie}".strip()
     return Address(
         num_voie=num_voie,
         voie=voie,
         cp=cp,
         ville=ville,
-        adresse_affichee=f"{street}, {cp} {ville}",
-    )
-
-
-def _structured_address(num: str, voie: str, cp: str, ville: str) -> Address | None:
-    """Adresse personnelle STRUCTUREE de l'associe (#8 / B4) ; None si incomplete.
-
-    La DNC (DOC-001) et l'avertissement au conjoint (DOC-006) exigent une adresse
-    complete (num/voie/cp/ville). Si un champ manque, on renvoie None : la
-    validation bloque alors « adresse requise » (jamais d'adresse partielle)."""
-    parts = (num.strip(), voie.strip(), cp.strip(), ville.strip())
-    if not all(parts):
-        return None
-    return Address(
-        num_voie=num.strip(),
-        voie=voie.strip(),
-        cp=cp.strip(),
-        ville=ville.strip(),
-        adresse_affichee=f"{num.strip()} {voie.strip()}, {cp.strip()} {ville.strip()}",
+        adresse_affichee=f"{num_voie} {voie}, {cp} {ville}",
     )
 
 
@@ -1377,11 +1368,19 @@ def _render_selas_cession(
     # regime ... » brut, non accentue et double — regression MAJEUR relevee par re-Akainu
     # 2026-06-23). On dissocie comme la SELARL : valeur COLLAPSEE (« marie ») pour l'affichage,
     # libelle BRUT pour le regime (cle de session lue par _vendeur_regime_label).
-    v_situation_label = str(
+    # Libelle BRUT du preset (porte le detail du regime) ; '' si la cle de session est absente.
+    v_situation_raw = str(
         st.session_state.get(f"{PREFIX}_associe_{vendeur_index}_situation") or ""
-    ) or ((vendeur.situation_maritale or "") if vendeur else "")
+    )
+    # Source d'AFFICHAGE seulement : a defaut de libelle brut, on collapse via la situation
+    # deja accentuee du vendeur (« marie »/« mariee »). Cette source ne sert JAMAIS a deriver
+    # le regime (re-Akainu tour 2, MINEUR O24-11 : la valeur collapsee a perdu separation/
+    # universelle/participation -> _vendeur_regime_label la mal-deriverait en communaute legale).
+    v_situation_display_src = v_situation_raw or (
+        (vendeur.situation_maritale or "") if vendeur else ""
+    )
     # Conjoint du vendeur : lu directement depuis les cles de session de l'associe choisi
-    # (captees pour TOUT regime marie/pacse, cf. _render_conjoint_si_communaute), donc present
+    # (captees pour tout associe MARIE, cf. _render_conjoint_si_communaute), donc present
     # meme hors communaute legale ou regime_communautaire_associe est None (MAJEUR O24-11).
     v_conj_prefix = f"{PREFIX}_associe_{vendeur_index}"
     praticien: dict[str, object] = {
@@ -1394,7 +1393,7 @@ def _render_selas_cession(
         "nationalite": vendeur.nationalite if vendeur else None,
         "numero_ordre": vendeur.numero_ordre if vendeur else None,
         "numero_rpps": vendeur.numero_rpps if vendeur else None,
-        "situation_maritale": matrimonial_status_value(v_situation_label),
+        "situation_maritale": matrimonial_status_value(v_situation_display_src),
         "conjoint_civilite": str(
             st.session_state.get(f"{v_conj_prefix}_conjoint_civilite") or ""
         ),
@@ -1408,7 +1407,9 @@ def _render_selas_cession(
     # Le sous-formulaire de cession derive le regime via cette cle : il lui faut le LIBELLE
     # BRUT du preset (« Marie(e) sous le regime de la communaute universelle »), pas la valeur
     # collapsee — _vendeur_regime_label y lit « universelle »/« participation »/« separation ».
-    st.session_state["selas_situation_maritale"] = v_situation_label
+    # On n'y met QUE le libelle brut (jamais le fallback collapse) : a defaut, chaine vide ->
+    # aucun regime faussement derive (re-Akainu tour 2, MINEUR O24-11).
+    st.session_state["selas_situation_maritale"] = v_situation_raw
     scm_on = st.checkbox("Cession de parts de SCM", key="selas_scm_cession_on")
     cession_ctx, bail_ctx = shell._render_cession_form(
         cession_on,

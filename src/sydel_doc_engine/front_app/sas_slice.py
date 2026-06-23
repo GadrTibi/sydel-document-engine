@@ -96,8 +96,8 @@ class SasSlicePlan:
 
 def render_sas_form() -> dict[str, object]:
     st.subheader("Donnees a saisir")
-    # Parite gold (couche partagee) : pre-remplir exercice (1er janvier / 31 decembre)
-    # + cloture « 31 decembre N+1 », modifiables. Seede AVANT les widgets concernes.
+    # Parite gold (couche partagee) : pre-remplir exercice (1er janvier / 31 décembre)
+    # + cloture « 31 décembre N+1 », modifiables. Seede AVANT les widgets concernes.
     seed_exercice_dates(PREFIX)
     seed_closing_date(PREFIX)
     # Parite gold (RAF-003a) : recopie siege <- adresse perso si la case est cochee.

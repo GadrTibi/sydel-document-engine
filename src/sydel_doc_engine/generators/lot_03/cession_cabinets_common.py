@@ -1071,11 +1071,14 @@ def _validate_selection(cession: CessionContext, variant: CessionCabinetVariant)
     if etape not in SUPPORTED_ETAPES:
         supported = ", ".join(sorted(SUPPORTED_ETAPES))
         raise ValueError(f"cession.etape doit etre dans [{supported}] pour {DOCUMENT_CODE}.")
-    # O24-14 (onglet 24) : en SELAS, l'acte ET le compromis sont produits ENSEMBLE. Le
-    # document genere est determine par le VARIANT (variant.etape pilote modele + contenu),
-    # jamais par cession.etape. La SELECTION cote orchestrateur (_cession_cabinet_enabled)
-    # a deja choisi les bons documents -> on ne leve plus sur un mismatch
-    # cession.etape/variant.etape (sinon le compromis crashe quand cession.etape='acte').
+    # O24-14 (onglet 24) : en SELAS, l'acte ET le compromis sont produits ENSEMBLE depuis UN
+    # SEUL contexte (etape forcee a 'acte'). Le document genere est determine par le VARIANT
+    # (variant.etape pilote modele + contenu), jamais par cession.etape. La SELECTION cote
+    # orchestrateur (_cession_cabinet_enabled) a deja choisi les bons documents -> on ne leve
+    # plus sur un mismatch cession.etape/variant.etape (sinon le compromis crashe a etape='acte').
+    # Corollaire (re-Akainu tour 2) : ce MEME contexte d'acte peut porter des champs propres a
+    # l'acte (ex. salaries repris) ; chaque variant qui ne les rend pas doit les IGNORER, pas
+    # lever -> cf. _validate_salaries (le compromis tolere les salaries de l'acte partage).
 
 
 def _validate_arbitrage_blocks(
@@ -1152,10 +1155,11 @@ def _validate_salaries(
         for index, salarie in enumerate(cession.salaries):
             _salarie_label(salarie, index)
         return
-    if cession.salaries:
-        raise ValueError(
-            f"cession.salaries est rendu uniquement pour l'acte dentaire {DOCUMENT_CODE}."
-        )
+    # re-Akainu 2026-06-23 (MAJEUR O24-14) : en SELAS, l'acte ET le compromis partagent
+    # UN SEUL contexte (generes ENSEMBLE). Si l'acte dentaire porte des salaries repris,
+    # le compromis (qui n'a PAS la clause salaries) recoit le meme contexte -> il doit les
+    # IGNORER, pas lever. Sans ca, le bundle « acte + compromis ensemble » crashe des qu'un
+    # salarie est saisi. La clause salaries reste rendue par le SEUL acte dentaire (ci-dessus).
 
 
 def _validate_origine_propriete(

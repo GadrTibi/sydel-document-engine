@@ -78,7 +78,7 @@ def seed_if_empty(key: str, value: object) -> None:
 
 
 def seed_closing_date(prefix: str, *, field: str = "date_cloture") -> None:
-    """Pre-remplit la cloture du 1er exercice a « 31 decembre N+1 » (convention gold
+    """Pre-remplit la cloture du 1er exercice a « 31 décembre N+1 » (convention gold
     SELARL-UI-1, shell.py:1582-1585), modifiable. Libelle TEXTUEL, pas un date-picker."""
     seed_if_empty(f"{prefix}_{field}", f"31 décembre {date.today().year + 1}")
 

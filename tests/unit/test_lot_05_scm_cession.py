@@ -276,6 +276,28 @@ def test_scm_cession_selas_generates_overlays(tmp_path: Path) -> None:
     assert "DocuSign" in acte_text
     for text in [pv_text, courrier_text, acte_text]:
         _assert_clean(text)
+        # re-Akainu tour 2 (NITPICK LIVE-03) : garde générique anti-mois-non-accentué sur la
+        # SORTIE réelle (DOCX rendu), pas seulement la fixture en amont. Une régression de
+        # rendu (lowercase / strip d'accents côté template) serait attrapée ici.
+        low = text.casefold()
+        for non_accentue in ("aout", "fevrier", "decembre"):
+            assert non_accentue not in low, f"LIVE-03 : « {non_accentue} » non accentué (rendu)"
+
+
+def test_mois_tables_accentuees_identiques() -> None:
+    # re-Akainu tour 2 (NITPICK LIVE-03) : trois tables de noms de mois coexistent (dette de
+    # duplication, cf. docs/operations/GOLDEN_BLOCS.md). Tant qu'elles ne sont pas factorisées,
+    # ce test de parité empêche qu'une correction d'accent soit oubliée dans une copie.
+    from sydel_doc_engine.front_app.field_derivations import _MONTHS
+    from sydel_doc_engine.generators.lot_01.autorisation_domiciliation import (
+        _MONTHS_FR as _MONTHS_DOMICILIATION,
+    )
+    from sydel_doc_engine.generators.lot_03.cession_cabinets_common import (
+        _MONTHS_FR as _MONTHS_CESSION,
+    )
+
+    assert _MONTHS == _MONTHS_DOMICILIATION == _MONTHS_CESSION
+    assert "février" in _MONTHS and "août" in _MONTHS and "décembre" in _MONTHS
 
 
 def test_scm_cession_fixture_pas_de_mois_non_accentue() -> None:

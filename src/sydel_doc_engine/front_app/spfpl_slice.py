@@ -168,8 +168,8 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
     operation, _doc = OPERATION_BY_STRUCTURE[structure]
     prefix = _prefix(structure)
     is_apport = operation == "apport"
-    # Parite gold (couche partagee) : pre-remplir exercice (1er janvier / 31 decembre)
-    # + cloture « 31 decembre N+1 », modifiables.
+    # Parite gold (couche partagee) : pre-remplir exercice (1er janvier / 31 décembre)
+    # + cloture « 31 décembre N+1 », modifiables.
     seed_exercice_dates(prefix)
     seed_closing_date(prefix)
     # Parite gold (RAF-003a) : recopie siege <- adresse perso si la case est cochee.

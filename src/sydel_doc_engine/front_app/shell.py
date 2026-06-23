@@ -2172,10 +2172,13 @@ def _render_cession_form(
         # « ajouter une case », inconditionnel) ; elle ne reporte que si le lieu d'exercice
         # est renseigné (sinon rien à recopier). Le report est RÉVERSIBLE (re-Akainu
         # 2026-06-23, MAJEUR O24-12 : décocher doit défaire le report, sinon l'adresse
-        # reste polluée par le lieu d'exercice). On mémorise l'état précédent de la case
-        # et, à la transition coché→décoché, on restaure l'adresse du cabinet au siège.
+        # reste polluée par le lieu d'exercice). On mémorise l'état précédent de la case ET
+        # la valeur du cabinet AVANT report : à la transition décoché→coché on sauvegarde la
+        # saisie courante, à coché→décoché on la RESTAURE (re-Akainu tour 2, MINEUR O24-12 :
+        # une adresse saisie manuellement ne doit pas être écrasée par le siège à la décoche).
         if prefix == "selas":
             prev_key = f"{_CESSION_PREFIX}_cabinet_meme_lieu_exercice_prev"
+            before_key = f"{_CESSION_PREFIX}_cabinet_adresse_avant_report"
             was_checked = bool(st.session_state.get(prev_key))
             checked = st.checkbox(
                 "Adresse du cabinet = même adresse que le lieu d'exercice",
@@ -2183,10 +2186,15 @@ def _render_cession_form(
                 help="Coché : reporte l'adresse du lieu d'exercice dans l'adresse du cabinet.",
             )
             if checked and lieu_exercice:
+                if not was_checked:
+                    # Décoché → coché : on mémorise la valeur saisie avant de la remplacer.
+                    st.session_state[before_key] = str(st.session_state.get(cab_key) or "")
                 st.session_state[cab_key] = lieu_exercice
             elif was_checked and not checked:
-                # Transition coché → décoché : on défait le report, retour au siège.
-                st.session_state[cab_key] = siege_display
+                # Coché → décoché : on restaure la saisie d'avant report (siège à défaut).
+                st.session_state[cab_key] = (
+                    st.session_state.get(before_key) or siege_display
+                )
             st.session_state[prev_key] = checked
         elif not st.session_state.get(cab_key) and siege_display:
             st.session_state[cab_key] = siege_display
@@ -2690,10 +2698,19 @@ def _render_scm_cession_form(
         if nb_parts_saisi.isdigit():
             scm_cedee["nb_parts_total"] = int(nb_parts_saisi)
         col_e, col_f = st.columns(2)
-        scm_cedee["valeur_nominale_part"] = _cession_text(
-            col_e, "Valeur nominale d'une part", section="scm_cedee",
-            field="valeur_nominale_part",
-            default=str(scm_cedee.get("valeur_nominale_part") or ""),
+        # O24-05 (re-Akainu 2026-06-23) : valeur nominale « calculee automatiquement ET
+        # affichee » s'applique a TOUS les types — y compris la SCM cedee, qui porte son
+        # propre capital + nb de parts. Champ desactive (auto-calc capital / nb parts),
+        # plus de saisie libre, comme les 6 types principaux.
+        scm_cedee["valeur_nominale_part"] = calculate_nominal_value(
+            scm_cedee.get("capital_social"), scm_cedee.get("nb_parts_total")
+        )
+        # Label DISTINCT de la valeur nominale de la societe (sinon DuplicateWidgetID :
+        # deux text_input desactifs sans cle au meme libelle -> meme ID auto).
+        col_e.text_input(
+            "Valeur nominale d'une part de SCM (calculee)",
+            value=scm_cedee["valeur_nominale_part"],
+            disabled=True,
         )
         scm_cedee["plage_parts_total"] = _cession_text(
             col_f, "Plage totale des parts (ex. 1 a 300)", section="scm_cedee",
