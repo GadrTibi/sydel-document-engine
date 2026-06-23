@@ -2306,12 +2306,61 @@ def test_selas_role_directeur_general_associe(tmp_path: Path, monkeypatch) -> No
     role_sb.set_value("Directeur Général Associé")
     app = app.run(timeout=180)
 
-    # Président (associe 0) + DG Associé (associe 1) -> pas de blocage.
-    assert not any("Directeur Général" in item.value for item in app.caption)
+    # R7 : ce dirigeant a sa propre DNC -> sa filiation est requise pour generer.
+    for w in app.text_input:
+        if str(w.key) == "selas_associe_1_sig_nom_pere":
+            w.set_value("Paul Martin")
+        elif str(w.key) == "selas_associe_1_sig_nom_mere":
+            w.set_value("Marie Martin")
+    app = app.run(timeout=180)
+
+    # Président (associe 0) + DG Associé (associe 1, filiation remplie) -> pas de blocage.
     generate_button = next(
         b for b in app.button if str(b.key) == "clean_typed_generate_dossier"
     )
     assert generate_button.disabled is False
+
+
+def test_selas_dnc_une_par_dirigeant(tmp_path: Path, monkeypatch) -> None:
+    # R7 (Rafael 2026-06-23) : une declaration de non-condamnation PAR dirigeant
+    # (President + chaque DG / DG Associe), chacune nommee par son nom.
+    from streamlit.testing.v1 import AppTest
+
+    from sydel_doc_engine.front_app import shell
+
+    monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selas-dnc-multi")
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
+    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle creation V1")
+    app = app.run(timeout=180)
+    next(b for b in app.button if "test_data" in str(b.key)).click()
+    app = app.run(timeout=180)
+
+    # Associe 1 devient un 2e dirigeant (DG Associe) + sa filiation (requise pour sa DNC).
+    app.checkbox(key="selas_associe_1_is_dirigeant").set_value(True)
+    app = app.run(timeout=180)
+    next(
+        s for s in app.selectbox if str(s.key) == "selas_associe_1_role_dirigeant"
+    ).set_value("Directeur Général Associé")
+    for w in app.text_input:
+        if str(w.key) == "selas_associe_1_sig_nom_pere":
+            w.set_value("Paul Martin")
+        elif str(w.key) == "selas_associe_1_sig_nom_mere":
+            w.set_value("Marie Martin")
+    app = app.run(timeout=180)
+
+    generate_button = next(
+        b for b in app.button if str(b.key) == "clean_typed_generate_dossier"
+    )
+    assert generate_button.disabled is False
+    generate_button.click()
+    app = app.run(timeout=180)
+
+    names = {
+        p.name
+        for p in (tmp_path / "ui-selas-dnc-multi").rglob("declaration_non_condamnation*.docx")
+    }
+    assert "declaration_non_condamnation_Durand.docx" in names  # president
+    assert "declaration_non_condamnation_Martin.docx" in names  # DG Associe
 
 
 def test_front_today_button_fills_date_non_selarl() -> None:
