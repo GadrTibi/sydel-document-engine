@@ -1,25 +1,31 @@
 from __future__ import annotations
 
+import random
+
 import pytest
 
 
 @pytest.fixture(autouse=True)
-def _isolate_artifacts_dir(tmp_path, monkeypatch):
-    """Isole le repertoire d'artefacts de generation PAR test (re-Akainu tour 7, MAJEUR flakiness).
+def _deterministic_test_env(tmp_path, monkeypatch):
+    """Rend l'environnement de test DETERMINISTE par test (re-Akainu tours 7-8, flakiness).
 
-    `shell.ARTIFACTS_DIR` et `ui_runtime.DEFAULT_ARTIFACTS_DIR` sont des chemins RELATIFS REELS
-    (« artifacts/... » au cwd). Beaucoup d'AppTest cliquent un bouton de generation et y ecrivent
-    SANS isoler le dossier -> deux runs/tests qui le partagent provoquent des echecs NON
-    deterministes (ZipBundleError « fichier introuvable », bundle incomplet) quand un fichier est
-    ecrase/supprime entre la generation et la mise en ZIP. On redirige ces dossiers vers `tmp_path`
-    (unique par test) pour rendre la suite DETERMINISTE. Les tests qui monkeypatchent deja
-    ARTIFACTS_DIR restent prioritaires (leur setattr ulterieur l'emporte ; restauration OK)."""
-    import sydel_doc_engine.app.ui_runtime as ui_runtime
+    Deux sources de non-determinisme cross-test prouvees par l'audit independant :
+    1. `shell.ARTIFACTS_DIR` est un chemin RELATIF REEL (« artifacts/track_b_selarl_v1 ») ou de
+       nombreux AppTest ecrivent leurs DOCX SANS isolation -> collisions cross-test
+       (ZipBundleError « fichier introuvable », bundle incomplet). On le redirige vers `tmp_path`
+       (unique par test). Lu comme global au call-time (shell.py) -> le monkeypatch mord.
+    2. `_prefill_random_selarl_data` (shell.py) tire des donnees via le module `random` GLOBAL
+       NON seede ; plusieurs tests cliquent le bouton « donnees de test » -> le flux random
+       depend de l'ORDRE / du nombre d'appels amont, rendant certains tests ORDER-DEPENDENT
+       (ex. O24-11 regime accentue dans l'acte SCM, flaky ~1/16 en suite complete). On RESEED
+       `random` a 0 AVANT chaque test pour fixer le flux quel que soit l'ordre de collecte.
+
+    (Le monkeypatch de `ui_runtime.DEFAULT_ARTIFACTS_DIR` a ete retire : inerte -- la constante
+    est liee en valeur par defaut d'argument de `build_output_dir`, sans appelant dans src/.)"""
+    random.seed(0)
+
     import sydel_doc_engine.front_app.shell as shell
 
     base = tmp_path / "artifacts"
     base.mkdir(parents=True, exist_ok=True)
     monkeypatch.setattr(shell, "ARTIFACTS_DIR", base / "track_b_selarl_v1", raising=False)
-    monkeypatch.setattr(
-        ui_runtime, "DEFAULT_ARTIFACTS_DIR", base / "ui_pdf_zip_integration_001", raising=False
-    )
