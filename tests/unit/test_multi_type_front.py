@@ -2083,6 +2083,8 @@ def test_selas_cession_vendeur_selectionnable(tmp_path: Path, monkeypatch) -> No
     assert "selas_cession_vendeur_index" in selectbox_keys
     # #10 (onglet 24) : le type de cabinet est derive de la profession -> pas de menu.
     assert "selas_cession_meta_type_cabinet" not in selectbox_keys
+    # R16 (Rafael 2026-06-23) : plus de choix d'etape (acte/compromis generes ensemble).
+    assert "selas_cession_meta_etape" not in selectbox_keys
     checkbox_labels = " ".join(str(c.label).lower() for c in app.checkbox)
     assert "associe unique" not in checkbox_labels
     assert "associé unique" not in checkbox_labels

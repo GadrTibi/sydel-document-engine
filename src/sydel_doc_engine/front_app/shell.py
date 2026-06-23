@@ -1954,11 +1954,18 @@ def _render_cession_form(
             )
         etape_key = f"{_CESSION_PREFIX}_cession_meta_etape"
         _seed_default(etape_key, "acte")
-        etape = col_b.selectbox(
-            "Etape",
-            tuple(CESSION_ETAPE_LABELS),
-            key=etape_key,
-        )
+        # R16 (Rafael 2026-06-23) : en SELAS, l'acte ET le compromis sont generes
+        # ENSEMBLE (#14) -> plus de CHOIX d'etape (le menu serait trompeur). Hors
+        # SELAS : menu conserve.
+        if prefix == "selas":
+            etape = "acte"
+            st.session_state[etape_key] = "acte"
+        else:
+            etape = col_b.selectbox(
+                "Etape",
+                tuple(CESSION_ETAPE_LABELS),
+                key=etape_key,
+            )
 
     profession_label = _profession_label(profession)
     siege_display = _siege_display(societe)

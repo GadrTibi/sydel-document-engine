@@ -880,7 +880,7 @@ def _physique(prefix: str, nb_actions: int, montant: str) -> StatutsCivilsAssoci
     situation_label = col_i.selectbox(
         "Situation matrimoniale", MATRIMONIAL_STATUS_PRESETS, key=f"{prefix}_situation"
     )
-    qualification = _ts(col_j, f"{prefix}_qualification", "Qualification principale")
+    qualification = _ts(col_j, f"{prefix}_qualification", "Qualification principale (profession)")
     col_k, col_l, col_m = st.columns(3)
     ordre_dep = _ts(col_k, f"{prefix}_ordre_dep", "Departement ordre")
     numero_ordre = _ts(col_l, f"{prefix}_numero_ordre", "Numero ordre")
