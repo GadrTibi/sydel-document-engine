@@ -278,6 +278,18 @@ def test_scm_cession_selas_generates_overlays(tmp_path: Path) -> None:
         _assert_clean(text)
 
 
+def test_scm_cession_fixture_pas_de_mois_non_accentue() -> None:
+    # LIVE-03 (onglet 24) : les mois sont accentués en SORTIE. La fixture de PRODUCTION
+    # scm_cession_fixture() — chargée telle quelle par le shell SELAS (shell.py:957) et
+    # émise verbatim dans le PV — ne doit contenir AUCUN mois non accentué. Le test
+    # existant ci-dessus reconstruit un contexte accentué et masquait donc le défaut.
+    from sydel_doc_engine.scenarios.selarl import scm_cession_fixture
+
+    blob = str(scm_cession_fixture().model_dump()).casefold()
+    for non_accentue in ("aout", "fevrier", "decembre"):
+        assert non_accentue not in blob, f"LIVE-03 : « {non_accentue} » non accentué"
+
+
 def test_orchestrator_selects_scm_cession_block_only_when_enabled() -> None:
     orchestrator = DocumentOrchestrator(build_seed_catalog())
     enabled = orchestrator.select_documents_for_context(_base_context("SELARL"))

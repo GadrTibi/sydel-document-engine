@@ -443,7 +443,7 @@ def _scm_cession_selarl() -> ScmCessionContext:
                 "date_pv": "15 mai 2026",
                 "date_pv_lettres": "deux mille vingt-six, le quinze mai",
                 "delai_mois": "3",
-                "date_limite": "15 aout 2026",
+                "date_limite": "15 août 2026",
             },
             "associes_presents": [
                 {"civilite_affichage": "Monsieur", "prenom": "Paul", "nom": "Bernard",

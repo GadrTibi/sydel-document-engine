@@ -89,7 +89,7 @@ def seed_exercice_dates(
     debut_field: str = "exercice_debut",
     fin_field: str = "exercice_fin",
 ) -> None:
-    """Pre-remplit debut='1er janvier' / fin='31 decembre' (gold shell.py:1578-1581)."""
+    """Pre-remplit debut='1er janvier' / fin='31 décembre' (gold shell.py:1578-1581)."""
     seed_if_empty(f"{prefix}_{debut_field}", "1er janvier")
     seed_if_empty(f"{prefix}_{fin_field}", "31 décembre")
 
