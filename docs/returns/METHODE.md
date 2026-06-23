@@ -62,6 +62,11 @@ Pour chaque retour, réponse consignée dans `TRIAGE.md` :
    vs une intention déjà ratifiée → **chercher les autres occurrences du même écart**.
 3. **Q3 — BLOC-GOLD ou MÉTIER ?** `BLOC-GOLD` = dérivable du déterministe → dispatchable.
    `MÉTIER` = dépasse les sources → `Statut = BLOQUÉ` + question au sachant (Albane via Gad). Jamais inventer.
+4. **Q4 — PÉRIMÈTRE DE PROPAGATION ?** (Gad 2026-06-23) Défaut = **propager à TOUS les cas
+   concernés**, pas seulement le cas testé. Un retour = une intention qui s'applique partout où
+   elle est pertinente. Exception : feature intrinsèquement liée à une structure (n'existe pas
+   ailleurs) → reste cantonnée. Consigner le périmètre exact (`tous les cas` / `types ayant X` /
+   `structure Y uniquement`). Traiter un retour universel sur UN seul cas = **défaut majeur** à reprendre.
 
 ## 6. Dépendances explicites
 

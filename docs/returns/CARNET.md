@@ -13,7 +13,7 @@
 |---|---|---|---|---|---|
 | O24-01 | « Supprimer : Signature d'une lettre de mission … / Paiement de l'acompte des honoraires du cabinet Sydel … dans l'annexe de tous les statuts de tous les cas » | tous types | — | TRAITÉ | ⬜ |
 | O24-02 | « Dans tous les cas où il y a une déclaration de non condamnation, elle doit être générée d'office pour chaque dirigeant uniquement. Le nom du document doit intégrer le nom du dirigeant … » | tous types | — | TRAITÉ | ⬜ |
-| O24-03 | « Toutes les adresses doivent être rédigées sur une ligne, pas de champ séparé pour la rue, la voie, etc.. » | SELAS (UI) | — | TRAITÉ | ⬜ |
+| O24-03 | « Toutes les adresses doivent être rédigées sur une ligne, pas de champ séparé pour la rue, la voie, etc.. » | **tous types (UX)** | — | TRAITÉ (SELAS) ⚠ **propagation tous types à faire** | ⬜ |
 | O24-04 | « Ajouter une icone "copier" à côté de chaque champ texte pour copier le texte contenu à l'intérieur d'un champ » | SELAS (UI) | — | TRIÉ | ⬜ |
 | O24-05 | « la valeur nominale d'une part/action doit être calculée automatiquement et affichée dans le champ concerné » | tous types | — | TRAITÉ | ⬜ |
 | O24-06 | « pluripersonnelle et multi associé veut dire la meme chose » | SELAS | — | TRAITÉ | ⬜ |
@@ -42,6 +42,7 @@
 
 ## Synthèse machine-lisible
 
-- **Reste à faire** (Statut ≠ TRAITÉ/VALIDÉ) : `O24-04` (icône copier, UI) ; `LIVE-05`/`LIVE-06` (CLARIF).
+- **Reste à faire** (Statut ≠ TRAITÉ/VALIDÉ) : **`O24-03` propagation tous types** (adresses une ligne hors SELAS) ; `O24-04` (icône copier, **tous types**, UI) ; `LIVE-05`/`LIVE-06` (CLARIF).
+- **Règle de propagation (Q4 triage, Gad 2026-06-23)** : un retour universel se propage à TOUS les cas concernés ; O24-01/02/05 déjà propagés ; O24-06→15 = SELAS-pluri structurel (pas de propagation).
 - **En attente validation Rafael** (TRAITÉ, `Validé = ⬜`) : O24-01 à 03, 05 à 15 + LIVE-01/02/03/04.
 - **VALIDÉ** : aucun → le carnet reste plein (Rafael doit retester `sprint/engine-completion`).
