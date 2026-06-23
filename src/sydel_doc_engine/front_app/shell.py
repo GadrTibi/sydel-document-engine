@@ -994,9 +994,9 @@ def _scm_cession_prefill_values(person: dict[str, str]) -> dict[str, object]:
         "selarl_cession_scm_cedee_numero_rcs": scm_cedee.get("numero_rcs") or "",
         "selarl_cession_scm_cedee_capital_social": scm_cedee.get("capital_social") or "",
         "selarl_cession_scm_cedee_nb_parts_total": str(nb_total),
-        "selarl_cession_scm_cedee_valeur_nominale_part": (
-            scm_cedee.get("valeur_nominale_part") or ""
-        ),
+        # O24-05 (re-Akainu tour 3, NITPICK) : la valeur nominale SCM est desormais un champ
+        # DESACTIVE auto-calcule (sans key) -> plus de cle de prefill « valeur_nominale_part »
+        # (elle n'etait plus lue par aucun widget). Retiree pour eviter toute confusion.
         "selarl_cession_scm_cedee_plage_parts_total": (
             scm_cedee.get("plage_parts_total") or ""
         ),

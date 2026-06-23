@@ -1,8 +1,10 @@
 # ruff: noqa: E501
 from __future__ import annotations
 
+import re
 import unicodedata
 from datetime import date
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any
 
@@ -131,6 +133,36 @@ def validate_acte_context(ctx: DocumentGenerationContext) -> ScmCessionContext:
     return scm_cession
 
 
+def _is_capital_divisible(capital: object, nb_parts: object) -> bool:
+    """True si le capital est divisible EXACTEMENT par le nombre de parts.
+
+    Plancher universel O24-05 (re-Akainu tour 3, MAJEUR) : la valeur nominale de la SCM
+    cedee est auto-calculee (capital / nb parts) ; un capital non divisible produirait une
+    valeur fractionnaire a precision infinie imprimee telle quelle dans le DOCX. On reprend
+    la logique de front_app.is_capital_divisible SANS dependance front (layering : un
+    generateur n'importe pas l'UI). Donnees incompletes/non numeriques -> True (la garde de
+    PRESENCE requise s'en charge ailleurs ; on ne double-signale pas)."""
+
+    def _dec(value: object) -> Decimal | None:
+        if value is None:
+            return None
+        cleaned = str(value).replace(" ", " ").replace(" ", "").replace(",", ".")
+        cleaned = re.sub(r"[^0-9.-]", "", cleaned)
+        if not cleaned:
+            return None
+        try:
+            return Decimal(cleaned)
+        except InvalidOperation:
+            return None
+
+    cap = _dec(capital)
+    parts = _dec(nb_parts)
+    if cap is None or parts is None or parts == 0:
+        return True
+    quotient = cap / parts
+    return quotient == quotient.to_integral_value()
+
+
 def required_scm_cedee(scm_cession: ScmCessionContext) -> ScmCessionSociete:
     if scm_cession.scm_cedee is None:
         raise ValueError(f"scm_cession.scm_cedee est obligatoire pour {DOCUMENT_CODE}.")
@@ -145,6 +177,16 @@ def required_scm_cedee(scm_cession: ScmCessionContext) -> ScmCessionSociete:
         societe.valeur_nominale_part,
         "scm_cession.scm_cedee.valeur_nominale_part",
     )
+    # O24-05 (re-Akainu tour 3, MAJEUR) : garde de divisibilite — le capital de la SCM cedee
+    # DOIT etre divisible par le nombre de parts (valeur nominale entiere), sinon le DOCX
+    # imprimerait « 3.333333333333333333333333333 € ». Plancher universel (tout chemin :
+    # SELARL, SELAS, generation directe). En amont, validate_selarl_input pose deja un blocker
+    # de plan (UX) pour le chemin SELARL.
+    if not _is_capital_divisible(societe.capital_social, societe.nb_parts_total):
+        raise ValueError(
+            "scm_cession.scm_cedee : le capital doit etre divisible par le nombre de parts "
+            f"(valeur nominale entiere) pour {DOCUMENT_CODE}."
+        )
     required_text(societe.plage_parts_total, "scm_cession.scm_cedee.plage_parts_total")
     return societe
 

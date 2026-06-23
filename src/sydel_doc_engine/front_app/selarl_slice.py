@@ -319,6 +319,20 @@ def validate_selarl_input(data: SelarlSliceInput) -> tuple[str, ...]:
         blockers.append("Cession demandee mais donnees cession manquantes.")
     if data.scm and data.scm_cession_context is None:
         blockers.append("Cession de parts SCM demandee mais donnees SCM manquantes.")
+    # O24-05 (re-Akainu tour 3, MAJEUR) : la valeur nominale de la SCM cedee est auto-calculee
+    # (capital / nb parts). Sans garde de divisibilite, un capital non divisible produit une
+    # valeur fractionnaire a precision infinie imprimee CRUMENT dans le DOCX. Meme garde que
+    # les 6 types principaux (is_capital_divisible). Couvre le chemin SCM cession (SELARL + SELAS).
+    _scm_cedee = (
+        data.scm_cession_context.scm_cedee if data.scm_cession_context is not None else None
+    )
+    if _scm_cedee is not None and not is_capital_divisible(
+        _scm_cedee.capital_social, _scm_cedee.nb_parts_total
+    ):
+        blockers.append(
+            "Le capital de la SCM cedee doit etre divisible par le nombre de parts "
+            "(la valeur nominale d'une part doit etre un nombre entier)."
+        )
 
     blockers.extend(_missing_text_blockers(data))
     if data.date_naissance is None:
