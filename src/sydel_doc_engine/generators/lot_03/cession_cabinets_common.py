@@ -1128,13 +1128,16 @@ def _validate_financement(
     variant: CessionCabinetVariant,
     financement: CessionFinancement,
 ) -> None:
+    # credit_vendeur / scm sont des clauses PROPRES a l'ACTE MEDICAL (seul modele les portant).
+    # re-Akainu tour 5 (BLOQUANT O24-14, RE-SCOPE regle 12) : en SELAS l'acte ET le compromis
+    # partagent UN SEUL contexte (generes ENSEMBLE). Le compromis (qui n'a PAS ces clauses) recoit
+    # le meme contexte porteur de credit_vendeur/scm -> il doit les IGNORER, pas lever (meme
+    # principe que _validate_salaries). On ne VALIDE (et n'exige) ces champs QUE pour le variant
+    # qui les rend : l'acte medical. Tout autre variant (compromis, acte dentaire) les tolere.
+    if not (variant.etape == ACTE and variant.type_cabinet == MEDICAL):
+        return
     credit_vendeur = financement.credit_vendeur
     if credit_vendeur is not None and credit_vendeur.actif:
-        if not (variant.etape == ACTE and variant.type_cabinet == MEDICAL):
-            raise ValueError(
-                "cession.financement.credit_vendeur.actif est autorise uniquement pour "
-                f"l'acte medical {DOCUMENT_CODE}."
-            )
         _required_text(credit_vendeur.montant, "cession.financement.credit_vendeur.montant")
         _required_text(credit_vendeur.duree, "cession.financement.credit_vendeur.duree")
         _required_text(credit_vendeur.taux, "cession.financement.credit_vendeur.taux")
@@ -1144,8 +1147,6 @@ def _validate_financement(
         )
 
     if cession.scm is not None and cession.scm.actif:
-        if not (variant.etape == ACTE and variant.type_cabinet == MEDICAL):
-            raise ValueError("cession.scm.actif est autorise uniquement pour l'acte medical.")
         _required_text(cession.scm.nb_parts_a_ceder, "cession.scm.nb_parts_a_ceder")
 
 

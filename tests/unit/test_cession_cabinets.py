@@ -367,11 +367,17 @@ def test_acte_medical_blocks_without_medical_bail_validation(tmp_path: Path) -> 
         ActeCessionCabinetMedicalGenerator().generate(ctx, tmp_path)
 
 
-def test_credit_vendeur_blocks_outside_medical_acte(tmp_path: Path) -> None:
-    ctx = _context(etape="compromis", credit_vendeur=True)
-
-    with pytest.raises(ValueError, match="credit_vendeur"):
-        CompromisCessionCabinetMedicalGenerator().generate(ctx, tmp_path)
+def test_compromis_tolere_credit_vendeur_du_contexte_partage(tmp_path: Path) -> None:
+    # re-Akainu tour 5 (BLOQUANT O24-14) : en SELAS, l'acte ET le compromis sont generes
+    # ENSEMBLE depuis UN SEUL contexte. Un credit-vendeur actif (clause PROPRE a l'acte medical)
+    # ne doit PAS faire lever le COMPROMIS qui partage ce contexte -> il l'IGNORE (sa garde ne
+    # s'applique qu'au variant acte medical qui rend reellement la clause). Avant le fix, le
+    # compromis levait et cassait tout le bundle. (Ancien test qui asserait la levee = retire :
+    # il codait une regle contraire au verbatim « acte ET compromis ensemble ».)
+    ctx = _context(etape="acte", credit_vendeur=True)  # contexte d'acte porteur, partage
+    compromis = CompromisCessionCabinetMedicalGenerator().generate(ctx, tmp_path)
+    assert compromis.exists()
+    _assert_no_residual_tokens(_docx_text(compromis))
 
 
 def test_credit_vendeur_duree_rendered_in_years(tmp_path: Path) -> None:
