@@ -12,7 +12,7 @@
 | ID | Verbatim exact | Périmètre | Dépend de | Statut | Validé |
 |---|---|---|---|---|---|
 | O24-01 | « Supprimer : Signature d'une lettre de mission … / Paiement de l'acompte des honoraires du cabinet Sydel … dans l'annexe de tous les statuts de tous les cas » | tous types | — | TRAITÉ | ⬜ |
-| O24-02 | « Dans tous les cas où il y a une déclaration de non condamnation, elle doit être générée d'office pour chaque dirigeant uniquement. Le nom du document doit intégrer le nom du dirigeant … » | tous types | — | DISPATCHÉ | ⬜ |
+| O24-02 | « Dans tous les cas où il y a une déclaration de non condamnation, elle doit être générée d'office pour chaque dirigeant uniquement. Le nom du document doit intégrer le nom du dirigeant … » | tous types | — | TRAITÉ | ⬜ |
 | O24-03 | « Toutes les adresses doivent être rédigées sur une ligne, pas de champ séparé pour la rue, la voie, etc.. » | SELAS (UI) | — | TRAITÉ | ⬜ |
 | O24-04 | « Ajouter une icone "copier" à côté de chaque champ texte pour copier le texte contenu à l'intérieur d'un champ » | SELAS (UI) | — | TRIÉ | ⬜ |
 | O24-05 | « la valeur nominale d'une part/action doit être calculée automatiquement et affichée dans le champ concerné » | tous types | — | TRAITÉ | ⬜ |
@@ -42,6 +42,6 @@
 
 ## Synthèse machine-lisible
 
-- **Reste à faire** (Statut ≠ TRAITÉ/VALIDÉ) : `O24-02` (DISPATCHÉ, à généraliser), `O24-04` ; `LIVE-05`/`LIVE-06` (CLARIF).
-- **En attente validation Rafael** (TRAITÉ, `Validé = ⬜`) : O24-01/03/05/06/07/08/09/10/11/12/13/14/15 + LIVE-01/02/03/04.
+- **Reste à faire** (Statut ≠ TRAITÉ/VALIDÉ) : `O24-04` (icône copier, UI) ; `LIVE-05`/`LIVE-06` (CLARIF).
+- **En attente validation Rafael** (TRAITÉ, `Validé = ⬜`) : O24-01 à 03, 05 à 15 + LIVE-01/02/03/04.
 - **VALIDÉ** : aucun → le carnet reste plein (Rafael doit retester `sprint/engine-completion`).

@@ -18,6 +18,7 @@ from sydel_doc_engine.app.ui_runtime import (
     GeneratedDossier,
     generate_docx_files_for_document_codes,
     generate_zip_file,
+    rename_dnc_with_signataire,
 )
 from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import (
@@ -1244,6 +1245,7 @@ def generate_dossier(payload: dict[str, object], output_dir: Path) -> GeneratedD
         raise ValueError(plan.reason)
     ctx = build_generation_context(payload)
     docx_paths = generate_docx_files_for_document_codes(ctx, output_dir, plan.document_codes)
+    docx_paths = rename_dnc_with_signataire(docx_paths, ctx)  # O24-02 : DNC nommee par le dirigeant
     zip_path = generate_zip_file(output_dir, docx_paths)
     return GeneratedDossier(
         output_dir=output_dir,

@@ -672,7 +672,8 @@ def test_clean_front_selarl_generation_smoke(tmp_path: Path) -> None:
     assert len(generated.docx_paths) == 6
     assert generated.zip_path.exists()
     assert {path.name for path in generated.docx_paths} >= {
-        "declaration_non_condamnation.docx",
+        # O24-02 : la DNC porte le nom du gerant (Martin) dans son nom de fichier.
+        "declaration_non_condamnation_Martin.docx",
         "autorisation_domiciliation.docx",
         "procuration.docx",
         "pv_nomination_gerant.docx",
@@ -701,7 +702,7 @@ def test_clean_front_selarl_medecin_regime_communautaire_generation_smoke(
     assert len(generated.docx_paths) == 8
     assert generated.zip_path.exists()
     assert names == {
-        "declaration_non_condamnation.docx",
+        "declaration_non_condamnation_Martin.docx",  # O24-02 : DNC nommee par le gerant
         "autorisation_domiciliation.docx",
         "procuration.docx",
         "pv_nomination_gerant.docx",
@@ -904,7 +905,7 @@ def test_clean_front_streamlit_generation_exposes_download_buttons(
     download_labels = [item.label for item in app.get("download_button")]
     assert download_labels == [
         "Telecharger le dossier ZIP",
-        "Telecharger declaration_non_condamnation.docx",
+        "Telecharger declaration_non_condamnation_Martin.docx",
         "Telecharger autorisation_domiciliation.docx",
         "Telecharger procuration.docx",
         "Telecharger pv_nomination_gerant.docx",

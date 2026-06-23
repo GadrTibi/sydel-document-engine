@@ -181,7 +181,15 @@ def _civil_base(structure, statuts_type, associes):
 
 
 def _assert_bundle_clean(generated, expected_names) -> None:
-    names = {p.name for p in generated.docx_paths}
+    # O24-02 (onglet 24) : la DNC est renommee avec le nom du dirigeant. On normalise
+    # vers le nom generique pour le controle de COMPLETUDE du bundle ; le nommage par
+    # dirigeant est verifie par les tests DNC dedies (SELARL clean / SELAS dnc multi).
+    names = {
+        "declaration_non_condamnation.docx"
+        if p.name.startswith("declaration_non_condamnation")
+        else p.name
+        for p in generated.docx_paths
+    }
     assert expected_names <= names
     for path in generated.docx_paths:
         _assert_clean(_docx_text(path))
@@ -1622,11 +1630,12 @@ def _selas_payload_n(associes):
     return payload
 
 
-# #2 (onglet 24) : la DNC porte le nom du dirigeant (president = « Durand » dans
-# les fixtures) dans son nom de fichier.
+# O24-02 (onglet 24) : la DNC porte le nom du dirigeant. La COMPLETUDE du bundle se
+# verifie au nom generique (cf. _assert_bundle_clean qui normalise) ; le nommage par
+# dirigeant (Durand president + Martin DG) est verifie par le test DNC multi dedie.
 _SELAS_BUNDLE_NAMES = {
     "statuts_selas_multi.docx",
-    "declaration_non_condamnation_Durand.docx",
+    "declaration_non_condamnation.docx",
     "autorisation_domiciliation.docx",
     "procuration.docx",
     "pv_nomination_gerant.docx",
