@@ -172,8 +172,21 @@ def rename_dnc_with_signataire(
     for path in docx_paths:
         if path.name == _DNC_GENERIC_NAME:
             target = path.with_name(f"declaration_non_condamnation_{slug}.docx")
-            path.replace(target)
-            out.append(target)
+            # O24-05 (NITPICK, re-Akainu T5) : rendre le renommage IDEMPOTENT / robuste.
+            # `path.replace` levait FileNotFoundError si la source etait deja renommee
+            # (2e appel sur la meme liste) ou absente (basetemp reutilise dans les tests
+            # -> faux « 4 failed »). On ne renomme que si la source EXISTE ; si la cible
+            # existe deja (renommage deja fait), on la retient telle quelle. Dans les deux
+            # cas on ne leve jamais.
+            if path.exists() and not target.exists():
+                path.replace(target)
+                out.append(target)
+            elif target.exists():
+                out.append(target)
+            else:
+                # Source absente ET cible absente : on garde le chemin tel quel
+                # (ni renommage possible ni resultat anterieur a refleter).
+                out.append(path)
         else:
             out.append(path)
     return out

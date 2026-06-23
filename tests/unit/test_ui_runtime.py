@@ -8,6 +8,7 @@ from sydel_doc_engine.app.ui_runtime import (
     build_output_dir,
     generate_dossier,
     parse_context_payload,
+    rename_dnc_with_signataire,
     selected_document_rows,
 )
 from sydel_doc_engine.rendering.pdf_export import PdfExportResult
@@ -41,6 +42,37 @@ def test_build_output_dir_sanitizes_source_name() -> None:
     output_dir = build_output_dir("Contexte dossier #1.yaml", Path("artifacts") / "ui")
 
     assert output_dir == Path("artifacts") / "ui" / "Contexte_dossier_1"
+
+
+def test_rename_dnc_with_signataire_is_idempotent(tmp_path: Path) -> None:
+    # O24-05 (NITPICK, re-Akainu T5) : le renommage de la DNC doit etre IDEMPOTENT /
+    # robuste. Avant le fix, un 2e appel (ou un basetemp reutilise) levait
+    # FileNotFoundError sur `path.replace` -> faux « failed ». On appelle 2x de suite et
+    # avec une liste portant le chemin GENERIQUE perime (source deja renommee) : aucun
+    # appel ne doit lever, et le resultat pointe toujours sur la DNC nommee.
+    ctx = parse_context_payload(
+        Path("examples/contexts/lot_01_example.yaml").read_text(encoding="utf-8")
+    )
+    slug = ctx.personne_signataire.nom  # "Martin"
+    expected = f"declaration_non_condamnation_{slug}.docx"
+
+    generic = tmp_path / "declaration_non_condamnation.docx"
+    generic.write_bytes(b"dnc")
+    other = tmp_path / "procuration.docx"
+    other.write_bytes(b"proc")
+
+    first = rename_dnc_with_signataire([generic, other], ctx)
+    assert [p.name for p in first] == [expected, "procuration.docx"]
+    assert (tmp_path / expected).exists()
+
+    # 2e appel sur le RESULTAT (deja renomme) : no-op, ne leve pas.
+    second = rename_dnc_with_signataire(first, ctx)
+    assert [p.name for p in second] == [expected, "procuration.docx"]
+
+    # 3e appel avec le chemin GENERIQUE perime (source absente, cible deja presente) :
+    # ne leve pas et retourne la cible existante (robustesse basetemp reutilise).
+    third = rename_dnc_with_signataire([generic, other], ctx)
+    assert [p.name for p in third] == [expected, "procuration.docx"]
 
 
 def test_generate_dossier_creates_zip_with_docx_and_pdf(
