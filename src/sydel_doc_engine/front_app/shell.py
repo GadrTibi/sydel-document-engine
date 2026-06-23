@@ -2540,7 +2540,12 @@ def _render_cession_form(
     # --- Avenant de bail (DOC-007) : bailleur a renseigner, locataire derive ---
     with st.expander("Avenant de bail — bailleur"):
         st.caption(
-            "Le locataire actuel est l'associe unique ; le nouveau locataire est la "
+            # O24-11 : en SELAS multi-associes, « l'associe unique » est faux -> locataire =
+            # l'associe selectionne (vendeur). Hors SELAS : wording historique inchange.
+            "Le locataire actuel est l'associé sélectionné ci-dessus ; le nouveau locataire "
+            "est la société en cours de création. Champs vides : omis de l'avenant."
+            if prefix == "selas"
+            else "Le locataire actuel est l'associe unique ; le nouveau locataire est la "
             "societe en cours de creation. Champs vides : omis de l'avenant."
         )
         col_a, col_b, col_c = st.columns(3)

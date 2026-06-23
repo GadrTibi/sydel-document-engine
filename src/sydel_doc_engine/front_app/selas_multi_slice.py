@@ -1392,6 +1392,13 @@ def _render_selas_cession(
         v_voie = str((v_adr.voie if v_adr else "") or "")
         v_cp = str((v_adr.cp if v_adr else "") or "")
         v_ville = str((v_adr.ville if v_adr else "") or "")
+    # O24-11 : reprendre le LIBELLE BRUT du menu situation matrimoniale de l'associe choisi
+    # (preset MATRIMONIAL_STATUS_PRESETS), pas le mot aplati « marie » de _situation_display
+    # -> la cession derive le bon regime (separation/universelle/participation). + conjoint.
+    v_situation_label = str(
+        st.session_state.get(f"{PREFIX}_associe_{vendeur_index}_situation") or ""
+    ) or ((vendeur.situation_maritale or "") if vendeur else "")
+    v_regime = vendeur.regime_communautaire_associe if vendeur else None
     praticien: dict[str, object] = {
         "prenom": (vendeur.prenom or vendeur.prenoms) if vendeur else "",
         "nom": vendeur.nom if vendeur else "",
@@ -1402,7 +1409,10 @@ def _render_selas_cession(
         "nationalite": vendeur.nationalite if vendeur else None,
         "numero_ordre": vendeur.numero_ordre if vendeur else None,
         "numero_rpps": vendeur.numero_rpps if vendeur else None,
-        "situation_maritale": vendeur.situation_maritale if vendeur else None,
+        "situation_maritale": v_situation_label,
+        "conjoint_civilite": (v_regime.conjoint_civilite if v_regime else "") or "",
+        "conjoint_prenom": (v_regime.conjoint_prenom if v_regime else "") or "",
+        "conjoint_nom": (v_regime.conjoint_nom if v_regime else "") or "",
         "adresse_num_voie": v_num,
         "adresse_voie": v_voie,
         "adresse_cp": v_cp,

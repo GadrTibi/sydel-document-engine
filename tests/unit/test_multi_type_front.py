@@ -2206,6 +2206,29 @@ def test_selarl_valeur_nominale_affichee_dans_un_champ(tmp_path: Path, monkeypat
     assert any("Valeur nominale d'une part (calculee)" in s for s in labels), labels
 
 
+def test_selas_cession_vendeur_regime_complet(tmp_path: Path, monkeypatch) -> None:
+    # O24-11 (onglet 24) : « toutes ses informations soient retranscrites » -> la situation
+    # matrimoniale du vendeur est reprise en LIBELLE COMPLET (preset), pas aplatie en « marié »,
+    # pour que la cession dérive le bon régime (séparation, etc.).
+    from streamlit.testing.v1 import AppTest
+
+    from sydel_doc_engine.front_app import shell
+
+    preset_sep = "Marie(e) sous le regime de la separation de biens"
+    monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selas-vendeur-regime")
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
+    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle creation V1")
+    app = app.run(timeout=180)
+    next(b for b in app.button if "test_data" in str(b.key)).click()
+    app = app.run(timeout=180)
+    app.selectbox(key="selas_associe_0_situation").set_value(preset_sep)
+    app = app.run(timeout=180)
+    app.checkbox(key="selas_cession_on").set_value(True)
+    app = app.run(timeout=180)
+    # le libellé complet (préset) est propagé, pas le mot aplati « marié »
+    assert app.session_state["selas_situation_maritale"] == preset_sep
+
+
 def test_selas_cession_cabinet_meme_adresse_lieu_exercice(tmp_path: Path, monkeypatch) -> None:
     # O24-12 (onglet 24) : « adresse du cabinet -> ajouter une case "meme adresse que le
     # lieu d'exercice" et reporter les donnees si cochee ». La case est sur le CABINET
