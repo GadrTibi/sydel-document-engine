@@ -1062,6 +1062,11 @@ def _validate_selection(cession: CessionContext, variant: CessionCabinetVariant)
             f"cession.type_cabinet doit etre {variant.type_cabinet} pour {variant.output_filename}."
         )
 
+    # cession.etape reste un champ REQUIS et borne a SUPPORTED_ETAPES, MAIS il n'est plus
+    # PILOTANT (re-Akainu 2026-06-23, NITPICK O24-14 : couplage vestigial documente). Il sert
+    # encore de garde de presence/validite de saisie ; un appelant qui le laisse vide/None
+    # leve donc ici via _required_text. C'est volontaire : en SELAS le formulaire force
+    # toujours etape='acte', et on prefere une garde de presence explicite a un champ optionnel.
     etape = _required_text(cession.etape, "cession.etape").lower()
     if etape not in SUPPORTED_ETAPES:
         supported = ", ".join(sorted(SUPPORTED_ETAPES))

@@ -11,21 +11,20 @@
 │   VALIDÉ  (Rafael)     [░░░░░░░░░░░░░░░░░░░░░░░░]   0/21  ·   0%   ⚠ rien validé
 │   RESTE : propagation Q4 (adresses tous types) · O24-04 icône · L5/L6 clarif
 │
-│   ── ONGLET 24 (🔴 = défaut Akainu à corriger) ───────────────────────
-│   ✅ 01 annexe Sydel — Akainu RIEN À REDIRE   ✅ 02 DNC nommée/dirigeant
-│   🔴 03 adresses (ordre 3 champs + double siège + parser KO + propagation)
-│   ⬜ 04 icône copier (décision UI)   🔴 05 valeur nominale (manque SELARL)
-│   ✅ 06 pluri=multi   🔴 07 rôles (DG requalifié Président ; Président pas obligatoire)
-│   ✅ 08 date+adresse 1×   ✅ 09 « (profession) »
-│   ✅ 10 dérivation dentaire — Akainu RIEN À REDIRE   🔴 11 vendeur (régime+conjoint perdus)
-│   🔴 12 case cabinet (test non-discriminant)   ✅ 13 CA non facultatif
-│   🔴 14 acte+compromis CRASH génération   ✅ 15 acquéreur retiré
+│   ── ONGLET 24 (✅=Akainu OK · 🟢=corrigé, batch en cours · ⬜=à faire) ──
+│   ✅ 01 annexe Sydel (Akainu OK)        ✅ 02 DNC nommée/dirigeant
+│   🟢 03 adresses 1 ligne SELAS (ordre+siège+parser)   ⬜ 04 icône copier (décision UI)
+│   🟢 05 valeur nominale SELARL          ✅ 06 pluri=multi   ✅ 08 date+adresse 1×
+│   🟢 07 Président obligatoire           ✅ 09 « (profession) »
+│   ✅ 10 dérivation dentaire (Akainu OK) 🟢 11 vendeur (régime+conjoint repris)
+│   🟢 12 case cabinet (test discriminant) ✅ 13 CA non facultatif
+│   🟢 14 acte+compromis (crash résolu)   ✅ 15 acquéreur retiré
 │
 │   ── RETOURS LIVE ───────────────────────────────────────────────────
-│   ✅ L1 situation=menu   🔴 L2 case régime (reste ailleurs)   🔴 L3 « aout » non accentué   ✅ L4 choix étape
+│   ✅ L1 situation=menu   🟢 L2 case régime morte supprimée   🟢 L3 mois accentués   ✅ L4 choix étape
 │   ❓ L5 lettre renonciation   ❓ L6 « case à la fin »   → illisibles, clarif Rafael
 │
-│   RESTE : 03-propagation (7 types) · 04 icône copier · L5/L6 (clarif)
+│   RESTE : propagation Q4 (adresses tous types) · 04 icône copier · L5/L6 (clarif)
 │   GARDE-FOU : 0 validé tant que Rafael n'a pas reconfirmé (traité ≠ validé)
 └──────────────────────────────────────────────────────────────────────────
 ```

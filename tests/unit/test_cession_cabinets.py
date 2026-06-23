@@ -303,10 +303,18 @@ def test_o24_14_compromis_genere_meme_si_cession_etape_acte(tmp_path: Path) -> N
     # compromis est généré alors que cession.etape est forcée à 'acte'. Avant le fix,
     # _validate_selection levait « cession.etape doit etre compromis pour compromis_... ».
     # Le document est piloté par le VARIANT (variant.etape), pas par cession.etape.
+    # re-Akainu 2026-06-23 (MINEUR O24-14) : on prouve le « À LA FOIS » du verbatim — acte ET
+    # compromis générés depuis le MÊME contexte (cession.etape='acte'), chacun avec son contenu
+    # propre (le compromis porte le financement : montant du prêt) et sans token résiduel.
     ctx = _context(etape="acte", type_cabinet="dentaire")
-    output_path = CompromisCessionCabinetDentaireGenerator().generate(ctx, tmp_path)
-    assert output_path == tmp_path / "compromis_cession_cabinet_dentaire.docx"
-    assert output_path.exists()
+    acte_path = ActeCessionCabinetDentaireGenerator().generate(ctx, tmp_path)
+    compromis_path = CompromisCessionCabinetDentaireGenerator().generate(ctx, tmp_path)
+    assert acte_path == tmp_path / "acte_cession_cabinet_dentaire.docx"
+    assert compromis_path == tmp_path / "compromis_cession_cabinet_dentaire.docx"
+    assert acte_path.exists() and compromis_path.exists()
+    compromis_text = _docx_text(compromis_path)
+    assert "240 000" in compromis_text  # montant du prêt (CessionPret), propre au financement
+    _assert_no_residual_tokens(compromis_text)
 
 
 def test_acte_medical_blocks_without_medical_bail_validation(tmp_path: Path) -> None:

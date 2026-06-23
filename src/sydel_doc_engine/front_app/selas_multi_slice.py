@@ -665,13 +665,21 @@ def _collect_dirigeants_nomines_indices(
 ) -> list[tuple[int, str]]:
     """Liste ordonnee (index associe, role) des dirigeants nommes au PV.
 
-    Le President vient toujours en PREMIERE decision ; les autres dirigeants
-    physiques coches (Directeur General) suivent dans l'ordre des associes.
-    Ignore les personnes morales (un dirigeant SELAS est une personne physique).
+    Le dirigeant pilote (president_index) vient en PREMIERE decision ; les autres
+    dirigeants physiques coches suivent dans l'ordre des associes. Ignore les
+    personnes morales (un dirigeant SELAS est une personne physique).
+
+    Racine O24-07 (re-Akainu 2026-06-23, MAJEUR) : on ne FORCE plus le role
+    « President » sur le dirigeant pilote — on lit son role REELLEMENT choisi. Un
+    associe explicitement « Directeur General » n'est donc plus requalifie
+    silencieusement « President ». Si le pilote n'a pas de role explicite (chemin
+    par defaut / bare-payload), _dirigeant_role retombe sur « President » (un SELAS
+    a structurellement un president). Le cas « dirigeants designes mais AUCUN
+    president » est un etat invalide bloque en amont par _validate_roles_dirigeants.
     """
     dirigeants: list[tuple[int, str]] = []
     if 0 <= president_index < len(associes):
-        dirigeants.append((president_index, "Président"))
+        dirigeants.append((president_index, _dirigeant_role(president_index)))
     for i, associe in enumerate(associes):
         if i == president_index:
             continue
@@ -906,14 +914,23 @@ def _situation_display(situation_label: str, genre: Gender) -> str:
 def _render_conjoint_si_communaute(
     prefix: str, situation_label: str
 ) -> RegimeCommunautaireAssocie | None:
-    """Conjoint d'UN associe physique, affiche UNIQUEMENT si la situation matrimoniale
-    choisie est un regime de COMMUNAUTE (R10/R11, Rafael 2026-06-23 : plus de case a
-    cocher — meme logique que la SELARL). Declenche DOC-005 (renonciation) + DOC-006
-    (avertissement). Le regime est la communaute legale (implicite) ; l'avertissement
-    reutilise l'adresse personnelle structuree de l'associe (foyer = domicile)."""
-    if not regime_communautaire_from_status(situation_label):
+    """Conjoint d'UN associe physique.
+
+    Affiche le sous-formulaire conjoint (civilite/prenom/nom) pour TOUT associe
+    marie ou pacse (re-Akainu 2026-06-23, MAJEUR O24-11 : le conjoint du vendeur
+    doit figurer a l'acte de cession pour TOUS les regimes maries — separation,
+    communaute universelle, participation aux acquets —, pas seulement la
+    communaute legale, comme le fait deja la SELARL via is_married_or_pacse). Les
+    coordonnees vivent dans les cles de session `{prefix}_conjoint_*` et sont lues
+    telles quelles par le sous-formulaire de cession.
+
+    En revanche, l'objet RegimeCommunautaireAssocie — qui DECLENCHE DOC-005
+    (renonciation) + DOC-006 (avertissement) — n'est retourne QUE pour la
+    communaute LEGALE (R10/R11, Rafael 2026-06-23) : les autres regimes maries
+    n'entrainent aucun document complementaire."""
+    if matrimonial_status_value(situation_label) not in ("marie", "pacse"):
         return None
-    st.caption("Conjoint de cet associé (lettres de renonciation / avertissement)")
+    st.caption("Conjoint de cet associé (figure à l'acte ; lettres si communauté légale)")
     col_a, col_b, col_c = st.columns(3)
     conjoint_civilite = col_a.selectbox(
         "Civilité conjoint",
@@ -922,6 +939,11 @@ def _render_conjoint_si_communaute(
     )
     conjoint_prenom = _ts(col_b, f"{prefix}_conjoint_prenom", "Prénom conjoint")
     conjoint_nom = _ts(col_c, f"{prefix}_conjoint_nom", "Nom conjoint")
+    # DOC-005/DOC-006 : communaute legale uniquement. Hors communaute legale, le
+    # conjoint est capte (cles de session ci-dessus, pour l'acte) mais aucun document
+    # de regime n'est genere -> on ne retourne pas d'objet RegimeCommunautaireAssocie.
+    if not regime_communautaire_from_status(situation_label):
+        return None
     return RegimeCommunautaireAssocie(
         actif=True,
         regime_matrimonial="la communauté légale",
@@ -932,23 +954,7 @@ def _render_conjoint_si_communaute(
     )
 
 
-def _parse_one_line_address(text: str) -> tuple[str, str, str]:
-    """Parse best-effort une adresse sur UNE ligne -> (voie, cp, ville).
-
-    « 5 place du Centre, 69000 Lyon » -> (« 5 place du Centre », « 69000 », « Lyon »).
-    Sert a recopier le lieu d'exercice (champ libre) dans le siege structure (#12).
-    Tolerant : si le format n'est pas reconnu, renvoie ce qu'il peut (voie = tout)."""
-    parts = [p.strip() for p in (text or "").split(",")]
-    voie = parts[0] if parts else ""
-    cp = ""
-    ville = ""
-    if len(parts) >= 2:
-        match = re.match(r"\s*(\d{4,5})\s+(.+)", parts[1])
-        if match:
-            cp, ville = match.group(1), match.group(2).strip()
-        else:
-            ville = parts[1]
-    return voie, cp, ville
+_CP_RE = re.compile(r"\b(\d{5})\b")
 
 
 def _parse_address_full(text: str) -> Address | None:
@@ -959,38 +965,46 @@ def _parse_address_full(text: str) -> Address | None:
     generateurs (DOC-001 DNC, domiciliation via [num_voie_siege], regime communautaire,
     ordre) exigent num_voie/voie/cp/ville separes -> on parse en interne.
 
-    Tolerant aux formes une-ligne usuelles : numero de tete (« 12 », « 12 bis », « 12B »)
-    detache via separateur espace OU virgule ; le code postal (4-5 chiffres) + la ville
-    sont isoles en FIN de chaine, avec ou sans virgule. Exemples acceptes :
+    Robustesse (re-Akainu 2026-06-23, MAJEUR O24-03) : le code postal francais fait
+    EXACTEMENT 5 chiffres et clot la chaine (CP + ville en fin). On retient donc le
+    DERNIER groupe de 5 chiffres comme CP, ce qui immunise les voies contenant une
+    annee (« avenue du 8 Mai 1945 » : 1945 = 4 chiffres, jamais pris pour un CP ;
+    « rue du 11 Novembre 1918 » idem). num_voie/voie = tout ce qui precede le CP,
+    ville = tout ce qui suit. Exemples acceptes :
       « 12 rue de la Paix, 75001 Paris »   « 12, rue de la Paix, 75001 Paris »
-      « 12 rue de la Paix 75001 Paris »
-    -> num_voie=12 / voie=rue de la Paix / cp=75001 / ville=Paris.
-    None si incomplet -> la validation « adresse requise » s'applique comme avant."""
+      « 12 rue de la Paix 75001 Paris »    « 10 avenue du 8 Mai 1945, 33700 Merignac »
+      « Lieu-dit Le Bourg, 12340 Bozouls » (numero de tete optionnel)
+    -> num_voie/voie / cp=75001 / ville=Paris.
+    None si voie/cp/ville manquent -> la validation « adresse requise » s'applique.
+    NB (re-Akainu MINEUR O24-03) : le numero de tete n'est PAS requis pour la
+    validite (lieu-dit / place sans numero acceptes) ; seuls voie+cp+ville le sont
+    (a confirmer Albane, cf. docs/review/QUESTIONS_RAFAEL.md)."""
     raw = (text or "").strip()
     if not raw:
         return None
-    # Numero de tete (optionnel), separateur espace OU virgule (« 12, rue ... »).
-    m = re.match(r"(\d+\s*(?:bis|ter|quater|[A-Za-z])?)[\s,]+(.*)", raw)
-    if m:
-        num_voie, rest = m.group(1).strip(), m.group(2).strip()
-    else:
-        num_voie, rest = "", raw
-    # CP (4-5 chiffres) + ville en FIN de chaine, separateur espace ou virgule.
-    m2 = re.search(r"(\d{4,5})[\s,]+(.+?)\s*$", rest)
-    if m2:
-        cp, ville = m2.group(1), m2.group(2).strip()
-        voie = rest[: m2.start()].strip().rstrip(",").strip()
-    else:
-        cp = ville = ""
-        voie = rest.rstrip(",").strip()
-    if not (num_voie and voie and cp and ville):
+    # CP francais = DERNIER groupe de 5 chiffres ; voie avant, ville apres.
+    cp_matches = list(_CP_RE.finditer(raw))
+    if not cp_matches:
         return None
+    last = cp_matches[-1]
+    cp = last.group(1)
+    before = raw[: last.start()].strip().rstrip(",").strip()
+    ville = raw[last.end():].strip().lstrip(",").strip()
+    # Numero de tete (optionnel) detache de la voie, separateur espace OU virgule.
+    m = re.match(r"(\d+\s*(?:bis|ter|quater|[A-Za-z])?)[\s,]+(.*)", before)
+    if m:
+        num_voie, voie = m.group(1).strip(), m.group(2).strip()
+    else:
+        num_voie, voie = "", before
+    if not (voie and cp and ville):
+        return None
+    street = f"{num_voie} {voie}".strip()
     return Address(
         num_voie=num_voie,
         voie=voie,
         cp=cp,
         ville=ville,
-        adresse_affichee=f"{num_voie} {voie}, {cp} {ville}",
+        adresse_affichee=f"{street}, {cp} {ville}",
     )
 
 
@@ -1357,13 +1371,19 @@ def _render_selas_cession(
         v_voie = str((v_adr.voie if v_adr else "") or "")
         v_cp = str((v_adr.cp if v_adr else "") or "")
         v_ville = str((v_adr.ville if v_adr else "") or "")
-    # O24-11 : reprendre le LIBELLE BRUT du menu situation matrimoniale de l'associe choisi
-    # (preset MATRIMONIAL_STATUS_PRESETS), pas le mot aplati « marie » de _situation_display
-    # -> la cession derive le bon regime (separation/universelle/participation). + conjoint.
+    # O24-11 : le LIBELLE BRUT du menu situation matrimoniale (preset MATRIMONIAL_STATUS_PRESETS)
+    # sert UNIQUEMENT a deriver le regime (separation/universelle/participation) cote cession ;
+    # il NE doit PAS partir dans `situation_maritale` (sinon l'acte rend « Marie(e) sous le
+    # regime ... » brut, non accentue et double — regression MAJEUR relevee par re-Akainu
+    # 2026-06-23). On dissocie comme la SELARL : valeur COLLAPSEE (« marie ») pour l'affichage,
+    # libelle BRUT pour le regime (cle de session lue par _vendeur_regime_label).
     v_situation_label = str(
         st.session_state.get(f"{PREFIX}_associe_{vendeur_index}_situation") or ""
     ) or ((vendeur.situation_maritale or "") if vendeur else "")
-    v_regime = vendeur.regime_communautaire_associe if vendeur else None
+    # Conjoint du vendeur : lu directement depuis les cles de session de l'associe choisi
+    # (captees pour TOUT regime marie/pacse, cf. _render_conjoint_si_communaute), donc present
+    # meme hors communaute legale ou regime_communautaire_associe est None (MAJEUR O24-11).
+    v_conj_prefix = f"{PREFIX}_associe_{vendeur_index}"
     praticien: dict[str, object] = {
         "prenom": (vendeur.prenom or vendeur.prenoms) if vendeur else "",
         "nom": vendeur.nom if vendeur else "",
@@ -1374,19 +1394,21 @@ def _render_selas_cession(
         "nationalite": vendeur.nationalite if vendeur else None,
         "numero_ordre": vendeur.numero_ordre if vendeur else None,
         "numero_rpps": vendeur.numero_rpps if vendeur else None,
-        "situation_maritale": v_situation_label,
-        "conjoint_civilite": (v_regime.conjoint_civilite if v_regime else "") or "",
-        "conjoint_prenom": (v_regime.conjoint_prenom if v_regime else "") or "",
-        "conjoint_nom": (v_regime.conjoint_nom if v_regime else "") or "",
+        "situation_maritale": matrimonial_status_value(v_situation_label),
+        "conjoint_civilite": str(
+            st.session_state.get(f"{v_conj_prefix}_conjoint_civilite") or ""
+        ),
+        "conjoint_prenom": str(st.session_state.get(f"{v_conj_prefix}_conjoint_prenom") or ""),
+        "conjoint_nom": str(st.session_state.get(f"{v_conj_prefix}_conjoint_nom") or ""),
         "adresse_num_voie": v_num,
         "adresse_voie": v_voie,
         "adresse_cp": v_cp,
         "adresse_ville": v_ville,
     }
-    # Statut marital du vendeur, lu par le sous-formulaire via la cle prefixee.
-    st.session_state["selas_situation_maritale"] = str(
-        praticien.get("situation_maritale") or ""
-    )
+    # Le sous-formulaire de cession derive le regime via cette cle : il lui faut le LIBELLE
+    # BRUT du preset (« Marie(e) sous le regime de la communaute universelle »), pas la valeur
+    # collapsee — _vendeur_regime_label y lit « universelle »/« participation »/« separation ».
+    st.session_state["selas_situation_maritale"] = v_situation_label
     scm_on = st.checkbox("Cession de parts de SCM", key="selas_scm_cession_on")
     cession_ctx, bail_ctx = shell._render_cession_form(
         cession_on,
@@ -1471,10 +1493,11 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
     # chemin per-associe gouverne, sinon adresse du president (toggle global).
     conjoint_foyer = _conjoint_foyer_address(payload, adresse_perso)
     # B1 (fidelite gold) : le sous-formulaire de cession PARTAGE code l'acquereur en
-    # « SELARL » (shell.py:2125, hardcode unipersonnel). En SELAS, l'acquereur EST la
-    # SELAS creee : on post-corrige sa forme sociale pour que les actes/compromis de
-    # cession affichent « SELAS » (meme principe que selas_uni_medecin_slice pour la
-    # societe). SELAS-only : le gold SELARL reste intact.
+    # « SELARL » (shell._render_cession_form, cle acquereur_payload["forme_sociale"],
+    # hardcode unipersonnel). En SELAS, l'acquereur EST la SELAS creee : on post-corrige
+    # sa forme sociale pour que les actes/compromis de cession affichent « SELAS » (meme
+    # principe que selas_uni_medecin_slice pour la societe). SELAS-only : le gold SELARL
+    # reste intact. (re-Akainu 2026-06-23 : ancre stable, plus de numero de ligne.)
     _cession_ctx = payload.get("cession_context")
     if _cession_ctx is not None and getattr(_cession_ctx, "acquereur", None) is not None:
         _cession_ctx.acquereur.forme_sociale = "SELAS"

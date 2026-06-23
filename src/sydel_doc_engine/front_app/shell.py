@@ -2170,17 +2170,24 @@ def _render_cession_form(
         lieu_exercice = str(societe.get("lieu_exercice") or "")
         # O24-12 : la case existe dès que le bloc Cabinet est rendu en SELAS (verbatim
         # « ajouter une case », inconditionnel) ; elle ne reporte que si le lieu d'exercice
-        # est renseigné (sinon rien à recopier).
+        # est renseigné (sinon rien à recopier). Le report est RÉVERSIBLE (re-Akainu
+        # 2026-06-23, MAJEUR O24-12 : décocher doit défaire le report, sinon l'adresse
+        # reste polluée par le lieu d'exercice). On mémorise l'état précédent de la case
+        # et, à la transition coché→décoché, on restaure l'adresse du cabinet au siège.
         if prefix == "selas":
-            if (
-                st.checkbox(
-                    "Adresse du cabinet = même adresse que le lieu d'exercice",
-                    key=f"{_CESSION_PREFIX}_cabinet_meme_lieu_exercice",
-                    help="Coché : reporte l'adresse du lieu d'exercice dans l'adresse du cabinet.",
-                )
-                and lieu_exercice
-            ):
+            prev_key = f"{_CESSION_PREFIX}_cabinet_meme_lieu_exercice_prev"
+            was_checked = bool(st.session_state.get(prev_key))
+            checked = st.checkbox(
+                "Adresse du cabinet = même adresse que le lieu d'exercice",
+                key=f"{_CESSION_PREFIX}_cabinet_meme_lieu_exercice",
+                help="Coché : reporte l'adresse du lieu d'exercice dans l'adresse du cabinet.",
+            )
+            if checked and lieu_exercice:
                 st.session_state[cab_key] = lieu_exercice
+            elif was_checked and not checked:
+                # Transition coché → décoché : on défait le report, retour au siège.
+                st.session_state[cab_key] = siege_display
+            st.session_state[prev_key] = checked
         elif not st.session_state.get(cab_key) and siege_display:
             st.session_state[cab_key] = siege_display
         adresse_cabinet = _cession_text(

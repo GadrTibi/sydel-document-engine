@@ -2123,22 +2123,6 @@ def test_selas_profession_field_removed(tmp_path: Path, monkeypatch) -> None:
     assert not any(k.endswith("_profession") for k in keys)
 
 
-def test_selas_parse_one_line_address() -> None:
-    # #12 (onglet 24) : parse best-effort du lieu d'exercice (1 champ) -> siege structure.
-    from sydel_doc_engine.front_app import selas_multi_slice as sms
-
-    assert sms._parse_one_line_address("5 place du Centre, 69000 Lyon") == (
-        "5 place du Centre",
-        "69000",
-        "Lyon",
-    )
-    assert sms._parse_one_line_address("12 rue de la Paix, 75002 Paris") == (
-        "12 rue de la Paix",
-        "75002",
-        "Paris",
-    )
-
-
 def test_selas_adresses_sur_une_ligne(tmp_path: Path, monkeypatch) -> None:
     # O24-03 (onglet 24) : toutes les adresses sur UNE ligne, pas de champ separe.
     # Le siege et l'adresse personnelle sont des champs texte uniques ; les anciennes
@@ -2187,6 +2171,28 @@ def test_parse_address_full_tolere_formes_usuelles() -> None:
         a = _parse_address_full(forme)
         assert a is not None, forme
         assert (a.num_voie, a.voie, a.cp, a.ville) == attendu, forme
+
+    # re-Akainu 2026-06-23 (MAJEUR O24-03) : une voie contenant une ANNÉE ne doit jamais voir
+    # l'année prise pour un code postal (« 8 Mai 1945 » : 1945 = 4 chiffres ; le CP français =
+    # DERNIER groupe de 5 chiffres). Sinon cp/ville ET l'affichage sont corrompus silencieusement.
+    a = _parse_address_full("10 avenue du 8 Mai 1945, 33700 Mérignac")
+    assert a is not None
+    assert (a.num_voie, a.voie, a.cp, a.ville) == (
+        "10",
+        "avenue du 8 Mai 1945",
+        "33700",
+        "Mérignac",
+    )
+    assert a.adresse_affichee == "10 avenue du 8 Mai 1945, 33700 Mérignac"
+    a = _parse_address_full("rue du 11 Novembre 1918, 69100 Villeurbanne")
+    assert a is not None and a.cp == "69100" and a.ville == "Villeurbanne"
+
+    # re-Akainu (MINEUR O24-03) : adresse SANS numéro de tête (lieu-dit, place) = valide
+    # (le numéro n'est pas requis ; seuls voie/cp/ville le sont).
+    a = _parse_address_full("Lieu-dit Le Bourg, 12340 Bozouls")
+    assert a is not None
+    assert (a.num_voie, a.voie, a.cp, a.ville) == ("", "Lieu-dit Le Bourg", "12340", "Bozouls")
+
     assert _parse_address_full("") is None
     assert _parse_address_full("pas une adresse") is None
 
@@ -2204,6 +2210,19 @@ def test_selarl_valeur_nominale_affichee_dans_un_champ(tmp_path: Path, monkeypat
     app = app.run(timeout=180)
     labels = [str(w.label) for w in app.text_input]
     assert any("Valeur nominale d'une part (calculee)" in s for s in labels), labels
+    # re-Akainu 2026-06-23 (MINEUR O24-05) : le verbatim exige « calculée automatiquement ET
+    # affichée ». On prouve la moitié « calculée » : capital 1000 / 100 parts -> value == '10'
+    # injectée DANS le champ (désactivé), pas seulement la présence du libellé.
+    app.number_input(key="selarl_capital_social").set_value(1000)
+    app.number_input(key="selarl_nb_parts_total").set_value(100)
+    app = app.run(timeout=180)
+    vn = next(
+        w
+        for w in app.text_input
+        if "Valeur nominale d'une part (calculee)" in str(w.label)
+    )
+    assert vn.value == "10"
+    assert vn.disabled is True
 
 
 def test_selas_cession_vendeur_regime_complet(tmp_path: Path, monkeypatch) -> None:
@@ -2223,10 +2242,41 @@ def test_selas_cession_vendeur_regime_complet(tmp_path: Path, monkeypatch) -> No
     app = app.run(timeout=180)
     app.selectbox(key="selas_associe_0_situation").set_value(preset_sep)
     app = app.run(timeout=180)
+    # re-Akainu 2026-06-23 (MAJEUR O24-11) : le conjoint doit être capté pour TOUT régime marié
+    # (séparation incluse), pas seulement la communauté légale -> les champs conjoint apparaissent.
+    conj_keys = {str(w.key) for w in app.text_input}
+    assert "selas_associe_0_conjoint_prenom" in conj_keys
+    assert "selas_associe_0_conjoint_nom" in conj_keys
+    for w in app.text_input:
+        if str(w.key) == "selas_associe_0_conjoint_prenom":
+            w.set_value("Alex")
+        elif str(w.key) == "selas_associe_0_conjoint_nom":
+            w.set_value("Separe")
+    app = app.run(timeout=180)
     app.checkbox(key="selas_cession_on").set_value(True)
     app = app.run(timeout=180)
-    # le libellé complet (préset) est propagé, pas le mot aplati « marié »
+    # le libellé complet (préset) est propagé POUR LA DÉRIVATION DU RÉGIME, pas le mot aplati
     assert app.session_state["selas_situation_maritale"] == preset_sep
+
+
+def test_selas_vendeur_situation_dissociee_du_regime() -> None:
+    # re-Akainu 2026-06-23 (MAJEUR O24-11) : le libellé BRUT du preset sert à DÉRIVER le RÉGIME,
+    # mais l'AFFICHAGE de la situation doit être COLLAPSÉ + accentué (« marié »/« mariée »), jamais
+    # le libellé brut « Marie(e) sous le régime ... » (sinon l'acte rend non accentué + régime
+    # doublé + artefact « (e) »). On verrouille la dissociation au niveau du contrat de fonctions.
+    from sydel_doc_engine.domain.enums import Gender
+    from sydel_doc_engine.front_app.field_derivations import matrimonial_status_value
+    from sydel_doc_engine.front_app.shell import _situation_display, _vendeur_regime_label
+
+    preset = "Marie(e) sous le regime de la communaute universelle"
+    # régime dérivé du libellé BRUT
+    assert _vendeur_regime_label(preset) == "communauté universelle"
+    # affichage = valeur COLLAPSÉE accentuée (ce qui part dans situation_maritale du praticien)
+    assert _situation_display(matrimonial_status_value(preset), Gender.FEMININ) == "mariée"
+    assert _situation_display(matrimonial_status_value(preset), Gender.MASCULIN) == "marié"
+    # le libellé brut (avec « (e) ») ne doit JAMAIS être ce qui s'affiche
+    affiche = _situation_display(matrimonial_status_value(preset), Gender.FEMININ)
+    assert "(e)" not in affiche and "regime" not in affiche.lower()
 
 
 def test_selas_cession_cabinet_meme_adresse_lieu_exercice(tmp_path: Path, monkeypatch) -> None:
@@ -2261,6 +2311,12 @@ def test_selas_cession_cabinet_meme_adresse_lieu_exercice(tmp_path: Path, monkey
     app = app.run(timeout=180)
     cab = next(w for w in app.text_input if str(w.key) == "selas_cession_cabinet_adresse")
     assert cab.value == "99 avenue Distincte, 75001 Paris"
+    # re-Akainu 2026-06-23 (MAJEUR O24-12) : DÉCOCHER doit DÉFAIRE le report -> retour au SIÈGE
+    # (sinon l'adresse du cabinet reste polluée par le lieu d'exercice après un décochage).
+    app.checkbox(key="selas_cabinet_meme_lieu_exercice").set_value(False)
+    app = app.run(timeout=180)
+    cab = next(w for w in app.text_input if str(w.key) == "selas_cession_cabinet_adresse")
+    assert cab.value == "5 place du Centre, 69000 Lyon"
 
 
 def test_cession_type_et_label_derives_de_la_profession() -> None:
@@ -2476,6 +2532,81 @@ def test_selas_zero_president_bloque(tmp_path: Path, monkeypatch) -> None:
         b for b in app.button if str(b.key) == "clean_typed_generate_dossier"
     )
     assert generate_button.disabled is True  # plus aucun Président -> bloqué
+
+
+def _fake_st_session(monkeypatch, state: dict) -> None:
+    """Remplace le `st` du module SELAS par un faux portant session_state = state.
+
+    Permet de tester _collect_dirigeants_nomines_indices / _validate_roles_dirigeants sur
+    le chemin PROGRAMMATIQUE (sans run AppTest), là où la requalification silencieuse
+    O24-07 se produisait (re-Akainu 2026-06-23)."""
+    from types import SimpleNamespace
+
+    from sydel_doc_engine.front_app import selas_multi_slice as sms
+
+    monkeypatch.setattr(sms, "st", SimpleNamespace(session_state=state))
+
+
+def _phys(n: int) -> list:
+    from types import SimpleNamespace
+
+    return [SimpleNamespace(type_personne="personne_physique") for _ in range(n)]
+
+
+def test_selas_collect_dirigeants_respecte_role_explicite(monkeypatch) -> None:
+    # Racine O24-07 (re-Akainu 2026-06-23, MAJEUR) : un dirigeant explicitement « Directeur
+    # Général » ne doit JAMAIS être requalifié « Président » par la collecte des dirigeants,
+    # même via le chemin programmatique (président_index résolu par fallback, sans Président).
+    from sydel_doc_engine.front_app import selas_multi_slice as sms
+
+    _fake_st_session(
+        monkeypatch,
+        {
+            "selas_associe_0_is_dirigeant": True,
+            "selas_associe_0_role_dirigeant": "Directeur Général",
+            "selas_associe_1_is_dirigeant": True,
+            "selas_associe_1_role_dirigeant": "Directeur Général Associé",
+        },
+    )
+    # président_index = 0 (premier dirigeant coché ; AUCUN « Président » explicite)
+    dirigeants = dict(sms._collect_dirigeants_nomines_indices(_phys(2), 0))
+    assert dirigeants[0] == "Directeur Général"  # PAS « Président » : plus de requalification
+    assert dirigeants[1] == "Directeur Général Associé"
+
+
+def test_selas_deux_presidents_bloque(monkeypatch) -> None:
+    # O24-07 (« soit président (UN SEUL) ») : 2 associés « Président » -> blocage.
+    from sydel_doc_engine.front_app import selas_multi_slice as sms
+
+    _fake_st_session(
+        monkeypatch,
+        {
+            "selas_associe_0_is_dirigeant": True,
+            "selas_associe_0_role_dirigeant": "Président",
+            "selas_associe_1_is_dirigeant": True,
+            "selas_associe_1_role_dirigeant": "Président",
+        },
+    )
+    blockers = sms._validate_roles_dirigeants(_phys(2))
+    assert any("Un seul Président" in b for b in blockers)
+
+
+def test_selas_president_plusieurs_dga_ok(monkeypatch) -> None:
+    # O24-07 (« directeur général associé (PLUSIEURS) ») : Président + ≥2 DGA -> aucun blocage.
+    from sydel_doc_engine.front_app import selas_multi_slice as sms
+
+    _fake_st_session(
+        monkeypatch,
+        {
+            "selas_associe_0_is_dirigeant": True,
+            "selas_associe_0_role_dirigeant": "Président",
+            "selas_associe_1_is_dirigeant": True,
+            "selas_associe_1_role_dirigeant": "Directeur Général Associé",
+            "selas_associe_2_is_dirigeant": True,
+            "selas_associe_2_role_dirigeant": "Directeur Général Associé",
+        },
+    )
+    assert sms._validate_roles_dirigeants(_phys(3)) == []
 
 
 def test_selas_dnc_une_par_dirigeant(tmp_path: Path, monkeypatch) -> None:
