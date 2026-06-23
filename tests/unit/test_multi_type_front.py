@@ -2386,15 +2386,23 @@ def test_selas_cession_genere_acte_et_compromis_ensemble() -> None:
     assert "DOC-009" in codes_med and "DOC-010" in codes_med  # acte + compromis medical
 
 
-def test_selas_cession_generate_dossier_emits_all_cession_files(tmp_path: Path) -> None:
+def test_selas_cession_generate_dossier_emits_all_cession_files(
+    tmp_path: Path, monkeypatch
+) -> None:
     # TACHE A (cablage cession SELAS) : PREUVE de bout en bout que generate_dossier
     # SELAS EMET reellement les documents de cession quand les contextes sont saisis.
     # Avant le cablage, le dossier levait « document est obligatoire pour
     # CODE-CESSION-CAB-001 » (acte/compromis/bail sans `document=`) et n'emettait
     # JAMAIS DOC-031/032/033 (scm_cession.variante_structure='selarl' != 'SELAS' ->
-    # plan menteur). On reutilise les fixtures cession SELARL VALIDES (memes
-    # generateurs) comme le ferait le sous-formulaire partage.
+    # plan menteur). On reutilise les GENERATEURS de cession SELARL (memes fichiers)
+    # comme le ferait le sous-formulaire partage, MAIS avec un acquereur
+    # REPRESENTATIF de la SELAS : en SELAS reel l'acquereur EST la societe creee,
+    # dont la denomination est derivee de la fiche societe (« SELAS EXEMPLE »), PAS
+    # « SELARL CABINET DURAND ». Un acquereur prefixe 'SELARL' validait un scenario
+    # impossible et produisait « Pour la SELAS SELARL CABINET DURAND » (Akainu
+    # MAJEUR 1, 2026-06-24).
     from sydel_doc_engine.front_app import selas_multi_slice as sms
+    from sydel_doc_engine.front_app import shell
     from sydel_doc_engine.scenarios.selarl import (
         PROFESSION_MEDECIN,
         cession_fixture_for_profession,
@@ -2402,14 +2410,39 @@ def test_selas_cession_generate_dossier_emits_all_cession_files(tmp_path: Path) 
     )
 
     cession, bail = cession_fixture_for_profession(PROFESSION_MEDECIN)
+    # Acquereur REPRESENTATIF SELAS : denomination derivee de la fiche societe (sans
+    # prefixe 'SELARL') ; la forme reelle ('SELAS') sera de toute facon imposee par
+    # la post-correction SELAS-only de build_generation_context. La fixture SELARL
+    # sert seulement de squelette d'etat civil/financement valide.
+    acquereur_selas = cession.acquereur.model_copy(
+        update={"denomination_societe": "SELAS EXEMPLE", "forme_sociale": "SELAS"}
+    )
+    cession = cession.model_copy(update={"acquereur": acquereur_selas})
     scm = scm_cession_fixture()
     # La fixture SCM SELARL porte variante_structure='selarl' ; on PROUVE que le
     # cablage SELAS la realigne (build_generation_context normalise -> 'selas').
     assert scm.variante_structure == "selarl"
-    # O24-11 : le modele SCM n'a qu'UN placeholder situation_maritale ; le front y
-    # injecte le libelle COMPLET ACCENTUE (statut genre + « sous le régime de » +
-    # regime). On simule cette injection (ce que fait _scm_cedant_situation_maritale_display).
-    scm.cedant.situation_maritale = "marié sous le régime de la communauté légale"
+    # O24-11 (MINEUR 2) : le modele SCM n'a qu'UN placeholder situation_maritale ; le
+    # front y injecte le libelle COMPLET ACCENTUE via le VRAI helper du shell. On
+    # DERIVE donc la valeur de _scm_cedant_situation_maritale_display(prefix='selas')
+    # — exactement le code que le sous-formulaire SELAS appelle — au lieu de coder en
+    # dur une valeur que le helper ne produit JAMAIS (« communauté légale »). Ainsi
+    # ce test e2e exerce REELLEMENT le chemin O24-11 et regresse si le helper casse.
+    class _FakeSt:
+        def __init__(self) -> None:
+            self.session_state = {
+                "selas_situation_maritale": (
+                    "Marie(e) sous le regime de la communaute reduite aux acquets"
+                )
+            }
+
+    monkeypatch.setattr(shell, "st", _FakeSt())
+    situation_complete = shell._scm_cedant_situation_maritale_display(
+        {"situation_maritale": "marie", "genre": Gender.MASCULIN}, prefix="selas"
+    )
+    # Le helper produit le libelle accentue+accorde reel (jamais « communauté légale »).
+    assert situation_complete == "marié sous le régime de communauté réduite aux acquêts"
+    scm.cedant.situation_maritale = situation_complete
 
     payload = {
         **_selas_payload(),
@@ -2440,13 +2473,148 @@ def test_selas_cession_generate_dossier_emits_all_cession_files(tmp_path: Path) 
     missing = expected_cession_files - names
     assert not missing, f"Fichiers de cession SELAS manquants : {sorted(missing)}"
 
+    # MAJEUR 1 : l'acte ET le compromis du cabinet affichent la forme de l'acquereur
+    # en « SELAS » (denomination + ligne « <forme> au capital de » + signature), et
+    # ne contiennent JAMAIS le doublon auto-contradictoire « SELAS SELARL ».
+    for fichier in (
+        "acte_cession_cabinet_medical.docx",
+        "compromis_cession_cabinet_medical.docx",
+    ):
+        path = next(p for p in generated.docx_paths if p.name == fichier)
+        texte = _docx_text(path)
+        assert "SELAS EXEMPLE" in texte, f"{fichier} : denomination acquereur SELAS attendue"
+        assert "SELAS au capital de" in texte, (
+            f"{fichier} : la forme de l'acquereur doit ressortir « SELAS au capital de »"
+        )
+        assert "SELAS SELARL" not in texte, (
+            f"{fichier} : doublon de forme « SELAS SELARL » (acquereur auto-contradictoire)"
+        )
+        # Aucune fuite residuelle de « SELARL » pour l'acquereur (denomination ou forme).
+        assert "SELARL au capital de" not in texte, (
+            f"{fichier} : forme acquereur figee « SELARL au capital de » (fidelite SELAS)"
+        )
+
     # O24-11 : l'acte SCM emis affiche « marié sous le régime de <regime> avec
     # <conjoint> » ACCENTUE (le generateur ajoute « avec <conjoint> » via mentions_conjoint).
     acte_scm = next(p for p in generated.docx_paths if p.name == "acte_cession_parts_scm.docx")
     texte = _docx_text(acte_scm)
-    assert "marié sous le régime de la communauté légale avec" in texte, (
-        "L'acte SCM doit afficher la situation matrimoniale accentuee + conjoint (O24-11)."
+    assert (
+        "marié sous le régime de communauté réduite aux acquêts avec Madame Claire Dupont"
+        in texte
+    ), "L'acte SCM doit afficher la situation matrimoniale accentuee + conjoint (O24-11)."
+
+
+class _StScmStub:
+    """Mock Streamlit minimal pour piloter `_render_scm_cession_form` hors AppTest.
+
+    Chaque widget lit/ecrit dans un `session_state` partage : `text_input` /
+    `number_input` / `selectbox` / `checkbox` renvoient la valeur de session (ou un
+    defaut). Les conteneurs (`columns`) renvoient le stub lui-meme : `_cession_text`
+    appelle `container.text_input(label, key=...)`, donc le meme objet suffit. Les
+    expanders sont des context managers no-op. Couvre le maillon UI du sous-formulaire
+    SCM, aujourd'hui non exerce (les tests existants n'appellent la fonction qu'avec
+    scm=False)."""
+
+    def __init__(self, session_state: dict[str, object]) -> None:
+        self.session_state = session_state
+        self.warnings: list[str] = []
+
+    # --- conteneurs / mise en page ---
+    def columns(self, spec):
+        n = spec if isinstance(spec, int) else len(spec)
+        return tuple(self for _ in range(n))
+
+    class _Expander:
+        def __enter__(self):
+            return None
+
+        def __exit__(self, *exc):
+            return False
+
+    def expander(self, *_a, **_k):
+        return self._Expander()
+
+    # --- widgets ---
+    def text_input(self, _label, *, key=None, disabled=False, value=None, **_k):
+        if value is not None:
+            return value
+        return self.session_state.get(key, "")
+
+    def number_input(self, _label, *, key=None, min_value=None, step=None, **_k):
+        if key in self.session_state:
+            return self.session_state[key]
+        return min_value if min_value is not None else 0
+
+    def selectbox(self, _label, options, *, key=None, **_k):
+        if key in self.session_state:
+            return self.session_state[key]
+        return options[0] if options else None
+
+    def checkbox(self, _label, *, key=None, **_k):
+        return bool(self.session_state.get(key, False))
+
+    # --- divers no-op ---
+    def markdown(self, *_a, **_k):
+        return None
+
+    def caption(self, *_a, **_k):
+        return None
+
+    def warning(self, message, *_a, **_k):
+        self.warnings.append(str(message))
+
+
+def test_render_scm_cession_form_selas_injecte_situation_accentuee(monkeypatch) -> None:
+    # MINEUR 2 (ideal) : couvre le MAILLON UI `_render_scm_cession_form(prefix='selas')`
+    # — non exerce par les tests existants. On pilote le sous-formulaire avec un stub
+    # Streamlit minimal et on PROUVE que le ScmCessionContext RETOURNE par le formulaire
+    # porte deja le libelle de situation maritale du cedant COMPLET et ACCENTUE
+    # (statut/genre + « sous le régime de » + regime), via le vrai helper du shell. Si
+    # le maillon UI cessait d'injecter ce libelle, ce test regresserait (le e2e seul ne
+    # couvrait pas l'appel direct du formulaire).
+    from sydel_doc_engine.front_app import shell
+
+    session_state = {
+        # Total des presents = nb_parts_total de la fixture (300) -> aucun warning de
+        # coherence et un signataires_pv derive proprement.
+        "selas_cession_scm_presents_count": 1,
+        "selas_cession_scm_present_0_civilite": "Monsieur",
+        "selas_cession_scm_present_0_prenom": "Jean",
+        "selas_cession_scm_present_0_nom": "Dupont",
+        "selas_cession_scm_present_0_nb_parts": "300",
+        "selas_cession_scm_present_0_plage": "1 a 300",
+        # Libelle BRUT du preset lu par _scm_cedant_situation_maritale_display.
+        "selas_situation_maritale": "Marie(e) sous le regime de la separation de biens",
+    }
+    monkeypatch.setattr(shell, "st", _StScmStub(session_state))
+
+    praticien = {
+        "civilite": "Monsieur",
+        "prenom": "Jean",
+        "nom": "Dupont",
+        "situation_maritale": "marie",
+        "genre": Gender.MASCULIN,
+        "nationalite": "française",
+    }
+    societe = {"denomination": "SELAS EXEMPLE", "capital_social": "1 000", "ville_rcs": "Lyon"}
+
+    scm_ctx = shell._render_scm_cession_form(
+        True,
+        praticien=praticien,
+        societe=societe,
+        profession_label="médecin",
+        ordre={"departement_ordre": "Rhône"},
+        prefix="selas",
     )
+
+    assert scm_ctx is not None
+    # Le maillon UI a injecte le libelle COMPLET ACCENTUE (regime separation, accorde
+    # au masculin) — pas la valeur collapsee « marie ».
+    assert scm_ctx.cedant.situation_maritale == (
+        "marié sous le régime de séparation de biens"
+    )
+    # La denomination de la SEL cessionnaire suit bien la fiche societe (SELAS EXEMPLE).
+    assert scm_ctx.cessionnaire.denomination == "SELAS EXEMPLE"
 
 
 def test_selas_cession_normalise_variante_structure_scm() -> None:
