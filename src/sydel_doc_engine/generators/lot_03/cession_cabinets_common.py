@@ -200,6 +200,41 @@ def _build_line_fixes(
     return fixes
 
 
+# Formes sociales connues susceptibles de prefixer une denomination saisie
+# (ordre indifferent : on strip le premier prefixe matche). Sert a dedupliquer
+# l'entete de signature « Pour la <forme> <denomination> » quand la denomination
+# porte deja une forme en tete — y compris une forme DIFFERENTE de celle posee
+# par le moteur apres post-correction (ex. forme='SELAS' apres SELAS-only sur une
+# denomination prefixee « SELARL »), qui sinon doublerait en « SELAS SELARL ... ».
+_FORMES_SOCIALES_CONNUES: tuple[str, ...] = (
+    "SELARL",
+    "SELAS",
+    "SELAFA",
+    "SELCA",
+    "SPFPL",
+    "SCP",
+    "SCM",
+    "SCI",
+    "SCS",
+    "SAS",
+    "SARL",
+    "SA",
+)
+
+
+def _strip_forme_prefix(denomination: str) -> str:
+    """Retire un prefixe de forme sociale connu en tete de la denomination.
+
+    Insensible a la casse, sur la limite de mot (« SCM Centre » -> « Centre »
+    mais « SCMédecins » reste intact). Aucun prefixe connu -> chaine inchangee.
+    """
+    for forme in _FORMES_SOCIALES_CONNUES:
+        match = re.match(rf"(?i)^{re.escape(forme)}\b\s*", denomination)
+        if match:
+            return denomination[match.end():].strip()
+    return denomination
+
+
 def _societe_signature_label(
     acquereur: CessionAcquereur,
     representant: CessionRepresentant,
@@ -213,13 +248,17 @@ def _societe_signature_label(
     if not denomination:
         return None
     forme = (acquereur.forme_sociale or "").strip()
-    # Eviter « Pour la SELARL SELARL CABINET ... » : la denomination saisie
-    # contient souvent deja la forme sociale en prefixe. On ne re-prefixe la
-    # forme que si elle n'est pas deja en tete de la denomination.
-    if forme and denomination.upper().startswith(forme.upper()):
-        entete = f"Pour la {denomination}"
+    # Eviter « Pour la SELARL SELARL CABINET ... » et « Pour la SELAS SELARL ... » :
+    # la denomination saisie contient souvent deja une forme sociale en prefixe (la
+    # meme OU une autre, ex. forme post-corrigee 'SELAS' sur une denomination encore
+    # prefixee 'SELARL'). On strip defensivement TOUT prefixe de forme connu avant de
+    # re-prefixer avec la forme du moteur, source de verite. Sans forme et sans
+    # prefixe a retirer, la denomination ressort telle quelle (cas normal inchange).
+    if forme:
+        base = _strip_forme_prefix(denomination)
+        entete = f"Pour la {forme} {base}" if base else f"Pour la {forme}"
     else:
-        entete = f"Pour la {forme} {denomination}" if forme else f"Pour la {denomination}"
+        entete = f"Pour la {denomination}"
     entete = re.sub(r"\s+", " ", entete).strip()
 
     civil = _civil_title(representant.genre)
