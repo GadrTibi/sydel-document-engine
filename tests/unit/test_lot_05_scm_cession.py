@@ -251,6 +251,16 @@ def test_acte_cession_scm_keeps_conjoint_when_married(tmp_path: Path) -> None:
     assert "marié avec Madame Claire Dupont" in text
 
 
+def test_scm_cession_required_scm_cedee_raises_on_non_divisible_capital(tmp_path: Path) -> None:
+    # O24-05 (re-Akainu T4) : plancher universel du generateur. Un capital de SCM cedee non
+    # divisible par le nb de parts (« 1000 » / 300 -> valeur nominale fractionnaire) DOIT lever
+    # proprement (jamais imprimer « 3.333... € »), quel que soit le chemin amont.
+    ctx = _base_context("SELARL")
+    ctx.scm_cession.scm_cedee.capital_social = "1000"  # 1000 / 300 = non entier
+    with pytest.raises(ValueError, match="divisible par le nombre de parts"):
+        ActeCessionPartsScmGenerator().generate(ctx, tmp_path)
+
+
 def test_scm_cession_selas_generates_overlays(tmp_path: Path) -> None:
     ctx = _base_context("SELAS")
 

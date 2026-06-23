@@ -59,6 +59,7 @@ from sydel_doc_engine.front_app.field_derivations import (
     date_to_french_words,
     derive_gender_from_civilite,
     format_numeric_value,
+    is_capital_divisible,
     matrimonial_status_value,
     number_words_from_value,
     parse_french_date,
@@ -1083,6 +1084,14 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:
     nb_actions_total = int(payload.get("nb_actions_total") or 0)
     if nb_actions_total < 1:
         blockers.append("Nombre total d'actions requis et superieur a zero.")
+    # O24-05 (re-Akainu T4) : capital non divisible par le nb d'actions -> valeur nominale
+    # fractionnaire (« 3333.333... € ») dans le DOCX / lettres cassees. Garde partagee, meme
+    # wording que civil/SAS/SELARL.
+    if not is_capital_divisible(payload.get("capital_social"), payload.get("nb_actions_total")):
+        blockers.append(
+            "Le capital social doit etre divisible par le nombre d'actions "
+            "(la valeur nominale d'une action doit etre un nombre entier)."
+        )
     if payload.get("signature_date") is None:
         blockers.append("Date de signature requise.")
     associes = payload.get("associes") or []
@@ -1127,7 +1136,25 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:
     blockers.extend(_validate_common_docs(payload))
     blockers.extend(_validate_regime_communautaire(payload))
     blockers.extend(_validate_cession_exercices(payload))
+    blockers.extend(_validate_scm_cedee_divisibility(payload))
     return tuple(dict.fromkeys(blockers))
+
+
+def _validate_scm_cedee_divisibility(payload: dict[str, object]) -> list[str]:
+    """O24-05 (re-Akainu T4) : en cession SCM, le capital de la SCM cedee doit etre
+    divisible par le nb de parts (valeur nominale entiere). Blocker de PLAN (UX) cote
+    SELAS, symetrique de selarl_slice.validate_selarl_input ; le generateur
+    required_scm_cedee leve de toute facon en aval (plancher universel)."""
+    scm_ctx = payload.get("scm_cession_context")
+    scm_cedee = getattr(scm_ctx, "scm_cedee", None) if scm_ctx is not None else None
+    if scm_cedee is None:
+        return []
+    if not is_capital_divisible(scm_cedee.capital_social, scm_cedee.nb_parts_total):
+        return [
+            "Le capital de la SCM cedee doit etre divisible par le nombre de parts "
+            "(la valeur nominale d'une part doit etre un nombre entier)."
+        ]
+    return []
 
 
 def _validate_cession_exercices(payload: dict[str, object]) -> list[str]:

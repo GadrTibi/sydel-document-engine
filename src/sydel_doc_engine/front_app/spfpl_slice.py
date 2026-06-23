@@ -70,6 +70,7 @@ from sydel_doc_engine.front_app.field_derivations import (
     derive_gender_from_civilite,
     format_grouped_numeric_value,
     format_numeric_value,
+    is_capital_divisible,
     number_words_from_value,
 )
 from sydel_doc_engine.front_app.front_widgets import (
@@ -567,6 +568,14 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:
     # 600 avant le test) -> 600 actions fantomes. On teste la valeur BRUTE.
     if int(payload.get("nb_actions_total") or 0) < 1:
         blockers.append("Nombre d'actions requis et superieur a zero.")
+    # O24-05 (re-Akainu T4) : capital non divisible par le nb d'actions -> valeur nominale
+    # fractionnaire (« 16.666... € ») dans le DOCX / lettres cassees. Garde partagee, meme
+    # wording que civil/SAS/SELARL/SELAS.
+    if not is_capital_divisible(payload.get("capital_social"), payload.get("nb_actions_total")):
+        blockers.append(
+            "Le capital social doit etre divisible par le nombre d'actions "
+            "(la valeur nominale d'une action doit etre un nombre entier)."
+        )
     if int(payload.get("apport_nb_parts") or 0) < 1:
         blockers.append("Nombre de parts apportees requis et superieur a zero.")
     if payload.get("signature_date") is None:

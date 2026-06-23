@@ -463,6 +463,49 @@ def test_civil_capital_divisible_by_parts_ok(tmp_path: Path) -> None:
     assert not any("divisible" in b for b in plan.blockers)
 
 
+def test_selas_capital_not_divisible_by_actions_blocks() -> None:
+    # O24-05 (re-Akainu T4) : SELAS multi sans garde de divisibilite -> valeur nominale
+    # fractionnaire (« 333.33... € ») dans le DOCX. Doit bloquer proprement.
+    payload = _selas_payload()
+    payload["capital_social"] = "1000"
+    payload["nb_actions_total"] = 3
+    # Repartition coherente (somme = 3) pour isoler le blocker de divisibilite.
+    payload["associes"][0].nb_actions = 2
+    payload["associes"][1].nb_actions = 1
+    plan = selas_multi_slice.build_selas_plan(payload)
+    assert plan.can_generate is False
+    assert any("divisible" in b for b in plan.blockers)
+
+
+def test_selas_capital_divisible_by_actions_ok() -> None:
+    # Contre-epreuve : 999 / 3 = 333 (entier) -> pas de blocage de divisibilite.
+    payload = _selas_payload()
+    payload["capital_social"] = "999"
+    payload["nb_actions_total"] = 3
+    payload["associes"][0].nb_actions = 2
+    payload["associes"][1].nb_actions = 1
+    plan = selas_multi_slice.build_selas_plan(payload)
+    assert not any("divisible" in b for b in plan.blockers)
+
+
+def test_spfpl_capital_not_divisible_by_actions_blocks() -> None:
+    # O24-05 (re-Akainu T4) : SPFPL sans garde de divisibilite -> valeur nominale
+    # fractionnaire. Doit bloquer proprement (meme garde que SAS/SELARL/SELAS).
+    payload = _spfpl_payload("SPFPL cession")
+    payload["capital_social"] = "1000"
+    payload["nb_actions_total"] = 7
+    plan = spfpl_slice.build_spfpl_plan(payload)
+    assert plan.can_generate is False
+    assert any("divisible" in b for b in plan.blockers)
+
+
+def test_spfpl_capital_divisible_by_actions_ok() -> None:
+    # Contre-epreuve : 60000 / 600 = 100 (entier) -> pas de blocage de divisibilite.
+    payload = _spfpl_payload("SPFPL cession")
+    plan = spfpl_slice.build_spfpl_plan(payload)
+    assert not any("divisible" in b for b in plan.blockers)
+
+
 def test_civil_capital_zero_blocks() -> None:
     # Dogfood 2026-06-22 : « 0 » passait la garde de presence -> capital 0. Doit bloquer.
     payload = _civil_base(
