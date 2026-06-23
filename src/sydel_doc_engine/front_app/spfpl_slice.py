@@ -905,7 +905,13 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
                 voie=str(cession_data.get("cible_siege_voie") or ""),  # type: ignore[union-attr]
                 cp=str(cession_data.get("cible_siege_cp") or ""),  # type: ignore[union-attr]
                 ville=str(cession_data.get("cible_siege_ville") or ""),  # type: ignore[union-attr]
-                adresse_affichee=str(payload.get("cible_siege") or ""),
+                # O24-03 : affichage derive du parse de la ligne unique (cession),
+                # repli sur le champ « affiche » du bloc principal (apport / legacy).
+                adresse_affichee=str(
+                    cession_data.get("cible_siege_affiche")  # type: ignore[union-attr]
+                    or payload.get("cible_siege")
+                    or ""
+                ),
             ),
             ville_rcs=str(payload.get("cible_ville_rcs") or ""),
             numero_rcs=str(payload.get("cible_numero_rcs") or ""),
@@ -1064,12 +1070,18 @@ def _render_spfpl_cession_cible(prefix: str) -> dict[str, object]:
         "Forme complete de la cible",
         hint="ex : societe d'exercice liberal a responsabilite limitee",
     )
-    st.caption("Siege de la cible (adresse structuree, requise par l'acte/PV)")
-    cs1, cs2, cs3, cs4 = st.columns(4)
-    cible_siege_num = _t(cs1, prefix, "cible_siege_num", "No")
-    cible_siege_voie = _t(cs2, prefix, "cible_siege_voie", "Voie")
-    cible_siege_cp = _t(cs3, prefix, "cible_siege_cp", "CP")
-    cible_siege_ville = _t(cs4, prefix, "cible_siege_ville", "Ville")
+    # O24-03 : siege de la cible sur UNE ligne (parse interne -> num/voie/cp/ville
+    # exiges par l'acte/PV de cession). Remplace l'ancienne grille No/Voie/CP/Ville
+    # ET le champ « Siege cible (affiche) » du bloc principal (double-saisie).
+    cible_siege_ligne = _t(
+        st, prefix, "cible_siege_cession", "Adresse du siège de la cible (N° et voie, CP Ville)"
+    )
+    _cible_struct = _parse_address_full(cible_siege_ligne)
+    cible_siege_num = _cible_struct.num_voie if _cible_struct else ""
+    cible_siege_voie = _cible_struct.voie if _cible_struct else ""
+    cible_siege_cp = _cible_struct.cp if _cible_struct else ""
+    cible_siege_ville = _cible_struct.ville if _cible_struct else ""
+    cible_siege_affiche = _cible_struct.adresse_affichee if _cible_struct else ""
     nb_associes = int(
         st.number_input(
             "Nombre d'associes de la cible (hors holding acquereur)",
@@ -1113,6 +1125,7 @@ def _render_spfpl_cession_cible(prefix: str) -> dict[str, object]:
         "cible_siege_voie": cible_siege_voie,
         "cible_siege_cp": cible_siege_cp,
         "cible_siege_ville": cible_siege_ville,
+        "cible_siege_affiche": cible_siege_affiche,
         "associes": associes,
     }
 

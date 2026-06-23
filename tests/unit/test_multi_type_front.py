@@ -2226,6 +2226,31 @@ def test_o24_03_adresses_une_ligne_par_type(
     assert not any("Blocage" in item.value for item in app.caption)
 
 
+def test_o24_03_spfpl_cession_cible_siege_une_ligne(tmp_path: Path, monkeypatch) -> None:
+    """O24-03 : le siege de la societe cible (cession SPFPL) est sur UNE ligne — plus de
+    grille No/Voie/CP/Ville ni double-saisie avec le champ « Siege cible (affiche) »."""
+    from streamlit.testing.v1 import AppTest
+
+    from sydel_doc_engine.front_app import shell
+
+    monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-spfpl-cession")
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
+    app.selectbox(key="clean_dossier_type").set_value("SPFPL dentistes - cession creation V1")
+    app = app.run(timeout=180)
+    next(b for b in app.button if "test_data" in str(b.key)).click()
+    app = app.run(timeout=180)
+
+    keys = {str(w.key) for w in app.text_input}
+    assert "spfpl_cession_cible_siege_cession" in keys
+    for comp in ("cible_siege_num", "cible_siege_voie", "cible_siege_cp", "cible_siege_ville"):
+        assert f"spfpl_cession_{comp}" not in keys, f"{comp} doit avoir disparu (O24-03)"
+    generate_button = next(
+        b for b in app.button if str(b.key) == "clean_typed_generate_dossier"
+    )
+    assert generate_button.disabled is False
+    assert not any("Blocage" in item.value for item in app.caption)
+
+
 def test_parse_address_full_tolere_formes_usuelles() -> None:
     # O24-03 (onglet 24) : la saisie sur UNE ligne doit accepter les formes françaises
     # courantes (virgule après le numéro, sans virgule), pas seulement « num voie, cp ville ».

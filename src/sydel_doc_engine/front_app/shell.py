@@ -651,10 +651,8 @@ def _spfpl_prefill_values(prefix: str) -> dict[str, object]:
         f"{prefix}_cession_prix_unitaire": "1000",
         f"{prefix}_cession_plage_cedee": "41 a 100",
         f"{prefix}_cible_forme_complete": "societe d'exercice liberal a responsabilite limitee",
-        f"{prefix}_cible_siege_num": "12",
-        f"{prefix}_cible_siege_voie": "avenue des Ternes",
-        f"{prefix}_cible_siege_cp": "75017",
-        f"{prefix}_cible_siege_ville": "Paris",
+        # O24-03 : siege de la cible (cession) sur UNE ligne (le slice reparse les composants).
+        f"{prefix}_cible_siege_cession": "12 avenue des Ternes, 75017 Paris",
         f"{prefix}_cession_nb_associes": 1,
         f"{prefix}_cession_assoc_0_civ": "Docteur",
         f"{prefix}_cession_assoc_0_prenom": "Camille",
