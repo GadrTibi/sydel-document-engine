@@ -780,10 +780,18 @@ def _build_cession_replacements(
     # 0 salarie -> "Néant" (convention systeme) ; 1..N -> liste nom/prenom/poste.
     # re-Akainu tour 3 (MINEUR O24-14) : on ne CONSTRUIT la clause (et donc on ne valide les
     # salaries via _salarie_label/_required_text) QUE pour l'acte dentaire — seul modele portant
-    # le token. Les autres variants (compromis, acte medical) partagent le MEME contexte (salaries
-    # de l'acte, generes ENSEMBLE en SELAS) mais n'ont pas cette clause : la construire ferait
-    # lever sur un salarie incomplet et crasherait le bundle. Le RENDU est ainsi aligne sur la
-    # VALIDATION (_validate_salaries), qui ne valide deja que l'acte dentaire.
+    # le token.
+    #
+    # PRINCIPE GENERAL « champs propres a l'acte, contexte partage » (re-Akainu tour 5, O24-14) :
+    # en SELAS l'ACTE et le COMPROMIS sont generes ENSEMBLE depuis UN SEUL contexte. Ce contexte
+    # porte des champs PROPRES a l'acte que le compromis ne rend PAS :
+    #   - salaries (acte dentaire) — clause [clause_reprise_salaries] ci-dessous ;
+    #   - credit_vendeur + scm (acte medical) — clauses credit/SCM plus haut.
+    # Le compromis (et tout variant qui ne porte pas la clause) recoit ces champs et les IGNORE :
+    # on ne CONSTRUIT le token ni n'EXIGE le champ que pour le variant qui le rend. Le RENDU est
+    # ainsi aligne sur la VALIDATION (_validate_salaries / _validate_financement), qui ne valide
+    # ces champs QUE pour leur variant proprietaire. Sans ca, le bundle « acte + compromis
+    # ensemble » crasherait des qu'un de ces champs propres a l'acte est saisi.
     if variant.etape == ACTE and variant.type_cabinet == DENTAIRE:
         put("[clause_reprise_salaries]", _build_clause_reprise_salaries(cession.salaries))
     # [date_entree_jouissance] (dentaire) : source choisie = date de debut du bail

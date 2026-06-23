@@ -380,6 +380,38 @@ def test_compromis_tolere_credit_vendeur_du_contexte_partage(tmp_path: Path) -> 
     _assert_no_residual_tokens(_docx_text(compromis))
 
 
+def test_o24_14_bundle_medical_acte_et_compromis_avec_credit_vendeur_et_scm(
+    tmp_path: Path,
+) -> None:
+    # O24-14 (re-Akainu T5, MAJEUR — preuve de BUNDLE manquante) : en SELAS l'ACTE (DOC-009)
+    # ET le COMPROMIS (DOC-010) du cabinet MEDICAL sont generes ENSEMBLE depuis UN SEUL contexte.
+    # Ce contexte porte des champs PROPRES a l'acte medical — credit-vendeur ET clause SCM, tous
+    # deux ACTIFS ici — que le compromis ne rend pas. Le bundle ne doit PAS lever : le compromis
+    # IGNORE ces champs (garde restreinte au variant acte medical, _validate_financement). Avant
+    # le fix (commit 01eaa27), le compromis levait sur credit_vendeur/scm -> tout le bundle
+    # crashait. On genere les DEUX depuis le MEME contexte, dans le meme tmp_path.
+    ctx = _context(etape="acte", type_cabinet="medical", credit_vendeur=True)
+    # Sanity : le contexte porte bien les deux clauses propres a l'acte, actives.
+    assert ctx.cession.financement.credit_vendeur.actif is True
+    assert ctx.cession.scm.actif is True
+
+    acte_path = ActeCessionCabinetMedicalGenerator().generate(ctx, tmp_path)
+    compromis_path = CompromisCessionCabinetMedicalGenerator().generate(ctx, tmp_path)
+
+    assert acte_path == tmp_path / "acte_cession_cabinet_medical.docx"
+    assert compromis_path == tmp_path / "compromis_cession_cabinet_medical.docx"
+    assert acte_path.exists() and compromis_path.exists()
+
+    acte_text = _docx_text(acte_path)
+    compromis_text = _docx_text(compromis_path)
+    # L'ACTE rend bien les clauses propres (SCM : nb de parts ; credit-vendeur : duree en annees).
+    assert "10" in acte_text  # nb_parts_scm_a_ceder rendu dans l'acte
+    assert "trois" in acte_text.casefold()  # duree credit-vendeur (« trois » ans)
+    # Aucun token residuel sur AUCUN des deux documents du bundle.
+    _assert_no_residual_tokens(acte_text)
+    _assert_no_residual_tokens(compromis_text)
+
+
 def test_credit_vendeur_duree_rendered_in_years(tmp_path: Path) -> None:
     # FIX 4 : l'unite de duree du credit-vendeur est l'annee (« ... ans »).
     ctx = _context(credit_vendeur=True)
