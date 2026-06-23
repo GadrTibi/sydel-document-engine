@@ -1705,11 +1705,15 @@ _YEARS_WORDS: dict[str, int] = {
 
 
 def _cession_default_type(profession: str) -> str:
-    return "dentaire" if profession == PROFESSION_DENTISTE else "medical"
+    # O24-10 : tolerant a la forme de la profession (« chirurgien-dentiste » tiret du
+    # menu SELAS vs PROFESSION_DENTISTE « chirurgien_dentiste » underscore) -> on teste
+    # « dentiste » dans la chaine, comme _scm_profession_pair.
+    return "dentaire" if "dentiste" in (profession or "").casefold() else "medical"
 
 
 def _profession_label(profession: str) -> str:
-    return "chirurgien-dentiste" if profession == PROFESSION_DENTISTE else "médecin"
+    # O24-10 : même tolérance que _cession_default_type (tiret vs underscore).
+    return "chirurgien-dentiste" if "dentiste" in (profession or "").casefold() else "médecin"
 
 
 def _personal_address_display(praticien: dict[str, object]) -> str:
@@ -1939,7 +1943,7 @@ def _render_cession_form(
         if prefix == "selas":
             type_cabinet = _cession_default_type(profession)
             st.session_state[type_key] = type_cabinet
-            col_a.caption(f"Type de cabinet : {type_cabinet} (derive de la profession).")
+            col_a.caption(f"Type de cabinet : {type_cabinet} (dérivé de la profession).")
         else:
             type_cabinet = col_a.selectbox(
                 "Type de cabinet",
@@ -2156,7 +2160,7 @@ def _render_cession_form(
 
     # --- Cabinet (ticket 2.3 : cadre reduit aux seules infos specifiques) ---
     with st.expander("Cabinet"):
-        st.caption(f"Nature du fonds liberal : {profession_label} (derivee de la profession).")
+        st.caption(f"Nature du fonds libéral : {profession_label} (dérivée de la profession).")
         cab_key = f"{_CESSION_PREFIX}_cession_cabinet_adresse"
         # O24-12 (onglet 24) : « adresse du cabinet -> ajouter une case "meme adresse que
         # le lieu d'exercice" et reporter les donnees si cochee ». En SELAS, le lieu

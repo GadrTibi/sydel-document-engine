@@ -48,8 +48,8 @@ def _assert_clean(text: str) -> None:
     # O24-01 (onglet 24) : les 2 items frais de cabinet de création (« lettre de mission » /
     # « acompte des honoraires ») sont retirés de l'annexe de TOUS les statuts, partout.
     low = text.lower()
-    assert "lettre de mission" not in low, "O24-01 : 'lettre de mission' (frais cabinet création) à retirer"
-    assert "acompte des honoraires" not in low, "O24-01 : 'acompte des honoraires' (frais cabinet création) à retirer"
+    assert "lettre de mission" not in low, "O24-01 lettre de mission à retirer"
+    assert "acompte des honoraires" not in low, "O24-01 acompte honoraires à retirer"
 
 
 # --- Registre + deroulante ----------------------------------------------------
@@ -2192,6 +2192,21 @@ def test_selas_cession_cabinet_meme_adresse_lieu_exercice(tmp_path: Path, monkey
     # cochee -> l'adresse du cabinet reprend le lieu d'exercice (saisi en une ligne)
     cab = next(w for w in app.text_input if str(w.key) == "selas_cession_cabinet_adresse")
     assert cab.value == "5 place du Centre, 69000 Lyon"
+
+
+def test_cession_type_et_label_derives_de_la_profession() -> None:
+    # O24-10 (onglet 24) : le menu « type de cabinet » est supprimé, le type + la nature
+    # du fonds sont DÉRIVÉS de la profession. Bug Akainu : « chirurgien-dentiste » (tiret,
+    # forme du menu SELAS) ne matchait pas PROFESSION_DENTISTE (« chirurgien_dentiste »,
+    # underscore) -> un cabinet DENTAIRE générait des docs MÉDICAUX. La dérivation doit
+    # être tolérante à la forme.
+    from sydel_doc_engine.front_app.shell import _cession_default_type, _profession_label
+
+    for dentiste in ("chirurgien-dentiste", "chirurgien_dentiste", "Chirurgien-dentiste"):
+        assert _cession_default_type(dentiste) == "dentaire"
+        assert _profession_label(dentiste) == "chirurgien-dentiste"
+    assert _cession_default_type("médecin") == "medical"
+    assert _profession_label("médecin") == "médecin"
 
 
 def test_front_selas_dentiste_pluri_uses_dentiste_corpus(
