@@ -88,6 +88,11 @@ j'ajoute UNE ligne ici : `- [AAAA-MM-JJ HH:MM] [TYPE] description (réf : SHA / 
 - [~20:00] **ACTION** refonte SELAS **#2** (onglet 24) : la DNC porte le NOM DU DIRIGEANT dans son nom de fichier (`declaration_non_condamnation_Durand.docx`) — renommage de la DNC du président produite par l'orchestrateur. **[MÉTIER À CONFIRMER Albane :** si CHAQUE dirigeant (DG inclus) doit déposer SA propre DNC → générer une par dirigeant ; non tranché ici, no-extrapolation.] 4 tests SELAS alignés + 1 test dédié. **525 verts.**
 - [~19:45] **AUDIT (règle 65) — B2 = FAUX POSITIF de l'organe 1.** La comparution SELAS multi (`statuts_selas_multi._add_physical_comparution`, « Source para 16 ») rend `[situation_maritale]` **brut par conception de SA source** (≠ le template gold sel_exercice qui injecte la clause conjoint). Le conjoint **est** bien utilisé là où la source SELAS l'exige (DOC-005/006 renonciation/avertissement via `_conjoint_person`). Injecter le conjoint dans la comparution **dévierait** de la source SELAS → on ne touche pas. C'est précisément la limite nommée de l'organe 1 (gold = seule vérité). **B2 non corrigé : par décision de source, pas par oubli.**
 
+## 2026-06-23 (soir) — TEST GRANDEUR NATURE : retours traités VIA la machine (WF-RETOUR)
+
+- [~] **R-GAD** : feu vert pour traiter les retours onglet 24 + live AVEC la machine (Operating Model) ; les résultats diront si la machine a marché.
+- [~] **ACTION O24-03** (WF-RETOUR) : « toutes les adresses sur UNE ligne, pas de champ séparé ». Align = les générateurs (DNC/domiciliation `[num_voie_siege]`/régime communautaire) exigent `num_voie/voie/cp/ville` → saisie 1 ligne **+ parse interne** (`_parse_address_full`, sépare le n° de la voie). Perso + siège SELAS passés en 1 champ ; **fausse case « siège = lieu d'exercice » retirée** (migrera sur le CABINET en O24-12, conforme verbatim) ; prefills + test alignés. **Verbatim gate OK** (relu clause par clause). **534 verts, ruff propre.** Statut TRAITÉ (≠ validé). O24-12 débloqué.
+
 ## 2026-06-23 (après-midi) — PIVOT : bureau des retours (« comme une petite entreprise »)
 
 - [~12:00] **R-GAD** : « la majorité des retours pas traités » → 5 retours marqués « fait » à tort (vérifiés contre la **paraphrase** de la machine, pas le **verbatim** client). Process imposé : carnet, **traité ≠ validé**, re-montrer la liste avant chaque item, point RH.

@@ -282,17 +282,6 @@ def render_selas_form(type_key: str = "selas_multi_v1") -> dict[str, object]:
     # RAF-006 (parite gold, couche partagee) : cloture du 1er exercice pre-remplie
     # « 31 decembre N+1 », modifiable. Libelle TEXTUEL (comme le gold), pas un picker.
     seed_closing_date(PREFIX)
-    # #12 (onglet 24) : si « siege = lieu d'exercice » est coche, recopier l'adresse du
-    # lieu d'exercice (saisie au run precedent) dans les champs siege structures AVANT
-    # leur rendu (cross-rerun). Le lieu d'exercice est UN champ libre -> parse best-effort
-    # « voie, cp ville » (a restructurer en 4 champs au besoin, cf. QUESTIONS_RAFAEL #12).
-    if st.session_state.get(f"{PREFIX}_siege_same_as_lieu_exercice"):
-        _voie, _cp, _ville = _parse_one_line_address(
-            str(st.session_state.get(f"{PREFIX}_adresse_lieu_exercice") or "")
-        )
-        for _f, _val in (("voie", _voie), ("cp", _cp), ("ville", _ville)):
-            if _val:
-                st.session_state[f"{PREFIX}_siege_{_f}"] = _val
     st.subheader("Donnees a saisir")
     st.markdown("**Societe (SELAS d'exercice, vocabulaire actions)**")
     col_a, col_b = st.columns(2)
@@ -342,17 +331,16 @@ def render_selas_form(type_key: str = "selas_multi_v1") -> dict[str, object]:
     )
     date_cloture = _t(st, "date_cloture", "Cloture du premier exercice")
 
-    st.caption("Siege social (adresse structuree, pour la domiciliation / procuration)")
-    st.checkbox(
-        "Siège social = même adresse que le lieu d'exercice",
-        key=f"{PREFIX}_siege_same_as_lieu_exercice",
-        help="Coché : recopie l'adresse du lieu d'exercice dans le siège (évite la double saisie).",
-    )
-    col_sa, col_sb, col_sc, col_sd = st.columns(4)
-    siege_num = _t(col_sa, "siege_num", "No")
-    siege_voie = _t(col_sb, "siege_voie", "Voie")
-    siege_cp = _t(col_sc, "siege_cp", "CP")
-    siege_ville = _t(col_sd, "siege_ville", "Ville")
+    # O24-03 (onglet 24) : siege sur UNE ligne (parse interne -> num_voie/voie/cp/ville
+    # exiges par la domiciliation [num_voie_siege] et la procuration). La case « siege =
+    # lieu d'exercice » est RETIREE ici : O24-12 la replace sur l'adresse du CABINET en
+    # cession (verbatim : « adresse du cabinet -> case meme adresse que le lieu d'exercice »).
+    siege_ligne = _t(st, "siege_adresse", "Adresse du siège (N° et voie, CP Ville)")
+    _siege_struct = _parse_address_full(siege_ligne)
+    siege_num = _siege_struct.num_voie if _siege_struct else ""
+    siege_voie = _siege_struct.voie if _siege_struct else ""
+    siege_cp = _siege_struct.cp if _siege_struct else ""
+    siege_ville = _siege_struct.ville if _siege_struct else ""
 
     # Parite gold (anti double-saisie, RAF-003, couche partagee) : lieu de signature
     # pre-rempli = ville du siege, modifiable.
@@ -865,13 +853,11 @@ def _physique(prefix: str, nb_actions: int, montant: str) -> StatutsCivilsAssoci
     # (comme le gold). Elle alimente la comparution (affichage derive), la DNC /
     # procuration du dirigeant ET l'avertissement au conjoint -> plus de re-saisie
     # sous la case « Dirigeant » ni de champ de foyer separe.
-    st.markdown("**Adresse personnelle**")
-    adr_a, adr_b, adr_c, adr_d = st.columns(4)
-    adresse_num = _ts(adr_a, f"{prefix}_adresse_num", "No")
-    adresse_voie = _ts(adr_b, f"{prefix}_adresse_voie", "Voie")
-    adresse_cp = _ts(adr_c, f"{prefix}_adresse_cp", "CP")
-    adresse_ville = _ts(adr_d, f"{prefix}_adresse_ville", "Ville")
-    adresse_struct = _structured_address(adresse_num, adresse_voie, adresse_cp, adresse_ville)
+    # O24-03 (onglet 24) : adresse personnelle sur UNE ligne, pas de champ separe.
+    # Parse interne (num_voie/voie/cp/ville) car DOC-001 (DNC), DOC-006 (avertissement
+    # conjoint) et le regime communautaire exigent l'adresse structuree complete.
+    adresse_ligne = _ts(st, f"{prefix}_adresse", "Adresse personnelle (N° et voie, CP Ville)")
+    adresse_struct = _parse_address_full(adresse_ligne)
     adresse = adresse_struct.adresse_affichee if adresse_struct else ""
     col_i, col_j = st.columns(2)
     # R10/R11 (Rafael 2026-06-23) : situation matrimoniale = MENU (comme la SELARL),
@@ -981,6 +967,44 @@ def _parse_one_line_address(text: str) -> tuple[str, str, str]:
         else:
             ville = parts[1]
     return voie, cp, ville
+
+
+def _parse_address_full(text: str) -> Address | None:
+    """Parse une adresse saisie sur UNE LIGNE -> Address structuree complete.
+
+    O24-03 (onglet 24) : « Toutes les adresses sur une ligne, pas de champ separe
+    pour la rue, la voie. » La saisie reste UNE ligne mais les generateurs
+    (DOC-001 DNC, domiciliation via [num_voie_siege], regime communautaire) exigent
+    num_voie/voie/cp/ville separes -> on parse en interne. Le numero de tete
+    (« 12 », « 12 bis », « 12B ») est detache de la voie.
+    « 12 rue de la Paix, 75001 Paris » -> num_voie=12 / voie=rue de la Paix /
+    cp=75001 / ville=Paris. None si incomplet -> la validation « adresse requise »
+    s'applique comme avant (jamais d'adresse partielle dans un acte)."""
+    raw = (text or "").strip()
+    if not raw:
+        return None
+    left, _, right = raw.partition(",")
+    left, right = left.strip(), right.strip()
+    m = re.match(r"(\d+\s*(?:bis|ter|quater|[A-Za-z])?)\s+(.+)", left)
+    if m:
+        num_voie, voie = m.group(1).strip(), m.group(2).strip()
+    else:
+        num_voie, voie = "", left
+    cp, ville = "", ""
+    m2 = re.match(r"(\d{4,5})\s+(.+)", right)
+    if m2:
+        cp, ville = m2.group(1), m2.group(2).strip()
+    else:
+        ville = right
+    if not (num_voie and voie and cp and ville):
+        return None
+    return Address(
+        num_voie=num_voie,
+        voie=voie,
+        cp=cp,
+        ville=ville,
+        adresse_affichee=f"{num_voie} {voie}, {cp} {ville}",
+    )
 
 
 def _structured_address(num: str, voie: str, cp: str, ville: str) -> Address | None:

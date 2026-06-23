@@ -2125,27 +2125,33 @@ def test_selas_parse_one_line_address() -> None:
     )
 
 
-def test_selas_siege_meme_adresse_que_lieu_exercice(tmp_path: Path, monkeypatch) -> None:
-    # #12 (onglet 24) : la case « siege = lieu d'exercice » recopie l'adresse du lieu
-    # d'exercice dans les champs siege structures.
+def test_selas_adresses_sur_une_ligne(tmp_path: Path, monkeypatch) -> None:
+    # O24-03 (onglet 24) : toutes les adresses sur UNE ligne, pas de champ separe.
+    # Le siege et l'adresse personnelle sont des champs texte uniques ; les anciennes
+    # cles structurees (siege_num/voie/cp/ville) et la case « siege = lieu d'exercice »
+    # n'existent plus (la case migre sur le CABINET en cession, O24-12).
     from streamlit.testing.v1 import AppTest
 
     from sydel_doc_engine.front_app import shell
 
-    monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selas-siege")
+    monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selas-adresses")
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
     app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle creation V1")
     app = app.run(timeout=180)
     next(b for b in app.button if "test_data" in str(b.key)).click()
     app = app.run(timeout=180)
 
-    checkbox_labels = " ".join(str(c.label).lower() for c in app.checkbox)
-    assert "lieu d'exercice" in checkbox_labels
-    app.checkbox(key="selas_siege_same_as_lieu_exercice").set_value(True)
-    app = app.run(timeout=180)
-
-    siege_voie = next(w for w in app.text_input if str(w.key) == "selas_siege_voie").value
-    assert siege_voie == "5 place du Centre"
+    keys = {str(w.key) for w in app.text_input}
+    # siege sur une ligne, valeur pre-remplie complete
+    assert "selas_siege_adresse" in keys
+    siege = next(w for w in app.text_input if str(w.key) == "selas_siege_adresse")
+    assert siege.value == "5 place du Centre, 69000 Lyon"
+    # adresse perso de l'associe 0 sur une ligne
+    assert "selas_associe_0_adresse" in keys
+    # plus aucun champ structure ni case « siege = lieu d'exercice »
+    assert "selas_siege_voie" not in keys
+    assert "selas_siege_num" not in keys
+    assert "selas_siege_same_as_lieu_exercice" not in {str(c.key) for c in app.checkbox}
 
 
 def test_front_selas_dentiste_pluri_uses_dentiste_corpus(

@@ -770,10 +770,7 @@ def _selas_associe_prefill(
         f"{p}_ville_naissance": ville,
         f"{p}_departement": departement,
         f"{p}_nationalite": "francaise",
-        f"{p}_adresse_num": "10",
-        f"{p}_adresse_voie": "rue Exemple",
-        f"{p}_adresse_cp": f"{departement}000",
-        f"{p}_adresse_ville": ville,
+        f"{p}_adresse": f"10 rue Exemple, {departement}000 {ville}",
         f"{p}_situation": "Celibataire",
         f"{p}_qualification": "Medecin generaliste",
         f"{p}_ordre_dep": nationalite_ordre,
@@ -797,10 +794,7 @@ def _prefill_selas_test_data(
     values: dict[str, object] = {
         "selas_denomination": "SELAS EXEMPLE",
         "selas_siege": "5 place du Centre, 69000 Lyon",
-        "selas_siege_num": "5",
-        "selas_siege_voie": "place du Centre",
-        "selas_siege_cp": "69000",
-        "selas_siege_ville": "Lyon",
+        "selas_siege_adresse": "5 place du Centre, 69000 Lyon",
         "selas_profession_choice": profession,
         # Capital = number_input cote SELAS (parite gold) -> seed un ENTIER, pas une
         # chaine (sinon le widget number_input leve).
