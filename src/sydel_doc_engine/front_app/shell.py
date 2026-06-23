@@ -1262,7 +1262,10 @@ def _render_one_selarl_membre(index: int) -> StatutsCivilsAssocie | None:
             prenom=prenom,
             nom=nom,
             profession=profession or None,
-            date_naissance=date_naissance or None,
+            # LIVE-03 : date de naissance a saisie LIBRE -> re-accentue les mois
+            # (« 1er aout 1980 » -> « 1er août 1980 ») AVANT injection ; le generateur
+            # des statuts reste un echo fidele et n'accentue rien en sortie.
+            date_naissance=_accentuate_date_value(date_naissance) or None,
             ville_naissance=ville_naissance or None,
             departement_naissance=dep_naissance or None,
             nationalite=nationalite or None,

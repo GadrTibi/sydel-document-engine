@@ -425,7 +425,10 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         profession=profession,
         qualite_associe="actionnaire unique",
         qualification_principale=str(payload.get("qualification_principale") or ""),
-        date_naissance=str(payload.get("date_naissance") or ""),
+        # LIVE-03 : date de naissance a saisie LIBRE (text_input « 2 janvier 1980 »)
+        # -> re-accentue les mois avant injection dans les statuts ; le generateur
+        # reste un echo fidele. (date_naissance_iso, en aval, est une vraie date.)
+        date_naissance=accentuate_french_months(str(payload.get("date_naissance") or "")),
         ville_naissance=str(payload.get("ville_naissance") or ""),
         departement_naissance=str(payload.get("departement_naissance") or ""),
         nationalite=str(payload.get("nationalite") or ""),

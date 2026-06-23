@@ -891,6 +891,31 @@ def test_sas_live03_accentuates_exercice_months(tmp_path: Path) -> None:
     ), "LIVE-03 : le debut d'exercice sans accent ne doit pas subsister"
 
 
+def test_sas_live03_accentuates_date_naissance(tmp_path: Path) -> None:
+    """LIVE-03 (date_naissance, SAS) : la date de naissance a saisie LIBRE
+    (« 1er aout 1980 ») ressort accentuee dans les statuts SAS. Verrouille la
+    re-accentuation EN AMONT (sas_slice.build_generation_context), le generateur
+    restant un echo fidele."""
+    payload = dict(_sas_payload())
+    payload["date_naissance"] = "1er aout 1980"
+    generated = sas_slice.generate_dossier(payload, tmp_path / "sas_naissance_live03")
+    full_text = "\n".join(_docx_text(p) for p in generated.docx_paths)
+    assert "août 1980" in full_text, "LIVE-03 : le mois de naissance doit ressortir accentue"
+    assert "1er aout 1980" not in full_text, "LIVE-03 : la saisie sans accent ne doit pas subsister"
+
+
+def test_spfpl_live03_accentuates_date_naissance(tmp_path: Path) -> None:
+    """LIVE-03 (date_naissance, SPFPL) : meme garde que SAS pour les statuts SPFPL.
+    Le champ accepte un libelle textuel (« 2 decembre 1979 ») -> mois accentue en
+    sortie ; une saisie ISO resterait intacte (aucun nom de mois)."""
+    payload = dict(_spfpl_payload("SPFPL cession"))
+    payload["date_naissance"] = "2 decembre 1979"
+    generated = spfpl_slice.generate_dossier(payload, tmp_path / "spfpl_naissance_live03")
+    full_text = "\n".join(_docx_text(p) for p in generated.docx_paths)
+    assert "décembre 1979" in full_text, "LIVE-03 : le mois de naissance SPFPL doit etre accentue"
+    assert "2 decembre 1979" not in full_text, "LIVE-03 : la saisie sans accent doit disparaitre"
+
+
 def test_scm_live03_accentuates_cloture_month(tmp_path: Path) -> None:
     """LIVE-03 (type civil) : la cloture « 31 decembre 2026 » saisie sans accent ressort
     accentuee dans le DOCX civil. Verrouille la re-accentuation EN AMONT cote
@@ -2085,6 +2110,145 @@ def test_typed_test_data_button_generates(
     download_labels = [item.label for item in app.get("download_button")]
     assert f"Telecharger {statuts_name}" in download_labels
     assert "Telecharger le dossier ZIP" in download_labels
+
+
+def _dir_docx_text(directory: Path) -> str:
+    """Concatene le texte de tous les .docx generes sous un repertoire (artifacts UI)."""
+    return "\n".join(_docx_text(p) for p in directory.rglob("*.docx"))
+
+
+def _set_text_widget(app, key: str, value: str) -> None:
+    for widget in app.text_input:
+        if str(widget.key) == key:
+            widget.set_value(value)
+            return
+    raise KeyError(key)
+
+
+def test_sci_repeater_live03_accentuates_date_naissance(tmp_path: Path, monkeypatch) -> None:
+    """LIVE-03 (date_naissance via le REPEATER, SCI) : une date de naissance saisie sans
+    accent (« 1er aout 1980 ») dans le repeater d'associes ressort accentuee dans
+    statuts_sci.docx. Exerce le code REEL du formulaire (associe_repeater._render_personne_physique
+    -> accentuate_french_months), pas un associe pre-construit."""
+    from streamlit.testing.v1 import AppTest
+
+    from sydel_doc_engine.front_app import shell
+
+    monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-sci-live03")
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
+    app.selectbox(key="clean_dossier_type").set_value("SCI creation V1")
+    app = app.run(timeout=180)
+    next(b for b in app.button if "test_data" in str(b.key)).click()
+    app = app.run(timeout=180)
+
+    # Force une date de naissance LIBRE sans accent sur le 1er associe (repeater).
+    _set_text_widget(app, "sci_associe_0_date_naissance", "1er aout 1980")
+    app = app.run(timeout=180)
+
+    generate_button = next(b for b in app.button if str(b.key) == "clean_typed_generate_dossier")
+    assert generate_button.disabled is False
+    generate_button.click()
+    app = app.run(timeout=180)
+
+    text = _dir_docx_text(tmp_path / "ui-sci-live03")
+    assert "août 1980" in text, "LIVE-03 : le mois de naissance (repeater SCI) doit etre accentue"
+    assert "1er aout 1980" not in text, "LIVE-03 : la saisie sans accent ne doit pas subsister"
+
+
+def test_selas_multi_live03_accentuates_date_naissance(tmp_path: Path, monkeypatch) -> None:
+    """LIVE-03 (date_naissance, SELAS multi) : la date de naissance LIBRE du 1er associe
+    SELAS ressort accentuee dans statuts_selas_multi.docx. Exerce
+    selas_multi_slice._render_personne_physique (accentuate_french_months)."""
+    from streamlit.testing.v1 import AppTest
+
+    from sydel_doc_engine.front_app import shell
+
+    monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selas-live03")
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
+    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle creation V1")
+    app = app.run(timeout=180)
+    next(b for b in app.button if "test_data" in str(b.key)).click()
+    app = app.run(timeout=180)
+
+    _set_text_widget(app, "selas_associe_0_date_naissance", "1er aout 1980")
+    app = app.run(timeout=180)
+
+    generate_button = next(b for b in app.button if str(b.key) == "clean_typed_generate_dossier")
+    assert generate_button.disabled is False
+    generate_button.click()
+    app = app.run(timeout=180)
+
+    text = _dir_docx_text(tmp_path / "ui-selas-live03")
+    assert "août 1980" in text, "LIVE-03 : le mois de naissance (SELAS multi) doit etre accentue"
+    assert "1er aout 1980" not in text, "LIVE-03 : la saisie sans accent ne doit pas subsister"
+
+
+def test_selarl_membre_additionnel_live03_accentuates_date_naissance(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """LIVE-03 (date_naissance, MEMBRE SELARL additionnel) : la date de naissance LIBRE
+    d'un associe additionnel (forme multi-associes) ressort accentuee dans les statuts.
+    Exerce shell._render_one_selarl_membre (text_input + accentuate via _accentuate_date_value).
+    Le 1er associe (praticien) utilise un date_input -> objet date, deja accentue par le moteur ;
+    seuls les membres additionnels saisissent la date en TEXTE libre."""
+    from streamlit.testing.v1 import AppTest
+
+    from sydel_doc_engine.front_app import shell
+
+    monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selarl-live03")
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
+    app.selectbox(key="clean_dossier_type").set_value("SELARL creation V1")
+    app = app.run(timeout=180)
+    next(b for b in app.button if "test_data" in str(b.key)).click()
+    app = app.run(timeout=180)
+
+    # Passer en multi-associes : decocher « Dossier unipersonnel » fait apparaitre le
+    # bloc des associes additionnels.
+    app.checkbox(key="selarl_dossier_unipersonnel").set_value(False)
+    app = app.run(timeout=180)
+
+    # Parts du praticien (60) ; le membre additionnel prend les 40 restantes (capital
+    # test = 100 parts). Un seul membre est rendu par defaut (selarl_membres_count=1).
+    def set_number(key: str, value: int) -> None:
+        for widget in app.number_input:
+            if str(widget.key) == key:
+                widget.set_value(value)
+                return
+        raise KeyError(key)
+
+    # Le total de parts du jeu de test est ALEATOIRE (100/200/500/1000) : on le fige a
+    # 100 pour un partage deterministe (praticien 60 + membre 40 = total).
+    set_number("selarl_nb_parts_total", 100)
+    app = app.run(timeout=180)
+    set_number("selarl_praticien_nb_parts", 60)
+    _set_text_widget(app, "selarl_praticien_apport", "600")
+    set_number("selarl_membre_0_nb_parts", 40)
+    _set_text_widget(app, "selarl_membre_0_apport", "400")
+    _set_text_widget(app, "selarl_membre_0_prenom", "Lea")
+    _set_text_widget(app, "selarl_membre_0_nom", "Bernard")
+    # Date de naissance LIBRE sans accent -> doit ressortir accentuee.
+    _set_text_widget(app, "selarl_membre_0_date_naissance", "1er aout 1985")
+    _set_text_widget(app, "selarl_membre_0_ville_naissance", "Lyon")
+    _set_text_widget(app, "selarl_membre_0_dep_naissance", "69")
+    _set_text_widget(app, "selarl_membre_0_nationalite", "française")
+    _set_text_widget(app, "selarl_membre_0_situation", "celibataire")
+    _set_text_widget(app, "selarl_membre_0_profession", "medecin")
+    _set_text_widget(app, "selarl_membre_0_adresse", "8 rue Centrale, 69001 Lyon")
+    _set_text_widget(app, "selarl_membre_0_ordre_dep", "69")
+    _set_text_widget(app, "selarl_membre_0_numero_ordre", "ORD-999")
+    _set_text_widget(app, "selarl_membre_0_numero_rpps", "20000000002")
+    app = app.run(timeout=180)
+
+    # La SELARL passe par le parcours legacy (cle de bouton « clean_generate_dossier »,
+    # distincte du parcours typé « clean_typed_generate_dossier »).
+    generate_button = next(b for b in app.button if str(b.key) == "clean_generate_dossier")
+    assert generate_button.disabled is False, [c.value for c in app.caption if "Blocage" in c.value]
+    generate_button.click()
+    app = app.run(timeout=180)
+
+    text = _dir_docx_text(tmp_path / "ui-selarl-live03")
+    assert "août 1985" in text, "LIVE-03 : la date du membre additionnel SELARL doit etre accentuee"
+    assert "1er aout 1985" not in text, "LIVE-03 : la saisie sans accent ne doit pas subsister"
 
 
 def test_selas_madame_la_presidente_toggle_drives_destinataire() -> None:

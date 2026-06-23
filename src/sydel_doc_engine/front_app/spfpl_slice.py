@@ -675,7 +675,10 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         profession="chirurgien-dentiste",
         profession_reglementee="chirurgiens-dentistes",
         profession_reglementee_pluriel="chirurgiens-dentistes",
-        date_naissance=str(payload.get("date_naissance") or ""),
+        # LIVE-03 : date de naissance a saisie LIBRE -> re-accentue les mois avant
+        # injection dans les statuts SPFPL (echo fidele du modele). Saisie ISO
+        # (12/04/1984) intacte ; saisie textuelle (« 12 avril 1984 ») accentuee.
+        date_naissance=accentuate_french_months(str(payload.get("date_naissance") or "")),
         ville_naissance=str(payload.get("ville_naissance") or ""),
         departement_naissance=str(payload.get("departement_naissance") or ""),
         nationalite=str(payload.get("nationalite") or ""),

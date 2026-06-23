@@ -29,6 +29,7 @@ from sydel_doc_engine.front_app.address_oneline import (
 )
 from sydel_doc_engine.front_app.field_derivations import (
     NATIONALITY_PRESETS,
+    accentuate_french_months,
     derive_gender_from_civilite,
     number_words_from_value,
 )
@@ -308,7 +309,9 @@ def _render_personne_physique(
         prenom=prenom,
         prenoms=prenom,
         nom=nom,
-        date_naissance=date_naissance or None,
+        # LIVE-03 : date de naissance a saisie LIBRE (text_input) -> re-accentue les
+        # mois avant injection (SCI / SCM / SCS via le repeater) ; generateur = echo fidele.
+        date_naissance=accentuate_french_months(date_naissance) if date_naissance else None,
         ville_naissance=ville_naissance or None,
         departement_naissance=departement_naissance or None,
         nationalite=nationalite or None,

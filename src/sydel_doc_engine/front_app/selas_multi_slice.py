@@ -885,7 +885,9 @@ def _physique(prefix: str, nb_actions: int, montant: str) -> StatutsCivilsAssoci
         prenom=prenoms,
         prenoms=prenoms,
         nom=nom,
-        date_naissance=date_naissance or None,
+        # LIVE-03 : date de naissance a saisie LIBRE (text_input « 1 janvier 1980 »)
+        # -> re-accentue les mois avant injection ; le generateur reste un echo fidele.
+        date_naissance=accentuate_french_months(date_naissance) if date_naissance else None,
         ville_naissance=ville_naissance or None,
         departement_naissance=departement or None,
         nationalite=nationalite or None,
