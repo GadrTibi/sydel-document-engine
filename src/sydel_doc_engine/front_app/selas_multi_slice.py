@@ -373,6 +373,7 @@ def render_selas_form(type_key: str = "selas_multi_v1") -> dict[str, object]:
         siege_cp=siege_cp,
         siege_ville=siege_ville,
         profession=profession,
+        adresse_exercice=adresse_exercice,
         ordre_departement=str(common.get("ordre_departement") or ""),
         signature_date=signature_date,
     )
@@ -1314,6 +1315,7 @@ def _render_selas_cession(
     siege_cp: str,
     siege_ville: str,
     profession: str,
+    adresse_exercice: str = "",
     ordre_departement: str,
     signature_date: object,
 ):
@@ -1332,6 +1334,7 @@ def _render_selas_cession(
         "siege_voie": siege_voie,
         "siege_cp": siege_cp,
         "siege_ville": siege_ville,
+        "lieu_exercice": adresse_exercice,
     }
     ordre = {"departement_ordre": ordre_departement}
     generation = {"signature_date": signature_date}

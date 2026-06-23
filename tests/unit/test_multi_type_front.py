@@ -2154,6 +2154,32 @@ def test_selas_adresses_sur_une_ligne(tmp_path: Path, monkeypatch) -> None:
     assert "selas_siege_same_as_lieu_exercice" not in {str(c.key) for c in app.checkbox}
 
 
+def test_selas_cession_cabinet_meme_adresse_lieu_exercice(tmp_path: Path, monkeypatch) -> None:
+    # O24-12 (onglet 24) : « adresse du cabinet -> ajouter une case "meme adresse que le
+    # lieu d'exercice" et reporter les donnees si cochee ». La case est sur le CABINET
+    # (cession), pas sur le siege.
+    from streamlit.testing.v1 import AppTest
+
+    from sydel_doc_engine.front_app import shell
+
+    monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selas-cabinet")
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
+    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle creation V1")
+    app = app.run(timeout=180)
+    next(b for b in app.button if "test_data" in str(b.key)).click()
+    app = app.run(timeout=180)
+    # activer la cession de cabinet liberal
+    app.checkbox(key="selas_cession_on").set_value(True)
+    app = app.run(timeout=180)
+    # la case « meme adresse que le lieu d'exercice » est sur le CABINET
+    assert "selas_cabinet_meme_lieu_exercice" in {str(c.key) for c in app.checkbox}
+    app.checkbox(key="selas_cabinet_meme_lieu_exercice").set_value(True)
+    app = app.run(timeout=180)
+    # cochee -> l'adresse du cabinet reprend le lieu d'exercice (saisi en une ligne)
+    cab = next(w for w in app.text_input if str(w.key) == "selas_cession_cabinet_adresse")
+    assert cab.value == "5 place du Centre, 69000 Lyon"
+
+
 def test_front_selas_dentiste_pluri_uses_dentiste_corpus(
     tmp_path: Path, monkeypatch
 ) -> None:

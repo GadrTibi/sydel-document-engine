@@ -91,6 +91,8 @@ j'ajoute UNE ligne ici : `- [AAAA-MM-JJ HH:MM] [TYPE] description (réf : SHA / 
 ## 2026-06-23 (soir) — TEST GRANDEUR NATURE : retours traités VIA la machine (WF-RETOUR)
 
 - [~] **R-GAD** : feu vert pour traiter les retours onglet 24 + live AVEC la machine (Operating Model) ; les résultats diront si la machine a marché.
+- [~] **R-GAD (méthode)** : ajouter un **agent « méchant »** adversarial qui passe sur CHAQUE livrable et remonte le moindre défaut, sans complaisance (Gad en a marre de passer pour un idiot devant Rafael). → Franky crée l'agent + règle gate. PUIS re-vérifier TOUS les retours (même traités/validés) avec un méchant par retour.
+- [~] **ACTION O24-12** (WF-RETOUR) : « adresse du cabinet → case "même adresse que le lieu d'exercice" + report ». Case posée sur le CABINET de la cession (pas le siège), SELAS, quand un lieu d'exercice existe ; cochée → recopie le lieu d'exercice (1 ligne, O24-03) dans l'adresse du cabinet. Lieu d'exercice câblé `_render_selas_cession` → `societe`. +1 test. **Verbatim gate OK. 535 verts, ruff propre.** TRAITÉ (≠ validé).
 - [~] **ACTION O24-03** (WF-RETOUR) : « toutes les adresses sur UNE ligne, pas de champ séparé ». Align = les générateurs (DNC/domiciliation `[num_voie_siege]`/régime communautaire) exigent `num_voie/voie/cp/ville` → saisie 1 ligne **+ parse interne** (`_parse_address_full`, sépare le n° de la voie). Perso + siège SELAS passés en 1 champ ; **fausse case « siège = lieu d'exercice » retirée** (migrera sur le CABINET en O24-12, conforme verbatim) ; prefills + test alignés. **Verbatim gate OK** (relu clause par clause). **534 verts, ruff propre.** Statut TRAITÉ (≠ validé). O24-12 débloqué.
 
 ## 2026-06-23 (après-midi) — PIVOT : bureau des retours (« comme une petite entreprise »)

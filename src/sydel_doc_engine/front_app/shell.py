@@ -2157,8 +2157,21 @@ def _render_cession_form(
     # --- Cabinet (ticket 2.3 : cadre reduit aux seules infos specifiques) ---
     with st.expander("Cabinet"):
         st.caption(f"Nature du fonds liberal : {profession_label} (derivee de la profession).")
-        if not st.session_state.get(f"{_CESSION_PREFIX}_cession_cabinet_adresse") and siege_display:
-            st.session_state[f"{_CESSION_PREFIX}_cession_cabinet_adresse"] = siege_display
+        cab_key = f"{_CESSION_PREFIX}_cession_cabinet_adresse"
+        # O24-12 (onglet 24) : « adresse du cabinet -> ajouter une case "meme adresse que
+        # le lieu d'exercice" et reporter les donnees si cochee ». En SELAS, le lieu
+        # d'exercice (saisi en UNE ligne, O24-03) est reporte dans l'adresse du cabinet
+        # quand la case est cochee. Hors SELAS : pre-remplissage siege inchange.
+        lieu_exercice = str(societe.get("lieu_exercice") or "")
+        if prefix == "selas" and lieu_exercice:
+            if st.checkbox(
+                "Adresse du cabinet = même adresse que le lieu d'exercice",
+                key=f"{_CESSION_PREFIX}_cabinet_meme_lieu_exercice",
+                help="Coché : reporte l'adresse du lieu d'exercice dans l'adresse du cabinet.",
+            ):
+                st.session_state[cab_key] = lieu_exercice
+        elif not st.session_state.get(cab_key) and siege_display:
+            st.session_state[cab_key] = siege_display
         adresse_cabinet = _cession_text(
             st, "Adresse du cabinet", section="cabinet", field="adresse",
             default=siege_display,

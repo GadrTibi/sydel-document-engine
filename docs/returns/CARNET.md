@@ -22,12 +22,12 @@
 | O24-09 | « supprimer le champ profession → laisser "qualification principale" et mentionner "(profession)" dans le nom du champ » | SELAS | — | TRAITÉ | ⬜ |
 | O24-10 | « menu cession cabinet "dentaire"/"médical" → supprimer ce champ, cela va de soi selon le cas » | SELAS (cession) | — | TRAITÉ | ⬜ |
 | O24-11 | « cession → vendeur : supprimer "le vendeur est l'associé unique" … à la place, choisir l'un des associés et reprendre toutes ses informations » | SELAS (cession) | — | TRAITÉ | ⬜ |
-| O24-12 | « adresse du cabinet → ajouter une case : "même adresse que le lieu d'exercice" et reporter les données si cochée. » | SELAS (cession) | O24-03 | TRIÉ ⚠ | ⬜ |
+| O24-12 | « adresse du cabinet → ajouter une case : "même adresse que le lieu d'exercice" et reporter les données si cochée. » | SELAS (cession) | O24-03 | TRAITÉ | ⬜ |
 | O24-13 | « Le CA ne doit pas être facultatif — mm chose pour les exercices » | SELAS (cession) | — | TRAITÉ | ⬜ |
 | O24-14 | « Ajouter le fait de remplir à la fois l'acte ainsi que le compromis de cession en meme temps » | SELAS (cession) | — | TRAITÉ | ⬜ |
 | O24-15 | « Retirer le champ acquéreur » | SELAS (cession) | — | TRAITÉ | ⬜ |
 
-> ⚠ `O24-12` : un essai précédent a posé la case sur le **siège** (faux) — à refaire sur le **cabinet** de la cession, après `O24-03`.
+> `O24-12` corrigé : la case est désormais sur l'adresse du **cabinet** (cession), conforme au verbatim ; le faux essai sur le siège a été retiré (O24-03).
 
 ## Retours live Rafael — `LIVE`
 
@@ -42,6 +42,6 @@
 
 ## Synthèse machine-lisible
 
-- **Reste à faire** (Statut ≠ TRAITÉ/VALIDÉ) : `O24-02` (DISPATCHÉ, à généraliser), `O24-04`, `O24-12` (débloqué : O24-03 fait) ; `LIVE-05`/`LIVE-06` (CLARIF).
-- **En attente validation Rafael** (TRAITÉ, `Validé = ⬜`) : O24-01/03/05/06/07/08/09/10/11/13/14/15 + LIVE-01/02/03/04.
+- **Reste à faire** (Statut ≠ TRAITÉ/VALIDÉ) : `O24-02` (DISPATCHÉ, à généraliser), `O24-04` ; `LIVE-05`/`LIVE-06` (CLARIF).
+- **En attente validation Rafael** (TRAITÉ, `Validé = ⬜`) : O24-01/03/05/06/07/08/09/10/11/12/13/14/15 + LIVE-01/02/03/04.
 - **VALIDÉ** : aucun → le carnet reste plein (Rafael doit retester `sprint/engine-completion`).
