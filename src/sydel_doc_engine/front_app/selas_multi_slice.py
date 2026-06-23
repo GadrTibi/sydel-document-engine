@@ -284,9 +284,10 @@ def render_selas_form(type_key: str = "selas_multi_v1") -> dict[str, object]:
     seed_closing_date(PREFIX)
     st.subheader("Donnees a saisir")
     st.markdown("**Societe (SELAS d'exercice, vocabulaire actions)**")
-    col_a, col_b = st.columns(2)
-    denomination = _t(col_a, "denomination", "Denomination")
-    siege = _t(col_b, "siege", "Siege (adresse affichee)")
+    # O24-03 : plus de champ « Siege (adresse affichee) » libre — le siege est saisi sur
+    # UNE ligne plus bas et son affichage en est derive (anti double-saisie / une adresse
+    # = un champ).
+    denomination = _t(st, "denomination", "Denomination")
     col_c, _ = st.columns(2)
     # R1 (retours Rafael 2026-06-18) : profession en menu deroulant ferme ; le
     # pluriel n'est plus saisi mais derive automatiquement du choix.
@@ -341,6 +342,7 @@ def render_selas_form(type_key: str = "selas_multi_v1") -> dict[str, object]:
     siege_voie = _siege_struct.voie if _siege_struct else ""
     siege_cp = _siege_struct.cp if _siege_struct else ""
     siege_ville = _siege_struct.ville if _siege_struct else ""
+    siege = _siege_struct.adresse_affichee if _siege_struct else ""  # O24-03 : affichage derive
 
     # Parite gold (anti double-saisie, RAF-003, couche partagee) : lieu de signature
     # pre-rempli = ville du siege, modifiable.
@@ -430,10 +432,14 @@ def _render_common_docs_form() -> dict[str, object]:
     col_i, col_j = st.columns(2)
     ordre_dep = _t(col_i, "ordre_departement", "Departement ordre")
     ordre_connecteur = _render_connecteur_selectbox(col_j)
-    col_k, col_l, col_m = st.columns(3)
-    ordre_ligne = _t(col_k, "ordre_adresse_ligne_1", "Adresse ordre")
-    ordre_cp = _t(col_l, "ordre_cp", "CP ordre")
-    ordre_ville = _t(col_m, "ordre_ville", "Ville ordre")
+    # O24-03 (onglet 24) : adresse de l'ordre sur UNE ligne (comme perso/siège, « ...
+    # la voie, etc.. »), parse interne -> ligne_1/cp/ville (OrdreAddress). Plus de champs séparés.
+    _ordre_struct = _parse_address_full(
+        _t(st, "ordre_adresse", "Adresse de l'ordre (N° et voie, CP Ville)")
+    )
+    ordre_ligne = f"{_ordre_struct.num_voie} {_ordre_struct.voie}".strip() if _ordre_struct else ""
+    ordre_cp = _ordre_struct.cp if _ordre_struct else ""
+    ordre_ville = _ordre_struct.ville if _ordre_struct else ""
     ordre_numero = _t(st, "ordre_numero", "Numero d'inscription")
     # Parite gold (retour Albane 2026-06-10, shell.py:1537-1542) : president(e) de
     # l'ordre = femme -> « Madame la Presidente » dans la demande d'inscription (DOC-034).
@@ -973,30 +979,35 @@ def _parse_one_line_address(text: str) -> tuple[str, str, str]:
 def _parse_address_full(text: str) -> Address | None:
     """Parse une adresse saisie sur UNE LIGNE -> Address structuree complete.
 
-    O24-03 (onglet 24) : « Toutes les adresses sur une ligne, pas de champ separe
-    pour la rue, la voie. » La saisie reste UNE ligne mais les generateurs
-    (DOC-001 DNC, domiciliation via [num_voie_siege], regime communautaire) exigent
-    num_voie/voie/cp/ville separes -> on parse en interne. Le numero de tete
-    (« 12 », « 12 bis », « 12B ») est detache de la voie.
-    « 12 rue de la Paix, 75001 Paris » -> num_voie=12 / voie=rue de la Paix /
-    cp=75001 / ville=Paris. None si incomplet -> la validation « adresse requise »
-    s'applique comme avant (jamais d'adresse partielle dans un acte)."""
+    O24-03 (onglet 24) : « Toutes les adresses doivent etre redigees sur une ligne, pas
+    de champ separe pour la rue, la voie, etc.. » La saisie reste UNE ligne mais les
+    generateurs (DOC-001 DNC, domiciliation via [num_voie_siege], regime communautaire,
+    ordre) exigent num_voie/voie/cp/ville separes -> on parse en interne.
+
+    Tolerant aux formes une-ligne usuelles : numero de tete (« 12 », « 12 bis », « 12B »)
+    detache via separateur espace OU virgule ; le code postal (4-5 chiffres) + la ville
+    sont isoles en FIN de chaine, avec ou sans virgule. Exemples acceptes :
+      « 12 rue de la Paix, 75001 Paris »   « 12, rue de la Paix, 75001 Paris »
+      « 12 rue de la Paix 75001 Paris »
+    -> num_voie=12 / voie=rue de la Paix / cp=75001 / ville=Paris.
+    None si incomplet -> la validation « adresse requise » s'applique comme avant."""
     raw = (text or "").strip()
     if not raw:
         return None
-    left, _, right = raw.partition(",")
-    left, right = left.strip(), right.strip()
-    m = re.match(r"(\d+\s*(?:bis|ter|quater|[A-Za-z])?)\s+(.+)", left)
+    # Numero de tete (optionnel), separateur espace OU virgule (« 12, rue ... »).
+    m = re.match(r"(\d+\s*(?:bis|ter|quater|[A-Za-z])?)[\s,]+(.*)", raw)
     if m:
-        num_voie, voie = m.group(1).strip(), m.group(2).strip()
+        num_voie, rest = m.group(1).strip(), m.group(2).strip()
     else:
-        num_voie, voie = "", left
-    cp, ville = "", ""
-    m2 = re.match(r"(\d{4,5})\s+(.+)", right)
+        num_voie, rest = "", raw
+    # CP (4-5 chiffres) + ville en FIN de chaine, separateur espace ou virgule.
+    m2 = re.search(r"(\d{4,5})[\s,]+(.+?)\s*$", rest)
     if m2:
         cp, ville = m2.group(1), m2.group(2).strip()
+        voie = rest[: m2.start()].strip().rstrip(",").strip()
     else:
-        ville = right
+        cp = ville = ""
+        voie = rest.rstrip(",").strip()
     if not (num_voie and voie and cp and ville):
         return None
     return Address(
@@ -1254,9 +1265,8 @@ def _validate_common_docs(payload: dict[str, object]) -> list[str]:
         # R5 (2026-06-18) : « Conseil departemental » supprime du formulaire ; le
         # libelle est derive du departement + connecteur, plus de saisie a valider.
         ("ordre_departement", "Departement d'inscription a l'ordre requis (demande inscription)."),
+        # O24-03 : adresse de l'ordre sur une ligne -> un seul blocker (cp/ville derives du parse).
         ("ordre_adresse_ligne_1", "Adresse de l'ordre requise (demande inscription)."),
-        ("ordre_cp", "Code postal de l'ordre requis (demande inscription)."),
-        ("ordre_ville", "Ville de l'ordre requise (demande inscription)."),
     )
     for field, message in required:
         if not str(payload.get(field) or "").strip():

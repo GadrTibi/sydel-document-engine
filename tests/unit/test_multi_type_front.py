@@ -2162,10 +2162,33 @@ def test_selas_adresses_sur_une_ligne(tmp_path: Path, monkeypatch) -> None:
     assert siege.value == "5 place du Centre, 69000 Lyon"
     # adresse perso de l'associe 0 sur une ligne
     assert "selas_associe_0_adresse" in keys
-    # plus aucun champ structure ni case « siege = lieu d'exercice »
+    # plus aucun champ structuré (siège), ni double champ siège, ni case « siège = lieu d'exercice »
     assert "selas_siege_voie" not in keys
     assert "selas_siege_num" not in keys
+    assert "selas_siege" not in keys  # plus de champ « Siege (adresse affichee) » libre (doublon)
     assert "selas_siege_same_as_lieu_exercice" not in {str(c.key) for c in app.checkbox}
+    # O24-03 : l'adresse de l'ORDRE aussi sur une ligne (plus de CP/Ville ordre séparés)
+    assert "selas_ordre_adresse" in keys
+    assert "selas_ordre_cp" not in keys
+    assert "selas_ordre_ville" not in keys
+
+
+def test_parse_address_full_tolere_formes_usuelles() -> None:
+    # O24-03 (onglet 24) : la saisie sur UNE ligne doit accepter les formes françaises
+    # courantes (virgule après le numéro, sans virgule), pas seulement « num voie, cp ville ».
+    from sydel_doc_engine.front_app.selas_multi_slice import _parse_address_full
+
+    attendu = ("12", "rue de la Paix", "75001", "Paris")
+    for forme in (
+        "12 rue de la Paix, 75001 Paris",
+        "12, rue de la Paix, 75001 Paris",
+        "12 rue de la Paix 75001 Paris",
+    ):
+        a = _parse_address_full(forme)
+        assert a is not None, forme
+        assert (a.num_voie, a.voie, a.cp, a.ville) == attendu, forme
+    assert _parse_address_full("") is None
+    assert _parse_address_full("pas une adresse") is None
 
 
 def test_selas_cession_cabinet_meme_adresse_lieu_exercice(tmp_path: Path, monkeypatch) -> None:

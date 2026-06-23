@@ -793,7 +793,6 @@ def _prefill_selas_test_data(
     coherent (la valeur DOIT etre une option exacte du menu)."""
     values: dict[str, object] = {
         "selas_denomination": "SELAS EXEMPLE",
-        "selas_siege": "5 place du Centre, 69000 Lyon",
         "selas_siege_adresse": "5 place du Centre, 69000 Lyon",
         "selas_profession_choice": profession,
         # Capital = number_input cote SELAS (parite gold) -> seed un ENTIER, pas une
@@ -820,9 +819,7 @@ def _prefill_selas_test_data(
         # le connecteur grammatical (« de » / « du ») le remplace pour l'accord.
         "selas_ordre_departement": "Rhone",
         "selas_ordre_connecteur": "du",
-        "selas_ordre_adresse_ligne_1": "1 rue de l'Ordre",
-        "selas_ordre_cp": "69002",
-        "selas_ordre_ville": "Lyon",
+        "selas_ordre_adresse": "1 rue de l'Ordre, 69002 Lyon",  # O24-03 : ordre sur une ligne
         "selas_ordre_numero": "69-12345",
         "selas_nb_associes": 2,
     }
