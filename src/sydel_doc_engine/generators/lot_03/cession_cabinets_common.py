@@ -297,12 +297,24 @@ def _build_segment_overrides(ctx: DocumentGenerationContext) -> dict[str, str]:
     cession = ctx.cession
     if cession is None:
         return {}
+    overrides: dict[str, str] = {}
+    # Fidelite forme acquereur : SEUL le modele de l'acte medical fige « SELARL »
+    # en DUR sur la ligne « SELARL au capital de [capital_social_acquereur] » (les 3
+    # autres modeles — acte dentaire, compromis medical/dentaire — utilisent deja le
+    # token [forme_sociale_acquereur]). On normalise le modele medical en restaurant
+    # le token AVANT le remplissage, pour que la VRAIE forme de l'acquereur ressorte
+    # (ex. « SELAS » sur un dossier SELAS, ou la forme post-corrigee par le slice).
+    # Pour un acquereur SELARL (cas SELARL nominal), le token se remplit en « SELARL »
+    # -> sortie byte-identique (gold *_matches_source_docx_line_by_line intact).
+    overrides["SELARL au capital de"] = "[forme_sociale_acquereur] au capital de"
     vendeur = cession.vendeur or CessionVendeur()
     situation = (vendeur.situation_maritale or "").strip()
     normalized = situation.casefold()
-    if not situation or normalized.startswith("mari"):
-        return {}
-    return {segment: f"{situation}." for segment in _VENDEUR_MARITAL_SEGMENTS}
+    if situation and not normalized.startswith("mari"):
+        overrides.update(
+            {segment: f"{situation}." for segment in _VENDEUR_MARITAL_SEGMENTS}
+        )
+    return overrides
 
 
 def _build_paragraph_overrides(
