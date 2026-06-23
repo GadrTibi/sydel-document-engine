@@ -731,6 +731,16 @@ def _validate_roles_dirigeants(associes: list[StatutsCivilsAssocie]) -> list[str
         and bool(st.session_state.get(f"{PREFIX}_associe_{i}_is_dirigeant"))
     ]
     blockers: list[str] = []
+    # O24-07 : un Président est OBLIGATOIRE (« soit président (un seul) » = cardinalité 1,
+    # bornée par le bas aussi). Sans ce blocage, un associé désigné DG/DGA serait
+    # requalifié « Président » par le fallback de _derive_president_index, écrasant le rôle
+    # choisi — incohérence relevée par l'audit.
+    # Ne bloque QUE si des dirigeants sont désignés sans aucun Président (cas UI réel ;
+    # le chemin bare-payload sans état de dirigeants a un president_index déjà résolu).
+    if roles and roles.count("Président") == 0:
+        blockers.append(
+            "Un Président est obligatoire : désignez un associé dirigeant « Président »."
+        )
     if roles.count("Président") > 1:
         blockers.append(
             "Un seul Président est admis : les fonctions de direction ne sont pas cumulatives."

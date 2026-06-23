@@ -2422,6 +2422,31 @@ def test_selas_role_directeur_general_associe(tmp_path: Path, monkeypatch) -> No
     assert generate_button.disabled is False
 
 
+def test_selas_zero_president_bloque(tmp_path: Path, monkeypatch) -> None:
+    # O24-07 (onglet 24) : un Président est OBLIGATOIRE (« soit président (un seul) »). Si
+    # aucun Président n'est désigné (que des DG/DGA), la génération doit BLOQUER — sinon un
+    # associé désigné DG serait requalifié Président par fallback, écrasant le rôle choisi.
+    from streamlit.testing.v1 import AppTest
+
+    from sydel_doc_engine.front_app import shell
+
+    monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selas-no-pres")
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
+    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle creation V1")
+    app = app.run(timeout=180)
+    next(b for b in app.button if "test_data" in str(b.key)).click()
+    app = app.run(timeout=180)
+    # L'associé 0 (dirigeant par défaut « Président ») est requalifié « Directeur Général ».
+    next(
+        s for s in app.selectbox if str(s.key) == "selas_associe_0_role_dirigeant"
+    ).set_value("Directeur Général")
+    app = app.run(timeout=180)
+    generate_button = next(
+        b for b in app.button if str(b.key) == "clean_typed_generate_dossier"
+    )
+    assert generate_button.disabled is True  # plus aucun Président -> bloqué
+
+
 def test_selas_dnc_une_par_dirigeant(tmp_path: Path, monkeypatch) -> None:
     # R7 (Rafael 2026-06-23) : une declaration de non-condamnation PAR dirigeant
     # (President + chaque DG / DG Associe), chacune nommee par son nom.
