@@ -217,7 +217,7 @@ def regime_communautaire_from_status(label: str) -> bool:
     """Le regime legal / communaute est le seul a declencher DOC-005/DOC-006.
 
     Derive du libelle de situation matrimoniale (plus de case a cocher dediee,
-    retours client 2026-06-11).
+    R10/R11 Rafael 2026-06-23 / LIVE-02).
     """
     normalized = _normalize_label(label)
     return normalized.startswith("marie") and (

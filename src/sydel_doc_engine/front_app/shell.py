@@ -2168,11 +2168,17 @@ def _render_cession_form(
         # d'exercice (saisi en UNE ligne, O24-03) est reporte dans l'adresse du cabinet
         # quand la case est cochee. Hors SELAS : pre-remplissage siege inchange.
         lieu_exercice = str(societe.get("lieu_exercice") or "")
-        if prefix == "selas" and lieu_exercice:
-            if st.checkbox(
-                "Adresse du cabinet = même adresse que le lieu d'exercice",
-                key=f"{_CESSION_PREFIX}_cabinet_meme_lieu_exercice",
-                help="Coché : reporte l'adresse du lieu d'exercice dans l'adresse du cabinet.",
+        # O24-12 : la case existe dès que le bloc Cabinet est rendu en SELAS (verbatim
+        # « ajouter une case », inconditionnel) ; elle ne reporte que si le lieu d'exercice
+        # est renseigné (sinon rien à recopier).
+        if prefix == "selas":
+            if (
+                st.checkbox(
+                    "Adresse du cabinet = même adresse que le lieu d'exercice",
+                    key=f"{_CESSION_PREFIX}_cabinet_meme_lieu_exercice",
+                    help="Coché : reporte l'adresse du lieu d'exercice dans l'adresse du cabinet.",
+                )
+                and lieu_exercice
             ):
                 st.session_state[cab_key] = lieu_exercice
         elif not st.session_state.get(cab_key) and siege_display:

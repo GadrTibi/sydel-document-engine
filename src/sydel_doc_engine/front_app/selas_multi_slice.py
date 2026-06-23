@@ -492,41 +492,6 @@ def _render_connecteur_selectbox(container) -> str:
     )
 
 
-def _render_regime_communautaire_form() -> dict[str, object]:
-    """Conditionnel canon « Si regime communautaire » (DOC-005 + DOC-006).
-
-    Toggle + saisies conjoint requises par les generateurs de renonciation et
-    d'avertissement. Inactif -> aucun document ajoute, bundle de base inchange.
-    """
-    regime_key = f"{PREFIX}_regime_communautaire"
-    if regime_key not in st.session_state:
-        st.session_state[regime_key] = False
-    actif = st.checkbox(
-        "Regime communautaire (ajoute lettre de renonciation + avertissement au conjoint)",
-        key=regime_key,
-    )
-    if not actif:
-        return {"regime_communautaire": False}
-    st.caption("Conjoint (lettres de renonciation / avertissement)")
-    col_a, col_b, col_c = st.columns(3)
-    conjoint_civilite = col_a.selectbox(
-        "Civilite conjoint",
-        ("Madame", "Monsieur"),
-        key=f"{PREFIX}_conjoint_civilite",
-    )
-    conjoint_prenom = _t(col_b, "conjoint_prenom", "Prenom conjoint")
-    conjoint_nom = _t(col_c, "conjoint_nom", "Nom conjoint")
-    regime_matrimonial = _t(st, "regime_matrimonial", "Regime matrimonial")
-    return {
-        "regime_communautaire": True,
-        "conjoint_civilite": conjoint_civilite,
-        "conjoint_genre": derive_gender_from_civilite(conjoint_civilite),
-        "conjoint_prenom": conjoint_prenom,
-        "conjoint_nom": conjoint_nom,
-        "regime_matrimonial": regime_matrimonial,
-    }
-
-
 def _render_selas_associes() -> tuple[
     list[StatutsCivilsAssocie], int, dict[str, object], list[dict[str, object]]
 ]:

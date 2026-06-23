@@ -2243,16 +2243,24 @@ def test_selas_cession_cabinet_meme_adresse_lieu_exercice(tmp_path: Path, monkey
     app = app.run(timeout=180)
     next(b for b in app.button if "test_data" in str(b.key)).click()
     app = app.run(timeout=180)
+    # rendre le LIEU D'EXERCICE distinct du siège -> test discriminant (sinon on ne sait pas
+    # si le cabinet reprend le lieu d'exercice ou le simple pré-remplissage du siège).
+    next(
+        w for w in app.text_input if str(w.key) == "selas_adresse_lieu_exercice"
+    ).set_value("99 avenue Distincte, 75001 Paris")
+    app = app.run(timeout=180)
     # activer la cession de cabinet liberal
     app.checkbox(key="selas_cession_on").set_value(True)
     app = app.run(timeout=180)
-    # la case « meme adresse que le lieu d'exercice » est sur le CABINET
     assert "selas_cabinet_meme_lieu_exercice" in {str(c.key) for c in app.checkbox}
-    app.checkbox(key="selas_cabinet_meme_lieu_exercice").set_value(True)
-    app = app.run(timeout=180)
-    # cochee -> l'adresse du cabinet reprend le lieu d'exercice (saisi en une ligne)
+    # décochée : le cabinet = le SIÈGE (pré-rempli), PAS le lieu d'exercice distinct
     cab = next(w for w in app.text_input if str(w.key) == "selas_cession_cabinet_adresse")
     assert cab.value == "5 place du Centre, 69000 Lyon"
+    # cochée -> le cabinet reprend le LIEU D'EXERCICE distinct (preuve du report O24-12)
+    app.checkbox(key="selas_cabinet_meme_lieu_exercice").set_value(True)
+    app = app.run(timeout=180)
+    cab = next(w for w in app.text_input if str(w.key) == "selas_cession_cabinet_adresse")
+    assert cab.value == "99 avenue Distincte, 75001 Paris"
 
 
 def test_cession_type_et_label_derives_de_la_profession() -> None:
@@ -2529,6 +2537,10 @@ def test_selas_situation_communaute_genere_docs_conjoint(tmp_path: Path, monkeyp
     app = app.run(timeout=180)
     next(b for b in app.button if "test_data" in str(b.key)).click()
     app = app.run(timeout=180)
+
+    # LIVE-02 : AUCUNE case à cocher « régime communautaire » dans le formulaire SELAS
+    # (le verbatim dit « Supprimer » ; remplacée par le menu situation matrimoniale).
+    assert not any("communautaire" in str(c.label).lower() for c in app.checkbox)
 
     # Associe 0 : choisir le regime de communaute -> les champs conjoint apparaissent.
     app.selectbox(key="selas_associe_0_situation").set_value(
