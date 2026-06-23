@@ -1814,6 +1814,30 @@ def _vendeur_regime_label(situation_label: str) -> str:
     return "communauté réduite aux acquêts"
 
 
+def _scm_cedant_situation_maritale_display(
+    praticien: dict[str, object], *, prefix: str
+) -> str:
+    """Libelle complet accentue de la situation matrimoniale du cedant SCM (O24-11).
+
+    Le modele SCM n'a qu'UN placeholder `[situation_maritale_cedant]` (pas de placeholder
+    regime separe). La valeur collapsee posee par le slice (« marie ») PERD le regime
+    (separation / universelle / communaute) et n'est pas accentuee. On reconstruit ici le
+    libelle complet — statut accentue/genre (_situation_display) + « sous le régime de » +
+    regime accentue (_vendeur_regime_label) — sur le libelle BRUT du preset
+    (st.session_state[f"{prefix}_situation_maritale"]), exactement comme l'acte cabinet.
+    Sortie mariee : « marié sous le régime de séparation de biens » ; le « avec <conjoint> »
+    est ajoute par le generateur (mentions_conjoint). Non marie : juste le statut accentue.
+    """
+    collapse = str(praticien.get("situation_maritale") or "")
+    genre = praticien.get("genre")
+    statut = _situation_display(collapse, genre)
+    libelle_brut = str(st.session_state.get(f"{prefix}_situation_maritale") or "")
+    regime = _vendeur_regime_label(libelle_brut)
+    if regime:
+        return f"{statut} sous le régime de {regime}"
+    return statut
+
+
 def _format_montant(value: str) -> str:
     """Formate un montant saisi en groupes lisibles (« 200 000 », ticket 2.9).
 
@@ -2157,8 +2181,9 @@ def _render_cession_form(
         # et le champ visible (cab_key) est piloté par l'état de la case :
         #  - cochée + lieu d'exercice renseigné -> MIROIR du lieu, champ DÉSACTIVÉ ;
         #  - sinon (décochée, OU cochée mais lieu vide) -> ÉDITABLE, valeur = saisie manuelle.
-        # À la transition coché→décoché on restaure `manual_key` (siège à défaut). En mode éditable
-        # on resynchronise `manual_key` APRÈS le widget -> la saisie survit à tout cycle coche/décoche.
+        # À la transition coché→décoché on restaure `manual_key` (siège à défaut). En mode
+        # éditable on resynchronise `manual_key` APRÈS le widget -> la saisie survit à tout
+        # cycle coche/décoche.
         cabinet_locked = False
         if prefix == "selas":
             prev_key = f"{_CESSION_PREFIX}_cabinet_meme_lieu_exercice_prev"
@@ -2747,6 +2772,14 @@ def _render_scm_cession_form(
     cedant.update(cedant_overrides)
     if ordre_override:
         cedant["ordre"] = {**(cedant.get("ordre") or {}), **ordre_override}
+    # O24-11 : injecter le LIBELLE COMPLET ACCENTUE de la situation matrimoniale
+    # (statut accentue/genre + « sous le régime de » + regime) — le modele SCM n'a
+    # qu'un placeholder unique et la valeur collapsee posee plus haut perdait le
+    # regime + l'accent. Ecrase la valeur collapsee de _scm_cedant_overrides ; pour
+    # un non-marie, rend juste le statut accentue (donc jamais de cle videe).
+    situation_display = _scm_cedant_situation_maritale_display(praticien, prefix=prefix)
+    if situation_display:
+        cedant["situation_maritale"] = situation_display
     payload["cedant"] = cedant
     # Coherence V1 du wording source : le representant de la SEL cessionnaire
     # EST le cedant (l'associe unique cede ses parts a sa propre SEL).

@@ -1292,6 +1292,160 @@ def test_clean_front_dentiste_sans_salarie_facultatifs_vides_genere(
     assert "Martin" in acte_text
 
 
+def _scm_acte_text_for_situation(
+    tmp_path: Path,
+    monkeypatch,
+    *,
+    situation_preset: str,
+    subdir: str,
+) -> str:
+    """Bout-en-bout O24-11 : SELARL dentiste + SCM via le SLICE reel (AppTest).
+
+    Clique le bouton de donnees de test (prefill cession + SCM + `selarl_scm`),
+    surcharge la situation matrimoniale + le conjoint de facon deterministe, genere,
+    et renvoie le texte de l'acte de cession de parts SCM.
+    """
+    from sydel_doc_engine.front_app import shell
+
+    monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / subdir)
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
+    app.selectbox(key="selarl_profession").set_value("Chirurgien-dentiste")
+    app = app.run(timeout=180)
+
+    app.button(key="clean_generate_test_data").click()
+    app = app.run(timeout=180)
+
+    # Surcharge deterministe : civilite (genre fixe), situation matrimoniale ciblee
+    # + conjoint nomme. La personne de test est aleatoire (genre M/F), on la fige.
+    app.selectbox(key="selarl_civilite").set_value("Monsieur")
+    app.selectbox(key="selarl_situation_maritale").set_value(situation_preset)
+    app = app.run(timeout=180)
+    app.text_input(key="selarl_conjoint_prenom").set_value("Claire")
+    app.text_input(key="selarl_conjoint_nom").set_value("Dupont")
+    app = app.run(timeout=180)
+
+    assert app.checkbox(key="selarl_scm").value is True
+    assert app.button(key="clean_generate_dossier").disabled is False
+
+    app.button(key="clean_generate_dossier").click()
+    app = app.run(timeout=180)
+    assert [e.value for e in app.error] == []
+
+    generated = app.session_state["clean_generated_dossier"]
+    acte = next(
+        Path(path)
+        for path in generated["docx_paths"]
+        if "acte_cession_parts_scm" in Path(path).name
+    )
+    return _docx_text(acte)
+
+
+def test_scm_cession_acte_keeps_regime_matrimonial_separation(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    # O24-11 (BLOQUANT re-Akainu T4) : l'acte de cession de parts SCM doit conserver
+    # le REGIME matrimonial accentue (pas le « marie » collapse, non accentue). Le
+    # modele n'a qu'un placeholder [situation_maritale_cedant] : le slice y injecte le
+    # libelle complet « marié sous le régime de séparation de biens avec <conjoint> ».
+    acte_text = _scm_acte_text_for_situation(
+        tmp_path,
+        monkeypatch,
+        situation_preset="Marie(e) sous le regime de la separation de biens",
+        subdir="scm-o2411-separation",
+    )
+    # Statut accentue/genre (« marié » ou « mariée » selon la personne de test aleatoire)
+    # + regime accentue + conjoint, dans une seule clause.
+    assert (
+        "marié sous le régime de séparation de biens avec Madame Claire Dupont" in acte_text
+        or "mariée sous le régime de séparation de biens avec Madame Claire Dupont"
+        in acte_text
+    )
+    # Pas de fuite de la valeur collapsee brute / non accentuee.
+    assert "marie sous le" not in acte_text
+
+
+def test_scm_cession_acte_keeps_regime_matrimonial_communaute_universelle(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    # O24-11 : second regime (communaute universelle) pour prouver que ce n'est pas
+    # un cas unique cable en dur.
+    acte_text = _scm_acte_text_for_situation(
+        tmp_path,
+        monkeypatch,
+        situation_preset="Marie(e) sous le regime de la communaute universelle",
+        subdir="scm-o2411-universelle",
+    )
+    assert (
+        "marié sous le régime de communauté universelle avec Madame Claire Dupont"
+        in acte_text
+        or "mariée sous le régime de communauté universelle avec Madame Claire Dupont"
+        in acte_text
+    )
+    assert "marie sous le" not in acte_text
+
+
+def test_scm_cedant_situation_display_covers_both_paths(monkeypatch) -> None:
+    # O24-11 : le helper qui reconstruit le libelle complet est partage par les DEUX
+    # chemins (SELARL prefix=selarl ; SELAS multi prefix=selas). On verrouille qu'il lit
+    # bien la cle de session `{prefix}_situation_maritale` (libelle BRUT) + le genre +
+    # la valeur collapsee, pour les 3 regimes + un non-marie.
+    from sydel_doc_engine.domain.enums import Gender
+    from sydel_doc_engine.front_app import shell
+
+    class _FakeSt:
+        def __init__(self) -> None:
+            self.session_state: dict[str, object] = {}
+
+    fake = _FakeSt()
+    monkeypatch.setattr(shell, "st", fake)
+
+    cases = [
+        ("selarl", "Marie(e) sous le regime de la separation de biens", Gender.MASCULIN,
+         "marié sous le régime de séparation de biens"),
+        ("selas", "Marie(e) sous le regime de la communaute universelle", Gender.FEMININ,
+         "mariée sous le régime de communauté universelle"),
+        ("selarl", "Marie(e) sous le regime legal / communaute", Gender.MASCULIN,
+         "marié sous le régime de communauté réduite aux acquêts"),
+    ]
+    for prefix, brut, genre, expected in cases:
+        fake.session_state = {f"{prefix}_situation_maritale": brut}
+        praticien = {"situation_maritale": "marie", "genre": genre}
+        assert (
+            shell._scm_cedant_situation_maritale_display(praticien, prefix=prefix)
+            == expected
+        )
+
+    # Non marie : juste le statut accentue, jamais « sous le régime de » (et jamais vide).
+    fake.session_state = {"selas_situation_maritale": "Divorce(e)"}
+    praticien = {"situation_maritale": "divorce", "genre": Gender.FEMININ}
+    assert (
+        shell._scm_cedant_situation_maritale_display(praticien, prefix="selas")
+        == "divorcée"
+    )
+
+
+def test_scm_cession_acte_keeps_regime_matrimonial_communaute_legale(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    # O24-11 : 3e regime (communaute legale -> « communauté réduite aux acquêts »).
+    acte_text = _scm_acte_text_for_situation(
+        tmp_path,
+        monkeypatch,
+        situation_preset="Marie(e) sous le regime legal / communaute",
+        subdir="scm-o2411-legale",
+    )
+    assert (
+        "marié sous le régime de communauté réduite aux acquêts avec Madame Claire Dupont"
+        in acte_text
+        or "mariée sous le régime de communauté réduite aux acquêts avec Madame Claire Dupont"
+        in acte_text
+    )
+    assert "marie sous le" not in acte_text
+
+
 def test_clean_front_signature_lieu_seeded_from_siege_ville(
     tmp_path: Path,
     monkeypatch,
