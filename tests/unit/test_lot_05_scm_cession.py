@@ -82,6 +82,33 @@ def _associe(
     )
 
 
+def test_scm_cession_plage_cedee_auto_derivee_n4() -> None:
+    # N4 (Rafael 2026-06-24) : la plage cedee est auto-derivee de la plage du cedant + nb cede,
+    # convention « le cedant cede ses dernieres parts » -> residu contigu au debut. Plus de saisie
+    # manuelle. Verrouille le helper pur + la derivation integree (Akainu N4 M2/m2).
+    from sydel_doc_engine.front_app.shell import (
+        _derive_scm_apres_cession,
+        _plage_dernieres_parts,
+    )
+
+    assert _plage_dernieres_parts("1 a 100", 40) == "61 a 100"
+    assert _plage_dernieres_parts("41 a 100", 20) == "81 a 100"
+    assert _plage_dernieres_parts("1 a 40", 50) == ""  # nb > taille de la plage
+    assert _plage_dernieres_parts("", 10) == ""  # plage non parsable
+
+    presents = [_associe("Jean Dupont", 100, "1 a 100")]
+    cedant = {"prenom": "Jean", "nom": "Dupont", "civilite_affichage": "Monsieur"}
+    cessionnaire = {"denomination": "SELARL X", "forme_juridique": "SELARL"}
+    parts_cedees: dict[str, object] = {"nb": 40}  # plage NON fournie -> doit etre derivee
+    apres = _derive_scm_apres_cession(presents, cedant, cessionnaire, parts_cedees)
+    assert parts_cedees["plage"] == "61 a 100"  # derivee in-place (dernieres 40 parts)
+    cedant_apres = next(a for a in apres if a.type_personne == "personne_physique")
+    assert cedant_apres.parts is not None
+    assert cedant_apres.parts.plage == "1 a 60" and cedant_apres.parts.nb == 60
+    sel = next(a for a in apres if a.type_personne == "personne_morale")
+    assert sel.parts is not None and sel.parts.plage == "61 a 100"
+
+
 def _base_context(structure: str = "SELARL") -> DocumentGenerationContext:
     variant = structure.lower()
     is_selas = structure == "SELAS"

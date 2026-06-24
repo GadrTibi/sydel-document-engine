@@ -962,12 +962,8 @@ def _scm_cession_prefill_values(person: dict[str, str]) -> dict[str, object]:
         "selarl_cession_scm_cedee_numero_rcs": scm_cedee.get("numero_rcs") or "",
         "selarl_cession_scm_cedee_capital_social": scm_cedee.get("capital_social") or "",
         "selarl_cession_scm_cedee_nb_parts_total": str(nb_total),
-        # O24-05 (re-Akainu tour 3, NITPICK) : la valeur nominale SCM est desormais un champ
-        # DESACTIVE auto-calcule (sans key) -> plus de cle de prefill « valeur_nominale_part »
-        # (elle n'etait plus lue par aucun widget). Retiree pour eviter toute confusion.
-        "selarl_cession_scm_cedee_plage_parts_total": (
-            scm_cedee.get("plage_parts_total") or ""
-        ),
+        # N4 (Akainu n1, 2026-06-24) : prefill « plage_parts_total » retire (le widget est
+        # desormais auto-calcule et desactive, sans key -> cette cle n'etait plus lue par personne).
         # Cedant = l'associe unique (ticket 2.13).
         "selarl_cession_scm_cedant_civilite": person["civilite"],
         "selarl_cession_scm_cedant_prenom": person["prenom"],
@@ -2901,11 +2897,12 @@ def _render_scm_cession_form(
         )
         if nb_cedees_saisi.isdigit():
             parts_cedees["nb"] = int(nb_cedees_saisi)
-        plage = _cession_text(
-            col_b, "Plage parts cedees (ex. 151 a 200)", section="scm_parts", field="plage",
-            default=str(parts_cedees.get("plage") or ""),
+        # N4 (Rafael 2026-06-24) : plage des parts cedees auto-derivee (plage du cedant + nb cede,
+        # convention « le cedant cede ses dernieres parts ») dans _derive_scm_apres_cession ; plus
+        # de saisie manuelle.
+        col_b.caption(
+            "Plage des parts cedees : calculee automatiquement (dernieres parts du cedant)."
         )
-        parts_cedees["plage"] = plage
         prix["global"] = _cession_text(
             col_c, "Prix global", section="scm_prix", field="global",
             default=str(prix.get("global") or ""),
@@ -2954,6 +2951,7 @@ def _render_scm_cession_associes_presents(
             )
         )
         presents: list[ScmCessionAssocie] = []
+        cursor = 1  # N4 : curseur de plage cumulative des presents (ordre + nb parts)
         for index in range(nb_associes):
             st.markdown(f"Associe present {index + 1}")
             morale = st.checkbox(
@@ -3001,15 +2999,22 @@ def _render_scm_cession_associes_presents(
                 col_d, "Nombre de parts", section="scm_present", field=f"{index}_nb_parts",
                 default="",
             )
-            plage = _cession_text(
-                col_e, "Plage de parts (ex. 1 a 100)", section="scm_present",
-                field=f"{index}_plage", default="",
+            nb_present = int(nb_parts_saisi) if nb_parts_saisi.isdigit() else None
+            # N4 (Rafael 2026-06-24) : plage de parts auto-calculee cumulativement (ordre des
+            # presents + nb), plus de saisie manuelle. Present k = [cursor, cursor + nb - 1].
+            plage = ""
+            if nb_present and nb_present > 0:
+                plage = f"{cursor} a {cursor + nb_present - 1}"
+                cursor += nb_present
+            copyable_text_input(
+                col_e, f"Plage de parts du present {index + 1} (calculee)",
+                value=plage, disabled=True,
             )
             presents.append(
                 ScmCessionAssocie(
                     **identity,
                     parts=ScmCessionPartsAttribution(
-                        nb=int(nb_parts_saisi) if nb_parts_saisi.isdigit() else None,
+                        nb=nb_present,
                         plage=plage or None,
                     ),
                 )
@@ -3065,6 +3070,14 @@ def _derive_scm_apres_cession(
             continue
         nb_initial = (associe.parts.nb if associe.parts else None) or 0
         plage_initiale = (associe.parts.plage if associe.parts else None) or ""
+        # N4 (Rafael 2026-06-24) : plage cedee auto-derivee de la plage du cedant + nb cede,
+        # convention « le cedant cede ses dernieres parts » (cf. _plage_dernieres_parts).
+        # A confirmer Rafael (QUESTIONS_RAFAEL O24-06). Une plage cedee deja fournie est respectee.
+        if not plage_cedee:
+            derivee = _plage_dernieres_parts(plage_initiale, nb_cedees)
+            if derivee:
+                plage_cedee = derivee
+                parts_cedees["plage"] = derivee
         reste = nb_initial - nb_cedees
         if reste > 0:
             apres.append(
@@ -3128,6 +3141,21 @@ def _complement_plage(plage_initiale: str, plage_cedee: str) -> str:
         return f"{c_fin + 1} a {i_fin}"
     # Cas non contigu : on conserve la plage initiale (le nb reste fait foi).
     return plage_initiale
+
+
+def _plage_dernieres_parts(plage_initiale: str, nb: int) -> str:
+    """Plage des `nb` DERNIERES parts d'une plage « A a B » (convention de cession §4.1).
+
+    N4 (Rafael 2026-06-24) : le cedant cede ses dernieres parts -> [B - nb + 1, B], residu
+    contigu au debut (cas principal de _complement_plage). Vide si la plage est non parsable,
+    si nb <= 0, ou si nb depasse la taille de la plage (cession partielle invalide)."""
+    init = _parse_plage(plage_initiale)
+    if init is None or nb <= 0:
+        return ""
+    debut, fin = init
+    if nb > (fin - debut + 1):
+        return ""
+    return f"{fin - nb + 1} a {fin}"
 
 
 def _derive_scm_signataires_pv(presents: list[ScmCessionAssocie]) -> list[str]:
