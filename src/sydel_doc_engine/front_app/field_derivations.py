@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 import unicodedata
 from datetime import date
-from decimal import Decimal, InvalidOperation
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from typing import Final
 
 from sydel_doc_engine.domain.enums import Gender
@@ -180,9 +180,25 @@ def format_grouped_numeric_value(value: object) -> str:
 
 def number_words_from_value(value: object) -> str:
     number = _decimal_from_value(value)
-    if number is None or number != number.to_integral_value():
+    if number is None:
         return ""
-    return integer_to_french_words(int(number))
+    if number == number.to_integral_value():
+        return integer_to_french_words(int(number))
+    # N1 (Rafael/Vincent 2026-06-24) : une valeur PEUT etre decimale (regle ratifiee). Les
+    # decimales n'apparaissent que pour des MONTANTS (jamais des comptes entiers) -> forme
+    # monetaire francaise « X euros et Y centimes ». Wording exact selon modele a confirmer
+    # (certains templates ajoutent deja « euro ») -> trace dans QUESTIONS_RAFAEL.
+    q = number.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    euros = int(q)
+    centimes = int((q - euros) * 100)
+    parts: list[str] = []
+    if euros or not centimes:
+        parts.append(integer_to_french_words(euros) + (" euro" if abs(euros) == 1 else " euros"))
+    if centimes:
+        parts.append(
+            integer_to_french_words(centimes) + (" centime" if centimes == 1 else " centimes")
+        )
+    return " et ".join(parts)
 
 
 def calculate_nominal_value(capital_social: object, nb_parts_total: object) -> str:
@@ -190,23 +206,25 @@ def calculate_nominal_value(capital_social: object, nb_parts_total: object) -> s
     nb_parts = _decimal_from_value(nb_parts_total)
     if capital is None or nb_parts is None or nb_parts == 0:
         return ""
-    return format_numeric_value(capital / nb_parts)
+    # N1 (retour Rafael 2026-06-24) : la contrainte « valeur nominale entiere » a ete RETIREE
+    # (rien dans les sources de verite ne l'exige ; c'etait une garde dogfood 2026-06-22).
+    # Une valeur nominale PEUT etre non entiere (ex. 1,25). On arrondit au centime pour ne
+    # jamais imprimer une decimale infinie (1000/3) dans l'acte ; plus aucun blocage en amont.
+    quotient = (capital / nb_parts).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    # Format francais : virgule decimale (« 1,25 »), sans grouper (un entier reste « 333 »,
+    # byte-identique au gold ; seule la decimale neuve prend la virgule). _decimal_from_value
+    # reparse la virgule, donc la mise en lettres reste correcte.
+    return format_numeric_value(quotient).replace(".", ",")
 
 
 def is_capital_divisible(capital_social: object, nb_parts_total: object) -> bool:
-    """True si le capital est divisible EXACTEMENT par le nombre de parts/actions.
-
-    Garde de robustesse partagee (dogfood 2026-06-22) : une valeur nominale non entiere
-    (ex. 1000 / 3) produit « 333.3333333333333333333333333 » dans l'acte et casse la mise
-    en lettres. On bloque la saisie en amont. Donnees incompletes -> True (la garde de
-    PRESENCE des champs s'en charge ailleurs ; on ne double-signale pas).
+    """RETIRE le 2026-06-24 (retour Rafael N1) : la contrainte « valeur nominale entiere »
+    n'etait dans AUCUNE source de verite (garde dogfood 2026-06-22). Une valeur nominale PEUT
+    etre non entiere ; `calculate_nominal_value` arrondit desormais au centime, donc plus de
+    decimale infinie a craindre. No-op (toujours True) ; les blocs appelants sont neutralises
+    et seront supprimes a la passe de nettoyage. NE PAS reintroduire de blocage de divisibilite.
     """
-    capital = _decimal_from_value(capital_social)
-    nb_parts = _decimal_from_value(nb_parts_total)
-    if capital is None or nb_parts is None or nb_parts == 0:
-        return True
-    quotient = capital / nb_parts
-    return quotient == quotient.to_integral_value()
+    return True
 
 
 def format_french_date(value: date | None) -> str:

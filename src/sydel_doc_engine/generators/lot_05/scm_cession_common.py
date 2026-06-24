@@ -177,16 +177,9 @@ def required_scm_cedee(scm_cession: ScmCessionContext) -> ScmCessionSociete:
         societe.valeur_nominale_part,
         "scm_cession.scm_cedee.valeur_nominale_part",
     )
-    # O24-05 (re-Akainu tour 3, MAJEUR) : garde de divisibilite — le capital de la SCM cedee
-    # DOIT etre divisible par le nombre de parts (valeur nominale entiere), sinon le DOCX
-    # imprimerait « 3.333333333333333333333333333 € ». Plancher universel (tout chemin :
-    # SELARL, SELAS, generation directe). En amont, validate_selarl_input pose deja un blocker
-    # de plan (UX) pour le chemin SELARL.
-    if not _is_capital_divisible(societe.capital_social, societe.nb_parts_total):
-        raise ValueError(
-            "scm_cession.scm_cedee : le capital doit etre divisible par le nombre de parts "
-            f"(valeur nominale entiere) pour {DOCUMENT_CODE}."
-        )
+    # N1 (Rafael/Vincent 2026-06-24) : garde de divisibilite RETIREE — la valeur nominale PEUT
+    # etre decimale (regle ratifiee, valable partout dans le generateur). L'arrondi au centime
+    # (calculate_nominal_value) evite la decimale infinie ; plus aucun blocage ici.
     required_text(societe.plage_parts_total, "scm_cession.scm_cedee.plage_parts_total")
     return societe
 

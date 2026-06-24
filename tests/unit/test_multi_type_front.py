@@ -442,16 +442,15 @@ def test_scm_inter_sel_blocks_with_personne_morale(tmp_path: Path) -> None:
     assert any("personnes physiques" in b for b in plan.blockers)
 
 
-def test_civil_capital_not_divisible_by_parts_blocks(tmp_path: Path) -> None:
-    # Dogfood 2026-06-22 : capital non divisible par le nb de parts -> valeur nominale non
-    # entiere (1000/3 = 333.3333... a 28 chiffres dans l'acte). Doit bloquer proprement, pas
-    # generer un document casse. Garde de divisibilite partagee.
+def test_civil_capital_not_divisible_by_parts_now_generates(tmp_path: Path) -> None:
+    # N1 (Rafael/Vincent 2026-06-24) : la valeur nominale PEUT etre decimale (regle ratifiee).
+    # Un capital non divisible par le nb de parts (1000/3) ne bloque PLUS ; l'arrondi au centime
+    # (calculate_nominal_value) evite la decimale infinie. Ancienne garde de divisibilite retiree.
     payload = _civil_base("SCI", "sci", [_pp("Jean", "Durand", 3, 1, 3, 1000)])
     payload["capital_social"] = "1000"
     payload["nb_parts_total"] = 3
     plan = css.build_civil_plan(payload)
-    assert plan.can_generate is False
-    assert any("divisible" in b for b in plan.blockers)
+    assert not any("divisible" in b for b in plan.blockers)
 
 
 def test_civil_capital_divisible_by_parts_ok(tmp_path: Path) -> None:
@@ -463,18 +462,17 @@ def test_civil_capital_divisible_by_parts_ok(tmp_path: Path) -> None:
     assert not any("divisible" in b for b in plan.blockers)
 
 
-def test_selas_capital_not_divisible_by_actions_blocks() -> None:
-    # O24-05 (re-Akainu T4) : SELAS multi sans garde de divisibilite -> valeur nominale
-    # fractionnaire (« 333.33... € ») dans le DOCX. Doit bloquer proprement.
+def test_selas_capital_not_divisible_by_actions_now_generates() -> None:
+    # N1 (Rafael/Vincent 2026-06-24) : valeur nominale decimale autorisee -> SELAS multi avec
+    # capital non divisible par le nb d'actions ne bloque PLUS (ancienne garde O24-05 retiree).
     payload = _selas_payload()
     payload["capital_social"] = "1000"
     payload["nb_actions_total"] = 3
-    # Repartition coherente (somme = 3) pour isoler le blocker de divisibilite.
+    # Repartition coherente (somme = 3) pour isoler l'absence de blocker de divisibilite.
     payload["associes"][0].nb_actions = 2
     payload["associes"][1].nb_actions = 1
     plan = selas_multi_slice.build_selas_plan(payload)
-    assert plan.can_generate is False
-    assert any("divisible" in b for b in plan.blockers)
+    assert not any("divisible" in b for b in plan.blockers)
 
 
 def test_selas_capital_divisible_by_actions_ok() -> None:
@@ -488,15 +486,14 @@ def test_selas_capital_divisible_by_actions_ok() -> None:
     assert not any("divisible" in b for b in plan.blockers)
 
 
-def test_spfpl_capital_not_divisible_by_actions_blocks() -> None:
-    # O24-05 (re-Akainu T4) : SPFPL sans garde de divisibilite -> valeur nominale
-    # fractionnaire. Doit bloquer proprement (meme garde que SAS/SELARL/SELAS).
+def test_spfpl_capital_not_divisible_by_actions_now_generates() -> None:
+    # N1 (Rafael/Vincent 2026-06-24) : valeur nominale decimale autorisee -> SPFPL avec capital
+    # non divisible par le nb d'actions ne bloque PLUS (ancienne garde O24-05 retiree).
     payload = _spfpl_payload("SPFPL cession")
     payload["capital_social"] = "1000"
     payload["nb_actions_total"] = 7
     plan = spfpl_slice.build_spfpl_plan(payload)
-    assert plan.can_generate is False
-    assert any("divisible" in b for b in plan.blockers)
+    assert not any("divisible" in b for b in plan.blockers)
 
 
 def test_spfpl_capital_divisible_by_actions_ok() -> None:
@@ -504,6 +501,23 @@ def test_spfpl_capital_divisible_by_actions_ok() -> None:
     payload = _spfpl_payload("SPFPL cession")
     plan = spfpl_slice.build_spfpl_plan(payload)
     assert not any("divisible" in b for b in plan.blockers)
+
+
+def test_valeur_nominale_decimale_rendue_n1() -> None:
+    # N1 (Rafael/Vincent 2026-06-24) : la valeur nominale PEUT etre decimale, PARTOUT. Verrou de
+    # rendu : figure arrondie au centime + mise en lettres « euros et centimes ».
+    from decimal import Decimal
+
+    from sydel_doc_engine.front_app.field_derivations import (
+        calculate_nominal_value,
+        number_words_from_value,
+    )
+
+    assert calculate_nominal_value("1000", 800) == "1,25"
+    assert calculate_nominal_value("1000", 3) == "333,33"  # arrondi : plus de decimale infinie
+    assert calculate_nominal_value("999", 3) == "333"  # entier reste propre
+    assert number_words_from_value(Decimal("1.25")) == "un euro et vingt-cinq centimes"
+    assert number_words_from_value(10) == "dix"  # entier inchange
 
 
 def test_civil_capital_zero_blocks() -> None:

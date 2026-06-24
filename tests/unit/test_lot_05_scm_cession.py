@@ -251,14 +251,15 @@ def test_acte_cession_scm_keeps_conjoint_when_married(tmp_path: Path) -> None:
     assert "marié avec Madame Claire Dupont" in text
 
 
-def test_scm_cession_required_scm_cedee_raises_on_non_divisible_capital(tmp_path: Path) -> None:
-    # O24-05 (re-Akainu T4) : plancher universel du generateur. Un capital de SCM cedee non
-    # divisible par le nb de parts (« 1000 » / 300 -> valeur nominale fractionnaire) DOIT lever
-    # proprement (jamais imprimer « 3.333... € »), quel que soit le chemin amont.
+def test_scm_cession_non_divisible_capital_now_generates(tmp_path: Path) -> None:
+    # N1 (Rafael/Vincent 2026-06-24) : la valeur nominale PEUT etre decimale (regle ratifiee).
+    # Un capital de SCM cedee non divisible par le nb de parts ne bloque PLUS le generateur ;
+    # l'acte se genere (l'arrondi au centime cote saisie evite la decimale infinie). Ancien
+    # plancher O24-05 (raise) retire.
     ctx = _base_context("SELARL")
-    ctx.scm_cession.scm_cedee.capital_social = "1000"  # 1000 / 300 = non entier
-    with pytest.raises(ValueError, match="divisible par le nombre de parts"):
-        ActeCessionPartsScmGenerator().generate(ctx, tmp_path)
+    ctx.scm_cession.scm_cedee.capital_social = "1000"  # 1000 / 300 = valeur nominale decimale
+    acte = ActeCessionPartsScmGenerator().generate(ctx, tmp_path)
+    assert acte.exists()
 
 
 def test_scm_cession_selas_generates_overlays(tmp_path: Path) -> None:
