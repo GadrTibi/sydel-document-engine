@@ -406,8 +406,17 @@ def test_selas_multi_dentiste_n6_entete_tirets_annexe(tmp_path: Path) -> None:
 
     # pt1 : en-tete STATUTS present (rendu dans une title box = table, pas un paragraphe simple)
     assert "STATUTS" in full_text, "en-tete STATUTS manquant (pt1)"
-    # pt3 : au moins une puce a tiret rendue (les 21 paras style « Tirets » du modele)
-    assert any(t.startswith("- ") for t in texts), "aucune puce a tiret rendue (pt3)"
+    # pt3 : les puces a tiret du CORPUS STATIQUE doivent etre rendues avec « - ». Ancres reparties
+    # sur PLUSIEURS articles (art.1, art. fin-de-mandat, decisions collectives) pour verrouiller le
+    # caractere SYSTEMIQUE revendique — PAS les blocs dynamiques apports/capital qui ont deja leur
+    # propre « - » (Akainu re-gate N6 : sans ces ancres statiques, neutraliser le fix garde le test
+    # vert). Sans _is_tiret_list_paragraph, ces lignes du modele perdent leur tiret.
+    assert "- par les présents statuts." in full_text, "tiret art.1 manquant (pt3)"
+    assert "- son décès," in full_text, "tiret art. fin-de-mandat manquant (pt3)"
+    assert (
+        "- fusion, scission, apport partiel" in full_text
+    ), "tiret art. decisions collectives manquant (pt3)"
+    assert texts  # garde-fou : le document a bien des paragraphes
     # pt4 : un saut de page existe (avant l'annexe)
     has_page_break = any(
         br.get(qn("w:type")) == "page"
