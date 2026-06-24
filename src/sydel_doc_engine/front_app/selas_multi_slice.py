@@ -1327,19 +1327,20 @@ def _render_selas_cession(
         "Cession de cabinet liberal (medical / dentaire)",
         key="selas_cession_on",
     )
-    # #11 (onglet 24) : le vendeur du cabinet est UN associe SELECTIONNABLE parmi les
-    # associes physiques (plus « l'associe unique »). Par defaut = le president.
-    vendeur_index = president_index
+    # #11 (Rafael 2026-06-24) : le SELECTEUR de l'associe vendeur est rendu DANS la section
+    # Vendeur du sous-formulaire (shell._render_cession_form), pas en haut du bloc cession.
+    # Ici on LIT l'index choisi (pose par ce selectbox au rerun precedent ; defaut = president)
+    # pour deriver ses infos -> passees au sous-formulaire qui rend le selecteur au bon endroit.
+    _default_vendeur_i = (
+        president_index
+        if president_index in physiques
+        else (physiques[0] if physiques else president_index)
+    )
+    vendeur_index = _default_vendeur_i
     if cession_on and physiques:
-        default_i = president_index if president_index in physiques else physiques[0]
-        vendeur_index = st.selectbox(
-            "Associé vendeur du cabinet",
-            physiques,
-            index=physiques.index(default_i),
-            format_func=lambda i: _associe_label(associes[i], i),
-            key="selas_cession_vendeur_index",
-            help="L'associé qui cède son cabinet ; ses informations sont reprises automatiquement.",
-        )
+        _picked = st.session_state.get("selas_cession_vendeur_index")
+        if isinstance(_picked, int) and _picked in physiques:
+            vendeur_index = _picked
     vendeur = associes[vendeur_index] if 0 <= vendeur_index < len(associes) else None
     # Adresse du vendeur : pour le president, on garde la source historique (cles
     # signataire_*, byte-identique) ; pour un autre associe, son adresse structuree.
@@ -1400,6 +1401,16 @@ def _render_selas_cession(
     # On n'y met QUE le libelle brut (jamais le fallback collapse) : a defaut, chaine vide ->
     # aucun regime faussement derive (re-Akainu tour 2, MINEUR O24-11).
     st.session_state["selas_situation_maritale"] = v_situation_raw
+    # Matiere du selecteur de vendeur, rendu DANS la section Vendeur du sous-formulaire (#11).
+    vendeur_selector = (
+        {
+            "options": physiques,
+            "default": _default_vendeur_i,
+            "label": lambda i: _associe_label(associes[i], i),
+        }
+        if (cession_on and physiques)
+        else None
+    )
     scm_on = st.checkbox("Cession de parts de SCM", key="selas_scm_cession_on")
     cession_ctx, bail_ctx = shell._render_cession_form(
         cession_on,
@@ -1409,6 +1420,7 @@ def _render_selas_cession(
         ordre=ordre,
         generation=generation,
         prefix="selas",
+        vendeur_selector=vendeur_selector,
     )
     scm_ctx = shell._render_scm_cession_form(
         scm_on,

@@ -1967,6 +1967,7 @@ def _render_cession_form(
     ordre: dict[str, object],
     generation: dict[str, object],
     prefix: str = "selarl",
+    vendeur_selector: dict[str, object] | None = None,
 ) -> tuple[CessionContext | None, BailContext | None]:
     """Sous-formulaire CESSION DE FONDS LIBERAL, pilote par les donnees du dossier.
 
@@ -1984,32 +1985,26 @@ def _render_cession_form(
 
     st.markdown("**Cession de fonds liberal**")
 
-    with st.expander("Type & etape", expanded=True):
-        col_a, col_b = st.columns(2)
-        type_key = f"{_CESSION_PREFIX}_cession_meta_type_cabinet"
-        _seed_default(type_key, _cession_default_type(profession))
-        # #10 (onglet 24) : en SELAS, le type de cabinet (medical / dentaire) est
-        # DERIVE de la profession -> plus de menu (la profession le determine deja).
-        # Hors SELAS : menu conserve.
-        if prefix == "selas":
-            type_cabinet = _cession_default_type(profession)
-            st.session_state[type_key] = type_cabinet
-            col_a.caption(f"Type de cabinet : {type_cabinet} (dérivé de la profession).")
-        else:
+    type_key = f"{_CESSION_PREFIX}_cession_meta_type_cabinet"
+    _seed_default(type_key, _cession_default_type(profession))
+    etape_key = f"{_CESSION_PREFIX}_cession_meta_etape"
+    _seed_default(etape_key, "acte")
+    # R2 (Rafael 2026-06-24) : en SELAS l'expander « Type & etape » n'offrait AUCUN choix
+    # (type DERIVE de la profession #10 ; acte + compromis generes ENSEMBLE #14) -> retire.
+    # Type et etape calcules silencieusement. Hors SELAS : menu conserve.
+    if prefix == "selas":
+        type_cabinet = _cession_default_type(profession)
+        st.session_state[type_key] = type_cabinet
+        etape = "acte"
+        st.session_state[etape_key] = "acte"
+    else:
+        with st.expander("Type & etape", expanded=True):
+            col_a, col_b = st.columns(2)
             type_cabinet = col_a.selectbox(
                 "Type de cabinet",
                 tuple(CESSION_TYPE_LABELS),
                 key=type_key,
             )
-        etape_key = f"{_CESSION_PREFIX}_cession_meta_etape"
-        _seed_default(etape_key, "acte")
-        # R16 (Rafael 2026-06-23) : en SELAS, l'acte ET le compromis sont generes
-        # ENSEMBLE (#14) -> plus de CHOIX d'etape (le menu serait trompeur). Hors
-        # SELAS : menu conserve.
-        if prefix == "selas":
-            etape = "acte"
-            st.session_state[etape_key] = "acte"
-        else:
             etape = col_b.selectbox(
                 "Etape",
                 tuple(CESSION_ETAPE_LABELS),
@@ -2018,26 +2013,40 @@ def _render_cession_form(
 
     profession_label = _profession_label(profession)
     siege_display = _siege_display(societe)
-    praticien_prenom = str(praticien.get("prenom") or "").strip()
-    praticien_nom = str(praticien.get("nom") or "").strip()
-    praticien_genre = praticien.get("genre")
-    praticien_adresse = _personal_address_display(praticien)
-    # LIVE-03 : la date de naissance de la fiche praticien est un text_input LIBRE.
-    # On re-accentue les mois EN AMONT (le generateur reste un echo fidele du modele
-    # — cf. _french_date / _display_date_or_empty). Reutilise pour le vendeur auto et
-    # pour le locataire du bail. Une vraie `date` (date_input) est preservee telle quelle.
-    praticien_date_naissance = _accentuate_date_value(praticien.get("date_naissance"))
-    situation_label = str(st.session_state.get(f"{_CESSION_PREFIX}_situation_maritale") or "")
-    conjoint_payload = {
-        "civilite_affichage": str(praticien.get("conjoint_civilite") or ""),
-        "prenom": str(praticien.get("conjoint_prenom") or ""),
-        "nom": str(praticien.get("conjoint_nom") or ""),
-    }
 
     # --- Vendeur (ticket 2.1 : associe unique par defaut, modifiable) ---
-    with st.expander("Vendeur"):
-        # #11 (onglet 24) : en SELAS le vendeur est l'associe choisi au menu ci-dessus
-        # (plus « l'associe unique », faux en multi-associes). Hors SELAS : inchange.
+    with st.expander("Vendeur", expanded=True):
+        # #11 (Rafael 2026-06-24) : le CHOIX de l'associe vendeur vit DESORMAIS DANS la
+        # section Vendeur (avant : en haut du bloc cession). En SELAS multi, on selectionne
+        # ICI l'associe qui cede -> ses infos sont reprises automatiquement (le derive est
+        # fourni par le slice appelant). Hors SELAS : pas de selecteur (associe unique).
+        if vendeur_selector is not None:
+            # Le selecteur de l'associe vendeur vit ICI (section Vendeur). Il met a jour la cle
+            # de session ; le slice appelant la relit au rerun pour deriver les infos du vendeur
+            # (deja refletees dans `praticien` passe ci-dessus). Selectbox = geste utilisateur.
+            _vsel_options = vendeur_selector["options"]
+            st.selectbox(
+                "Associé vendeur du cabinet",
+                _vsel_options,
+                index=_vsel_options.index(vendeur_selector["default"]),
+                format_func=vendeur_selector["label"],
+                key=f"{_CESSION_PREFIX}_cession_vendeur_index",
+                help="L'associé qui cède son cabinet ; ses infos sont reprises automatiquement.",
+            )
+        # Locaux derives du vendeur (recalcules ICI, APRES le selecteur, pour refleter
+        # l'associe choisi). LIVE-03 : la date de naissance (text_input libre) est
+        # re-accentuee en amont ; reutilisee aussi pour le locataire du bail plus bas.
+        praticien_prenom = str(praticien.get("prenom") or "").strip()
+        praticien_nom = str(praticien.get("nom") or "").strip()
+        praticien_genre = praticien.get("genre")
+        praticien_adresse = _personal_address_display(praticien)
+        praticien_date_naissance = _accentuate_date_value(praticien.get("date_naissance"))
+        situation_label = str(st.session_state.get(f"{_CESSION_PREFIX}_situation_maritale") or "")
+        conjoint_payload = {
+            "civilite_affichage": str(praticien.get("conjoint_civilite") or ""),
+            "prenom": str(praticien.get("conjoint_prenom") or ""),
+            "nom": str(praticien.get("conjoint_nom") or ""),
+        }
         vendeur_auto = st.checkbox(
             "Le vendeur est l'associé sélectionné ci-dessus"
             if prefix == "selas"
