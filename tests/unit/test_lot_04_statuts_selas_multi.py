@@ -377,6 +377,47 @@ def _dentiste_context(associes: list[StatutsCivilsAssocie]) -> DocumentGeneratio
     )
 
 
+def test_selas_multi_dentiste_n6_entete_tirets_annexe(tmp_path: Path) -> None:
+    # N6 (Rafael 2026-06-24, re-gate Akainu) : verrouille les 3 points codables des statuts SELAS
+    # dentiste pluri : pt1 en-tete « STATUTS », pt3 puces a tiret (style « Tirets » du modele :
+    # art.1, 14, 16, 21...), pt4 annexe sur nouvelle page. pt2 (aeration) = flag Rafael (ambigu).
+    from docx.oxml.ns import qn
+
+    ctx = _dentiste_context(
+        associes=[
+            _dentiste_associe(
+                prenoms="Jean-Guillaume", nom="FUCHS", genre=Gender.MASCULIN,
+                civilite="Monsieur", nb_actions=510, montant="510",
+                montant_lettres="CINQ CENT DIX", qualite="associé exerçant",
+                situation_maritale="marié sous le régime de la séparation des biens",
+            ),
+            _dentiste_associe(
+                prenoms="Marie", nom="LEROUX", genre=Gender.FEMININ,
+                civilite="Madame", nb_actions=510, montant="510",
+                montant_lettres="CINQ CENT DIX", qualite="associée exerçante",
+                situation_maritale="mariée sous le régime de la communauté",
+            ),
+        ]
+    )
+    output_path = StatutsSelasMultiGenerator().generate(ctx, tmp_path)
+    full_text = _docx_text(output_path)  # inclut les tables (la title box STATUTS est une table)
+    document = Document(output_path)
+    texts = [p.text for p in document.paragraphs]
+
+    # pt1 : en-tete STATUTS present (rendu dans une title box = table, pas un paragraphe simple)
+    assert "STATUTS" in full_text, "en-tete STATUTS manquant (pt1)"
+    # pt3 : au moins une puce a tiret rendue (les 21 paras style « Tirets » du modele)
+    assert any(t.startswith("- ") for t in texts), "aucune puce a tiret rendue (pt3)"
+    # pt4 : un saut de page existe (avant l'annexe)
+    has_page_break = any(
+        br.get(qn("w:type")) == "page"
+        for p in document.paragraphs
+        for run in p.runs
+        for br in run._element.findall(qn("w:br"))
+    )
+    assert has_page_break, "aucun saut de page annexe (pt4)"
+
+
 def test_selas_multi_dentiste_genere_depuis_le_corpus_dentiste(tmp_path: Path) -> None:
     # Fidelite : une SELAS dentiste pluripersonnelle doit sortir le corpus DENTISTE
     # (R. 4113-1 Code de la sante publique, "chirurgien-dentiste", articles 1-32, Directeur

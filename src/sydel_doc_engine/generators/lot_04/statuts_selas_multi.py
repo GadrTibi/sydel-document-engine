@@ -96,7 +96,7 @@ def _select_profile(profession_reglementee: str) -> _SelasProfile:
 class StatutsSelasMultiGenerator:
     """Generateur SELAS multi (statuts de creation) lisant le modele tokenise et reinjectant
     les blocs dynamiques (comparution N, apports N, repartition capital N en actions,
-    designation du President, ligne de signature N), 2 a 5 associes dont au moins une
+    designation du President, ligne de signature N), 2 a 6 associes dont au moins une
     personne physique exercante et un eventuel associe personne morale. Le modele source et
     les fenetres d'index sont choisis selon la profession reglementee (medecin / dentiste)."""
 
@@ -146,6 +146,12 @@ class StatutsSelasMultiGenerator:
             text = paragraph.text.strip()
             if not text:
                 continue
+            # N6 (Rafael 2026-06-24) : les puces a tiret du modele (style « Tirets », numId=7 :
+            # art.1, 14, 16, 21...) portent le tiret dans le NUMBERING Word, pas dans .text -> il
+            # etait perdu. On re-prefixe « - » pour que le renderer les rende en hanging list item
+            # (add_statuts_hanging_list_item). Systemique : toute puce a ce style.
+            if _is_tiret_list_paragraph(paragraph) and not text.startswith("-"):
+                text = f"- {text}"
             rendered = _replace_placeholders(text, replacements)
             if is_creation_fee_annexe_line(rendered):  # O24-01 : annexe sans frais cabinet création
                 continue
@@ -759,6 +765,19 @@ def _add_rendered_paragraph(document, text: str) -> None:
         add_statuts_hanging_list_item(document, text[2:])
     else:
         add_statuts_body_paragraph(document, text)
+
+
+def _is_tiret_list_paragraph(paragraph: object) -> bool:
+    """Vrai si le paragraphe SOURCE est une puce a tiret (style « Tirets (-) document »).
+
+    N6 (Rafael 2026-06-24) : le tiret de ces listes est porte par le numbering Word (numId=7),
+    pas par .text ; on le detecte par le nom de style pour re-prefixer « - » et le rendre en
+    hanging list item. Couvre toutes les listes a tirets (art.1, 14, 16, 21...), pas que l'art.1."""
+    style = getattr(paragraph, "style", None)
+    if style is None:
+        return False
+    name = getattr(style, "name", None) or ""
+    return "tiret" in name.lower()
 
 
 def _replace_placeholders(text: str, replacements: dict[str, str]) -> str:
