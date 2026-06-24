@@ -1161,10 +1161,13 @@ def _render_selarl_membres(
     add_col, remove_col = st.columns(2)
     if add_col.button("Ajouter un associe", key="selarl_membres_add"):
         st.session_state[count_key] = min(5, nombre + 1)
-        st.rerun()
     if remove_col.button("Retirer un associe", key="selarl_membres_remove"):
         st.session_state[count_key] = max(1, nombre - 1)
-        st.rerun()
+    # N5 (Albane 2026-06-24) : re-lire le nombre APRES les boutons +/- au lieu de st.rerun().
+    # Le st.rerun() premature s'executait avant la boucle membres -> Streamlit garbage-collectait
+    # l'etat des widgets membres non instancies -> les champs des associes PRECEDENTS etaient
+    # effaces a l'ajout. Meme fix que selas_multi_slice / associe_repeater (propagation N5).
+    nombre = max(1, min(5, int(st.session_state[count_key])))
 
     membres: list[StatutsCivilsAssocie] = []
     for index in range(nombre):

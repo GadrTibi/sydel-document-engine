@@ -542,6 +542,45 @@ def test_selas_ajout_associe_preserve_les_precedents_n5() -> None:
     assert a0 == 60 and a1 == 40  # champs des associes precedents preserves apres ajout
 
 
+def test_civil_repeater_ajout_associe_preserve_les_precedents_n5() -> None:
+    # N5 propagation (Albane 2026-06-24) : le repeater PARTAGE (civil/SCI/SCM via
+    # render_associe_repeater) ne doit pas non plus effacer les champs des associes precedents
+    # a l'ajout. Meme cause/fix que le SELAS (retrait st.rerun). Verrouille le 2e des 3 repeaters.
+    from streamlit.testing.v1 import AppTest
+
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
+    app.selectbox(key="clean_dossier_type").set_value("SCM creation V1")
+    app = app.run(timeout=180)
+    next(w for w in app.text_input if str(w.key) == "scm_associe_0_profession").set_value("Medecin")
+    next(w for w in app.text_input if str(w.key) == "scm_associe_1_profession").set_value("Dentiste")
+    app = app.run(timeout=180)
+    next(b for b in app.button if str(b.key) == "scm_add").click()
+    app = app.run(timeout=180)
+    p0 = next(w for w in app.text_input if str(w.key) == "scm_associe_0_profession").value
+    p1 = next(w for w in app.text_input if str(w.key) == "scm_associe_1_profession").value
+    assert p0 == "Medecin" and p1 == "Dentiste"  # repeater partage : precedents preserves
+
+
+def test_selarl_multi_ajout_associe_preserve_les_precedents_n5() -> None:
+    # N5 propagation (Albane 2026-06-24) : SELARL multi-associes (_render_selarl_membres) ne doit
+    # pas effacer les champs des membres precedents a l'ajout. Bug identique (st.rerun premature)
+    # reste INTACT sur ce chemin (Akainu M1). Verrouille le 3e des 3 repeaters.
+    from streamlit.testing.v1 import AppTest
+
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
+    app.selectbox(key="clean_dossier_type").set_value("SELARL creation V1")
+    app = app.run(timeout=180)
+    # Passer en mode multi-associes : decocher « Dossier unipersonnel » (defaut coche).
+    next(w for w in app.checkbox if str(w.key) == "selarl_dossier_unipersonnel").set_value(False)
+    app = app.run(timeout=180)
+    next(w for w in app.number_input if str(w.key) == "selarl_membre_0_nb_parts").set_value(30)
+    app = app.run(timeout=180)
+    next(b for b in app.button if str(b.key) == "selarl_membres_add").click()
+    app = app.run(timeout=180)
+    v0 = next(w for w in app.number_input if str(w.key) == "selarl_membre_0_nb_parts").value
+    assert v0 == 30  # le membre precedent garde sa valeur apres ajout
+
+
 def test_civil_capital_zero_blocks() -> None:
     # Dogfood 2026-06-22 : « 0 » passait la garde de presence -> capital 0. Doit bloquer.
     payload = _civil_base(
