@@ -80,12 +80,15 @@ clôture** (cf. § 6).
 
 ## 4. Auto-critique honnête (ce que je dois améliorer)
 
-1. **Pattern de sur-affirmation (récurrent, attrapé 3-4×).** Ma faute la plus coûteuse :
-   déclarer « racine prouvée », « gold intact », « X verts déterministe » sur des bases
-   insuffisantes. Akainu l'a relevé à répétition. **Correctif appliqué** : wording requalifié
-   en « cause plausible + neutralisation par construction » ; preuves désormais structurelles
-   (`pytest-randomly`) avant toute affirmation d'ordre-indépendance. Codifié en mémoire
-   (`feedback-fixes-racine-pas-surface`).
+1. **Pattern de sur-affirmation (récurrent, constaté ~6× sur le sprint).** Ma faute la plus
+   coûteuse : servir un fait/chiffre/preuve non re-vérifié — « racine prouvée », « gold intact »,
+   « 593 verts » (réel 594), pin `pytest-randomly<4` (testé sur 4.1.0), et enfin
+   « `sprint/engine-completion` jamais poussé » (FAUX — refspec local restreint à `main`, cf. § 7).
+   **Nuance honnête** : les 5 premiers, c'est Akainu qui m'a rattrapé ; le 6ᵉ (staging), je l'ai
+   attrapé **moi-même** via la sortie du `git push` — léger progrès, je commence à me reprendre
+   avant qu'on me reprenne. **Correctif** : preuves structurelles (`pytest-randomly`), wording
+   épistémique honnête, et désormais `git ls-remote` pour tout état distant. Codifié en mémoire
+   (`feedback-preuve-avant-affirmation-chiffree`, `project-staging-deploy-channel`).
 2. **Surface vs racine.** Mes premiers « traité » étaient des garde-fous UI, pas des fixes
    moteur — invisibles tant qu'on ne régénère pas le DOCX. **Leçon** : un retour n'est traité
    que prouvé sur **DOCX régénéré**, jamais sur la lecture du code.
@@ -174,26 +177,28 @@ des items comme « ré-ouverts ». **Synchronisés** au statut réel post-conver
 
 ---
 
-## 7. Recommandation de manœuvre (ton GO requis)
+## 7. Manœuvre exécutée + ce qui reste
 
-1. **Merge** worktree `feat/propagation-q4-adresses` → `sprint/engine-completion`
-   (fast-forward, 0 conflit) **après** convergence Akainu tour 10. _(Local, réversible — je le
-   fais en autonomie une fois tour 10 OK.)_
-2. **⚠️ DÉCISION PM — où déployer le staging.** J'ai découvert cette nuit que
-   `sprint/engine-completion` **n'a jamais été poussé sur `origin`** (seul `origin/main`
-   existe). Et un indice côté clone primaire (`26fdf8a "chore: trigger Streamlit main test
-   deploy"`) suggère que **Streamlit Cloud déploie depuis `main`**. Conséquence : rendre le
-   travail testable pourrait exiger de **toucher `main`** — ton garde-fou dur. **Je n'ai
-   poussé RIEN.** Deux options à ton réveil :
-   - **(a)** Streamlit watch `sprint/engine-completion` → je pousse cette branche (ne touche
-     pas `main`, je peux le faire sans risque) — dis-moi juste « pousse engine-completion ».
-   - **(b)** Streamlit watch `main` → il faut un merge `main` (PR + ton GO explicite). Je
-     prépare la PR mais **je ne merge pas `main` sans toi**.
-   → **Dis-moi quelle branche Streamlit surveille**, je pousse en conséquence.
-3. **Message Rafael « à retester »** prêt à copier (je ne le contacte pas — c'est ton geste) —
-   finalisé une fois le staging réellement déployé (sinon je l'enverrais sur du vide).
-4. Puis **O24-04** (build) + clarif **L5/L6**.
+1. **Merge** `feat/propagation-q4-adresses` → `sprint/engine-completion` : **fait** (fast-forward,
+   0 conflit, local).
+2. **Staging poussé** (tranché par toi : Streamlit watch `sprint/engine-completion`).
+   `origin/sprint/engine-completion` = `f01e3a4` → **Streamlit Cloud redéploie le lot convergé**.
+   `origin/main` = `9c70b14` **intacte**.
+   - ⚠️ **Correction honnête (à inscrire au passif § 4).** En cours de nuit j'avais écrit
+     « `sprint/engine-completion` jamais poussé sur origin » — **c'était FAUX**. La branche existait
+     (à `b2a57d4`, l'ancien état que Streamlit déployait) ; le **refspec de fetch de ce clone est
+     restreint à `main`** (`+refs/heads/main:…`), donc mon local ne la voyait pas. Un
+     `git ls-remote origin` l'aurait montré d'emblée. **6ᵉ instance** du travers « fait servi sans
+     vérif complète » — corrigé, mémoire `project-staging-deploy-channel` mise à jour.
+3. **Message Rafael « à retester »** (tu l'envoies — je ne contacte pas Rafael) :
 
-_(Sections convergence / merge / O24-04 finalisées en bas de sprint.)_
-</content>
-</invoke>
+   ```
+   Lot retours onglet-24 + live retraité — à retester sur le staging.
+   - Adresses sur une ligne (tous les types), valeur nominale calculée auto,
+     cession SELAS (acte + compromis ensemble), mois accentués partout, etc.
+   - Reboot l'app Streamlit pour charger la dernière version.
+   - 2 points où j'ai besoin de ton avis (tes mini-captures étaient illisibles) :
+     « lettre de renonciation » et « supprimer la case à la fin » — tu peux repréciser ?
+   ```
+
+4. Reste : **O24-04** (icône copier — § 6bis, sur ton greenlight) + **L5/L6** (clarif Rafael).
