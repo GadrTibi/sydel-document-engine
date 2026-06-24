@@ -1,5 +1,12 @@
 # Dernier état projet
 
+> ⚠️ **CE FICHIER EST FIGÉ AU 2026-06-03 — il NE reflète PAS l'état courant.** Depuis, ~3 semaines
+> de travail (SELAS dentiste pluri, SELARL multi-associés, ~27 retours Albane/Rafael traités et
+> Akainu-gatés, ~607 tests verts, branche `sprint/engine-completion` déployée en staging). **Pour
+> l'état réel, lire en priorité [`../returns/DASHBOARD.md`](../returns/DASHBOARD.md) et
+> [`../returns/CARNET.md`](../returns/CARNET.md).** Le contenu ci-dessous est conservé comme archive
+> historique. (Bandeau ajouté 2026-06-24 — chantier fraîcheur docs du Bilan de Santé.)
+
 ## Date de mise à jour
 2026-06-03
 

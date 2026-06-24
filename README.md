@@ -12,16 +12,19 @@ Construire un moteur de génération documentaire **par document canonique** à 
 
 Le cœur du moteur reste **déterministe** : aucune IA générative n'est utilisée dans la logique de production documentaire.
 
-## Statut actuel
+## Statut actuel (mis à jour 2026-06-24)
 
-Cette V1 de dépôt sert de base propre pour GitHub + Codex.
+Le moteur déterministe est **livré et fonctionnel**, bien au-delà d'une V1 stub :
 
-- la source de vérité métier est versionnée ;
-- le fichier de pilotage Excel est inclus ;
-- le Lot 1 est analysé et spécifié ;
-- l'architecture de repo et les conventions de travail sont posées ;
-- les helpers transverses sûrs sont en place ;
-- les générateurs documentaires sont volontairement laissés en **stub** tant que les arbitrages restants ne sont pas clos.
+- **plusieurs types de dossiers câblés** (SELARL création + cession, SELAS pluripersonnelle médecin/dentiste, SCI / SCI IRIS / SCS / SCM, SPFPL…), avec des **générateurs réels par document** ;
+- **front Streamlit opérationnel** : saisie, validation, génération **DOCX + ZIP** déterministe ;
+- **~607 tests unitaires verts**, `ruff` propre, tests gold de fidélité ;
+- **retours client** (Albane / Rafael) traités en continu, avec un gate adversarial (règle 66) avant tout « traité ».
+
+> ⚠️ **Ne pas se fier à ce README pour l'état détaillé du jour.** Photo vivante :
+> [`docs/returns/DASHBOARD.md`](docs/returns/DASHBOARD.md) (retours) et
+> [`docs/project/04_LAST_STATE.md`](docs/project/04_LAST_STATE.md). Reprise à froid :
+> commencer par [`docs/project/05_NEW_CHAT_PROMPT.md`](docs/project/05_NEW_CHAT_PROMPT.md).
 
 ## Décisions structurantes déjà actées
 
@@ -42,12 +45,13 @@ Cette V1 de dépôt sert de base propre pour GitHub + Codex.
 - seeds de registre pour le Lot 1 ;
 - tests unitaires sur les helpers transverses.
 
-### Volontairement non implémenté dans cette V1
+### Encore partiel / en cours (2026-06-24)
 
-- génération réelle des DOCX du Lot 1 ;
-- conversion PDF finale ;
-- packaging ZIP final de dossier ;
-- écran Streamlit métier complet.
+- **conversion PDF** : back-end disponible (`src/sydel_doc_engine/rendering/pdf_export.py`) mais **non câblé dans le front** (le front produit DOCX + ZIP ; `pdf_results=[]`) ;
+- **périmètre produit V1** (quels types exposés au juriste) non encore formellement ratifié ;
+- **fidélité juridique ligne-à-ligne** verrouillée sur un sous-ensemble des générateurs (chantier en cours — cf. Bilan de Santé).
+
+> Génération DOCX réelle, packaging ZIP et écran Streamlit métier : **faits** (n'étaient « non implémentés » qu'au tout début du dépôt).
 
 ## Structure du dépôt
 
