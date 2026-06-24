@@ -504,8 +504,10 @@ def test_spfpl_capital_divisible_by_actions_ok() -> None:
 
 
 def test_valeur_nominale_decimale_rendue_n1() -> None:
-    # N1 (Rafael/Vincent 2026-06-24) : la valeur nominale PEUT etre decimale, PARTOUT. Verrou de
-    # rendu : figure arrondie au centime + mise en lettres « euros et centimes ».
+    # N1 (Rafael/Vincent 2026-06-24) : la valeur nominale PEUT etre decimale, PARTOUT. La FIGURE
+    # est arrondie au centime + format FR (« 1,25 »). La mise en LETTRES d'un decimal est DIFFEREE
+    # (forme monetaire non ratifiee -> "" pour ne pas produire un double « euro » dans les
+    # templates qui portent deja l'unite ; Akainu BLOQUANT 2026-06-24 ; cf. QUESTIONS_RAFAEL).
     from decimal import Decimal
 
     from sydel_doc_engine.front_app.field_derivations import (
@@ -516,7 +518,7 @@ def test_valeur_nominale_decimale_rendue_n1() -> None:
     assert calculate_nominal_value("1000", 800) == "1,25"
     assert calculate_nominal_value("1000", 3) == "333,33"  # arrondi : plus de decimale infinie
     assert calculate_nominal_value("999", 3) == "333"  # entier reste propre
-    assert number_words_from_value(Decimal("1.25")) == "un euro et vingt-cinq centimes"
+    assert number_words_from_value(Decimal("1.25")) == ""  # lettres decimales differees
     assert number_words_from_value(10) == "dix"  # entier inchange
 
 

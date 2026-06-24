@@ -180,25 +180,15 @@ def format_grouped_numeric_value(value: object) -> str:
 
 def number_words_from_value(value: object) -> str:
     number = _decimal_from_value(value)
-    if number is None:
+    # N1 (Rafael/Vincent 2026-06-24) : entier -> mise en lettres. DECIMAL -> "" : la valeur
+    # nominale PEUT etre decimale (la FIGURE « 1,25 » est bien rendue par calculate_nominal_value),
+    # mais la mise en LETTRES monetaire (« un euro et vingt-cinq centimes ») n'est PAS ratifiee et
+    # provoquait un DOUBLE « euro » la ou le template porte deja l'unite (Akainu BLOQUANT
+    # 2026-06-24 : statuts civils/SEL/SELAS). On attend le wording exact (cf. QUESTIONS_RAFAEL :
+    # forme decimale + convention unite par template) avant de l'emettre. NE PAS reintroduire ici.
+    if number is None or number != number.to_integral_value():
         return ""
-    if number == number.to_integral_value():
-        return integer_to_french_words(int(number))
-    # N1 (Rafael/Vincent 2026-06-24) : une valeur PEUT etre decimale (regle ratifiee). Les
-    # decimales n'apparaissent que pour des MONTANTS (jamais des comptes entiers) -> forme
-    # monetaire francaise « X euros et Y centimes ». Wording exact selon modele a confirmer
-    # (certains templates ajoutent deja « euro ») -> trace dans QUESTIONS_RAFAEL.
-    q = number.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-    euros = int(q)
-    centimes = int((q - euros) * 100)
-    parts: list[str] = []
-    if euros or not centimes:
-        parts.append(integer_to_french_words(euros) + (" euro" if abs(euros) == 1 else " euros"))
-    if centimes:
-        parts.append(
-            integer_to_french_words(centimes) + (" centime" if centimes == 1 else " centimes")
-        )
-    return " et ".join(parts)
+    return integer_to_french_words(int(number))
 
 
 def calculate_nominal_value(capital_social: object, nb_parts_total: object) -> str:
