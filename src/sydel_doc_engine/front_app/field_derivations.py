@@ -180,15 +180,18 @@ def format_grouped_numeric_value(value: object) -> str:
 
 def number_words_from_value(value: object) -> str:
     number = _decimal_from_value(value)
-    # N1 (Rafael/Vincent 2026-06-24) : entier -> mise en lettres. DECIMAL -> "" : la valeur
-    # nominale PEUT etre decimale (la FIGURE « 1,25 » est bien rendue par calculate_nominal_value),
-    # mais la mise en LETTRES monetaire (« un euro et vingt-cinq centimes ») n'est PAS ratifiee et
-    # provoquait un DOUBLE « euro » la ou le template porte deja l'unite (Akainu BLOQUANT
-    # 2026-06-24 : statuts civils/SEL/SELAS). On attend le wording exact (cf. QUESTIONS_RAFAEL :
-    # forme decimale + convention unite par template) avant de l'emettre. NE PAS reintroduire ici.
-    if number is None or number != number.to_integral_value():
+    if number is None:
         return ""
-    return integer_to_french_words(int(number))
+    if number == number.to_integral_value():
+        return integer_to_french_words(int(number))
+    # N1 (Rafael/Vincent 2026-06-24) : valeur DECIMALE (la valeur nominale peut l'etre, PARTOUT).
+    # La mise en lettres monetaire (« un euro et vingt-cinq centimes ») n'est PAS ratifiee et
+    # provoquait un DOUBLE « euro » la ou le template porte deja l'unite (Akainu). En attendant le
+    # wording (cf. QUESTIONS_RAFAEL), on met la FIGURE dans le slot lettres (« 1,25 ») : NON VIDE
+    # (donc ni crash _required_text cote SELAS multi, ni marqueur « À COMPLÉTER » cote SEL/SPFPL)
+    # et SANS unite (donc pas de double euro). Cosmetique assume : la figure peut apparaitre 2x
+    # (« 1,25 (1,25) ») jusqu'au wording ratifie. NE PAS reintroduire de forme monetaire ici.
+    return format_numeric_value(number).replace(".", ",")
 
 
 def calculate_nominal_value(capital_social: object, nb_parts_total: object) -> str:
