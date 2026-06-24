@@ -13,7 +13,7 @@
 |---|---|---|---|---|---|
 | O24-01 | « Supprimer : Signature d'une lettre de mission … / Paiement de l'acompte des honoraires du cabinet Sydel … dans l'annexe de tous les statuts de tous les cas » | tous types | — | TRAITÉ | ⬜ |
 | O24-02 | « Dans tous les cas où il y a une déclaration de non condamnation, elle doit être générée d'office pour chaque dirigeant uniquement. Le nom du document doit intégrer le nom du dirigeant … » | tous types | — | TRAITÉ | ⬜ |
-| O24-03 | « Toutes les adresses doivent être rédigées sur une ligne, pas de champ séparé pour la rue, la voie, etc.. » | **tous types (UX)** | — | TRAITÉ (SELAS) ⚠ **propagation tous types à faire** | ⬜ |
+| O24-03 | « Toutes les adresses doivent être rédigées sur une ligne, pas de champ séparé pour la rue, la voie, etc.. » | **tous types (UX)** | — | TRAITÉ (propagé tous types, golden-bloc `address_oneline`) | ⬜ |
 | O24-04 | « Ajouter une icone "copier" à côté de chaque champ texte pour copier le texte contenu à l'intérieur d'un champ » | SELAS (UI) | — | TRIÉ | ⬜ |
 | O24-05 | « la valeur nominale d'une part/action doit être calculée automatiquement et affichée dans le champ concerné » | tous types | — | TRAITÉ | ⬜ |
 | O24-06 | « pluripersonnelle et multi associé veut dire la meme chose » | SELAS | — | TRAITÉ | ⬜ |
@@ -42,8 +42,14 @@
 
 ## Synthèse machine-lisible
 
-- **Reste à faire** (Statut ≠ TRAITÉ/VALIDÉ) : **`O24-03` propagation tous types** (adresses une ligne hors SELAS) ; `O24-04` (icône copier, **tous types**, UI) ; `LIVE-05`/`LIVE-06` (CLARIF).
-- **Règle de propagation (Q4 triage, Gad 2026-06-23)** : un retour universel se propage à TOUS les cas concernés ; O24-01/02/05 déjà propagés ; O24-06→15 = SELAS-pluri structurel (pas de propagation).
-- **🔴 DÉFAUTS Akainu — RE-OUVERTS (PAS traités)** : `O24-01`, `O24-03`, `O24-05`, `O24-07`, `O24-10`, `O24-11`, `O24-12`, `O24-14`, `LIVE-02`, `LIVE-03` — 8 bloquant + 16 majeur. Détail : `AKAINU_VERDICT_2026-06-23.md`. (Mes « traité » sur ces items étaient FAUX — Akainu l'a prouvé sur DOCX régénérés.)
-- **En attente validation Rafael** (traité ET 0 défaut Akainu) : `O24-02`, `O24-06`, `O24-08`, `O24-09`, `O24-13`, `O24-15` + `LIVE-01`, `LIVE-04`.
-- **VALIDÉ** : aucun → le carnet reste plein (Rafael doit retester `sprint/engine-completion`).
+- **Reste à faire** (Statut ≠ TRAITÉ/VALIDÉ) : `O24-04` (icône copier, **tous types**, UI — cadré
+  pour Gad, voir `DEBRIEF_SPRINT_NUIT_2026-06-24.md` § 6bis) ; `LIVE-05`/`LIVE-06` (CLARIF, screenshots illisibles).
+- **Règle de propagation (Q4 triage, Gad 2026-06-23)** : un retour universel se propage à TOUS les cas concernés ; O24-01/02/03/05 propagés ; O24-06→15 = SELAS-pluri structurel (pas de propagation).
+- **✅ CONVERGENCE Akainu (tour 10, 2026-06-24)** : les défauts ré-ouverts par le verdict 23-06
+  (`AKAINU_VERDICT_2026-06-23.md` : 8 bloquant + 16 majeur) sont **tous re-corrigés à la racine et
+  re-vérifiés** (sprint de nuit, 29 commits, HEAD `44f7dda`). Gate tour 10 = **CONVERGENCE OUI**
+  (0 bloquant, 0 majeur ; 2 mineur de véracité doc corrigés). Suite **594 verts**, ordre-indépendance
+  prouvée. Détail : `DEBRIEF_SPRINT_NUIT_2026-06-24.md`.
+- **TRAITÉ (≠ validé), en attente retest Rafael** : tous les O24 sauf O24-04, + tout le LIVE sauf L5/L6.
+- **VALIDÉ** : aucun → le carnet reste plein (Rafael doit retester une fois le canal de déploiement
+  tranché — voir DEBRIEF § 7).

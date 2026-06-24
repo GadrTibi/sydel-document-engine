@@ -4,29 +4,29 @@
 > Légende : ✅ traité · 🟡 traité partiel (propagation due) · ⬜ à faire · ❓ à clarifier · 🔴 défaut Akainu.
 
 ```
-┌─ SYDEL · RETOURS CLIENT — compteur de vitesse ──────────────────────────
+┌─ SYDEL · RETOURS CLIENT — compteur de vitesse (post-convergence T10) ─────
 │
 │   CORRIGÉ (code)    [████████████████████░░░░]  18/21 · 86%
-│   CONTRÔLE AKAINU   [██████████████░░░░░░░░░░]  12/21 · 57%  (6 en contrôle T3)
-│   VALIDÉ  (Rafael)  [░░░░░░░░░░░░░░░░░░░░░░░░]   0/21 ·  0%  ⚠ rien validé
+│   CONTRÔLE AKAINU   [████████████████████░░░░]  18/21 · 86%  ✅ convergence T10
+│   VALIDÉ  (Rafael)  [░░░░░░░░░░░░░░░░░░░░░░░░]   0/21 ·  0%  ⚠ rien validé (normal)
 │   gate : CORRIGÉ ≥ AKAINU ≥ VALIDÉ — un retour ne passe Rafael qu'après Akainu OK
-│   T3 (a152bf4, 550 verts) EN COURS : O24-03,11,14 + 05,12,LIVE-03
-│   RESTE : propagation Q4 · O24-04 icône (décision) · L5/L6 (clarif Rafael)
+│   Akainu tour 10 (2026-06-24) : CONVERGENCE OUI (0 bloquant, 0 majeur). 594 verts.
+│   RESTE : O24-04 icône (cadré Gad, § 6bis debrief) · L5/L6 (clarif Rafael, illisibles)
 │
-│   ── ONGLET 24 (✅=Akainu OK · 🟢=corrigé, re-Akainu en cours · ⬜=à faire) ──
-│   ✅ 01 annexe Sydel (Akainu OK)        ✅ 02 DNC nommée/dirigeant
-│   🟢 03 adresses 1 ligne (numéro requis)  ⬜ 04 icône copier (décision UI)
-│   🟢 05 valeur nominale (+ SCM cédée)   ✅ 06 pluri=multi   ✅ 08 date+adresse 1×
+│   ── ONGLET 24 (✅=Akainu OK · ⬜=à faire) ──────────────────────────────
+│   ✅ 01 annexe Sydel (régen-propre tous types)   ✅ 02 DNC nommée/dirigeant
+│   ✅ 03 adresses 1 ligne (propagé tous types)     ⬜ 04 icône copier (cadré Gad)
+│   ✅ 05 valeur nominale (+ SCM cédée)   ✅ 06 pluri=multi   ✅ 08 date+adresse 1×
 │   ✅ 07 Président (racine, Akainu OK)    ✅ 09 « (profession) »
-│   ✅ 10 dérivation dentaire (Akainu OK) 🟢 11 vendeur (régime+conjoint, PACS exclu)
-│   🟢 12 case cabinet (édition préservée) ✅ 13 CA non facultatif
-│   🟢 14 acte+compromis (salariés tolérés) ✅ 15 acquéreur retiré
+│   ✅ 10 dérivation dentaire (Akainu OK)  ✅ 11 vendeur (régime+conjoint, PACS exclu)
+│   ✅ 12 case cabinet (édition préservée) ✅ 13 CA non facultatif
+│   ✅ 14 acte+compromis (salariés tolérés) ✅ 15 acquéreur retiré
 │
 │   ── RETOURS LIVE ───────────────────────────────────────────────────
-│   ✅ L1 situation=menu   🟢 L2 case régime morte supprimée   🟢 L3 mois accentués   ✅ L4 choix étape
+│   ✅ L1 situation=menu   ✅ L2 case régime morte supprimée   ✅ L3 mois accentués   ✅ L4 choix étape
 │   ❓ L5 lettre renonciation   ❓ L6 « case à la fin »   → illisibles, clarif Rafael
 │
-│   RESTE : propagation Q4 (adresses tous types) · 04 icône copier · L5/L6 (clarif)
+│   RESTE : O24-04 icône copier (cadré Gad) · L5/L6 (clarif Rafael)
 │   GARDE-FOU : 0 validé tant que Rafael n'a pas reconfirmé (traité ≠ validé)
 └──────────────────────────────────────────────────────────────────────────
 ```
@@ -47,6 +47,5 @@ ne peut jamais dépasser celle de gauche (gate).
 
 | # | Pourquoi ça reste | Action |
 |---|---|---|
-| O24-03 propagation | traité SELAS-only ; règle Q4 (Gad) = propager à tous les cas | build : adresses 1 ligne sur SELARL/SAS/SPFPL/SCI/SCS/SCM/SELAS-uni |
-| O24-04 icône copier | Streamlit n'a pas de copier natif sur un champ → décision UI | trancher l'approche + build tous types |
+| O24-04 icône copier | non shippable à l'aveugle (non testable headless + dép + scope UX) | greenlight Gad + build vérifiable (`DEBRIEF_SPRINT_NUIT_2026-06-24.md` § 6bis) |
 | L5 / L6 | mini-screenshots **illisibles** : sens inconnu | question Rafael (`QUESTIONS_RAFAEL.md`) — ne pas deviner |

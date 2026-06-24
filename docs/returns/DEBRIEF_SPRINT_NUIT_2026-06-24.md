@@ -133,10 +133,44 @@ n'a pas retesté `sprint/engine-completion`.
 
 | # | Sujet | Pourquoi ça reste | Action prévue |
 |---|---|---|---|
-| O24-04 | icône « copier » par champ | Streamlit n'a pas de copier natif → décision UI (approche `st-copy`) | build avec helper partagé **après** merge du lot retours |
+| O24-04 | icône « copier » par champ | **non shippable à l'aveugle** (voir § 6bis) | ton greenlight + build vérifiable next session |
 | L5 / L6 | 2 retours live | **mini-screenshots illisibles** : sens inconnu | **question Rafael** — ne pas deviner (`QUESTIONS_RAFAEL.md`) |
-| Sync registres | `CARNET`/`DASHBOARD` stale (23-06 17:48) | corrigés mais registres non mis à jour | synchroniser au statut réel (clôture) |
+| Sync registres | `CARNET`/`DASHBOARD` stale (23-06 17:48) | corrigés mais registres non mis à jour | synchroniser au statut réel (fait en clôture, voir § 6ter) |
 | Dettes Albane | wording figé « Inscription de la SELARL au Tableau » (2 compromis) ; PACS cession ; valeur nominale SPFPL cible ; salarié incomplet | arbitrage **métier** Albane, pas un bug | tracés dans `QUESTIONS_RAFAEL.md` |
+
+### § 6bis — O24-04 (icône copier) : pourquoi je ne l'ai PAS shippé cette nuit
+
+Verbatim client clair (« ajouter une icône copier à côté de chaque champ texte »). Mais en
+l'investiguant cette nuit, **4 raisons dures** m'ont fait choisir de te le cadrer plutôt que de
+le livrer en aveugle :
+
+1. **Non testable sans déploiement.** Une icône « copier » est du **JS client-side** (clipboard).
+   Streamlit `AppTest` (headless, ce qui fait tourner mes 594 tests) **ne peut pas** introspecter
+   un bouton de copie (composant tiers en iframe, ou `components.v1.html`). Le livrer = livrer du
+   code **invérifiable par la suite** → contraire à tout ce qu'on vient de faire cette nuit.
+2. **Pas de point de passage unique.** **70 appels `st.text_input`** dispersés sur ~10 slices,
+   **aucun helper central**. Le faire « tous types » = soit migrer 70 sites, soit créer un helper
+   partagé et réécrire les 70 appels. Gros chantier transverse, à faire propre, pas à 5h.
+3. **Nouvelle dépendance entanglée au déploiement.** Il faut un composant (`st-copy`) ou un hack
+   `components.v1.html` → nouvelle dépendance. Or il n'y a **pas de `requirements.txt`** (deps via
+   `pyproject`) et **le canal de déploiement n'est pas tranché** (§ 7). Ajouter une dép qui doit
+   atteindre le bon environnement avant d'avoir tranché OÙ on déploie = mettre la charrue avant les
+   bœufs.
+4. **Scope UX = ta décision.** Une icône sur **chaque** champ de **tout** l'app est une décision
+   d'agencement (risque d'encombrement). Le CARNET la tague d'ailleurs « décision UI ».
+
+**Ma reco technique (prête à exécuter sur ton GO) :** helper partagé `copyable_text_field(label,
+key, …)` qui enrobe `st.text_input` + un bouton de copie via `st.components.v1.html` (zéro dép
+tierce, pas de risque Streamlit Cloud). Rollout progressif : d'abord les champs « sortie » (ceux
+qu'on recopie vraiment), pas forcément les 70 d'un coup. **Vérification = manuelle sur le staging**
+une fois le canal de déploiement tranché. → Dis « go O24-04 » + (champs ciblés ou tous) et je le
+fais next session, vérifiable.
+
+### § 6ter — Synchronisation des registres (fait en clôture)
+
+`CARNET.md` / `DASHBOARD.md` dataient du 23-06 17:48 (avant les fixes de nuit) et listaient encore
+des items comme « ré-ouverts ». **Synchronisés** au statut réel post-convergence (les 8 BLOQUANT +
+16 MAJEUR re-vérifiés OK) — le détail par retour est le § 5 ci-dessus.
 
 ---
 
