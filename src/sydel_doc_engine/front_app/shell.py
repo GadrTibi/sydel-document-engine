@@ -1923,6 +1923,27 @@ def _cession_text(
     return str(value).strip()
 
 
+def _cession_civilite(
+    container: object,
+    label: str,
+    *,
+    section: str,
+    field: str,
+) -> str:
+    """R4 (Rafael 2026-06-24) : une civilite CIVILE se choisit dans un menu deroulant
+    Monsieur / Madame, jamais en texte libre. Une option vide est conservee pour les
+    champs FACULTATIFS (ex. conjoint si non marie) afin de ne pas forcer une civilite
+    parasite. Les champs de TITRE professionnel (« Docteur » : vendeur / cedant
+    praticien) ne passent PAS par ici (fidelite gold de l'acte ; doctrine §14.2).
+    Meme clef de session que `_cession_text` => compatible prefill et payloads."""
+    options = ("", "Monsieur", "Madame")
+    key = f"{_CESSION_PREFIX}_cession_{section}_{field}"
+    _seed_default(key, "")
+    if str(st.session_state.get(key) or "") not in options:
+        st.session_state[key] = ""
+    return str(container.selectbox(label, options, key=key)).strip()
+
+
 def _accentuate_date_value(value: object) -> object:
     """Re-accentue les mois d'une date saisie en TEXTE libre (LIVE-03).
 
@@ -2129,9 +2150,9 @@ def _render_cession_form(
                 col_j, "Numero RPPS", section="vendeur", field="numero_rpps", default="",
             )
             col_k, col_m, col_n = st.columns(3)
-            conjoint_civilite = _cession_text(
+            conjoint_civilite = _cession_civilite(
                 col_k, "Civilite conjoint (si marie)",
-                section="vendeur", field="conjoint_civilite", default="",
+                section="vendeur", field="conjoint_civilite",
             )
             conjoint_prenom = _cession_text(
                 col_m, "Prenom conjoint", section="vendeur", field="conjoint_prenom",
@@ -2477,9 +2498,9 @@ def _render_cession_form(
             "il se complete a la main sur l'appel de fonds genere si besoin."
         )
         col_a, col_b, col_c = st.columns(3)
-        destinataire_civilite = _cession_text(
+        destinataire_civilite = _cession_civilite(
             col_a, "Civilite destinataire",
-            section="financement", field="destinataire_civilite", default="",
+            section="financement", field="destinataire_civilite",
         )
         destinataire_prenom = _cession_text(
             col_b, "Prenom destinataire", section="financement",
@@ -2607,9 +2628,9 @@ def _render_cession_form(
                     col_a, col_b, col_c, col_d = st.columns(4)
                     salaries_payload.append(
                         {
-                            "civilite_affichage": _cession_text(
+                            "civilite_affichage": _cession_civilite(
                                 col_a, f"Civilite salarie {index + 1}",
-                                section="salarie", field=f"{index}_civilite", default="",
+                                section="salarie", field=f"{index}_civilite",
                             ),
                             "prenom": _cession_text(
                                 col_b, f"Prenom salarie {index + 1}",
@@ -2646,9 +2667,8 @@ def _render_cession_form(
             "societe en cours de creation. Champs vides : omis de l'avenant."
         )
         col_a, col_b, col_c = st.columns(3)
-        bailleur_civilite = _cession_text(
+        bailleur_civilite = _cession_civilite(
             col_a, "Civilite du bailleur", section="bailleur", field="civilite",
-            default="",
         )
         bailleur_prenom = _cession_text(
             col_b, "Prenom du bailleur", section="bailleur", field="prenom", default="",
