@@ -212,6 +212,7 @@ def mandataire_inputs(prefix: str) -> tuple[str, str]:
     if not st.session_state.get(nom_key):
         st.session_state[nom_key] = DEFAULT_MANDATAIRE_NOM
     col_a, col_b = st.columns(2)
-    prenom = col_a.text_input("Conseiller (prénom)", key=prenom_key)
-    nom = col_b.text_input("Conseiller (nom)", key=nom_key)
+    # O24-04 : icône « copier » sur les champs Conseiller (re-Akainu O24-04, MAJEUR M1).
+    prenom = copyable_text_input(col_a, "Conseiller (prénom)", key=prenom_key)
+    nom = copyable_text_input(col_b, "Conseiller (nom)", key=nom_key)
     return (prenom or DEFAULT_MANDATAIRE_PRENOM, nom or DEFAULT_MANDATAIRE_NOM)

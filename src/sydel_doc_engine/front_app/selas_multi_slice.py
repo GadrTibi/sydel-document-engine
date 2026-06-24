@@ -475,8 +475,9 @@ def _render_common_docs_form() -> dict[str, object]:
     if not st.session_state.get(mand_nom_key):
         st.session_state[mand_nom_key] = DEFAULT_MANDATAIRE_NOM
     col_man_a, col_man_b = st.columns(2)
-    mandataire_prenom = col_man_a.text_input("Conseiller (prénom)", key=mand_prenom_key)
-    mandataire_nom = col_man_b.text_input("Conseiller (nom)", key=mand_nom_key)
+    # O24-04 : icône « copier » sur les champs Conseiller (re-Akainu O24-04, MAJEUR M2).
+    mandataire_prenom = copyable_text_input(col_man_a, "Conseiller (prénom)", key=mand_prenom_key)
+    mandataire_nom = copyable_text_input(col_man_b, "Conseiller (nom)", key=mand_nom_key)
     # R11 (Rafael 2026-06-23) : plus de case « Régime communautaire » GLOBALE — la
     # situation matrimoniale PAR associé (menu) pilote désormais le régime + les docs
     # DOC-005/006. (Le chemin global reste géré côté payload pour les tests directs.)
