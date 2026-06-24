@@ -2808,10 +2808,14 @@ def _render_scm_cession_form(
             value=scm_cedee["valeur_nominale_part"],
             disabled=True,
         )
-        scm_cedee["plage_parts_total"] = _cession_text(
-            col_f, "Plage totale des parts (ex. 1 a 300)", section="scm_cedee",
-            field="plage_parts_total",
-            default=str(scm_cedee.get("plage_parts_total") or ""),
+        # N4 (Rafael 2026-06-24) : la plage TOTALE des parts est auto-calculee (« 1 a N »),
+        # plus de saisie manuelle (champ desactive, comme la valeur nominale calculee).
+        _nb_scm = scm_cedee.get("nb_parts_total")
+        scm_cedee["plage_parts_total"] = f"1 a {_nb_scm}" if _nb_scm else ""
+        copyable_text_input(
+            col_f, "Plage totale des parts (calculee)",
+            value=scm_cedee["plage_parts_total"],
+            disabled=True,
         )
     payload["scm_cedee"] = scm_cedee
 
