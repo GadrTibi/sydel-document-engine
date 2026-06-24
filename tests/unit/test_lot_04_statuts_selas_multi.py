@@ -155,6 +155,37 @@ def test_selas_multi_generates_clean_docx(tmp_path: Path) -> None:
     assert "]" not in text
 
 
+def test_selas_multi_valeur_nominale_decimale_n1(tmp_path: Path) -> None:
+    # N1 (Akainu re-gate 2026-06-24) : une valeur nominale DECIMALE (1,25) doit GENERER le SELAS
+    # multi sans crash (_required_text levait sur lettres vide = BLOQUANT B1), sans marqueur
+    # « À COMPLÉTER » dans l'acte (M2), et sans DOUBLE « euro ». La mise en lettres d'un decimal
+    # = la FIGURE (number_words_from_value). Ce test est le verrou bout-en-bout qui manquait.
+    from sydel_doc_engine.front_app.field_derivations import number_words_from_value
+
+    ctx = _context(
+        associes=[
+            _physical_associe(
+                prenoms="Claire", nom="Durand", nb_actions=75,
+                montant="750", montant_lettres="sept cent cinquante",
+            ),
+            _morale_associe(
+                nb_actions=25, montant="250", montant_lettres="deux cent cinquante",
+            ),
+        ]
+    )
+    # Cas B1 prouve par Akainu : 125 / 100 actions = 1,25 (valeur nominale decimale).
+    ctx.statuts_selas_multi.valeur_nominale_action = "1,25"
+    ctx.statuts_selas_multi.valeur_nominale_action_lettres = number_words_from_value("1,25")
+
+    output_path = StatutsSelasMultiGenerator().generate(ctx, tmp_path)  # ne doit PAS lever
+    text = _docx_text(output_path)
+
+    assert "1,25" in text  # figure decimale presente
+    assert "À COMPLÉTER" not in text  # pas de marqueur technique dans l'acte
+    assert "euro euro" not in text and "euros euro" not in text  # pas de double euro
+    assert "centimes" not in text  # pas de forme monetaire non ratifiee emise
+
+
 def test_selas_multi_asserts_source_wording(tmp_path: Path) -> None:
     ctx = _context(
         associes=[
