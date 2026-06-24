@@ -664,7 +664,10 @@ _DENTISTE_PROFILE = _SelasProfile(
     add_capital=_add_capital_block_dentiste,
     add_president=None,
     add_signature=_add_signature_line_dentiste,
-    title_box_before=None,
+    # N6 (Rafael 2026-06-24) : en-tete « STATUTS » manquant sur le dentiste pluri (parite medecin).
+    # Le modele dentiste n'a pas de titre encadre en table -> on le restaure avant « Les
+    # soussignes, » (index 15), comme le medecin l'insere avant son « LES SOUSSIGNEES » (index 14).
+    title_box_before=15,
     boilerplate_replacements=_dentiste_boilerplate_replacements,
 )
 
