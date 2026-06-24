@@ -739,7 +739,7 @@ def _selas_associe_prefill(
         f"{p}_departement": departement,
         f"{p}_nationalite": "francaise",
         f"{p}_adresse": f"10 rue Exemple, {departement}000 {ville}",
-        f"{p}_situation": "Celibataire",
+        f"{p}_situation": "Célibataire",
         f"{p}_qualification": "Medecin generaliste",
         f"{p}_ordre_dep": nationalite_ordre,
         f"{p}_numero_ordre": numero_ordre,
@@ -1644,7 +1644,7 @@ def _render_generation_context(societe: dict[str, object]) -> dict[str, object]:
     col_g, col_h = st.columns(2)
     depot_banque_nom = copyable_text_input(col_g, "Banque depot", key="selarl_depot_banque_nom")
     depot_banque_adresse = copyable_text_input(col_h,
-        "Adresse banque (facultatif)",
+        "Adresse banque",
         key="selarl_depot_banque_adresse",
         help="Vide : les statuts laissent une zone a completer a la main.",
     )
@@ -2047,16 +2047,19 @@ def _render_cession_form(
             "prenom": str(praticien.get("conjoint_prenom") or ""),
             "nom": str(praticien.get("conjoint_nom") or ""),
         }
-        vendeur_auto = st.checkbox(
-            "Le vendeur est l'associé sélectionné ci-dessus"
-            if prefix == "selas"
-            else "Le vendeur est l'associe unique",
-            value=True,
-            key=f"{_CESSION_PREFIX}_cession_vendeur_auto",
-            help="Decocher uniquement si un autre vendeur doit etre renseigne.",
-        )
+        if prefix == "selas":
+            # R7 (Rafael 2026-06-24) : case « Le vendeur est l'associe selectionne ci-dessus »
+            # retiree (le vendeur EST deja l'associe choisi au selecteur ci-dessus).
+            vendeur_auto = True
+        else:
+            vendeur_auto = st.checkbox(
+                "Le vendeur est l'associe unique",
+                value=True,
+                key=f"{_CESSION_PREFIX}_cession_vendeur_auto",
+                help="Decocher uniquement si un autre vendeur doit etre renseigne.",
+            )
         siren = _cession_text(
-            st, "Numero SIREN du vendeur (facultatif)",
+            st, "Numero SIREN du vendeur",
             section="vendeur", field="siren", default="",
         )
         if vendeur_auto:
@@ -2187,21 +2190,21 @@ def _render_cession_form(
             )
             col_a, col_b = st.columns(2)
             numero_rcs = _cession_text(
-                col_a, "Numero RCS (des immatriculation, facultatif)",
+                col_a, "Numero RCS (des immatriculation)",
                 section="acquereur", field="numero_rcs", default="",
             )
             numero_siret = _cession_text(
-                col_b, "Numero SIRET (facultatif)",
+                col_b, "Numero SIRET",
                 section="acquereur", field="numero_siret", default="",
             )
             if type_cabinet == "medical" and etape == "acte":
                 col_c, col_d = st.columns(2)
                 date_immatriculation = _cession_date(
-                    col_c, "Date d'immatriculation (JJ/MM/AAAA, facultatif)",
+                    col_c, "Date d'immatriculation (JJ/MM/AAAA)",
                     section="acquereur", field="date_immatriculation",
                 )
                 date_inscription_ordre = _cession_date(
-                    col_d, "Date d'inscription a l'ordre (JJ/MM/AAAA, facultatif)",
+                    col_d, "Date d'inscription a l'ordre (JJ/MM/AAAA)",
                     section="acquereur", field="date_inscription_ordre",
                 )
     acquereur_payload = {
@@ -2276,7 +2279,7 @@ def _render_cession_form(
             # on la mémorise pour qu'elle survive à un futur report (coche).
             st.session_state[manual_key] = adresse_cabinet
         telephone_cabinet = _cession_text(
-            st, "Telephone du cabinet (facultatif)", section="cabinet", field="telephone",
+            st, "Telephone du cabinet", section="cabinet", field="telephone",
             default="",
         )
         st.markdown("Origine de propriete du vendeur")
@@ -2294,7 +2297,7 @@ def _render_cession_form(
             # ci-dessous alimentent ses tokens (vides -> zones a completer).
             origine_mode = "achete"
         date_origine = _cession_date(
-            st, "Date d'origine de propriete (JJ/MM/AAAA, facultatif)",
+            st, "Date d'origine de propriete (JJ/MM/AAAA)",
             section="cabinet", field="origine_date",
         )
         precedent_payload: dict[str, str] | None = None
@@ -2317,7 +2320,7 @@ def _render_cession_form(
             }
             prix_origine = _format_montant(
                 _cession_text(
-                    st, "Prix d'origine de propriete (facultatif)",
+                    st, "Prix d'origine de propriete",
                     section="cabinet", field="origine_prix", default="",
                 )
             )
@@ -2340,11 +2343,11 @@ def _render_cession_form(
     with st.expander("Bail professionnel"):
         col_a, col_b = st.columns(2)
         date_bail = _cession_date(
-            col_a, "Date du bail (JJ/MM/AAAA, facultatif)",
+            col_a, "Date du bail (JJ/MM/AAAA)",
             section="bail", field="date_bail",
         )
         date_effet = _cession_date(
-            col_b, "Date d'effet du bail (JJ/MM/AAAA, facultatif)",
+            col_b, "Date d'effet du bail (JJ/MM/AAAA)",
             section="bail", field="date_effet",
         )
         col_c, col_d = st.columns(2)
@@ -2353,7 +2356,7 @@ def _render_cession_form(
         )
         loyer = _format_montant(
             _cession_text(
-                col_d, "Loyer mensuel (facultatif)", section="bail", field="loyer",
+                col_d, "Loyer mensuel", section="bail", field="loyer",
                 default="",
             )
         )
@@ -2361,7 +2364,7 @@ def _render_cession_form(
         _seed_default(descriptif_key, "")
         descriptif_local = str(
             st.text_area(
-                "Descriptif libre du local (facultatif)",
+                "Descriptif libre du local",
                 key=descriptif_key,
                 help=(
                     "Rempli : le texte est insere tel quel dans l'acte a la place de la "
@@ -2410,7 +2413,7 @@ def _render_cession_form(
             periode = col_a.selectbox(f"Annee {index + 1}", year_options, key=periode_key)
             # #13 (onglet 24) : en SELAS, le CA et le resultat des exercices ne sont
             # plus facultatifs (la validation SELAS les exige) -> on retire la mention.
-            opt = "" if prefix == "selas" else " (facultatif)"
+            opt = "" if prefix == "selas" else ""
             ca = _cession_text(
                 col_b, f"CA {index + 1}{opt}",
                 section="exercice", field=f"{index}_ca", default="",
@@ -2443,13 +2446,13 @@ def _render_cession_form(
         col_c, col_d = st.columns(2)
         prix_corporels = _format_montant(
             _cession_text(
-                col_c, "Elements corporels (facultatif)",
+                col_c, "Elements corporels",
                 section="prix", field="corporels", default="",
             )
         )
         prix_incorporels = _format_montant(
             _cession_text(
-                col_d, "Elements incorporels (facultatif)",
+                col_d, "Elements incorporels",
                 section="prix", field="incorporels", default="",
             )
         )
@@ -2475,7 +2478,7 @@ def _render_cession_form(
         )
         col_a, col_b, col_c = st.columns(3)
         destinataire_civilite = _cession_text(
-            col_a, "Civilite destinataire (facultatif)",
+            col_a, "Civilite destinataire",
             section="financement", field="destinataire_civilite", default="",
         )
         destinataire_prenom = _cession_text(
@@ -2488,7 +2491,7 @@ def _render_cession_form(
         )
         montant_deblocage = _format_montant(
             _cession_text(
-                st, "Montant deblocage minimum (facultatif)",
+                st, "Montant deblocage minimum",
                 section="financement", field="deblocage", default="",
             )
         )
@@ -2505,11 +2508,11 @@ def _render_cession_form(
                     )
                 ),
                 "taux": _cession_text(
-                    col_e, "Taux du pret (facultatif)",
+                    col_e, "Taux du pret",
                     section="financement", field="pret_taux", default="",
                 ),
                 "duree": _cession_text(
-                    col_f, "Duree du pret (facultatif)",
+                    col_f, "Duree du pret",
                     section="financement", field="pret_duree", default="",
                 ),
             }
@@ -2617,7 +2620,7 @@ def _render_cession_form(
                                 section="salarie", field=f"{index}_nom", default="",
                             ),
                             "poste": _cession_text(
-                                col_d, f"Poste salarie {index + 1} (facultatif)",
+                                col_d, f"Poste salarie {index + 1}",
                                 section="salarie", field=f"{index}_poste", default="",
                             )
                             or None,
@@ -2627,7 +2630,7 @@ def _render_cession_form(
     date_limite_realisation = ""
     if etape == "compromis" or prefix == "selas":  # O24-14 : compromis produit aussi en SELAS
         date_limite_realisation = _cession_date(
-            st, "Date limite de realisation (JJ/MM/AAAA, facultatif)",
+            st, "Date limite de realisation (JJ/MM/AAAA)",
             section="meta", field="date_limite",
         )
 
@@ -2654,7 +2657,7 @@ def _render_cession_form(
             col_c, "Nom du bailleur", section="bailleur", field="nom", default="",
         )
         bailleur_adresse = _cession_text(
-            st, "Adresse du bailleur (facultatif)", section="bailleur", field="adresse",
+            st, "Adresse du bailleur", section="bailleur", field="adresse",
             default="",
         )
 

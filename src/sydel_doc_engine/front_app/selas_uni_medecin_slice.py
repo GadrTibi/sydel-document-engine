@@ -187,7 +187,7 @@ def render_selas_uni_medecin_form() -> dict[str, object]:
     banque_adresse = _t(
         col_i,
         "banque_adresse",
-        "Adresse banque (facultatif)",
+        "Adresse banque",
         hint="ex : 5 place Bellecour, 69002 Lyon",
     )
 

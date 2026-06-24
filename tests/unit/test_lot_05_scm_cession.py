@@ -298,12 +298,12 @@ def test_scm_cession_selas_generates_overlays(tmp_path: Path) -> None:
     ("preset_brut", "genre", "attendu_regime"),
     [
         (
-            "Marie(e) sous le regime de la separation de biens",
+            "Marié(e) sous le régime de la séparation de biens",
             Gender.MASCULIN,
             "marié sous le régime de séparation de biens",
         ),
         (
-            "Marie(e) sous le regime de la communaute universelle",
+            "Marié(e) sous le régime de la communauté universelle",
             Gender.FEMININ,
             "mariée sous le régime de communauté universelle",
         ),

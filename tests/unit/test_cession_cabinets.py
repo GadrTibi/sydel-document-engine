@@ -350,7 +350,7 @@ def test_o24_11_acte_retranscrit_regime_et_conjoint_du_vendeur(tmp_path: Path) -
     assert "Claire Durand" in text  # conjoint du vendeur retranscrit dans l'acte
     assert "communaute reduite aux acquets" in text  # régime matrimonial retranscrit (fixture)
     # pas d'artefact du LIBELLE BRUT du menu situation (« Marie(e) sous le regime ... » doublé) :
-    assert "Marie(e)" not in text
+    assert "Marié(e)" not in text
     assert text.count("sous le régime") <= 1  # régime jamais doublé (« ... régime ... régime ... »)
     _assert_no_residual_tokens(text)
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import unicodedata
 from datetime import date
 from decimal import Decimal, InvalidOperation
 from typing import Final
@@ -28,15 +29,15 @@ NATIONALITY_PRESETS: Final = (
 # dentiste 1.2) : seul le regime legal / communaute declenche la logique
 # documentaire DOC-005/DOC-006 ; les trois autres regimes maries n'entrainent
 # aucun document complementaire.
-MATRIMONIAL_STATUS_MARRIED_COMMUNAUTE: Final = "Marie(e) sous le regime legal / communaute"
+MATRIMONIAL_STATUS_MARRIED_COMMUNAUTE: Final = "Marié(e) sous le régime légal / communauté"
 MATRIMONIAL_STATUS_PRESETS: Final = (
-    "Celibataire",
+    "Célibataire",
     MATRIMONIAL_STATUS_MARRIED_COMMUNAUTE,
-    "Marie(e) sous le regime de la separation de biens",
-    "Marie(e) sous le regime de la communaute universelle",
-    "Marie(e) sous le regime de la participation aux acquets",
-    "Pacs(e)",
-    "Divorce(e)",
+    "Marié(e) sous le régime de la séparation de biens",
+    "Marié(e) sous le régime de la communauté universelle",
+    "Marié(e) sous le régime de la participation aux acquêts",
+    "Pacsé(e)",
+    "Divorcé(e)",
     "Veuf / veuve",
 )
 
@@ -368,4 +369,8 @@ def _decimal_from_value(value: object) -> Decimal | None:
 
 
 def _normalize_label(value: str) -> str:
-    return value.strip().lower().replace(".", "")
+    # NFKD -> insensible aux accents (« communauté » -> « communaute ») : les libelles ACCENTUES
+    # des presets (R8, Rafael 2026-06-24) matchent toujours (startswith « marie », « communaute »…).
+    decomposed = unicodedata.normalize("NFKD", value)
+    stripped = "".join(c for c in decomposed if not unicodedata.combining(c))
+    return stripped.strip().lower().replace(".", "")

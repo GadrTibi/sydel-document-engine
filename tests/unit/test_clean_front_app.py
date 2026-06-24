@@ -179,7 +179,7 @@ def test_clean_front_selarl_regime_ui_never_exposes_conjoint_address_fields() ->
     # Retours client 2026-06-11 : le regime de la communaute est derive de la
     # situation matrimoniale (plus de case a cocher dediee).
     app.selectbox(key="selarl_situation_maritale").set_value(
-        "Marie(e) sous le regime legal / communaute"
+        "Marié(e) sous le régime légal / communauté"
     )
     app.run(timeout=120)
 
@@ -868,10 +868,10 @@ def test_clean_front_streamlit_surface_is_not_legacy() -> None:
     assert app.selectbox(key="selarl_situation_maritale").label == "Situation matrimoniale"
     # Retours client 2026-06-11 (ticket 1.2) : les regimes matrimoniaux sont des
     # options de la situation matrimoniale ; plus de case a cocher dediee.
-    assert "Marie(e) sous le regime legal / communaute" in app.selectbox(
+    assert "Marié(e) sous le régime légal / communauté" in app.selectbox(
         key="selarl_situation_maritale"
     ).options
-    assert "Marie(e) sous le regime de la separation de biens" in app.selectbox(
+    assert "Marié(e) sous le régime de la séparation de biens" in app.selectbox(
         key="selarl_situation_maritale"
     ).options
     assert not any(
@@ -1236,38 +1236,38 @@ def test_regime_matrimonial_derivations_cover_new_options() -> None:
     )
 
     # Ticket 1.2 : les quatre regimes maries sont proposes.
-    married = [item for item in MATRIMONIAL_STATUS_PRESETS if item.startswith("Marie")]
+    married = [item for item in MATRIMONIAL_STATUS_PRESETS if item.startswith("Marié")]
     assert len(married) == 4
 
     # Seul le regime legal / communaute declenche DOC-005/DOC-006.
-    assert regime_communautaire_from_status("Marie(e) sous le regime legal / communaute")
+    assert regime_communautaire_from_status("Marié(e) sous le régime légal / communauté")
     assert not regime_communautaire_from_status(
-        "Marie(e) sous le regime de la separation de biens"
+        "Marié(e) sous le régime de la séparation de biens"
     )
     assert not regime_communautaire_from_status(
-        "Marie(e) sous le regime de la communaute universelle"
+        "Marié(e) sous le régime de la communauté universelle"
     )
     assert not regime_communautaire_from_status(
-        "Marie(e) sous le regime de la participation aux acquets"
+        "Marié(e) sous le régime de la participation aux acquêts"
     )
-    assert not regime_communautaire_from_status("Celibataire")
+    assert not regime_communautaire_from_status("Célibataire")
 
     # Le regime injecte dans les statuts suit l'option choisie.
     assert (
         regime_matrimonial_from_status(
-            "Marie(e) sous le regime de la communaute universelle", False
+            "Marié(e) sous le régime de la communauté universelle", False
         )
         == "communaute universelle"
     )
     assert (
         regime_matrimonial_from_status(
-            "Marie(e) sous le regime de la participation aux acquets", False
+            "Marié(e) sous le régime de la participation aux acquêts", False
         )
         == "participation aux acquets"
     )
     assert (
         regime_matrimonial_from_status(
-            "Marie(e) sous le regime de la separation de biens", False
+            "Marié(e) sous le régime de la séparation de biens", False
         )
         == "separation de biens"
     )
@@ -1301,7 +1301,7 @@ def test_clean_front_dentiste_sans_salarie_facultatifs_vides_genere(
     # Marie sous le regime de la separation de biens : aucune logique
     # documentaire supplementaire (pas de DOC-005/006), conjoint requis.
     app.selectbox(key="selarl_situation_maritale").set_value(
-        "Marie(e) sous le regime de la separation de biens"
+        "Marié(e) sous le régime de la séparation de biens"
     )
     app = app.run(timeout=180)
     app.text_input(key="selarl_conjoint_prenom").set_value("Claire")
@@ -1407,7 +1407,7 @@ def test_scm_cession_acte_keeps_regime_matrimonial_separation(
     acte_text = _scm_acte_text_for_situation(
         tmp_path,
         monkeypatch,
-        situation_preset="Marie(e) sous le regime de la separation de biens",
+        situation_preset="Marié(e) sous le régime de la séparation de biens",
         subdir="scm-o2411-separation",
     )
     # Statut accentue/genre (« marié » ou « mariée » selon la personne de test aleatoire)
@@ -1430,7 +1430,7 @@ def test_scm_cession_acte_keeps_regime_matrimonial_communaute_universelle(
     acte_text = _scm_acte_text_for_situation(
         tmp_path,
         monkeypatch,
-        situation_preset="Marie(e) sous le regime de la communaute universelle",
+        situation_preset="Marié(e) sous le régime de la communauté universelle",
         subdir="scm-o2411-universelle",
     )
     assert (
@@ -1458,11 +1458,11 @@ def test_scm_cedant_situation_display_covers_both_paths(monkeypatch) -> None:
     monkeypatch.setattr(shell, "st", fake)
 
     cases = [
-        ("selarl", "Marie(e) sous le regime de la separation de biens", Gender.MASCULIN,
+        ("selarl", "Marié(e) sous le régime de la séparation de biens", Gender.MASCULIN,
          "marié sous le régime de séparation de biens"),
-        ("selas", "Marie(e) sous le regime de la communaute universelle", Gender.FEMININ,
+        ("selas", "Marié(e) sous le régime de la communauté universelle", Gender.FEMININ,
          "mariée sous le régime de communauté universelle"),
-        ("selarl", "Marie(e) sous le regime legal / communaute", Gender.MASCULIN,
+        ("selarl", "Marié(e) sous le régime légal / communauté", Gender.MASCULIN,
          "marié sous le régime de communauté réduite aux acquêts"),
     ]
     for prefix, brut, genre, expected in cases:
@@ -1474,7 +1474,7 @@ def test_scm_cedant_situation_display_covers_both_paths(monkeypatch) -> None:
         )
 
     # Non marie : juste le statut accentue, jamais « sous le régime de » (et jamais vide).
-    fake.session_state = {"selas_situation_maritale": "Divorce(e)"}
+    fake.session_state = {"selas_situation_maritale": "Divorcé(e)"}
     praticien = {"situation_maritale": "divorce", "genre": Gender.FEMININ}
     assert (
         shell._scm_cedant_situation_maritale_display(praticien, prefix="selas")
@@ -1490,7 +1490,7 @@ def test_scm_cession_acte_keeps_regime_matrimonial_communaute_legale(
     acte_text = _scm_acte_text_for_situation(
         tmp_path,
         monkeypatch,
-        situation_preset="Marie(e) sous le regime legal / communaute",
+        situation_preset="Marié(e) sous le régime légal / communauté",
         subdir="scm-o2411-legale",
     )
     assert (

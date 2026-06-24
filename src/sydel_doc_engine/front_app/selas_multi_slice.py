@@ -915,7 +915,7 @@ def _physique(prefix: str, nb_actions: int, montant: str) -> StatutsCivilsAssoci
 def _situation_display(situation_label: str, genre: Gender) -> str:
     """Affichage genre-resolu de la situation matrimoniale pour la comparution (R10).
 
-    Le menu (MATRIMONIAL_STATUS_PRESETS) porte des libelles « Marie(e) », « Pacs(e) »,
+    Le menu (MATRIMONIAL_STATUS_PRESETS) porte des libelles « Marie(e) », « Pacsé(e) »,
     etc. ; la comparution SELAS rend `situation_maritale` brut -> on stocke le mot
     d'etat civil accorde et accentue (comme le `[situation_maritale]` du gold)."""
     feminin = genre == Gender.FEMININ
@@ -1369,7 +1369,7 @@ def _render_selas_cession(
     # _situation_display cote sous-formulaire. PAS de repli vers vendeur.situation_maritale
     # (re-Akainu tour 3, NITPICK O24-11) : cette valeur est DEJA accentuee (« marié ») et
     # matrimonial_status_value la mal-deriverait en 'celibataire' (pas de NFKD). En UI reelle
-    # v_situation_raw est toujours renseigne (le selectbox situation a un defaut « Celibataire »).
+    # v_situation_raw est toujours renseigne (le selectbox situation a un defaut « Célibataire »).
     # Conjoint du vendeur : lu directement depuis les cles de session de l'associe choisi
     # (captees pour tout associe MARIE, cf. _render_conjoint_si_communaute), donc present
     # meme hors communaute legale ou regime_communautaire_associe est None (MAJEUR O24-11).
@@ -1396,7 +1396,7 @@ def _render_selas_cession(
         "adresse_ville": v_ville,
     }
     # Le sous-formulaire de cession derive le regime via cette cle : il lui faut le LIBELLE
-    # BRUT du preset (« Marie(e) sous le regime de la communaute universelle »), pas la valeur
+    # BRUT du preset (« Marié(e) sous le régime de la communauté universelle »), pas la valeur
     # collapsee — _vendeur_regime_label y lit « universelle »/« participation »/« separation ».
     # On n'y met QUE le libelle brut (jamais le fallback collapse) : a defaut, chaine vide ->
     # aucun regime faussement derive (re-Akainu tour 2, MINEUR O24-11).

@@ -2584,7 +2584,7 @@ def test_render_scm_cession_form_selas_injecte_situation_accentuee(monkeypatch) 
         "selas_cession_scm_present_0_nb_parts": "300",
         "selas_cession_scm_present_0_plage": "1 a 300",
         # Libelle BRUT du preset lu par _scm_cedant_situation_maritale_display.
-        "selas_situation_maritale": "Marie(e) sous le regime de la separation de biens",
+        "selas_situation_maritale": "Marié(e) sous le régime de la séparation de biens",
     }
     monkeypatch.setattr(shell, "st", _StScmStub(session_state))
 
@@ -2991,7 +2991,7 @@ def test_selas_cession_vendeur_regime_complet(tmp_path: Path, monkeypatch) -> No
 
     from sydel_doc_engine.front_app import shell
 
-    preset_sep = "Marie(e) sous le regime de la separation de biens"
+    preset_sep = "Marié(e) sous le régime de la séparation de biens"
     monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selas-vendeur-regime")
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
     app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle creation V1")
@@ -3026,7 +3026,7 @@ def test_selas_vendeur_situation_dissociee_du_regime() -> None:
     from sydel_doc_engine.front_app.field_derivations import matrimonial_status_value
     from sydel_doc_engine.front_app.shell import _situation_display, _vendeur_regime_label
 
-    preset = "Marie(e) sous le regime de la communaute universelle"
+    preset = "Marié(e) sous le régime de la communauté universelle"
     # régime dérivé du libellé BRUT
     assert _vendeur_regime_label(preset) == "communauté universelle"
     # affichage = valeur COLLAPSÉE accentuée (ce qui part dans situation_maritale du praticien)
@@ -3040,7 +3040,7 @@ def test_selas_vendeur_situation_dissociee_du_regime() -> None:
 def test_selas_pacs_n_affiche_pas_conjoint(tmp_path: Path, monkeypatch) -> None:
     # re-Akainu tour 2 (MAJEUR O24-11) : le PACS est EXCLU de la capture conjoint. L'acte de
     # cession n'a pas de segment « pacsé avec [conjoint] » → capter le partenaire ferait
-    # disparaître une donnée saisie (jamais retranscrite). Choisir « Pacs(e) » ne doit donc
+    # disparaître une donnée saisie (jamais retranscrite). Choisir « Pacsé(e) » ne doit donc
     # PAS afficher les champs conjoint (seul le mariage les déclenche).
     from streamlit.testing.v1 import AppTest
 
@@ -3052,7 +3052,7 @@ def test_selas_pacs_n_affiche_pas_conjoint(tmp_path: Path, monkeypatch) -> None:
     app = app.run(timeout=180)
     next(b for b in app.button if "test_data" in str(b.key)).click()
     app = app.run(timeout=180)
-    app.selectbox(key="selas_associe_0_situation").set_value("Pacs(e)")
+    app.selectbox(key="selas_associe_0_situation").set_value("Pacsé(e)")
     app = app.run(timeout=180)
     keys = {str(w.key) for w in app.text_input}
     assert "selas_associe_0_conjoint_prenom" not in keys
