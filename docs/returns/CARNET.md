@@ -14,7 +14,7 @@
 | O24-01 | « Supprimer : Signature d'une lettre de mission … / Paiement de l'acompte des honoraires du cabinet Sydel … dans l'annexe de tous les statuts de tous les cas » | tous types | — | TRAITÉ | ⬜ |
 | O24-02 | « Dans tous les cas où il y a une déclaration de non condamnation, elle doit être générée d'office pour chaque dirigeant uniquement. Le nom du document doit intégrer le nom du dirigeant … » | tous types | — | TRAITÉ | ⬜ |
 | O24-03 | « Toutes les adresses doivent être rédigées sur une ligne, pas de champ séparé pour la rue, la voie, etc.. » | **tous types (UX)** | — | TRAITÉ (propagé tous types, golden-bloc `address_oneline`) | ⬜ |
-| O24-04 | « Ajouter une icone "copier" à côté de chaque champ texte pour copier le texte contenu à l'intérieur d'un champ » | SELAS (UI) | — | TRIÉ | ⬜ |
+| O24-04 | « Ajouter une icone "copier" à côté de chaque champ texte pour copier le texte contenu à l'intérieur d'un champ » | **tous types (UI)** | — | TRAITÉ | ⬜ |
 | O24-05 | « la valeur nominale d'une part/action doit être calculée automatiquement et affichée dans le champ concerné » | tous types | — | TRAITÉ | ⬜ |
 | O24-06 | « pluripersonnelle et multi associé veut dire la meme chose » | SELAS | — | TRAITÉ | ⬜ |
 | O24-07 | « soit président (un seul), soit directeur général (un seul), soit directeur général associé (plusieurs) — non cumulatives » | SELAS | — | TRAITÉ | ⬜ |
@@ -44,14 +44,15 @@
 
 ## Synthèse machine-lisible
 
-- **Reste à faire** (Statut ≠ TRAITÉ/VALIDÉ) : `O24-04` UNIQUEMENT (icône copier, **tous types**, UI
-  — cadré pour Gad, voir `DEBRIEF_SPRINT_NUIT_2026-06-24.md` § 6bis). `LIVE-05`/`LIVE-06` désormais TRAITÉS.
+- **Reste à faire (constructible)** : **AUCUN** — les 21 retours sont TRAITÉS. `O24-04` (icône copier
+  tous types) traité 2026-06-24, gate Akainu RIEN À REDIRE ; reste seulement la **validation visuelle
+  du copier réel** par Gad/Rafael sur le staging (JS client, non testable en headless).
 - **Règle de propagation (Q4 triage, Gad 2026-06-23)** : un retour universel se propage à TOUS les cas concernés ; O24-01/02/03/05 propagés ; O24-06→15 = SELAS-pluri structurel (pas de propagation).
 - **✅ CONVERGENCE Akainu (tour 10, 2026-06-24)** : les défauts ré-ouverts par le verdict 23-06
   (`AKAINU_VERDICT_2026-06-23.md` : 8 bloquant + 16 majeur) sont **tous re-corrigés à la racine et
   re-vérifiés** (sprint de nuit, 29 commits, HEAD `44f7dda`). Gate tour 10 = **CONVERGENCE OUI**
   (0 bloquant, 0 majeur ; 2 mineur de véracité doc corrigés). Suite **594 verts**, ordre-indépendance
   prouvée. Détail : `DEBRIEF_SPRINT_NUIT_2026-06-24.md`.
-- **TRAITÉ (≠ validé), en attente retest Rafael** : tous les O24 sauf O24-04, + **tout le LIVE** (L5/L6 inclus).
+- **TRAITÉ (≠ validé), en attente retest Rafael** : **les 21** (O24-01→15 + LIVE-01→06).
 - **VALIDÉ** : aucun → le carnet reste plein (Rafael doit retester une fois le canal de déploiement
   tranché — voir DEBRIEF § 7).

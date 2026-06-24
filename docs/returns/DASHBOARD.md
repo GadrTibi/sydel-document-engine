@@ -6,16 +6,16 @@
 ```
 ┌─ SYDEL · RETOURS CLIENT — compteur de vitesse (post-convergence T10) ─────
 │
-│   CORRIGÉ (code)    [███████████████████████░]  20/21 · 95%
-│   CONTRÔLE AKAINU   [███████████████████████░]  20/21 · 95%  ✅ L6 RIEN À REDIRE
+│   CORRIGÉ (code)    [████████████████████████] 21/21 · 100%
+│   CONTRÔLE AKAINU   [████████████████████████] 21/21 · 100% ✅ O24-04 RIEN À REDIRE
 │   VALIDÉ  (Rafael)  [░░░░░░░░░░░░░░░░░░░░░░░░]   0/21 ·  0%  ⚠ rien validé (normal)
 │   gate : CORRIGÉ ≥ AKAINU ≥ VALIDÉ — un retour ne passe Rafael qu'après Akainu OK
-│   Akainu : convergence T10 + L6 (SPFPL) RIEN À REDIRE (2026-06-24). 594 verts.
-│   RESTE : O24-04 icône copier UNIQUEMENT (cadré Gad, § 6bis debrief)
+│   Akainu : convergence T10 + L6 + O24-04 RIEN À REDIRE (2026-06-24). 597 verts.
+│   RESTE constructible : AUCUN. Reste = œil Gad/Rafael (copier réel) + validation.
 │
 │   ── ONGLET 24 (✅=Akainu OK · ⬜=à faire) ──────────────────────────────
 │   ✅ 01 annexe Sydel (régen-propre tous types)   ✅ 02 DNC nommée/dirigeant
-│   ✅ 03 adresses 1 ligne (propagé tous types)     ⬜ 04 icône copier (cadré Gad)
+│   ✅ 03 adresses 1 ligne (propagé tous types)     ✅ 04 icône copier (tous types, Akainu OK)
 │   ✅ 05 valeur nominale (+ SCM cédée)   ✅ 06 pluri=multi   ✅ 08 date+adresse 1×
 │   ✅ 07 Président (racine, Akainu OK)    ✅ 09 « (profession) »
 │   ✅ 10 dérivation dentaire (Akainu OK)  ✅ 11 vendeur (régime+conjoint, PACS exclu)
@@ -26,7 +26,7 @@
 │   ✅ L1 situation=menu   ✅ L2 case régime morte supprimée   ✅ L3 mois accentués   ✅ L4 choix étape
 │   ✅ L5+L6 case « Régime communautaire » SPFPL → menu (Akainu RIEN À REDIRE)
 │
-│   RESTE : O24-04 icône copier UNIQUEMENT (cadré Gad, ton « go » attendu)
+│   RESTE constructible : AUCUN — les 21 retours sont TRAITÉS (gate Akainu OK)
 │   GARDE-FOU : 0 validé tant que Rafael n'a pas reconfirmé (traité ≠ validé)
 └──────────────────────────────────────────────────────────────────────────
 ```
@@ -43,9 +43,12 @@ ne peut jamais dépasser celle de gauche (gate).
 - **VALIDÉ (Rafael)** = Rafael a confirmé en retest réel. Reste à **0** par discipline (`traité ≠ validé`) :
   rien ne passe ici tant qu'il n'a pas reconfirmé, et seulement après Akainu OK.
 
-## Reste à traiter (le « pourquoi 3 trucs »)
+## Reste à traiter
+
+**Aucun reste constructible** : les 21 retours sont TRAITÉS (gate Akainu RIEN À REDIRE sur chacun).
+Reste uniquement, côté humain :
 
 | # | Pourquoi ça reste | Action |
 |---|---|---|
-| O24-04 icône copier | non shippable à l'aveugle (non testable headless + dép + scope UX) | greenlight Gad + build vérifiable (`DEBRIEF_SPRINT_NUIT_2026-06-24.md` § 6bis) |
-| L5 / L6 | mini-screenshots **illisibles** : sens inconnu | question Rafael (`QUESTIONS_RAFAEL.md`) — ne pas deviner |
+| O24-04 copier réel | le presse-papier est du JS client → non testable en headless | **œil Gad/Rafael** sur le staging (vérifier que l'icône copie bien) |
+| Validation des 21 | `traité ≠ validé` (discipline) | **retest Rafael** sur le staging → passage en VALIDÉ |
