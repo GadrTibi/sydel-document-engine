@@ -258,7 +258,7 @@ def test_regime_communautaire_blocks_when_batch_option_is_false(tmp_path: Path) 
 
 
 def test_renonciation_tokenizes_missing_qualite_renoncee(tmp_path: Path) -> None:
-    # R10 (Rafael 2026-06-24) : une donnee manquante ne bloque PLUS -> marqueur « (À COMPLÉTER : ...) »
+    # R10 (Rafael 2026-06-24) : une donnee manquante ne bloque plus -> marqueur (A COMPLETER)
     # visible (SANS crochets -> compatible garde-fou anti-placeholder), generation reussie.
     ctx = _context(qualite_renoncee=None)
 
