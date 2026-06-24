@@ -116,12 +116,17 @@ def date_input_with_today(
         if isinstance(picked, date):
             st.session_state[key] = format_french_date(picked)
 
+    # N2 (Rafael 2026-06-24) : le libelle du calendrier est REPLIE (label_visibility="collapsed")
+    # pour ne PAS afficher le nom du champ DEUX fois (« X (calendrier) » au-dessus de « X »). Un
+    # seul libelle visible (sur le champ texte editable) ; le calendrier reste un selecteur discret
+    # juste au-dessus. Propage a TOUS les champs date (helper partage).
     target.date_input(
         f"{label} (calendrier)",
         value=None,
         key=cal_key,
         format="DD/MM/YYYY",
         on_change=_sync_from_calendar,
+        label_visibility="collapsed",
     )
     if target.button("Aujourd'hui", key=f"{key}_today"):
         st.session_state[key] = format_french_date(date.today())
