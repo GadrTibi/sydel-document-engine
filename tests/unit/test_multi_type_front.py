@@ -551,8 +551,9 @@ def test_civil_repeater_ajout_associe_preserve_les_precedents_n5() -> None:
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
     app.selectbox(key="clean_dossier_type").set_value("SCM creation V1")
     app = app.run(timeout=180)
-    next(w for w in app.text_input if str(w.key) == "scm_associe_0_profession").set_value("Medecin")
-    next(w for w in app.text_input if str(w.key) == "scm_associe_1_profession").set_value("Dentiste")
+    ti = {str(w.key): w for w in app.text_input}
+    ti["scm_associe_0_profession"].set_value("Medecin")
+    ti["scm_associe_1_profession"].set_value("Dentiste")
     app = app.run(timeout=180)
     next(b for b in app.button if str(b.key) == "scm_add").click()
     app = app.run(timeout=180)
