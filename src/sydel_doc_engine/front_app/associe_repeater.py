@@ -33,6 +33,7 @@ from sydel_doc_engine.front_app.field_derivations import (
     derive_gender_from_civilite,
     number_words_from_value,
 )
+from sydel_doc_engine.front_app.front_widgets import copyable_text_input
 
 PERSONNE_PHYSIQUE: Final = "personne_physique"
 PERSONNE_MORALE: Final = "personne_morale"
@@ -161,7 +162,8 @@ def _render_one_associe(config: RepeaterConfig, index: int) -> StatutsCivilsAsso
 def _text(prefix: str, field: str, label: str, *, container=st) -> str:
     key = f"{prefix}_{field}"
     _seed(key, "")
-    return str(container.text_input(label, key=key)).strip()
+    # O24-04 : icône « copier » sur chaque champ texte (helper partagé).
+    return str(copyable_text_input(container, label, key=key)).strip()
 
 
 def render_nationalite_selectbox(prefix: str, *, container=st) -> str:

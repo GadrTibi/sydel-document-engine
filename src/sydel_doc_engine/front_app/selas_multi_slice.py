@@ -68,6 +68,7 @@ from sydel_doc_engine.front_app.field_derivations import (
     regime_communautaire_from_status,
 )
 from sydel_doc_engine.front_app.front_widgets import (
+    copyable_text_input,
     seed_closing_date,
     seed_signature_lieu,
 )
@@ -2119,7 +2120,8 @@ def _t(container, field: str, label: str, hint: str | None = None) -> str:
 def _ts(container, key: str, label: str, hint: str | None = None) -> str:
     if key not in st.session_state:
         st.session_state[key] = ""
-    return str(container.text_input(label, key=key, help=hint)).strip()
+    # O24-04 : icône « copier » sur chaque champ texte (helper partagé).
+    return str(copyable_text_input(container, label, key=key, help=hint)).strip()
 
 
 def _i(container, field: str, label: str) -> int:

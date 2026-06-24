@@ -43,21 +43,37 @@ def _copy_button_html(text: str) -> str:
     )
 
 
-def copyable_text_input(container, label: str, *, key: str, help: str | None = None) -> str:
+def copyable_text_input(
+    container, label: str, *, key: str | None = None, help: str | None = None, **text_input_kwargs
+) -> str:
     """`text_input` + icône « copier » à côté (O24-04, retour Rafael « icône copier par champ »).
 
-    Layout : le champ et l'icône sont placés côte à côte via `container.columns` (UN niveau de
-    nesting, sûr quand `container` est `st` ou une colonne de 1er niveau). L'icône est un petit
-    bouton `components.html` (presse-papier client-side fiable au clic). La valeur copiée est
-    relue dans `st.session_state[key]` au moment du rendu.
+    DROP-IN sûr pour tout `text_input` existant : `**text_input_kwargs` (ex. `disabled`) est
+    transmis tel quel. L'icône est un enrichissement PROGRESSIF -> on retombe proprement sur un
+    `text_input` simple (sans icône) dans 3 cas, sans jamais casser le formulaire :
+      - pas de `key` (impossible de relire la valeur à copier) ;
+      - `container.columns` indisponible / nesting trop profond (Streamlit interdit > 1 niveau) ;
+      - conteneur mocké en test (stub sans protocole de context manager).
+    En contexte réel (Streamlit Cloud, https), l'icône `components.html` écrit le presse-papier
+    AU CLIC (le bouton EST le geste utilisateur) ; la valeur est relue dans `st.session_state[key]`.
     """
-    col_field, col_copy = container.columns([0.90, 0.10])
-    value = col_field.text_input(label, key=key, help=help)
+    if key is None:
+        return container.text_input(label, key=key, help=help, **text_input_kwargs)
+    try:
+        col_field, col_copy = container.columns([0.90, 0.10])
+    except Exception:
+        # Nesting trop profond ou conteneur sans `columns` -> champ simple, pas d'icône.
+        return container.text_input(label, key=key, help=help, **text_input_kwargs)
+    value = col_field.text_input(label, key=key, help=help, **text_input_kwargs)
     text = str(st.session_state.get(key, "") or "")
-    with col_copy:
-        # Spacer : descend l'icône sous le label pour l'aligner sur le champ.
-        st.markdown("<div style='height:1.75rem'></div>", unsafe_allow_html=True)
-        components.html(_copy_button_html(text), height=40)
+    try:
+        with col_copy:
+            # Spacer : descend l'icône sous le label pour l'aligner sur le champ.
+            st.markdown("<div style='height:1.75rem'></div>", unsafe_allow_html=True)
+            components.html(_copy_button_html(text), height=40)
+    except Exception:
+        # Conteneur mocké (test) ou contexte hors-Streamlit : on garde juste le champ.
+        pass
     return value
 
 

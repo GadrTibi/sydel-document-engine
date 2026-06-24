@@ -52,6 +52,7 @@ from sydel_doc_engine.front_app.field_derivations import (
     regime_matrimonial_from_status,
     situation_display,
 )
+from sydel_doc_engine.front_app.front_widgets import copyable_text_input
 from sydel_doc_engine.front_app.generation import (
     CleanGenerationPlan,
     build_clean_generation_plan,
@@ -1148,7 +1149,7 @@ def _render_selarl_membres(
             key="selarl_praticien_nb_parts",
         )
     )
-    praticien_apport = col_b.text_input(
+    praticien_apport = copyable_text_input(col_b,
         "Apport du praticien (euros)",
         key="selarl_praticien_apport",
     )
@@ -1195,27 +1196,27 @@ def _render_one_selarl_membre(index: int) -> StatutsCivilsAssocie | None:
                 key=f"{prefix}_nb_parts",
             )
         )
-        apport = col_a.text_input("Apport (euros)", key=f"{prefix}_apport")
+        apport = copyable_text_input(col_a, "Apport (euros)", key=f"{prefix}_apport")
         parts = StatutsCivilsParts(nb=nb_parts, nb_lettres=number_words_from_value(nb_parts))
         apport_obj = StatutsCivilsApport(
             montant=apport, montant_lettres=number_words_from_value(apport)
         )
         if type_personne == "personne_morale":
-            denomination = st.text_input("Denomination", key=f"{prefix}_denomination")
+            denomination = copyable_text_input(st, "Denomination", key=f"{prefix}_denomination")
             col_b, col_c = st.columns(2)
-            forme = col_b.text_input("Forme juridique", key=f"{prefix}_forme")
-            capital = col_c.text_input("Capital social (euros)", key=f"{prefix}_capital")
-            siege = st.text_input("Siege (adresse affichee)", key=f"{prefix}_siege")
+            forme = copyable_text_input(col_b, "Forme juridique", key=f"{prefix}_forme")
+            capital = copyable_text_input(col_c, "Capital social (euros)", key=f"{prefix}_capital")
+            siege = copyable_text_input(st, "Siege (adresse affichee)", key=f"{prefix}_siege")
             col_d, col_e = st.columns(2)
-            numero_rcs = col_d.text_input("Numero RCS", key=f"{prefix}_rcs")
-            ville_rcs = col_e.text_input("Ville RCS", key=f"{prefix}_ville_rcs")
+            numero_rcs = copyable_text_input(col_d, "Numero RCS", key=f"{prefix}_rcs")
+            ville_rcs = copyable_text_input(col_e, "Ville RCS", key=f"{prefix}_ville_rcs")
             st.caption("Representant legal")
             col_f, col_g, col_h = st.columns(3)
             rep_civilite = col_f.selectbox(
                 "Civilite rep.", ("Monsieur", "Madame"), key=f"{prefix}_rep_civilite"
             )
-            rep_prenom = col_g.text_input("Prenom rep.", key=f"{prefix}_rep_prenom")
-            rep_nom = col_h.text_input("Nom rep.", key=f"{prefix}_rep_nom")
+            rep_prenom = copyable_text_input(col_g, "Prenom rep.", key=f"{prefix}_rep_prenom")
+            rep_nom = copyable_text_input(col_h, "Nom rep.", key=f"{prefix}_rep_nom")
             if not denomination.strip():
                 return None
             return StatutsCivilsAssocie(
@@ -1238,21 +1239,27 @@ def _render_one_selarl_membre(index: int) -> StatutsCivilsAssocie | None:
         civilite = col_b.selectbox(
             "Civilite", ("Monsieur", "Madame"), key=f"{prefix}_civilite"
         )
-        prenom = col_c.text_input("Prenom", key=f"{prefix}_prenom")
-        nom = col_d.text_input("Nom", key=f"{prefix}_nom")
+        prenom = copyable_text_input(col_c, "Prenom", key=f"{prefix}_prenom")
+        nom = copyable_text_input(col_d, "Nom", key=f"{prefix}_nom")
         col_e, col_f, col_g = st.columns(3)
-        date_naissance = col_e.text_input("Date de naissance", key=f"{prefix}_date_naissance")
-        ville_naissance = col_f.text_input("Ville de naissance", key=f"{prefix}_ville_naissance")
-        dep_naissance = col_g.text_input("Departement naissance", key=f"{prefix}_dep_naissance")
+        date_naissance = copyable_text_input(
+            col_e, "Date de naissance", key=f"{prefix}_date_naissance"
+        )
+        ville_naissance = copyable_text_input(
+            col_f, "Ville de naissance", key=f"{prefix}_ville_naissance"
+        )
+        dep_naissance = copyable_text_input(
+            col_g, "Departement naissance", key=f"{prefix}_dep_naissance"
+        )
         col_h, col_i = st.columns(2)
-        nationalite = col_h.text_input("Nationalite", key=f"{prefix}_nationalite")
-        situation = col_i.text_input("Situation matrimoniale", key=f"{prefix}_situation")
-        profession = st.text_input("Profession", key=f"{prefix}_profession")
-        adresse = st.text_input("Adresse personnelle (affichee)", key=f"{prefix}_adresse")
+        nationalite = copyable_text_input(col_h, "Nationalite", key=f"{prefix}_nationalite")
+        situation = copyable_text_input(col_i, "Situation matrimoniale", key=f"{prefix}_situation")
+        profession = copyable_text_input(st, "Profession", key=f"{prefix}_profession")
+        adresse = copyable_text_input(st, "Adresse personnelle (affichee)", key=f"{prefix}_adresse")
         col_j, col_k, col_l = st.columns(3)
-        ordre_dep = col_j.text_input("Departement ordre", key=f"{prefix}_ordre_dep")
-        numero_ordre = col_k.text_input("Numero ordre", key=f"{prefix}_numero_ordre")
-        numero_rpps = col_l.text_input("Numero RPPS", key=f"{prefix}_numero_rpps")
+        ordre_dep = copyable_text_input(col_j, "Departement ordre", key=f"{prefix}_ordre_dep")
+        numero_ordre = copyable_text_input(col_k, "Numero ordre", key=f"{prefix}_numero_ordre")
+        numero_rpps = copyable_text_input(col_l, "Numero RPPS", key=f"{prefix}_numero_rpps")
         if not (prenom.strip() and nom.strip()):
             return None
         return StatutsCivilsAssocie(
@@ -1306,7 +1313,7 @@ def _render_qualification() -> dict[str, object]:
     scm = out_b.checkbox("SCM", value=False, key="selarl_scm")
 
     return {
-        "dossier_reference": st.text_input(
+        "dossier_reference": copyable_text_input(st,
             "Reference dossier",
             key="selarl_dossier_reference",
         ),
@@ -1323,8 +1330,8 @@ def _render_praticien(*, profession: str) -> dict[str, object]:
     st.markdown("**Fiche Client / Praticien**")
     civilite = st.selectbox("Civilite", ("Monsieur", "Madame"), key="selarl_civilite")
     col_d, col_e = st.columns(2)
-    prenom = col_d.text_input("Prenom", key="selarl_prenom")
-    nom = col_e.text_input("Nom", key="selarl_nom")
+    prenom = copyable_text_input(col_d, "Prenom", key="selarl_prenom")
+    nom = copyable_text_input(col_e, "Nom", key="selarl_nom")
     col_f, col_g, col_h = st.columns(3)
     with col_f:
         date_naissance = _date_input_with_today(
@@ -1332,13 +1339,13 @@ def _render_praticien(*, profession: str) -> dict[str, object]:
             key="selarl_date_naissance",
             value=date(1990, 1, 1),
         )
-    ville_naissance = col_g.text_input("Ville de naissance", key="selarl_ville_naissance")
+    ville_naissance = copyable_text_input(col_g, "Ville de naissance", key="selarl_ville_naissance")
     ville_naissance_article_au = col_g.checkbox(
         "au",
         key="selarl_ville_naissance_article_au",
         help="Affiche 'ne au ...' au lieu de 'ne a ...' dans la DNC.",
     )
-    departement_naissance = col_h.text_input(
+    departement_naissance = copyable_text_input(col_h,
         "Departement naissance",
         key="selarl_departement_naissance",
     )
@@ -1349,7 +1356,7 @@ def _render_praticien(*, profession: str) -> dict[str, object]:
         key="selarl_nationalite_choice",
     )
     nationalite = (
-        col_i.text_input("Nationalite autre", key="selarl_nationalite_other")
+        copyable_text_input(col_i, "Nationalite autre", key="selarl_nationalite_other")
         if nationalite_choice == "Autre"
         else nationalite_choice.lower()
     )
@@ -1384,11 +1391,11 @@ def _render_praticien(*, profession: str) -> dict[str, object]:
         conjoint = {
             "conjoint_civilite": conjoint_civilite,
             "conjoint_genre": derive_gender_from_civilite(conjoint_civilite),
-            "conjoint_prenom": conj_b.text_input(
+            "conjoint_prenom": copyable_text_input(conj_b,
                 "Prenom de l'epoux / partenaire",
                 key="selarl_conjoint_prenom",
             ),
-            "conjoint_nom": conj_c.text_input(
+            "conjoint_nom": copyable_text_input(conj_c,
                 "Nom de l'epoux / partenaire",
                 key="selarl_conjoint_nom",
             ),
@@ -1396,12 +1403,12 @@ def _render_praticien(*, profession: str) -> dict[str, object]:
 
     # Numero d'Ordre et RPPS sur une meme ligne (ticket 1.4).
     col_k, col_m = st.columns(2)
-    numero_ordre = col_k.text_input("Numero d'Ordre", key="selarl_numero_ordre")
-    numero_rpps = col_m.text_input("Numero RPPS", key="selarl_numero_rpps")
+    numero_ordre = copyable_text_input(col_k, "Numero d'Ordre", key="selarl_numero_ordre")
+    numero_rpps = copyable_text_input(col_m, "Numero RPPS", key="selarl_numero_rpps")
     # Parents sur la ligne suivante, avec les libelles demandes (ticket 1.4).
     col_n, col_o = st.columns(2)
-    nom_pere = col_n.text_input("Nom et prenom du pere", key="selarl_nom_pere")
-    nom_mere = col_o.text_input(
+    nom_pere = copyable_text_input(col_n, "Nom et prenom du pere", key="selarl_nom_pere")
+    nom_mere = copyable_text_input(col_o,
         "Nom de jeune fille et prenom de la mere",
         key="selarl_nom_mere",
     )
@@ -1410,7 +1417,7 @@ def _render_praticien(*, profession: str) -> dict[str, object]:
     # O24-03 : adresse personnelle sur UNE ligne (parse interne -> num/voie/cp/ville).
     # Remplace les 3 champs (Numero et voie / CP / Ville). Le parse alimente les MEMES
     # cles que l'ancienne grille -> generateur SELARL et gold byte-identique inchanges.
-    _perso_ligne = st.text_input(
+    _perso_ligne = copyable_text_input(st,
         "Adresse personnelle (N° et voie, CP Ville)", key="selarl_adresse_ligne"
     )
     _perso_struct = _parse_address_full(_perso_ligne)
@@ -1448,7 +1455,7 @@ def _render_societe(
 ) -> dict[str, object]:
     st.markdown("**Fiche Societe**")
     col_a, col_b = st.columns(2)
-    denomination = col_a.text_input("Denomination sociale", key="selarl_denomination")
+    denomination = copyable_text_input(col_a, "Denomination sociale", key="selarl_denomination")
     capital_social = col_b.number_input(
         "Capital social (€)",
         min_value=0,
@@ -1468,12 +1475,12 @@ def _render_societe(
     # O24-05 (onglet 24) : valeur nominale calculée automatiquement ET affichée DANS LE
     # CHAMP concerné (text_input désactivé), comme les 5 autres types — plus de simple
     # caption gris. Pas de `key` (sinon « value= » + « key= » fige la valeur initiale).
-    st.text_input(
+    copyable_text_input(st,
         "Valeur nominale d'une part (calculee)",
         value=valeur_nominale_part,
         disabled=True,
     )
-    ville_rcs = st.text_input("RCS (ville)", key="selarl_ville_rcs")
+    ville_rcs = copyable_text_input(st, "RCS (ville)", key="selarl_ville_rcs")
 
     st.markdown("Siege social")
     siege_same_as_personal = st.checkbox(
@@ -1498,7 +1505,7 @@ def _render_societe(
         # O24-03 : siege sur UNE ligne (parse interne -> num/voie/cp/ville). Remplace les
         # 3 champs (Numero et voie / CP / Ville) ; memes cles que l'ancienne grille ->
         # generateur SELARL et gold byte-identique inchanges.
-        _siege_ligne = st.text_input(
+        _siege_ligne = copyable_text_input(st,
             "Adresse du siège (N° et voie, CP Ville)", key="selarl_siege_ligne"
         )
         _siege_struct = _parse_address_full(_siege_ligne)
@@ -1532,11 +1539,11 @@ def _render_societe(
     second_lieu_nom = ""
     second_lieu_adresse = ""
     if autre_lieu_exercice:
-        second_lieu_nom = st.text_input(
+        second_lieu_nom = copyable_text_input(st,
             "Nom du 2e lieu d'exercice",
             key="selarl_second_lieu_exercice_nom",
         )
-        second_lieu_adresse = st.text_input(
+        second_lieu_adresse = copyable_text_input(st,
             "Adresse du 2e lieu d'exercice",
             key="selarl_second_lieu_exercice_adresse",
         )
@@ -1551,7 +1558,7 @@ def _render_societe(
 def _render_ordre_mandataire() -> dict[str, object]:
     st.markdown("**Ordre professionnel**")
     col_a, _ = st.columns(2)
-    departement_ordre = col_a.text_input(
+    departement_ordre = copyable_text_input(col_a,
         "Departement d'inscription a l'ordre",
         key="selarl_departement_ordre",
         help="Exemple : Paris, Loire-Atlantique ou le departement ordinal attendu par le dossier.",
@@ -1560,7 +1567,7 @@ def _render_ordre_mandataire() -> dict[str, object]:
     # comme perso/siege/SELAS. Remplace les 3 champs separes (Adresse / CP / Ville ordre) ;
     # alimente les MEMES cles -> generateur DOC-034 et gold byte-identique inchanges.
     _ordre_struct = _parse_address_full(
-        st.text_input(
+        copyable_text_input(st,
             "Adresse de l'ordre (N° et voie, CP Ville)",
             key="selarl_ordre_adresse_ligne",
         )
@@ -1585,11 +1592,11 @@ def _render_ordre_mandataire() -> dict[str, object]:
     if not st.session_state.get("selarl_mandataire_nom"):
         st.session_state["selarl_mandataire_nom"] = DEFAULT_MANDATAIRE_NOM
     col_f, col_g = st.columns(2)
-    mandataire_prenom = col_f.text_input(
+    mandataire_prenom = copyable_text_input(col_f,
         "Conseiller (prénom)",
         key="selarl_mandataire_prenom",
     )
-    mandataire_nom = col_g.text_input(
+    mandataire_nom = copyable_text_input(col_g,
         "Conseiller (nom)",
         key="selarl_mandataire_nom",
     )
@@ -1622,7 +1629,7 @@ def _render_generation_context(societe: dict[str, object]) -> dict[str, object]:
             f"31 décembre {date.today().year + 1}"
         )
     col_a, col_b = st.columns(2)
-    signature_lieu = col_a.text_input("Lieu de signature", key="selarl_signature_lieu")
+    signature_lieu = copyable_text_input(col_a, "Lieu de signature", key="selarl_signature_lieu")
     with col_b:
         signature_date = _date_input_with_today(
             "Date de signature",
@@ -1635,16 +1642,16 @@ def _render_generation_context(societe: dict[str, object]) -> dict[str, object]:
         value=date.today(),
     )
     col_g, col_h = st.columns(2)
-    depot_banque_nom = col_g.text_input("Banque depot", key="selarl_depot_banque_nom")
-    depot_banque_adresse = col_h.text_input(
+    depot_banque_nom = copyable_text_input(col_g, "Banque depot", key="selarl_depot_banque_nom")
+    depot_banque_adresse = copyable_text_input(col_h,
         "Adresse banque (facultatif)",
         key="selarl_depot_banque_adresse",
         help="Vide : les statuts laissent une zone a completer a la main.",
     )
     col_j, col_k, col_l = st.columns(3)
-    exercice_debut = col_j.text_input("Debut exercice", key="selarl_exercice_debut")
-    exercice_fin = col_k.text_input("Fin exercice", key="selarl_exercice_fin")
-    exercice_cloture_premier = col_l.text_input(
+    exercice_debut = copyable_text_input(col_j, "Debut exercice", key="selarl_exercice_debut")
+    exercice_fin = copyable_text_input(col_k, "Fin exercice", key="selarl_exercice_fin")
+    exercice_cloture_premier = copyable_text_input(col_l,
         "Cloture premier exercice",
         key="selarl_exercice_cloture_premier",
     )
@@ -1912,7 +1919,7 @@ def _cession_text(
 ) -> str:
     key = f"{_CESSION_PREFIX}_cession_{section}_{field}"
     _seed_default(key, default)
-    value = container.text_input(label, key=key, disabled=disabled)
+    value = copyable_text_input(container, label, key=key, disabled=disabled)
     return str(value).strip()
 
 
@@ -2764,7 +2771,7 @@ def _render_scm_cession_form(
         )
         # Label DISTINCT de la valeur nominale de la societe (sinon DuplicateWidgetID :
         # deux text_input desactifs sans cle au meme libelle -> meme ID auto).
-        col_e.text_input(
+        copyable_text_input(col_e,
             "Valeur nominale d'une part de SCM (calculee)",
             value=scm_cedee["valeur_nominale_part"],
             disabled=True,

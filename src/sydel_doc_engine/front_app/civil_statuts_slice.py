@@ -63,6 +63,7 @@ from sydel_doc_engine.front_app.field_derivations import (
     parse_french_date,
 )
 from sydel_doc_engine.front_app.front_widgets import (
+    copyable_text_input,
     date_input_with_today,
     mandataire_inputs,
     seed_closing_date,
@@ -1428,7 +1429,8 @@ def _text(container, prefix: str, field: str, label: str, hint: str | None = Non
     key = f"{prefix}_{field}"
     if key not in st.session_state:
         st.session_state[key] = ""
-    return str(container.text_input(label, key=key, help=hint)).strip()
+    # O24-04 : icône « copier » sur chaque champ texte (helper partagé).
+    return str(copyable_text_input(container, label, key=key, help=hint)).strip()
 
 
 def _int(container, prefix: str, field: str, label: str) -> int:
