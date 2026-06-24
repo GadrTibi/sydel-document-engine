@@ -42,6 +42,19 @@
 
 > **L5 + L6 = UN seul point** (clarifié Gad 2026-06-24) : « ajoute lettre de renonciation » n'était pas une demande séparée, c'est le **texte entre parenthèses** de la case à supprimer = « **Régime communautaire (ajoute lettre de renonciation + avertissement au conjoint)** ». Cette case survivait sur le **formulaire SPFPL** (retirée de SELAS par LIVE-02). Remplacée par un **menu « Régime matrimonial »** (4 régimes mariés) qui dérive le régime + le déclencheur DOC-005/006 (communauté légale). Gate Akainu = RIEN À REDIRE (régénération réelle 4 régimes). Commit `aa00fc6`.
 
+## Retours 2026-06-24 (batch N — Rafael/Albane) — `N`
+
+| # | verbatim | périmètre | statut | validé |
+|---|---|---|---|---|
+| N1 | « le capital doit être divisible / la valeur nominale doit être un entier → enlever ça » (la valeur nominale PEUT être décimale, partout) | tous types | TRAITÉ (figure décimale rendue ; **lettres décimale flaggée Albane** = interim figure 2×). Gate Akainu (3 boucles). | ⬜ |
+| N2 | « il y a deux fois la date de décision, enlever un des deux » | tous types (champ date partagé) | TRAITÉ (libellé calendrier replié `label_visibility=collapsed` + test). Gate Akainu. | ⬜ |
+| N3 | « fais en sorte que tous les montants en lettres soient écrits automatiquement » | tous types | TRAITÉ (déjà auto, 46 sites, 0 manuel). | ⬜ |
+| N4 | « calcule automatiquement la plage de parts » | SCM cession (+ statuts) | TRAITÉ (plages présents/cédées/total auto ; **accent « 1 a/à N » flaggé Albane** ; sous-ens. SPFPL = convention Rafael). Gate Akainu **RIEN À REDIRE**. | ⬜ |
+| N5 | « j'ai fait le test avec deux associés et en cours de test j'en ai ajouté un qui a supprimé les champs des deux précédents » (Albane) | tous formulaires multi-associés (SELAS, civil/SCI/SCM, SELARL) | TRAITÉ (st.rerun prématuré retiré des 3 repeaters + 3 tests de régression). Gate Akainu **RIEN À REDIRE**. | ⬜ |
+| N6 | « Ajouter l'en-tête Statuts. Aérer entre les associés. Remettre les tirets dans la liste de l'article 1. Faire démarrer l'annexe sur une nouvelle page. » | statuts SELAS (médecin + dentiste) | TRAITÉ pt1 (en-tête) + pt3 (**tirets systémiques** via style Word, 25 puces) + pt4 (annexe nouvelle page) + tests ; **pt2 aération flaggée Rafael**. Gate Akainu **RIEN À REDIRE**. | ⬜ |
+
+> Batch N = retours du 2026-06-24 (postérieurs aux 21 O24+LIVE). Tous **Akainu-gatés** (boucle règle 66 close cette session, commits N5 `a951935`, N4 `3b6a159`, N6 `7d47287`+test). Flags métier non bloquants tracés dans `QUESTIONS_RAFAEL.md` (lettres décimale N1, accent plages N4, aération N6).
+
 ## Synthèse machine-lisible
 
 - **Reste à faire (constructible)** : **AUCUN** — les 21 retours sont TRAITÉS. `O24-04` (icône copier
@@ -53,6 +66,6 @@
   re-vérifiés** (sprint de nuit, 29 commits, HEAD `44f7dda`). Gate tour 10 = **CONVERGENCE OUI**
   (0 bloquant, 0 majeur ; 2 mineur de véracité doc corrigés). Suite **594 verts**, ordre-indépendance
   prouvée. Détail : `DEBRIEF_SPRINT_NUIT_2026-06-24.md`.
-- **TRAITÉ (≠ validé), en attente retest Rafael** : **les 21** (O24-01→15 + LIVE-01→06).
+- **TRAITÉ (≠ validé), en attente retest Rafael** : **les 21** (O24-01→15 + LIVE-01→06) **+ le batch N (N1→N6, 2026-06-24, Akainu-gaté règle 66)**.
 - **VALIDÉ** : aucun → le carnet reste plein (Rafael doit retester une fois le canal de déploiement
   tranché — voir DEBRIEF § 7).
