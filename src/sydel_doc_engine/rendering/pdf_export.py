@@ -50,6 +50,7 @@ def export_docx_to_pdf(
     backend: PdfBackendName = "auto",
     overwrite: bool = True,
     timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS,
+    _resolved_backend: _ResolvedBackend | None = None,
 ) -> PdfExportResult:
     source_path = _validate_source_docx(docx_path)
     target_path = _resolve_pdf_path(source_path, pdf_path)
@@ -59,7 +60,11 @@ def export_docx_to_pdf(
         target_path.unlink()
 
     target_path.parent.mkdir(parents=True, exist_ok=True)
-    resolved_backend = _resolve_backend(backend, timeout_seconds=timeout_seconds)
+    # Perf (chantier 2026-06-24) : reutilise un backend deja resolu si fourni (chemin batch),
+    # sinon resout (appel unitaire). Evite de re-sonder Word COM (~4 s) a chaque document.
+    resolved_backend = _resolved_backend or _resolve_backend(
+        backend, timeout_seconds=timeout_seconds
+    )
     if resolved_backend.name == "libreoffice":
         _export_with_libreoffice(
             source_path,
@@ -90,9 +95,15 @@ def export_docx_batch_to_pdf(
     overwrite: bool = True,
     timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS,
 ) -> list[PdfExportResult]:
+    docx_list = [Path(p) for p in docx_paths]
     results: list[PdfExportResult] = []
-    for docx_path in docx_paths:
-        source_path = Path(docx_path)
+    if not docx_list:
+        return results
+    # Perf (chantier 2026-06-24) : resoudre le backend PDF UNE SEULE FOIS pour tout le lot
+    # au lieu de re-sonder a chaque document (sonde Word COM ~4 s x N docs, 100% gaspillee
+    # sur un dossier complet). Garde lot vide : on ne sonde pas s'il n'y a rien a convertir.
+    resolved_backend = _resolve_backend(backend, timeout_seconds=timeout_seconds)
+    for source_path in docx_list:
         target_path = (
             output_dir / source_path.with_suffix(PDF_EXTENSION).name
             if output_dir is not None
@@ -105,6 +116,7 @@ def export_docx_batch_to_pdf(
                 backend=backend,
                 overwrite=overwrite,
                 timeout_seconds=timeout_seconds,
+                _resolved_backend=resolved_backend,
             )
         )
     return results
