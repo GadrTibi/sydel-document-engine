@@ -24,7 +24,9 @@ dev = [
   "pytest>=8.2,<9",
   # re-Akainu T9 : randomise l'ordre de collecte par defaut -> la suite PROUVE
   # l'ordre-independance a chaque run (fini le faux-vert « N runs a ordre constant »).
-  "pytest-randomly>=3.15,<4",
+  # Borne <5 : la preuve d'ordre-independance a tourne sur 4.1.0 (re-Akainu T10 [m1]) ;
+  # un install propre doit pouvoir reproduire cet environnement, pas une 3.x divergente.
+  "pytest-randomly>=3.15,<5",
   "ruff>=0.5,<1",
 ]
 

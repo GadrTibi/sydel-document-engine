@@ -20,11 +20,13 @@ def _deterministic_test_env(tmp_path, monkeypatch):
        d'appels amont. On RESEED `random` a 0 AVANT chaque test : neutralisation robuste par
        construction, quel que soit l'ordre de collecte.
 
-    PREUVE d'ordre-independance (T9) : la suite est verte sur 4 ORDRES de collecte DISTINCTS
-    (pytest-randomly, seeds 1/2/3 + ordre par defaut, 593 verts chacun) -- ce qui prouve
+    PREUVE d'ordre-independance (T9-T10) : la suite reste verte sur PLUSIEURS ORDRES de collecte
+    DISTINCTS (pytest-randomly). Decompte courant = 594 ; les premiers ordres seeds 1/2/3
+    tournaient a 593 AVANT l'ajout du test SELARL symetrique (tour 9), puis l'ordre par defaut
+    et les seeds 7/99 du gate de convergence (tour 10) ont reconfirme 594. C'est ce qui prouve
     l'independance a l'ordre, contrairement aux runs « N fois a ordre constant » (qui ne
     prouvaient que la stabilite, pas l'ordre-independance). pytest-randomly est en dep dev :
-    l'ordre est desormais randomise par defaut a chaque run.
+    l'ordre est randomise par defaut a chaque run.
 
     (Le monkeypatch de `ui_runtime.DEFAULT_ARTIFACTS_DIR` a ete retire : inerte -- la constante
     est liee en valeur par defaut d'argument de `build_output_dir`, sans appelant dans src/.)"""
