@@ -7,6 +7,8 @@ Verrouille les 2 propriétés de sûreté que l'audit a vérifiées à la main :
 
 from __future__ import annotations
 
+import pytest
+
 from sydel_doc_engine.front_app.front_widgets import (
     _copy_button_html,
     copyable_text_input,
@@ -23,6 +25,40 @@ def test_copy_button_html_escapes_dangerous_value() -> None:
     assert "<script>" not in html
     # Les guillemets de la valeur sont échappés (&quot;), pas bruts.
     assert "&quot;" in html
+
+
+def test_date_input_calendrier_label_collapsed_n2(monkeypatch: pytest.MonkeyPatch) -> None:
+    # N2 (Rafael 2026-06-24, Akainu m1) : le date_input « calendrier » du helper partage doit etre
+    # rendu avec label_visibility="collapsed" pour ne PAS afficher le libelle du champ deux fois.
+    # Verrou : sans ce kwarg, le double libelle (« X (calendrier) » + « X ») reviendrait.
+    from datetime import date
+
+    from sydel_doc_engine.front_app import front_widgets
+
+    captured: dict[str, object] = {}
+
+    class _FakeTarget:
+        def date_input(self, label: str, **kwargs: object) -> None:
+            captured["label"] = label
+            captured["label_visibility"] = kwargs.get("label_visibility")
+
+        def button(self, *_a: object, **_k: object) -> bool:
+            return False
+
+        def text_input(self, _label: str, **_kwargs: object) -> str:
+            return ""
+
+    class _FakeSt:
+        session_state: dict[str, object] = {}
+
+    monkeypatch.setattr(front_widgets, "st", _FakeSt())
+    front_widgets.date_input_with_today(
+        "Date de decision", key="d_n2", value=date(2026, 1, 1), container=_FakeTarget()
+    )
+
+    # libelle du calendrier replie -> un seul libelle visible (sur le champ texte)
+    assert captured["label_visibility"] == "collapsed"
+    assert captured["label"] == "Date de decision (calendrier)"
 
 
 class _StubNoColumns:
