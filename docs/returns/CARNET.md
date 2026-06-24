@@ -37,19 +37,21 @@
 | LIVE-02 | « Supprime le champ à cocher "marié sous un régime communautaire" » | live 23-06 | — | TRAITÉ | ⬜ |
 | LIVE-03 | « decembre → décembre » (+ règle globale mois accentués) | live 23-06 | — | TRAITÉ | ⬜ |
 | LIVE-04 | Cession : retirer le CHOIX acte/compromis (menu Étape) — découle de O24-14 | live 23-06 | O24-14 | TRAITÉ | ⬜ |
-| LIVE-05 | « ajoute lettre de renonciation » *(réf. mini-screenshot illisible)* | live 23-06 | — | CLARIF | ⬜ |
-| LIVE-06 | « supprimer cette case à la fin, ne sert à rien » *(réf. mini-screenshot illisible)* | live 23-06 | — | CLARIF | ⬜ |
+| LIVE-05 | « ajoute lettre de renonciation » | live 23-06 | LIVE-06 | TRAITÉ | ⬜ |
+| LIVE-06 | « supprimer cette case à la fin, ne sert à rien » | live 23-06 | — | TRAITÉ | ⬜ |
+
+> **L5 + L6 = UN seul point** (clarifié Gad 2026-06-24) : « ajoute lettre de renonciation » n'était pas une demande séparée, c'est le **texte entre parenthèses** de la case à supprimer = « **Régime communautaire (ajoute lettre de renonciation + avertissement au conjoint)** ». Cette case survivait sur le **formulaire SPFPL** (retirée de SELAS par LIVE-02). Remplacée par un **menu « Régime matrimonial »** (4 régimes mariés) qui dérive le régime + le déclencheur DOC-005/006 (communauté légale). Gate Akainu = RIEN À REDIRE (régénération réelle 4 régimes). Commit `aa00fc6`.
 
 ## Synthèse machine-lisible
 
-- **Reste à faire** (Statut ≠ TRAITÉ/VALIDÉ) : `O24-04` (icône copier, **tous types**, UI — cadré
-  pour Gad, voir `DEBRIEF_SPRINT_NUIT_2026-06-24.md` § 6bis) ; `LIVE-05`/`LIVE-06` (CLARIF, screenshots illisibles).
+- **Reste à faire** (Statut ≠ TRAITÉ/VALIDÉ) : `O24-04` UNIQUEMENT (icône copier, **tous types**, UI
+  — cadré pour Gad, voir `DEBRIEF_SPRINT_NUIT_2026-06-24.md` § 6bis). `LIVE-05`/`LIVE-06` désormais TRAITÉS.
 - **Règle de propagation (Q4 triage, Gad 2026-06-23)** : un retour universel se propage à TOUS les cas concernés ; O24-01/02/03/05 propagés ; O24-06→15 = SELAS-pluri structurel (pas de propagation).
 - **✅ CONVERGENCE Akainu (tour 10, 2026-06-24)** : les défauts ré-ouverts par le verdict 23-06
   (`AKAINU_VERDICT_2026-06-23.md` : 8 bloquant + 16 majeur) sont **tous re-corrigés à la racine et
   re-vérifiés** (sprint de nuit, 29 commits, HEAD `44f7dda`). Gate tour 10 = **CONVERGENCE OUI**
   (0 bloquant, 0 majeur ; 2 mineur de véracité doc corrigés). Suite **594 verts**, ordre-indépendance
   prouvée. Détail : `DEBRIEF_SPRINT_NUIT_2026-06-24.md`.
-- **TRAITÉ (≠ validé), en attente retest Rafael** : tous les O24 sauf O24-04, + tout le LIVE sauf L5/L6.
+- **TRAITÉ (≠ validé), en attente retest Rafael** : tous les O24 sauf O24-04, + **tout le LIVE** (L5/L6 inclus).
 - **VALIDÉ** : aucun → le carnet reste plein (Rafael doit retester une fois le canal de déploiement
   tranché — voir DEBRIEF § 7).

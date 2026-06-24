@@ -6,12 +6,12 @@
 ```
 ┌─ SYDEL · RETOURS CLIENT — compteur de vitesse (post-convergence T10) ─────
 │
-│   CORRIGÉ (code)    [████████████████████░░░░]  18/21 · 86%
-│   CONTRÔLE AKAINU   [████████████████████░░░░]  18/21 · 86%  ✅ convergence T10
+│   CORRIGÉ (code)    [███████████████████████░]  20/21 · 95%
+│   CONTRÔLE AKAINU   [███████████████████████░]  20/21 · 95%  ✅ L6 RIEN À REDIRE
 │   VALIDÉ  (Rafael)  [░░░░░░░░░░░░░░░░░░░░░░░░]   0/21 ·  0%  ⚠ rien validé (normal)
 │   gate : CORRIGÉ ≥ AKAINU ≥ VALIDÉ — un retour ne passe Rafael qu'après Akainu OK
-│   Akainu tour 10 (2026-06-24) : CONVERGENCE OUI (0 bloquant, 0 majeur). 594 verts.
-│   RESTE : O24-04 icône (cadré Gad, § 6bis debrief) · L5/L6 (clarif Rafael, illisibles)
+│   Akainu : convergence T10 + L6 (SPFPL) RIEN À REDIRE (2026-06-24). 594 verts.
+│   RESTE : O24-04 icône copier UNIQUEMENT (cadré Gad, § 6bis debrief)
 │
 │   ── ONGLET 24 (✅=Akainu OK · ⬜=à faire) ──────────────────────────────
 │   ✅ 01 annexe Sydel (régen-propre tous types)   ✅ 02 DNC nommée/dirigeant
@@ -24,9 +24,9 @@
 │
 │   ── RETOURS LIVE ───────────────────────────────────────────────────
 │   ✅ L1 situation=menu   ✅ L2 case régime morte supprimée   ✅ L3 mois accentués   ✅ L4 choix étape
-│   ❓ L5 lettre renonciation   ❓ L6 « case à la fin »   → illisibles, clarif Rafael
+│   ✅ L5+L6 case « Régime communautaire » SPFPL → menu (Akainu RIEN À REDIRE)
 │
-│   RESTE : O24-04 icône copier (cadré Gad) · L5/L6 (clarif Rafael)
+│   RESTE : O24-04 icône copier UNIQUEMENT (cadré Gad, ton « go » attendu)
 │   GARDE-FOU : 0 validé tant que Rafael n'a pas reconfirmé (traité ≠ validé)
 └──────────────────────────────────────────────────────────────────────────
 ```
