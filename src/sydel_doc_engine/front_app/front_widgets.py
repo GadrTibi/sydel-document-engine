@@ -13,9 +13,11 @@ branchent au lieu de dupliquer leur propre `_date()`.
 
 from __future__ import annotations
 
+import html as _html
 from datetime import date
 
 import streamlit as st
+import streamlit.components.v1 as components
 
 from sydel_doc_engine.front_app.field_derivations import (
     DEFAULT_MANDATAIRE_NOM,
@@ -23,6 +25,40 @@ from sydel_doc_engine.front_app.field_derivations import (
     format_french_date,
     parse_french_date,
 )
+
+
+def _copy_button_html(text: str) -> str:
+    """Bouton « copier » autonome (O24-04). Le presse-papier est écrit AU CLIC (le bouton
+    EST le geste utilisateur) -> `navigator.clipboard.writeText` fiable en contexte sécurisé
+    (Streamlit Cloud = https). La valeur transite par un attribut `data-copy` HTML-échappé
+    pour éviter tout problème de quotes/caractères spéciaux dans le handler."""
+    esc = _html.escape(text, quote=True)
+    return (
+        f'<button title="Copier le contenu" data-copy="{esc}" '
+        'onclick="var b=this;navigator.clipboard.writeText(b.dataset.copy).then('
+        "function(){var o=b.textContent;b.textContent='\\u2713 copié';"
+        'setTimeout(function(){b.textContent=o;},1200);});" '
+        'style="cursor:pointer;border:1px solid #d0d0d0;border-radius:6px;background:#fafafa;'
+        'padding:2px 8px;font-size:12px;color:#444;white-space:nowrap;">\U0001F4CB</button>'
+    )
+
+
+def copyable_text_input(container, label: str, *, key: str, help: str | None = None) -> str:
+    """`text_input` + icône « copier » à côté (O24-04, retour Rafael « icône copier par champ »).
+
+    Layout : le champ et l'icône sont placés côte à côte via `container.columns` (UN niveau de
+    nesting, sûr quand `container` est `st` ou une colonne de 1er niveau). L'icône est un petit
+    bouton `components.html` (presse-papier client-side fiable au clic). La valeur copiée est
+    relue dans `st.session_state[key]` au moment du rendu.
+    """
+    col_field, col_copy = container.columns([0.90, 0.10])
+    value = col_field.text_input(label, key=key, help=help)
+    text = str(st.session_state.get(key, "") or "")
+    with col_copy:
+        # Spacer : descend l'icône sous le label pour l'aligner sur le champ.
+        st.markdown("<div style='height:1.75rem'></div>", unsafe_allow_html=True)
+        components.html(_copy_button_html(text), height=40)
+    return value
 
 
 def date_input_with_today(
