@@ -842,7 +842,12 @@ def test_clean_front_streamlit_surface_is_not_legacy() -> None:
         *[item.label for item in app.selectbox],
         *[item.label for item in app.date_input],
     }
-    assert len(app.date_input) == 0
+    # R3 (Rafael 2026-06-24) : un calendrier (st.date_input) est desormais propose EN OPTION
+    # a cote de chaque champ date texte (pour aller plus vite). Avant ce retour la surface
+    # n'avait aucun date_input (saisie texte JJ/MM/AAAA seule). Les calendriers portent le
+    # suffixe « (calendrier) » et coexistent avec le champ texte + le bouton « Aujourd'hui ».
+    assert len(app.date_input) >= 1
+    assert all(str(item.label).endswith("(calendrier)") for item in app.date_input)
     assert "Genre" not in visible_labels
     assert "Titre affichage" not in visible_labels
     assert "Capital social en lettres" not in visible_labels

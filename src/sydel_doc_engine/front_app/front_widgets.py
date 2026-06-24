@@ -105,6 +105,24 @@ def date_input_with_today(
     elif current_value is None:
         st.session_state[key] = format_french_date(value)
 
+    # R3 (Rafael 2026-06-24) : calendrier en OPTION (pour aller plus vite) + bouton
+    # « Aujourd'hui ». Le calendrier ecrit la date formatee dans la cle TEXTE au changement
+    # (on_change) ; le champ texte JJ/MM/AAAA reste la source editable. NESTING-SAFE (aucun
+    # st.columns interne). value=None -> calendrier vide tant qu'on n'a pas choisi.
+    cal_key = f"{key}_cal"
+
+    def _sync_from_calendar() -> None:
+        picked = st.session_state.get(cal_key)
+        if isinstance(picked, date):
+            st.session_state[key] = format_french_date(picked)
+
+    target.date_input(
+        f"{label} (calendrier)",
+        value=None,
+        key=cal_key,
+        format="DD/MM/YYYY",
+        on_change=_sync_from_calendar,
+    )
     if target.button("Aujourd'hui", key=f"{key}_today"):
         st.session_state[key] = format_french_date(date.today())
     raw_value = target.text_input(
