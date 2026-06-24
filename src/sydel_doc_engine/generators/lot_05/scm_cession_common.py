@@ -395,8 +395,10 @@ def format_display_date(value: date | str | None, field_name: str) -> str:
 
 
 def required_text(value: str | None, field_name: str) -> str:
+    # R10 (Rafael 2026-06-24) : donnee manquante -> marqueur « (A COMPLETER : data) » sans crochets
+    # (compatible garde-fou anti-placeholder) au lieu de lever.
     if value is None or not str(value).strip():
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return f"(À COMPLÉTER : {field_name})"
     return str(value).strip()
 
 

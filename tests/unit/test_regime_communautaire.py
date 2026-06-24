@@ -257,18 +257,21 @@ def test_regime_communautaire_blocks_when_batch_option_is_false(tmp_path: Path) 
         LettreAvertissementConjointGenerator().generate(ctx, tmp_path)
 
 
-def test_renonciation_blocks_when_qualite_renoncee_is_missing(tmp_path: Path) -> None:
+def test_renonciation_tokenizes_missing_qualite_renoncee(tmp_path: Path) -> None:
+    # R10 (Rafael 2026-06-24) : une donnee manquante ne bloque PLUS -> marqueur « (À COMPLÉTER : ...) »
+    # visible (SANS crochets -> compatible garde-fou anti-placeholder), generation reussie.
     ctx = _context(qualite_renoncee=None)
 
-    with pytest.raises(ValueError, match="qualite_renoncee"):
-        LettreRenonciationAssocieGenerator().generate(ctx, tmp_path)
+    text = _docx_text(LettreRenonciationAssocieGenerator().generate(ctx, tmp_path))
+    assert "COMPLÉTER" in text and "qualite_renoncee" in text
 
 
-def test_selas_avertissement_blocks_when_abregee_is_missing(tmp_path: Path) -> None:
+def test_selas_avertissement_tokenizes_missing_abregee(tmp_path: Path) -> None:
+    # R10 : donnee manquante (forme_sociale_abregee) ne bloque plus -> marqueur visible.
     ctx = _context("SELAS", forme_sociale_abregee=None)
 
-    with pytest.raises(ValueError, match="forme_sociale_abregee"):
-        LettreAvertissementConjointGenerator().generate(ctx, tmp_path)
+    text = _docx_text(LettreAvertissementConjointGenerator().generate(ctx, tmp_path))
+    assert "COMPLÉTER" in text and "forme_sociale_abregee" in text
 
 
 def test_orchestrator_generates_regime_communautaire_batch_only_when_enabled(

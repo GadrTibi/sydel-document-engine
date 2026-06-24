@@ -459,8 +459,10 @@ def test_acte_blocks_incomplete_credit_vendeur(tmp_path: Path) -> None:
         majoration_interet_retard="4 points",
     )
 
-    with pytest.raises(ValueError, match="credit_vendeur.taux"):
-        ActeCessionPartsScmGenerator().generate(ctx, tmp_path)
+    # R10 (Rafael 2026-06-24) : donnee manquante (credit_vendeur.taux) ne bloque plus -> marqueur
+    # « (À COMPLÉTER : ...) » visible dans l'acte (sans crochets), generation reussie.
+    text = _docx_text(ActeCessionPartsScmGenerator().generate(ctx, tmp_path))
+    assert "COMPLÉTER" in text and "credit_vendeur.taux" in text
 
 
 def test_pv_age_renders_hyphen_bullets_on_two_lists(tmp_path: Path) -> None:

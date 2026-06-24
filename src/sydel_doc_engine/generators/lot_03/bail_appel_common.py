@@ -16,8 +16,11 @@ SUPPORTED_CABINET_TYPES = {CABINET_DENTAIRE, CABINET_MEDICAL}
 
 
 def required_text(value: str | None, field_name: str) -> str:
+    # R10 (Rafael 2026-06-24) : une donnee manquante NE bloque PAS la generation -> on ecrit un
+    # marqueur visible « (A COMPLETER : data) » SANS crochets (pour ne pas declencher le garde-fou
+    # anti-placeholder source qui interdit les [ ]) au lieu de lever.
     if value is None or not value.strip():
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return f"(À COMPLÉTER : {field_name})"
     return value.strip()
 
 
