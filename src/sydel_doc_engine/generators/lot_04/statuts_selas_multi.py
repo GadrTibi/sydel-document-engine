@@ -149,6 +149,10 @@ class StatutsSelasMultiGenerator:
             rendered = _replace_placeholders(text, replacements)
             if is_creation_fee_annexe_line(rendered):  # O24-01 : annexe sans frais cabinet création
                 continue
+            # N6 (Rafael 2026-06-24) : l'annexe demarre sur une NOUVELLE PAGE (parite gold SELARL,
+            # cf. annex_page_break du renderer partage). Le modele source porte le titre « ANNEXE ».
+            if rendered.strip().upper() == "ANNEXE":
+                output_doc.add_page_break()
             _add_rendered_paragraph(output_doc, rendered)
 
         full_text = "\n".join(paragraph.text for paragraph in output_doc.paragraphs)
