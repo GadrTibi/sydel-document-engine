@@ -514,16 +514,19 @@ def _render_selas_associes() -> tuple[
     if _count_key() not in st.session_state:
         st.session_state[_count_key()] = SELAS_NB_MIN
     nombre = _associe_count()
-    st.markdown(
-        f"**Associes ({nombre})** — {SELAS_NB_MIN} a {SELAS_NB_MAX}, exercants / non exercants"
-    )
     cols = st.columns([1, 1, 3])
     if cols[0].button("Ajouter un associe", key=f"{PREFIX}_add"):
         st.session_state[_count_key()] = min(SELAS_NB_MAX, nombre + 1)
-        st.rerun()
     if cols[1].button("Retirer un associe", key=f"{PREFIX}_remove"):
         st.session_state[_count_key()] = max(SELAS_NB_MIN, nombre - 1)
-        st.rerun()
+    # N5 (Albane 2026-06-24) : re-lire le nombre APRES +/- au lieu de st.rerun(). Le st.rerun()
+    # se declenchait AVANT le rendu de la boucle associes -> Streamlit garbage-collectait l'etat
+    # des widgets associes (non instancies sur ce run) -> les champs des associes PRECEDENTS
+    # etaient EFFACES. Sans rerun, la boucle rend directement le nouveau nombre, etat preserve.
+    nombre = _associe_count()
+    st.markdown(
+        f"**Associes ({nombre})** — {SELAS_NB_MIN} a {SELAS_NB_MAX}, exercants / non exercants"
+    )
     cols[2].caption(
         "Cochez le(s) dirigeant(s) sur un associe (President et/ou Directeur General) ; "
         "a defaut, le premier associe physique est president."

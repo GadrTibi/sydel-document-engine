@@ -522,6 +522,26 @@ def test_valeur_nominale_decimale_rendue_n1() -> None:
     assert number_words_from_value(10) == "dix"  # entier inchange
 
 
+def test_selas_ajout_associe_preserve_les_precedents_n5() -> None:
+    # N5 (Albane 2026-06-24) : ajouter un associe ne doit PAS effacer les champs des precedents.
+    # Cause : st.rerun() du bouton "Ajouter" se declenchait AVANT le rendu de la boucle associes
+    # -> Streamlit garbage-collectait l'etat des widgets non instancies -> champs effaces. Fix :
+    # retrait du st.rerun() + re-lecture du count (la boucle rend directement le nouveau nombre).
+    from streamlit.testing.v1 import AppTest
+
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
+    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle creation V1")
+    app = app.run(timeout=180)
+    next(w for w in app.number_input if str(w.key) == "selas_associe_0_nb_actions").set_value(60)
+    next(w for w in app.number_input if str(w.key) == "selas_associe_1_nb_actions").set_value(40)
+    app = app.run(timeout=180)
+    next(b for b in app.button if str(b.key) == "selas_add").click()
+    app = app.run(timeout=180)
+    a0 = next(w for w in app.number_input if str(w.key) == "selas_associe_0_nb_actions").value
+    a1 = next(w for w in app.number_input if str(w.key) == "selas_associe_1_nb_actions").value
+    assert a0 == 60 and a1 == 40  # champs des associes precedents preserves apres ajout
+
+
 def test_civil_capital_zero_blocks() -> None:
     # Dogfood 2026-06-22 : « 0 » passait la garde de presence -> capital 0. Doit bloquer.
     payload = _civil_base(

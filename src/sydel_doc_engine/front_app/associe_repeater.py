@@ -86,14 +86,16 @@ def render_associe_repeater(config: RepeaterConfig) -> list[StatutsCivilsAssocie
     _seed(_count_key(config), config.nb_defaut)
     nombre = associe_count(config)
 
-    st.markdown(f"**Associes ({nombre})**")
     cols = st.columns([1, 1, 3])
     if cols[0].button("Ajouter un associe", key=f"{config.key_prefix}_add"):
         st.session_state[_count_key(config)] = min(config.nb_max, nombre + 1)
-        st.rerun()
     if cols[1].button("Retirer un associe", key=f"{config.key_prefix}_remove"):
         st.session_state[_count_key(config)] = max(config.nb_min, nombre - 1)
-        st.rerun()
+    # N5 (Albane 2026-06-24) : re-lire le nombre APRES +/- au lieu de st.rerun() (qui se declenchait
+    # AVANT le rendu des associes -> Streamlit garbage-collectait l'etat des widgets non instancies
+    # -> champs des associes PRECEDENTS EFFACES). Sans rerun, la boucle rend le nouveau nombre.
+    nombre = associe_count(config)
+    st.markdown(f"**Associes ({nombre})**")
     cols[2].caption(
         f"Entre {config.nb_min} et {config.nb_max} associes. Vocabulaire : {config.titre_unite}."
     )
