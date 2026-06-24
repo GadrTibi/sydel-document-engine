@@ -694,6 +694,28 @@ def test_acte_medical_renders_conjoint_prenom_and_nom(tmp_path: Path) -> None:
     _assert_no_residual_tokens(text)
 
 
+def test_acte_medical_selarl_acquereur_keeps_selarl_au_capital(tmp_path: Path) -> None:
+    # Verrou SYMETRIQUE de la correction d18c0fd (override segment « SELARL au capital de »
+    # -> « [forme_sociale_acquereur] au capital de »). La face SELAS (ABSENCE de « SELARL au
+    # capital de ») est testee dans test_multi_type_front.py:2493 ; ici on verrouille la face
+    # SELARL : pour un acquereur SELARL (cf. _context, forme_sociale="SELARL") le token doit se
+    # remplir « SELARL » -> la ligne de forme ressort « SELARL au capital de » (byte-identique au
+    # modele source d'origine = claim « gold intact » de d18c0fd). Sans ce test, l'override
+    # pourrait casser le rendu SELARL sans qu'aucun test ne le signale.
+    text = _docx_text(
+        ActeCessionCabinetMedicalGenerator().generate(
+            _context(credit_vendeur=True),
+            tmp_path,
+        )
+    )
+
+    assert "SELARL au capital de" in text, (
+        "acquereur SELARL : la ligne de forme doit ressortir « SELARL au capital de » "
+        "(fidelite gold, symetrique du test d'absence SELAS)"
+    )
+    _assert_no_residual_tokens(text)
+
+
 def test_orchestrator_selects_only_requested_cession_cabinet_document() -> None:
     orchestrator = DocumentOrchestrator(build_seed_catalog())
 

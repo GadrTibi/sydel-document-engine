@@ -22,6 +22,9 @@ dev = [
   "mypy>=1.10,<2",
   "pre-commit>=3.7,<4",
   "pytest>=8.2,<9",
+  # re-Akainu T9 : randomise l'ordre de collecte par defaut -> la suite PROUVE
+  # l'ordre-independance a chaque run (fini le faux-vert « N runs a ordre constant »).
+  "pytest-randomly>=3.15,<4",
   "ruff>=0.5,<1",
 ]
 
