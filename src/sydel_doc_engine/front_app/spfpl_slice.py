@@ -64,6 +64,7 @@ from sydel_doc_engine.front_app.address_oneline import (
 )
 from sydel_doc_engine.front_app.associe_repeater import render_nationalite_selectbox
 from sydel_doc_engine.front_app.field_derivations import (
+    MATRIMONIAL_STATUS_PRESETS,
     accentuate_french_months,
     calculate_nominal_value,
     date_to_french_words,
@@ -71,7 +72,10 @@ from sydel_doc_engine.front_app.field_derivations import (
     format_grouped_numeric_value,
     format_numeric_value,
     is_capital_divisible,
+    matrimonial_status_value,
     number_words_from_value,
+    regime_communautaire_from_status,
+    regime_matrimonial_from_status,
     situation_display,
 )
 from sydel_doc_engine.front_app.front_widgets import (
@@ -252,7 +256,21 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
     col_m, col_n = st.columns(2)
     # Parite gold : nationalite en deroulant (NATIONALITY_PRESETS + « Autre »).
     nationalite = render_nationalite_selectbox(prefix, container=col_m)
-    regime = _t(col_n, prefix, "regime_matrimonial", "Regime matrimonial")
+    # L6 (Gad 2026-06-24) : plus de case « Régime communautaire (...) ». L'actionnaire fondateur
+    # SPFPL est marié (conjoint requis par la validation) -> on choisit le RÉGIME dans un MENU
+    # (patron menu ratifié SELAS / LIVE-02). Le menu dérive le régime matrimonial ET le
+    # déclencheur DOC-005/006 (communauté légale uniquement), via les mêmes helpers que la SELAS.
+    _married_regimes = tuple(
+        s for s in MATRIMONIAL_STATUS_PRESETS if matrimonial_status_value(s) == "marie"
+    )
+    regime_label = col_n.selectbox(
+        "Regime matrimonial",
+        _married_regimes,
+        key=f"{prefix}_regime_label",
+        help="« communauté légale » → renonciation + avertissement au conjoint.",
+    )
+    regime_communautaire = regime_communautaire_from_status(regime_label)
+    regime = regime_matrimonial_from_status(regime_label, regime_communautaire)
     # O24-03 : adresse personnelle sur UNE ligne (parse interne -> num/voie/cp/ville
     # exiges par la DNC du president).
     st.caption("Adresse personnelle + filiation (déclaration de non-condamnation)")
@@ -277,13 +295,6 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
     )
     conjoint_prenom = _t(col_p, prefix, "conjoint_prenom", "Prenom conjoint")
     conjoint_nom = _t(col_q, prefix, "conjoint_nom", "Nom conjoint")
-    regime_key = f"{prefix}_regime_communautaire"
-    if regime_key not in st.session_state:
-        st.session_state[regime_key] = False
-    regime_communautaire = st.checkbox(
-        "Regime communautaire (ajoute lettre de renonciation + avertissement au conjoint)",
-        key=regime_key,
-    )
 
     st.markdown("Ordre")
     col_r, col_s, col_t = st.columns(3)
