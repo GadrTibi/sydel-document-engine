@@ -1435,6 +1435,27 @@ def _generate_regime_civil_par_associe(
     produced: list[Path] = []
     for associe in maries:
         ctx = _regime_context_for_associe(base_ctx, payload, associe)
+        # SCS4 (Akainu M1) : DOC-005 (renonciation) lit societe.forme_sociale_complete et
+        # DOC-006 (avertissement) lit societe.forme_sociale_abregee. Le Company civil ne pose
+        # PAS ces champs (sinon il changerait l'en-tete du PV, qui lit complete en priorite).
+        # On les renseigne donc UNIQUEMENT dans le contexte des lettres de regime, derives de
+        # la forme civile -> plus de marqueur « (À COMPLÉTER : …) », PV des autres docs intact.
+        if ctx.societe is not None:
+            societe = ctx.societe
+            forme = societe.forme_sociale or ""
+            ctx = ctx.model_copy(
+                update={
+                    "societe": societe.model_copy(
+                        update={
+                            "forme_sociale_abregee": societe.forme_sociale_abregee
+                            or ctx.structure,
+                            "forme_sociale_complete": societe.forme_sociale_complete or forme,
+                            "forme_sociale_libelle_long": societe.forme_sociale_libelle_long
+                            or forme,
+                        }
+                    )
+                }
+            )
         if associe.apport is not None:
             ctx = ctx.model_copy(
                 update={

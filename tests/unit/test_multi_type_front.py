@@ -45,6 +45,14 @@ def _docx_text(path: Path) -> str:
 def _assert_clean(text: str) -> None:
     assert "[" not in text
     assert "]" not in text
+    # SCS4 (Akainu m1 2026-06-25) : le marqueur « (À COMPLÉTER : …) » est volontairement
+    # SANS crochets (pour échapper au garde-fou source) -> un champ ctx oublié le shippe
+    # silencieusement (vécu : DOC-006 SCS « (À COMPLÉTER : forme_sociale_abregee) »). On le
+    # scanne donc explicitement, pour TOUS les documents.
+    assert "À COMPLÉTER" not in text, "marqueur (À COMPLÉTER : …) résiduel"
+    assert "A COMPLETER" not in text.upper().replace("À", "A").replace("É", "E"), (
+        "marqueur (A COMPLETER : …) résiduel"
+    )
     # O24-01 (onglet 24) : les 2 items frais de cabinet de création (« lettre de mission » /
     # « acompte des honoraires ») sont retirés de l'annexe de TOUS les statuts, partout.
     low = text.lower()
@@ -666,6 +674,12 @@ def test_scs4_associe_marie_communaute_genere_doc005_006(tmp_path: Path) -> None
     generated = css.generate_dossier(payload, tmp_path / "scs-regime")
     names = {p.name for p in generated.docx_paths}
     assert _REGIME_DOCS <= names
+    # SCS4 (Akainu m1) : le CONTENU des DOC-005/006 doit etre propre (le test ne se
+    # contente plus de la presence des fichiers — un placeholder « (À COMPLÉTER : …) »
+    # y avait echappe). On scanne chaque document du couple regime.
+    for path in generated.docx_paths:
+        if path.name in _REGIME_DOCS:
+            _assert_clean(_docx_text(path))
 
 
 def test_scs_sans_associe_marie_ne_genere_pas_doc005_006(tmp_path: Path) -> None:
