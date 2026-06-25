@@ -29,6 +29,7 @@ from sydel_doc_engine.app.ui_runtime import (
 from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import (
     Address,
+    Apport,
     CentreImpots,
     Company,
     DocumentGenerationContext,
@@ -68,6 +69,18 @@ from sydel_doc_engine.front_app.front_widgets import (
     mandataire_inputs,
     seed_closing_date,
     siege_same_as_perso_checkbox,
+)
+from sydel_doc_engine.front_app.selas_multi_slice import (
+    _associe_filename_slug,
+    _associes_maries_communaute,
+    _regime_context_for_associe,
+    _rename_with_slug,
+)
+from sydel_doc_engine.generators.lot_02.lettre_avertissement_conjoint import (
+    LettreAvertissementConjointGenerator,
+)
+from sydel_doc_engine.generators.lot_02.lettre_renonciation_associe import (
+    LettreRenonciationAssocieGenerator,
 )
 
 # Mapping structure -> (type statuts civils, doc_code statuts).
@@ -141,8 +154,15 @@ def _creation_bundle_codes(
     option_is: bool = False,
     scm_satellites_pair: bool = False,
     scm_inter_sel: bool = False,
+    regime_communautaire: bool = False,
 ) -> tuple[str, ...]:
     codes: list[str] = [statuts_code, *cc.TRONC_COMMUN_CODES, cc.DOC_PV_NOMINATION_GERANT]
+    # SCS4 (Albane 2026-06-25) : un associe SCS marie sous communaute legale genere
+    # le couple regime (DOC-005 renonciation + DOC-006 avertissement), comme la SELAS
+    # pluri. Codes de PLAN (ce qui SERA livre) ; l'emission de fait est per-associe dans
+    # generate_dossier (hors orchestrateur, noms de fichiers distincts), pas via l'orchestrateur.
+    if regime_communautaire:
+        codes.extend(cc.REGIME_COMMUNAUTAIRE_CODES)
     # SCS5 (Albane 2026-06-25) : « ajouter le doc liste des souscripteurs » -> NON LIVRABLE par un
     # simple append (DOC-042 est gate SPFPL-apport, 1 souscripteur). La SCS exige un generateur +
     # entree catalog + predicat DEDIES (TODO, metier-adjacent comme ANO-045).
@@ -694,12 +714,14 @@ def build_civil_plan(payload: dict[str, object]) -> CivilSlicePlan:
     _statuts_type, doc_code = CIVIL_TYPE_BY_STRUCTURE[structure]
     option_is = bool(payload.get("option_is")) and structure in OPTION_IS_STRUCTURES
     scm_pair = _scm_satellites_pair_active(payload)
+    regime_actif = bool(_associes_maries_communaute(payload))
     document_codes = _creation_bundle_codes(
         structure,
         doc_code,
         option_is=option_is,
         scm_satellites_pair=scm_pair,
         scm_inter_sel=_scm_inter_sel_active(payload),
+        regime_communautaire=regime_actif,
     )
     blockers = _validate(payload)
     warnings_list = [
@@ -1142,7 +1164,11 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
     pv_associes = _pv_associes(associes)
     ctx = DocumentGenerationContext(
         structure=structure,
-        dossier_options=_dossier_options(structure, option_is=option_is),
+        dossier_options=_dossier_options(
+            structure,
+            option_is=option_is,
+            regime_communautaire=bool(_associes_maries_communaute(payload)),
+        ),
         impots=_centre_impots(payload) if option_is else None,
         personne_signataire=cc.founder_person(common),
         signature=Signature(
@@ -1229,11 +1255,15 @@ def _pv_associes(associes: list[StatutsCivilsAssocie]) -> list:
     return mapped
 
 
-def _dossier_options(structure: str, *, option_is: bool = False) -> DossierOptions:
+def _dossier_options(
+    structure: str, *, option_is: bool = False, regime_communautaire: bool = False
+) -> DossierOptions:
     return DossierOptions(
         associe_unique=False,
         scm_satellites=structure == "SCM",
         option_is=option_is,
+        # SCS4 : active la garde regime des generateurs DOC-005/006 (per-associe).
+        regime_communautaire=regime_communautaire,
     )
 
 
@@ -1356,13 +1386,22 @@ def generate_dossier(payload: dict[str, object], output_dir: Path) -> GeneratedD
     if not plan.can_generate:
         raise ValueError(plan.reason)
     ctx = build_generation_context(payload)
+    # SCS4 : DOC-005/006 ne passent PAS par l'orchestrateur (1 doc_id -> 1 fichier de
+    # nom fixe ecraserait les couples si plusieurs associes maries). Ils sont retires
+    # des codes confies a l'orchestrateur et emis UNE FOIS PAR associe marie ci-dessous
+    # (noms de fichiers distincts), exactement comme la SELAS pluri (_generate_regime_par_associe).
+    orchestrator_codes = tuple(
+        code for code in plan.document_codes if code not in cc.REGIME_COMMUNAUTAIRE_CODES
+    )
     docx_paths = generate_docx_files_for_document_codes(
         ctx,
         output_dir,
-        plan.document_codes,
+        orchestrator_codes,
     )
     # O24-02 : la DNC porte le nom du dirigeant (gerant) dans tous les cas.
     docx_paths = rename_dnc_with_signataire(docx_paths, ctx)
+    # SCS4 : couple regime (DOC-005/006) per-associe marie sous communaute.
+    docx_paths = [*docx_paths, *_generate_regime_civil_par_associe(payload, ctx, output_dir)]
     zip_path = generate_zip_file(output_dir, docx_paths)
     return GeneratedDossier(
         output_dir=output_dir,
@@ -1373,6 +1412,50 @@ def generate_dossier(payload: dict[str, object], output_dir: Path) -> GeneratedD
 
 
 # --- helpers internes ---------------------------------------------------------
+
+
+def _generate_regime_civil_par_associe(
+    payload: dict[str, object],
+    base_ctx: DocumentGenerationContext,
+    output_dir: Path,
+) -> list[Path]:
+    """SCS4 : emet le couple regime (DOC-005 renonciation + DOC-006 avertissement)
+    UNE FOIS PAR associe civil marie sous communaute legale.
+
+    Reprend le mecanisme SELAS pluri (_regime_context_for_associe + renommage par
+    associe quand plusieurs maries) mais INJECTE l'apport DE CET associe : le ctx
+    civil n'a pas d'apport unique au niveau dossier (chaque associe porte le sien,
+    contrairement a la SELAS uni dont le contexte expose un apport unique)."""
+    maries = _associes_maries_communaute(payload)
+    if not maries:
+        return []
+    suffix_par_associe = len(maries) > 1
+    renonciation_gen = LettreRenonciationAssocieGenerator()
+    avertissement_gen = LettreAvertissementConjointGenerator()
+    produced: list[Path] = []
+    for associe in maries:
+        ctx = _regime_context_for_associe(base_ctx, payload, associe)
+        if associe.apport is not None:
+            ctx = ctx.model_copy(
+                update={
+                    "apport": Apport(
+                        montant=associe.apport.montant,
+                        montant_lettres=(
+                            associe.apport.montant_lettres
+                            or number_words_from_value(associe.apport.montant)
+                        ),
+                    )
+                }
+            )
+        rendu_renonciation = renonciation_gen.generate(ctx, output_dir)
+        rendu_avertissement = avertissement_gen.generate(ctx, output_dir)
+        if suffix_par_associe:
+            slug = _associe_filename_slug(associe)
+            rendu_renonciation = _rename_with_slug(rendu_renonciation, slug)
+            rendu_avertissement = _rename_with_slug(rendu_avertissement, slug)
+        produced.append(rendu_renonciation)
+        produced.append(rendu_avertissement)
+    return produced
 
 
 def _siege_display(payload: dict[str, object]) -> str:

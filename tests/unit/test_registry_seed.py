@@ -38,11 +38,14 @@ def test_seed_catalog_regime_communautaire_scope_is_limited_to_batch_structures(
 
     assert len(rc_documents) == 2
     for document in rc_documents:
+        # SCS4 (Albane 2026-06-25) : la SCS reprend le bloc regime matrimonial de la
+        # SELAS pluri -> DOC-005/006 desormais dans le scope SCS aussi.
         assert set(document.structures) == {
             "SELARL",
             "SELAS",
             "SPFPL cession",
             "SPFPL apport",
+            "SCS",
         }
         assert document.general_condition == "dossier.options.regime_communautaire == true"
 

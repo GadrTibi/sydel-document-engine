@@ -645,6 +645,48 @@ def test_scs_slice_generates_clean(tmp_path: Path) -> None:
     _assert_bundle_clean(generated, _TRONC_DOCS | {"statuts_scs.docx"})
 
 
+def test_scs4_associe_marie_communaute_genere_doc005_006(tmp_path: Path) -> None:
+    # SCS4 (Albane 2026-06-25) : la SCS reprend le bloc regime matrimonial de la SELAS
+    # pluri -> un associe SCS marie sous communaute legale genere DOC-005 (renonciation)
+    # + DOC-006 (avertissement), per-associe comme la SELAS (avant : capture morte, le
+    # bloc UI captait le conjoint/regime mais AUCUN document n'etait emis — BLOQUANT Akainu).
+    payload = _civil_base(
+        "SCS",
+        "scs",
+        [
+            _pp("Jean", "Durand", 60, 1, 60, 600, role="commandite"),
+            _pp("Alice", "Martin", 40, 61, 100, 400, role="commanditaire"),
+        ],
+    )
+    payload["associes"][0].regime_communautaire_associe = _regime_associe("Paule", "Durand")
+    plan = css.build_civil_plan(payload)
+    assert plan.can_generate is True
+    assert "DOC-005" in plan.document_codes
+    assert "DOC-006" in plan.document_codes
+    generated = css.generate_dossier(payload, tmp_path / "scs-regime")
+    names = {p.name for p in generated.docx_paths}
+    assert _REGIME_DOCS <= names
+
+
+def test_scs_sans_associe_marie_ne_genere_pas_doc005_006(tmp_path: Path) -> None:
+    # SCS4 non-regression : une SCS sans associe marie sous communaute NE genere PAS
+    # le couple regime (bundle de base inchange).
+    payload = _civil_base(
+        "SCS",
+        "scs",
+        [
+            _pp("Jean", "Durand", 60, 1, 60, 600, role="commandite"),
+            _pp("Alice", "Martin", 40, 61, 100, 400, role="commanditaire"),
+        ],
+    )
+    plan = css.build_civil_plan(payload)
+    assert "DOC-005" not in plan.document_codes
+    assert "DOC-006" not in plan.document_codes
+    generated = css.generate_dossier(payload, tmp_path / "scs-no-regime")
+    names = {p.name for p in generated.docx_paths}
+    assert not (_REGIME_DOCS & names)
+
+
 def test_sci_iris_slice_generates_clean(tmp_path: Path) -> None:
     payload = _civil_base(
         "SCI IRIS",

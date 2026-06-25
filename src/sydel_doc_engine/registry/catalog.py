@@ -39,6 +39,9 @@ REGIME_COMMUNAUTAIRE_STRUCTURES: list[str] = [
     "SELAS",
     "SPFPL cession",
     "SPFPL apport",
+    # SCS4 (Albane 2026-06-25) : la SCS reprend le bloc regime matrimonial de la
+    # SELAS pluri -> un associe SCS marie sous communaute genere DOC-005/006.
+    "SCS",
 ]
 
 BAIL_AVENANT_STRUCTURES: list[str] = [
