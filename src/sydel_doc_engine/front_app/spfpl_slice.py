@@ -679,7 +679,8 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
 
     founder_genre = payload.get("genre") or Gender.MASCULIN
     founder = SpfplPerson(
-        civilite_affichage=str(payload.get("civilite") or "Docteur"),
+        # SP2 (Rafael 2026-06-25) : civilite civile M./Mme, jamais « Docteur » (titre a part).
+        civilite_affichage=str(payload.get("civilite") or "Monsieur"),
         prenom=str(payload.get("prenom") or ""),
         prenoms=str(payload.get("prenoms") or payload.get("prenom") or ""),
         nom=str(payload.get("nom") or ""),
@@ -969,7 +970,7 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
             apports_numeraire_montant="0 euro",
             souscripteurs=[
                 CapitalSouscripteur(
-                    civilite_affichage="Docteur",
+                    civilite_affichage=str(payload.get("civilite") or "Monsieur"),  # SP2
                     prenom=str(payload.get("prenom") or ""),
                     nom=str(payload.get("nom") or ""),
                     profession="chirurgien-dentiste",
@@ -1202,7 +1203,7 @@ def _build_associes_cible(payload: dict[str, object]) -> list[object]:
     nb_cedees = int(cession_data.get("nb_cedees") or 0)  # type: ignore[union-attr]
     associes: list[object] = [
         AssocieCible(
-            civilite_affichage=str(a.get("civilite") or "Docteur"),
+            civilite_affichage=str(a.get("civilite") or "Monsieur"),  # SP2
             prenom=str(a.get("prenom") or ""),
             nom=str(a.get("nom") or ""),
             nb_parts_avant=int(a.get("avant") or 0),

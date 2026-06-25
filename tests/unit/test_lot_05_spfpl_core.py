@@ -160,7 +160,9 @@ def _base_context(*, operation: str = "cession") -> DocumentGenerationContext:
 
 def _spfpl_person() -> SpfplPerson:
     return SpfplPerson(
-        civilite_affichage="Docteur",
+        # SP2 (Rafael 2026-06-25) : civilite civile M./Mme (reflete le slice : selectbox
+        # « Monsieur/Madame »), « Docteur » reste le TITRE (« Dr » abrege en repartition).
+        civilite_affichage="Monsieur",
         prenom="Camille",
         nom="Martin",
         genre=Gender.MASCULIN,
@@ -233,11 +235,28 @@ def test_acte_cession_parts_generates_dynamic_capital_and_preserves_source_frais
 
     text = _docx_text(output_path)
 
+    # SP1/SP3/SP4 (Albane 2026-06-25) : acte rebati en TOKEN-REPLACEMENT fidele au modele
+    # source -> texte legal COMPLET (clauses GAP / SIGNIFICATION / AFFIRMATION DE SINCERITE,
+    # absentes de l'ancien from-scratch), accents preserves, repartition « Dr <nom> détenant N
+    # parts » (abrege « Dr », accentue). Fidelite de STRUCTURE (aucun .docx gold de sortie
+    # n'existe pour cet acte). NB SP2 « civilite » : la phrase d'identite rend [civilite_cedant]
+    # = la donnee (« Docteur » tant que §14.2 le pose) -> assertion volontairement non posee ici,
+    # cf. flag metier QUESTIONS_RAFAEL (civilite civile M./Mme a trancher Albane).
     assert output_path.name == "acte_cession_parts_spfpl.docx"
-    assert "Docteur Camille Martin detenant 70 parts" in text
-    assert "Docteur Louise Bernard detenant 30 parts" in text
-    assert "mille euros (1 000) euro par part cedee" in text
-    assert "cession d'action consentie" in text
+    # SP2 (Rafael 2026-06-25) : la civilite du cedant dans la phrase d'identite est CIVILE
+    # (« Monsieur Camille Martin »), pas « Docteur Camille Martin » (le titre reste « Dr »
+    # uniquement la ou le modele l'abrege, ex. repartition).
+    assert "Monsieur Camille Martin" in text
+    assert "Docteur Camille Martin" not in text
+    # Repartition dynamique fidele : « Dr » abrege + « détenant » accentue.
+    assert "Dr Camille Martin détenant 70 parts" in text
+    assert "Dr Louise Bernard détenant 30 parts" in text
+    # Clauses du modele source qui MANQUAIENT dans l'ancien from-scratch (SP1 « tout revoir »).
+    assert "GARANTIE D’ACTIF ET DE PASSIF" in text
+    assert "AFFIRMATION DE SINCERITE" in text
+    assert "SIGNIFICATION DE LA CESSION" in text
+    assert "moyennant le prix de" in text
+    assert "FRAIS" in text  # clause frais presente (l'ancien from-scratch la paraphrasait)
     _assert_clean(text)
 
 
