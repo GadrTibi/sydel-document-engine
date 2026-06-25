@@ -252,7 +252,7 @@ def render_selas_uni_medecin_form() -> dict[str, object]:
     # ne s'affichent QUE pour un associe MARIE (la clause matrimoniale n'utilise le conjoint
     # que dans ce cas ; un celibataire rend juste « celibataire »). Plus de champs conjoint
     # parasites pour un celibataire.
-    is_marie = "marié" in situation_maritale.lower()
+    is_marie = "marie" in situation_maritale.lower().replace("é", "e")
     if is_marie:
         conjoint_civilite, conjoint_prenom, conjoint_nom = _render_conjoint()
     else:
@@ -371,12 +371,12 @@ def render_selas_uni_medecin_form() -> dict[str, object]:
 def _render_conjoint() -> tuple[str, str, str]:
     """Saisie du conjoint (clause matrimoniale des statuts SELAS medecin).
 
-    Le modele source DOC-018 porte les tokens conjoint (civilite / prenom / nom)
-    de maniere INCONDITIONNELLE — `add_conjoint_replacements` les exige meme pour
-    un associe non marie. On collecte donc toujours le conjoint pour ne pas bloquer
-    la generation ; le wording de la clause distingue ensuite marie / non marie cote
-    moteur. Aucune regle inventee : c'est le contrat du modele SEL d'exercice."""
-    st.caption("Conjoint (clause matrimoniale des statuts — requis par le modele)")
+    Retour Rafael 2026-06-25 (#2) : appele UNIQUEMENT pour un associe MARIE. Le bloc
+    identite actif utilise le token combine `[situation_matrimoniale_statuts]` (clause qui,
+    pour un non-marie, rend juste « celibataire » sans conjoint) ; `add_conjoint_replacements`
+    ne leve plus pour un non-marie. On ne collecte donc le conjoint que s'il est pertinent —
+    meme logique que la SELAS pluri. Aucune regle inventee : c'est le contrat du modele SEL."""
+    st.caption("Conjoint (clause matrimoniale des statuts — associe marie)")
     col_a, col_b, col_c = st.columns(3)
     civilite = col_a.selectbox(
         "Civilite conjoint",
@@ -538,17 +538,20 @@ def build_selas_uni_medecin_plan(payload: dict[str, object]) -> SelasUniMedecinP
     # contexte SEL d'exercice), via une entree derivee.
     data = _to_selarl_input(payload)
     blockers = list(selarl_slice.validate_selarl_input(data))
-    # Dogfood 2026-06-22 : le modele DOC-018 porte les tokens conjoint de maniere
-    # INCONDITIONNELLE (add_conjoint_replacements les exige meme pour un non marie) ;
-    # un conjoint vide passait la validation SELARL (conjoint requis seulement si marie)
-    # puis crashait a la generation. On valide donc toujours la presence du conjoint.
-    for field, name in (
-        ("conjoint_civilite", "civilite du conjoint"),
-        ("conjoint_prenom", "prenom du conjoint"),
-        ("conjoint_nom", "nom du conjoint"),
-    ):
-        if not str(payload.get(field) or "").strip():
-            blockers.append(f"SELAS medecin : {name} requis (le modele DOC-018 l'exige).")
+    # Retour Rafael 2026-06-25 (#2 — Akainu B1) : le conjoint n'est requis QUE pour un associe
+    # MARIE (meme gate que le formulaire `is_marie`). Le generateur rend « celibataire » sans
+    # conjoint (add_conjoint_replacements ne leve plus pour un non-marie) : un celibataire/pacse/
+    # divorce/veuf doit pouvoir generer. Un MARIE sans conjoint reste bloque (vraie donnee
+    # manquante). Avant : 3 blockers inconditionnels -> celibataire bloque (can_generate=False).
+    is_marie = "marie" in str(payload.get("situation_maritale") or "").lower().replace("é", "e")
+    if is_marie:
+        for field, name in (
+            ("conjoint_civilite", "civilite du conjoint"),
+            ("conjoint_prenom", "prenom du conjoint"),
+            ("conjoint_nom", "nom du conjoint"),
+        ):
+            if not str(payload.get(field) or "").strip():
+                blockers.append(f"SELAS medecin : {name} requis pour un associe marie.")
     document_codes = selected_document_codes(payload)
     warnings_list = [
         "SELAS unipersonnelle medecin V1 : associe unique, vocabulaire actions. "

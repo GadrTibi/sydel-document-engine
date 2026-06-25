@@ -4063,9 +4063,8 @@ def test_selas_uni_medecin_generates_doc018_bundle(tmp_path: Path) -> None:
 
 
 def test_selas_uni_medecin_empty_conjoint_blocks() -> None:
-    # Dogfood 2026-06-22 : DOC-018 porte les tokens conjoint inconditionnellement ; un
-    # conjoint vide passait la validation SELARL (conjoint requis seulement si marie) puis
-    # crashait a la generation. Doit bloquer proprement.
+    # Retour Rafael 2026-06-25 (#2) : un associe MARIE sans conjoint reste bloque proprement
+    # (vraie donnee manquante). Le payload de base est marie.
     from sydel_doc_engine.front_app import selas_uni_medecin_slice as uni
 
     payload = _selas_uni_medecin_payload()
@@ -4074,6 +4073,30 @@ def test_selas_uni_medecin_empty_conjoint_blocks() -> None:
     plan = uni.build_selas_uni_medecin_plan(payload)
     assert plan.can_generate is False
     assert any("conjoint" in b.lower() for b in plan.blockers)
+
+
+def test_selas_uni_medecin_celibataire_can_generate(tmp_path: Path) -> None:
+    # Retour Rafael 2026-06-25 (#2 — Akainu B1) : un associe CELIBATAIRE (champs conjoint vides,
+    # comme le front les pose desormais) doit pouvoir GENERER (plus de blockers conjoint
+    # inconditionnels). Symetrique du test marie-sans-conjoint ci-dessus.
+    from sydel_doc_engine.front_app import selas_uni_medecin_slice as uni
+
+    payload = _selas_uni_medecin_payload()
+    payload["situation_maritale"] = "célibataire"
+    payload["conjoint_civilite"] = ""
+    payload["conjoint_prenom"] = ""
+    payload["conjoint_nom"] = ""
+    plan = uni.build_selas_uni_medecin_plan(payload)
+    assert plan.can_generate is True
+    assert not any("conjoint" in b.lower() for b in plan.blockers)
+
+    generated = uni.generate_dossier(payload, tmp_path / "selas-uni-celibataire")
+    statuts_text = _docx_text(
+        next(p for p in generated.docx_paths if p.name == "statuts_selas_medecin.docx")
+    )
+    assert "célibataire" in statuts_text
+    assert "sous le régime de" not in statuts_text
+    assert "avec Madame" not in statuts_text
 
 
 def test_selas_uni_medecin_pv_uses_actions_not_parts(tmp_path: Path) -> None:
