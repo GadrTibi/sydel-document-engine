@@ -366,9 +366,9 @@ def capital_after_lines(ctx: DocumentGenerationContext) -> list[str]:
             f"{nb_parts} {part_label}"
         )
         if associe.numero_part_unique:
-            details += f", numerotee {associe.numero_part_unique}"
+            details += f", numérotée {associe.numero_part_unique}"
         elif associe.plage_parts:
-            details += f", numerotees de {associe.plage_parts}"
+            details += f", numérotées de {associe.plage_parts}"
         lines.append(details)
 
     if total_after != total:

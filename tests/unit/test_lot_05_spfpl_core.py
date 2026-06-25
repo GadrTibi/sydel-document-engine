@@ -314,6 +314,26 @@ def test_contrat_apport_blocks_missing_commissaire(tmp_path: Path) -> None:
         ContratApportSpfplGenerator().generate(ctx, tmp_path)
 
 
+def test_contrat_apport_empty_address_renders_marker_not_blank(tmp_path: Path) -> None:
+    """Akainu M1 round 2 : le front construit toujours `Address(adresse_affichee=str(...) or "")`.
+    Une adresse vide (adresse_affichee="" + sous-champs vides) NE DOIT PAS rendre un blanc
+    silencieux (« Siège social :  » / « Demeurant  , ») mais le marqueur « (À COMPLÉTER : …) »
+    (R10), cohérent avec les jumeaux company_siege_display / person_address_display."""
+    ctx = _base_context(operation="apport")
+    ctx.apporteur.adresse_personnelle = Address(adresse_affichee="")
+    ctx.societe_spfpl.siege = Address(adresse_affichee="")
+
+    output_path = ContratApportSpfplGenerator().generate(ctx, tmp_path)
+    text = _docx_text(output_path)
+
+    # Aucun blanc silencieux : pas de « Demeurant  , » ni de siège vide.
+    assert "Demeurant  ," not in text
+    assert "Demeurant ," not in text
+    # Le marqueur visible apparait a la place (jamais une adresse fantome).
+    assert "(À COMPLÉTER : apporteur.adresse_personnelle" in text
+    assert "(À COMPLÉTER : societe_spfpl.siege" in text
+
+
 def test_attestation_capital_is_limited_to_unique_souscripteur(tmp_path: Path) -> None:
     ctx = _base_context(operation="apport")
     ctx.capital_souscription.souscripteurs.append(

@@ -51,16 +51,24 @@ def _date_fr(value: object) -> str:
     return str(value or "")
 
 
-def _addr_display(address: Address | None) -> str:
+def _addr_display(address: Address | None, field_name: str) -> str:
     """Adresse en UNE chaine, PRIORITE a `adresse_affichee` (Akainu M1 : le ctx fournit
     l'adresse en `adresse_affichee` — pattern dominant lot_05 ; lire seulement num/voie/cp/ville
-    sortait des adresses VIDES). Repli sur les sous-champs structures."""
-    if address is None:
-        return ""
-    if address.adresse_affichee:
+    sortait des adresses VIDES).
+
+    Akainu M1 (round 2) : repli sur `required_text` (marqueur « (À COMPLÉTER : …) » visible,
+    R10 Rafael) et JAMAIS une chaine vide — cohérent avec les jumeaux `company_siege_display` /
+    `person_address_display`. Un `adresse_affichee=""` (front : `Address(adresse_affichee=str(...) or "")`)
+    + sous-champs vides rendait « Siège social :  » blanc : interdit."""
+    if address is not None and address.adresse_affichee:
         return address.adresse_affichee.strip()
-    voie = f"{_txt(address.num_voie)} {_txt(address.voie)}".strip()
-    return f"{voie}, {_txt(address.cp)} {_txt(address.ville)}".strip(" ,")
+    if address is None:
+        return required_text(None, field_name)
+    num = required_text(address.num_voie, f"{field_name}.num_voie")
+    voie = required_text(address.voie, f"{field_name}.voie")
+    cp = required_text(address.cp, f"{field_name}.cp")
+    ville = required_text(address.ville, f"{field_name}.ville")
+    return f"{num} {voie}, {cp} {ville}"
 
 
 def _entity_rep(entity: ProfessionalEntity) -> str:
@@ -144,8 +152,10 @@ class ContratApportSpfplGenerator:
     ) -> dict[str, str]:
         ordre = apporteur.ordre
         conjoint = apporteur.conjoint
-        perso = _addr_display(apporteur.adresse_personnelle)
-        siege = _addr_display(societe_spfpl.siege)
+        perso = _addr_display(
+            apporteur.adresse_personnelle, "apporteur.adresse_personnelle"
+        )
+        siege = _addr_display(societe_spfpl.siege, "societe_spfpl.siege")
         dirigeant_fonction = required_text(
             societe_spfpl.dirigeant.fonction if societe_spfpl.dirigeant else None,
             "societe_spfpl.dirigeant.fonction",

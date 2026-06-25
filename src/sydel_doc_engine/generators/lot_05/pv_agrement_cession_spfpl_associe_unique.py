@@ -50,16 +50,16 @@ class PvAgrementCessionSpfplAssocieUniqueGenerator:
                 f"{required_text(societe_cible.denomination, 'societe_cible.denomination')}, "
                 "au capital de "
                 f"{required_text(societe_cible.capital_social, 'societe_cible.capital_social')} "
-                "euros, compose de "
+                "euros, composé de "
                 f"{required_int(societe_cible.nb_parts_total, 'societe_cible.nb_parts_total')} "
                 "parts, a pris les décisions suivantes :"
             ),
             alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
         )
-        add_ordre_du_jour(docx)
+        add_ordre_du_jour(docx, ctx)
         add_resolution_agrement(docx, ctx, subject="L'associé unique")
-        add_article_7_bis(docx, ctx, subject="L'associe unique")
-        add_pouvoirs_resolution(docx, subject="L'associe unique")
+        add_article_7_bis(docx, ctx, subject="L'associé unique")
+        add_pouvoirs_resolution(docx, subject="L'associé unique")
         add_paragraph(
             docx,
             (

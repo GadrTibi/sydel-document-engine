@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from datetime import date
 from pathlib import Path
 
@@ -91,7 +92,7 @@ def _base_context(*, associe_unique: bool = True) -> DocumentGenerationContext:
                 civilite_affichage="Docteur",
                 prenom="Camille",
                 nom="Martin",
-                qualite="gerant associe",
+                qualite="gérant associé",
             ),
         ),
     )
@@ -184,6 +185,27 @@ def _assert_no_placeholders_or_options(text: str) -> None:
     assert "d'acquerir/de recevoir" not in text
 
 
+# SP3 (Albane 2026-06-25) + Akainu M2 : les 2 PV étaient ENTIÈREMENT non accentués. Ce garde-fou
+# fait échouer le test si l'un des mots français qui DOIVENT porter un accent reparait nu dans le
+# texte généré (cause exacte qu'un test faible avait laissé passer). « détenant » (presence_lines,
+# fidèle au modèle source) reste hors liste : accepté par Akainu (« detient légitime »).
+_MOTS_NON_ACCENTUES_INTERDITS = (
+    "Societe", "societe", "associe", "associes", "Associes", "associee", "qualite",
+    "numerotee", "numerotees", "consequent", "agree", "divise", "liberees", "attribuees",
+    "maniere", "entierement", "inchange", "reunis", "reguliere", "gerance", "Siege",
+    "assemblee", "Assemblee", "habilitee", "preside", "seance", "resolutions", "proposees",
+    "prevus", "reglementation", "adresses", "delai", "precede", "compose", "correlative",
+    "formalites",
+)
+
+
+def _assert_french_accents(text: str) -> None:
+    residus = sorted(
+        {mot for mot in _MOTS_NON_ACCENTUES_INTERDITS if re.search(rf"\b{re.escape(mot)}\b", text)}
+    )
+    assert not residus, f"Mots français non accentués dans le PV : {residus}"
+
+
 def test_note_information_generates_cession_wording(tmp_path: Path) -> None:
     output_path = NoteInformationGenerator().generate(_unique_context(), tmp_path)
 
@@ -219,6 +241,11 @@ def test_pv_associe_unique_generates_cession_wording(tmp_path: Path) -> None:
     assert "contrat d'apport" not in text
     assert "autorise l'apport" not in text
     assert "parts apportees" not in text
+    # Akainu M1 : la denomination reelle du SPFPL beneficiaire (plus « la SPFPL » hardcode).
+    assert "Agrément d'un nouvel associé, la SPFPL MARTIN ;" in text
+    assert "la SPFPL ;" not in text
+    # Akainu M2 / SP3 : aucun mot francais non accentue.
+    _assert_french_accents(text)
     _assert_no_placeholders_or_options(text)
 
 
@@ -236,6 +263,11 @@ def test_pv_plusieurs_associes_generates_presence_and_signatures(tmp_path: Path)
     assert "Projet du contrat de cession" in text
     assert "Camille Martin" in text
     assert "Louise Bernard" in text
+    # Akainu M1 : la denomination reelle du SPFPL beneficiaire (plus « la SPFPL » hardcode).
+    assert "Agrément d'un nouvel associé, la SPFPL MARTIN ;" in text
+    assert "la SPFPL ;" not in text
+    # Akainu M2 / SP3 : aucun mot francais non accentue.
+    _assert_french_accents(text)
     _assert_no_placeholders_or_options(text)
 
 

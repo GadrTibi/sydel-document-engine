@@ -44,7 +44,7 @@ class PvAgrementCessionSpfplPlusieursAssociesGenerator:
 
         docx = new_document()
         add_societe_cible_header(docx, ctx)
-        add_pv_title(docx, "L'ASSEMBLEE GENERALE EXTRAORDINAIRE", ctx)
+        add_pv_title(docx, "L'ASSEMBLÉE GÉNÉRALE EXTRAORDINAIRE", ctx)
         for line in reunion_intro_lines(ctx):
             add_paragraph(docx, line)
         add_paragraph(
@@ -54,10 +54,10 @@ class PvAgrementCessionSpfplPlusieursAssociesGenerator:
                 f"{required_text(societe_cible.denomination, 'societe_cible.denomination')}, "
                 "au capital de "
                 f"{required_text(societe_cible.capital_social, 'societe_cible.capital_social')} "
-                "euros, compose de "
+                "euros, composé de "
                 f"{required_int(societe_cible.nb_parts_total, 'societe_cible.nb_parts_total')} "
-                "parts, se sont reunis sur convocation reguliere de la gerance au siege "
-                "de la Societe."
+                "parts, se sont réunis sur convocation régulière de la gérance au siège "
+                "de la Société."
             ),
             alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
         )
@@ -68,22 +68,22 @@ class PvAgrementCessionSpfplPlusieursAssociesGenerator:
             docx,
             (
                 "Les associés présents ou représentés disposent ensemble de la totalité "
-                "des parts formant le capital de la societe. L'assemblee est habilitee "
-                "a prendre les decisions extraordinaires."
+                "des parts formant le capital de la société. L'assemblée est habilitée "
+                "à prendre les décisions extraordinaires."
             ),
             alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
         )
         _add_president_sentence(docx, ctx)
         _add_depot_documents(docx, ctx)
-        add_ordre_du_jour(docx)
-        add_resolution_agrement(docx, ctx, subject="L'assemblee generale")
-        add_article_7_bis(docx, ctx, subject="L'assemblee generale")
-        add_pouvoirs_resolution(docx, subject="L'assemblee generale")
+        add_ordre_du_jour(docx, ctx)
+        add_resolution_agrement(docx, ctx, subject="L'assemblée générale")
+        add_article_7_bis(docx, ctx, subject="L'assemblée générale")
+        add_pouvoirs_resolution(docx, subject="L'assemblée générale")
         add_paragraph(
             docx,
             (
                 "De tout ce que dessus, il a été dressé le présent procès-verbal qui a "
-                "été signé après lecture par tous les associes."
+                "été signé après lecture par tous les associés."
             ),
             alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
         )
@@ -110,7 +110,7 @@ def _add_president_sentence(docx, ctx: DocumentGenerationContext) -> None:
     add_paragraph(
         docx,
         (
-            f"{person_display(president, 'reunion.president')} preside la seance en qualite "
+            f"{person_display(president, 'reunion.president')} préside la séance en qualité "
             f"de {required_text(president.qualite, 'reunion.president.qualite')}."
         ),
         alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
@@ -131,26 +131,26 @@ def _add_depot_documents(docx, ctx: DocumentGenerationContext) -> None:
     for item in [
         "Les copies des convocations des associés ;",
         (
-            f"Projet du contrat de cession des parts sociales detenues par {cedant_name} "
+            f"Projet du contrat de cession des parts sociales détenues par {cedant_name} "
             f"au profit de la {societe_spfpl_name};"
         ),
-        "Le rapport de la gerance ;",
-        "Le texte des resolutions proposees.",
+        "Le rapport de la gérance ;",
+        "Le texte des résolutions proposées.",
     ]:
         add_hyphen_list_item(docx, item)
     add_paragraph(
         docx,
         (
-            "Le President declare que tous les documents prevus par la reglementation et "
-            "les statuts ont bien ete adresses aux associes avec la convocation."
+            "Le Président déclare que tous les documents prévus par la réglementation et "
+            "les statuts ont bien été adressés aux associés avec la convocation."
         ),
         alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
     )
     add_paragraph(
         docx,
         (
-            "Ils ont ete tenus a leur disposition au siege social pendant le delai de "
-            "quinze jours ayant precede l'assemblee."
+            "Ils ont été tenus à leur disposition au siège social pendant le délai de "
+            "quinze jours ayant précédé l'assemblée."
         ),
         alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
     )
@@ -162,4 +162,4 @@ def _add_depot_documents(docx, ctx: DocumentGenerationContext) -> None:
         ),
         alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
     )
-    add_paragraph(docx, "Puis le President rappelle l'ordre du jour :")
+    add_paragraph(docx, "Puis le Président rappelle l'ordre du jour :")

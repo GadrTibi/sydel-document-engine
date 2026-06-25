@@ -35,7 +35,7 @@ def add_societe_cible_header(docx, ctx: DocumentGenerationContext) -> None:
             required_text(societe_cible.forme_sociale, "societe_cible.forme_sociale"),
             f"Au capital de {_capital_social(societe_cible)} euros",
             (
-                "Siege social : "
+                "Siège social : "
                 f"{required_text(siege.num_voie, 'societe_cible.siege.num_voie')} "
                 f"{required_text(siege.voie, 'societe_cible.siege.voie')}, "
                 f"{required_text(siege.cp, 'societe_cible.siege.cp')} "
@@ -44,7 +44,7 @@ def add_societe_cible_header(docx, ctx: DocumentGenerationContext) -> None:
             (
                 "Immatriculée au RCS de "
                 f"{required_text(societe_cible.ville_rcs, 'societe_cible.ville_rcs')} "
-                "sous le n "
+                "sous le n° "
                 f"{required_text(societe_cible.numero_rcs, 'societe_cible.numero_rcs')}"
             ),
         ],
@@ -76,8 +76,12 @@ def reunion_intro_lines(ctx: DocumentGenerationContext) -> tuple[str, str]:
     )
 
 
-def add_ordre_du_jour(docx) -> None:
-    add_paragraph(docx, "Agrément d'un nouvel associé, la SPFPL ;")
+def add_ordre_du_jour(docx, ctx: DocumentGenerationContext) -> None:
+    # Akainu M1 (2026-06-25) : la denomination reelle du SPFPL beneficiaire etait ignoree
+    # (« la SPFPL » hardcode) -> rendre la denomination du ctx.
+    societe_spfpl = required_societe_spfpl(ctx)
+    denomination = required_text(societe_spfpl.denomination, "societe_spfpl.denomination")
+    add_paragraph(docx, f"Agrément d'un nouvel associé, la {denomination} ;")
     add_paragraph(docx, "Modification corrélative des statuts ;")
     add_paragraph(docx, "Pouvoirs pour l'accomplissement des formalités.")
     add_paragraph(docx, "Dès lors, il est décidé de ce qui suit :")
@@ -99,20 +103,20 @@ def add_resolution_agrement(
         (
             f"{subject} autorise la cession par {person_display(cedant, 'cedant')} de "
             f"{required_int(cession_parts.nb_parts, 'cession_parts.nb_parts')} parts sociales "
-            "qu'il detient de la "
-            f"{required_text(societe_cible.denomination, 'societe_cible.denomination')}, a la "
+            "qu'il détient de la "
+            f"{required_text(societe_cible.denomination, 'societe_cible.denomination')}, à la "
             f"{required_text(societe_spfpl.denomination, 'societe_spfpl.denomination')}, "
-            f"numerotees de {_plage_parts(cession_parts)} "
-            "inclus a compter de ce jour."
+            f"numérotées de {_plage_parts(cession_parts)} "
+            "inclus à compter de ce jour."
         ),
         alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
     )
     add_paragraph(
         docx,
         (
-            f"Par consequent, {subject.lower()} agree la societe "
+            f"Par conséquent, {subject.lower()} agrée la société "
             f"{required_text(societe_spfpl.denomination, 'societe_spfpl.denomination')} "
-            "en qualite de nouvelle associee a compter de ce jour."
+            "en qualité de nouvelle associée à compter de ce jour."
         ),
         alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
     )
@@ -133,22 +137,22 @@ def add_article_7_bis(docx, ctx: DocumentGenerationContext, *, subject: str) -> 
     add_paragraph(
         docx,
         (
-            "Le capital social de la Societe est fixe a "
+            "Le capital social de la Société est fixé à "
             f"{required_text(societe_cible.capital_social, 'societe_cible.capital_social')} euros "
             f"({_capital_social_lettres(societe_cible)}) "
-            "et est divise en "
+            "et est divisé en "
             f"{required_int(societe_cible.nb_parts_total, 'societe_cible.nb_parts_total')} "
             "parts sociales d'un montant de "
             f"{_valeur_nominale_part(societe_cible)} "
-            "euros chacune de nominal, entierement liberees, attribuees aux Associes de "
-            "la maniere suivante :"
+            "euros chacune de nominal, entièrement libérées, attribuées aux Associés de "
+            "la manière suivante :"
         ),
         alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
     )
     for line in capital_after_lines(ctx):
         add_hyphen_list_item(docx, line)
     add_paragraph(docx, "»")
-    add_paragraph(docx, "Le reste de l'article est inchange.")
+    add_paragraph(docx, "Le reste de l'article est inchangé.")
 
 
 def add_pouvoirs_resolution(docx, *, subject: str) -> None:
