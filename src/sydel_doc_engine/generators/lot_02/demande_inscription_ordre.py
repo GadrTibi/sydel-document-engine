@@ -186,6 +186,12 @@ def _conseil_departemental_lines(
         # (« de » / « du ») avant le departement, pour gerer l'accord. Defaut
         # « de » = comportement historique (SELARL byte-identique).
         connecteur = (ordre.connecteur_departement or "de").strip() or "de"
+        # SU2 (Albane 2026-06-25) : SELAS uni — destinataire SANS « de l'Ordre des
+        # <profession> », réduit à « Conseil départemental <connecteur> <departement> »
+        # (ex. « Conseil départemental des Hauts de Seine »). Flag SELAS-only ;
+        # SELARL / SELAS multi conservent la ligne historique byte-identique.
+        if ordre.destinataire_sans_mention_ordre:
+            return [f"Conseil départemental {connecteur} {departement}"]
         return [
             (
                 "Conseil départemental de l'Ordre des "

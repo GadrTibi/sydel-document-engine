@@ -805,6 +805,12 @@ class OrdreProfessionnel(BaseModel):
     # Defaut « de » = comportement historique byte-identique pour tous les
     # callers qui ne le renseignent pas (SELARL inchangee). Retours Rafael R6.
     connecteur_departement: str | None = None
+    # SU2 (Albane 2026-06-25) : SELAS unipersonnelle — le destinataire de la
+    # demande d'inscription OMET « de l'Ordre des <profession> » et ne garde que
+    # « Conseil départemental <connecteur> <departement> » (ex. « Conseil
+    # départemental des Hauts de Seine »). Défaut False = SELARL / SELAS multi
+    # byte-identiques (« Conseil départemental de l'Ordre des médecins de X »).
+    destinataire_sans_mention_ordre: bool = False
     destinataire_appel: str | None = None
     profession_signataire_affichee: str | None = None
     profession_ligne_destinataire: str | None = None

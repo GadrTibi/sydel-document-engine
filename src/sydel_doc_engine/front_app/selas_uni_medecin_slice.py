@@ -50,10 +50,15 @@ from sydel_doc_engine.front_app.address_oneline import (
 from sydel_doc_engine.front_app.associe_repeater import render_nationalite_selectbox
 from sydel_doc_engine.front_app.field_derivations import (
     DEFAULT_TITRE_AFFICHAGE,
+    MATRIMONIAL_STATUS_PRESETS,
     accentuate_french_months,
     calculate_nominal_value,
     derive_gender_from_civilite,
     format_numeric_value,
+    matrimonial_status_value,
+    regime_communautaire_from_status,
+    regime_matrimonial_from_status,
+    situation_display,
 )
 from sydel_doc_engine.front_app.front_widgets import (
     copyable_text_input,
@@ -223,23 +228,26 @@ def render_selas_uni_medecin_form() -> dict[str, object]:
     adresse_cp = _adresse_struct.cp if _adresse_struct else ""
     adresse_ville = _adresse_struct.ville if _adresse_struct else ""
 
-    st.caption("Situation matrimoniale (clause des statuts)")
-    col_sm, col_rm = st.columns(2)
-    situation_maritale = _t(
-        col_sm, "situation_maritale", "Situation matrimoniale (ex: celibataire)"
+    # SU1 (Albane 2026-06-25) : MEME DEROULE que la SELARL / SELAS pluri — UN SEUL
+    # champ « Situation matrimoniale » (menu preset). Le regime matrimonial ET le
+    # regime de la communaute (DOC-005/006) sont DERIVES du libelle ; plus de double
+    # champ texte (situation + regime) ni de case a cocher dediee. La derivation est
+    # celle, validee, de la fiche praticien SELARL (regime_*_from_status).
+    situation_label = st.selectbox(
+        "Situation matrimoniale",
+        MATRIMONIAL_STATUS_PRESETS,
+        key=f"{PREFIX}_situation",
     )
-    regime_matrimonial = _t(
-        col_rm, "regime_matrimonial", "Regime matrimonial (ex: separation de biens)"
+    situation_maritale = situation_display(
+        matrimonial_status_value(situation_label),
+        derive_gender_from_civilite(civilite),
     )
-    # Conditionnel canon SELAS « Si regime communautaire » : ajoute la lettre de
-    # renonciation (DOC-005) + la lettre d'avertissement (DOC-006) au bundle. Le
-    # constructeur SELARL reutilise produit alors le contexte regime ; le conjoint
-    # et le regime matrimonial deviennent requis (valide cote SELARL).
-    regime_communautaire = _toggle(
-        st,
-        "regime_communautaire",
-        "Regime communautaire (genere renonciation + avertissement conjoint)",
+    regime_communautaire = regime_communautaire_from_status(situation_label)
+    regime_matrimonial = regime_matrimonial_from_status(
+        situation_label, regime_communautaire
     )
+    if regime_communautaire:
+        st.caption("Regime de la communaute : DOC-005 et DOC-006 seront generes.")
     conjoint_civilite, conjoint_prenom, conjoint_nom = _render_conjoint()
 
     st.caption("Filiation + ordre professionnel (declaration / demande inscription)")
@@ -471,6 +479,12 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
 
     if ctx.statuts_sel is not None:
         ctx.statuts_sel.overlay = "selas_medecin"
+
+    # SU2 (Albane 2026-06-25) : la demande d'inscription de la SELAS uni adresse le
+    # « Conseil départemental <connecteur> <departement> » SANS « de l'Ordre des
+    # médecins ». Flag SELAS-only -> SELARL / SELAS multi inchangées.
+    if ctx.ordre is not None:
+        ctx.ordre.destinataire_sans_mention_ordre = True
 
     if ctx.capital is not None:
         ctx.capital.type_titre = "actions"

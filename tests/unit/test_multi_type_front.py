@@ -2843,6 +2843,48 @@ def test_selas_uni_medecin_ordre_adresse_sur_une_ligne(tmp_path: Path, monkeypat
     assert "selas_uni_medecin_ordre_adresse_ligne_1" not in keys
 
 
+def test_su1_selas_uni_situation_un_seul_champ_menu(tmp_path: Path, monkeypatch) -> None:
+    # SU1 (Albane 2026-06-25) : la SELAS unipersonnelle aligne son deroule matrimonial
+    # sur la SELARL — UN SEUL champ « Situation matrimoniale » (menu preset). Le regime
+    # matrimonial ET le regime de communaute (DOC-005/006) sont DERIVES du libelle ;
+    # plus de double champ texte (situation + regime) ni de case a cocher dediee.
+    from streamlit.testing.v1 import AppTest
+
+    from sydel_doc_engine.front_app import shell
+
+    monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-su1-selas-uni")
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
+    app.selectbox(key="clean_dossier_type").set_value("SELAS unipersonnelle medecin creation V1")
+    app = app.run(timeout=180)
+
+    selectbox_keys = {str(w.key) for w in app.selectbox}
+    text_keys = {str(w.key) for w in app.text_input}
+    # UN SEUL champ : le menu « Situation matrimoniale ».
+    assert "selas_uni_medecin_situation" in selectbox_keys
+    # Plus AUCUN champ texte situation/regime separe, ni case a cocher dediee.
+    assert "selas_uni_medecin_situation_maritale" not in text_keys
+    assert "selas_uni_medecin_regime_matrimonial" not in text_keys
+    assert "selas_uni_medecin_regime_communautaire" not in text_keys
+    assert "selas_uni_medecin_regime_communautaire" not in selectbox_keys
+
+
+def test_su2_selas_uni_destinataire_conseil_departemental_sans_ordre(tmp_path: Path) -> None:
+    # SU2 (Albane 2026-06-25) : SELAS unipersonnelle — le destinataire de la demande
+    # d'inscription est « Conseil departemental <connecteur> <departement> », SANS
+    # « de l'Ordre des medecins ». SELARL / SELAS multi gardent la ligne historique
+    # (verifie plus bas que le gold partage n'est pas touche).
+    from sydel_doc_engine.front_app import selas_uni_medecin_slice as uni
+
+    payload = _selas_uni_medecin_payload()
+    payload["departement_ordre"] = "Hauts de Seine"
+    generated = uni.generate_dossier(payload, tmp_path / "selas-uni-su2")
+    text = _docx_text(
+        next(p for p in generated.docx_paths if p.name == "demande_inscription_ordre.docx")
+    )
+    assert "Conseil départemental de Hauts de Seine" in text
+    assert "de l'Ordre des médecins" not in text
+
+
 @pytest.mark.parametrize(
     "label, prefix, has_siege, perso_keys",
     [
