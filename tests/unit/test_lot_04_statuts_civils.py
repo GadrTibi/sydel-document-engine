@@ -245,7 +245,7 @@ def test_statuts_scs_generates_roles_and_lu_approuve(tmp_path: Path) -> None:
         for paragraph in cell.paragraphs
     )
 
-    assert output_path.name == "statuts_scs.docx"
+    assert output_path.name == "Statuts SCS EXEMPLE.docx"
     # En-tete apport (source para 41, accents) rendu par le chemin source, non reduplique.
     assert "Associés commandités" in text
     assert text.count("Associés commandités") == 1

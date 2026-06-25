@@ -114,7 +114,7 @@ _CASES = [
             ),
             d,
         ),
-        "statuts_scs.docx",
+        "Statuts SCS EXEMPLE.docx",
         lambda: _source("SCS"),
         id="SCS",
     ),

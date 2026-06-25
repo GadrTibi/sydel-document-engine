@@ -642,7 +642,7 @@ def test_scs_slice_generates_clean(tmp_path: Path) -> None:
     assert plan.can_generate is True
     assert plan.document_codes == ("DOC-019", "DOC-001", "DOC-002", "DOC-003", "DOC-004")
     generated = css.generate_dossier(payload, tmp_path / "scs")
-    _assert_bundle_clean(generated, _TRONC_DOCS | {"statuts_scs.docx"})
+    _assert_bundle_clean(generated, _TRONC_DOCS | {"Statuts SCS EXEMPLE.docx"})
 
 
 def test_scs4_associe_marie_communaute_genere_doc005_006(tmp_path: Path) -> None:
@@ -814,8 +814,8 @@ def test_scs_three_associes_generates_clean(tmp_path: Path) -> None:
     assert plan.can_generate is True
     assert plan.document_codes == ("DOC-019", "DOC-001", "DOC-002", "DOC-003", "DOC-004")
     generated = css.generate_dossier(payload, tmp_path / "scs3")
-    _assert_bundle_clean(generated, _TRONC_DOCS | {"statuts_scs.docx"})
-    statuts_text = _names_in(generated, "statuts_scs.docx")
+    _assert_bundle_clean(generated, _TRONC_DOCS | {"Statuts SCS EXEMPLE.docx"})
+    statuts_text = _names_in(generated, "Statuts SCS EXEMPLE.docx")
     for nom in ("Durand", "Martin", "Petit"):
         assert nom in statuts_text
 
@@ -2192,7 +2192,7 @@ def test_front_routes_to_sci_slice_and_generates(tmp_path: Path, monkeypatch) ->
         ("SCM creation V1", "statuts_scm.docx"),
         ("SCI creation V1", "statuts_sci.docx"),
         ("SCI IRIS creation V1", "statuts_sci_iris.docx"),
-        ("SCS creation V1", "statuts_scs.docx"),
+        ("SCS creation V1", "Statuts SCS EXEMPLE.docx"),
         ("SPFPL medecins (forme SAS) creation V1", "statuts_sas_spfpl_medecins.docx"),
         ("SPFPL dentistes - cession creation V1", "statuts_spfpl_cession.docx"),
         ("SPFPL dentistes - apport creation V1", "statuts_spfpl_apport.docx"),

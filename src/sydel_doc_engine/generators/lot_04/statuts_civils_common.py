@@ -16,6 +16,9 @@ from sydel_doc_engine.domain.models import (
     StatutsCivilsContext,
 )
 from sydel_doc_engine.generators.lot_04.annexe_filter import is_creation_fee_annexe_line
+from sydel_doc_engine.generators.lot_04.statuts_sel_exercice_common import (
+    statuts_output_filename,
+)
 from sydel_doc_engine.rendering.docx_builder import (
     add_paragraph,
     add_statuts_article_heading,
@@ -160,7 +163,18 @@ def generate_statuts_civil_docx(
         raise ValueError(f"placeholder source residuel dans le rendu {DOCUMENT_CODE}.")
 
     output_dir.mkdir(parents=True, exist_ok=True)
-    output_path = output_dir / template.output_filename
+    # SCS6 (Albane 2026-06-25) : pour la SCS, le fichier statuts porte la denomination
+    # (« Statuts <denomination>.docx ») au lieu du nom fixe « statuts_scs.docx » — meme
+    # convention que la SELARL, deja ratifiee (2026-06-10, helper statuts_output_filename).
+    # Le « _ » du verbatim « Statuts_{denomination_sociale} » est sa notation placeholder
+    # (cf. le snake_case « denomination_sociale ») -> on aligne sur la convention espace
+    # ratifiee. Les autres civiles (SCI / SCI IRIS / SCM) gardent leur nom fixe.
+    filename = (
+        statuts_output_filename(data.denomination, template.output_filename)
+        if template.expected_structure == "SCS"
+        else template.output_filename
+    )
+    output_path = output_dir / filename
     output_doc.save(output_path)
     return output_path
 
