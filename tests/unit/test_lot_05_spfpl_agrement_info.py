@@ -195,7 +195,7 @@ _MOTS_NON_ACCENTUES_INTERDITS = (
     "maniere", "entierement", "inchange", "reunis", "reguliere", "gerance", "Siege",
     "assemblee", "Assemblee", "habilitee", "preside", "seance", "resolutions", "proposees",
     "prevus", "reglementation", "adresses", "delai", "precede", "compose", "correlative",
-    "formalites",
+    "formalites", "present", "depose", "declare", "decisions", "decide",
 )
 
 
@@ -203,7 +203,12 @@ def _assert_french_accents(text: str) -> None:
     residus = sorted(
         {mot for mot in _MOTS_NON_ACCENTUES_INTERDITS if re.search(rf"\b{re.escape(mot)}\b", text)}
     )
-    assert not residus, f"Mots français non accentués dans le PV : {residus}"
+    # Akainu M1 : la preposition « a » devant l'heure (« a 10 heures ») doit etre « à ». Check cible
+    # (pas un \ba\b global : « il a pris » = verbe avoir legitime ; « 41 a 100 » = echo fidele de la
+    # plage texte-libre SPFPL, convention Rafael N4, hors perimetre generateur).
+    if re.search(r"\ba \d+\s*heure", text):
+        residus.append("a {heure}")
+    assert not residus, f"Mots français non accentués dans le PV : {sorted(residus)}"
 
 
 def test_note_information_generates_cession_wording(tmp_path: Path) -> None:

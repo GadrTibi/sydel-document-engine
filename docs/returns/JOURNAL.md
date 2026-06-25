@@ -149,6 +149,16 @@ j'ajoute UNE ligne ici : `- [AAAA-MM-JJ HH:MM] [TYPE] description (réf : SHA / 
 - [~T3] **Q-RAFAEL** ajoutées : lieu-dit sans numéro (O24-03), périmètre PACS (O24-11) → `QUESTIONS_RAFAEL.md`.
 - [~T3] **AUDIT** re-Akainu tour 3 relancé sur les 6 items résiduels (objectif RIEN À REDIRE).
 
+## 2026-06-25 — lot Albane 14 items (Lot A/B/C/D) + boucle Akainu
+
+- [~] **ACTION** Lot A (SU3 ville signature=siège ; SU4 date nomination=signature ; SCS2 date PV=signature), Lot B SCS (SCS1 retirer conseiller ; SCS3 Fonction→gérant ; SCS4 bloc régime matrimonial repris de SELAS pluri ; SCS5 liste souscripteurs actions→parts ; SCS6 nom statuts dynamique), Lot C (SU1 situation matrimoniale 1 champ déroulé SELARL ; SU2 « conseil départemental {dept} » sans « de l'Ordre »), Lot D SP2 (civilité M./Mme défaut front) → tous **Akainu RIEN À REDIRE**, poussés.
+- [~] **ACTION** Lot D cessions : acte_cession_parts_spfpl + acte_cession_actions_spfpl rebâtis/confirmés token-replacement fidèles + helper partagé `elision_de` (utils/grammar) appliqué à 6 sites (« de cent euros »/« d'un euro ») → Akainu RIEN À REDIRE exhaustif. SP4 (« réutiliser les blocs validés SELARL ») = satisfait par ces rebuilds fidèles.
+- [~] **AUDIT (Akainu)** contrat_apport : MAJEUR M1 round 2 — `_addr_display` rendait un BLANC silencieux (« Siège social :  ») sur `Address(adresse_affichee="")` + sous-champs vides (cas atteignable en prod, front `Address(adresse_affichee=str(...) or "")`).
+- [~] **ACTION** (`d3329d0`) contrat_apport M1 r2 : `_addr_display` repli sur `required_text` (marqueur « (À COMPLÉTER : …) », R10) — jamais de blanc, cohérent avec jumeaux `company_siege_display`/`person_address_display` ; test cas adresse vide ajouté.
+- [~] **AUDIT (Akainu)** 2 PV agrément cession SPFPL : BLOQUANT B1 — accentuation SP3 (« revoir les accents ») massivement incomplète (from-scratch entièrement non accentué) ; MAJEUR M1 « la SPFPL » hardcodé (dénomination ignorée) ; MAJEUR M2 test faible (aucune assertion accents).
+- [~] **ACTION** (`d3329d0`) PV B1/M1/M2 : accentuation exhaustive pv_agrement_common + 2 PV + `capital_after_lines` (numérotée/numérotées) ; `add_ordre_du_jour(docx, ctx)` rend `ctx.societe_spfpl.denomination` réelle ; garde-fou `_assert_french_accents` (liste noire) + assertion dénomination. Re-génération réelle re-scannée = zéro résidu. **627 verts randomisés.**
+- [~] **AUDIT** re-gate Akainu relancé sur contrat_apport (M1 r2) + 2 PV (B1/M1/M2), objectif RIEN À REDIRE (boucle règle 66).
+
 ## Conneries / incidents Rafael (résumé — détail dans la mémoire privée)
 - **G1** (2026-06-22) : nouvelle remarque sur la SELARL « validée 100 % » et socle de tous les types (confirmé par Rafael : nouvelle remarque, pas régression).
 - **G2** : ne teste pas réellement — preuve : 4 docs sur 7 produits non remarqués (docs non téléchargés).

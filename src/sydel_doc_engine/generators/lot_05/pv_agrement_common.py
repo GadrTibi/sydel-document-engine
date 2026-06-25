@@ -71,7 +71,7 @@ def reunion_intro_lines(ctx: DocumentGenerationContext) -> tuple[str, str]:
         f"L'an {required_text(reunion.annee_lettres, 'reunion.annee_lettres')},",
         (
             f"Le {required_text(reunion.date_lettres, 'reunion.date_lettres')}, "
-            f"a {required_text(reunion.heure, 'reunion.heure')},"
+            f"à {required_text(reunion.heure, 'reunion.heure')},"
         ),
     )
 
@@ -160,7 +160,7 @@ def add_pouvoirs_resolution(docx, *, subject: str) -> None:
     add_paragraph(
         docx,
         (
-            f"{subject} donne tous pouvoirs au porteur de copies ou d'extraits du present "
+            f"{subject} donne tous pouvoirs au porteur de copies ou d'extraits du présent "
             "procès-verbal pour remplir toutes formalités de droit."
         ),
         alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
