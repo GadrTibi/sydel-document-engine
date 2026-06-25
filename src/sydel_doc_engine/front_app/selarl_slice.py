@@ -597,7 +597,8 @@ def build_generation_context(data: SelarlSliceInput) -> DocumentGenerationContex
         personne_signataire=person,
         conjoint=conjoint,
         signature=Signature(
-            lieu=data.signature_lieu,
+            # SU3 (Albane 2026-06-25) : ville de signature = ville du siege DANS TOUS LES CAS.
+            lieu=(data.siege_ville or data.signature_lieu),
             date=_required_date(data.signature_date, "signature_date"),
             nombre_exemplaires=data.signature_nombre_exemplaires,
             prestataire_signature_electronique=signature_prestataire,
@@ -1099,7 +1100,7 @@ def _regime_communautaire(data: SelarlSliceInput) -> RegimeCommunautaire | None:
             date_signature=data.date_courrier_avertissement,
         ),
         renonciation=RegimeCommunautaireRenonciation(
-            lieu_signature=data.signature_lieu,
+            lieu_signature=(data.siege_ville or data.signature_lieu),  # SU3 : = ville du siege
             date_signature=data.signature_date,
             nombre_exemplaires_lettres=data.signature_nombre_exemplaires,
         ),

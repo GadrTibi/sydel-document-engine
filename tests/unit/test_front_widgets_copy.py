@@ -61,6 +61,23 @@ def test_date_input_calendrier_label_collapsed_n2(monkeypatch: pytest.MonkeyPatc
     assert captured["label"] == "Date de decision (calendrier)"
 
 
+def test_seed_signature_lieu_force_la_ville_du_siege_su3(monkeypatch: pytest.MonkeyPatch) -> None:
+    # SU3 (Albane 2026-06-25) : la ville de signature EST la ville du siege DANS TOUS LES CAS.
+    # Le helper FORCE (ecrase toute valeur divergente) des que la ville du siege est connue.
+    from sydel_doc_engine.front_app import front_widgets
+
+    class _FakeSt:
+        session_state: dict[str, object] = {"x_signature_lieu": "Lyon"}  # ville divergente saisie
+
+    monkeypatch.setattr(front_widgets, "st", _FakeSt())
+    front_widgets.seed_signature_lieu("x", "Paris")  # siege = Paris
+    assert front_widgets.st.session_state["x_signature_lieu"] == "Paris"  # forcee = siege
+    # Siege inconnu -> on ne touche pas (pas d'ecrasement par du vide).
+    front_widgets.st.session_state["y_signature_lieu"] = "Marseille"
+    front_widgets.seed_signature_lieu("y", "")
+    assert front_widgets.st.session_state["y_signature_lieu"] == "Marseille"
+
+
 class _StubNoColumns:
     """Conteneur minimal : `text_input` seulement (pas de `columns`)."""
 

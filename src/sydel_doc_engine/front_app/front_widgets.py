@@ -175,10 +175,12 @@ def seed_signature_lieu(
     *,
     field: str = "signature_lieu",
 ) -> None:
-    """Pre-remplit le lieu de signature = ville du siege (gold shell.py:1573-1575),
-    modifiable. Anti double-saisie. Ne seede que si la ville du siege est connue."""
+    """SU3 (Albane 2026-06-25) : la ville de signature EST la ville du siege DANS TOUS LES CAS,
+    partout dans le moteur. On la FORCE (= siege, on ecrase toute valeur divergente) des que la
+    ville du siege est connue : plus une simple pre-saisie modifiable, c'est un invariant.
+    Le champ signature_lieu doit donc etre rendu en lecture seule (derive)."""
     if ville_siege:
-        seed_if_empty(f"{prefix}_{field}", ville_siege)
+        st.session_state[f"{prefix}_{field}"] = ville_siege
 
 
 def seed_siege_from_perso(

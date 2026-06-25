@@ -423,7 +423,8 @@ def _to_selarl_input(payload: dict[str, object]) -> SelarlSliceInput:
         # date de signature, comme TOUS les autres types (SELAS pluri 1469/1627, SPFPL
         # 828, common_creation 303, SELARL natif data_entry 138). Sinon elle reste None.
         date_courrier_avertissement=payload.get("signature_date"),  # type: ignore[arg-type]
-        decision_date=payload.get("decision_date"),  # type: ignore[arg-type]
+        # SU4 (Albane 2026-06-25) : date de nomination (PV) = date de signature, dans tous les cas.
+        decision_date=payload.get("signature_date"),  # type: ignore[arg-type]
         depot_banque_nom=str(payload.get("banque_nom") or ""),
         depot_banque_adresse=str(payload.get("banque_adresse") or ""),
         # LIVE-03 : re-accentue les mois saisis librement (« 1er aout » -> « 1er août »)

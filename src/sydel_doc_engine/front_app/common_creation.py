@@ -280,7 +280,8 @@ def dirigeant_nomine(common: CommonDocsInput) -> DirigeantNomine:
 def reunion_context(common: CommonDocsInput) -> ReunionContext:
     f = common.founder
     return ReunionContext(
-        date_lettres=date_to_french_words(common.decision_date),
+        # SCS2 (Albane 2026-06-25) : date de decision (PV) = date de signature.
+        date_lettres=date_to_french_words(common.signature_date),
         president=ReunionPresident(
             civilite_affichage=f.civilite,
             prenom=f.prenom,
@@ -294,7 +295,8 @@ def reunion_context(common: CommonDocsInput) -> ReunionContext:
 
 
 def decision_context(common: CommonDocsInput) -> DecisionContext:
-    return DecisionContext(date=_display_date(common.decision_date))
+    # SCS2 (Albane 2026-06-25) : date de decision (PV) = date de signature, dans tous les cas.
+    return DecisionContext(date=_display_date(common.signature_date))
 
 
 def regime_communautaire(common: CommonDocsInput) -> RegimeCommunautaire | None:
