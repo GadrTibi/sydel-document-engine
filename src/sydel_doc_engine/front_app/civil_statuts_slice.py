@@ -82,6 +82,12 @@ from sydel_doc_engine.generators.lot_02.lettre_avertissement_conjoint import (
 from sydel_doc_engine.generators.lot_02.lettre_renonciation_associe import (
     LettreRenonciationAssocieGenerator,
 )
+from sydel_doc_engine.generators.lot_05.liste_souscripteurs_scs import (
+    DOCUMENT_CODE as _DOC_LISTE_SOUSCRIPTEURS_SCS,
+)
+from sydel_doc_engine.generators.lot_05.liste_souscripteurs_scs import (
+    ListeSouscripteursScsGenerator,
+)
 
 # Mapping structure -> (type statuts civils, doc_code statuts).
 CIVIL_TYPE_BY_STRUCTURE: dict[str, tuple[str, str]] = {
@@ -163,9 +169,11 @@ def _creation_bundle_codes(
     # generate_dossier (hors orchestrateur, noms de fichiers distincts), pas via l'orchestrateur.
     if regime_communautaire:
         codes.extend(cc.REGIME_COMMUNAUTAIRE_CODES)
-    # SCS5 (Albane 2026-06-25) : « ajouter le doc liste des souscripteurs » -> NON LIVRABLE par un
-    # simple append (DOC-042 est gate SPFPL-apport, 1 souscripteur). La SCS exige un generateur +
-    # entree catalog + predicat DEDIES (TODO, metier-adjacent comme ANO-045).
+    # SCS5 (Albane 2026-06-25 ; arbitrage Rafael « parts/president ») : liste des souscripteurs
+    # SCS = generateur DEDIE (token-replacement du modele SCS, « actions »->« parts », President
+    # conserve), emis directement dans generate_dossier (pas via l'orchestrateur de catalog).
+    if structure == "SCS":
+        codes.append(_DOC_LISTE_SOUSCRIPTEURS_SCS)
     if structure == "SCM":
         codes.append(cc.DOC_DEMANDE_INSCRIPTION_ORDRE)
         # Satellites SCM (Rafael) : pacte + liste depenses, si exactement 2 associes.
@@ -1390,8 +1398,13 @@ def generate_dossier(payload: dict[str, object], output_dir: Path) -> GeneratedD
     # nom fixe ecraserait les couples si plusieurs associes maries). Ils sont retires
     # des codes confies a l'orchestrateur et emis UNE FOIS PAR associe marie ci-dessous
     # (noms de fichiers distincts), exactement comme la SELAS pluri (_generate_regime_par_associe).
+    # SCS4 : DOC-005/006 hors orchestrateur (per-associe). SCS5 : DOC-LSS-SCS (liste des
+    # souscripteurs SCS) emis directement aussi (token-replacement in-place du modele source,
+    # pas un code d'orchestrateur de catalog).
+    structure = str(payload["structure"])
+    _direct_codes = {*cc.REGIME_COMMUNAUTAIRE_CODES, _DOC_LISTE_SOUSCRIPTEURS_SCS}
     orchestrator_codes = tuple(
-        code for code in plan.document_codes if code not in cc.REGIME_COMMUNAUTAIRE_CODES
+        code for code in plan.document_codes if code not in _direct_codes
     )
     docx_paths = generate_docx_files_for_document_codes(
         ctx,
@@ -1402,6 +1415,9 @@ def generate_dossier(payload: dict[str, object], output_dir: Path) -> GeneratedD
     docx_paths = rename_dnc_with_signataire(docx_paths, ctx)
     # SCS4 : couple regime (DOC-005/006) per-associe marie sous communaute.
     docx_paths = [*docx_paths, *_generate_regime_civil_par_associe(payload, ctx, output_dir)]
+    # SCS5 (Albane 2026-06-25) : liste des souscripteurs (parts/President), SCS uniquement.
+    if structure == "SCS":
+        docx_paths.append(ListeSouscripteursScsGenerator().generate(ctx, output_dir))
     zip_path = generate_zip_file(output_dir, docx_paths)
     return GeneratedDossier(
         output_dir=output_dir,

@@ -648,9 +648,13 @@ def test_scs_slice_generates_clean(tmp_path: Path) -> None:
     )
     plan = css.build_civil_plan(payload)
     assert plan.can_generate is True
-    assert plan.document_codes == ("DOC-019", "DOC-001", "DOC-002", "DOC-003", "DOC-004")
+    assert plan.document_codes == (
+        "DOC-019", "DOC-001", "DOC-002", "DOC-003", "DOC-004", "DOC-LSS-SCS"
+    )
     generated = css.generate_dossier(payload, tmp_path / "scs")
-    _assert_bundle_clean(generated, _TRONC_DOCS | {"Statuts SCS EXEMPLE.docx"})
+    _assert_bundle_clean(
+        generated, _TRONC_DOCS | {"Statuts SCS EXEMPLE.docx", "liste_souscripteurs_scs.docx"}
+    )
 
 
 def test_scs4_associe_marie_communaute_genere_doc005_006(tmp_path: Path) -> None:
@@ -680,6 +684,36 @@ def test_scs4_associe_marie_communaute_genere_doc005_006(tmp_path: Path) -> None
     for path in generated.docx_paths:
         if path.name in _REGIME_DOCS:
             _assert_clean(_docx_text(path))
+
+
+def test_scs5_liste_souscripteurs_parts_president_civilite(tmp_path: Path) -> None:
+    # SCS5 (Albane 2026-06-25 ; arbitrage Rafael « adapte les termes a la SCS (parts/president) ») :
+    # la SCS genere une LISTE DES SOUSCRIPTEURS adaptee — « parts » (jamais « actions »),
+    # « President » conserve, civilite civile M./Mme (SP2), une ligne de table par associe + TOTAL.
+    payload = _civil_base(
+        "SCS",
+        "scs",
+        [
+            _pp("Jean", "Durand", 60, 1, 60, 600, role="commandite"),
+            _pp("Alice", "Martin", 40, 61, 100, 400, role="commanditaire"),
+        ],
+    )
+    generated = css.generate_dossier(payload, tmp_path / "scs-souscr")
+    names = {p.name for p in generated.docx_paths}
+    assert "liste_souscripteurs_scs.docx" in names
+    text = _names_in(generated, "liste_souscripteurs_scs.docx")
+    # Termes SCS : « parts », jamais « actions ».
+    assert "souscription de parts" in text
+    assert "parts souscrites" in text
+    assert "actions" not in text
+    # President conserve (Rafael), civilite civile M./Mme (SP2), pas « Docteur ».
+    assert "Président" in text
+    assert "Monsieur Jean Durand" in text
+    assert "Monsieur Alice Martin" in text
+    assert "Docteur" not in text
+    # Table dynamique : 1 ligne par associe + TOTAL des parts.
+    assert "100 parts" in text
+    _assert_clean(text)
 
 
 def test_scs_sans_associe_marie_ne_genere_pas_doc005_006(tmp_path: Path) -> None:
@@ -826,9 +860,13 @@ def test_scs_three_associes_generates_clean(tmp_path: Path) -> None:
     )
     plan = css.build_civil_plan(payload)
     assert plan.can_generate is True
-    assert plan.document_codes == ("DOC-019", "DOC-001", "DOC-002", "DOC-003", "DOC-004")
+    assert plan.document_codes == (
+        "DOC-019", "DOC-001", "DOC-002", "DOC-003", "DOC-004", "DOC-LSS-SCS"
+    )
     generated = css.generate_dossier(payload, tmp_path / "scs3")
-    _assert_bundle_clean(generated, _TRONC_DOCS | {"Statuts SCS EXEMPLE.docx"})
+    _assert_bundle_clean(
+        generated, _TRONC_DOCS | {"Statuts SCS EXEMPLE.docx", "liste_souscripteurs_scs.docx"}
+    )
     statuts_text = _names_in(generated, "Statuts SCS EXEMPLE.docx")
     for nom in ("Durand", "Martin", "Petit"):
         assert nom in statuts_text
