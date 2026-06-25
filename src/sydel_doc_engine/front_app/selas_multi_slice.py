@@ -500,10 +500,11 @@ def _render_connecteur_selectbox(container) -> str:
     departement de l'ordre dans le libelle derive (gestion de l'accord)."""
     return str(
         container.selectbox(
-            "Connecteur (de / du)",
-            ("de", "du"),
+            "Connecteur (de / du / des)",
+            ("de", "du", "des"),
             key=f"{PREFIX}_ordre_connecteur",
-            help="S'affiche avant le departement : « ... de Gironde » / « ... du Jura ».",
+            help="S'affiche avant le departement : « ... de Gironde » / « ... du Jura » "
+            "/ « ... des Hauts de Seine ».",
         )
     )
 

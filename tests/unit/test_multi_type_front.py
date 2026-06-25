@@ -2908,6 +2908,12 @@ def test_su1_selas_uni_situation_un_seul_champ_menu(tmp_path: Path, monkeypatch)
     assert "selas_uni_medecin_regime_matrimonial" not in text_keys
     assert "selas_uni_medecin_regime_communautaire" not in text_keys
     assert "selas_uni_medecin_regime_communautaire" not in selectbox_keys
+    # SU2 (M2 Akainu) : le connecteur grammatical existe sur le formulaire SELAS uni et
+    # offre « des » (sinon « conseil departemental des Hauts de Seine » est inatteignable).
+    connecteur_box = next(
+        w for w in app.selectbox if str(w.key) == "selas_uni_medecin_ordre_connecteur"
+    )
+    assert "des" in [str(o) for o in connecteur_box.options]
 
 
 def test_su2_selas_uni_destinataire_conseil_departemental_sans_ordre(tmp_path: Path) -> None:
@@ -2919,11 +2925,13 @@ def test_su2_selas_uni_destinataire_conseil_departemental_sans_ordre(tmp_path: P
 
     payload = _selas_uni_medecin_payload()
     payload["departement_ordre"] = "Hauts de Seine"
+    # Connecteur « des » choisi par l'operateur -> verbatim Albane « des Hauts de Seine ».
+    payload["connecteur_departement"] = "des"
     generated = uni.generate_dossier(payload, tmp_path / "selas-uni-su2")
     text = _docx_text(
         next(p for p in generated.docx_paths if p.name == "demande_inscription_ordre.docx")
     )
-    assert "Conseil départemental de Hauts de Seine" in text
+    assert "Conseil départemental des Hauts de Seine" in text
     assert "de l'Ordre des médecins" not in text
 
 

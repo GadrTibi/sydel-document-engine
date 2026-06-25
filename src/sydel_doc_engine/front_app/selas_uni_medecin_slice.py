@@ -258,6 +258,19 @@ def render_selas_uni_medecin_form() -> dict[str, object]:
     ordre_conseil = _t(col_aa, "ordre_conseil", "Conseil departemental (ordre)")
     departement_ordre = _t(col_ab, "departement_ordre", "Departement ordre")
     numero_ordre = _t(col_ac, "numero_ordre", "Numero d'inscription")
+    # SU2 (Albane 2026-06-25) : le destinataire = « Conseil departemental <connecteur>
+    # <departement> ». Le connecteur grammatical est choisi par l'operateur (accord du
+    # departement) : « de Paris » / « du Rhone » / « des Hauts de Seine ». L'option
+    # « des » est requise par le verbatim Albane (« conseil departemental des Hauts de Seine »).
+    connecteur_departement = str(
+        st.selectbox(
+            "Connecteur avant le departement (de / du / des)",
+            ("de", "du", "des"),
+            key=f"{PREFIX}_ordre_connecteur",
+            help="S'affiche dans « Conseil departemental ... <departement> » : "
+            "« de Paris » / « du Rhone » / « des Hauts de Seine ».",
+        )
+    )
     numero_rpps = _t(st, "numero_rpps", "Numero RPPS")
     # O24-03 : adresse de l'ordre sur UNE ligne (parse interne -> ligne_1/cp/ville),
     # comme siege/perso/SELAS multi. Remplace les 3 champs separes ; alimente les MEMES
@@ -328,6 +341,7 @@ def render_selas_uni_medecin_form() -> dict[str, object]:
         "conjoint_nom": conjoint_nom,
         "ordre_conseil": ordre_conseil,
         "departement_ordre": departement_ordre,
+        "connecteur_departement": connecteur_departement,
         "ordre_president_feminin": ordre_president_feminin,
         "mandataire_prenom": mandataire_prenom,
         "mandataire_nom": mandataire_nom,
@@ -482,9 +496,13 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
 
     # SU2 (Albane 2026-06-25) : la demande d'inscription de la SELAS uni adresse le
     # « Conseil départemental <connecteur> <departement> » SANS « de l'Ordre des
-    # médecins ». Flag SELAS-only -> SELARL / SELAS multi inchangées.
+    # médecins ». Flag SELAS-only -> SELARL / SELAS multi inchangées. Le connecteur
+    # grammatical (de / du / des) est choisi par l'operateur (ex. « des Hauts de Seine »).
     if ctx.ordre is not None:
         ctx.ordre.destinataire_sans_mention_ordre = True
+        ctx.ordre.connecteur_departement = str(
+            payload.get("connecteur_departement") or "de"
+        )
 
     if ctx.capital is not None:
         ctx.capital.type_titre = "actions"
