@@ -281,6 +281,28 @@ def test_statuts_selarl_medecin_renders_separation_de_biens_clause(
     _assert_clean(text)
 
 
+def test_statuts_sel_exercice_celibataire_sans_conjoint(tmp_path: Path) -> None:
+    # Retour Rafael 2026-06-25 (#2) : un associé CÉLIBATAIRE ne doit PAS exiger de conjoint
+    # (avant : add_conjoint_replacements levait ValueError) ni rendre de clause matrimoniale
+    # parasite. La clause rend juste « célibataire », sans « sous le régime de … avec … ».
+    ctx = _context(overlay="selarl_medecin")
+    # Le front fournit la situation deja accentuee (situation_display) ; le generateur est
+    # byte-fidele a son entree.
+    ctx.associes[0].situation_maritale = "célibataire"
+    ctx.associes[0].regime_matrimonial = ""
+    ctx.associes[0].conjoint = None
+
+    output_path = StatutsSelarlMedecinGenerator().generate(ctx, tmp_path)
+    text = _docx_text(output_path)
+
+    assert "célibataire" in text
+    assert "marié" not in text
+    assert "mariée" not in text
+    assert "avec Madame" not in text
+    assert "sous le régime de" not in text
+    _assert_clean(text)
+
+
 def test_statuts_selarl_medecin_article_8_agrees_female_unique(
     tmp_path: Path,
 ) -> None:

@@ -248,14 +248,26 @@ def render_selas_uni_medecin_form() -> dict[str, object]:
     )
     if regime_communautaire:
         st.caption("Regime de la communaute : DOC-005 et DOC-006 seront generes.")
-    conjoint_civilite, conjoint_prenom, conjoint_nom = _render_conjoint()
+    # Retour Rafael 2026-06-25 (#2) : MEME LOGIQUE que la SELAS pluri — les champs conjoint
+    # ne s'affichent QUE pour un associe MARIE (la clause matrimoniale n'utilise le conjoint
+    # que dans ce cas ; un celibataire rend juste « celibataire »). Plus de champs conjoint
+    # parasites pour un celibataire.
+    is_marie = "marié" in situation_maritale.lower()
+    if is_marie:
+        conjoint_civilite, conjoint_prenom, conjoint_nom = _render_conjoint()
+    else:
+        conjoint_civilite = conjoint_prenom = conjoint_nom = ""
 
     st.caption("Filiation + ordre professionnel (declaration / demande inscription)")
     col_y, col_z = st.columns(2)
     nom_pere = _t(col_y, "nom_pere", "Nom du pere")
     nom_mere = _t(col_z, "nom_mere", "Nom de la mere")
-    col_aa, col_ab, col_ac = st.columns(3)
-    ordre_conseil = _t(col_aa, "ordre_conseil", "Conseil departemental (ordre)")
+    # Retour Rafael 2026-06-25 (#3) : le champ « Conseil departemental (ordre) » est RETIRE.
+    # Depuis SU2, le destinataire de la demande d'inscription est DERIVE de « Departement ordre »
+    # (+ connecteur), ce champ libre `ordre_conseil` ne pilotait plus rien (vestigial) -> source de
+    # confusion legitime (« quelle reponse est attendue ici ?? »). Conserve a vide pour le contexte.
+    ordre_conseil = ""
+    col_ab, col_ac = st.columns(2)
     departement_ordre = _t(col_ab, "departement_ordre", "Departement ordre")
     numero_ordre = _t(col_ac, "numero_ordre", "Numero d'inscription")
     # SU2 (Albane 2026-06-25) : le destinataire = « Conseil departemental <connecteur>
@@ -473,11 +485,14 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
     ctx = selarl_slice.build_generation_context(_to_selarl_input(payload))
 
     # Le constructeur SELARL n'attache le conjoint a l'associe que pour un associe
-    # marie. Le modele SELAS medecin (DOC-018) exige les tokens conjoint de maniere
-    # INCONDITIONNELLE (`add_conjoint_replacements`). On garantit donc le conjoint
-    # sur l'associe representatif a partir de la saisie (toujours collectee), sans
-    # changer le comportement SELARL.
-    if ctx.associes and ctx.associes[0].conjoint is None:
+    # marie. Retour Rafael 2026-06-25 (#2) : le conjoint n'est porte que pour un associe MARIE
+    # (champ conjoint renseigne). Pour un celibataire, conjoint reste None et le generateur rend
+    # juste « celibataire » (add_conjoint_replacements ne leve plus pour un non-marie).
+    if (
+        ctx.associes
+        and ctx.associes[0].conjoint is None
+        and payload.get("conjoint_civilite")
+    ):
         ctx.associes[0].conjoint = SpfplConjoint(
             civilite_affichage=str(payload.get("conjoint_civilite") or ""),
             prenom=str(payload.get("conjoint_prenom") or ""),

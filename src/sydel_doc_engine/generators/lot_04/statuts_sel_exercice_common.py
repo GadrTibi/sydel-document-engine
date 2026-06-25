@@ -224,8 +224,21 @@ def add_conjoint_replacements(
     replacements: dict[str, str],
     associate: Associe,
 ) -> None:
+    # Retour Rafael 2026-06-25 (#2) : le conjoint n'est requis QUE pour un associé MARIÉ.
+    # Le bloc identité actif utilise le token combiné `[situation_matrimoniale_statuts]`
+    # (clause matrimoniale qui, pour un non-marié, rend juste « célibataire » SANS conjoint) ;
+    # les tokens bruts `[*_conjoint]` ne figurent pas dans les blocs actifs (no-op). On ne lève
+    # donc que pour un marié sans conjoint (vraie donnée manquante) ; un célibataire/pacsé/
+    # divorcé/veuf passe sans conjoint — meme logique que la SELAS pluri.
     if associate.conjoint is None:
-        raise ValueError(f"associes[0].conjoint est obligatoire pour {DOCUMENT_CODE}.")
+        status = _normalized_text(
+            required_text(associate.situation_maritale, "associes[0].situation_maritale")
+        )
+        if status in {"marie", "mariee"}:
+            raise ValueError(
+                f"associes[0].conjoint est obligatoire pour un associé marié ({DOCUMENT_CODE})."
+            )
+        return
     replacements.update(
         {
             "[civilite_conjoint]": required_text(
