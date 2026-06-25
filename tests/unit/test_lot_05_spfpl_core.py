@@ -263,8 +263,11 @@ def test_acte_cession_parts_generates_dynamic_capital_and_preserves_source_frais
     assert "La societe" not in text
     assert "Representee" not in text
     assert "La société SPFPL MARTIN" in text
-    # Akainu M3 : valeur nominale = champ ctx « cent euros » (pas un nombre nu « d'cent » sans unite).
-    assert "cent euros" in text
+    # Akainu M3 : valeur nominale = champ ctx « cent euros » AVEC elision correcte « de cent euros »
+    # (le modele colle « d’ » au placeholder ; consonne -> « de »). NB apostrophe COURBE (’, U+2019)
+    # comme dans le rendu reel — l'apostrophe droite (') passait faussement vert.
+    assert "de cent euros de valeur nominale" in text
+    assert "d’cent" not in text
     assert "d'cent" not in text
     _assert_clean(text)
 

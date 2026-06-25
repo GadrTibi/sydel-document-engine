@@ -211,8 +211,15 @@ class ActeCessionPartsSpfplGenerator:
             "[departement_inscription_societe]": required_text(
                 ordre.departement if ordre else None, "cedant.ordre.departement"
             ),
-            # SP3 (Akainu M3) : utiliser le champ CTX deja fourni (« cent euros »), pas un
-            # nombre nu derive (« cent ») qui donnait « d'cent » (sans euros + elision fausse).
+            # SP3 (Akainu M3) : champ CTX « cent euros » + elision corrigee. Le modele colle
+            # « d’[valeur…] » : « cent euros » commence par une consonne -> « DE cent euros »
+            # (pas « d’cent euros »). La cle combinee (plus longue) est traitee en premier.
+            "d’[valeur_nominale_part_lettres]": _elision_de(
+                required_text(
+                    societe_cible.valeur_nominale_part_lettres,
+                    "societe_cible.valeur_nominale_part_lettres",
+                )
+            ),
             "[valeur_nominale_part_lettres]": required_text(
                 societe_cible.valeur_nominale_part_lettres,
                 "societe_cible.valeur_nominale_part_lettres",
@@ -285,7 +292,19 @@ class ActeCessionPartsSpfplGenerator:
 
 def _replace(text: str, replacements: dict[str, str]) -> str:
     out = text
-    for token, value in replacements.items():
+    # Tokens les plus LONGS d'abord : une cle combinee « d’[valeur…] » (gestion de l'elision)
+    # doit etre traitee AVANT le token simple « [valeur…] » qu'elle contient.
+    for token in sorted(replacements, key=len, reverse=True):
         if token in out:
-            out = out.replace(token, value)
+            out = out.replace(token, replacements[token])
     return out
+
+
+_VOYELLES = "aeiouyàâäéèêëîïôöùûüh"
+
+
+def _elision_de(value: str) -> str:
+    """« d’ » devant voyelle/h muet, « de » devant consonne (le modele colle « d’ »
+    au placeholder valeur nominale ; « cent euros » -> « de cent euros »)."""
+    first = (value or "").strip()[:1].lower()
+    return f"d’{value}" if first in _VOYELLES else f"de {value}"
