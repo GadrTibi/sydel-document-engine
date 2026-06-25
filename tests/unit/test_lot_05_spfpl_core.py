@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from datetime import date
 from pathlib import Path
 
@@ -282,9 +283,21 @@ def test_contrat_apport_uses_context_evaluateur_and_commissaire(tmp_path: Path) 
     text = _docx_text(output_path)
 
     assert output_path.name == "contrat_apport_spfpl.docx"
+    # SP1/SP3 (Albane 2026-06-25) : rebuild HYBRIDE token-replacement -> societes template du
+    # modele (SYDEL evaluateur, TS EXPERTISE commissaire) DYNAMISEES depuis le ctx, texte legal
+    # ACCENTUE (le from-scratch etait entierement non accentue).
     assert "EVAL CONSEIL" in text
     assert "CAA EXPERTISE" in text
-    assert "SYDEL, Societe a responsabilite limitee" not in text
+    assert "SYDEL" not in text  # societe template du modele dynamisee
+    assert "TS EXPERTISE" not in text
+    # Accents preserves (le from-scratch shippait « Societe »/« Representee »/« beneficiaire » nus).
+    assert "Société" in text
+    assert "bénéficiaire" in text
+    assert not re.search(r"\bSociete\b", text)
+    assert "Representee" not in text
+    # SP2 : civilite civile M./Mme, jamais « Docteur ».
+    assert "Monsieur" in text
+    assert "Docteur" not in text
     _assert_clean(text)
 
 
