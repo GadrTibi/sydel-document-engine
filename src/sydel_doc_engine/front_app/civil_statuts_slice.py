@@ -356,12 +356,22 @@ def _render_common_docs_form(structure: str, prefix: str) -> dict[str, object]:
     """
 
     st.markdown("**Documents communs (decision, gerant)**")
-    col_g, col_h = st.columns(2)
-    fonction = _text(col_g, prefix, "signataire_fonction", "Fonction (ex: gerant)") or "gérant"
-    titre = _text(col_h, prefix, "signataire_titre", "Titre d'affichage") or "Docteur"
+    if structure == "SCS":
+        # SCS3 (Albane 2026-06-25) : pour la SCS, champ « Fonction » retire -> toujours « gérant ».
+        fonction = "gérant"
+        titre = _text(st, prefix, "signataire_titre", "Titre d'affichage") or "Docteur"
+    else:
+        col_g, col_h = st.columns(2)
+        fonction = _text(col_g, prefix, "signataire_fonction", "Fonction (ex: gerant)") or "gérant"
+        titre = _text(col_h, prefix, "signataire_titre", "Titre d'affichage") or "Docteur"
     decision_date = _date_input(prefix, "decision_date", "Date de decision (PV gerant)")
-    # Parite gold (couche partagee) : conseiller/mandataire SYDEL editable (procuration).
-    mandataire_prenom, mandataire_nom = mandataire_inputs(prefix)
+    # SCS1 (Albane 2026-06-25) : pour la SCS, champ conseiller/mandataire retire (pas d'interet a le
+    # saisir) -> vide, common_creation le defaulte sur le mandataire SYDEL standard (Jordan ELBAZ).
+    # Les autres civils (SCI/SCM) gardent la saisie editable.
+    if structure == "SCS":
+        mandataire_prenom, mandataire_nom = "", ""
+    else:
+        mandataire_prenom, mandataire_nom = mandataire_inputs(prefix)
 
     common: dict[str, object] = {
         "signataire_fonction": fonction,
