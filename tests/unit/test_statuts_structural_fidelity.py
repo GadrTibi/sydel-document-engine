@@ -180,6 +180,77 @@ def test_statuts_source_headings_all_present(
     )
 
 
+# --- Verrou ligne-par-ligne du CORPS (chantier fidelite, Bilan 2026-06-24) -----------------
+# Generalise a tous les types statuts le verrou ligne-par-ligne que seul SELARL medecin avait.
+# Toute ligne de corps STATIQUE du modele (sans placeholder [...]) doit apparaitre dans le rendu
+# -> attrape une clause perdue ou PARAPHRASEE a l'interieur d'un article (invisible au verrou
+# en-tetes). Les lignes intentionnellement absentes (blocs reinjectes dynamiquement, ou lignes
+# supprimees par decision client) sont allowlistees PAR TYPE avec raison.
+
+# Marqueurs (substring) des lignes du modele LEGITIMEMENT absentes du rendu, par type, avec raison.
+# Une ligne source manquante n'echoue PAS si elle contient l'un de ces marqueurs. Tout le RESTE
+# du corps statique doit apparaitre verbatim.
+_BODY_ALLOWLIST: dict[str, tuple[str, ...]] = {
+    # O24-01 (Rafael) : lignes d'annexe « lettre de mission » + « acompte des honoraires » du
+    # cabinet Sydel, supprimees de TOUS les statuts a la demande du client.
+    "statuts_sci.docx": ("lettre de mission", "acompte des honoraires"),
+    "statuts_sci_iris.docx": ("lettre de mission", "acompte des honoraires"),
+    "statuts_spfpl_cession": ("lettre de mission", "acompte des honoraires"),
+    "statuts_selas_multi": ("lettre de mission", "acompte des honoraires"),
+    # SCM : O24-01 + « ci- 510 € » = valeur d'EXEMPLE du modele (montant reinjecte dynamiquement) ;
+    # « Faire preceder » / « Lu et approuve » = artefact du modele source SCM (texte de la mention
+    # de signature DUPLIQUE dans un meme paragraphe), rendu de-duplique cote sortie.
+    "statuts_scm.docx": (
+        "lettre de mission",
+        "acompte des honoraires",
+        "ci- 510",
+        "Faire précéder",
+        "Lu et approuvé",
+    ),
+}
+
+
+def _normalized_full_text(path: Path) -> str:
+    parts: list[str] = []
+    document = Document(path)
+    for para in document.paragraphs:
+        parts.append(para.text)
+    for table in document.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                for para in cell.paragraphs:
+                    parts.append(para.text)
+    return re.sub(r"\s+", " ", _nfc("\n".join(parts)))
+
+
+def _static_body_lines(path: Path) -> list[str]:
+    out: list[str] = []
+    for para in Document(path).paragraphs:
+        text = re.sub(r"\s+", " ", _nfc(para.text).strip())
+        if text and "[" not in text and "]" not in text:
+            out.append(text)
+    return out
+
+
+@pytest.mark.parametrize("generate, statuts_name, source_resolver", _CASES)
+def test_statuts_source_body_lines_present(
+    tmp_path: Path, generate, statuts_name: str, source_resolver
+) -> None:
+    generated = generate(tmp_path)
+    statuts_path = _gen_statuts(generated, statuts_name)
+    output = _normalized_full_text(statuts_path)
+    allow = _BODY_ALLOWLIST.get(statuts_name, ())
+    missing = [
+        line
+        for line in _static_body_lines(source_resolver())
+        if line not in output and not any(marker in line for marker in allow)
+    ]
+    assert not missing, (
+        f"{statuts_name} : {len(missing)} ligne(s) de corps du modele perdues/paraphrasees "
+        f"(non rendues, non allowlistees) : {missing[:8]}"
+    )
+
+
 def test_statuts_civil_first_page_formatting_matches_source(tmp_path: Path) -> None:
     # R22-06 (Rafael 2026-06-22, « toute la première page ») : la 1re page des statuts
     # civils doit respecter la mise en forme de la source -> en-tete CENTRE, « LES
