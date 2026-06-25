@@ -808,6 +808,55 @@ def _prefill_selas_test_data(
     _commit_civil_prefill(values)
 
 
+def _prefill_selas_uni_medecin_test_data() -> None:
+    """Retour Rafael 2026-06-25 (#4) : donnees de test SELAS UNIPERSONNELLE medecin.
+
+    Un clic = dossier SELAS uni coherent et generable (associe unique = President, marie
+    sous communaute pour demontrer la clause conjoint + DOC-005/006). Cles = `selas_uni_medecin_*`
+    (prefixe du slice). Les dates sont seedees en objets `date` (widgets date_input)."""
+    p = "selas_uni_medecin"
+    values: dict[str, object] = {
+        f"{p}_denomination": "SELAS EXEMPLE",
+        f"{p}_capital_social": 1000,  # number_input -> entier
+        f"{p}_nb_actions_total": 100,
+        f"{p}_duree": "99 ans",
+        f"{p}_ville_rcs": "Lyon",
+        f"{p}_lieu_exercice_adresse": "5 place du Centre, 69000 Lyon",
+        f"{p}_siege": "5 place du Centre, 69000 Lyon",
+        f"{p}_banque_nom": "BANQUE EXEMPLE",
+        f"{p}_banque_adresse": "1 rue Banque, 69009 Lyon",
+        f"{p}_exercice_debut": "1er janvier",
+        f"{p}_exercice_fin": "31 décembre",
+        f"{p}_exercice_cloture": "31 décembre 2026",
+        f"{p}_civilite": "Monsieur",  # selectbox (Monsieur / Madame)
+        f"{p}_prenom": "Jean",
+        f"{p}_nom": "Durand",
+        f"{p}_date_naissance": date(1980, 1, 1),
+        f"{p}_ville_naissance": "Lyon",
+        f"{p}_departement_naissance": "69",
+        f"{p}_nationalite_choice": NATIONALITY_PRESETS[0],
+        f"{p}_titre_affichage": "Docteur",
+        f"{p}_adresse": "10 rue Exemple, 69000 Lyon",
+        # Marie sous communaute -> demontre la clause conjoint + DOC-005/006.
+        f"{p}_situation": MATRIMONIAL_STATUS_MARRIED_COMMUNAUTE,
+        f"{p}_conjoint_civilite": "Madame",  # selectbox (Madame / Monsieur)
+        f"{p}_conjoint_prenom": "Alice",
+        f"{p}_conjoint_nom": "Durand",
+        f"{p}_nom_pere": "Pierre Durand",
+        f"{p}_nom_mere": "Anne Durand",
+        # SU2 : destinataire ordre derive du departement + connecteur (« du Rhone »).
+        f"{p}_departement_ordre": "Rhone",
+        f"{p}_ordre_connecteur": "du",  # selectbox (de / du / des)
+        f"{p}_numero_ordre": "69-12345",
+        f"{p}_numero_rpps": "10100000001",
+        f"{p}_ordre_adresse": "1 rue de l'Ordre, 69002 Lyon",
+        f"{p}_signature_lieu": "Lyon",
+        f"{p}_signature_date": date(2026, 5, 15),
+        f"{p}_decision_date": date(2026, 5, 15),
+    }
+    _commit_civil_prefill(values)
+
+
 # Boutons "donnees de test" par type (calques sur le bouton SELARL). Etendu type
 # par type au fur et a mesure de la validation.
 _TYPED_TEST_DATA_PREFILL = {
@@ -819,6 +868,8 @@ _TYPED_TEST_DATA_PREFILL = {
     "SPFPL cession": _prefill_spfpl_cession_test_data,
     "SPFPL apport": _prefill_spfpl_apport_test_data,
     "SELAS": _prefill_selas_test_data,
+    # Retour Rafael 2026-06-25 (#4) : bouton donnees de test SELAS unipersonnelle medecin.
+    "SELAS uni medecin": _prefill_selas_uni_medecin_test_data,
 }
 
 # Prefill surchargeant le defaut par structure pour une cle de type precise.

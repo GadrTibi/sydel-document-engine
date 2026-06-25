@@ -401,6 +401,44 @@ def _assert_ui_prefill_cession_generates(
     assert "]" not in combined_text
 
 
+def test_clean_front_ui_prefill_selas_uni_medecin_generates(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    # Retour Rafael 2026-06-25 (#4) : le bouton « donnees de test » de la SELAS unipersonnelle
+    # medecin pre-remplit un dossier COHERENT et GENERABLE en un clic (avant : aucun bouton).
+    from sydel_doc_engine.front_app import shell
+
+    monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selas-uni")
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
+    app.selectbox(key="clean_dossier_type").set_value(
+        "SELAS unipersonnelle medecin creation V1"
+    )
+    app = app.run(timeout=180)
+
+    app.button(key="clean_test_data_SELAS_uni_medecin").click()
+    app = app.run(timeout=180)
+
+    assert not any("Blocage" in item.value for item in app.caption)
+    assert app.button(key="clean_typed_generate_dossier").disabled is False
+
+    app.button(key="clean_typed_generate_dossier").click()
+    app = app.run(timeout=180)
+
+    generated = app.session_state[shell.TYPED_GENERATED_STATE_KEY]
+    combined_text = "\n".join(
+        _docx_text(Path(path)) for path in generated["docx_paths"]
+    )
+    assert "SELAS EXEMPLE" in combined_text
+    # Marie sous communaute -> clause conjoint rendue (avec Madame Alice Durand).
+    assert "Alice Durand" in combined_text
+    # SU2 : destinataire de la demande d'inscription derive du departement + connecteur « du ».
+    assert "Conseil départemental du Rhone" in combined_text
+    # Dossier propre : aucun token/placeholder residuel.
+    assert "[" not in combined_text
+    assert "]" not in combined_text
+
+
 def test_clean_front_cession_libre_dates_have_accented_months(
     tmp_path: Path,
     monkeypatch,
