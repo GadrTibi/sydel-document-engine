@@ -4,6 +4,7 @@ from datetime import date
 from pathlib import Path
 
 import pytest
+from _accents import assert_no_unaccented_french
 from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
@@ -301,6 +302,10 @@ def test_scm_cession_selas_generates_overlays(tmp_path: Path) -> None:
     acte_text = _docx_text(acte_path)
     assert "dans un délai de 3 mois" in pv_text
     assert "15 août 2026" in pv_text
+    # Akainu B1/M1 : le PV AGE cession SCM est un générateur FROM-SCRATCH -> garde-fou centralisé
+    # anti-non-accentué sur sa SORTIE. Le courrier/acte sont token-replacement (hors périmètre :
+    # ils préservent les intitulés source en CAPITALES non accentuées, cf. §8.1 ci-dessous).
+    assert_no_unaccented_french(pv_text)
     # §8.1 — ligne destinataire fixe presente quelle que soit la structure ;
     # la valeur saisie du service (quand fournie) suit la ligne fixe.
     assert "Service départemental de l'enregistrement de" in courrier_text

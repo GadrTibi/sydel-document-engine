@@ -27,7 +27,7 @@ from sydel_doc_engine.rendering.docx_builder import (
 OUTPUT_FILENAME = "note_information.docx"
 
 OPERATION_PHRASES = {
-    OPERATION_CESSION: "d'acquerir",
+    OPERATION_CESSION: "d'acquérir",
     OPERATION_APPORT: "de recevoir en apport en nature",
 }
 
@@ -38,7 +38,7 @@ OPERATION_NOMS = {
 
 
 class NoteInformationGenerator:
-    """Generateur from-scratch de la note d'information SPFPL."""
+    """Générateur from-scratch de la note d'information SPFPL."""
 
     def generate(self, ctx: DocumentGenerationContext, output_dir: Path) -> Path:
         operation_type = validate_note_context(ctx)
@@ -49,7 +49,7 @@ class NoteInformationGenerator:
 
         docx = new_document()
         add_paragraph(docx, "Note d'informations", alignment=WD_ALIGN_PARAGRAPH.CENTER, bold=True)
-        add_paragraph(docx, "Constitution de la Societe", bold=True)
+        add_paragraph(docx, "Constitution de la Société", bold=True)
         add_paragraph(
             docx,
             required_text(societe_spfpl.denomination, "societe_spfpl.denomination"),
@@ -59,30 +59,30 @@ class NoteInformationGenerator:
             docx,
             (
                 f"La {required_text(societe_spfpl.denomination, 'societe_spfpl.denomination')}, "
-                "en cours de constitution, dont le siege est situe "
+                "en cours de constitution, dont le siège est situé "
                 f"{company_siege_display(societe_spfpl, 'societe_spfpl')}, au capital de "
                 f"{required_text(societe_spfpl.capital_social, 'societe_spfpl.capital_social')}, "
-                f"prevoit {OPERATION_PHRASES[operation_type]}, des son immatriculation, "
+                f"prévoit {OPERATION_PHRASES[operation_type]}, dès son immatriculation, "
                 f"{nb_titres} parts de la "
                 f"{required_text(societe_cible.denomination, 'societe_cible.denomination')}, "
                 f"{required_text(societe_cible.forme_sociale, 'societe_cible.forme_sociale')} "
                 f"de {_profession_reglementee(societe_cible)} "
                 f"au capital de {_capital_social_cible(societe_cible)} "
-                "divise en "
+                "divisé en "
                 f"{required_int(societe_cible.nb_parts_total, 'societe_cible.nb_parts_total')} "
-                "parts, dont le siege social est situe "
-                f"{company_siege_display(societe_cible, 'societe_cible')}, immatriculee au "
+                "parts, dont le siège social est situé "
+                f"{company_siege_display(societe_cible, 'societe_cible')}, immatriculée au "
                 f"RCS de {required_text(societe_cible.ville_rcs, 'societe_cible.ville_rcs')} "
-                f"sous le numero {_numero_rcs_cible(societe_cible)}."
+                f"sous le numéro {_numero_rcs_cible(societe_cible)}."
             ),
             alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
         )
         add_paragraph(
             docx,
             (
-                f"Apres {OPERATION_NOMS[operation_type]}, le capital de la "
+                f"Après {OPERATION_NOMS[operation_type]}, le capital de la "
                 f"{required_text(societe_cible.denomination, 'societe_cible.denomination')} "
-                "sera decompose comme suit :"
+                "sera décomposé comme suit :"
             ),
         )
         for line in capital_after_lines(ctx):

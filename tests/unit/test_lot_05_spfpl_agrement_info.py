@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import re
 from datetime import date
 from pathlib import Path
 
 import pytest
+from _accents import assert_no_unaccented_french
 from docx import Document
 
 from sydel_doc_engine.domain.enums import Gender
@@ -52,7 +52,7 @@ def _base_context(*, associe_unique: bool = True) -> DocumentGenerationContext:
             forme_sociale="SPFPL",
             capital_social="1 000",
             siege=Address(adresse_affichee="10 rue de la Paix, 75002 Paris"),
-            dirigeant=SpfplDirigeant(fonction="President"),
+            dirigeant=SpfplDirigeant(fonction="Président"),
         ),
         cedant=SpfplPerson(
             civilite_affichage="Docteur",
@@ -185,30 +185,14 @@ def _assert_no_placeholders_or_options(text: str) -> None:
     assert "d'acquerir/de recevoir" not in text
 
 
-# SP3 (Albane 2026-06-25) + Akainu M2 : les 2 PV étaient ENTIÈREMENT non accentués. Ce garde-fou
-# fait échouer le test si l'un des mots français qui DOIVENT porter un accent reparait nu dans le
-# texte généré (cause exacte qu'un test faible avait laissé passer). « détenant » (presence_lines,
-# fidèle au modèle source) reste hors liste : accepté par Akainu (« detient légitime »).
-_MOTS_NON_ACCENTUES_INTERDITS = (
-    "Societe", "societe", "associe", "associes", "Associes", "associee", "qualite",
-    "numerotee", "numerotees", "consequent", "agree", "divise", "liberees", "attribuees",
-    "maniere", "entierement", "inchange", "reunis", "reguliere", "gerance", "Siege",
-    "assemblee", "Assemblee", "habilitee", "preside", "seance", "resolutions", "proposees",
-    "prevus", "reglementation", "adresses", "delai", "precede", "compose", "correlative",
-    "formalites", "present", "depose", "declare", "decisions", "decide",
-)
-
-
-def _assert_french_accents(text: str) -> None:
-    residus = sorted(
-        {mot for mot in _MOTS_NON_ACCENTUES_INTERDITS if re.search(rf"\b{re.escape(mot)}\b", text)}
-    )
-    # Akainu M1 : la preposition « a » devant l'heure (« a 10 heures ») doit etre « à ». Check cible
-    # (pas un \ba\b global : « il a pris » = verbe avoir legitime ; « 41 a 100 » = echo fidele de la
-    # plage texte-libre SPFPL, convention Rafael N4, hors perimetre generateur).
-    if re.search(r"\ba \d+\s*heure", text):
-        residus.append("a {heure}")
-    assert not residus, f"Mots français non accentués dans le PV : {sorted(residus)}"
+# SP3 (Albane 2026-06-25) + Akainu M2 : les 2 PV étaient ENTIÈREMENT non accentués. Le garde-fou
+# anti-non-accentué est désormais CENTRALISÉ dans ``_accents.assert_no_unaccented_french`` (Akainu
+# B1/M1, 2026-06-26) : liste noire unique et exhaustive partagée par tous les générateurs
+# from-scratch. « détenant » (presence_lines, fidèle au modèle source) reste hors liste.
+# ``_assert_french_accents`` / ``_assert_no_unaccented_french`` conservés comme alias des appels
+# existants (PV + note d'information).
+_assert_french_accents = assert_no_unaccented_french
+_assert_no_unaccented_french = assert_no_unaccented_french
 
 
 def test_note_information_generates_cession_wording(tmp_path: Path) -> None:
@@ -217,10 +201,11 @@ def test_note_information_generates_cession_wording(tmp_path: Path) -> None:
     text = _docx_text(output_path)
 
     assert output_path.name == "note_information.docx"
-    assert "prevoit d'acquerir" in text
-    assert "Apres ladite cession" in text
+    assert "prévoit d'acquérir" in text
+    assert "Après ladite cession" in text
     assert "SPFPL MARTIN, titulaire de 60 parts sociales" in text
     _assert_no_placeholders_or_options(text)
+    _assert_no_unaccented_french(text)
 
 
 def test_note_information_generates_apport_wording(tmp_path: Path) -> None:
@@ -228,9 +213,10 @@ def test_note_information_generates_apport_wording(tmp_path: Path) -> None:
 
     text = _docx_text(output_path)
 
-    assert "prevoit de recevoir en apport en nature" in text
-    assert "Apres ledit apport" in text
+    assert "prévoit de recevoir en apport en nature" in text
+    assert "Après ledit apport" in text
     _assert_no_placeholders_or_options(text)
+    _assert_no_unaccented_french(text)
 
 
 def test_pv_associe_unique_generates_cession_wording(tmp_path: Path) -> None:

@@ -119,13 +119,13 @@ def build_seed_catalog() -> list[DocumentDefinition]:
             general_condition="tous les dossiers",
             dynamic_associates=False,
             grammar_variants=True,
-            workflow_status=WorkflowStatus.SPECIFIE,
+            workflow_status=WorkflowStatus.TESTE,
             source_path=(
                 "project/source_documents/lot_01/"
                 "declaration_non_condamnation_transforme.docx"
             ),
             specification_path="docs/delivery/lot_01_analysis_and_specs_v1.md",
-            notes="Implémentation différée tant que les arbitrages de démarrage ne sont pas clos.",
+            notes="Implémenté et testé (générateur declaration_non_condamnation, suite verte).",
         ),
         DocumentDefinition(
             doc_id="DOC-002",
@@ -137,15 +137,15 @@ def build_seed_catalog() -> list[DocumentDefinition]:
             general_condition="tous les dossiers",
             dynamic_associates=False,
             grammar_variants=True,
-            workflow_status=WorkflowStatus.SPECIFIE,
+            workflow_status=WorkflowStatus.TESTE,
             source_path=(
                 "project/source_documents/lot_01/"
                 "autorisation_domiciliation_transforme.docx"
             ),
             specification_path="docs/delivery/lot_01_analysis_and_specs_v1.md",
             notes=(
-                "Arbitrage métier encore requis sur la règle de rendu de l'adresse "
-                "de domiciliation."
+                "Implémenté et testé (générateur autorisation_domiciliation, suite verte ; "
+                "règle d'adresse « pour 99 ans » résolue retours 006)."
             ),
         ),
         DocumentDefinition(
@@ -158,10 +158,10 @@ def build_seed_catalog() -> list[DocumentDefinition]:
             general_condition="tous les dossiers",
             dynamic_associates=False,
             grammar_variants=True,
-            workflow_status=WorkflowStatus.SPECIFIE,
+            workflow_status=WorkflowStatus.TESTE,
             source_path="project/source_documents/lot_01/procuration_transforme.docx",
             specification_path="docs/delivery/lot_01_analysis_and_specs_v1.md",
-            notes="Constantes SYDEL à externaliser avant implémentation.",
+            notes="Implémenté et testé (générateur procuration, suite verte).",
         ),
         DocumentDefinition(
             doc_id="DOC-004",

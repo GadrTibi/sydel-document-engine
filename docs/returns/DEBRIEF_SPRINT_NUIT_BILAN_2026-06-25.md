@@ -58,5 +58,20 @@
   au lieu de N) ; fallback per-doc Word COM préservé ; 9 tests PDF verts.
 - **COMPLÉTUDE** : E501 `contrat_apport_spfpl` corrigé (le « ruff propre » précédent était sur fichiers
   ciblés) ; reste métadonnée `workflow_status` (DOC-001/002/003) + docs cadrage (faits par DOCS).
-- **CODE** : à venir (vestigial C6, tables mois/dates C3/C4, extraction fixtures shell.py C1).
-- **Prochaine étape** : suite complète + commit groupé + re-gate Akainu (boucle jusqu'au 5/5).
+- **CODE** ✅ (mécanique) : fixtures extraites de shell.py (3419→2417 l., `_dev_fixtures.py`) ;
+  tables mois/dates centralisées (`utils/months.py`, `utils/dates.py`) ; vestigial `ordre_conseil`
+  purgé. **NON faits (flagués, refacto supervisée)** : C2/C5 (unifier `_t` sur 5 slices), C7 (20
+  fonctions C901), `_ordre_label` mort. → code visé ~4-5/5, le solde C7 bloque un 5/5 incontestable.
+
+## Commits du sprint (poussés sur sprint/engine-completion)
+- `2ece002` — fidélité (5 générateurs + helpers + garde-fou + registre) + perf batch PDF + docs cold-start + E501.
+- `10148f0` — code (fixtures/tables/vestigial) + pack Albane métier (26 décisions).
+
+## Verdict final (Akainu en cours) + réserves honnêtes
+- **Réserves connues qui bloquent un « toutes_5sur5 » strict** : (1) **Équipage** — dépassement
+  21/20 agents = **décision PM** (archivage/fusion d'un agent global, cross-projet, pas unilatéral) ;
+  (2) **Code** — C7 (fonctions à complexité >10) non refactoré (risqué en autonomie nuit) ;
+  (3) **Complétude** — métadonnée `workflow_status` (DOC-001/002/003 « specifie » alors que testés),
+  cosmétique ; (4) **Métier-Albane** — 26 items packagés, appartiennent au sachant (hors-build).
+- Tout le reste (fidélité, perf, docs, E501, gros du code) est remédié + vérifié (630 verts, ruff propre).
+- Verdict Akainu par dimension → rempli à son retour.

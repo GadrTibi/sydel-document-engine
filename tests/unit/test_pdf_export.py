@@ -200,6 +200,41 @@ def test_export_docx_batch_resolves_backend_once_perf(
     assert calls["n"] == 1  # 5 documents -> 1 seule resolution de backend (pas 5)
 
 
+def test_export_batch_with_libreoffice_runs_single_process(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Perf (Bilan de Sante 2026-06-26, Akainu M2) : LibreOffice convertit TOUT le lot en UN SEUL
+    # process (`soffice ... --convert-to pdf --outdir <dir> doc1 ... docN`) -> 1 cold-start au lieu
+    # de N. Verrouille : 1 SEUL appel a _run_conversion_process, tous les docs dans la meme commande
+    # avec --outdir, et un PDF par doc en sortie.
+    source_paths = [_write_docx_placeholder(tmp_path / f"doc_{i}.docx") for i in range(3)]
+    output_dir = tmp_path / "out"
+    fake_backend = pdf_export._ResolvedBackend(name="libreoffice", executable=Path("soffice"))
+    monkeypatch.setattr(pdf_export, "_resolve_backend", lambda *a, **k: fake_backend)
+    calls: list[list[str]] = []
+
+    def fake_run(
+        command: list[str], timeout_seconds: int, backend_name: str
+    ) -> subprocess.CompletedProcess[str]:
+        calls.append(command)
+        for source in source_paths:
+            (output_dir / source.with_suffix(".pdf").name).write_text("pdf")
+        return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
+
+    monkeypatch.setattr(pdf_export, "_run_conversion_process", fake_run)
+
+    results = export_docx_batch_to_pdf(source_paths, output_dir)
+
+    assert len(calls) == 1  # 3 docs -> 1 SEUL process LibreOffice (le coeur du chantier perf)
+    command = calls[0]
+    assert "--outdir" in command and "--convert-to" in command
+    assert len([arg for arg in command if arg.endswith(".docx")]) == 3  # tous dans le meme appel
+    assert [result.pdf_path for result in results] == [
+        output_dir / f"doc_{i}.pdf" for i in range(3)
+    ]
+
+
 def test_export_docx_batch_empty_does_not_probe_backend(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

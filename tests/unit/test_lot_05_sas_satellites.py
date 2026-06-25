@@ -4,6 +4,7 @@ from datetime import date
 from pathlib import Path
 
 import pytest
+from _accents import assert_no_unaccented_french
 from docx import Document
 
 from sydel_doc_engine.domain.enums import Gender
@@ -143,6 +144,7 @@ def test_pv_remuneration_president_generates_source_wording(tmp_path: Path) -> N
     assert "Docteur Camille Martin, actionnaire unique, décide qu'il ne percevra" in text
     assert "Fait à Paris en trois exemplaires" in text
     _assert_clean(text)
+    assert_no_unaccented_french(text)
 
 
 def test_pv_remuneration_president_blocks_feminine_wording(tmp_path: Path) -> None:
@@ -168,6 +170,7 @@ def test_attestation_capital_sas_generates_unique_subscriber_wording(
     assert "Répartition : 600 actions attribuées au Dr Camille Martin, actionnaire unique" in text
     assert "Apports en nature" in text
     _assert_clean(text)
+    assert_no_unaccented_french(text)
 
 
 def test_attestation_capital_sas_blocks_multiple_subscribers(tmp_path: Path) -> None:

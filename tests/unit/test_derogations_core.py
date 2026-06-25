@@ -4,6 +4,7 @@ from datetime import date
 from pathlib import Path
 
 import pytest
+from _accents import assert_no_unaccented_french
 from docx import Document
 from docx.oxml.ns import qn
 from docx.shared import Cm
@@ -129,6 +130,7 @@ def test_formulaire_derogation_sites_sel_generates_prefilled_form(tmp_path: Path
     section = next(p for p in document.paragraphs if p.text == "I - Identification du déclarant")
     assert section.runs[0].underline is True
     _assert_no_source_placeholders(text)
+    assert_no_unaccented_french(text)
 
 
 def test_formulaire_derogation_sites_sel_blocks_without_role_mapping(
@@ -163,6 +165,7 @@ def test_demande_derogation_cumul_selarl_bnc_generates_prefilled_form(
     assert any("PIÈCES À JOINDRE" in table.cell(0, 0).text for table in document.tables)
     assert all(_table_has_explicit_borders(table) for table in document.tables)
     _assert_no_source_placeholders(text)
+    assert_no_unaccented_french(text)
 
 
 def test_cumul_selarl_bnc_blocks_outside_selarl(tmp_path: Path) -> None:

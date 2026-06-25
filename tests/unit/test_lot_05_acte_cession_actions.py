@@ -4,6 +4,7 @@ from datetime import date
 from pathlib import Path
 
 import pytest
+from _accents import assert_no_unaccented_french
 from docx import Document
 
 from sydel_doc_engine.domain.enums import Gender
@@ -65,14 +66,14 @@ def _base_context() -> DocumentGenerationContext:
                 civilite_courte="M.",
                 prenom="Camille",
                 nom="Martin",
-                fonction="President",
+                fonction="Président",
             ),
         ),
         cedant=_cedant(),
         societe_cible=SocieteCible(
             denomination="SELAS CABINET MARTIN",
             forme_sociale="SELAS",
-            forme_sociale_complete="societe d'exercice liberal par actions simplifiee",
+            forme_sociale_complete="société d'exercice libéral par actions simplifiée",
             profession_reglementee="chirurgien-dentiste",
             profession_reglementee_pluriel="chirurgiens-dentistes",
             capital_social="10 000",
@@ -195,6 +196,7 @@ def test_acte_cession_actions_generates_source_vocabulary_and_clean_docx(
     assert "d’cent" not in text
     assert "[" not in text
     assert "]" not in text
+    assert_no_unaccented_french(text)
 
 
 def test_acte_cession_actions_blocks_non_actions_context(tmp_path: Path) -> None:

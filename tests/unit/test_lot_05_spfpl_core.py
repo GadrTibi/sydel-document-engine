@@ -5,6 +5,7 @@ from datetime import date
 from pathlib import Path
 
 import pytest
+from _accents import assert_no_unaccented_french
 from docx import Document
 
 from sydel_doc_engine.domain.enums import Gender
@@ -62,18 +63,18 @@ def _base_context(*, operation: str = "cession") -> DocumentGenerationContext:
             denomination="SPFPL MARTIN",
             forme_sociale="SPFPLAS",
             capital_social="60 000",
-            activite="participations financieres de profession liberale",
+            activite="participations financières de profession libérale",
             profession="chirurgien-dentiste",
             ville_rcs="Paris",
             numero_rcs="en cours",
             siege=Address(adresse_affichee="10 rue de la Paix, 75002 Paris"),
-            dirigeant=SpfplDirigeant(fonction="President"),
+            dirigeant=SpfplDirigeant(fonction="Président"),
             representant=SpfplRepresentant(
                 civilite_affichage="Monsieur",
                 civilite_courte="M.",
                 prenom="Camille",
                 nom="Martin",
-                fonction="President",
+                fonction="Président",
             ),
         ),
         cedant=_spfpl_person(),
@@ -82,7 +83,7 @@ def _base_context(*, operation: str = "cession") -> DocumentGenerationContext:
             denomination="SELARL CABINET MARTIN",
             forme_sociale="SELARL",
             forme_sociale_complete=(
-                "societe d'exercice liberal a responsabilite limitee"
+                "société d'exercice libéral à responsabilité limitée"
             ),
             profession_reglementee="chirurgien-dentiste",
             profession_reglementee_pluriel="chirurgiens-dentistes",
@@ -232,21 +233,14 @@ def _assert_clean(text: str) -> None:
 
 # Akainu Bilan de Santé 2026-06-26 (cause racine M4) : la garde anti-accents n'existait que
 # sur les PV agrément → 3 générateurs juridiques sortaient du texte NON accentué sans qu'aucun
-# test n'échoue. Ce garde-fou liste des mots français qui DOIVENT porter un accent ; s'ils
-# reparaissent nus dans une sortie générée, le test échoue.
-_MOTS_NON_ACCENTUES_INTERDITS = (
-    "Societe", "societe", "simplifiee", "Financieres", "Liberale", "Siege", "reparti",
-    "maniere", "Repartition", "attribuees", "denommee", "immatriculee", "numero", "numeraire",
-    "totalite", "certifie", "sincere", "veritable", "President", "realisation", "present etat",
-    "Repartis", "liberees", "souscripteurs declarent",
-)
-
-
+# test n'échoue. Le garde-fou mot-à-mot est désormais CENTRALISÉ (Akainu B1/M1, 2026-06-26)
+# dans ``_accents.assert_no_unaccented_french`` (liste noire unique et exhaustive). On y ajoute
+# ici deux contrôles de PHRASE propres à ces attestations (« présent état », « déclarent ») que le
+# check mot-à-mot ne couvre pas (homographes verbaux exclus de la liste centrale).
 def _assert_no_unaccented_french(text: str) -> None:
-    residus = sorted(
-        {m for m in _MOTS_NON_ACCENTUES_INTERDITS if re.search(rf"\b{re.escape(m)}\b", text)}
-    )
-    assert not residus, f"Mots français non accentués dans la sortie générée : {residus}"
+    assert_no_unaccented_french(text)
+    assert "present etat" not in text, "« présent état » non accentué dans la sortie générée."
+    assert "souscripteurs declarent" not in text, "« déclarent » non accentué dans la sortie."
 
 
 def test_acte_cession_parts_generates_dynamic_capital_and_preserves_source_frais(

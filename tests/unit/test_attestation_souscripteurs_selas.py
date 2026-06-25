@@ -4,6 +4,7 @@ from datetime import date
 from pathlib import Path
 
 import pytest
+from _accents import assert_no_unaccented_french
 from docx import Document
 
 from sydel_doc_engine.domain.enums import Gender
@@ -126,6 +127,7 @@ def test_attestation_selas_generates_multi_subscriber_wording(tmp_path: Path) ->
     assert "Fait à Rennes" in text
     assert "Le 15/06/2026" in text
     _assert_clean(text)
+    assert_no_unaccented_french(text)
 
 
 def test_attestation_selas_three_subscribers(tmp_path: Path) -> None:
