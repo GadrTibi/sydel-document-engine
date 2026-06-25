@@ -298,6 +298,11 @@ def test_contrat_apport_uses_context_evaluateur_and_commissaire(tmp_path: Path) 
     # SP2 : civilite civile M./Mme, jamais « Docteur ».
     assert "Monsieur" in text
     assert "Docteur" not in text
+    # Akainu M1/M2 : adresses NON vides (le ctx fournit l'adresse via adresse_affichee ; lire
+    # seulement num/voie/cp/ville sortait « Demeurant  , » / « Siège social :  ,  »).
+    assert "5 rue Royale, 75008 Paris" in text  # adresse perso de l'apporteur
+    assert "10 rue de la Paix, 75002 Paris" in text  # siege de la SPFPL
+    assert "Demeurant  ," not in text
     _assert_clean(text)
 
 

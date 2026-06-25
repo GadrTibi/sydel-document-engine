@@ -40,31 +40,31 @@ class PvAgrementCessionSpfplAssocieUniqueGenerator:
 
         docx = new_document()
         add_societe_cible_header(docx, ctx)
-        add_pv_title(docx, "L'ASSOCIE UNIQUE", ctx)
+        add_pv_title(docx, "L'ASSOCIÉ UNIQUE", ctx)
         for line in reunion_intro_lines(ctx):
             add_paragraph(docx, line)
         add_paragraph(
             docx,
             (
-                f"{person_display(cedant, 'cedant')}, associe unique de la Societe "
+                f"{person_display(cedant, 'cedant')}, associé unique de la Société "
                 f"{required_text(societe_cible.denomination, 'societe_cible.denomination')}, "
                 "au capital de "
                 f"{required_text(societe_cible.capital_social, 'societe_cible.capital_social')} "
                 "euros, compose de "
                 f"{required_int(societe_cible.nb_parts_total, 'societe_cible.nb_parts_total')} "
-                "parts, a pris les decisions suivantes :"
+                "parts, a pris les décisions suivantes :"
             ),
             alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
         )
         add_ordre_du_jour(docx)
-        add_resolution_agrement(docx, ctx, subject="L'associe unique")
+        add_resolution_agrement(docx, ctx, subject="L'associé unique")
         add_article_7_bis(docx, ctx, subject="L'associe unique")
         add_pouvoirs_resolution(docx, subject="L'associe unique")
         add_paragraph(
             docx,
             (
-                "De tout ce que dessus, il a ete dresse le present proces-verbal qui a "
-                "ete signe apres lecture par l'associe unique."
+                "De tout ce que dessus, il a été dressé le présent procès-verbal qui a "
+                "été signé après lecture par l'associé unique."
             ),
             alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
         )

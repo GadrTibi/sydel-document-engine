@@ -42,7 +42,7 @@ def add_societe_cible_header(docx, ctx: DocumentGenerationContext) -> None:
                 f"{required_text(siege.ville, 'societe_cible.siege.ville')}"
             ),
             (
-                "Immatriculee au RCS de "
+                "Immatriculée au RCS de "
                 f"{required_text(societe_cible.ville_rcs, 'societe_cible.ville_rcs')} "
                 "sous le n "
                 f"{required_text(societe_cible.numero_rcs, 'societe_cible.numero_rcs')}"
@@ -56,7 +56,7 @@ def add_pv_title(docx, middle_line: str, ctx: DocumentGenerationContext) -> None
     add_framed_title(
         docx,
         [
-            "PROCES-VERBAL DE",
+            "PROCÈS-VERBAL DE",
             middle_line,
             f"DU {format_display_date(decision_date, 'decision.date')}",
         ],
@@ -77,10 +77,10 @@ def reunion_intro_lines(ctx: DocumentGenerationContext) -> tuple[str, str]:
 
 
 def add_ordre_du_jour(docx) -> None:
-    add_paragraph(docx, "Agrement d'un nouvel associe, la SPFPL ;")
-    add_paragraph(docx, "Modification correlative des statuts ;")
-    add_paragraph(docx, "Pouvoirs pour l'accomplissement des formalites.")
-    add_paragraph(docx, "Des lors, il est decide de ce qui suit :")
+    add_paragraph(docx, "Agrément d'un nouvel associé, la SPFPL ;")
+    add_paragraph(docx, "Modification corrélative des statuts ;")
+    add_paragraph(docx, "Pouvoirs pour l'accomplissement des formalités.")
+    add_paragraph(docx, "Dès lors, il est décidé de ce qui suit :")
 
 
 def add_resolution_agrement(
@@ -93,7 +93,7 @@ def add_resolution_agrement(
     societe_cible = required_societe_cible(ctx)
     cedant = required_cedant(ctx)
     cession_parts = required_cession_parts(ctx)
-    add_paragraph(docx, "PREMIERE RESOLUTION", bold=True, space_before_pt=10)
+    add_paragraph(docx, "PREMIÈRE RÉSOLUTION", bold=True, space_before_pt=10)
     add_paragraph(
         docx,
         (
@@ -120,12 +120,12 @@ def add_resolution_agrement(
 
 def add_article_7_bis(docx, ctx: DocumentGenerationContext, *, subject: str) -> None:
     societe_cible = required_societe_cible(ctx)
-    add_paragraph(docx, "DEUXIEME RESOLUTION", bold=True, space_before_pt=10)
+    add_paragraph(docx, "DEUXIÈME RÉSOLUTION", bold=True, space_before_pt=10)
     add_paragraph(
         docx,
         (
-            f"En consequence de la premiere resolution, {subject.lower()} decide, que "
-            "l'article 7 bis des statuts sera modifie comme suit, a compter de ce jour :"
+            f"En conséquence de la première résolution, {subject.lower()} décide, que "
+            "l'article 7 bis des statuts sera modifié comme suit, à compter de ce jour :"
         ),
         alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
     )
@@ -152,12 +152,12 @@ def add_article_7_bis(docx, ctx: DocumentGenerationContext, *, subject: str) -> 
 
 
 def add_pouvoirs_resolution(docx, *, subject: str) -> None:
-    add_paragraph(docx, "TROISIEME RESOLUTION", bold=True, space_before_pt=10)
+    add_paragraph(docx, "TROISIÈME RÉSOLUTION", bold=True, space_before_pt=10)
     add_paragraph(
         docx,
         (
             f"{subject} donne tous pouvoirs au porteur de copies ou d'extraits du present "
-            "proces-verbal pour remplir toutes formalites de droit."
+            "procès-verbal pour remplir toutes formalités de droit."
         ),
         alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
     )

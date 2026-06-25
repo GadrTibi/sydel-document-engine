@@ -50,7 +50,7 @@ class PvAgrementCessionSpfplPlusieursAssociesGenerator:
         add_paragraph(
             docx,
             (
-                "Les associes de la Societe "
+                "Les associés de la Société "
                 f"{required_text(societe_cible.denomination, 'societe_cible.denomination')}, "
                 "au capital de "
                 f"{required_text(societe_cible.capital_social, 'societe_cible.capital_social')} "
@@ -61,13 +61,13 @@ class PvAgrementCessionSpfplPlusieursAssociesGenerator:
             ),
             alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
         )
-        add_paragraph(docx, "Sont presents ou representes :")
+        add_paragraph(docx, "Sont présents ou représentés :")
         for line in presence_lines(ctx):
             add_hyphen_list_item(docx, line)
         add_paragraph(
             docx,
             (
-                "Les associes presents ou representes disposent ensemble de la totalite "
+                "Les associés présents ou représentés disposent ensemble de la totalité "
                 "des parts formant le capital de la societe. L'assemblee est habilitee "
                 "a prendre les decisions extraordinaires."
             ),
@@ -82,8 +82,8 @@ class PvAgrementCessionSpfplPlusieursAssociesGenerator:
         add_paragraph(
             docx,
             (
-                "De tout ce que dessus, il a ete dresse le present proces-verbal qui a "
-                "ete signe apres lecture par tous les associes."
+                "De tout ce que dessus, il a été dressé le présent procès-verbal qui a "
+                "été signé après lecture par tous les associes."
             ),
             alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
         )
@@ -126,10 +126,10 @@ def _add_depot_documents(docx, ctx: DocumentGenerationContext) -> None:
     cedant_name += f" {required_text(ctx.cedant.nom if ctx.cedant else None, 'cedant.nom')}"
     add_paragraph(
         docx,
-        "Le President depose et met a la disposition des associes les documents suivants :",
+        "Le Président dépose et met à la disposition des associés les documents suivants :",
     )
     for item in [
-        "Les copies des convocations des associes ;",
+        "Les copies des convocations des associés ;",
         (
             f"Projet du contrat de cession des parts sociales detenues par {cedant_name} "
             f"au profit de la {societe_spfpl_name};"
@@ -157,7 +157,7 @@ def _add_depot_documents(docx, ctx: DocumentGenerationContext) -> None:
     add_paragraph(
         docx,
         (
-            "L'assemblee lui donne acte de ses declarations et reconnait la validite de "
+            "L'assemblée lui donne acte de ses déclarations et reconnaît la validité de "
             "la convocation."
         ),
         alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,

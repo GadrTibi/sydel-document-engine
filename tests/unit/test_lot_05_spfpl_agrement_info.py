@@ -215,7 +215,7 @@ def test_pv_associe_unique_generates_cession_wording(tmp_path: Path) -> None:
     text = _docx_text(output_path)
 
     assert output_path.name == "pv_agrement_cession_spfpl_associe_unique.docx"
-    assert "L'associe unique autorise la cession" in text
+    assert "L'associé unique autorise la cession" in text
     assert "contrat d'apport" not in text
     assert "autorise l'apport" not in text
     assert "parts apportees" not in text

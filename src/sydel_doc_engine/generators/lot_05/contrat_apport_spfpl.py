@@ -51,15 +51,16 @@ def _date_fr(value: object) -> str:
     return str(value or "")
 
 
-def _addr(address: Address | None) -> dict[str, str]:
+def _addr_display(address: Address | None) -> str:
+    """Adresse en UNE chaine, PRIORITE a `adresse_affichee` (Akainu M1 : le ctx fournit
+    l'adresse en `adresse_affichee` — pattern dominant lot_05 ; lire seulement num/voie/cp/ville
+    sortait des adresses VIDES). Repli sur les sous-champs structures."""
     if address is None:
-        return {"num_voie": "", "voie": "", "cp": "", "ville": ""}
-    return {
-        "num_voie": _txt(address.num_voie),
-        "voie": _txt(address.voie),
-        "cp": _txt(address.cp),
-        "ville": _txt(address.ville),
-    }
+        return ""
+    if address.adresse_affichee:
+        return address.adresse_affichee.strip()
+    voie = f"{_txt(address.num_voie)} {_txt(address.voie)}".strip()
+    return f"{voie}, {_txt(address.cp)} {_txt(address.ville)}".strip(" ,")
 
 
 def _entity_rep(entity: ProfessionalEntity) -> str:
@@ -143,8 +144,8 @@ class ContratApportSpfplGenerator:
     ) -> dict[str, str]:
         ordre = apporteur.ordre
         conjoint = apporteur.conjoint
-        perso = _addr(apporteur.adresse_personnelle)
-        siege = _addr(societe_spfpl.siege)
+        perso = _addr_display(apporteur.adresse_personnelle)
+        siege = _addr_display(societe_spfpl.siege)
         dirigeant_fonction = required_text(
             societe_spfpl.dirigeant.fonction if societe_spfpl.dirigeant else None,
             "societe_spfpl.dirigeant.fonction",
@@ -184,10 +185,15 @@ class ContratApportSpfplGenerator:
             "[numero_rpps]": required_text(
                 ordre.numero_rpps if ordre else None, "apporteur.ordre.numero_rpps"
             ),
-            "[num_voie_perso]": perso["num_voie"],
-            "[voie_perso]": perso["voie"],
-            "[cp_perso]": perso["cp"],
-            "[ville_perso]": perso["ville"],
+            # Akainu M1 : la phrase « Demeurant [num_voie_perso] [voie_perso], [cp_perso]
+            # [ville_perso] » est remplacee EN BLOC par l'adresse affichee (le ctx la fournit
+            # ainsi). Cle combinee traitee en premier (_replace trie par longueur desc) ; les
+            # tokens nus -> vide (aucune fuite si occurrence isolee).
+            "[num_voie_perso] [voie_perso], [cp_perso] [ville_perso]": perso,
+            "[num_voie_perso]": "",
+            "[voie_perso]": "",
+            "[cp_perso]": "",
+            "[ville_perso]": "",
             "[denomination_societe]": required_text(
                 societe_spfpl.denomination, "societe_spfpl.denomination"
             ),
@@ -199,10 +205,12 @@ class ContratApportSpfplGenerator:
             ),
             "[activite_spfpl]": required_text(societe_spfpl.activite, "societe_spfpl.activite"),
             "[ville_rcs]": required_text(societe_spfpl.ville_rcs, "societe_spfpl.ville_rcs"),
-            "[num_voie_siege]": siege["num_voie"],
-            "[voie_siege]": siege["voie"],
-            "[cp_siege]": siege["cp"],
-            "[ville_siege]": siege["ville"],
+            # Akainu M1 : siege en bloc depuis l'adresse affichee (cle combinee, cf. perso).
+            "[num_voie_siege] [voie_siege], [cp_siege] [ville_siege]": siege,
+            "[num_voie_siege]": "",
+            "[voie_siege]": "",
+            "[cp_siege]": "",
+            "[ville_siege]": "",
             "[fonction_dirigeant]": dirigeant_fonction,
             "[president_ou_gerant]": dirigeant_fonction,
             "[denomination_societe_apportee]": required_text(
