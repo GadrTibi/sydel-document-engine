@@ -300,6 +300,9 @@ def render_civil_form(structure: str) -> dict[str, object]:
             collect_dirigeant=True,
             # Profession demandee UNIQUEMENT pour la SCM (§18.6).
             collect_profession=structure == "SCM",
+            # SCS4 (Albane 2026-06-25) : bloc matrimonial riche (selectbox + conjoint + regime),
+            # comme la SELAS pluri, pour la SCS uniquement.
+            rich_matrimonial=structure == "SCS",
         )
     )
     gerant_index = _derive_gerant_index(associes, prefix)

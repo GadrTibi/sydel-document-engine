@@ -17,8 +17,10 @@ from typing import Final
 
 import streamlit as st
 
+from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import (
     Address,
+    RegimeCommunautaireAssocie,
     StatutsCivilsApport,
     StatutsCivilsAssocie,
     StatutsCivilsParts,
@@ -28,10 +30,13 @@ from sydel_doc_engine.front_app.address_oneline import (
     parse_address_full as _parse_address_full,
 )
 from sydel_doc_engine.front_app.field_derivations import (
+    MATRIMONIAL_STATUS_PRESETS,
     NATIONALITY_PRESETS,
     accentuate_french_months,
     derive_gender_from_civilite,
+    matrimonial_status_value,
     number_words_from_value,
+    regime_communautaire_from_status,
 )
 from sydel_doc_engine.front_app.front_widgets import copyable_text_input
 
@@ -60,6 +65,10 @@ class RepeaterConfig:
     # physique + champs DNC (filiation/adresse) saisis SOUS le gerant designe
     # (reunion 2026-06-09 : champs conditionnels au dirigeant).
     collect_dirigeant: bool = False
+    # SCS4 (Albane 2026-06-25) : bloc regime matrimonial RICHE par associe (selectbox de statut +
+    # sous-formulaire conjoint si marie + RegimeCommunautaireAssocie / DOC-005-006 si communaute
+    # legale), comme la SELAS pluri. Active pour la SCS ; les autres civils gardent le champ simple.
+    rich_matrimonial: bool = False
 
 
 def _count_key(config: RepeaterConfig) -> str:
@@ -286,7 +295,20 @@ def _render_personne_physique(
 
     col_g, col_h = st.columns(2)
     nationalite = _render_nationalite(prefix, container=col_g)
-    situation = _text(prefix, "situation_maritale", "Situation matrimoniale", container=col_h)
+    # SCS4 (Albane 2026-06-25) : pour la SCS, bloc matrimonial RICHE (selectbox de statut +
+    # conjoint si marie + RegimeCommunautaireAssocie / DOC-005-006), comme la SELAS pluri. Les
+    # autres civils (SCI/SCM) gardent le champ « situation matrimoniale » texte simple.
+    regime_associe: RegimeCommunautaireAssocie | None = None
+    if config.rich_matrimonial:
+        situation_label = col_h.selectbox(
+            "Situation matrimoniale", MATRIMONIAL_STATUS_PRESETS, key=f"{prefix}_situation"
+        )
+        situation = _situation_display_civil(
+            situation_label, derive_gender_from_civilite(civilite)
+        )
+        regime_associe = _render_conjoint_si_communaute_civil(prefix, situation_label)
+    else:
+        situation = _text(prefix, "situation_maritale", "Situation matrimoniale", container=col_h)
     # Profession : SCM uniquement (§18.6). Hors SCM, aucun champ ni valeur.
     profession = _text(prefix, "profession", "Profession") if config.collect_profession else ""
 
@@ -325,11 +347,54 @@ def _render_personne_physique(
         adresse_personnelle_affichee=adresse_affichee or None,
         apport=apport,
         parts=parts,
+        regime_communautaire_associe=regime_associe,  # SCS4 : DOC-005/006 si communaute
     )
 
     if config.collect_exercice_fields:
         _enrich_exercice_fields(associe, prefix, parts.nb or 0)
     return associe
+
+
+def _situation_display_civil(situation_label: str, genre: Gender) -> str:
+    """SCS4 (Albane 2026-06-25) : affichage genre-resolu de la situation matrimoniale, comme la
+    SELAS pluri (_situation_display) -> on stocke le mot d'etat civil accorde et accentue."""
+    feminin = genre == Gender.FEMININ
+    table = {
+        "marie": "mariée" if feminin else "marié",
+        "pacse": "pacsée" if feminin else "pacsé",
+        "divorce": "divorcée" if feminin else "divorcé",
+        "veuf": "veuve" if feminin else "veuf",
+        "celibataire": "célibataire",
+    }
+    return table.get(matrimonial_status_value(situation_label), "célibataire")
+
+
+def _render_conjoint_si_communaute_civil(
+    prefix: str, situation_label: str
+) -> RegimeCommunautaireAssocie | None:
+    """SCS4 : conjoint d'un associe physique MARIE (figure a l'acte) + RegimeCommunautaireAssocie
+    (DOC-005 renonciation + DOC-006 avertissement) si communaute LEGALE seulement. Reprise fidele du
+    bloc SELAS pluri (_render_conjoint_si_communaute) : PACS exclu, objet regime retourne uniquement
+    en communaute legale (les autres regimes maries ne generent aucun document complementaire)."""
+    if matrimonial_status_value(situation_label) != "marie":
+        return None
+    st.caption("Conjoint de cet associé (figure à l'acte ; lettres si communauté légale)")
+    col_a, col_b, col_c = st.columns(3)
+    conjoint_civilite = col_a.selectbox(
+        "Civilité conjoint", ("Madame", "Monsieur"), key=f"{prefix}_conjoint_civilite"
+    )
+    conjoint_prenom = _text(prefix, "conjoint_prenom", "Prénom conjoint", container=col_b)
+    conjoint_nom = _text(prefix, "conjoint_nom", "Nom conjoint", container=col_c)
+    if not regime_communautaire_from_status(situation_label):
+        return None
+    return RegimeCommunautaireAssocie(
+        actif=True,
+        regime_matrimonial="la communauté légale",
+        conjoint_civilite=conjoint_civilite,
+        conjoint_genre=derive_gender_from_civilite(conjoint_civilite),
+        conjoint_prenom=conjoint_prenom or None,
+        conjoint_nom=conjoint_nom or None,
+    )
 
 
 def _render_personne_morale(
