@@ -951,8 +951,10 @@ def render_statuts_sel_docx(
 
 def replace_placeholders(text: str, replacements: dict[str, str]) -> str:
     rendered = text
-    for placeholder, value in replacements.items():
-        rendered = rendered.replace(placeholder, value)
+    # Tokens les plus LONGS d'abord : une cle combinee « d’[valeur…] » (gestion de l'elision,
+    # Akainu B1 regle 68) doit etre traitee AVANT le token nu « [valeur…] » qu'elle contient.
+    for placeholder in sorted(replacements, key=len, reverse=True):
+        rendered = rendered.replace(placeholder, replacements[placeholder])
     return rendered
 
 

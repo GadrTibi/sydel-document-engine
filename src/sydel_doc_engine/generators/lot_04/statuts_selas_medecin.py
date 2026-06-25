@@ -22,6 +22,7 @@ from sydel_doc_engine.generators.lot_04.statuts_sel_exercice_common import (
 from sydel_doc_engine.generators.lot_04.statuts_sel_exercice_templates import (
     STATUTS_SELAS_MEDECIN_BLOCKS,
 )
+from sydel_doc_engine.utils.grammar import elision_de
 
 OUTPUT_FILENAME = "statuts_selas_medecin.docx"
 
@@ -97,6 +98,15 @@ class StatutsSelasMedecinGenerator:
                 "[nb_actions_lettres]": required_text(
                     ctx.capital.nombre_titres_total_lettres,
                     "capital.nombre_titres_total_lettres",
+                ),
+                # Akainu B1 (regle 68) : le modele art.8 colle « d’[valeur…] » -> elision via
+                # le helper partage (« de cent euros », « d’un euro »). Cle combinee traitee en
+                # premier (replace_placeholders trie par longueur desc).
+                "d’[valeur_nominale_action_lettres]": elision_de(
+                    required_text(
+                        ctx.capital.valeur_nominale_titre_lettres,
+                        "capital.valeur_nominale_titre_lettres",
+                    )
                 ),
                 "[valeur_nominale_action_lettres]": required_text(
                     ctx.capital.valeur_nominale_titre_lettres,

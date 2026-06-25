@@ -26,6 +26,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_statuts_title_box,
     new_document,
 )
+from sydel_doc_engine.utils.grammar import elision_de
 
 DOCUMENT_CODE = "CODE-STATUTS-SELAS-MULTI-001"
 STRUCTURE_SELAS = "SELAS"
@@ -252,6 +253,14 @@ class _ResolvedSelasMulti:
             "[valeur_nominale_action]": _required_text(
                 selas.valeur_nominale_action,
                 "statuts_selas_multi.valeur_nominale_action",
+            ),
+            # Akainu B1 (regle 68) : le modele art.8 colle « d’[valeur…] » -> elision via le
+            # helper partage. Cle combinee traitee en premier (replace_placeholders trie desc).
+            "d’[valeur_nominale_action_lettres]": elision_de(
+                _required_text(
+                    selas.valeur_nominale_action_lettres,
+                    "statuts_selas_multi.valeur_nominale_action_lettres",
+                )
             ),
             "[valeur_nominale_action_lettres]": _required_text(
                 selas.valeur_nominale_action_lettres,
@@ -782,8 +791,10 @@ def _is_tiret_list_paragraph(paragraph: object) -> bool:
 
 def _replace_placeholders(text: str, replacements: dict[str, str]) -> str:
     rendered = text
-    for placeholder, value in replacements.items():
-        rendered = rendered.replace(placeholder, value)
+    # Tokens les plus LONGS d'abord : la cle combinee « d’[valeur…] » (elision art.8, Akainu B1)
+    # doit etre traitee AVANT le token nu « [valeur…] » qu'elle contient.
+    for placeholder in sorted(replacements, key=len, reverse=True):
+        rendered = rendered.replace(placeholder, replacements[placeholder])
     return rendered
 
 

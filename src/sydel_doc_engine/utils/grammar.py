@@ -108,3 +108,22 @@ def _replace_to_target(text: str, source: str, target: str, index: int) -> str:
     protected = text.replace(target, sentinel)
     protected = protected.replace(source, target)
     return protected.replace(sentinel, target)
+
+
+# Voyelles d'elision (sans « h » : dans une valeur-nombre-en-lettres, le seul mot a « h »
+# initial est « huit/huitieme » = h ASPIRE -> « de huit »). « onze/onzieme » = exception
+# francaise (« de onze »). Helper partage lot_04 (statuts SEL art.8) + lot_05 (actes/attestations).
+_VOYELLES_ELISION = "aeiouàâäéèêëîïôöùûü"
+_NO_ELISION_PREFIXES = ("onze", "onziem", "huit", "huitiem", "huitain", "onzain")
+
+
+def elision_de(value: str) -> str:
+    """« de <value> » avec elision correcte : « d’ » (apostrophe courbe U+2019) devant voyelle,
+    « de » devant consonne, « h » aspire (« huit ») et l'exception « onze ». PORTEE : valeurs
+    NUMERIQUES en lettres (valeur nominale, montant). Les modeles collent « d’ » au placeholder
+    (« d’[valeur] ») ; « cent euros » -> « de cent euros », « un euro » -> « d’un euro »,
+    « onze/huit euros » -> « de onze/huit euros », « 100 » -> « de 100 »."""
+    cleaned = (value or "").strip()
+    low = cleaned.lower()
+    voyelle = bool(low) and low[0] in _VOYELLES_ELISION and not low.startswith(_NO_ELISION_PREFIXES)
+    return f"d’{cleaned}" if voyelle else f"de {cleaned}"

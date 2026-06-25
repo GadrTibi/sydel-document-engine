@@ -447,6 +447,24 @@ def test_statuts_selas_medecin_generates_without_second_lieu_by_default(
     _assert_clean(text)
 
 
+def test_statuts_selas_medecin_article_8_elision_valeur_nominale(tmp_path: Path) -> None:
+    # Akainu B1 (regle 68, propagation) : l'article 8 du modele colle « d’[valeur…] ». Avec une
+    # valeur nominale a initiale CONSONNE (« cent euros »), il faut « actions de cent euros »
+    # (et non « actions d’cent euros »). Le fixture par defaut (« un euro », voyelle) masquait le
+    # bug. Apostrophe COURBE (U+2019) comme le rendu reel.
+    ctx = _context(overlay="selas_medecin")
+    ctx.capital.valeur_nominale_titre_lettres = "cent euros"
+    text = _docx_text(StatutsSelasMedecinGenerator().generate(ctx, tmp_path))
+    assert "actions de cent euros" in text
+    assert "d’cent" not in text
+    assert "d'cent" not in text
+    # Cas voyelle preserve : « un euro » -> « d’un euro ».
+    ctx_v = _context(overlay="selas_medecin")
+    ctx_v.capital.valeur_nominale_titre_lettres = "un euro"
+    text_v = _docx_text(StatutsSelasMedecinGenerator().generate(ctx_v, tmp_path))
+    assert "actions d’un euro" in text_v
+
+
 def test_statuts_selas_medecin_renders_complete_second_lieu(tmp_path: Path) -> None:
     ctx = _context(overlay="selas_medecin")
     ctx.exercice_social.lieux.append(
