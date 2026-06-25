@@ -6,7 +6,6 @@ from pathlib import Path
 from docx import Document
 
 from sydel_doc_engine.domain.models import DocumentGenerationContext, SpfplPerson
-from sydel_doc_engine.front_app.field_derivations import number_words_from_value
 from sydel_doc_engine.generators.lot_05.spfpl_common import (
     company_siege_display,
     required_cedant,
@@ -20,7 +19,6 @@ from sydel_doc_engine.generators.lot_05.spfpl_common import (
 from sydel_doc_engine.rendering.docx_builder import (
     add_hyphen_list_item,
     add_paragraph,
-    add_signature_lines,
     new_document,
 )
 
@@ -73,25 +71,6 @@ def _person_address(person: SpfplPerson, field_name: str) -> str:
     return required_text(
         person.adresse_personnelle_affichee,
         f"{field_name}.adresse_personnelle_affichee",
-    )
-
-
-def _to_int(value: object) -> int:
-    cleaned = re.sub(r"[^\d]", "", str(value or ""))
-    return int(cleaned) if cleaned else 0
-
-
-def _valeur_nominale_lettres(societe_cible) -> str:
-    """Valeur nominale d'une part EN LETTRES = capital / nb_parts (le modele porte
-    « divise en N parts sociales d'<valeur_nominale_part_lettres> »). Derivee, le flux
-    SPFPL ne la collecte pas separement."""
-    capital = _to_int(societe_cible.capital_social)
-    nb_parts = required_int(societe_cible.nb_parts_total, "societe_cible.nb_parts_total")
-    if capital and nb_parts and capital % nb_parts == 0:
-        return number_words_from_value(capital // nb_parts)
-    raise ValueError(
-        "valeur nominale non derivable (capital non divisible par nb_parts) "
-        f"pour {OUTPUT_FILENAME}."
     )
 
 
@@ -154,23 +133,11 @@ class ActeCessionPartsSpfplGenerator:
                 continue
             add_paragraph(docx, rendered)
 
+        # SP3 (Akainu M1/M2) : PAS de bloc signature ajoute — le modele source porte DEJA sa
+        # ligne de signature (« Dr <cedant> / La société <cessionnaire> / Représentée par … »),
+        # rendue fidelement (accentuee) par le token-replacement ci-dessus. Un bloc ajoute la
+        # dupliquait ET perdait les accents (« La societe »/« Representee »).
         self._assert_no_residual(docx)
-        cedant_prenom = required_text(cedant.prenom, "cedant.prenom")
-        cedant_nom = required_text(cedant.nom, "cedant.nom")
-        rep_civ_courte = required_text(
-            representant.civilite_courte, "representant.civilite_courte"
-        )
-        rep_prenom = required_text(representant.prenom, "representant.prenom")
-        rep_nom = required_text(representant.nom, "representant.nom")
-        add_signature_lines(
-            docx,
-            [
-                f"Dr {cedant_prenom} {cedant_nom}",
-                f"La societe {replacements['[denomination_societe_cessionnaire]']}",
-                f"Representee par {rep_civ_courte} {rep_prenom} {rep_nom}",
-            ],
-        )
-
         output_dir.mkdir(parents=True, exist_ok=True)
         output_path = output_dir / OUTPUT_FILENAME
         docx.save(output_path)
@@ -244,7 +211,12 @@ class ActeCessionPartsSpfplGenerator:
             "[departement_inscription_societe]": required_text(
                 ordre.departement if ordre else None, "cedant.ordre.departement"
             ),
-            "[valeur_nominale_part_lettres]": _valeur_nominale_lettres(societe_cible),
+            # SP3 (Akainu M3) : utiliser le champ CTX deja fourni (« cent euros »), pas un
+            # nombre nu derive (« cent ») qui donnait « d'cent » (sans euros + elision fausse).
+            "[valeur_nominale_part_lettres]": required_text(
+                societe_cible.valeur_nominale_part_lettres,
+                "societe_cible.valeur_nominale_part_lettres",
+            ),
             # Societe cessionnaire (SPFPL acquereur)
             "[denomination_societe_cessionnaire]": required_text(
                 societe_spfpl.denomination, "societe_spfpl.denomination"

@@ -257,6 +257,15 @@ def test_acte_cession_parts_generates_dynamic_capital_and_preserves_source_frais
     assert "SIGNIFICATION DE LA CESSION" in text
     assert "moyennant le prix de" in text
     assert "FRAIS" in text  # clause frais presente (l'ancien from-scratch la paraphrasait)
+    # Akainu M1 : signature UNIQUE (le modele porte deja sa ligne ; pas de bloc ajoute en double).
+    assert text.count("Représentée par M. Camille Martin") == 1
+    # Akainu M2 : accents preserves dans la signature (pas de « La societe »/« Representee » nus).
+    assert "La societe" not in text
+    assert "Representee" not in text
+    assert "La société SPFPL MARTIN" in text
+    # Akainu M3 : valeur nominale = champ ctx « cent euros » (pas un nombre nu « d'cent » sans unite).
+    assert "cent euros" in text
+    assert "d'cent" not in text
     _assert_clean(text)
 
 
