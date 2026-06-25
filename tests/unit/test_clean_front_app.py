@@ -431,9 +431,12 @@ def test_clean_front_ui_prefill_selas_uni_medecin_generates(
     )
     assert "SELAS EXEMPLE" in combined_text
     # Akainu M1/M2 (retour #1) : duree forcee « 99 ans » -> le template porte deja « années »,
-    # le rendu doit etre « fixée à 99 années » (JAMAIS le doublon « 99 ans années »).
+    # le rendu doit etre « fixée à 99 années » (JAMAIS le doublon « 99 ans années » ni
+    # « 99 ans ans », ni le placeholder brut).
     assert "fixée à 99 années" in combined_text
     assert "99 ans années" not in combined_text
+    assert "99 ans ans" not in combined_text
+    assert "[duree_societe]" not in combined_text
     # Marie sous communaute -> clause conjoint rendue (avec Madame Alice Durand).
     assert "Alice Durand" in combined_text
     # SU2 : destinataire de la demande d'inscription derive du departement + connecteur « du ».
