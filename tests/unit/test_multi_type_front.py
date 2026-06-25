@@ -3951,10 +3951,16 @@ def test_su3_scs2_force_signature_siege_et_decision_signature_divergent(tmp_path
     from docx import Document
 
     from sydel_doc_engine.front_app import civil_statuts_slice as css
-    from sydel_doc_engine.front_app import sas_slice, selas_multi_slice, spfpl_slice
+    from sydel_doc_engine.front_app import (
+        sas_slice,
+        selas_multi_slice,
+        selas_uni_medecin_slice,
+        spfpl_slice,
+    )
 
     siege, divergent = "Lyon", "VilleSignatureDivergente"
-    sig_date, decision_div = date(2026, 5, 26), date(2026, 5, 10)
+    # ANNEE divergente aussi (Akainu re-gate m1) : 2024 != 2026 -> attrape annee_lettres du PV.
+    sig_date, decision_div = date(2026, 5, 26), date(2024, 3, 7)
 
     def _full_text(p: Path) -> str:
         d = Document(p)
@@ -3981,6 +3987,8 @@ def test_su3_scs2_force_signature_siege_et_decision_signature_divergent(tmp_path
         ("SAS", lambda d: sas_slice.generate_dossier(_ov(_sas_payload()), d)),
         ("SELAS-multi", lambda d: selas_multi_slice.generate_dossier(_ov(_selas_payload()), d)),
         ("SPFPL", lambda d: spfpl_slice.generate_dossier(_ov(_spfpl_payload("SPFPL cession")), d)),
+        ("SELAS-uni", lambda d: selas_uni_medecin_slice.generate_dossier(
+            _ov(_selas_uni_medecin_payload()), d)),
     ]
     for label, gen in cases:
         generated = gen(tmp_path / label)
@@ -3988,6 +3996,8 @@ def test_su3_scs2_force_signature_siege_et_decision_signature_divergent(tmp_path
             text = _full_text(path)
             # SU3 : la ville de signature divergente ne doit JAMAIS apparaitre (forcee au siege).
             assert divergent not in text, f"{label} ville signature (SU3)"
-            # SCS2/B1 : la date de decision divergente (10 mai) ne doit pas apparaitre dans un PV.
-            assert "dix mai" not in text, f"{label} date decision (SCS2/B1)"
-            assert "10/05/2026" not in text, f"{label} date decision chiffres"
+            # SCS2/B1 : la date de decision divergente (7 mars 2024) ne doit pas apparaitre (PV).
+            assert "sept mars" not in text, f"{label} date decision (SCS2/B1)"
+            assert "07/03/2024" not in text, f"{label} date decision chiffres"
+            # B1 annee : l'annee divergente en lettres ne doit pas apparaitre (annee_lettres PV).
+            assert "deux mille vingt-quatre" not in text, f"{label} annee decision (B1)"

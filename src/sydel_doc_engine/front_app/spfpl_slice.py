@@ -850,7 +850,8 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
             # B1/SCS2 (Albane 2026-06-25) : date de reunion (PV) = date de signature.
             date_lettres=date_to_french_words(payload.get("signature_date")),
             # Annee en lettres + heure : exigees par le PV d'agrement de cession.
-            annee_lettres=_annee_lettres(payload.get("decision_date")),
+            # B1/SCS2 (Akainu re-gate) : l'annee aussi = date de signature (token voisin).
+            annee_lettres=_annee_lettres(payload.get("signature_date")),
             heure="10 heures",
             president=ReunionPresident(
                 civilite_affichage=str(payload.get("civilite") or "Monsieur"),
