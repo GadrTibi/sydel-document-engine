@@ -112,7 +112,10 @@ def _derive_hidden_values(values: dict[str, Any]) -> None:
             bool(values.get("regime_communautaire")),
         ),
     )
-    _set_default(values, "reunion_date_lettres", date_to_french_words(values.get("decision_date")))
+    # B1/SCS2 (Albane 2026-06-25, fix RACINE) : date de reunion (PV) = date de signature. La valeur
+    # est posee ici (chemin reel data_entry) AVANT le fallback de selarl_slice, qui sinon n'opere
+    # jamais (default non vide). Plus de contradiction reunion(decision) vs titre(signature).
+    _set_default(values, "reunion_date_lettres", date_to_french_words(values.get("signature_date")))
 
     values["duree"] = "99 ans"
     values["signature_nombre_exemplaires"] = "4"

@@ -1607,3 +1607,37 @@ def test_clean_front_demande_ordre_presidente_and_conseiller(tmp_path: Path) -> 
     # Adresse perso sur deux lignes (rue / CP ville).
     assert "10 rue Test" in paragraphs
     assert "75001 Paris" in paragraphs
+
+
+def test_clean_front_selarl_pv_decision_reunion_signature_divergent_b1(tmp_path: Path) -> None:
+    # B1/SCS2/SU3 (Albane 2026-06-25, lock Akainu) : SELARL via le CHEMIN REEL
+    # (build_clean_data_entry -> generate_selarl_dossier). Ville signature != siege + date decision
+    # d'une ANNEE differente : le PV DOIT forcer signature=siege et decision=reunion=signature (pas
+    # de contradiction interne). Sans le fix data_entry.py:115, reunion_date_lettres tirait de
+    # decision_date -> regression non protegee par le lock multi_type (qui ne couvre pas SELARL).
+    from docx import Document
+
+    dossier_type = dossier_type_by_label("SELARL creation V1")
+    kwargs = dict(_valid_selarl_kwargs(PROFESSION_MEDECIN))
+    kwargs.update(
+        {
+            "siege_ville": "Lyon",
+            "signature_lieu": "VilleSignatureDivergente",
+            "signature_date": date(2026, 5, 26),
+            "decision_date": date(2024, 3, 7),
+        }
+    )
+    data = build_clean_data_entry(dossier_type, **kwargs)
+    result = generate_selarl_dossier(data, tmp_path)
+    for path in result.docx_paths:
+        doc = Document(path)
+        parts = [p.text for p in doc.paragraphs]
+        for table in doc.tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    parts += [p.text for p in cell.paragraphs]
+        text = "\n".join(parts)
+        assert "VilleSignatureDivergente" not in text, f"{path.name} ville signature (SU3)"
+        assert "sept mars" not in text, f"{path.name} date decision (B1)"
+        assert "07/03/2024" not in text, f"{path.name} date decision chiffres"
+        assert "deux mille vingt-quatre" not in text, f"{path.name} annee (B1)"
