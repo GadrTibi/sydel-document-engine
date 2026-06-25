@@ -430,3 +430,15 @@ def presence_lines(ctx: DocumentGenerationContext) -> list[str]:
             f"pour {DOCUMENT_CODE}."
         )
     return lines
+
+
+_VOYELLES_ELISION = "aeiouyàâäéèêëîïôöùûüh"
+
+
+def elision_de(value: str) -> str:
+    """« d'value » avec elision correcte : « d’ » (apostrophe courbe) devant voyelle/h muet,
+    « de » devant consonne. Les modeles SPFPL collent « d’ » au placeholder valeur nominale ;
+    « cent euros » commence par une consonne -> « de cent euros » (et non « d'cent euros »).
+    Partage par les actes cession parts/actions (Akainu M3 + propagation regle 68)."""
+    first = (value or "").strip()[:1].lower()
+    return f"d’{value}" if first in _VOYELLES_ELISION else f"de {value}"

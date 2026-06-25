@@ -14,6 +14,7 @@ from sydel_doc_engine.generators.lot_05.spfpl_common import (
     SPFPL_CESSION_STRUCTURE,
     associe_display_name,
     company_siege_display,
+    elision_de,
     format_display_date,
     person_address_display,
     person_display,
@@ -197,7 +198,7 @@ class ActeCessionActionsSpfplGenerator:
             (
                 f"La Société {cible_name} est une {cible_forme_complete}, au capital social "
                 f"de {cible_capital} divisé en {cible_actions_total} actions "
-                f"d'{cible_valeur_action_lettres} de valeur nominale, entièrement libérées "
+                f"{elision_de(cible_valeur_action_lettres)} de valeur nominale, entièrement libérées "
                 f"dont le siège est situé au {company_siege_display(societe_cible, 'societe_cible')}."
             ),
         )

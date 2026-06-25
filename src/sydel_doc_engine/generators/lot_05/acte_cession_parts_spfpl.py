@@ -8,6 +8,7 @@ from docx import Document
 from sydel_doc_engine.domain.models import DocumentGenerationContext, SpfplPerson
 from sydel_doc_engine.generators.lot_05.spfpl_common import (
     company_siege_display,
+    elision_de,
     required_cedant,
     required_cession_parts,
     required_int,
@@ -214,7 +215,7 @@ class ActeCessionPartsSpfplGenerator:
             # SP3 (Akainu M3) : champ CTX « cent euros » + elision corrigee. Le modele colle
             # « d’[valeur…] » : « cent euros » commence par une consonne -> « DE cent euros »
             # (pas « d’cent euros »). La cle combinee (plus longue) est traitee en premier.
-            "d’[valeur_nominale_part_lettres]": _elision_de(
+            "d’[valeur_nominale_part_lettres]": elision_de(
                 required_text(
                     societe_cible.valeur_nominale_part_lettres,
                     "societe_cible.valeur_nominale_part_lettres",
@@ -299,12 +300,3 @@ def _replace(text: str, replacements: dict[str, str]) -> str:
             out = out.replace(token, replacements[token])
     return out
 
-
-_VOYELLES = "aeiouyàâäéèêëîïôöùûüh"
-
-
-def _elision_de(value: str) -> str:
-    """« d’ » devant voyelle/h muet, « de » devant consonne (le modele colle « d’ »
-    au placeholder valeur nominale ; « cent euros » -> « de cent euros »)."""
-    first = (value or "").strip()[:1].lower()
-    return f"d’{value}" if first in _VOYELLES else f"de {value}"

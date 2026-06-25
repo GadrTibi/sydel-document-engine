@@ -188,6 +188,11 @@ def test_acte_cession_actions_generates_source_vocabulary_and_clean_docx(
     assert "service Yousign" in text
     assert "Cession de parts" not in text
     assert "parts sociales" not in text
+    # Akainu M3 propagation (regle 68) : valeur nominale « cent euros » avec elision correcte
+    # « de cent euros » (consonne), jamais « d'cent » (droite) ni « d’cent » (courbe).
+    assert "de cent euros de valeur nominale" in text
+    assert "d'cent" not in text
+    assert "d’cent" not in text
     assert "[" not in text
     assert "]" not in text
 
