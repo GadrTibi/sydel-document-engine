@@ -3006,10 +3006,10 @@ def test_su1_selas_uni_situation_un_seul_champ_menu(tmp_path: Path, monkeypatch)
 
 
 def test_su2_selas_uni_destinataire_conseil_departemental_sans_ordre(tmp_path: Path) -> None:
-    # SU2 (Albane 2026-06-25) : SELAS unipersonnelle — le destinataire de la demande
-    # d'inscription est « Conseil departemental <connecteur> <departement> », SANS
-    # « de l'Ordre des medecins ». SELARL / SELAS multi gardent la ligne historique
-    # (verifie plus bas que le gold partage n'est pas touche).
+    # SU2 (Albane 2026-06-25, propagé à TOUS les types SEL — confirmation Gad « Oui ») :
+    # le destinataire de la demande d'inscription est « Conseil departemental <connecteur>
+    # <departement> », SANS « de l'Ordre des medecins ». La forme courte vaut désormais pour
+    # SELARL + SELAS uni + SELAS multi (cf. test_selas_ordre_conseil_derive / connecteur_du).
     from sydel_doc_engine.front_app import selas_uni_medecin_slice as uni
 
     payload = _selas_uni_medecin_payload()

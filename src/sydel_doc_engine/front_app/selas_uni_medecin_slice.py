@@ -494,10 +494,13 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
     if ctx.statuts_sel is not None:
         ctx.statuts_sel.overlay = "selas_medecin"
 
-    # SU2 (Albane 2026-06-25) : la demande d'inscription de la SELAS uni adresse le
-    # « Conseil départemental <connecteur> <departement> » SANS « de l'Ordre des
-    # médecins ». Flag SELAS-only -> SELARL / SELAS multi inchangées. Le connecteur
-    # grammatical (de / du / des) est choisi par l'operateur (ex. « des Hauts de Seine »).
+    # SU2 (Albane 2026-06-25, PROPAGÉ tous types SEL — confirmation Gad « Oui ») : la demande
+    # d'inscription adresse le « Conseil départemental <connecteur> <departement> » SANS « de
+    # l'Ordre des médecins ». Le générateur (demande_inscription_ordre.py:194-196) rend désormais
+    # cette forme courte pour TOUT l'overlay SEL (SELARL + SELAS uni + SELAS multi) : le flag
+    # `destinataire_sans_mention_ordre` ci-dessous est donc devenu INERTE pour les types SEL
+    # (la forme courte est forcée indépendamment du flag) ; on le laisse pour compat appelant.
+    # Le connecteur grammatical (de / du / des) reste choisi par l'operateur (ex. « des Hauts »).
     if ctx.ordre is not None:
         ctx.ordre.destinataire_sans_mention_ordre = True
         ctx.ordre.connecteur_departement = str(
