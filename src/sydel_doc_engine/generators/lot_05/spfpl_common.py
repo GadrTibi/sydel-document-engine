@@ -432,13 +432,21 @@ def presence_lines(ctx: DocumentGenerationContext) -> list[str]:
     return lines
 
 
-_VOYELLES_ELISION = "aeiouyàâäéèêëîïôöùûüh"
+# Voyelles d'elision (sans « h » : dans un nombre-en-lettres, le seul mot a « h » initial est
+# « huit/huitieme » = h ASPIRE -> pas d'elision, « de huit »). « onze/onzieme » sont aussi une
+# exception francaise (« de onze »). Akainu n1 (regle 68, propagation).
+_VOYELLES_ELISION = "aeiouàâäéèêëîïôöùûü"
+_NO_ELISION_PREFIXES = ("onze", "onziem", "huit", "huitiem", "huitain", "onzain")
 
 
 def elision_de(value: str) -> str:
-    """« d'value » avec elision correcte : « d’ » (apostrophe courbe) devant voyelle/h muet,
-    « de » devant consonne. Les modeles SPFPL collent « d’ » au placeholder valeur nominale ;
-    « cent euros » commence par une consonne -> « de cent euros » (et non « d'cent euros »).
-    Partage par les actes cession parts/actions (Akainu M3 + propagation regle 68)."""
-    first = (value or "").strip()[:1].lower()
-    return f"d’{value}" if first in _VOYELLES_ELISION else f"de {value}"
+    """« de <value> » avec elision correcte : « d’ » (apostrophe courbe) devant voyelle, « de »
+    devant consonne, « h » aspire (« huit ») et l'exception « onze ». Les modeles SPFPL collent
+    « d’ » au placeholder valeur nominale ; « cent euros » -> « de cent euros », « un euro » ->
+    « d’un euro », « onze/huit euros » -> « de onze/huit euros ». Partage par les actes et
+    attestations SPFPL/SAS (Akainu M3 + propagation regle 68)."""
+    cleaned = (value or "").strip()
+    low = cleaned.lower()
+    # NB : « "" in "aeiou" » vaut True en Python -> tester low[0], pas low[:1] in ….
+    voyelle = bool(low) and low[0] in _VOYELLES_ELISION and not low.startswith(_NO_ELISION_PREFIXES)
+    return f"d’{cleaned}" if voyelle else f"de {cleaned}"

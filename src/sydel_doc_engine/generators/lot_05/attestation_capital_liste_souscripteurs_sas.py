@@ -23,6 +23,7 @@ from sydel_doc_engine.generators.lot_05.sas_satellites_common import (
     validate_capital_consistency,
     validate_sas_satellite_scope,
 )
+from sydel_doc_engine.generators.lot_05.spfpl_common import elision_de
 from sydel_doc_engine.rendering.docx_builder import (
     add_company_identity_block,
     add_paragraph,
@@ -67,7 +68,8 @@ class AttestationCapitalListeSouscripteursSasGenerator:
         add_paragraph(
             document,
             f"Nombre d'actions : {data.nb_actions_total} actions d'un montant "
-            f"d'{data.valeur_nominale_action} {euro_word(data.valeur_nominale_action)} chacune",
+            f"{elision_de(str(data.valeur_nominale_action))} "
+            f"{euro_word(data.valeur_nominale_action)} chacune",
         )
         add_paragraph(
             document,

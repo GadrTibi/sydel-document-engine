@@ -41,6 +41,7 @@ from sydel_doc_engine.generators.lot_05.attestation_commissaire_apports import (
 from sydel_doc_engine.generators.lot_05.contrat_apport_spfpl import (
     ContratApportSpfplGenerator,
 )
+from sydel_doc_engine.generators.lot_05.spfpl_common import elision_de
 
 
 def _base_context(*, operation: str = "cession") -> DocumentGenerationContext:
@@ -342,3 +343,15 @@ def test_attestation_commissaire_apports_renders_single_selected_commissaire(
     assert "ADVENSO" not in text
     assert "TS EXPERTISE" not in text
     _assert_clean(text)
+
+def test_elision_de_couvre_voyelle_consonne_h_aspire_onze() -> None:
+    # Akainu m1 (regle 68) : test direct du helper d'elision partage. « de » devant
+    # consonne, « d’ » (courbe) devant voyelle, « de » pour h aspire (« huit ») et
+    # l'exception « onze ». Couvre la branche voyelle (non exercee par les actes).
+    assert elision_de("cent euros") == "de cent euros"
+    assert elision_de("100") == "de 100"
+    assert elision_de("un euro") == "d’un euro"
+    assert elision_de("onze euros") == "de onze euros"
+    assert elision_de("huit euros") == "de huit euros"
+    assert elision_de("") == "de "
+

@@ -7,6 +7,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from sydel_doc_engine.domain.models import CapitalSouscripteur, DocumentGenerationContext
 from sydel_doc_engine.generators.lot_05.spfpl_common import (
     company_siege_display,
+    elision_de,
     person_short_identity,
     required_apport_titres,
     required_apporteur,
@@ -89,7 +90,7 @@ class AttestationCapitalListeSouscripteursGenerator:
             docx,
             "Nombre d'actions : "
             f"{required_int(capital.nb_actions_total, 'capital_souscription.nb_actions_total')} "
-            f"actions d'un montant d'{_valeur_nominale_action(capital)} "
+            f"actions d'un montant {elision_de(str(_valeur_nominale_action(capital)))} "
             "euro chacune",
         )
         add_paragraph(
