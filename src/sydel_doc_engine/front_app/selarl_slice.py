@@ -629,7 +629,8 @@ def build_generation_context(data: SelarlSliceInput) -> DocumentGenerationContex
             fonction_affichage="gérant",
             ref_associe_index=0,
         ),
-        decision=DecisionContext(date=_display_date(data.decision_date)),
+        # SCS2/SU4 (Albane 2026-06-25, propag. Q4) : date de decision (PV) = date de signature.
+        decision=DecisionContext(date=_display_date(data.signature_date)),
         reunion=ReunionContext(
             date_lettres=reunion_date_lettres,
             president=reunion_president,

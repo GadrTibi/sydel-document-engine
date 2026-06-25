@@ -1617,7 +1617,8 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         ),
         dirigeants_nomines=_build_dirigeants_nomines(payload, president_index, adresse_perso),
         associes=_selas_pv_associes(associes),
-        decision=DecisionContext(date=_display_date(payload.get("decision_date"))),
+        # SCS2/SU4 (Albane 2026-06-25, propag. Q4) : date de decision (PV) = date de signature.
+        decision=DecisionContext(date=_display_date(payload.get("signature_date"))),
         reunion=ReunionContext(
             date_lettres=date_to_french_words(payload.get("decision_date")),
             president=ReunionPresident(

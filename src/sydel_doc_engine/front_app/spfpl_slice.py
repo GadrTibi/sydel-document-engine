@@ -843,7 +843,8 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
             ref_associe_index=0,
         ),
         associes=[_spfpl_pv_associe(payload, nb_apportees)],
-        decision=DecisionContext(date=_display_date(payload.get("decision_date"))),
+        # SCS2/SU4 (Albane 2026-06-25, propag. Q4) : date de decision (PV) = date de signature.
+        decision=DecisionContext(date=_display_date(payload.get("signature_date"))),
         reunion=ReunionContext(
             date_lettres=date_to_french_words(payload.get("decision_date")),
             # Annee en lettres + heure : exigees par le PV d'agrement de cession.
