@@ -686,6 +686,39 @@ def test_scs4_associe_marie_communaute_genere_doc005_006(tmp_path: Path) -> None
             _assert_clean(_docx_text(path))
 
 
+def test_scs5_souscripteurs_ordre_et_personne_morale(tmp_path: Path) -> None:
+    # SCS5 (Akainu M1+M2 2026-06-25) : (M1) l'ordre des souscripteurs suit l'ordre des associes
+    # (pas d'inversion LIFO des 3 associes) ; (M2) un associe personne morale est LISTE et compte
+    # dans le TOTAL (sinon souscripteur omis + total != capital).
+    # --- M1 : 3 associes a valeurs distinctes, ordre preserve ---
+    payload = _civil_base(
+        "SCS",
+        "scs",
+        [
+            _pp("Un", "Aaa", 50, 1, 50, 500, role="commandite"),
+            _pp("Deux", "Bbb", 30, 51, 80, 300, role="commanditaire"),
+            _pp("Trois", "Ccc", 20, 81, 100, 200, role="commanditaire"),
+        ],
+    )
+    generated = css.generate_dossier(payload, tmp_path / "scs-ordre")
+    text = _names_in(generated, "liste_souscripteurs_scs.docx")
+    pos = [text.index(n) for n in ("Un Aaa", "Deux Bbb", "Trois Ccc")]
+    assert pos == sorted(pos), f"ordre des souscripteurs inverse : {pos}"
+    # --- M2 : associe personne morale liste + TOTAL juste ---
+    pm = _pm(40, 61, 100, 400)
+    pm.role_statutaire = "commanditaire"
+    payload_pm = _civil_base(
+        "SCS",
+        "scs",
+        [_pp("Jean", "Durand", 60, 1, 60, 600, role="commandite"), pm],
+    )
+    generated_pm = css.generate_dossier(payload_pm, tmp_path / "scs-pm")
+    text_pm = _names_in(generated_pm, "liste_souscripteurs_scs.docx")
+    assert "SEL IRIS" in text_pm  # la PM est listee
+    assert "100 parts" in text_pm  # TOTAL = somme PP (60) + PM (40), pas seulement les PP
+    _assert_clean(text_pm)
+
+
 def test_scs5_liste_souscripteurs_parts_president_civilite(tmp_path: Path) -> None:
     # SCS5 (Albane 2026-06-25 ; arbitrage Rafael « adapte les termes a la SCS (parts/president) ») :
     # la SCS genere une LISTE DES SOUSCRIPTEURS adaptee — « parts » (jamais « actions »),

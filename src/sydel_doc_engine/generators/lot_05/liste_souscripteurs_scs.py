@@ -5,6 +5,7 @@ import re
 from pathlib import Path
 
 from docx import Document
+from docx.table import _Row
 
 from sydel_doc_engine.domain.models import (
     DocumentGenerationContext,
@@ -36,7 +37,9 @@ def _adapt_actions_to_parts(text: str) -> str:
     out = out.replace("souscription d'actions", "souscription de parts")
     out = out.replace("Nombre d’actions souscrites", "Nombre de parts souscrites")
     out = out.replace("Nombre d'actions souscrites", "Nombre de parts souscrites")
-    out = out.replace(" actions", " parts")
+    # SCS5 (Akainu n1) : remplacement ancre sur le MOT (robuste a la ponctuation/debut de
+    # ligne), pas sur l'espace de tete.
+    out = re.sub(r"\bactions\b", "parts", out)
     return out
 
 
@@ -71,10 +74,19 @@ def _apply_to_paragraph(paragraph, replacements: dict[str, str]) -> None:
         _set_para_text(paragraph, rendered)
 
 
-def _physical_associes(ctx: DocumentGenerationContext) -> list[StatutsCivilsAssocie]:
+def _all_associes(ctx: DocumentGenerationContext) -> list[StatutsCivilsAssocie]:
+    """TOUS les associes (PP + PM), dans l'ordre du dossier (= ordre des plages de parts)."""
     statuts = ctx.statuts_civils
-    associes = list(statuts.associes) if statuts and statuts.associes else []
-    return [a for a in associes if a.type_personne == "personne_physique"]
+    return list(statuts.associes) if statuts and statuts.associes else []
+
+
+def _siege_of_associe(associe: StatutsCivilsAssocie) -> str:
+    if associe.adresse_personnelle_affichee:
+        return associe.adresse_personnelle_affichee.strip()
+    siege = associe.siege
+    if siege is not None and siege.adresse_affichee:
+        return siege.adresse_affichee.strip()
+    return ""
 
 
 def _associe_nb_parts(associe: StatutsCivilsAssocie) -> int:
@@ -94,13 +106,18 @@ class ListeSouscripteursScsGenerator:
     token-replacement IN-PLACE du modele source (SCS5)."""
 
     def generate(self, ctx: DocumentGenerationContext, output_dir: Path) -> Path:
-        associes = _physical_associes(ctx)
+        # SCS5 (Akainu M2) : la liste des souscripteurs porte TOUS les associes (personnes
+        # physiques ET morales) — sinon un associe PM est omis et le TOTAL ne correspond plus
+        # au capital souscrit. Le certificateur (signataire) reste le gerant : 1re personne
+        # PHYSIQUE (commandite), pas une PM.
+        associes = _all_associes(ctx)
         if not associes:
-            raise ValueError(f"associes (personne physique) requis pour {OUTPUT_FILENAME}.")
+            raise ValueError(f"associes requis pour {OUTPUT_FILENAME}.")
+        physiques = [a for a in associes if a.type_personne == "personne_physique"]
+        certificateur = physiques[0] if physiques else associes[0]
 
         total_parts = sum(_associe_nb_parts(a) for a in associes)
         total_montant = sum(_safe_int(_associe_montant(a)) for a in associes)
-        certificateur = associes[0]  # gerant (1er commandite) = signataire/certificateur
 
         company = ctx.societe
         signature = ctx.signature
@@ -145,21 +162,33 @@ class ListeSouscripteursScsGenerator:
                 _apply_to_paragraph(paragraph, {})
         template_row = table.rows[1]
         total_row = table.rows[-1]
-        # Duplique le gabarit pour chaque associe supplementaire (le 1er reutilise le gabarit).
+        # SCS5 (Akainu M1) : chaque nouvelle ligne est inseree APRES la precedente (chainage
+        # sur le dernier `tr` cree), sinon `addnext` sur le gabarit empile en LIFO et inverse
+        # l'ordre des souscripteurs des 3 associes. Le 1er reutilise le gabarit.
         created_rows = [template_row]
+        last_tr = template_row._tr
         for _ in associes[1:]:
             new_tr = copy.deepcopy(template_row._tr)
-            template_row._tr.addnext(new_tr)
-            created_rows.append(template_row._tr.getnext())
-        from docx.table import _Row
+            last_tr.addnext(new_tr)
+            last_tr = new_tr
+            created_rows.append(_Row(new_tr, table))
 
-        for associe, tr in zip(associes, created_rows, strict=True):
-            row = tr if isinstance(tr, _Row) else _Row(tr, table)
+        for associe, row in zip(associes, created_rows, strict=True):
+            if associe.type_personne == "personne_morale":
+                nom_ligne = _txt(associe.denomination)
+                adresse = _siege_of_associe(associe)
+            else:
+                civilite = _txt(associe.civilite_affichage) or "Monsieur"
+                nom_ligne = " ".join(
+                    x for x in (civilite, _txt(associe.prenom), _txt(associe.nom)) if x
+                )
+                adresse = _txt(associe.adresse_personnelle_affichee)
             per = {
-                "[civilite]": _txt(associe.civilite_affichage) or "Monsieur",
-                "[prenom]": _txt(associe.prenom),
-                "[nom]": _txt(associe.nom),
-                "[adresse_personnelle]": _txt(associe.adresse_personnelle_affichee),
+                "[civilite] [prenom] [nom]": nom_ligne,
+                "[civilite]": "",
+                "[prenom]": nom_ligne,
+                "[nom]": "",
+                "[adresse_personnelle]": adresse,
                 "[nb_actions]": str(_associe_nb_parts(associe)),
                 "[montant_sous]": _associe_montant(associe) or "0",
             }
