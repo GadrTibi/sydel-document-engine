@@ -56,36 +56,36 @@ class AttestationCommissaireApportsGenerator:
         add_paragraph(docx, person_address_display(apporteur, "apporteur"))
         add_paragraph(
             docx,
-            "Acte de designation d'un commissaire aux apports",
+            "Acte de désignation d'un commissaire aux apports",
             alignment=WD_ALIGN_PARAGRAPH.CENTER,
             bold=True,
             space_before_pt=10,
         )
         add_paragraph(
             docx,
-            "Le soussigne, "
+            "Le soussigné, "
             f"{person_short_identity(apporteur, 'apporteur')}, "
-            f"ne le {format_display_date(apporteur.date_naissance, 'apporteur.date_naissance')} "
-            f"a {required_text(apporteur.ville_naissance, 'apporteur.ville_naissance')} "
+            f"né le {format_display_date(apporteur.date_naissance, 'apporteur.date_naissance')} "
+            f"à {required_text(apporteur.ville_naissance, 'apporteur.ville_naissance')} "
             f"({apporteur_departement_naissance}), "
             f"{apporteur_profession}, "
-            f"de nationalite {required_text(apporteur.nationalite, 'apporteur.nationalite')}, "
+            f"de nationalité {required_text(apporteur.nationalite, 'apporteur.nationalite')}, "
             f"demeurant {person_address_display(apporteur, 'apporteur')}, "
             f"{required_text(apporteur.situation_maritale, 'apporteur.situation_maritale')} "
             f"avec {_conjoint_nom(apporteur)}",
         )
         add_paragraph(
             docx,
-            "seul futur associe de la societe "
+            "seul futur associé de la société "
             f"{required_text(societe_spfpl.denomination, 'societe_spfpl.denomination')} "
             f"{required_text(societe_spfpl.forme_sociale, 'societe_spfpl.forme_sociale')} "
             f"de {required_text(societe_spfpl.profession, 'societe_spfpl.profession')} "
             "en cours de formation,",
         )
-        add_paragraph(docx, "a prealablement expose et rappele ce qui suit :")
+        add_paragraph(docx, "a préalablement exposé et rappelé ce qui suit :")
         add_paragraph(
             docx,
-            "Le soussigne a decide de constituer une societe de "
+            "Le soussigné a décidé de constituer une société de "
             f"{required_text(societe_spfpl.activite, 'societe_spfpl.activite')} "
             "moyennant l'apport suivant :",
         )
@@ -93,30 +93,30 @@ class AttestationCommissaireApportsGenerator:
             docx,
             f"{required_int(apport_titres.nb_parts, 'apport_titres.nb_parts')} "
             f"parts de la {cible_forme} "
-            f"denommee \"{cible_name}\", "
-            f"ayant son siege {company_siege_display(societe_cible, 'societe_cible')}, "
-            "immatriculee au RCS de "
+            f"dénommée \"{cible_name}\", "
+            f"ayant son siège {company_siege_display(societe_cible, 'societe_cible')}, "
+            "immatriculée au RCS de "
             f"{required_text(societe_cible.ville_rcs, 'societe_cible.ville_rcs')} "
-            f"sous le numero {cible_numero_rcs}.",
+            f"sous le numéro {cible_numero_rcs}.",
         )
-        add_paragraph(docx, "Il a ete convenu ce qui suit :")
+        add_paragraph(docx, "Il a été convenu ce qui suit :")
         add_paragraph(
             docx,
-            "Aux fins de realisation de cet apport en nature a ladite societe, "
-            "le soussigne nomme :",
+            "Aux fins de réalisation de cet apport en nature à ladite société, "
+            "le soussigné nomme :",
         )
         add_paragraph(
             docx,
             professional_entity_presentation(commissaire, "commissaire_aux_apports")
-            + ", en qualite de commissaire aux apports.",
+            + ", en qualité de commissaire aux apports.",
         )
         add_paragraph(
             docx,
-            "A l'effet d'etablir sous sa responsabilite un rapport sur la valeur "
-            "dudit apport en nature, lequel sera annexe aux statuts de la societe "
-            "conformement a l'article L. 223-9 du Code de commerce.",
+            "À l'effet d'établir sous sa responsabilité un rapport sur la valeur "
+            "dudit apport en nature, lequel sera annexé aux statuts de la société "
+            "conformément à l'article L. 223-9 du Code de commerce.",
         )
-        add_paragraph(docx, f"Fait a {ctx.signature.lieu}")
+        add_paragraph(docx, f"Fait à {ctx.signature.lieu}")
         add_paragraph(docx, f"Le {ctx.signature.date.strftime('%d/%m/%Y')}")
         add_paragraph(docx, person_signature_header(apporteur), space_before_pt=12)
 

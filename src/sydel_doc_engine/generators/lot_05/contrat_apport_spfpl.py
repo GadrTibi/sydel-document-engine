@@ -58,8 +58,9 @@ def _addr_display(address: Address | None, field_name: str) -> str:
 
     Akainu M1 (round 2) : repli sur `required_text` (marqueur « (À COMPLÉTER : …) » visible,
     R10 Rafael) et JAMAIS une chaine vide — cohérent avec les jumeaux `company_siege_display` /
-    `person_address_display`. Un `adresse_affichee=""` (front : `Address(adresse_affichee=str(...) or "")`)
-    + sous-champs vides rendait « Siège social :  » blanc : interdit."""
+    `person_address_display`. Un `adresse_affichee=""` (le front pose toujours
+    `Address(adresse_affichee=str(...) or "")`) + sous-champs vides rendait « Siège social :  »
+    blanc : interdit."""
     if address is not None and address.adresse_affichee:
         return address.adresse_affichee.strip()
     if address is None:

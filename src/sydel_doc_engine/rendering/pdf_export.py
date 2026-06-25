@@ -103,6 +103,18 @@ def export_docx_batch_to_pdf(
     # au lieu de re-sonder a chaque document (sonde Word COM ~4 s x N docs, 100% gaspillee
     # sur un dossier complet). Garde lot vide : on ne sonde pas s'il n'y a rien a convertir.
     resolved_backend = _resolve_backend(backend, timeout_seconds=timeout_seconds)
+    # Perf (Bilan de Sante 2026-06-26) : LibreOffice convertit TOUT le lot en UN SEUL process
+    # (`soffice ... --convert-to pdf --outdir <dir> doc1 doc2 ... docN`) -> 1 cold-start (~2-4 s)
+    # au lieu de N. Word COM ne supporte pas le batch -> on garde la boucle unitaire (backend deja
+    # resolu, donc pas de re-sonde). Le batch n'est emprunte que si une cible de sortie est fournie.
+    if resolved_backend.name == "libreoffice" and output_dir is not None:
+        return _export_batch_with_libreoffice(
+            docx_list,
+            output_dir,
+            resolved_backend.executable,
+            timeout_seconds=timeout_seconds,
+            overwrite=overwrite,
+        )
     for source_path in docx_list:
         target_path = (
             output_dir / source_path.with_suffix(PDF_EXTENSION).name
@@ -279,6 +291,54 @@ def _export_with_libreoffice(
                 f"{converted_path}. Sortie : {process_output}"
             )
         shutil.move(str(converted_path), str(target_path))
+
+
+def _export_batch_with_libreoffice(
+    source_paths: list[Path],
+    output_dir: Path,
+    executable: Path,
+    *,
+    timeout_seconds: int,
+    overwrite: bool,
+) -> list[PdfExportResult]:
+    """Convertit TOUT le lot en UN SEUL appel LibreOffice (1 cold-start au lieu de N).
+
+    `soffice ... --convert-to pdf --outdir <output_dir> doc1.docx doc2.docx … docN.docx` produit
+    `output_dir/docK.pdf` (meme basename) -> pas de repertoire temporaire ni de move par document.
+    Le timeout est augmente proportionnellement au nombre de documents (1 process, N conversions).
+    """
+    output_dir.mkdir(parents=True, exist_ok=True)
+    validated = [_validate_source_docx(p) for p in source_paths]
+    targets = [output_dir / p.with_suffix(PDF_EXTENSION).name for p in validated]
+    for target in targets:
+        if target.exists():
+            if not overwrite:
+                raise PdfExportFailedError(f"Le PDF cible existe deja : {target}")
+            target.unlink()
+    command = [
+        str(executable),
+        "--headless",
+        "--nologo",
+        "--nodefault",
+        "--nofirststartwizard",
+        "--nolockcheck",
+        "--convert-to",
+        "pdf",
+        "--outdir",
+        str(output_dir.resolve()),
+        *[str(p) for p in validated],
+    ]
+    batch_timeout = timeout_seconds + 5 * max(0, len(validated) - 1)
+    completed = _run_conversion_process(command, batch_timeout, "LibreOffice")
+    if completed.returncode != 0:
+        raise PdfExportFailedError(_format_process_failure("LibreOffice", completed))
+    results: list[PdfExportResult] = []
+    for source, target in zip(validated, targets, strict=True):
+        _ensure_pdf_created(target, "libreoffice")
+        results.append(
+            PdfExportResult(source_docx=source, pdf_path=target, backend="libreoffice")
+        )
+    return results
 
 
 def _export_with_word_com(

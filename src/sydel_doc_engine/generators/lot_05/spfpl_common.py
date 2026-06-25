@@ -263,10 +263,10 @@ def ordre_sentence(person: SpfplPerson, field_name: str) -> str:
         f"{field_name}.profession_reglementee_pluriel",
     )
     return (
-        "Inscrit au Tableau de l'ordre departemental des "
+        "Inscrit au Tableau de l'ordre départemental des "
         f"{profession_pluriel} "
         f"du {required_text(person.ordre.departement, f'{field_name}.ordre.departement')} "
-        "sous le numero RPPS "
+        "sous le numéro RPPS "
         f"{required_text(person.ordre.numero_rpps, f'{field_name}.ordre.numero_rpps')}."
     )
 
@@ -293,11 +293,11 @@ def professional_entity_presentation(entity: ProfessionalEntity, field_name: str
         f"{required_text(entity.denomination, f'{field_name}.denomination')}, "
         f"{required_text(entity.forme_sociale, f'{field_name}.forme_sociale')} "
         f"au capital de {required_text(entity.capital_social, f'{field_name}.capital_social')}, "
-        f"dont le siege est situe {address_display(entity.siege, f'{field_name}.siege')}, "
-        "immatriculee au Registre du Commerce et des Societes de "
+        f"dont le siège est situé {address_display(entity.siege, f'{field_name}.siege')}, "
+        "immatriculée au Registre du Commerce et des Sociétés de "
         f"{required_text(entity.ville_rcs, f'{field_name}.ville_rcs')} "
-        f"sous le numero {required_text(entity.numero_rcs, f'{field_name}.numero_rcs')}, "
-        f"representee par {representant_display(representant, f'{field_name}.representant')}"
+        f"sous le numéro {required_text(entity.numero_rcs, f'{field_name}.numero_rcs')}, "
+        f"représentée par {representant_display(representant, f'{field_name}.representant')}"
     )
 
 

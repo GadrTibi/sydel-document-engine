@@ -55,14 +55,14 @@ class DemandeDerogationCumulSelarlBncGenerator:
 def _add_header(docx) -> None:
     add_paragraph(
         docx,
-        "Demande de cumul d'exercices en societe d'exercice liberal (SEL)",
+        "Demande de cumul d'exercices en société d'exercice libéral (SEL)",
         alignment=WD_ALIGN_PARAGRAPH.CENTER,
         bold=True,
     )
-    add_paragraph(docx, "et a titre individuel", alignment=WD_ALIGN_PARAGRAPH.CENTER, bold=True)
+    add_paragraph(docx, "et à titre individuel", alignment=WD_ALIGN_PARAGRAPH.CENTER, bold=True)
     add_paragraph(
         docx,
-        "(Articles R.4113-3 et R.4127-85 du Code de la sante publique)",
+        "(Articles R.4113-3 et R.4127-85 du Code de la santé publique)",
         alignment=WD_ALIGN_PARAGRAPH.CENTER,
     )
 
@@ -77,28 +77,28 @@ def _add_declarant(docx, signataire: Person, company: Company) -> None:
         signataire.qualification_principale,
         "personne_signataire.qualification_principale",
     )
-    add_form_section_heading(docx, "Identification du declarant")
-    add_paragraph(docx, "Demande formulee par le Docteur :")
+    add_form_section_heading(docx, "Identification du déclarant")
+    add_paragraph(docx, "Demande formulée par le Docteur :")
     add_paragraph(docx, f"Nom : {required_text(signataire.nom, 'personne_signataire.nom')}")
     add_paragraph(
         docx,
-        f"Prenom : {required_text(signataire.prenom, 'personne_signataire.prenom')}",
+        f"Prénom : {required_text(signataire.prenom, 'personne_signataire.prenom')}",
     )
     inscription = require_company_inscription(company)
     add_paragraph(
         docx,
         (
-            "Inscrit au Tableau du Conseil departemental de : "
+            "Inscrit au Tableau du Conseil départemental de : "
             f"{required_text(inscription.ville, 'societe.inscription_ordre.ville')}"
         ),
     )
-    add_paragraph(docx, f"Sous le numero : {numero_ordre}")
+    add_paragraph(docx, f"Sous le numéro : {numero_ordre}")
     add_paragraph(docx, f"Qualification principale : {qualification}")
     add_paragraph(
         docx,
         (
-            "Autres disciplines exercees (Competences, DESC du groupe 1, VAE ordinale, "
-            f"Capacites, Orientations) : {MANUAL_BLANK}"
+            "Autres disciplines exercées (Compétences, DESC du groupe 1, VAE ordinale, "
+            f"Capacités, Orientations) : {MANUAL_BLANK}"
         ),
     )
     siege = company.siege
@@ -111,11 +111,11 @@ def _add_declarant(docx, signataire: Person, company: Company) -> None:
         docx,
         f"Commune : {required_text(siege.ville if siege else None, 'societe.siege.ville')}",
     )
-    add_paragraph(docx, "Coordonnees :")
+    add_paragraph(docx, "Coordonnées :")
     add_paragraph(
         docx,
         (
-            "N° de telephone : "
+            "N° de téléphone : "
             f"{required_text(contact.telephone, 'personne_signataire.contact.telephone')} ; "
             "|__|__|__|__|__|__|__|__|__|__|"
         ),
@@ -123,7 +123,7 @@ def _add_declarant(docx, signataire: Person, company: Company) -> None:
     add_paragraph(
         docx,
         (
-            "Adresse electronique : "
+            "Adresse électronique : "
             f"{required_text(contact.email, 'personne_signataire.contact.email')}"
         ),
     )
@@ -131,110 +131,110 @@ def _add_declarant(docx, signataire: Person, company: Company) -> None:
 
 def _add_company(docx, company: Company) -> None:
     inscription = require_company_inscription(company)
-    add_form_section_heading(docx, "Identification de la societe (SEL)")
+    add_form_section_heading(docx, "Identification de la société (SEL)")
     add_paragraph(
         docx,
-        f"Denomination sociale : {required_text(company.denomination, 'societe.denomination')}",
+        f"Dénomination sociale : {required_text(company.denomination, 'societe.denomination')}",
     )
     add_paragraph(
         docx,
         (
-            "Inscrite au Tableau du Conseil departemental de : "
+            "Inscrite au Tableau du Conseil départemental de : "
             f"{required_text(inscription.ville, 'societe.inscription_ordre.ville')}"
         ),
     )
     add_paragraph(
         docx,
         (
-            "Sous le numero : "
+            "Sous le numéro : "
             f"{required_text(inscription.numero, 'societe.inscription_ordre.numero')}"
         ),
     )
-    add_paragraph(docx, f"Adresse du siege social : {_siege_address(company)}")
+    add_paragraph(docx, f"Adresse du siège social : {_siege_address(company)}")
 
 
 def _add_lieux_exercice(docx, company: Company) -> None:
     add_form_section_heading(docx, "Lieux d'exercices")
-    add_paragraph(docx, "Concernant votre exercice a titre individuel :")
-    add_paragraph(docx, "Type d'activite :         Salariee        □ Liberale")
+    add_paragraph(docx, "Concernant votre exercice à titre individuel :")
+    add_paragraph(docx, "Type d'activité :         Salariée        □ Libérale")
     add_paragraph(docx, f"Adresse : {MANUAL_BLANK}")
     add_paragraph(
         docx,
-        f"Temps hebdomadaire consacre (nombre de demi-journees) : {MANUAL_BLANK}",
+        f"Temps hebdomadaire consacré (nombre de demi-journées) : {MANUAL_BLANK}",
     )
     add_paragraph(docx, "Concernant votre exercice en SEL :")
     add_paragraph(
         docx,
         (
-            "Adresse de la residence professionnelle de votre SEL (activite principale) : "
+            "Adresse de la résidence professionnelle de votre SEL (activité principale) : "
             f"{_siege_address(company)}"
         ),
     )
     add_paragraph(
         docx,
-        f"Temps hebdomadaire consacre (nombre de demi-journees) : {MANUAL_BLANK}",
+        f"Temps hebdomadaire consacré (nombre de demi-journées) : {MANUAL_BLANK}",
     )
-    add_paragraph(docx, "Autre(s) site(s) d'exercice deja declare(s) (activite(s) secondaire(s)) :")
+    add_paragraph(docx, "Autre(s) site(s) d'exercice déjà déclaré(s) (activité(s) secondaire(s)) :")
     add_checkbox_line(docx, "Aucun")
     add_checkbox_line(docx, f"Oui - nombre de sites : {MANUAL_BLANK}")
     add_paragraph(docx, "1er site distinct :")
     add_paragraph(docx, f"Adresse du site : {MANUAL_BLANK}")
     add_paragraph(
         docx,
-        f"Temps hebdomadaire consacre (nombre de demi-journees) : {MANUAL_BLANK}",
+        f"Temps hebdomadaire consacré (nombre de demi-journées) : {MANUAL_BLANK}",
     )
     add_paragraph(
         docx,
         (
             "Autres sites distincts (indiquer l'adresse et le temps hebdomadaire "
-            f"consacre) : {MANUAL_BLANK}"
+            f"consacré) : {MANUAL_BLANK}"
         ),
     )
-    add_paragraph(docx, "Continuite des soins sur l'ensemble de vos lieux d'exercices :")
-    add_paragraph(docx, f"A l'adresse de votre activite a titre individuel : {MANUAL_BLANK}")
+    add_paragraph(docx, "Continuité des soins sur l'ensemble de vos lieux d'exercices :")
+    add_paragraph(docx, f"À l'adresse de votre activité à titre individuel : {MANUAL_BLANK}")
     add_paragraph(
         docx,
         (
-            "A l'adresse de la residence professionnelle de votre SEL "
-            f"(activite principale) : {MANUAL_BLANK}"
+            "À l'adresse de la résidence professionnelle de votre SEL "
+            f"(activité principale) : {MANUAL_BLANK}"
         ),
     )
     add_paragraph(
         docx,
-        f"A l'adresse du 1er site distinct de votre SEL (activite secondaire) : {MANUAL_BLANK}",
+        f"À l'adresse du 1er site distinct de votre SEL (activité secondaire) : {MANUAL_BLANK}",
     )
     add_paragraph(
         docx,
-        f"A l'adresse des autres sites de votre SEL (activite(s) secondaire(s)) : {MANUAL_BLANK}",
+        f"À l'adresse des autres sites de votre SEL (activité(s) secondaire(s)) : {MANUAL_BLANK}",
     )
 
 
 def _add_motifs(docx) -> None:
     add_form_section_heading(
         docx,
-        "Critere(s) sur le(s)quel(s) est fondee la demande de cumul",
+        "Critère(s) sur le(s)quel(s) est fondée la demande de cumul",
     )
-    add_italic_instruction(docx, "Toute case cochee doit etre accompagnee d'une explication :")
+    add_italic_instruction(docx, "Toute case cochée doit être accompagnée d'une explication :")
     add_checkbox_line(
         docx,
         (
-            "L'exercice dans votre SEL est lie a des techniques medicales necessitant "
-            "un regroupement ou un travail en equipe (motif non applicable dans le cadre "
-            "d'une SEL unipersonnelle, si vous etes le seul associe)"
+            "L'exercice dans votre SEL est lié à des techniques médicales nécessitant "
+            "un regroupement ou un travail en équipe (motif non applicable dans le cadre "
+            "d'une SEL unipersonnelle, si vous êtes le seul associé)"
         ),
     )
     add_checkbox_line(
         docx,
         (
-            "L'exercice dans votre SEL est lie a l'acquisition d'equipements ou de "
-            "materiels lourds soumis a autorisation"
+            "L'exercice dans votre SEL est lié à l'acquisition d'équipements ou de "
+            "matériels lourds soumis à autorisation"
         ),
     )
     add_checkbox_line(
         docx,
         (
-            "L'exercice dans votre SEL necessite l'acquisition d'equipements ou de "
-            "materiels qui justifient des utilisations multiples"
+            "L'exercice dans votre SEL nécessite l'acquisition d'équipements ou de "
+            "matériels qui justifient des utilisations multiples"
         ),
     )
 
@@ -242,38 +242,38 @@ def _add_motifs(docx) -> None:
 def _add_certification(docx, ctx: DocumentGenerationContext) -> None:
     prenom = required_text(ctx.personne_signataire.prenom, "personne_signataire.prenom")
     nom = required_text(ctx.personne_signataire.nom, "personne_signataire.nom")
-    add_paragraph(docx, f"Je soussigne(e) Dr {prenom} {nom}certifie :", space_before_pt=10)
+    add_paragraph(docx, f"Je soussigné(e) Dr {prenom} {nom} certifie :", space_before_pt=10)
     add_paragraph(
         docx,
         (
-            "L'exactitude de l'ensemble des informations fournies ou jointes au present "
+            "L'exactitude de l'ensemble des informations fournies ou jointes au présent "
             "formulaire et que toute modification de mes conditions d'exercice sera "
-            "communiquee au conseil departemental de ma residence professionnelle,"
+            "communiquée au conseil départemental de ma résidence professionnelle,"
         ),
     )
     add_italic_instruction(
         docx,
         (
-            "(Le Conseil departemental vous informe que toute declaration volontairement "
-            "inexacte ou incomplete faite au Conseil de l'Ordre par un medecin peut "
-            "donner lieu a des poursuites disciplinaires, conformement a l'article "
-            "R. 4127-110 du Code de la sante publique)"
+            "(Le Conseil départemental vous informe que toute déclaration volontairement "
+            "inexacte ou incomplète faite au Conseil de l'Ordre par un médecin peut "
+            "donner lieu à des poursuites disciplinaires, conformément à l'article "
+            "R. 4127-110 du Code de la santé publique)"
         ),
     )
     add_paragraph(
         docx,
         (
-            "Que l'ouverture du site n'est pas contraire aux dispositions legislatives "
-            "et reglementaires."
+            "Que l'ouverture du site n'est pas contraire aux dispositions législatives "
+            "et réglementaires."
         ),
     )
     add_paragraph(docx, f"Fait le {format_display_date(ctx.signature.date, 'signature.date')}")
-    add_paragraph(docx, f"a {required_text(ctx.signature.lieu, 'signature.lieu')}")
+    add_paragraph(docx, f"à {required_text(ctx.signature.lieu, 'signature.lieu')}")
     add_paragraph(docx, "Signature :")
     add_notice_box(
         docx,
         [
-            "PIECES A JOINDRE AU PRESENT FORMULAIRE DE DECLARATION",
+            "PIÈCES À JOINDRE AU PRÉSENT FORMULAIRE DE DÉCLARATION",
             "Projet d'acte constitutif ou justificatif utile selon la demande.",
         ],
         style_profile=DEROGATION_CUMUL_STYLE_PROFILE,
@@ -285,11 +285,11 @@ def _add_principle_notice(docx) -> None:
         docx,
         [
             (
-                "En principe, lorsqu'un medecin decide d'exercer en SEL, il ne peut "
-                "cumuler cette activite avec un exercice a titre individuel."
+                "En principe, lorsqu'un médecin décide d'exercer en SEL, il ne peut "
+                "cumuler cette activité avec un exercice à titre individuel."
             ),
             (
-                "Cependant, une derogation peut etre demandee dans les cas prevus par "
+                "Cependant, une dérogation peut être demandée dans les cas prévus par "
                 "les textes applicables."
             ),
         ],

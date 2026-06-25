@@ -1,3 +1,5 @@
+> ⚠️ **ARCHIVE PÉRIMÉE (~2026-06-03) — état vivant = [`../returns/DASHBOARD.md`](../returns/DASHBOARD.md).** 11 types sont aujourd'hui `generation_enabled` (cf. `front_app/type_registry.py`) et 43 documents ↔ 43 générateurs sont livrés ; ce fichier décrit un état de démarrage dépassé. Conservé comme archive.
+
 # État de travail au démarrage de la V1 GitHub
 
 ## Ce qui est fait

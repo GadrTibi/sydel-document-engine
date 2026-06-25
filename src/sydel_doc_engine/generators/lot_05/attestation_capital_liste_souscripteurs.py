@@ -57,18 +57,18 @@ class AttestationCapitalListeSouscripteursGenerator:
         )
         add_paragraph(
             docx,
-            f"Societe par actions simplifiee au capital de {spfpl_capital} euros",
+            f"Société par actions simplifiée au capital de {spfpl_capital} euros",
             alignment=WD_ALIGN_PARAGRAPH.CENTER,
         )
         add_paragraph(
             docx,
-            "Societe de Participations Financieres de Profession Liberale de "
+            "Société de Participations Financières de Profession Libérale de "
             f"{required_text(societe_spfpl.profession, 'societe_spfpl.profession')}",
             alignment=WD_ALIGN_PARAGRAPH.CENTER,
         )
         add_paragraph(
             docx,
-            f"Siege social : {company_siege_display(societe_spfpl, 'societe_spfpl')}",
+            f"Siège social : {company_siege_display(societe_spfpl, 'societe_spfpl')}",
             alignment=WD_ALIGN_PARAGRAPH.CENTER,
         )
         add_paragraph(docx, "ATTESTATION", alignment=WD_ALIGN_PARAGRAPH.CENTER, bold=True)
@@ -82,8 +82,8 @@ class AttestationCapitalListeSouscripteursGenerator:
             docx,
             f"{_souscripteur_identite(president, 'capital_souscription.president')}, "
             f"demeurant {_adresse(president, 'capital_souscription.president')}, "
-            f"atteste que le capital de la societe {spfpl_name} "
-            "est reparti de la maniere suivante :",
+            f"atteste que le capital de la société {spfpl_name} "
+            "est réparti de la manière suivante :",
         )
         add_paragraph(docx, f"Capital social : {spfpl_capital} euros")
         add_paragraph(
@@ -91,13 +91,13 @@ class AttestationCapitalListeSouscripteursGenerator:
             "Nombre d'actions : "
             f"{required_int(capital.nb_actions_total, 'capital_souscription.nb_actions_total')} "
             f"actions d'un montant {elision_de(str(_valeur_nominale_action(capital)))} "
-            "euro chacune",
+            "euros chacune",
         )
         add_paragraph(
             docx,
-            "Repartition : "
+            "Répartition : "
             f"{required_int(souscripteur.nb_actions, _souscripteur_field('nb_actions'))} "
-            f"actions attribuees au Dr {souscripteur_prenom} {souscripteur_nom}, "
+            f"actions attribuées au Dr {souscripteur_prenom} {souscripteur_nom}, "
             "actionnaire unique",
         )
         add_paragraph(docx, "Apports en nature :", bold=True)
@@ -106,29 +106,29 @@ class AttestationCapitalListeSouscripteursGenerator:
             f"{person_short_identity(apporteur, 'apporteur')} fait apport de "
             f"{required_int(apport_titres.nb_parts, 'apport_titres.nb_parts')} parts de la "
             f"{required_text(societe_cible.forme_sociale, 'societe_cible.forme_sociale')} "
-            f"denommee {required_text(societe_cible.denomination, 'societe_cible.denomination')} "
-            f"ayant son siege {company_siege_display(societe_cible, 'societe_cible')}, "
-            "immatriculee au RCS de "
+            f"dénommée {required_text(societe_cible.denomination, 'societe_cible.denomination')} "
+            f"ayant son siège {company_siege_display(societe_cible, 'societe_cible')}, "
+            "immatriculée au RCS de "
             f"{required_text(societe_cible.ville_rcs, 'societe_cible.ville_rcs')} "
-            f"sous le numero {required_text(societe_cible.numero_rcs, 'societe_cible.numero_rcs')} "
+            f"sous le numéro {required_text(societe_cible.numero_rcs, 'societe_cible.numero_rcs')} "
             f"pour une valeur de {apport_nature} euros.",
         )
         add_paragraph(docx, f"Total des apports en nature {apport_nature} euros")
-        add_paragraph(docx, f"Apports en numeraire : {apports_numeraire}")
+        add_paragraph(docx, f"Apports en numéraire : {apports_numeraire}")
         add_paragraph(
             docx,
-            "Le Docteur "
-            f"{_souscripteur_nom(souscripteur)} a fait la totalite des apports en nature.",
+            "Le "
+            f"{_souscripteur_nom(souscripteur)} a fait la totalité des apports en nature.",
         )
         add_paragraph(
             docx,
-            f"Le present etat qui constate la souscription d'actions de la societe {spfpl_name}, "
+            f"Le présent état qui constate la souscription d'actions de la société {spfpl_name}, "
             "ainsi que l'apport de la somme de "
-            f"{apport_nature} euros correspondant a la totalite du nominal desdites actions, est "
-            "certifie exact, sincere et veritable par le President, "
+            f"{apport_nature} euros correspondant à la totalité du nominal desdites actions, est "
+            "certifié exact, sincère et véritable par le Président, "
             f"{_souscripteur_identite(president, 'capital_souscription.president')}.",
         )
-        add_paragraph(docx, f"Fait a {ctx.signature.lieu}")
+        add_paragraph(docx, f"Fait à {ctx.signature.lieu}")
         add_paragraph(docx, f"Le {ctx.signature.date.strftime('%d/%m/%Y')}")
         add_paragraph(docx, _souscripteur_identite(president, "capital_souscription.president"))
 

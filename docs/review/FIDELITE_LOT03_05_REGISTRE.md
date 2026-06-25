@@ -1,11 +1,26 @@
 # Registre fidélité — générateurs from-scratch lot_03/lot_05 (Bilan de Santé, 2026-06-25)
 
+> **⚠️ MAJ 2026-06-26 (re-audit fidélité du sprint de nuit, par génération réelle au HEAD).**
+> Ce registre du 25/06 était PARTIELLEMENT PÉRIMÉ. État réel après re-audit + remédiation nuit :
+> - **CORRIGÉS (accents + bugs) cette nuit** : `attestation_capital_liste_souscripteurs` (doublon
+>   « Le Docteur Docteur » + accents + « euros »), `attestation_commissaire_apports` (accents,
+>   non flaggé au 25/06), `demande_derogation_cumul_selarl_bnc` (« Martincertifie » + accents),
+>   `formulaire_derogation_sites_sel` (accents — voir correction ci-dessous), helpers partagés
+>   `professional_entity_presentation` / `ordre_sentence` (spfpl_common).
+> - **FAUX ✅ corrigé** : `formulaire_derogation_sites_sel` était classé FIDÈLE ci-dessous À TORT
+>   (sortie réelle NON accentuée). Reclassé 🔴, corrigé.
+> - **Déjà fidèles confirmés** : PV agrément (accentués + dénomination réelle), acte_cession_parts/
+>   actions, contrat_apport (token-replacement), attestation_sas.
+> - **Garde-fou cause-racine (M4)** : `_assert_no_unaccented_french` ajouté aux tests (avant : la
+>   garde accents n'existait que sur les PV → ces défauts passaient les 630 verts).
+> - Restent ouverts : les ~36 items **métier-Albane** (divergences spec≠modèle) ci-dessous, packagés.
+
 > Source : re-tri fan-out vs SPEC ratifiée (task wxlxo6yef). Les écarts du 1er audit étaient mesurés vs le MODÈLE brut ; ici on compare le rendu à la SPEC (autorité du texte) + on isole les divergences spec≠modèle pour Albane.
 > **Constat de fond** : les générateurs ci-dessous sont *from-scratch* (texte codé en dur, souvent NON accentué) et approximent la source. La correction fidèle = les **rebâtir en token-replacement** (lire le modèle, remplacer les placeholders), pas du patch ligne-à-ligne. Arbitrage ratifié 3.8 : conserver les formulations source.
 
 ## ✅ Fidèles à leur spec (faux positifs du 1er audit) : 5
 - lot_03/avenant_contrat_bail
-- lot_03/formulaire_derogation_sites_sel
+- ~~lot_03/formulaire_derogation_sites_sel~~ → **FAUX ✅ (MAJ 26/06)** : sortie non accentuée, reclassé 🔴, corrigé cette nuit.
 - lot_05/acte_cession_actions_spfpl
 - lot_05/acte_cession_parts_scm
 - lot_05/pv_agrement_cession_spfpl_plusieurs_associes

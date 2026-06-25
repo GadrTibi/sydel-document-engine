@@ -230,6 +230,25 @@ def _assert_clean(text: str) -> None:
     assert "d'acquerir/de recevoir" not in text
 
 
+# Akainu Bilan de Santé 2026-06-26 (cause racine M4) : la garde anti-accents n'existait que
+# sur les PV agrément → 3 générateurs juridiques sortaient du texte NON accentué sans qu'aucun
+# test n'échoue. Ce garde-fou liste des mots français qui DOIVENT porter un accent ; s'ils
+# reparaissent nus dans une sortie générée, le test échoue.
+_MOTS_NON_ACCENTUES_INTERDITS = (
+    "Societe", "societe", "simplifiee", "Financieres", "Liberale", "Siege", "reparti",
+    "maniere", "Repartition", "attribuees", "denommee", "immatriculee", "numero", "numeraire",
+    "totalite", "certifie", "sincere", "veritable", "President", "realisation", "present etat",
+    "Repartis", "liberees", "souscripteurs declarent",
+)
+
+
+def _assert_no_unaccented_french(text: str) -> None:
+    residus = sorted(
+        {m for m in _MOTS_NON_ACCENTUES_INTERDITS if re.search(rf"\b{re.escape(m)}\b", text)}
+    )
+    assert not residus, f"Mots français non accentués dans la sortie générée : {residus}"
+
+
 def test_acte_cession_parts_generates_dynamic_capital_and_preserves_source_frais(
     tmp_path: Path,
 ) -> None:
@@ -361,7 +380,12 @@ def test_attestation_capital_generates_unique_shareholder_wording(tmp_path: Path
 
     assert output_path.name == "attestation_capital_liste_souscripteurs.docx"
     assert "actionnaire unique" in text
-    assert "Apports en numeraire : 0 euro" in text
+    assert "Apports en numéraire : 0 euro" in text
+    # Akainu Bilan de Santé (fidélité) : B1 doublon « Le Docteur Docteur » corrigé +
+    # M1 texte juridique ACCENTUÉ (le from-scratch sortait tout non accentué).
+    assert "Docteur Docteur" not in text
+    assert "Le Docteur Camille Martin a fait la totalité des apports" in text
+    _assert_no_unaccented_french(text)
     _assert_clean(text)
 
 
@@ -376,10 +400,12 @@ def test_attestation_commissaire_apports_renders_single_selected_commissaire(
     text = _docx_text(output_path)
 
     assert output_path.name == "attestation_commissaire_apports.docx"
-    assert "Aux fins de realisation de cet apport en nature" in text
+    assert "Aux fins de réalisation de cet apport en nature" in text
     assert "CAA EXPERTISE" in text
     assert "ADVENSO" not in text
     assert "TS EXPERTISE" not in text
+    # Akainu Bilan de Santé (fidélité M4) : ce from-scratch sortait tout non accentué.
+    _assert_no_unaccented_french(text)
     _assert_clean(text)
 
 def test_elision_de_couvre_voyelle_consonne_h_aspire_onze() -> None:

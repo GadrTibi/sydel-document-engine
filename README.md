@@ -18,12 +18,13 @@ Le moteur déterministe est **livré et fonctionnel**, bien au-delà d'une V1 st
 
 - **plusieurs types de dossiers câblés** (SELARL création + cession, SELAS pluripersonnelle médecin/dentiste, SCI / SCI IRIS / SCS / SCM, SPFPL…), avec des **générateurs réels par document** ;
 - **front Streamlit opérationnel** : saisie, validation, génération **DOCX + ZIP** déterministe ;
-- **~607 tests unitaires verts**, `ruff` propre, tests gold de fidélité ;
+- **630 tests verts**, `ruff` propre, tests gold de fidélité ;
 - **retours client** (Albane / Rafael) traités en continu, avec un gate adversarial (règle 66) avant tout « traité ».
 
-> ⚠️ **Ne pas se fier à ce README pour l'état détaillé du jour.** Photo vivante :
-> [`docs/returns/DASHBOARD.md`](docs/returns/DASHBOARD.md) (retours) et
-> [`docs/project/04_LAST_STATE.md`](docs/project/04_LAST_STATE.md). Reprise à froid :
+> ⚠️ **Ne pas se fier à ce README pour l'état détaillé du jour.** LA photo vivante :
+> [`docs/returns/DASHBOARD.md`](docs/returns/DASHBOARD.md) (état du jour, retours).
+> [`docs/project/04_LAST_STATE.md`](docs/project/04_LAST_STATE.md) est une **archive 2026-06-03** (ne pas s'y fier).
+> Carte complète de la doc : [`docs/INDEX.md`](docs/INDEX.md). Reprise à froid :
 > commencer par [`docs/project/05_NEW_CHAT_PROMPT.md`](docs/project/05_NEW_CHAT_PROMPT.md).
 
 ## Décisions structurantes déjà actées
