@@ -147,10 +147,10 @@ def test_demande_inscription_ordre_selarl_uses_structured_ordinal_address(
 
     assert output_path == tmp_path / "demande_inscription_ordre.docx"
     assert "Dr Jean Durand" in text
-    assert (
-        "Conseil départemental de l'Ordre des chirurgiens-dentistes "
-        "de la Loire-Atlantique"
-    ) in paragraphs
+    # SU2 (Albane 2026-06-25, propagé à tous les types SEL) : destinataire SANS « de l'Ordre
+    # des <profession> » → « Conseil départemental <connecteur> <departement> ».
+    assert "Conseil départemental de la Loire-Atlantique" in paragraphs
+    assert "de l'Ordre des chirurgiens-dentistes" not in "\n".join(paragraphs)
     assert "Des chirurgiens-dentistes" not in paragraphs
     assert "6 rue du Conseil" in paragraphs
     assert "75001 Paris" in paragraphs
@@ -169,7 +169,7 @@ def test_demande_inscription_ordre_selarl_uses_structured_ordinal_address(
     assert subject.runs[0].underline is True
     recipient = _matching_paragraphs(
         output_path,
-        "Conseil départemental de l'Ordre des chirurgiens-dentistes de la Loire-Atlantique",
+        "Conseil départemental de la Loire-Atlantique",
     )[0]
     assert recipient.paragraph_format.left_indent > Cm(8)
     assert _matching_paragraphs(output_path, "Dr Jean Durand")[-1].alignment == (

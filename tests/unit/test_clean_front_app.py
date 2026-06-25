@@ -736,7 +736,9 @@ def test_clean_front_selarl_generation_smoke(tmp_path: Path) -> None:
     combined_text = "\n".join(_docx_text(path) for path in generated.docx_paths)
     assert "SELARL SELARL" not in combined_text
     assert "Société d’exercice libéral à responsabilité limitée de médecin" in combined_text
-    assert "Conseil départemental de l'Ordre des médecins de 75" in combined_text
+    # SU2 (Albane 2026-06-25, propagé tous types SEL) : sans « de l'Ordre des <profession> ».
+    assert "Conseil départemental de 75" in combined_text
+    assert "de l'Ordre des médecins" not in combined_text
     assert "Au capital de 1 000 euros" in combined_text
     assert "Au capital de 1000" not in combined_text
     assert " medecin" not in combined_text

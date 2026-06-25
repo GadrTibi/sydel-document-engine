@@ -1673,7 +1673,9 @@ def test_selas_ordre_conseil_derive_sans_champ_libelle(tmp_path: Path) -> None:
         next(p for p in generated.docx_paths if p.name == "demande_inscription_ordre.docx")
     )
     # Connecteur par defaut « de » (ordre_connecteur absent).
-    assert "Conseil départemental de l'Ordre des médecins de Rhône" in text
+    # SU2 (Albane 2026-06-25, propagé tous types SEL) : sans « de l'Ordre des <profession> ».
+    assert "Conseil départemental de Rhône" in text
+    assert "de l'Ordre des médecins" not in text
 
 
 def test_selas_ordre_connecteur_du(tmp_path: Path) -> None:
@@ -1686,8 +1688,10 @@ def test_selas_ordre_connecteur_du(tmp_path: Path) -> None:
     text = _docx_text(
         next(p for p in generated.docx_paths if p.name == "demande_inscription_ordre.docx")
     )
-    assert "Conseil départemental de l'Ordre des médecins du Rhône" in text
-    assert "des médecins de Rhône" not in text
+    # SU2 (Albane 2026-06-25, propagé tous types SEL) : sans « de l'Ordre des <profession> ».
+    assert "Conseil départemental du Rhône" in text
+    assert "de l'Ordre des médecins" not in text
+    assert "Conseil départemental de Rhône" not in text
 
 
 def test_selas_blocks_incoherent_actions_sum() -> None:
