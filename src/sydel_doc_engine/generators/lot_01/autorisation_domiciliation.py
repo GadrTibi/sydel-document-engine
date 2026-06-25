@@ -13,6 +13,7 @@ from docx.shared import Pt
 
 from sydel_doc_engine.domain.models import Address, Company, DocumentGenerationContext
 from sydel_doc_engine.rendering.docx_template_fill import fill_docx_template
+from sydel_doc_engine.utils.months import FRENCH_MONTHS
 
 ROBOTO_FONT = "Roboto"
 
@@ -27,23 +28,6 @@ _SOURCE_MODELS_DIR = (
 
 # Motif glob robuste aux accents du nom de fichier du modele.
 _MODEL_GLOB = "autorisation*domiciliation*.docx"
-
-# Mois francais accentues pour un rendu fidele "12 mai 2026".
-_MONTHS_FR = (
-    "",
-    "janvier",
-    "février",
-    "mars",
-    "avril",
-    "mai",
-    "juin",
-    "juillet",
-    "août",
-    "septembre",
-    "octobre",
-    "novembre",
-    "décembre",
-)
 
 _ISO_DATE_RE = re.compile(r"^(\d{4})-(\d{2})-(\d{2})$")
 
@@ -205,7 +189,7 @@ def _french_date(value: date | str | None) -> str:
     if value is None:
         raise ValueError(f"signature.date est obligatoire pour {DOCUMENT_CODE}.")
     if isinstance(value, date):
-        return f"{value.day} {_MONTHS_FR[value.month]} {value.year}"
+        return f"{value.day} {FRENCH_MONTHS[value.month]} {value.year}"
     text = value.strip()
     match = _ISO_DATE_RE.match(text)
     if match is not None:
@@ -214,5 +198,5 @@ def _french_date(value: date | str | None) -> str:
             parsed = date(year, month, day)
         except ValueError:
             return text
-        return f"{parsed.day} {_MONTHS_FR[parsed.month]} {parsed.year}"
+        return f"{parsed.day} {FRENCH_MONTHS[parsed.month]} {parsed.year}"
     return text

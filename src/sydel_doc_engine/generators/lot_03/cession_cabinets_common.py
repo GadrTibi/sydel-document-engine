@@ -33,6 +33,7 @@ from sydel_doc_engine.domain.models import (
     DocumentGenerationContext,
 )
 from sydel_doc_engine.utils.grammar import apply_gender_pairs
+from sydel_doc_engine.utils.months import FRENCH_MONTHS
 
 DOCUMENT_CODE = "CODE-CESSION-CAB-001"
 
@@ -81,22 +82,6 @@ _MODEL_GLOB_BY_VARIANT: dict[tuple[str, str], str] = {
     (COMPROMIS, DENTAIRE): "Compromis*cession*dentaire*.docx",
 }
 
-# Mois francais accentues pour un rendu fidele "10 mars 1975".
-_MONTHS_FR = (
-    "",
-    "janvier",
-    "février",
-    "mars",
-    "avril",
-    "mai",
-    "juin",
-    "juillet",
-    "août",
-    "septembre",
-    "octobre",
-    "novembre",
-    "décembre",
-)
 
 _ISO_DATE_RE = re.compile(r"^(\d{4})-(\d{2})-(\d{2})$")
 _TOKEN_RE = re.compile(r"\[[^\]\[]+\]")
@@ -916,7 +901,7 @@ def _french_date(value: date | str | None) -> str | None:
     if value is None:
         return None
     if isinstance(value, date):
-        return f"{value.day} {_MONTHS_FR[value.month]} {value.year}"
+        return f"{value.day} {FRENCH_MONTHS[value.month]} {value.year}"
     text = value.strip()
     match = _ISO_DATE_RE.match(text)
     if match is not None:
@@ -925,7 +910,7 @@ def _french_date(value: date | str | None) -> str | None:
             parsed = date(year, month, day)
         except ValueError:
             return text
-        return f"{parsed.day} {_MONTHS_FR[parsed.month]} {parsed.year}"
+        return f"{parsed.day} {FRENCH_MONTHS[parsed.month]} {parsed.year}"
     return text
 
 

@@ -374,19 +374,23 @@ def test_scm_cession_acte_selas_situation_cedant_accentuee(
 
 
 def test_mois_tables_accentuees_identiques() -> None:
-    # re-Akainu tour 2 (NITPICK LIVE-03) : trois tables de noms de mois coexistent (dette de
-    # duplication, cf. docs/operations/GOLDEN_BLOCS.md). Tant qu'elles ne sont pas factorisées,
-    # ce test de parité empêche qu'une correction d'accent soit oubliée dans une copie.
-    from sydel_doc_engine.front_app.field_derivations import _MONTHS
-    from sydel_doc_engine.generators.lot_01.autorisation_domiciliation import (
-        _MONTHS_FR as _MONTHS_DOMICILIATION,
-    )
-    from sydel_doc_engine.generators.lot_03.cession_cabinets_common import (
-        _MONTHS_FR as _MONTHS_CESSION,
-    )
+    # La dette de duplication (trois tables de mois identiques) est résorbée : la table
+    # accentuée est désormais centralisée dans utils.months.FRENCH_MONTHS et importée par
+    # field_derivations / autorisation_domiciliation / cession_cabinets_common. Ce test garde
+    # la garantie d'accentuation (LIVE-03) et vérifie que les modules pointent bien sur la table
+    # centralisée (plus aucune copie locale susceptible de dériver).
+    from sydel_doc_engine.front_app import field_derivations
+    from sydel_doc_engine.generators.lot_01 import autorisation_domiciliation
+    from sydel_doc_engine.generators.lot_03 import cession_cabinets_common
+    from sydel_doc_engine.utils.months import FRENCH_MONTHS
 
-    assert _MONTHS == _MONTHS_DOMICILIATION == _MONTHS_CESSION
-    assert "février" in _MONTHS and "août" in _MONTHS and "décembre" in _MONTHS
+    assert (
+        field_derivations.FRENCH_MONTHS
+        is autorisation_domiciliation.FRENCH_MONTHS
+        is cession_cabinets_common.FRENCH_MONTHS
+        is FRENCH_MONTHS
+    )
+    assert "février" in FRENCH_MONTHS and "août" in FRENCH_MONTHS and "décembre" in FRENCH_MONTHS
 
 
 def test_scm_cession_fixture_pas_de_mois_non_accentue() -> None:

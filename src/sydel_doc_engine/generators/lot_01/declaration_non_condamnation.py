@@ -14,6 +14,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_spacer,
     new_document,
 )
+from sydel_doc_engine.utils.dates import format_date_fr
 from sydel_doc_engine.utils.grammar import birth_label, filiation_label, subject_line
 
 OUTPUT_FILENAME = "declaration_non_condamnation.docx"
@@ -94,7 +95,7 @@ class DeclarationNonCondamnationGenerator:
         _add_signature_block(
             document,
             lieu_signature=lieu_signature,
-            date_signature=_format_date(ctx.signature.date),
+            date_signature=format_date_fr(ctx.signature.date),
             image_path=ctx.signature.image_optionnelle,
         )
         # Mise en forme (Albane 2026-06-17, §7) : « descendre legerement » le
@@ -119,7 +120,7 @@ def _required_text(value: str | None, field_name: str) -> str:
 def _required_date(value: date | None, field_name: str) -> str:
     if value is None:
         raise ValueError(f"{field_name} est obligatoire pour DOC-001.")
-    return _format_date(value)
+    return format_date_fr(value)
 
 
 def _compose_required_address(address: Address) -> str:
@@ -139,10 +140,6 @@ def _birth_city_prefix(person) -> str:
 def _birth_department_suffix(person) -> str:
     departement = (getattr(person, "departement_naissance", None) or "").strip()
     return f" ({departement})" if departement else ""
-
-
-def _format_date(value: date) -> str:
-    return value.strftime("%d/%m/%Y")
 
 
 def _add_title(document) -> None:

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from datetime import date
 from pathlib import Path
 
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -23,6 +22,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_subject_heading,
     new_document,
 )
+from sydel_doc_engine.utils.dates import format_date_fr
 
 OUTPUT_FILENAME = "demande_inscription_ordre.docx"
 DOCUMENT_CODE = "CODE-ORDRE-001"
@@ -128,10 +128,6 @@ def _required_text(value: str | None, field_name: str) -> str:
     if value is None or not value.strip():
         raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
     return value.strip()
-
-
-def _format_date(value: date) -> str:
-    return value.strftime("%d/%m/%Y")
 
 
 def _split_display_lines(value: str | None, field_name: str) -> list[str]:
@@ -304,7 +300,7 @@ def _add_signature_place_and_subject(document, ctx: DocumentGenerationContext) -
     lieu_signature = _required_text(ctx.signature.lieu, "signature.lieu")
     add_letter_place_date(
         document,
-        f"{lieu_signature}, le {_format_date(ctx.signature.date)}",
+        f"{lieu_signature}, le {format_date_fr(ctx.signature.date)}",
         space_after_pt=12,
     )
     add_subject_heading(

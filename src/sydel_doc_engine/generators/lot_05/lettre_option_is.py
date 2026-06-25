@@ -25,6 +25,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_subject_heading,
     new_document,
 )
+from sydel_doc_engine.utils.dates import format_date_fr
 
 OUTPUT_FILENAME = "lettre_option_is.docx"
 DOCUMENT_CODE = "CODE-OPTION-IS-001"
@@ -98,10 +99,6 @@ def _required_int(value: int | None, field_name: str) -> int:
     return value
 
 
-def _format_date(value: date) -> str:
-    return value.strftime("%d/%m/%Y")
-
-
 # Retour Rafael R22-07 (2026-06-22) : le centre est TOUJOURS « Centre des Finances
 # Publiques » (le service + l'adresse portent l'identification). On fige le libelle au
 # lieu d'une variable saisie -> plus de champ « Centre » dans le formulaire.
@@ -131,7 +128,7 @@ def _add_tax_office_block(document: Any, tax_office: CentreImpots) -> None:
 def _add_place_date_and_subject(document: Any, lieu: str, signature_date: date) -> None:
     add_letter_place_date(
         document,
-        f"Fait à {lieu}, le {_format_date(signature_date)}",
+        f"Fait à {lieu}, le {format_date_fr(signature_date)}",
         space_after_pt=12,
         style_profile=LETTER_WIDE_STYLE_PROFILE,
     )

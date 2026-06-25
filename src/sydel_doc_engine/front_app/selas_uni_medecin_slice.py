@@ -268,9 +268,7 @@ def render_selas_uni_medecin_form() -> dict[str, object]:
     nom_mere = _t(col_z, "nom_mere", "Nom de la mere")
     # Retour Rafael 2026-06-25 (#3) : le champ « Conseil departemental (ordre) » est RETIRE.
     # Depuis SU2, le destinataire de la demande d'inscription est DERIVE de « Departement ordre »
-    # (+ connecteur), ce champ libre `ordre_conseil` ne pilotait plus rien (vestigial) -> source de
-    # confusion legitime (« quelle reponse est attendue ici ?? »). Conserve a vide pour le contexte.
-    ordre_conseil = ""
+    # (+ connecteur), ce champ libre `ordre_conseil` ne pilotait plus rien (vestigial) -> retire.
     col_ab, col_ac = st.columns(2)
     departement_ordre = _t(col_ab, "departement_ordre", "Departement ordre")
     numero_ordre = _t(col_ac, "numero_ordre", "Numero d'inscription")
@@ -355,7 +353,6 @@ def render_selas_uni_medecin_form() -> dict[str, object]:
         "conjoint_civilite": conjoint_civilite,
         "conjoint_prenom": conjoint_prenom,
         "conjoint_nom": conjoint_nom,
-        "ordre_conseil": ordre_conseil,
         "departement_ordre": departement_ordre,
         "connecteur_departement": connecteur_departement,
         "ordre_president_feminin": ordre_president_feminin,
@@ -450,7 +447,6 @@ def _to_selarl_input(payload: dict[str, object]) -> SelarlSliceInput:
         siege_cp=str(payload.get("siege_cp") or ""),
         siege_ville=str(payload.get("siege_ville") or ""),
         ville_rcs=str(payload.get("ville_rcs") or ""),
-        ordre_conseil=str(payload.get("ordre_conseil") or ""),
         ordre_adresse_ligne_1=str(payload.get("ordre_adresse_ligne_1") or ""),
         ordre_cp=str(payload.get("ordre_cp") or ""),
         ordre_ville=str(payload.get("ordre_ville") or ""),

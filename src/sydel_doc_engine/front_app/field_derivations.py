@@ -7,6 +7,7 @@ from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from typing import Final
 
 from sydel_doc_engine.domain.enums import Gender
+from sydel_doc_engine.utils.months import FRENCH_MONTHS
 
 DEFAULT_MANDATAIRE_CIVILITE: Final = "Monsieur"
 DEFAULT_MANDATAIRE_PRENOM: Final = "Jordan"
@@ -70,23 +71,6 @@ _TENS: Final = {
 # Règle globale (Rafael 2026-06-23) : les noms de mois en SORTIE sont toujours
 # correctement accentués (février, août, décembre). Les MAPS de parsing (nom -> n°)
 # restent sans accent : le parseur normalise (NFKD) l'entrée avant lookup.
-_MONTHS: Final = (
-    "",
-    "janvier",
-    "février",
-    "mars",
-    "avril",
-    "mai",
-    "juin",
-    "juillet",
-    "août",
-    "septembre",
-    "octobre",
-    "novembre",
-    "décembre",
-)
-
-
 _MONTH_ACCENT_FIXES: Final = (
     (re.compile(r"\baout\b", re.IGNORECASE), "août"),
     (re.compile(r"\bf[ée]vrier\b", re.IGNORECASE), "février"),
@@ -103,7 +87,7 @@ def accentuate_french_months(text: str) -> str:
     rester un echo fidele du modele de reference SELARL — il contient « 31 decembre » sans
     accent, typo source a faire trancher par Albane). Seuls les 3 mois a accent sont concernes
     (aout/fevrier/decembre) ; insensible a la casse, preserve la capitale initiale, idempotent.
-    Convention globale Rafael 2026-06-23 (cf. _MONTHS pour les sorties derivees d'un objet date)."""
+    Convention globale Rafael 2026-06-23 (cf. FRENCH_MONTHS pour les sorties d'une date)."""
     if not text:
         return text
     out = text
@@ -312,7 +296,7 @@ def date_to_french_words(value: date | None) -> str:
         return ""
     return (
         f"{integer_to_french_words(value.day)} "
-        f"{_MONTHS[value.month]} "
+        f"{FRENCH_MONTHS[value.month]} "
         f"{integer_to_french_words(value.year)}"
     )
 

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from datetime import date
 from pathlib import Path
 
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -14,6 +13,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_spacer,
     new_document,
 )
+from sydel_doc_engine.utils.dates import format_date_fr
 from sydel_doc_engine.utils.grammar import subject_line
 
 OUTPUT_FILENAME = "procuration.docx"
@@ -91,7 +91,7 @@ class ProcurationGenerator:
         _add_final_block(
             document,
             lieu_signature=lieu_signature,
-            date_signature=_format_date(ctx.signature.date),
+            date_signature=format_date_fr(ctx.signature.date),
             signatory_name=f"{prenom} {nom}",
         )
 
@@ -153,10 +153,6 @@ def _denomination_starts_with_form(
 
 def _normalize_for_prefix(value: str) -> str:
     return " ".join(value.casefold().replace("’", "'").split())
-
-
-def _format_date(value: date) -> str:
-    return value.strftime("%d/%m/%Y")
 
 
 def _add_title(document) -> None:
