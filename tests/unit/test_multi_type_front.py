@@ -3942,3 +3942,52 @@ def test_selas_uni_medecin_context_is_selas_actions() -> None:
     assert ctx.capital.type_titre == "actions"
     assert ctx.dirigeant_nomine.fonction_affichage == "président"
     assert ctx.dirigeant_nomine.duree_mandat == "illimitée"
+
+
+def test_su3_scs2_force_signature_siege_et_decision_signature_divergent(tmp_path: Path) -> None:
+    # SU3/SCS2/B1 (Albane 2026-06-25, lock Akainu) : avec une ville de signature DIVERGENTE du
+    # siege ET une date de decision DIFFERENTE de la signature, le doc genere DOIT forcer
+    # signature = siege et decision/reunion = date de signature. Valeurs divergentes = vrai test.
+    from docx import Document
+
+    from sydel_doc_engine.front_app import civil_statuts_slice as css
+    from sydel_doc_engine.front_app import sas_slice, selas_multi_slice, spfpl_slice
+
+    siege, divergent = "Lyon", "VilleSignatureDivergente"
+    sig_date, decision_div = date(2026, 5, 26), date(2026, 5, 10)
+
+    def _full_text(p: Path) -> str:
+        d = Document(p)
+        parts = [pa.text for pa in d.paragraphs]
+        for t in d.tables:
+            for r in t.rows:
+                for c in r.cells:
+                    parts += [pa.text for pa in c.paragraphs]
+        return "\n".join(parts)
+
+    def _ov(payload: dict) -> dict:
+        p = dict(payload)
+        p.update({
+            "siege_ville": siege, "signature_lieu": divergent,
+            "signature_date": sig_date, "decision_date": decision_div,
+        })
+        return p
+
+    cases = [
+        ("SCS", lambda d: css.generate_dossier(_ov(_civil_base(
+            "SCS", "scs",
+            [_pp("Jean", "Durand", 60, 1, 60, 600, role="commandite"),
+             _pp("Alice", "Martin", 40, 61, 100, 400, role="commanditaire")])), d)),
+        ("SAS", lambda d: sas_slice.generate_dossier(_ov(_sas_payload()), d)),
+        ("SELAS-multi", lambda d: selas_multi_slice.generate_dossier(_ov(_selas_payload()), d)),
+        ("SPFPL", lambda d: spfpl_slice.generate_dossier(_ov(_spfpl_payload("SPFPL cession")), d)),
+    ]
+    for label, gen in cases:
+        generated = gen(tmp_path / label)
+        for path in generated.docx_paths:
+            text = _full_text(path)
+            # SU3 : la ville de signature divergente ne doit JAMAIS apparaitre (forcee au siege).
+            assert divergent not in text, f"{label} ville signature (SU3)"
+            # SCS2/B1 : la date de decision divergente (10 mai) ne doit pas apparaitre dans un PV.
+            assert "dix mai" not in text, f"{label} date decision (SCS2/B1)"
+            assert "10/05/2026" not in text, f"{label} date decision chiffres"

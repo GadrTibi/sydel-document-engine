@@ -792,7 +792,8 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
             qualification_principale="chirurgien-dentiste",
         ),
         signature=Signature(
-            lieu=str(payload.get("signature_lieu") or ""),
+            # SU3 (Albane 2026-06-25) : ville de signature = ville du siege, FORCE au moteur.
+            lieu=str(payload.get("siege_ville") or payload.get("signature_lieu") or ""),
             date=payload.get("signature_date"),
             nombre_exemplaires="trois",
         ),
@@ -846,7 +847,8 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         # SCS2/SU4 (Albane 2026-06-25, propag. Q4) : date de decision (PV) = date de signature.
         decision=DecisionContext(date=_display_date(payload.get("signature_date"))),
         reunion=ReunionContext(
-            date_lettres=date_to_french_words(payload.get("decision_date")),
+            # B1/SCS2 (Albane 2026-06-25) : date de reunion (PV) = date de signature.
+            date_lettres=date_to_french_words(payload.get("signature_date")),
             # Annee en lettres + heure : exigees par le PV d'agrement de cession.
             annee_lettres=_annee_lettres(payload.get("decision_date")),
             heure="10 heures",

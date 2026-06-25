@@ -485,7 +485,8 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
             qualification_principale=str(payload.get("qualification_principale") or ""),
         ),
         signature=Signature(
-            lieu=str(payload.get("signature_lieu") or ""),
+            # SU3 (Albane 2026-06-25) : ville de signature = ville du siege, FORCE au moteur.
+            lieu=str(payload.get("siege_ville") or payload.get("signature_lieu") or ""),
             date=payload.get("signature_date"),
             nombre_exemplaires="trois",
         ),

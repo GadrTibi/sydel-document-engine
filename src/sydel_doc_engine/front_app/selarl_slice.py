@@ -528,7 +528,8 @@ def build_generation_context(data: SelarlSliceInput) -> DocumentGenerationContex
     valeur_nominale_part_lettres = (
         data.valeur_nominale_part_lettres or number_words_from_value(valeur_nominale_part)
     )
-    reunion_date_lettres = data.reunion_date_lettres or date_to_french_words(data.decision_date)
+    # B1/SCS2 (Albane 2026-06-25) : date de reunion (PV) = date de signature, comme la decision.
+    reunion_date_lettres = data.reunion_date_lettres or date_to_french_words(data.signature_date)
     signature_prestataire = (
         data.prestataire_signature_electronique
         or DEFAULT_PRESTATAIRE_SIGNATURE_ELECTRONIQUE

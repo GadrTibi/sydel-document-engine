@@ -1047,8 +1047,10 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         payload.get("valeur_nominale_part") or ""
     ) or calculate_nominal_value(capital, nb_parts)
     forme_sociale = str(payload.get("forme_sociale") or "") or civil_forme_sociale(structure)
-    signature_lieu = str(payload.get("signature_lieu") or "") or str(
-        payload.get("siege_ville") or ""
+    # SU3 (Albane 2026-06-25) : la ville de signature EST la ville du siege DANS TOUS LES CAS.
+    # On FORCE = siege (avant toute valeur de payload divergente). Couvre signature ET renonciation.
+    signature_lieu = str(payload.get("siege_ville") or "") or str(
+        payload.get("signature_lieu") or ""
     )
 
     statuts_civils = StatutsCivilsContext(
