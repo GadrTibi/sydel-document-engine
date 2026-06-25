@@ -143,6 +143,9 @@ def _creation_bundle_codes(
     scm_inter_sel: bool = False,
 ) -> tuple[str, ...]:
     codes: list[str] = [statuts_code, *cc.TRONC_COMMUN_CODES, cc.DOC_PV_NOMINATION_GERANT]
+    if structure == "SCS":
+        # SCS5 (Albane 2026-06-25) : ajouter la liste des souscripteurs (attestation de capital).
+        codes.append("DOC-042")
     if structure == "SCM":
         codes.append(cc.DOC_DEMANDE_INSCRIPTION_ORDRE)
         # Satellites SCM (Rafael) : pacte + liste depenses, si exactement 2 associes.

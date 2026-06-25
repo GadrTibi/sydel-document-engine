@@ -640,7 +640,7 @@ def test_scs_slice_generates_clean(tmp_path: Path) -> None:
     )
     plan = css.build_civil_plan(payload)
     assert plan.can_generate is True
-    assert plan.document_codes == ("DOC-019", "DOC-001", "DOC-002", "DOC-003", "DOC-004")
+    assert plan.document_codes == ("DOC-019", "DOC-001", "DOC-002", "DOC-003", "DOC-004", "DOC-042")
     generated = css.generate_dossier(payload, tmp_path / "scs")
     _assert_bundle_clean(generated, _TRONC_DOCS | {"statuts_scs.docx"})
 
@@ -770,7 +770,7 @@ def test_scs_three_associes_generates_clean(tmp_path: Path) -> None:
     )
     plan = css.build_civil_plan(payload)
     assert plan.can_generate is True
-    assert plan.document_codes == ("DOC-019", "DOC-001", "DOC-002", "DOC-003", "DOC-004")
+    assert plan.document_codes == ("DOC-019", "DOC-001", "DOC-002", "DOC-003", "DOC-004", "DOC-042")
     generated = css.generate_dossier(payload, tmp_path / "scs3")
     _assert_bundle_clean(generated, _TRONC_DOCS | {"statuts_scs.docx"})
     statuts_text = _names_in(generated, "statuts_scs.docx")
