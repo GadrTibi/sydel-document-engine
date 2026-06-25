@@ -30,14 +30,17 @@
 
 ## Scores (mis à jour à chaque tour)
 
-| Dimension | Audit (bon clone, HEAD a6a2119) | Blocage 5/5 | 5/5 ? |
+| Dimension | Audit initial | **Confirmé post-boucle (Akainu)** | 5/5 ? |
 |-----------|-------|-------------------|-------|
-| Fidélité | ⏳ en cours | registre lot_03/05 (rebuilds restants) | ⬜ |
-| Qualité code | **3/5** | shell.py 3419 l. (fixtures mêlées C1), helpers `_t`/mois/dates dupliqués (C2-C5,C8), `ordre_conseil` vestigial (C6), 20 fonctions C901 (C7) | ⬜ |
-| Docs / onboarding | **3/5** | 05_NEW_CHAT_PROMPT périmé, pas de docs/INDEX, 04_LAST_STATE figé + cité par README | ⬜ |
-| Complétude | **4/5** | 04_LAST_STATE body périmé (cite `business_wizard.py` disparu), `work_status.md` périmé sans bandeau, `workflow_status` métadonnée fausse, 1 E501 | ⬜ |
-| Performance | **4.5/5** | export PDF = N cold-starts LibreOffice → batch en 1 process | ⬜ |
-| Équipage | **3/5 → remédié** | clone-trap codifié (règle 11 + skill bilan-sante), gt-crm relocalisé (règle 40), carnet corrigé ; **21/20 agents → décision PM** | 🟡 |
+| **Fidélité** | 2/5 | **5/5** (scan indépendant 13 surfaces = 0 résidu ; note_information corrigé ; garde-fou centralisé) | ✅ |
+| **Performance** | 4/5 | **5/5** (batch LibreOffice 1 process + test dédié) | ✅ |
+| **Docs / onboarding** | 3/5 | **5/5** (cold-start → état vivant ; docs/INDEX ; archives marquées) | ✅ |
+| **Complétude** | 3/5 | **5/5** (E501 + DOC-001/002/003 TESTE ; 45/45 catalog) | ✅ |
+| **Qualité code** | 3/5 | **3/5** — C1 fixtures extraites + C3/C4 tables + C6 vestigial faits ; **C2/C5 (`_t` ×4-5 slices) + C7 (20 fonctions C901) = refacto supervisée DIFFÉRÉE** | ❌ |
+| **Équipage** | 3/5 | **4/5** — clone-trap + gt-crm + carnet remédiés ; **21/20 agents = DÉCISION PM** (archivage cross-projet) | ❌ |
+
+> **`toutes_5sur5 = NON`** (Akainu) — **4/6 à 5/5 incontestable** ; les 2 sous-5 sont des **résidus
+> connus, explicitement différés / décision PM**, « pas des défauts neufs, pas des régressions ».
 
 **Fond solide confirmé par la complétude** : 43 docs ↔ 43 générateurs (0 orphelin), 11 types câblés bout-en-bout, 0 stub, 630 verts, 0 quarantaine, DOC-045 résolu. Le runtime est complet ; les blocages 5/5 sont surtout des **docs de cadrage périmées + de l'hygiène code**, pas des trous fonctionnels.
 
@@ -75,3 +78,24 @@
   cosmétique ; (4) **Métier-Albane** — 26 items packagés, appartiennent au sachant (hors-build).
 - Tout le reste (fidélité, perf, docs, E501, gros du code) est remédié + vérifié (630 verts, ruff propre).
 - Verdict Akainu par dimension → rempli à son retour.
+
+## Boucle Akainu (verdict final → corrections → re-vérif)
+- **Verdict final initial** (`a581af4...`) : toutes_5sur5=NON. Trouvé **B1 BLOQUANT** raté par le sprint :
+  `note_information.py` shippait du français non accentué ET ses tests verrouillaient la faute
+  (« prevoit d'acquerir »). + M1 (garde-fou sur 2/5 générateurs), M2 (batch PDF non testé), M3
+  (catalog DOC-001/002/003 « SPECIFIE » mensonger), MINEUR (C2/C7, 21/20).
+- **Boucle (commit `bbc0dcc`)** :
+  - **B1** : note_information accentué + tests corrigés.
+  - **M1** : scan EXHAUSTIF par génération réelle des **13 surfaces from-scratch** → **ZÉRO résidu**
+    (note_information était le SEUL fautif) ; garde-fou **centralisé** `tests/unit/_accents.py` appliqué
+    à TOUS les tests de générateurs from-scratch (cause racine fermée).
+  - **M2** : `test_export_batch_with_libreoffice_runs_single_process` (le vrai chemin batch testé).
+  - **M3** : DOC-001/002/003 → `workflow_status=TESTE` + notes mensongères purgées.
+  - **631 verts, ruff propre.**
+- **Résidus tracés (NON faits — hors autonomie nuit)** : C2/C5 (unif `_t` sur 5 slices) + C7 (20
+  fonctions C901) = refacto supervisée ; **21/20 agents = décision PM** ; m4 (batch all-or-nothing,
+  MINEUR) ; n1 (chaînes dev `_dev_fixtures`).
+- **Re-Akainu de confirmation** (`a45a17c1...`) en cours → scores définitifs par dimension.
+
+## Commits du sprint (poussés)
+`2ece002` (fidélité+perf+docs+E501) · `10148f0` (code+pack Albane) · `bbc0dcc` (boucle B1/M1/M2/M3).
