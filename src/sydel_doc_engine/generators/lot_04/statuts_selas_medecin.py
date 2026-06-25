@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 from sydel_doc_engine.domain.models import Associe, DocumentGenerationContext
@@ -25,6 +26,18 @@ from sydel_doc_engine.generators.lot_04.statuts_sel_exercice_templates import (
 from sydel_doc_engine.utils.grammar import elision_de
 
 OUTPUT_FILENAME = "statuts_selas_medecin.docx"
+
+
+def _duree_en_annees(value: str | None) -> str:
+    """Akainu M1/M2 (2026-06-25) : le template porte deja « [duree_societe] années » -> le slot
+    attend le NOMBRE seul. Les slices SEL d'exercice passent « 99 ans » (defaut SELARL/SELAS) ; on
+    retire un suffixe d'unite eventuel pour eviter le doublon « 99 ans années ». « 99 » et
+    « 99 ans » rendent donc tous deux « fixée à 99 années »."""
+    text = required_text(value, "societe.duree")
+    stripped = re.sub(
+        r"\s+(ans|an|années|année|annees|annee)\.?\s*$", "", text, flags=re.IGNORECASE
+    ).strip()
+    return stripped or text
 
 # Voyelles + « h » muet déclenchant l'élision « de l' » (au lieu de « du »)
 # devant le nom de l'Ordre dans la ligne d'identité SELAS mono. Le modèle source
@@ -94,7 +107,7 @@ class StatutsSelasMedecinGenerator:
                     company.forme_sociale_abregee,
                     "societe.forme_sociale_abregee",
                 ),
-                "[duree_societe]": required_text(company.duree, "societe.duree"),
+                "[duree_societe]": _duree_en_annees(company.duree),
                 "[nb_actions_lettres]": required_text(
                     ctx.capital.nombre_titres_total_lettres,
                     "capital.nombre_titres_total_lettres",
