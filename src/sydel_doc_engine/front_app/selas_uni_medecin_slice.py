@@ -161,7 +161,7 @@ def render_selas_uni_medecin_form() -> dict[str, object]:
             help="Montant numerique uniquement (ex : 330 000).",
         )
     )
-    col_c, col_d, col_e = st.columns(3)
+    col_c, col_d = st.columns(2)
     nb_actions = _i(col_c, "nb_actions_total", "Nombre total d'actions")
     valeur_action = calculate_nominal_value(capital, nb_actions)
     col_d.text_input(
@@ -169,7 +169,11 @@ def render_selas_uni_medecin_form() -> dict[str, object]:
         value=valeur_action,
         disabled=True,
     )
-    duree = _t(col_e, "duree", "Duree de la societe (ex: 99 ans)") or "99 ans"
+    # Retour Rafael 2026-06-25 (#1) : la duree est FORCEE a « 99 ans » (champ RETIRE) — comme la
+    # SELARL et tous les autres types. Convention ratifiee (retours humains 006 :
+    # SELARL-RETURNS-006-FRONT-VARIABLES-001 « duree sociale forcee a 99 ans » ; spec canonique
+    # SEL d'exercice « duree de 99 ans fixee »). Le champ etait le seul reliquat visible.
+    duree = "99 ans"
     col_f, col_g = st.columns(2)
     ville_rcs = _t(col_f, "ville_rcs", "RCS (ville)")
     lieu_exercice = _t(col_g, "lieu_exercice_adresse", "Adresse du lieu d'exercice")

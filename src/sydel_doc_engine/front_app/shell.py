@@ -819,7 +819,6 @@ def _prefill_selas_uni_medecin_test_data() -> None:
         f"{p}_denomination": "SELAS EXEMPLE",
         f"{p}_capital_social": 1000,  # number_input -> entier
         f"{p}_nb_actions_total": 100,
-        f"{p}_duree": "99 ans",
         f"{p}_ville_rcs": "Lyon",
         f"{p}_lieu_exercice_adresse": "5 place du Centre, 69000 Lyon",
         f"{p}_siege": "5 place du Centre, 69000 Lyon",
