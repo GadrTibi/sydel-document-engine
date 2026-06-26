@@ -250,18 +250,19 @@ class StatutsSelasMultiGenerator:
                     output_doc, text.upper(), left_indent_cm=0.25
                 )
                 continue
-            # ST6 (Albane 2026-06-26) : « article 14.1 : j'ai mis un homme mais c'est ecrit
-            # "est nommee presidente", genrer aussi ». Ce paragraphe source (modele medecin,
-            # art. 14.1) est FIGE au feminin. On l'accorde au sexe du President nomme :
-            # homme -> « est nomme president », femme -> « est nommee presidente ».
+            # DOUBLON-PRESIDENT (Albane 2026-06-26) : suppression de la DESIGNATION NOMINATIVE du
+            # president dans les STATUTS (le PV de nomination reste le seul a le nommer). On retire
+            # (1) la phrase « est nomme(e) president(e) de la Societe et ce pour une duree
+            # illimitee. » (para source 224) et (2) le paragraphe de remuneration qui suit
+            # IMMEDIATEMENT (para source 226). La clause GENERIQUE de gerance est conservee.
+            # Ceci SUPERSEDE le fix ST6 (accord de genre de cette phrase) DANS le statut : la
+            # phrase disparaissant, son accord est sans objet. Le genre reste gere dans le PV.
             if text == "est nommée présidente de la Société et ce pour une durée illimitée.":
-                feminin = _associe_est_feminin(data.president)
-                nomme = "nommée" if feminin else "nommé"
-                fonction = "présidente" if feminin else "président"
-                _add_rendered_paragraph(
-                    output_doc,
-                    f"est {nomme} {fonction} de la Société et ce pour une durée illimitée.",
-                )
+                continue
+            if text == (
+                "Sa rémunération sera fixée ultérieurement. Le président sera remboursé, "
+                "sur justificatifs, de ses frais de déplacement et de représentation."
+            ):
                 continue
             rendered = _replace_placeholders(text, replacements)
             if is_creation_fee_annexe_line(rendered):  # O24-01 : annexe sans frais cabinet création
@@ -551,14 +552,27 @@ def _add_capital_block(document, data: _ResolvedSelasMulti) -> None:
 
 
 def _add_president_block(document, data: _ResolvedSelasMulti) -> None:
-    president = data.president
+    # DOUBLON-PRESIDENT (Albane 2026-06-26) : « on a deja nomme le president dans les statuts et
+    # on a une nouvelle decision [PV] qui le nomme president ; il ne faudrait pas de doublon ->
+    # retirer la partie des statuts (designation NOMINATIVE) et le paragraphe de remuneration qui
+    # suit. » Albane TRANCHE : le PV de nomination reste le SEUL a nommer nominativement le(s)
+    # dirigeant(s). On RETIRE donc du statut la designation nominative du president.
+    #
     # Source para 221 : "[civilite] [prenoms] [nom]" puis para 222 : "Demeurant [adresse].".
-    # ST7f (Albane 2026-06-26) : art. 14.1 DESIGNATION -> le NOM du dirigeant ET son ADRESSE
-    # en GRAS. Bloc nominatif present uniquement sur le modele medecin (le corpus dentiste ne
-    # nomme jamais le president, cf. _DENTISTE_PROFILE.add_president=None) : ST7f y est donc
-    # sans objet.
-    add_paragraph(document, _person_label(president), bold=True)
-    add_paragraph(document, f"Demeurant {_person_address(president)}.", bold=True)
+    # Ces deux paras source portent le NOM PROPRE du dirigeant : ils sont sautes par le
+    # president_slice (221, 223) et NE sont PLUS reinjectes (no-op) -> plus de nom nominatif au
+    # statut. La phrase « est nomme(e) president(e) ... » (para source 224) et le paragraphe de
+    # remuneration (para source 226) sont filtres a la lecture (cf. boucle generate). La CLAUSE
+    # GENERIQUE de gerance (« La Societe ... est geree par un President, choisi parmi les
+    # associes ... ») est CONSERVEE : on garde le CADRE statutaire, on retire seulement la
+    # nomination nominative + sa remuneration.
+    #
+    # NB : ceci SUPERSEDE dans les STATUTS le fix ST6 (accord de genre de la phrase nominative)
+    # et le fix ST7f (nom+adresse en gras), tous deux devenus sans objet puisque la phrase
+    # nominative disparait du statut. Le genre reste pertinent dans le PV de nomination (hors de
+    # ce generateur). Le president_slice est conserve UNIQUEMENT pour sauter les paras 221/222 du
+    # modele (sinon leurs placeholders bruts ressortiraient).
+    return
 
 
 def _add_signature_line(document, data: _ResolvedSelasMulti) -> None:

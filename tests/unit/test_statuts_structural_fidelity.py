@@ -222,12 +222,18 @@ _BODY_ALLOWLIST: dict[str, tuple[str, ...]] = {
     # integrales (transformation sanctionnee, cf. _HEADING_TRANSFORMS) -> la ligne SOURCE a casse
     # cassee n'apparait plus verbatim (sa version MAJUSCULES est presente, verifiee par le verrou
     # d'en-tetes). Marqueurs = segments distinctifs de la casse source.
+    # DOUBLON-PRESIDENT (Albane 2026-06-26) : la DESIGNATION NOMINATIVE du president (« est
+    # nomme(e) president(e) ... ») et le paragraphe de REMUNERATION qui suit ont ete RETIRES du
+    # statut a la demande d'Albane (le PV de nomination reste le seul a nommer nominativement le
+    # dirigeant ; pas de doublon). La clause GENERIQUE de gerance reste presente et verifiee.
     "Statuts SELAS EXEMPLE.docx": (
         "lettre de mission",
         "acompte des honoraires",
         "des DECISIONS sociales",
         "ENTRE leS DIRIgerantS",
         "variation du capital",
+        "est nommée présidente de la Société et ce pour une durée illimitée",
+        "Sa rémunération sera fixée ultérieurement",
     ),
     # SCM : O24-01 + « ci- 510 € » = valeur d'EXEMPLE du modele (montant reinjecte dynamiquement) ;
     # « Faire preceder » / « Lu et approuve » = artefact du modele source SCM (texte de la mention

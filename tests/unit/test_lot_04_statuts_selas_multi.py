@@ -263,9 +263,17 @@ def test_selas_multi_asserts_source_wording(tmp_path: Path) -> None:
         "qui retireraient la majorité des droits de vote aux associés exerçant dans la "
         "société." in text
     )
-    # Article 14 - Presidence : designation du president (personne physique)
+    # Article 14 - Presidence (Albane 2026-06-26, DOUBLON-PRESIDENT) : la designation
+    # NOMINATIVE du president a ete RETIREE du statut (le PV de nomination reste le seul a le
+    # nommer). Seule subsiste la CLAUSE GENERIQUE de gerance.
     assert "ARTICLE 14 – PRESIDENCE" in text
-    assert "est nommée présidente de la Société et ce pour une durée illimitée." in text
+    assert (
+        "est gérée par un Président, choisi parmi les associés exerçant la profession au sein "
+        "de la Société et nommé avec ou sans limitation de durée"
+    ) in text  # clause generique conservee
+    assert "est nommée présidente de la Société et ce pour une durée illimitée." not in text
+    assert "est nommé président de la Société et ce pour une durée illimitée." not in text
+    assert "Sa rémunération sera fixée ultérieurement" not in text
     # Article 15 - Directeurs Generaux : present, generique (source conservee)
     assert "ARTICLE 15 - DIRECTEURS GENERAUX" in text
     assert "15-1 - DESIGNATION" in text
@@ -653,9 +661,18 @@ def test_st5_denomination_article_en_majuscules(tmp_path: Path) -> None:
     assert "Cabinet Durand" not in paras
 
 
-def test_st6_president_accorde_au_genre(tmp_path: Path) -> None:
-    # ST6 : « article 14.1 : j'ai mis un homme mais c'est ecrit "est nommee presidente",
-    # genrer aussi ». Le verbe et la fonction s'accordent au sexe du President nomme.
+def test_doublon_president_designation_nominative_retiree_des_statuts(tmp_path: Path) -> None:
+    # DOUBLON-PRESIDENT (Albane 2026-06-26) : « on a deja nomme le president dans les statuts et
+    # on a une nouvelle decision [PV] qui le nomme president ; il ne faudrait pas de doublon ->
+    # retirer la partie des statuts [designation nominative] et supprimer le paragraphe suivant
+    # sur sa remuneration. » Albane TRANCHE : le PV reste le seul a nommer nominativement le
+    # dirigeant. Ce test SUPERSEDE l'ancien test ST6 (accord de genre de la phrase nominative
+    # DANS le statut) : la phrase ayant disparu du statut, son accord est sans objet (le genre
+    # reste gere dans le PV de nomination, hors de ce generateur).
+    #
+    # Verrou pour les DEUX sexes : ni la variante masculine ni la feminine ne doit subsister, ni
+    # le bloc nom+adresse nominatif, ni le paragraphe de remuneration. La clause GENERIQUE de
+    # gerance, elle, est CONSERVEE.
     homme = _physical_associe(
         prenoms="Jean", nom="Durant", nb_actions=75,
         montant="750", montant_lettres="sept cent cinquante", qualite="associé exerçant",
@@ -664,27 +681,34 @@ def test_st6_president_accorde_au_genre(tmp_path: Path) -> None:
         prenoms="Claire", nom="Martin", nb_actions=25,
         montant="250", montant_lettres="deux cent cinquante",
     )
-    # President = l'homme (index 0).
-    ctx_h = _context(associes=[homme, autre])
-    text_h = _docx_text(StatutsSelasMultiGenerator().generate(ctx_h, tmp_path / "h"))
-    assert "est nommé président de la Société et ce pour une durée illimitée." in text_h
-    assert "est nommée présidente" not in text_h
 
-    # President = la femme (index 0).
-    ctx_f = _context(
-        associes=[
+    for label, president, autres in (
+        ("homme", homme, [autre]),
+        (
+            "femme",
             _physical_associe(
                 prenoms="Claire", nom="Durand", nb_actions=75,
                 montant="750", montant_lettres="sept cent cinquante",
             ),
-            _morale_associe(
-                nb_actions=25, montant="250", montant_lettres="deux cent cinquante",
-            ),
-        ]
-    )
-    text_f = _docx_text(StatutsSelasMultiGenerator().generate(ctx_f, tmp_path / "f"))
-    assert "est nommée présidente de la Société et ce pour une durée illimitée." in text_f
-    assert "est nommé président de la Société" not in text_f
+            [_morale_associe(nb_actions=25, montant="250", montant_lettres="deux cent cinquante")],
+        ),
+    ):
+        ctx = _context(associes=[president, *autres])
+        text = _docx_text(StatutsSelasMultiGenerator().generate(ctx, tmp_path / label))
+        # (1) designation nominative RETIREE (les deux genres).
+        assert "est nommé président de la Société et ce pour une durée illimitée." not in text
+        assert "est nommée présidente de la Société et ce pour une durée illimitée." not in text
+        # (2) paragraphe de remuneration (qui suivait la designation) RETIRE.
+        assert "Sa rémunération sera fixée ultérieurement" not in text
+        # (3) le nom + l'adresse nominatifs du president ne sont plus injectes a l'art. 14.1
+        #     (le PV les porte desormais seul).
+        assert "Monsieur Jean Durant\nDemeurant" not in text
+        assert "Madame Claire Durand\nDemeurant" not in text
+        # (4) la CLAUSE GENERIQUE de gerance est CONSERVEE (cadre statutaire intact).
+        assert (
+            "est gérée par un Président, choisi parmi les associés exerçant la profession au "
+            "sein de la Société et nommé avec ou sans limitation de durée"
+        ) in text
 
 
 # =============================================================================================
@@ -781,8 +805,11 @@ def test_st7e_article4_siege_centre_et_gras(tmp_path: Path) -> None:
     assert _para_is_bold(siege[0])
 
 
-def test_st7f_president_designation_nom_et_adresse_en_gras(tmp_path: Path) -> None:
-    # ST7f : article 14.1 designation — le nom du dirigeant ET son adresse en gras.
+def test_st7f_president_designation_nominative_supprimee(tmp_path: Path) -> None:
+    # ST7f (nom+adresse du president en gras a l'art. 14.1) est SUPERSEDE par DOUBLON-PRESIDENT
+    # (Albane 2026-06-26) : la designation nominative ayant ete retiree du statut, il n'y a plus
+    # de bloc nom+adresse a mettre en gras a l'art. 14.1. Ce test verrouille desormais l'ABSENCE
+    # de ce bloc nominatif (le PV de nomination le porte seul).
     president = _physical_associe(
         prenoms="Jean", nom="Durant", nb_actions=75,
         montant="750", montant_lettres="sept cent cinquante", qualite="associé exerçant",
@@ -794,14 +821,12 @@ def test_st7f_president_designation_nom_et_adresse_en_gras(tmp_path: Path) -> No
     ctx = _context(associes=[president, autre])
     document = Document(StatutsSelasMultiGenerator().generate(ctx, tmp_path))
 
+    # Le bloc nominatif du president (« Monsieur Jean Durant » + « Demeurant … ») n'est PLUS
+    # injecte a l'art. 14.1 : aucun paragraphe ne porte ce nom seul, ni l'adresse en designation.
     nom_pres = _find_paras(document, lambda t: t == "Monsieur Jean Durant")
     adresse_pres = _find_paras(document, lambda t: t.startswith("Demeurant 10 rue de l'Exemple"))
-    assert nom_pres, "le nom du president (art. 14.1) est introuvable"
-    assert adresse_pres, "l'adresse du president (art. 14.1) est introuvable"
-    # Le bloc nominatif du president (le SEUL « Monsieur Jean Durant » + « Demeurant … » de
-    # l'art. 14.1) est en gras.
-    assert any(_para_is_bold(p) for p in nom_pres)
-    assert _para_is_bold(adresse_pres[0])
+    assert not nom_pres, "le nom nominatif du president ne doit plus figurer a l'art. 14.1"
+    assert not adresse_pres, "l'adresse nominative du president ne doit plus figurer a l'art. 14.1"
 
 
 def test_st7g_titres_articles_16_17_22_en_majuscules(tmp_path: Path) -> None:
