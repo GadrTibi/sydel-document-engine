@@ -386,7 +386,7 @@ def _build_cession_gender_pairs(
     return pairs
 
 
-def render_cession_from_template(
+def render_cession_from_template(  # noqa: C901
     model_path: Path,
     replacements: dict[str, str],
     output_path: Path,

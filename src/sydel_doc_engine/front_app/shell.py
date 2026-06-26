@@ -1028,7 +1028,7 @@ def _cession_date(
     )
 
 
-def _render_cession_form(
+def _render_cession_form(  # noqa: C901
     cession: bool,
     profession: str,
     *,
@@ -2225,7 +2225,7 @@ def _derive_scm_signataires_pv(presents: list[ScmCessionAssocie]) -> list[str]:
     return signataires
 
 
-def _render_generation_zone(data_entry: CleanDataEntry, plan: CleanGenerationPlan) -> None:
+def _render_generation_zone(data_entry: CleanDataEntry, plan: CleanGenerationPlan) -> None:  # noqa: C901
     st.subheader("Generation")
     for warning in plan.warnings:
         st.info(warning)

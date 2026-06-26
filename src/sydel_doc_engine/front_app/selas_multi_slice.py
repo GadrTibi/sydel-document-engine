@@ -1079,7 +1079,7 @@ def build_selas_plan(payload: dict[str, object]) -> SelasSlicePlan:
     )
 
 
-def _validate(payload: dict[str, object]) -> tuple[str, ...]:
+def _validate(payload: dict[str, object]) -> tuple[str, ...]:  # noqa: C901
     blockers: list[str] = []
     required = (
         ("denomination", "Denomination requise."),

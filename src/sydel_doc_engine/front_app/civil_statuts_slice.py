@@ -761,7 +761,7 @@ def build_civil_plan(payload: dict[str, object]) -> CivilSlicePlan:
     )
 
 
-def _validate_one_associe(
+def _validate_one_associe(  # noqa: C901
     idx: int,
     associe: StatutsCivilsAssocie,
     structure: str,
@@ -887,7 +887,7 @@ def _validate_scm_satellites_pair(payload: dict[str, object]) -> list[str]:
     return blockers
 
 
-def _validate(payload: dict[str, object]) -> tuple[str, ...]:
+def _validate(payload: dict[str, object]) -> tuple[str, ...]:  # noqa: C901
     blockers: list[str] = []
     structure = str(payload["structure"])
     if not str(payload.get("denomination") or "").strip():

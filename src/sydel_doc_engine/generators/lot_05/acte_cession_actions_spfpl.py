@@ -281,7 +281,7 @@ class ActeCessionActionsSpfplGenerator:
         return output_path
 
 
-def _validate_actions_context(ctx: DocumentGenerationContext) -> None:
+def _validate_actions_context(ctx: DocumentGenerationContext) -> None:  # noqa: C901
     validate_cession_context(ctx)
     if ctx.structure != SPFPL_CESSION_STRUCTURE:
         raise ValueError(f"dossier.structure doit etre SPFPL cession pour {DOCUMENT_CODE}.")

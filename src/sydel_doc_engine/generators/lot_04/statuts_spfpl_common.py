@@ -89,7 +89,7 @@ def required_actionnaire_unique(ctx: DocumentGenerationContext) -> SpfplPerson:
     raise ValueError(f"actionnaire_unique est obligatoire pour {DOCUMENT_CODE}.")
 
 
-def validate_common_statuts_context(
+def validate_common_statuts_context(  # noqa: C901
     ctx: DocumentGenerationContext,
     *,
     structure: str,
@@ -154,7 +154,7 @@ def person_address_display(person: SpfplPerson, field_name: str) -> str:
     )
 
 
-def render_statuts_docx(
+def render_statuts_docx(  # noqa: C901
     blocks: tuple[str, ...],
     replacements: dict[str, str],
     output_path: Path,

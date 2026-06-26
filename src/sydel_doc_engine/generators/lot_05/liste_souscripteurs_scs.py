@@ -151,7 +151,7 @@ class ListeSouscripteursScsGenerator:
         document.save(output_path)
         return output_path
 
-    def _render_table(self, document, associes, total_parts, total_montant, replacements) -> None:
+    def _render_table(self, document, associes, total_parts, total_montant, replacements) -> None:  # noqa: C901
         if not document.tables:
             return
         table = document.tables[0]

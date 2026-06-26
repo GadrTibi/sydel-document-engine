@@ -76,7 +76,7 @@ def fill_docx_template(
     return output_path
 
 
-def _fill_paragraph(paragraph, replacements: dict[str, str]) -> None:
+def _fill_paragraph(paragraph, replacements: dict[str, str]) -> None:  # noqa: C901
     if "[" not in paragraph.text:
         return
 

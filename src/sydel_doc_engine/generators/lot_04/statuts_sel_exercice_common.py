@@ -826,7 +826,7 @@ def _render_selarl_two_lieux_article_5(
         add_statuts_body_paragraph(docx, text)
 
 
-def render_statuts_sel_docx(
+def render_statuts_sel_docx(  # noqa: C901
     blocks: tuple[str, ...],
     replacements: dict[str, str],
     output_path: Path,

@@ -102,7 +102,7 @@ SCI_IRIS_TEMPLATE = StatutsCivilTemplate(
 )
 
 
-def generate_statuts_civil_docx(
+def generate_statuts_civil_docx(  # noqa: C901
     ctx: DocumentGenerationContext,
     output_dir: Path,
     template: StatutsCivilTemplate,

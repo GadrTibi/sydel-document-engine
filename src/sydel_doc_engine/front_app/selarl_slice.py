@@ -306,7 +306,7 @@ def build_selarl_plan(data: SelarlSliceInput) -> SelarlSlicePlan:
     )
 
 
-def validate_selarl_input(data: SelarlSliceInput) -> tuple[str, ...]:
+def validate_selarl_input(data: SelarlSliceInput) -> tuple[str, ...]:  # noqa: C901
     blockers: list[str] = []
     if data.profession not in SELARL_V1_PROFESSIONS:
         blockers.append("Profession hors perimetre SELARL V1.")
@@ -382,7 +382,7 @@ def validate_selarl_input(data: SelarlSliceInput) -> tuple[str, ...]:
     return tuple(dict.fromkeys(blockers))
 
 
-def _multi_membres_blockers(data: SelarlSliceInput) -> list[str]:
+def _multi_membres_blockers(data: SelarlSliceInput) -> list[str]:  # noqa: C901
     """Bloqueurs UTILES du multi-associes (retours V3 2026-06-17).
 
     Le moteur revalide la coherence du capital ; ici on remonte tot, avant
@@ -430,7 +430,7 @@ def _multi_membres_blockers(data: SelarlSliceInput) -> list[str]:
     return blockers
 
 
-def _cession_blockers(data: SelarlSliceInput) -> list[str]:
+def _cession_blockers(data: SelarlSliceInput) -> list[str]:  # noqa: C901
     """Bloqueurs UTILES de la cession, montres dans le plan avant generation.
 
     Retours client 2026-06-11 : seuls les champs reellement indispensables

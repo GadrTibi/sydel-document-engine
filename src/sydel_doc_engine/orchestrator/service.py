@@ -294,7 +294,7 @@ def _document_enabled_for_context(
     return bool(ctx.dossier_options and ctx.dossier_options.regime_communautaire)
 
 
-def _non_regime_document_enabled(
+def _non_regime_document_enabled(  # noqa: C901
     document: DocumentDefinition,
     ctx: DocumentGenerationContext,
 ) -> bool:

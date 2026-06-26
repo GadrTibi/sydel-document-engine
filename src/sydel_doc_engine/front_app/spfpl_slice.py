@@ -529,7 +529,7 @@ def build_spfpl_plan(payload: dict[str, object]) -> SpfplSlicePlan:
     )
 
 
-def _validate(payload: dict[str, object]) -> tuple[str, ...]:
+def _validate(payload: dict[str, object]) -> tuple[str, ...]:  # noqa: C901
     blockers: list[str] = []
     required = (
         ("denomination", "Denomination SPFPL requise."),

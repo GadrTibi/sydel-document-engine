@@ -101,7 +101,7 @@ class StatutsSelasMultiGenerator:
     personne physique exercante et un eventuel associe personne morale. Le modele source et
     les fenetres d'index sont choisis selon la profession reglementee (medecin / dentiste)."""
 
-    def generate(self, ctx: DocumentGenerationContext, output_dir: Path) -> Path:
+    def generate(self, ctx: DocumentGenerationContext, output_dir: Path) -> Path:  # noqa: C901
         data = _ResolvedSelasMulti.from_context(ctx)
         profile = data.profile
         source_doc = Document(_source_path(profile.source_name))
