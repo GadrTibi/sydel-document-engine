@@ -4,13 +4,12 @@ from pathlib import Path
 
 from docx.enum.table import WD_ROW_HEIGHT_RULE
 from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.shared import Cm
+from docx.shared import Cm, Pt
 
 from sydel_doc_engine.domain.models import (
     BailContext,
     BailParty,
     Company,
-    DocumentContext,
     DocumentGenerationContext,
 )
 from sydel_doc_engine.generators.lot_03.bail_appel_common import (
@@ -26,8 +25,10 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_paragraph,
     add_party_marker,
     add_signature_table,
+    add_spacer,
     new_document,
 )
+from sydel_doc_engine.utils.months import FRENCH_MONTHS
 
 OUTPUT_FILENAME = "avenant_contrat_bail.docx"
 
@@ -39,7 +40,6 @@ class AvenantContratBailGenerator:
         validate_avenant_context(ctx)
         bail = _required_bail(ctx.bail)
         company = _required_company(ctx.societe)
-        document_context = _required_document_context(ctx.document)
         bailleur = _required_party(bail.bailleur, "bail.bailleur")
         locataire = _required_party(bail.locataire, "bail.locataire")
 
@@ -71,18 +71,19 @@ class AvenantContratBailGenerator:
             style_profile=BAIL_COMPACT_STYLE_PROFILE,
         )
         _add_parties(docx, bailleur, locataire)
+        # AV4 (Albane 2026-06-26) : « ajouter un espace entre chaque article » ->
+        # un espace dedie entre l'article 1, 2 et 3.
         _add_article_1(docx, bail, locataire, company)
+        add_spacer(docx, space_after_pt=BAIL_COMPACT_STYLE_PROFILE.standard_space_after_pt)
         _add_article_2(docx, locataire)
+        add_spacer(docx, space_after_pt=BAIL_COMPACT_STYLE_PROFILE.standard_space_after_pt)
         _add_article_3(docx)
-        nombre_exemplaires = required_text(
-            document_context.nombre_exemplaires_lettres,
-            "document.nombre_exemplaires_lettres",
-        )
+        # AV5 (Albane 2026-06-26) : « on peut retirer "en quatre exemplaires" » ->
+        # plus de mention du nombre d'exemplaires dans l'avenant.
         add_paragraph(
             docx,
             (
-                f"Fait à {required_text(ctx.signature.lieu, 'signature.lieu')} en "
-                f"{nombre_exemplaires} exemplaires, le "
+                f"Fait à {required_text(ctx.signature.lieu, 'signature.lieu')}, le "
                 f"{format_display_date(ctx.signature.date, 'signature.date')}"
             ),
         )
@@ -104,12 +105,6 @@ def _required_company(company: Company | None) -> Company:
     if company is None:
         raise ValueError(f"societe est obligatoire pour {DOCUMENT_CODE}.")
     return company
-
-
-def _required_document_context(document_context: DocumentContext | None) -> DocumentContext:
-    if document_context is None:
-        raise ValueError(f"document est obligatoire pour {DOCUMENT_CODE}.")
-    return document_context
 
 
 def _required_party(party: BailParty | None, field_name: str) -> BailParty:
@@ -135,18 +130,39 @@ def _display_date_or_empty(value) -> str:
     return str(value).strip()
 
 
-def _party_identity(party: BailParty, field_name: str) -> str:
-    parts = [_clean(party.civilite_affichage), _clean(party.prenom), _clean(party.nom)]
-    return " ".join(part for part in parts if part)
+def _display_birthdate(value) -> str:
+    # AV2 (Albane 2026-06-26) : « que le chiffre ne soit pas 1 janvier mais 01 janvier »
+    # -> date de naissance en « JJ mois AAAA » avec jour sur 2 chiffres et mois accentue
+    # en toutes lettres (meme presentation que cession_cabinets_common §A26-33/A26-69).
+    if value is None:
+        return ""
+    if hasattr(value, "year") and hasattr(value, "month") and hasattr(value, "day"):
+        return f"{value.day:02d} {FRENCH_MONTHS[value.month]} {value.year}"
+    return str(value).strip()
 
 
-def _party_full_line(party: BailParty, field_name: str) -> str:
-    # Segments composes uniquement a partir des informations saisies : aucun
-    # « ne le , a » incomplet quand un element du bailleur manque.
-    segments = [_party_identity(party, field_name)]
+def _locataire_nom_avec_titre(locataire: BailParty, article: str = "") -> str:
+    # AV3 (Albane 2026-06-26) : « le Docteur ... » -> on s'aligne sur l'art 2, 1re phrase,
+    # qui utilise le titre COURT (« Docteur »). M1 (Akainu 2026-06-26) : l'article « le/Le »
+    # ne se met QUE devant un titre PROFESSIONNEL (civilite_courte, ex « Docteur ») ; devant
+    # une civilite simple (« Monsieur »/« Madame ») on n'ajoute PAS d'article, sinon
+    # « le Monsieur ... ». Fallback sur la civilite d'affichage (sans article) si pas de titre.
+    titre_pro = _clean(locataire.civilite_courte)
+    titre = titre_pro or _clean(locataire.civilite_affichage)
+    parts = [titre, _clean(locataire.prenom), _clean(locataire.nom)]
+    label = " ".join(part for part in parts if part)
+    if article and titre_pro:
+        return f"{article} {label}"
+    return label
+
+
+def _party_other_segments(party: BailParty) -> list[str]:
+    # Segments d'identite HORS nom : composes uniquement a partir des informations
+    # saisies : aucun « ne le , a » incomplet quand un element du bailleur manque.
+    segments: list[str] = []
     if _clean(party.profession):
         segments.append(_clean(party.profession))
-    naissance = _display_date_or_empty(party.date_naissance)
+    naissance = _display_birthdate(party.date_naissance)
     if naissance:
         ville = _clean(party.ville_naissance)
         segments.append(f"né le {naissance}" + (f", à {ville}" if ville else ""))
@@ -156,7 +172,34 @@ def _party_full_line(party: BailParty, field_name: str) -> str:
         segments.append(f"de nationalité {_clean(party.nationalite)}")
     if _clean(party.adresse_affichee):
         segments.append(f"demeurant {_clean(party.adresse_affichee)}")
-    return ", ".join(segment for segment in segments if segment) + ","
+    return segments
+
+
+def _party_full_runs(party: BailParty, field_name: str) -> list[tuple[str, bool]]:
+    # AV1 (Albane 2026-06-26) : « l'identite du Locataire devrait etre en non gras
+    # (sauf son nom), peut-etre pareil pour le bailleur » -> seul le NOM (prenom + nom)
+    # reste en gras ; la civilite et tout le reste de l'identite passent en non gras.
+    # Applique au LOCATAIRE comme au BAILLEUR.
+    civilite = _clean(party.civilite_affichage)
+    nom_complet = " ".join(
+        part for part in (_clean(party.prenom), _clean(party.nom)) if part
+    )
+    rest = _party_other_segments(party)
+
+    runs: list[tuple[str, bool]] = []
+    has_head = bool(civilite or nom_complet)
+    if civilite:
+        runs.append((f"{civilite} " if nom_complet else civilite, False))
+    if nom_complet:
+        runs.append((nom_complet, True))  # NOM en gras
+    # Le reste de l'identite (non gras) ; virgule de separation seulement si une tete existe.
+    if rest:
+        joined = ", ".join(rest)
+        prefix = ", " if has_head else ""
+        runs.append((f"{prefix}{joined},", False))
+    elif has_head:
+        runs.append((",", False))
+    return runs
 
 
 def _add_article_1(
@@ -170,11 +213,13 @@ def _add_article_1(
     date_segment = f" en date du {date_origine}" if date_origine else ""
     profession = _clean(locataire.profession)
     profession_segment = f", ({profession})" if profession else ""
+    # AV3 (Albane 2026-06-26) : « devant Docteur, mettre "le docteur" » -> article
+    # « le » devant l'identite du locataire a l'article 1 (milieu de phrase -> minuscule).
     add_paragraph(
         docx,
         (
             f"Le bail signé{date_segment}, "
-            f"a pour locataire {_party_identity(locataire, 'bail.locataire')}"
+            f"a pour locataire {_locataire_nom_avec_titre(locataire, article='le')}"
             f"{profession_segment}."
         ),
         alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
@@ -200,25 +245,29 @@ def _add_article_1(
 
 def _add_article_2(docx, locataire: BailParty) -> None:
     _add_article_title(docx, "ARTICLE 2 : Responsabilité pour une société en cours de formation")
-    civilite_courte = _clean(locataire.civilite_courte) or _clean(locataire.civilite_affichage)
+    # M1 (Akainu 2026-06-26) : meme regle d'article que l'art1 — « Le Docteur … » devant un
+    # titre professionnel, « Monsieur … » (sans article) sinon. required_text garde la garde
+    # sur le nom obligatoire.
+    required_text(locataire.nom, "bail.locataire.nom")
     domicile = _clean(locataire.adresse_affichee)
     domicile_segment = f", domicilié {domicile}" if domicile else ""
     add_paragraph(
         docx,
         (
-            f"Le {civilite_courte} "
-            f"{_clean(locataire.prenom)} "
-            f"{required_text(locataire.nom, 'bail.locataire.nom')}"
+            f"{_locataire_nom_avec_titre(locataire, article='Le')}"
             f"{domicile_segment}, "
             "engage sa responsabilité pour tous les actes passés au nom de la société jusqu’à "
             "l’immatriculation au RCS."
         ),
         alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
     )
+    # AV3 (Albane 2026-06-26) : « pareil a l'art 2 sur la seconde phrase » -> article
+    # « Le » devant l'identite (debut de phrase -> majuscule), comme la 1re phrase.
+    locataire_label = _locataire_nom_avec_titre(locataire, article="Le")
     add_paragraph(
         docx,
         (
-            f"{_party_identity(locataire, 'bail.locataire')} s’engage à fournir au Bailleur un "
+            f"{locataire_label} s’engage à fournir au Bailleur un "
             "extrait KBIS une fois que les démarches seront finies."
         ),
         alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
@@ -234,28 +283,31 @@ def _add_article_3(docx) -> None:
     )
 
 
+def _add_party_line(docx, party: BailParty, field_name: str) -> None:
+    # AV1 : paragraphe d'identite en runs multiples (nom gras, reste non gras).
+    # On reproduit les reglages de style d'add_paragraph (space_before/after du
+    # profil compact, JUSTIFY) sans modifier docx_builder.
+    paragraph = docx.add_paragraph()
+    paragraph.paragraph_format.space_before = Pt(0)
+    paragraph.paragraph_format.space_after = Pt(
+        BAIL_COMPACT_STYLE_PROFILE.standard_space_after_pt
+    )
+    paragraph.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+    for text, bold in _party_full_runs(party, field_name):
+        run = paragraph.add_run(text)
+        run.bold = bold
+
+
 def _add_parties(docx, bailleur: BailParty, locataire: BailParty) -> None:
     add_paragraph(docx, "Entre les soussign\u00e9s :", style_profile=BAIL_COMPACT_STYLE_PROFILE)
-    add_paragraph(
-        docx,
-        _party_full_line(bailleur, "bail.bailleur"),
-        alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
-        bold=True,
-        style_profile=BAIL_COMPACT_STYLE_PROFILE,
-    )
+    _add_party_line(docx, bailleur, "bail.bailleur")
     add_party_marker(
         docx,
         "Ci-apr\u00e8s d\u00e9sign\u00e9 \u00ab le Bailleur \u00bb",
         style_profile=BAIL_COMPACT_STYLE_PROFILE,
     )
     add_paragraph(docx, "ET :", bold=True, style_profile=BAIL_COMPACT_STYLE_PROFILE)
-    add_paragraph(
-        docx,
-        _party_full_line(locataire, "bail.locataire"),
-        alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
-        bold=True,
-        style_profile=BAIL_COMPACT_STYLE_PROFILE,
-    )
+    _add_party_line(docx, locataire, "bail.locataire")
     add_party_marker(
         docx,
         "Ci-apr\u00e8s d\u00e9sign\u00e9 \u00ab le Locataire \u00bb",

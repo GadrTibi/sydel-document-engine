@@ -9,7 +9,6 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_centered_block,
     add_framed_title,
     add_paragraph,
-    add_signature_block,
     add_spacer,
     new_document,
 )
@@ -156,7 +155,12 @@ def _normalize_for_prefix(value: str) -> str:
 
 
 def _add_title(document) -> None:
-    add_framed_title(document, ["Procuration"])
+    # PR1 (Albane 2026-06-26) : « descendre le cadre, l'agrandir, mettre de l'espace
+    # apres ». (a) espace AVANT le cadre (le descend), (b) `inner_spacing=True`
+    # l'agrandit (espace interieur autour du titre), (c) espace APRES le cadre.
+    add_spacer(document, space_after_pt=18)
+    add_framed_title(document, ["Procuration"], inner_spacing=True)
+    add_spacer(document, space_after_pt=12)
 
 
 def _add_paragraph(
@@ -191,7 +195,11 @@ def _add_final_block(
     date_signature: str,
     signatory_name: str,
 ) -> None:
-    add_signature_block(
-        document,
-        [f"Fait à {lieu_signature}", f"Le {date_signature}", signatory_name],
-    )
+    # PR1 (Albane 2026-06-26) : « que "fait a le" soit a gauche » -> bloc final aligne
+    # a GAUCHE (au lieu de l'alignement a droite par defaut du helper signature).
+    add_spacer(document)
+    for line in (f"Fait à {lieu_signature}", f"Le {date_signature}", signatory_name):
+        _add_paragraph(document, line, alignment=WD_ALIGN_PARAGRAPH.LEFT)
+    signature_zone = document.add_paragraph()
+    signature_zone.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    signature_zone.add_run("\n\n\n")

@@ -4,6 +4,7 @@ from datetime import date
 from pathlib import Path
 
 from docx import Document
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml.ns import qn
 
 from sydel_doc_engine.domain.enums import Gender
@@ -205,3 +206,15 @@ def test_procuration_uses_signature_paragraphs_without_table(tmp_path: Path) -> 
     assert "Fait à Paris" in paragraphs
     assert "Le 12/05/2026" in paragraphs
     assert "Jean Durand" in paragraphs
+
+
+def test_procuration_final_block_is_left_aligned(tmp_path: Path) -> None:
+    # PR1 (Albane 2026-06-26) : « que "fait a le" soit a gauche ». Le bloc final
+    # (Fait a / Le / signataire) doit etre aligne a GAUCHE, plus a droite.
+    document = Document(_generate(tmp_path))
+
+    fait_a = next(p for p in document.paragraphs if p.text == "Fait à Paris")
+    le_date = next(p for p in document.paragraphs if p.text == "Le 12/05/2026")
+    assert fait_a.alignment == WD_ALIGN_PARAGRAPH.LEFT
+    assert le_date.alignment == WD_ALIGN_PARAGRAPH.LEFT
+    assert fait_a.alignment != WD_ALIGN_PARAGRAPH.RIGHT
