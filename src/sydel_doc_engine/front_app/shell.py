@@ -1600,19 +1600,14 @@ def _render_cession_form(  # noqa: C901
             "Le nom de la banque n'est plus demande ici (inconnu au remplissage) ; "
             "il se complete a la main sur l'appel de fonds genere si besoin."
         )
-        col_a, col_b, col_c = st.columns(3)
-        destinataire_civilite = _cession_civilite(
-            col_a, "Civilite destinataire",
-            section="financement", field="destinataire_civilite",
-        )
-        destinataire_prenom = _cession_text(
-            col_b, "Prenom destinataire", section="financement",
-            field="destinataire_prenom", default="",
-        )
-        destinataire_nom = _cession_text(
-            col_c, "Nom destinataire", section="financement",
-            field="destinataire_nom", default="",
-        )
+        # FB-2 (Albane 2026-06-26) : « en cas de cession sur la partie financement le
+        # destinataire n'est pas utile (appel de fonds = doc qu'on complète nous), il faut
+        # que seul le nom de la société et les éléments comme le nom du client soient
+        # préremplis ». -> on RETIRE la saisie du destinataire de l'appel de fonds. Le
+        # générateur appel_fond_sel traite déjà `financement.destinataire` comme OPTIONNEL
+        # (destinataire absent -> ligne « À l'attention de » omise), donc ne plus alimenter
+        # ce champ ne casse pas la génération. Société (acquéreur) + client (vendeur) restent
+        # préremplis par ailleurs.
         montant_deblocage = _format_montant(
             _cession_text(
                 st, "Montant deblocage minimum",
@@ -1698,11 +1693,25 @@ def _render_cession_form(  # noqa: C901
                 key=scm_actif_key,
             )
             if scm_actif:
+                col_scm_a, col_scm_b = st.columns(2)
                 scm_payload = {
                     "actif": True,
                     "nb_parts_a_ceder": _cession_text(
-                        st, "Nombre de parts SCM a ceder",
+                        col_scm_a, "Nombre de parts SCM a ceder",
                         section="financement", field="scm_parts", default="",
+                    ),
+                    # FB-1 (CE8, Albane 2026-06-26) : le point 8 de l'acte médical cède
+                    # « l'intégralité des parts qu'il détient de la SCM <dénomination> ». Le
+                    # champ `CessionScm.denomination` existait déjà côté moteur mais n'était
+                    # PAS saisi -> l'acte affichait un marqueur à compléter. On expose la
+                    # saisie ici (vide -> le générateur retombe sur sa zone à compléter,
+                    # jamais bloquant).
+                    "denomination": (
+                        _cession_text(
+                            col_scm_b, "Denomination de la SCM",
+                            section="financement", field="scm_denomination", default="",
+                        )
+                        or None
                     ),
                 }
         financement_payload = {
@@ -1710,11 +1719,7 @@ def _render_cession_form(  # noqa: C901
             # omet la ligne banque quand le nom est vide (pas de placeholder
             # parasite) ; la mention se complete a la main sur le document.
             "banque": {"nom": "", "adresse_affichee": ""},
-            "destinataire": {
-                "civilite_affichage": destinataire_civilite,
-                "prenom": destinataire_prenom,
-                "nom": destinataire_nom,
-            },
+            # FB-2 : plus de destinataire saisi (clé omise -> generateur omet la ligne).
             "montant_deblocage": montant_deblocage,
             "pret": pret_payload,
             "credit_vendeur": credit_payload,
@@ -1867,7 +1872,7 @@ def _render_cession_form(  # noqa: C901
     return cession_context, bail_context
 
 
-def _render_scm_cession_form(
+def _render_scm_cession_form(  # noqa: C901
     scm: bool,
     *,
     praticien: dict[str, object],
@@ -1899,6 +1904,38 @@ def _render_scm_cession_form(
             st, "Denomination SCM", section="scm_cedee", field="denomination",
             default=str(scm_cedee.get("denomination") or ""),
         )
+        # FB-6 (Albane 2026-06-26) : « l'adresse du siege dans le PV doit provenir d'un
+        # champ saisi (ou par defaut le siege de la SEL), pas d'une valeur fixe ». FB-8a :
+        # « l'adresse [de l'expose de l'acte] souvent c'est la meme que le siege de la SEL
+        # -> proposee par defaut ou en cochant une case ». -> on saisit le siege de la SCM,
+        # avec une case « = siege de la SEL » qui le prerempli depuis le siege de la societe.
+        # Ce champ alimente scm_cedee.siege (lu par le PV pour tous, et par l'expose de
+        # l'acte en SELAS ; en SELARL l'expose lit deja cessionnaire.siege = siege SEL).
+        siege_sel = (
+            str(st.session_state.get(f"{prefix}_siege") or "").strip()
+            or _siege_display(societe)
+        )
+        siege_scm_existant = ""
+        _siege_scm_base = scm_cedee.get("siege")
+        if isinstance(_siege_scm_base, dict):
+            siege_scm_existant = str(_siege_scm_base.get("adresse_affichee") or "")
+        siege_same_key = f"{_CESSION_PREFIX}_cession_scm_cedee_siege_same_as_sel"
+        _seed_default(siege_same_key, False)
+        siege_same = st.checkbox(
+            "Siege de la SCM = siege de la SEL",
+            key=siege_same_key,
+            help="Coche : prerempli l'adresse du siege de la SCM avec celle de la SEL.",
+        )
+        siege_text_key = f"{_CESSION_PREFIX}_cession_scm_cedee_siege"
+        if siege_same and siege_sel:
+            st.session_state[siege_text_key] = siege_sel
+        scm_cedee_siege_saisi = _cession_text(
+            st, "Siege de la SCM (adresse affichee)",
+            section="scm_cedee", field="siege",
+            default=siege_scm_existant,
+        )
+        if scm_cedee_siege_saisi:
+            scm_cedee["siege"] = {"adresse_affichee": scm_cedee_siege_saisi}
         col_a, col_b = st.columns(2)
         scm_cedee["ville_rcs"] = _cession_text(
             col_a, "RCS (ville)", section="scm_cedee", field="rcs_ville",
@@ -2038,19 +2075,25 @@ def _render_scm_cession_form(
         )
         if nb_cedees_saisi.isdigit():
             parts_cedees["nb"] = int(nb_cedees_saisi)
-        # N4 (Rafael 2026-06-24) : plage des parts cedees auto-derivee (plage du cedant + nb cede,
-        # convention « le cedant cede ses dernieres parts ») dans _derive_scm_apres_cession ; plus
-        # de saisie manuelle.
-        # Albane 2026-06-26 §S4 : la plage de la fixture (« 151 a 200 » = 50 parts) restait
-        # collee au payload et n'etait jamais re-derivee quand l'utilisateur saisissait un
-        # nombre cede different (20) -> plage incoherente avec le nb. On efface la plage ici
-        # pour FORCER la re-derivation deterministe (dernieres parts du cedant) dans
-        # _derive_scm_apres_cession. La saisie manuelle de la plage reste une nouveaute du
-        # Lot Formulaire (cf. flags).
+        # FB-4 (Albane 2026-06-26) : « pour les plages cédées est-ce qu'on peut prendre la
+        # main ? en pratique le mec détient 10 parts numérotées de 1 à 5 et 21 à 25 ». -> on
+        # rouvre une SAISIE MANUELLE OPTIONNELLE de la plage cédée. Renseignée -> elle OVERRIDE
+        # la dérivation automatique (les parts détenues peuvent être NON contiguës, ex.
+        # « 1 a 5 et 21 a 25 ») ; laissée VIDE -> la dérivation déterministe actuelle (dernières
+        # parts du cedant, _derive_scm_apres_cession) reste en place. On efface d'abord la plage
+        # héritée de la fixture (Albane §S4 : sinon « 151 a 200 » restait collée et incohérente
+        # avec un nb saisi différent), puis on ne repose que la saisie manuelle si fournie.
         parts_cedees.pop("plage", None)
-        col_b.caption(
-            "Plage des parts cedees : calculee automatiquement (dernieres parts du cedant)."
+        plage_cedee_manuelle = _cession_text(
+            col_b, "Plage des parts cedees (laisser vide = calcul auto)",
+            section="scm_parts", field="plage", default="",
         )
+        if plage_cedee_manuelle:
+            parts_cedees["plage"] = plage_cedee_manuelle
+        else:
+            col_b.caption(
+                "Plage des parts cedees : calculee automatiquement (dernieres parts du cedant)."
+            )
         prix["global"] = _cession_text(
             col_c, "Prix global", section="scm_prix", field="global",
             default=str(prix.get("global") or ""),
@@ -2080,7 +2123,7 @@ def _render_scm_cession_form(
     # §4.1 — repeater des associes PRESENTS (plus de fixture 3 presents / 4 apres).
     # L'apres-cession est DERIVE deterministe (cedant reduit + SEL cessionnaire
     # entrante), jamais saisi. signataires_pv en derive aussi.
-    presents = _render_scm_cession_associes_presents(scm_cedee)
+    presents = _render_scm_cession_associes_presents(scm_cedee, cedant=cedant)
     payload["associes_presents"] = [a.model_dump() for a in presents]
     payload["associes_avant_cession"] = [a.model_dump() for a in presents]
     apres = _derive_scm_apres_cession(presents, cedant, cessionnaire, parts_cedees)
@@ -2095,18 +2138,53 @@ def _render_scm_cession_form(
     return ScmCessionContext.model_validate(payload)
 
 
-def _render_scm_cession_associes_presents(
+def _scm_present_label(associe: ScmCessionAssocie) -> str:
+    """Libelle d'affichage TOLERANT d'un associe present (FB-7/FB-8b).
+
+    Contrairement a `associe_display` du generateur (strict, leve si un champ manque),
+    ce helper front ne crashe jamais sur une saisie partielle : il assemble ce qui est
+    disponible et renvoie chaine vide si rien n'est saisi (le selecteur retombe alors sur
+    un libelle « Associe N » ; la case gerant vide n'ajoute pas de cogerant fantome)."""
+    if associe.type_personne == "personne_morale":
+        return (associe.denomination or "").strip()
+    parts = [associe.civilite_affichage, associe.prenom, associe.nom]
+    return " ".join(p.strip() for p in parts if p and p.strip())
+
+
+def _render_scm_cession_associes_presents(  # noqa: C901
     scm_cedee: dict[str, object],
+    *,
+    cedant: dict[str, object] | None = None,
 ) -> list[ScmCessionAssocie]:
     """Repeater des associes PRESENTS a l'AGE de cession SCM (§4.1).
 
-    N associes (identite + nb de parts + plage). Le total des parts doit egaler
-    le capital de la SCM (nb_parts_total) ; un avertissement non bloquant le
-    signale sinon. Le dernier associe preside la seance (regle moteur a10ff29)."""
+    N associes (identite + nb de parts). Le total des parts doit egaler le capital
+    de la SCM (nb_parts_total) ; un avertissement non bloquant le signale sinon.
+
+    FB-5 (Albane 2026-06-26) : « les plages de parts pour les associes presents je
+    pense qu'il n'est pas necessaire de le mettre car ce n'est reporte nulle part
+    et cela risque de creer des erreurs ; et dans les associes par defaut le
+    premier peut etre le cedant ». -> on RETIRE la saisie/affichage de la plage des
+    presents ; on garde le nb. La plage des presents n'est consommee par AUCUN
+    generateur (le PV ne lit que parts.nb ; l'apres-cession DERIVE sa propre plage),
+    on la calcule donc cumulativement EN INTERNE (pour la seule derivation
+    apres-cession du cedant) sans jamais l'afficher. Le 1er present est preremplie
+    avec le cedant.
+
+    FB-7 (Albane 2026-06-26) : « le cedant preside par defaut ». Le generateur PV
+    prend `associes_presents[-1]` comme president de seance. Pour faire presider le
+    cedant, on REORDONNE la liste afin que le president selectionne (defaut = cedant)
+    figure en DERNIERE position (l'ordre interne des autres est preserve).
+
+    FB-8b (Albane 2026-06-26) : « le nom des cogerants est mis au hasard -> dans la
+    liste des associes on puisse cocher si la personne est gerante ». -> une case
+    « Gerant(e) de la SCM » par associe ; la liste `scm_cedee['cogerants']` est
+    DERIVEE des cases cochees (au lieu du fallback hardcode du generateur)."""
     with st.expander("Associes presents a l'assemblee", expanded=True):
         st.caption(
             "Le total des parts des presents doit egaler le nombre total de parts "
-            "de la SCM. Le dernier associe saisi preside la seance (gerant associe)."
+            "de la SCM. Cochez « Gerant(e) » pour les cogerants ; choisissez plus bas "
+            "qui preside la seance (par defaut le cedant)."
         )
         count_key = f"{_CESSION_PREFIX}_cession_scm_presents_count"
         _seed_default(count_key, 3)
@@ -2118,8 +2196,19 @@ def _render_scm_cession_associes_presents(
                 key=count_key,
             )
         )
+        # FB-5 : 1er present preremplie avec le cedant (identite), modifiable.
+        if cedant:
+            for field, value in (
+                ("civilite", str(cedant.get("civilite_affichage") or "")),
+                ("prenom", str(cedant.get("prenom") or "")),
+                ("nom", str(cedant.get("nom") or "")),
+            ):
+                key = f"{_CESSION_PREFIX}_cession_scm_present_0_{field}"
+                if not st.session_state.get(key) and value:
+                    st.session_state[key] = value
         presents: list[ScmCessionAssocie] = []
-        cursor = 1  # N4 : curseur de plage cumulative des presents (ordre + nb parts)
+        cogerants: list[str] = []  # FB-8b : cogerants derives des cases cochees
+        cursor = 1  # plage cumulative INTERNE (jamais affichee) -> derivation apres-cession
         for index in range(nb_associes):
             st.markdown(f"Associe present {index + 1}")
             morale = st.checkbox(
@@ -2162,31 +2251,36 @@ def _render_scm_cession_associes_presents(
                     "prenom": prenom or None,
                     "nom": nom or None,
                 }
-            col_d, col_e = st.columns(2)
+            # FB-5 : plus de saisie de plage -> une seule colonne pour le nb de parts.
             nb_parts_saisi = _cession_text(
-                col_d, "Nombre de parts", section="scm_present", field=f"{index}_nb_parts",
+                st, "Nombre de parts", section="scm_present", field=f"{index}_nb_parts",
                 default="",
             )
             nb_present = int(nb_parts_saisi) if nb_parts_saisi.isdigit() else None
-            # N4 (Rafael 2026-06-24) : plage de parts auto-calculee cumulativement (ordre des
-            # presents + nb), plus de saisie manuelle. Present k = [cursor, cursor + nb - 1].
+            # Plage INTERNE cumulative (ordre des presents + nb) : present k = [cursor,
+            # cursor + nb - 1]. Sert UNIQUEMENT a la derivation deterministe de
+            # l'apres-cession (plage residuelle du cedant / plage cedee), jamais affichee.
             plage = ""
             if nb_present and nb_present > 0:
                 plage = f"{cursor} a {cursor + nb_present - 1}"
                 cursor += nb_present
-            copyable_text_input(
-                col_e, f"Plage de parts du present {index + 1} (calculee)",
-                value=plage, disabled=True,
+            # FB-8b : case « Gerant(e) de la SCM » -> alimente la liste des cogerants.
+            est_gerant = st.checkbox(
+                "Gerant(e) de la SCM",
+                key=f"{_CESSION_PREFIX}_cession_scm_present_{index}_gerant",
             )
-            presents.append(
-                ScmCessionAssocie(
-                    **identity,
-                    parts=ScmCessionPartsAttribution(
-                        nb=nb_present,
-                        plage=plage or None,
-                    ),
-                )
+            associe = ScmCessionAssocie(
+                **identity,
+                parts=ScmCessionPartsAttribution(
+                    nb=nb_present,
+                    plage=plage or None,
+                ),
             )
+            if est_gerant:
+                cogerant_label = _scm_present_label(associe)
+                if cogerant_label:
+                    cogerants.append(cogerant_label)
+            presents.append(associe)
         total_parts = sum((a.parts.nb or 0) for a in presents if a.parts)
         nb_total_scm = int(scm_cedee.get("nb_parts_total") or 0)
         if nb_total_scm and total_parts != nb_total_scm:
@@ -2195,7 +2289,50 @@ def _render_scm_cession_associes_presents(
                 f"total de parts de la SCM ({nb_total_scm}). La generation du PV "
                 "sera bloquee tant que les deux ne coincident pas."
             )
+        # FB-8b : la liste des cogerants derive des cases cochees (override le fallback
+        # hardcode du generateur). Vide -> on n'ecrase pas (le generateur garde son repli).
+        if cogerants:
+            scm_cedee["cogerants"] = cogerants
+        # FB-7 : le president de seance (par defaut le cedant) doit figurer en DERNIERE
+        # position (le generateur PV prend associes_presents[-1]). On expose le choix.
+        presents = _scm_reorder_president_last(presents, cedant)
     return presents
+
+
+def _scm_reorder_president_last(
+    presents: list[ScmCessionAssocie],
+    cedant: dict[str, object] | None,
+) -> list[ScmCessionAssocie]:
+    """FB-7 : reordonne les presents pour que le PRESIDENT de seance soit en derniere
+    position (le generateur PV AGE SCM lit associes_presents[-1] comme president).
+
+    Par DEFAUT le president = le cedant (celui qui vend les parts) ; un selecteur
+    permet de choisir un autre present si besoin. L'ordre relatif des autres associes
+    est preserve. Liste vide / un seul present -> renvoyee telle quelle."""
+    if len(presents) <= 1:
+        return presents
+    # Index par defaut = le cedant s'il est present, sinon le dernier (comportement
+    # historique : le dernier associe saisi presidait).
+    default_index = len(presents) - 1
+    if cedant:
+        for idx, associe in enumerate(presents):
+            if _scm_same_person(associe, cedant):
+                default_index = idx
+                break
+    labels = [
+        _scm_present_label(a) or f"Associe {i + 1}"
+        for i, a in enumerate(presents)
+    ]
+    choix = st.selectbox(
+        "Qui preside la seance ? (par defaut le cedant)",
+        options=list(range(len(presents))),
+        index=default_index,
+        format_func=lambda i: labels[i],
+        key=f"{_CESSION_PREFIX}_cession_scm_president_index",
+    )
+    president = presents[int(choix)]
+    autres = [a for i, a in enumerate(presents) if i != int(choix)]
+    return [*autres, president]
 
 
 def _scm_same_person(associe: ScmCessionAssocie, cedant: dict[str, object]) -> bool:

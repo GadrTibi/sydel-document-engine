@@ -13,11 +13,9 @@ branchent au lieu de dupliquer leur propre `_date()`.
 
 from __future__ import annotations
 
-import html as _html
 from datetime import date
 
 import streamlit as st
-import streamlit.components.v1 as components
 
 from sydel_doc_engine.front_app.field_derivations import (
     DEFAULT_MANDATAIRE_NOM,
@@ -27,54 +25,19 @@ from sydel_doc_engine.front_app.field_derivations import (
 )
 
 
-def _copy_button_html(text: str) -> str:
-    """Bouton « copier » autonome (O24-04). Le presse-papier est écrit AU CLIC (le bouton
-    EST le geste utilisateur) -> `navigator.clipboard.writeText` fiable en contexte sécurisé
-    (Streamlit Cloud = https). La valeur transite par un attribut `data-copy` HTML-échappé
-    pour éviter tout problème de quotes/caractères spéciaux dans le handler."""
-    esc = _html.escape(text, quote=True)
-    return (
-        f'<button title="Copier le contenu" data-copy="{esc}" '
-        'onclick="var b=this;navigator.clipboard.writeText(b.dataset.copy).then('
-        "function(){var o=b.textContent;b.textContent='\\u2713 copié';"
-        'setTimeout(function(){b.textContent=o;},1200);});" '
-        'style="cursor:pointer;border:1px solid #d0d0d0;border-radius:6px;background:#fafafa;'
-        'padding:2px 8px;font-size:12px;color:#444;white-space:nowrap;">\U0001F4CB</button>'
-    )
-
-
 def copyable_text_input(
     container, label: str, *, key: str | None = None, help: str | None = None, **text_input_kwargs
 ) -> str:
-    """`text_input` + icône « copier » à côté (O24-04, retour Rafael « icône copier par champ »).
+    """`text_input` SIMPLE (l'icône « copier » latérale a été RETIRÉE — FB-3 Albane 2026-06-26).
 
-    DROP-IN sûr pour tout `text_input` existant : `**text_input_kwargs` (ex. `disabled`) est
-    transmis tel quel. L'icône est un enrichissement PROGRESSIF -> on retombe proprement sur un
-    `text_input` simple (sans icône) dans 3 cas, sans jamais casser le formulaire :
-      - pas de `key` (impossible de relire la valeur à copier) ;
-      - `container.columns` indisponible / nesting trop profond (Streamlit interdit > 1 niveau) ;
-      - conteneur mocké en test (stub sans protocole de context manager).
-    En contexte réel (Streamlit Cloud, https), l'icône `components.html` écrit le presse-papier
-    AU CLIC (le bouton EST le geste utilisateur) ; la valeur est relue dans `st.session_state[key]`.
+    Albane : « j'ai vu qu'il y avait des champs sur le côté pour copier le texte, est-ce possible
+    de les retirer ? … avec le copier le tab passe dessus, ça rend la saisie moins fluide ». La
+    colonne icône captait le focus de tabulation et cassait la fluidité de saisie. On revient donc
+    à un `text_input` nu PARTOUT (le nom de la fonction et sa signature sont CONSERVÉS pour rester
+    un drop-in : tous les appelants existants — y compris ceux sans `key`, avec `value=`/`disabled=`
+    via `**text_input_kwargs` — continuent de fonctionner à l'identique, sans la colonne copier).
     """
-    if key is None:
-        return container.text_input(label, key=key, help=help, **text_input_kwargs)
-    try:
-        col_field, col_copy = container.columns([0.90, 0.10])
-    except Exception:
-        # Nesting trop profond ou conteneur sans `columns` -> champ simple, pas d'icône.
-        return container.text_input(label, key=key, help=help, **text_input_kwargs)
-    value = col_field.text_input(label, key=key, help=help, **text_input_kwargs)
-    text = str(st.session_state.get(key, "") or "")
-    try:
-        with col_copy:
-            # Spacer : descend l'icône sous le label pour l'aligner sur le champ.
-            st.markdown("<div style='height:1.75rem'></div>", unsafe_allow_html=True)
-            components.html(_copy_button_html(text), height=40)
-    except Exception:
-        # Conteneur mocké (test) ou contexte hors-Streamlit : on garde juste le champ.
-        pass
-    return value
+    return container.text_input(label, key=key, help=help, **text_input_kwargs)
 
 
 def date_input_with_today(

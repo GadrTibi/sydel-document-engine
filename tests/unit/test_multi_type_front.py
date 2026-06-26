@@ -2790,11 +2790,25 @@ class _StScmStub:
     def checkbox(self, _label, *, key=None, **_k):
         return bool(self.session_state.get(key, False))
 
+    def text_area(self, _label, *, key=None, **_k):
+        return self.session_state.get(key, "")
+
+    def date_input(self, _label, *, key=None, value=None, **_k):
+        if key in self.session_state:
+            return self.session_state[key]
+        return value
+
+    def button(self, *_a, **_k):
+        return False
+
     # --- divers no-op ---
     def markdown(self, *_a, **_k):
         return None
 
     def caption(self, *_a, **_k):
+        return None
+
+    def info(self, *_a, **_k):
         return None
 
     def warning(self, message, *_a, **_k):
