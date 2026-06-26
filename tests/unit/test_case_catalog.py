@@ -21,7 +21,8 @@ def _doc_codes(case_type: str, **conditions: object) -> list[str]:
 def test_case_catalog_documents_mapped_to_existing_registry() -> None:
     registry_codes = {document.doc_id for document in build_seed_catalog()}
 
-    assert len(CATALOG_DOCUMENTS) == 48
+    # DOC-046 (statuts SELAS unipersonnelle dentiste, retour Rafael #5) porte le total a 49.
+    assert len(CATALOG_DOCUMENTS) == 49
     assert set(mapped_document_codes()) == registry_codes
 
 

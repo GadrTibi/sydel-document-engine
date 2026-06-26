@@ -770,6 +770,52 @@ def _prefill_selas_uni_medecin_test_data() -> None:
     _commit_civil_prefill(values)
 
 
+def _prefill_selas_uni_dentiste_test_data() -> None:
+    """Retour Rafael #5 : donnees de test SELAS UNIPERSONNELLE chirurgien-dentiste.
+
+    Un clic = dossier SELAS uni dentiste coherent et generable (associe unique = President,
+    marie sous communaute pour demontrer la clause conjoint + DOC-005/006). Cles =
+    `selas_uni_dentiste_*` (prefixe du slice). Calque du prefill SELAS uni medecin."""
+    p = "selas_uni_dentiste"
+    values: dict[str, object] = {
+        f"{p}_denomination": "SELAS EXEMPLE",
+        f"{p}_capital_social": 1000,
+        f"{p}_nb_actions_total": 100,
+        f"{p}_ville_rcs": "Lyon",
+        f"{p}_lieu_exercice_adresse": "5 place du Centre, 69000 Lyon",
+        f"{p}_siege": "5 place du Centre, 69000 Lyon",
+        f"{p}_banque_nom": "BANQUE EXEMPLE",
+        f"{p}_banque_adresse": "1 rue Banque, 69009 Lyon",
+        f"{p}_exercice_debut": "1er janvier",
+        f"{p}_exercice_fin": "31 décembre",
+        f"{p}_exercice_cloture": "31 décembre 2026",
+        f"{p}_civilite": "Monsieur",
+        f"{p}_prenom": "Jean",
+        f"{p}_nom": "Durand",
+        f"{p}_date_naissance": date(1980, 1, 1),
+        f"{p}_ville_naissance": "Lyon",
+        f"{p}_departement_naissance": "69",
+        f"{p}_nationalite_choice": NATIONALITY_PRESETS[0],
+        f"{p}_titre_affichage": "Docteur",
+        f"{p}_adresse": "10 rue Exemple, 69000 Lyon",
+        f"{p}_situation": MATRIMONIAL_STATUS_MARRIED_COMMUNAUTE,
+        f"{p}_conjoint_civilite": "Madame",
+        f"{p}_conjoint_prenom": "Alice",
+        f"{p}_conjoint_nom": "Durand",
+        f"{p}_nom_pere": "Pierre Durand",
+        f"{p}_nom_mere": "Anne Durand",
+        f"{p}_departement_ordre": "Rhone",
+        f"{p}_ordre_connecteur": "du",
+        f"{p}_numero_ordre": "69-12345",
+        f"{p}_numero_rpps": "10100000001",
+        f"{p}_ordre_adresse": "1 rue de l'Ordre, 69002 Lyon",
+        f"{p}_signature_lieu": "Lyon",
+        f"{p}_signature_date": date(2026, 5, 15),
+        f"{p}_decision_date": date(2026, 5, 15),
+    }
+    _commit_civil_prefill(values)
+
+
 # Boutons "donnees de test" par type (calques sur le bouton SELARL). Etendu type
 # par type au fur et a mesure de la validation.
 _TYPED_TEST_DATA_PREFILL = {
@@ -783,6 +829,8 @@ _TYPED_TEST_DATA_PREFILL = {
     "SELAS": _prefill_selas_test_data,
     # Retour Rafael 2026-06-25 (#4) : bouton donnees de test SELAS unipersonnelle medecin.
     "SELAS uni medecin": _prefill_selas_uni_medecin_test_data,
+    # Retour Rafael #5 : bouton donnees de test SELAS unipersonnelle dentiste.
+    "SELAS uni dentiste": _prefill_selas_uni_dentiste_test_data,
 }
 
 # Prefill surchargeant le defaut par structure pour une cle de type precise.

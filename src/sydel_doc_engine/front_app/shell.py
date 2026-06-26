@@ -2291,6 +2291,7 @@ def _render_typed_dossier(dossier_type: DossierTypeOption) -> None:
         civil_statuts_slice,
         sas_slice,
         selas_multi_slice,
+        selas_uni_dentiste_slice,
         selas_uni_medecin_slice,
         spfpl_slice,
     )
@@ -2314,6 +2315,12 @@ def _render_typed_dossier(dossier_type: DossierTypeOption) -> None:
         payload = selas_uni_medecin_slice.render_selas_uni_medecin_form()
         plan = selas_uni_medecin_slice.build_selas_uni_medecin_plan(payload)
         generate = selas_uni_medecin_slice.generate_dossier
+    elif structure == "SELAS uni dentiste":
+        # SELAS UNIPERSONNELLE dentiste (DOC-046) : parcours uni dedie, clone du medecin
+        # uni avec corpus dentiste (retour Rafael #5).
+        payload = selas_uni_dentiste_slice.render_selas_uni_dentiste_form()
+        plan = selas_uni_dentiste_slice.build_selas_uni_dentiste_plan(payload)
+        generate = selas_uni_dentiste_slice.generate_dossier
     elif structure == "SELAS":
         # On passe la cle du type pour que la SELAS « dentiste pluripersonnelle »
         # pre-regle la profession sur chirurgien-dentiste (corpus dentiste).

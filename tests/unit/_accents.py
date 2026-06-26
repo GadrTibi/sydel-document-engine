@@ -97,8 +97,13 @@ MOTS_NON_ACCENTUES_INTERDITS: tuple[str, ...] = (
     "Generale", "generale", "Generales", "generales",
     "nommee", "nommes", "nommees",
     "designee", "designes", "designees",
-    # nomination / rémunération / arrêté(participe accordé)
-    "nominations", "nomination", "remuneration", "remunerations",
+    # rémunération / arrêté(participe accordé)
+    # NB : « nomination » / « nominations » RETIRES de la liste (2026-06-26, SELAS uni
+    # dentiste) — la forme correcte EST sans accent (« nomination », de « nommer ») ; les
+    # blacklister etait un faux positif (cf. discipline « sans ambiguite fautive » du
+    # docstring). Le corpus dentiste verbatim porte « lors de sa nomination » / « decision
+    # de nomination » : du francais correct, jamais un accent manquant.
+    "remuneration", "remunerations",
     "arretee", "arretes",
     # opération / période / échéance / bénéficiaire / médecin
     "operation", "operations", "periode", "periodes",

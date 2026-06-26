@@ -446,6 +446,151 @@ def test_clean_front_ui_prefill_selas_uni_medecin_generates(
     assert "]" not in combined_text
 
 
+def test_clean_front_ui_prefill_selas_uni_dentiste_generates(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    # Retour Rafael #5 : « la SELAS unipers dentiste = la pluripersonnelle dentiste mais
+    # avec un seul associe ». Le bouton « donnees de test » pre-remplit un dossier
+    # COHERENT et GENERABLE en un clic, profession chirurgien-dentiste (statuts DOC-046).
+    from _accents import assert_no_unaccented_french
+
+    from sydel_doc_engine.front_app import shell
+
+    monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selas-uni-dent")
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
+    app.selectbox(key="clean_dossier_type").set_value(
+        "SELAS unipersonnelle dentiste creation V1"
+    )
+    app = app.run(timeout=180)
+
+    app.button(key="clean_test_data_SELAS_uni_dentiste").click()
+    app = app.run(timeout=180)
+
+    assert not any("Blocage" in item.value for item in app.caption)
+    assert app.button(key="clean_typed_generate_dossier").disabled is False
+
+    app.button(key="clean_typed_generate_dossier").click()
+    app = app.run(timeout=180)
+
+    generated = app.session_state[shell.TYPED_GENERATED_STATE_KEY]
+    statuts_text = next(
+        _docx_text(Path(path))
+        for path in generated["docx_paths"]
+        if "statuts_selas_dentiste" in Path(path).name
+    )
+    # Corpus dentiste (verbatim du modele source dentiste pluri, uni-fie).
+    assert "chirurgien-dentiste" in statuts_text
+    assert "société d'exercice libéral par actions simplifiée" in statuts_text
+    # Uni-fication : un seul soussigne, un seul apporteur, « A établi » (singulier).
+    assert "LE SOUSSIGNE" in statuts_text
+    assert "A établi ainsi qu’il suit" in statuts_text
+    assert "- Le Docteur Jean Durand, apporte" in statuts_text
+    # Article President dentiste GENERIQUE (jamais nomme) preserve.
+    assert "Article 19 - Président de La société" in statuts_text
+    # Marie sous communaute -> clause conjoint rendue (avec Madame Alice Durand).
+    assert "Alice Durand" in statuts_text
+    # Texte from-scratch dentiste : entierement accentue (garde-fou centralise).
+    assert_no_unaccented_french(statuts_text)
+    # Dossier propre : aucun token/placeholder residuel.
+    assert "[" not in statuts_text
+    assert "]" not in statuts_text
+
+
+def test_selas_uni_dentiste_generator_matches_dentiste_model_wording(
+    tmp_path: Path,
+) -> None:
+    # Fidelite : le statuts SELAS uni dentiste reprend le wording VERBATIM du modele
+    # source dentiste pluri (`Statuts_SELAS_dentiste_pluri_modele.docx`), uni-fie. On
+    # verifie quelques ancres litterales propres au corpus dentiste (et absentes du
+    # corpus medecin), plus l'absence de placeholder et l'accentuation complete.
+    from _accents import assert_no_unaccented_french
+
+    from sydel_doc_engine.front_app import selas_uni_dentiste_slice as sd
+
+    payload: dict[str, object] = {
+        "denomination": "SELAS DENTAIRE TEST",
+        "capital_social": "1000",
+        "nb_actions_total": 100,
+        "valeur_nominale_action": "10",
+        "duree": "99 ans",
+        "ville_rcs": "Rennes",
+        "lieu_exercice_adresse": "9 rue du Centre, 35000 Rennes",
+        "siege_num": "9",
+        "siege_voie": "rue du Centre",
+        "siege_cp": "35000",
+        "siege_ville": "Rennes",
+        "banque_nom": "BANQUE TEST",
+        "banque_adresse": "8 place Test, 35000 Rennes",
+        "exercice_debut": "1er janvier",
+        "exercice_fin": "31 décembre",
+        "exercice_cloture": "31 décembre 2026",
+        "civilite": "Monsieur",
+        "prenom": "Jean",
+        "nom": "Durand",
+        "date_naissance": date(1980, 1, 1),
+        "ville_naissance": "Rennes",
+        "departement_naissance": "35",
+        "nationalite": "française",
+        "titre_affichage": "Docteur",
+        "adresse_num": "31",
+        "adresse_voie": "boulevard Test",
+        "adresse_cp": "35700",
+        "adresse_ville": "Rennes",
+        "nom_pere": "Pierre Durand",
+        "nom_mere": "Anne Durand",
+        "situation_maritale": "celibataire",
+        # Pour un celibataire, le formulaire derive regime_matrimonial = « celibataire »
+        # (regime_matrimonial_from_status) — non vide, donc generable sans conjoint.
+        "regime_matrimonial": "celibataire",
+        "regime_communautaire": False,
+        "conjoint_civilite": "",
+        "conjoint_prenom": "",
+        "conjoint_nom": "",
+        "departement_ordre": "Ille et Vilaine",
+        "connecteur_departement": "de",
+        "ordre_president_feminin": False,
+        "mandataire_prenom": "Marc",
+        "mandataire_nom": "Sydel",
+        "numero_ordre": "79630",
+        "numero_rpps": "10101676194",
+        "ordre_ville": "Rennes",
+        "ordre_cp": "35000",
+        "ordre_adresse_ligne_1": "1 rue Ordre",
+        "signature_lieu": "Rennes",
+        "signature_date": date(2026, 9, 22),
+        "decision_date": date(2026, 9, 22),
+    }
+    plan = sd.build_selas_uni_dentiste_plan(payload)
+    assert plan.can_generate, plan.blockers
+    assert plan.document_codes[0] == "DOC-046"
+
+    ctx = sd.build_generation_context(payload)
+    from sydel_doc_engine.generators.lot_04.statuts_selas_dentiste import (
+        StatutsSelasDentisteGenerator,
+    )
+
+    out_path = StatutsSelasDentisteGenerator().generate(ctx, tmp_path / "dent")
+    text = _docx_text(out_path)
+
+    # Ancres litterales DENTISTE (corpus dentiste pluri, absentes du corpus medecin).
+    assert "La société est constituée en Société d'Exercice Libéral par Actions Simplifiée." in text
+    assert "par les articles R. 4113-1 et suivants du Code de la santé publique" in text
+    assert "La société a pour objet l’exercice en commun de la profession de chirurgien-dentiste." in text  # noqa: E501
+    assert "l’agrément de celle-ci par le Conseil Départemental de l’Ordre des Chirurgiens-dentistes" in text  # noqa: E501
+    assert "Article 19 - Président de La société" in text
+    assert "Article 20 - Directeur Général" in text
+    # Uni-fication : associe unique, un seul apporteur / attributaire.
+    assert "A la constitution de la Société, l’associé unique a fait les apports suivants" in text
+    assert "- Le Docteur Jean Durand, apporte mille euros" in text
+    assert "- Monsieur Jean Durand, cent actions" in text
+    # Celibataire : la clause matrimoniale rend juste « celibataire » (pas de conjoint).
+    assert "marié" not in text.replace("non marié", "")
+    # Propre + accentue.
+    assert "[" not in text and "]" not in text
+    assert_no_unaccented_french(text)
+
+
 def test_clean_front_cession_libre_dates_have_accented_months(
     tmp_path: Path,
     monkeypatch,

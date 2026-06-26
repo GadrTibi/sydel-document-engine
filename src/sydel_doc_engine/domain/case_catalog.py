@@ -254,6 +254,15 @@ CATALOG_DOCUMENTS: tuple[CatalogDocument, ...] = (
         DocumentAvailability.GENERATABLE,
     ),
     CatalogDocument(
+        "statuts_selas_dentiste",
+        "Statuts SELAS dentiste",
+        "Statuts_SELAS_dentiste_pluri_modele.docx",
+        "DOC-046",
+        DocumentAvailability.GENERATABLE,
+        "Statuts SELAS unipersonnelle chirurgien-dentiste (modele dentiste pluri uni-fie, "
+        "retour Rafael #5).",
+    ),
+    CatalogDocument(
         "statuts_selas_multi",
         "Statuts SELAS multi",
         "Statuts_SELAS_multi_modele.docx",

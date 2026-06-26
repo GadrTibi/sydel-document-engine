@@ -132,13 +132,25 @@ REGISTERED_TYPES: Final[tuple[RegisteredType, ...]] = (
     # (statuts SELAS medecin from-scratch) qui existait cote moteur mais restait
     # orphelin (aucun parcours front — audit retours Albane lot 2, §17.1). Slice
     # dedie unipersonnel (1 associe / President), structure de routage distincte de
-    # la SELAS multi pour ne pas detourner le chemin DOC-044 (>=2 associes). Pas de
-    # version dentiste uni : le modele source dentiste uni n'existe pas (NEEDS_SOURCE_MODEL).
+    # la SELAS multi pour ne pas detourner le chemin DOC-044 (>=2 associes).
     RegisteredType(
         key="selas_uni_medecin_v1",
         label="SELAS unipersonnelle medecin creation V1",
         structure="SELAS uni medecin",
         slice_module="sydel_doc_engine.front_app.selas_uni_medecin_slice",
+        generation_enabled=True,
+        status="moteur_teste",
+    ),
+    # Cas NOMME « SELAS unipersonnelle dentiste » (retour Rafael #5 : « la SELAS
+    # unipers dentiste = la pluripersonnelle dentiste mais avec un seul associe »).
+    # Clone structurel du parcours SELAS uni medecin, profession chirurgien-dentiste,
+    # statuts DOC-046 (blocs dentiste verbatim du modele pluri uni-fie). Structure de
+    # routage dediee, distincte de la SELAS uni medecin et de la SELAS pluri.
+    RegisteredType(
+        key="selas_uni_dentiste_v1",
+        label="SELAS unipersonnelle dentiste creation V1",
+        structure="SELAS uni dentiste",
+        slice_module="sydel_doc_engine.front_app.selas_uni_dentiste_slice",
         generation_enabled=True,
         status="moteur_teste",
     ),

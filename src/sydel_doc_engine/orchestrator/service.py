@@ -58,6 +58,9 @@ from sydel_doc_engine.generators.lot_04.statuts_selarl_dentiste import (
 from sydel_doc_engine.generators.lot_04.statuts_selarl_medecin import (
     StatutsSelarlMedecinGenerator,
 )
+from sydel_doc_engine.generators.lot_04.statuts_selas_dentiste import (
+    StatutsSelasDentisteGenerator,
+)
 from sydel_doc_engine.generators.lot_04.statuts_selas_medecin import (
     StatutsSelasMedecinGenerator,
 )
@@ -200,6 +203,7 @@ def build_generator_registry() -> dict[str, DocumentGenerator]:
         "DOC-016": StatutsSelarlDentisteGenerator(),
         "DOC-017": StatutsSelarlMedecinGenerator(),
         "DOC-018": StatutsSelasMedecinGenerator(),
+        "DOC-046": StatutsSelasDentisteGenerator(),
         "DOC-044": StatutsSelasMultiGenerator(),
         "DOC-019": StatutsScsGenerator(),
         "DOC-020": StatutsSciGenerator(),

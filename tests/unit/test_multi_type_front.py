@@ -78,6 +78,7 @@ def test_registry_exposes_all_ready_types() -> None:
         "SPFPL apport",
         "SELAS",
         "SELAS uni medecin",
+        "SELAS uni dentiste",
     } == structures
 
 
@@ -2173,6 +2174,7 @@ def test_front_dropdown_lists_all_types_with_selarl_default() -> None:
         "SPFPL dentistes - apport creation V1",
         "SELAS pluripersonnelle creation V1",
         "SELAS unipersonnelle medecin creation V1",
+        "SELAS unipersonnelle dentiste creation V1",
     ]
     # Surface SELARL inchangee : aucun expander sur le defaut.
     assert len(app.expander) == 0

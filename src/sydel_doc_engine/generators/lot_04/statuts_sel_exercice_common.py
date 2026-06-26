@@ -39,6 +39,7 @@ STRUCTURE_SELAS = "SELAS"
 OVERLAY_SELARL_DENTISTE = "selarl_dentiste"
 OVERLAY_SELARL_MEDECIN = "selarl_medecin"
 OVERLAY_SELAS_MEDECIN = "selas_medecin"
+OVERLAY_SELAS_DENTISTE = "selas_dentiste"
 
 
 def required_text(value: str | None, field_name: str) -> str:
