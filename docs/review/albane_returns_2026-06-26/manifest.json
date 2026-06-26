@@ -1,0 +1,93 @@
+{
+  "file_count": 12,
+  "files": [
+    {
+      "archive_path": "acte_cession_cabinet_medical.docx",
+      "format": "docx",
+      "sha256": "55681e764efa7ba15d3dfce1c0ad6497131d476302467870185accd11faf6761",
+      "size_bytes": 519616,
+      "source_name": "acte_cession_cabinet_medical.docx"
+    },
+    {
+      "archive_path": "autorisation_domiciliation.docx",
+      "format": "docx",
+      "sha256": "38cd06f18d6c33283b3c7b4896e241ec7757b6618dca5a7bcf93c2fc9c5b68e6",
+      "size_bytes": 12174,
+      "source_name": "autorisation_domiciliation.docx"
+    },
+    {
+      "archive_path": "avenant_contrat_bail.docx",
+      "format": "docx",
+      "sha256": "6eea0eb2c20c5509b51490b0e8e7a0a41127b983554df671960e6a4cff4c99b1",
+      "size_bytes": 37729,
+      "source_name": "avenant_contrat_bail.docx"
+    },
+    {
+      "archive_path": "compromis_cession_cabinet_medical.docx",
+      "format": "docx",
+      "sha256": "03f62042a65e3d81995d0a863041bfe324f7a274c34f407e1608681a389bb17e",
+      "size_bytes": 517399,
+      "source_name": "compromis_cession_cabinet_medical.docx"
+    },
+    {
+      "archive_path": "declaration_non_condamnation_Durand_2.docx",
+      "format": "docx",
+      "sha256": "738f2516ac58493d2d549da9b2eda2f9647b8a96d90cdbbd7c4d94a7c9bef979",
+      "size_bytes": 37723,
+      "source_name": "declaration_non_condamnation_Durand_2.docx"
+    },
+    {
+      "archive_path": "declaration_non_condamnation_cod.docx",
+      "format": "docx",
+      "sha256": "17ab065229ff043c8d845f2708a9825a395119e190ef9b9551d68d2677e7a9c1",
+      "size_bytes": 37741,
+      "source_name": "declaration_non_condamnation_cod.docx"
+    },
+    {
+      "archive_path": "demande_inscription_ordre.docx",
+      "format": "docx",
+      "sha256": "d9252608e33e4b728e86737c816ade13fc12bb505e8c96754e7f4c8389c29f0d",
+      "size_bytes": 37204,
+      "source_name": "demande_inscription_ordre.docx"
+    },
+    {
+      "archive_path": "lettre_avertissement_conjoint.docx",
+      "format": "docx",
+      "sha256": "c22645e9c30eaf5cf43a8ea47d21268e9d404854ee0224f6a1bded445426842e",
+      "size_bytes": 37360,
+      "source_name": "lettre_avertissement_conjoint.docx"
+    },
+    {
+      "archive_path": "lettre_renonciation_associe.docx",
+      "format": "docx",
+      "sha256": "ad891c146c2d747003921b6cc5479f745ec5839c692225dc133bb64bb8714cc7",
+      "size_bytes": 37192,
+      "source_name": "lettre_renonciation_associe.docx"
+    },
+    {
+      "archive_path": "procuration.docx",
+      "format": "docx",
+      "sha256": "861944e769266774d817f06650f0b68b81c552fbc6482283915568da4ddd7134",
+      "size_bytes": 37607,
+      "source_name": "procuration.docx"
+    },
+    {
+      "archive_path": "pv_nomination_gerant.docx",
+      "format": "docx",
+      "sha256": "bb9e78a6d74026e53e1c70cb51147df676e18e58c496e0d8b47b0f82aa15f480",
+      "size_bytes": 38074,
+      "source_name": "pv_nomination_gerant.docx"
+    },
+    {
+      "archive_path": "statuts_selas_multi.docx",
+      "format": "docx",
+      "sha256": "53922082d743ff1f573c8937133c8ed89edb1882ab05cda6fab91624c18f3205",
+      "size_bytes": 52107,
+      "source_name": "statuts_selas_multi.docx"
+    }
+  ],
+  "formats": [
+    "docx"
+  ],
+  "zip_name": "dossier_generation.zip"
+}
