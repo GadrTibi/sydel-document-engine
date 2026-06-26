@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from datetime import date
+from datetime import date, timedelta
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from pathlib import Path
 
@@ -46,6 +46,7 @@ from sydel_doc_engine.front_app.field_derivations import (
     accentuate_french_months,
     calculate_nominal_value,
     derive_gender_from_civilite,
+    format_french_date,
     format_grouped_numeric_value,
     format_numeric_value,
     matrimonial_status_value,
@@ -959,6 +960,24 @@ def _add_years(value: date, years: int) -> date:
         return value.replace(year=value.year + years, day=28)
 
 
+def _add_months(value: date, months: int) -> date:
+    """Ajoute `months` mois a une date en clampant le jour de fin de mois.
+
+    Sert au prefill « date limite de realisation = date des actes + 6 mois »
+    (FA5, Albane lot Formulaire). Le 31 mars + 1 mois -> 30 avril (jour clampe au
+    dernier jour du mois cible), jamais de date invalide / de crash.
+    """
+    total = value.month - 1 + months
+    year = value.year + total // 12
+    month = total % 12 + 1
+    # Dernier jour du mois cible (mois suivant - 1 jour).
+    if month == 12:
+        last_day = 31
+    else:
+        last_day = (date(year, month + 1, 1) - timedelta(days=1)).day
+    return value.replace(year=year, month=month, day=min(value.day, last_day))
+
+
 def _seed_default(key: str, default: object) -> None:
     if key not in st.session_state:
         st.session_state[key] = default
@@ -970,6 +989,13 @@ def _seed_default(key: str, default: object) -> None:
 # Pose par _render_cession_form / _render_scm_cession_form au debut de chaque
 # rendu (Streamlit = mono-thread par session, sans course).
 _CESSION_PREFIX = "selarl"
+
+# FA4 (Albane, Lot Formulaire) : la majoration des intérêts de retard du crédit-vendeur
+# est FIXE (« il n'y a pas de variable à mettre, reprendre ce qu'il y avait dans le
+# modèle »). Le modèle source médical rend « majoré de [majoration_interet_retard]
+# points » avec la valeur 2 (cf. scénario SELARL `majoration_interet_retard="2"` et le
+# modèle SELARL « majoré de 2 points »). Plus aucun champ de saisie.
+CREDIT_VENDEUR_MAJORATION_FIXE = "2"
 
 
 def _cession_text(
@@ -1246,10 +1272,23 @@ def _render_cession_form(  # noqa: C901
                     "nom": conjoint_nom,
                 },
             }
+        # FB1 (Albane, Lot Formulaire) : « né le ... à Lyon (France) » — la mention entre
+        # parenthèses après la ville de naissance doit être le DÉPARTEMENT (« 75 »), pas
+        # « France ». L'ACTE médical/dentaire utilise le token [departement_naissance_vendeur]
+        # (déjà correct, « 69 »), mais le COMPROMIS médical rend
+        # « [ville_naissance_vendeur] ([pays_naissance_vendeur]) » : c'est le token PAYS qui
+        # s'affiche dans la parenthèse, d'où le « (France) ». On câble donc le DÉPARTEMENT
+        # saisi dans `pays_naissance` (fallback « France » si aucun département connu) ->
+        # le compromis affiche le département comme l'acte. Le token pays ne sert qu'à cette
+        # parenthèse de lieu de naissance (la nationalité a son propre token), donc aucun
+        # autre rendu n'est touché. S'applique SELARL et SELAS (même intention partout).
+        _departement_naissance = str(
+            vendeur_payload.get("departement_naissance") or ""
+        ).strip()
         vendeur_payload.update(
             {
                 "cp_naissance": "",
-                "pays_naissance": "France",
+                "pays_naissance": _departement_naissance or "France",
                 "numero_siren": siren,
                 "ordre_departemental": str(ordre.get("departement_ordre") or ""),
             }
@@ -1584,21 +1623,33 @@ def _render_cession_form(  # noqa: C901
         # O24-14 : en SELAS le compromis est produit en plus de l'acte -> on expose ses
         # champs propres (prêt) même si l'étape affichée est 'acte'.
         if etape == "compromis" or prefix == "selas":
+            # Lot Formulaire (Albane) — préremplissages déterministes du prêt :
+            #  FA1 « montant du prêt (compromis) = prix de cession » -> défaut = prix total
+            #       saisi plus haut (auto, modifiable). On (re)seede tant que l'utilisateur
+            #       n'a pas saisi de montant propre : le champ SUIT le prix de cession.
+            #  FA2 « taux du prêt : toujours mettre 5,5 % » -> défaut 5,5 %.
+            #  FA3 « durée du prêt : toujours mettre 10 ans » -> défaut 10 ans.
+            # Tous restent éditables (_cession_text). Le prix vient du bloc Prix rendu
+            # juste au-dessus (prix_total), donc disponible ici.
+            montant_key = f"{_CESSION_PREFIX}_cession_financement_pret_montant"
+            if not str(st.session_state.get(montant_key) or "").strip() and prix_total:
+                st.session_state[montant_key] = prix_total
             col_d, col_e, col_f = st.columns(3)
             pret_payload = {
                 "montant": _format_montant(
                     _cession_text(
                         col_d, "Montant du pret (compromis)",
-                        section="financement", field="pret_montant", default="",
+                        section="financement", field="pret_montant",
+                        default=prix_total,
                     )
                 ),
                 "taux": _cession_text(
                     col_e, "Taux du pret",
-                    section="financement", field="pret_taux", default="",
+                    section="financement", field="pret_taux", default="5,5 %",
                 ),
                 "duree": _cession_text(
                     col_f, "Duree du pret",
-                    section="financement", field="pret_duree", default="",
+                    section="financement", field="pret_duree", default="10 ans",
                 ),
             }
         credit_payload: dict[str, object] | None = None
@@ -1615,7 +1666,7 @@ def _render_cession_form(  # noqa: C901
                 ),
             )
             if credit_actif:
-                col_g, col_h, col_i, col_j = st.columns(4)
+                col_g, col_h, col_i = st.columns(3)
                 credit_payload = {
                     "actif": True,
                     "montant": _format_montant(
@@ -1632,10 +1683,13 @@ def _render_cession_form(  # noqa: C901
                         col_i, "Taux", section="financement",
                         field="credit_taux", default="",
                     ),
-                    "majoration_interet_retard": _cession_text(
-                        col_j, "Majoration interet de retard", section="financement",
-                        field="credit_majoration", default="",
-                    ),
+                    # FA4 (Albane, Lot Formulaire) : « majoration intérêts de retard :
+                    # c'est fixe, il n'y a pas de variable à mettre, reprendre ce qu'il y
+                    # avait dans le modèle ». On RETIRE la saisie : la valeur du MODÈLE
+                    # SOURCE médical (« majoré de 2 points », cf. scénario SELARL
+                    # majoration_interet_retard="2") est figée ici. Aligne SELARL/SELAS
+                    # (même modèle, même valeur).
+                    "majoration_interet_retard": CREDIT_VENDEUR_MAJORATION_FIXE,
                 }
             scm_actif_key = f"{_CESSION_PREFIX}_cession_scm_clause_actif"
             _seed_default(scm_actif_key, False)
@@ -1714,6 +1768,20 @@ def _render_cession_form(  # noqa: C901
 
     date_limite_realisation = ""
     if etape == "compromis" or prefix == "selas":  # O24-14 : compromis produit aussi en SELAS
+        # FA5 (Albane, Lot Formulaire) : « date limite de la réalisation : par défaut à
+        # +6 mois de la date des actes ». On préremplit la date limite = date de
+        # signature (date des actes, `generation["signature_date"]`) + 6 mois, tant que
+        # l'utilisateur n'a pas saisi sa propre valeur. Modifiable.
+        # FB3 (même retour) : le bug « 01/01//2027 » (double barre) venait d'un format
+        # douteux ; on formate ici la date dérivée via `format_french_date` (« %d/%m/%Y »
+        # propre, jamais de double slash). La saisie reste libre (JJ/MM/AAAA).
+        date_limite_key = f"{_CESSION_PREFIX}_cession_meta_date_limite"
+        if not str(st.session_state.get(date_limite_key) or "").strip():
+            _date_actes = generation.get("signature_date")
+            if isinstance(_date_actes, date):
+                st.session_state[date_limite_key] = format_french_date(
+                    _add_months(_date_actes, 6)
+                )
         date_limite_realisation = _cession_date(
             st, "Date limite de realisation (JJ/MM/AAAA)",
             section="meta", field="date_limite",
@@ -1987,9 +2055,19 @@ def _render_scm_cession_form(
             col_c, "Prix global", section="scm_prix", field="global",
             default=str(prix.get("global") or ""),
         )
-        prix["global_lettres"] = _cession_text(
-            st, "Prix global (lettres)", section="scm_prix", field="global_lettres",
-            default=str(prix.get("global_lettres") or ""),
+        # FA7 (Albane, Lot Formulaire) : « SCM / prix : en mettant le prix global est-ce
+        # qu'il peut se mettre d'office en lettre ? » -> le prix global en lettres est
+        # DÉRIVÉ AUTOMATIQUEMENT du prix global saisi (même helper number_words_from_value
+        # que la valeur nominale calculée), affiché en champ désactivé. Repli sur la valeur
+        # de base si le prix n'est pas un montant exploitable (jamais de clé requise vidée).
+        prix["global_lettres"] = (
+            number_words_from_value(prix.get("global"))
+            or str(prix.get("global_lettres") or "")
+        )
+        copyable_text_input(
+            st, "Prix global en lettres (automatique)",
+            value=prix["global_lettres"],
+            disabled=True,
         )
     # Albane 2026-06-26 §S2 : le prix UNITAIRE par part doit etre RECALCULE = prix global /
     # nombre de parts cedees (chiffre + lettres), au lieu de rester fige a la valeur fixture
