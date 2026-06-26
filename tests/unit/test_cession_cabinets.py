@@ -1071,17 +1071,19 @@ def test_compromis_signatories_cedant_then_societe(
         (CompromisCessionCabinetMedicalGenerator(), "medical"),
     ],
 )
-def test_compromis_pages_count_is_eight_not_twenty(
+def test_compromis_pages_count_is_seven_not_twenty(
     generator,
     type_cabinet: str,
     tmp_path: Path,
 ) -> None:
-    # 9.9 : le compromis fige « huit pages » (longueur reelle ~8) et non plus
-    # le placeholder « vingt » herite de la constante front.
+    # CE4 (Albane 2026-06-26) : le compromis fige « sept pages » (defaut demande,
+    # l'auto-comptage reel etant impossible sans moteur de pagination) et non plus
+    # « huit » (retour 9.9 supersede) ni le placeholder « vingt » du front.
     ctx = _context(etape="compromis", type_cabinet=type_cabinet)
     text = _docx_text(generator.generate(ctx, tmp_path))
 
-    assert "Sur huit pages." in text
+    assert "Sur sept pages." in text
+    assert "Sur huit pages." not in text
     assert "vingt pages" not in text
 
 
@@ -1091,3 +1093,237 @@ def test_acte_pages_count_unchanged(tmp_path: Path) -> None:
     text = _docx_text(ActeCessionCabinetMedicalGenerator().generate(ctx, tmp_path))
 
     assert "Sur vingt pages." in text
+
+
+# ---------------------------------------------------------------------------
+# Retours Albane 2026-06-26 — LOT « Compromis + Acte de cession » (CE1..CE8)
+# ---------------------------------------------------------------------------
+
+
+def _bold_run_texts(path: Path) -> list[str]:
+    document = Document(path)
+    texts: list[str] = []
+
+    def _scan(paragraphs) -> None:
+        for paragraph in paragraphs:
+            for run in paragraph.runs:
+                if run.bold and run.text.strip():
+                    texts.append(run.text)
+
+    _scan(document.paragraphs)
+    for table in document.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                _scan(cell.paragraphs)
+    return texts
+
+
+def _identity_paragraph(path: Path) -> tuple[str, list[tuple[str, bool]]]:
+    """1er paragraphe d'identite vendeur (« <civ> <prenom> <nom>, ... né... »)."""
+    document = Document(path)
+    for paragraph in document.paragraphs:
+        t = paragraph.text
+        if t.startswith("Docteur Jean Durand") and ("né" in t or "née" in t):
+            runs = [(r.text, bool(r.bold)) for r in paragraph.runs if r.text.strip()]
+            return t, runs
+    raise AssertionError("paragraphe d'identite vendeur introuvable")
+
+
+@pytest.mark.parametrize(
+    ("generator", "etape", "type_cabinet"),
+    [
+        (ActeCessionCabinetMedicalGenerator(), "acte", "medical"),
+        (CompromisCessionCabinetMedicalGenerator(), "compromis", "medical"),
+        (ActeCessionCabinetDentaireGenerator(), "acte", "dentaire"),
+        (CompromisCessionCabinetDentaireGenerator(), "compromis", "dentaire"),
+    ],
+)
+def test_ce1_only_vendeur_name_is_bold(generator, etape, type_cabinet, tmp_path: Path) -> None:
+    # CE1 : dans l'identite du vendeur, SEUL le nom (« Durand ») est en gras ;
+    # la civilite/prenom (« Docteur », « Jean ») ne le sont PAS.
+    salaries = (
+        [CessionSalarie(civilite_affichage="Madame", prenom="Lea", nom="Petit")]
+        if (etape == "acte" and type_cabinet == "dentaire")
+        else None
+    )
+    ctx = _context(etape=etape, type_cabinet=type_cabinet, salaries=salaries)
+    out = generator.generate(ctx, tmp_path)
+
+    _, runs = _identity_paragraph(out)
+    # Le nom « Durand » est porte par un run gras.
+    assert any(is_bold and "Durand" in text for text, is_bold in runs), runs
+    # Aucune civilite/prenom en gras dans la zone d'identite.
+    for text, is_bold in runs:
+        if is_bold:
+            assert "Docteur" not in text, f"civilite ne doit pas etre en gras : {text!r}"
+            assert "Jean" not in text, f"prenom ne doit pas etre en gras : {text!r}"
+
+
+@pytest.mark.parametrize(
+    ("generator", "etape", "type_cabinet"),
+    [
+        (ActeCessionCabinetMedicalGenerator(), "acte", "medical"),
+        (CompromisCessionCabinetMedicalGenerator(), "compromis", "medical"),
+        # CE2 etendu aux DEUX variants DENTAIRES (Akainu, M3 — siloing regle 68 Q4) :
+        # le fix CE2 (plage de dates + « € » apres resultat) doit valoir sur le dentaire
+        # exactement comme sur le medical, et les 3 resultats doivent etre DISTINCTS
+        # (B2 : le compromis dentaire dupliquait [resultat_1] sur la ligne 2 -> 80 000).
+        (ActeCessionCabinetDentaireGenerator(), "acte", "dentaire"),
+        (CompromisCessionCabinetDentaireGenerator(), "compromis", "dentaire"),
+    ],
+)
+def test_ce2_exercices_date_range_and_euro_on_resultat(
+    generator, etape, type_cabinet, tmp_path: Path
+) -> None:
+    # CE2 : les exercices saisis en annee seule sont rendus en PLAGE de dates,
+    # et le sigle « € » suit les montants de RESULTAT. Verifie sur les 4 variants
+    # (medical ET dentaire, acte ET compromis) — le dentaire ne doit pas etre silote.
+    salaries = (
+        [CessionSalarie(civilite_affichage="Madame", prenom="Lea", nom="Petit")]
+        if (etape == "acte" and type_cabinet == "dentaire")
+        else None
+    )
+    ctx = _context(etape=etape, type_cabinet=type_cabinet, salaries=salaries)
+    text = _docx_text(generator.generate(ctx, tmp_path))
+
+    # Plages de dates : une SEULE par ligne d'exercice (plus de texte fige parasite
+    # « Du 01/01/2023 ... du 01/0 » colle devant le token sur l'acte dentaire).
+    assert "Du 01/01/2023 au 31/12/2023" in text
+    assert "Du 01/01/2024 au 31/12/2024" in text
+    assert "Du 01/01/2025 au 31/12/2025" in text
+    assert text.count("Du 01/01/2023 au 31/12/2023") == 1
+    assert text.count("Du 01/01/2024 au 31/12/2024") == 1
+    assert text.count("Du 01/01/2025 au 31/12/2025") == 1
+    # Resultats avec euro, et les 3 valeurs DISTINCTES (anti-duplication B2).
+    assert "80 000 €" in text
+    assert "85 000 €" in text
+    assert "90 000 €" in text
+    _assert_no_residual_tokens(text)
+
+
+@pytest.mark.parametrize(
+    ("generator", "type_cabinet"),
+    [
+        (CompromisCessionCabinetMedicalGenerator(), "medical"),
+        (CompromisCessionCabinetDentaireGenerator(), "dentaire"),
+    ],
+)
+def test_ce3_promesse_prefixes_le_docteur(generator, type_cabinet, tmp_path: Path) -> None:
+    # CE3 : dans la section III (promesse), les 2 occurrences « Docteur ... » sont
+    # precedees de « le » -> « le Docteur ... ».
+    ctx = _context(etape="compromis", type_cabinet=type_cabinet)
+    text = _docx_text(generator.generate(ctx, tmp_path))
+
+    assert "Par les présentes, le Docteur Jean Durand" in text
+    assert "s’oblige envers le Docteur Jean Durand" in text
+    # Pas de « Docteur » nu (sans « le ») a ces deux emplacements.
+    assert "Par les présentes, Docteur Jean" not in text
+    assert "s’oblige envers Docteur Jean" not in text
+
+
+def test_ce3_non_docteur_civilite_untouched(tmp_path: Path) -> None:
+    # CE3 borne : si la civilite n'est PAS « Docteur » (ex. « Madame »), on ne
+    # prefixe pas « le » (verbatim « lorsqu'il y a docteur »).
+    ctx = _context(etape="compromis")
+    vendeur = ctx.cession.vendeur.model_copy(update={"civilite_affichage": "Madame"})
+    ctx = _with_cession_updates(ctx, vendeur=vendeur)
+    text = _docx_text(CompromisCessionCabinetMedicalGenerator().generate(ctx, tmp_path))
+
+    assert "Par les présentes, Madame Jean Durand" in text
+    assert "le Madame" not in text
+
+
+@pytest.mark.parametrize(
+    ("generator", "type_cabinet"),
+    [
+        (CompromisCessionCabinetMedicalGenerator(), "medical"),
+        (CompromisCessionCabinetDentaireGenerator(), "dentaire"),
+    ],
+)
+def test_ce4_compromis_default_seven_pages(generator, type_cabinet, tmp_path: Path) -> None:
+    # CE4 : le compromis affiche « sept pages » par defaut (et non « huit »).
+    ctx = _context(etape="compromis", type_cabinet=type_cabinet)
+    text = _docx_text(generator.generate(ctx, tmp_path))
+
+    assert "Sur sept pages." in text
+    assert "huit pages" not in text
+
+
+def test_ce5_credit_vendeur_active_removes_redaction_note(tmp_path: Path) -> None:
+    # CE5 : credit-vendeur actif -> la mention de redaction « Ajouter en cas de CV : »
+    # est retiree, la clause credit-vendeur restant presente.
+    ctx = _context(credit_vendeur=True)
+    text = _docx_text(ActeCessionCabinetMedicalGenerator().generate(ctx, tmp_path))
+
+    assert "Ajouter en cas de CV" not in text
+    assert "crédit-vendeur à hauteur de 60 000" in text
+    _assert_no_residual_tokens(text)
+
+
+def test_ce6_contrats_de_travail_highlighted(tmp_path: Path) -> None:
+    # CE6 : le passage « ... contrats de travail de » de l'acte medical est
+    # surligne (zone a completer si necessaire).
+    ctx = _context(credit_vendeur=True)
+    out = ActeCessionCabinetMedicalGenerator().generate(ctx, tmp_path)
+
+    highlighted = _docx_highlighted_run_texts(out)
+    assert any("contrats de travail" in t for t in highlighted)
+
+
+def test_ce7_no_extra_blank_after_affirmation_sincerite(tmp_path: Path) -> None:
+    # CE7 : un seul paragraphe vide entre l'affirmation de sincerite et la section
+    # suivante (plus d'espaces surnumeraires).
+    ctx = _context(credit_vendeur=True)
+    out = ActeCessionCabinetMedicalGenerator().generate(ctx, tmp_path)
+
+    paras = _docx_paragraph_texts(out)
+    prefix = "Les parties affirment sous les peines"
+    anchor = next(i for i, t in enumerate(paras) if t.strip().startswith(prefix))
+    empties = 0
+    j = anchor + 1
+    while j < len(paras) and not paras[j].strip():
+        empties += 1
+        j += 1
+    assert empties == 1, f"attendu 1 paragraphe vide, trouve {empties}"
+
+
+def test_ce8_point8_scm_clause_when_scm_active(tmp_path: Path) -> None:
+    # CE8 : avec une SCM, le point 8 porte la clause « De céder l'intégralité des
+    # parts qu'il détient de la SCM <denomination> » et le « De maintenir le cabinet
+    # médical dans son état actuel... » est RETIRE.
+    ctx = _context(credit_vendeur=True)
+    ctx = _with_cession_updates(
+        ctx, scm=CessionScm(actif=True, nb_parts_a_ceder="10", denomination="CMS DU PARC")
+    )
+    text = _docx_text(ActeCessionCabinetMedicalGenerator().generate(ctx, tmp_path))
+
+    assert "De céder l’intégralité des parts qu’il détient de la SCM CMS DU PARC" in text
+    assert "De maintenir le cabinet médical dans son état actuel" not in text
+    # Ancien wording (nombre de parts) disparu.
+    assert "parts sociales lui appartenant au sein de la Société civile de Moyens" not in text
+    _assert_no_residual_tokens(text)
+
+
+def test_ce8_without_scm_keeps_maintenir_and_drops_scm_clause(tmp_path: Path) -> None:
+    # CE8 borne : sans SCM, la clause SCM (point 8) est supprimee et le « De
+    # maintenir le cabinet médical... » (point 9) reste.
+    ctx = _context(credit_vendeur=True)
+    ctx = _with_cession_updates(ctx, scm=CessionScm(actif=False, nb_parts_a_ceder=None))
+    text = _docx_text(ActeCessionCabinetMedicalGenerator().generate(ctx, tmp_path))
+
+    assert "détient de la SCM" not in text
+    assert "De maintenir le cabinet médical dans son état actuel" in text
+    _assert_no_residual_tokens(text)
+
+
+def test_ce8_scm_denomination_empty_renders_blank_zone(tmp_path: Path) -> None:
+    # CE8 : SCM active sans denomination -> zone vide a completer a la main, jamais
+    # bloquant ni token residuel.
+    ctx = _context(credit_vendeur=True)
+    ctx = _with_cession_updates(
+        ctx, scm=CessionScm(actif=True, nb_parts_a_ceder="10", denomination=None)
+    )
+    text = _docx_text(ActeCessionCabinetMedicalGenerator().generate(ctx, tmp_path))
+
+    assert "De céder l’intégralité des parts qu’il détient de la SCM" in text
+    _assert_no_residual_tokens(text)

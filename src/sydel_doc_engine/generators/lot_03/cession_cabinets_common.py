@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Literal
 
 from docx import Document
+from docx.enum.text import WD_COLOR_INDEX
 from docx.oxml.ns import qn
 
 from sydel_doc_engine.domain.enums import Gender
@@ -57,15 +58,18 @@ SUPPORTED_ORIGINE_MODES = {ORIGINE_MODE_CREE, ORIGINE_MODE_ACHETE}
 # apports en nature inexistants. Utilisee pour la reprise des salaries (0/1/N).
 NEANT = "Néant."
 
-# Nombre de pages (en lettres) du modele, par variante (retours 9.9).
+# Nombre de pages (en lettres) du modele, par variante (retours 9.9 puis CE4).
 # Le front fournissait une constante unique « vingt » pour TOUS les docs de
-# cession, fausse pour le compromis (~8 pages). python-docx n'ayant pas de
-# moteur de pagination, on ne peut PAS compter les pages a l'execution : on fige
-# donc la longueur connue de chaque modele, source deterministe et fidele. Une
-# variante non mappee retombe sur la valeur fournie par le contexte.
+# cession, fausse pour le compromis. python-docx n'ayant pas de moteur de
+# pagination, on ne peut PAS compter les pages a l'execution : on fige donc la
+# longueur connue de chaque modele, source deterministe et fidele. Une variante
+# non mappee retombe sur la valeur fournie par le contexte.
+# CE4 (Albane 2026-06-26) : le compromis fait en pratique SEPT pages (et non huit) ;
+# le defaut est donc « sept » (l'auto-comptage reel est impossible sans moteur de
+# pagination -> flag, cf. retour). Supersede la valeur « huit » du retour 9.9.
 _PAGES_LETTRES_BY_VARIANT: dict[tuple[str, str], str] = {
-    (COMPROMIS, DENTAIRE): "huit",
-    (COMPROMIS, MEDICAL): "huit",
+    (COMPROMIS, DENTAIRE): "sept",
+    (COMPROMIS, MEDICAL): "sept",
 }
 
 # Dossier des modeles Word tokenises, resolu independamment du cwd.
@@ -85,6 +89,9 @@ _MODEL_GLOB_BY_VARIANT: dict[tuple[str, str], str] = {
 
 _ISO_DATE_RE = re.compile(r"^(\d{4})-(\d{2})-(\d{2})$")
 _TOKEN_RE = re.compile(r"\[[^\]\[]+\]")
+# CE2 (Albane 2026-06-26) : une periode d'exercice saisie en ANNEE SEULE (« 2023 »)
+# est rendue en PLAGE de dates « Du 01/01/2023 au 31/12/2023 » (format du modele).
+_YEAR_ONLY_RE = re.compile(r"^\s*(\d{4})\s*$")
 
 
 @dataclass(frozen=True)
@@ -113,7 +120,26 @@ def generate_cession_cabinet_docx(
         paragraph_overrides=_build_paragraph_overrides(ctx, variant),
         segment_overrides=_build_segment_overrides(ctx),
         line_fixes=_build_line_fixes(ctx, variant),
+        highlight_anchors=_build_highlight_anchors(variant),
     )
+
+
+# CE6 (Albane 2026-06-26) : passages a SURLIGNER (jaune) pour signaler une zone a
+# completer a la main. Ces passages sont STATIQUES (sans token), donc le nettoyage
+# anti-surlignage du modele les de-surlignerait ; on RE-POSE donc le surlignage en
+# CODE, APRES le nettoyage. La cle = sous-chaine litterale d'un run cible.
+_CONTRATS_TRAVAIL_ANCHOR = "contrats de travail"
+
+
+def _build_highlight_anchors(variant: CessionCabinetVariant) -> list[str]:
+    """Sous-chaines de runs a re-surligner apres remplissage (CE6).
+
+    Acte medical : « ... les contrats de travail de » (point a completer si
+    necessaire). Aucun autre variant concerne.
+    """
+    if variant.etape == ACTE and variant.type_cabinet == MEDICAL:
+        return [_CONTRATS_TRAVAIL_ANCHOR]
+    return []
 
 
 # Titre civil (M./Mme) derive du genre, pour les emplacements ou un titre
@@ -179,6 +205,31 @@ def _build_line_fixes(
                 anchor="Représentée par s",
                 pattern=re.compile(r"(Représentée par s(?:on|a) [^,]+, ).+?(, domicilié)"),
                 replacement=rf"\g<1>{rep_identity.replace(chr(92), chr(92) * 2)}\g<2>",
+            )
+        )
+
+    # --- CE3 (Albane 2026-06-26) : section III « PROMESSE SYNALLAGMATIQUE » ---
+    # Aux DEUX endroits ou le vendeur est nomme « Docteur ... », inserer « le » ->
+    # « le Docteur ... ». Conditionne a une civilite vendeur EXACTEMENT « Docteur »
+    # (verbatim « lorsqu'il y a docteur »). On ancre les fragments litteraux du
+    # modele pour ne toucher QUE ces deux phrases (pas les autres occurrences du
+    # document). Les fixes sont appliques APRES remplissage des tokens, donc le
+    # texte porte deja « Docteur » a la place de [civilite_vendeur].
+    vendeur = cession.vendeur or CessionVendeur()
+    civilite = (vendeur.civilite_affichage or "").strip()
+    if civilite == "Docteur":
+        fixes.append(
+            _LineFix(
+                anchor="Par les présentes, Docteur",
+                pattern=re.compile(r"Par les présentes, Docteur"),
+                replacement="Par les présentes, le Docteur",
+            )
+        )
+        fixes.append(
+            _LineFix(
+                anchor="s’oblige envers Docteur",
+                pattern=re.compile(r"s’oblige envers Docteur"),
+                replacement="s’oblige envers le Docteur",
             )
         )
 
@@ -299,6 +350,16 @@ def _build_segment_overrides(ctx: DocumentGenerationContext) -> dict[str, str]:
         overrides.update(
             {segment: f"{situation}." for segment in _VENDEUR_MARITAL_SEGMENTS}
         )
+    # CE5 (Albane 2026-06-26) : la clause credit-vendeur de l'acte medical est
+    # prefixee par l'instruction de redaction « Ajouter en cas de CV : ». Quand le
+    # credit-vendeur est ACTIF (clause conservee et remplie), cette mention parasite
+    # est retiree du texte. Le segment n'existe QUE dans l'acte medical -> inoffensif
+    # pour les autres modeles. Credit-vendeur inactif -> on ne touche pas (la clause
+    # reste, mention comprise, comme zone de redaction a la main).
+    financement = cession.financement or CessionFinancement()
+    credit_vendeur = financement.credit_vendeur or CessionCreditVendeur()
+    if credit_vendeur.actif:
+        overrides["Ajouter en cas de CV : "] = ""
     return overrides
 
 
@@ -335,10 +396,18 @@ def _build_paragraph_overrides(
     if variant.etape == ACTE and variant.type_cabinet == DENTAIRE and not cession.salaries:
         overrides["[clause_reprise_salaries]"] = None
     if variant.etape == ACTE and variant.type_cabinet == MEDICAL:
-        # Pas de reprise de parts SCM -> la clause « De ceder les [...] parts
-        # sociales ... SCM » (paragraphe unique, ancre par token) est supprimee.
-        if cession.scm is None or not cession.scm.actif:
-            overrides["[nb_parts_scm_a_ceder]"] = None
+        scm_actif = cession.scm is not None and cession.scm.actif
+        if not scm_actif:
+            # Pas de reprise de parts SCM -> la clause « De ceder l'integralite des
+            # parts ... SCM [denomination_scm] » (point 8, paragraphe ancre par
+            # token) est supprimee.
+            overrides["[denomination_scm]"] = None
+        else:
+            # CE8 (Albane 2026-06-26) : quand il y a une SCM, le point 8 porte la
+            # clause SCM (cf. modele) et le « De maintenir le cabinet medical dans
+            # son etat actuel... » (point 9) est RETIRE. Ancre = fragment litteral
+            # du paragraphe (statique, present avant remplissage des tokens).
+            overrides["De maintenir le cabinet médical dans son état actuel"] = None
     return overrides
 
 
@@ -395,6 +464,7 @@ def render_cession_from_template(  # noqa: C901
     paragraph_overrides: dict[str, str | None] | None = None,
     segment_overrides: dict[str, str] | None = None,
     line_fixes: list[_LineFix] | None = None,
+    highlight_anchors: list[str] | None = None,
 ) -> Path:
     """Charge le modele tokenise et remplace chaque token [xxx] run par run.
 
@@ -466,6 +536,12 @@ def render_cession_from_template(  # noqa: C901
     if line_fixes:
         for paragraph in _iter_all_paragraphs(document):
             _apply_line_fixes_to_paragraph(paragraph, line_fixes)
+
+    if highlight_anchors:
+        # CE6 : re-poser le surlignage APRES le nettoyage anti-surlignage, sur les
+        # runs statiques cibles (zones a completer a la main).
+        for paragraph in _iter_all_paragraphs(document):
+            _apply_highlight_anchors_to_paragraph(paragraph, highlight_anchors)
 
     residual = _collect_residual_tokens(document)
     if residual:
@@ -574,6 +650,21 @@ def _apply_line_fixes_to_paragraph(paragraph, line_fixes: list[_LineFix]) -> Non
         paragraph.runs[0].text = new_text
         for run in paragraph.runs[1:]:
             run.text = ""
+
+
+def _apply_highlight_anchors_to_paragraph(paragraph, anchors: list[str]) -> None:
+    """Surligne (jaune) les runs d'un paragraphe contenant une ancre (CE6).
+
+    Pour chaque run dont le texte contient l'une des sous-chaines, on pose le
+    surlignage jaune. Applique APRES le nettoyage anti-surlignage, pour les zones
+    statiques a completer a la main.
+    """
+    for run in paragraph.runs:
+        text = run.text
+        if not text.strip():
+            continue
+        if any(anchor in text for anchor in anchors):
+            run.font.highlight_color = WD_COLOR_INDEX.YELLOW
 
 
 def _apply_segment_overrides(
@@ -806,8 +897,13 @@ def _build_cession_replacements(
     put_opt("[duree_pret]", pret.duree)
 
     # --- SCM (acte medical) ---
+    # CE8 (Albane 2026-06-26) : le point 8 cede « l'integralite des parts qu'il
+    # detient de la SCM <denomination> » (le nombre de parts n'est plus rendu). La
+    # denomination vide laisse une zone a completer a la main (put_opt), jamais
+    # bloquant. La clause entiere est supprimee si la SCM est inactive
+    # (cf. _build_paragraph_overrides).
     if cession.scm is not None:
-        put("[nb_parts_scm_a_ceder]", cession.scm.nb_parts_a_ceder)
+        put_opt("[denomination_scm]", cession.scm.denomination)
 
     # --- Conditions suspensives (compromis) ---
     put_opt("[date_realisation_limite]", _french_date(cession.date_limite_realisation))
@@ -838,7 +934,7 @@ def _build_cession_replacements(
     for index in (0, 1, 2):
         if index < len(cession.exercices):
             exercice = cession.exercices[index]
-            put_opt(f"[exercice_{index + 1}]", exercice.periode)
+            put_opt(f"[exercice_{index + 1}]", _exercice_periode(exercice.periode))
             put_opt(f"[chiffre_affaires_{index + 1}]", exercice.chiffre_affaires)
             put_opt(f"[resultat_{index + 1}]", exercice.resultat)
 
@@ -915,6 +1011,22 @@ def _french_date(value: date | str | None) -> str | None:
             return text
         return f"{parsed.day:02d} {FRENCH_MONTHS[parsed.month]} {parsed.year}"
     return text
+
+
+def _exercice_periode(periode: str | None) -> str | None:
+    """Periode d'un exercice comptable (CE2).
+
+    Une ANNEE SEULE (« 2023 ») est rendue en PLAGE « Du 01/01/2023 au 31/12/2023 »,
+    comme le modele dentaire source. Toute autre saisie (deja une plage, libelle
+    libre) ressort telle quelle. None -> None (zone a completer a la main).
+    """
+    if periode is None:
+        return None
+    match = _YEAR_ONLY_RE.match(periode)
+    if match is None:
+        return periode
+    annee = match.group(1)
+    return f"Du 01/01/{annee} au 31/12/{annee}"
 
 
 def _nombre_pages_lettres(

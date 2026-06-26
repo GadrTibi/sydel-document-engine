@@ -272,6 +272,10 @@ class CessionPrix(BaseModel):
 class CessionScm(BaseModel):
     actif: bool = False
     nb_parts_a_ceder: str | None = None
+    # CE8 (Albane 2026-06-26) : le point 8 de l'acte medical cede « l'integralite
+    # des parts qu'il detient de la SCM <denomination> ». La denomination de la SCM
+    # est portee ici ; vide -> zone a completer a la main (jamais bloquant).
+    denomination: str | None = None
 
 
 class CessionSalarie(BaseModel):
