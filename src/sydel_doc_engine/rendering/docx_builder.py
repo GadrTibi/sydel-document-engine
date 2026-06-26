@@ -723,6 +723,7 @@ def add_framed_title(
     document: Any,
     lines: Sequence[str],
     *,
+    inner_spacing: bool = False,
     style_profile: SydelDocxStyleProfile = DEFAULT_STYLE_PROFILE,
 ) -> Any:
     table = document.add_table(rows=1, cols=1)
@@ -740,6 +741,12 @@ def add_framed_title(
     )
     paragraph = cell.paragraphs[0]
     paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    # Albane 2026-06-26 §S5 : aerer l'INTERIEUR du cadre-titre (espace avant/apres le texte
+    # dans la cellule). OPT-IN via `inner_spacing` (defaut False) pour rester byte-neutre sur
+    # les 7 autres appelants (procuration, PV, bail...) ; seul l'acte de cession SCM l'active.
+    if inner_spacing:
+        paragraph.paragraph_format.space_before = Pt(style_profile.standard_space_after_pt)
+        paragraph.paragraph_format.space_after = Pt(style_profile.standard_space_after_pt)
     for index, line in enumerate(lines):
         if index:
             paragraph.add_run("\n")

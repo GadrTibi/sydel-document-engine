@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from datetime import date
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from pathlib import Path
 
 import streamlit as st
@@ -832,12 +833,21 @@ def _scm_cedant_overrides(
     return overrides
 
 
-def _scm_cessionnaire_overrides(societe: dict[str, object]) -> dict[str, object]:
+def _scm_cessionnaire_overrides(
+    societe: dict[str, object], *, prefix: str = "selarl"
+) -> dict[str, object]:
     """Description de la SEL cessionnaire (= societe creee) derivee de la fiche societe.
 
     Retour Albane lot 2 §13.3 : le capital / siege / denomination du cessionnaire
     restaient ceux de la fixture (capital 10 000 affiche alors que 1 000 saisi).
-    Valeurs non vides uniquement (preserve le representant deja calcule)."""
+    Valeurs non vides uniquement (preserve le representant deja calcule).
+
+    Retour Albane 2026-06-26 §S1 : en SELAS, la FORME du cessionnaire restait « SELARL »
+    (valeur fixture jamais ecrasee) -> l'acte imprimait « SELARL au capital de … » et
+    « representee par son gerant ». Le generateur lit `cessionnaire.forme_juridique` quand
+    `ctx.structure == 'SELAS'` ; on la peuple ici a partir du `prefix` du sous-formulaire
+    (selas => « SELAS », selarl => inchange, le generateur force « SELARL »). La fonction
+    du representant (« president » en SELAS) est posee dans le bloc representant du form."""
     overrides: dict[str, object] = {}
     denomination = str(societe.get("denomination") or "")
     capital = str(societe.get("capital_social") or "")
@@ -851,6 +861,11 @@ def _scm_cessionnaire_overrides(societe: dict[str, object]) -> dict[str, object]
         overrides["ville_rcs"] = ville_rcs
     if siege:
         overrides["siege"] = {"adresse_affichee": siege}
+    if prefix == "selas":
+        # La SEL cessionnaire EST la SELAS creee : forme reelle « SELAS » (le generateur
+        # n'imprime cette valeur que pour ctx.structure == 'SELAS' ; en SELARL il force
+        # « SELARL » et ignore ce champ, donc le gold SELARL reste byte-identique).
+        overrides["forme_juridique"] = "SELAS"
     return overrides
 
 
@@ -1931,10 +1946,18 @@ def _render_scm_cession_form(
     )
     representant["prenom"] = cedant["prenom"]
     representant["nom"] = cedant["nom"]
+    # Albane 2026-06-26 §S1 : en SELAS, le dirigeant de la SEL cessionnaire est un
+    # « president » (pas un « gerant »). Le generateur lit representant.fonction quand
+    # ctx.structure == 'SELAS' ; en SELARL il force « gerant » et ignore ce champ, donc
+    # le gold SELARL reste byte-identique. Pose ici, a la source du contexte.
+    if prefix == "selas":
+        representant["fonction"] = "président"
     cessionnaire["representant"] = representant
     # §13.3 : la description de la SEL cessionnaire = la societe creee
     # (denomination / capital / siege / RCS), pas les valeurs de la fixture.
-    cessionnaire.update(_scm_cessionnaire_overrides(societe))
+    # Albane §S1 : `prefix` propage la forme reelle (SELAS) pour ecraser la forme
+    # fixture (SELARL) du cessionnaire dans le rendu SELAS.
+    cessionnaire.update(_scm_cessionnaire_overrides(societe, prefix=prefix))
     payload["cessionnaire"] = cessionnaire
 
     parts_cedees = payload.setdefault("parts_cedees", {}) or {}
@@ -1950,6 +1973,13 @@ def _render_scm_cession_form(
         # N4 (Rafael 2026-06-24) : plage des parts cedees auto-derivee (plage du cedant + nb cede,
         # convention « le cedant cede ses dernieres parts ») dans _derive_scm_apres_cession ; plus
         # de saisie manuelle.
+        # Albane 2026-06-26 §S4 : la plage de la fixture (« 151 a 200 » = 50 parts) restait
+        # collee au payload et n'etait jamais re-derivee quand l'utilisateur saisissait un
+        # nombre cede different (20) -> plage incoherente avec le nb. On efface la plage ici
+        # pour FORCER la re-derivation deterministe (dernieres parts du cedant) dans
+        # _derive_scm_apres_cession. La saisie manuelle de la plage reste une nouveaute du
+        # Lot Formulaire (cf. flags).
+        parts_cedees.pop("plage", None)
         col_b.caption(
             "Plage des parts cedees : calculee automatiquement (dernieres parts du cedant)."
         )
@@ -1961,6 +1991,11 @@ def _render_scm_cession_form(
             st, "Prix global (lettres)", section="scm_prix", field="global_lettres",
             default=str(prix.get("global_lettres") or ""),
         )
+    # Albane 2026-06-26 §S2 : le prix UNITAIRE par part doit etre RECALCULE = prix global /
+    # nombre de parts cedees (chiffre + lettres), au lieu de rester fige a la valeur fixture
+    # (« cent (100) »). Ex. 20 EUR pour 20 parts -> « un (1) euro » par part. Derivation
+    # deterministe in-place ; non divisible -> figure decimale francaise (jamais de crash).
+    _derive_scm_prix_unitaire(prix, parts_cedees.get("nb"))
     payload["parts_cedees"] = parts_cedees
     payload["prix"] = prix
 
@@ -1973,6 +2008,11 @@ def _render_scm_cession_form(
     apres = _derive_scm_apres_cession(presents, cedant, cessionnaire, parts_cedees)
     payload["associes_apres_cession"] = [a.model_dump() for a in apres]
     payload["signataires_pv"] = _derive_scm_signataires_pv(presents)
+
+    # Albane 2026-06-26 §S3 : le nombre d'exemplaires de l'acte de cession de parts SCM est
+    # « quatre » (la fixture portait « trois »). Valeur fixe de l'acte, posee a la source du
+    # contexte (le courrier SDE porte deja « 4 exemplaires » par ailleurs).
+    payload["nombre_exemplaires_lettres"] = "quatre"
 
     return ScmCessionContext.model_validate(payload)
 
@@ -2206,6 +2246,46 @@ def _plage_dernieres_parts(plage_initiale: str, nb: int) -> str:
     if nb > (fin - debut + 1):
         return ""
     return f"{fin - nb + 1} a {fin}"
+
+
+def _derive_scm_prix_unitaire(prix: dict[str, object], nb_parts: object) -> None:
+    """Recalcule le prix UNITAIRE par part = prix global / nb de parts cedees (§S2 Albane).
+
+    Le prix global est saisi ; le prix par part doit en DECOULER (ex. 20 EUR pour 20 parts
+    -> « un (1) euro »). On derive in-place `prix['unitaire']` (chiffre) et
+    `prix['unitaire_lettres']` (toutes lettres) via les helpers publics
+    `format_numeric_value` / `number_words_from_value` (memes que la valeur nominale).
+    Divisible -> entier (« 1 » / « un ») ; non divisible -> figure decimale francaise
+    (« 1,5 », lettres = figure, la mise en lettres monetaire decimale n'etant pas ratifiee).
+    Donnees absentes / nb == 0 : on NE touche a rien (jamais de crash, jamais de cle videe)."""
+    global_raw = str(prix.get("global") or "").strip()
+    if not global_raw:
+        return
+    try:
+        nb = int(nb_parts) if nb_parts is not None else 0
+    except (TypeError, ValueError):
+        nb = 0
+    if nb <= 0:
+        return
+    cleaned = re.sub(r"[^0-9,.\-]", "", global_raw.replace(" ", "").replace(",", "."))
+    if not cleaned:
+        return
+    try:
+        global_amount = Decimal(cleaned)
+    except InvalidOperation:
+        return
+    unitaire = global_amount / Decimal(nb)
+    # M2 (Akainu 2026-06-26) : arrondir au centime — sinon un global non divisible (ex
+    # 100/3) imprimerait 28 decimales brutes sur l'acte. Un divisible exact redevient un
+    # entier propre (« 1 », pas « 1,00 ») pour la mise en lettres.
+    unitaire = unitaire.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    if unitaire == unitaire.to_integral_value():
+        unitaire = unitaire.to_integral_value()
+    figure = format_numeric_value(unitaire).replace(".", ",")
+    prix["unitaire"] = figure
+    # number_words_from_value rend les lettres pour un entier (« un »), la figure pour un
+    # decimal (coherent avec calculate_nominal_value / number_words_from_value).
+    prix["unitaire_lettres"] = number_words_from_value(figure) or figure
 
 
 def _derive_scm_signataires_pv(presents: list[ScmCessionAssocie]) -> list[str]:

@@ -659,3 +659,217 @@ def test_courrier_sde_destinataire_block_for_selarl_with_placeholders(tmp_path: 
     assert len(fillable) == 4
     # R22b-01 : aucun surlignage sur ces champs.
     assert all(all(r.font.highlight_color is None for r in p.runs) for p in fillable)
+
+
+# ==========================================================================
+# Albane 2026-06-26 — LOT acte de cession de parts SCM (S1..S12).
+# Tests ADVERSARIAUX : verifient le DEFAUT corrige (pas seulement la presence),
+# avec preuve de non-regression SELARL pour les correctifs partages.
+# ==========================================================================
+
+
+def test_s1_cessionnaire_overrides_selas_forme(tmp_path: Path) -> None:
+    # S1 : « la SELAS il y a écrit ... SELARL au lieu de SELAS ». Le helper front qui
+    # decrit la SEL cessionnaire DOIT poser forme_juridique='SELAS' en prefix='selas',
+    # et NE PAS la poser en prefix='selarl' (le generateur force 'SELARL', gold intact).
+    from sydel_doc_engine.front_app.shell import _scm_cessionnaire_overrides
+
+    societe = {"denomination": "SELAS X", "capital_social": "1 000", "ville_rcs": "Lyon"}
+    sel = _scm_cessionnaire_overrides(societe, prefix="selas")
+    assert sel["forme_juridique"] == "SELAS"
+    selarl = _scm_cessionnaire_overrides(societe, prefix="selarl")
+    assert "forme_juridique" not in selarl  # SELARL force 'SELARL' cote generateur
+
+
+def test_s1_acte_selas_forme_et_president(tmp_path: Path) -> None:
+    # S1 (bout-en-bout) : en contexte SELAS, l'acte imprime « SELAS au capital de … » et
+    # « Représentée par son président » — JAMAIS « SELARL » / « gérant » pour le cessionnaire.
+    ctx = _base_context("SELAS")
+    text = _docx_text(ActeCessionPartsScmGenerator().generate(ctx, tmp_path))
+    assert "SELAS au capital de 10 000" in text
+    assert "Représentée par son président" in text
+    # Pas de forme/fonction SELARL dans la description du cessionnaire (le mot « gérance »
+    # de la SCM apparait ailleurs ; on cible la ligne de representation du cessionnaire).
+    assert "Représentée par son gérant" not in text
+
+
+def test_s1_acte_selarl_forme_et_gerant_non_regression(tmp_path: Path) -> None:
+    # S1 NON-REGRESSION : en SELARL, l'acte garde « SELARL au capital de … € » et
+    # « Représentée par son gérant ». Le code partage SELARL/SELAS via ctx.structure.
+    ctx = _base_context("SELARL")
+    text = _docx_text(ActeCessionPartsScmGenerator().generate(ctx, tmp_path))
+    assert "SELARL au capital de 10 000 €" in text
+    assert "Représentée par son gérant" in text
+    assert "Représentée par son président" not in text
+
+
+def test_s2_prix_unitaire_recalcule_global_sur_nb() -> None:
+    # S2 : « si j'ai cédé 20 parts pour 20€ ... la part cédée vaut un (1) euro et non 100 € ».
+    # Le prix unitaire DOIT etre derive = global / nb (chiffre + lettres), pas fige.
+    from sydel_doc_engine.front_app.shell import _derive_scm_prix_unitaire
+
+    prix = {"global": "20", "unitaire": "100", "unitaire_lettres": "cent"}
+    _derive_scm_prix_unitaire(prix, 20)
+    assert prix["unitaire"] == "1"
+    assert prix["unitaire_lettres"] == "un"
+
+    # 5 000 / 50 = 100 (cas SELARL, byte-identique au gold).
+    prix2 = {"global": "5 000", "unitaire": "x", "unitaire_lettres": "x"}
+    _derive_scm_prix_unitaire(prix2, 50)
+    assert prix2["unitaire"] == "100" and prix2["unitaire_lettres"] == "cent"
+
+    # Non divisible : figure decimale francaise, jamais de crash.
+    prix3 = {"global": "10", "unitaire": "x", "unitaire_lettres": "x"}
+    _derive_scm_prix_unitaire(prix3, 4)
+    assert prix3["unitaire"] == "2,5"
+
+    # Donnees absentes / nb == 0 : on ne touche a rien (pas de crash, pas de cle videe).
+    prix4 = {"global": "", "unitaire": "100", "unitaire_lettres": "cent"}
+    _derive_scm_prix_unitaire(prix4, 0)
+    assert prix4["unitaire"] == "100"
+
+
+def test_s2_acte_prix_unitaire_un_euro(tmp_path: Path) -> None:
+    # S2 (bout-en-bout) : un acte avec prix unitaire « 1 » imprime « un (1) ... par part cédée ».
+    ctx = _base_context("SELAS")
+    ctx.scm_cession.prix = ScmCessionPrix(
+        unitaire="1", unitaire_lettres="un", global_="20", global_lettres="vingt"
+    )
+    text = _docx_text(ActeCessionPartsScmGenerator().generate(ctx, tmp_path))
+    assert "un (1)" in text and "par part cédée" in text
+    assert "cent (100)" not in text
+
+
+def test_s3_acte_quatre_exemplaires(tmp_path: Path) -> None:
+    # S3 : « le nombre d'exemplaires c'est quatre et non trois pour cet acte ».
+    ctx = _base_context("SELARL")
+    text = _docx_text(ActeCessionPartsScmGenerator().generate(ctx, tmp_path))
+    assert "En quatre exemplaires originaux," in text
+    assert "trois exemplaires" not in text
+
+
+def test_s4_plage_cedee_coherente_avec_nb() -> None:
+    # S4 : « les numéros de parts ne correspondent pas à la somme de mes parts (20 cédées,
+    # numérotées de 151 à 200) » — 151..200 = 50, incoherent. Avec la plage EFFACEE en amont
+    # (forcage front), la derivation produit une plage COHERENTE avec le nb (20 dernieres parts).
+    from sydel_doc_engine.front_app.shell import _derive_scm_apres_cession
+
+    presents = [_associe("Jean Dupont", 100, "101 a 200")]
+    cedant = {"prenom": "Jean", "nom": "Dupont", "civilite_affichage": "Monsieur"}
+    cessionnaire = {"denomination": "SELAS X", "forme_juridique": "SELAS"}
+    parts_cedees: dict[str, object] = {"nb": 20}  # plage NON fournie (effacee par le front)
+    _derive_scm_apres_cession(presents, cedant, cessionnaire, parts_cedees)
+    # 20 dernieres parts de [101..200] = [181..200] (20 parts), pas 151..200 (50 parts).
+    assert parts_cedees["plage"] == "181 a 200"
+    debut, fin = (int(x) for x in parts_cedees["plage"].split(" a "))
+    assert fin - debut + 1 == 20  # plage <=> nb cede
+
+
+def test_s6_cadre_contient_denomination_scm(tmp_path: Path) -> None:
+    # S6 : « mettre dans le cadre sur une 3e ligne le nom de la SCM ... ».
+    ctx = _base_context("SELARL")
+    document = Document(ActeCessionPartsScmGenerator().generate(ctx, tmp_path))
+    cadre = document.tables[0].cell(0, 0).text
+    assert "SCM CABINET CENTRAL" in cadre
+    assert cadre.splitlines() == [
+        "CESSION DES PARTS",
+        "DE LA SOCIETE CIVILE DE MOYENS",
+        "SCM CABINET CENTRAL",
+    ]
+
+
+def test_s7_party_markers_droite_et_gras(tmp_path: Path) -> None:
+    # S7 : « soussigné de première part » / « soussigné de seconde part » / « ci après dénommé
+    # La Société » alignes a DROITE et en GRAS.
+    ctx = _base_context("SELARL")
+    document = Document(ActeCessionPartsScmGenerator().generate(ctx, tmp_path))
+    markers = [
+        p
+        for p in document.paragraphs
+        if p.text.startswith(("Soussigné de première", "Soussignée de seconde"))
+        or p.text == "Ci-après dénommé « LA SOCIETE »,"
+    ]
+    assert len(markers) == 3
+    for paragraph in markers:
+        assert paragraph.alignment == WD_ALIGN_PARAGRAPH.RIGHT
+        assert paragraph.runs and paragraph.runs[0].bold is True
+
+
+def test_s8_cedant_civilite_majuscule(tmp_path: Path) -> None:
+    # S8 : « pour le soussigné 1 que monsieur soit avec une majuscule au début ».
+    ctx = _base_context("SELARL")
+    ctx.scm_cession.cedant.civilite_affichage = "monsieur"  # saisie en minuscule
+    text = _docx_text(ActeCessionPartsScmGenerator().generate(ctx, tmp_path))
+    assert "Monsieur Jean Dupont" in text
+    assert "monsieur Jean Dupont" not in text
+
+
+def test_s9_date_naissance_jour_deux_chiffres(tmp_path: Path) -> None:
+    # S9 : « pareil sur la date de naissance (01 non 1) ».
+    ctx = _base_context("SELARL")
+    ctx.scm_cession.cedant.date_naissance = "1/1/1980"  # saisie texte jour 1 chiffre
+    text = _docx_text(ActeCessionPartsScmGenerator().generate(ctx, tmp_path))
+    assert "né le 01/01/1980" in text
+    assert "né le 1/1/1980" not in text
+
+
+def test_s11_origine_propriete_commence_par_majuscule(tmp_path: Path) -> None:
+    # S11 : « Origine de propriété ... la civilité il faudrait une majuscule en début de phrase ».
+    ctx = _base_context("SELARL")
+    ctx.scm_cession.cedant.civilite_affichage = "monsieur"
+    document = Document(ActeCessionPartsScmGenerator().generate(ctx, tmp_path))
+    origine = next(p for p in document.paragraphs if "le CEDANT, déclare" in p.text)
+    assert origine.text[0].isupper()
+    assert origine.text.startswith("Monsieur ")
+
+
+def test_s12_signatures_cote_a_cote(tmp_path: Path) -> None:
+    # S12 : « pour les signatures il faudrait soit les mettre côte à côte soit avec plus
+    # d'espace ». On rend une table 2 colonnes (cedant | cessionnaire) cote a cote.
+    ctx = _base_context("SELARL")
+    document = Document(ActeCessionPartsScmGenerator().generate(ctx, tmp_path))
+    signature_table = document.tables[-1]
+    assert len(signature_table.columns) == 2
+    assert signature_table.cell(0, 0).text.startswith("Le cédant")
+    assert signature_table.cell(0, 1).text.startswith("Le cessionnaire")
+    assert "Jean Dupont" in signature_table.cell(1, 0).text
+    assert "CABINET DUPONT" in signature_table.cell(1, 1).text
+
+
+def test_s10_section_headings_have_space_after(tmp_path: Path) -> None:
+    # S10 : « Mettre des espaces après chaque titre ». Les headings de section de l'acte
+    # portent un space_after explicite (> 0) pour aerer sous le titre.
+    from docx.shared import Pt
+
+    ctx = _base_context("SELARL")
+    document = Document(ActeCessionPartsScmGenerator().generate(ctx, tmp_path))
+    prix_heading = next(p for p in document.paragraphs if p.text == "PRIX")
+    assert prix_heading.paragraph_format.space_after is not None
+    assert prix_heading.paragraph_format.space_after >= Pt(10)
+
+
+def test_accord_euro_M1_singulier_si_un() -> None:
+    # M1 (Akainu 2026-06-26) : « euro » au singulier quand le prix unitaire vaut 1
+    # (verbatim Albane « la part cédée vaut un (1) euro »), « euros » sinon.
+    from sydel_doc_engine.generators.lot_05.acte_cession_parts_scm import _accord_euro
+
+    assert _accord_euro("1") == "euro"
+    assert _accord_euro("1,00") == "euro"
+    assert _accord_euro("100") == "euros"
+    assert _accord_euro("10") == "euros"  # surtout pas confondre avec 1
+    assert _accord_euro("33,33") == "euros"
+
+
+def test_derive_scm_prix_unitaire_M2_arrondi_centime() -> None:
+    # M2 (Akainu 2026-06-26) : prix unitaire = global/nb arrondi au CENTIME (pas 28
+    # décimales brutes) ; divisible exact -> entier propre.
+    from sydel_doc_engine.front_app.shell import _derive_scm_prix_unitaire
+
+    p = {"global": "100"}
+    _derive_scm_prix_unitaire(p, 3)
+    assert p["unitaire"] == "33,33"  # 2 décimales, jamais 33,33333...
+
+    p2 = {"global": "20"}
+    _derive_scm_prix_unitaire(p2, 20)
+    assert p2["unitaire"] == "1"
+    assert p2["unitaire_lettres"] == "un"

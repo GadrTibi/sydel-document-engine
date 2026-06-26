@@ -384,7 +384,16 @@ def format_display_date(value: date | str | None, field_name: str) -> str:
         raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
     if isinstance(value, date):
         return value.strftime("%d/%m/%Y")
-    return required_text(value, field_name)
+    text = required_text(value, field_name)
+    # Albane 2026-06-26 §S9 : une date saisie en TEXTE numerique « 1/1/1980 » ressortait avec
+    # le jour/mois sur 1 chiffre (« 1 »). On zero-pad le jour ET le mois a 2 chiffres pour un
+    # libelle JJ/MM/AAAA. Les libelles en lettres (« 1er janvier 1980 ») ne matchent pas et
+    # restent INCHANGES (echo fidele du modele).
+    match = re.fullmatch(r"\s*(\d{1,2})/(\d{1,2})/(\d{4})\s*", text)
+    if match is not None:
+        jour, mois, annee = match.groups()
+        return f"{int(jour):02d}/{int(mois):02d}/{annee}"
+    return text
 
 
 def required_text(value: str | None, field_name: str) -> str:
@@ -446,8 +455,15 @@ def scm_cedee_address_for_acte(
 
 
 def cedant_display(cedant: ScmCessionCedant) -> str:
+    # Albane 2026-06-26 §S8 : la civilite du cedant (soussigne 1) doit commencer par une
+    # MAJUSCULE (« Monsieur », pas « monsieur »). On ne capitalise que l'initiale (jamais
+    # « MONSIEUR ».casefold() -> « Monsieur ») : une civilite deja correcte est inchangee.
+    civilite = required_text(
+        cedant.civilite_affichage, "scm_cession.cedant.civilite_affichage"
+    )
+    civilite = civilite[:1].upper() + civilite[1:]
     return (
-        f"{required_text(cedant.civilite_affichage, 'scm_cession.cedant.civilite_affichage')} "
+        f"{civilite} "
         f"{required_text(cedant.prenom, 'scm_cession.cedant.prenom')} "
         f"{required_text(cedant.nom, 'scm_cession.cedant.nom')}"
     )
@@ -493,16 +509,26 @@ def add_body_paragraph(
     )
 
 
-def add_heading(document: Any, text: str, *, space_before_pt: int = 0) -> None:
+def add_heading(
+    document: Any,
+    text: str,
+    *,
+    space_before_pt: int = 0,
+    space_after_pt: int | None = None,
+) -> None:
     # space_before_pt optionnel (defaut 0) : preserve le comportement actuel
     # pour les appelants existants (PV, courrier). L'acte de cession SCM
     # l'utilise pour aerer avant chaque grande section (mise en forme §13.1).
+    # space_after_pt optionnel (defaut None -> standard_space_after_pt, rendu
+    # inchange pour PV/courrier). Albane 2026-06-26 §S10 : l'acte le surcharge
+    # pour aerer APRES chaque titre de section.
     add_paragraph(
         document,
         text,
         alignment=WD_ALIGN_PARAGRAPH.CENTER,
         bold=True,
         space_before_pt=space_before_pt,
+        space_after_pt=space_after_pt,
     )
 
 

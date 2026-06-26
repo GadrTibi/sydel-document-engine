@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+
 from sydel_doc_engine.domain.models import DocumentGenerationContext
 from sydel_doc_engine.generators.lot_05.scm_cession_common import (
     acte_signature_prestataire,
@@ -24,7 +26,8 @@ from sydel_doc_engine.generators.lot_05.scm_cession_common import (
 )
 from sydel_doc_engine.rendering.docx_builder import (
     add_framed_title,
-    add_signature_lines,
+    add_paragraph,
+    add_signature_table,
     add_spacer,
     new_document,
 )
@@ -36,10 +39,46 @@ OUTPUT_FILENAME = "acte_cession_parts_scm.docx"
 # aerer un document juge trop serre. Local a l'acte : n'affecte ni le PV ni le
 # courrier SCM (qui appellent add_heading sans space_before).
 _SECTION_SPACE_BEFORE_PT = 12
+# Albane 2026-06-26 §S10 : aerer APRES chaque titre de section (espace sous le heading,
+# au-dela du space_after standard de 6 pt).
+_SECTION_SPACE_AFTER_PT = 10
+
+
+def _accord_euro(montant: str | None) -> str:
+    """« euro » au singulier si le montant vaut exactement 1, « euros » sinon.
+
+    M1 (Akainu 2026-06-26) : le prix unitaire par part peut valoir 1 (ex. 20 € / 20 parts),
+    le verbatim Albane écrit « la part cédée vaut un (1) euro » au singulier — « 1 euros »
+    etait une faute d'accord. N'affecte que l'unitaire ; le global garde « euros »."""
+    v = (montant or "").strip().replace(" ", "").replace(",", ".")
+    if "." in v:
+        v = v.rstrip("0").rstrip(".")
+    return "euro" if v == "1" else "euros"
 
 
 def _section_heading(document, text: str) -> None:
-    add_heading(document, text, space_before_pt=_SECTION_SPACE_BEFORE_PT)
+    add_heading(
+        document,
+        text,
+        space_before_pt=_SECTION_SPACE_BEFORE_PT,
+        space_after_pt=_SECTION_SPACE_AFTER_PT,
+    )
+
+
+# Albane 2026-06-26 §S7 : les marqueurs de partie (« Soussigné de premiere part… »,
+# « Soussignee de seconde part… », « Ci-apres denomme LA SOCIETE ») sont alignes a DROITE,
+# en GRAS, avec un espace AVANT pour aerer/separer les blocs soussignes.
+_PARTY_MARKER_SPACE_BEFORE_PT = 8
+
+
+def _party_marker(document, text: str) -> None:
+    add_paragraph(
+        document,
+        text,
+        alignment=WD_ALIGN_PARAGRAPH.RIGHT,
+        bold=True,
+        space_before_pt=_PARTY_MARKER_SPACE_BEFORE_PT,
+    )
 
 
 class ActeCessionPartsScmGenerator:
@@ -74,7 +113,18 @@ class ActeCessionPartsScmGenerator:
             else cedant_maritale
         )
         document = new_document()
-        add_framed_title(document, ["CESSION DES PARTS", "DE LA SOCIETE CIVILE DE MOYENS"])
+        # Albane 2026-06-26 §S5/§S6 : aerer le cadre-titre (espace avant/apres, marges internes)
+        # et ajouter une 3e ligne au cadre = la denomination de la SCM cedee (objet de la cession).
+        scm_denomination = required_text(
+            scm_cedee.denomination, "scm_cession.scm_cedee.denomination"
+        )
+        add_spacer(document, space_after_pt=12)
+        add_framed_title(
+            document,
+            ["CESSION DES PARTS", "DE LA SOCIETE CIVILE DE MOYENS", scm_denomination],
+            inner_spacing=True,
+        )
+        add_spacer(document, space_after_pt=12)
 
         add_body_paragraph(document, "Entre les soussignés :", bold=True)
         add_body_paragraph(
@@ -93,7 +143,7 @@ class ActeCessionPartsScmGenerator:
                 f"et sous le numéro RPPS {required_text(cedant.numero_rpps, 'scm_cession.cedant.numero_rpps')}."
             ),
         )
-        add_body_paragraph(document, "Soussigné de première part, ci-après dénommé « LE CÉDANT »,")
+        _party_marker(document, "Soussigné de première part, ci-après dénommé « LE CÉDANT »,")
         add_body_paragraph(document, "ET :", bold=True)
         add_body_paragraph(document, required_text(cessionnaire.denomination, "scm_cession.cessionnaire.denomination"))
         add_body_paragraph(
@@ -119,12 +169,12 @@ class ActeCessionPartsScmGenerator:
                 f"{cedant_name}, domicilié en cette qualité audit siège."
             ),
         )
-        add_body_paragraph(document, "Soussignée de seconde part, ci-après dénommé « LE CESSIONNAIRE »,")
+        _party_marker(document, "Soussignée de seconde part, ci-après dénommé « LE CESSIONNAIRE »,")
         add_body_paragraph(
             document,
             f"Ont procédé de la manière suivante à la cession des parts de la Société {required_text(scm_cedee.denomination, 'scm_cession.scm_cedee.denomination')}.",
         )
-        add_body_paragraph(document, "Ci-après dénommé « LA SOCIETE »,")
+        _party_marker(document, "Ci-après dénommé « LA SOCIETE »,")
 
         _section_heading(document, "IL EST PREALABLEMENT EXPOSE CE QUI SUIT :")
         add_body_paragraph(
@@ -161,20 +211,27 @@ class ActeCessionPartsScmGenerator:
         )
         add_body_paragraph(document, f"Le {scm_cession.date_acte_affichee or ''}")
         add_spacer(document, space_after_pt=18)
-        add_signature_lines(
+        # Albane 2026-06-26 §S12 : les signatures cedant / cessionnaire sont mises COTE A COTE
+        # (table 2 colonnes), au lieu d'etre empilees et serrees. La zone manuscrite (espace
+        # de signature) est integree par add_signature_table. Les libelles « Le cédant » / « Le
+        # cessionnaire » sont CONSERVES (Albane laissait le choix de les retirer « si plus
+        # simple » — on garde la qualite, plus claire ; le cote-a-cote suffit a aerer).
+        cessionnaire_signataire = (
+            "Représentée par "
+            f"{required_text(cessionnaire.representant.civilite_courte, 'scm_cession.cessionnaire.representant.civilite_courte')} "
+            f"{required_text(cessionnaire.representant.prenom, 'scm_cession.cessionnaire.representant.prenom')} "
+            f"{required_text(cessionnaire.representant.nom, 'scm_cession.cessionnaire.representant.nom')}"
+        )
+        add_signature_table(
             document,
             [
-                f"{cedant_name}",
-                f"{required_text(cessionnaire.denomination, 'scm_cession.cessionnaire.denomination')}",
-                "Le cédant",
-                (
-                    "Représentée par "
-                    f"{required_text(cessionnaire.representant.civilite_courte, 'scm_cession.cessionnaire.representant.civilite_courte')} "
-                    f"{required_text(cessionnaire.representant.prenom, 'scm_cession.cessionnaire.representant.prenom')} "
-                    f"{required_text(cessionnaire.representant.nom, 'scm_cession.cessionnaire.representant.nom')}"
-                ),
-                "Le cessionnaire",
+                ["Le cédant", "Le cessionnaire"],
+                [
+                    cedant_name,
+                    f"{required_text(cessionnaire.denomination, 'scm_cession.cessionnaire.denomination')}\n{cessionnaire_signataire}",
+                ],
             ],
+            min_row_height_cm=2.5,
         )
         return save_clean_document(document, output_dir, OUTPUT_FILENAME)
 
@@ -266,7 +323,7 @@ def _add_price_and_payment(
         (
             "La présente cession est consentie et acceptée moyennant le prix de "
             f"{required_text(prix.unitaire_lettres, 'scm_cession.prix.unitaire_lettres')} "
-            f"({required_text(prix.unitaire, 'scm_cession.prix.unitaire')}) euros par part cédée, soit le prix global de "
+            f"({required_text(prix.unitaire, 'scm_cession.prix.unitaire')}) {_accord_euro(prix.unitaire)} par part cédée, soit le prix global de "
             f"{required_text(prix.global_lettres, 'scm_cession.prix.global_lettres')} "
             f"({required_text(prix.global_, 'scm_cession.prix.global')}) euros, payé comptant ce jour à {cedant_name} qui lui reconnaît et lui en donne bonne et valable quittance."
         ),
