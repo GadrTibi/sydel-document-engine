@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.shared import Cm
 
 from sydel_doc_engine.domain.models import DocumentGenerationContext
 from sydel_doc_engine.generators.lot_05.scm_cession_common import (
@@ -30,6 +31,11 @@ DESTINATAIRE_FIXED_LINE = "Service départemental de l'enregistrement de"
 # Espace blanc au-dessus du bloc destinataire pour le faire tomber dans la
 # fenetre d'enveloppe (haut). Calibre sur le top margin du modele client (~3 cm).
 ENVELOPE_WINDOW_SPACER_PT = 28
+# Albane 2026-06-26 §C1 : les 5 premieres lignes (en-tete destinataire) demarrent « vers le
+# cm 12 de la regle » -> retrait gauche de 12 cm (texte aligne a gauche mais decale a droite).
+ENTETE_LEFT_INDENT_CM = 12.0
+# §C3 : espace avant le bloc lieu/date + objet pour les faire commencer plus bas.
+OBJET_SPACER_PT = 24
 
 # Montant FIXE des droits d'enregistrement (§8.3), texte noir standard (R22b-01 :
 # plus de rouge). PAS une variable.
@@ -59,16 +65,25 @@ class CourrierSdeCessionScmGenerator:
 
         # §8.1 — Bloc destinataire SDE pour TOUTES structures, descendu dans la
         # fenetre d'enveloppe. 1re ligne FIXE, reste a completer (jaune).
+        # Albane 2026-06-26 §C1 : les 5 premieres lignes (en-tete destinataire) sont alignees a
+        # GAUCHE mais demarrent vers le cm 12 de la regle -> retrait gauche de 12 cm.
         add_spacer(document, space_after_pt=ENVELOPE_WINDOW_SPACER_PT)
-        add_paragraph(document, DESTINATAIRE_FIXED_LINE, alignment=WD_ALIGN_PARAGRAPH.LEFT)
+        fixed_para = add_paragraph(
+            document, DESTINATAIRE_FIXED_LINE, alignment=WD_ALIGN_PARAGRAPH.LEFT
+        )
+        fixed_para.paragraph_format.left_indent = Cm(ENTETE_LEFT_INDENT_CM)
         for value, placeholder in (
             (enregistrement.service, "Nom du service"),
             (enregistrement.centre_finances_publiques, "Centre des finances publiques"),
             (enregistrement.adresse_service, "Adresse"),
             (enregistrement.cp_ville_service, "Code postal et ville"),
         ):
-            _add_fillable_destinataire_line(document, value, placeholder)
+            _add_fillable_destinataire_line(
+                document, value, placeholder, left_indent_cm=ENTETE_LEFT_INDENT_CM
+            )
 
+        # §C3 — espace avant l'objet / le corps pour les faire commencer plus bas.
+        add_spacer(document, space_after_pt=OBJET_SPACER_PT)
         add_letter_place_date(
             document,
             f"{ctx.signature.lieu}, le {format_display_date(ctx.signature.date, 'signature.date')}",
@@ -80,6 +95,7 @@ class CourrierSdeCessionScmGenerator:
             alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
             bold=True,
             underline=True,
+            space_before_pt=OBJET_SPACER_PT,
         )
         add_body_paragraph(document, "Madame, Monsieur,")
         # §8.2 — nom de la SCM via variable dans le corps (modele client).
@@ -110,29 +126,38 @@ class CourrierSdeCessionScmGenerator:
         return save_clean_document(document, output_dir, OUTPUT_FILENAME)
 
 
-def _add_fillable_destinataire_line(document, value, placeholder: str) -> None:
+def _add_fillable_destinataire_line(
+    document, value, placeholder: str, *, left_indent_cm: float = 0.0
+) -> None:
     """Ligne du bloc destinataire : saisie reelle si fournie, sinon champ a completer.
 
     Quand la valeur n'est pas saisie (cas SELARL), on rend un libelle de champ
     « [Nom du service] a completer » SANS surlignage (R22b-01), sans token moteur ni
     placeholder source « [ ] » (qui ferait planter save_clean_document).
+
+    Albane 2026-06-26 §C1 : `left_indent_cm` decale la ligne vers le cm 12 de la regle
+    (en-tete destinataire aligne a gauche mais demarrant a droite).
     """
     text = value.strip() if isinstance(value, str) else (value or None)
     if text:
-        add_paragraph(document, str(text), alignment=WD_ALIGN_PARAGRAPH.LEFT)
+        paragraph = add_paragraph(document, str(text), alignment=WD_ALIGN_PARAGRAPH.LEFT)
+        paragraph.paragraph_format.left_indent = Cm(left_indent_cm)
         return
     paragraph = document.add_paragraph()
     paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    paragraph.paragraph_format.left_indent = Cm(left_indent_cm)
     # R22b-01 (Rafael 2026-06-22) : aucun surlignage/couleur sur le texte.
     paragraph.add_run(f"{placeholder} à compléter")
 
 
 def _add_corps_exemplaires(document, exemplaires: str, denomination: str) -> None:
+    # Albane 2026-06-26 §C2 : eviter le doublon « SCM SCM CABINET CENTRAL » (la forme « SCM »
+    # est deja portee par la denomination). On ecrit « de la Société {denomination} ».
     paragraph = document.add_paragraph()
     paragraph.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
     paragraph.add_run(
         "Je vous prie de bien vouloir trouver sous ce pli "
-        f"{exemplaires} exemplaires de l'acte de cession de parts de la SCM "
+        f"{exemplaires} exemplaires de l'acte de cession de parts de la Société "
     )
     paragraph.add_run(denomination)
     paragraph.add_run(" pour les enregistrer.")

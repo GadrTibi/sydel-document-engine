@@ -495,17 +495,27 @@ def conjoint_display(cedant: ScmCessionCedant) -> str:
 
 
 def add_body_paragraph(
-    document: Any, text: str, *, bold: bool = False, italic: bool = False
+    document: Any,
+    text: str,
+    *,
+    bold: bool = False,
+    italic: bool = False,
+    space_after_pt: int | None = None,
 ) -> None:
     # italic optionnel (defaut False) : preserve le comportement des appelants
     # existants. Le PV SCM (DOC-031) l'active pour la mention d'adoption des
     # resolutions « Cette resolution est adoptee a l'unanimite » (§4.2).
+    # space_after_pt optionnel (defaut None -> standard_space_after_pt, rendu inchange
+    # pour tous les appelants existants). Albane 2026-06-26 §P2 : le PV SCM le surcharge
+    # pour aerer entre paragraphes (« mettre de l'espace entre les paragraphes »). N'affecte
+    # que les appelants qui le passent explicitement.
     add_paragraph(
         document,
         text,
         alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
         bold=bold,
         italic=italic,
+        space_after_pt=space_after_pt,
     )
 
 

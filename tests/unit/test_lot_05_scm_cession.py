@@ -249,7 +249,12 @@ def test_scm_cession_selarl_generates_three_clean_docx(tmp_path: Path) -> None:
         in texts["courrier_sde_cession_scm.docx"]
     )
     # §8.2 — nom de la SCM imprime dans le corps.
-    assert "de parts de la SCM SCM CABINET CENTRAL" in texts["courrier_sde_cession_scm.docx"]
+    # Albane 2026-06-26 §C2 : « de la Société {denom} » (plus de doublon « SCM SCM »).
+    assert (
+        "de parts de la Société SCM CABINET CENTRAL"
+        in texts["courrier_sde_cession_scm.docx"]
+    )
+    assert "SCM SCM CABINET CENTRAL" not in texts["courrier_sde_cession_scm.docx"]
     assert "chirurgiens-dentistes" in texts["acte_cession_parts_scm.docx"]
     assert "Yousign" in texts["acte_cession_parts_scm.docx"]
     for text in texts.values():
@@ -300,8 +305,13 @@ def test_scm_cession_selas_generates_overlays(tmp_path: Path) -> None:
     pv_text = _docx_text(pv_path)
     courrier_text = _docx_text(courrier_path)
     acte_text = _docx_text(acte_path)
-    assert "dans un délai de 3 mois" in pv_text
-    assert "15 août 2026" in pv_text
+    # Albane 2026-06-26 §P4 : la 1re résolution n'utilise plus « dans un délai de 3 mois ...
+    # soit jusqu'au {date} » (supprimé pour TOUTES structures, SELAS comprise) mais « à compter
+    # de ce jour », et autorise la cession.
+    assert "dans un délai de" not in pv_text
+    assert "15 août 2026" not in pv_text
+    assert "à compter de ce jour" in pv_text
+    assert "autorise la cession de 50 parts sociales de Monsieur Jean Dupont" in pv_text
     # Akainu B1/M1 : le PV AGE cession SCM est un générateur FROM-SCRATCH -> garde-fou centralisé
     # anti-non-accentué sur sa SORTIE. Le courrier/acte sont token-replacement (hors périmètre :
     # ils préservent les intitulés source en CAPITALES non accentuées, cf. §8.1 ci-dessous).
@@ -625,10 +635,13 @@ def test_courrier_sde_montant_droits_fixe_25_sans_couleur(tmp_path: Path) -> Non
 
 def test_courrier_sde_scm_name_sans_surlignage(tmp_path: Path) -> None:
     # §8.2 — nom de la SCM dans le corps. R22b-01 : plus de surlignage jaune.
+    # Albane 2026-06-26 §C2 : le corps dit « de parts de la Société {denom} » (plus de doublon).
     ctx = _base_context("SELARL")
     document = Document(CourrierSdeCessionScmGenerator().generate(ctx, tmp_path))
 
-    paragraph = next(p for p in document.paragraphs if "de parts de la SCM" in p.text)
+    paragraph = next(
+        p for p in document.paragraphs if "de parts de la Société" in p.text
+    )
     name_run = next(r for r in paragraph.runs if r.text == "SCM CABINET CENTRAL")
     assert name_run.font.highlight_color is None
 
@@ -873,3 +886,195 @@ def test_derive_scm_prix_unitaire_M2_arrondi_centime() -> None:
     _derive_scm_prix_unitaire(p2, 20)
     assert p2["unitaire"] == "1"
     assert p2["unitaire_lettres"] == "un"
+
+
+# ==========================================================================
+# Albane 2026-06-26 — LOT « PV AGE cession SCM + courrier SDE » (P2..P7, C1..C3).
+# Tests ADVERSARIAUX : verifient le DEFAUT corrige, avec preuve de
+# non-regression SELARL pour les correctifs partages.
+# ==========================================================================
+
+
+def test_p4_premiere_resolution_autorise_cession_sans_delai_selas(tmp_path: Path) -> None:
+    # P4 : « ajouter ... "et par conséquent, autorise la cession de XX parts sociales de
+    # Monsieur XXX à la SEL XX" » + remplacer « dans un délai de 3 mois à compter de ce jour
+    # soit jusqu'au {date} » par « à compter de ce jour ». Le verbatim s'applique a la 1re
+    # resolution -> on l'exerce sur SELAS (ou l'ancien wording « delai » existait).
+    ctx = _base_context("SELAS")
+    text = _docx_text(PvAgeCessionScmGenerator().generate(ctx, tmp_path))
+    assert "dans un délai de" not in text  # plus aucun delai de 3 mois
+    assert "soit jusqu'au" not in text
+    assert (
+        "autorise la cession de 50 parts sociales de Monsieur Jean Dupont "
+        "à la SELAS CABINET DUPONT" in text
+    )
+    assert "à compter de ce jour" in text
+
+
+def test_p4_premiere_resolution_autorise_cession_selarl(tmp_path: Path) -> None:
+    # P4 NON-REGRESSION SELARL : meme clause « autorise la cession » + « à compter de ce jour ».
+    ctx = _base_context("SELARL")
+    text = _docx_text(PvAgeCessionScmGenerator().generate(ctx, tmp_path))
+    assert "dans un délai de" not in text
+    assert (
+        "autorise la cession de 50 parts sociales de Monsieur Jean Dupont "
+        "à la SELARL CABINET DUPONT" in text
+    )
+
+
+def test_p5_deuxieme_resolution_sans_sous_reserve_et_a_compter(tmp_path: Path) -> None:
+    # P5 : (a) SUPPRIMER « et sous réserve de la réalisation définitive de la cession, » ;
+    # (c) ajouter « à compter de ce jour » a la formule d'entree en vigueur.
+    ctx = _base_context("SELARL")
+    text = _docx_text(PvAgeCessionScmGenerator().generate(ctx, tmp_path))
+    assert "sous réserve de la réalisation définitive" not in text
+    deuxieme = next(
+        line
+        for line in text.splitlines()
+        if "compte tenu de la résolution qui précède" in line
+    )
+    assert "des statuts qui sera rédigé ainsi, à compter de ce jour :" in deuxieme
+
+
+def test_p5_numero_article_surligne(tmp_path: Path) -> None:
+    # P5 (b) : le numero d'article modifie est SURLIGNE (champ variable a adapter).
+    from docx.enum.text import WD_COLOR_INDEX
+
+    ctx = _base_context("SELARL")
+    document = Document(PvAgeCessionScmGenerator().generate(ctx, tmp_path))
+    para = next(
+        p
+        for p in document.paragraphs
+        if "compte tenu de la résolution qui précède" in p.text
+    )
+    article_run = next(r for r in para.runs if r.text.strip() == "7")
+    assert article_run.font.highlight_color == WD_COLOR_INDEX.YELLOW
+    # le reste du paragraphe n'est PAS surligne.
+    for run in para.runs:
+        if run.text.strip() != "7":
+            assert run.font.highlight_color is None
+
+
+def test_p3a_president_femme_gerante_associee(tmp_path: Path) -> None:
+    # P3a : « il faudrait pouvoir le féminiser pour que ce soit gérante associée ». Quand le
+    # president de seance (dernier present) est une femme -> « gérante associée ».
+    ctx = _base_context("SELARL")
+    ctx.scm_cession.associes_presents[-1] = ScmCessionAssocie(
+        civilite_affichage="Madame",
+        prenom="Sophie",
+        nom="Leroy",
+        parts=ScmCessionPartsAttribution(nb=100, plage="201 à 300"),
+    )
+    text = _docx_text(PvAgeCessionScmGenerator().generate(ctx, tmp_path))
+    assert "Sophie Leroy préside la séance en qualité de gérante associée" in text
+    assert "gérant associé." not in text
+
+
+def test_p3a_president_homme_gerant_associe(tmp_path: Path) -> None:
+    # P3a CONTRE-EPREUVE : un president homme reste « gérant associé » (accord au sexe).
+    ctx = _base_context("SELARL")
+    ctx.scm_cession.associes_presents[-1] = ScmCessionAssocie(
+        civilite_affichage="Monsieur",
+        prenom="Marc",
+        nom="Petit",
+        parts=ScmCessionPartsAttribution(nb=100, plage="201 à 300"),
+    )
+    text = _docx_text(PvAgeCessionScmGenerator().generate(ctx, tmp_path))
+    assert "Marc Petit préside la séance en qualité de gérant associé" in text
+    assert "gérante associée" not in text
+
+
+def test_p6_a_concurrence_sur_meme_ligne(tmp_path: Path) -> None:
+    # P6 : « "à concurrence de" ne doit pas être sur la ligne du dessous, mais à la suite de
+    # l'associé ». Chaque ligne de repartition fusionne l'associe + « à concurrence de ... ».
+    ctx = _base_context("SELARL")
+    document = Document(PvAgeCessionScmGenerator().generate(ctx, tmp_path))
+    para_texts = [p.text for p in document.paragraphs]
+    # l'associe et « à concurrence de » sont sur la MEME ligne.
+    assert "à Monsieur Paul Bernard, à concurrence de 100 parts," in para_texts
+    assert "à Monsieur Jean Dupont, à concurrence de 50 parts," in para_texts
+    # plus aucune ligne isolee « à concurrence de ... » (retour a la ligne supprime).
+    assert not any(p.strip().startswith("à concurrence de") for p in para_texts)
+
+
+def test_p7_signature_tous_associes_pas_gerance(tmp_path: Path) -> None:
+    # P7 : « mettre que c'est signé par tous les associés (enlever la gérance) ». La formule
+    # finale ne mentionne plus « la gérance » ; le cadre de signature liste les associes.
+    ctx = _base_context("SELARL")
+    document = Document(PvAgeCessionScmGenerator().generate(ctx, tmp_path))
+    para_texts = [p.text for p in document.paragraphs]
+    closing = next(p for p in para_texts if "a été signé" in p)
+    assert closing == (
+        "De tout ceci, il a été dressé le présent procès-verbal qui, après lecture, "
+        "a été signé par tous les associés présents."
+    )
+    assert "signé par la gérance" not in closing
+    # le cadre de signature (derniere table) liste les associes (signataires_pv),
+    # pas « la gérance ».
+    signature_cells = [
+        cell.text
+        for row in document.tables[-1].rows
+        for cell in row.cells
+    ]
+    signature_blob = "\n".join(signature_cells)
+    assert "Jean Dupont" in signature_blob
+    assert "Paul Bernard" in signature_blob
+    assert "Anne Martin" in signature_blob
+    assert "la gérance" not in signature_blob.casefold()
+    assert "gérant" not in signature_blob.casefold()
+
+
+def test_p2_paragraphes_aeres(tmp_path: Path) -> None:
+    # P2 : « mettre de l'espace entre les paragraphes ». Les paragraphes de corps du PV
+    # portent un space_after superieur au standard (6 pt).
+    from docx.shared import Pt
+
+    ctx = _base_context("SELARL")
+    document = Document(PvAgeCessionScmGenerator().generate(ctx, tmp_path))
+    corps = next(p for p in document.paragraphs if p.text.startswith("L'an "))
+    assert corps.paragraph_format.space_after > Pt(6)
+
+
+def test_c1_entete_destinataire_retrait_12cm(tmp_path: Path) -> None:
+    # C1 : « les 5 premières lignes ... aligné à gauche mais qui démarre vers le cm 12 ».
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.shared import Cm
+
+    ctx = _base_context("SELARL")
+    document = Document(CourrierSdeCessionScmGenerator().generate(ctx, tmp_path))
+    entete = [
+        p
+        for p in document.paragraphs
+        if p.text
+        and (
+            p.text.startswith("Service départemental")
+            or p.text.startswith("SERVICE DEPARTEMENTAL")
+            or p.text.startswith("Centre des finances")
+            or p.text.startswith("6 rue Paganini")
+            or p.text.startswith("75020 Paris")
+        )
+    ]
+    assert len(entete) == 5
+    for paragraph in entete:
+        assert paragraph.alignment in (WD_ALIGN_PARAGRAPH.LEFT, None)
+        indent = paragraph.paragraph_format.left_indent
+        assert indent is not None and indent >= Cm(11.5)
+
+
+def test_c2_societe_sans_doublon_scm(tmp_path: Path) -> None:
+    # C2 : « il y a une répétition de la SCM ; mettre "de la Société {dénomination}" ».
+    ctx = _base_context("SELARL")
+    text = _docx_text(CourrierSdeCessionScmGenerator().generate(ctx, tmp_path))
+    assert "de parts de la Société SCM CABINET CENTRAL" in text
+    assert "SCM SCM CABINET CENTRAL" not in text  # doublon elimine
+
+
+def test_c3_objet_corps_plus_bas(tmp_path: Path) -> None:
+    # C3 : « mettre de l'espace pour que l'objet et le début du courrier commencent plus bas ».
+    from docx.shared import Pt
+
+    ctx = _base_context("SELARL")
+    document = Document(CourrierSdeCessionScmGenerator().generate(ctx, tmp_path))
+    objet = next(p for p in document.paragraphs if p.text.startswith("Objet :"))
+    assert objet.paragraph_format.space_before is not None
+    assert objet.paragraph_format.space_before >= Pt(12)
