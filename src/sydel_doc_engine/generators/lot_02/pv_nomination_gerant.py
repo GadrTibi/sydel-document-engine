@@ -24,6 +24,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_hyphen_list_item,
     add_paragraph,
     add_signature_lines,
+    add_signature_table,
     add_spacer,
     new_document,
 )
@@ -31,6 +32,11 @@ from sydel_doc_engine.utils.grammar import euro_word
 
 OUTPUT_FILENAME = "pv_nomination_gerant.docx"
 DOCUMENT_CODE = "CODE-PV-001"
+
+# Retour Albane 2026-06-26 (PV3) : « mettre de l'espace entre les paragraphes ».
+# Espacement apres paragraphe renforce (10 pt vs 6 pt du profil standard), local
+# au PV pour aerer le document sans impacter les autres generateurs.
+_PV_PARAGRAPH_SPACE_AFTER_PT = 10
 
 VOTE_FORMULA = "Cette résolution est adoptée à l’unanimité"
 POWERS_TEXT = (
@@ -303,14 +309,27 @@ def _sel_profession_for_header(company: Company, associes: list[Associe]) -> str
     if acronym not in {"SELARL", "SELAS"}:
         return None
     for associe in associes:
-        profession = (
-            associe.profession_reglementee
-            or associe.profession
-            or associe.qualification_principale
+        # Retour Albane 2026-06-26 (PV2) : l'entete doit afficher la PROFESSION
+        # (« médecin » / « chirurgien-dentiste »), jamais le TITRE « Docteur ».
+        # On privilegie la profession reglementee/qualification ; « Docteur »
+        # (titre derive cote front) est ecarte comme valeur d'entete.
+        candidates = (
+            associe.profession_reglementee,
+            associe.qualification_principale,
+            associe.profession,
         )
-        if profession and profession.strip():
-            return profession.strip()
+        for candidate in candidates:
+            if candidate and candidate.strip() and not _is_title_only(candidate):
+                return candidate.strip()
     return None
+
+
+def _is_title_only(value: str) -> bool:
+    """Vrai si `value` est un TITRE d'adresse (« Docteur ») et non une profession.
+
+    Un titre ne doit jamais alimenter l'entete profession (retour Albane PV2).
+    """
+    return value.strip().casefold() in {"docteur", "dr", "dr."}
 
 
 def _normalized_contains_profession(base: str, profession: str) -> bool:
@@ -354,7 +373,7 @@ def _add_paragraph(
     italic: bool = False,
     underline: bool = False,
     space_before: int = 0,
-    space_after: int = 6,
+    space_after: int = _PV_PARAGRAPH_SPACE_AFTER_PT,
 ) -> None:
     add_paragraph(
         document,
@@ -369,7 +388,14 @@ def _add_paragraph(
 
 
 def _add_list_item(document, text: str) -> None:
-    add_hyphen_list_item(document, text, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY)
+    # Retour Albane 2026-06-26 (PV3) : aerer entre les paragraphes (espace apres
+    # chaque item de liste aligne sur l'espacement renforce du PV).
+    add_hyphen_list_item(
+        document,
+        text,
+        alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
+        space_after_pt=_PV_PARAGRAPH_SPACE_AFTER_PT,
+    )
 
 
 def _add_decision_title(document, title: str) -> None:
@@ -560,12 +586,15 @@ def _add_order_of_business(
 ) -> None:
     _add_president_sentence(document, ctx)
     _add_paragraph(document, "Le président rappelle l’ordre du jour :")
+    # Retour Albane 2026-06-26 (PV4) : points de l'ordre du jour prefixes d'un
+    # tiret « - » (et non plus du point median « · »), comme la structure
+    # associe unique du meme PV (coherence intra-document).
     for dirigeant in dirigeants:
         fonction_affichage = _required_text(
             dirigeant.fonction_affichage,
             "dirigeant_nomine.fonction_affichage",
         )
-        _add_paragraph(document, f"· {_nomination_agenda_label(fonction_affichage)}")
+        _add_list_item(document, _nomination_agenda_label(fonction_affichage))
     if emprunt.actif:
         bien_adresse = _address_inline(
             _required_address(
@@ -573,14 +602,14 @@ def _add_order_of_business(
                 "bien_immobilier.adresse",
             )
         )
-        _add_paragraph(
+        _add_list_item(
             document,
             (
-                "· Autorisation de contracter un emprunt pour l’achat d’un bien immobilier sis "
+                "Autorisation de contracter un emprunt pour l’achat d’un bien immobilier sis "
                 f"{bien_adresse}"
             ),
         )
-    _add_paragraph(document, "· Pouvoirs")
+    _add_list_item(document, "Pouvoirs")
 
 
 def _add_nomination_decisions(
@@ -704,13 +733,11 @@ def _add_closing_and_signatures(
     dirigeants: list[DirigeantNomine],
 ) -> None:
     lieu_signature = _required_text(ctx.signature.lieu, "signature.lieu")
-    nombre_exemplaires = _required_text(
-        ctx.signature.nombre_exemplaires,
-        "signature.nombre_exemplaires",
-    )
+    # Retour Albane 2026-06-26 (PV6) : supprimer la mention « en quatre
+    # exemplaires » apres le lieu. Seul « Fait à {lieu} » subsiste.
     _add_paragraph(
         document,
-        f"Fait à {lieu_signature} en {nombre_exemplaires} exemplaires",
+        f"Fait à {lieu_signature}",
         alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
     )
     add_spacer(document)
@@ -745,21 +772,28 @@ def _add_multi_dirigeant_signatures(
 ) -> None:
     """Bloc signatures multi-colonnes du modele PV nominations dirigeants.
 
-    Une colonne par dirigeant (separateur tabulation, comme le modele) : ligne
-    des noms en gras, puis la mention « Bon pour acceptation des fonctions de
-    {fonction} » par dirigeant. Wording verbatim du modele.
+    Une colonne (case bordee) par dirigeant : le nom du dirigeant puis la
+    mention « Bon pour acceptation des fonctions de {fonction} ». Wording
+    verbatim du modele.
+
+    Retour Albane 2026-06-26 (PV7) : les mentions « ne s'intercalent pas bien »
+    avec le separateur tabulation precedent (les noms se decalaient quand la
+    mention d'une colonne etait plus longue). On bascule sur des CASES (tableau
+    2 colonnes, meme esprit que les statuts) : chaque case contient le nom + sa
+    mention propre, alignes par colonne, plus aucun decalage, zone de signature
+    suffisante (hauteur de ligne minimale).
     """
-    sep = "\t\t\t\t"
-    noms = sep.join(f"{d.prenom} {d.nom}" for d in dirigeants)
-    _add_paragraph(document, noms, alignment=WD_ALIGN_PARAGRAPH.CENTER, bold=True)
-    mentions = sep.join(
-        (
-            "(Faire précéder de la mention « Bon pour acceptation des fonctions de "
-            f"{_required_text(d.fonction_affichage, 'dirigeant_nomine.fonction_affichage')} »)"
-        )
-        for d in dirigeants
-    )
-    _add_paragraph(document, mentions, alignment=WD_ALIGN_PARAGRAPH.CENTER, italic=True)
+    labels = [
+        [
+            (
+                f"{d.prenom} {d.nom}\n"
+                "(Faire précéder de la mention « Bon pour acceptation des fonctions de "
+                f"{_required_text(d.fonction_affichage, 'dirigeant_nomine.fonction_affichage')} »)"
+            )
+            for d in dirigeants
+        ]
+    ]
+    add_signature_table(document, labels, min_row_height_cm=2.5)
 
 
 # ---------------------------------------------------------------------------
@@ -888,14 +922,11 @@ def _build_associe_unique_pv(
     )
 
     # Cloture + signature de l'associe (« Bon pour acceptation des fonctions de gerant »).
+    # Retour Albane 2026-06-26 (PV6) : supprimer « en X exemplaires » apres le lieu.
     lieu_signature = _required_text(ctx.signature.lieu, "signature.lieu")
-    nombre_exemplaires = _required_text(
-        ctx.signature.nombre_exemplaires,
-        "signature.nombre_exemplaires",
-    )
     _add_paragraph(
         document,
-        f"Fait à {lieu_signature} en {nombre_exemplaires} exemplaires",
+        f"Fait à {lieu_signature}",
         alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
     )
     add_spacer(document)

@@ -226,8 +226,11 @@ def test_pv_nomination_gerant_repeats_two_associes(tmp_path: Path) -> None:
     ) in text
     assert "Madame Alice Durand préside la séance." in text
     assert "Le président rappelle l’ordre du jour :" in text
-    assert "· Nomination du gérant" in text
-    assert "· Pouvoirs" in text
+    # PV4 (Albane 2026-06-26) : ordre du jour en tirets « - » (plus de « · »).
+    assert "- Nomination du gérant" in paragraphs
+    assert "- Pouvoirs" in paragraphs
+    assert "· Nomination du gérant" not in text
+    assert "· Pouvoirs" not in text
     assert "RCS de Paris" not in text
     assert "En cours d’immatriculation" in text
     assert "EXTRAORDINAIRE" not in text
@@ -295,12 +298,15 @@ def test_pv_nomination_gerant_without_emprunt_omits_borrowing_decision(
 def test_pv_nomination_gerant_with_emprunt_writes_borrowing_decision(
     tmp_path: Path,
 ) -> None:
-    text = _docx_text(_generate(tmp_path, _context(emprunt_actif=True)))
+    output = _generate(tmp_path, _context(emprunt_actif=True))
+    text = _docx_text(output)
+    paragraphs = _paragraphs(output)
 
+    # PV4 (Albane 2026-06-26) : item d'ordre du jour en tiret « - ».
     assert (
-        "· Autorisation de contracter un emprunt pour l’achat d’un bien immobilier sis "
+        "- Autorisation de contracter un emprunt pour l’achat d’un bien immobilier sis "
         "5 rue du Bien, 33000 Bordeaux"
-    ) in text
+    ) in paragraphs
     assert (
         "L’assemblée générale décide de contracter un emprunt d’un montant "
         "maximum de 250 000 euros pour l’acquisition d’un bien immobilier sis "
@@ -315,9 +321,10 @@ def test_pv_nomination_gerant_uses_plural_agenda_for_plural_function(
     ctx = _context()
     ctx.dirigeant_nomine.fonction_affichage = "gérants"
 
-    text = _docx_text(_generate(tmp_path, ctx))
+    paragraphs = _paragraphs(_generate(tmp_path, ctx))
 
-    assert "· Nomination des premiers gérants" in text
+    # PV4 (Albane 2026-06-26) : tiret « - » devant l'item d'ordre du jour.
+    assert "- Nomination des premiers gérants" in paragraphs
 
 
 def test_pv_nomination_gerant_uses_distinct_dirigeant_nomine(
@@ -362,8 +369,8 @@ def test_pv_nomination_gerant_restores_essential_docx_structure(tmp_path: Path) 
     vote_formula = _find_paragraph(document, VOTE_FORMULA)
     assert vote_formula.runs[0].italic is True
 
-    decision_item = _find_paragraph(document, "· Nomination du gérant")
-    assert decision_item.text == "· Nomination du gérant"
+    decision_item = _find_paragraph(document, "- Nomination du gérant")
+    assert decision_item.text == "- Nomination du gérant"
 
     signature_name = _find_paragraph(document, "Alice Durand")
     assert signature_name.alignment == WD_ALIGN_PARAGRAPH.CENTER
@@ -527,10 +534,11 @@ def test_pv_nomination_selas_president_then_directeur_general(tmp_path: Path) ->
     text = _docx_text(_generate(tmp_path, ctx))
     paragraphs = _paragraphs(_generate(tmp_path / "second", ctx))
 
-    # Ordre du jour : une ligne par dirigeant + pouvoirs.
-    assert "· Nomination du Président" in text
-    assert "· Nomination du Directeur Général" in text
-    assert "· Pouvoirs" in text
+    # Ordre du jour : une ligne par dirigeant + pouvoirs, en tirets (PV4).
+    assert "- Nomination du Président" in paragraphs
+    assert "- Nomination du Directeur Général" in paragraphs
+    assert "- Pouvoirs" in paragraphs
+    assert "· Nomination du Président" not in text
 
     # PREMIERE DECISION = President.
     assert "PREMIERE DECISION" in text
@@ -565,8 +573,8 @@ def test_pv_nomination_selas_president_then_directeur_general(tmp_path: Path) ->
 def test_pv_nomination_selas_multi_signature_block_two_functions(tmp_path: Path) -> None:
     # Bloc signatures 2 colonnes : nom + « Bon pour acceptation des fonctions de
     # Président » / « ... Directeur Général » (mention verbatim du modele).
-    ctx = _selas_context(dirigeants=_selas_dirigeants())
-    text = _docx_text(_generate(tmp_path, ctx))
+    output = _generate(tmp_path, _selas_context(dirigeants=_selas_dirigeants()))
+    text = _docx_text(output)
 
     assert "Bon pour acceptation des fonctions de Président" in text
     assert "Bon pour acceptation des fonctions de Directeur Général" in text
@@ -575,15 +583,35 @@ def test_pv_nomination_selas_multi_signature_block_two_functions(tmp_path: Path)
     # Pas de mention « gérant » sur ce chemin SELAS.
     assert "fonctions de gérant" not in text
 
+    # PV7 (Albane 2026-06-26) : les mentions ne doivent plus decaler les noms.
+    # Le bloc est desormais un TABLEAU (cases), chaque colonne portant SON nom
+    # ET SA mention -> nom et mention de la meme colonne sont dans la meme cellule,
+    # plus aucune jointure par tabulations.
+    document = Document(output)
+    signature_table = document.tables[-1]
+    assert len(signature_table.columns) == 2
+    cell_texts = [
+        "\n".join(p.text for p in signature_table.cell(0, col).paragraphs)
+        for col in range(2)
+    ]
+    assert "Alain FEDOROWSKY" in cell_texts[0]
+    assert "fonctions de Président" in cell_texts[0]
+    assert "Jean-Pierre HUBERMAN" in cell_texts[1]
+    assert "fonctions de Directeur Général" in cell_texts[1]
+    # Plus de separateur tabulation (ancienne mise en page qui decalait).
+    assert "\t" not in text
+
 
 def test_pv_nomination_selas_single_president_keeps_mono_structure(tmp_path: Path) -> None:
     # Un SEUL dirigeant (President) -> pas de comma model wording, pas de DEUXIEME
     # decision de nomination ; mode mono preserve (signature par associes).
     only_president = _selas_dirigeants()[:1]
     ctx = _selas_context(dirigeants=only_president)
-    text = _docx_text(_generate(tmp_path, ctx))
+    output = _generate(tmp_path, ctx)
+    text = _docx_text(output)
+    paragraphs = _paragraphs(output)
 
-    assert "· Nomination du Président" in text
+    assert "- Nomination du Président" in paragraphs
     assert "Nomination du Directeur Général" not in text
     assert "PREMIERE DECISION" in text
     # Sans emprunt ni DG : pouvoirs = DEUXIEME DECISION (mono).
@@ -594,3 +622,80 @@ def test_pv_nomination_selas_single_president_keeps_mono_structure(tmp_path: Pat
         "L’assemblée générale décide de désigner en qualité de Président pour une "
         "durée indéterminée :"
     ) in text
+
+
+# ---------------------------------------------------------------------------
+# Retours Albane 2026-06-26 (PV nomination dirigeant) — assertions adversariales.
+# Verbatim = spec : intitule « dirigeant » et non « gerant » (SELAS), entete
+# profession (jamais « Docteur »), ordre du jour en tirets, suppression de la
+# mention « X exemplaires », signatures en cases (pas de decalage).
+# ---------------------------------------------------------------------------
+
+
+def test_pv_nomination_selas_intitule_dirigeant_jamais_gerant(tmp_path: Path) -> None:
+    # PV1 : « ce ne sont justement pas des gerants » -> aucun « gerant »/« gerante »
+    # dans le PV SELAS (l'intitule parle de Président / Directeur Général).
+    text = _docx_text(_generate(tmp_path, _selas_context(dirigeants=_selas_dirigeants())))
+
+    assert "gérant" not in text.lower()
+    assert "Nomination du Président" in text
+    assert "Nomination du Directeur Général" in text
+
+
+def test_pv_nomination_selas_entete_profession_pas_docteur(tmp_path: Path) -> None:
+    # PV2 : l'entete affiche la PROFESSION (« chirurgien-dentiste »), jamais le
+    # titre « Docteur » — meme si le front n'a fourni que « Docteur ».
+    ctx = _selas_context(dirigeants=_selas_dirigeants())
+    for associe in ctx.associes:
+        associe.profession_reglementee = "chirurgien-dentiste"
+    paragraphs = _paragraphs(_generate(tmp_path, ctx))
+
+    assert (
+        "Société d’exercice libéral par actions simplifiée de chirurgien-dentiste"
+        in paragraphs
+    )
+    assert not any("de Docteur" in p for p in paragraphs)
+
+
+def test_pv_nomination_header_excludes_docteur_title_fallback(tmp_path: Path) -> None:
+    # PV2 (garde-fou) : si la seule donnee est « Docteur » (titre), l'entete ne
+    # doit PAS afficher « de Docteur » — le titre est ecarte comme profession.
+    ctx = _selas_context(dirigeants=_selas_dirigeants())
+    for associe in ctx.associes:
+        associe.profession_reglementee = None
+        associe.qualification_principale = None
+        associe.profession = "Docteur"
+    text = _docx_text(_generate(tmp_path, ctx))
+
+    assert "de Docteur" not in text
+
+
+def test_pv_nomination_selas_ordre_du_jour_tirets(tmp_path: Path) -> None:
+    # PV4 : points de l'ordre du jour prefixes d'un tiret « - » (plus de « · »).
+    paragraphs = _paragraphs(_generate(tmp_path, _selas_context(dirigeants=_selas_dirigeants())))
+
+    assert "- Nomination du Président" in paragraphs
+    assert "- Nomination du Directeur Général" in paragraphs
+    assert "- Pouvoirs" in paragraphs
+    assert not any(p.startswith("·") for p in paragraphs)
+
+
+def test_pv_nomination_supprime_mention_exemplaires(tmp_path: Path) -> None:
+    # PV6 : « en quatre exemplaires » apres la ville est supprime (SELAS + SELARL).
+    selas_text = _docx_text(_generate(tmp_path, _selas_context(dirigeants=_selas_dirigeants())))
+    assert "Fait à Rennes" in selas_text
+    assert "exemplaires" not in selas_text
+    assert "quatre exemplaires" not in selas_text
+
+    selarl_text = _docx_text(_generate(tmp_path / "selarl", _context(associes=_associes(1))))
+    assert "Fait à Paris" in selarl_text
+    assert "exemplaires" not in selarl_text
+
+
+def test_pv_nomination_selarl_garde_intitule_gerant(tmp_path: Path) -> None:
+    # Non-regression PV1 : la SELARL nomme un GERANT -> « gérant »/« gérante »
+    # reste correct (l'intitule « dirigeant » de PV1 ne s'impose qu'au SELAS).
+    text = _docx_text(_generate(tmp_path, _context(associes=_associes(1))))
+
+    assert "Nomination du gérant" in text
+    assert "Bon pour acceptation des fonctions de gérante" in text
