@@ -47,6 +47,22 @@ from sydel_doc_engine.front_app import (
 _LOT4 = Path("project/source_documents/lot_04")
 _HEADING_RE = re.compile(r"^\s*(ARTICLE|TITRE)\b", re.IGNORECASE)
 
+# Transformations d'en-tetes INTENTIONNELLES, sanctionnees par retour client, par type de
+# statuts. Le rendu remplace l'en-tete SOURCE (cle) par sa version transformee (valeur) ; le
+# verrou de fidelite verifie donc la presence de la VERSION TRANSFORMEE, pas du verbatim source.
+# Tout le reste des en-tetes doit rester verbatim.
+_HEADING_TRANSFORMS: dict[str, dict[str, str]] = {
+    # ST7g (Albane 2026-06-26) : les titres a casse cassee du modele medecin (art. 16/17/22)
+    # sont mis en MAJUSCULES integrales (cf. _SELAS_MEDECIN_BROKEN_TITLE_SOURCES du generateur).
+    "Statuts SELAS EXEMPLE.docx": {
+        "ARTICLE 16 – des DECISIONS sociales": "ARTICLE 16 – DES DECISIONS SOCIALES",
+        "ARTICLE 17 - CONVENTIONS ENTRE leS DIRIgerantS ou les associes et la societe": (
+            "ARTICLE 17 - CONVENTIONS ENTRE LES DIRIGERANTS OU LES ASSOCIES ET LA SOCIETE"
+        ),
+        "ARTICLE 22 – variation du capital": "ARTICLE 22 – VARIATION DU CAPITAL",
+    },
+}
+
 
 def _nfc(value: str) -> str:
     return unicodedata.normalize("NFC", value)
@@ -167,7 +183,10 @@ def test_statuts_source_headings_all_present(
     generated = generate(tmp_path)
     statuts_path = _gen_statuts(generated, statuts_name)
 
-    source_headings = _headings(source_resolver())
+    transforms = _HEADING_TRANSFORMS.get(statuts_name, {})
+    # On applique les transformations sanctionnees a l'en-tete SOURCE avant comparaison : le
+    # rendu doit porter la version transformee (ST7g : MAJUSCULES), pas le verbatim a casse cassee.
+    source_headings = [transforms.get(h, h) for h in _headings(source_resolver())]
     generated_headings = _headings(statuts_path)
     generated_set = set(generated_headings)
 
@@ -199,7 +218,17 @@ _BODY_ALLOWLIST: dict[str, tuple[str, ...]] = {
     "statuts_sci_iris.docx": ("lettre de mission", "acompte des honoraires"),
     "statuts_spfpl_cession": ("lettre de mission", "acompte des honoraires"),
     # ST1 (Albane 2026-06-26) : nom de fichier porte la denomination -> cle alignee.
-    "Statuts SELAS EXEMPLE.docx": ("lettre de mission", "acompte des honoraires"),
+    # ST7g (Albane 2026-06-26) : titres art. 16/17/22 a casse cassee RENDUS en MAJUSCULES
+    # integrales (transformation sanctionnee, cf. _HEADING_TRANSFORMS) -> la ligne SOURCE a casse
+    # cassee n'apparait plus verbatim (sa version MAJUSCULES est presente, verifiee par le verrou
+    # d'en-tetes). Marqueurs = segments distinctifs de la casse source.
+    "Statuts SELAS EXEMPLE.docx": (
+        "lettre de mission",
+        "acompte des honoraires",
+        "des DECISIONS sociales",
+        "ENTRE leS DIRIgerantS",
+        "variation du capital",
+    ),
     # SCM : O24-01 + « ci- 510 € » = valeur d'EXEMPLE du modele (montant reinjecte dynamiquement) ;
     # « Faire preceder » / « Lu et approuve » = artefact du modele source SCM (texte de la mention
     # de signature DUPLIQUE dans un meme paragraphe), rendu de-duplique cote sortie.

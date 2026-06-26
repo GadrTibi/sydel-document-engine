@@ -531,10 +531,12 @@ def test_selas_multi_dentiste_genere_depuis_le_corpus_dentiste(tmp_path: Path) -
     assert "- Madame Marie LEROUX, 510 actions" in text
     assert "Total des actions composant le capital social\xa0: \t\t\t\t\t1020 actions" in text
 
-    # Signature dentiste : "Fait a [lieu]" + date + ligne de noms.
+    # Signature dentiste : "Fait a [lieu]" + date + cases de signature (ST7h : tableau borde,
+    # une case ~5 cm par signataire — les noms ne sont plus tabules sur une seule ligne).
     assert "Fait à Rennes" in text
     assert "Le 22/09/2026" in text
-    assert "Jean-Guillaume FUCHS\t\t\t\tMarie LEROUX" in text
+    assert "Jean-Guillaume FUCHS" in text
+    assert "Marie LEROUX" in text
 
 
 def test_selas_multi_physical_associe_masculin_accorde_ne_et_inscrit(tmp_path: Path) -> None:
@@ -683,3 +685,270 @@ def test_st6_president_accorde_au_genre(tmp_path: Path) -> None:
     text_f = _docx_text(StatutsSelasMultiGenerator().generate(ctx_f, tmp_path / "f"))
     assert "est nommée présidente de la Société et ce pour une durée illimitée." in text_f
     assert "est nommé président de la Société" not in text_f
+
+
+# =============================================================================================
+# ST7 — PRESENTATION des statuts SELAS multi (Albane 2026-06-26, section « Statuts »).
+# Tests ADVERSARIAUX sur la sortie DOCX reelle : alignement, gras, casse, hauteur de case.
+# =============================================================================================
+
+from docx.enum.text import WD_ALIGN_PARAGRAPH as _AL  # noqa: E402
+
+
+def _para_is_bold(paragraph) -> bool:
+    """Vrai si tous les runs non vides du paragraphe sont en gras."""
+    runs = [r for r in paragraph.runs if r.text.strip()]
+    return bool(runs) and all(r.bold for r in runs)
+
+
+def _find_paras(document, predicate):
+    return [p for p in document.paragraphs if predicate(p.text.strip())]
+
+
+def test_st7a_entete_medecin_centre_et_nom_gras(tmp_path: Path) -> None:
+    # ST7a : centrer l'en-tete, et le NOM de la societe en gras dans l'en-tete.
+    ctx = _context(
+        associes=[
+            _physical_associe(
+                prenoms="Jean", nom="Durand", nb_actions=75,
+                montant="750", montant_lettres="sept cent cinquante",
+            ),
+            _morale_associe(
+                nb_actions=25, montant="250", montant_lettres="deux cent cinquante",
+            ),
+        ]
+    )
+    ctx.societe.denomination = "Cabinet Durand"
+    document = Document(StatutsSelasMultiGenerator().generate(ctx, tmp_path))
+
+    # Le NOM de la societe (token autonome) : 1re occurrence = en-tete -> CENTRE + GRAS + MAJ.
+    noms = _find_paras(document, lambda t: t == "CABINET DURAND")
+    assert noms, "le nom de la societe en majuscules est introuvable"
+    entete_nom = noms[0]
+    assert entete_nom.alignment == _AL.CENTER
+    assert _para_is_bold(entete_nom)
+
+    # Les 3 lignes d'en-tete (forme, capital, siege) sont CENTREES (le nom seul est gras).
+    forme = _find_paras(document, lambda t: t.startswith("Société d’exercice libéral"))
+    capital = _find_paras(document, lambda t: t.startswith("Au capital de"))
+    siege_entete = _find_paras(document, lambda t: t.startswith("Siège social"))
+    assert forme and forme[0].alignment == _AL.CENTER
+    assert capital and capital[0].alignment == _AL.CENTER
+    assert siege_entete and siege_entete[0].alignment == _AL.CENTER
+
+
+def test_st7d_article3_nom_centre_et_gras(tmp_path: Path) -> None:
+    # ST7d : article 3 — le nom de la societe au milieu (centre) en gras.
+    ctx = _context(
+        associes=[
+            _physical_associe(
+                prenoms="Jean", nom="Durand", nb_actions=75,
+                montant="750", montant_lettres="sept cent cinquante",
+            ),
+            _morale_associe(
+                nb_actions=25, montant="250", montant_lettres="deux cent cinquante",
+            ),
+        ]
+    )
+    ctx.societe.denomination = "Cabinet Durand"
+    document = Document(StatutsSelasMultiGenerator().generate(ctx, tmp_path))
+
+    # 2e occurrence du nom autonome = art. 3 (la 1re est l'en-tete) ; centree + grasse.
+    noms = _find_paras(document, lambda t: t == "CABINET DURAND")
+    assert len(noms) >= 2, "le nom autonome de l'article 3 est introuvable"
+    art3_nom = noms[1]
+    assert art3_nom.alignment == _AL.CENTER
+    assert _para_is_bold(art3_nom)
+
+
+def test_st7e_article4_siege_centre_et_gras(tmp_path: Path) -> None:
+    # ST7e : article 4 — le siege social centre/gras comme le nom.
+    ctx = _context(
+        associes=[
+            _physical_associe(
+                prenoms="Jean", nom="Durand", nb_actions=75,
+                montant="750", montant_lettres="sept cent cinquante",
+            ),
+            _morale_associe(
+                nb_actions=25, montant="250", montant_lettres="deux cent cinquante",
+            ),
+        ]
+    )
+    document = Document(StatutsSelasMultiGenerator().generate(ctx, tmp_path))
+    siege = _find_paras(document, lambda t: t.startswith("Le siège social est fixé au"))
+    assert siege, "la phrase du siege social (art. 4) est introuvable"
+    assert siege[0].alignment == _AL.CENTER
+    assert _para_is_bold(siege[0])
+
+
+def test_st7f_president_designation_nom_et_adresse_en_gras(tmp_path: Path) -> None:
+    # ST7f : article 14.1 designation — le nom du dirigeant ET son adresse en gras.
+    president = _physical_associe(
+        prenoms="Jean", nom="Durant", nb_actions=75,
+        montant="750", montant_lettres="sept cent cinquante", qualite="associé exerçant",
+    ).model_copy(update={"genre": Gender.MASCULIN, "civilite_affichage": "Monsieur"})
+    autre = _physical_associe(
+        prenoms="Claire", nom="Martin", nb_actions=25,
+        montant="250", montant_lettres="deux cent cinquante",
+    )
+    ctx = _context(associes=[president, autre])
+    document = Document(StatutsSelasMultiGenerator().generate(ctx, tmp_path))
+
+    nom_pres = _find_paras(document, lambda t: t == "Monsieur Jean Durant")
+    adresse_pres = _find_paras(document, lambda t: t.startswith("Demeurant 10 rue de l'Exemple"))
+    assert nom_pres, "le nom du president (art. 14.1) est introuvable"
+    assert adresse_pres, "l'adresse du president (art. 14.1) est introuvable"
+    # Le bloc nominatif du president (le SEUL « Monsieur Jean Durant » + « Demeurant … » de
+    # l'art. 14.1) est en gras.
+    assert any(_para_is_bold(p) for p in nom_pres)
+    assert _para_is_bold(adresse_pres[0])
+
+
+def test_st7g_titres_articles_16_17_22_en_majuscules(tmp_path: Path) -> None:
+    # ST7g : articles 16, 17, 22 — titres a casse cassee mis en MAJUSCULES integrales.
+    ctx = _context(
+        associes=[
+            _physical_associe(
+                prenoms="Jean", nom="Durand", nb_actions=75,
+                montant="750", montant_lettres="sept cent cinquante",
+            ),
+            _morale_associe(
+                nb_actions=25, montant="250", montant_lettres="deux cent cinquante",
+            ),
+        ]
+    )
+    text = _docx_text(StatutsSelasMultiGenerator().generate(ctx, tmp_path))
+
+    # Les titres source a casse cassee sont ABSENTS ; leur version MAJUSCULES est presente.
+    assert "des DECISIONS sociales" not in text
+    assert "ENTRE leS DIRIgerantS" not in text
+    assert "variation du capital" not in text
+    assert "ARTICLE 16 – DES DECISIONS SOCIALES" in text
+    assert "ARTICLE 17 - CONVENTIONS ENTRE LES DIRIGERANTS OU LES ASSOCIES ET LA SOCIETE" in text
+    assert "ARTICLE 22 – VARIATION DU CAPITAL" in text
+
+
+def test_st7h_signature_cases_borduees_de_cinq_cm(tmp_path: Path) -> None:
+    # ST7h : cases de signature ~5 cm pour que l'encadre passe sans decaler les noms.
+    ctx = _context(
+        associes=[
+            _physical_associe(
+                prenoms="Jean", nom="Durand", nb_actions=75,
+                montant="750", montant_lettres="sept cent cinquante",
+            ),
+            _morale_associe(
+                nb_actions=25, montant="250", montant_lettres="deux cent cinquante",
+            ),
+        ]
+    )
+    document = Document(StatutsSelasMultiGenerator().generate(ctx, tmp_path))
+
+    # Une case (cellule de tableau) par signataire, hauteur de ligne >= ~5 cm.
+    signature_tables = []
+    for table in document.tables:
+        cell_texts = [c.text for c in table.rows[0].cells]
+        if any("Jean Durand" in t for t in cell_texts):
+            signature_tables.append(table)
+    assert signature_tables, "le tableau de signature (ST7h) est introuvable"
+    sig = signature_tables[0]
+    row = sig.rows[0]
+    assert row.height is not None, "la hauteur de case de signature n'est pas posee"
+    assert row.height.cm >= 4.9, f"case de signature trop petite : {row.height.cm} cm"
+    # Une cellule par signataire (le nom n'est plus tabule sur une seule ligne).
+    assert len(sig.rows[0].cells) == 2
+    cell_texts = [c.text for c in sig.rows[0].cells]
+    assert any("Jean Durand" in t for t in cell_texts)
+    assert any("SOCIETE CIVILE EXEMPLE" in t for t in cell_texts)
+
+
+def test_st7b_espace_avant_et_apres_le_cadre_statuts(tmp_path: Path) -> None:
+    # ST7b : de l'espace avant ET apres le cadre des statuts.
+    from docx.oxml.ns import qn
+
+    ctx = _context(
+        associes=[
+            _physical_associe(
+                prenoms="Jean", nom="Durand", nb_actions=75,
+                montant="750", montant_lettres="sept cent cinquante",
+            ),
+            _morale_associe(
+                nb_actions=25, montant="250", montant_lettres="deux cent cinquante",
+            ),
+        ]
+    )
+    document = Document(StatutsSelasMultiGenerator().generate(ctx, tmp_path))
+
+    # Parcours du corps en ordre de document : reperer le cadre « STATUTS » (table) et verifier
+    # qu'un paragraphe (espaceur) le precede ET le suit immediatement.
+    body = document.element.body
+    seq = []
+    for child in body.iterchildren():
+        if child.tag == qn("w:p"):
+            txt = "".join(n.text or "" for n in child.iter(qn("w:t")))
+            seq.append(("P", txt.strip()))
+        elif child.tag == qn("w:tbl"):
+            txt = "".join(n.text or "" for n in child.iter(qn("w:t")))
+            seq.append(("TBL", txt.strip()))
+    box_idx = next(i for i, (k, t) in enumerate(seq) if k == "TBL" and "STATUTS" in t)
+    assert seq[box_idx - 1] == ("P", ""), "espaceur AVANT le cadre STATUTS manquant (ST7b)"
+    assert seq[box_idx + 1] == ("P", ""), "espaceur APRES le cadre STATUTS manquant (ST7b)"
+
+
+def test_st7c_espace_entre_chaque_soussigne(tmp_path: Path) -> None:
+    # ST7c : de l'espace entre chaque soussigne (au debut).
+    ctx = _context(
+        associes=[
+            _physical_associe(
+                prenoms="Jean", nom="Durand", nb_actions=50,
+                montant="500", montant_lettres="cinq cents",
+            ),
+            _physical_associe(
+                prenoms="Claire", nom="Martin", nb_actions=50,
+                montant="500", montant_lettres="cinq cents",
+            ),
+        ]
+    )
+    document = Document(StatutsSelasMultiGenerator().generate(ctx, tmp_path))
+    texts = [p.text.strip() for p in document.paragraphs]
+
+    # Entre la fin de la comparution de l'associe 1 (ligne « Inscrit(e)… ») et le debut de
+    # l'associe 2 (« Madame Claire Martin … »), il y a un paragraphe vide (espaceur ST7c).
+    idx_a1_fin = next(
+        i for i, t in enumerate(texts) if t.startswith("Inscrit") and "au tableau du conseil" in t
+    )
+    idx_a2_debut = next(
+        i for i, t in enumerate(texts)
+        if t.startswith("Madame Claire Martin") and i > idx_a1_fin
+    )
+    assert any(texts[j] == "" for j in range(idx_a1_fin + 1, idx_a2_debut)), (
+        "aucun espaceur entre les deux soussignes (ST7c)"
+    )
+
+
+def test_st7h_signature_cases_dentiste(tmp_path: Path) -> None:
+    # ST7h propage au corpus dentiste : cases de signature ~5 cm, une par signataire.
+    ctx = _dentiste_context(
+        associes=[
+            _dentiste_associe(
+                prenoms="Jean-Guillaume", nom="FUCHS", genre=Gender.MASCULIN,
+                civilite="Monsieur", nb_actions=510, montant="510",
+                montant_lettres="CINQ CENT DIX", qualite="associé exerçant",
+                situation_maritale="marié sous le régime de la séparation des biens",
+            ),
+            _dentiste_associe(
+                prenoms="Marie", nom="LEROUX", genre=Gender.FEMININ,
+                civilite="Madame", nb_actions=510, montant="510",
+                montant_lettres="CINQ CENT DIX", qualite="associée exerçante",
+                situation_maritale="mariée sous le régime de la communauté",
+            ),
+        ]
+    )
+    document = Document(StatutsSelasMultiGenerator().generate(ctx, tmp_path))
+    signature_tables = [
+        t for t in document.tables
+        if any("FUCHS" in c.text for c in t.rows[0].cells)
+    ]
+    assert signature_tables, "tableau de signature dentiste introuvable (ST7h)"
+    row = signature_tables[0].rows[0]
+    assert row.height is not None and row.height.cm >= 4.9
+    assert len(row.cells) == 2

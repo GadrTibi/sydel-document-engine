@@ -6,6 +6,7 @@ from datetime import date
 from pathlib import Path
 
 from docx import Document
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import (
@@ -25,9 +26,11 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_statuts_body_paragraph,
     add_statuts_hanging_list_item,
     add_statuts_part_heading,
-    add_statuts_signature_block,
     add_statuts_title_box,
     new_document,
+)
+from sydel_doc_engine.rendering.docx_builder import (
+    add_signature_table as _add_signature_table,
 )
 from sydel_doc_engine.utils.grammar import elision_de
 
@@ -60,6 +63,43 @@ SIGNATURE_SLICE = (510, 511)
 # Le modele medecin vit avec un titre encadre "STATUTS" dans une TABLE (non iteree par
 # python-docx). On le restaure avant "LES SOUSSIGNEES" (para 14), comme les statuts civils.
 STATUTS_TITLE_BOX_BEFORE = 14
+
+# --- ST7 PRESENTATION (Albane 2026-06-26, section « Statuts ») ----------------------------
+#
+# Mise en forme PURE des statuts SELAS multi (medecin + dentiste). On NE CHANGE QUE la sortie
+# de CE generateur : aucun comportement partage du renderer n'est modifie par defaut. Les
+# fenetres sont ancrees par le TEXTE SOURCE EXACT (avant substitution des placeholders), pas
+# par index, pour ne cibler QUE les paragraphes vises et survivre a tout decalage d'index.
+#
+# ST7a : en-tete medecin (paras source 3/4/5 : forme, capital, siege) -> CENTRE. Le NOM de la
+#        societe (para 2, token « [denomination_societe] ») -> CENTRE + GRAS (deja .upper par ST5).
+# ST7d : art. 3 (para 46, meme token autonome « [denomination_societe] ») -> CENTRE + GRAS.
+# ST7e : art. 4 siege social (para 53, phrase complete) -> CENTRE + GRAS, « comme le nom ».
+_SELAS_MEDECIN_HEADER_LINES: frozenset[str] = frozenset(
+    {
+        "Société d’exercice libéral par Actions Simplifiée de [profession_reglementee]",
+        "Au capital de [capital_social] €",
+        "Siège social\xa0: [adresse_siege]",
+    }
+)
+# Phrase source de l'art. 4 (siege social) — centree + grasse comme le nom (ST7e).
+_SELAS_MEDECIN_ART4_SIEGE_SOURCE = "Le siège social est fixé au [adresse_siege]."
+
+# ST7g : les TITRES d'articles du modele MEDECIN ont une casse cassee
+# (« des DECISIONS sociales », « ENTRE leS DIRIgerantS », « variation du capital »). On force
+# le titre entier en MAJUSCULES. Cible : ces trois titres source EXACTS (art. 16, 17, 22) ;
+# les titres dentiste sont deja en casse propre et ne sont PAS touches.
+_SELAS_MEDECIN_BROKEN_TITLE_SOURCES: frozenset[str] = frozenset(
+    {
+        "ARTICLE 16 – des DECISIONS sociales",
+        "ARTICLE 17 - CONVENTIONS ENTRE leS DIRIgerantS ou les associes et la societe",
+        "ARTICLE 22 – variation du capital",
+    }
+)
+
+# ST7h : cases de signature ~5 cm de haut pour que l'encadre de signature passe sans decaler
+# les noms. Hauteur de ligne du tableau de signature, en cm.
+_SELAS_SIGNATURE_ROW_HEIGHT_CM = 5.0
 
 
 @dataclass(frozen=True)
@@ -121,6 +161,11 @@ class StatutsSelasMultiGenerator:
             if index < skip_until:
                 continue
             if profile.title_box_before is not None and index == profile.title_box_before:
+                # ST7b (Albane 2026-06-26) : de l'espace AVANT le cadre des statuts (le helper
+                # add_statuts_title_box pose deja un espaceur APRES). On ajoute ici l'espaceur
+                # AVANT, cote generateur, pour ne pas toucher le comportement par defaut du
+                # helper partage (sept autres appelants : statuts civils, SELARL...).
+                _add_statuts_box_spacer(output_doc)
                 add_statuts_title_box(output_doc, "STATUTS")
             if index == profile.comparution_slice[0]:
                 profile.add_comparution(output_doc, data)
@@ -163,7 +208,47 @@ class StatutsSelasMultiGenerator:
             # MAJUSCULES. On cible ce paragraphe precis : les autres occurrences du token
             # (pied de page, mention « ... destines aux tiers ») gardent la casse saisie.
             if text == "[denomination_societe]":
-                _add_rendered_paragraph(output_doc, data.denomination.upper())
+                # ST7a/ST7d (Albane 2026-06-26) : ce token AUTONOME porte le NOM de la societe,
+                # a l'en-tete (para 2) ET a l'article 3 (para 46). Mise en forme PRESENTATION :
+                # CENTRE + GRAS (en plus du .upper() ST5). Cible le SEUL paragraphe nom ; les
+                # autres occurrences du token (pied de page, « ... destines aux tiers ») gardent
+                # leur casse/alignement.
+                add_paragraph(
+                    output_doc,
+                    data.denomination.upper(),
+                    alignment=WD_ALIGN_PARAGRAPH.CENTER,
+                    bold=True,
+                )
+                continue
+            # ST7a (Albane 2026-06-26) : le reste de l'en-tete medecin (forme, capital, siege)
+            # est CENTRE (le nom seul est gras, gere ci-dessus).
+            if text in _SELAS_MEDECIN_HEADER_LINES:
+                rendered_header = _replace_placeholders(text, replacements)
+                add_paragraph(
+                    output_doc,
+                    rendered_header,
+                    alignment=WD_ALIGN_PARAGRAPH.CENTER,
+                )
+                continue
+            # ST7e (Albane 2026-06-26) : art. 4 siege social CENTRE + GRAS, « comme le nom ».
+            # Le modele porte une phrase complete (pas une ligne d'adresse autonome) -> on
+            # centre/grasse la phrase entiere telle qu'elle figure au modele.
+            if text == _SELAS_MEDECIN_ART4_SIEGE_SOURCE:
+                rendered_siege = _replace_placeholders(text, replacements)
+                add_paragraph(
+                    output_doc,
+                    rendered_siege,
+                    alignment=WD_ALIGN_PARAGRAPH.CENTER,
+                    bold=True,
+                )
+                continue
+            # ST7g (Albane 2026-06-26) : titres d'articles medecin a casse cassee (art. 16/17/22)
+            # -> MAJUSCULES integrales. Cible les trois titres source EXACTS ; les autres titres
+            # (deja propres) et les titres dentiste ne sont pas touches.
+            if text in _SELAS_MEDECIN_BROKEN_TITLE_SOURCES:
+                add_statuts_article_heading(
+                    output_doc, text.upper(), left_indent_cm=0.25
+                )
                 continue
             # ST6 (Albane 2026-06-26) : « article 14.1 : j'ai mis un homme mais c'est ecrit
             # "est nommee presidente", genrer aussi ». Ce paragraphe source (modele medecin,
@@ -326,7 +411,13 @@ def _add_comparution_block(document, data: _ResolvedSelasMulti) -> None:
         data.selas.profession_reglementee_pluriel,
         "statuts_selas_multi.profession_reglementee_pluriel",
     )
-    for associe in data.associes:
+    for index, associe in enumerate(data.associes):
+        # ST7c (Albane 2026-06-26) : de l'espace entre chaque soussigne (au debut). On insere
+        # un paragraphe espaceur AVANT chaque associe sauf le premier, pour aerer la liste de
+        # comparution sans toucher au wording. Le modele medecin separait deja les associes par
+        # un paragraphe vide source (para 18) ; on le reproduit de facon deterministe pour N.
+        if index:
+            _add_soussigne_spacer(document)
         if _is_morale(associe):
             _add_morale_comparution(document, associe)
         else:
@@ -462,16 +553,27 @@ def _add_capital_block(document, data: _ResolvedSelasMulti) -> None:
 def _add_president_block(document, data: _ResolvedSelasMulti) -> None:
     president = data.president
     # Source para 221 : "[civilite] [prenoms] [nom]" puis para 222 : "Demeurant [adresse].".
-    add_paragraph(document, _person_label(president))
-    add_paragraph(document, f"Demeurant {_person_address(president)}.")
+    # ST7f (Albane 2026-06-26) : art. 14.1 DESIGNATION -> le NOM du dirigeant ET son ADRESSE
+    # en GRAS. Bloc nominatif present uniquement sur le modele medecin (le corpus dentiste ne
+    # nomme jamais le president, cf. _DENTISTE_PROFILE.add_president=None) : ST7f y est donc
+    # sans objet.
+    add_paragraph(document, _person_label(president), bold=True)
+    add_paragraph(document, f"Demeurant {_person_address(president)}.", bold=True)
 
 
 def _add_signature_line(document, data: _ResolvedSelasMulti) -> None:
     # Source para 510 : "[prenoms_personne_1] [nom_personne_1]\t\t\t\t\t\t[denomination_associe_1]".
-    # Generalise N : on aligne les etiquettes courtes des signataires separees par six
-    # tabulations, dans l'ordre des associes (physique = prenoms + nom ; morale = denomination).
+    # Generalise N : etiquettes courtes des signataires, dans l'ordre des associes
+    # (physique = prenoms + nom ; morale = denomination).
+    # ST7h (Albane 2026-06-26) : prevoir des cases ~5 cm pour que l'encadre de signature passe
+    # sans decaler les noms -> on rend la ligne de signature dans un TABLEAU BORDE, une case par
+    # signataire, hauteur de ligne ~5 cm (au lieu d'une ligne de texte tabulee qui se decalait).
     labels = [_signature_short_label(a) for a in data.associes if a.est_signataire]
-    add_statuts_signature_block(document, ["\t\t\t\t\t\t".join(labels)])
+    _add_signature_table(
+        document,
+        [labels],
+        min_row_height_cm=_SELAS_SIGNATURE_ROW_HEIGHT_CM,
+    )
 
 
 # --- Blocs dynamiques DENTISTE (wording reproduit A L'IDENTIQUE du modele dentiste) ---------
@@ -498,7 +600,10 @@ def _add_comparution_block_dentiste(document, data: _ResolvedSelasMulti) -> None
         data.selas.profession_reglementee_pluriel,
         "statuts_selas_multi.profession_reglementee_pluriel",
     )
-    for associe in data.associes:
+    for index, associe in enumerate(data.associes):
+        # ST7c (Albane 2026-06-26) : espace entre chaque soussigne (propagation Q4 au dentiste).
+        if index:
+            _add_soussigne_spacer(document)
         if _is_morale(associe):
             _add_morale_comparution(document, associe)
         else:
@@ -608,9 +713,14 @@ def _add_signature_line_dentiste(document, data: _ResolvedSelasMulti) -> None:
     add_paragraph(document, f"Fait à {data.signature_lieu}")
     add_paragraph(document, f"Le {data.signature_date}")
     add_paragraph(document, "")
-    add_paragraph(document, "\t\t")
+    # ST7h (Albane 2026-06-26, propagation Q4 au dentiste) : cases de signature ~5 cm dans un
+    # tableau borde, une case par signataire, au lieu de la ligne de noms tabulee qui decalait.
     labels = [_signature_short_label(a) for a in data.associes if a.est_signataire]
-    add_statuts_signature_block(document, ["\t\t\t\t".join(labels)])
+    _add_signature_table(
+        document,
+        [labels],
+        min_row_height_cm=_SELAS_SIGNATURE_ROW_HEIGHT_CM,
+    )
 
 
 def _dentiste_boilerplate_replacements(data: _ResolvedSelasMulti) -> dict[str, str]:
@@ -789,6 +899,16 @@ def _source_path(source_name: str) -> Path:
     if not path.exists():
         raise ValueError(f"source DOCX introuvable pour {DOCUMENT_CODE}: {path}")
     return path
+
+
+def _add_soussigne_spacer(document) -> None:
+    """ST7c : paragraphe espaceur entre deux soussignes de la comparution (presentation pure)."""
+    add_paragraph(document, "")
+
+
+def _add_statuts_box_spacer(document) -> None:
+    """ST7b : paragraphe espaceur AVANT le cadre « STATUTS » (espace avant le cadre)."""
+    add_paragraph(document, "")
 
 
 def _add_rendered_paragraph(document, text: str) -> None:
