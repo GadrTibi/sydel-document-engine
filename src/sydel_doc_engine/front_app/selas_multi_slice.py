@@ -65,8 +65,10 @@ from sydel_doc_engine.front_app.field_derivations import (
     is_capital_divisible,
     matrimonial_status_value,
     number_words_from_value,
+    pad_birthdate_day,
     parse_french_date,
     regime_communautaire_from_status,
+    situation_maritale_complete,
 )
 from sydel_doc_engine.front_app.front_widgets import (
     copyable_text_input,
@@ -884,6 +886,17 @@ def _physique(prefix: str, nb_actions: int, montant: str) -> StatutsCivilsAssoci
     numero_rpps = _ts(col_m, f"{prefix}_numero_rpps", "Numero RPPS")
     qualite = _ts(st, f"{prefix}_qualite", "Qualite au capital (ex: associee exercante)")
     regime_associe = _render_conjoint_si_communaute(prefix, situation_label)
+    # ST4 (Albane 2026-06-26) : la comparution d'un associe MARIE doit porter le REGIME
+    # (« marie(e) sous le regime de ... ») ET le nom du conjoint, pas un « marie » nu.
+    # Le conjoint est saisi pour TOUT associe marie (cles de session ci-dessous, posees
+    # par _render_conjoint_si_communaute juste au-dessus).
+    situation_maritale = situation_maritale_complete(
+        situation_label,
+        genre,
+        conjoint_civilite=str(st.session_state.get(f"{prefix}_conjoint_civilite") or ""),
+        conjoint_prenom=str(st.session_state.get(f"{prefix}_conjoint_prenom") or ""),
+        conjoint_nom=str(st.session_state.get(f"{prefix}_conjoint_nom") or ""),
+    )
 
     return StatutsCivilsAssocie(
         type_personne="personne_physique",
@@ -894,12 +907,17 @@ def _physique(prefix: str, nb_actions: int, montant: str) -> StatutsCivilsAssoci
         nom=nom,
         # LIVE-03 : date de naissance a saisie LIBRE (text_input « 1 janvier 1980 »)
         # -> re-accentue les mois avant injection ; le generateur reste un echo fidele.
-        date_naissance=accentuate_french_months(date_naissance) if date_naissance else None,
+        # ST3 (Albane 2026-06-26) : jour de 1 a 9 zero-pade (« 01 janvier 1980 »).
+        date_naissance=(
+            pad_birthdate_day(accentuate_french_months(date_naissance))
+            if date_naissance
+            else None
+        ),
         ville_naissance=ville_naissance or None,
         departement_naissance=departement or None,
         nationalite=nationalite or None,
         profession=profession or None,
-        situation_maritale=_situation_display(situation_label, genre),
+        situation_maritale=situation_maritale,
         # #8 / B4 : adresse personnelle STRUCTUREE (saisie une seule fois). Sert la
         # comparution (affichage derive), la DNC du dirigeant et l'avertissement au
         # conjoint (foyer = domicile). Repli president supprime : toujours renseignee.
@@ -915,23 +933,6 @@ def _physique(prefix: str, nb_actions: int, montant: str) -> StatutsCivilsAssoci
         apport=_apport(montant),
         regime_communautaire_associe=regime_associe,
     )
-
-
-def _situation_display(situation_label: str, genre: Gender) -> str:
-    """Affichage genre-resolu de la situation matrimoniale pour la comparution (R10).
-
-    Le menu (MATRIMONIAL_STATUS_PRESETS) porte des libelles « Marie(e) », « Pacsé(e) »,
-    etc. ; la comparution SELAS rend `situation_maritale` brut -> on stocke le mot
-    d'etat civil accorde et accentue (comme le `[situation_maritale]` du gold)."""
-    feminin = genre == Gender.FEMININ
-    table = {
-        "marie": "mariée" if feminin else "marié",
-        "pacse": "pacsée" if feminin else "pacsé",
-        "divorce": "divorcée" if feminin else "divorcé",
-        "veuf": "veuve" if feminin else "veuf",
-        "celibataire": "célibataire",
-    }
-    return table.get(matrimonial_status_value(situation_label), "célibataire")
 
 
 def _render_conjoint_si_communaute(

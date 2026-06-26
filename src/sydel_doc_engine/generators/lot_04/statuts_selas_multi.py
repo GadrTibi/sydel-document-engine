@@ -16,6 +16,9 @@ from sydel_doc_engine.domain.models import (
     StatutsSelasMultiPresident,
 )
 from sydel_doc_engine.generators.lot_04.annexe_filter import is_creation_fee_annexe_line
+from sydel_doc_engine.generators.lot_04.statuts_sel_exercice_common import (
+    statuts_output_filename,
+)
 from sydel_doc_engine.rendering.docx_builder import (
     add_paragraph,
     add_statuts_article_heading,
@@ -153,6 +156,28 @@ class StatutsSelasMultiGenerator:
             # (add_statuts_hanging_list_item). Systemique : toute puce a ce style.
             if _is_tiret_list_paragraph(paragraph) and not text.startswith("-"):
                 text = f"- {text}"
+            # ST5 (Albane 2026-06-26) : « article [denomination] : le nom est a moitie en
+            # majuscule et minuscule, harmoniser pour mettre en majuscule partout ». Le
+            # paragraphe AUTONOME qui porte uniquement la denomination sociale (art. 3 du
+            # modele medecin, para source « [denomination_societe] » seul) est rendu en
+            # MAJUSCULES. On cible ce paragraphe precis : les autres occurrences du token
+            # (pied de page, mention « ... destines aux tiers ») gardent la casse saisie.
+            if text == "[denomination_societe]":
+                _add_rendered_paragraph(output_doc, data.denomination.upper())
+                continue
+            # ST6 (Albane 2026-06-26) : « article 14.1 : j'ai mis un homme mais c'est ecrit
+            # "est nommee presidente", genrer aussi ». Ce paragraphe source (modele medecin,
+            # art. 14.1) est FIGE au feminin. On l'accorde au sexe du President nomme :
+            # homme -> « est nomme president », femme -> « est nommee presidente ».
+            if text == "est nommée présidente de la Société et ce pour une durée illimitée.":
+                feminin = _associe_est_feminin(data.president)
+                nomme = "nommée" if feminin else "nommé"
+                fonction = "présidente" if feminin else "président"
+                _add_rendered_paragraph(
+                    output_doc,
+                    f"est {nomme} {fonction} de la Société et ce pour une durée illimitée.",
+                )
+                continue
             rendered = _replace_placeholders(text, replacements)
             if is_creation_fee_annexe_line(rendered):  # O24-01 : annexe sans frais cabinet création
                 continue
@@ -167,7 +192,12 @@ class StatutsSelasMultiGenerator:
             raise ValueError(f"placeholder source residuel dans le rendu {DOCUMENT_CODE}.")
 
         output_dir.mkdir(parents=True, exist_ok=True)
-        output_path = output_dir / "statuts_selas_multi.docx"
+        # ST1 (Albane 2026-06-26) : « remettre le nom de la societe dans l'intitule du doc
+        # des statuts pour avoir "Statuts nom" » -> meme helper que les statuts civils /
+        # SELARL (statuts_output_filename), denomination vide -> fallback historique.
+        output_path = output_dir / statuts_output_filename(
+            data.denomination, "statuts_selas_multi.docx"
+        )
         output_doc.save(output_path)
         return output_path
 
@@ -327,8 +357,7 @@ def _add_physical_comparution(
     add_paragraph(
         document,
         f"{_person_label(associe)}, "
-        f"{_required_text(associe.profession, 'associes[].profession')} "
-        f"{_required_text(associe.qualification_principale, 'associes[].qualification_principale')}"
+        f"{_qualite_comparution(associe)}"
         ", "
         f"{ne} le {_format_display_date(associe.date_naissance, 'associes[].date_naissance')} "
         f"à {_required_text(associe.ville_naissance, 'associes[].ville_naissance')} "
@@ -607,9 +636,10 @@ def _dentiste_boilerplate_replacements(data: _ResolvedSelasMulti) -> dict[str, s
     banque_nom = _required_text(selas.banque_nom, "statuts_selas_multi.banque_nom")
     banque_adresse = _required_text(selas.banque_adresse, "statuts_selas_multi.banque_adresse")
     return {
-        # Para 39 : denomination.
+        # Para 39 : denomination. ST5 (Albane 2026-06-26, propagation Q4 au corpus
+        # dentiste) : le nom de la societe est harmonise en MAJUSCULES.
         "La société est dénommée « Cabinet Dentaire Fuchs & Associés »,": (
-            f"La société est dénommée « {data.denomination} »,"
+            f"La société est dénommée « {data.denomination.upper()} »,"
         ),
         # Para 55 : siege social.
         "Le siège de la société est fixé au 9 rue du Général Chassereau, "
@@ -805,6 +835,27 @@ def _person_label(associe: StatutsCivilsAssocie) -> str:
         f"{_required_text(prenoms, 'associes[].prenoms')} "
         f"{_required_text(associe.nom, 'associes[].nom')}"
     )
+
+
+def _qualite_comparution(associe: StatutsCivilsAssocie) -> str:
+    """Segment « profession qualification » de la comparution medecin.
+
+    ST2 (Albane 2026-06-26) : « j'ai "Monsieur Jean Durant, Docteur Medecin
+    generaliste", il y a un "Docteur" en trop car je n'ai rien ajoute dans le
+    formulaire ». Le front a RETIRE le champ profession (#9, onglet 24) et le fige
+    a « Docteur » -> la comparution sortait « Docteur [qualification] », avec un
+    titre parasite que l'operateur n'a jamais saisi. On n'emet plus ce titre
+    generique : la QUALIFICATION (la profession reelle saisie, ex. « Medecin
+    generaliste ») porte seule. Une profession reellement distincte du titre
+    generique (jamais produite par le front actuel, mais possible en test direct)
+    reste prefixee, pour ne pas perdre une donnee saisie volontairement."""
+    qualification = _required_text(
+        associe.qualification_principale, "associes[].qualification_principale"
+    )
+    profession = (associe.profession or "").strip()
+    if not profession or profession.casefold() in {"docteur", "dr"}:
+        return qualification
+    return f"{profession} {qualification}"
 
 
 def _signature_short_label(associe: StatutsCivilsAssocie) -> str:

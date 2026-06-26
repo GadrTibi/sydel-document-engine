@@ -1910,7 +1910,7 @@ def test_selas_deux_maries_generent_deux_couples_distincts(tmp_path: Path) -> No
     # R2 (Albane 2026-06-26) : plus de mention « exemplaires » dans la renonciation.
     assert "exemplaires" not in durand_renonciation
     assert "exemplaires" not in petit_renonciation
-    _assert_bundle_clean(generated, {"statuts_selas_multi.docx"})
+    _assert_bundle_clean(generated, {_SELAS_STATUTS_NAME})
 
 
 def test_selas_deux_maries_adresses_foyer_distinctes(tmp_path: Path) -> None:
@@ -2047,8 +2047,11 @@ def _selas_payload_n(associes):
 # O24-02 (onglet 24) : la DNC porte le nom du dirigeant. La COMPLETUDE du bundle se
 # verifie au nom generique (cf. _assert_bundle_clean qui normalise) ; le nommage par
 # dirigeant (Durand president + Martin DG) est verifie par le test DNC multi dedie.
+# ST1 (Albane 2026-06-26) : le statuts porte la denomination dans son nom
+# (« Statuts SELAS EXEMPLE.docx » pour les payloads de denomination « SELAS EXEMPLE »).
+_SELAS_STATUTS_NAME = "Statuts SELAS EXEMPLE.docx"
 _SELAS_BUNDLE_NAMES = {
-    "statuts_selas_multi.docx",
+    _SELAS_STATUTS_NAME,
     "declaration_non_condamnation.docx",
     "autorisation_domiciliation.docx",
     "procuration.docx",
@@ -2078,7 +2081,7 @@ def test_selas_three_associes_generates_clean(tmp_path: Path) -> None:
     generated = selas_multi_slice.generate_dossier(payload, tmp_path / "selas3")
     _assert_bundle_clean(generated, _SELAS_BUNDLE_NAMES)
     statuts_text = _docx_text(
-        next(p for p in generated.docx_paths if p.name == "statuts_selas_multi.docx")
+        next(p for p in generated.docx_paths if p.name == _SELAS_STATUTS_NAME)
     )
     for nom in ("Durand", "Martin", "Petit"):
         assert nom in statuts_text
@@ -2099,7 +2102,7 @@ def test_selas_five_associes_generates_clean(tmp_path: Path) -> None:
     generated = selas_multi_slice.generate_dossier(payload, tmp_path / "selas5")
     _assert_bundle_clean(generated, _SELAS_BUNDLE_NAMES)
     statuts_text = _docx_text(
-        next(p for p in generated.docx_paths if p.name == "statuts_selas_multi.docx")
+        next(p for p in generated.docx_paths if p.name == _SELAS_STATUTS_NAME)
     )
     for nom in ("Durand", "Martin", "Petit", "Robert", "Bernard"):
         assert nom in statuts_text
@@ -2312,7 +2315,7 @@ def test_front_routes_to_sci_slice_and_generates(tmp_path: Path, monkeypatch) ->
         ("SPFPL medecins (forme SAS) creation V1", "statuts_sas_spfpl_medecins.docx"),
         ("SPFPL dentistes - cession creation V1", "statuts_spfpl_cession.docx"),
         ("SPFPL dentistes - apport creation V1", "statuts_spfpl_apport.docx"),
-        ("SELAS pluripersonnelle creation V1", "statuts_selas_multi.docx"),
+        ("SELAS pluripersonnelle creation V1", "Statuts SELAS EXEMPLE.docx"),
     ],
 )
 def test_typed_test_data_button_generates(
@@ -3534,7 +3537,7 @@ def test_front_selas_dentiste_pluri_uses_dentiste_corpus(
     app = app.run(timeout=180)
 
     statuts_files = list(
-        (tmp_path / "ui-selas-dentiste").rglob("statuts_selas_multi.docx")
+        (tmp_path / "ui-selas-dentiste").rglob(_SELAS_STATUTS_NAME)
     )
     assert statuts_files, "Statuts SELAS dentiste non generes."
     text = _docx_text(statuts_files[0])
@@ -3588,7 +3591,7 @@ def test_front_selas_change_dirigeant_generates(tmp_path: Path, monkeypatch) -> 
     app = app.run(timeout=180)
 
     download_labels = [item.label for item in app.get("download_button")]
-    assert "Telecharger statuts_selas_multi.docx" in download_labels
+    assert f"Telecharger {_SELAS_STATUTS_NAME}" in download_labels
     assert "Telecharger le dossier ZIP" in download_labels
 
 

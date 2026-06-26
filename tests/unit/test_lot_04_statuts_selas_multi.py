@@ -149,7 +149,9 @@ def test_selas_multi_generates_clean_docx(tmp_path: Path) -> None:
     output_path = StatutsSelasMultiGenerator().generate(ctx, tmp_path)
     text = _docx_text(output_path)
 
-    assert output_path.name == "statuts_selas_multi.docx"
+    # ST1 (Albane 2026-06-26) : le nom de la societe est porte par l'intitule du doc
+    # (« Statuts <denomination>.docx »), comme les statuts civils / SELARL.
+    assert output_path.name == "Statuts SELAS EXEMPLE.docx"
     # 0 placeholder residuel
     assert "[" not in text
     assert "]" not in text
@@ -210,9 +212,14 @@ def test_selas_multi_asserts_source_wording(tmp_path: Path) -> None:
     # En-tete / forme (wording source)
     assert "Société d’exercice libéral par Actions Simplifiée de médecin" in text
     assert "LES SOUSSIGNEES :" in text
-    # Comparution multi : personne physique + ligne ordre + personne morale
+    # Comparution multi : personne physique + ligne ordre + personne morale.
+    # ST2 (Albane 2026-06-26) : plus de titre « Docteur » parasite devant la
+    # qualification (le front figeait profession=« Docteur ») -> la qualification
+    # (profession reelle saisie) porte seule. Le fixture garde date_naissance
+    # « 1 janvier 1980 » : ST3 (zero-pad du jour) est applique au FRONT a la saisie,
+    # pas dans le generateur (echo fidele) -> ce builder direct conserve « 1 janvier ».
     assert (
-        "Madame Claire Durand, Docteur qualifiée en médecine générale, née le 1 janvier 1980 "
+        "Madame Claire Durand, qualifiée en médecine générale, née le 1 janvier 1980 "
         "à Lyon (69), de nationalité française, demeurant 10 rue de l'Exemple, 69000 Lyon, "
         "célibataire." in text
     )
@@ -497,7 +504,8 @@ def test_selas_multi_dentiste_genere_depuis_le_corpus_dentiste(tmp_path: Path) -
     )
 
     # Boilerplate concret du modele dentiste remplace par les donnees de la societe.
-    assert "La société est dénommée « Cabinet Dentaire Test & Associés »," in text
+    # ST5 (Albane 2026-06-26) : le nom de la societe est harmonise en MAJUSCULES.
+    assert "La société est dénommée « CABINET DENTAIRE TEST & ASSOCIÉS »," in text
     assert "Le siège de la société est fixé au 12 rue de la Paix, 35000 RENNES." in text
     assert (
         "Cette somme a été déposée au crédit du compte ouvert dans les livres de la Banque "
@@ -552,11 +560,126 @@ def test_selas_multi_physical_associe_masculin_accorde_ne_et_inscrit(tmp_path: P
 
     text = _docx_text(StatutsSelasMultiGenerator().generate(ctx, tmp_path))
 
-    # Femme : accord feminin conserve.
-    assert "Madame Claire Durand, Docteur qualifiée en médecine générale, née le" in text
+    # Femme : accord feminin conserve. ST2 (2026-06-26) : plus de « Docteur » parasite.
+    assert "Madame Claire Durand, qualifiée en médecine générale, née le" in text
     assert "Inscrite au tableau du conseil de l’ordre des médecins" in text
     # Homme : accord masculin (le bug).
-    assert "Monsieur Paul Martin, Docteur qualifiée en médecine générale, né le" in text
+    assert "Monsieur Paul Martin, qualifiée en médecine générale, né le" in text
     assert "Inscrit au tableau du conseil de l’ordre des médecins" in text
     # Pas de « née »/« Inscrite » accole au nom de l'homme.
-    assert "Monsieur Paul Martin, Docteur qualifiée en médecine générale, née le" not in text
+    assert "Monsieur Paul Martin, qualifiée en médecine générale, née le" not in text
+
+
+# --- Retours Albane 2026-06-26 (lot « Statuts SELAS multi ») : tests adversariaux ----------
+
+
+def test_st1_nom_fichier_porte_la_denomination(tmp_path: Path) -> None:
+    # ST1 : « remettre le nom de la societe dans l'intitule du doc des statuts pour avoir
+    # "Statuts nom" ». Le fichier de sortie n'est plus fige « statuts_selas_multi.docx ».
+    ctx = _context(
+        associes=[
+            _physical_associe(
+                prenoms="Claire", nom="Durand", nb_actions=75,
+                montant="750", montant_lettres="sept cent cinquante",
+            ),
+            _morale_associe(
+                nb_actions=25, montant="250", montant_lettres="deux cent cinquante",
+            ),
+        ]
+    )
+    ctx.societe.denomination = "Cabinet Durand"
+
+    output_path = StatutsSelasMultiGenerator().generate(ctx, tmp_path)
+
+    assert output_path.name == "Statuts Cabinet Durand.docx"
+    assert output_path.name != "statuts_selas_multi.docx"
+
+
+def test_st2_comparution_sans_docteur_parasite(tmp_path: Path) -> None:
+    # ST2 : « j'ai "Monsieur Jean Durant, Docteur Medecin generaliste", il y a un "Docteur"
+    # en trop car je n'ai rien ajoute dans le formulaire ». La profession « Docteur » figee
+    # par le front ne doit plus prefixer la qualification (= profession reelle saisie).
+    homme = _physical_associe(
+        prenoms="Jean", nom="Durant", nb_actions=75,
+        montant="750", montant_lettres="sept cent cinquante",
+        qualite="associé exerçant",
+    ).model_copy(
+        update={
+            "genre": Gender.MASCULIN,
+            "civilite_affichage": "Monsieur",
+            "profession": "Docteur",  # valeur figee par le front (#9)
+            "qualification_principale": "Médecin généraliste",
+        }
+    )
+    autre = _physical_associe(
+        prenoms="Claire", nom="Martin", nb_actions=25,
+        montant="250", montant_lettres="deux cent cinquante",
+    )
+    ctx = _context(associes=[homme, autre])
+
+    text = _docx_text(StatutsSelasMultiGenerator().generate(ctx, tmp_path))
+
+    assert "Monsieur Jean Durant, Médecin généraliste, né le" in text
+    # Le « Docteur » parasite a disparu (ni « Docteur Médecin » double, ni « Docteur » seul).
+    assert "Docteur Médecin généraliste" not in text
+    assert "Jean Durant, Docteur" not in text
+
+
+def test_st5_denomination_article_en_majuscules(tmp_path: Path) -> None:
+    # ST5 : « le nom est a moitie en majuscule et minuscule, harmoniser pour mettre en
+    # majuscule partout ». Le paragraphe autonome portant la denomination (art. 3) sort en
+    # MAJUSCULES, quelle que soit la casse saisie.
+    ctx = _context(
+        associes=[
+            _physical_associe(
+                prenoms="Claire", nom="Durand", nb_actions=75,
+                montant="750", montant_lettres="sept cent cinquante",
+            ),
+            _morale_associe(
+                nb_actions=25, montant="250", montant_lettres="deux cent cinquante",
+            ),
+        ]
+    )
+    ctx.societe.denomination = "Cabinet Durand"
+
+    document = Document(StatutsSelasMultiGenerator().generate(ctx, tmp_path))
+    paras = [p.text.strip() for p in document.paragraphs if p.text.strip()]
+
+    # Le paragraphe AUTONOME du nom (art. 3) est en majuscules.
+    assert "CABINET DURAND" in paras
+    # La casse mixte saisie n'apparait PAS comme paragraphe-nom autonome.
+    assert "Cabinet Durand" not in paras
+
+
+def test_st6_president_accorde_au_genre(tmp_path: Path) -> None:
+    # ST6 : « article 14.1 : j'ai mis un homme mais c'est ecrit "est nommee presidente",
+    # genrer aussi ». Le verbe et la fonction s'accordent au sexe du President nomme.
+    homme = _physical_associe(
+        prenoms="Jean", nom="Durant", nb_actions=75,
+        montant="750", montant_lettres="sept cent cinquante", qualite="associé exerçant",
+    ).model_copy(update={"genre": Gender.MASCULIN, "civilite_affichage": "Monsieur"})
+    autre = _physical_associe(
+        prenoms="Claire", nom="Martin", nb_actions=25,
+        montant="250", montant_lettres="deux cent cinquante",
+    )
+    # President = l'homme (index 0).
+    ctx_h = _context(associes=[homme, autre])
+    text_h = _docx_text(StatutsSelasMultiGenerator().generate(ctx_h, tmp_path / "h"))
+    assert "est nommé président de la Société et ce pour une durée illimitée." in text_h
+    assert "est nommée présidente" not in text_h
+
+    # President = la femme (index 0).
+    ctx_f = _context(
+        associes=[
+            _physical_associe(
+                prenoms="Claire", nom="Durand", nb_actions=75,
+                montant="750", montant_lettres="sept cent cinquante",
+            ),
+            _morale_associe(
+                nb_actions=25, montant="250", montant_lettres="deux cent cinquante",
+            ),
+        ]
+    )
+    text_f = _docx_text(StatutsSelasMultiGenerator().generate(ctx_f, tmp_path / "f"))
+    assert "est nommée présidente de la Société et ce pour une durée illimitée." in text_f
+    assert "est nommé président de la Société" not in text_f

@@ -99,6 +99,31 @@ def accentuate_french_months(text: str) -> str:
     return out
 
 
+# ST3 (Albane 2026-06-26) : « pour la date de naissance, si le chiffre est de 1 a 9,
+# au lieu de "1 janvier" mettre "01" ». La date de naissance est saisie en TEXTE LIBRE
+# (« 1 janvier 1980 » / « 1er janvier 1980 ») et part verbatim dans la comparution. On
+# zero-pade le JOUR en tete (« 01 janvier 1980 ») sans toucher le reste de la chaine.
+# Le « er » de « 1er » est retire (un jour zero-pade « 01er » serait fautif). Idempotent
+# (« 01 » reste « 01 »), insensible aux espaces de tete.
+_BIRTHDATE_DAY_RE: Final = re.compile(r"^(\s*)(\d{1,2})(\s*(?:er|ER))?(\s+\S)")
+
+
+def pad_birthdate_day(text: str) -> str:
+    """Zero-pade le jour (1->9) d'une date de naissance textuelle (ST3).
+
+    « 1 janvier 1980 » -> « 01 janvier 1980 » ; « 1er mars 1990 » -> « 01 mars 1990 ».
+    Une chaine sans jour numerique en tete, ou deja sur 2 chiffres, est renvoyee telle
+    quelle. Ne touche QUE le jour de tete (le millesime « 1980 » n'est pas affecte)."""
+    if not text:
+        return text
+
+    def _pad(match: re.Match[str]) -> str:
+        lead, day, _ordinal, tail = match.groups()
+        return f"{lead}{int(day):02d}{tail}"
+
+    return _BIRTHDATE_DAY_RE.sub(_pad, text, count=1)
+
+
 _NUM_VOIE_RE: Final = re.compile(
     r"^\s*(\d+\s*(?:bis|ter|quater)?)\s+(.+)$",
     re.IGNORECASE,
@@ -253,6 +278,58 @@ def regime_matrimonial_from_status(label: str, regime_communautaire: bool) -> st
             return "participation aux acquets"
         return "separation de biens"
     return status
+
+
+def situation_maritale_complete(
+    label: str,
+    genre: object,
+    *,
+    conjoint_civilite: str | None = None,
+    conjoint_prenom: str | None = None,
+    conjoint_nom: str | None = None,
+) -> str:
+    """Situation matrimoniale complete pour la comparution (ST4, Albane 2026-06-26).
+
+    « j'ai mis un associe marie sous un regime specifique et dans les statuts il
+    n'apparait que "marie" sans plus de precision, ni le nom de l'epoux ; ajouter le
+    regime et le nom du conjoint ». La valeur collapsee (« marie ») perdait le regime
+    porte par le preset ET le conjoint saisi. On reconstruit, pour un associe MARIE :
+    « marie(e) sous le regime de <regime>, epoux/epouse de <Civilite Prenom Nom> ».
+    Le regime est ACCENTUE et accorde (pas le libelle brut du preset, qui partait
+    double et non accentue — regression O24-11). Hors « marie », on retombe sur le mot
+    d'etat civil accorde (situation_display) : pas de regime ni de conjoint a ajouter."""
+    feminine = genre == Gender.FEMININ
+    base = situation_display(matrimonial_status_value(label), genre)
+    if matrimonial_status_value(label) != "marie":
+        return base
+    regime = _married_regime_display(label)
+    phrase = f"{base} sous le régime de {regime}" if regime else base
+    conjoint = " ".join(
+        part.strip()
+        for part in (conjoint_civilite, conjoint_prenom, conjoint_nom)
+        if part and str(part).strip()
+    ).strip()
+    if conjoint:
+        lien = "épouse de" if feminine else "époux de"
+        phrase = f"{phrase}, {lien} {conjoint}"
+    return phrase
+
+
+def _married_regime_display(label: str) -> str:
+    """Libelle ACCENTUE du regime matrimonial d'un associe MARIE, derive du preset.
+
+    `regime_matrimonial_from_status(.., False)` ne distingue PAS la communaute legale
+    (il retombe sur « separation de biens » par defaut) -> on detecte d'abord la
+    communaute legale via `regime_communautaire_from_status`, puis on mappe les trois
+    autres regimes maries vers leur libelle accentue."""
+    if regime_communautaire_from_status(label):
+        return "la communauté légale"
+    normalized = _normalize_label(label)
+    if "universelle" in normalized:
+        return "la communauté universelle"
+    if "participation" in normalized:
+        return "la participation aux acquêts"
+    return "la séparation de biens"
 
 
 def regime_communautaire_from_status(label: str) -> bool:

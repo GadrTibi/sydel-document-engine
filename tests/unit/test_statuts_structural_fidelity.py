@@ -151,7 +151,9 @@ _CASES = [
     ),
     pytest.param(
         lambda d: selas_multi_slice.generate_dossier(_selas_payload(), d),
-        "statuts_selas_multi",
+        # ST1 (Albane 2026-06-26) : le fichier statuts porte desormais la denomination
+        # (« Statuts SELAS EXEMPLE.docx »), comme les autres types nommes (cf. SCS).
+        "Statuts SELAS EXEMPLE.docx",
         lambda: _source("SELAS", "multi"),
         id="SELAS-multi",
     ),
@@ -196,7 +198,8 @@ _BODY_ALLOWLIST: dict[str, tuple[str, ...]] = {
     "statuts_sci.docx": ("lettre de mission", "acompte des honoraires"),
     "statuts_sci_iris.docx": ("lettre de mission", "acompte des honoraires"),
     "statuts_spfpl_cession": ("lettre de mission", "acompte des honoraires"),
-    "statuts_selas_multi": ("lettre de mission", "acompte des honoraires"),
+    # ST1 (Albane 2026-06-26) : nom de fichier porte la denomination -> cle alignee.
+    "Statuts SELAS EXEMPLE.docx": ("lettre de mission", "acompte des honoraires"),
     # SCM : O24-01 + « ci- 510 € » = valeur d'EXEMPLE du modele (montant reinjecte dynamiquement) ;
     # « Faire preceder » / « Lu et approuve » = artefact du modele source SCM (texte de la mention
     # de signature DUPLIQUE dans un meme paragraphe), rendu de-duplique cote sortie.
