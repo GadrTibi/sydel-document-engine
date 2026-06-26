@@ -48,6 +48,7 @@ from sydel_doc_engine.domain.models import (
     StatutsSelasMultiPresident,
 )
 from sydel_doc_engine.front_app import common_creation as cc
+from sydel_doc_engine.front_app._field_inputs import text_input_field
 from sydel_doc_engine.front_app.address_oneline import (
     parse_address_full as _parse_address_full,
 )
@@ -2138,10 +2139,8 @@ def _t(container, field: str, label: str, hint: str | None = None) -> str:
 
 
 def _ts(container, key: str, label: str, hint: str | None = None) -> str:
-    if key not in st.session_state:
-        st.session_state[key] = ""
-    # O24-04 : icône « copier » sur chaque champ texte (helper partagé).
-    return str(copyable_text_input(container, label, key=key, help=hint)).strip()
+    # C2 : helper canonique partage (front_app/_field_inputs). Comportement inchange.
+    return text_input_field(container, key, label, hint)
 
 
 def _i(container, field: str, label: str) -> int:

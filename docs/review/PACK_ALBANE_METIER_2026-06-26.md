@@ -1,9 +1,10 @@
 # Pack Albane — décisions métier (divergences spec ≠ modèle) · Bilan de Santé 2026-06-26
 
-> Ces points appartiennent au **sachant juridique (Albane)** : ce sont des choix de wording / fidélité
-> où la **spec ratifiée** et le **modèle source** divergent, ou des fautes/tournures du modèle préservées
-> volontairement. **Aucun n'est inventé ni tranché par l'équipe** (règles 20/50). Le générateur suit
-> aujourd'hui l'autorité indiquée (« défaut appliqué ») ; Albane confirme ou corrige.
+> **À RELAYER À RAFAEL (relai unique — il route ensuite, Gad 2026-06-26).** Ce sont des choix de
+> wording / fidélité où la **spec ratifiée** et le **modèle source** divergent, ou des fautes/tournures
+> du modèle préservées volontairement. **Aucun n'est inventé ni tranché par l'équipe** (règle 20). Le
+> générateur suit aujourd'hui l'autorité indiquée (« défaut appliqué ») ; on demande à Rafael, il décide
+> qui répond. **A8 et A15 retirés** : déjà tranchés par ARBITRAGE-SPFPL-001 (wording cession).
 >
 > Détail technique complet : `docs/review/FIDELITE_LOT03_05_REGISTRE.md` §🟠. Ce pack en est la
 > **vue décision** (1 ligne par point). Format : **défaut appliqué** → *question à Albane*.
@@ -19,14 +20,14 @@
 | A5 | acte_cession_actions | représentant cessionnaire : rôle dédié + drapeau bloquant (spec a tranché un point qu'elle marque OUVERT) | confirmer le traitement du représentant ? |
 | A6 | acte_cession_parts_spfpl | **« Dr »** abrégé en répartition (le modèle abrège ; ailleurs « Docteur ») | « Dr » ou « Docteur » dans la liste de répartition ? |
 | A7 | acte_cession_parts_spfpl | wording « par » ajouté + « € »→« euros » (spec corrige le modèle) | modèle verbatim (fautif) ou spec corrigée ? |
-| A8 | acte_cession_parts_spfpl | **« cession d'action »** conservé dans un acte de cession de **parts** (point ouvert 5) | garder « action » ou corriger en « parts » ? |
+| ~~A8~~ | acte_cession_parts_spfpl | **TRANCHÉ** (ARBITRAGE-SPFPL-001) : wording cession retenu, l'« apport/action » en source = écart à corriger | — (résolu, retiré) |
 | A9 | acte_cession_parts_spfpl | exposé de la société cible plus pauvre que le modèle | niveau de détail attendu de l'exposé ? |
 | A10 | contrat_apport_spfpl | clause **« à titre pur et simple »** (qualification de l'apport) retirée par la spec | rétablir ? portée juridique sur la nature de l'apport |
 | A11 | contrat_apport_spfpl | **report d'imposition art. 150-0 B ter CGI** absent du rendu | bloc à intégrer ? (enjeu fiscal) |
 | A12 | contrat_apport_spfpl | clause de **sincérité art. 1837 CGI** absente | à intégrer ? |
 | A13 | contrat_apport_spfpl | mention d'**annexion du rapport de valorisation** retirée | à rétablir ? (preuve / pièce) |
 | A14 | contrat_apport_spfpl | **« n »** au lieu de **« n° »** (RCS) | « n° » voulu ? |
-| A15 | pv_agrement (×2) | wording **« cession »** substitué à **« apport »** (ARBITRAGE-SPFPL-001) | confirmer que « cession » est bien le wording retenu ? |
+| ~~A15~~ | pv_agrement (×2) | **TRANCHÉ** (ARBITRAGE-SPFPL-001) : « PV d'agrément de cession, le vocabulaire d'apport en source = écart à corriger » | — (résolu, retiré) |
 | A16 | pv_agrement_plusieurs | mention **« adoptée à l'unanimité »** retirée du PV | doit-elle figurer (valeur probatoire du vote en AGE) ? |
 | A17 | pv_agrement | ligne **« Dès lors, il est décidé de ce qui suit »** ajoutée (absente du squelette spec) | garder ? |
 
@@ -48,6 +49,7 @@
 | A24 | acte_cession_parts_scm | liaison **« et »** du modèle (X, Y et Z) perdue → virgule simple | rétablir « et » ? |
 | A25 | demande_derogation_cumul | **encart de principe paraphrasé** (2 phrases) + cadre PIÈCES réduit (vs 5 lignes source, mention OBLIGATOIRE) | reproduire l'encart/pièces à l'identique, ou la curation est-elle voulue ? |
 | A26 | formulaire_derogation_sites | détail métier ordinal (DESC groupe 1, VAE, capacités) + consignes impératives du modèle **supprimés** | curation voulue, ou à restaurer verbatim ? |
+| A27 | TOUS les SEL d'exercice (médecin + dentiste, uni + multi) | la clause matrimoniale rend **« sous le régime de la communauté »** là où le modèle source porte **« la communauté légale »** (comportement partagé, pas spécifique au dentiste) | garder « la communauté » ou rétablir « la communauté légale » du modèle ? (à propager à tous les SEL si oui) |
 
 > **Note** : tous les défauts d'**ACCENTS** et les 2 bugs visibles (« Le Docteur Docteur », « Martincertifie »)
 > ont été **corrigés** cette nuit (ce ne sont PAS des décisions métier). Ce pack ne contient QUE les

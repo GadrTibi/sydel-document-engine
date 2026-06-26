@@ -286,55 +286,65 @@ def _document_enabled_for_context(
     document: DocumentDefinition,
     ctx: DocumentGenerationContext,
 ) -> bool:
+    # C7 : la longue chaine de gating des documents NON regime-communautaire est
+    # extraite telle quelle dans `_non_regime_document_enabled` (meme ordre de
+    # conditions, memes early-returns, memes valeurs). Comportement inchange.
     if document.doc_id not in REGIME_COMMUNAUTAIRE_DOCUMENT_IDS:
-        if document.doc_id == DEMANDE_INSCRIPTION_ORDRE_DOCUMENT_ID:
-            return _demande_inscription_ordre_enabled(ctx)
-        if document.doc_id == BAIL_AVENANT_DOCUMENT_ID:
-            return _cession_bail_enabled(ctx)
-        if document.doc_id == APPEL_FONDS_DOCUMENT_ID:
-            return _appel_fonds_enabled(ctx)
-        if document.doc_id in CESSION_CABINET_DOCUMENT_IDS:
-            return _cession_cabinet_enabled(document.doc_id, ctx)
-        if document.doc_id in DEROGATION_DOCUMENT_TYPES:
-            return _derogation_enabled(ctx, DEROGATION_DOCUMENT_TYPES[document.doc_id])
-        if document.doc_id == STATUTS_SAS_DOCUMENT_ID:
-            return _statuts_sas_enabled(ctx)
-        if document.doc_id in STATUTS_SPFPL_DOCUMENT_TYPES:
-            return _statuts_spfpl_enabled(ctx, STATUTS_SPFPL_DOCUMENT_TYPES[document.doc_id])
-        if document.doc_id == STATUTS_SELAS_MULTI_DOCUMENT_ID:
-            return _statuts_selas_multi_enabled(ctx)
-        if document.doc_id in STATUTS_SEL_DOCUMENTS:
-            return _statuts_sel_enabled(ctx, STATUTS_SEL_DOCUMENTS[document.doc_id])
-        if document.doc_id in STATUTS_CIVILS_DOCUMENT_TYPES:
-            return _statuts_civils_enabled(ctx, STATUTS_CIVILS_DOCUMENT_TYPES[document.doc_id])
-        if document.doc_id == OPTION_IS_DOCUMENT_ID:
-            return _option_is_enabled(ctx)
-        if document.doc_id == SAS_PV_REMUNERATION_PRESIDENT_DOCUMENT_ID:
-            return _sas_pv_remuneration_president_enabled(ctx)
-        if document.doc_id == SAS_ATTESTATION_CAPITAL_DOCUMENT_ID:
-            return _sas_attestation_capital_enabled(ctx)
-        if document.doc_id == SPFPL_NOTE_INFORMATION_DOCUMENT_ID:
-            return _spfpl_note_information_enabled(ctx)
-        if document.doc_id == SPFPL_PV_AGREMENT_ASSOCIE_UNIQUE_DOCUMENT_ID:
-            return _spfpl_pv_agrement_enabled(ctx, associe_unique=True)
-        if document.doc_id == SPFPL_PV_AGREMENT_PLUSIEURS_ASSOCIES_DOCUMENT_ID:
-            return _spfpl_pv_agrement_enabled(ctx, associe_unique=False)
-        if document.doc_id == SPFPL_ACTE_CESSION_PARTS_DOCUMENT_ID:
-            return _spfpl_acte_cession_parts_enabled(ctx)
-        if document.doc_id == SPFPL_CONTRAT_APPORT_DOCUMENT_ID:
-            return _spfpl_apport_document_enabled(ctx)
-        if document.doc_id == SPFPL_ATTESTATION_CAPITAL_DOCUMENT_ID:
-            return _spfpl_attestation_capital_enabled(ctx)
-        if document.doc_id == SPFPL_ATTESTATION_COMMISSAIRE_DOCUMENT_ID:
-            return _spfpl_apport_document_enabled(ctx)
-        if document.doc_id in SCM_SATELLITES_DOCUMENT_IDS:
-            return _scm_satellite_enabled(ctx, SCM_SATELLITES_DOCUMENT_IDS[document.doc_id])
-        if document.doc_id == ACTE_CESSION_ACTIONS_DOCUMENT_ID:
-            return _acte_cession_actions_enabled(ctx)
-        if document.doc_id in SCM_CESSION_DOCUMENT_IDS:
-            return _scm_cession_enabled(ctx)
-        return True
+        return _non_regime_document_enabled(document, ctx)
     return bool(ctx.dossier_options and ctx.dossier_options.regime_communautaire)
+
+
+def _non_regime_document_enabled(
+    document: DocumentDefinition,
+    ctx: DocumentGenerationContext,
+) -> bool:
+    if document.doc_id == DEMANDE_INSCRIPTION_ORDRE_DOCUMENT_ID:
+        return _demande_inscription_ordre_enabled(ctx)
+    if document.doc_id == BAIL_AVENANT_DOCUMENT_ID:
+        return _cession_bail_enabled(ctx)
+    if document.doc_id == APPEL_FONDS_DOCUMENT_ID:
+        return _appel_fonds_enabled(ctx)
+    if document.doc_id in CESSION_CABINET_DOCUMENT_IDS:
+        return _cession_cabinet_enabled(document.doc_id, ctx)
+    if document.doc_id in DEROGATION_DOCUMENT_TYPES:
+        return _derogation_enabled(ctx, DEROGATION_DOCUMENT_TYPES[document.doc_id])
+    if document.doc_id == STATUTS_SAS_DOCUMENT_ID:
+        return _statuts_sas_enabled(ctx)
+    if document.doc_id in STATUTS_SPFPL_DOCUMENT_TYPES:
+        return _statuts_spfpl_enabled(ctx, STATUTS_SPFPL_DOCUMENT_TYPES[document.doc_id])
+    if document.doc_id == STATUTS_SELAS_MULTI_DOCUMENT_ID:
+        return _statuts_selas_multi_enabled(ctx)
+    if document.doc_id in STATUTS_SEL_DOCUMENTS:
+        return _statuts_sel_enabled(ctx, STATUTS_SEL_DOCUMENTS[document.doc_id])
+    if document.doc_id in STATUTS_CIVILS_DOCUMENT_TYPES:
+        return _statuts_civils_enabled(ctx, STATUTS_CIVILS_DOCUMENT_TYPES[document.doc_id])
+    if document.doc_id == OPTION_IS_DOCUMENT_ID:
+        return _option_is_enabled(ctx)
+    if document.doc_id == SAS_PV_REMUNERATION_PRESIDENT_DOCUMENT_ID:
+        return _sas_pv_remuneration_president_enabled(ctx)
+    if document.doc_id == SAS_ATTESTATION_CAPITAL_DOCUMENT_ID:
+        return _sas_attestation_capital_enabled(ctx)
+    if document.doc_id == SPFPL_NOTE_INFORMATION_DOCUMENT_ID:
+        return _spfpl_note_information_enabled(ctx)
+    if document.doc_id == SPFPL_PV_AGREMENT_ASSOCIE_UNIQUE_DOCUMENT_ID:
+        return _spfpl_pv_agrement_enabled(ctx, associe_unique=True)
+    if document.doc_id == SPFPL_PV_AGREMENT_PLUSIEURS_ASSOCIES_DOCUMENT_ID:
+        return _spfpl_pv_agrement_enabled(ctx, associe_unique=False)
+    if document.doc_id == SPFPL_ACTE_CESSION_PARTS_DOCUMENT_ID:
+        return _spfpl_acte_cession_parts_enabled(ctx)
+    if document.doc_id == SPFPL_CONTRAT_APPORT_DOCUMENT_ID:
+        return _spfpl_apport_document_enabled(ctx)
+    if document.doc_id == SPFPL_ATTESTATION_CAPITAL_DOCUMENT_ID:
+        return _spfpl_attestation_capital_enabled(ctx)
+    if document.doc_id == SPFPL_ATTESTATION_COMMISSAIRE_DOCUMENT_ID:
+        return _spfpl_apport_document_enabled(ctx)
+    if document.doc_id in SCM_SATELLITES_DOCUMENT_IDS:
+        return _scm_satellite_enabled(ctx, SCM_SATELLITES_DOCUMENT_IDS[document.doc_id])
+    if document.doc_id == ACTE_CESSION_ACTIONS_DOCUMENT_ID:
+        return _acte_cession_actions_enabled(ctx)
+    if document.doc_id in SCM_CESSION_DOCUMENT_IDS:
+        return _scm_cession_enabled(ctx)
+    return True
 
 
 def _demande_inscription_ordre_enabled(ctx: DocumentGenerationContext) -> bool:

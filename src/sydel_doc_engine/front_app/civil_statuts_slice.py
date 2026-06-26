@@ -51,6 +51,7 @@ from sydel_doc_engine.domain.models import (
     StatutsCivilsGroupeParts,
 )
 from sydel_doc_engine.front_app import common_creation as cc
+from sydel_doc_engine.front_app._field_inputs import text_input_prefixed
 from sydel_doc_engine.front_app.address_oneline import (
     parse_address_full as _parse_address_full,
 )
@@ -64,7 +65,6 @@ from sydel_doc_engine.front_app.field_derivations import (
     parse_french_date,
 )
 from sydel_doc_engine.front_app.front_widgets import (
-    copyable_text_input,
     date_input_with_today,
     mandataire_inputs,
     seed_closing_date,
@@ -761,6 +761,132 @@ def build_civil_plan(payload: dict[str, object]) -> CivilSlicePlan:
     )
 
 
+def _validate_one_associe(
+    idx: int,
+    associe: StatutsCivilsAssocie,
+    structure: str,
+) -> list[str]:
+    # Extraction C7 de la validation d'UN associe (corps de boucle). Ordre d'append et
+    # messages strictement identiques a l'historique.
+    blockers: list[str] = []
+    if not _associe_named(associe):
+        blockers.append(f"Identite de l'associe {idx} requise.")
+    if associe.parts is None or not associe.parts.nb:
+        blockers.append(f"Nombre de parts de l'associe {idx} requis.")
+    if associe.apport is None or not str(associe.apport.montant or "").strip():
+        blockers.append(f"Apport de l'associe {idx} requis.")
+    if structure == "SCM" and not str(associe.profession or "").strip():
+        blockers.append(f"Profession de l'associe {idx} requise (SCM).")
+    if associe.type_personne == "personne_physique":
+        for field, name in (
+            ("date_naissance", "date de naissance"),
+            ("ville_naissance", "ville de naissance"),
+            ("departement_naissance", "departement de naissance"),
+            ("nationalite", "nationalite"),
+            ("situation_maritale", "situation matrimoniale"),
+            ("adresse_personnelle_affichee", "adresse"),
+        ):
+            if not str(getattr(associe, field) or "").strip():
+                blockers.append(f"Associe {idx} : {name} requise.")
+    elif associe.type_personne == "personne_morale":
+        # Dogfood 2026-06-22 : le generateur exige l'identite complete de la
+        # personne morale + son representant ; sans eux, crash a la generation.
+        for field, name in (
+            ("forme_juridique", "forme juridique"),
+            ("capital_social", "capital social"),
+            ("numero_rcs", "numero RCS"),
+            ("ville_rcs", "ville du RCS"),
+        ):
+            if not str(getattr(associe, field, "") or "").strip():
+                blockers.append(
+                    f"Associe {idx} (personne morale) : {name} requise."
+                )
+        siege = getattr(associe, "siege", None)
+        if siege is None or not str(getattr(siege, "adresse_affichee", "") or "").strip():
+            blockers.append(f"Associe {idx} (personne morale) : siege requis.")
+        rep = getattr(associe, "representant", None)
+        if (
+            rep is None
+            or not str(getattr(rep, "prenom", "") or "").strip()
+            or not str(getattr(rep, "nom", "") or "").strip()
+        ):
+            blockers.append(
+                f"Associe {idx} (personne morale) : representant (prenom + nom) requis."
+            )
+    return blockers
+
+
+def _validate_associes(
+    associes: list[StatutsCivilsAssocie],
+    structure: str,
+    nb_parts_total: int,
+    payload: dict[str, object],
+) -> list[str]:
+    # Extraction C7 du corps `else` de la validation des associes. Ordre d'append et
+    # messages strictement identiques a l'historique.
+    blockers: list[str] = []
+    # SCI standard + associe personne morale = AUTORISE (ratifie Rafael 2026-06-08).
+    if structure == "SCI IRIS" and not any(
+        a.type_personne == "personne_morale" for a in associes
+    ):
+        blockers.append("SCI IRIS : au moins une personne morale associee requise.")
+    for idx, associe in enumerate(associes, start=1):
+        blockers.extend(_validate_one_associe(idx, associe, structure))
+    # Coherence dure exigee par le moteur : somme parts = nb_parts_total,
+    # somme apports = capital_social. On la SURFACE en blocage front au lieu
+    # de la decouvrir a la generation.
+    if nb_parts_total:
+        total_parts = sum((a.parts.nb or 0) for a in associes if a.parts)
+        if total_parts != nb_parts_total:
+            blockers.append(
+                f"Somme des parts ({total_parts}) != total declare ({nb_parts_total})."
+            )
+    capital = _safe_int(payload.get("capital_social"))
+    if capital:
+        total_apports = sum(
+            _safe_int(a.apport.montant) for a in associes if a.apport
+        )
+        if total_apports != capital:
+            blockers.append(
+                f"Somme des apports ({total_apports}) != capital social ({capital})."
+            )
+    return blockers
+
+
+def _validate_scs(
+    associes: list[StatutsCivilsAssocie],
+    payload: dict[str, object],
+) -> list[str]:
+    # Extraction C7 du bloc SCS. Logique et messages strictement identiques.
+    blockers: list[str] = []
+    roles = {a.role_statutaire for a in associes if isinstance(associes, list)}
+    if "commandite" not in roles or "commanditaire" not in roles:
+        blockers.append("SCS : au moins un commandite ET un commanditaire requis.")
+    # Source NotebookLM (validee) : « legalement seul le commandite gere, le
+    # commanditaire n'est qu'apporteur de capitaux » et « ne s'immisce pas dans la
+    # gestion » -> le gerant designe doit etre un commandite.
+    gerant = _signataire_associe(payload)
+    if gerant is not None and gerant.role_statutaire == "commanditaire":
+        blockers.append(
+            "SCS : le gerant doit etre un associe commandite ; le commanditaire est un "
+            "simple apporteur de capitaux et ne gere pas la societe."
+        )
+    return blockers
+
+
+def _validate_scm_satellites_pair(payload: dict[str, object]) -> list[str]:
+    # Extraction C7 du bloc satellites SCM. Logique et messages strictement identiques.
+    blockers: list[str] = []
+    # Satellites SCM (pacte + liste depenses) generes -> champs requis.
+    if not str(payload.get("pacte_ville_tribunal") or "").strip():
+        blockers.append("Ville du tribunal requise (pacte d'associes SCM).")
+    if not str(payload.get("societe_numero_rcs") or "").strip():
+        blockers.append(
+            "N° RCS de la SCM requis pour le pacte (ou « en cours de constitution »)."
+        )
+    return blockers
+
+
 def _validate(payload: dict[str, object]) -> tuple[str, ...]:
     blockers: list[str] = []
     structure = str(payload["structure"])
@@ -803,95 +929,13 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:
     if not isinstance(associes, list) or not associes:
         blockers.append("Au moins un associe requis.")
     else:
-        # SCI standard + associe personne morale = AUTORISE (ratifie Rafael 2026-06-08).
-        if structure == "SCI IRIS" and not any(
-            a.type_personne == "personne_morale" for a in associes
-        ):
-            blockers.append("SCI IRIS : au moins une personne morale associee requise.")
-        for idx, associe in enumerate(associes, start=1):
-            if not _associe_named(associe):
-                blockers.append(f"Identite de l'associe {idx} requise.")
-            if associe.parts is None or not associe.parts.nb:
-                blockers.append(f"Nombre de parts de l'associe {idx} requis.")
-            if associe.apport is None or not str(associe.apport.montant or "").strip():
-                blockers.append(f"Apport de l'associe {idx} requis.")
-            if structure == "SCM" and not str(associe.profession or "").strip():
-                blockers.append(f"Profession de l'associe {idx} requise (SCM).")
-            if associe.type_personne == "personne_physique":
-                for field, name in (
-                    ("date_naissance", "date de naissance"),
-                    ("ville_naissance", "ville de naissance"),
-                    ("departement_naissance", "departement de naissance"),
-                    ("nationalite", "nationalite"),
-                    ("situation_maritale", "situation matrimoniale"),
-                    ("adresse_personnelle_affichee", "adresse"),
-                ):
-                    if not str(getattr(associe, field) or "").strip():
-                        blockers.append(f"Associe {idx} : {name} requise.")
-            elif associe.type_personne == "personne_morale":
-                # Dogfood 2026-06-22 : le generateur exige l'identite complete de la
-                # personne morale + son representant ; sans eux, crash a la generation.
-                for field, name in (
-                    ("forme_juridique", "forme juridique"),
-                    ("capital_social", "capital social"),
-                    ("numero_rcs", "numero RCS"),
-                    ("ville_rcs", "ville du RCS"),
-                ):
-                    if not str(getattr(associe, field, "") or "").strip():
-                        blockers.append(
-                            f"Associe {idx} (personne morale) : {name} requise."
-                        )
-                siege = getattr(associe, "siege", None)
-                if siege is None or not str(getattr(siege, "adresse_affichee", "") or "").strip():
-                    blockers.append(f"Associe {idx} (personne morale) : siege requis.")
-                rep = getattr(associe, "representant", None)
-                if (
-                    rep is None
-                    or not str(getattr(rep, "prenom", "") or "").strip()
-                    or not str(getattr(rep, "nom", "") or "").strip()
-                ):
-                    blockers.append(
-                        f"Associe {idx} (personne morale) : representant (prenom + nom) requis."
-                    )
-        # Coherence dure exigee par le moteur : somme parts = nb_parts_total,
-        # somme apports = capital_social. On la SURFACE en blocage front au lieu
-        # de la decouvrir a la generation.
-        if nb_parts_total:
-            total_parts = sum((a.parts.nb or 0) for a in associes if a.parts)
-            if total_parts != nb_parts_total:
-                blockers.append(
-                    f"Somme des parts ({total_parts}) != total declare ({nb_parts_total})."
-                )
-        capital = _safe_int(payload.get("capital_social"))
-        if capital:
-            total_apports = sum(
-                _safe_int(a.apport.montant) for a in associes if a.apport
-            )
-            if total_apports != capital:
-                blockers.append(
-                    f"Somme des apports ({total_apports}) != capital social ({capital})."
-                )
+        # C7 : la validation par associe + coherence parts/apports est extraite telle
+        # quelle (meme ordre d'append, memes messages). Comportement inchange.
+        blockers.extend(_validate_associes(associes, structure, nb_parts_total, payload))
     if structure == "SCS":
-        roles = {a.role_statutaire for a in associes if isinstance(associes, list)}
-        if "commandite" not in roles or "commanditaire" not in roles:
-            blockers.append("SCS : au moins un commandite ET un commanditaire requis.")
-        # Source NotebookLM (validee) : « legalement seul le commandite gere, le
-        # commanditaire n'est qu'apporteur de capitaux » et « ne s'immisce pas dans la
-        # gestion » -> le gerant designe doit etre un commandite.
-        gerant = _signataire_associe(payload)
-        if gerant is not None and gerant.role_statutaire == "commanditaire":
-            blockers.append(
-                "SCS : le gerant doit etre un associe commandite ; le commanditaire est un "
-                "simple apporteur de capitaux et ne gere pas la societe."
-            )
+        blockers.extend(_validate_scs(associes, payload))
     if _scm_satellites_pair_active(payload):
-        # Satellites SCM (pacte + liste depenses) generes -> champs requis.
-        if not str(payload.get("pacte_ville_tribunal") or "").strip():
-            blockers.append("Ville du tribunal requise (pacte d'associes SCM).")
-        if not str(payload.get("societe_numero_rcs") or "").strip():
-            blockers.append(
-                "N° RCS de la SCM requis pour le pacte (ou « en cours de constitution »)."
-            )
+        blockers.extend(_validate_scm_satellites_pair(payload))
     blockers.extend(_validate_inter_sel(payload))
     blockers.extend(_validate_common_docs(payload, structure))
     blockers.extend(_validate_option_is(payload, structure))
@@ -1564,11 +1608,8 @@ def _apply_iris_result_groups(
 
 
 def _text(container, prefix: str, field: str, label: str, hint: str | None = None) -> str:
-    key = f"{prefix}_{field}"
-    if key not in st.session_state:
-        st.session_state[key] = ""
-    # O24-04 : icône « copier » sur chaque champ texte (helper partagé).
-    return str(copyable_text_input(container, label, key=key, help=hint)).strip()
+    # C2 : helper canonique partage (front_app/_field_inputs). Comportement inchange.
+    return text_input_prefixed(container, prefix, field, label, hint)
 
 
 def _int(container, prefix: str, field: str, label: str) -> int:

@@ -44,6 +44,7 @@ from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import DocumentGenerationContext, SpfplConjoint
 from sydel_doc_engine.front_app import common_creation as cc
 from sydel_doc_engine.front_app import selarl_slice
+from sydel_doc_engine.front_app._field_inputs import text_input_prefixed
 from sydel_doc_engine.front_app.address_oneline import (
     parse_address_full as _parse_address_full,
 )
@@ -61,7 +62,6 @@ from sydel_doc_engine.front_app.field_derivations import (
     situation_display,
 )
 from sydel_doc_engine.front_app.front_widgets import (
-    copyable_text_input,
     date_input_with_today,
     mandataire_inputs,
     seed_closing_date,
@@ -599,11 +599,8 @@ def generate_dossier(payload: dict[str, object], output_dir: Path) -> GeneratedD
 
 
 def _t(container, field: str, label: str, hint: str | None = None) -> str:
-    key = f"{PREFIX}_{field}"
-    if key not in st.session_state:
-        st.session_state[key] = ""
-    # O24-04 : icône « copier » sur chaque champ texte (helper partagé).
-    return str(copyable_text_input(container, label, key=key, help=hint)).strip()
+    # C2 : helper canonique partage (front_app/_field_inputs). Comportement inchange.
+    return text_input_prefixed(container, PREFIX, field, label, hint)
 
 
 def _i(container, field: str, label: str) -> int:
