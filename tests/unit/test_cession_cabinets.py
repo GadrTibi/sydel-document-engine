@@ -434,7 +434,8 @@ def test_origine_propriete_describes_vendeur_created_by_default(tmp_path: Path) 
         text = _docx_text(generator.generate(ctx, tmp_path / etape))
         # Sujet = vendeur (Docteur Jean Durand), pas l'acquereur (Alice Moreau).
         assert "Docteur Jean Durand est propriétaire des éléments constitutifs du cabinet" in text
-        assert "pour l’avoir régulièrement créé le 1 janvier 2020." in text
+        # A26-33 (Albane 2026-06-26) : jour sur 2 chiffres (« 01 janvier », pas « 1 janvier »).
+        assert "pour l’avoir régulièrement créé le 01 janvier 2020." in text
         assert "Alice Moreau est propriétaire" not in text
         _assert_no_residual_tokens(text)
 

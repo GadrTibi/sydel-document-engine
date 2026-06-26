@@ -119,3 +119,18 @@ def city_line(address: Address) -> str:
         f"{required_text(address.cp, 'adresse.cp')} "
         f"{required_text(address.ville, 'adresse.ville')}"
     )
+
+
+def siege_social_inline(address: Address) -> str:
+    """Adresse du siege sur UNE seule ligne, prefixee « Siège social : » (A2).
+
+    Albane 2026-06-26 : dans l'entete societe des lettres de regime communautaire,
+    l'adresse doit etre sur une seule ligne precedee de « Siège social : », comme
+    dans le PV (qui compose « Siège social : <num voie cp ville> »), et SANS la
+    mention « en cours d'immatriculation »."""
+    num_voie = (address.num_voie or "").strip()
+    voie = required_text(address.voie, "adresse.voie")
+    cp = required_text(address.cp, "adresse.cp")
+    ville = required_text(address.ville, "adresse.ville")
+    inline = f"{num_voie} {voie} {cp} {ville}".strip()
+    return f"Siège social : {inline}"

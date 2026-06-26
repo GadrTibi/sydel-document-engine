@@ -4,6 +4,7 @@ from pathlib import Path
 
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
+from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import Address, Company, DocumentGenerationContext, Person
 from sydel_doc_engine.generators.lot_02.regime_communautaire_common import (
     SELARL_STRUCTURE,
@@ -17,6 +18,7 @@ from sydel_doc_engine.generators.lot_02.regime_communautaire_common import (
     required_company,
     required_regime_communautaire,
     required_text,
+    siege_social_inline,
     street_line,
     validate_batch_enabled,
 )
@@ -58,7 +60,7 @@ class LettreAvertissementConjointGenerator:
         )
         add_right_aligned_lines(
             document,
-            [f"Le  {date_signature}"],
+            [f"Le {date_signature}"],
             space_after_pt=12,
         )
         add_subject_heading(
@@ -111,8 +113,9 @@ def _add_company_block(
             required_text(company.denomination, "societe.denomination"),
             _company_forme_sociale_header(company, ctx),
             f"Au capital de {company_capital_social(company)} €",
-            street_line(siege),
-            city_line(siege),
+            # A2 (Albane 2026-06-26) : adresse du siege sur UNE ligne precedee de
+            # « Siège social : » (comme le PV), sans « en cours d'immatriculation ».
+            siege_social_inline(siege),
         ],
         first_line_bold=True,
         space_after_pt=2,
@@ -154,10 +157,14 @@ def _conjoint_appel(ctx: DocumentGenerationContext) -> str:
 
 
 def _conjoint_line(ctx: DocumentGenerationContext) -> str:
+    # A3 (Albane 2026-06-26) : le nom du destinataire (conjoint) doit inclure le
+    # PRENOM, aux 3 endroits ou il apparait : bloc destinataire, appel d'ouverture
+    # et ligne de signature finale (toutes derivees de cette fonction).
     conjoint = _required_conjoint(ctx)
     civilite = required_text(conjoint.civilite, "conjoint.civilite_affichage")
+    prenom = required_text(conjoint.prenom, "conjoint.prenom")
     nom = required_text(conjoint.nom, "conjoint.nom")
-    return f"{civilite} {nom}"
+    return f"{civilite} {prenom} {nom}"
 
 
 def _company_forme_sociale_header(
@@ -245,7 +252,15 @@ def _mention_manuscrite(
         destination = f"à la Société {denomination}"
     else:
         destination = f"à la {company_forme_sociale_abregee(company)} {denomination}"
+    # A4 (Albane 2026-06-26) : la mention manuscrite est portee par le CONJOINT
+    # signataire -> « informé » s'accorde a son genre (informé / informée).
+    informe = _conjoint_informe(ctx)
     return (
-        "(Faire précéder de la mention « j’atteste avoir été informé de l’apport de "
+        f"(Faire précéder de la mention « j’atteste avoir été {informe} de l’apport de "
         f"{montant} euros par {apporteur_label} {destination} »)"
     )
+
+
+def _conjoint_informe(ctx: DocumentGenerationContext) -> str:
+    conjoint = _required_conjoint(ctx)
+    return "informée" if conjoint.genre == Gender.FEMININ else "informé"

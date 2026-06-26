@@ -5,14 +5,17 @@ from unicodedata import normalize
 
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
-from sydel_doc_engine.domain.models import DocumentGenerationContext, Person
+from sydel_doc_engine.domain.models import Address, DocumentGenerationContext, Person
 from sydel_doc_engine.generators.lot_02.regime_communautaire_common import (
+    city_line,
     company_forme_sociale_complete,
     format_display_date,
+    required_address,
     required_apport,
     required_company,
     required_regime_communautaire,
     required_text,
+    street_line,
     validate_batch_enabled,
 )
 from sydel_doc_engine.rendering.docx_builder import (
@@ -45,18 +48,24 @@ class LettreRenonciationAssocieGenerator:
             regime.renonciation.lieu_signature,
             "regime_communautaire.renonciation.lieu_signature",
         )
-        nombre_exemplaires = required_text(
-            regime.renonciation.nombre_exemplaires_lettres,
-            "regime_communautaire.renonciation.nombre_exemplaires_lettres",
-        )
 
         document = new_document(style_profile=LETTER_WIDE_STYLE_PROFILE)
+        # R1 (Albane 2026-06-26) : c'est un courrier -> en haut a droite, le bloc
+        # destinataire (nom + adresse) AU-DESSUS de la ligne « à <ville> », puis le
+        # corps + l'objet descendus nettement plus bas.
+        add_right_aligned_lines(
+            document,
+            _destinataire_block(ctx),
+            space_after_pt=2,
+        )
+        add_spacer(document, space_after_pt=6)
         add_right_aligned_lines(
             document,
             [f"À {lieu_signature}"],
             space_after_pt=2,
         )
-        add_spacer(document, space_after_pt=12)
+        # Descend le corps/objet (R1 : « que le texte avec objet soit bien plus bas »).
+        add_spacer(document, space_after_pt=48)
         add_subject_heading(
             document,
             "Objet : Lettre de renonciation à revendiquer la qualité d'associé",
@@ -103,7 +112,8 @@ class LettreRenonciationAssocieGenerator:
             alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
         )
         add_paragraph(document, "Fait pour servir et valoir ce que de droit.")
-        add_paragraph(document, f"En {nombre_exemplaires} exemplaires", space_before_pt=5)
+        # R2 (Albane 2026-06-26) : la mention « en N exemplaires » n'a pas de sens
+        # pour un courrier -> retiree de la lettre de renonciation (uniquement).
         add_right_aligned_lines(document, [_conjoint_signature(ctx)], space_after_pt=0)
 
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -148,6 +158,27 @@ def _apporteur_appel(ctx: DocumentGenerationContext) -> str:
     prenom = required_text(apporteur.prenom, "apporteur.prenom")
     nom = required_text(apporteur.nom, "apporteur.nom")
     return f"{civilite} {prenom} {nom},"
+
+
+def _destinataire_block(ctx: DocumentGenerationContext) -> list[str]:
+    """Bloc destinataire du courrier (R1) : nom + adresse de l'apporteur, place en
+    haut a droite au-dessus de la ligne « à <ville> ».
+
+    Le destinataire de la lettre de renonciation est l'associe apporteur
+    (`personne_signataire`), a qui son conjoint adresse la renonciation."""
+    apporteur = ctx.personne_signataire
+    civilite = required_text(apporteur.civilite, "apporteur.civilite_affichage")
+    prenom = required_text(apporteur.prenom, "apporteur.prenom")
+    nom = required_text(apporteur.nom, "apporteur.nom")
+    address = _apporteur_address(ctx)
+    return [f"{civilite} {prenom} {nom}", street_line(address), city_line(address)]
+
+
+def _apporteur_address(ctx: DocumentGenerationContext) -> Address:
+    return required_address(
+        ctx.personne_signataire.adresse_perso,
+        "personne_signataire.adresse_perso",
+    )
 
 
 def _required_conjoint(ctx: DocumentGenerationContext) -> Person:

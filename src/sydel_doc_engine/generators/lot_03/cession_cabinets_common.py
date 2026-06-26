@@ -900,8 +900,11 @@ def _french_date(value: date | str | None) -> str | None:
     """
     if value is None:
         return None
+    # A26-33/A26-69 (Albane 2026-06-26) : jour sur 2 chiffres (« 01 janvier » et non
+    # « 1 janvier ») pour ne pas laisser croire qu'un chiffre manque. Le mois reste en
+    # toutes lettres.
     if isinstance(value, date):
-        return f"{value.day} {FRENCH_MONTHS[value.month]} {value.year}"
+        return f"{value.day:02d} {FRENCH_MONTHS[value.month]} {value.year}"
     text = value.strip()
     match = _ISO_DATE_RE.match(text)
     if match is not None:
@@ -910,7 +913,7 @@ def _french_date(value: date | str | None) -> str | None:
             parsed = date(year, month, day)
         except ValueError:
             return text
-        return f"{parsed.day} {FRENCH_MONTHS[parsed.month]} {parsed.year}"
+        return f"{parsed.day:02d} {FRENCH_MONTHS[parsed.month]} {parsed.year}"
     return text
 
 

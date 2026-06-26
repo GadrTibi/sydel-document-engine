@@ -1882,9 +1882,34 @@ def test_selas_deux_maries_generent_deux_couples_distincts(tmp_path: Path) -> No
     # Apporteur correct par fichier (mention manuscrite « ... par {apporteur} »).
     assert "Madame Claire Durand" in durand_avert
     assert "Monsieur Marc Petit" in petit_avert
-    # Conjoint destinataire correct (civilite + nom) : Monsieur Durand / Madame Petit.
-    assert "Monsieur Durand" in durand_avert
-    assert "Madame Petit" in petit_avert
+    # A3 (Albane 2026-06-26) : le conjoint destinataire porte son PRENOM
+    # (« Monsieur Paul Durand » / « Madame Sophie Petit »), plus jamais sans prenom.
+    assert "Monsieur Paul Durand" in durand_avert
+    assert "Madame Sophie Petit" in petit_avert
+    assert "Monsieur Durand\n" not in durand_avert
+    assert "Madame Petit\n" not in petit_avert
+    # A1 (Albane 2026-06-26) : l'entete societe affiche la PROFESSION REGLEMENTEE
+    # (« médecin »), jamais le titre « Docteur ».
+    assert "de médecin" in durand_avert
+    assert "de Docteur" not in durand_avert
+    assert "de Docteur" not in petit_avert
+    # A5 (Albane 2026-06-26) : montant = apport INDIVIDUEL du renoncant (750 pour
+    # Durand, 250 pour Petit), pas le capital total (1 000 / 1 020). A4 : la mention
+    # s'accorde au CONJOINT signataire (Durand -> conjoint Paul MASCULIN « informé » ;
+    # Petit -> conjointe Sophie FEMININ « informée »).
+    assert "été informé de l’apport de 750 euros" in durand_avert
+    assert "informée de l’apport de 750" not in durand_avert
+    assert "de l’apport de 1 000 euros" not in durand_avert
+    assert "de l’apport de 1 020 euros" not in durand_avert
+    assert "été informée de l’apport de 250 euros" in petit_avert
+    assert "de l’apport de 1 000 euros" not in petit_avert
+    # R3 (Albane 2026-06-26) : renonciation utilise aussi l'apport individuel.
+    assert "en apportant 750 (sept cent cinquante) euros" in durand_renonciation
+    assert "en apportant 250 (deux cent cinquante) euros" in petit_renonciation
+    assert "1 000" not in durand_renonciation
+    # R2 (Albane 2026-06-26) : plus de mention « exemplaires » dans la renonciation.
+    assert "exemplaires" not in durand_renonciation
+    assert "exemplaires" not in petit_renonciation
     _assert_bundle_clean(generated, {"statuts_selas_multi.docx"})
 
 
@@ -4207,3 +4232,25 @@ def test_su3_scs2_force_signature_siege_et_decision_signature_divergent(tmp_path
             assert "07/03/2024" not in text, f"{label} date decision chiffres"
             # B1 annee : l'annee divergente en lettres ne doit pas apparaitre (annee_lettres PV).
             assert "deux mille vingt-quatre" not in text, f"{label} annee decision (B1)"
+
+
+def test_apporteur_apport_M1_absent_donne_marqueur_pas_capital() -> None:
+    # M1 (Akainu 2026-06-26) : apport individuel ABSENT -> marqueur visible
+    # « (À COMPLÉTER : apport individuel) », JAMAIS un repli sur le capital (qui
+    # reintroduirait le bug A26-40 : capital affiche au lieu de l'apport reel).
+    from types import SimpleNamespace
+
+    sans_apport = SimpleNamespace(apport=None)
+    res = selas_multi_slice._apporteur_apport(sans_apport)
+    assert res is not None
+    assert "À COMPLÉTER" in res.montant
+    assert "À COMPLÉTER" in res.montant_lettres
+    assert "1 000" not in res.montant  # surtout PAS le capital
+
+    # Apport individuel present -> repris tel quel (chiffre + lettres).
+    avec_apport = SimpleNamespace(
+        apport=SimpleNamespace(montant="500", montant_lettres="cinq cents")
+    )
+    res2 = selas_multi_slice._apporteur_apport(avec_apport)
+    assert res2.montant == "500"
+    assert res2.montant_lettres == "cinq cents"

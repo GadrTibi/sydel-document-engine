@@ -1619,7 +1619,10 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
             ref_associe_index=president_index,
         ),
         dirigeants_nomines=_build_dirigeants_nomines(payload, president_index, adresse_perso),
-        associes=_selas_pv_associes(associes),
+        associes=_selas_pv_associes(
+            associes,
+            profession_reglementee=str(payload.get("profession_reglementee") or ""),
+        ),
         # SCS2/SU4 (Albane 2026-06-25, propag. Q4) : date de decision (PV) = date de signature.
         decision=DecisionContext(date=_display_date(payload.get("signature_date"))),
         reunion=ReunionContext(
@@ -1825,8 +1828,13 @@ def _regime_communautaire(payload: dict[str, object]) -> RegimeCommunautaire:
     )
 
 
-def _selas_pv_associes(associes: list[StatutsCivilsAssocie]) -> list[Associe]:
+def _selas_pv_associes(
+    associes: list[StatutsCivilsAssocie],
+    *,
+    profession_reglementee: str = "",
+) -> list[Associe]:
     mapped: list[Associe] = []
+    profession_dossier = (profession_reglementee or "").strip()
     for associe in associes:
         nb = associe.nb_actions or 0
         if associe.type_personne == "personne_morale":
@@ -1841,6 +1849,18 @@ def _selas_pv_associes(associes: list[StatutsCivilsAssocie]) -> list[Associe]:
                 )
             )
             continue
+        # A1 (Albane 2026-06-26) : l'entete societe (PV + lettres regime communautaire)
+        # doit afficher la PROFESSION REGLEMENTEE du dossier (« médecin » /
+        # « chirurgien-dentiste »), pas le titre « Docteur ». En SELAS multi,
+        # `associe.profession` porte le titre derive (« Docteur ») ; la profession
+        # reglementee canonique du dossier (`payload["profession_reglementee"]`) est la
+        # source correcte. Repli : qualification puis profession brute. `profession`
+        # (titre) reste intacte pour la comparution de l'acte.
+        vraie_profession = (
+            profession_dossier
+            or (associe.qualification_principale or "").strip()
+            or (associe.profession or "").strip()
+        )
         mapped.append(
             Associe(
                 genre=associe.genre or Gender.MASCULIN,
@@ -1850,7 +1870,8 @@ def _selas_pv_associes(associes: list[StatutsCivilsAssocie]) -> list[Associe]:
                 nb_parts=nb,
                 nb_parts_lettres=number_words_from_value(nb),
                 profession=associe.profession or "",
-                profession_reglementee=associe.profession or "",
+                profession_reglementee=vraie_profession,
+                qualification_principale=vraie_profession or None,
             )
         )
     return mapped
@@ -2048,9 +2069,16 @@ def _regime_context_for_associe(
         regime_matrimonial=(regime.regime_matrimonial if regime else None) or "",
         qualite_renoncee="associé",
     )
+    # A5 (Albane 2026-06-26) : le montant de la phrase « en apportant X euros » /
+    # « somme en numeraire de X » doit etre l'apport INDIVIDUEL du renoncant, pas le
+    # capital social total porte par `base_ctx.apport`. On reconstruit l'apport du
+    # contexte par-associe depuis l'apport saisi pour CET associe ; apport individuel
+    # absent -> marqueur visible « (À COMPLÉTER) », jamais le capital (M1, Akainu).
+    apport_ctx = _apporteur_apport(associe)
     dossier_options = base_ctx.dossier_options or DossierOptions(associe_unique=False)
     return base_ctx.model_copy(
         update={
+            "apport": apport_ctx,
             "dossier_options": dossier_options.model_copy(
                 update={"regime_communautaire": True}
             ),
@@ -2059,6 +2087,26 @@ def _regime_context_for_associe(
             "regime_communautaire": regime_ctx,
         }
     )
+
+
+def _apporteur_apport(associe: StatutsCivilsAssocie) -> Apport | None:
+    """Apport INDIVIDUEL du renoncant pour les lettres de regime communautaire (A5).
+
+    Prend le montant saisi pour CET associe (`associe.apport`). M1 (Akainu 2026-06-26) :
+    si l'apport individuel n'est pas renseigne, on ecrit un marqueur VISIBLE R10
+    « (À COMPLÉTER : apport individuel) » — JAMAIS un repli sur le capital, qui
+    reintroduirait le bug A26-40 (capital affiche au lieu de l'apport reel). Un montant
+    faux silencieux est pire qu'un trou visible. Recompose la version en lettres si seul
+    le chiffre est fourni."""
+    indiv = associe.apport
+    montant = (indiv.montant if indiv else None) or ""
+    if not montant.strip():
+        marqueur = "(À COMPLÉTER : apport individuel)"
+        return Apport(montant=marqueur, montant_lettres=marqueur)
+    montant_lettres = (
+        (indiv.montant_lettres if indiv else None) or number_words_from_value(montant)
+    )
+    return Apport(montant=montant, montant_lettres=montant_lettres)
 
 
 def _associe_signataire_address(

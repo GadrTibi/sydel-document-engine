@@ -972,7 +972,9 @@ def test_clean_front_selarl_medecin_regime_communautaire_generation_smoke(
     assert f"Par courrier en date du {date.today():%d/%m/%Y}" in combined_text
     assert "euros dependant de notre communaute." in ascii_text
     assert "regime de communaute" not in ascii_text
-    assert "Madame Martin" in combined_text
+    # A3 (Albane 2026-06-26) : le destinataire conjoint porte desormais son PRENOM.
+    assert "Madame Claire Martin" in combined_text
+    assert "Madame Martin\n" not in combined_text
     assert "10 rue Test" in combined_text
     assert "30 rue Conjoint" not in combined_text
 

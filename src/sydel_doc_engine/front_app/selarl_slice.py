@@ -652,9 +652,13 @@ def build_generation_context(data: SelarlSliceInput) -> DocumentGenerationContex
             seuil_achat_materiel=seuil_achat_materiel,
             seuil_emprunt=seuil_emprunt,
         ),
+        # R3/A5 (Albane 2026-06-26) : l'apport porte ici alimente les lettres de regime
+        # communautaire (« en apportant X euros » / « somme en numeraire de X »). Ce doit
+        # etre l'apport INDIVIDUEL de l'associe renoncant, PAS le capital social total.
+        # `_praticien_apport_montant` rend l'apport saisi (repli capital si seul detenteur).
         apport=Apport(
-            montant=capital_social_display,
-            montant_lettres=capital_social_lettres,
+            montant=_praticien_apport_montant(data),
+            montant_lettres=number_words_from_value(_praticien_apport_montant(data)),
         ),
         regime_communautaire=_regime_communautaire(data),
         statuts_sel=StatutsSel(
@@ -1029,7 +1033,10 @@ def _associe(
     *,
     nb_parts: int,
 ) -> Associe:
-    apport_montant = format_grouped_numeric_value(data.capital_social)
+    # R3/A5 (Albane 2026-06-26) : l'apport numeraire de l'associe est son apport
+    # INDIVIDUEL (repli capital si seul detenteur), pas systematiquement le capital
+    # social total. Coherent avec `_statuts_membres` (meme helper).
+    apport_montant = _praticien_apport_montant(data)
     return Associe(
         genre=data.genre,
         civilite_affichage=data.civilite,
