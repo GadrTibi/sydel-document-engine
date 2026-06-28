@@ -1,22 +1,29 @@
-# Message prêt-à-coller pour Rafael — MICRO HOLDING (1 seule validation)
+# Message prêt-à-coller pour Rafael — MICRO HOLDING (DÉVELOPPÉE, 2-3 confirmations Albane)
 
-> Single relay : Gad → Rafael → Albane. Tout cherché dans nos sources (3 passes) :
-> il ne reste qu'UNE validation d'objet social, avec un défaut déjà proposé.
+> Single relay : Gad → Rafael → Albane. Le type est construit et en ligne ; il reste à
+> choisir la variante d'objet (les deux sont développées → on retire la mauvaise) + 2 confirmations.
 
 ---
 
 Salut Rafael,
 
-Micro holding : on a déjà presque tout dans le moteur.
-- **Forme** = société civile à capital variable → notre **modèle de statuts SCI** est exactement ça (capital effectif + minimum + maximum, articles variabilité/retrait déjà présents).
-- **Max = 10× le minimum** : noté (mail 26/06), appliqué automatiquement.
-- **Type** : je l'ajoute comme société à part dans la liste, avec le tronc commun civil habituel (non-condamnation, domiciliation…).
+Micro holding : c'est développé et en ligne (reboot Streamlit pour tester).
 
-**Une seule chose à faire valider par Albane — l'objet social.** Mon défaut, à confirmer ou corriger (je ne l'invente pas) :
+Ce qu'on a fait :
+- Nouveau type « micro holding » ajouté dans la liste des sociétés.
+- C'est une société civile à CAPITAL VARIABLE (forme confirmée par les réponses d'Albane + son modèle « SELAS avec micro holding »).
+- Capital : effectif + minimum saisis, et le maximum s'affiche tout seul = 10× le minimum (sa règle).
+- Documents générés : les statuts + le tronc commun civil habituel (non-condamnation, domiciliation, procuration, PV de nomination).
 
-➡️ Je pars sur l'**objet de notre SCI**, qui couvre déjà la détention de titres : *« la propriété, l'administration et la gestion d'un portefeuille de valeurs mobilières, droits sociaux ou tous autres titres, détenus en pleine propriété, nue-propriété ou usufruit »*.
+Pour finaliser, 2-3 trucs à faire confirmer par Albane :
 
-- Si ça convient pour une micro holding → je construis tel quel.
-- Si Albane veut un **objet holding plus spécifique** (ex. « détenir des participations dans une SEL et toute société civile/commerciale… ») → qu'elle nous donne la phrase exacte, je la mets et c'est réglé.
+1. OBJET SOCIAL — j'ai développé DEUX versions, il suffira d'en garder une :
+   • Version A = l'objet de notre SCI (société civile générique : gestion de biens immobiliers + portefeuille de titres/droits sociaux).
+   • Version B = un objet « holding » (participation dans des sociétés + portefeuille de titres).
+   → Laquelle veut-elle pour la micro holding ? On retire l'autre, c'est immédiat.
 
-C'est le seul point. Dès sa réponse (ou si elle valide mon défaut), je le construis directement sur la base SCI. Merci.
+2. Si elle prend la version B : je l'ai composée à partir de nos modèles (chapeau « société civile », paragraphe « participation » repris du modèle de holding, paragraphe « portefeuille de titres » repris de la SCI). Elle valide la composition ?
+
+3. SIGLE / MENTION — dans les statuts, la mention obligatoire sur les documents aux tiers : j'ai mis « Société Civile ». C'est le bon libellé pour une micro holding, ou elle veut autre chose (« SC », ou rien) ?
+
+Dès ses réponses, je finalise (quelques minutes). Merci !
