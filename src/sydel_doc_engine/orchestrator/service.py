@@ -47,6 +47,9 @@ from sydel_doc_engine.generators.lot_03.demande_derogation_cumul_selarl_bnc impo
 from sydel_doc_engine.generators.lot_03.formulaire_derogation_sites_sel import (
     FormulaireDerogationSitesSelGenerator,
 )
+from sydel_doc_engine.generators.lot_04.statuts_micro_holding import (
+    StatutsMicroHoldingGenerator,
+)
 from sydel_doc_engine.generators.lot_04.statuts_sas import StatutsSasGenerator
 from sydel_doc_engine.generators.lot_04.statuts_sci import StatutsSciGenerator
 from sydel_doc_engine.generators.lot_04.statuts_sci_iris import StatutsSciIrisGenerator
@@ -155,6 +158,7 @@ STATUTS_CIVILS_DOCUMENT_TYPES = {
     "DOC-020": "sci",
     "DOC-021": "sci_iris",
     "DOC-025": "scm",
+    "DOC-047": "micro_holding",
 }
 OPTION_IS_DOCUMENT_ID = "DOC-022"
 SAS_PV_REMUNERATION_PRESIDENT_DOCUMENT_ID = "DOC-023"
@@ -208,6 +212,7 @@ def build_generator_registry() -> dict[str, DocumentGenerator]:
         "DOC-019": StatutsScsGenerator(),
         "DOC-020": StatutsSciGenerator(),
         "DOC-021": StatutsSciIrisGenerator(),
+        "DOC-047": StatutsMicroHoldingGenerator(),
         "DOC-022": LettreOptionIsGenerator(),
         "DOC-023": PvRemunerationPresidentGenerator(),
         "DOC-024": AttestationCapitalListeSouscripteursSasGenerator(),

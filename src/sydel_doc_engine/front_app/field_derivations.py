@@ -344,6 +344,20 @@ def regime_communautaire_from_status(label: str) -> bool:
     ) and "universelle" not in normalized
 
 
+def _invariable_before_mille(words: str) -> str:
+    """« quatre-vingts » et « cents » sont INVARIABLES devant « mille » (adjectif numéral).
+
+    Akainu 2026-06-26 : « trois cents mille » / « quatre-vingts mille » étaient fautifs ->
+    « trois cent mille » / « quatre-vingt mille ». NB : on ne touche QUE devant « mille » ;
+    devant « millions »/« milliards » (substantifs) le « s » reste (« deux cents millions »).
+    """
+    if words.endswith("vingts"):
+        return words[:-1]
+    if words.endswith("cents"):
+        return words[:-1]
+    return words
+
+
 def integer_to_french_words(value: int) -> str:
     if value < 0:
         return "moins " + integer_to_french_words(abs(value))
@@ -357,13 +371,27 @@ def integer_to_french_words(value: int) -> str:
         return _hundreds_words(value)
     if value < 1_000_000:
         thousands, remainder = divmod(value, 1000)
-        prefix = "mille" if thousands == 1 else f"{integer_to_french_words(thousands)} mille"
+        prefix = (
+            "mille"
+            if thousands == 1
+            else f"{_invariable_before_mille(integer_to_french_words(thousands))} mille"
+        )
         return prefix if remainder == 0 else f"{prefix} {integer_to_french_words(remainder)}"
-    millions, remainder = divmod(value, 1_000_000)
+    if value < 1_000_000_000:
+        millions, remainder = divmod(value, 1_000_000)
+        prefix = (
+            "un million"
+            if millions == 1
+            else f"{integer_to_french_words(millions)} millions"
+        )
+        return prefix if remainder == 0 else f"{prefix} {integer_to_french_words(remainder)}"
+    # Palier milliard (Akainu 2026-06-26) : sans lui, 1 000 000 000 rendait « mille millions »
+    # au lieu de « un milliard » (capital variable micro holding = 10x un capital >= 100 M).
+    milliards, remainder = divmod(value, 1_000_000_000)
     prefix = (
-        "un million"
-        if millions == 1
-        else f"{integer_to_french_words(millions)} millions"
+        "un milliard"
+        if milliards == 1
+        else f"{integer_to_french_words(milliards)} milliards"
     )
     return prefix if remainder == 0 else f"{prefix} {integer_to_french_words(remainder)}"
 

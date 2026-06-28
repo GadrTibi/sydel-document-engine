@@ -81,6 +81,17 @@ REGISTERED_TYPES: Final[tuple[RegisteredType, ...]] = (
         generation_enabled=True,
         status="moteur_teste",
     ),
+    # Micro holding (Albane 2026-06-26) : societe civile a capital variable, ajoutee a la
+    # liste des societes. Reutilise le socle des statuts civils ; objet social pilote par
+    # variante A (generique) / B (holding), capital variable (max = 10x le minimum saisi).
+    RegisteredType(
+        key="micro_holding_v1",
+        label="Micro holding creation V1",
+        structure="MICRO_HOLDING",
+        slice_module="sydel_doc_engine.front_app.micro_holding_slice",
+        generation_enabled=True,
+        status="moteur_teste",
+    ),
     # Libelles SPFPL clarifies (audit retours Albane lot 2, §17.4) : la deroulante
     # melait « SAS SPFPL medecins », « SPFPL cession » et « SPFPL apport » sans dire
     # ni la FORME ni la PROFESSION, d'ou une confusion + un faux doublon. Les

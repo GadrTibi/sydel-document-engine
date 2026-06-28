@@ -12,6 +12,9 @@ ALL_STRUCTURES: list[str] = [
     "SCI",
     "SCI IRIS",
     "SCM",
+    # Micro holding (Albane 2026-06-26) : societe civile a capital variable, ajoutee a la
+    # liste des societes. Tronc commun civil (DOC-001/002/003) eligible via ALL_STRUCTURES.
+    "MICRO_HOLDING",
     "SAS",
 ]
 
@@ -24,6 +27,8 @@ PV_NOMINATION_GERANT_STRUCTURES: list[str] = [
     "SCI",
     "SCI IRIS",
     "SCM",
+    # Micro holding : PV de nomination du gerant, comme les autres civiles.
+    "MICRO_HOLDING",
 ]
 
 DEMANDE_INSCRIPTION_ORDRE_STRUCTURES: list[str] = [
@@ -90,6 +95,10 @@ STATUTS_CIVILS_SCI_IRIS_STRUCTURES: list[str] = [
 
 STATUTS_CIVILS_SCM_STRUCTURES: list[str] = [
     "SCM",
+]
+
+STATUTS_CIVILS_MICRO_HOLDING_STRUCTURES: list[str] = [
+    "MICRO_HOLDING",
 ]
 
 OPTION_IS_STRUCTURES: list[str] = [
@@ -684,6 +693,30 @@ def build_seed_catalog() -> list[DocumentDefinition]:
             source_path="project/source_documents/lot_04/Modèle statuts SCI IRIS.docx",
             specification_path="docs/delivery/lot_04_statuts_civils_arbitrages_v1.md",
             notes="Lettre option IS separee hors generateur statuts civils.",
+        ),
+        DocumentDefinition(
+            doc_id="DOC-047",
+            canonical_name="Statuts micro holding",
+            generator_name="generate_statuts_micro_holding",
+            lot=4,
+            category=DocumentCategory.SPECIFIQUE,
+            structures=STATUTS_CIVILS_MICRO_HOLDING_STRUCTURES,
+            general_condition="dossier.structure == MICRO_HOLDING",
+            specific_conditions=[
+                "statuts_civils.type == micro_holding",
+                "societe civile a capital variable (max = 10x le minimum saisi)",
+                "objet social variante A (generique civil) ou B (holding)",
+            ],
+            dynamic_associates=True,
+            grammar_variants=False,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path="project/source_documents/lot_04/Modele statuts micro holding.docx",
+            specification_path="docs/delivery/lot_04_statuts_civils_arbitrages_v1.md",
+            notes=(
+                "Demande Albane 2026-06-26 : clone du modele SCI (societe civile a capital "
+                "variable) dont le bloc objet (article 2) est pilote par variante A/B "
+                "(extraites des modeles sources, aucun texte invente)."
+            ),
         ),
         DocumentDefinition(
             doc_id="DOC-022",

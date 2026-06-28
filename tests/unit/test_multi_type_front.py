@@ -73,6 +73,8 @@ def test_registry_exposes_all_ready_types() -> None:
         "SCI",
         "SCI IRIS",
         "SCS",
+        # Micro holding (Albane 2026-06-26) : societe civile a capital variable.
+        "MICRO_HOLDING",
         "SAS",
         "SPFPL cession",
         "SPFPL apport",
@@ -2123,6 +2125,8 @@ def test_repeater_bounds_are_named_and_aligned() -> None:
     assert css.CIVIL_NB_MIN_BY_STRUCTURE == {
         "SCI": 1,
         "SCM": 1,
+        # Micro holding : 1 associe minimum (societe civile a capital variable).
+        "MICRO_HOLDING": 1,
         "SCI IRIS": 2,
         "SCS": 2,
     }
@@ -2197,6 +2201,7 @@ def test_front_dropdown_lists_all_types_with_selarl_default() -> None:
         "SCI creation V1",
         "SCI IRIS creation V1",
         "SCS creation V1",
+        "Micro holding creation V1",
         "SPFPL medecins (forme SAS) creation V1",
         "SPFPL dentistes - cession creation V1",
         "SPFPL dentistes - apport creation V1",

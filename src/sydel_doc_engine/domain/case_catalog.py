@@ -14,6 +14,7 @@ class CaseType(StrEnum):
     SCS = "SCS"
     SCI = "SCI"
     SCM = "SCM"
+    MICRO_HOLDING = "MICRO_HOLDING"
     SAS = "SAS"
 
 
@@ -369,6 +370,13 @@ CATALOG_DOCUMENTS: tuple[CatalogDocument, ...] = (
         "Statuts SCI IRIS",
         "Modele statuts SCI IRIS.docx",
         "DOC-021",
+        DocumentAvailability.GENERATABLE,
+    ),
+    CatalogDocument(
+        "statuts_micro_holding",
+        "Statuts micro holding",
+        "Modele statuts micro holding.docx",
+        "DOC-047",
         DocumentAvailability.GENERATABLE,
     ),
     CatalogDocument(
@@ -734,6 +742,17 @@ CATALOG_OCCURRENCES: tuple[DocumentOccurrence, ...] = (
     DocumentOccurrence(CaseType.SCI, "procuration", "SCI"),
     DocumentOccurrence(CaseType.SCI, "autorisation_domiciliation", "SCI"),
     DocumentOccurrence(CaseType.SCI, "pv_nomination_gerant", "SCI"),
+    # MICRO HOLDING (societe civile a capital variable, bundle de creation comme une SCI :
+    # statuts + tronc commun civil DNC/domiciliation/procuration + PV nomination gerant).
+    DocumentOccurrence(CaseType.MICRO_HOLDING, "statuts_micro_holding", "MICRO_HOLDING"),
+    DocumentOccurrence(
+        CaseType.MICRO_HOLDING, "declaration_non_condamnation", "MICRO_HOLDING"
+    ),
+    DocumentOccurrence(CaseType.MICRO_HOLDING, "procuration", "MICRO_HOLDING"),
+    DocumentOccurrence(
+        CaseType.MICRO_HOLDING, "autorisation_domiciliation", "MICRO_HOLDING"
+    ),
+    DocumentOccurrence(CaseType.MICRO_HOLDING, "pv_nomination_gerant", "MICRO_HOLDING"),
     # SCM
     DocumentOccurrence(CaseType.SCM, "statuts_scm", "SCM"),
     DocumentOccurrence(CaseType.SCM, "declaration_non_condamnation", "SCM"),

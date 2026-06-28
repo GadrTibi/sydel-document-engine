@@ -725,6 +725,10 @@ class StatutsCivilsGroupeParts(BaseModel):
 class StatutsCivilsContext(BaseModel):
     type: str | None = None
     forme_sociale: str | None = None
+    # Micro holding (Albane 2026-06-26) : objet social pilote par une variante (A generique
+    # civil / B holding), texte deja resolu en amont. Injecte au token [objet_social] du
+    # modele micro holding. None pour les autres civiles (objet fige dans leur modele source).
+    objet_social: str | None = None
     mention_capital_variable: str | None = None
     capital_social: str | None = None
     capital_social_lettres: str | None = None

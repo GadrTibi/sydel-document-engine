@@ -86,6 +86,22 @@ SCI_TEMPLATE = StatutsCivilTemplate(
     signature_slice=(612, 623),
 )
 
+# Micro holding (Albane 2026-06-26) : societe civile a CAPITAL VARIABLE, clone du modele
+# SCI dont le SEUL bloc objet (article 2) est remplace par le token [objet_social]. Tous les
+# autres index de paragraphe sont IDENTIQUES au SCI (on n'a vide que du texte, ajoute/supprime
+# aucun paragraphe) -> les memes slices que SCI_TEMPLATE. source_name_contains distinct
+# (« MICRO », « HOLDING ») pour ne pas collisionner avec le routage SCI.
+MICRO_HOLDING_TEMPLATE = StatutsCivilTemplate(
+    source_name_contains=("MICRO", "HOLDING"),
+    output_filename="statuts_micro_holding.docx",
+    expected_structure="MICRO_HOLDING",
+    expected_type="micro_holding",
+    associate_slice=(25, 44),
+    apport_slice=(97, 111),
+    capital_slice=(120, 131),
+    signature_slice=(612, 623),
+)
+
 SCI_IRIS_TEMPLATE = StatutsCivilTemplate(
     source_name_contains=("SCI", "IRIS"),
     output_filename="statuts_sci_iris.docx",
@@ -143,6 +159,13 @@ def generate_statuts_civil_docx(  # noqa: C901
         text = paragraph.text.strip()
         if not text:
             continue
+        # Micro holding : le bloc objet (article 2) du modele = le seul token [objet_social].
+        # On l'injecte alinea par alinea (un paragraphe par ligne du texte de variante) pour
+        # preserver la presentation multi-alineas du modele source, au lieu d'un remplacement
+        # inline qui aplatirait l'objet en un seul paragraphe.
+        if template.expected_type == "micro_holding" and text == "[objet_social]":
+            _add_objet_block(output_doc, data)
+            continue
         rendered = _replace_placeholders(text, replacements)
         rendered = _strip_editorial_marker(rendered)
         if not rendered:
@@ -196,9 +219,11 @@ class _ResolvedStatutsCivil:
         signature_lieu: str,
         signature_date: str,
         associes: list[StatutsCivilsAssocie],
+        objet_social: str | None = None,
     ) -> None:
         self.template = template
         self.statuts = statuts
+        self.objet_social = objet_social
         self.denomination = denomination
         self.forme_sociale = forme_sociale
         self.adresse_siege = adresse_siege
@@ -241,6 +266,8 @@ class _ResolvedStatutsCivil:
             _validate_sci(associes)
         if template.expected_type == "sci_iris":
             _validate_sci_iris(ctx.statuts_civils, associes)
+        if template.expected_type == "micro_holding":
+            _validate_micro_holding(ctx.statuts_civils)
         _validate_template_fields(ctx.statuts_civils, template)
 
         return cls(
@@ -260,6 +287,7 @@ class _ResolvedStatutsCivil:
             signature_lieu=ctx.signature.lieu,
             signature_date=_format_display_date(ctx.signature.date, "signature.date"),
             associes=associes,
+            objet_social=ctx.statuts_civils.objet_social,
         )
 
     def common_replacements(self) -> dict[str, str]:
@@ -346,6 +374,20 @@ def _add_associate_block(document, data: _ResolvedStatutsCivil) -> None:
             _add_morale_identity(document, associe)
         else:
             _add_physical_identity(document, associe)
+
+
+def _add_objet_block(document, data: _ResolvedStatutsCivil) -> None:
+    """Micro holding : rend l'objet social (variante choisie) alinea par alinea.
+
+    Le texte de la variante (A generique civil / B holding) est resolu en amont et porte
+    plusieurs alineas separes par des sauts de ligne. On rend chaque alinea non vide comme
+    un paragraphe de corps justifie (parite avec les autres alineas d'article du modele).
+    """
+    objet = _required_text(data.objet_social, "statuts_civils.objet_social")
+    for ligne in objet.split("\n"):
+        ligne = ligne.strip()
+        if ligne:
+            add_statuts_body_paragraph(document, ligne, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY)
 
 
 def _add_apport_block(document, data: _ResolvedStatutsCivil) -> None:
@@ -691,6 +733,13 @@ def _validate_sci(associes: list[StatutsCivilsAssocie]) -> None:
     return None
 
 
+def _validate_micro_holding(statuts: StatutsCivilsContext) -> None:
+    # Micro holding : l'objet social (variante A ou B, deja resolu en amont) est OBLIGATOIRE,
+    # il alimente le token [objet_social] du modele clone. Le capital variable est verifie
+    # par _validate_template_fields (micro_holding dans le set capital-variable).
+    _required_text(statuts.objet_social, "statuts_civils.objet_social")
+
+
 def _validate_sci_iris(
     statuts: StatutsCivilsContext,
     associes: list[StatutsCivilsAssocie],
@@ -724,7 +773,7 @@ def _validate_template_fields(
     _required_text(
         statuts.date_cloture_premier_exercice, "statuts_civils.date_cloture_premier_exercice"
     )
-    if template.expected_type in {"sci", "sci_iris"}:
+    if template.expected_type in {"sci", "sci_iris", "micro_holding"}:
         _required_text(statuts.mention_capital_variable, "statuts_civils.mention_capital_variable")
         _required_text(statuts.capital_autorise, "statuts_civils.capital_autorise")
         _required_text(statuts.capital_autorise_lettres, "statuts_civils.capital_autorise_lettres")

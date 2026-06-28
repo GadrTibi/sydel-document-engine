@@ -82,6 +82,9 @@ from sydel_doc_engine.generators.lot_02.lettre_avertissement_conjoint import (
 from sydel_doc_engine.generators.lot_02.lettre_renonciation_associe import (
     LettreRenonciationAssocieGenerator,
 )
+from sydel_doc_engine.generators.lot_04.statuts_micro_holding import (
+    objet_social_for_variante,
+)
 from sydel_doc_engine.generators.lot_05.liste_souscripteurs_scs import (
     DOCUMENT_CODE as _DOC_LISTE_SOUSCRIPTEURS_SCS,
 )
@@ -95,6 +98,8 @@ CIVIL_TYPE_BY_STRUCTURE: dict[str, tuple[str, str]] = {
     "SCI IRIS": ("sci_iris", "DOC-021"),
     "SCS": ("scs", "DOC-019"),
     "SCM": ("scm", "DOC-025"),
+    # Micro holding (Albane 2026-06-26) : societe civile a capital variable, socle civil reutilise.
+    "MICRO_HOLDING": ("micro_holding", "DOC-047"),
 }
 
 # Libelle de forme sociale DERIVE automatiquement de la structure (§18.1, retours
@@ -106,6 +111,8 @@ CIVIL_FORME_SOCIALE_BY_STRUCTURE: dict[str, str] = {
     "SCI": "société civile",
     "SCI IRIS": "société civile",
     "SCS": "société civile",
+    # Micro holding = societe civile a capital variable.
+    "MICRO_HOLDING": "société civile",
 }
 
 
@@ -122,6 +129,8 @@ def civil_forme_sociale(structure: str) -> str:
 CIVIL_NB_MIN_BY_STRUCTURE: dict[str, int] = {
     "SCI": 1,
     "SCM": 1,
+    # Micro holding : 1 associe minimum (societe civile a capital variable, 1..6).
+    "MICRO_HOLDING": 1,
     "SCI IRIS": 2,
     "SCS": 2,
 }
@@ -312,6 +321,23 @@ def render_civil_form(structure: str) -> dict[str, object]:
     signature_lieu = siege_ville
     signature_date = _date_input(prefix, "signature_date", "Date de signature")
 
+    # Micro holding (Albane 2026-06-26) : selecteur de variante d'objet social.
+    # A = objet societe civile generique (extrait du modele SCI) ; B = objet holding
+    # (extrait du modele SASU Holding, adapte au caractere civil). Defaut A. Albane tranchera.
+    objet_variante = "A"
+    if structure == "MICRO_HOLDING":
+        objet_key = f"{prefix}_objet_variante"
+        if objet_key not in st.session_state:
+            st.session_state[objet_key] = "A (générique)"
+        objet_choice = st.radio(
+            "Objet social",
+            options=("A (générique)", "B (holding)"),
+            key=objet_key,
+            help="A : objet de société civile générique (modèle SCI). "
+            "B : objet holding (participation à des sociétés).",
+        )
+        objet_variante = "B" if str(objet_choice).startswith("B") else "A"
+
     role_options: tuple[str, ...] = ()
     if structure == "SCS":
         role_options = ("commandite", "commanditaire")
@@ -363,6 +389,7 @@ def render_civil_form(structure: str) -> dict[str, object]:
         "signature_date": signature_date,
         "associes": associes,
         "gerant_index": gerant_index,
+        "objet_variante": objet_variante,
     }
     payload.update(common)
     payload.update(inter_sel)
@@ -1143,9 +1170,18 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         payload.get("signature_lieu") or ""
     )
 
+    # Micro holding : objet social resolu selon la variante choisie (A generique / B holding).
+    # None pour les autres civiles (leur objet est fige dans leur propre modele source).
+    objet_social = (
+        objet_social_for_variante(str(payload.get("objet_variante") or "A"))
+        if structure == "MICRO_HOLDING"
+        else None
+    )
+
     statuts_civils = StatutsCivilsContext(
         type=statuts_type,
         forme_sociale=forme_sociale,
+        objet_social=objet_social,
         mention_capital_variable="a capital variable",
         capital_social=capital,
         capital_social_lettres=number_words_from_value(capital),

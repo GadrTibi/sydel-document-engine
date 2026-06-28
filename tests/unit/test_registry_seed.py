@@ -3,10 +3,11 @@ from __future__ import annotations
 from sydel_doc_engine.registry.catalog import build_seed_catalog
 
 
-def test_seed_catalog_contains_forty_six_documents() -> None:
-    # DOC-046 (statuts SELAS unipersonnelle dentiste, retour Rafael #5) porte le total a 46.
+def test_seed_catalog_contains_forty_seven_documents() -> None:
+    # DOC-046 (statuts SELAS unipersonnelle dentiste, retour Rafael #5) portait le total a 46 ;
+    # DOC-047 (statuts micro holding, demande Albane 2026-06-26) le porte a 47.
     catalog = build_seed_catalog()
-    assert len(catalog) == 46
+    assert len(catalog) == 47
 
 
 def test_seed_catalog_contains_lot_one_to_lot_five_entries() -> None:
@@ -28,6 +29,8 @@ def test_seed_catalog_pv_nomination_gerant_scope_excludes_sas() -> None:
         "SCI",
         "SCI IRIS",
         "SCM",
+        # Micro holding (Albane 2026-06-26) : PV gerant comme les autres civiles.
+        "MICRO_HOLDING",
     }
     assert "SAS" not in pv_document.structures
 
