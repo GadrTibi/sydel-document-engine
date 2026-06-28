@@ -20,6 +20,46 @@ j'ajoute UNE ligne ici : `- [AAAA-MM-JJ HH:MM] [TYPE] description (réf : SHA / 
 
 ---
 
+## 2026-06-26 — Lot « Formulaire-A » Albane (Chopper) : préremplissages + bugs front cession
+
+> Sous-formulaire cession PARTAGÉ SELARL/SELAS (`front_app/shell.py::_render_cession_form`
+> + `_render_scm_cession_form`). Zéro générateur touché. Fix prouvés via streamlit AppTest
+> (parcours SELAS pluri = celui d'Albane) + régénération réelle des DOCX. Tests :
+> `tests/unit/test_cession_formulaire_a.py` (13 verts). Périmètre régression
+> `front|cession|scm|multi_type|selarl|selas` = **538 verts**, ruff propre, mypy shell.py 0 erreur.
+> **GATE AKAINU pas encore passé → rien déclaré TRAITÉ.**
+
+- [16:20] **ACTION** FA1 (A26-03) « montant du prêt = prix de cession » : `pret_montant`
+  préremplie = prix total saisi (auto, modifiable). Preuve : prix 300000 → prêt « 300 000 ».
+- [16:20] **ACTION** FA2 (A26-04) « taux du prêt : 5,5 % » : défaut `5,5 %`. FA3 (A26-05)
+  « durée : 10 ans » : défaut `10 ans`. Préremplissages éditables.
+- [16:20] **ACTION** FA4 (A26-06) majoration intérêts retard crédit-vendeur : champ de saisie
+  RETIRÉ, valeur FIGÉE = `"2"` (modèle source SELARL « majoré de 2 points » + scénario validé).
+  ⚠️ **FLAG PM** : la consigne disait « 3 points » (indication approx.) ; le verbatim Albane
+  = « reprendre ce qu'il y avait dans le modèle » → modèle source = **2 points**. Aligné sur la
+  source de vérité (2), pas sur l'indication (3). À confirmer si Albane veut 3.
+- [16:20] **ACTION** FA5 (A26-07) + FB3 (A26-46) date limite réalisation : préremplie =
+  date des actes (`signature_date`) + 6 mois via nouveau helper `_add_months` + `format_french_date`
+  (« %d/%m/%Y » propre). Double slash « 01/01//2027 » éliminé (compromis régénéré : `//` absent).
+- [16:20] **ACTION** FA6 (A26-02) montant déblocage minimum : reste vide par défaut (confirmé).
+- [16:20] **ACTION** FA7 (A26-09) prix global SCM en lettres : dérivé d'office de `global` via
+  `number_words_from_value` (même helper que la valeur nominale), champ auto affiché.
+- [16:20] **ACTION** FB1 (A26-42) « Lyon (France) » → département : le COMPROMIS médical rend
+  `[pays_naissance_vendeur]` dans la parenthèse de naissance ; on y câble le DÉPARTEMENT saisi
+  (fallback « France » si absent). Compromis régénéré : « Lyon (69) ». L'acte (token département)
+  restait correct. Aucun générateur/modèle touché.
+- [16:20] **ACTION** FB2 (A26-43) origine de propriété vide : la date+mode (créé) étaient déjà
+  câblés ; la phrase ne se construit QUE si la date est saisie (générateur ligne 979). Preuve e2e :
+  date renseignée → « ... pour l'avoir régulièrement créé le 01/01/2020. » Le vide d'Albane venait
+  de la date non saisie (elle n'avait plus accès à son formulaire, cf. note carnet). Cabling OK,
+  test de non-régression ajouté. **NB** : le générateur n'accentue pas une date JJ/MM/AAAA
+  (échoue le mois en lettres) — il l'écho « 01/01/2020 » ; comportement générateur, hors périmètre front.
+
+- [16:20] **AUDIT (à lancer)** Gate Akainu sur les 10 items du lot (FA1-FA7, FB1-FB3) contre
+  leur verbatim propre, avant toute déclaration TRAITÉ (règle 66).
+
+---
+
 ## 2026-06-22 — session retours R22 + audits
 
 - [~10:00] **R-RAFAEL** Rafael répond au lot précédent : « toute la première page du document - oui ajuste » (réponse R22-06 + accents).
