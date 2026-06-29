@@ -13,7 +13,6 @@ from docx.shared import Pt
 
 from sydel_doc_engine.domain.models import Address, Company, DocumentGenerationContext
 from sydel_doc_engine.rendering.docx_template_fill import fill_docx_template
-from sydel_doc_engine.utils.months import FRENCH_MONTHS
 
 ROBOTO_FONT = "Roboto"
 
@@ -254,16 +253,21 @@ def _required_text(value: str | None, field_name: str) -> str:
 
 
 def _french_date(value: date | str | None) -> str:
-    """Formate une date en français long (ex. « 12 mai 2026 »).
+    """Formate la date de signature en JJ/MM/AAAA (ex. « 12/05/2026 »).
 
-    - date -> jour mois année en français ;
-    - str ISO « YYYY-MM-DD » -> parsée puis formatée FR ;
-    - autre str -> renvoyée telle quelle.
+    Convention Albane (propagation, Gad 2026-06-29) : les SATELLITES (domiciliation,
+    procuration, liste des souscripteurs) portent la date en JJ/MM/AAAA ; seuls les
+    STATUTS sont en toutes lettres. Tous les modeles Albane de domiciliation (SAS +
+    micro holding) ecrivent « Le JJ/MM/AAAA ».
+
+    - date -> JJ/MM/AAAA ;
+    - str ISO « YYYY-MM-DD » -> parsee puis formatee JJ/MM/AAAA ;
+    - autre str -> renvoyee telle quelle.
     """
     if value is None:
         raise ValueError(f"signature.date est obligatoire pour {DOCUMENT_CODE}.")
     if isinstance(value, date):
-        return f"{value.day} {FRENCH_MONTHS[value.month]} {value.year}"
+        return f"{value.day:02d}/{value.month:02d}/{value.year}"
     text = value.strip()
     match = _ISO_DATE_RE.match(text)
     if match is not None:
@@ -272,5 +276,5 @@ def _french_date(value: date | str | None) -> str:
             parsed = date(year, month, day)
         except ValueError:
             return text
-        return f"{parsed.day} {FRENCH_MONTHS[parsed.month]} {parsed.year}"
+        return f"{parsed.day:02d}/{parsed.month:02d}/{parsed.year}"
     return text

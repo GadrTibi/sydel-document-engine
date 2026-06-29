@@ -115,7 +115,7 @@ def test_autorisation_domiciliation_contains_essential_texts(tmp_path: Path) -> 
         "75008 Paris pour une durée indéterminée."
     ) in text
     assert "Fait à Paris" in text
-    assert "Le 12 mai 2026" in text
+    assert "Le 12/05/2026" in text
     assert "Monsieur Jean Durand" in text
 
 
@@ -203,6 +203,6 @@ def test_autorisation_domiciliation_uses_signature_paragraphs_without_table(
     assert len(document.tables) == 1
     paragraphs = [paragraph.text for paragraph in document.paragraphs if paragraph.text]
     assert "Fait à Paris, " in paragraphs
-    assert "Le 12 mai 2026" in paragraphs
+    assert "Le 12/05/2026" in paragraphs
     # Modele a jour (Drive) : la ligne de signature est « [prenom] [nom] » (sans civilite).
     assert "Jean Durand" in paragraphs
