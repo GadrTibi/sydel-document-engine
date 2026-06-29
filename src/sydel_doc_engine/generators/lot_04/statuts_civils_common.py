@@ -36,6 +36,10 @@ from sydel_doc_engine.utils.grammar import euro_word
 DOCUMENT_CODE = "CODE-STATUTS-CIVILS-CORE-001"
 MAX_ASSOCIES = 6
 
+# Espace insecable (U+00A0) : ponctuation fine francaise du modele Albane micro holding
+# (« Siege social<NBSP>: », « comme suit<NBSP>: »). Defini via chr() pour rester ASCII-safe.
+_NBSP = chr(0x00A0)
+
 # Marqueur editorial interne du modele source SCI (fin Art. 31, source para 547) :
 # "... jusqu'au [date]. A RETIRER SI LA SOCIETE EST A L'IR". C'est une INSTRUCTION INTERNE de
 # redaction, pas du texte juridique destine au client -> on la retire de la sortie tout en gardant
@@ -86,20 +90,26 @@ SCI_TEMPLATE = StatutsCivilTemplate(
     signature_slice=(612, 623),
 )
 
-# Micro holding (Albane 2026-06-26) : societe civile a CAPITAL VARIABLE, clone du modele
-# SCI dont le SEUL bloc objet (article 2) est remplace par le token [objet_social]. Tous les
-# autres index de paragraphe sont IDENTIQUES au SCI (on n'a vide que du texte, ajoute/supprime
-# aucun paragraphe) -> les memes slices que SCI_TEMPLATE. source_name_contains distinct
-# (« MICRO », « HOLDING ») pour ne pas collisionner avec le routage SCI.
+# Micro holding (Albane 2026-06-29) : VRAI modele Albane « societe civile de portefeuille a
+# capital variable » (26 articles, distinct du SCI). Modele source tokenise depuis le DOCX
+# fourni par Albane (Statuts_Micro_holding.docx). Slices derivees du modele Albane :
+#   - statuts_title_box_before=9 : le titre « STATUTS » vit dans une TABLE (entre l'en-tete et
+#     « LES SOUSSIGNES ») -> non vu par l'iteration des paragraphes, on l'injecte avant le P9.
+#   - associate (17,33) : comparution SPFPL (morale) + praticien (physique), wording MH propre.
+#   - apport (86,96) : art. 6 (« X apporte la somme de … / Ci … euros » + total + depot).
+#   - capital (100,114) : art. 7 (variable min/max/effectif + division + repartition par associe).
+#   - signature (461,465) : « Fait a [lieu] / Le [date] » + signataires cote a cote.
+# L'objet social (art. 2) est desormais VERBATIM dans le modele Albane (plus de token/variante).
 MICRO_HOLDING_TEMPLATE = StatutsCivilTemplate(
     source_name_contains=("MICRO", "HOLDING"),
     output_filename="statuts_micro_holding.docx",
     expected_structure="MICRO_HOLDING",
     expected_type="micro_holding",
-    associate_slice=(25, 44),
-    apport_slice=(97, 111),
-    capital_slice=(120, 131),
-    signature_slice=(612, 623),
+    associate_slice=(17, 33),
+    apport_slice=(86, 96),
+    capital_slice=(100, 114),
+    signature_slice=(461, 465),
+    statuts_title_box_before=9,
 )
 
 SCI_IRIS_TEMPLATE = StatutsCivilTemplate(
@@ -158,13 +168,6 @@ def generate_statuts_civil_docx(  # noqa: C901
 
         text = paragraph.text.strip()
         if not text:
-            continue
-        # Micro holding : le bloc objet (article 2) du modele = le seul token [objet_social].
-        # On l'injecte alinea par alinea (un paragraphe par ligne du texte de variante) pour
-        # preserver la presentation multi-alineas du modele source, au lieu d'un remplacement
-        # inline qui aplatirait l'objet en un seul paragraphe.
-        if template.expected_type == "micro_holding" and text == "[objet_social]":
-            _add_objet_block(output_doc, data)
             continue
         rendered = _replace_placeholders(text, replacements)
         rendered = _strip_editorial_marker(rendered)
@@ -369,30 +372,97 @@ def _bold_paragraph(paragraph) -> None:
 
 
 def _add_associate_block(document, data: _ResolvedStatutsCivil) -> None:
+    micro_holding = data.template.expected_type == "micro_holding"
     for associe in data.associes:
         if _is_morale(associe):
-            _add_morale_identity(document, associe)
+            if micro_holding:
+                _add_morale_identity_micro_holding(document, associe)
+            else:
+                _add_morale_identity(document, associe)
+        elif micro_holding:
+            _add_physical_identity_micro_holding(document, associe)
         else:
             _add_physical_identity(document, associe)
 
 
-def _add_objet_block(document, data: _ResolvedStatutsCivil) -> None:
-    """Micro holding : rend l'objet social (variante choisie) alinea par alinea.
+def _mh_morale_denomination(associe: StatutsCivilsAssocie) -> str:
+    return _required_text(associe.denomination, "associes[].denomination")
 
-    Le texte de la variante (A generique civil / B holding) est resolu en amont et porte
-    plusieurs alineas separes par des sauts de ligne. On rend chaque alinea non vide comme
-    un paragraphe de corps justifie (parite avec les autres alineas d'article du modele).
+
+def _mh_short_label(associe: StatutsCivilsAssocie) -> str:
+    """Libelle court micro holding (apport / capital / signature).
+
+    Personne morale -> « La <denomination> » (article feminin, denomination seule, SANS
+    « representee par … » contrairement au libelle generique). Personne physique ->
+    « <civilite> <prenoms> <nom> » (sans la mention « epouse … » reservee a la comparution).
     """
-    objet = _required_text(data.objet_social, "statuts_civils.objet_social")
-    for ligne in objet.split("\n"):
-        ligne = ligne.strip()
-        if ligne:
-            add_statuts_body_paragraph(document, ligne, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY)
+    if _is_morale(associe):
+        return f"La {_mh_morale_denomination(associe)}"
+    prenoms = associe.prenoms or associe.prenom
+    return (
+        f"{_required_text(associe.civilite_affichage, 'associes[].civilite_affichage')} "
+        f"{_required_text(prenoms, 'associes[].prenoms')} "
+        f"{_required_text(associe.nom, 'associes[].nom')}"
+    )
+
+
+def _add_morale_identity_micro_holding(document, associe: StatutsCivilsAssocie) -> None:
+    # Comparution morale micro holding (modele Albane P017-P022) : 6 lignes distinctes.
+    _bold_paragraph(add_paragraph(document, f"- {_mh_morale_denomination(associe)}"))
+    add_paragraph(document, _required_text(associe.forme_juridique, "associes[].forme_juridique"))
+    capital_morale = _required_text(associe.capital_social, "associes[].capital_social")
+    add_paragraph(document, f"Au capital de {capital_morale} euros")
+    add_paragraph(
+        document, f"Siège social : {_address_display(associe.siege, 'associes[].siege')}"
+    )
+    add_paragraph(
+        document,
+        f"Immatriculée au RCS de {_required_text(associe.ville_rcs, 'associes[].ville_rcs')} "
+        f"sous le numéro {_required_text(associe.numero_rcs, 'associes[].numero_rcs')}",
+    )
+    if associe.representant is None:
+        raise ValueError(
+            f"associes[].representant est obligatoire pour une personne morale {DOCUMENT_CODE}."
+        )
+    add_paragraph(
+        document,
+        f"Représentée par son "
+        f"{_required_text(associe.representant.fonction, 'associes[].representant.fonction')}, "
+        f"{_required_text(associe.representant.civilite_affichage, 'representant.civilite')} "
+        f"{_required_text(associe.representant.prenom, 'associes[].representant.prenom')} "
+        f"{_required_text(associe.representant.nom, 'associes[].representant.nom')}",
+    )
+
+
+def _add_physical_identity_micro_holding(document, associe: StatutsCivilsAssocie) -> None:
+    # Comparution physique micro holding (modele Albane P025-P029). Libelle d'identite avec
+    # virgule finale ; date de naissance verbatim (« 1er decembre 1978 »).
+    gender = associe.genre or Gender.MASCULIN
+    born = "Née" if gender == Gender.FEMININ else "Né"
+    _bold_paragraph(add_paragraph(document, f"{_signature_label(associe)},"))
+    add_paragraph(
+        document,
+        f"{born} le {_format_display_date(associe.date_naissance, 'associes[].date_naissance')} "
+        f"à {_required_text(associe.ville_naissance, 'associes[].ville_naissance')} "
+        f"({_required_text(associe.departement_naissance, 'associes[].departement_naissance')})",
+    )
+    add_paragraph(
+        document,
+        f"De nationalité {_required_text(associe.nationalite, 'associes[].nationalite')}",
+    )
+    add_paragraph(
+        document,
+        _required_text(associe.situation_maritale, "associes[].situation_maritale"),
+    )
+    add_paragraph(document, f"Demeurant {_person_address(associe)}")
 
 
 def _add_apport_block(document, data: _ResolvedStatutsCivil) -> None:
     if data.template.expected_type == "scs":
         _add_apport_block_scs(document, data)
+        return
+    if data.template.expected_type == "micro_holding":
+        _add_apport_block_micro_holding(document, data)
         return
     for associe in data.associes:
         _add_apport_line(document, associe, expected_type=data.template.expected_type)
@@ -466,6 +536,9 @@ def _add_capital_block(document, data: _ResolvedStatutsCivil) -> None:
     if data.template.expected_type == "scs":
         _add_capital_block_scs(document, data)
         return
+    if data.template.expected_type == "micro_holding":
+        _add_capital_block_micro_holding(document, data)
+        return
     for associe in data.associes:
         parts = _required_parts(associe)
         add_paragraph(document, _signature_label(associe))
@@ -495,6 +568,80 @@ def _add_capital_block(document, data: _ResolvedStatutsCivil) -> None:
         "SOIT AU TOTAL "
         f"{_required_int(data.statuts.nb_parts_total, 'statuts_civils.nb_parts_total')} parts",
     )
+
+
+def _add_apport_block_micro_holding(document, data: _ResolvedStatutsCivil) -> None:
+    # Art. 6 APPORTS (modele Albane P086-P095). Une ligne « <label> apporte la somme de
+    # <lettres> » + « Ci\t<montant> euros » par associe, puis total + clause de depot.
+    # NB FIDELITE : le modele source utilise des points de conduite (« Ci…… 1010 euros »)
+    # comme remplissage visuel d'alignement ; on les rend par une TABULATION (convention du
+    # moteur, cf. SCI « ci\t<montant> euros ») -> seul ecart cosmetique, sans valeur juridique.
+    for associe in data.associes:
+        apport = _required_apport(associe)
+        add_paragraph(
+            document,
+            f"{_mh_short_label(associe)} apporte la somme de "
+            f"{_required_text(apport.montant_lettres, 'associes[].apport.montant_lettres')} euros",
+        )
+        add_paragraph(
+            document,
+            f"\tCi\t{_required_text(apport.montant, 'associes[].apport.montant')} euros",
+        )
+    capital_social = _required_text(data.statuts.capital_social, "statuts_civils.capital_social")
+    add_paragraph(document, f"Total des apports : \t{capital_social} euros")
+    depot = data.statuts.capital_depot
+    banque_nom = _required_text(
+        depot.banque_nom if depot else None, "statuts_civils.capital_depot.banque_nom"
+    )
+    banque_adresse = _required_text(
+        depot.banque_adresse if depot else None, "statuts_civils.capital_depot.banque_adresse"
+    )
+    add_paragraph(
+        document,
+        f"Cette somme de {capital_social} € a été déposée par les associés conformément à la "
+        "loi, au crédit d’un compte ouvert au nom de la société en formation auprès de la "
+        f"banque {banque_nom}, {banque_adresse}.",
+    )
+
+
+def _add_capital_block_micro_holding(document, data: _ResolvedStatutsCivil) -> None:
+    # Art. 7 CAPITAL SOCIAL variable (modele Albane P100-P113). Lettres en MAJUSCULES (verbatim
+    # modele). Repartition des parts par associe (« <label> \t<nb> parts »).
+    statuts = data.statuts
+    capital = _required_text(statuts.capital_social, "statuts_civils.capital_social")
+    capital_lettres = _required_text(
+        statuts.capital_social_lettres, "statuts_civils.capital_social_lettres"
+    ).upper()
+    capital_max = _required_text(statuts.capital_maximal, "statuts_civils.capital_maximal")
+    capital_max_lettres = _required_text(
+        statuts.capital_maximal_lettres, "statuts_civils.capital_maximal_lettres"
+    ).upper()
+    nb_parts = _required_int(statuts.nb_parts_total, "statuts_civils.nb_parts_total")
+    vnp = _required_text(statuts.valeur_nominale_part, "statuts_civils.valeur_nominale_part")
+    vnp_lettres = _required_text(
+        statuts.valeur_nominale_part_lettres, "statuts_civils.valeur_nominale_part_lettres"
+    ).upper()
+    add_paragraph(document, "Le capital social est variable.")
+    add_paragraph(document, f"Le capital social minimal est fixé à {capital_lettres} ({capital}€).")
+    add_paragraph(
+        document,
+        f"Le capital social maximal est fixé à {capital_max_lettres} EUROS ({capital_max}€).",
+    )
+    add_paragraph(
+        document,
+        f"Le capital social effectif est fixé à {capital_lettres} ({capital} €) euros à la "
+        "constitution de la Société.",
+    )
+    add_paragraph(
+        document,
+        f"Le capital social est divisé en {nb_parts} parts de {vnp}€ "
+        f"({vnp_lettres} {euro_word(vnp).upper()}) chacune.",
+    )
+    add_paragraph(document, f"Elles sont réparties entre les associés comme suit{_NBSP}:")
+    for associe in data.associes:
+        parts = _required_parts(associe)
+        add_paragraph(document, f"{_mh_short_label(associe)} \t{parts.nb} parts")
+    add_paragraph(document, f"Composant le capital social effectif\t{nb_parts} parts")
 
 
 def _add_capital_block_scs(document, data: _ResolvedStatutsCivil) -> None:
@@ -556,7 +703,29 @@ def _add_capital_block_scs(document, data: _ResolvedStatutsCivil) -> None:
     )
 
 
+def _mh_signature_label(associe: StatutsCivilsAssocie) -> str:
+    if _is_morale(associe):
+        return _mh_morale_denomination(associe)
+    prenoms = associe.prenoms or associe.prenom
+    return (
+        f"{_required_text(associe.civilite_affichage, 'associes[].civilite_affichage')} "
+        f"{_required_text(prenoms, 'associes[].prenoms')} "
+        f"{_required_text(associe.nom, 'associes[].nom')}"
+    )
+
+
 def _add_signature_block(document, data: _ResolvedStatutsCivil) -> None:
+    if data.template.expected_type == "micro_holding":
+        # Modele Albane P461-P464 : « Fait a <lieu> » / « Le <date> » sur deux lignes, puis les
+        # signataires cote a cote (physiques d'abord, morales ensuite) separes par des tabulations.
+        add_paragraph(document, f"Fait à {data.signature_lieu}")
+        add_paragraph(document, f"Le {data.signature_date}")
+        physiques = [a for a in data.associes if a.est_signataire and not _is_morale(a)]
+        morales = [a for a in data.associes if a.est_signataire and _is_morale(a)]
+        signers = [_mh_signature_label(a) for a in (physiques + morales)]
+        if signers:
+            add_paragraph(document, "\t\t\t\t\t".join(signers))
+        return
     if data.template.signature_slice is not None:
         add_paragraph(document, f"A {data.signature_lieu}, le {data.signature_date}")
     signers = [_signature_label(a) for a in data.associes if a.est_signataire]
@@ -734,10 +903,14 @@ def _validate_sci(associes: list[StatutsCivilsAssocie]) -> None:
 
 
 def _validate_micro_holding(statuts: StatutsCivilsContext) -> None:
-    # Micro holding : l'objet social (variante A ou B, deja resolu en amont) est OBLIGATOIRE,
-    # il alimente le token [objet_social] du modele clone. Le capital variable est verifie
-    # par _validate_template_fields (micro_holding dans le set capital-variable).
-    _required_text(statuts.objet_social, "statuts_civils.objet_social")
+    # Micro holding (VRAI modele Albane 2026-06-29) : l'objet social (art. 2 « societe civile de
+    # portefeuille ») est desormais VERBATIM dans le modele source -> plus de token/variante a
+    # valider. Le capital maximal (= 10x le minimum) et ses lettres sont requis (art. 7) :
+    _required_text(statuts.capital_maximal, "statuts_civils.capital_maximal")
+    _required_text(statuts.capital_maximal_lettres, "statuts_civils.capital_maximal_lettres")
+    _required_text(
+        statuts.valeur_nominale_part_lettres, "statuts_civils.valeur_nominale_part_lettres"
+    )
 
 
 def _validate_sci_iris(
@@ -998,6 +1171,7 @@ def _amount_to_int(value: str | None) -> int:
     normalized = (
         text.replace(" ", "")
         .replace("\u00a0", "")
+        .replace(".", "")  # separateur de milliers \u00ab 1.020 \u00bb (montants entiers en euros)
         .replace("euros", "")
         .replace("euro", "")
         .replace("EUR", "")

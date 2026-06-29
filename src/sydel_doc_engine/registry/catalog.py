@@ -704,8 +704,8 @@ def build_seed_catalog() -> list[DocumentDefinition]:
             general_condition="dossier.structure == MICRO_HOLDING",
             specific_conditions=[
                 "statuts_civils.type == micro_holding",
-                "societe civile a capital variable (max = 10x le minimum saisi)",
-                "objet social variante A (generique civil) ou B (holding)",
+                "societe civile de portefeuille a capital variable (max = 10x le minimum saisi)",
+                "objet social (art. 2) VERBATIM du modele Albane (plus de variante)",
             ],
             dynamic_associates=True,
             grammar_variants=False,
@@ -713,9 +713,12 @@ def build_seed_catalog() -> list[DocumentDefinition]:
             source_path="project/source_documents/lot_04/Modele statuts micro holding.docx",
             specification_path="docs/delivery/lot_04_statuts_civils_arbitrages_v1.md",
             notes=(
-                "Demande Albane 2026-06-26 : clone du modele SCI (societe civile a capital "
-                "variable) dont le bloc objet (article 2) est pilote par variante A/B "
-                "(extraites des modeles sources, aucun texte invente)."
+                "VRAI modele Albane 2026-06-29 (mail « creation micro holding ») : societe "
+                "civile de portefeuille a capital variable, 26 articles, modele DISTINCT du "
+                "SCI. Tokenise depuis le DOCX fourni (objet, gerance avec gerant suppleant, "
+                "capital variable art. 7/8/9, signature electronique YouSign). Block builders "
+                "micro holding dans statuts_civils_common (comparution / apport / capital / "
+                "signature)."
             ),
         ),
         DocumentDefinition(
