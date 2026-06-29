@@ -626,13 +626,16 @@ def _render_scm_inter_sel(
         "Adresse des locaux communs",
         hint="souvent le siege de la SCM",
     )
-    date_effet = _text(
-        st,
-        prefix,
-        "inter_sel_date_effet",
+    # R29-06 (Rafael) : vraie date complete (jour+mois+annee) -> selecteur de date
+    # (calendrier) + « Aujourd'hui », champ texte JJ/MM/AAAA conserve (saisie verbatim
+    # « 1er janvier 2027 » possible), cle session inchangee. seed=False (pas de defaut).
+    date_input_with_today(
         "Date d'effet du contrat de frais communs",
-        hint="ex : 1er janvier 2027",
+        key=f"{prefix}_inter_sel_date_effet",
+        value=date.today(),
+        seed=False,
     )
+    date_effet = str(st.session_state.get(f"{prefix}_inter_sel_date_effet") or "").strip()
     col_r1, col_r2 = st.columns(2)
     seuil = _text(
         col_r1, prefix, "inter_sel_seuil", "Seuil de depense commune", hint="ex : 1 500 euros"
@@ -641,13 +644,20 @@ def _render_scm_inter_sel(
         col_r2, prefix, "inter_sel_annee_ref", "Annee de reference des charges", hint="ex : 2027"
     )
     col_r3, col_r4 = st.columns(2)
-    date_fin = _text(
-        col_r3,
-        prefix,
-        "inter_sel_date_fin_gestion",
+    # R29-06 (Rafael) : vraie date complete -> selecteur de date + « Aujourd'hui »,
+    # champ texte conserve, cle session inchangee. seed=False.
+    date_input_with_today(
         "Fin de gestion administrative",
-        hint="ex : 31 décembre 2027",
+        key=f"{prefix}_inter_sel_date_fin_gestion",
+        value=date.today(),
+        container=col_r3,
+        seed=False,
     )
+    date_fin = str(st.session_state.get(f"{prefix}_inter_sel_date_fin_gestion") or "").strip()
+    # EXCEPTION R29-06 (tracee carnet) : « Attribution des responsabilites » porte un
+    # libelle PARTIEL « 1er janvier » (sans annee, recurrent) qu'un st.date_input ne peut
+    # pas representer sans imposer une annee. Conserve en text_input. Idem « Debut/Cloture
+    # exercice » (shell.py:703/705, civil_statuts_slice clotures).
     date_attrib = _text(
         col_r4,
         prefix,

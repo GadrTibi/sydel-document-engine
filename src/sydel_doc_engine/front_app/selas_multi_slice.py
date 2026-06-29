@@ -72,6 +72,7 @@ from sydel_doc_engine.front_app.field_derivations import (
 )
 from sydel_doc_engine.front_app.front_widgets import (
     copyable_text_input,
+    date_input_with_today,
     seed_closing_date,
     seed_signature_lieu,
 )
@@ -852,7 +853,19 @@ def _physique(prefix: str, nb_actions: int, montant: str) -> StatutsCivilsAssoci
     prenoms = _ts(col_b, f"{prefix}_prenoms", "Prenom(s)")
     nom = _ts(col_c, f"{prefix}_nom", "Nom")
     col_d, col_e, col_f = st.columns(3)
-    date_naissance = _ts(col_d, f"{prefix}_date_naissance", "Date naissance (ex: 1 janvier 1980)")
+    # R29-06 (Rafael) : selecteur de date (calendrier) + « Aujourd'hui » sur la date de
+    # naissance des associes SELAS multi. Champ texte JJ/MM/AAAA conserve comme source
+    # editable (saisie verbatim « 1er aout 1985 » possible), cle `{prefix}_date_naissance`
+    # inchangee -> pad_birthdate_day + accentuation aval preserves. seed=False (pas de
+    # date du jour sur une naissance). On relit la chaine texte (pas l'objet date).
+    date_input_with_today(
+        "Date naissance (ex: 1 janvier 1980)",
+        key=f"{prefix}_date_naissance",
+        value=date.today(),
+        container=col_d,
+        seed=False,
+    )
+    date_naissance = str(st.session_state.get(f"{prefix}_date_naissance") or "").strip()
     ville_naissance = _ts(col_e, f"{prefix}_ville_naissance", "Ville naissance")
     departement = _ts(col_f, f"{prefix}_departement", "Departement naissance")
     nationalite = render_nationalite_selectbox(prefix, container=st)

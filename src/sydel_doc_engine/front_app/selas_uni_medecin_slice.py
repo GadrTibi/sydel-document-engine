@@ -216,7 +216,7 @@ def render_selas_uni_medecin_form() -> dict[str, object]:
     prenom = _t(col_n, "prenom", "Prenom(s)")
     nom = _t(col_o, "nom", "Nom")
     col_p, col_q, col_r = st.columns(3)
-    date_naissance = _date(col_p, "date_naissance", "Date de naissance")
+    date_naissance = _date(col_p, "date_naissance", "Date de naissance", seed=False)
     ville_naissance = _t(col_q, "ville_naissance", "Ville de naissance")
     departement_naissance = _t(col_r, "departement_naissance", "Departement naissance")
     col_s, col_t = st.columns(2)
@@ -610,11 +610,12 @@ def _i(container, field: str, label: str) -> int:
     return int(container.number_input(label, min_value=0, step=1, key=key))
 
 
-def _date(container, field: str, label: str) -> date | None:
+def _date(container, field: str, label: str, *, seed: bool = True) -> date | None:
     # Consomme la couche de rendu partagee (front_widgets) : ajoute le bouton
     # « Aujourd'hui » qui manquait ici, et unifie le rendu (cause racine des ecarts).
+    # seed=False pour une NAISSANCE (pas de pre-remplissage au jour) — m1 Akainu 29/06.
     return date_input_with_today(
-        label, key=f"{PREFIX}_{field}", value=date.today(), container=container
+        label, key=f"{PREFIX}_{field}", value=date.today(), container=container, seed=seed
     )
 
 

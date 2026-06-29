@@ -4276,3 +4276,82 @@ def test_apporteur_apport_M1_absent_donne_marqueur_pas_capital() -> None:
     res2 = selas_multi_slice._apporteur_apport(avec_apport)
     assert res2.montant == "500"
     assert res2.montant_lettres == "cinq cents"
+
+
+# ---------------------------------------------------------------------------
+# R29-06 (Rafael) : selecteur de date (calendrier) + bouton « Aujourd'hui »
+# PARTOUT. Tests ADVERSARIAUX : on assert que, pour un champ date route au helper
+# `date_input_with_today`, l'app rendue expose BIEN les trois widgets — le champ
+# texte `{key}`, le calendrier `{key}_cal` ET le bouton `{key}_today`. Sans ces
+# assertions, une regression (champ retombe en text_input nu) passerait verte.
+# ---------------------------------------------------------------------------
+
+
+def _widget_keys(app) -> set[str]:
+    """Toutes les cles de widgets rendus (text_input + date_input + button)."""
+    keys: set[str] = set()
+    for collection in (app.text_input, app.date_input, app.button):
+        for widget in collection:
+            if widget.key is not None:
+                keys.add(str(widget.key))
+    return keys
+
+
+def _assert_date_picker_trio(app, base_key: str) -> None:
+    """Le champ date `base_key` doit exposer texte + calendrier + bouton Aujourd'hui."""
+    keys = _widget_keys(app)
+    assert base_key in keys, f"champ texte editable absent : {base_key}"
+    assert f"{base_key}_cal" in keys, (
+        f"calendrier (st.date_input) absent pour {base_key} "
+        f"-> le champ n'est pas route au helper date_input_with_today (R29-06)"
+    )
+    assert f"{base_key}_today" in keys, (
+        f"bouton « Aujourd'hui » absent pour {base_key} (R29-06)"
+    )
+
+
+def test_r29_06_repeater_naissance_expose_calendrier_et_aujourdhui() -> None:
+    """R29-06 : la date de naissance d'un associe du REPEATER (SCI) expose le
+    calendrier `{key}_cal` ET le bouton `{key}_today`, en plus du champ texte."""
+    from streamlit.testing.v1 import AppTest
+
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
+    app.selectbox(key="clean_dossier_type").set_value("SCI creation V1")
+    app = app.run(timeout=180)
+    next(b for b in app.button if "test_data" in str(b.key)).click()
+    app = app.run(timeout=180)
+
+    _assert_date_picker_trio(app, "sci_associe_0_date_naissance")
+
+    # NON-REGRESSION : la saisie verbatim francaise reste possible sur le champ texte
+    # (meme cle) -> le helper n'a pas casse la saisie LIVE-03.
+    _set_text_widget(app, "sci_associe_0_date_naissance", "1er aout 1980")
+    app = app.run(timeout=180)
+    assert (
+        app.session_state["sci_associe_0_date_naissance"] == "1er aout 1980"
+    ), "la saisie verbatim doit etre conservee telle quelle dans la cle texte"
+
+
+def test_r29_06_cession_dates_exposent_calendrier_et_aujourdhui(monkeypatch, tmp_path) -> None:
+    """R29-06 : les dates du sous-formulaire CESSION (date du bail, date d'origine de
+    propriete) — toutes via `_cession_date` refondu sur le helper — exposent le
+    calendrier `{key}_cal` ET le bouton `{key}_today`, en plus du champ texte."""
+    from streamlit.testing.v1 import AppTest
+
+    from sydel_doc_engine.front_app import shell
+
+    monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-r2906-cession")
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
+    app.selectbox(key="selarl_profession").set_value("Medecin")
+    app = app.run(timeout=180)
+    app.button(key="clean_generate_test_data").click()
+    app = app.run(timeout=180)
+    assert app.checkbox(key="selarl_cession").value is True
+
+    _assert_date_picker_trio(app, "selarl_cession_bail_date_bail")
+    _assert_date_picker_trio(app, "selarl_cession_cabinet_origine_date")
+
+    # NON-REGRESSION : la saisie texte cession reste fonctionnelle (meme cle).
+    app.text_input(key="selarl_cession_bail_date_bail").set_value("1er aout 2021")
+    app = app.run(timeout=180)
+    assert app.session_state["selarl_cession_bail_date_bail"] == "1er aout 2021"

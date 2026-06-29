@@ -46,6 +46,7 @@ def date_input_with_today(
     key: str,
     value: date,
     container=None,
+    seed: bool = True,
 ) -> date | None:
     """Champ de date « JJ/MM/AAAA » + bouton « Aujourd'hui » (helper gold partage).
 
@@ -59,13 +60,19 @@ def date_input_with_today(
     cas frequent dans les slices (ex. selas_multi_slice signature_date). Le param
     `container` permet de cibler une colonne precise ; par defaut, le contexte
     Streamlit courant.
-    """
+
+    `seed` (defaut True) : pre-remplit la cle texte avec `value` si elle est vide.
+    Le mettre a False pour un champ qui NE doit PAS afficher de valeur par defaut
+    (ex. date de NAISSANCE : « aujourd'hui » serait une fausse date) — le champ reste
+    vide tant que l'utilisateur n'a pas tape, choisi au calendrier ou clique
+    « Aujourd'hui ». La saisie texte JJ/MM/AAAA reste la source editable dans tous les
+    cas, donc la saisie verbatim francaise (« 1er aout 1985 ») reste possible (R29-06)."""
     target = container if container is not None else st
 
     current_value = st.session_state.get(key)
     if isinstance(current_value, date):
         st.session_state[key] = format_french_date(current_value)
-    elif current_value is None:
+    elif current_value is None and seed:
         st.session_state[key] = format_french_date(value)
 
     # R3 (Rafael 2026-06-24) : calendrier en OPTION (pour aller plus vite) + bouton

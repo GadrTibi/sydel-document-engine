@@ -168,7 +168,17 @@ def render_sas_form() -> dict[str, object]:
     )
     qualification = _t(col_j, "qualification_principale", "Qualification (ex: Medecin cardiologue)")
     col_k, col_l, col_m = st.columns(3)
-    date_naissance = _t(col_k, "date_naissance", "Date de naissance (ex: 2 janvier 1980)")
+    # R29-06 (Rafael) : selecteur de date (calendrier) + « Aujourd'hui » sur la date de
+    # naissance (verbatim statuts). Champ texte conserve (saisie « 2 janvier 1980 » possible),
+    # cle `sas_date_naissance` inchangee -> accentuation aval (L432) preservee. seed=False.
+    date_input_with_today(
+        "Date de naissance (ex: 2 janvier 1980)",
+        key=f"{PREFIX}_date_naissance",
+        value=date.today(),
+        container=col_k,
+        seed=False,
+    )
+    date_naissance = str(st.session_state.get(f"{PREFIX}_date_naissance") or "").strip()
     ville_naissance = _t(col_l, "ville_naissance", "Ville de naissance")
     departement_naissance = _t(col_m, "departement_naissance", "Departement naissance")
     col_n, col_o = st.columns(2)

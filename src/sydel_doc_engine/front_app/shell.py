@@ -56,7 +56,10 @@ from sydel_doc_engine.front_app.field_derivations import (
     regime_matrimonial_from_status,
     situation_display,
 )
-from sydel_doc_engine.front_app.front_widgets import copyable_text_input
+from sydel_doc_engine.front_app.front_widgets import (
+    copyable_text_input,
+    date_input_with_today,
+)
 from sydel_doc_engine.front_app.generation import (
     CleanGenerationPlan,
     build_clean_generation_plan,
@@ -293,9 +296,18 @@ def _render_one_selarl_membre(index: int) -> StatutsCivilsAssocie | None:
         prenom = copyable_text_input(col_c, "Prenom", key=f"{prefix}_prenom")
         nom = copyable_text_input(col_d, "Nom", key=f"{prefix}_nom")
         col_e, col_f, col_g = st.columns(3)
-        date_naissance = copyable_text_input(
-            col_e, "Date de naissance", key=f"{prefix}_date_naissance"
+        # R29-06 (Rafael) : selecteur de date (calendrier) + « Aujourd'hui » sur la date
+        # de naissance (associe personne physique d'une personne morale / SELARL multi).
+        # Champ texte JJ/MM/AAAA conserve (saisie verbatim possible), cle inchangee ->
+        # _accentuate_date_value aval preserve. seed=False (pas de date du jour).
+        date_input_with_today(
+            "Date de naissance",
+            key=f"{prefix}_date_naissance",
+            value=date.today(),
+            container=col_e,
+            seed=False,
         )
+        date_naissance = str(st.session_state.get(f"{prefix}_date_naissance") or "").strip()
         ville_naissance = copyable_text_input(
             col_f, "Ville de naissance", key=f"{prefix}_ville_naissance"
         )
@@ -1054,19 +1066,31 @@ def _cession_date(
     field: str,
     default: str = "",
 ) -> str:
-    """Champ date a saisie LIBRE du sous-formulaire cession/bail (LIVE-03).
+    """Champ date du sous-formulaire cession/bail.
 
-    Identique a `_cession_text` mais re-accentue les mois (« 1er aout 2021 » ->
-    « 1er août 2021 ») AVANT injection dans le contexte. La saisie verbatim
-    partirait sinon non accentuee dans le DOCX : le generateur (_french_date /
-    _display_date_or_empty) reste un echo fidele du modele et ne corrige rien.
-    Une saisie ISO (JJ/MM/AAAA) est intacte (aucun nom de mois a accentuer).
+    R29-06 (Rafael) : repose desormais sur le helper partage
+    `date_input_with_today` -> selecteur de date (calendrier) + bouton « Aujourd'hui »
+    PARTOUT, en plus du champ texte editable. On CONSERVE :
+    - la cle de session `{_CESSION_PREFIX}_cession_{section}_{field}` (prefill / payloads
+      intacts) ;
+    - le pre-remplissage `default` (seede ici, AVANT le helper, donc non ecrase par la
+      date du jour ; seed=False cote helper) ;
+    - la re-accentuation des mois (« 1er aout 2021 » -> « 1er août 2021 ») AVANT injection,
+      le generateur restant un echo fidele du modele.
+    La saisie verbatim francaise reste possible (champ texte) ; une saisie JJ/MM/AAAA
+    (calendrier / Aujourd'hui) est intacte (aucun nom de mois a accentuer). Le contrat
+    de retour (chaine re-accentuee) est inchange pour tous les appelants.
     """
-    return accentuate_french_months(
-        _cession_text(
-            container, label, section=section, field=field, default=default
-        )
+    key = f"{_CESSION_PREFIX}_cession_{section}_{field}"
+    _seed_default(key, default)
+    date_input_with_today(
+        label,
+        key=key,
+        value=date.today(),
+        container=container if container is not None else st,
+        seed=False,
     )
+    return accentuate_french_months(str(st.session_state.get(key) or "").strip())
 
 
 def _render_cession_form(  # noqa: C901

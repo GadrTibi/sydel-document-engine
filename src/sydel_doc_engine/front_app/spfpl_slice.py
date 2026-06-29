@@ -251,7 +251,17 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
     prenoms = _t(col_g, prefix, "prenoms", "Prenoms complets (etat civil)")
     nom = _t(st, prefix, "nom", "Nom")
     col_j, col_k, col_l = st.columns(3)
-    date_naissance = _t(col_j, prefix, "date_naissance", "Date de naissance (JJ/MM/AAAA)")
+    # R29-06 (Rafael) : selecteur de date (calendrier) + « Aujourd'hui » sur la date de
+    # naissance SPFPL. Champ texte JJ/MM/AAAA conserve, cle `{prefix}_date_naissance`
+    # inchangee. seed=False (pas de date du jour sur une naissance).
+    date_input_with_today(
+        "Date de naissance (JJ/MM/AAAA)",
+        key=f"{prefix}_date_naissance",
+        value=date.today(),
+        container=col_j,
+        seed=False,
+    )
+    date_naissance = str(st.session_state.get(f"{prefix}_date_naissance") or "").strip()
     ville_naissance = _t(col_k, prefix, "ville_naissance", "Ville de naissance")
     departement_naissance = _t(col_l, prefix, "departement_naissance", "Departement naissance")
     col_m, col_n = st.columns(2)

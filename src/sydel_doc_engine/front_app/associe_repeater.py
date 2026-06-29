@@ -13,6 +13,7 @@ des parts, totaux) ; le repeater ne fait que collecter une saisie propre.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 from typing import Final
 
 import streamlit as st
@@ -38,7 +39,10 @@ from sydel_doc_engine.front_app.field_derivations import (
     number_words_from_value,
     regime_communautaire_from_status,
 )
-from sydel_doc_engine.front_app.front_widgets import copyable_text_input
+from sydel_doc_engine.front_app.front_widgets import (
+    copyable_text_input,
+    date_input_with_today,
+)
 
 PERSONNE_PHYSIQUE: Final = "personne_physique"
 PERSONNE_MORALE: Final = "personne_morale"
@@ -287,7 +291,20 @@ def _render_personne_physique(
     nom = _text(prefix, "nom", "Nom", container=col_c)
 
     col_d, col_e, col_f = st.columns(3)
-    date_naissance = _text(prefix, "date_naissance", "Date de naissance", container=col_d)
+    # R29-06 (Rafael) : selecteur de date (calendrier) + bouton « Aujourd'hui » sur la
+    # date de naissance, PARTOUT. Le helper conserve le champ texte JJ/MM/AAAA comme
+    # source editable (saisie verbatim francaise « 1er aout 1985 » toujours possible) et
+    # la cle session_state `{prefix}_date_naissance` est inchangee -> aucun post-traitement
+    # casse (accentuation des mois ci-dessous). seed=False : pas de date du jour pre-remplie
+    # sur une naissance. On relit la chaine texte (et non l'objet date) pour rester byte-fidele.
+    date_input_with_today(
+        "Date de naissance",
+        key=f"{prefix}_date_naissance",
+        value=date.today(),
+        container=col_d,
+        seed=False,
+    )
+    date_naissance = str(st.session_state.get(f"{prefix}_date_naissance") or "").strip()
     ville_naissance = _text(prefix, "ville_naissance", "Ville de naissance", container=col_e)
     departement_naissance = _text(
         prefix, "departement_naissance", "Departement naissance", container=col_f
