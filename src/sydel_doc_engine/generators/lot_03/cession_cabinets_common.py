@@ -1242,7 +1242,13 @@ def _build_clause_reprise_salaries(salaries: list[CessionSalarie]) -> str:
         liste = labels[0]
         contrat = "le contrat de travail"
     else:
-        liste = ", ".join(labels[:-1]) + f" et de {labels[-1]}"
+        # INTERIM (Akainu m1, 2026-06-29) : separateur « ; » entre salaries (et non « , »)
+        # car chaque salarie porte deja une virgule interne « <identite>, <profession> » ;
+        # un « , » de separation serait AMBIGU a N>=3 (impossible de distinguer la profession
+        # du salarie suivant). « ; » = ponctuation francaise standard pour des items a virgule
+        # interne, sans rien inventer du fond. Albane n'a donne qu'un exemple A 1 SALARIE -> le
+        # FORMAT EXACT d'enumeration multi-salaries reste A CONFIRMER (cf. QUESTIONS_RAFAEL, R5).
+        liste = " ; ".join(labels[:-1]) + f" et de {labels[-1]}"
         contrat = "les contrats de travail"
     return f"De reprendre {contrat} de {liste}."
 

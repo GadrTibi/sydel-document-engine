@@ -543,7 +543,7 @@ def test_acte_dentaire_salaries_three_renders_full_list(tmp_path: Path) -> None:
 
     text = _docx_text(ActeCessionCabinetDentaireGenerator().generate(ctx, tmp_path))
 
-    assert "Madame Lea Petit, Monsieur Noe Robert et de Madame Ines Faure" in text
+    assert "Madame Lea Petit ; Monsieur Noe Robert et de Madame Ines Faure" in text
     _assert_no_residual_tokens(text)
 
 
@@ -634,10 +634,38 @@ def test_r5_clause_three_salaries_joined(type_cabinet: str, tmp_path: Path) -> N
     ]
     paras = _r5_paragraphs(type_cabinet, salaries, tmp_path)
     idx_clause = _index_of(paras, "De reprendre les contrats de travail")
+    # Separateur « ; » entre salaries (Akainu m1) : non ambigu vis-a-vis de la virgule interne.
     assert paras[idx_clause] == (
-        "De reprendre les contrats de travail de Madame Lea Petit, "
+        "De reprendre les contrats de travail de Madame Lea Petit ; "
         "Monsieur Noe Robert et de Madame Ines Faure."
     )
+
+
+@pytest.mark.parametrize("type_cabinet", ["medical", "dentaire"])
+def test_r5_clause_three_salaries_with_profession_unambiguous(
+    type_cabinet: str, tmp_path: Path
+) -> None:
+    # Akainu m1/n1 (2026-06-29) : le CAS NOMINAL du verbatim = salarie « <identite>, <profession> ».
+    # A N>=3 avec profession, le separateur entre salaries doit rester non ambigu (« ; »), sinon la
+    # virgule de profession et la virgule de separation se confondent. Format multi-salaries =
+    # INTERIM a confirmer Albane (QUESTIONS_RAFAEL R5).
+    salaries = [
+        CessionSalarie(civilite_affichage="Madame", prenom="Lea", nom="Petit", poste="juriste"),
+        CessionSalarie(
+            civilite_affichage="Monsieur", prenom="Noe", nom="Robert", poste="assistant dentaire"
+        ),
+        CessionSalarie(
+            civilite_affichage="Madame", prenom="Ines", nom="Faure", poste="secretaire"
+        ),
+    ]
+    paras = _r5_paragraphs(type_cabinet, salaries, tmp_path)
+    idx_clause = _index_of(paras, "De reprendre les contrats de travail")
+    assert paras[idx_clause] == (
+        "De reprendre les contrats de travail de Madame Lea Petit, juriste ; "
+        "Monsieur Noe Robert, assistant dentaire et de Madame Ines Faure, secretaire."
+    )
+    # Aucune virgule de separation inter-salaries (seules les virgules nom/profession subsistent).
+    assert "en qualité de" not in paras[idx_clause]
 
 
 @pytest.mark.parametrize("type_cabinet", ["medical", "dentaire"])
