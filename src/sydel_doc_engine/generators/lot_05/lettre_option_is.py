@@ -29,7 +29,11 @@ from sydel_doc_engine.utils.dates import format_date_fr
 
 OUTPUT_FILENAME = "lettre_option_is.docx"
 DOCUMENT_CODE = "CODE-OPTION-IS-001"
-SUPPORTED_STRUCTURES = {"SCI", "SCI IRIS"}
+# Micro holding (Albane 2026-06-29) : la lettre d'option IS fait partie du bundle de creation
+# de la micro holding (societe civile) — meme modele que la SCI (« la societe civile … opte
+# pour le regime de l'IS »).
+SUPPORTED_STRUCTURES = {"SCI", "SCI IRIS", "MICRO_HOLDING"}
+_EXPECTED_STATUTS_TYPE = {"SCI": "sci", "SCI IRIS": "sci_iris", "MICRO_HOLDING": "micro_holding"}
 
 
 class LettreOptionIsGenerator:
@@ -62,7 +66,7 @@ def _validate_context(ctx: DocumentGenerationContext) -> None:
     if ctx.dossier_options is None or not ctx.dossier_options.option_is:
         raise ValueError(f"dossier.options.option_is doit etre vrai pour {DOCUMENT_CODE}.")
     statuts = _required_statuts_civils(ctx.statuts_civils)
-    expected_type = "sci_iris" if ctx.structure == "SCI IRIS" else "sci"
+    expected_type = _EXPECTED_STATUTS_TYPE[ctx.structure]
     if statuts.type != expected_type:
         raise ValueError(f"statuts_civils.type doit etre {expected_type} pour {DOCUMENT_CODE}.")
 

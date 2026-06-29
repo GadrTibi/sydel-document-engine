@@ -147,7 +147,9 @@ def test_seed_catalog_option_is_scope_is_limited_to_sci_structures() -> None:
 
     option_is = next(document for document in catalog if document.doc_id == "DOC-022")
 
-    assert set(option_is.structures) == {"SCI", "SCI IRIS"}
+    # Micro holding (Albane 2026-06-29) : la lettre d'option IS fait desormais partie du bundle
+    # de creation de la micro holding (societe civile), en plus de la SCI / SCI IRIS.
+    assert set(option_is.structures) == {"SCI", "SCI IRIS", "MICRO_HOLDING"}
     assert option_is.general_condition == "dossier.options.option_is == true"
     assert option_is.source_path == "project/source_documents/lot_05/lettre option IS.docx"
 

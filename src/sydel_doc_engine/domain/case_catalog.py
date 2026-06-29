@@ -742,9 +742,15 @@ CATALOG_OCCURRENCES: tuple[DocumentOccurrence, ...] = (
     DocumentOccurrence(CaseType.SCI, "procuration", "SCI"),
     DocumentOccurrence(CaseType.SCI, "autorisation_domiciliation", "SCI"),
     DocumentOccurrence(CaseType.SCI, "pv_nomination_gerant", "SCI"),
-    # MICRO HOLDING (societe civile a capital variable, bundle de creation comme une SCI :
-    # statuts + tronc commun civil DNC/domiciliation/procuration + PV nomination gerant).
+    # MICRO HOLDING (societe civile de portefeuille a capital variable, modele Albane 2026-06-29).
+    # Bundle de creation = statuts + lettre option IS + tronc commun civil
+    # DNC/domiciliation/procuration + PV nomination gerant (les 6 pieces du mail Albane).
     DocumentOccurrence(CaseType.MICRO_HOLDING, "statuts_micro_holding", "MICRO_HOLDING"),
+    # Lettre d'option IS (DOC-022), conditionnee a l'option IS (meme modele que la SCI :
+    # « la societe civile … opte pour le regime de l'IS »).
+    DocumentOccurrence(
+        CaseType.MICRO_HOLDING, "lettre_option_is", "Si IS", (condition("option_is"),)
+    ),
     DocumentOccurrence(
         CaseType.MICRO_HOLDING, "declaration_non_condamnation", "MICRO_HOLDING"
     ),

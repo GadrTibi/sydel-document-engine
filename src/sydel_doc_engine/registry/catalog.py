@@ -104,6 +104,8 @@ STATUTS_CIVILS_MICRO_HOLDING_STRUCTURES: list[str] = [
 OPTION_IS_STRUCTURES: list[str] = [
     "SCI",
     "SCI IRIS",
+    # Micro holding (Albane 2026-06-29) : lettre d'option IS dans le bundle de creation.
+    "MICRO_HOLDING",
 ]
 
 SCM_SATELLITES_STRUCTURES: list[str] = [

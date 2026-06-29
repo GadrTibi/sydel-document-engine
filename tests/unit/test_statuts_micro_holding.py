@@ -19,8 +19,10 @@ from docx import Document
 from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import (
     Address,
+    CentreImpots,
     Company,
     DocumentGenerationContext,
+    DossierOptions,
     Person,
     Signature,
     StatutsCivilsApport,
@@ -35,6 +37,7 @@ from sydel_doc_engine.front_app.type_registry import registered_type_by_key
 from sydel_doc_engine.generators.lot_04.statuts_micro_holding import (
     StatutsMicroHoldingGenerator,
 )
+from sydel_doc_engine.generators.lot_05.lettre_option_is import LettreOptionIsGenerator
 from sydel_doc_engine.registry.catalog import ALL_STRUCTURES
 
 
@@ -290,3 +293,100 @@ def test_bundle_is_statuts_plus_civil_tronc_commun() -> None:
     # Pas de satellites SCM sur la micro holding.
     assert "DOC-025" not in codes
     assert "DOC-026" not in codes
+    # Sans option IS cochee, la lettre d'option IS (DOC-022) n'est PAS dans le bundle.
+    assert "DOC-022" not in codes
+
+
+def _payload_option_is() -> dict:
+    payload = _payload()
+    payload.update(
+        {
+            "option_is": True,
+            "siren": "En cours d’immatriculation",
+            "impots_service": "SIE MEURTHE-ET-MOSELLE",
+            "impots_adresse_ligne_1": "CITE ADMINISTRATIVE",
+            "impots_adresse_ligne_2": "45 RUE SAINTE CATHERINE",
+            "impots_cp": "54000",
+            "impots_ville": "NANCY",
+        }
+    )
+    return payload
+
+
+def test_bundle_includes_lettre_option_is_when_option_is_on() -> None:
+    # Mail Albane 2026-06-29 : la lettre d'option IS (DOC-022) entre dans le bundle micro
+    # holding quand l'option IS est cochee.
+    codes = set(cs.build_civil_plan(_payload_option_is()).document_codes)
+    assert "DOC-022" in codes
+    assert "DOC-047" in codes
+
+
+# --- lettre option IS micro holding : fidelite au modele Albane ---------------
+
+
+def _ctx_lettre_is() -> DocumentGenerationContext:
+    spfpl = StatutsCivilsAssocie(
+        type_personne="personne_morale",
+        denomination="SPFPL DU DR JESSICA GOSSET",
+        siege=Address(adresse_affichee="20 rue Isabey, 54000 NANCY"),
+        apport=StatutsCivilsApport(montant="1010", montant_lettres="mille dix"),
+        parts=StatutsCivilsParts(nb=1010, nb_lettres="mille dix"),
+    )
+    gosset = StatutsCivilsAssocie(
+        type_personne="personne_physique",
+        genre=Gender.FEMININ,
+        civilite_affichage="Madame",
+        prenom="Jessica",
+        prenoms="Jessica",
+        nom="GOSSET",
+        adresse_personnelle_affichee="19 rue Sainte Catherine, 54000 NANCY",
+        apport=StatutsCivilsApport(montant="10", montant_lettres="dix"),
+        parts=StatutsCivilsParts(nb=10, nb_lettres="dix", qualite_associe="gérante"),
+    )
+    return DocumentGenerationContext(
+        structure="MICRO_HOLDING",
+        dossier_options=DossierOptions(option_is=True),
+        personne_signataire=Person(
+            genre=Gender.FEMININ, civilite="Madame", prenom="Jessica", nom="GOSSET"
+        ),
+        signature=Signature(lieu="Nancy", date=date(2023, 12, 6)),
+        societe=Company(
+            denomination="Micro holding famille Berte",
+            siege=Address(adresse_affichee="19 rue Sainte Catherine, 54000 NANCY"),
+            siren="En cours d’immatriculation",
+            capital_social="1020",
+        ),
+        impots=CentreImpots(
+            service="SIE MEURTHE-ET-MOSELLE",
+            adresse_ligne_1="CITE ADMINISTRATIVE",
+            adresse_ligne_2="45 RUE SAINTE CATHERINE",
+            cp="54000",
+            ville="NANCY",
+        ),
+        statuts_civils=StatutsCivilsContext(
+            type="micro_holding",
+            capital_social="1020",
+            nb_parts_total=1020,
+            associes=[gosset, spfpl],
+        ),
+    )
+
+
+def test_lettre_option_is_micro_holding_fidelity(tmp_path: Path) -> None:
+    out = LettreOptionIsGenerator().generate(_ctx_lettre_is(), tmp_path)
+    text = _docx_text(out)
+    assert "Centre des Finances Publiques" in text
+    assert "Objet : Demande d'option pour le régime de l'impôt sur les sociétés" in text
+    assert "la société civile dont vous trouverez la description ci-après opte" in text
+    # Tableau d'identification : associe morale + physique au format Albane.
+    assert "Micro holding famille Berte" in text
+    assert "En cours d’immatriculation" in text
+    assert (
+        "Madame Jessica GOSSET, demeurant 19 rue Sainte Catherine, 54000 NANCY, gérante, "
+        "détenant 10 parts." in text
+    )
+    assert (
+        "La société SPFPL DU DR JESSICA GOSSET, ayant son siège social au 20 rue Isabey, "
+        "54000 NANCY, détenant 1010 parts." in text
+    )
+    assert "Le gérant" in text

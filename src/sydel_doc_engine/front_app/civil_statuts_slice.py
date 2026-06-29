@@ -136,7 +136,7 @@ CIVIL_NB_MAX_ASSOCIES = 6
 
 # Lettre d'option IS (canon « Si IS ») : conditionnel CREATION pour SCI / SCI IRIS.
 DOC_OPTION_IS = "DOC-022"
-OPTION_IS_STRUCTURES: tuple[str, ...] = ("SCI", "SCI IRIS")
+OPTION_IS_STRUCTURES: tuple[str, ...] = ("SCI", "SCI IRIS", "MICRO_HOLDING")
 
 # Bundle de CREATION par type (canon : statuts du type + tronc commun
 # DNC/domiciliation/procuration + PV nomination gerant ; la SCM ajoute la demande
