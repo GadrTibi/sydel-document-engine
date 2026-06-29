@@ -389,19 +389,18 @@ def test_scm_cession_acte_selas_situation_cedant_accentuee(
 
 
 def test_mois_tables_accentuees_identiques() -> None:
-    # La dette de duplication (trois tables de mois identiques) est résorbée : la table
-    # accentuée est désormais centralisée dans utils.months.FRENCH_MONTHS et importée par
-    # field_derivations / autorisation_domiciliation / cession_cabinets_common. Ce test garde
-    # la garantie d'accentuation (LIVE-03) et vérifie que les modules pointent bien sur la table
-    # centralisée (plus aucune copie locale susceptible de dériver).
+    # La dette de duplication (tables de mois identiques) est résorbée : la table accentuée est
+    # centralisée dans utils.months.FRENCH_MONTHS et importée par field_derivations /
+    # cession_cabinets_common. Ce test garde la garantie d'accentuation (LIVE-03) et vérifie que
+    # les modules pointent bien sur la table centralisée (plus aucune copie locale susceptible de
+    # dériver). NB : autorisation_domiciliation n'utilise plus FRENCH_MONTHS depuis la propagation
+    # des dates satellites en JJ/MM/AAAA (Gad 2026-06-29) — retiré de l'assertion.
     from sydel_doc_engine.front_app import field_derivations
-    from sydel_doc_engine.generators.lot_01 import autorisation_domiciliation
     from sydel_doc_engine.generators.lot_03 import cession_cabinets_common
     from sydel_doc_engine.utils.months import FRENCH_MONTHS
 
     assert (
         field_derivations.FRENCH_MONTHS
-        is autorisation_domiciliation.FRENCH_MONTHS
         is cession_cabinets_common.FRENCH_MONTHS
         is FRENCH_MONTHS
     )
