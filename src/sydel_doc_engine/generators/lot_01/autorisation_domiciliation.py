@@ -68,6 +68,12 @@ class AutorisationDomiciliationGenerator:
             _apply_micro_holding_capital_variable(filled, _required_text(
                 _required_company(ctx.societe).capital, "societe.capital"
             ))
+        # SASU Holding (Albane 2026-06-29) : holding patrimoniale, PAS un cabinet -> le wording
+        # « dans les locaux du cabinet au … » du tronc commun est inadapte. Le modele Albane SAS
+        # ecrit « dans les locaux situes a <adresse>, pour une duree indeterminee » (gate Akainu
+        # M1/M2). Remplacement structure-aware (les autres structures ne sont PAS touchees).
+        if ctx.structure == "SASU_HOLDING":
+            _apply_sasu_holding_locaux(filled)
         # Retour Albane 2026-06-10 : police Roboto 10 sur l'autorisation (« le
         # reste c'est top »). Le modele est une lettre courte SANS titre distinct :
         # le « titre en 11 » demande par Albane n'a pas de cible ici (a confirmer
@@ -185,6 +191,30 @@ def _apply_micro_holding_capital_variable(output_path: Path, capital: str) -> No
                     run.text = ""
             else:
                 paragraph.text = new_text
+    document.save(str(output_path))
+
+
+def _apply_sasu_holding_locaux(output_path: Path) -> None:
+    """SASU Holding : « dans les locaux du cabinet au <adresse> pour une duree indeterminee »
+    -> « dans les locaux situes a <adresse>, pour une duree indeterminee » (modele Albane SAS,
+    gate Akainu M1/M2 : une holding n'est pas un cabinet ; virgule avant « pour »).
+
+    Remplacement au niveau du paragraphe (segment multi-runs) ; police re-appliquee ensuite.
+    """
+    document = Document(str(output_path))
+    for paragraph in document.paragraphs:
+        text = paragraph.text
+        if "dans les locaux du cabinet au " not in text:
+            continue
+        new_text = text.replace(
+            "dans les locaux du cabinet au ", "dans les locaux situés à "
+        ).replace(" pour une durée indéterminée", ", pour une durée indéterminée")
+        if paragraph.runs:
+            paragraph.runs[0].text = new_text
+            for run in paragraph.runs[1:]:
+                run.text = ""
+        else:
+            paragraph.text = new_text
     document.save(str(output_path))
 
 

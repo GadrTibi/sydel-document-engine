@@ -108,7 +108,7 @@ def test_sasu_holding_tokens_filled(tmp_path: Path) -> None:
     assert "Associé unique et Président" in text  # qualite
     # Comparution reconstruite (proxy P022 casse) : identite complete propre.
     assert (
-        "né le 1 janvier 1990 à Lorient, de nationalité française, demeurant "
+        "né le 1er janvier 1990 à Lorient, de nationalité française, demeurant "
         "5 Allée de la Clarté" in text
     )
 
@@ -118,7 +118,7 @@ def test_sasu_holding_feminin_accord(tmp_path: Path) -> None:
     # le masculin, contrairement a la SPFPL medecins du moteur).
     text = _docx_text(StatutsSasuHoldingGenerator().generate(_ctx(genre=Gender.FEMININ), tmp_path))
     assert "La soussignée" in text
-    assert "née le 1 janvier 1990" in text
+    assert "née le 1er janvier 1990" in text
     assert "Le soussigné :" not in text
 
 

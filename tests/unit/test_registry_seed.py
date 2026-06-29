@@ -3,11 +3,12 @@ from __future__ import annotations
 from sydel_doc_engine.registry.catalog import build_seed_catalog
 
 
-def test_seed_catalog_contains_forty_seven_documents() -> None:
-    # DOC-046 (statuts SELAS unipersonnelle dentiste, retour Rafael #5) portait le total a 46 ;
-    # DOC-047 (statuts micro holding, demande Albane 2026-06-26) le porte a 47.
+def test_seed_catalog_contains_fifty_documents() -> None:
+    # DOC-046 (statuts SELAS uni dentiste) -> 46 ; DOC-047 (micro holding) -> 47 ;
+    # DOC-048/049/050 (SASU Holding : statuts + PV remuneration president + liste
+    # souscripteurs, modele officiel Albane 2026-06-29) -> 50.
     catalog = build_seed_catalog()
-    assert len(catalog) == 47
+    assert len(catalog) == 50
 
 
 def test_seed_catalog_contains_lot_one_to_lot_five_entries() -> None:

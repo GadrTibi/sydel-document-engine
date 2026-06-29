@@ -38,6 +38,11 @@ from sydel_doc_engine.generators.lot_05.pv_remuneration_president_sasu_holding i
     PvRemunerationPresidentSasuHoldingGenerator,
 )
 
+# Ponctuation fine francaise des modeles Albane (apostrophe courbe U+2019, espace insecable
+# U+00A0) — la sortie doit etre byte-fidele a ces caracteres.
+_APOS = chr(0x2019)
+_NBSP = chr(0x00A0)
+
 
 def _ctx(*, genre: Gender = Gender.MASCULIN) -> DocumentGenerationContext:
     civilite = "Madame" if genre == Gender.FEMININ else "Monsieur"
@@ -129,29 +134,30 @@ def test_pv_remuneration_president_fidelity(tmp_path: Path) -> None:
 
     # Titre encadre (verbatim modele Albane), date longue francaise.
     assert "PROCES-VERBAL DES DECISIONS" in all_text
-    assert "DE L'ASSOCIE UNIQUE" in all_text
+    assert f"DE L{_APOS}ASSOCIE UNIQUE" in all_text
     assert "DU 13 novembre 2025" in all_text
 
-    # Corps verbatim (lignes du modele Albane).
+    # Corps verbatim (lignes du modele Albane) : apostrophe courbe + NBSP + « jusqu'au 31 ... »
+    # (sans « le » : pas de double article — gate Akainu B1).
     expected_lines = [
         "Monsieur Malo LE GUEN",
         "Demeurant 5 Allée de la Clarté, 56700 KERVIGNAC",
         "Associé unique et Président de la SASU en cours de formation.",
-        "a pris la décision suivante : ",
+        f"a pris la décision suivante{_NBSP}: ",
         "Fixation de la rémunération du Président",
         "DECISION UNIQUE",
         (
-            "Monsieur LE GUEN, associé unique, décide qu'il ne percevra aucune rémunération "
-            "au titre de son mandat de Président, à compter de son immatriculation, et ce, "
-            "jusqu'au le 31 décembre 2026 inclus, date de la clôture du premier exercice "
-            "social."
+            f"Monsieur LE GUEN, associé unique, décide qu{_APOS}il ne percevra aucune "
+            "rémunération au titre de son mandat de Président, à compter de son immatriculation, "
+            f"et ce, jusqu{_APOS}au 31 décembre 2026 inclus, date de la clôture du premier "
+            "exercice social."
         ),
         (
             "Il pourra donc prétendre au remboursement sur justification de ses frais de "
             "représentation et de déplacement."
         ),
         (
-            "De tout ce que dessus, l'associé unique a dressé et signé le présent "
+            f"De tout ce que dessus, l{_APOS}associé unique a dressé et signé le présent "
             "procès-verbal."
         ),
         "Fait à KERVIGNAC en trois exemplaires ",
@@ -185,8 +191,9 @@ def test_pv_remuneration_president_feminin(tmp_path: Path) -> None:
     )
     paragraphs = _paragraphs(path)
     assert "Madame Malo LE GUEN" in paragraphs
-    assert "Madame LE GUEN, associé unique, décide qu'il ne percevra aucune rémunération" in (
-        "\n".join(paragraphs)
+    assert (
+        f"Madame LE GUEN, associé unique, décide qu{_APOS}il ne percevra aucune rémunération"
+        in "\n".join(paragraphs)
     )
 
 
@@ -205,7 +212,7 @@ def test_liste_souscripteurs_fidelity(tmp_path: Path) -> None:
     # Tableau : en-tetes verbatim.
     assert rows[0] == [
         "Noms, prénoms et adresse des souscripteurs",
-        "Nombre d'actions souscrites",
+        f"Nombre d{_APOS}actions souscrites",
         "Montant des souscriptions",
     ]
     # Ligne souscripteur unique (nb actions formate a POINT comme le modele : « 10.000 »).

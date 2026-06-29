@@ -30,6 +30,9 @@ DOCUMENT_CODE = "DOC-050"
 OUTPUT_FILENAME = "liste_souscripteurs_sasu_holding.docx"
 # Forme courte verbatim du modele Albane (« Etat des souscriptions / De la SAS <denom> »).
 FORME_COURTE = "SAS"
+# Apostrophe typographique (U+2019) : en-tete « Nombre d'actions souscrites » du modele Albane
+# (byte-fidelite — le modele emploie la courbe, pas la droite).
+_APOS = chr(0x2019)
 
 
 class ListeSouscripteursSasuHoldingGenerator:
@@ -45,7 +48,7 @@ class ListeSouscripteursSasuHoldingGenerator:
             document,
             [
                 "Noms, prénoms et adresse des souscripteurs",
-                "Nombre d'actions souscrites",
+                f"Nombre d{_APOS}actions souscrites",
                 "Montant des souscriptions",
             ],
             [

@@ -341,8 +341,12 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
             nombre_exemplaires="trois",
         ),
         societe=Company(
-            forme_sociale=forme_sociale,
-            forme_sociale_affichage=forme_sociale,
+            # Forme ABREGEE « SAS » pour les satellites (procuration « de la SAS <denom> »,
+            # domiciliation) — modele Albane (gate Akainu M1). La forme LONGUE
+            # (« Societe par actions simplifiee unipersonnelle ») n'est portee que par les
+            # statuts via statuts_sasu_holding.forme_sociale.
+            forme_sociale="SAS",
+            forme_sociale_affichage="SAS",
             denomination=str(payload.get("denomination") or ""),
             denomination_courte=str(payload.get("denomination") or ""),
             capital=capital,

@@ -124,7 +124,8 @@ def _french_date(value: date | str | None, field_name: str) -> str:
     if value is None:
         raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
     if isinstance(value, date):
-        return f"{value.day} {FRENCH_MONTHS[value.month]} {value.year}"
+        jour = "1er" if value.day == 1 else str(value.day)  # convention francaise du 1er
+        return f"{jour} {FRENCH_MONTHS[value.month]} {value.year}"
     return _required_text(value, field_name)
 
 

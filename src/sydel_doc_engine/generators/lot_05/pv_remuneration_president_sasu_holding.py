@@ -28,6 +28,11 @@ from sydel_doc_engine.utils.months import FRENCH_MONTHS
 DOCUMENT_CODE = "DOC-049"
 OUTPUT_FILENAME = "pv_remuneration_president_sasu_holding.docx"
 
+# Apostrophe typographique (U+2019) + espace insecable (U+00A0) : ponctuation fine francaise
+# du modele Albane (byte-fidelite). Definis via chr() pour rester ASCII-safe dans le source.
+_APOS = chr(0x2019)
+_NBSP = chr(0x00A0)
+
 
 class PvRemunerationPresidentSasuHoldingGenerator:
     """Generateur from-scratch du PV remuneration president SASU Holding (generaliste)."""
@@ -40,7 +45,7 @@ class PvRemunerationPresidentSasuHoldingGenerator:
             document,
             [
                 "PROCES-VERBAL DES DECISIONS",
-                "DE L'ASSOCIE UNIQUE",
+                f"DE L{_APOS}ASSOCIE UNIQUE",
                 f"DU {data.date_signature}",
             ],
         )
@@ -50,15 +55,15 @@ class PvRemunerationPresidentSasuHoldingGenerator:
             document,
             f"{data.qualite_associe} de la SASU en cours de formation.",
         )
-        add_paragraph(document, "a pris la décision suivante : ")
+        add_paragraph(document, f"a pris la décision suivante{_NBSP}: ")
         add_paragraph(document, f"Fixation de la rémunération du {data.fonction_president}")
         add_paragraph(document, "DECISION UNIQUE")
         add_paragraph(
             document,
-            f"{data.associe_civilite_nom}, associé unique, décide qu'il ne percevra "
+            f"{data.associe_civilite_nom}, associé unique, décide qu{_APOS}il ne percevra "
             "aucune rémunération au titre de son mandat de "
             f"{data.fonction_president}, à compter de son immatriculation, et ce, "
-            f"jusqu'au {data.date_cloture} inclus, date de la clôture du premier exercice "
+            f"jusqu{_APOS}au {data.date_cloture} inclus, date de la clôture du premier exercice "
             "social.",
         )
         add_paragraph(
@@ -68,7 +73,7 @@ class PvRemunerationPresidentSasuHoldingGenerator:
         )
         add_paragraph(
             document,
-            "De tout ce que dessus, l'associé unique a dressé et signé le présent "
+            f"De tout ce que dessus, l{_APOS}associé unique a dressé et signé le présent "
             "procès-verbal.",
         )
         add_paragraph(document, f"Fait à {data.lieu_signature} en trois exemplaires ")
@@ -138,13 +143,27 @@ class _ResolvedPvSasuHolding:
             ),
             qualite_associe=qualite_associe,
             fonction_president=fonction_president,
-            date_cloture=_required_text(
-                ctx.exercice_social.date_cloture_premier_exercice,
-                "exercice_social.date_cloture_premier_exercice",
+            # « jusqu'au {date} » : le template porte deja « au » -> on retire un article
+            # « le »/« Le » de tete si le champ partage (statuts : « prendra fin le … ») l'inclut,
+            # pour eviter « jusqu'au le 31 decembre » (gate Akainu B1).
+            date_cloture=_strip_leading_article(
+                _required_text(
+                    ctx.exercice_social.date_cloture_premier_exercice,
+                    "exercice_social.date_cloture_premier_exercice",
+                )
             ),
             lieu_signature=_required_text(ctx.signature.lieu, "signature.lieu"),
             signature_nom=f"{prenom} {nom}",
         )
+
+
+def _strip_leading_article(value: str) -> str:
+    """Retire un « le »/« Le » de tete (le template PV porte deja « jusqu'au »)."""
+    stripped = value.strip()
+    for article in ("le ", "Le "):
+        if stripped.startswith(article):
+            return stripped[len(article) :].strip()
+    return stripped
 
 
 def _required_person(ctx: DocumentGenerationContext) -> Person:
@@ -164,5 +183,6 @@ def _long_french_date(value: date | str | None, field_name: str) -> str:
     if value is None:
         raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
     if isinstance(value, date):
-        return f"{value.day} {FRENCH_MONTHS[value.month]} {value.year}"
+        jour = "1er" if value.day == 1 else str(value.day)  # convention francaise du 1er
+        return f"{jour} {FRENCH_MONTHS[value.month]} {value.year}"
     return _required_text(value, field_name)
