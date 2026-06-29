@@ -26,7 +26,9 @@ DECLARATION_TEXT = (
     "gérer, d’administrer ou de diriger une personne morale."
 )
 
-RAPPEL_TITLE_SUFFIX = " : Article L123-5 du code de commerce"
+# Espace insecable (U+00A0) avant les deux-points : typographie francaise du modele source
+# tokenise (« Rappel\xa0: »), perdue jusqu'ici par le generateur. Corrige globalement (tous types).
+RAPPEL_TITLE_SUFFIX = chr(0x00A0) + ": Article L123-5 du code de commerce"
 RAPPEL_PARAGRAPH_1 = (
     "Le fait de donner, de mauvaise foi, des indications inexactes ou incomplètes en vue d’une "
     "immatriculation, d’une radiation ou d’une mention complémentaire ou rectificative au registre "

@@ -102,7 +102,8 @@ def test_declaration_non_condamnation_contains_essential_texts(tmp_path: Path) -
     assert "Déclare sur l’honneur, conformément aux dispositions de l’article A.123-51" in text
     assert "Fait à Paris" in text
     assert "Le 12/05/2026" in text
-    assert "Rappel : Article L123-5 du code de commerce" in text
+    # NBSP (U+00A0) avant les deux-points (typographie modele source).
+    assert "Rappel" + chr(0x00A0) + ": Article L123-5 du code de commerce" in text
     assert "Les dispositions des deuxième et troisième alinéas de l’article L.123-4" in text
 
 
