@@ -1217,7 +1217,9 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
 
     option_is = bool(payload.get("option_is")) and structure in OPTION_IS_STRUCTURES
     if option_is:
-        _apply_option_is_qualite_associe(associes)
+        _apply_option_is_qualite_associe(
+            associes, structure=structure, gerant_index=_resolve_gerant_index(payload, associes)
+        )
 
     common = _common_docs_input(
         payload,
@@ -1367,22 +1369,32 @@ def _centre_impots(payload: dict[str, object]) -> CentreImpots:
     )
 
 
-def _apply_option_is_qualite_associe(associes: list[StatutsCivilsAssocie]) -> None:
+def _apply_option_is_qualite_associe(
+    associes: list[StatutsCivilsAssocie],
+    *,
+    structure: str = "",
+    gerant_index: int = -1,
+) -> None:
     """Renseigne la qualite d'associe attendue par DOC-022 pour les personnes
     physiques sans qualite explicite.
 
     La lettre d'option IS decrit chaque associe « ... qualite, detenant N parts ».
-    Pour une SCI / SCI IRIS l'associe physique est un simple associe ; on derive la
-    seule variante grammaticale genre (associe / associee) documentee au canon,
-    sans inventer de regle metier. Une qualite deja saisie n'est jamais ecrasee.
+    Pour une SCI / SCI IRIS l'associe physique est un simple associe (associe / associee).
+    Micro holding (Albane 2026-06-29) : l'associe physique GERANT est decrit « gerante »
+    (modele Albane « ... gerante, detenant 10 parts ») ; les autres restent « associe(e) ».
+    On derive uniquement la variante grammaticale de genre, sans inventer de regle metier.
+    Une qualite deja saisie n'est jamais ecrasee.
     """
-    for associe in associes:
+    for index, associe in enumerate(associes):
         if associe.type_personne != "personne_physique" or associe.parts is None:
             continue
         if str(associe.parts.qualite_associe or "").strip():
             continue
         feminin = associe.genre == Gender.FEMININ
-        associe.parts.qualite_associe = "associée" if feminin else "associé"
+        if structure == "MICRO_HOLDING" and index == gerant_index:
+            associe.parts.qualite_associe = "gérante" if feminin else "gérant"
+        else:
+            associe.parts.qualite_associe = "associée" if feminin else "associé"
 
 
 def _common_docs_input(

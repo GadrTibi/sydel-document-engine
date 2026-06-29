@@ -60,6 +60,14 @@ class AutorisationDomiciliationGenerator:
             output_path,
             gender_pairs=gender_pairs,
         )
+        # Micro holding (Albane 2026-06-29) : la societe domiciliee est a CAPITAL VARIABLE.
+        # Le modele generique fige « au capital de <X> euros » -> on remplace par la mention
+        # capital variable du modele Albane « a capital variable au capital minimum de <X> €
+        # et au capital effectif de <X> € » (les autres structures ne sont PAS touchees).
+        if ctx.structure == "MICRO_HOLDING":
+            _apply_micro_holding_capital_variable(filled, _required_text(
+                _required_company(ctx.societe).capital, "societe.capital"
+            ))
         # Retour Albane 2026-06-10 : police Roboto 10 sur l'autorisation (« le
         # reste c'est top »). Le modele est une lettre courte SANS titre distinct :
         # le « titre en 11 » demande par Albane n'a pas de cible ici (a confirmer
@@ -148,6 +156,35 @@ def _apply_roboto_font(output_path: Path, *, body_size_pt: int) -> None:
                 for paragraph in cell.paragraphs:
                     for run in paragraph.runs:
                         _set_run_font(run, name=ROBOTO_FONT, size_pt=body_size_pt)
+    document.save(str(output_path))
+
+
+def _apply_micro_holding_capital_variable(output_path: Path, capital: str) -> None:
+    """Micro holding : remplace « au capital de <X> euros en cours de formation » par la
+    mention capital variable du modele Albane (« a capital variable au capital minimum de
+    <X> € et au capital effectif de <X> €, en cours de formation »).
+
+    Remplacement au niveau du paragraphe (le segment couvre plusieurs runs apres le
+    remplissage des tokens) ; la police est re-appliquee ensuite par _apply_roboto_font.
+    NB perimetre (a confirmer Rafael/Albane, cf. QUESTIONS_RAFAEL) : on conserve la
+    denomination reelle de la societe (« de la <denomination> ») la ou le modele Albane
+    ecrit la forme generique « de la Societe micro holding ».
+    """
+    old = f"au capital de {capital} euros en cours de formation"
+    new = (
+        f"à capital variable au capital minimum de {capital} € "
+        f"et au capital effectif de {capital} €, en cours de formation"
+    )
+    document = Document(str(output_path))
+    for paragraph in document.paragraphs:
+        if old in paragraph.text:
+            new_text = paragraph.text.replace(old, new)
+            if paragraph.runs:
+                paragraph.runs[0].text = new_text
+                for run in paragraph.runs[1:]:
+                    run.text = ""
+            else:
+                paragraph.text = new_text
     document.save(str(output_path))
 
 

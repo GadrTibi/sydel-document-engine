@@ -34,6 +34,9 @@ from sydel_doc_engine.domain.models import (
 )
 from sydel_doc_engine.front_app import civil_statuts_slice as cs
 from sydel_doc_engine.front_app.type_registry import registered_type_by_key
+from sydel_doc_engine.generators.lot_01.autorisation_domiciliation import (
+    AutorisationDomiciliationGenerator,
+)
 from sydel_doc_engine.generators.lot_04.statuts_micro_holding import (
     StatutsMicroHoldingGenerator,
 )
@@ -390,3 +393,39 @@ def test_lettre_option_is_micro_holding_fidelity(tmp_path: Path) -> None:
         "54000 NANCY, détenant 1010 parts." in text
     )
     assert "Le gérant" in text
+
+
+def test_option_is_gerant_recoit_qualite_gerant() -> None:
+    # Akainu m1 (2026-06-29) : dans le bundle REEL (slice), l'associe physique GERANT de la
+    # lettre option IS doit recevoir « gerant/gerante » (modele Albane « ..., gerante, ... »),
+    # pas « associe(e) ». Verifie le comportement du slice de production (pas un fixture force).
+    ctx = cs.build_generation_context(_payload_option_is())
+    associes = ctx.statuts_civils.associes
+    # gerant_index = 0 (1er associe physique) -> « gerant » (masculin) ; l'autre -> « associee/e ».
+    assert associes[0].parts.qualite_associe == "gérant"
+    assert associes[1].parts.qualite_associe in {"associé", "associée"}
+
+
+def test_domiciliation_micro_holding_mention_capital_variable(tmp_path: Path) -> None:
+    # Akainu M1 (2026-06-29) : l'autorisation de domiciliation du bundle micro holding doit
+    # porter la mention capital variable du modele Albane (« a capital variable au capital
+    # minimum de X € et au capital effectif de X € »), pas le generique « au capital de X euros ».
+    ctx = DocumentGenerationContext(
+        structure="MICRO_HOLDING",
+        personne_signataire=Person(
+            genre=Gender.MASCULIN, civilite="Monsieur", prenom="Jérémie", nom="BERDAH"
+        ),
+        signature=Signature(lieu="Paris", date=date(2025, 10, 29)),
+        societe=Company(
+            denomination="Micro holding famille Berte",
+            capital="1.020",
+            siege=Address(num_voie="54", voie="rue Ordener", cp="75018", ville="PARIS"),
+        ),
+    )
+    out = AutorisationDomiciliationGenerator().generate(ctx, tmp_path)
+    text = _docx_text(out)
+    assert (
+        "à capital variable au capital minimum de 1.020 € et au capital effectif de 1.020 €"
+        in text
+    )
+    assert "au capital de 1.020 euros" not in text
