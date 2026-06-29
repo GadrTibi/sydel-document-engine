@@ -781,6 +781,23 @@ class StatutsSelasMultiContext(BaseModel):
     president: StatutsSelasMultiPresident | None = None
 
 
+class StatutsSasuHoldingContext(BaseModel):
+    # Contexte dedie SASU Holding (nouveau type, modele officiel Albane 2026-06-29).
+    # SAS unipersonnelle (actionnaire/associe unique = president), holding patrimoniale
+    # GENERALISTE (objet participations, pas de profession reglementee). Self-contained :
+    # ne reutilise pas la validation SPFPL medecins. Token-replacement sur le modele
+    # « statuts SASU Holding.docx » (27 tokens). Identite de l'associe unique + societe +
+    # signature + exercice viennent du DocumentGenerationContext standard ; les champs
+    # specifiques SAS sont portes ici.
+    forme_sociale: str | None = None  # ex. « Société par actions simplifiée unipersonnelle »
+    capital_social: str | None = None
+    capital_social_lettres: str | None = None
+    nb_actions: int | None = None
+    nom_banque: str | None = None
+    qualite_associe: str | None = None  # ex. « Associé unique et Président »
+    fonction_dirigeant: str | None = None  # ex. « Président »
+
+
 class RegimeCommunautaireAvertissement(BaseModel):
     date_signature: date | str | None = None
 
@@ -1165,6 +1182,7 @@ class DocumentGenerationContext(BaseModel):
     sites_existants: list[SiteExistant] = Field(default_factory=list)
     operation_spfpl: OperationSpfpl | None = None
     statuts_sas: StatutsSas | None = None
+    statuts_sasu_holding: StatutsSasuHoldingContext | None = None
     statuts_sel: StatutsSel | None = None
     societe_spfpl: SocieteSpfpl | None = None
     actionnaire_unique: SpfplPerson | None = None
