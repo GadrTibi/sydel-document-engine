@@ -31,6 +31,9 @@ from sydel_doc_engine.domain.models import (
     Signature,
     StatutsSasuHoldingContext,
 )
+from sydel_doc_engine.generators.lot_01.autorisation_domiciliation import (
+    AutorisationDomiciliationGenerator,
+)
 from sydel_doc_engine.generators.lot_05.liste_souscripteurs_sasu_holding import (
     ListeSouscripteursSasuHoldingGenerator,
 )
@@ -122,6 +125,21 @@ def _body_in_order(path: Path) -> list[str]:
             for row in Table(child, document).rows:
                 out.extend(cell.text for cell in row.cells)
     return out
+
+
+# --- Autorisation de domiciliation (tronc commun, chemin SASU_HOLDING) -------------------
+
+
+def test_domiciliation_sasu_holding_fidelity(tmp_path: Path) -> None:
+    # Gate Akainu : la domiciliation SASU porte la forme « de la SAS <denom> » (coherent avec
+    # la procuration) + « dans les locaux situes a <adresse>, » (une holding n'est pas un
+    # cabinet). Structure-aware SASU_HOLDING (autres types inchanges).
+    path = AutorisationDomiciliationGenerator().generate(_ctx(), tmp_path)
+    text = _all_text(path)
+    assert "de la SAS MLG" in text
+    assert "dans les locaux situés à" in text
+    assert ", pour une durée indéterminée" in text
+    assert "du cabinet" not in text  # plus de wording cabinet
 
 
 # --- PV remuneration president (DOC-049) -------------------------------------------------

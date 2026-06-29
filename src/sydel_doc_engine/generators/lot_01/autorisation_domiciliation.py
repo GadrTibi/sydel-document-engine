@@ -195,9 +195,12 @@ def _apply_micro_holding_capital_variable(output_path: Path, capital: str) -> No
 
 
 def _apply_sasu_holding_locaux(output_path: Path) -> None:
-    """SASU Holding : « dans les locaux du cabinet au <adresse> pour une duree indeterminee »
-    -> « dans les locaux situes a <adresse>, pour une duree indeterminee » (modele Albane SAS,
-    gate Akainu M1/M2 : une holding n'est pas un cabinet ; virgule avant « pour »).
+    """SASU Holding : aligne la domiciliation sur le modele Albane SAS (gate Akainu) :
+    - « de la <denom> » -> « de la SAS <denom> » (forme abregee, comme la procuration ; le
+      modele Albane ecrit « de la SAS … » et le bundle doit etre coherent) ;
+    - « dans les locaux du cabinet au <adresse> pour une duree indeterminee » -> « dans les
+      locaux situes a <adresse>, pour une duree indeterminee » (une holding n'est pas un
+      cabinet ; virgule avant « pour »).
 
     Remplacement au niveau du paragraphe (segment multi-runs) ; police re-appliquee ensuite.
     """
@@ -206,9 +209,13 @@ def _apply_sasu_holding_locaux(output_path: Path) -> None:
         text = paragraph.text
         if "dans les locaux du cabinet au " not in text:
             continue
-        new_text = text.replace(
-            "dans les locaux du cabinet au ", "dans les locaux situés à "
-        ).replace(" pour une durée indéterminée", ", pour une durée indéterminée")
+        new_text = (
+            text.replace(
+                "autorise la domiciliation de la ", "autorise la domiciliation de la SAS "
+            )
+            .replace("dans les locaux du cabinet au ", "dans les locaux situés à ")
+            .replace(" pour une durée indéterminée", ", pour une durée indéterminée")
+        )
         if paragraph.runs:
             paragraph.runs[0].text = new_text
             for run in paragraph.runs[1:]:
