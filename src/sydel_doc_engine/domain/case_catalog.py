@@ -466,19 +466,19 @@ CATALOG_DOCUMENTS: tuple[CatalogDocument, ...] = (
         "pv_remuneration_president_sasu_holding",
         "PV remuneration president SASU Holding",
         "PV_remuneration_president.docx",
-        None,
-        DocumentAvailability.NOT_IMPLEMENTED,
-        "Modele Albane SAS generaliste (docs/review/albane_sas_2026-06-29/) ; le generateur "
-        "DOC-023 existant est verrouille SPFPL medecins -> generateur generaliste a batir.",
+        "DOC-049",
+        DocumentAvailability.GENERATABLE,
+        "Modele Albane SAS generaliste (docs/review/albane_sas_2026-06-29/) ; generateur "
+        "generaliste dedie (byte-fidele), DISTINCT du DOC-023 SPFPL medecins (conserve).",
     ),
     CatalogDocument(
         "liste_souscripteurs_sasu_holding",
         "Liste des souscripteurs SASU Holding",
         "Liste_des_souscripteurs.docx",
-        None,
-        DocumentAvailability.NOT_IMPLEMENTED,
-        "Modele Albane SAS generaliste (docs/review/albane_sas_2026-06-29/) ; le generateur "
-        "DOC-024 existant est verrouille SPFPL medecins -> generateur generaliste a batir.",
+        "DOC-050",
+        DocumentAvailability.GENERATABLE,
+        "Modele Albane SAS generaliste (docs/review/albane_sas_2026-06-29/) ; generateur "
+        "generaliste dedie (byte-fidele), DISTINCT du DOC-024 SPFPL medecins (conserve).",
     ),
 )
 
@@ -810,12 +810,10 @@ CATALOG_OCCURRENCES: tuple[DocumentOccurrence, ...] = (
     DocumentOccurrence(CaseType.SAS, "attestation_capital_sas", "Liste des souscripteurs"),
     # SASU Holding (modele officiel Albane 2026-06-29) : SAS unipersonnelle, holding
     # patrimoniale GENERALISTE, DISTINCTE de la « SAS / SPFPL medecins » (conservee).
-    # Bundle de creation = 6 pieces : statuts + tronc commun (DNC / domiciliation /
-    # procuration) + PV remuneration president + liste des souscripteurs. Les 2 satellites
-    # ont leurs PROPRES modeles generalistes (locks albane_sas_2026-06-29) : les generateurs
-    # DOC-023 / DOC-024 existants sont verrouilles SPFPL medecins et ne peuvent pas etre
-    # reutilises tels quels (wording « SPFPL de Profession Liberale de medecins ») -> ils
-    # restent NOT_IMPLEMENTED ici, a batir en phase fidelite.
+    # Bundle de creation = 6 pieces : statuts (DOC-048) + tronc commun (DNC / domiciliation /
+    # procuration) + PV remuneration president (DOC-049) + liste des souscripteurs (DOC-050).
+    # Les 2 satellites ont leurs PROPRES generateurs GENERALISTES (byte-fideles aux modeles
+    # Albane), DISTINCTS des generateurs DOC-023 / DOC-024 SPFPL medecins (conserves).
     DocumentOccurrence(CaseType.SASU_HOLDING, "statuts_sasu_holding", "SASU_HOLDING"),
     DocumentOccurrence(CaseType.SASU_HOLDING, "declaration_non_condamnation", "SASU_HOLDING"),
     DocumentOccurrence(CaseType.SASU_HOLDING, "autorisation_domiciliation", "SASU_HOLDING"),
@@ -823,12 +821,12 @@ CATALOG_OCCURRENCES: tuple[DocumentOccurrence, ...] = (
     DocumentOccurrence(
         CaseType.SASU_HOLDING,
         "pv_remuneration_president_sasu_holding",
-        "SASU_HOLDING (satellite generaliste a batir)",
+        "SASU_HOLDING (satellite generaliste)",
     ),
     DocumentOccurrence(
         CaseType.SASU_HOLDING,
         "liste_souscripteurs_sasu_holding",
-        "SASU_HOLDING (satellite generaliste a batir)",
+        "SASU_HOLDING (satellite generaliste)",
     ),
 )
 

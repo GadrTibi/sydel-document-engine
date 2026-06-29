@@ -6,12 +6,11 @@ conservee, chemin `sas_slice`). L'acte est unipersonnel : un seul associe = le p
 aucun bloc repetitif. Le slice collecte societe + associe unique + nb actions + banque +
 exercice + signature, et emet le contexte dedie `statuts_sasu_holding`.
 
-Bundle de creation = 6 pieces (canon Albane) : statuts + tronc commun (DNC / domiciliation /
-procuration) + PV remuneration president + liste des souscripteurs. Les 2 satellites ont
-leurs PROPRES modeles generalistes (locks `docs/review/albane_sas_2026-06-29/`) : les
-generateurs DOC-023 / DOC-024 existants sont verrouilles SPFPL medecins et ne peuvent pas
-etre reutilises tels quels -> ils restent a batir (phase fidelite). Ce slice genere donc, a
-ce stade, les 4 pieces deja generables (statuts + tronc commun).
+Bundle de creation = 6 pieces (canon Albane) : statuts (DOC-048) + tronc commun (DNC /
+domiciliation / procuration) + PV remuneration president (DOC-049) + liste des souscripteurs
+(DOC-050). Les 2 satellites ont leurs PROPRES generateurs GENERALISTES, byte-fideles aux
+modeles Albane (`docs/review/albane_sas_2026-06-29/`), DISTINCTS des generateurs SPFPL medecins
+DOC-023 / DOC-024 (conserves, verrouilles SPFPL medecins). Genre libre, pas de profession.
 """
 
 from __future__ import annotations
@@ -66,14 +65,18 @@ STRUCTURE = "SASU_HOLDING"
 DOC_CODE = "DOC-048"
 PREFIX = "sasu_holding"
 
-# Bundle de creation SASU Holding (canon Albane 2026-06-29) : statuts (DOC-048) + tronc
-# commun (DNC / domiciliation / procuration). Les 2 satellites generalistes (PV remuneration
-# president, liste des souscripteurs) restent a batir (generateurs DOC-023 / DOC-024
-# verrouilles SPFPL medecins, non reutilisables pour une holding generaliste).
+# Bundle de creation SASU Holding (canon Albane 2026-06-29) = 6 pieces : statuts (DOC-048) +
+# tronc commun (DNC / domiciliation / procuration) + PV remuneration president (DOC-049) +
+# liste des souscripteurs (DOC-050). Les 2 satellites ont leurs generateurs GENERALISTES
+# dedies (byte-fideles aux modeles Albane), DISTINCTS des DOC-023 / DOC-024 SPFPL medecins.
 SASU_HOLDING_DOC_STATUTS = "DOC-048"
+SASU_HOLDING_DOC_PV_REMUNERATION = "DOC-049"
+SASU_HOLDING_DOC_LISTE_SOUSCRIPTEURS = "DOC-050"
 SASU_HOLDING_BUNDLE_CODES: tuple[str, ...] = (
     SASU_HOLDING_DOC_STATUTS,
     *cc.TRONC_COMMUN_CODES,
+    SASU_HOLDING_DOC_PV_REMUNERATION,
+    SASU_HOLDING_DOC_LISTE_SOUSCRIPTEURS,
 )
 
 
@@ -223,8 +226,8 @@ def build_sasu_holding_plan(payload: dict[str, object]) -> SasuHoldingSlicePlan:
     blockers = _validate(payload)
     warnings = (
         "SASU Holding = SAS unipersonnelle generaliste (associe unique = president). "
-        "Bundle : statuts + tronc commun (DNC / domiciliation / procuration). PV remuneration "
-        "president et liste des souscripteurs (modeles Albane generalistes) restent a batir.",
+        "Bundle (6 pieces) : statuts + tronc commun (DNC / domiciliation / procuration) + "
+        "PV remuneration president + liste des souscripteurs (modeles Albane generalistes).",
     )
     if blockers:
         return SasuHoldingSlicePlan(

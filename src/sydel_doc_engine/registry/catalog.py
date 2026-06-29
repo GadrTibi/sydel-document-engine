@@ -506,6 +506,53 @@ def build_seed_catalog() -> list[DocumentDefinition]:
             ),
         ),
         DocumentDefinition(
+            doc_id="DOC-049",
+            canonical_name="PV remuneration president SASU Holding",
+            generator_name="generate_pv_remuneration_president_sasu_holding",
+            lot=5,
+            category=DocumentCategory.SPECIFIQUE,
+            structures=STATUTS_SASU_HOLDING_STRUCTURES,
+            general_condition="dossier.structure == SASU_HOLDING",
+            specific_conditions=[
+                "SAS unipersonnelle, holding patrimoniale generaliste",
+                "associe unique = president (acte unipersonnel)",
+                "absence de remuneration jusqu'a la cloture du premier exercice",
+            ],
+            dynamic_associates=False,
+            grammar_variants=True,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path="docs/review/albane_sas_2026-06-29/PV_remuneration_president.docx",
+            notes=(
+                "Satellite SASU Holding GENERALISTE (modele officiel Albane 2026-06-29), "
+                "DISTINCT du PV remuneration president SPFPL medecins (DOC-023, conserve, "
+                "verrouille SPFPL medecins). Generateur from-scratch byte-fidele, genre libre."
+            ),
+        ),
+        DocumentDefinition(
+            doc_id="DOC-050",
+            canonical_name="Liste des souscripteurs SASU Holding",
+            generator_name="generate_liste_souscripteurs_sasu_holding",
+            lot=5,
+            category=DocumentCategory.SPECIFIQUE,
+            structures=STATUTS_SASU_HOLDING_STRUCTURES,
+            general_condition="dossier.structure == SASU_HOLDING",
+            specific_conditions=[
+                "SAS unipersonnelle, holding patrimoniale generaliste",
+                "souscripteur unique = associe / president",
+                "etat des souscriptions (table + ligne TOTAL), sans apport en nature",
+            ],
+            dynamic_associates=False,
+            grammar_variants=True,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path="docs/review/albane_sas_2026-06-29/Liste_des_souscripteurs.docx",
+            notes=(
+                "Satellite SASU Holding GENERALISTE (modele officiel Albane 2026-06-29), "
+                "DISTINCT de l'attestation capital / liste souscripteurs SAS SPFPL medecins "
+                "(DOC-024, conserve). Etat des souscriptions simple (pas d'apport en nature), "
+                "genre libre."
+            ),
+        ),
+        DocumentDefinition(
             doc_id="DOC-035",
             canonical_name="Statuts SPFPL cession",
             generator_name="generate_statuts_spfpl_cession",

@@ -113,6 +113,9 @@ from sydel_doc_engine.generators.lot_05.lettre_option_is import LettreOptionIsGe
 from sydel_doc_engine.generators.lot_05.liste_depenses_communes_scm import (
     ListeDepensesCommunesScmGenerator,
 )
+from sydel_doc_engine.generators.lot_05.liste_souscripteurs_sasu_holding import (
+    ListeSouscripteursSasuHoldingGenerator,
+)
 from sydel_doc_engine.generators.lot_05.note_information import NoteInformationGenerator
 from sydel_doc_engine.generators.lot_05.pacte_associes_scm import PacteAssociesScmGenerator
 from sydel_doc_engine.generators.lot_05.pv_age_cession_scm import (
@@ -126,6 +129,9 @@ from sydel_doc_engine.generators.lot_05.pv_agrement_cession_spfpl_plusieurs_asso
 )
 from sydel_doc_engine.generators.lot_05.pv_remuneration_president import (
     PvRemunerationPresidentGenerator,
+)
+from sydel_doc_engine.generators.lot_05.pv_remuneration_president_sasu_holding import (
+    PvRemunerationPresidentSasuHoldingGenerator,
 )
 from sydel_doc_engine.generators.lot_05.reglement_interieur_scm import (
     ReglementInterieurScmGenerator,
@@ -147,6 +153,8 @@ DEROGATION_DOCUMENT_TYPES = {
 }
 STATUTS_SAS_DOCUMENT_ID = "DOC-015"
 STATUTS_SASU_HOLDING_DOCUMENT_ID = "DOC-048"
+SASU_HOLDING_PV_REMUNERATION_DOCUMENT_ID = "DOC-049"
+SASU_HOLDING_LISTE_SOUSCRIPTEURS_DOCUMENT_ID = "DOC-050"
 STATUTS_SPFPL_DOCUMENT_TYPES = {
     "DOC-035": ("SPFPL cession", "cession"),
     "DOC-036": ("SPFPL apport", "apport"),
@@ -207,6 +215,8 @@ def build_generator_registry() -> dict[str, DocumentGenerator]:
         "DOC-014": DemandeDerogationCumulSelarlBncGenerator(),
         "DOC-015": StatutsSasGenerator(),
         "DOC-048": StatutsSasuHoldingGenerator(),
+        "DOC-049": PvRemunerationPresidentSasuHoldingGenerator(),
+        "DOC-050": ListeSouscripteursSasuHoldingGenerator(),
         "DOC-035": StatutsSpfplCessionGenerator(),
         "DOC-036": StatutsSpfplApportGenerator(),
         "DOC-016": StatutsSelarlDentisteGenerator(),
@@ -321,6 +331,10 @@ def _non_regime_document_enabled(  # noqa: C901
     if document.doc_id == STATUTS_SAS_DOCUMENT_ID:
         return _statuts_sas_enabled(ctx)
     if document.doc_id == STATUTS_SASU_HOLDING_DOCUMENT_ID:
+        return _statuts_sasu_holding_enabled(ctx)
+    if document.doc_id == SASU_HOLDING_PV_REMUNERATION_DOCUMENT_ID:
+        return _statuts_sasu_holding_enabled(ctx)
+    if document.doc_id == SASU_HOLDING_LISTE_SOUSCRIPTEURS_DOCUMENT_ID:
         return _statuts_sasu_holding_enabled(ctx)
     if document.doc_id in STATUTS_SPFPL_DOCUMENT_TYPES:
         return _statuts_spfpl_enabled(ctx, STATUTS_SPFPL_DOCUMENT_TYPES[document.doc_id])

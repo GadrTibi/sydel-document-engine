@@ -70,16 +70,26 @@ def test_sasu_holding_registered_type() -> None:
 
 
 def test_sasu_holding_bundle_codes() -> None:
-    # Bundle generable a ce stade = statuts (DOC-048) + tronc commun (DNC/domic/procuration).
+    # Bundle complet (6 pieces) = statuts (DOC-048) + tronc commun (DNC/domic/procuration)
+    # + PV remuneration president (DOC-049) + liste des souscripteurs (DOC-050).
     assert sasu_holding_slice.SASU_HOLDING_BUNDLE_CODES == (
         "DOC-048",
         "DOC-001",
         "DOC-002",
         "DOC-003",
+        "DOC-049",
+        "DOC-050",
     )
     plan = sasu_holding_slice.build_sasu_holding_plan(_payload())
     assert plan.can_generate, plan.blockers
-    assert plan.document_codes == ("DOC-048", "DOC-001", "DOC-002", "DOC-003")
+    assert plan.document_codes == (
+        "DOC-048",
+        "DOC-001",
+        "DOC-002",
+        "DOC-003",
+        "DOC-049",
+        "DOC-050",
+    )
 
 
 def test_sasu_holding_context_routes_doc_048_not_sas_medecins() -> None:
@@ -91,14 +101,19 @@ def test_sasu_holding_context_routes_doc_048_not_sas_medecins() -> None:
     # Le statuts SASU Holding est selectionne ; le statuts SAS / SPFPL medecins NON.
     assert "DOC-048" in selected
     assert "DOC-015" not in selected
-    # Tronc commun present.
-    assert {"DOC-001", "DOC-002", "DOC-003"} <= selected
+    # Tronc commun + 2 satellites generalistes presents.
+    assert {"DOC-001", "DOC-002", "DOC-003", "DOC-049", "DOC-050"} <= selected
+    # Les satellites SPFPL medecins (DOC-023 / DOC-024) NE sont PAS selectionnes.
+    assert "DOC-023" not in selected
+    assert "DOC-024" not in selected
 
 
 def test_sasu_holding_generates_bundle(tmp_path: Path) -> None:
     result = sasu_holding_slice.generate_dossier(_payload(), tmp_path)
     names = {p.name for p in result.docx_paths}
     assert "statuts_sasu_holding.docx" in names
-    # 4 pieces du bundle (statuts + tronc commun) generees.
-    assert len(result.docx_paths) == 4
+    assert "pv_remuneration_president_sasu_holding.docx" in names
+    assert "liste_souscripteurs_sasu_holding.docx" in names
+    # 6 pieces du bundle (statuts + tronc commun + 2 satellites generalistes) generees.
+    assert len(result.docx_paths) == 6
     assert result.zip_path is not None and result.zip_path.exists()
