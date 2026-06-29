@@ -511,7 +511,8 @@ def test_acte_dentaire_salaries_zero_removes_clause(tmp_path: Path) -> None:
 
 
 def test_acte_dentaire_salaries_one_renders_single(tmp_path: Path) -> None:
-    # Regle NotebookLM : 1 salarie -> liste a un element (poste optionnel rendu).
+    # Verbatim Albane (IMG_7837) : 1 salarie -> « LE CONTRAT » (singulier) + profession
+    # rendue par « , <profession> » (PAS « en qualite de » : « sans aucun mot de plus »).
     ctx = _context(
         type_cabinet="dentaire",
         salaries=[
@@ -523,9 +524,9 @@ def test_acte_dentaire_salaries_one_renders_single(tmp_path: Path) -> None:
 
     text = _docx_text(ActeCessionCabinetDentaireGenerator().generate(ctx, tmp_path))
 
-    assert "De reprendre les contrats de travail de Madame Lea Petit" in text
-    assert "en qualité de assistante dentaire" in text
-    assert " et de " not in text.split("contrats de travail de")[1].split(".")[0]
+    assert "De reprendre le contrat de travail de Madame Lea Petit, assistante dentaire." in text
+    assert "en qualité de" not in text
+    assert "les contrats de travail" not in text  # singulier pour 1 salarie
     _assert_no_residual_tokens(text)
 
 
@@ -558,10 +559,10 @@ def test_acte_dentaire_salary_requires_complete_identity(tmp_path: Path) -> None
 
 
 # ---------------------------------------------------------------------------
-# R5-contrats (Rafael 2026-06-29) : clause de reprise des contrats de travail
-# inseree JUSTE AVANT « De payer tous frais... » (point n°3), sur l'acte MEDICAL
-# ET DENTAIRE, conditionnelle au nombre de salaries repris. Supersede CE6 (medical
-# = zone surlignee a completer a la main) et deplace la clause dentaire.
+# R5-contrats (verbatim Albane IMG_7837, 2026-06-29) : clause de reprise des contrats
+# de travail rendue EN PLACE a sa position du modele = POINT 3, APRES « De payer tous
+# frais... », sur l'acte MEDICAL ET DENTAIRE. Accord singulier/pluriel sur « contrat »,
+# profession « , <profession> » (sans « en qualite de »), conditionnelle au nb de salaries.
 # ---------------------------------------------------------------------------
 
 _R5_GENERATORS = {
@@ -582,18 +583,16 @@ def _index_of(paras: list[str], needle: str) -> int | None:
 
 
 @pytest.mark.parametrize("type_cabinet", ["medical", "dentaire"])
-def test_r5_clause_inserted_just_before_payer_frais_two_salaries(
-    type_cabinet: str, tmp_path: Path
-) -> None:
-    # 2 salaries repris -> clause presente JUSTE AVANT « De payer tous frais »,
-    # avec les bons noms joints par « et de », sur l'acte medical ET dentaire.
+def test_r5_clause_after_payer_frais_two_salaries(type_cabinet: str, tmp_path: Path) -> None:
+    # Verbatim Albane : 2 salaries -> « les contrats » (pluriel), joints par « et de »,
+    # clause au POINT 3 = APRES « De payer tous frais » (et avant la section suivante).
     paras = _r5_paragraphs(type_cabinet, _DENT_SALARIES, tmp_path)
     idx_payer = _index_of(paras, "De payer tous frais")
     idx_clause = _index_of(paras, "De reprendre les contrats de travail")
     assert idx_payer is not None
     assert idx_clause is not None
-    # Emplacement exact : le paragraphe juste avant « De payer tous frais ».
-    assert idx_clause == idx_payer - 1
+    # Point 3 : juste APRES « De payer tous frais » (a un blanc pres du modele).
+    assert idx_payer < idx_clause <= idx_payer + 2
     assert (
         paras[idx_clause]
         == "De reprendre les contrats de travail de Madame Lea Petit et de Monsieur Noe Robert."
@@ -613,14 +612,16 @@ def test_r5_clause_absent_when_zero_salaries(type_cabinet: str, tmp_path: Path) 
 
 @pytest.mark.parametrize("type_cabinet", ["medical", "dentaire"])
 def test_r5_clause_single_salary(type_cabinet: str, tmp_path: Path) -> None:
-    # 1 salarie repris -> clause a un seul element, sans « et de », juste avant payer.
+    # Verbatim Albane : 1 salarie -> « LE CONTRAT » (singulier), sans « et de », point 3.
     salaries = [CessionSalarie(civilite_affichage="Madame", prenom="Lea", nom="Petit")]
     paras = _r5_paragraphs(type_cabinet, salaries, tmp_path)
     idx_payer = _index_of(paras, "De payer tous frais")
-    idx_clause = _index_of(paras, "De reprendre les contrats de travail")
-    assert idx_clause == idx_payer - 1
-    assert paras[idx_clause] == "De reprendre les contrats de travail de Madame Lea Petit."
+    idx_clause = _index_of(paras, "De reprendre le contrat de travail")
+    assert idx_payer is not None and idx_clause is not None
+    assert idx_payer < idx_clause <= idx_payer + 2
+    assert paras[idx_clause] == "De reprendre le contrat de travail de Madame Lea Petit."
     assert " et de " not in paras[idx_clause]
+    assert "les contrats de travail" not in "\n".join(paras)  # singulier pour 1 salarie
 
 
 @pytest.mark.parametrize("type_cabinet", ["medical", "dentaire"])
@@ -641,8 +642,8 @@ def test_r5_clause_three_salaries_joined(type_cabinet: str, tmp_path: Path) -> N
 
 @pytest.mark.parametrize("type_cabinet", ["medical", "dentaire"])
 def test_r5_clause_not_duplicated(type_cabinet: str, tmp_path: Path) -> None:
-    # L'ancien emplacement (apres « De payer tous frais ») est supprime : la clause
-    # n'apparait QU'UNE fois (pas de doublon insertion + ancien paragraphe).
+    # Clause rendue EN PLACE (token/ligne statique du modele) -> elle n'apparait QU'UNE
+    # fois, aucun doublon.
     paras = _r5_paragraphs(type_cabinet, _DENT_SALARIES, tmp_path)
     occurrences = [i for i, t in enumerate(paras) if "De reprendre les contrats de travail" in t]
     assert len(occurrences) == 1

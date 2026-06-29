@@ -163,19 +163,15 @@ def _build_clause_removals(
     ctx: DocumentGenerationContext,
     variant: CessionCabinetVariant,
 ) -> list[str]:
-    """Anciens emplacements de la clause salaries a SUPPRIMER (R5-contrats).
+    """R5-contrats (CORRIGE 2026-06-29) : plus de suppression/deplacement de la clause.
 
-    Pour l'acte (medical comme dentaire), la clause est re-inseree JUSTE AVANT « De
-    payer tous frais » via _build_clause_insertions. On retire donc l'ancien
-    paragraphe (apres « De payer tous frais ») : le token dentaire et le texte
-    statique medical. Une sous-chaine ici cible le paragraphe ENTIER a supprimer.
+    La clause de reprise des contrats de travail est rendue EN PLACE (a sa position du
+    modele = point 3, APRES « De payer tous frais ») via _build_paragraph_overrides :
+    le token dentaire [clause_reprise_salaries] (P168) et la ligne statique medicale
+    « De reprendre les contrats de travail de » (P187) sont remplis sur place, ou retires
+    (override None) si 0 salarie. Verbatim Albane IMG_7837 : la clause est le « point 3 »,
+    apres « De payer tous frais » -> on NE la deplace plus.
     """
-    if variant.etape != ACTE:
-        return []
-    if variant.type_cabinet == DENTAIRE:
-        return [_CLAUSE_SALARIES_TOKEN]
-    if variant.type_cabinet == MEDICAL:
-        return [_CONTRATS_TRAVAIL_STATIQUE_MEDICAL]
     return []
 
 
@@ -183,23 +179,12 @@ def _build_clause_insertions(
     ctx: DocumentGenerationContext,
     variant: CessionCabinetVariant,
 ) -> list[tuple[str, str]]:
-    """Clause(s) a inserer JUSTE AVANT une ancre litterale (R5-contrats).
+    """R5-contrats (CORRIGE 2026-06-29) : plus d'insertion deplacee.
 
-    Renvoie une liste de couples (ancre, texte) : le `texte` est insere comme
-    NOUVEAU paragraphe immediatement AVANT le premier paragraphe contenant `ancre`
-    (mise en forme reprise du paragraphe-ancre = meme style de liste du point n°3).
-
-    Acte (medical + dentaire) : clause de reprise des contrats de travail juste
-    avant « De payer tous frais... ». Conditionnelle : 0 salarie -> aucune insertion
-    (la clause est simplement absente, son ancien emplacement etant deja supprime).
+    La clause est desormais rendue EN PLACE par _build_paragraph_overrides (cf.
+    _build_clause_removals). Conserve pour compatibilite de signature -> liste vide.
     """
-    if variant.etape != ACTE:
-        return []
-    cession = ctx.cession
-    if cession is None or not cession.salaries:
-        return []
-    clause = _build_clause_reprise_salaries(cession.salaries)
-    return [(_PAYER_FRAIS_ANCHOR, clause)]
+    return []
 
 
 # Titre civil (M./Mme) derive du genre, pour les emplacements ou un titre
@@ -453,8 +438,21 @@ def _build_paragraph_overrides(
         # Une superficie renseignee (scenarios existants) conserve la phrase du
         # modele avec le token remplace.
         overrides["[superficie_local]"] = None
-    if variant.etape == ACTE and variant.type_cabinet == DENTAIRE and not cession.salaries:
-        overrides["[clause_reprise_salaries]"] = None
+    # R5-contrats (verbatim Albane IMG_7837, 2026-06-29) : la clause de reprise des contrats
+    # de travail (point 3, APRES « De payer tous frais ») est remplie EN PLACE, a sa position
+    # du modele : token [clause_reprise_salaries] (dentaire) / ligne statique « De reprendre les
+    # contrats de travail de » (medical). >= 1 salarie -> clause filled ; 0 salarie -> override
+    # None (le paragraphe est retire). On ne deplace plus la clause.
+    if variant.etape == ACTE and variant.type_cabinet in (DENTAIRE, MEDICAL):
+        clause = (
+            _build_clause_reprise_salaries(cession.salaries) if cession.salaries else None
+        )
+        anchor = (
+            _CLAUSE_SALARIES_TOKEN
+            if variant.type_cabinet == DENTAIRE
+            else _CONTRATS_TRAVAIL_STATIQUE_MEDICAL
+        )
+        overrides[anchor] = clause
     if variant.etape == ACTE and variant.type_cabinet == MEDICAL:
         scm_actif = cession.scm is not None and cession.scm.actif
         if not scm_actif:
@@ -1218,13 +1216,16 @@ def _build_origine_propriete_phrase(cession: CessionContext) -> str | None:
 
 
 def _build_clause_reprise_salaries(salaries: list[CessionSalarie]) -> str:
-    """Construit la clause de reprise des contrats de travail (acte dentaire).
+    """Construit la clause de reprise des contrats de travail (acte medical + dentaire).
 
-    Regle NotebookLM : 0 salarie -> "Néant" (convention systeme) ; 1..N salaries
-    -> "De reprendre les contrats de travail de <liste>." ou chaque salarie est
-    "Civilite Prenom Nom" (+ ", en qualite de <poste>" si le poste est saisi).
-    Reutilise le wording de clause existant du modele ; "Néant" applique la
-    convention systeme (aucune clause "néant" dediee dans le modele source).
+    Verbatim Albane (IMG_7837, 2026-06-29) : « à la suite de la phrase on mets le nom,
+    prenom et la profession du ou des salaries SANS AUCUN MOT DE PLUS. Ca donne "3. De
+    reprendre LE CONTRAT de travail de Mme Albane LALLEMAND, juriste". » Donc :
+      - 1 salarie  -> « De reprendre le contrat de travail de <identite>, <profession>. »
+      - N salaries -> « De reprendre les contrats de travail de <id1>, <prof1>, ... et de
+        <idN>, <profN>. » (accord singulier/pluriel sur « contrat »).
+    Profession rendue par « , <profession> » (PAS « en qualite de » : mot interdit).
+    0 salarie -> clause ABSENTE (retiree par override None, cf. _build_paragraph_overrides).
     """
     if not salaries:
         return NEANT
@@ -1232,16 +1233,18 @@ def _build_clause_reprise_salaries(salaries: list[CessionSalarie]) -> str:
     labels: list[str] = []
     for index, salarie in enumerate(salaries):
         label = _salarie_label(salarie, index)
-        poste = (salarie.poste or "").strip()
-        if poste:
-            label = f"{label}, en qualité de {poste}"
+        profession = (salarie.poste or "").strip()
+        if profession:
+            label = f"{label}, {profession}"
         labels.append(label)
 
     if len(labels) == 1:
         liste = labels[0]
+        contrat = "le contrat de travail"
     else:
         liste = ", ".join(labels[:-1]) + f" et de {labels[-1]}"
-    return f"De reprendre les contrats de travail de {liste}."
+        contrat = "les contrats de travail"
+    return f"De reprendre {contrat} de {liste}."
 
 
 def _address_label(address: Address | None) -> str | None:
@@ -1372,15 +1375,10 @@ def _validate_arbitrage_blocks(
             "cession.validations.date_realisation_compromis_validee doit etre vrai pour "
             f"{DOCUMENT_CODE}."
         )
-    if (
-        variant.etape == ACTE
-        and variant.type_cabinet == MEDICAL
-        and not validations.ligne_contrats_travail_medical_supprimee
-    ):
-        raise ValueError(
-            "cession.validations.ligne_contrats_travail_medical_supprimee doit etre vrai "
-            f"pour {DOCUMENT_CODE}."
-        )
+    # R5-contrats (CORRIGE 2026-06-29) : la ligne medicale « De reprendre les contrats de
+    # travail de » n'est plus une zone a supprimer/completer a la main mais une clause remplie
+    # EN PLACE (cf. _build_paragraph_overrides). L'ancienne garde
+    # `ligne_contrats_travail_medical_supprimee` est donc retiree.
 
 
 def _validate_financement(
