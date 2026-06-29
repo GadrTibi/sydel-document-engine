@@ -510,8 +510,8 @@ def _cession_cabinet_medical_compromis() -> CessionContext:
 
 def _cession_cabinet_dentaire_compromis() -> CessionContext:
     """Compromis de cession dentaire (DOC-012) — mêmes données que l'acte, étape compromis,
-    sans les salariés (la reprise des contrats de travail est réservée à l'acte dentaire
-    par les règles métier des générateurs)."""
+    sans les salariés (la reprise des contrats de travail est réservée à l'ACTE — médical
+    comme dentaire, R5-contrats Rafael 2026-06-29 — jamais au compromis)."""
     return _cession_cabinet_dentaire_acte().model_copy(
         update={"etape": "compromis", "salaries": []}
     )

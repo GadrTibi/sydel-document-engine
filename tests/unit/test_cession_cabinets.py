@@ -557,6 +557,97 @@ def test_acte_dentaire_salary_requires_complete_identity(tmp_path: Path) -> None
         ActeCessionCabinetDentaireGenerator().generate(ctx, tmp_path)
 
 
+# ---------------------------------------------------------------------------
+# R5-contrats (Rafael 2026-06-29) : clause de reprise des contrats de travail
+# inseree JUSTE AVANT « De payer tous frais... » (point n°3), sur l'acte MEDICAL
+# ET DENTAIRE, conditionnelle au nombre de salaries repris. Supersede CE6 (medical
+# = zone surlignee a completer a la main) et deplace la clause dentaire.
+# ---------------------------------------------------------------------------
+
+_R5_GENERATORS = {
+    "medical": ActeCessionCabinetMedicalGenerator,
+    "dentaire": ActeCessionCabinetDentaireGenerator,
+}
+
+
+def _r5_paragraphs(type_cabinet: str, salaries, tmp_path: Path) -> list[str]:
+    ctx = _context(type_cabinet=type_cabinet, salaries=salaries)
+    out = _R5_GENERATORS[type_cabinet]().generate(ctx, tmp_path)
+    document = Document(out)
+    return [p.text for p in document.paragraphs]
+
+
+def _index_of(paras: list[str], needle: str) -> int | None:
+    return next((i for i, t in enumerate(paras) if needle in t), None)
+
+
+@pytest.mark.parametrize("type_cabinet", ["medical", "dentaire"])
+def test_r5_clause_inserted_just_before_payer_frais_two_salaries(
+    type_cabinet: str, tmp_path: Path
+) -> None:
+    # 2 salaries repris -> clause presente JUSTE AVANT « De payer tous frais »,
+    # avec les bons noms joints par « et de », sur l'acte medical ET dentaire.
+    paras = _r5_paragraphs(type_cabinet, _DENT_SALARIES, tmp_path)
+    idx_payer = _index_of(paras, "De payer tous frais")
+    idx_clause = _index_of(paras, "De reprendre les contrats de travail")
+    assert idx_payer is not None
+    assert idx_clause is not None
+    # Emplacement exact : le paragraphe juste avant « De payer tous frais ».
+    assert idx_clause == idx_payer - 1
+    assert (
+        paras[idx_clause]
+        == "De reprendre les contrats de travail de Madame Lea Petit et de Monsieur Noe Robert."
+    )
+
+
+@pytest.mark.parametrize("type_cabinet", ["medical", "dentaire"])
+def test_r5_clause_absent_when_zero_salaries(type_cabinet: str, tmp_path: Path) -> None:
+    # 0 salarie repris -> clause ABSENTE (ni a l'ancien emplacement, ni au nouveau),
+    # aucun token residuel, aucune phrase incomplete heritee du modele.
+    paras = _r5_paragraphs(type_cabinet, [], tmp_path)
+    full = "\n".join(p for p in paras if p)
+    assert "De reprendre les contrats de travail" not in full
+    assert "[clause_reprise_salaries]" not in full
+    assert "[" not in full and "]" not in full
+
+
+@pytest.mark.parametrize("type_cabinet", ["medical", "dentaire"])
+def test_r5_clause_single_salary(type_cabinet: str, tmp_path: Path) -> None:
+    # 1 salarie repris -> clause a un seul element, sans « et de », juste avant payer.
+    salaries = [CessionSalarie(civilite_affichage="Madame", prenom="Lea", nom="Petit")]
+    paras = _r5_paragraphs(type_cabinet, salaries, tmp_path)
+    idx_payer = _index_of(paras, "De payer tous frais")
+    idx_clause = _index_of(paras, "De reprendre les contrats de travail")
+    assert idx_clause == idx_payer - 1
+    assert paras[idx_clause] == "De reprendre les contrats de travail de Madame Lea Petit."
+    assert " et de " not in paras[idx_clause]
+
+
+@pytest.mark.parametrize("type_cabinet", ["medical", "dentaire"])
+def test_r5_clause_three_salaries_joined(type_cabinet: str, tmp_path: Path) -> None:
+    # N salaries -> tous listes, separes par « , » et le dernier par « et de ».
+    salaries = [
+        CessionSalarie(civilite_affichage="Madame", prenom="Lea", nom="Petit"),
+        CessionSalarie(civilite_affichage="Monsieur", prenom="Noe", nom="Robert"),
+        CessionSalarie(civilite_affichage="Madame", prenom="Ines", nom="Faure"),
+    ]
+    paras = _r5_paragraphs(type_cabinet, salaries, tmp_path)
+    idx_clause = _index_of(paras, "De reprendre les contrats de travail")
+    assert paras[idx_clause] == (
+        "De reprendre les contrats de travail de Madame Lea Petit, "
+        "Monsieur Noe Robert et de Madame Ines Faure."
+    )
+
+
+@pytest.mark.parametrize("type_cabinet", ["medical", "dentaire"])
+def test_r5_clause_not_duplicated(type_cabinet: str, tmp_path: Path) -> None:
+    # L'ancien emplacement (apres « De payer tous frais ») est supprime : la clause
+    # n'apparait QU'UNE fois (pas de doublon insertion + ancien paragraphe).
+    paras = _r5_paragraphs(type_cabinet, _DENT_SALARIES, tmp_path)
+    occurrences = [i for i, t in enumerate(paras) if "De reprendre les contrats de travail" in t]
+    assert len(occurrences) == 1
+
+
 _DENT_SALARIES = [
     CessionSalarie(civilite_affichage="Madame", prenom="Lea", nom="Petit"),
     CessionSalarie(civilite_affichage="Monsieur", prenom="Noe", nom="Robert"),
@@ -1260,14 +1351,17 @@ def test_ce5_credit_vendeur_active_removes_redaction_note(tmp_path: Path) -> Non
     _assert_no_residual_tokens(text)
 
 
-def test_ce6_contrats_de_travail_highlighted(tmp_path: Path) -> None:
-    # CE6 : le passage « ... contrats de travail de » de l'acte medical est
-    # surligne (zone a completer si necessaire).
-    ctx = _context(credit_vendeur=True)
+def test_r5_contrats_medical_clause_no_longer_highlighted(tmp_path: Path) -> None:
+    # R5-contrats (Rafael 2026-06-29) SUPERSEDE CE6 : le passage « contrats de
+    # travail » de l'acte medical n'est plus une zone surlignee a completer a la
+    # main, mais une clause GENEREE (cf. tests R5 ci-dessous). Avec des salaries
+    # repris, la clause est presente mais AUCUN run ne doit rester surligne (champ
+    # rempli, pas zone a completer).
+    ctx = _context(type_cabinet="medical", salaries=_DENT_SALARIES)
     out = ActeCessionCabinetMedicalGenerator().generate(ctx, tmp_path)
 
     highlighted = _docx_highlighted_run_texts(out)
-    assert any("contrats de travail" in t for t in highlighted)
+    assert not any("contrats de travail" in t for t in highlighted)
 
 
 def test_ce7_no_extra_blank_after_affirmation_sincerite(tmp_path: Path) -> None:

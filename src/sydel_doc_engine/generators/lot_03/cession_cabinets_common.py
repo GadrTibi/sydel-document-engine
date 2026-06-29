@@ -121,6 +121,8 @@ def generate_cession_cabinet_docx(
         segment_overrides=_build_segment_overrides(ctx),
         line_fixes=_build_line_fixes(ctx, variant),
         highlight_anchors=_build_highlight_anchors(variant),
+        clause_removals=_build_clause_removals(ctx, variant),
+        clause_insertions=_build_clause_insertions(ctx, variant),
     )
 
 
@@ -130,16 +132,74 @@ def generate_cession_cabinet_docx(
 # CODE, APRES le nettoyage. La cle = sous-chaine litterale d'un run cible.
 _CONTRATS_TRAVAIL_ANCHOR = "contrats de travail"
 
+# R5-contrats (Rafael 2026-06-29) : la clause de reprise des contrats de travail est
+# desormais GENEREE (wording exact ci-dessous) et placee JUSTE AVANT le point « De payer
+# tous frais... » du point n°3 (obligations du soussigne de seconde part / acquereur), sur
+# l'acte MEDICAL ET DENTAIRE. Elle est CONDITIONNELLE : presente seulement si au moins un
+# salarie est repris (sinon ABSENTE). Cela supersede l'etat CE6 (medical = zone surlignee a
+# completer a la main) et deplace la clause dentaire (auparavant APRES « De payer tous frais »).
+#
+# Ancre d'insertion = debut litteral du paragraphe « De payer tous frais... » (point n°3).
+_PAYER_FRAIS_ANCHOR = "De payer tous frais"
+# Anciens emplacements a SUPPRIMER (remplaces par l'insertion ci-dessus) :
+#  - dentaire : le paragraphe-token [clause_reprise_salaries] (apres « De payer tous frais ») ;
+#  - medical  : le paragraphe statique incomplet « De reprendre les contrats de travail de »
+#               (zone CE6 a completer a la main), idem apres « De payer tous frais ».
+_CLAUSE_SALARIES_TOKEN = "[clause_reprise_salaries]"
+_CONTRATS_TRAVAIL_STATIQUE_MEDICAL = "De reprendre les contrats de travail de"
+
 
 def _build_highlight_anchors(variant: CessionCabinetVariant) -> list[str]:
-    """Sous-chaines de runs a re-surligner apres remplissage (CE6).
+    """Sous-chaines de runs a re-surligner apres remplissage (CE6, superseded).
 
-    Acte medical : « ... les contrats de travail de » (point a completer si
-    necessaire). Aucun autre variant concerne.
+    R5-contrats (Rafael 2026-06-29) : la clause medicale de reprise des contrats de
+    travail n'est plus une zone a completer a la main (surlignee) mais une clause
+    GENEREE (cf. _build_clause_insertions). Plus aucun variant n'est re-surligne ici.
     """
-    if variant.etape == ACTE and variant.type_cabinet == MEDICAL:
-        return [_CONTRATS_TRAVAIL_ANCHOR]
     return []
+
+
+def _build_clause_removals(
+    ctx: DocumentGenerationContext,
+    variant: CessionCabinetVariant,
+) -> list[str]:
+    """Anciens emplacements de la clause salaries a SUPPRIMER (R5-contrats).
+
+    Pour l'acte (medical comme dentaire), la clause est re-inseree JUSTE AVANT « De
+    payer tous frais » via _build_clause_insertions. On retire donc l'ancien
+    paragraphe (apres « De payer tous frais ») : le token dentaire et le texte
+    statique medical. Une sous-chaine ici cible le paragraphe ENTIER a supprimer.
+    """
+    if variant.etape != ACTE:
+        return []
+    if variant.type_cabinet == DENTAIRE:
+        return [_CLAUSE_SALARIES_TOKEN]
+    if variant.type_cabinet == MEDICAL:
+        return [_CONTRATS_TRAVAIL_STATIQUE_MEDICAL]
+    return []
+
+
+def _build_clause_insertions(
+    ctx: DocumentGenerationContext,
+    variant: CessionCabinetVariant,
+) -> list[tuple[str, str]]:
+    """Clause(s) a inserer JUSTE AVANT une ancre litterale (R5-contrats).
+
+    Renvoie une liste de couples (ancre, texte) : le `texte` est insere comme
+    NOUVEAU paragraphe immediatement AVANT le premier paragraphe contenant `ancre`
+    (mise en forme reprise du paragraphe-ancre = meme style de liste du point n°3).
+
+    Acte (medical + dentaire) : clause de reprise des contrats de travail juste
+    avant « De payer tous frais... ». Conditionnelle : 0 salarie -> aucune insertion
+    (la clause est simplement absente, son ancien emplacement etant deja supprime).
+    """
+    if variant.etape != ACTE:
+        return []
+    cession = ctx.cession
+    if cession is None or not cession.salaries:
+        return []
+    clause = _build_clause_reprise_salaries(cession.salaries)
+    return [(_PAYER_FRAIS_ANCHOR, clause)]
 
 
 # Titre civil (M./Mme) derive du genre, pour les emplacements ou un titre
@@ -465,6 +525,8 @@ def render_cession_from_template(  # noqa: C901
     segment_overrides: dict[str, str] | None = None,
     line_fixes: list[_LineFix] | None = None,
     highlight_anchors: list[str] | None = None,
+    clause_removals: list[str] | None = None,
+    clause_insertions: list[tuple[str, str]] | None = None,
 ) -> Path:
     """Charge le modele tokenise et remplace chaque token [xxx] run par run.
 
@@ -506,6 +568,13 @@ def render_cession_from_template(  # noqa: C901
         _apply_paragraph_overrides(document, paragraph_overrides)
     if segment_overrides:
         _apply_segment_overrides(document, segment_overrides)
+    # R5-contrats : retirer l'ancien emplacement de la clause salaries (apres « De
+    # payer tous frais ») AVANT de re-inserer la clause a sa nouvelle place. La
+    # suppression precede l'insertion pour ne jamais dupliquer la clause.
+    if clause_removals:
+        _apply_clause_removals(document, clause_removals)
+    if clause_insertions:
+        _apply_clause_insertions(document, clause_insertions)
 
     for paragraph in _iter_all_paragraphs(document):
         for run in paragraph.runs:
@@ -718,6 +787,42 @@ def _apply_paragraph_overrides(
             break
 
 
+def _apply_clause_removals(document, removals: list[str]) -> None:
+    """Supprime les paragraphes dont le texte contient une sous-chaine donnee (R5-contrats).
+
+    Sert a retirer l'ancien emplacement de la clause salaries (token dentaire,
+    texte statique medical) avant de la re-inserer ailleurs. Chaque sous-chaine
+    est cherchee dans le texte du paragraphe AVANT remplissage des tokens (donc le
+    token litteral et le texte statique sont encore presents). No-op si absente.
+    """
+    for paragraph in list(_iter_all_paragraphs(document)):
+        text = paragraph.text
+        if any(needle in text for needle in removals):
+            element = paragraph._element
+            parent = element.getparent()
+            if parent is not None:
+                parent.remove(element)
+
+
+def _apply_clause_insertions(
+    document,
+    insertions: list[tuple[str, str]],
+) -> None:
+    """Insere un NOUVEAU paragraphe juste AVANT une ancre litterale (R5-contrats).
+
+    Pour chaque couple (ancre, texte) : le paragraphe-ancre est le premier dont le
+    texte contient `ancre` ; un nouveau paragraphe portant `texte` est insere
+    immediatement avant lui, en reprenant son style (meme format de liste du
+    point n°3). No-op si l'ancre est absente. Le texte insere est statique (sans
+    token) -> sans impact sur l'anti-token-residuel.
+    """
+    for anchor, text in insertions:
+        for paragraph in _iter_all_paragraphs(document):
+            if anchor in paragraph.text:
+                paragraph.insert_paragraph_before(text, style=paragraph.style)
+                break
+
+
 def _apply_gender_pairs_to_paragraph(
     paragraph,
     gender_pairs: list[tuple[Gender, list[tuple[str, str]]]],
@@ -908,24 +1013,20 @@ def _build_cession_replacements(
     # --- Conditions suspensives (compromis) ---
     put_opt("[date_realisation_limite]", _french_date(cession.date_limite_realisation))
 
-    # --- Salaries (acte dentaire UNIQUEMENT) : reprise 0 / 1 / N (regle NotebookLM) ---
-    # 0 salarie -> "Néant" (convention systeme) ; 1..N -> liste nom/prenom/poste.
-    # re-Akainu tour 3 (MINEUR O24-14) : on ne CONSTRUIT la clause (et donc on ne valide les
-    # salaries via _salarie_label/_required_text) QUE pour l'acte dentaire — seul modele portant
-    # le token.
+    # --- Salaries (acte medical + dentaire) : reprise 0 / 1 / N (regle NotebookLM) ---
+    # R5-contrats (Rafael 2026-06-29) : la clause « De reprendre les contrats de travail de
+    # <liste>. » n'est plus rendue VIA UN TOKEN a son ancien emplacement. Elle est desormais
+    # INSEREE JUSTE AVANT « De payer tous frais... » (cf. _build_clause_insertions), pour l'acte
+    # MEDICAL ET DENTAIRE, et conditionnee a >= 1 salarie repris (0 -> absente). L'ancien
+    # emplacement (paragraphe-token dentaire / paragraphe statique medical, apres « De payer tous
+    # frais ») est SUPPRIME via _build_clause_removals. On ne remplit donc plus de token ici : le
+    # paragraphe-token dentaire est retire en entier avant l'anti-token-residuel.
     #
     # PRINCIPE GENERAL « champs propres a l'acte, contexte partage » (re-Akainu tour 5, O24-14) :
-    # en SELAS l'ACTE et le COMPROMIS sont generes ENSEMBLE depuis UN SEUL contexte. Ce contexte
-    # porte des champs PROPRES a l'acte que le compromis ne rend PAS :
-    #   - salaries (acte dentaire) — clause [clause_reprise_salaries] ci-dessous ;
-    #   - credit_vendeur + scm (acte medical) — clauses credit/SCM plus haut.
-    # Le compromis (et tout variant qui ne porte pas la clause) recoit ces champs et les IGNORE :
-    # on ne CONSTRUIT le token ni n'EXIGE le champ que pour le variant qui le rend. Le RENDU est
-    # ainsi aligne sur la VALIDATION (_validate_salaries / _validate_financement), qui ne valide
-    # ces champs QUE pour leur variant proprietaire. Sans ca, le bundle « acte + compromis
-    # ensemble » crasherait des qu'un de ces champs propres a l'acte est saisi.
-    if variant.etape == ACTE and variant.type_cabinet == DENTAIRE:
-        put("[clause_reprise_salaries]", _build_clause_reprise_salaries(cession.salaries))
+    # en SELAS l'ACTE et le COMPROMIS sont generes ENSEMBLE depuis UN SEUL contexte. Le compromis
+    # (qui ne porte pas la clause salaries) recoit ce contexte et l'IGNORE : aucune insertion ni
+    # suppression n'est construite pour lui (_build_clause_* retournent [] hors acte).
+    #
     # [date_entree_jouissance] (dentaire) : source choisie = date de debut du bail
     # professionnel (entree en jouissance des locaux). A confirmer cote metier.
     put("[date_entree_jouissance]", _french_date(bail.date_debut))
