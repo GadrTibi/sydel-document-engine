@@ -16,6 +16,7 @@ class CaseType(StrEnum):
     SCM = "SCM"
     MICRO_HOLDING = "MICRO_HOLDING"
     SAS = "SAS"
+    SASU_HOLDING = "SASU_HOLDING"
 
 
 class DocumentAvailability(StrEnum):
@@ -452,6 +453,33 @@ CATALOG_DOCUMENTS: tuple[CatalogDocument, ...] = (
         "DOC-023",
         DocumentAvailability.GENERATABLE,
     ),
+    CatalogDocument(
+        "statuts_sasu_holding",
+        "Statuts SASU Holding",
+        "statuts SASU Holding.docx",
+        "DOC-048",
+        DocumentAvailability.GENERATABLE,
+        "SASU Holding generaliste (SAS unipersonnelle, holding patrimoniale), "
+        "modele officiel Albane 2026-06-29.",
+    ),
+    CatalogDocument(
+        "pv_remuneration_president_sasu_holding",
+        "PV remuneration president SASU Holding",
+        "PV_remuneration_president.docx",
+        None,
+        DocumentAvailability.NOT_IMPLEMENTED,
+        "Modele Albane SAS generaliste (docs/review/albane_sas_2026-06-29/) ; le generateur "
+        "DOC-023 existant est verrouille SPFPL medecins -> generateur generaliste a batir.",
+    ),
+    CatalogDocument(
+        "liste_souscripteurs_sasu_holding",
+        "Liste des souscripteurs SASU Holding",
+        "Liste_des_souscripteurs.docx",
+        None,
+        DocumentAvailability.NOT_IMPLEMENTED,
+        "Modele Albane SAS generaliste (docs/review/albane_sas_2026-06-29/) ; le generateur "
+        "DOC-024 existant est verrouille SPFPL medecins -> generateur generaliste a batir.",
+    ),
 )
 
 DOCUMENTS_BY_KEY = {document.document_key: document for document in CATALOG_DOCUMENTS}
@@ -780,6 +808,28 @@ CATALOG_OCCURRENCES: tuple[DocumentOccurrence, ...] = (
     DocumentOccurrence(CaseType.SAS, "attestation_capital_sas", "SAS"),
     DocumentOccurrence(CaseType.SAS, "pv_remuneration_president", "SAS"),
     DocumentOccurrence(CaseType.SAS, "attestation_capital_sas", "Liste des souscripteurs"),
+    # SASU Holding (modele officiel Albane 2026-06-29) : SAS unipersonnelle, holding
+    # patrimoniale GENERALISTE, DISTINCTE de la « SAS / SPFPL medecins » (conservee).
+    # Bundle de creation = 6 pieces : statuts + tronc commun (DNC / domiciliation /
+    # procuration) + PV remuneration president + liste des souscripteurs. Les 2 satellites
+    # ont leurs PROPRES modeles generalistes (locks albane_sas_2026-06-29) : les generateurs
+    # DOC-023 / DOC-024 existants sont verrouilles SPFPL medecins et ne peuvent pas etre
+    # reutilises tels quels (wording « SPFPL de Profession Liberale de medecins ») -> ils
+    # restent NOT_IMPLEMENTED ici, a batir en phase fidelite.
+    DocumentOccurrence(CaseType.SASU_HOLDING, "statuts_sasu_holding", "SASU_HOLDING"),
+    DocumentOccurrence(CaseType.SASU_HOLDING, "declaration_non_condamnation", "SASU_HOLDING"),
+    DocumentOccurrence(CaseType.SASU_HOLDING, "autorisation_domiciliation", "SASU_HOLDING"),
+    DocumentOccurrence(CaseType.SASU_HOLDING, "procuration", "SASU_HOLDING"),
+    DocumentOccurrence(
+        CaseType.SASU_HOLDING,
+        "pv_remuneration_president_sasu_holding",
+        "SASU_HOLDING (satellite generaliste a batir)",
+    ),
+    DocumentOccurrence(
+        CaseType.SASU_HOLDING,
+        "liste_souscripteurs_sasu_holding",
+        "SASU_HOLDING (satellite generaliste a batir)",
+    ),
 )
 
 

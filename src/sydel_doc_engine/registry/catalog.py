@@ -16,6 +16,9 @@ ALL_STRUCTURES: list[str] = [
     # liste des societes. Tronc commun civil (DOC-001/002/003) eligible via ALL_STRUCTURES.
     "MICRO_HOLDING",
     "SAS",
+    # SASU Holding (Albane 2026-06-29) : SAS unipersonnelle, holding patrimoniale
+    # generaliste. Tronc commun civil (DOC-001/002/003) eligible via ALL_STRUCTURES.
+    "SASU_HOLDING",
 ]
 
 PV_NOMINATION_GERANT_STRUCTURES: list[str] = [
@@ -71,6 +74,10 @@ DEROGATION_CORE_STRUCTURES: list[str] = [
 
 STATUTS_SAS_STRUCTURES: list[str] = [
     "SAS",
+]
+
+STATUTS_SASU_HOLDING_STRUCTURES: list[str] = [
+    "SASU_HOLDING",
 ]
 
 STATUTS_SPFPL_CESSION_STRUCTURES: list[str] = [
@@ -474,6 +481,29 @@ def build_seed_catalog() -> list[DocumentDefinition]:
             source_path="project/source_documents/lot_04/STATUTS_SAS_SPFPL_medecins_modele.docx",
             specification_path="docs/delivery/lot_04_statuts_sas_spec_texte_v1.md",
             notes="Statuts SAS V1 limites a la source SPFPL medecins actionnaire unique.",
+        ),
+        DocumentDefinition(
+            doc_id="DOC-048",
+            canonical_name="Statuts SASU Holding",
+            generator_name="generate_statuts_sasu_holding",
+            lot=4,
+            category=DocumentCategory.SPECIFIQUE,
+            structures=STATUTS_SASU_HOLDING_STRUCTURES,
+            general_condition="dossier.structure == SASU_HOLDING",
+            specific_conditions=[
+                "SAS unipersonnelle, holding patrimoniale generaliste",
+                "associe unique = president (acte unipersonnel, aucun bloc repetitif)",
+                "objet participations, pas de profession reglementee",
+            ],
+            dynamic_associates=False,
+            grammar_variants=True,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path="project/source_documents/lot_04/statuts SASU Holding.docx",
+            notes=(
+                "Nouveau type SASU Holding (modele officiel Albane 2026-06-29), DISTINCT de "
+                "la « SAS / SPFPL medecins » (DOC-015, conservee). Token-replacement pur sur "
+                "le modele officiel ; accord de genre de l'associe(e) unique."
+            ),
         ),
         DocumentDefinition(
             doc_id="DOC-035",

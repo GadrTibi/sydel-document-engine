@@ -110,6 +110,19 @@ REGISTERED_TYPES: Final[tuple[RegisteredType, ...]] = (
         generation_enabled=True,
         status="moteur_teste",
     ),
+    # SASU Holding (modele officiel Albane 2026-06-29) : SAS unipersonnelle, holding
+    # patrimoniale GENERALISTE, DISTINCTE de la « SPFPL medecins (forme SAS) » ci-dessus
+    # (conservee). Slice dedie : associe unique = president, objet participations, pas de
+    # profession reglementee. Bundle = statuts + tronc commun (DNC / domiciliation /
+    # procuration).
+    RegisteredType(
+        key="sasu_holding_v1",
+        label="SASU Holding (holding patrimoniale) creation V1",
+        structure="SASU_HOLDING",
+        slice_module="sydel_doc_engine.front_app.sasu_holding_slice",
+        generation_enabled=True,
+        status="moteur_teste",
+    ),
     RegisteredType(
         key="spfpl_cession_v1",
         label="SPFPL dentistes - cession creation V1",

@@ -51,6 +51,9 @@ from sydel_doc_engine.generators.lot_04.statuts_micro_holding import (
     StatutsMicroHoldingGenerator,
 )
 from sydel_doc_engine.generators.lot_04.statuts_sas import StatutsSasGenerator
+from sydel_doc_engine.generators.lot_04.statuts_sasu_holding import (
+    StatutsSasuHoldingGenerator,
+)
 from sydel_doc_engine.generators.lot_04.statuts_sci import StatutsSciGenerator
 from sydel_doc_engine.generators.lot_04.statuts_sci_iris import StatutsSciIrisGenerator
 from sydel_doc_engine.generators.lot_04.statuts_scm import StatutsScmGenerator
@@ -143,6 +146,7 @@ DEROGATION_DOCUMENT_TYPES = {
     "DOC-014": "cumul_sel_bnc",
 }
 STATUTS_SAS_DOCUMENT_ID = "DOC-015"
+STATUTS_SASU_HOLDING_DOCUMENT_ID = "DOC-048"
 STATUTS_SPFPL_DOCUMENT_TYPES = {
     "DOC-035": ("SPFPL cession", "cession"),
     "DOC-036": ("SPFPL apport", "apport"),
@@ -202,6 +206,7 @@ def build_generator_registry() -> dict[str, DocumentGenerator]:
         "DOC-013": FormulaireDerogationSitesSelGenerator(),
         "DOC-014": DemandeDerogationCumulSelarlBncGenerator(),
         "DOC-015": StatutsSasGenerator(),
+        "DOC-048": StatutsSasuHoldingGenerator(),
         "DOC-035": StatutsSpfplCessionGenerator(),
         "DOC-036": StatutsSpfplApportGenerator(),
         "DOC-016": StatutsSelarlDentisteGenerator(),
@@ -315,6 +320,8 @@ def _non_regime_document_enabled(  # noqa: C901
         return _derogation_enabled(ctx, DEROGATION_DOCUMENT_TYPES[document.doc_id])
     if document.doc_id == STATUTS_SAS_DOCUMENT_ID:
         return _statuts_sas_enabled(ctx)
+    if document.doc_id == STATUTS_SASU_HOLDING_DOCUMENT_ID:
+        return _statuts_sasu_holding_enabled(ctx)
     if document.doc_id in STATUTS_SPFPL_DOCUMENT_TYPES:
         return _statuts_spfpl_enabled(ctx, STATUTS_SPFPL_DOCUMENT_TYPES[document.doc_id])
     if document.doc_id == STATUTS_SELAS_MULTI_DOCUMENT_ID:
@@ -405,6 +412,13 @@ def _statuts_sas_enabled(ctx: DocumentGenerationContext) -> bool:
         "medecin",
         "médecin",
     }
+
+
+def _statuts_sasu_holding_enabled(ctx: DocumentGenerationContext) -> bool:
+    # SASU Holding = SAS unipersonnelle generaliste (DISTINCTE de la SAS / SPFPL medecins).
+    # Le statuts est selectionne des que la structure est SASU_HOLDING et que son contexte
+    # dedie est present ; pas de condition profession/medecin (holding generaliste).
+    return ctx.structure == "SASU_HOLDING" and ctx.statuts_sasu_holding is not None
 
 
 def _operation_spfpl_is(ctx: DocumentGenerationContext, operation_type: str) -> bool:

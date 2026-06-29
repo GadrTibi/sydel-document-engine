@@ -22,8 +22,12 @@ def test_case_catalog_documents_mapped_to_existing_registry() -> None:
     registry_codes = {document.doc_id for document in build_seed_catalog()}
 
     # DOC-046 portait le total a 49 ; DOC-047 (statuts micro holding, Albane 2026-06-26)
-    # ajoute une entree au catalogue des cas -> 50.
-    assert len(CATALOG_DOCUMENTS) == 50
+    # ajoute une entree au catalogue des cas -> 50. SASU Holding (Albane 2026-06-29) ajoute 3
+    # entrees : le statuts (DOC-048, mappe) + 2 satellites generalistes NOT_IMPLEMENTED (PV
+    # remuneration president + liste souscripteurs, sans doc_id, a batir) -> 53.
+    assert len(CATALOG_DOCUMENTS) == 53
+    # Les 2 satellites SASU Holding sont sans doc_id (NOT_IMPLEMENTED) : ils ne figurent ni
+    # dans mapped_document_codes() ni dans le registre, donc l'egalite tient.
     assert set(mapped_document_codes()) == registry_codes
 
 

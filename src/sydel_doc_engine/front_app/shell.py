@@ -2609,6 +2609,7 @@ def _render_typed_dossier(dossier_type: DossierTypeOption) -> None:
     from sydel_doc_engine.front_app import (
         civil_statuts_slice,
         sas_slice,
+        sasu_holding_slice,
         selas_multi_slice,
         selas_uni_dentiste_slice,
         selas_uni_medecin_slice,
@@ -2624,6 +2625,12 @@ def _render_typed_dossier(dossier_type: DossierTypeOption) -> None:
         payload = sas_slice.render_sas_form()
         plan = sas_slice.build_sas_plan(payload)
         generate = sas_slice.generate_dossier
+    elif structure == "SASU_HOLDING":
+        # SASU Holding generaliste (DOC-048) : SAS unipersonnelle, holding patrimoniale,
+        # DISTINCTE de la « SAS / SPFPL medecins » ci-dessus.
+        payload = sasu_holding_slice.render_sasu_holding_form()
+        plan = sasu_holding_slice.build_sasu_holding_plan(payload)
+        generate = sasu_holding_slice.generate_dossier
     elif structure in spfpl_slice.OPERATION_BY_STRUCTURE:
         payload = spfpl_slice.render_spfpl_form(structure)
         plan = spfpl_slice.build_spfpl_plan(payload)

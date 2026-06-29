@@ -76,6 +76,9 @@ def test_registry_exposes_all_ready_types() -> None:
         # Micro holding (Albane 2026-06-26) : societe civile a capital variable.
         "MICRO_HOLDING",
         "SAS",
+        # SASU Holding (Albane 2026-06-29) : SAS unipersonnelle, holding patrimoniale
+        # generaliste, DISTINCTE de la SAS / SPFPL medecins.
+        "SASU_HOLDING",
         "SPFPL cession",
         "SPFPL apport",
         "SELAS",
@@ -2203,6 +2206,7 @@ def test_front_dropdown_lists_all_types_with_selarl_default() -> None:
         "SCS creation V1",
         "Micro holding creation V1",
         "SPFPL medecins (forme SAS) creation V1",
+        "SASU Holding (holding patrimoniale) creation V1",
         "SPFPL dentistes - cession creation V1",
         "SPFPL dentistes - apport creation V1",
         "SELAS pluripersonnelle creation V1",
