@@ -85,7 +85,11 @@ class ProcurationGenerator:
         add_spacer(document, space_after_pt=6)
         for text in (MANDATE_PARAGRAPH_1, MANDATE_PARAGRAPH_2, MANDATE_PARAGRAPH_3):
             _add_paragraph(document, text, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY)
-        _add_paragraph(document, LEGAL_EFFECT_PARAGRAPH)
+        # « Fait pour servir et valoir ce que de droit. » : present dans le modele micro holding
+        # d'Albane mais ABSENT du modele Procuration_SAS.docx (et du modele source tronc commun) ->
+        # on l'OMET pour la SASU Holding (gate Akainu ; source = modele SAS Albane 2026-06-29).
+        if ctx.structure != "SASU_HOLDING":
+            _add_paragraph(document, LEGAL_EFFECT_PARAGRAPH)
         add_spacer(document, space_after_pt=6)
         _add_final_block(
             document,

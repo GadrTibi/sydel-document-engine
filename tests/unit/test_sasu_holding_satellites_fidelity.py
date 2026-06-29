@@ -34,6 +34,7 @@ from sydel_doc_engine.domain.models import (
 from sydel_doc_engine.generators.lot_01.autorisation_domiciliation import (
     AutorisationDomiciliationGenerator,
 )
+from sydel_doc_engine.generators.lot_01.procuration import ProcurationGenerator
 from sydel_doc_engine.generators.lot_05.liste_souscripteurs_sasu_holding import (
     ListeSouscripteursSasuHoldingGenerator,
 )
@@ -140,6 +141,19 @@ def test_domiciliation_sasu_holding_fidelity(tmp_path: Path) -> None:
     assert "dans les locaux situés à" in text
     assert ", pour une durée indéterminée" in text
     assert "du cabinet" not in text  # plus de wording cabinet
+
+
+def test_procuration_sasu_holding_no_legal_effect_line(tmp_path: Path) -> None:
+    # Gate Akainu / source : le modele Procuration_SAS.docx d'Albane n'a PAS la ligne « Fait
+    # pour servir et valoir ce que de droit. » (present seulement dans le modele micro holding)
+    # -> omise pour la SASU Holding. Forme abregee « SAS » portee par le slice (forme_affichage).
+    ctx = _ctx()
+    # Le slice SASU pose la forme abregee « SAS » sur la Company (forme_sociale + affichage).
+    ctx.societe.forme_sociale = "SAS"
+    ctx.societe.forme_sociale_affichage = "SAS"
+    text = _all_text(ProcurationGenerator().generate(ctx, tmp_path))
+    assert "de la SAS MLG" in text
+    assert "Fait pour servir et valoir ce que de droit" not in text
 
 
 # --- PV remuneration president (DOC-049) -------------------------------------------------
