@@ -17,10 +17,25 @@ Trois familles d'architecture coexistent — seule la famille C est à migrer :
 | Famille | Mécanisme | Statut |
 |---|---|---|
 | A. Déjà token-replacement sur DOCX (`Document(model)` + `_build_*_replacements`) | actes/compromis cession cabinet, autorisation_domiciliation | **FAIT** |
-| B. Déjà block-template (tuples `*_BLOCKS` + garde anti-`[ ]`) | statuts lot_04, satellites SCM | **FAIT/convergé** |
+| B. Déjà block-template (tuples `*_BLOCKS` + garde anti-`[ ]`) | statuts lot_04, satellites SCM | **texte OK, FORME ko** ⚠️ |
 | C. From-scratch programmatique (prose codée en dur) | le backlog ci-dessous | **À migrer** |
 
-## FAIT cette session
+> **MAJ 2026-06-30 — distinction TEXTE vs FORME (retour Albane R1)** : la « famille B » garantit le
+> TEXTE (garde anti-`[ ]`) mais PAS la FORME — le socle civil lisait le modèle puis recopiait dans un
+> `new_document()` SYDEL (Roboto 10, marges 2,5, page Letter US, footer parasite). Albane a signalé
+> « la mise en forme est toujours l'ancienne ». **2e axe de migration = la FORME** : hériter
+> police/marges/page/styles/header-footer du modèle EN GARDANT le texte validé du code. Pattern
+> = **« shell du modèle »** (`new_document_from_model()` : ouvre le modèle, vide le corps, garde le
+> sectPr gouvernant + styles, le code émet son texte dedans). Réf. : statuts civils (R1, ci-dessous).
+
+## FAIT
+
+- **FORME des statuts civils (R1 Albane, 2026-06-30)** — SCI/SCI IRIS/SCS/SCM/micro-holding héritent
+  désormais la mise en forme du modèle (page 20,95×29,67, marges/police/styles du modèle, footer
+  parasite supprimé) via le pattern **« shell du modèle »** (`new_document_from_model`). Le TEXTE
+  validé du code est **préservé byte-pour-byte** (golden-texte, diff vide 5/5). Gate Akainu 2 tours
+  (rattrapé : fuite client « Berte » du footer modèle + paragraphe vide d'amorce). Commits `b62af1d`
+  + `1730cb6`. Reste FORME à propager : **PV** (R4, bloqué arbitrage Albane) + statuts SEL/SELARL/SELAS.
 
 - **`statuts_sas` (DOC-015)** — VRAI from-scratch (~1100 lignes de prose en dur) → token-replacement
   sur `STATUTS_SAS_SPFPL_medecins_modele.docx` (modèle À JOUR, 30 tokens). 625 lignes supprimées,
