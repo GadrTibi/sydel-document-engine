@@ -15,14 +15,13 @@ from sydel_doc_engine.domain.models import (
 )
 from sydel_doc_engine.generators.lot_04.annexe_filter import is_creation_fee_annexe_line
 from sydel_doc_engine.rendering.docx_builder import (
-    add_header_logo,
     add_paragraph,
     add_statuts_article_heading,
     add_statuts_body_paragraph,
     add_statuts_part_heading,
     add_statuts_signature_block,
     add_statuts_title_box,
-    new_document,
+    new_document_from_model,
 )
 
 DOCUMENT_CODE = "CODE-STATUTS-SCM-001"
@@ -42,13 +41,12 @@ class StatutsScmGenerator:
     def generate(self, ctx: DocumentGenerationContext, output_dir: Path) -> Path:
         data = _ResolvedStatutsScm.from_context(ctx)
         source_doc = Document(SOURCE_PATH)
-        output_doc = new_document()
-        # Le modele source SCM porte le logo SYDEL en en-tete (aligne a gauche) ; le rendu
-        # from-scratch le perdait (audit fidelite 2026-06-07). On le restaure a l'identique.
-        add_header_logo(output_doc, alignment=WD_ALIGN_PARAGRAPH.LEFT)
-        output_doc.sections[0].footer.paragraphs[0].text = (
-            f"{data.denomination} - Statuts constitutifs"
-        )
+        # R1 (Albane 2026-06-30) : on HERITE la forme du modele SCM (page custom, marges,
+        # styles nommes, header avec le LOGO SYDEL deja present, footer vide) au lieu de
+        # recopier le texte dans un new_document() au profil SYDEL qui ECRASAIT la forme.
+        # Comme le modele porte deja son logo en header, on NE rappelle PAS add_header_logo
+        # (sinon double logo) et on N'ecrase PAS le footer (vide dans le modele).
+        output_doc = new_document_from_model(SOURCE_PATH)
 
         replacements = data.replacements()
         skip_until = -1

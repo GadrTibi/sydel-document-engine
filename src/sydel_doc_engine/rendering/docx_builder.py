@@ -75,6 +75,55 @@ def new_document(
     return document
 
 
+def new_document_from_model(model_path: Any) -> Any:
+    """Ouvre un modele .docx et le vide de son CORPS en conservant sa FORME.
+
+    R1 (Albane 2026-06-30, « la mise en forme des statuts est toujours l'ancienne ») : les
+    statuts civils lisaient le modele Albane pour son TEXTE mais recopiaient ce texte dans un
+    ``new_document()`` au profil SYDEL (Roboto 10, marges 2,5, page Letter US, footer parasite)
+    -> la forme du modele etait ECRASEE. On herite desormais la forme du modele en partant du
+    modele lui-meme et en ne supprimant que le contenu du corps.
+
+    Le document retourne conserve, du modele :
+    - la mise en page de section (page / marges) via le ``<w:sectPr>`` GOUVERNANT, c.-a-d. le
+      premier dans l'ordre du document — celui que python-docx expose comme ``sections[0]`` et
+      qui porte la geometrie de la page 1 ainsi que les references header/footer ;
+    - les styles nommes (Title / Heading 1 / Normal...) et la police par defaut (styles.xml) ;
+    - le header et le footer (logo de marque, pagination native...).
+
+    Il NE conserve PAS le texte du modele : tous les enfants du corps (``w:p``, ``w:tbl``,
+    signets...) sont retires ; un paragraphe vide d'amorce est ajoute pour que
+    ``document.add_paragraph`` / ``add_table`` repartent sur un corps propre. L'appelant
+    re-injecte ensuite le wording valide du code.
+
+    PIEGE multi-sections (vecu SCI IRIS) : certains modeles ont DEUX sectPr — un de niveau
+    paragraphe (le ``sectPr`` GOUVERNANT : vraie geometrie page 1 + footer de pagination) et un
+    sectPr final aux proprietes differentes (marge droite distincte, sans footer). Garder
+    naivement le sectPr FINAL prendrait la mauvaise geometrie et perdrait le footer. On preserve
+    donc le PREMIER sectPr de l'ordre du document et on le repose comme unique sectPr du corps.
+    """
+    document = Document(model_path)
+    body = document.element.body
+    # Premier sectPr dans l'ordre du document = section gouvernante (geometrie page 1 +
+    # references header/footer). On le detache pour le re-poser comme sectPr final unique.
+    governing_sect_pr = body.find(".//" + qn("w:sectPr"))
+    if governing_sect_pr is None:
+        governing_sect_pr = body.find(qn("w:sectPr"))
+    if governing_sect_pr is not None:
+        governing_sect_pr.getparent().remove(governing_sect_pr)
+    # On vide entierement le corps (texte du modele) ; la geometrie/styles/header-footer
+    # vivent dans le sectPr gouvernant detache + styles.xml + parts header/footer (preserves).
+    for child in list(body.iterchildren()):
+        body.remove(child)
+    # Paragraphe d'amorce : garantit un corps non vide et un point de depart propre pour les
+    # appels add_paragraph / add_table de l'appelant.
+    document.add_paragraph()
+    # Repose le sectPr gouvernant comme dernier enfant du corps (= sectPr de section finale).
+    if governing_sect_pr is not None:
+        body.append(governing_sect_pr)
+    return document
+
+
 _SYDEL_LOGO_PATH = Path(__file__).resolve().parent.parent / "assets" / "logo_sydel.png"
 
 
@@ -429,7 +478,7 @@ def add_statuts_title_box(
     table = document.add_table(rows=1, cols=1)
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
     if bordered:
-        table.style = "Table Grid"
+        _apply_table_grid_style(table)
         _set_table_borders(table)
     else:
         _clear_table_borders(table)
@@ -643,7 +692,7 @@ def add_statuts_matrix_table(
 ) -> Any:
     table = document.add_table(rows=1, cols=len(headers))
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
-    table.style = "Table Grid"
+    _apply_table_grid_style(table)
     _set_table_borders(table)
     for cell, header in zip(table.rows[0].cells, headers, strict=True):
         paragraph = cell.paragraphs[0]
@@ -728,7 +777,7 @@ def add_framed_title(
 ) -> Any:
     table = document.add_table(rows=1, cols=1)
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
-    table.style = "Table Grid"
+    _apply_table_grid_style(table)
     _set_table_borders(table)
 
     cell = table.cell(0, 0)
@@ -767,7 +816,7 @@ def add_framed_section_title(
 ) -> Any:
     table = document.add_table(rows=1, cols=1)
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
-    table.style = "Table Grid"
+    _apply_table_grid_style(table)
     _set_table_borders(table)
 
     cell = table.cell(0, 0)
@@ -798,7 +847,7 @@ def add_notice_box(
 ) -> Any:
     table = document.add_table(rows=1, cols=1)
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
-    table.style = "Table Grid"
+    _apply_table_grid_style(table)
     _set_table_borders(table)
     cell = table.cell(0, 0)
     _set_cell_margins(
@@ -825,7 +874,7 @@ def add_bordered_data_table(
     style_profile: SydelDocxStyleProfile = DEFAULT_STYLE_PROFILE,
 ) -> Any:
     table = document.add_table(rows=1, cols=len(headers))
-    table.style = "Table Grid"
+    _apply_table_grid_style(table)
     _set_table_borders(table)
     for index, header in enumerate(headers):
         paragraph = table.rows[0].cells[index].paragraphs[0]
@@ -946,7 +995,7 @@ def add_framed_signature_block(
     add_spacer(document)
     table = document.add_table(rows=1, cols=1)
     table.alignment = WD_TABLE_ALIGNMENT.RIGHT
-    table.style = "Table Grid"
+    _apply_table_grid_style(table)
     _set_table_borders(table)
     cell = table.cell(0, 0)
     cell.width = Cm(width_cm or style_profile.signature_width_cm)
@@ -992,7 +1041,7 @@ def add_framed_address_block(
         spacer.paragraph_format.space_before = Pt(round(drop_top_cm * 28.35))
     table = document.add_table(rows=1, cols=1)
     table.alignment = WD_TABLE_ALIGNMENT.RIGHT
-    table.style = "Table Grid"
+    _apply_table_grid_style(table)
     _set_table_borders(table)
     cell = table.cell(0, 0)
     cell.width = Cm(width_cm)
@@ -1046,7 +1095,7 @@ def add_signature_table(
     column_count = len(labels[0])
     table = document.add_table(rows=len(labels), cols=column_count)
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
-    table.style = "Table Grid"
+    _apply_table_grid_style(table)
     _set_table_borders(table)
     for row_index, row in enumerate(labels):
         if len(row) != column_count:
@@ -1164,6 +1213,21 @@ def _set_cell_margins(
         element.set(qn("w:type"), "dxa")
         tc_mar.append(element)
     tc_pr.append(tc_mar)
+
+
+def _apply_table_grid_style(table: Any) -> None:
+    """Applique le style nomme « Table Grid » UNIQUEMENT s'il existe dans le document.
+
+    R1 (2026-06-30) : depuis ``new_document_from_model``, un document peut heriter du
+    styles.xml d'un modele client qui ne definit PAS « Table Grid » (cas SCI / SCI IRIS /
+    SCS / SCM). Affecter un style absent leve une erreur. Le quadrillage VISIBLE est de toute
+    facon pose explicitement par ``_set_table_borders`` (bordures XML), donc l'absence du
+    style nomme ne change pas le rendu. Garde-fou : on n'affecte le style que s'il est present
+    (cas du ``Document()`` vierge et du modele micro holding), sinon on s'appuie sur les
+    bordures explicites -> comportement inchange pour les appelants existants.
+    """
+    if "Table Grid" in {style.name for style in table.part.document.styles}:
+        table.style = "Table Grid"
 
 
 def _set_table_borders(table: Any) -> None:

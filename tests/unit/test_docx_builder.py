@@ -1,9 +1,15 @@
 from __future__ import annotations
 
+from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml.ns import qn
 from docx.shared import Cm, Pt
 
+from sydel_doc_engine.generators.lot_04.statuts_civils_common import (
+    SCI_IRIS_TEMPLATE,
+    SCS_TEMPLATE,
+    _source_path,
+)
 from sydel_doc_engine.rendering.docx_builder import (
     BAIL_COMPACT_STYLE_PROFILE,
     DEROGATION_CUMUL_STYLE_PROFILE,
@@ -29,6 +35,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_signature_table,
     add_subject_heading,
     new_document,
+    new_document_from_model,
 )
 
 
@@ -172,3 +179,57 @@ def test_form_helpers_apply_checkbox_notice_and_cumul_profile() -> None:
     assert heading.runs[0].underline is True
     assert checkbox.text == "☒ OUI"
     assert _table_has_explicit_borders(notice)
+
+
+# --- new_document_from_model (R1 : « shell du modele ») ----------------------
+
+
+def _body_child_tags(document) -> list[str]:
+    return [child.tag.split("}")[-1] for child in document.element.body.iterchildren()]
+
+
+def test_new_document_from_model_empties_body_keeps_one_sectpr() -> None:
+    # Le corps du modele (centaines de paragraphes/tables) doit etre vide : seul un paragraphe
+    # d'amorce + un unique sectPr final subsistent ; aucun texte du modele ne fuit.
+    document = new_document_from_model(_source_path(SCI_IRIS_TEMPLATE))
+
+    assert _body_child_tags(document) == ["p", "sectPr"]
+    assert [p.text for p in document.paragraphs if p.text.strip()] == []
+    assert len(document.tables) == 0
+    assert len(document.element.body.findall(qn("w:sectPr"))) == 1
+
+
+def test_new_document_from_model_inherits_page_margins_and_named_styles() -> None:
+    # La FORME du modele est heritee : page custom Albane 20,95 x 29,67, marges du modele,
+    # styles nommes Title / Heading 1 disponibles (absents d'un new_document() vierge SYDEL).
+    document = new_document_from_model(_source_path(SCI_IRIS_TEMPLATE))
+    section = document.sections[0]
+
+    assert abs(section.page_width - Cm(20.95)) < Cm(0.05)
+    assert abs(section.page_height - Cm(29.67)) < Cm(0.05)
+    # Marge droite gouvernante (sectPr de niveau paragraphe = 2,19 cm), PAS la marge du sectPr
+    # final (3,2 cm) : on preserve bien la section gouvernante, pas la derniere.
+    assert abs(section.right_margin - Cm(2.19)) < Cm(0.05)
+    assert abs(section.top_margin - Cm(2.79)) < Cm(0.05)
+    style_names = {style.name for style in document.styles}
+    assert "Title" in style_names
+    assert "Heading 1" in style_names
+
+
+def test_new_document_from_model_preserves_governing_footer() -> None:
+    # Le footer de pagination natif du modele SCI IRIS (champ PAGE/NUMPAGES) est preserve :
+    # il est porte par la section gouvernante, pas par le sectPr final (qui n'a pas de footer).
+    document = new_document_from_model(_source_path(SCI_IRIS_TEMPLATE))
+    footer_xml = document.sections[0].footer._element.xml
+
+    assert "PAGE" in footer_xml
+
+
+def test_new_document_from_model_single_section_model_keeps_geometry() -> None:
+    # Modele mono-section (SCS) : la geometrie A4 du modele est conservee, corps vide.
+    document = new_document_from_model(_source_path(SCS_TEMPLATE))
+    model = Document(_source_path(SCS_TEMPLATE))
+
+    assert _body_child_tags(document) == ["p", "sectPr"]
+    assert abs(document.sections[0].page_width - model.sections[0].page_width) < Cm(0.02)
+    assert abs(document.sections[0].right_margin - model.sections[0].right_margin) < Cm(0.02)

@@ -5,6 +5,8 @@ from pathlib import Path
 
 import pytest
 from docx import Document
+from docx.oxml.ns import qn
+from docx.shared import Cm
 
 from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import (
@@ -334,3 +336,90 @@ def test_statuts_sci_iris_generates_morale_and_result_groups(tmp_path: Path) -> 
     assert "Total" in matrix_table_text
     assert "100 %" in matrix_table_text
     _assert_clean(text)
+
+
+# --- FORME : filet R1 (la sortie herite la forme du modele Albane, plus l'ancien profil SYDEL) -
+
+
+def _named_styles_present(document: Document) -> set[str]:
+    return {style.name for style in document.styles}
+
+
+def _has_title_box(document: Document) -> bool:
+    return any(p.text.strip() == "STATUTS" for t in document.tables for r in t.rows
+              for c in r.cells for p in c.paragraphs)
+
+
+def test_statuts_sci_inherits_model_form(tmp_path: Path) -> None:
+    # R1 (Albane 2026-06-30) : la SCI doit heriter la FORME du modele Albane (page custom
+    # 20,95 x 29,67, marge droite 2,19 cm de la section gouvernante, styles nommes Title /
+    # Heading 1) — plus l'ancien profil SYDEL (Letter US 21,59 x 27,94, marges 2,5, Roboto 10).
+    ctx = _base_context(
+        structure="SCI",
+        statuts_type="sci",
+        associes=[
+            _person_associe(prenom="Jean", nom="Durand", nb_parts=40, debut=1, fin=40),
+            _person_associe(prenom="Alice", nom="Martin", nb_parts=60, debut=41, fin=100),
+        ],
+    )
+    document = Document(StatutsSciGenerator().generate(ctx, tmp_path))
+    section = document.sections[0]
+
+    assert abs(section.page_width - Cm(20.95)) < Cm(0.05)
+    assert abs(section.page_height - Cm(29.67)) < Cm(0.05)
+    assert abs(section.right_margin - Cm(2.19)) < Cm(0.05)
+    # PAS la page Letter US ni les marges 2,5 du profil SYDEL ecrase.
+    assert abs(section.page_width - Cm(21.59)) > Cm(0.05)
+    assert {"Title", "Heading 1"} <= _named_styles_present(document)
+    # Un seul sectPr (section unifiee) -> mise en page coherente.
+    assert len(document.element.body.findall(qn("w:sectPr"))) == 1
+
+
+def test_statuts_sci_iris_inherits_model_form_and_pagination_footer(tmp_path: Path) -> None:
+    ctx = _base_context(
+        structure="SCI IRIS",
+        statuts_type="sci_iris",
+        associes=[
+            _morale_associe(nb_parts=40, debut=1, fin=40),
+            _person_associe(prenom="Alice", nom="Martin", nb_parts=60, debut=41, fin=100),
+        ],
+    )
+    ctx.statuts_civils.resultat_groupes_parts = [
+        StatutsCivilsGroupeParts(
+            parts_debut=1, parts_fin=40, quote_part_resultat_exceptionnel="40 %"
+        ),
+        StatutsCivilsGroupeParts(
+            parts_debut=41, parts_fin=100, quote_part_resultat_exceptionnel="60 %"
+        ),
+    ]
+    document = Document(StatutsSciIrisGenerator().generate(ctx, tmp_path))
+    section = document.sections[0]
+
+    assert abs(section.page_width - Cm(20.95)) < Cm(0.05)
+    # Marge droite gouvernante 2,19 cm (PAS la marge 3,2 cm du sectPr final du modele).
+    assert abs(section.right_margin - Cm(2.19)) < Cm(0.05)
+    assert {"Title", "Heading 1"} <= _named_styles_present(document)
+    # Footer de pagination natif du modele preserve (champ PAGE).
+    assert "PAGE" in section.footer._element.xml
+
+
+def test_statuts_scs_inherits_model_form(tmp_path: Path) -> None:
+    ctx = _base_context(
+        structure="SCS",
+        statuts_type="scs",
+        associes=[
+            _person_associe(prenom="Jean", nom="Durand", nb_parts=60, debut=1, fin=60,
+                            role="commandite", montant="600"),
+            _person_associe(prenom="Alice", nom="Martin", nb_parts=40, debut=61, fin=100,
+                            role="commanditaire", montant="400"),
+        ],
+    )
+    ctx.statuts_civils.total_apports_commandites = "600"
+    document = Document(StatutsScsGenerator().generate(ctx, tmp_path))
+    section = document.sections[0]
+
+    # Modele SCS = A4 (21 x 29,7), marges 2,5 propres au modele (et non au profil SYDEL Letter US).
+    assert abs(section.page_width - Cm(21.0)) < Cm(0.05)
+    assert abs(section.page_height - Cm(29.7)) < Cm(0.05)
+    assert abs(section.page_width - Cm(21.59)) > Cm(0.05)  # pas Letter US
+    assert {"Title", "Heading 1"} <= _named_styles_present(document)

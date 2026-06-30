@@ -5,6 +5,8 @@ from pathlib import Path
 
 import pytest
 from docx import Document
+from docx.oxml.ns import qn
+from docx.shared import Cm
 
 from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import (
@@ -151,6 +153,24 @@ def test_statuts_scm_generates_dynamic_associates_apports_parts_and_signatures(
     assert "STATUTS" in table_text
     assert any(run.italic for run in lu_approuve.runs)
     _assert_clean(text)
+
+
+def test_statuts_scm_inherits_model_form_single_logo(tmp_path: Path) -> None:
+    # R1 (Albane 2026-06-30) : la SCM herite la FORME du modele (page custom ~21 x 29,7,
+    # marges du modele) et son header porte le logo SYDEL DEJA present dans le modele. Le rendu
+    # ne doit PAS rappeler add_header_logo (sinon DOUBLE logo) -> exactement 1 image en header,
+    # 0 dans le corps. Le footer du modele (vide) n'est plus ecrase par une denomination.
+    document = Document(StatutsScmGenerator().generate(_context(), tmp_path))
+    section = document.sections[0]
+
+    assert abs(section.page_height - Cm(29.7)) < Cm(0.1)
+    # Pas la page Letter US du profil SYDEL ecrase.
+    assert abs(section.page_width - Cm(21.59)) > Cm(0.1)
+    header_logos = section.header._element.findall(".//" + qn("a:blip"))
+    body_logos = document.element.body.findall(".//" + qn("a:blip"))
+    assert len(header_logos) == 1  # logo herite du modele, non double
+    assert len(body_logos) == 0
+    assert len(document.element.body.findall(qn("w:sectPr"))) == 1
 
 
 def test_statuts_scm_blocks_when_parts_total_is_ambiguous(tmp_path: Path) -> None:

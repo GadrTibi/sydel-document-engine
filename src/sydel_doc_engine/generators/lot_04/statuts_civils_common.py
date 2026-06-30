@@ -29,7 +29,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_statuts_signature_block,
     add_statuts_signature_grid,
     add_statuts_title_box,
-    new_document,
+    new_document_from_model,
 )
 from sydel_doc_engine.utils.grammar import euro_word
 
@@ -136,8 +136,18 @@ def generate_statuts_civil_docx(  # noqa: C901
     data = _ResolvedStatutsCivil.from_context(ctx, template)
     source = _source_path(template)
     source_doc = Document(source)
-    output_doc = new_document()
-    output_doc.sections[0].footer.paragraphs[0].text = f"{data.denomination} - Statuts constitutifs"
+    # R1 (Albane 2026-06-30) : on HERITE la forme du modele (page custom 20,95x29,67 pour SCI /
+    # SCI IRIS, marges/police/styles nommes/header-footer) au lieu de recopier le texte dans un
+    # new_document() au profil SYDEL (Roboto 10, marges 2,5, Letter US, footer parasite) qui
+    # ECRASAIT la forme. Le wording valide du code est preserve a l'identique (token-replacement).
+    output_doc = new_document_from_model(source)
+    if template.expected_type == "micro_holding":
+        # Le modele micro holding porte un footer CLIENT (« 1 | Statuts ...Berte ») a remplacer
+        # par la denomination du dossier. Les autres civiles (SCI / SCI IRIS / SCS) heritent du
+        # footer du modele (vide ou pagination native) -> on ne l'ecrase pas.
+        output_doc.sections[0].footer.paragraphs[0].text = (
+            f"{data.denomination} - Statuts constitutifs"
+        )
 
     replacements = data.common_replacements()
     skip_until = -1
@@ -992,6 +1002,40 @@ def _add_rendered_paragraph(document, text: str, source_paragraph=None) -> None:
         _add_source_styled_body(document, text, source_paragraph)
 
 
+# Styles nommes de titres du modele que l'on REUTILISE tels quels quand ils existent dans le
+# document de sortie (R1 : la sortie herite des styles du modele via new_document_from_model).
+# Appliquer le style nomme source plutot que de simuler gras/centrage inline preserve la
+# hierarchie visuelle (police de titre, espacements, niveau de plan) definie par Albane.
+_HERITABLE_NAMED_STYLES = ("Title", "Heading 1")
+
+
+def _source_style_name(source_paragraph) -> str:
+    if source_paragraph is None or source_paragraph.style is None:
+        return ""
+    return source_paragraph.style.name or ""
+
+
+def _apply_source_direct_emphasis(paragraph, source_paragraph) -> None:
+    """Recopie l'alignement DIRECT et le gras/souligne DIRECT du paragraphe source.
+
+    Certains titres du modele portent un alignement explicite (ex. « Au Capital... » en
+    Heading 1 avec alignement direct CENTRE alors que le style Heading 1 ne centre pas) ou
+    une emphase inline (intitules). Sans cela, ces effets directs seraient perdus quand on
+    applique le style nomme (regression 1re page R22-06).
+    """
+    if source_paragraph is None:
+        return
+    if source_paragraph.alignment is not None:
+        paragraph.alignment = source_paragraph.alignment
+    text_runs = [run for run in source_paragraph.runs if run.text.strip()]
+    if any(bool(run.bold) for run in text_runs):
+        for run in paragraph.runs:
+            run.bold = True
+    if any(bool(run.underline) for run in text_runs):
+        for run in paragraph.runs:
+            run.underline = True
+
+
 def _add_source_styled_body(document, text: str, source_paragraph) -> None:
     """Rend un paragraphe de corps en PRESERVANT la mise en forme de la source.
 
@@ -1000,15 +1044,29 @@ def _add_source_styled_body(document, text: str, source_paragraph) -> None:
     souligné, les intitulés sont en gras — le moteur les aplatissait en justifié Normal.
     On recopie l'alignement + le gras + le souligné de la source au lieu de les perdre.
     Le corps des articles (justifié, non gras) reste inchangé.
+
+    R1 (2026-06-30) : quand le paragraphe source porte un STYLE NOMME (Title / Heading 1) ET
+    que ce style existe dans le document de sortie (cas SCI / SCI IRIS, qui heritent les styles
+    du modele), on cree le paragraphe AVEC ce style nomme plutot que de simuler gras/centrage
+    inline (puis on recopie l'emphase DIRECTE de la source par-dessus). Garde-fou : si le style
+    n'existe pas dans la sortie (SCM / SCS / micro n'ont que Normal pour ces niveaux), on
+    retombe sur le rendu inline actuel — comportement inchange.
     """
+    src_style_name = _source_style_name(source_paragraph)
+    available_styles = {style.name for style in document.styles}
+    if src_style_name in _HERITABLE_NAMED_STYLES and src_style_name in available_styles:
+        # Style nomme du modele present dans la sortie -> on l'applique tel quel (police de
+        # titre, niveau de plan, espacements herites du style Albane) + emphase directe source.
+        paragraph = document.add_paragraph(text, style=src_style_name)
+        _apply_source_direct_emphasis(paragraph, source_paragraph)
+        return
+
     alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
     bold = False
     underline = False
     title_like = False
     if source_paragraph is not None:
-        style_name = (
-            source_paragraph.style.name.lower() if source_paragraph.style else ""
-        )
+        style_name = src_style_name.lower()
         title_like = "title" in style_name
         src_alignment = source_paragraph.alignment
         if src_alignment is not None:
