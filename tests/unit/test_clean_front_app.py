@@ -497,6 +497,87 @@ def test_clean_front_ui_prefill_selas_uni_dentiste_generates(
     assert "]" not in statuts_text
 
 
+def test_clean_front_ui_prefill_micro_holding_generates(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    # Levier anti-Rafael : le bouton « donnees de test » de la Micro holding (societe civile
+    # a capital variable) pre-remplit un dossier COHERENT et GENERABLE en un clic (avant :
+    # aucun bouton pour ce type). Bundle = statuts (DOC-047) + tronc commun + PV gerant +
+    # lettre d'option IS (DOC-022, activee par le prefill pour la demontrer).
+    from sydel_doc_engine.front_app import shell
+
+    monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-micro-holding")
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
+    app.selectbox(key="clean_dossier_type").set_value("Micro holding creation V1")
+    app = app.run(timeout=180)
+
+    # Le bouton n'apparait QUE si un prefill est enregistre pour la structure.
+    app.button(key="clean_test_data_MICRO_HOLDING").click()
+    app = app.run(timeout=180)
+
+    assert not any("Blocage" in item.value for item in app.caption)
+    assert app.button(key="clean_typed_generate_dossier").disabled is False
+
+    app.button(key="clean_typed_generate_dossier").click()
+    app = app.run(timeout=180)
+
+    generated = app.session_state[shell.TYPED_GENERATED_STATE_KEY]
+    names = {Path(path).name for path in generated["docx_paths"]}
+    # Statuts micro holding + tronc commun + PV gerant + lettre d'option IS (prefill IS actif).
+    assert "statuts_micro_holding.docx" in names
+    assert "pv_nomination_gerant.docx" in names
+    assert "lettre_option_is.docx" in names
+    combined_text = "\n".join(_docx_text(Path(path)) for path in generated["docx_paths"])
+    assert "MICRO HOLDING EXEMPLE" in combined_text
+    # Societe civile A CAPITAL VARIABLE : la mention doit etre rendue.
+    assert "capital variable" in combined_text
+    # Dossier propre : aucun token/placeholder residuel.
+    assert "[" not in combined_text
+    assert "]" not in combined_text
+
+
+def test_clean_front_ui_prefill_sasu_holding_generates(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    # Levier anti-Rafael : le bouton « donnees de test » de la SASU Holding (SAS
+    # unipersonnelle, holding patrimoniale generaliste) pre-remplit un dossier COHERENT
+    # et GENERABLE en un clic (avant : aucun bouton). Bundle 6 pieces : statuts (DOC-048)
+    # + tronc commun + PV remuneration president (DOC-049) + liste souscripteurs (DOC-050).
+    from sydel_doc_engine.front_app import shell
+
+    monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-sasu-holding")
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
+    app.selectbox(key="clean_dossier_type").set_value(
+        "SASU Holding (holding patrimoniale) creation V1"
+    )
+    app = app.run(timeout=180)
+
+    app.button(key="clean_test_data_SASU_HOLDING").click()
+    app = app.run(timeout=180)
+
+    assert not any("Blocage" in item.value for item in app.caption)
+    assert app.button(key="clean_typed_generate_dossier").disabled is False
+
+    app.button(key="clean_typed_generate_dossier").click()
+    app = app.run(timeout=180)
+
+    generated = app.session_state[shell.TYPED_GENERATED_STATE_KEY]
+    names = {Path(path).name for path in generated["docx_paths"]}
+    # 6 pieces : statuts + tronc commun (DNC/domic/procuration) + PV remu president + souscripteurs.
+    assert "statuts_sasu_holding.docx" in names
+    assert "pv_remuneration_president_sasu_holding.docx" in names
+    assert "liste_souscripteurs_sasu_holding.docx" in names
+    assert len(generated["docx_paths"]) == 6
+    combined_text = "\n".join(_docx_text(Path(path)) for path in generated["docx_paths"])
+    assert "SASU HOLDING EXEMPLE" in combined_text
+    assert "Jean Durand" in combined_text
+    # Dossier propre : aucun token/placeholder residuel.
+    assert "[" not in combined_text
+    assert "]" not in combined_text
+
+
 def test_selas_uni_dentiste_generator_matches_dentiste_model_wording(
     tmp_path: Path,
 ) -> None:

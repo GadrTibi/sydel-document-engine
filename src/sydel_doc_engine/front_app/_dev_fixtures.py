@@ -417,6 +417,35 @@ def _prefill_sci_test_data() -> None:
     _commit_civil_prefill(values)
 
 
+def _prefill_micro_holding_test_data() -> None:
+    """Micro holding de creation fictive (1 associe physique = gerant) + option IS.
+
+    Micro holding = societe civile A CAPITAL VARIABLE (Albane 2026-06-26), 1 associe
+    minimum. Route 100 % vers le socle civil (`civil_statuts_slice`), prefixe
+    « micro_holding ». L'associe unique est aussi le gerant. Le capital variable +
+    la valeur nominale + la forme sociale sont DERIVES par le slice (pas de cle de
+    prefill dediee) : on ne pose que les cles societe + l'associe + sa DNC de gerant.
+    """
+    values = _civil_society_prefill(
+        "micro_holding",
+        denomination="MICRO HOLDING EXEMPLE",
+        forme_sociale="societe civile",
+    )
+    # 1 seul associe (societe civile a capital variable, 1..6 ; min = 1 pour micro holding).
+    values["micro_holding_nb_associes"] = 1
+    values.update(_option_is_prefill("micro_holding"))
+    values.update(
+        _civil_pp_associe_prefill(
+            "micro_holding", 0, civilite="Monsieur", prenom="Jean", nom="Durand",
+            ville="Paris", departement="75", naissance="1 janvier 1980",
+            adresse="1 rue Exemple, 75000 Paris", apport="1000", nb=100, debut=1, fin=100,
+        )
+    )
+    # L'associe unique (index 0) est aussi le gerant : on coche la case + sa DNC.
+    values.update(_civil_gerant_dnc_prefill("micro_holding", 0))
+    _commit_civil_prefill(values)
+
+
 def _prefill_sci_iris_test_data() -> None:
     """SCI IRIS de creation fictive (1 societe associee + 1 associe physique)."""
     values = _civil_society_prefill(
@@ -516,6 +545,49 @@ def _prefill_sas_test_data() -> None:
         "sas_exercice_fin": "31 décembre",
         "sas_date_cloture": "31 décembre 2026",
         "sas_signature_date": "14/05/2026",
+    }
+    _commit_civil_prefill(values)
+
+
+def _prefill_sasu_holding_test_data() -> None:
+    """SASU Holding de creation fictive (associe unique = president) — slice dedie.
+
+    SASU Holding = SAS UNIPERSONNELLE generaliste (holding patrimoniale, PAS de
+    profession reglementee), prefixe « sasu_holding ». Un clic = dossier coherent et
+    generable (bundle 6 pieces : statuts + tronc commun + PV remuneration president +
+    liste des souscripteurs). Capital == nb_actions * valeur nominale (1000 € / 100
+    actions). Certaines cles (exercice, cloture, lieu de signature) sont aussi
+    auto-seedees par le slice ; on les fixe quand meme pour la coherence du prefill.
+    """
+    p = "sasu_holding"
+    values: dict[str, object] = {
+        f"{p}_denomination": "SASU HOLDING EXEMPLE",
+        f"{p}_forme_sociale": "Société par actions simplifiée unipersonnelle",
+        # Siege sur UNE ligne (le slice reparse num/voie/cp/ville pour domiciliation/procuration).
+        f"{p}_siege": "10 rue de la Paix, 75002 Paris",
+        # Capital = number_input -> ENTIER (1000 € = 100 actions x 10 €).
+        f"{p}_capital_social": 1000,
+        f"{p}_nb_actions": 100,
+        # Associe unique = president.
+        f"{p}_civilite": "Monsieur",  # selectbox (Monsieur / Madame)
+        f"{p}_prenom": "Jean",
+        f"{p}_nom": "Durand",
+        # Date de naissance : champ texte verbatim francais (re-accentue en aval).
+        f"{p}_date_naissance": "2 janvier 1980",
+        f"{p}_date_naissance_iso": "02/01/1980",  # parse -> date (declaration DNC)
+        f"{p}_ville_naissance": "Paris",
+        f"{p}_nationalite_choice": NATIONALITY_PRESETS[0],  # selectbox nationalite
+        # Adresse perso sur UNE ligne (le slice reparse num/voie/cp/ville pour la DNC).
+        f"{p}_adresse": "5 rue Royale, 75008 Paris",
+        f"{p}_nom_pere": "Pierre Durand",
+        f"{p}_nom_mere": "Anne Durand",
+        # Depot / exercice / signature.
+        f"{p}_banque_nom": "BANQUE EXEMPLE",
+        f"{p}_signature_lieu": "Paris",
+        f"{p}_exercice_debut": "1er janvier",
+        f"{p}_exercice_fin": "31 décembre",
+        f"{p}_date_cloture": f"31 décembre {date.today().year + 1}",
+        f"{p}_signature_date": "15/05/2026",  # parse -> date
     }
     _commit_civil_prefill(values)
 
@@ -823,7 +895,11 @@ _TYPED_TEST_DATA_PREFILL = {
     "SCI": _prefill_sci_test_data,
     "SCI IRIS": _prefill_sci_iris_test_data,
     "SCS": _prefill_scs_test_data,
+    # Micro holding (Albane 2026-06-26) : societe civile a capital variable, socle civil.
+    "MICRO_HOLDING": _prefill_micro_holding_test_data,
     "SAS": _prefill_sas_test_data,
+    # SASU Holding (Albane 2026-06-29) : SAS unipersonnelle generaliste, slice dedie.
+    "SASU_HOLDING": _prefill_sasu_holding_test_data,
     "SPFPL cession": _prefill_spfpl_cession_test_data,
     "SPFPL apport": _prefill_spfpl_apport_test_data,
     "SELAS": _prefill_selas_test_data,

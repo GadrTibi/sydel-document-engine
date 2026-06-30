@@ -2321,7 +2321,11 @@ def test_front_routes_to_sci_slice_and_generates(tmp_path: Path, monkeypatch) ->
         ("SCI creation V1", "statuts_sci.docx"),
         ("SCI IRIS creation V1", "statuts_sci_iris.docx"),
         ("SCS creation V1", "Statuts SCS EXEMPLE.docx"),
+        # Micro holding (Albane 2026-06-26) : societe civile a capital variable, socle civil.
+        ("Micro holding creation V1", "statuts_micro_holding.docx"),
         ("SPFPL medecins (forme SAS) creation V1", "statuts_sas_spfpl_medecins.docx"),
+        # SASU Holding (Albane 2026-06-29) : SAS unipersonnelle generaliste, slice dedie.
+        ("SASU Holding (holding patrimoniale) creation V1", "statuts_sasu_holding.docx"),
         ("SPFPL dentistes - cession creation V1", "statuts_spfpl_cession.docx"),
         ("SPFPL dentistes - apport creation V1", "statuts_spfpl_apport.docx"),
         ("SELAS pluripersonnelle creation V1", "Statuts SELAS EXEMPLE.docx"),
