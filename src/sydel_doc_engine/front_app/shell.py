@@ -626,6 +626,19 @@ def _render_ordre_mandataire() -> dict[str, object]:
         key="selarl_departement_ordre",
         help="Exemple : Paris, Loire-Atlantique ou le departement ordinal attendu par le dossier.",
     )
+    # M2 (Akainu, 2026-06-30, parite SELAS) : connecteur grammatical place avant le
+    # departement dans le destinataire de la demande d'inscription a l'Ordre (R5) :
+    # « de Paris » / « du Calvados » / « des Hauts de Seine ». Sans ce selecteur, le SELARL
+    # restait bloque sur « de » et ne pouvait pas produire « du Calvados ».
+    connecteur_departement = str(
+        st.selectbox(
+            "Connecteur avant le departement (de / du / des)",
+            ("de", "du", "des"),
+            key="selarl_ordre_connecteur",
+            help="S'affiche dans « ... de l'Ordre <connecteur> <departement> des ... » : "
+            "« de Paris » / « du Calvados » / « des Hauts de Seine ».",
+        )
+    )
     # O24-03 : adresse de l'ordre sur UNE ligne (parse interne -> ligne_1/cp/ville),
     # comme perso/siege/SELAS. Remplace les 3 champs separes (Adresse / CP / Ville ordre) ;
     # alimente les MEMES cles -> generateur DOC-034 et gold byte-identique inchanges.
@@ -665,6 +678,7 @@ def _render_ordre_mandataire() -> dict[str, object]:
     )
     return {
         "departement_ordre": departement_ordre,
+        "connecteur_departement": connecteur_departement,
         "ordre_adresse_ligne_1": ordre_adresse_ligne_1,
         "ordre_cp": ordre_cp,
         "ordre_ville": ordre_ville,

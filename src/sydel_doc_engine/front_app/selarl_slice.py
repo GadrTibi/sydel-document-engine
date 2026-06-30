@@ -155,6 +155,11 @@ class SelarlSliceInput:
     numero_ordre: str = ""
     numero_rpps: str = ""
     departement_ordre: str = ""
+    # M2 (Akainu, 2026-06-30, parite avec les slices SELAS) : connecteur grammatical
+    # (« de » / « du » / « des ») place avant le departement dans le destinataire de la
+    # demande d'inscription a l'Ordre (R5). Sans ce champ, le SELARL retombait sur « de »
+    # et ne pouvait pas produire « du Calvados » / « des Hauts de Seine ». Defaut « de ».
+    connecteur_departement: str = "de"
     denomination: str = ""
     capital_social: str = ""
     capital_social_lettres: str = ""
@@ -926,6 +931,9 @@ def _ordre(
     return OrdreProfessionnel(
         conseil_departemental_libelle=data.ordre_conseil,
         departement_inscription=data.departement_ordre,
+        # M2 (Akainu, 2026-06-30) : connecteur grammatical du destinataire R5, cable depuis
+        # le formulaire SELARL (parite SELAS). Defaut « de » si non renseigne.
+        connecteur_departement=data.connecteur_departement or "de",
         destinataire_appel=(
             "Madame la Présidente"
             if data.ordre_president_feminin

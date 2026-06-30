@@ -199,6 +199,20 @@ def test_clean_front_selarl_regime_ui_never_exposes_conjoint_address_fields() ->
     assert conjoint_address_keys == []
 
 
+def test_clean_front_selarl_ui_exposes_ordre_connecteur_selector() -> None:
+    # M2 (Akainu, 2026-06-30, parite SELAS) : le formulaire SELARL expose le selecteur
+    # de connecteur grammatical (de / du / des) avant le departement, sinon « du Calvados »
+    # est inatteignable (le SELARL restait bloque sur « de »).
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=120)
+
+    connecteur_box = next(
+        (w for w in app.selectbox if str(w.key) == "selarl_ordre_connecteur"),
+        None,
+    )
+    assert connecteur_box is not None
+    assert [str(o) for o in connecteur_box.options] == ["de", "du", "des"]
+
+
 def test_clean_front_selarl_slice_blocks_out_of_scope_cases() -> None:
     # La cession est desormais SUPPORTEE quand les donnees cession sont fournies
     # (cession_context). Demander la cession (flag) sans donnees reste bloque.

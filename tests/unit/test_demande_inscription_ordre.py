@@ -74,8 +74,12 @@ def _spfpl_ordre(
     *,
     derogation_mention_manuelle: str | None = None,
 ) -> OrdreProfessionnel:
+    # M1 (Akainu, 2026-06-30) : SPFPL porte un departement d'inscription (champ
+    # `ordre_departement` requis cote front) -> forme longue R5 propagee.
     return OrdreProfessionnel(
         conseil_departemental_libelle="Conseil départemental de l’Ordre",
+        departement_inscription="Calvados",
+        connecteur_departement="du",
         destinataire_appel="Monsieur le Président",
         profession_signataire_affichee="chirurgien-dentiste",
         profession_ligne_destinataire="chirurgiens-dentistes",
@@ -86,8 +90,12 @@ def _spfpl_ordre(
 
 
 def _scm_ordre() -> OrdreProfessionnel:
+    # M1 (Akainu, 2026-06-30) : SCM porte un departement d'inscription (champ
+    # `ordre_departement` requis cote front SCM) -> forme longue R5 propagee.
     return OrdreProfessionnel(
         conseil_departemental_libelle="Conseil départemental de l’Ordre",
+        departement_inscription="Rhône",
+        connecteur_departement="du",
         destinataire_appel="Monsieur le Président",
         profession_signataire_affichee="médecin",
         profession_ligne_destinataire="médecins",
@@ -247,10 +255,40 @@ def test_demande_inscription_ordre_scm_requires_explicit_ordinal_data(
     text = _docx_text(_generate(tmp_path, _context("SCM", ordre=_scm_ordre())))
 
     assert "médecin" in text
-    assert "Des médecins" in text
+    # M1 (Akainu, 2026-06-30, regle 68 Q4) : la forme longue R5 est propagee a SCM
+    # (plus l'ancienne 2e ligne « Des médecins » capitalisee).
+    assert "Conseil départemental de l’Ordre du Rhône des médecins" in text
+    assert "Des médecins" not in text
     assert "4 avenue Ordinale" in text
     assert "69002 Lyon" in text
     _assert_no_source_placeholders(text)
+
+
+def test_demande_inscription_ordre_spfpl_recipient_uses_long_form(tmp_path: Path) -> None:
+    """M1 (Akainu, 2026-06-30) : la forme longue R5 est propagee a l'overlay SPFPL."""
+    text = _docx_text(
+        _generate(
+            tmp_path,
+            _context("SPFPL cession", ordre=_spfpl_ordre(), mandataire=_configured_mandataire()),
+        )
+    )
+    assert "Conseil départemental de l’Ordre du Calvados des chirurgiens-dentistes" in text
+    assert "Des chirurgiens-dentistes" not in text
+
+
+def test_demande_inscription_ordre_recipient_falls_back_without_departement(
+    tmp_path: Path,
+) -> None:
+    """M1 : si AUCUN departement (cas degrade), forme coherente avec R5 conservee :
+    « de l’Ordre des <profession> » (« des » minuscule, plus « Des » capitalise)."""
+    ordre = _spfpl_ordre()
+    ordre.departement_inscription = ""
+    text = _docx_text(
+        _generate(tmp_path, _context("SPFPL cession", ordre=ordre,
+                                     mandataire=_configured_mandataire()))
+    )
+    assert "Conseil départemental de l’Ordre des chirurgiens-dentistes" in text
+    assert "Des chirurgiens-dentistes" not in text
 
 
 def test_demande_inscription_ordre_renders_manual_derogation_only_when_provided(
