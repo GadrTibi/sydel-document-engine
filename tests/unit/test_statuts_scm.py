@@ -171,6 +171,8 @@ def test_statuts_scm_inherits_model_form_single_logo(tmp_path: Path) -> None:
     assert len(header_logos) == 1  # logo herite du modele, non double
     assert len(body_logos) == 0
     assert len(document.element.body.findall(qn("w:sectPr"))) == 1
+    # M2 (Akainu 2026-06-30) : pas de paragraphe vide d'amorce -> body[0] = titre (denomination).
+    assert document.paragraphs[0].text.strip() != ""
 
 
 def test_statuts_scm_blocks_when_parts_total_is_ambiguous(tmp_path: Path) -> None:

@@ -299,6 +299,32 @@ def test_micro_holding_inherits_model_form_and_overwrites_client_footer(tmp_path
     assert abs(section.page_width - Cm(21.59)) > Cm(0.1)  # pas Letter US SYDEL
     footer_text = " | ".join(p.text for p in section.footer.paragraphs if p.text)
     assert "Micro holding famille Berte - Statuts constitutifs" in footer_text
+    # M2 (Akainu 2026-06-30) : pas de paragraphe vide d'amorce en tete -> body[0] = le titre.
+    assert document.paragraphs[0].text.strip() != ""
+
+
+def test_micro_holding_footer_no_client_residue_for_other_dossier(tmp_path: Path) -> None:
+    # M1 (Akainu 2026-06-30) : le footer du modele micro a 3 paragraphes dont [1] = « Statuts
+    # Societe Micro holding famille Berte » (NOM CLIENT). Ecraser uniquement [0] laissait
+    # « Berte » FUITER dans tout dossier. Avec une denomination NON-Berte, le nom client du
+    # modele ne doit apparaitre NULLE PART, et le footer doit porter la SEULE denomination.
+    ctx = _ctx_berte()
+    ctx.societe.denomination = "HOLDING TEST DUPONT ZZZ"
+    document = Document(StatutsMicroHoldingGenerator().generate(ctx, tmp_path))
+
+    fragments = [p.text for p in document.paragraphs]
+    for table in document.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                fragments.extend(p.text for p in cell.paragraphs)
+    for sect in document.sections:
+        fragments.extend(p.text for p in sect.footer.paragraphs)
+        fragments.extend(p.text for p in sect.header.paragraphs)
+    full_doc = "\n".join(fragments)
+
+    assert "Berte" not in full_doc, "residu du nom client modele a fuite dans le dossier"
+    footer_text = " | ".join(p.text for p in document.sections[0].footer.paragraphs if p.text)
+    assert footer_text == "HOLDING TEST DUPONT ZZZ - Statuts constitutifs"
 
 
 # --- bundle de creation = statuts + tronc commun civil + PV + option IS -------

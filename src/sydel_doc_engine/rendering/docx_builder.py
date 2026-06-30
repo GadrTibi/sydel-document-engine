@@ -92,9 +92,11 @@ def new_document_from_model(model_path: Any) -> Any:
     - le header et le footer (logo de marque, pagination native...).
 
     Il NE conserve PAS le texte du modele : tous les enfants du corps (``w:p``, ``w:tbl``,
-    signets...) sont retires ; un paragraphe vide d'amorce est ajoute pour que
-    ``document.add_paragraph`` / ``add_table`` repartent sur un corps propre. L'appelant
-    re-injecte ensuite le wording valide du code.
+    signets...) sont retires. AUCUN paragraphe d'amorce n'est laisse : ``add_paragraph`` /
+    ``add_table`` de python-docx inserent correctement leur contenu AVANT le ``sectPr`` final
+    meme quand le corps ne contient que ce sectPr. L'appelant re-injecte ensuite le wording
+    valide du code, et son PREMIER bloc devient ``body[0]`` (le titre / la denomination), sans
+    ligne blanche parasite en tete de page 1 (m1 : l'amorce vide decalait le rendu vs modele).
 
     PIEGE multi-sections (vecu SCI IRIS) : certains modeles ont DEUX sectPr — un de niveau
     paragraphe (le ``sectPr`` GOUVERNANT : vraie geometrie page 1 + footer de pagination) et un
@@ -115,10 +117,9 @@ def new_document_from_model(model_path: Any) -> Any:
     # vivent dans le sectPr gouvernant detache + styles.xml + parts header/footer (preserves).
     for child in list(body.iterchildren()):
         body.remove(child)
-    # Paragraphe d'amorce : garantit un corps non vide et un point de depart propre pour les
-    # appels add_paragraph / add_table de l'appelant.
-    document.add_paragraph()
-    # Repose le sectPr gouvernant comme dernier enfant du corps (= sectPr de section finale).
+    # Repose le sectPr gouvernant comme unique enfant du corps (= sectPr de section finale).
+    # Le corps ne contient QUE ce sectPr ; le 1er add_paragraph/add_table de l'appelant s'inserera
+    # juste avant lui -> son 1er bloc devient body[0] (titre), sans amorce vide en tete.
     if governing_sect_pr is not None:
         body.append(governing_sect_pr)
     return document

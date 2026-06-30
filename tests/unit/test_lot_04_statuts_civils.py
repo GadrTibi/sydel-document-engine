@@ -373,6 +373,9 @@ def test_statuts_sci_inherits_model_form(tmp_path: Path) -> None:
     assert {"Title", "Heading 1"} <= _named_styles_present(document)
     # Un seul sectPr (section unifiee) -> mise en page coherente.
     assert len(document.element.body.findall(qn("w:sectPr"))) == 1
+    # M2 (Akainu 2026-06-30) : pas de paragraphe vide d'amorce en tete de page 1 -> body[0] est
+    # le titre (la denomination), comme le modele (l'amorce vide decalait le rendu vers le bas).
+    assert document.paragraphs[0].text.strip() == "SCI EXEMPLE"
 
 
 def test_statuts_sci_iris_inherits_model_form_and_pagination_footer(tmp_path: Path) -> None:

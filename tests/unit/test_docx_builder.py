@@ -189,14 +189,25 @@ def _body_child_tags(document) -> list[str]:
 
 
 def test_new_document_from_model_empties_body_keeps_one_sectpr() -> None:
-    # Le corps du modele (centaines de paragraphes/tables) doit etre vide : seul un paragraphe
-    # d'amorce + un unique sectPr final subsistent ; aucun texte du modele ne fuit.
+    # Le corps du modele (centaines de paragraphes/tables) doit etre vide : seul l'unique sectPr
+    # final subsiste, SANS paragraphe d'amorce (m1 : l'amorce vide decalait le rendu page 1).
+    # Aucun texte du modele ne fuit.
     document = new_document_from_model(_source_path(SCI_IRIS_TEMPLATE))
 
-    assert _body_child_tags(document) == ["p", "sectPr"]
+    assert _body_child_tags(document) == ["sectPr"]
     assert [p.text for p in document.paragraphs if p.text.strip()] == []
     assert len(document.tables) == 0
     assert len(document.element.body.findall(qn("w:sectPr"))) == 1
+
+
+def test_new_document_from_model_first_added_block_is_body_zero() -> None:
+    # m1 (Akainu 2026-06-30) : sans amorce, le 1er bloc emis par l'appelant devient body[0]
+    # (pas de ligne blanche parasite en tete). add_paragraph s'insere bien avant le sectPr final.
+    document = new_document_from_model(_source_path(SCI_IRIS_TEMPLATE))
+    document.add_paragraph("PREMIER BLOC")
+
+    assert document.paragraphs[0].text == "PREMIER BLOC"
+    assert _body_child_tags(document)[-1] == "sectPr"
 
 
 def test_new_document_from_model_inherits_page_margins_and_named_styles() -> None:
@@ -230,6 +241,6 @@ def test_new_document_from_model_single_section_model_keeps_geometry() -> None:
     document = new_document_from_model(_source_path(SCS_TEMPLATE))
     model = Document(_source_path(SCS_TEMPLATE))
 
-    assert _body_child_tags(document) == ["p", "sectPr"]
+    assert _body_child_tags(document) == ["sectPr"]
     assert abs(document.sections[0].page_width - model.sections[0].page_width) < Cm(0.02)
     assert abs(document.sections[0].right_margin - model.sections[0].right_margin) < Cm(0.02)

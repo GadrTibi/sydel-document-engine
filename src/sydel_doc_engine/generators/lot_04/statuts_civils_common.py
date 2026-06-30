@@ -142,12 +142,18 @@ def generate_statuts_civil_docx(  # noqa: C901
     # ECRASAIT la forme. Le wording valide du code est preserve a l'identique (token-replacement).
     output_doc = new_document_from_model(source)
     if template.expected_type == "micro_holding":
-        # Le modele micro holding porte un footer CLIENT (« 1 | Statuts ...Berte ») a remplacer
-        # par la denomination du dossier. Les autres civiles (SCI / SCI IRIS / SCS) heritent du
-        # footer du modele (vide ou pagination native) -> on ne l'ecrase pas.
-        output_doc.sections[0].footer.paragraphs[0].text = (
-            f"{data.denomination} - Statuts constitutifs"
-        )
+        # Le modele micro holding porte un footer CLIENT a 3 paragraphes :
+        #   [0] = champ numero de page (« 1 »), [1] = « Statuts Societe Micro holding famille
+        #   Berte » (NOM CLIENT), [2] = vide.
+        # M1 (Akainu 2026-06-30) : ne reecrire QUE [0] laissait le nom « Berte » FUITER en [1]
+        # dans tout dossier. Le footer micro doit afficher UNIQUEMENT la denomination du dossier
+        # -> on pose la denomination en [0] et on VIDE tous les autres paragraphes du footer
+        # (aucun residu du modele). Les autres civiles (SCI / SCI IRIS / SCS) heritent du footer
+        # du modele (vide ou pagination native) et ne sont pas touchees.
+        footer_paragraphs = output_doc.sections[0].footer.paragraphs
+        footer_paragraphs[0].text = f"{data.denomination} - Statuts constitutifs"
+        for residual in footer_paragraphs[1:]:
+            residual.text = ""
 
     replacements = data.common_replacements()
     skip_until = -1
