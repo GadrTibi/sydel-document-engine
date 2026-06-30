@@ -961,6 +961,59 @@ def add_framed_signature_block(
     return table
 
 
+def add_framed_address_block(
+    document: Any,
+    lines: Sequence[str],
+    *,
+    width_cm: float = 7.5,
+    drop_top_cm: float = 0.0,
+    style_profile: SydelDocxStyleProfile = DEFAULT_STYLE_PROFILE,
+) -> Any:
+    """Bloc DESTINATAIRE encadre et aligne a droite, pour enveloppe a fenetre.
+
+    R2 (Albane 2026-06-30) : le destinataire d'un courrier doit tenir dans un ENCADRE
+    (boite bordee) afin d'apparaitre dans la fenetre d'une enveloppe a fenetre, et etre
+    DESCENDU a la hauteur de la fenetre. Helper additif (n'impacte aucun appelant
+    existant) :
+
+    - `width_cm` : largeur de la boite (cale a droite via `WD_TABLE_ALIGNMENT.RIGHT`,
+      « le côté me paraît bien » = on garde le calage a droite actuel).
+    - `drop_top_cm` : hauteur du spacer pose AVANT la boite pour la descendre a la
+      hauteur de la fenetre standard FR. 0 = pas de descente. La cote exacte est
+      pilotee par l'appelant (defaut documente cote appelant, a valider sur rendu).
+    """
+    if drop_top_cm > 0:
+        spacer = document.add_paragraph()
+        spacer.paragraph_format.space_after = Pt(0)
+        spacer.paragraph_format.space_before = Pt(0)
+        # python-docx ne sait pas poser une hauteur de paragraphe directement ; on
+        # convertit la descente voulue (cm) en espace-avant en points (1 cm = 28.35 pt)
+        # sur un paragraphe vide -> pousse le bloc destinataire vers le bas.
+        spacer.paragraph_format.space_before = Pt(round(drop_top_cm * 28.35))
+    table = document.add_table(rows=1, cols=1)
+    table.alignment = WD_TABLE_ALIGNMENT.RIGHT
+    table.style = "Table Grid"
+    _set_table_borders(table)
+    cell = table.cell(0, 0)
+    cell.width = Cm(width_cm)
+    _set_cell_margins(
+        cell,
+        top=style_profile.frame_cell_margin_vertical_dxa,
+        bottom=style_profile.frame_cell_margin_vertical_dxa,
+        left=style_profile.frame_cell_margin_horizontal_dxa,
+        right=style_profile.frame_cell_margin_horizontal_dxa,
+    )
+    first_paragraph = cell.paragraphs[0]
+    for index, text in enumerate(lines):
+        paragraph = first_paragraph if index == 0 else cell.add_paragraph()
+        paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
+        paragraph.paragraph_format.space_after = Pt(style_profile.compact_space_after_pt)
+        run = paragraph.add_run(text)
+        run.font.name = style_profile.font_name
+        run.font.size = Pt(style_profile.font_size_pt)
+    return table
+
+
 def add_signature_lines(
     document: Any,
     names: Sequence[str],

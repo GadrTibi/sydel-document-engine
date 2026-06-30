@@ -117,11 +117,72 @@ def test_lettre_option_is_generates_clean_docx(tmp_path: Path) -> None:
     assert "SIE Paris Centre" not in text
     assert "Demande d'option pour le régime de l'impôt sur les sociétés" in text
     assert "SCI EXEMPLE" in text
-    assert "123 456 789" in text
+    # R3 (Albane 2026-06-30) : la societe est EN COURS DE CONSTITUTION -> le SIREN affiche
+    # TOUJOURS la constante « En cours d'immatriculation » (apostrophe courbe U+2019),
+    # JAMAIS le numero saisi (« 123 456 789 » fourni au contexte est volontairement ignore).
+    assert "En cours d’immatriculation" in text
+    assert "123 456 789" not in text
     assert "Monsieur Jean Durand, demeurant 1 rue Exemple, 75000 Paris" in text
     assert "La société SEL IRIS, ayant son siège social au 2 rue Pro, 75000 Paris" in text
     assert "Le gérant" in text
     _assert_clean(text)
+
+
+def test_lettre_option_is_siren_always_en_cours_immatriculation(tmp_path: Path) -> None:
+    """R3 (Albane 2026-06-30) : meme avec un SIREN saisi, la ligne SIREN doit afficher la
+    constante « En cours d'immatriculation » (societe en cours de constitution)."""
+    ctx = _base_context()
+    ctx.societe.siren = "987 654 321"
+    output_path = LettreOptionIsGenerator().generate(ctx, tmp_path)
+    document = Document(output_path)
+
+    siren_values = [
+        row.cells[1].text
+        for table in document.tables
+        for row in table.rows
+        if row.cells[0].text.strip() == "SIREN"
+    ]
+    assert siren_values == ["En cours d’immatriculation"]
+    assert "987 654 321" not in _docx_text(output_path)
+
+
+def test_lettre_option_is_siren_not_required(tmp_path: Path) -> None:
+    """R3 : la lettre se genere meme SANS SIREN (societe pas encore immatriculee)."""
+    ctx = _base_context()
+    ctx.societe.siren = None
+    output_path = LettreOptionIsGenerator().generate(ctx, tmp_path)
+    assert "En cours d’immatriculation" in _docx_text(output_path)
+
+
+def test_lettre_option_is_recipient_block_is_boxed_and_lowered(tmp_path: Path) -> None:
+    """R2 (Albane 2026-06-30) : le bloc destinataire est ENCADRE (boite bordee), cale a
+    DROITE, et DESCENDU (spacer en tete) pour une enveloppe a fenetre."""
+    from docx.enum.table import WD_TABLE_ALIGNMENT
+    from docx.oxml.ns import qn
+
+    output_path = LettreOptionIsGenerator().generate(_base_context(), tmp_path)
+    document = Document(output_path)
+
+    # 1re table = boite destinataire : 1x1, bordee, calee a droite.
+    box = document.tables[0]
+    assert (len(box.rows), len(box.columns)) == (1, 1)
+    assert box.alignment == WD_TABLE_ALIGNMENT.RIGHT
+    borders = box._tbl.tblPr.find(qn("w:tblBorders"))
+    assert borders is not None
+    assert borders.find(qn("w:top")).get(qn("w:val")) == "single"
+    box_text = box.cell(0, 0).text
+    assert "Service des impots des entreprises" in box_text
+    assert "Centre des Finances Publiques" in box_text
+
+    # Un spacer (paragraphe vide a space_before non nul) precede la boite -> descente.
+    body = document.element.body
+    first_paragraph = next(
+        child for child in body.iterchildren() if child.tag.endswith("}p")
+    )
+    p_pr = first_paragraph.find(qn("w:pPr"))
+    spacing = p_pr.find(qn("w:spacing")) if p_pr is not None else None
+    assert spacing is not None
+    assert int(spacing.get(qn("w:before"))) > 0
 
 
 def test_lettre_option_is_requires_option_flag(tmp_path: Path) -> None:

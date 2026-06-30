@@ -439,8 +439,9 @@ def test_clean_front_ui_prefill_selas_uni_medecin_generates(
     assert "[duree_societe]" not in combined_text
     # Marie sous communaute -> clause conjoint rendue (avec Madame Alice Durand).
     assert "Alice Durand" in combined_text
-    # SU2 : destinataire de la demande d'inscription derive du departement + connecteur « du ».
-    assert "Conseil départemental du Rhone" in combined_text
+    # R5 (Albane 2026-06-30) : destinataire FORME LONGUE « Conseil départemental de l’Ordre
+    # <connecteur> <departement> des <profession_pluriel> » (departement PUIS profession).
+    assert "Conseil départemental de l’Ordre du Rhone des médecins" in combined_text
     # Dossier propre : aucun token/placeholder residuel.
     assert "[" not in combined_text
     assert "]" not in combined_text
@@ -1006,9 +1007,9 @@ def test_clean_front_selarl_generation_smoke(tmp_path: Path) -> None:
     combined_text = "\n".join(_docx_text(path) for path in generated.docx_paths)
     assert "SELARL SELARL" not in combined_text
     assert "Société d’exercice libéral à responsabilité limitée de médecin" in combined_text
-    # SU2 (Albane 2026-06-25, propagé tous types SEL) : sans « de l'Ordre des <profession> ».
-    assert "Conseil départemental de 75" in combined_text
-    assert "de l'Ordre des médecins" not in combined_text
+    # R5 (Albane 2026-06-30) : destinataire FORME LONGUE « Conseil départemental de l’Ordre
+    # <connecteur> <departement> des <profession_pluriel> ».
+    assert "Conseil départemental de l’Ordre de 75 des médecins" in combined_text
     assert "Au capital de 1 000 euros" in combined_text
     assert "Au capital de 1000" not in combined_text
     assert " medecin" not in combined_text

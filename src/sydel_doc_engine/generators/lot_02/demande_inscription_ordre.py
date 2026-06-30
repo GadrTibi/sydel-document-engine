@@ -182,14 +182,23 @@ def _conseil_departemental_lines(
         # (« de » / « du ») avant le departement, pour gerer l'accord. Defaut
         # « de » = comportement historique (SELARL byte-identique).
         connecteur = (ordre.connecteur_departement or "de").strip() or "de"
-        # SU2 (Albane 2026-06-25, propagation confirmée Gad/Albane 2026-06-25 « Oui ») :
-        # destinataire SANS « de l'Ordre des <profession> », réduit à
-        # « Conseil départemental <connecteur> <departement> » (ex. « Conseil départemental
-        # des Hauts de Seine »). D'abord scopé SELAS uni, désormais PROPAGÉ à TOUT l'overlay
-        # SEL (SELARL + SELAS uni + SELAS multi) — règle 68 §4 (un retour s'applique à tous
-        # les cas concernés). Le flag `destinataire_sans_mention_ordre` reste accepté mais la
-        # forme courte est désormais la règle pour l'overlay SEL.
-        return [f"Conseil départemental {connecteur} {departement}"]
+        # R5 (Albane 2026-06-30, AUTORITE METIER) : le destinataire est la FORME LONGUE
+        # « Conseil départemental de l’Ordre <connecteur> <departement> des <profession_pluriel> »
+        # (ex. « Conseil départemental de l’Ordre du Calvados des médecins »). Cette decision
+        # SUPERSEDE la forme courte SU2 (Albane 2026-06-25) qui avait retire « de l’Ordre des
+        # <profession> » — Albane (autorite metier) revient a la forme longue le 2026-06-30 et
+        # ajoute deux exigences : (1) « de l’Ordre » avant le departement, (2) la profession au
+        # pluriel a la fin.
+        # ORDRE DES MOTS = departement PUIS profession (verbatim 30/06 « ... de l’Ordre du
+        # Calvados des médecins »). ⚠️ A CONFIRMER ALBANE : le modele du 26/06 ecrivait
+        # l'inverse (« ... de l’Ordre des médecins du Rhône », profession PUIS departement) ;
+        # on applique le PLUS RECENT (30/06) comme defaut.
+        # `profession_ligne_destinataire` porte deja la profession AU PLURIEL (cf. prefill
+        # front : `profession_pluriel`), comme « médecins » / « chirurgiens-dentistes ».
+        return [
+            f"Conseil départemental de l’Ordre {connecteur} {departement} "
+            f"des {profession_ligne_destinataire}"
+        ]
     conseil_libelle = _required_text(
         ordre.conseil_departemental_libelle,
         "ordre.conseil_departemental_libelle",

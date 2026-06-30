@@ -18,9 +18,9 @@ from sydel_doc_engine.domain.models import (
 )
 from sydel_doc_engine.rendering.docx_builder import (
     LETTER_WIDE_STYLE_PROFILE,
+    add_framed_address_block,
     add_letter_place_date,
     add_paragraph,
-    add_right_indented_block,
     add_spacer,
     add_subject_heading,
     new_document,
@@ -108,9 +108,27 @@ def _required_int(value: int | None, field_name: str) -> int:
 # lieu d'une variable saisie -> plus de champ « Centre » dans le formulaire.
 CENTRE_FINANCES_PUBLIQUES = "Centre des Finances Publiques"
 
+# R3 (Albane 2026-06-30) : la lettre d'option IS est emise PENDANT la constitution de la
+# societe — elle n'est donc PAS encore immatriculee. Le SIREN ne doit JAMAIS afficher un
+# numero (meme saisi par erreur), mais la constante « En cours d'immatriculation » (E
+# majuscule, apostrophe COURBE U+2019, conforme au modele client
+# docs/review/albane_micro_holding_2026-06-29/lettre_option_IS.docx). On retire donc
+# l'exigence de non-vide sur company.siren pour ce document.
+SIREN_EN_COURS_IMMATRICULATION = "En cours d’immatriculation"
+
+
+# R2 (Albane 2026-06-30) : le bloc DESTINATAIRE (centre des impots) doit etre ENCADRE
+# (enveloppe a fenetre) ET DESCENDU a la hauteur de la fenetre. Le calage a DROITE est
+# conserve (« le côté me paraît bien »).
+# DEFAUT DOCUMENTE (a valider Albane sur rendu) : la cote exacte n'est pas chiffree par
+# Albane -> on vise ~4,5 cm du haut de page (fenetre standard FR). La marge haute du
+# courrier est 2,5 cm (LETTER_WIDE_STYLE_PROFILE) ; il reste donc ~2,0 cm a descendre via
+# un spacer pour amener le bloc a ~4,5 cm.
+_FENETRE_DROP_TOP_CM = 2.0
+
 
 def _add_tax_office_block(document: Any, tax_office: CentreImpots) -> None:
-    add_right_indented_block(
+    add_framed_address_block(
         document,
         [
             _required_text(tax_office.service, "impots.service"),
@@ -122,8 +140,8 @@ def _add_tax_office_block(document: Any, tax_office: CentreImpots) -> None:
                 f"{_required_text(tax_office.ville, 'impots.ville')}"
             ),
         ],
-        left_indent_cm=8.4,
-        space_after_pt=2,
+        width_cm=7.5,
+        drop_top_cm=_FENETRE_DROP_TOP_CM,
         style_profile=LETTER_WIDE_STYLE_PROFILE,
     )
     add_spacer(document, space_after_pt=16)
@@ -192,7 +210,9 @@ def _add_identification_table(
     denomination = _required_text(company.denomination, "societe.denomination")
     _add_table_row(table, "Dénomination", denomination)
     _add_table_row(table, "Adresse (siège ou principal établissement)", _company_address(company))
-    _add_table_row(table, "SIREN", _required_text(company.siren, "societe.siren"))
+    # R3 (Albane 2026-06-30) : societe EN COURS DE CONSTITUTION -> jamais de numero SIREN,
+    # toujours la constante (le numero saisi, s'il existe, est volontairement ignore ici).
+    _add_table_row(table, "SIREN", SIREN_EN_COURS_IMMATRICULATION)
     label = (
         "Nom, prénom et adresse des différents associés de la société, "
         f"et répartition du capital de {capital} €"

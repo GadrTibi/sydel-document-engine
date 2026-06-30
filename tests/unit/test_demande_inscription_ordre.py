@@ -147,10 +147,13 @@ def test_demande_inscription_ordre_selarl_uses_structured_ordinal_address(
 
     assert output_path == tmp_path / "demande_inscription_ordre.docx"
     assert "Dr Jean Durand" in text
-    # SU2 (Albane 2026-06-25, propagé à tous les types SEL) : destinataire SANS « de l'Ordre
-    # des <profession> » → « Conseil départemental <connecteur> <departement> ».
-    assert "Conseil départemental de la Loire-Atlantique" in paragraphs
-    assert "de l'Ordre des chirurgiens-dentistes" not in "\n".join(paragraphs)
+    # R5 (Albane 2026-06-30, AUTORITE METIER) : destinataire FORME LONGUE
+    # « Conseil départemental de l’Ordre <connecteur> <departement> des <profession_pluriel> »
+    # (departement PUIS profession, verbatim 30/06). SUPERSEDE la forme courte SU2 (25/06).
+    assert (
+        "Conseil départemental de l’Ordre de la Loire-Atlantique des chirurgiens-dentistes"
+        in paragraphs
+    )
     assert "Des chirurgiens-dentistes" not in paragraphs
     assert "6 rue du Conseil" in paragraphs
     assert "75001 Paris" in paragraphs
@@ -169,13 +172,30 @@ def test_demande_inscription_ordre_selarl_uses_structured_ordinal_address(
     assert subject.runs[0].underline is True
     recipient = _matching_paragraphs(
         output_path,
-        "Conseil départemental de la Loire-Atlantique",
+        "Conseil départemental de l’Ordre de la Loire-Atlantique des chirurgiens-dentistes",
     )[0]
     assert recipient.paragraph_format.left_indent > Cm(8)
     assert _matching_paragraphs(output_path, "Dr Jean Durand")[-1].alignment == (
         WD_ALIGN_PARAGRAPH.RIGHT
     )
     _assert_no_source_placeholders(text)
+
+
+def test_demande_inscription_ordre_recipient_matches_albane_verbatim(tmp_path: Path) -> None:
+    """R5 (Albane 2026-06-30) : verbatim exact « Conseil départemental de l’Ordre du Calvados
+    des médecins » (connecteur « du » + profession au pluriel « médecins »)."""
+    ordre = OrdreProfessionnel(
+        conseil_departemental_libelle="Conseil départemental de l’Ordre",
+        departement_inscription="Calvados",
+        connecteur_departement="du",
+        destinataire_appel="Monsieur le Président",
+        profession_signataire_affichee="médecin",
+        profession_ligne_destinataire="médecins",
+        profession_reglementee_pluriel="médecins",
+        adresse=OrdreAddress(ligne_1="6 rue du Conseil", cp="14000", ville="Caen"),
+    )
+    paragraphs = _paragraphs(_generate(tmp_path, _context("SELARL", ordre=ordre)))
+    assert "Conseil départemental de l’Ordre du Calvados des médecins" in paragraphs
 
 
 def test_demande_inscription_ordre_selas_uses_same_overlay_as_selarl(tmp_path: Path) -> None:
