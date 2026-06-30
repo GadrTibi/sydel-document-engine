@@ -66,7 +66,7 @@ from sydel_doc_engine.front_app.field_derivations import (
     matrimonial_status_value,
     number_words_from_value,
     pad_birthdate_day,
-    parse_french_date,
+    parse_associe_birthdate,
     regime_communautaire_from_status,
     situation_maritale_complete,
 )
@@ -441,8 +441,10 @@ def _render_common_docs_form() -> dict[str, object]:
     dirigeant). Ce bloc ne garde que ce qui n'appartient pas a un associe : date
     de decision (PV), ordre professionnel, regime communautaire.
     """
-    st.markdown("**Documents communs (decision, ordre professionnel)**")
-    decision_date = _date("decision_date", "Date de decision (PV gerant)")
+    st.markdown("**Documents communs (ordre professionnel)**")
+    # SU4/SCS2 (Albane) : la date du PV de decision = la date de signature dans TOUS les
+    # cas ; le champ « Date de decision » dedie etait mort (jamais lu — DecisionContext
+    # plus bas derive la date de signature_date). Supprime (#8 onglet 24 — champ trompeur).
     st.markdown("Ordre professionnel (demande d'inscription)")
     # R5 (retours Rafael 2026-06-18) : « Conseil departemental » supprime du
     # formulaire (inutile) ; le libelle est derive automatiquement cote moteur.
@@ -486,7 +488,6 @@ def _render_common_docs_form() -> dict[str, object]:
     # situation matrimoniale PAR associé (menu) pilote désormais le régime + les docs
     # DOC-005/006. (Le chemin global reste géré côté payload pour les tests directs.)
     return {
-        "decision_date": decision_date,
         "ordre_departement": ordre_dep,
         "ordre_connecteur": ordre_connecteur,
         "ordre_adresse_ligne_1": ordre_ligne,
@@ -571,7 +572,7 @@ def _build_dirigeants_nomines_payload(
                 "genre": associe.genre or Gender.MASCULIN,
                 # Date de naissance ISO derivee du champ texte de l'associe pour la
                 # phrase d'identite du PV ; fallback sur la date « en lettres ».
-                "date_naissance_iso": _parse_associe_birthdate(associe.date_naissance),
+                "date_naissance_iso": parse_associe_birthdate(associe.date_naissance),
                 "date_naissance_affichee": associe.date_naissance,
                 "ville_naissance": associe.ville_naissance,
                 "departement_naissance": associe.departement_naissance,
@@ -773,45 +774,6 @@ def _validate_dirigeants_filiation(
     return blockers
 
 
-_MOIS_NUM = {
-    "janvier": 1, "fevrier": 2, "mars": 3, "avril": 4, "mai": 5, "juin": 6,
-    "juillet": 7, "aout": 8, "septembre": 9, "octobre": 10, "novembre": 11,
-    "decembre": 12,
-}
-
-
-def _parse_associe_birthdate(value: object) -> date | None:
-    """Derive la date de naissance ISO a partir de l'UNIQUE saisie associe.
-
-    L'associe saisit sa date en TEXTE (« 1 janvier 1980 », parite source pour la
-    comparution). La DNC du dirigeant (DOC-001) exige une date reelle : on la derive
-    de ce MEME champ (#8, onglet 24 : plus de double saisie via un picker dedie).
-    Accepte « 1 janvier 1980 », « 1er janvier 1980 » et « JJ/MM/AAAA »."""
-    parsed = parse_french_date(value)
-    if parsed is not None:
-        return parsed
-    if not isinstance(value, str):
-        return None
-    match = re.fullmatch(
-        r"\s*(\d{1,2})\s*(?:er)?\s+([A-Za-zàâäéèêëîïôöûüç]+)\s+(\d{4})\s*",
-        value.strip(),
-        re.IGNORECASE,
-    )
-    if match is None:
-        return None
-    day, month_name, year = match.groups()
-    normalized = "".join(
-        c for c in normalize("NFKD", month_name.lower()) if not combining(c)
-    )
-    month = _MOIS_NUM.get(normalized)
-    if month is None:
-        return None
-    try:
-        return date(int(year), month, int(day))
-    except ValueError:
-        return None
-
-
 def _collect_dirigeant_sig(
     associes: list[StatutsCivilsAssocie], president_index: int
 ) -> dict[str, object]:
@@ -838,7 +800,7 @@ def _collect_dirigeant_sig(
         "signataire_adresse_ville": str((adresse.ville if adresse else "") or ""),
         "signataire_nationalite": str(dirigeant.nationalite or ""),
         "signataire_titre": str(dirigeant.profession or "Docteur"),
-        "signataire_date_naissance": _parse_associe_birthdate(dirigeant.date_naissance),
+        "signataire_date_naissance": parse_associe_birthdate(dirigeant.date_naissance),
     }
 
 
@@ -1264,8 +1226,8 @@ def _validate_common_docs(payload: dict[str, object]) -> list[str]:
             blockers.append(message)
     if payload.get("signataire_date_naissance") is None:
         blockers.append("Date de naissance du president requise (declaration).")
-    if payload.get("decision_date") is None:
-        blockers.append("Date de decision requise (PV nomination gerant).")
+    # SU4/SCS2 (Albane) : plus de blocker « Date de decision » — champ supprime (la date du
+    # PV = la date de signature dans tous les cas, derivee par DecisionContext).
     return blockers
 
 
@@ -1922,7 +1884,7 @@ def _dnc_context_for_dirigeant(
         civilite=associe.civilite_affichage or "Monsieur",
         prenom=associe.prenom or associe.prenoms or "",
         nom=associe.nom or "",
-        date_naissance=_parse_associe_birthdate(associe.date_naissance),
+        date_naissance=parse_associe_birthdate(associe.date_naissance),
         ville_naissance=associe.ville_naissance or "",
         departement_naissance=associe.departement_naissance or None,
         nationalite=associe.nationalite or "",

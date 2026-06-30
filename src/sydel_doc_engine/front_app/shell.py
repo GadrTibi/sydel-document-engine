@@ -699,11 +699,9 @@ def _render_generation_context(societe: dict[str, object]) -> dict[str, object]:
             key="selarl_signature_date",
             value=date.today(),
         )
-    decision_date = _date_input_with_today(
-        "Date de decision",
-        key="selarl_decision_date",
-        value=date.today(),
-    )
+    # SU4/SCS2 (Albane) : la date du PV de decision = la date de signature dans TOUS les
+    # cas (DecisionContext la derive de signature_date). Le champ « Date de decision »
+    # dedie etait mort (jamais lu) + requis + trompeur. Supprime (#8 onglet 24).
     col_g, col_h = st.columns(2)
     depot_banque_nom = copyable_text_input(col_g, "Banque depot", key="selarl_depot_banque_nom")
     depot_banque_adresse = copyable_text_input(col_h,
@@ -722,7 +720,6 @@ def _render_generation_context(societe: dict[str, object]) -> dict[str, object]:
         "signature_lieu": signature_lieu,
         "signature_date": signature_date,
         "signature_nombre_exemplaires": "quatre",
-        "decision_date": decision_date,
         "depot_banque_nom": depot_banque_nom,
         "depot_banque_adresse": depot_banque_adresse,
         "exercice_debut": exercice_debut,

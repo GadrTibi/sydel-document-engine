@@ -184,6 +184,11 @@ class SelarlSliceInput:
     signature_date: date | None = None
     signature_nombre_exemplaires: str = "quatre"
     prestataire_signature_electronique: str = DEFAULT_PRESTATAIRE_SIGNATURE_ELECTRONIQUE
+    # SU4/SCS2 (Albane) : la date du PV de decision = la date de signature dans TOUS les cas
+    # (DecisionContext la derive de signature_date). Ce champ n'est JAMAIS lu pour la sortie ;
+    # il est conserve car les adaptateurs SELAS uni (_to_selarl_input) le passent encore
+    # (= signature_date) et un test de non-regression injecte une valeur divergente pour
+    # prouver qu'elle est ignoree. Le formulaire SELARL ne le collecte plus (champ mort retire).
     decision_date: date | None = None
     reunion_date_lettres: str = ""
     depot_banque_nom: str = ""
@@ -340,8 +345,11 @@ def validate_selarl_input(data: SelarlSliceInput) -> tuple[str, ...]:  # noqa: C
         blockers.append("Date de naissance du praticien requise.")
     if data.signature_date is None:
         blockers.append("Date de signature requise.")
-    if data.decision_date is None:
-        blockers.append("Date de decision requise.")
+    # SU4/SCS2 (Albane) : plus de blocker « Date de decision » — le champ dedie est supprime
+    # du formulaire (la date du PV = la date de signature dans tous les cas, derivee par
+    # DecisionContext). Le champ dataclass `decision_date` est CONSERVE : il reste alimente
+    # par les adaptateurs SELAS uni (_to_selarl_input -> signature_date) et sert de garde de
+    # non-regression (test : un decision_date divergent ne doit JAMAIS apparaitre en sortie).
     if data.nb_parts_total < 1:
         blockers.append("Nombre de parts requis et superieur a zero.")
     # Dogfood 2026-06-22 : capital non divisible par le nb de parts -> valeur nominale a

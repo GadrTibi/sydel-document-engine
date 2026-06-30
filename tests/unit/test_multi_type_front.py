@@ -1636,7 +1636,6 @@ def _selas_payload():
         "signataire_nationalite": "française",
         "signataire_titre": "Docteur",
         "signataire_date_naissance": date(1980, 1, 1),
-        "decision_date": date(2026, 5, 15),
         "ordre_conseil": "Conseil departemental",
         "ordre_departement": "Rhône",
         "ordre_adresse_ligne_1": "1 rue de l'Ordre",
@@ -2251,10 +2250,9 @@ def test_front_routes_to_sci_slice_and_generates(tmp_path: Path, monkeypatch) ->
         "sci_banque_nom": "BANQUE",
         "sci_banque_adresse": "1 rue Banque, 75009 Paris",
         "sci_date_cloture_premier_exercice": "31 decembre 2026",
-        # Documents communs (hors identite du gerant : fonction/titre/decision).
+        # Documents communs (hors identite du gerant : fonction/titre).
         "sci_signataire_fonction": "gerant",
         "sci_signataire_titre": "Docteur",
-        "sci_decision_date": "15/05/2026",
     }
     for key, value in society.items():
         set_text(key, value)
@@ -3625,17 +3623,18 @@ def test_front_selas_change_dirigeant_generates(tmp_path: Path, monkeypatch) -> 
 def test_selas_parse_associe_birthdate_handles_french_long_form() -> None:
     # #8 (onglet 24) : la date de naissance de la DNC est DERIVEE de l'unique champ
     # texte de l'associe (plus de double saisie via un picker dedie). Le parseur
-    # accepte la forme longue francaise ET « JJ/MM/AAAA ».
+    # accepte la forme longue francaise ET « JJ/MM/AAAA ». Promu en helper PARTAGE
+    # (field_derivations) — un seul parseur pour selas_multi, sas, sasu_holding.
     from datetime import date
 
-    from sydel_doc_engine.front_app import selas_multi_slice as sms
+    from sydel_doc_engine.front_app.field_derivations import parse_associe_birthdate
 
-    assert sms._parse_associe_birthdate("1 janvier 1980") == date(1980, 1, 1)
-    assert sms._parse_associe_birthdate("1er janvier 1980") == date(1980, 1, 1)
-    assert sms._parse_associe_birthdate("2 février 1982") == date(1982, 2, 2)
-    assert sms._parse_associe_birthdate("02/02/1982") == date(1982, 2, 2)
-    assert sms._parse_associe_birthdate("") is None
-    assert sms._parse_associe_birthdate("pas une date") is None
+    assert parse_associe_birthdate("1 janvier 1980") == date(1980, 1, 1)
+    assert parse_associe_birthdate("1er janvier 1980") == date(1980, 1, 1)
+    assert parse_associe_birthdate("2 février 1982") == date(1982, 2, 2)
+    assert parse_associe_birthdate("02/02/1982") == date(1982, 2, 2)
+    assert parse_associe_birthdate("") is None
+    assert parse_associe_birthdate("pas une date") is None
 
 
 def test_selas_deux_directeurs_generaux_bloque(tmp_path: Path, monkeypatch) -> None:
@@ -4087,7 +4086,6 @@ def _selas_uni_medecin_payload():
         "ordre_adresse_ligne_1": "1 rue de l'Ordre",
         "signature_lieu": "Paris",
         "signature_date": date(2026, 5, 14),
-        "decision_date": date(2026, 5, 14),
     }
 
 

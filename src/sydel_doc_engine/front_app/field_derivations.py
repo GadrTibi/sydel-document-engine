@@ -253,6 +253,50 @@ def parse_french_date(value: object) -> date | None:
         return None
 
 
+# Mois (sans accent : l'entree est normalisee NFKD avant lookup) -> numero.
+_MOIS_NUM: Final = {
+    "janvier": 1, "fevrier": 2, "mars": 3, "avril": 4, "mai": 5, "juin": 6,
+    "juillet": 7, "aout": 8, "septembre": 9, "octobre": 10, "novembre": 11,
+    "decembre": 12,
+}
+
+_ASSOCIE_BIRTHDATE_RE: Final = re.compile(
+    r"\s*(\d{1,2})\s*(?:er)?\s+([A-Za-zàâäéèêëîïôöûüç]+)\s+(\d{4})\s*",
+    re.IGNORECASE,
+)
+
+
+def parse_associe_birthdate(value: object) -> date | None:
+    """Derive la date de naissance ISO a partir de l'UNIQUE saisie associe.
+
+    L'associe saisit sa date en TEXTE (« 1 janvier 1980 », parite source pour la
+    comparution). La DNC du dirigeant (DOC-001) exige une date reelle : on la derive
+    de ce MEME champ (#8, onglet 24 : plus de double saisie via un picker dedie).
+    Accepte « 1 janvier 1980 », « 1er janvier 1980 » et « JJ/MM/AAAA ». Helper PARTAGE
+    (selas_multi, sas, sasu_holding) — un seul parseur, jamais duplique."""
+    parsed = parse_french_date(value)
+    if parsed is not None:
+        return parsed
+    if not isinstance(value, str):
+        return None
+    match = _ASSOCIE_BIRTHDATE_RE.fullmatch(value.strip())
+    if match is None:
+        return None
+    day, month_name, year = match.groups()
+    normalized = "".join(
+        c
+        for c in unicodedata.normalize("NFKD", month_name.lower())
+        if not unicodedata.combining(c)
+    )
+    month = _MOIS_NUM.get(normalized)
+    if month is None:
+        return None
+    try:
+        return date(int(year), month, int(day))
+    except ValueError:
+        return None
+
+
 def matrimonial_status_value(label: str) -> str:
     normalized = _normalize_label(label)
     if normalized.startswith("marie"):

@@ -291,11 +291,13 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
     adresse_voie = _adresse_struct.voie if _adresse_struct else ""
     adresse_cp = _adresse_struct.cp if _adresse_struct else ""
     adresse_ville = _adresse_struct.ville if _adresse_struct else ""
-    col_ae, col_af, col_ag = st.columns(3)
+    # SU4/SCS2 (Albane) : la date du PV de decision = la date de signature dans TOUS les cas
+    # (DecisionContext la derive de signature_date). Le champ « Date de decision (PV gerant) »
+    # dedie etait mort (jamais lu) + requis + trompeur. Supprime ; la filiation ne porte plus que
+    # le nom du pere et de la mere (2 colonnes au lieu de 3) (#8 onglet 24).
+    col_ae, col_af = st.columns(2)
     nom_pere = _t(col_ae, prefix, "nom_pere", "Nom du pere")
     nom_mere = _t(col_af, prefix, "nom_mere", "Nom de la mere")
-    with col_ag:
-        decision_date = _date(prefix, "decision_date", "Date de decision (PV gerant)")
 
     st.markdown("Conjoint")
     col_o, col_p, col_q = st.columns(3)
@@ -444,7 +446,6 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
         "adresse_ville": adresse_ville,
         "nom_pere": nom_pere,
         "nom_mere": nom_mere,
-        "decision_date": decision_date,
         "conjoint_civilite": conjoint_civilite,
         "conjoint_genre": derive_gender_from_civilite(conjoint_civilite),
         "conjoint_prenom": conjoint_prenom,
@@ -610,8 +611,8 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:  # noqa: C901
         blockers.append("Nombre de parts apportees requis et superieur a zero.")
     if payload.get("signature_date") is None:
         blockers.append("Date de signature requise.")
-    if payload.get("decision_date") is None:
-        blockers.append("Date de decision requise (PV nomination gerant).")
+    # SU4/SCS2 (Albane) : plus de blocker « Date de decision » — champ supprime (la date du PV =
+    # la date de signature dans tous les cas, derivee par DecisionContext payload signature_date).
     # Operation apport : les documents DOC-041/042/043 exigent le detail des
     # titres + les organes de controle (commissaire aux apports + evaluateur) +
     # la forme/capital de la cible (sinon le generateur leve `required_*`).

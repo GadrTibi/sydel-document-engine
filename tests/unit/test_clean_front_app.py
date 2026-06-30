@@ -640,7 +640,6 @@ def test_selas_uni_dentiste_generator_matches_dentiste_model_wording(
         "ordre_adresse_ligne_1": "1 rue Ordre",
         "signature_lieu": "Rennes",
         "signature_date": date(2026, 9, 22),
-        "decision_date": date(2026, 9, 22),
     }
     plan = sd.build_selas_uni_dentiste_plan(payload)
     assert plan.can_generate, plan.blockers
@@ -1484,7 +1483,6 @@ def _fill_valid_streamlit_selarl_form(app: AppTest) -> None:
         "selarl_ordre_adresse_ligne": "1 rue de l'Ordre, 75008 Paris",
         "selarl_signature_lieu": "Paris",
         "selarl_signature_date": "27/05/2026",
-        "selarl_decision_date": "27/05/2026",
         "selarl_depot_banque_nom": "Banque Test",
         "selarl_depot_banque_adresse": "30 boulevard Banque, 75009 Paris",
         "selarl_exercice_debut": "1er janvier",

@@ -152,6 +152,10 @@ class CommonDocsInput:
     siege: CompanyAddress
     signature_lieu: str
     signature_date: date | None
+    # SU4/SCS2 (Albane) : la date du PV de decision = la date de signature dans TOUS les cas
+    # (decision_context la derive de signature_date). Ce champ n'est JAMAIS lu pour la sortie ;
+    # il est conserve comme garde de non-regression (un test injecte une valeur divergente pour
+    # prouver qu'elle est ignoree). Le formulaire civil ne collecte plus ce champ (mort retire).
     decision_date: date | None
     signature_nombre_exemplaires: str = "quatre"
     ordre: OrdreInput = field(default_factory=OrdreInput)

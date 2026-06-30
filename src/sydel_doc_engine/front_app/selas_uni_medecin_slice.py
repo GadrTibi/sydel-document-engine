@@ -310,11 +310,13 @@ def render_selas_uni_medecin_form() -> dict[str, object]:
     # Parite gold (couche partagee) : conseiller/mandataire SYDEL editable.
     mandataire_prenom, mandataire_nom = mandataire_inputs(PREFIX)
 
-    st.markdown("**Signature / decision**")
+    st.markdown("**Signature**")
     col_ag, col_ah = st.columns(2)
     signature_lieu = _t(col_ag, "signature_lieu", "Lieu de signature")
     signature_date = _date(col_ah, "signature_date", "Date de signature")
-    decision_date = _date(st, "decision_date", "Date de decision (PV nomination)")
+    # SU4/SCS2 (Albane) : la date du PV de decision = la date de signature dans TOUS les
+    # cas ; le champ « Date de decision » dedie etait mort (jamais lu, derive de
+    # signature_date plus bas). Supprime (#8 onglet 24 — champ trompeur).
 
     return {
         "denomination": denomination,
@@ -365,7 +367,6 @@ def render_selas_uni_medecin_form() -> dict[str, object]:
         "ordre_adresse_ligne_1": ordre_adresse,
         "signature_lieu": signature_lieu,
         "signature_date": signature_date,
-        "decision_date": decision_date,
     }
 
 

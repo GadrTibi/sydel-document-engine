@@ -407,7 +407,9 @@ def _render_common_docs_form(structure: str, prefix: str) -> dict[str, object]:
         col_g, col_h = st.columns(2)
         fonction = _text(col_g, prefix, "signataire_fonction", "Fonction (ex: gerant)") or "gérant"
         titre = _text(col_h, prefix, "signataire_titre", "Titre d'affichage") or "Docteur"
-    decision_date = _date_input(prefix, "decision_date", "Date de decision (PV gerant)")
+    # SU4/SCS2 (Albane) : la date du PV de decision = la date de signature dans TOUS les cas
+    # (decision_context la derive de signature_date). Le champ « Date de decision (PV gerant) »
+    # dedie etait mort (jamais lu) + requis + trompeur. Supprime du formulaire (#8 onglet 24).
     # SCS1 (Albane 2026-06-25) : pour la SCS, champ conseiller/mandataire retire (pas d'interet a le
     # saisir) -> vide, common_creation le defaulte sur le mandataire SYDEL standard (Jordan ELBAZ).
     # Les autres civils (SCI/SCM) gardent la saisie editable.
@@ -419,7 +421,6 @@ def _render_common_docs_form(structure: str, prefix: str) -> dict[str, object]:
     common: dict[str, object] = {
         "signataire_fonction": fonction,
         "signataire_titre": titre,
-        "decision_date": decision_date,
         "mandataire_prenom": mandataire_prenom,
         "mandataire_nom": mandataire_nom,
     }
@@ -1034,8 +1035,10 @@ def _validate_common_docs(payload: dict[str, object], structure: str) -> list[st
     for field_name, message in required:
         if not str(payload.get(field_name) or "").strip():
             blockers.append(message)
-    if payload.get("decision_date") is None:
-        blockers.append("Date de decision requise (PV nomination gerant).")
+    # SU4/SCS2 (Albane) : plus de blocker « Date de decision » — le champ dedie est supprime du
+    # formulaire (la date du PV = la date de signature dans tous les cas, derivee par
+    # decision_context). Le champ dataclass CommonDocsInput.decision_date est CONSERVE (il sert de
+    # garde de non-regression : un decision_date divergent injecte ne doit JAMAIS sortir).
     signataire = _signataire_associe(payload)
     if signataire is not None:
         for field_name, name in (

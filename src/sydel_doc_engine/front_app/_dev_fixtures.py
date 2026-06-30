@@ -100,7 +100,6 @@ def _prefill_random_selarl_data() -> None:
         ),
         "selarl_signature_lieu": company["ville"],
         "selarl_signature_date": today_text,
-        "selarl_decision_date": today_text,
         "selarl_depot_banque_nom": random.choice(("BNP Paribas", "CIC", "Credit Agricole")),
         "selarl_depot_banque_adresse": company["banque_adresse"],
         "selarl_exercice_debut": "1er janvier",
@@ -175,7 +174,6 @@ def _prefill_scm_test_data() -> None:
         "scm_signature_date": "15/05/2026",
         "scm_signataire_fonction": "gerant",
         "scm_signataire_titre": "Docteur",
-        "scm_decision_date": "15/05/2026",
         "scm_ordre_conseil": "Conseil departemental de l'Ordre des medecins",
         "scm_ordre_departement": "75",
         # O24-03 : adresse de l'ordre sur UNE ligne (le slice reparse ligne_1/cp/ville).
@@ -285,7 +283,6 @@ def _civil_society_prefill(
         f"{prefix}_signature_date": "15/05/2026",
         f"{prefix}_signataire_fonction": "gerant",
         f"{prefix}_signataire_titre": "Docteur",
-        f"{prefix}_decision_date": "15/05/2026",
     }
 
 
@@ -517,8 +514,8 @@ def _prefill_sas_test_data() -> None:
         "sas_nom": "Martin",
         "sas_genre_label": "Monsieur",
         "sas_qualification_principale": "Medecin cardiologue",
+        # #8 : la date ISO de la DNC est derivee de cette UNIQUE date verbatim (parsable).
         "sas_date_naissance": "2 janvier 1980",
-        "sas_date_naissance_iso": "02/01/1980",
         "sas_ville_naissance": "Paris",
         "sas_departement_naissance": "75",
         "sas_nationalite_choice": "Française",
@@ -573,8 +570,8 @@ def _prefill_sasu_holding_test_data() -> None:
         f"{p}_prenom": "Jean",
         f"{p}_nom": "Durand",
         # Date de naissance : champ texte verbatim francais (re-accentue en aval).
+        # #8 : la date ISO de la DNC est derivee de cette UNIQUE date verbatim (parsable).
         f"{p}_date_naissance": "2 janvier 1980",
-        f"{p}_date_naissance_iso": "02/01/1980",  # parse -> date (declaration DNC)
         f"{p}_ville_naissance": "Paris",
         f"{p}_nationalite_choice": NATIONALITY_PRESETS[0],  # selectbox nationalite
         # Adresse perso sur UNE ligne (le slice reparse num/voie/cp/ville pour la DNC).
@@ -685,7 +682,6 @@ def _spfpl_prefill_values(prefix: str) -> dict[str, object]:
         f"{prefix}_date_cloture": "31 décembre 2026",
         f"{prefix}_signature_lieu": "Paris",
         f"{prefix}_signature_date": "14/05/2026",
-        f"{prefix}_decision_date": "14/05/2026",
     }
 
 
@@ -768,7 +764,6 @@ def _prefill_selas_test_data(
         "selas_associe_0_is_dirigeant": True,
         "selas_associe_0_sig_nom_pere": "Pierre Durand",
         "selas_associe_0_sig_nom_mere": "Anne Durand",
-        "selas_decision_date": "15/05/2026",
         # R5/R6 (2026-06-18) : « Conseil departemental » retire du formulaire ;
         # le connecteur grammatical (« de » / « du ») le remplace pour l'accord.
         "selas_ordre_departement": "Rhone",
@@ -837,7 +832,6 @@ def _prefill_selas_uni_medecin_test_data() -> None:
         f"{p}_ordre_adresse": "1 rue de l'Ordre, 69002 Lyon",
         f"{p}_signature_lieu": "Lyon",
         f"{p}_signature_date": date(2026, 5, 15),
-        f"{p}_decision_date": date(2026, 5, 15),
     }
     _commit_civil_prefill(values)
 
@@ -883,7 +877,6 @@ def _prefill_selas_uni_dentiste_test_data() -> None:
         f"{p}_ordre_adresse": "1 rue de l'Ordre, 69002 Lyon",
         f"{p}_signature_lieu": "Lyon",
         f"{p}_signature_date": date(2026, 5, 15),
-        f"{p}_decision_date": date(2026, 5, 15),
     }
     _commit_civil_prefill(values)
 

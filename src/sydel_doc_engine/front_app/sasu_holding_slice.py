@@ -50,6 +50,7 @@ from sydel_doc_engine.front_app.field_derivations import (
     derive_gender_from_civilite,
     format_numeric_value,
     number_words_from_value,
+    parse_associe_birthdate,
 )
 from sydel_doc_engine.front_app.front_widgets import (
     date_input_with_today,
@@ -167,11 +168,12 @@ def render_sasu_holding_form() -> dict[str, object]:
     adresse_cp = _adresse_struct.cp if _adresse_struct else ""
     adresse_ville = _adresse_struct.ville if _adresse_struct else ""
     st.caption("Filiation de l'associé président (déclaration de non-condamnation)")
-    col_k, col_l, col_m = st.columns(3)
+    # #8 (onglet 24) : la date ISO de la DNC est DERIVEE de l'unique date de naissance
+    # verbatim (parse_associe_birthdate) — plus de picker `date_naissance_iso` redondant.
+    # La filiation ne porte donc QUE le nom du pere et de la mere (2 colonnes).
+    col_k, col_l = st.columns(2)
     nom_pere = _t(col_k, "nom_pere", "Nom du pere")
     nom_mere = _t(col_l, "nom_mere", "Nom de la mere")
-    with col_m:
-        date_naissance_iso = _date(PREFIX, "date_naissance_iso", "Date naissance (JJ/MM/AAAA)")
 
     # Conseiller / mandataire SYDEL editable (parite gold).
     mandataire_prenom, mandataire_nom = mandataire_inputs(PREFIX)
@@ -201,7 +203,8 @@ def render_sasu_holding_form() -> dict[str, object]:
         "nom": nom,
         "genre": derive_gender_from_civilite(civilite),
         "date_naissance": date_naissance,
-        "date_naissance_iso": date_naissance_iso,
+        # #8 : date ISO de la DNC derivee de l'UNIQUE saisie verbatim (zero double saisie).
+        "date_naissance_iso": parse_associe_birthdate(date_naissance),
         "ville_naissance": ville_naissance,
         "nationalite": nationalite,
         "adresse": adresse_perso,
@@ -284,8 +287,9 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:
         blockers.append("Nombre d'actions requis et superieur a zero.")
     if payload.get("signature_date") is None:
         blockers.append("Date de signature requise.")
-    if payload.get("date_naissance_iso") is None:
-        blockers.append("Date de naissance (JJ/MM/AAAA) requise (declaration).")
+    # #8 : on garde sur l'UNIQUE champ verbatim (la date ISO de la DNC en est derivee).
+    if parse_associe_birthdate(payload.get("date_naissance")) is None:
+        blockers.append("Date de naissance non reconnue (ex : 2 janvier 1980).")
     return tuple(dict.fromkeys(blockers))
 
 
