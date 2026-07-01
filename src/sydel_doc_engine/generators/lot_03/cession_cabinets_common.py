@@ -388,6 +388,16 @@ def _build_segment_overrides(ctx: DocumentGenerationContext) -> dict[str, str]:
     # Pour un acquereur SELARL (cas SELARL nominal), le token se remplit en « SELARL »
     # -> sortie byte-identique (gold *_matches_source_docx_line_by_line intact).
     overrides["SELARL au capital de"] = "[forme_sociale_acquereur] au capital de"
+    # O24-fidelite-SELARL #2 (Albane/Rafael 2026-07-01, « comme les modeles ») : le TITRE de
+    # clause « Inscription de la SELARL au Tableau de l'Ordre… » est fige « SELARL » dans les 2
+    # compromis (medical + dentaire). Ses PROPRES modeles « transforme » (Drive Cession/Compromis)
+    # tokenisent ce titre en « Inscription de la [forme_sociale_acquereur] au Tableau ». On restaure
+    # donc le token pour refleter la VRAIE forme de l'acquereur (SELAS -> « SELAS », SELARL ->
+    # « SELARL » = byte-identique au gold, aucune regression). Meme logique que « au capital de »
+    # ci-dessus. Segment distinct (ne chevauche pas « SELARL au capital de »).
+    overrides["Inscription de la SELARL au Tableau"] = (
+        "Inscription de la [forme_sociale_acquereur] au Tableau"
+    )
     vendeur = cession.vendeur or CessionVendeur()
     situation = (vendeur.situation_maritale or "").strip()
     normalized = situation.casefold()

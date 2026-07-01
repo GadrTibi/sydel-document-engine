@@ -837,6 +837,37 @@ def test_acte_medical_selarl_acquereur_keeps_selarl_au_capital(tmp_path: Path) -
     _assert_no_residual_tokens(text)
 
 
+def test_compromis_titre_inscription_reflete_forme_acquereur(tmp_path: Path) -> None:
+    # O24-fidelite-SELARL #2 (Albane/Rafael 2026-07-01, « comme les modeles ») : le titre de
+    # clause « Inscription de la SELARL au Tableau » des 2 compromis (medical + dentaire) doit
+    # refleter la VRAIE forme de l'acquereur (token [forme_sociale_acquereur], comme ses modeles
+    # « transforme »). Acquereur SELARL -> « SELARL » (byte-identique au gold). Acquereur SELAS
+    # -> « SELAS » (plus de « SELARL » parasite). Teste les 2 faces sur les 2 compromis.
+    for generator, cabinet in (
+        (CompromisCessionCabinetMedicalGenerator(), "medical"),
+        (CompromisCessionCabinetDentaireGenerator(), "dentaire"),
+    ):
+        # Face SELARL (defaut) : titre byte-identique au modele source.
+        ctx_selarl = _context(etape="compromis", type_cabinet=cabinet)
+        text_selarl = _docx_text(generator.generate(ctx_selarl, tmp_path / f"{cabinet}-selarl"))
+        assert "Inscription de la SELARL au Tableau" in text_selarl, (
+            f"compromis {cabinet} acquereur SELARL : titre « Inscription de la SELARL au "
+            "Tableau » attendu (fidelite gold)"
+        )
+
+        # Face SELAS : le titre suit la forme reelle de l'acquereur.
+        ctx_selas = _context(etape="compromis", type_cabinet=cabinet)
+        ctx_selas.cession.acquereur.forme_sociale = "SELAS"
+        text_selas = _docx_text(generator.generate(ctx_selas, tmp_path / f"{cabinet}-selas"))
+        assert "Inscription de la SELAS au Tableau" in text_selas, (
+            f"compromis {cabinet} acquereur SELAS : titre « Inscription de la SELAS au "
+            "Tableau » attendu (forme dynamique)"
+        )
+        assert "Inscription de la SELARL au Tableau" not in text_selas, (
+            f"compromis {cabinet} acquereur SELAS : plus de « SELARL » parasite dans le titre"
+        )
+
+
 def test_orchestrator_selects_only_requested_cession_cabinet_document() -> None:
     orchestrator = DocumentOrchestrator(build_seed_catalog())
 
