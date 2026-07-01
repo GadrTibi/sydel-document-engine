@@ -1196,7 +1196,7 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         valeur_nominale_part=valeur_nominale_part,
         valeur_nominale_part_lettres=number_words_from_value(valeur_nominale_part)
         or valeur_nominale_part,
-        plage_parts_totale=f"1 a {nb_parts}" if nb_parts else None,
+        plage_parts_totale=f"1 à {nb_parts}" if nb_parts else None,  # N4 : « à » accentue
         duree_societe="99",
         capital_depot=StatutsCivilsCapitalDepot(
             banque_nom=str(payload.get("banque_nom") or ""),

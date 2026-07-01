@@ -142,7 +142,9 @@ def _assign_cumulative_part_ranges(associes: list[StatutsCivilsAssocie]) -> None
         fin = cursor + nb - 1
         associe.parts.debut = debut
         associe.parts.fin = fin
-        associe.parts.plage_affichee = f"{debut} a {fin}"
+        # N4 (Albane/Rafael 2026-07-01, « comme les modeles ») : plage avec « à » accentue
+        # (« 1 à 100 »), comme le modele SCI IRIS et le francais correct.
+        associe.parts.plage_affichee = f"{debut} à {fin}"
         cursor = fin + 1
 
 

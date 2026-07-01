@@ -92,22 +92,23 @@ def test_scm_cession_plage_cedee_auto_derivee_n4() -> None:
         _plage_dernieres_parts,
     )
 
-    assert _plage_dernieres_parts("1 a 100", 40) == "61 a 100"
-    assert _plage_dernieres_parts("41 a 100", 20) == "81 a 100"
-    assert _plage_dernieres_parts("1 a 40", 50) == ""  # nb > taille de la plage
+    # N4 (2026-07-01) : plages avec « à » accentue (parser _parse_plage accepte a/à/-).
+    assert _plage_dernieres_parts("1 à 100", 40) == "61 à 100"
+    assert _plage_dernieres_parts("41 à 100", 20) == "81 à 100"
+    assert _plage_dernieres_parts("1 à 40", 50) == ""  # nb > taille de la plage
     assert _plage_dernieres_parts("", 10) == ""  # plage non parsable
 
-    presents = [_associe("Jean Dupont", 100, "1 a 100")]
+    presents = [_associe("Jean Dupont", 100, "1 à 100")]
     cedant = {"prenom": "Jean", "nom": "Dupont", "civilite_affichage": "Monsieur"}
     cessionnaire = {"denomination": "SELARL X", "forme_juridique": "SELARL"}
     parts_cedees: dict[str, object] = {"nb": 40}  # plage NON fournie -> doit etre derivee
     apres = _derive_scm_apres_cession(presents, cedant, cessionnaire, parts_cedees)
-    assert parts_cedees["plage"] == "61 a 100"  # derivee in-place (dernieres 40 parts)
+    assert parts_cedees["plage"] == "61 à 100"  # derivee in-place (dernieres 40 parts)
     cedant_apres = next(a for a in apres if a.type_personne == "personne_physique")
     assert cedant_apres.parts is not None
-    assert cedant_apres.parts.plage == "1 a 60" and cedant_apres.parts.nb == 60
+    assert cedant_apres.parts.plage == "1 à 60" and cedant_apres.parts.nb == 60
     sel = next(a for a in apres if a.type_personne == "personne_morale")
-    assert sel.parts is not None and sel.parts.plage == "61 a 100"
+    assert sel.parts is not None and sel.parts.plage == "61 à 100"
 
 
 def _base_context(structure: str = "SELARL") -> DocumentGenerationContext:
@@ -766,14 +767,15 @@ def test_s4_plage_cedee_coherente_avec_nb() -> None:
     # (forcage front), la derivation produit une plage COHERENTE avec le nb (20 dernieres parts).
     from sydel_doc_engine.front_app.shell import _derive_scm_apres_cession
 
-    presents = [_associe("Jean Dupont", 100, "101 a 200")]
+    presents = [_associe("Jean Dupont", 100, "101 à 200")]
     cedant = {"prenom": "Jean", "nom": "Dupont", "civilite_affichage": "Monsieur"}
     cessionnaire = {"denomination": "SELAS X", "forme_juridique": "SELAS"}
     parts_cedees: dict[str, object] = {"nb": 20}  # plage NON fournie (effacee par le front)
     _derive_scm_apres_cession(presents, cedant, cessionnaire, parts_cedees)
     # 20 dernieres parts de [101..200] = [181..200] (20 parts), pas 151..200 (50 parts).
-    assert parts_cedees["plage"] == "181 a 200"
-    debut, fin = (int(x) for x in parts_cedees["plage"].split(" a "))
+    # N4 (2026-07-01) : plage avec « à » accentue.
+    assert parts_cedees["plage"] == "181 à 200"
+    debut, fin = (int(x) for x in parts_cedees["plage"].split(" à "))
     assert fin - debut + 1 == 20  # plage <=> nb cede
 
 

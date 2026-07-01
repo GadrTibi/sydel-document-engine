@@ -164,8 +164,9 @@ def test_fb4_plage_vide_garde_la_derivation_auto(monkeypatch) -> None:
     }
     scm = _render(session_state, monkeypatch)
     assert scm is not None
-    # 100 parts (1 a 100), 40 cédées -> dernières parts = 61 a 100.
-    assert scm.parts_cedees.plage == "61 a 100"
+    # 100 parts (1 à 100), 40 cédées -> dernières parts = 61 à 100.
+    # N4 (2026-07-01) : plage avec « à » accentue (derivation front).
+    assert scm.parts_cedees.plage == "61 à 100"
 
 
 # --------------------------------------------------------------------------- FB-5 / FB-7

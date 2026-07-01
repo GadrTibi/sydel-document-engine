@@ -2015,7 +2015,7 @@ def _render_scm_cession_form(  # noqa: C901
         # N4 (Rafael 2026-06-24) : la plage TOTALE des parts est auto-calculee (« 1 a N »),
         # plus de saisie manuelle (champ desactive, comme la valeur nominale calculee).
         _nb_scm = scm_cedee.get("nb_parts_total")
-        scm_cedee["plage_parts_total"] = f"1 a {_nb_scm}" if _nb_scm else ""
+        scm_cedee["plage_parts_total"] = f"1 à {_nb_scm}" if _nb_scm else ""  # N4 : « à »
         copyable_text_input(
             col_f, "Plage totale des parts (calculee)",
             value=scm_cedee["plage_parts_total"],
@@ -2297,7 +2297,7 @@ def _render_scm_cession_associes_presents(  # noqa: C901
             # l'apres-cession (plage residuelle du cedant / plage cedee), jamais affichee.
             plage = ""
             if nb_present and nb_present > 0:
-                plage = f"{cursor} a {cursor + nb_present - 1}"
+                plage = f"{cursor} à {cursor + nb_present - 1}"  # N4 : « à » accentue
                 cursor += nb_present
             # FB-8b : case « Gerant(e) de la SCM » -> alimente la liste des cogerants.
             est_gerant = st.checkbox(
@@ -2475,10 +2475,10 @@ def _complement_plage(plage_initiale: str, plage_cedee: str) -> str:
     c_debut, c_fin = cedee
     # Plage cedee a la FIN de la plage initiale : reste = [i_debut, c_debut - 1].
     if c_fin == i_fin and c_debut > i_debut:
-        return f"{i_debut} a {c_debut - 1}"
+        return f"{i_debut} à {c_debut - 1}"  # N4 : « à » accentue
     # Plage cedee au DEBUT de la plage initiale : reste = [c_fin + 1, i_fin].
     if c_debut == i_debut and c_fin < i_fin:
-        return f"{c_fin + 1} a {i_fin}"
+        return f"{c_fin + 1} à {i_fin}"  # N4 : « à » accentue
     # Cas non contigu : on conserve la plage initiale (le nb reste fait foi).
     return plage_initiale
 
@@ -2495,7 +2495,7 @@ def _plage_dernieres_parts(plage_initiale: str, nb: int) -> str:
     debut, fin = init
     if nb > (fin - debut + 1):
         return ""
-    return f"{fin - nb + 1} a {fin}"
+    return f"{fin - nb + 1} à {fin}"  # N4 : « à » accentue
 
 
 def _derive_scm_prix_unitaire(prix: dict[str, object], nb_parts: object) -> None:

@@ -778,8 +778,9 @@ def test_clean_front_cession_form_returns_none_without_flag() -> None:
 def test_scm_cession_derive_apres_cession_deux_associes() -> None:
     # §4.1 : derivation deterministe de l'apres-cession a partir des presents.
     # 2 presents (Paul 40 / Jean 60 = 100). Jean (cedant) cede 20 parts (plage
-    # 81 a 100) a la SEL acquereur. Attendu : Paul inchange (40), Jean reduit
-    # (40, plage residuelle 41 a 80), SEL entrante (20, plage 81 a 100).
+    # 81 à 100) a la SEL acquereur. Attendu : Paul inchange (40), Jean reduit
+    # (40, plage residuelle 41 à 80), SEL entrante (20, plage 81 à 100).
+    # N4 (2026-07-01) : plages avec « à » accentue (« comme les modeles »).
     from sydel_doc_engine.domain.models import (
         ScmCessionAssocie,
         ScmCessionPartsAttribution,
@@ -790,33 +791,33 @@ def test_scm_cession_derive_apres_cession_deux_associes() -> None:
         ScmCessionAssocie(
             type_personne="personne_physique", civilite_affichage="Monsieur",
             prenom="Paul", nom="Bernard",
-            parts=ScmCessionPartsAttribution(nb=40, plage="1 a 40"),
+            parts=ScmCessionPartsAttribution(nb=40, plage="1 à 40"),
         ),
         ScmCessionAssocie(
             type_personne="personne_physique", civilite_affichage="Monsieur",
             prenom="Jean", nom="Dupont",
-            parts=ScmCessionPartsAttribution(nb=60, plage="41 a 100"),
+            parts=ScmCessionPartsAttribution(nb=60, plage="41 à 100"),
         ),
     ]
     cedant = {"prenom": "Jean", "nom": "Dupont"}
     cessionnaire = {"denomination": "SELARL CABINET DUPONT", "forme_juridique": "SELARL"}
-    parts_cedees = {"nb": 20, "plage": "81 a 100"}
+    parts_cedees = {"nb": 20, "plage": "81 à 100"}
 
     apres = shell._derive_scm_apres_cession(presents, cedant, cessionnaire, parts_cedees)
 
     assert len(apres) == 3
     paul, jean, sel = apres
     assert (paul.prenom, paul.nom, paul.parts.nb, paul.parts.plage) == (
-        "Paul", "Bernard", 40, "1 a 40",
+        "Paul", "Bernard", 40, "1 à 40",
     )
-    # Cedant reduit : 60 - 20 = 40, plage residuelle = complement (41 a 80).
+    # Cedant reduit : 60 - 20 = 40, plage residuelle = complement (41 à 80).
     assert (jean.prenom, jean.nom, jean.parts.nb, jean.parts.plage) == (
-        "Jean", "Dupont", 40, "41 a 80",
+        "Jean", "Dupont", 40, "41 à 80",
     )
     # SEL acquereur entrante (personne morale) avec les parts cedees.
     assert sel.type_personne == "personne_morale"
     assert sel.denomination == "SELARL CABINET DUPONT"
-    assert (sel.parts.nb, sel.parts.plage) == (20, "81 a 100")
+    assert (sel.parts.nb, sel.parts.plage) == (20, "81 à 100")
     # Sommes coherentes : 40 + 40 + 20 = 100 = total des presents.
     assert sum(a.parts.nb for a in apres) == sum(p.parts.nb for p in presents)
 

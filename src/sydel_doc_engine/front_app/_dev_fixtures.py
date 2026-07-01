@@ -1018,7 +1018,7 @@ def _scm_cession_prefill_values(person: dict[str, str]) -> dict[str, object]:
             "prenom": person["prenom"],
             "nom": person["nom"],
             "nb_parts": str(part),
-            "plage": f"1 a {part}",
+            "plage": f"1 à {part}",  # N4 : « à » accentue
         },
         {
             "morale": False,
@@ -1026,7 +1026,7 @@ def _scm_cession_prefill_values(person: dict[str, str]) -> dict[str, object]:
             "prenom": "Paul",
             "nom": "Bernard",
             "nb_parts": str(part),
-            "plage": f"{part + 1} a {2 * part}",
+            "plage": f"{part + 1} à {2 * part}",  # N4 : « à » accentue
         },
         {
             "morale": False,
@@ -1034,7 +1034,7 @@ def _scm_cession_prefill_values(person: dict[str, str]) -> dict[str, object]:
             "prenom": "Anne",
             "nom": "Martin",
             "nb_parts": str(reste),
-            "plage": f"{2 * part + 1} a {nb_total}",
+            "plage": f"{2 * part + 1} à {nb_total}",  # N4 : « à » accentue
         },
     ]
     values: dict[str, object] = {
@@ -1051,7 +1051,7 @@ def _scm_cession_prefill_values(person: dict[str, str]) -> dict[str, object]:
         "selarl_cession_scm_cedant_nom": person["nom"],
         # Parts cedees : le cedant cede les `nb_cedees` dernieres de sa tranche.
         "selarl_cession_scm_parts_nb": str(nb_cedees),
-        "selarl_cession_scm_parts_plage": f"{part - nb_cedees + 1} a {part}",
+        "selarl_cession_scm_parts_plage": f"{part - nb_cedees + 1} à {part}",  # N4 : « à »
         "selarl_cession_scm_prix_global": prix.get("global") or "",
         "selarl_cession_scm_prix_global_lettres": prix.get("global_lettres") or "",
         # Repeater des presents.
