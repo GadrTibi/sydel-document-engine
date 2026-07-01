@@ -463,7 +463,14 @@ def _add_physical_identity_micro_holding(document, associe: StatutsCivilsAssocie
     # virgule finale ; date de naissance verbatim (« 1er decembre 1978 »).
     gender = associe.genre or Gender.MASCULIN
     born = "Née" if gender == Gender.FEMININ else "Né"
-    _bold_paragraph(add_paragraph(document, f"{_signature_label(associe)},"))
+    # Micro holding : nom d'usage « épouse <nom> » SANS virgule avant (modele « Madame Jessica
+    # GOSSET épouse BERTE, »). La virgule finale reste la ponctuation de ligne.
+    _bold_paragraph(
+        add_paragraph(
+            document,
+            f"{_comparution_identite(associe, comma_before_epouse=False)},",
+        )
+    )
     add_paragraph(
         document,
         f"{born} le {_format_display_date(associe.date_naissance, 'associes[].date_naissance')} "
@@ -847,7 +854,11 @@ def _add_physical_identity(document, associe: StatutsCivilsAssocie) -> None:
     gender = associe.genre or Gender.MASCULIN
     born = "Née" if gender == Gender.FEMININ else "Né"
     # R22-06 : la ligne d'identite du comparant est en gras dans la source (comparution).
-    _bold_paragraph(add_paragraph(document, _signature_label(associe)))
+    # SCS : nom d'usage « [nom_naissance], épouse [nom] » AVEC virgule avant « épouse »
+    # (modele « [prenom] [nom_naissance], épouse [nom], née le… »).
+    _bold_paragraph(
+        add_paragraph(document, _comparution_identite(associe, comma_before_epouse=True))
+    )
     add_paragraph(
         document,
         f"{born} le {_format_display_date(associe.date_naissance, 'associes[].date_naissance')} "
@@ -1225,6 +1236,34 @@ def _signature_label(associe: StatutsCivilsAssocie) -> str:
         f"{_required_text(prenoms, 'associes[].prenoms')} "
         f"{_required_text(associe.nom, 'associes[].nom')}"
     )
+
+
+def _comparution_identite(
+    associe: StatutsCivilsAssocie,
+    *,
+    comma_before_epouse: bool,
+) -> str:
+    """Ligne d'identite en COMPARUTION, avec le nom d'usage « épouse <nom marital> » (Q4/MH-épouse,
+    Albane 2026-07-01 « comme les modeles »).
+
+    Modeles source : SCS « [civilite] [prenom] [nom_naissance], épouse [nom], née le… » (virgule
+    avant « épouse ») et micro holding « Madame Jessica GOSSET épouse BERTE, » (sans virgule avant).
+    Convention : `associe.nom` = nom d'usage/marital affiche ; `associe.nom_naissance` = nom de
+    naissance (maiden). DECLENCHEUR LOGIQUE : la mention « épouse » n'apparait QUE si un nom de
+    naissance DISTINCT est saisi (`nom_naissance` present et != `nom`). Sinon -> rendu identique a
+    `_signature_label` (byte-identique : SCI/SCP et les cas sans nom d'usage restent inchanges).
+    Reserve a la COMPARUTION (pas aux blocs apport/capital/signature)."""
+    if _is_morale(associe):
+        return _signature_label(associe)
+    nom = _required_text(associe.nom, "associes[].nom")
+    nom_naissance = (associe.nom_naissance or "").strip()
+    if not nom_naissance or nom_naissance == nom:
+        return _signature_label(associe)
+    prenoms = associe.prenoms or associe.prenom
+    civilite = _required_text(associe.civilite_affichage, "associes[].civilite_affichage")
+    prenoms_txt = _required_text(prenoms, "associes[].prenoms")
+    sep = ", épouse " if comma_before_epouse else " épouse "
+    return f"{civilite} {prenoms_txt} {nom_naissance}{sep}{nom}"
 
 
 def _is_morale(associe: StatutsCivilsAssocie) -> bool:

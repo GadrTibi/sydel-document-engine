@@ -209,6 +209,35 @@ def test_statuts_scs_requires_commandite_and_commanditaire(tmp_path: Path) -> No
         StatutsScsGenerator().generate(ctx, tmp_path)
 
 
+def test_statuts_scs_comparution_nom_usage_epouse(tmp_path: Path) -> None:
+    # Q4/MH-épouse (Albane 2026-07-01, « comme les modeles ») : le modele SCS ecrit la comparution
+    # d'une associee mariee « [civilite] [prenom] [nom_naissance], épouse [nom], née le… » (virgule
+    # AVANT « épouse »). Convention : nom = nom d'usage (apport/signature) ; nom_naissance = maiden.
+    ctx = _base_context(
+        structure="SCS",
+        statuts_type="scs",
+        associes=[
+            _person_associe(
+                prenom="Jean", nom="Durand", nb_parts=60, debut=1, fin=60,
+                role="commandite", montant="600",
+            ),
+            _person_associe(
+                prenom="Alice", nom="BERTE", nb_parts=40, debut=61, fin=100,
+                role="commanditaire", montant="400",
+            ),
+        ],
+    )
+    ctx.statuts_civils.total_apports_commandites = "600"
+    alice = ctx.statuts_civils.associes[1]
+    alice.genre = Gender.FEMININ
+    alice.civilite_affichage = "Madame"
+    alice.nom_naissance = "GOSSET"  # maiden distinct du nom d'usage marital "BERTE"
+
+    text = _docx_text(StatutsScsGenerator().generate(ctx, tmp_path))
+    # Comparution : maiden AVANT, virgule, puis nom d'usage apres « épouse ».
+    assert "Madame Alice GOSSET, épouse BERTE" in text
+
+
 def test_statuts_scs_generates_roles_and_lu_approuve(tmp_path: Path) -> None:
     ctx = _base_context(
         structure="SCS",

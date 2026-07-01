@@ -240,6 +240,30 @@ def test_micro_holding_capital_variable_lines(tmp_path: Path) -> None:
     assert "La SPFPL DU DR JESSICA GOSSET apporte la somme de mille dix euros" in text
 
 
+def test_micro_holding_comparution_nom_usage_epouse(tmp_path: Path) -> None:
+    # Q4/MH-épouse (Albane 2026-07-01, « comme les modeles ») : quand un NOM DE NAISSANCE distinct
+    # est saisi, la comparution physique porte le nom d'usage « <maiden> épouse <nom> » (modele
+    # micro holding « Madame Jessica GOSSET épouse BERTE, » — SANS virgule avant « épouse »).
+    # Convention : nom = nom d'usage (apport/signature) ; nom_naissance = maiden (comparution seule).
+    ctx = _ctx_berte()
+    physique = next(a for a in ctx.statuts_civils.associes if a.type_personne == "personne_physique")
+    physique.nom = "BERTE"  # nom d'usage marital
+    physique.nom_naissance = "GOSSET"  # nom de naissance (maiden)
+    out = StatutsMicroHoldingGenerator().generate(ctx, tmp_path)
+    text = _docx_text(out)
+    assert "Madame Jessica GOSSET épouse BERTE," in text
+
+
+def test_micro_holding_comparution_sans_nom_naissance_inchangee(tmp_path: Path) -> None:
+    # Non-regression Q4 : SANS nom_naissance distinct, la comparution reste « <civ> <prenoms>
+    # <nom>, » (byte-identique, aucune mention « épouse »).
+    ctx = _ctx_berte()  # gosset : nom="GOSSET", nom_naissance=None
+    out = StatutsMicroHoldingGenerator().generate(ctx, tmp_path)
+    text = _docx_text(out)
+    assert "Madame Jessica GOSSET," in text
+    assert "épouse" not in text
+
+
 def test_micro_holding_signature_date_longue_et_civilite_abregee(tmp_path: Path) -> None:
     # MH signature (Albane 2026-07-01, « comme les modeles ») : zone signature du modele
     # Statuts_Micro_holding.docx = « Fait à Nancy » / « Le 22 mai 2026 » (date LONGUE) puis
