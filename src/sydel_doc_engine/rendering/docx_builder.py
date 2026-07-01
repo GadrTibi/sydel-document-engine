@@ -136,10 +136,14 @@ def _force_charter_font_family(document: Any, font_name: str) -> None:
     ni a la geometrie. A appeler apres new_document_from_model pour que la mise en page HERITEE
     du modele s'affiche dans la police SYDEL et non celle (arbitraire) du modele.
 
-    Pose la police a 3 niveaux pour couvrir tous les cas d'heritage docx :
+    Pose la police a 4 niveaux pour couvrir tous les cas d'heritage docx :
     (1) docDefaults (rPrDefault) = police par defaut du document ;
     (2) le style « Normal » (base dont heritent les runs sans police explicite) ;
-    (3) chaque style de paragraphe/caractere qui definit une police propre (Title, Heading...).
+    (3) chaque style de paragraphe/caractere qui definit une police propre (Title, Heading...) ;
+    (4) les parts HEADER / FOOTER de chaque section (XML separe, NON couvert par les styles du
+        corps) — dont les champs de pagination (« PAGE ») que certains modeles rendent en Arial
+        (Akainu M1, retour Albane 2026-07-01 : la charte Roboto doit s'appliquer AUSSI au numero
+        de page en pied/en-tete de SCI, SCM...).
     """
 
     def _set_rfonts(rpr: Any) -> None:
@@ -174,6 +178,33 @@ def _force_charter_font_family(document: Any, font_name: str) -> None:
             _set_rfonts(style.element.get_or_add_rPr())
         except (AttributeError, ValueError, KeyError):
             continue
+    # (4) HEADER / FOOTER de chaque section (parts XML separees) : on force la famille sur TOUS
+    # les runs (y compris les champs de pagination « PAGE » rendus en Arial par certains modeles).
+    for section in document.sections:
+        parts = (
+            section.header,
+            section.footer,
+            section.first_page_header,
+            section.first_page_footer,
+            section.even_page_header,
+            section.even_page_footer,
+        )
+        for part in parts:
+            if part is None:
+                continue
+            # Force la famille sur TOUS les rFonts existants du header/footer (runs, marques de
+            # paragraphe w:pPr/w:rPr, champs PAGE...), pas seulement les runs — sinon un rFonts
+            # Arial d'une marque de paragraphe survit (vecu : pagination SCI/SCM).
+            for rfonts in part._element.iter(qn("w:rFonts")):
+                for attr in ("w:ascii", "w:hAnsi", "w:eastAsia", "w:cs"):
+                    rfonts.set(qn(attr), font_name)
+            # + les runs SANS rFonts : leur en creer un (police explicite Roboto).
+            for run_element in part._element.iter(qn("w:r")):
+                rpr = run_element.find(qn("w:rPr"))
+                if rpr is None:
+                    rpr = OxmlElement("w:rPr")
+                    run_element.insert(0, rpr)
+                _set_rfonts(rpr)
 
 
 _SYDEL_LOGO_PATH = Path(__file__).resolve().parent.parent / "assets" / "logo_sydel.png"
