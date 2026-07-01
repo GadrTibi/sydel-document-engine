@@ -4166,41 +4166,54 @@ def test_repeater_assigns_cumulative_part_ranges() -> None:
     assert associes[1].parts.plage_affichee == "41 à 75"  # N4 : « à » accentue
 
 
-def test_a26_pv5_dirigeant_identite_phrase_modele() -> None:
-    # A26-PV5 : la phrase d'identite du dirigeant dans le PV nomination (SELAS) reprend le format
-    # EXACT du modele Albane (MODELE_PV_nominations_dirigeants) : « <civ> <prenom> <NOM>,
-    # <profession>, de nationalite <nat>, <ne> le <date longue> a <ville> (<dept>), <situation
-    # maritale (regime + conjoint)>, demeurant <adresse> » (« demeurant » SANS « au », date en
-    # forme longue). Renvoie None si la profession est absente -> repli byte-identique.
+def test_a26_pv5_dirigeant_identite_phrase_via_flux_reel() -> None:
+    # A26-PV5 (+ Akainu B1) : la phrase d'identite du dirigeant dans le PV SELAS reprend le format
+    # EXACT du modele Albane et porte la profession REGLEMENTEE (« chirurgien-dentiste »), JAMAIS le
+    # titre derive « Docteur ». Test sur le FLUX REEL : StatutsCivilsAssocie (profession="Docteur",
+    # qualification_principale="chirurgien-dentiste") -> _build_dirigeants_nomines_payload ->
+    # _build_dirigeants_nomines -> identite_phrase. (Un test qui hardcoderait la profession
+    # masquerait le piege « Docteur » — regle 65.)
     from datetime import date as _date
 
     from sydel_doc_engine.domain.enums import Gender as _G
-    from sydel_doc_engine.domain.models import Address as _A
-    from sydel_doc_engine.front_app.selas_multi_slice import _selas_dirigeant_identite_phrase
+    from sydel_doc_engine.domain.models import Address as _A, StatutsCivilsAssocie
+    from sydel_doc_engine.front_app.selas_multi_slice import (
+        _build_dirigeants_nomines,
+        _build_dirigeants_nomines_payload,
+        _selas_dirigeant_identite_phrase,
+    )
 
-    entry: dict[str, object] = {
-        "civilite_affichage": "Monsieur", "prenom": "Jean-Guillaume", "nom": "FUCHS",
-        "nationalite": "française", "ville_naissance": "RENNES", "departement_naissance": "35",
-        "genre": _G.MASCULIN, "date_naissance_iso": _date(1994, 2, 20),
-        "profession": "chirurgien-dentiste",
-        "situation_maritale": (
+    adresse = _A(adresse_affichee="31B Boulevard de Sévigné, 35700 RENNES")
+    associe = StatutsCivilsAssocie(
+        type_personne="personne_physique", genre=_G.MASCULIN, civilite_affichage="Monsieur",
+        prenom="Jean-Guillaume", prenoms="Jean-Guillaume", nom="FUCHS",
+        date_naissance=_date(1994, 2, 20), ville_naissance="RENNES", departement_naissance="35",
+        nationalite="française",
+        profession="Docteur",  # TITRE derive (le piege Akainu B1)
+        qualification_principale="chirurgien-dentiste",  # profession REGLEMENTEE (source correcte)
+        situation_maritale=(
             "marié sous le régime de la séparation des biens avec société d’acquêts, "
             "avec Madame Eva ROUAULT"
         ),
-    }
-    adresse = _A(adresse_affichee="31B Boulevard de Sévigné, 35700 RENNES")
-    assert _selas_dirigeant_identite_phrase(entry, adresse) == (
+        adresse_personnelle=adresse,
+    )
+    payload_list = _build_dirigeants_nomines_payload([associe], 0)
+    dirigeants = _build_dirigeants_nomines({"dirigeants_nomines": payload_list}, 0, adresse)
+    assert len(dirigeants) == 1
+    phrase = dirigeants[0].identite_phrase
+    assert phrase == (
         "Monsieur Jean-Guillaume FUCHS, chirurgien-dentiste, de nationalité française, "
         "né le 20 février 1994 à RENNES (35), marié sous le régime de la séparation des biens "
         "avec société d’acquêts, avec Madame Eva ROUAULT, demeurant 31B Boulevard de Sévigné, "
         "35700 RENNES"
     )
+    assert "Docteur" not in phrase  # Akainu B1 : jamais le titre, toujours la profession reglementee
+
     # Sans profession -> None (repli byte-identique sur la reconstruction par champs du PV).
+    entry = payload_list[0]
     assert _selas_dirigeant_identite_phrase({**entry, "profession": ""}, adresse) is None
     # Genre feminin -> « née ».
-    assert (
-        "née le" in _selas_dirigeant_identite_phrase({**entry, "genre": _G.FEMININ}, adresse)
-    )
+    assert "née le" in _selas_dirigeant_identite_phrase({**entry, "genre": _G.FEMININ}, adresse)
 
 
 def test_repeater_nationalite_dropdown_lowercased() -> None:

@@ -637,7 +637,10 @@ def _build_dirigeants_nomines_payload(
                 # A26-PV5 : profession + situation maritale de l'associe pour la phrase
                 # d'identite complete du PV (modele PV nominations dirigeants SELAS :
                 # « ..., <profession>, de nationalite ..., ne le ..., <situation maritale>, ... »).
-                "profession": associe.profession,
+                # Akainu B1 : la phrase exige la profession REGLEMENTEE (« chirurgien-dentiste »),
+                # portee par `qualification_principale` — JAMAIS le TITRE derive « Docteur »
+                # (`associe.profession`). Meme regle que le mapping A1 (selas_multi_slice:2054).
+                "profession": (associe.qualification_principale or associe.profession),
                 "situation_maritale": associe.situation_maritale,
                 # Adresse personnelle structuree de l'associe.
                 "adresse_num": str((adresse.num_voie if adresse else "") or ""),
