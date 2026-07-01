@@ -4,6 +4,46 @@
 > on NE bloque PAS et on NE demande PAS à Gad — on applique le **défaut le plus simple / sûr** ci-dessous,
 > on accumule ici, Rafael/Albane tranchent plus tard, on rajuste au besoin.
 
+## ✅ RÉSOLUS 2026-07-01 — réponse Rafael « comme les modèles + le plus logique »
+
+Rafael (2026-07-01) : « faut comme sur les modèles et ce qui partait le plus logique ». Cette
+réponse TRANCHE en bloc les points ci-dessous — appliqués sans nouvelle question :
+
+- **Ordre des mots destinataire Ordre (SU2/R5, ligne 39)** → **forme A = profession PUIS
+  département** « Conseil départemental de l'Ordre des médecins du Rhône » (forme du modèle Albane
+  doc_08 26/06 + instruction ferme 02/06). Le « du Calvados des médecins » du 30/06 était un exemple,
+  pas une inversion. **Commit `fc91f6f`**, Akainu RIEN À REDIRE. [m1 Akainu] apostrophe destinataire :
+  le générateur uniformise en apostrophe typographique U+2019 (français correct + cohérent), le modèle
+  est lui-même incohérent (U+0027 sur cette seule ligne) → **décision : garder U+2019 uniforme**
+  (« le plus logique »), pré-existant, non introduit par le fix.
+- **Titre compromis « Inscription de la SELARL au Tableau » (O24-fidélité-SELARL #2, ligne 19)** →
+  **dynamique** : token `[forme_sociale_acquereur]` (ses modèles « transforme » le tokenisent). SELARL
+  → « SELARL » byte-identique ; SELAS → « SELAS ». **Commit `6b86e45`**.
+- **Plages de parts « à » accentué (N4, ligne 36 ; SP3 auto-calc, ligne 44)** → **« 1 à 100 » avec
+  « à »** (le modèle SCI IRIS écrit « numérotées de [parts_debut] à [parts_fin] » + français correct).
+  Points de composition front + helpers de dérivation. **Commit `c609a33`**. NB : les plages
+  SPFPL **texte-libre** (SP3) restent l'écho fidèle de la saisie (le help front peut suggérer « à »).
+- **DOC-045 attestation SELAS (ANO-045, ligne 38)** → **le canon fait foi** : DOC-045 est câblé au
+  bundle SELAS (câblage des données `capital_souscription`/`depot_fonds`/`societe_spfpl` + inclusion
+  conditionnelle). **Périmètre « comme les modèles »** : le modèle Albane ne représente que des
+  souscripteurs PHYSIQUES (« au Dr X ») → attestation générée quand tous les associés sont physiques
+  et que la somme des actions = total ; le cas **associé PERSONNE MORALE reste flaggé** (aucun modèle
+  Albane pour un souscripteur moral → non inventé, DOC-045 non émis dans ce cas, à confirmer si un
+  modèle morale existe).
+- **Nom d'usage « épouse <nom> » (MH-épouse / Q4, ligne 52)** → **capturé comme les modèles** (SCS +
+  micro holding : « <civ> <prénoms> <NOM NAISSANCE> épouse <NOM D'USAGE> »). **Déclencheur logique** :
+  uniquement quand un nom de naissance distinct est saisi (sinon rendu inchangé, byte-identique).
+  Convention : `nom` = nom d'usage (apport/signature) ; `nom_naissance` = maiden (comparution).
+- **MH signature (date longue + « Mme »)** → **fait** : zone signature micro holding « Le 22 mai 2026 »
+  (forme longue) + « Mme » (civilité abrégée), comme `Statuts_Micro_holding.docx`.
+- **N4 plages** (voir ci-dessus) : accent « à » généralisé.
+
+### Déjà couverts (vérif code 2026-07-01, aucun build nécessaire)
+- **SASU « Fait pour servir »** : déjà omis pour la SASU Holding (`procuration.py:91`
+  `if ctx.structure != "SASU_HOLDING"`, sourcé modèle SAS, gaté Akainu).
+- **Salarié repris incomplet** : le formulaire **bloque déjà** la soumission
+  (`selarl_slice.py:481-489` : « identite complete du salarie X requise (civilite, prenom, nom) »).
+
 | # | Question | Défaut appliqué (réversible) |
 |---|---|---|
 | #9 | En retirant le champ « profession » (garder « qualification »), la comparution doit-elle **garder le titre « Docteur »** (« Docteur Médecin généraliste… ») ou **ne montrer que la qualification** (« Médecin généraliste… ») ? | **Titre « Docteur » conservé et dérivé** → output de l'acte INCHANGÉ ; seul le champ disparaît du formulaire. |
