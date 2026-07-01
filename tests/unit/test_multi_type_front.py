@@ -1678,9 +1678,9 @@ def test_selas_ordre_conseil_derive_sans_champ_libelle(tmp_path: Path) -> None:
         next(p for p in generated.docx_paths if p.name == "demande_inscription_ordre.docx")
     )
     # Connecteur par defaut « de » (ordre_connecteur absent).
-    # R5 (Albane 2026-06-30) : FORME LONGUE « Conseil départemental de l’Ordre <connecteur>
-    # <departement> des <profession_pluriel> » (departement PUIS profession).
-    assert "Conseil départemental de l’Ordre de Rhône des médecins" in text
+    # R5 (Albane) : FORME LONGUE « Conseil départemental de l’Ordre des <profession_pluriel>
+    # <connecteur> <departement> » (profession PUIS departement, forme du modele d'Albane).
+    assert "Conseil départemental de l’Ordre des médecins de Rhône" in text
 
 
 def test_selas_ordre_connecteur_du(tmp_path: Path) -> None:
@@ -1693,8 +1693,9 @@ def test_selas_ordre_connecteur_du(tmp_path: Path) -> None:
     text = _docx_text(
         next(p for p in generated.docx_paths if p.name == "demande_inscription_ordre.docx")
     )
-    # R5 (Albane 2026-06-30) : FORME LONGUE avec connecteur « du » + profession au pluriel.
-    assert "Conseil départemental de l’Ordre du Rhône des médecins" in text
+    # R5 (Albane) : FORME LONGUE profession (pluriel) PUIS connecteur « du » + departement,
+    # comme le modele d'Albane (« des médecins du Rhône »). Confirme 2026-07-01.
+    assert "Conseil départemental de l’Ordre des médecins du Rhône" in text
     assert "Conseil départemental de Rhône" not in text
 
 
@@ -3060,10 +3061,11 @@ def test_su1_selas_uni_situation_un_seul_champ_menu(tmp_path: Path, monkeypatch)
 
 
 def test_r5_selas_uni_destinataire_forme_longue_connecteur_des(tmp_path: Path) -> None:
-    # R5 (Albane 2026-06-30) SUPERSEDE SU2 (25/06) : le destinataire revient a la FORME LONGUE
-    # « Conseil départemental de l’Ordre <connecteur> <departement> des <profession_pluriel> ».
+    # R5 (Albane) SUPERSEDE SU2 (25/06) : le destinataire revient a la FORME LONGUE
+    # « Conseil départemental de l’Ordre des <profession_pluriel> <connecteur> <departement> »
+    # (profession PUIS departement, forme du modele d'Albane, confirme 2026-07-01).
     # Cas connecteur « des » (departement « Hauts de Seine » -> « des Hauts de Seine ») : le
-    # rendu porte alors deux « des » (« ... de l’Ordre des Hauts de Seine des médecins »), ce
+    # rendu porte alors deux « des » (« ... de l’Ordre des médecins des Hauts de Seine »), ce
     # qui est l'accord correct du departement « (les) Hauts-de-Seine ».
     from sydel_doc_engine.front_app import selas_uni_medecin_slice as uni
 
@@ -3074,7 +3076,7 @@ def test_r5_selas_uni_destinataire_forme_longue_connecteur_des(tmp_path: Path) -
     text = _docx_text(
         next(p for p in generated.docx_paths if p.name == "demande_inscription_ordre.docx")
     )
-    assert "Conseil départemental de l’Ordre des Hauts de Seine des médecins" in text
+    assert "Conseil départemental de l’Ordre des médecins des Hauts de Seine" in text
 
 
 @pytest.mark.parametrize(

@@ -173,22 +173,22 @@ def _conseil_departemental_lines(
     overlay: str,
     profession_ligne_destinataire: str,
 ) -> list[str]:
-    # R5 (Albane 2026-06-30, AUTORITE METIER) : le destinataire est la FORME LONGUE
-    # « Conseil départemental de l’Ordre <connecteur> <departement> des <profession_pluriel> »
-    # (ex. « Conseil départemental de l’Ordre du Calvados des médecins »). Cette decision
+    # R5 (Albane, AUTORITE METIER) : le destinataire est la FORME LONGUE
+    # « Conseil départemental de l’Ordre des <profession_pluriel> <connecteur> <departement> »
+    # (ex. « Conseil départemental de l’Ordre des médecins du Rhône »). Cette decision
     # SUPERSEDE la forme courte SU2 (Albane 2026-06-25) qui avait retire « de l’Ordre des
-    # <profession> » — Albane (autorite metier) revient a la forme longue le 2026-06-30 et
-    # ajoute deux exigences : (1) « de l’Ordre » avant le departement, (2) la profession au
-    # pluriel a la fin.
+    # <profession> » — Albane (autorite metier) revient a la forme longue et exige (1) « de
+    # l’Ordre » present, (2) la profession au pluriel.
+    # ORDRE DES MOTS = profession PUIS departement (« ... de l’Ordre des médecins du Rhône »).
+    # Confirme Rafael/Albane 2026-07-01 (« comme les modeles ») : c'est la forme du MODELE
+    # source d'Albane (doc_08 26/06 « des médecins du Rhône ») + son instruction ferme du
+    # 02/06 + le gold historique. Le « du Calvados des médecins » du 30/06 etait un exemple
+    # (« par ex »), pas une inversion de l'ordre.
     # M1 (Akainu, 2026-06-30, regle 68 Q4 anti-siloing) : cette forme s'applique a TOUT overlay
     # qui ecrit a l'Ordre (SEL + SPFPL + SCM), pas seulement SEL. SPFPL et SCM portent eux aussi
     # un departement d'inscription (`ordre_departement` requis cote front pour les deux), donc la
     # forme longue identique s'applique. La condition pivote sur la PRESENCE du departement, plus
     # sur l'overlay.
-    # ORDRE DES MOTS = departement PUIS profession (verbatim 30/06 « ... de l’Ordre du
-    # Calvados des médecins »). ⚠️ A CONFIRMER ALBANE : le modele du 26/06 ecrivait
-    # l'inverse (« ... de l’Ordre des médecins du Rhône », profession PUIS departement) ;
-    # on applique le PLUS RECENT (30/06) comme defaut.
     # `profession_ligne_destinataire` porte deja la profession AU PLURIEL (cf. prefill
     # front : `profession_pluriel`), comme « médecins » / « chirurgiens-dentistes ».
     if ordre.departement_inscription and ordre.departement_inscription.strip():
@@ -201,8 +201,8 @@ def _conseil_departemental_lines(
         # « de » = comportement historique.
         connecteur = (ordre.connecteur_departement or "de").strip() or "de"
         return [
-            f"Conseil départemental de l’Ordre {connecteur} {departement} "
-            f"des {profession_ligne_destinataire}"
+            f"Conseil départemental de l’Ordre des {profession_ligne_destinataire} "
+            f"{connecteur} {departement}"
         ]
     # FALLBACK sans departement (cas degrade : aucun overlay front ne devrait l'atteindre,
     # SEL/SPFPL/SCM fournissant tous un departement). On garde une forme COHERENTE avec R5 :

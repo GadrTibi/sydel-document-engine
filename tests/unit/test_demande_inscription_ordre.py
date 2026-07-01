@@ -155,11 +155,13 @@ def test_demande_inscription_ordre_selarl_uses_structured_ordinal_address(
 
     assert output_path == tmp_path / "demande_inscription_ordre.docx"
     assert "Dr Jean Durand" in text
-    # R5 (Albane 2026-06-30, AUTORITE METIER) : destinataire FORME LONGUE
-    # « Conseil départemental de l’Ordre <connecteur> <departement> des <profession_pluriel> »
-    # (departement PUIS profession, verbatim 30/06). SUPERSEDE la forme courte SU2 (25/06).
+    # R5 (Albane, AUTORITE METIER) : destinataire FORME LONGUE
+    # « Conseil départemental de l’Ordre des <profession_pluriel> <connecteur> <departement> »
+    # (profession PUIS departement — forme du MODELE d'Albane doc_08 26/06 « des médecins du
+    # Rhône » + instruction ferme 02/06, confirmee Rafael/Albane 2026-07-01 « comme les
+    # modeles »). SUPERSEDE la forme courte SU2 (25/06).
     assert (
-        "Conseil départemental de l’Ordre de la Loire-Atlantique des chirurgiens-dentistes"
+        "Conseil départemental de l’Ordre des chirurgiens-dentistes de la Loire-Atlantique"
         in paragraphs
     )
     assert "Des chirurgiens-dentistes" not in paragraphs
@@ -180,7 +182,7 @@ def test_demande_inscription_ordre_selarl_uses_structured_ordinal_address(
     assert subject.runs[0].underline is True
     recipient = _matching_paragraphs(
         output_path,
-        "Conseil départemental de l’Ordre de la Loire-Atlantique des chirurgiens-dentistes",
+        "Conseil départemental de l’Ordre des chirurgiens-dentistes de la Loire-Atlantique",
     )[0]
     assert recipient.paragraph_format.left_indent > Cm(8)
     assert _matching_paragraphs(output_path, "Dr Jean Durand")[-1].alignment == (
@@ -190,8 +192,8 @@ def test_demande_inscription_ordre_selarl_uses_structured_ordinal_address(
 
 
 def test_demande_inscription_ordre_recipient_matches_albane_verbatim(tmp_path: Path) -> None:
-    """R5 (Albane 2026-06-30) : verbatim exact « Conseil départemental de l’Ordre du Calvados
-    des médecins » (connecteur « du » + profession au pluriel « médecins »)."""
+    """R5 (Albane) : forme du modele « Conseil départemental de l’Ordre des médecins du
+    Calvados » (profession au pluriel « médecins » PUIS connecteur « du » + departement)."""
     ordre = OrdreProfessionnel(
         conseil_departemental_libelle="Conseil départemental de l’Ordre",
         departement_inscription="Calvados",
@@ -203,7 +205,7 @@ def test_demande_inscription_ordre_recipient_matches_albane_verbatim(tmp_path: P
         adresse=OrdreAddress(ligne_1="6 rue du Conseil", cp="14000", ville="Caen"),
     )
     paragraphs = _paragraphs(_generate(tmp_path, _context("SELARL", ordre=ordre)))
-    assert "Conseil départemental de l’Ordre du Calvados des médecins" in paragraphs
+    assert "Conseil départemental de l’Ordre des médecins du Calvados" in paragraphs
 
 
 def test_demande_inscription_ordre_selas_uses_same_overlay_as_selarl(tmp_path: Path) -> None:
@@ -257,7 +259,7 @@ def test_demande_inscription_ordre_scm_requires_explicit_ordinal_data(
     assert "médecin" in text
     # M1 (Akainu, 2026-06-30, regle 68 Q4) : la forme longue R5 est propagee a SCM
     # (plus l'ancienne 2e ligne « Des médecins » capitalisee).
-    assert "Conseil départemental de l’Ordre du Rhône des médecins" in text
+    assert "Conseil départemental de l’Ordre des médecins du Rhône" in text
     assert "Des médecins" not in text
     assert "4 avenue Ordinale" in text
     assert "69002 Lyon" in text
@@ -272,7 +274,7 @@ def test_demande_inscription_ordre_spfpl_recipient_uses_long_form(tmp_path: Path
             _context("SPFPL cession", ordre=_spfpl_ordre(), mandataire=_configured_mandataire()),
         )
     )
-    assert "Conseil départemental de l’Ordre du Calvados des chirurgiens-dentistes" in text
+    assert "Conseil départemental de l’Ordre des chirurgiens-dentistes du Calvados" in text
     assert "Des chirurgiens-dentistes" not in text
 
 
