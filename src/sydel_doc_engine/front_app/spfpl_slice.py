@@ -398,31 +398,37 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
     if not is_apport:
         cession_data = _render_spfpl_cession_cible(prefix)
 
-    st.markdown("**Exercice / signature**")
-    if is_apport:
-        # SPFPL APPORT (retour Rafael 2026-07-01, « champs date qui n'ont pas de sens ») :
-        # l'exercice social est FIGE dans le modele d'apport (« commence le 1er janvier et
-        # finit le 31 decembre », statuts_spfpl_templates.py:660). Aucun generateur du bundle
-        # apport ne lit exercice.debut/fin (verifie) -> ces 2 selecteurs de date etaient
-        # INUTILES en apport. On ne les DEMANDE plus ; valeurs figees au modele (validation
-        # partagee satisfaite, sortie byte-inchangee car jamais rendues). Seule la cloture du
-        # 1er exercice reste saisie (elle, EST rendue en apport via date_cloture_premier).
-        exercice_debut = "1er janvier"
-        exercice_fin = "31 décembre"
-        date_cloture = _t(
-            st, prefix, "date_cloture", "Date de clôture du 1er exercice (ex : 31 décembre 2028)"
-        )
-    else:
-        col_ad, col_ae, col_af = st.columns(3)
-        exercice_debut = _t(
-            col_ad, prefix, "exercice_debut", "Début de l'exercice comptable (ex : 1er janvier)"
-        )
-        exercice_fin = _t(
-            col_ae, prefix, "exercice_fin", "Fin de l'exercice comptable (ex : 31 décembre)"
-        )
-        date_cloture = _t(
-            col_af, prefix, "date_cloture", "Date de clôture du 1er exercice (ex : 31 décembre 2028)"
-        )
+    # Retour Rafael 2026-07-01 : exercice/cloture pre-remplis et recurrents -> volet replie.
+    with st.expander(
+        "Exercice comptable et clôture (pré-rempli — modifier si besoin)", expanded=False
+    ):
+        if is_apport:
+            # SPFPL APPORT : l'exercice social est FIGE dans le modele d'apport (« commence le
+            # 1er janvier et finit le 31 decembre », statuts_spfpl_templates.py:660). Aucun
+            # generateur du bundle apport ne lit exercice.debut/fin (verifie) -> ces 2 selecteurs
+            # etaient INUTILES en apport. On ne les DEMANDE plus ; valeurs figees au modele
+            # (validation satisfaite, sortie byte-inchangee car jamais rendues). Seule la cloture
+            # du 1er exercice reste saisie (elle, EST rendue en apport via date_cloture_premier).
+            exercice_debut = "1er janvier"
+            exercice_fin = "31 décembre"
+            date_cloture = _t(
+                st, prefix, "date_cloture",
+                "Date de clôture du 1er exercice (ex : 31 décembre 2028)",
+            )
+        else:
+            col_ad, col_ae, col_af = st.columns(3)
+            exercice_debut = _t(
+                col_ad, prefix, "exercice_debut",
+                "Début de l'exercice comptable (ex : 1er janvier)",
+            )
+            exercice_fin = _t(
+                col_ae, prefix, "exercice_fin", "Fin de l'exercice comptable (ex : 31 décembre)"
+            )
+            date_cloture = _t(
+                col_af, prefix, "date_cloture",
+                "Date de clôture du 1er exercice (ex : 31 décembre 2028)",
+            )
+    st.markdown("**Signature**")
     signature_lieu = _t(st, prefix, "signature_lieu", "Lieu de signature")
     signature_date = _date(prefix, "signature_date", "Date de signature")
 

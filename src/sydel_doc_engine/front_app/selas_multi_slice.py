@@ -399,7 +399,11 @@ def render_selas_form(type_key: str = "selas_multi_v1") -> dict[str, object]:
     banque_adresse = _t(
         col_k, "banque_adresse", "Adresse banque", hint="ex : 5 place Bellecour, 69002 Lyon"
     )
-    date_cloture = _t(st, "date_cloture", "Cloture du premier exercice")
+    # Retour Rafael 2026-07-01 : cloture pre-remplie (seed_closing_date) et recurrente -> volet replie.
+    with st.expander("Clôture du 1er exercice (pré-rempli — modifier si besoin)", expanded=False):
+        date_cloture = _t(
+            st, "date_cloture", "Date de clôture du 1er exercice (ex : 31 décembre 2028)"
+        )
 
     # O24-03 (onglet 24) : siege sur UNE ligne (parse interne -> num_voie/voie/cp/ville
     # exiges par la domiciliation [num_voie_siege] et la procuration). La case « siege =

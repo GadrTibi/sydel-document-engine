@@ -187,11 +187,18 @@ def render_selas_uni_dentiste_form() -> dict[str, object]:
         hint="ex : 5 place Bellecour, 69002 Lyon",
     )
 
-    st.markdown("Exercice social")
-    col_j, col_k, col_l = st.columns(3)
-    exercice_debut = _t(col_j, "exercice_debut", "Debut (ex: 1er janvier)")
-    exercice_fin = _t(col_k, "exercice_fin", "Fin (ex: 31 décembre)")
-    exercice_cloture = _t(col_l, "exercice_cloture", "Cloture du 1er exercice")
+    # Retour Rafael 2026-07-01 : exercice/cloture pre-remplis et recurrents -> volet replie.
+    with st.expander(
+        "Exercice comptable et clôture (pré-rempli — modifier si besoin)", expanded=False
+    ):
+        col_j, col_k, col_l = st.columns(3)
+        exercice_debut = _t(
+            col_j, "exercice_debut", "Début de l'exercice comptable (ex : 1er janvier)"
+        )
+        exercice_fin = _t(col_k, "exercice_fin", "Fin de l'exercice comptable (ex : 31 décembre)")
+        exercice_cloture = _t(
+            col_l, "exercice_cloture", "Date de clôture du 1er exercice (ex : 31 décembre 2028)"
+        )
 
     st.markdown("**Associe unique / President**")
     col_m, col_n, col_o = st.columns(3)

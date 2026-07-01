@@ -236,12 +236,20 @@ def render_sas_form() -> dict[str, object]:
     col_v, col_w = st.columns(2)
     banque_nom = _t(col_v, "banque_nom", "Banque depot", hint="ex : CIC CHAPEAU ROUGE BORDEAUX")
     signature_lieu = _t(col_w, "signature_lieu", "Lieu de signature")
-    col_x, col_y, col_z = st.columns(3)
-    exercice_debut = _t(col_x, "exercice_debut", "Début de l'exercice comptable (ex : 1er janvier)")
-    exercice_fin = _t(col_y, "exercice_fin", "Fin de l'exercice comptable (ex : 31 décembre)")
-    date_cloture = _t(
-        col_z, "date_cloture", "Date de clôture du 1er exercice (ex : 31 décembre 2028)"
-    )
+    # Retour Rafael 2026-07-01 : les dates d'exercice/cloture sont quasi toujours les memes
+    # (1er janvier -> 31 decembre, cloture 31 decembre N+1) et pre-remplies (seed_exercice_dates /
+    # seed_closing_date). On les MASQUE par defaut dans un volet replie pour ne pas alourdir la
+    # saisie ; l'utilisateur les modifie s'il en a besoin. Valeurs seedees conservees (widgets
+    # instancies meme replies), sortie inchangee.
+    with st.expander("Exercice comptable et clôture (pré-rempli — modifier si besoin)", expanded=False):
+        col_x, col_y, col_z = st.columns(3)
+        exercice_debut = _t(
+            col_x, "exercice_debut", "Début de l'exercice comptable (ex : 1er janvier)"
+        )
+        exercice_fin = _t(col_y, "exercice_fin", "Fin de l'exercice comptable (ex : 31 décembre)")
+        date_cloture = _t(
+            col_z, "date_cloture", "Date de clôture du 1er exercice (ex : 31 décembre 2028)"
+        )
     signature_date = _date(PREFIX, "signature_date", "Date de signature")
 
     return {

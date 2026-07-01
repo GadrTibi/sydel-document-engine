@@ -182,12 +182,17 @@ def render_sasu_holding_form() -> dict[str, object]:
     col_n, col_o = st.columns(2)
     banque_nom = _t(col_n, "banque_nom", "Banque depot", hint="ex : HSBC")
     signature_lieu = _t(col_o, "signature_lieu", "Lieu de signature")
-    col_p, col_q, col_r = st.columns(3)
-    exercice_debut = _t(col_p, "exercice_debut", "Début de l'exercice comptable (ex : 1er janvier)")
-    exercice_fin = _t(col_q, "exercice_fin", "Fin de l'exercice comptable (ex : 31 décembre)")
-    date_cloture = _t(
-        col_r, "date_cloture", "Date de clôture du 1er exercice (ex : 31 décembre 2028)"
-    )
+    # Retour Rafael 2026-07-01 : dates d'exercice/cloture pre-remplies et quasi toujours identiques
+    # -> masquees dans un volet replie (modifiable). Valeurs seedees conservees, sortie inchangee.
+    with st.expander("Exercice comptable et clôture (pré-rempli — modifier si besoin)", expanded=False):
+        col_p, col_q, col_r = st.columns(3)
+        exercice_debut = _t(
+            col_p, "exercice_debut", "Début de l'exercice comptable (ex : 1er janvier)"
+        )
+        exercice_fin = _t(col_q, "exercice_fin", "Fin de l'exercice comptable (ex : 31 décembre)")
+        date_cloture = _t(
+            col_r, "date_cloture", "Date de clôture du 1er exercice (ex : 31 décembre 2028)"
+        )
     signature_date = _date(PREFIX, "signature_date", "Date de signature")
 
     return {

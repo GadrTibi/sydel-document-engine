@@ -308,9 +308,14 @@ def render_civil_form(structure: str) -> dict[str, object]:
     banque_adresse = _text(
         col_l, prefix, "banque_adresse", "Adresse banque", hint="ex : 5 place Bellecour, 69002 Lyon"
     )
-    date_cloture = _text(
-        st, prefix, "date_cloture_premier_exercice", "Cloture du premier exercice"
-    )
+    # Retour Rafael 2026-07-01 : cloture pre-remplie (seed_closing_date) et recurrente -> volet replie.
+    with st.expander("Clôture du 1er exercice (pré-rempli — modifier si besoin)", expanded=False):
+        date_cloture = _text(
+            st,
+            prefix,
+            "date_cloture_premier_exercice",
+            "Date de clôture du 1er exercice (ex : 31 décembre 2028)",
+        )
 
     st.markdown("**Signature**")
     # Lieu de signature : supprime du questionnaire ; on reprend automatiquement la
