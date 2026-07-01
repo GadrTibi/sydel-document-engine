@@ -105,7 +105,10 @@ CATALOG_DOCUMENTS: tuple[CatalogDocument, ...] = (
     ),
     CatalogDocument(
         "pv_nomination_gerant",
-        "PV nomination gerant",
+        # A26-label (Albane 2026-06-26) : libelle affiche « PV nomination dirigeant » (terme
+        # generique — le gerant d'une societe civile EST un dirigeant, le president d'une SEL
+        # aussi). La CLE et le nom de fichier restent inchanges (compat).
+        "PV nomination dirigeant",
         "PV nomination gerant.docx",
         "DOC-004",
         DocumentAvailability.GENERATABLE,

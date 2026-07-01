@@ -212,7 +212,7 @@ UNIT_DOCUMENT_V1_REQUIREMENTS: dict[str, DocumentRequirementRecord] = {
     ),
     "DOC-004": DocumentRequirementRecord(
         doc_code="DOC-004",
-        doc_label="PV nomination gerant",
+        doc_label="PV nomination dirigeant",  # A26-label (Albane 2026-06-26)
         required_roles=(
             BusinessRole.SIGNATAIRE,
             BusinessRole.ASSOCIE,

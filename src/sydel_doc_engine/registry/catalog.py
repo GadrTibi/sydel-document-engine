@@ -183,7 +183,8 @@ def build_seed_catalog() -> list[DocumentDefinition]:
         ),
         DocumentDefinition(
             doc_id="DOC-004",
-            canonical_name="PV nomination gérant",
+            # A26-label (Albane 2026-06-26) : « dirigeant » (generique). Cle/generateur inchanges.
+            canonical_name="PV nomination dirigeant",
             generator_name="generate_pv_nomination_gerant",
             lot=2,
             category=DocumentCategory.MUTUALISABLE,
