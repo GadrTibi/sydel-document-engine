@@ -509,6 +509,33 @@ def _selas_context(
     return ctx
 
 
+def test_pv_nomination_selas_rend_identite_phrase_complete(tmp_path: Path) -> None:
+    # A26-PV5 (Akainu M2) : quand un dirigeant porte une `identite_phrase` (SELAS), le PV la rend
+    # VERBATIM (profession reglementee + situation maritale du modele Albane) + le wording du
+    # modele « pour une durée indéterminée : ». Couvre le chemin de rendu identite_phrase
+    # (pv_nomination_gerant.py:660-662) + la bascule use_model_wording (L629) — non exerces sinon.
+    phrase = (
+        "Monsieur Jean-Guillaume FUCHS, chirurgien-dentiste, de nationalité française, "
+        "né le 20 février 1994 à RENNES (35), marié sous le régime de la séparation des biens "
+        "avec société d’acquêts, avec Madame Eva ROUAULT, demeurant 31B Boulevard de Sévigné, "
+        "35700 RENNES"
+    )
+    dirigeant = DirigeantNomine(
+        genre=Gender.MASCULIN, civilite_affichage="Monsieur", prenom="Jean-Guillaume", nom="FUCHS",
+        date_naissance=date(1994, 2, 20), ville_naissance="RENNES", departement_naissance="35",
+        nationalite="française",
+        adresse_personnelle=Address(
+            num_voie="31B", voie="Boulevard de Sévigné", cp="35700", ville="RENNES"
+        ),
+        fonction_affichage="Président", identite_phrase=phrase,
+    )
+    text = _docx_text(_generate(tmp_path, _selas_context(dirigeants=[dirigeant])))
+    assert phrase in text  # rendu verbatim de la phrase du modele
+    assert "chirurgien-dentiste" in text  # profession reglementee presente
+    assert "Docteur" not in text  # jamais le titre (Akainu B1)
+    assert "pour une durée indéterminée :" in text  # wording modele (use_model_wording)
+
+
 def test_pv_nomination_selas_actions_vocabulary(tmp_path: Path) -> None:
     # Vocabulaire « actions » (SELAS) au lieu de « parts » : intro + bloc associes.
     ctx = _selas_context(dirigeants=_selas_dirigeants())
