@@ -7,6 +7,7 @@ from pathlib import Path
 
 from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.shared import Pt
 
 from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import (
@@ -192,6 +193,10 @@ def generate_statuts_civil_docx(  # noqa: C901
             continue
         if is_creation_fee_annexe_line(rendered):  # O24-01 : annexe sans frais cabinet création
             continue
+        # Retour Albane 2026-07-01 : la page d'ANNEXE (« Liste des actes accomplis pour le compte
+        # de la société en formation ») doit SYSTEMATIQUEMENT commencer sur une nouvelle page.
+        if rendered.strip().upper() == "ANNEXE":
+            output_doc.add_page_break()
         _add_rendered_paragraph(output_doc, rendered, paragraph)
         if template.expected_type == "sci_iris" and index == 561:
             _add_resultat_groupes_block(output_doc, data)
@@ -398,6 +403,7 @@ def _bold_paragraph(paragraph) -> None:
 def _add_associate_block(document, data: _ResolvedStatutsCivil) -> None:
     micro_holding = data.template.expected_type == "micro_holding"
     for associe in data.associes:
+        start = len(document.paragraphs)
         if _is_morale(associe):
             if micro_holding:
                 _add_morale_identity_micro_holding(document, associe)
@@ -407,6 +413,16 @@ def _add_associate_block(document, data: _ResolvedStatutsCivil) -> None:
             _add_physical_identity_micro_holding(document, associe)
         else:
             _add_physical_identity(document, associe)
+        if micro_holding:
+            # Retour Albane 2026-07-01 : dans la comparution micro holding, les mentions d'UN
+            # associe sont COLLEES (interligne retire, un bloc coherent) et un ESPACE separe les
+            # blocs entre eux ET suit la description des associes. On serre les lignes du bloc
+            # (space_after = 0) et on aere apres le bloc (space_after = 10 pt).
+            block = document.paragraphs[start:]
+            for para in block[:-1]:
+                para.paragraph_format.space_after = Pt(0)
+            if block:
+                block[-1].paragraph_format.space_after = Pt(10)
 
 
 def _mh_morale_denomination(associe: StatutsCivilsAssocie) -> str:

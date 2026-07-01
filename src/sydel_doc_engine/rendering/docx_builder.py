@@ -122,7 +122,58 @@ def new_document_from_model(model_path: Any) -> Any:
     # juste avant lui -> son 1er bloc devient body[0] (titre), sans amorce vide en tete.
     if governing_sect_pr is not None:
         body.append(governing_sect_pr)
+    # Charte SYDEL (retour Albane 2026-07-01 : « police Times au lieu de Roboto ») : la police
+    # par defaut HERITEE du modele n'est PAS forcement Roboto (ex. le modele micro holding est en
+    # Times New Roman). On garde toute la GEOMETRIE / mise en page du modele, mais on IMPOSE la
+    # FAMILLE de police de la charte (Roboto) sur les styles -> layout du modele + police SYDEL.
+    # On ne touche NI aux marges NI aux tailles (seule la famille change).
+    _force_charter_font_family(document, DEFAULT_STYLE_PROFILE.font_name)
     return document
+
+
+def _force_charter_font_family(document: Any, font_name: str) -> None:
+    """Force la FAMILLE de police `font_name` (charte SYDEL) partout, sans toucher aux tailles
+    ni a la geometrie. A appeler apres new_document_from_model pour que la mise en page HERITEE
+    du modele s'affiche dans la police SYDEL et non celle (arbitraire) du modele.
+
+    Pose la police a 3 niveaux pour couvrir tous les cas d'heritage docx :
+    (1) docDefaults (rPrDefault) = police par defaut du document ;
+    (2) le style « Normal » (base dont heritent les runs sans police explicite) ;
+    (3) chaque style de paragraphe/caractere qui definit une police propre (Title, Heading...).
+    """
+
+    def _set_rfonts(rpr: Any) -> None:
+        if rpr is None:
+            return
+        rfonts = rpr.find(qn("w:rFonts"))
+        if rfonts is None:
+            rfonts = OxmlElement("w:rFonts")
+            rpr.insert(0, rfonts)
+        for attr in ("w:ascii", "w:hAnsi", "w:eastAsia", "w:cs"):
+            rfonts.set(qn(attr), font_name)
+
+    styles_element = document.styles.element
+    # (1) docDefaults / rPrDefault : police par defaut de tout le document.
+    doc_defaults = styles_element.find(qn("w:docDefaults"))
+    if doc_defaults is not None:
+        rpr_default = doc_defaults.find(qn("w:rPrDefault"))
+        if rpr_default is not None:
+            rpr = rpr_default.find(qn("w:rPr"))
+            if rpr is None:
+                rpr = OxmlElement("w:rPr")
+                rpr_default.append(rpr)
+            _set_rfonts(rpr)
+    # (2) + (3) chaque style porteur d'une police.
+    for style in document.styles:
+        try:
+            font = style.font
+        except (AttributeError, ValueError):
+            continue
+        try:
+            font.name = font_name
+            _set_rfonts(style.element.get_or_add_rPr())
+        except (AttributeError, ValueError, KeyError):
+            continue
 
 
 _SYDEL_LOGO_PATH = Path(__file__).resolve().parent.parent / "assets" / "logo_sydel.png"

@@ -321,9 +321,12 @@ def test_capital_max_ligne_dans_docx_reel(tmp_path: Path) -> None:
 
 
 def test_micro_holding_inherits_model_form_and_overwrites_client_footer(tmp_path: Path) -> None:
-    # R1 (Albane 2026-06-30) : la micro holding herite la FORME du modele Albane (police
-    # Times New Roman 12 pt, A4) au lieu du profil SYDEL (Roboto 10, Letter US). Le modele porte
-    # un footer CLIENT (« ...Berte ») qui DOIT etre ecrase par la denomination du dossier.
+    # R1 (Albane 2026-06-30) : la micro holding herite la GEOMETRIE / mise en page du modele
+    # Albane (A4, taille 12 pt) au lieu du profil SYDEL Letter US.
+    # MAJ police (Albane 2026-07-01 : « police Times au lieu de Roboto, notre charte ») : on garde
+    # la geometrie ET la taille du modele, mais on IMPOSE la police de la CHARTE (Roboto). Le
+    # modele est en Times New Roman ; on ne le reproduit plus (c'etait l'ecart signale). Le modele
+    # porte aussi un footer CLIENT (« ...Berte ») qui DOIT etre ecrase par la denomination.
     from docx import Document
     from docx.shared import Cm
 
@@ -332,9 +335,9 @@ def test_micro_holding_inherits_model_form_and_overwrites_client_footer(tmp_path
     section = document.sections[0]
     normal = document.styles["Normal"]
 
-    assert normal.font.name == "Times New Roman"
-    assert normal.font.size is not None and normal.font.size.pt == 12.0
-    assert abs(section.page_height - Cm(29.7)) < Cm(0.1)
+    assert normal.font.name == "Roboto"  # charte SYDEL (imposee), plus le Times du modele
+    assert normal.font.size is not None and normal.font.size.pt == 12.0  # taille du modele conservee
+    assert abs(section.page_height - Cm(29.7)) < Cm(0.1)  # A4 du modele conserve
     assert abs(section.page_width - Cm(21.59)) > Cm(0.1)  # pas Letter US SYDEL
     footer_text = " | ".join(p.text for p in section.footer.paragraphs if p.text)
     assert "Micro holding famille Berte - Statuts constitutifs" in footer_text
