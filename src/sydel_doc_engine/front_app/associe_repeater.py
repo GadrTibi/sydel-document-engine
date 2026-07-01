@@ -291,6 +291,12 @@ def _render_personne_physique(
     )
     prenom = _text(prefix, "prenom", "Prenom", container=col_b)
     nom = _text(prefix, "nom", "Nom", container=col_c)
+    # Q4 (nom d'usage marital) : nom de naissance OPTIONNEL. S'il est renseigne ET differe du nom
+    # d'usage, la comparution (SCS / micro holding) rend « <prenoms> <nom_naissance> épouse <nom> »
+    # (modeles Albane). Laisser vide pour les cas sans nom d'usage -> rendu inchange.
+    nom_naissance = _text(
+        prefix, "nom_naissance", "Nom de naissance (si différent du nom d'usage)"
+    )
 
     col_d, col_e, col_f = st.columns(3)
     # R29-06 (Rafael) : selecteur de date (calendrier) + bouton « Aujourd'hui » sur la
@@ -354,6 +360,8 @@ def _render_personne_physique(
         prenom=prenom,
         prenoms=prenom,
         nom=nom,
+        # Q4 : nom de naissance (maiden) optionnel -> mention « épouse » en comparution.
+        nom_naissance=nom_naissance or None,
         # LIVE-03 : date de naissance a saisie LIBRE (text_input) -> re-accentue les
         # mois avant injection (SCI / SCM / SCS via le repeater) ; generateur = echo fidele.
         date_naissance=accentuate_french_months(date_naissance) if date_naissance else None,
