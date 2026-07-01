@@ -1456,7 +1456,7 @@ def _render_cession_form(  # noqa: C901
             # ci-dessous alimentent ses tokens (vides -> zones a completer).
             origine_mode = "achete"
         date_origine = _cession_date(
-            st, "Date d'origine de propriete (JJ/MM/AAAA)",
+            st, "Date d'acquisition du cabinet par le vendeur (JJ/MM/AAAA)",
             section="cabinet", field="origine_date",
         )
         precedent_payload: dict[str, str] | None = None
@@ -1506,7 +1506,7 @@ def _render_cession_form(  # noqa: C901
             section="bail", field="date_bail",
         )
         date_effet = _cession_date(
-            col_b, "Date d'effet du bail (JJ/MM/AAAA)",
+            col_b, "Date d'effet du bail / d'entrée dans les locaux (JJ/MM/AAAA)",
             section="bail", field="date_effet",
         )
         col_c, col_d = st.columns(2)
@@ -1823,7 +1823,7 @@ def _render_cession_form(  # noqa: C901
                     _add_months(_date_actes, 6)
                 )
         date_limite_realisation = _cession_date(
-            st, "Date limite de realisation (JJ/MM/AAAA)",
+            st, "Date limite de signature de l'acte définitif (JJ/MM/AAAA)",
             section="meta", field="date_limite",
         )
 

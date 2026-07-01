@@ -237,9 +237,11 @@ def render_sas_form() -> dict[str, object]:
     banque_nom = _t(col_v, "banque_nom", "Banque depot", hint="ex : CIC CHAPEAU ROUGE BORDEAUX")
     signature_lieu = _t(col_w, "signature_lieu", "Lieu de signature")
     col_x, col_y, col_z = st.columns(3)
-    exercice_debut = _t(col_x, "exercice_debut", "Debut exercice")
-    exercice_fin = _t(col_y, "exercice_fin", "Fin exercice")
-    date_cloture = _t(col_z, "date_cloture", "Cloture premier exercice")
+    exercice_debut = _t(col_x, "exercice_debut", "Début de l'exercice comptable (ex : 1er janvier)")
+    exercice_fin = _t(col_y, "exercice_fin", "Fin de l'exercice comptable (ex : 31 décembre)")
+    date_cloture = _t(
+        col_z, "date_cloture", "Date de clôture du 1er exercice (ex : 31 décembre 2028)"
+    )
     signature_date = _date(PREFIX, "signature_date", "Date de signature")
 
     return {

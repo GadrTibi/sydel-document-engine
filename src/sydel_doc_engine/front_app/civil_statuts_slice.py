@@ -630,7 +630,7 @@ def _render_scm_inter_sel(
     # R29-06 (Rafael) : vraie date complete -> selecteur de date + « Aujourd'hui »,
     # champ texte conserve, cle session inchangee. seed=False.
     date_input_with_today(
-        "Fin de gestion administrative",
+        "Fin de la cogestion administrative (jusqu'à cette date, gestion conjointe des cogérants)",
         key=f"{prefix}_inter_sel_date_fin_gestion",
         value=date.today(),
         container=col_r3,
@@ -645,7 +645,7 @@ def _render_scm_inter_sel(
         col_r4,
         prefix,
         "inter_sel_date_attribution",
-        "Attribution des responsabilites",
+        "Date d'attribution des responsabilités aux cogérants",
         hint="ex : 1er janvier",
     )
     return {
