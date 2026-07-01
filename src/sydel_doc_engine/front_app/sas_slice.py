@@ -61,6 +61,7 @@ from sydel_doc_engine.front_app.field_derivations import (
 )
 from sydel_doc_engine.front_app.front_widgets import (
     date_input_with_today,
+    date_input_freeform,
     mandataire_inputs,
     seed_closing_date,
     seed_exercice_dates,
@@ -243,12 +244,17 @@ def render_sas_form() -> dict[str, object]:
     # instancies meme replies), sortie inchangee.
     with st.expander("Exercice comptable et clôture (pré-rempli — modifier si besoin)", expanded=False):
         col_x, col_y, col_z = st.columns(3)
-        exercice_debut = _t(
-            col_x, "exercice_debut", "Début de l'exercice comptable (ex : 1er janvier)"
+        exercice_debut = date_input_freeform(
+            "Début de l'exercice comptable (ex : 1er janvier)",
+            key=f"{PREFIX}_exercice_debut", container=col_x,
         )
-        exercice_fin = _t(col_y, "exercice_fin", "Fin de l'exercice comptable (ex : 31 décembre)")
-        date_cloture = _t(
-            col_z, "date_cloture", "Date de clôture du 1er exercice (ex : 31 décembre 2028)"
+        exercice_fin = date_input_freeform(
+            "Fin de l'exercice comptable (ex : 31 décembre)",
+            key=f"{PREFIX}_exercice_fin", container=col_y,
+        )
+        date_cloture = date_input_freeform(
+            "Date de clôture du 1er exercice (ex : 31 décembre 2028)",
+            key=f"{PREFIX}_date_cloture", container=col_z,
         )
     signature_date = _date(PREFIX, "signature_date", "Date de signature")
 

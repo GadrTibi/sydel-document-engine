@@ -78,6 +78,7 @@ from sydel_doc_engine.front_app.field_derivations import (
 from sydel_doc_engine.front_app.front_widgets import (
     copyable_text_input,
     date_input_with_today,
+    date_input_freeform,
     seed_closing_date,
     seed_signature_lieu,
 )
@@ -401,8 +402,9 @@ def render_selas_form(type_key: str = "selas_multi_v1") -> dict[str, object]:
     )
     # Retour Rafael 2026-07-01 : cloture pre-remplie (seed_closing_date) et recurrente -> volet replie.
     with st.expander("Clôture du 1er exercice (pré-rempli — modifier si besoin)", expanded=False):
-        date_cloture = _t(
-            st, "date_cloture", "Date de clôture du 1er exercice (ex : 31 décembre 2028)"
+        date_cloture = date_input_freeform(
+            "Date de clôture du 1er exercice (ex : 31 décembre 2028)",
+            key=f"{PREFIX}_date_cloture",
         )
 
     # O24-03 (onglet 24) : siege sur UNE ligne (parse interne -> num_voie/voie/cp/ville

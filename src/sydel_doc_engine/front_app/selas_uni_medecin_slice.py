@@ -63,6 +63,7 @@ from sydel_doc_engine.front_app.field_derivations import (
 )
 from sydel_doc_engine.front_app.front_widgets import (
     date_input_with_today,
+    date_input_freeform,
     mandataire_inputs,
     seed_closing_date,
     seed_exercice_dates,
@@ -213,12 +214,17 @@ def render_selas_uni_medecin_form() -> dict[str, object]:
         "Exercice comptable et clôture (pré-rempli — modifier si besoin)", expanded=False
     ):
         col_j, col_k, col_l = st.columns(3)
-        exercice_debut = _t(
-            col_j, "exercice_debut", "Début de l'exercice comptable (ex : 1er janvier)"
+        exercice_debut = date_input_freeform(
+            "Début de l'exercice comptable (ex : 1er janvier)",
+            key=f"{PREFIX}_exercice_debut", container=col_j,
         )
-        exercice_fin = _t(col_k, "exercice_fin", "Fin de l'exercice comptable (ex : 31 décembre)")
-        exercice_cloture = _t(
-            col_l, "exercice_cloture", "Date de clôture du 1er exercice (ex : 31 décembre 2028)"
+        exercice_fin = date_input_freeform(
+            "Fin de l'exercice comptable (ex : 31 décembre)",
+            key=f"{PREFIX}_exercice_fin", container=col_k,
+        )
+        exercice_cloture = date_input_freeform(
+            "Date de clôture du 1er exercice (ex : 31 décembre 2028)",
+            key=f"{PREFIX}_exercice_cloture", container=col_l,
         )
 
     st.markdown("**Associe unique / President**")

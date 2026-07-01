@@ -66,6 +66,7 @@ from sydel_doc_engine.front_app.field_derivations import (
 )
 from sydel_doc_engine.front_app.front_widgets import (
     date_input_with_today,
+    date_input_freeform,
     mandataire_inputs,
     seed_closing_date,
     siege_same_as_perso_checkbox,
@@ -310,11 +311,9 @@ def render_civil_form(structure: str) -> dict[str, object]:
     )
     # Retour Rafael 2026-07-01 : cloture pre-remplie (seed_closing_date) et recurrente -> volet replie.
     with st.expander("Clôture du 1er exercice (pré-rempli — modifier si besoin)", expanded=False):
-        date_cloture = _text(
-            st,
-            prefix,
-            "date_cloture_premier_exercice",
+        date_cloture = date_input_freeform(
             "Date de clôture du 1er exercice (ex : 31 décembre 2028)",
+            key=f"{prefix}_date_cloture_premier_exercice",
         )
 
     st.markdown("**Signature**")
@@ -642,16 +641,18 @@ def _render_scm_inter_sel(
         seed=False,
     )
     date_fin = str(st.session_state.get(f"{prefix}_inter_sel_date_fin_gestion") or "").strip()
-    # EXCEPTION R29-06 (tracee carnet) : « Attribution des responsabilites » porte un
-    # libelle PARTIEL « 1er janvier » (sans annee, recurrent) qu'un st.date_input ne peut
-    # pas representer sans imposer une annee. Conserve en text_input. Idem « Debut/Cloture
-    # exercice » (shell.py:703/705, civil_statuts_slice clotures).
-    date_attrib = _text(
-        col_r4,
-        prefix,
-        "inter_sel_date_attribution",
-        "Date d'attribution des responsabilités aux cogérants",
-        hint="ex : 1er janvier",
+    # MAJ coherence (Rafael 2026-07-01) : l'ancienne exception R29-06 (garder « Attribution des
+    # responsabilites » en text_input car « 1er janvier » recurrent) est LEVEE — on utilise
+    # desormais `date_input_freeform` (meme selecteur que toutes les dates) qui EXPOSE un champ
+    # texte editable : « 1er janvier » reste saisissable, tout en donnant la parite visuelle
+    # (calendrier optionnel) demandee. Idem exercice/cloture partout.
+    # Cohérence Rafael 2026-07-01 : meme selecteur que les autres dates du bloc (calendrier +
+    # texte). La saisie verbatim « 1er janvier » (recurrent, sans annee) reste possible via le
+    # champ texte du widget.
+    date_attrib = date_input_freeform(
+        "Date d'attribution des responsabilités aux cogérants (ex : 1er janvier)",
+        key=f"{prefix}_inter_sel_date_attribution",
+        container=col_r4,
     )
     return {
         "inter_sel_active": True,

@@ -111,6 +111,20 @@ def date_input_with_today(
     return parsed
 
 
+def date_input_freeform(label: str, *, key: str, container=None) -> str:
+    """Champ date en SELECTEUR (calendrier optionnel + « Aujourd'hui » + champ texte editable),
+    qui RENVOIE la valeur TEXTE brute au lieu de la date parsee.
+
+    Retour Rafael 2026-07-01 (coherence) : TOUS les champs date doivent etre des selecteurs.
+    Mais les dates d'EXERCICE/CLOTURE sont des marqueurs RECURRENTS sans annee (« 1er janvier »,
+    « 31 decembre ») qu'un calendrier ne peut pas representer et que `parse_french_date` renvoie
+    None. On garde donc le meme widget que les autres dates (parite visuelle = selecteur) mais on
+    lit la valeur TEXTE de `session_state[key]` (la saisie verbatim « 1er janvier » est preservee).
+    `seed=False` : le pre-remplissage est fait en amont (seed_exercice_dates / seed_closing_date)."""
+    date_input_with_today(label, key=key, value=date.today(), container=container, seed=False)
+    return str(st.session_state.get(key) or "")
+
+
 def seed_if_empty(key: str, value: object) -> None:
     """Seede `st.session_state[key]` avec `value` s'il est absent/vide.
 

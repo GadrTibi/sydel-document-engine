@@ -81,6 +81,7 @@ from sydel_doc_engine.front_app.field_derivations import (
 )
 from sydel_doc_engine.front_app.front_widgets import (
     date_input_with_today,
+    date_input_freeform,
     mandataire_inputs,
     seed_closing_date,
     seed_exercice_dates,
@@ -411,22 +412,23 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
             # du 1er exercice reste saisie (elle, EST rendue en apport via date_cloture_premier).
             exercice_debut = "1er janvier"
             exercice_fin = "31 décembre"
-            date_cloture = _t(
-                st, prefix, "date_cloture",
+            date_cloture = date_input_freeform(
                 "Date de clôture du 1er exercice (ex : 31 décembre 2028)",
+                key=f"{prefix}_date_cloture",
             )
         else:
             col_ad, col_ae, col_af = st.columns(3)
-            exercice_debut = _t(
-                col_ad, prefix, "exercice_debut",
+            exercice_debut = date_input_freeform(
                 "Début de l'exercice comptable (ex : 1er janvier)",
+                key=f"{prefix}_exercice_debut", container=col_ad,
             )
-            exercice_fin = _t(
-                col_ae, prefix, "exercice_fin", "Fin de l'exercice comptable (ex : 31 décembre)"
+            exercice_fin = date_input_freeform(
+                "Fin de l'exercice comptable (ex : 31 décembre)",
+                key=f"{prefix}_exercice_fin", container=col_ae,
             )
-            date_cloture = _t(
-                col_af, prefix, "date_cloture",
+            date_cloture = date_input_freeform(
                 "Date de clôture du 1er exercice (ex : 31 décembre 2028)",
+                key=f"{prefix}_date_cloture", container=col_af,
             )
     st.markdown("**Signature**")
     signature_lieu = _t(st, prefix, "signature_lieu", "Lieu de signature")
