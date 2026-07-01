@@ -240,6 +240,21 @@ def test_micro_holding_capital_variable_lines(tmp_path: Path) -> None:
     assert "La SPFPL DU DR JESSICA GOSSET apporte la somme de mille dix euros" in text
 
 
+def test_micro_holding_signature_date_longue_et_civilite_abregee(tmp_path: Path) -> None:
+    # MH signature (Albane 2026-07-01, « comme les modeles ») : zone signature du modele
+    # Statuts_Micro_holding.docx = « Fait à Nancy » / « Le 22 mai 2026 » (date LONGUE) puis
+    # « Mme Jessica GOSSET \t...\t SPFPL DU DR JESSICA GOSSET » (civilite ABREGEE « Mme »).
+    out = StatutsMicroHoldingGenerator().generate(_ctx_berte(), tmp_path)
+    text = _docx_text(out)
+    assert "Fait à Nancy" in text
+    assert "Le 22 mai 2026" in text  # forme longue (date signature = 22/05/2026)
+    assert "Le 22/05/2026" not in text  # plus la date courte dans la zone signature
+    assert "Mme Jessica GOSSET" in text  # civilite abregee
+    # La zone signature ne porte plus la civilite pleine (« Madame Jessica GOSSET » suivi d'une
+    # tabulation = ligne signataire) ; la comparution garde « Madame » ailleurs, non testee ici.
+    assert "Madame Jessica GOSSET\t" not in text
+
+
 # --- capital variable, max = 10x min (separateur a point), accords ------------
 
 

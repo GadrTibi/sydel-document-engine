@@ -31,6 +31,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_statuts_title_box,
     new_document_from_model,
 )
+from sydel_doc_engine.utils.dates import format_date_longue_fr
 from sydel_doc_engine.utils.grammar import euro_word
 
 DOCUMENT_CODE = "CODE-STATUTS-CIVILS-CORE-001"
@@ -239,6 +240,7 @@ class _ResolvedStatutsCivil:
         signature_date: str,
         associes: list[StatutsCivilsAssocie],
         objet_social: str | None = None,
+        signature_date_longue: str | None = None,
     ) -> None:
         self.template = template
         self.statuts = statuts
@@ -253,6 +255,9 @@ class _ResolvedStatutsCivil:
         self.ville_rcs = ville_rcs
         self.signature_lieu = signature_lieu
         self.signature_date = signature_date
+        # MH signature (modele Albane) : date en forme longue « 22 mai 2026 ». Defaut = date
+        # courte si non fournie (types non-MH, retro-compat).
+        self.signature_date_longue = signature_date_longue or signature_date
         self.associes = associes
 
     @classmethod
@@ -305,6 +310,9 @@ class _ResolvedStatutsCivil:
             ville_rcs=_required_text(ctx.societe.ville_rcs, "societe.ville_rcs"),
             signature_lieu=ctx.signature.lieu,
             signature_date=_format_display_date(ctx.signature.date, "signature.date"),
+            signature_date_longue=_format_display_date_longue(
+                ctx.signature.date, "signature.date"
+            ),
             associes=associes,
             objet_social=ctx.statuts_civils.objet_social,
         )
@@ -719,12 +727,29 @@ def _add_capital_block_scs(document, data: _ResolvedStatutsCivil) -> None:
     )
 
 
+def _civilite_abregee(civilite_affichage: str) -> str:
+    """Civilite abregee pour la zone signature MH (modele Albane : « Mme »/« M. »)."""
+    civ = civilite_affichage.strip()
+    low = civ.casefold()
+    if "adame" in low or civ in {"Mme", "Mme."}:
+        return "Mme"
+    if "ademoiselle" in low or civ in {"Mlle", "Mlle."}:
+        return "Mlle"
+    if "onsieur" in low or civ in {"M.", "M"}:
+        return "M."
+    return civ
+
+
 def _mh_signature_label(associe: StatutsCivilsAssocie) -> str:
     if _is_morale(associe):
         return _mh_morale_denomination(associe)
     prenoms = associe.prenoms or associe.prenom
+    # MH signature (Albane, « comme les modeles ») : civilite ABREGEE « Mme Jessica GOSSET ».
+    civilite = _civilite_abregee(
+        _required_text(associe.civilite_affichage, "associes[].civilite_affichage")
+    )
     return (
-        f"{_required_text(associe.civilite_affichage, 'associes[].civilite_affichage')} "
+        f"{civilite} "
         f"{_required_text(prenoms, 'associes[].prenoms')} "
         f"{_required_text(associe.nom, 'associes[].nom')}"
     )
@@ -732,10 +757,13 @@ def _mh_signature_label(associe: StatutsCivilsAssocie) -> str:
 
 def _add_signature_block(document, data: _ResolvedStatutsCivil) -> None:
     if data.template.expected_type == "micro_holding":
-        # Modele Albane P461-P464 : « Fait a <lieu> » / « Le <date> » sur deux lignes, puis les
-        # signataires cote a cote (physiques d'abord, morales ensuite) separes par des tabulations.
+        # Modele Albane P461-P464 : « Fait a <lieu> » / « Le <date longue> » sur deux lignes, puis
+        # les signataires cote a cote (physiques d'abord, morales ensuite) separes par des
+        # tabulations. MH signature (Albane 2026-07-01, « comme les modeles ») : date en FORME
+        # LONGUE « Le 22 mai 2026 » (et non « 22/05/2026 ») + civilite ABREGEE « Mme »/« M. »
+        # dans le libelle signataire (cf. _mh_signature_label).
         add_paragraph(document, f"Fait à {data.signature_lieu}")
-        add_paragraph(document, f"Le {data.signature_date}")
+        add_paragraph(document, f"Le {data.signature_date_longue}")
         physiques = [a for a in data.associes if a.est_signataire and not _is_morale(a)]
         morales = [a for a in data.associes if a.est_signataire and _is_morale(a)]
         signers = [_mh_signature_label(a) for a in (physiques + morales)]
@@ -1148,6 +1176,16 @@ def _format_display_date(value: date | str | None, field_name: str) -> str:
         raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
     if isinstance(value, date):
         return value.strftime("%d/%m/%Y")
+    return _required_text(value, field_name)
+
+
+def _format_display_date_longue(value: date | str | None, field_name: str) -> str:
+    """Date en forme longue « JJ mois AAAA » (MH signature). Fallback = affichage court
+    si la date est deja une chaine (pas de reformatage aveugle d'un texte saisi)."""
+    if value is None:
+        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+    if isinstance(value, date):
+        return format_date_longue_fr(value)
     return _required_text(value, field_name)
 
 
