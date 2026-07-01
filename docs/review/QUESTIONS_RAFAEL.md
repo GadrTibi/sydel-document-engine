@@ -102,3 +102,6 @@ réponse TRANCHE en bloc les points ci-dessous — appliqués sans nouvelle ques
 
 ### Tracé 2026-07-01 (Akainu, hors périmètre — pré-existant)
 - **PV nomination — NBSP avant « : »** (Akainu m1, MINEUR) : le modèle Albane `MODELE_PV_nominations_dirigeants.docx` porte un espace **insécable** (U+00A0) avant le « : » de « pour une durée indéterminée : » ; le générateur émet un espace normal. Pré-existant (non introduit par A26-PV5), typographie. À confirmer Albane : préserver le NBSP du modèle ? (défaut actuel = espace normal, cohérent avec le reste du moteur).
+
+### Tracé 2026-07-01 (Akainu n1, nitpick non rendu)
+- **numbering.xml polices mortes** : les définitions de listes du template (`word/numbering.xml`) portent des polices non-Roboto (Arial, Times, Wingdings, Calibri...) héritées du modèle. NON RENDU : aucun `numId` n'est référencé dans le corps des statuts civils générés (aucune liste à puces/numérotée utilisée) → invisible pour le lecteur. `_force_charter_font_family` ne couvre pas `numbering.xml` (hygiène de template). Accepté tel quel ; à étendre si un jour une liste numérotée native est utilisée dans ces statuts.
