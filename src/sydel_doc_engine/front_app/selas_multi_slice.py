@@ -22,6 +22,7 @@ from sydel_doc_engine.app.ui_runtime import (
     generate_zip_file,
 )
 from sydel_doc_engine.domain.enums import Gender
+from sydel_doc_engine.utils.dates import format_date_longue_fr
 from sydel_doc_engine.domain.models import (
     Address,
     Apport,
@@ -633,6 +634,11 @@ def _build_dirigeants_nomines_payload(
                 "ville_naissance": associe.ville_naissance,
                 "departement_naissance": associe.departement_naissance,
                 "nationalite": associe.nationalite,
+                # A26-PV5 : profession + situation maritale de l'associe pour la phrase
+                # d'identite complete du PV (modele PV nominations dirigeants SELAS :
+                # « ..., <profession>, de nationalite ..., ne le ..., <situation maritale>, ... »).
+                "profession": associe.profession,
+                "situation_maritale": associe.situation_maritale,
                 # Adresse personnelle structuree de l'associe.
                 "adresse_num": str((adresse.num_voie if adresse else "") or ""),
                 "adresse_voie": str((adresse.voie if adresse else "") or ""),
@@ -1806,6 +1812,49 @@ def _build_capital_souscription_selas(
     )
 
 
+def _selas_dirigeant_identite_phrase(entry: dict[str, object], adresse: Address | None) -> str | None:
+    """A26-PV5 : phrase d'identite COMPLETE du dirigeant pour le PV nomination dirigeant SELAS.
+
+    Format du modele Albane (MODELE_PV_nominations_dirigeants) :
+    « <civ> <prenom> <NOM>, <profession>, de nationalite <nat>, <ne/nee> le <date longue>
+    a <ville> (<dept>), <situation maritale>, demeurant <adresse> ».
+    Renvoie None si la profession n'est PAS fournie -> le PV retombe sur la reconstruction par
+    champs (byte-identique ; SELARL/SPFPL et les cas sans profession restent inchanges)."""
+    profession = str(entry.get("profession") or "").strip()
+    if not profession:
+        return None
+    civilite = str(entry.get("civilite_affichage") or "Monsieur").strip()
+    prenom = str(entry.get("prenom") or "").strip()
+    nom = str(entry.get("nom") or "").strip()
+    nationalite = str(entry.get("nationalite") or "").strip()
+    ville = str(entry.get("ville_naissance") or "").strip()
+    dept = str(entry.get("departement_naissance") or "").strip()
+    ne = "née" if (entry.get("genre") or Gender.MASCULIN) == Gender.FEMININ else "né"
+    iso = entry.get("date_naissance_iso")
+    date_txt = (
+        format_date_longue_fr(iso)
+        if isinstance(iso, date)
+        else str(entry.get("date_naissance_affichee") or "").strip()
+    )
+    adresse_inline = (adresse.adresse_affichee or "").strip() if adresse else ""
+    if not adresse_inline and adresse is not None:
+        num = (adresse.num_voie or "").strip()
+        adresse_inline = (
+            f"{num} {(adresse.voie or '').strip()}, "
+            f"{(adresse.cp or '').strip()} {(adresse.ville or '').strip()}"
+        ).strip()
+    situation = str(entry.get("situation_maritale") or "").strip()
+    parts = [
+        f"{civilite} {prenom} {nom}",
+        profession,
+        f"de nationalité {nationalite}",
+        f"{ne} le {date_txt} à {ville} ({dept})",
+    ]
+    if situation:
+        parts.append(situation)
+    return ", ".join(parts) + f", demeurant {adresse_inline}"
+
+
 def _build_dirigeants_nomines(
     payload: dict[str, object],
     president_index: int,
@@ -1852,6 +1901,9 @@ def _build_dirigeants_nomines(
                 adresse_personnelle=adresse,
                 fonction_affichage=str(entry.get("fonction_affichage") or "Président"),
                 ref_associe_index=index if isinstance(index, int) else None,
+                # A26-PV5 : phrase d'identite complete (profession + regime + conjoint) du
+                # modele SELAS ; None si profession absente -> reconstruction par champs.
+                identite_phrase=_selas_dirigeant_identite_phrase(entry, adresse),
             )
         )
     return dirigeants
