@@ -74,6 +74,10 @@ from sydel_doc_engine.front_app.selarl_slice import (
     PROFESSION_MEDECIN,
     SelarlSliceInput,
 )
+from sydel_doc_engine.front_app.selas_uni_attestation import (
+    attach_attestation_to_ctx,
+    selas_uni_bundle_codes,
+)
 
 PREFIX = "selas_uni_medecin"
 STRUCTURE = "SELAS uni medecin"
@@ -108,6 +112,10 @@ def selected_document_codes(payload: dict[str, object]) -> tuple[str, ...]:
     regime est produit par le constructeur SELARL reutilise des que le toggle est
     actif. Aucun document existant n'est retire (additif)."""
     codes = list(SELAS_UNI_MEDECIN_BASE_CODES)
+    # ANO-045 : attestation souscripteurs SELAS (DOC-045). Un unipersonnel a un unique
+    # associe physique detenant toutes les actions -> toujours attestable. Insere juste
+    # apres les statuts, avant le conditionnel regime communautaire.
+    codes = list(selas_uni_bundle_codes(tuple(codes), payload))
     if _is_regime_communautaire(payload):
         codes.extend(cc.REGIME_COMMUNAUTAIRE_CODES)
     return tuple(codes)
@@ -531,6 +539,11 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         ctx.dirigeant_nomine.duree_mandat = _DUREE_MANDAT_PRESIDENT
 
     ctx.metadata = {**(ctx.metadata or {}), "front_slice": "track_b_selas_uni_medecin_v1"}
+
+    # ANO-045 : construit et attache les objets requis par l'attestation souscripteurs
+    # (DOC-045) — le constructeur SELARL reutilise ne les produit pas. No-op si non
+    # attestable (jamais le cas pour un unipersonnel valide).
+    ctx = attach_attestation_to_ctx(ctx, payload)
     return ctx
 
 

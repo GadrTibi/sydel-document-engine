@@ -27,8 +27,12 @@ from sydel_doc_engine.domain.models import (
     Apport,
     Associe,
     CapitalContext,
+    CapitalSouscripteur,
+    CapitalSouscription,
+    CessionBanque,
     Company,
     DecisionContext,
+    DepotFonds,
     DirigeantNomine,
     DocumentContext,
     DocumentGenerationContext,
@@ -43,6 +47,7 @@ from sydel_doc_engine.domain.models import (
     ReunionContext,
     ReunionPresident,
     Signature,
+    SocieteSpfpl,
     StatutsCivilsAssocie,
     StatutsSelasMultiContext,
     StatutsSelasMultiPresident,
@@ -92,6 +97,12 @@ from sydel_doc_engine.orchestrator.service import (
 
 STRUCTURE = "SELAS"
 DOC_CODE = "DOC-044"
+# ANO-045 : attestation sur le capital / liste des souscripteurs SELAS (DOC-045).
+# Requise au canon pour tout dossier SELAS (case_catalog SELAS ->
+# attestation_capital_souscripteurs_selas), mais uniquement CONSTRUCTIBLE quand tous
+# les souscripteurs sont des personnes PHYSIQUES et que leur somme d'actions == total
+# (le modele d'Albane ne represente QUE des souscripteurs physiques : « au Dr X »).
+DOC_ATTESTATION_SELAS = "DOC-045"
 PREFIX = "selas"
 
 # Nombre de pages (en lettres) par defaut de l'acte de cession de cabinet, requis
@@ -213,10 +224,44 @@ def _selas_document_codes(payload: dict[str, object]) -> tuple[str, ...]:
     declare simplement que DOC-005/006 font partie du livrable des que le regime
     est actif, quelle que soit la voie d'emission."""
     codes = list(SELAS_BUNDLE_CODES)
+    # ANO-045 : l'attestation sur le capital / liste des souscripteurs (DOC-045) fait
+    # partie du livrable SELAS canon, mais UNIQUEMENT quand le dossier est attestable
+    # (tous les souscripteurs physiques, somme des actions == total). Un dossier avec
+    # un associe PERSONNE MORALE (ou une somme d'actions incoherente) ne l'inclut pas :
+    # le modele d'Albane ne represente que des souscripteurs physiques (« au Dr X ») et
+    # le generateur leverait sinon (contrainte somme actions). Pas de plan menteur.
+    if _selas_attestable(payload):
+        codes.append(DOC_ATTESTATION_SELAS)
     if _regime_communautaire_actif(payload):
         codes.extend(cc.REGIME_COMMUNAUTAIRE_CODES)
     codes.extend(_cession_codes(payload))
     return tuple(codes)
+
+
+def _selas_attestable(payload: dict[str, object]) -> bool:
+    """ANO-045 : le dossier SELAS peut-il produire l'attestation souscripteurs (DOC-045) ?
+
+    Vrai UNIQUEMENT si TOUS les associes sont des personnes PHYSIQUES et que la somme
+    de leurs actions == le nombre total d'actions (apports en numeraire, capital SELAS).
+    Le modele d'Albane ne represente QUE des souscripteurs physiques (« ... actions
+    attribuees au Dr X ») ; aucun wording n'existe pour un souscripteur personne
+    morale. Un associe morale ou une somme d'actions incoherente rend le dossier
+    NON-ATTESTABLE (l'attestation est alors omise du plan et du bundle).
+    """
+    associes = [
+        a
+        for a in (payload.get("associes") or [])
+        if isinstance(a, StatutsCivilsAssocie)
+    ]
+    if not associes:
+        return False
+    if any(a.type_personne != "personne_physique" for a in associes):
+        return False
+    nb_actions_total = int(payload.get("nb_actions_total") or 0)
+    if nb_actions_total < 1:
+        return False
+    total = sum(int(a.nb_actions or 0) for a in associes)
+    return total == nb_actions_total
 
 
 def _cession_codes(payload: dict[str, object]) -> tuple[str, ...]:
@@ -262,6 +307,11 @@ def _orchestrator_codes(payload: dict[str, object]) -> tuple[str, ...]:
     distincts (l'orchestrateur ne sait emettre qu'un fichier de nom fixe par
     code, ce qui ecraserait les couples successifs)."""
     codes = list(SELAS_BUNDLE_CODES)
+    # ANO-045 : l'attestation souscripteurs (DOC-045, nom de fichier fixe) passe par
+    # l'orchestrateur generique quand le dossier est attestable (tous physiques + somme
+    # d'actions == total). Sinon elle est omise (cf. _selas_attestable / plan).
+    if _selas_attestable(payload):
+        codes.append(DOC_ATTESTATION_SELAS)
     if bool(payload.get("regime_communautaire")):
         # Toggle global : chemin historique inchange (un couple, nom fixe).
         codes.extend(cc.REGIME_COMMUNAUTAIRE_CODES)
@@ -1635,7 +1685,118 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
             associes=associes,
             president=StatutsSelasMultiPresident(ref_associe_index=president_index),
         ),
+        # ANO-045 : donnees de l'attestation souscripteurs (DOC-045). Construites
+        # uniquement pour un dossier ATTESTABLE (tous physiques + somme actions ==
+        # total) ; None sinon -> le generateur n'est de toute facon pas au bundle.
+        societe_spfpl=_build_societe_spfpl_selas(
+            payload, siege_struct, capital, nb_actions_total, valeur_action
+        ),
+        depot_fonds=_build_depot_fonds_selas(payload),
+        capital_souscription=_build_capital_souscription_selas(
+            payload, associes, president_index, nb_actions_total, valeur_action, capital
+        ),
         metadata={"front_slice": "track_b_selas_multi_v1"},
+    )
+
+
+def _profession_pluriel_capitalise(payload: dict[str, object]) -> str:
+    """Profession (pluriel) capitalisee pour l'entete de l'attestation (DOC-045).
+
+    Le modele d'Albane affiche « Societe d'exercice liberale par Actions simplifiees
+    de Medecins » : la profession y est au PLURIEL et capitalisee (« Médecins »,
+    « Chirurgiens-dentistes »). Le payload porte le pluriel en minuscule
+    (`profession_reglementee_pluriel`), on capitalise la 1re lettre. Repli sur la
+    profession au singulier si le pluriel est absent (jamais invente)."""
+    pluriel = str(
+        payload.get("profession_reglementee_pluriel")
+        or payload.get("profession_reglementee")
+        or ""
+    ).strip()
+    if not pluriel:
+        return ""
+    return pluriel[0].upper() + pluriel[1:]
+
+
+def _build_societe_spfpl_selas(
+    payload: dict[str, object],
+    siege_struct: Address,
+    capital: str,
+    nb_actions_total: int,
+    valeur_action: str,
+) -> SocieteSpfpl | None:
+    """SocieteSpfpl requise par le generateur d'attestation souscripteurs (ANO-045).
+
+    None si le dossier n'est pas attestable. `forme_sociale` = libelle long SELAS ;
+    `profession` = profession reglementee au pluriel capitalise (parite modele
+    d'Albane « ... de Médecins »)."""
+    if not _selas_attestable(payload):
+        return None
+    return SocieteSpfpl(
+        denomination=str(payload.get("denomination") or ""),
+        forme_sociale="Société d'exercice libéral par actions simplifiée",
+        capital_social=capital,
+        nb_actions_total=nb_actions_total,
+        valeur_nominale_action=valeur_action,
+        profession=_profession_pluriel_capitalise(payload),
+        siege=siege_struct,
+    )
+
+
+def _build_depot_fonds_selas(payload: dict[str, object]) -> DepotFonds | None:
+    """DepotFonds (banque) requis par l'attestation souscripteurs (ANO-045).
+
+    None si le dossier n'est pas attestable. Reutilise la banque deja saisie
+    (`banque_nom`)."""
+    if not _selas_attestable(payload):
+        return None
+    return DepotFonds(
+        banque=CessionBanque(nom=str(payload.get("banque_nom") or "")),
+    )
+
+
+def _build_capital_souscription_selas(
+    payload: dict[str, object],
+    associes: list[StatutsCivilsAssocie],
+    president_index: int,
+    nb_actions_total: int,
+    valeur_action: str,
+    capital: str,
+) -> CapitalSouscription | None:
+    """CapitalSouscription (souscripteurs physiques) pour l'attestation (ANO-045).
+
+    None si le dossier n'est pas attestable. Un souscripteur par associe physique
+    (civilite / prenom / nom / nb_actions) ; president = l'associe physique a
+    `president_index`. La somme des actions == nb_actions_total est garantie par
+    `_selas_attestable` (le generateur revalide de toute facon)."""
+    if not _selas_attestable(payload):
+        return None
+    souscripteurs = [
+        CapitalSouscripteur(
+            civilite_affichage=associe.civilite_affichage or "",
+            prenom=associe.prenom or associe.prenoms or "",
+            nom=associe.nom or "",
+            nb_actions=associe.nb_actions or 0,
+        )
+        for associe in associes
+    ]
+    if not (0 <= president_index < len(associes)):
+        president_index = 0
+    president_associe = associes[president_index]
+    # Le generateur rend « certifie ... par le President, {civilite} {prenom} {nom} ».
+    # Le modele d'Albane porte le TITRE professionnel a cet emplacement (parite avec
+    # « au Dr X » / « Le Docteur X » du corps) : on utilise le titre de l'associe
+    # (« Docteur » par defaut en SELAS multi), pas la civilite civile (Monsieur/Madame).
+    president = CapitalSouscripteur(
+        civilite_affichage=(president_associe.profession or "Docteur"),
+        prenom=president_associe.prenom or president_associe.prenoms or "",
+        nom=president_associe.nom or "",
+    )
+    return CapitalSouscription(
+        nb_actions_total=nb_actions_total,
+        valeur_nominale_action=valeur_action,
+        apports_numeraire_montant=capital,
+        president=president,
+        souscripteurs=souscripteurs,
     )
 
 

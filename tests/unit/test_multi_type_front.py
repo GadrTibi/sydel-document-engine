@@ -2074,6 +2074,8 @@ def test_selas_three_associes_generates_clean(tmp_path: Path) -> None:
     )
     plan = selas_multi_slice.build_selas_plan(payload)
     assert plan.can_generate is True
+    # ANO-045 : dossier ENTIEREMENT physique (somme actions == total) -> attestable ->
+    # l'attestation souscripteurs (DOC-045) est incluse au bundle.
     assert plan.document_codes == (
         "DOC-044",
         "DOC-001",
@@ -2081,9 +2083,13 @@ def test_selas_three_associes_generates_clean(tmp_path: Path) -> None:
         "DOC-003",
         "DOC-004",
         "DOC-034",
+        "DOC-045",
     )
     generated = selas_multi_slice.generate_dossier(payload, tmp_path / "selas3")
-    _assert_bundle_clean(generated, _SELAS_BUNDLE_NAMES)
+    _assert_bundle_clean(
+        generated,
+        _SELAS_BUNDLE_NAMES | {"attestation_capital_souscripteurs_selas.docx"},
+    )
     statuts_text = _docx_text(
         next(p for p in generated.docx_paths if p.name == _SELAS_STATUTS_NAME)
     )
@@ -2103,13 +2109,185 @@ def test_selas_five_associes_generates_clean(tmp_path: Path) -> None:
     )
     plan = selas_multi_slice.build_selas_plan(payload)
     assert plan.can_generate is True
+    # ANO-045 : dossier entierement physique -> attestable -> DOC-045 au bundle.
+    assert "DOC-045" in plan.document_codes
     generated = selas_multi_slice.generate_dossier(payload, tmp_path / "selas5")
-    _assert_bundle_clean(generated, _SELAS_BUNDLE_NAMES)
+    _assert_bundle_clean(
+        generated,
+        _SELAS_BUNDLE_NAMES | {"attestation_capital_souscripteurs_selas.docx"},
+    )
     statuts_text = _docx_text(
         next(p for p in generated.docx_paths if p.name == _SELAS_STATUTS_NAME)
     )
     for nom in ("Durand", "Martin", "Petit", "Robert", "Bernard"):
         assert nom in statuts_text
+
+
+# --- ANO-045 : attestation souscripteurs SELAS (DOC-045) ----------------------
+
+
+_ATTESTATION_SELAS_NAME = "attestation_capital_souscripteurs_selas.docx"
+
+
+def test_selas_multi_all_physical_generates_attestation_souscripteurs(
+    tmp_path: Path,
+) -> None:
+    """ANO-045 : un dossier SELAS multi entierement PHYSIQUE (somme actions == total)
+    produit l'attestation souscripteurs, bien remplie (une ligne de repartition + une
+    d'apport par souscripteur), header profession au pluriel capitalise."""
+    payload = _selas_payload_n(
+        [
+            _selas_phys("Claire", "Durand", 60),
+            _selas_phys("Paul", "Martin", 40),
+        ]
+    )
+    plan = selas_multi_slice.build_selas_plan(payload)
+    assert plan.can_generate is True
+    assert "DOC-045" in plan.document_codes
+    generated = selas_multi_slice.generate_dossier(payload, tmp_path / "selas-att")
+    attestation = next(
+        p for p in generated.docx_paths if p.name == _ATTESTATION_SELAS_NAME
+    )
+    text = _docx_text(attestation)
+    assert "Liste des souscripteurs" in text
+    # Header : profession reglementee au pluriel, capitalisee (parite modele Albane).
+    assert "par Actions simplifiées de Médecins" in text
+    # Une ligne de repartition + une ligne d'apport PAR souscripteur (« au Dr ... »).
+    assert "60 actions attribuées au Dr Claire Durand," in text
+    assert "40 actions attribuées au Dr Paul Martin," in text
+    assert "Le Docteur Claire Durand a fait un apport de 600 euros en numéraire." in text
+    assert "Le Docteur Paul Martin a fait un apport de 400 euros en numéraire." in text
+    # President identite = titre professionnel (« Docteur »), pas la civilite civile.
+    assert (
+        "certifié exact, sincère et véritable par le Président, Docteur Claire Durand"
+        in text
+    )
+    assert "[" not in text and "]" not in text
+
+
+def test_selas_multi_with_morale_omits_attestation_souscripteurs(
+    tmp_path: Path,
+) -> None:
+    """ANO-045 : un dossier SELAS multi comportant un associe PERSONNE MORALE n'est PAS
+    attestable (le modele ne represente que des souscripteurs physiques) -> DOC-045
+    absent du plan ET du bundle, sans crash du generateur."""
+    payload = _selas_payload()  # 1 physique + 1 personne morale
+    plan = selas_multi_slice.build_selas_plan(payload)
+    assert plan.can_generate is True
+    assert "DOC-045" not in plan.document_codes
+    generated = selas_multi_slice.generate_dossier(payload, tmp_path / "selas-att-morale")
+    names = {p.name for p in generated.docx_paths}
+    assert _ATTESTATION_SELAS_NAME not in names
+
+
+def test_selas_multi_incoherent_actions_omits_attestation() -> None:
+    """ANO-045 : une somme d'actions != total (dossier bloque par ailleurs) n'est pas
+    attestable -> DOC-045 jamais annonce au plan."""
+    payload = _selas_payload_n(
+        [
+            _selas_phys("Claire", "Durand", 60),
+            _selas_phys("Paul", "Martin", 40),
+        ]
+    )
+    payload["nb_actions_total"] = 120  # 60 + 40 != 120
+    plan = selas_multi_slice.build_selas_plan(payload)
+    assert "DOC-045" not in plan.document_codes
+
+
+def _selas_uni_payload() -> dict[str, object]:
+    """Payload minimal generable d'une SELAS unipersonnelle (medecin / dentiste)."""
+    return {
+        "denomination": "SELAS EXEMPLE",
+        "capital_social": "1000",
+        "nb_actions_total": 100,
+        "valeur_nominale_action": "10",
+        "duree": "99 ans",
+        "ville_rcs": "Rennes",
+        "lieu_exercice_adresse": "5 place du Centre, 35000 Rennes",
+        "siege_num": "5",
+        "siege_voie": "place du Centre",
+        "siege_cp": "35000",
+        "siege_ville": "Rennes",
+        "banque_nom": "BANQUE EXEMPLE",
+        "banque_adresse": "1 rue Banque, 35000 Rennes",
+        "exercice_debut": "1er janvier",
+        "exercice_fin": "31 décembre",
+        "exercice_cloture": "31 décembre 2027",
+        "civilite": "Monsieur",
+        "prenom": "Alain",
+        "nom": "Fedorowsky",
+        "date_naissance": date(1980, 1, 1),
+        "ville_naissance": "Rennes",
+        "departement_naissance": "35",
+        "nationalite": "française",
+        "titre_affichage": "Docteur",
+        "adresse_num": "10",
+        "adresse_voie": "rue Exemple",
+        "adresse_cp": "35000",
+        "adresse_ville": "Rennes",
+        "nom_pere": "Pierre",
+        "nom_mere": "Anne",
+        "situation_maritale": "celibataire",
+        "regime_matrimonial": "celibataire",
+        "regime_communautaire": False,
+        "conjoint_civilite": "",
+        "conjoint_prenom": "",
+        "conjoint_nom": "",
+        "departement_ordre": "Ille-et-Vilaine",
+        "connecteur_departement": "de",
+        "ordre_president_feminin": False,
+        "mandataire_prenom": "Jordan",
+        "mandataire_nom": "ELBAZ",
+        "numero_ordre": "35-1",
+        "numero_rpps": "10100000001",
+        "ordre_ville": "Rennes",
+        "ordre_cp": "35000",
+        "ordre_adresse_ligne_1": "1 rue de l'Ordre",
+        "signature_lieu": "Rennes",
+        "signature_date": date(2026, 5, 15),
+    }
+
+
+def test_selas_uni_medecin_generates_attestation_souscripteurs(tmp_path: Path) -> None:
+    """ANO-045 : la SELAS unipersonnelle medecin est toujours attestable (associe
+    physique unique) -> DOC-045 au bundle, un unique souscripteur = le president."""
+    from sydel_doc_engine.front_app import selas_uni_medecin_slice as sm
+
+    payload = _selas_uni_payload()
+    plan = sm.build_selas_uni_medecin_plan(payload)
+    assert plan.can_generate is True
+    assert "DOC-045" in plan.document_codes
+    generated = sm.generate_dossier(payload, tmp_path / "selas-uni-med")
+    attestation = next(
+        p for p in generated.docx_paths if p.name == _ATTESTATION_SELAS_NAME
+    )
+    text = _docx_text(attestation)
+    assert "par Actions simplifiées de Médecins" in text
+    assert "100 actions attribuées au Dr Alain Fedorowsky," in text
+    assert (
+        "Le Docteur Alain Fedorowsky a fait un apport de 1000 euros en numéraire."
+        in text
+    )
+    assert "[" not in text and "]" not in text
+
+
+def test_selas_uni_dentiste_generates_attestation_souscripteurs(tmp_path: Path) -> None:
+    """ANO-045 : la SELAS unipersonnelle dentiste est toujours attestable -> DOC-045
+    au bundle, header profession dentiste au pluriel capitalise."""
+    from sydel_doc_engine.front_app import selas_uni_dentiste_slice as sd
+
+    payload = _selas_uni_payload()
+    plan = sd.build_selas_uni_dentiste_plan(payload)
+    assert plan.can_generate is True
+    assert "DOC-045" in plan.document_codes
+    generated = sd.generate_dossier(payload, tmp_path / "selas-uni-dent")
+    attestation = next(
+        p for p in generated.docx_paths if p.name == _ATTESTATION_SELAS_NAME
+    )
+    text = _docx_text(attestation)
+    assert "par Actions simplifiées de Chirurgiens-dentistes" in text
+    assert "100 actions attribuées au Dr Alain Fedorowsky," in text
+    assert "[" not in text and "]" not in text
 
 
 # --- A1 : bornes du repeater nommees + alignees sur le moteur -----------------
@@ -3985,7 +4163,7 @@ def test_repeater_assigns_cumulative_part_ranges() -> None:
     associes = [_a(40), _a(35), _a(25)]
     _assign_cumulative_part_ranges(associes)
     assert [(a.parts.debut, a.parts.fin) for a in associes] == [(1, 40), (41, 75), (76, 100)]
-    assert associes[1].parts.plage_affichee == "41 a 75"
+    assert associes[1].parts.plage_affichee == "41 à 75"  # N4 : « à » accentue
 
 
 def test_repeater_nationalite_dropdown_lowercased() -> None:
@@ -4097,7 +4275,17 @@ def test_selas_uni_medecin_generates_doc018_bundle(tmp_path: Path) -> None:
     payload = _selas_uni_medecin_payload()
     plan = uni.build_selas_uni_medecin_plan(payload)
     assert plan.can_generate is True
-    assert plan.document_codes == ("DOC-018", "DOC-001", "DOC-002", "DOC-003", "DOC-004", "DOC-034")
+    # ANO-045 : un unipersonnel est toujours attestable -> DOC-045 (attestation
+    # souscripteurs) fait partie du bundle de creation SELAS.
+    assert plan.document_codes == (
+        "DOC-018",
+        "DOC-001",
+        "DOC-002",
+        "DOC-003",
+        "DOC-004",
+        "DOC-034",
+        "DOC-045",
+    )
 
     generated = uni.generate_dossier(payload, tmp_path / "selas-uni-medecin")
     _assert_bundle_clean(
@@ -4109,6 +4297,7 @@ def test_selas_uni_medecin_generates_doc018_bundle(tmp_path: Path) -> None:
             "procuration.docx",
             "pv_nomination_gerant.docx",
             "demande_inscription_ordre.docx",
+            "attestation_capital_souscripteurs_selas.docx",
         },
     )
     statuts_text = _docx_text(
