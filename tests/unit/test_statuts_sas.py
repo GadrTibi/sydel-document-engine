@@ -238,11 +238,48 @@ def test_statuts_sas_blocks_president_distinct_from_unique_shareholder(
         StatutsSasGenerator().generate(ctx, tmp_path)
 
 
-def test_statuts_sas_blocks_non_married_wording_without_source_variant(
-    tmp_path: Path,
-) -> None:
-    ctx = _context()
-    ctx.actionnaire_unique.situation_maritale = "Célibataire"
+@pytest.mark.parametrize("statut", ["Célibataire", "Pacsé", "Divorcé", "Veuf"])
+def test_statuts_sas_non_marie_replie_sur_le_statut(tmp_path: Path, statut) -> None:
+    # R0702-02 (Gad 2026-07-02) : le SAS accepte DESORMAIS tout statut matrimonial (menu complet
+    # « Situation matrimoniale », comme la SPFPL). Un NON-MARIE (celibataire/pacse/divorce/veuf)
+    # rend juste son statut — la clause mariee du modele (« sous le régime de ... avec <conjoint> »)
+    # est repliee sur le seul statut, SANS token/marqueur/conjoint fantome. (Remplace l'ancien test
+    # qui verrouillait le blocage « without source variant » — decision levee par Gad ; Akainu n2 :
+    # paramétré sur les 4 statuts non-mariés.)
+    from docx import Document
 
-    with pytest.raises(ValueError, match="phrase matrimoniale"):
-        StatutsSasGenerator().generate(ctx, tmp_path)
+    ctx = _context()
+    ctx.actionnaire_unique.situation_maritale = statut
+    ctx.actionnaire_unique.regime_matrimonial = ""
+    ctx.actionnaire_unique.conjoint = None
+
+    out = StatutsSasGenerator().generate(ctx, tmp_path)
+    text = "\n".join(p.text for p in Document(out).paragraphs)
+    assert statut in text
+    # Comparution repliee : plus de clause mariee ni de fuite pour un non-marie.
+    assert f"{statut} sous le régime de" not in text
+    assert "À COMPLÉTER" not in text
+    assert "avec (" not in text
+    assert "[" not in text and "]" not in text
+
+
+@pytest.mark.parametrize(
+    "regime",
+    [
+        "la communauté légale",
+        "la séparation de biens",
+        "la communauté universelle",
+        "la participation aux acquêts",
+    ],
+)
+def test_statuts_sas_marie_comparution_byte_fidele(tmp_path: Path, regime) -> None:
+    # R0702-02 : le cas MARIE reste FIDELE (comparution complete du modele) sur les 4 REGIMES
+    # dérivés par `married_regime_display`. Verrou de non-regression du chemin marie — le fix
+    # non-marie ne doit rien changer pour un marie. (Akainu n1 : paramétré sur les 4 régimes.)
+    from docx import Document
+
+    ctx = _context()  # marie, conjoint Madame Alice Martin
+    ctx.actionnaire_unique.regime_matrimonial = regime
+    out = StatutsSasGenerator().generate(ctx, tmp_path)
+    text = "\n".join(p.text for p in Document(out).paragraphs)
+    assert f"Marié sous le régime de {regime} avec Madame Alice Martin" in text

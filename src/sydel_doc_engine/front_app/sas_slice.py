@@ -1,9 +1,12 @@
 """Slice front SAS / SPFPL medecins (DOC-015), sur patron SELARL.
 
-SAS V1 = SPFPL medecins, actionnaire unique, associe unique, marie(e) (le moteur
-verrouille le wording non marie). Contexte moteur mirroir du builder de test
-`test_statuts_sas`. Le slice collecte les champs cles et superpose un contexte de
-defaut valide pour garantir une generation sans token residuel.
+SAS V1 = SPFPL medecins, actionnaire unique, associe unique. R0702-02 (Gad 2026-07-02) : le moteur
+accepte DESORMAIS tout statut matrimonial (menu complet « Situation matrimoniale », comme la SPFPL)
+— un non-marie a sa comparution repliee sur le seul statut (`_collapse_marital_sentence`) ; regime +
+conjoint ne sont exiges (fail-loud) que pour un marie ; l'ancien verrou « wording non marie »
+(ValueError) est leve. Contexte moteur mirroir du builder de test `test_statuts_sas`. Le slice
+collecte les champs cles et superpose un contexte de defaut valide pour une generation sans token
+residuel.
 """
 
 from __future__ import annotations
@@ -51,17 +54,22 @@ from sydel_doc_engine.front_app.address_oneline import (
 )
 from sydel_doc_engine.front_app.associe_repeater import render_nationalite_selectbox
 from sydel_doc_engine.front_app.field_derivations import (
+    MATRIMONIAL_STATUS_PRESETS,
     accentuate_french_months,
     calculate_nominal_value,
     derive_gender_from_civilite,
     format_numeric_value,
     is_capital_divisible,
+    married_regime_display,
+    matrimonial_status_value,
     number_words_from_value,
     parse_associe_birthdate,
+    regime_communautaire_from_status,
+    situation_display,
 )
 from sydel_doc_engine.front_app.front_widgets import (
-    date_input_with_today,
     date_input_freeform,
+    date_input_with_today,
     mandataire_inputs,
     seed_closing_date,
     seed_exercice_dates,
@@ -153,7 +161,7 @@ def render_sas_form() -> dict[str, object]:
     apports_nature = _t(col_an, "apports_nature_montant", "Apports en nature (montant)")
     apports_numeraire = _t(col_ai, "apports_numeraire_montant", "Apports en numeraire (montant)")
 
-    st.markdown("**Actionnaire unique / president (medecin, marie(e))**")
+    st.markdown("**Actionnaire unique / president (medecin)**")
     col_f, col_g, col_h = st.columns(3)
     civilite = col_f.selectbox(
         "Civilite affichee",
@@ -186,7 +194,24 @@ def render_sas_form() -> dict[str, object]:
     col_n, col_o = st.columns(2)
     # Parite gold : nationalite en deroulant (NATIONALITY_PRESETS + « Autre »).
     nationalite = render_nationalite_selectbox(PREFIX, container=col_n)
-    regime = _t(col_o, "regime_matrimonial", "Regime matrimonial (ex: la communaute legale)")
+    # R0702-02 (Gad 2026-07-02) : menu matrimonial COMPLET partage (comme SPFPL/SELAS), plus le
+    # champ regime en texte libre ni le « marie » verrouille. Derivation ratifiee (fiche praticien
+    # SELARL) : statut accorde au genre + CAPITALISE (la comparution du modele SAS commence par le
+    # statut : « Marié sous le régime de ... »), regime en wording modele (« la communauté
+    # légale »), declencheur communaute. Regime + conjoint n'ont de sens QUE pour un marie.
+    situation_label = col_o.selectbox(
+        "Situation matrimoniale",
+        MATRIMONIAL_STATUS_PRESETS,
+        key=f"{PREFIX}_situation",
+    )
+    _founder_genre = derive_gender_from_civilite(genre_label)
+    _statut = situation_display(matrimonial_status_value(situation_label), _founder_genre)
+    situation_maritale = _statut[:1].upper() + _statut[1:]  # « Marié » (debut de comparution)
+    regime_communautaire = regime_communautaire_from_status(situation_label)
+    is_marie = matrimonial_status_value(situation_label) == "marie"
+    regime = married_regime_display(situation_label) if is_marie else ""
+    if regime_communautaire:
+        st.caption("Régime de la communauté : lettre de renonciation + avertissement au conjoint.")
     # O24-03 : adresse personnelle sur UNE ligne (suppression de la double-saisie : un
     # champ « affichee » + 4 champs No/Voie/CP/Ville). On parse l'unique ligne -> le
     # display ET les composants num/voie/cp/ville exiges par la DNC du president.
@@ -205,15 +230,20 @@ def render_sas_form() -> dict[str, object]:
     nom_pere = _t(col_ae, "nom_pere", "Nom du pere")
     nom_mere = _t(col_af, "nom_mere", "Nom de la mere")
 
-    st.markdown("Conjoint")
-    col_p, col_q, col_r = st.columns(3)
-    conjoint_civilite = col_p.selectbox(
-        "Civilite conjoint",
-        ("Madame", "Monsieur"),
-        key=f"{PREFIX}_conjoint_civilite",
-    )
-    conjoint_prenom = _t(col_q, "conjoint_prenom", "Prenom conjoint")
-    conjoint_nom = _t(col_r, "conjoint_nom", "Nom conjoint")
+    # R0702-02 : champs conjoint affiches SEULEMENT pour un actionnaire MARIE (meme logique que
+    # SPFPL/SELAS). Un non-marie rend juste son statut (comparution sans « avec <conjoint> »).
+    if is_marie:
+        st.markdown("Conjoint")
+        col_p, col_q, col_r = st.columns(3)
+        conjoint_civilite = col_p.selectbox(
+            "Civilite conjoint",
+            ("Madame", "Monsieur"),
+            key=f"{PREFIX}_conjoint_civilite",
+        )
+        conjoint_prenom = _t(col_q, "conjoint_prenom", "Prenom conjoint")
+        conjoint_nom = _t(col_r, "conjoint_nom", "Nom conjoint")
+    else:
+        conjoint_civilite = conjoint_prenom = conjoint_nom = ""
 
     st.markdown("Ordre")
     col_s, col_t, col_u = st.columns(3)
@@ -242,7 +272,9 @@ def render_sas_form() -> dict[str, object]:
     # seed_closing_date). On les MASQUE par defaut dans un volet replie pour ne pas alourdir la
     # saisie ; l'utilisateur les modifie s'il en a besoin. Valeurs seedees conservees (widgets
     # instancies meme replies), sortie inchangee.
-    with st.expander("Exercice comptable et clôture (pré-rempli — modifier si besoin)", expanded=False):
+    with st.expander(
+        "Exercice comptable et clôture (pré-rempli — modifier si besoin)", expanded=False
+    ):
         col_x, col_y, col_z = st.columns(3)
         exercice_debut = date_input_freeform(
             "Début de l'exercice comptable (ex : 1er janvier)",
@@ -281,6 +313,9 @@ def render_sas_form() -> dict[str, object]:
         "ville_naissance": ville_naissance,
         "departement_naissance": departement_naissance,
         "nationalite": nationalite,
+        # R0702-02 : statut matrimonial CHOISI (accorde + capitalise), plus le « Marie » hardcode
+        # cote moteur. La comparution des statuts SAS rend ce libelle verbatim.
+        "situation_maritale": situation_maritale,
         "regime_matrimonial": regime,
         "adresse": adresse_perso,
         "adresse_num": adresse_num,
@@ -315,8 +350,11 @@ def render_sas_form() -> dict[str, object]:
 def build_sas_plan(payload: dict[str, object]) -> SasSlicePlan:
     blockers = _validate(payload)
     warnings = (
-        "SAS V1 = SPFPL medecins, actionnaire unique marie(e). Bundle de creation : statuts "
-        "+ tronc commun + attestation capital + PV remuneration president (non remunere V1).",
+        # R0702-02 : le SAS accepte tout statut matrimonial (menu complet) ; regime + conjoint
+        # requis pour un marie uniquement. Plus de « marie(e) » verrouille dans le message.
+        "SAS V1 = SPFPL medecins, actionnaire unique ; menu matrimonial complet (regime + conjoint "
+        "requis pour un marie uniquement). Bundle de creation : statuts + tronc commun + "
+        "attestation capital + PV remuneration president (non remunere V1).",
     )
     if blockers:
         return SasSlicePlan(
@@ -346,6 +384,32 @@ def _amount(value: object) -> int:
         return 0
 
 
+def _sas_is_marie(payload: dict[str, object]) -> bool:
+    """L'actionnaire fondateur SAS est-il MARIE ? (regime + conjoint requis, comparution
+    « <statut> sous le régime de ... avec <conjoint> »).
+
+    R0702-02 : le slice pose `situation_maritale` capitalise (« Marié »/« Célibataire »…). On la
+    teste en priorite ; a defaut (tests legacy ne fournissant que `regime_matrimonial`), un regime
+    non vide vaut marie."""
+    explicit = str(payload.get("situation_maritale") or "").strip().lower().replace("é", "e")
+    if explicit:
+        return explicit.startswith("marie")
+    return bool(str(payload.get("regime_matrimonial") or "").strip())
+
+
+def _sas_situation_maritale(payload: dict[str, object]) -> str:
+    """Statut matrimonial (capitalise, comparution en debut de ligne) de l'actionnaire SAS.
+
+    R0702-02 : le slice pose deja le libelle accorde+capitalise dans `situation_maritale` ; on
+    l'utilise en priorite. A defaut (appelants directs / tests legacy qui ne fournissent que
+    `regime_matrimonial` + conjoint), on retombe sur « Marié » si un regime est present, sinon
+    « Célibataire »."""
+    explicit = str(payload.get("situation_maritale") or "").strip()
+    if explicit:
+        return explicit
+    return "Marié" if str(payload.get("regime_matrimonial") or "").strip() else "Célibataire"
+
+
 def _validate(payload: dict[str, object]) -> tuple[str, ...]:  # noqa: C901
     blockers: list[str] = []
     required = (
@@ -360,10 +424,7 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:  # noqa: C901
         ("ville_naissance", "Ville de naissance requise."),
         ("departement_naissance", "Departement de naissance requis."),
         ("nationalite", "Nationalite requise."),
-        ("regime_matrimonial", "Regime matrimonial requis."),
         ("adresse", "Adresse personnelle requise."),
-        ("conjoint_prenom", "Prenom du conjoint requis (actionnaire marie(e))."),
-        ("conjoint_nom", "Nom du conjoint requis (actionnaire marie(e))."),
         ("ordre_departement", "Departement ordre requis."),
         ("numero_ordre", "Numero ordre requis."),
         ("numero_rpps", "Numero RPPS requis."),
@@ -398,6 +459,16 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:  # noqa: C901
     for field, message in required:
         if not str(payload.get(field) or "").strip():
             blockers.append(message)
+    # R0702-02 : regime + conjoint EXIGES uniquement pour un actionnaire MARIE (menu complet
+    # « Situation matrimoniale »). Un non-marie rend juste son statut, sans regime ni conjoint.
+    if _sas_is_marie(payload):
+        for field, message in (
+            ("regime_matrimonial", "Regime matrimonial requis (actionnaire marie(e))."),
+            ("conjoint_prenom", "Prenom du conjoint requis (actionnaire marie(e))."),
+            ("conjoint_nom", "Nom du conjoint requis (actionnaire marie(e))."),
+        ):
+            if not str(payload.get(field) or "").strip():
+                blockers.append(message)
     if int(payload.get("nb_actions_total") or 0) < 1:
         blockers.append("Nombre total d'actions requis et superieur a zero.")
     # Dogfood 2026-06-22 : capital non divisible par le nb d'actions -> valeur nominale a
@@ -463,10 +534,13 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         ville_naissance=str(payload.get("ville_naissance") or ""),
         departement_naissance=str(payload.get("departement_naissance") or ""),
         nationalite=str(payload.get("nationalite") or ""),
-        situation_maritale="Marie",
+        # R0702-02 : statut du CHOIX (menu complet, accorde + capitalise), plus « Marie » hardcode.
+        # Repli « Marié » si un regime est present (appelants directs / tests legacy), sinon
+        # « Célibataire ». La comparution des statuts SAS rend ce libelle verbatim.
+        situation_maritale=_sas_situation_maritale(payload),
         regime_matrimonial=str(payload.get("regime_matrimonial") or ""),
         conjoint=SpfplConjoint(
-            civilite_affichage=str(payload.get("conjoint_civilite") or "Madame"),
+            civilite_affichage=str(payload.get("conjoint_civilite") or ""),
             prenom=str(payload.get("conjoint_prenom") or ""),
             nom=str(payload.get("conjoint_nom") or ""),
         ),

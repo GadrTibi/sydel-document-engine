@@ -1075,6 +1075,33 @@ def test_sas_slice_generates_clean(tmp_path: Path) -> None:
     )
 
 
+def test_sas_bundle_celibataire_sans_fuite(tmp_path: Path) -> None:
+    # R0702-02 / Akainu n2 : bundle SAS COMPLET pour un actionnaire CELIBATAIRE (menu complet). La
+    # comparification repliee -> AUCUN document du bundle ne fuit « <statut> avec … », marqueur
+    # « À COMPLÉTER » ni token residuel ; validation non bloquante (regime/conjoint non exiges).
+    payload = _sas_payload()
+    payload["situation_maritale"] = "Célibataire"
+    payload["regime_matrimonial"] = ""
+    payload["conjoint_civilite"] = ""
+    payload["conjoint_prenom"] = ""
+    payload["conjoint_nom"] = ""
+    plan = sas_slice.build_sas_plan(payload)
+    assert plan.can_generate is True
+    assert not any("conjoint" in b.lower() or "Regime matrimonial" in b for b in plan.blockers)
+    generated = sas_slice.generate_dossier(payload, tmp_path / "sas-celib")
+    seen = False
+    for path in generated.docx_paths:
+        text = _docx_text(path)
+        assert "À COMPLÉTER" not in text, f"marqueur À COMPLÉTER dans {path.name}"
+        assert (
+            "Célibataire avec" not in text
+        ), f"« Célibataire avec » (conjoint fantome) dans {path.name}"
+        assert "[" not in text and "]" not in text, f"token residuel dans {path.name}"
+        if "Célibataire" in text:
+            seen = True
+    assert seen, "« Célibataire » absent de tout le bundle SAS"
+
+
 def test_sas_live03_accentuates_exercice_months(tmp_path: Path) -> None:
     """LIVE-03 : un mois saisi sans accent (« 31 decembre ») ressort accentue.
 
@@ -1487,6 +1514,38 @@ def test_spfpl_form_situation_menu_complet_et_conjoint_conditionnel() -> None:
     conjoint_keys = {str(w.key) for w in app.text_input if "conjoint" in str(w.key)}
     assert "spfpl_cession_conjoint_prenom" in conjoint_keys
     assert "spfpl_cession_conjoint_nom" in conjoint_keys
+
+
+def test_sas_form_situation_menu_complet_et_conjoint_conditionnel() -> None:
+    # R0702-02 (Gad 2026-07-02) : le formulaire SAS (SPFPL medecins forme SAS) expose DESORMAIS le
+    # MEME menu complet « Situation matrimoniale » que les autres types, plus l'ancien champ regime
+    # en TEXTE LIBRE ni le « marie » verrouille. Champs conjoint conditionnels (marie uniquement).
+    from streamlit.testing.v1 import AppTest
+
+    from sydel_doc_engine.front_app.field_derivations import MATRIMONIAL_STATUS_PRESETS
+
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=120)
+    app.selectbox(key="clean_dossier_type").set_value("SPFPL medecins (forme SAS) creation V1")
+    app = app.run(timeout=120)
+
+    situation_box = next(s for s in app.selectbox if str(s.key) == "sas_situation")
+    assert situation_box.label == "Situation matrimoniale"
+    assert list(situation_box.options) == list(MATRIMONIAL_STATUS_PRESETS)
+    # Plus d'ancien champ « Regime matrimonial » en texte libre.
+    assert not any(str(w.key) == "sas_regime_matrimonial" for w in app.text_input)
+    assert "Regime matrimonial (ex: la communaute legale)" not in [w.label for w in app.text_input]
+
+    # Defaut = Celibataire (1er preset) -> champs conjoint MASQUES.
+    conjoint_keys = {str(w.key) for w in app.text_input if "conjoint" in str(w.key)}
+    assert "sas_conjoint_prenom" not in conjoint_keys
+    assert "sas_conjoint_nom" not in conjoint_keys
+
+    # Choisir un statut MARIE -> les champs conjoint APPARAISSENT.
+    situation_box.set_value("Marié(e) sous le régime légal / communauté")
+    app = app.run(timeout=120)
+    conjoint_keys = {str(w.key) for w in app.text_input if "conjoint" in str(w.key)}
+    assert "sas_conjoint_prenom" in conjoint_keys
+    assert "sas_conjoint_nom" in conjoint_keys
 
 
 def test_spfpl_cession_missing_cible_forme_blocks() -> None:

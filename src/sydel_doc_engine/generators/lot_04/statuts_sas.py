@@ -15,6 +15,7 @@ from sydel_doc_engine.domain.models import (
     SpfplPerson,
     StatutsPresident,
 )
+from sydel_doc_engine.generators.lot_05.scm_cession_common import mentions_conjoint
 from sydel_doc_engine.rendering.docx_builder import apply_style_profile
 from sydel_doc_engine.rendering.docx_template_fill import fill_docx_template
 
@@ -61,14 +62,34 @@ class StatutsSasGenerator:
         output_path = output_dir / OUTPUT_FILENAME
         fill_docx_template(_resolve_model_path(), replacements, output_path)
         _apply_style_footer_normalize(output_path, data.denomination)
+        # R0702-02 : pour un actionnaire NON MARIE, replie la comparution matrimoniale du modele
+        # sur le seul statut (le modele est token-based, « sous le régime de »/« avec » sont
+        # LITTERAUX -> pas remplaçables par token ; on post-traite). Marie -> non touche.
+        _collapse_marital_sentence(output_path, data.actionnaire)
         return output_path
 
 
 def _build_replacements(data: _ResolvedStatutsSas) -> dict[str, str]:
     """Mappe les [tokens] du modele aux valeurs resolues du dossier."""
     actionnaire = data.actionnaire
-    conjoint = _required_conjoint(actionnaire)
     ordre = _required_ordre(actionnaire)
+    # R0702-02 : le conjoint + le regime n'existent QUE pour un actionnaire MARIE (menu complet
+    # « Situation matrimoniale »). Garde partagee mentions_conjoint : marie -> tokens remplis
+    # (BYTE-IDENTIQUE a avant) ; sinon -> "" et la ligne de comparution du modele est repliee sur le
+    # seul statut en post-traitement (_collapse_marital_sentence). Le statut est TOUJOURS rendu.
+    _is_married = mentions_conjoint(actionnaire.situation_maritale)
+    if _is_married:
+        conjoint = _required_conjoint(actionnaire)
+        _regime_token = _required_text(
+            actionnaire.regime_matrimonial, "actionnaire_unique.regime_matrimonial"
+        )
+        _civilite_conjoint = _required_text(
+            conjoint.civilite_affichage, "actionnaire_unique.conjoint.civilite"
+        )
+        _prenom_conjoint = _required_text(conjoint.prenom, "actionnaire_unique.conjoint.prenom")
+        _nom_conjoint = _required_text(conjoint.nom, "actionnaire_unique.conjoint.nom")
+    else:
+        _regime_token = _civilite_conjoint = _prenom_conjoint = _nom_conjoint = ""
     return {
         "[denomination_societe]": data.denomination,
         "[capital_social]": data.capital_social,
@@ -99,16 +120,10 @@ def _build_replacements(data: _ResolvedStatutsSas) -> dict[str, str]:
         "[situation_maritale]": _required_text(
             actionnaire.situation_maritale, "actionnaire_unique.situation_maritale"
         ),
-        "[regime_matrimonial]": _required_text(
-            actionnaire.regime_matrimonial, "actionnaire_unique.regime_matrimonial"
-        ),
-        "[civilite_conjoint]": _required_text(
-            conjoint.civilite_affichage, "actionnaire_unique.conjoint.civilite"
-        ),
-        "[prenom_conjoint]": _required_text(
-            conjoint.prenom, "actionnaire_unique.conjoint.prenom"
-        ),
-        "[nom_conjoint]": _required_text(conjoint.nom, "actionnaire_unique.conjoint.nom"),
+        "[regime_matrimonial]": _regime_token,
+        "[civilite_conjoint]": _civilite_conjoint,
+        "[prenom_conjoint]": _prenom_conjoint,
+        "[nom_conjoint]": _nom_conjoint,
         "[numero_ordre]": _required_text(ordre.numero, "actionnaire_unique.ordre.numero"),
         "[numero_rpps]": _required_text(
             ordre.numero_rpps, "actionnaire_unique.ordre.numero_rpps"
@@ -145,6 +160,34 @@ def _apply_style_footer_normalize(output_path: Path, denomination: str) -> None:
                     paragraph.text = footer_text
     for paragraph in document.paragraphs:
         _normalize_paragraph(paragraph)
+    document.save(str(output_path))
+
+
+def _collapse_marital_sentence(output_path: Path, actionnaire: SpfplPerson) -> None:
+    """Replie la comparution matrimoniale sur le SEUL statut pour un actionnaire NON MARIE.
+
+    R0702-02 : le modele SAS ecrit « <statut> sous le régime de <regime> avec <Civ Prénom Nom> » ;
+    pour un non-marie, regime + conjoint sont vides (« sous le régime de  avec » orphelin). On
+    remplace le paragraphe de comparution par le seul statut (« Célibataire »). Meme approche que la
+    SPFPL (collapse, PAS de wording source invente). Un MARIE n'est PAS touche (byte-identique)."""
+    if mentions_conjoint(actionnaire.situation_maritale):
+        return
+    statut = _required_text(
+        actionnaire.situation_maritale, "actionnaire_unique.situation_maritale"
+    )
+    document = Document(str(output_path))
+    for paragraph in document.paragraphs:
+        text = paragraph.text.strip()
+        if text.startswith(statut) and "sous le régime de" in text and "avec" in text:
+            if paragraph.runs:
+                paragraph.runs[0].text = statut
+                # n3 (Akainu) : SUPPRIME les runs suivants (plus de run vide residuel) plutot que
+                # de les vider — le paragraphe ne porte plus que le seul run « <statut> ».
+                for run in paragraph.runs[1:]:
+                    run._element.getparent().remove(run._element)
+            else:
+                paragraph.text = statut
+            break
     document.save(str(output_path))
 
 
@@ -364,17 +407,15 @@ def _validate_capital(
 
 
 def _validate_marital_sentence(actionnaire: SpfplPerson) -> None:
-    situation = _required_text(
-        actionnaire.situation_maritale,
-        "actionnaire_unique.situation_maritale",
-    )
-    if not _normalize_profession(situation).startswith("mari"):
-        raise ValueError(
-            "la phrase matrimoniale source n'est stabilisee que pour une situation "
-            f"mariee pour {DOCUMENT_CODE}."
-        )
-    _required_text(actionnaire.regime_matrimonial, "actionnaire_unique.regime_matrimonial")
-    _required_conjoint(actionnaire)
+    # R0702-02 (Gad 2026-07-02) : le SAS accepte DESORMAIS tout statut matrimonial (menu complet
+    # « Situation matrimoniale », comme la SPFPL). Le statut est toujours requis ; le regime + le
+    # conjoint ne sont exiges (fail-loud) QUE pour un MARIE. Pour un non-marie, la ligne de
+    # comparution du modele (« <statut> sous le régime de ... avec ... ») est repliee sur le SEUL
+    # statut en post-traitement (_collapse_marital_sentence) — pas de wording source invente.
+    _required_text(actionnaire.situation_maritale, "actionnaire_unique.situation_maritale")
+    if mentions_conjoint(actionnaire.situation_maritale):
+        _required_text(actionnaire.regime_matrimonial, "actionnaire_unique.regime_matrimonial")
+        _required_conjoint(actionnaire)
 
 
 def _required_societe_spfpl(ctx: DocumentGenerationContext) -> SocieteSpfpl:

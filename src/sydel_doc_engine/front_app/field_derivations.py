@@ -359,6 +359,13 @@ def situation_maritale_complete(
     return phrase
 
 
+def married_regime_display(label: str) -> str:
+    """Alias public de `_married_regime_display` (libelle accentue « la communauté légale »… du
+    regime matrimonial d'un associe MARIE). Reutilise par les slices dont le MODELE rend le regime
+    directement dans la comparution (ex. SAS/SPFPL medecins)."""
+    return _married_regime_display(label)
+
+
 def _married_regime_display(label: str) -> str:
     """Libelle ACCENTUE du regime matrimonial d'un associe MARIE, derive du preset.
 
