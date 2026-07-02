@@ -10,6 +10,7 @@ from sydel_doc_engine.domain.models import (
     DocumentGenerationContext,
     ProfessionalEntity,
 )
+from sydel_doc_engine.generators.lot_05.scm_cession_common import mentions_conjoint
 from sydel_doc_engine.generators.lot_05.spfpl_common import (
     company_siege_display,
     required_apport_titres,
@@ -175,11 +176,19 @@ class ContratApportSpfplGenerator:
                 apporteur.departement_naissance, "apporteur.departement_naissance"
             ),
             "[nationalite]": required_text(apporteur.nationalite, "apporteur.nationalite"),
+            # Akainu M1 round 2 (2026-07-02) : le menu matrimonial complet ouvre l'APPORT au
+            # NON-MARIE. Le modele P8 = « [situation_maritale] avec [nom_conjoint] » (« avec »
+            # LITTERAL) -> un non-marie rendait « célibataire avec  » (« avec » orphelin). Cle
+            # COMBINEE branchee via mentions_conjoint (comme l'acte de parts) : marie -> ligne
+            # complete BYTE-IDENTIQUE ; sinon -> statut seul. Traitee en premier (longest-first).
+            "[situation_maritale] avec [nom_conjoint]": _apporteur_maritale(apporteur, conjoint),
             "[situation_maritale]": required_text(
                 apporteur.situation_maritale, "apporteur.situation_maritale"
             ),
             "[nom_conjoint]": (
-                f"{_txt(conjoint.prenom)} {_txt(conjoint.nom)}".strip() if conjoint else ""
+                f"{_txt(conjoint.prenom)} {_txt(conjoint.nom)}".strip()
+                if conjoint and mentions_conjoint(apporteur.situation_maritale)
+                else ""
             ),
             "[profession_reglementee]": required_text(
                 apporteur.profession_reglementee, "apporteur.profession_reglementee"
@@ -296,6 +305,20 @@ class ContratApportSpfplGenerator:
         if "[" in full or "]" in full:
             residual = re.findall(r"\[[^\]]+\]", full)
             raise ValueError(f"placeholder source residuel dans {OUTPUT_FILENAME}: {residual}")
+
+
+def _apporteur_maritale(apporteur, conjoint) -> str:
+    """Ligne matrimoniale de l'apporteur (contrat d'apport, modele P8).
+
+    Akainu M1 round 2 (2026-07-02) : marie -> « <statut> avec <prenom nom conjoint> »
+    BYTE-IDENTIQUE au modele ; non-marie -> statut seul (plus de « avec » orphelin). Garde
+    partagee `mentions_conjoint` (R22-02), coherente avec l'acte de parts et l'attestation.
+    """
+    situation = required_text(apporteur.situation_maritale, "apporteur.situation_maritale")
+    if mentions_conjoint(apporteur.situation_maritale) and conjoint:
+        nom = f"{_txt(conjoint.prenom)} {_txt(conjoint.nom)}".strip()
+        return f"{situation} avec {nom}"
+    return situation
 
 
 def _set_para_text(paragraph, text: str) -> None:

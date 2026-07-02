@@ -1386,6 +1386,109 @@ def test_spfpl_cession_acte_situation_cedant_accentuee(
     assert "marie sous" not in acte_text
 
 
+@pytest.mark.parametrize(
+    ("genre", "civilite", "statut"),
+    [(Gender.MASCULIN, "Monsieur", "marié"), (Gender.FEMININ, "Madame", "mariée")],
+)
+@pytest.mark.parametrize(
+    "regime",
+    [
+        "la communaute legale",
+        "la separation de biens",
+        "la communaute universelle",
+        "la participation aux acquets",
+    ],
+)
+def test_spfpl_cession_comparution_marie_ligne_complete(
+    tmp_path: Path, genre, civilite, statut, regime
+) -> None:
+    # Akainu m1 (2026-07-02) : byte-fidelite du cas MARIE sur les 4 REGIMES x 2 GENRES.
+    # La comparution des statuts de cession rend EXACTEMENT « <statut accorde> sous le régime
+    # de <regime> avec <conjoint> » (wording propre a la SPFPL : « avec », pas « époux/épouse
+    # de »). Assertion de ligne COMPLETE (pas une sous-chaine d'un seul regime/genre).
+    payload = _spfpl_payload("SPFPL cession")
+    payload["genre"] = genre
+    payload["civilite"] = civilite
+    payload["regime_matrimonial"] = regime
+    slug = f"{statut}-{regime.split()[-1]}"
+    generated = spfpl_slice.generate_dossier(payload, tmp_path / f"spfpl-cession-marie-{slug}")
+    statuts = next(
+        p for p in generated.docx_paths if p.name == "statuts_spfpl_cession.docx"
+    )
+    text = _docx_text(statuts)
+    expected = f"{statut} sous le régime de {regime} avec Madame Alice Martin"
+    assert expected in text, f"comparution mariee attendue absente ({slug}) : {expected!r}"
+
+
+@pytest.mark.parametrize("structure", ["SPFPL cession", "SPFPL apport"])
+def test_spfpl_comparution_celibataire_sans_conjoint(tmp_path: Path, structure) -> None:
+    # Akainu m2 (round 1) + M1/m1 (round 2, 2026-07-02) : la SPFPL utilise le menu complet
+    # « Situation matrimoniale » — sur les DEUX operations (cession ET apport), servies par le
+    # meme formulaire. Un CELIBATAIRE rend juste « célibataire » dans la comparution, SANS
+    # « avec <conjoint> » ni marqueur « À COMPLÉTER » residuel, dans AUCUN document du bundle
+    # (scan exhaustif ET sur les 2 operations — sinon siloing : l'apport fuyait alors que la
+    # cession etait propre, d'ou 840 verts trompeurs au round 1).
+    payload = _spfpl_payload(structure)
+    payload["situation_maritale"] = "célibataire"
+    payload["regime_matrimonial"] = ""
+    payload["conjoint_civilite"] = ""
+    payload["conjoint_prenom"] = ""
+    payload["conjoint_nom"] = ""
+    plan = spfpl_slice.build_spfpl_plan(payload)
+    assert plan.can_generate is True
+    assert not any(
+        "conjoint" in b.lower() or "Regime matrimonial" in b for b in plan.blockers
+    )
+    slug = structure.split()[-1]
+    generated = spfpl_slice.generate_dossier(payload, tmp_path / f"spfpl-{slug}-celib")
+    seen_celibataire = False
+    for path in generated.docx_paths:
+        text = _docx_text(path)
+        assert "À COMPLÉTER" not in text, f"marqueur À COMPLÉTER dans {path.name} ({structure})"
+        assert (
+            "célibataire avec" not in text
+        ), f"« célibataire avec » (conjoint fantome) dans {path.name} ({structure})"
+        assert "[" not in text and "]" not in text, f"token residuel dans {path.name} ({structure})"
+        if "célibataire" in text:
+            seen_celibataire = True
+    assert seen_celibataire, f"« célibataire » absent de tout le bundle {structure}"
+
+
+def test_spfpl_form_situation_menu_complet_et_conjoint_conditionnel() -> None:
+    # Retour Rafael 2026-07-02 : le formulaire SPFPL expose DESORMAIS le menu complet
+    # « Situation matrimoniale » (comme les autres types), plus l'ancien « Regime
+    # matrimonial » restreint aux regimes maries ; les champs conjoint sont
+    # conditionnels (affiches uniquement pour un marie).
+    from streamlit.testing.v1 import AppTest
+
+    from sydel_doc_engine.front_app.field_derivations import MATRIMONIAL_STATUS_PRESETS
+
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=120)
+    app.selectbox(key="clean_dossier_type").set_value("SPFPL dentistes - cession creation V1")
+    app = app.run(timeout=120)
+
+    situation_box = next(
+        s for s in app.selectbox if str(s.key) == "spfpl_cession_situation"
+    )
+    assert situation_box.label == "Situation matrimoniale"
+    assert list(situation_box.options) == list(MATRIMONIAL_STATUS_PRESETS)
+    # Plus d'ancien selecteur « Regime matrimonial » (menu married-only).
+    assert not any(str(s.key) == "spfpl_cession_regime_label" for s in app.selectbox)
+    assert "Regime matrimonial" not in [s.label for s in app.selectbox]
+
+    # Defaut = Celibataire (1er preset) -> champs conjoint MASQUES.
+    conjoint_keys = {str(w.key) for w in app.text_input if "conjoint" in str(w.key)}
+    assert "spfpl_cession_conjoint_prenom" not in conjoint_keys
+    assert "spfpl_cession_conjoint_nom" not in conjoint_keys
+
+    # Choisir un statut MARIE -> les champs conjoint APPARAISSENT.
+    situation_box.set_value("Marié(e) sous le régime légal / communauté")
+    app = app.run(timeout=120)
+    conjoint_keys = {str(w.key) for w in app.text_input if "conjoint" in str(w.key)}
+    assert "spfpl_cession_conjoint_prenom" in conjoint_keys
+    assert "spfpl_cession_conjoint_nom" in conjoint_keys
+
+
 def test_spfpl_cession_missing_cible_forme_blocks() -> None:
     # Dogfood 2026-06-22 : forme complete de la cible non validee -> crash a la generation
     # (note d'info / acte). Doit bloquer proprement.

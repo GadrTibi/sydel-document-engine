@@ -42,8 +42,10 @@ class StatutsSpfplCessionGenerator:
             raise ValueError(f"depot_fonds.banque est obligatoire pour {DOCUMENT_CODE}.")
         if ctx.exercice_social is None:
             raise ValueError(f"exercice_social est obligatoire pour {DOCUMENT_CODE}.")
-        if founder.conjoint is None:
-            raise ValueError(f"actionnaire_unique.conjoint est obligatoire pour {DOCUMENT_CODE}.")
+        # Retour Rafael 2026-07-02 : le conjoint n'est PLUS obligatoire (menu complet
+        # « Situation matrimoniale » — un celibataire n'a pas de conjoint). La ligne de
+        # comparution matrimoniale est branchee dans `founder_common_replacements`
+        # (marie -> ligne complete avec conjoint ; sinon -> juste le statut).
 
         replacements = founder_common_replacements(founder, "actionnaire_unique")
         replacements.update(
@@ -61,22 +63,9 @@ class StatutsSpfplCessionGenerator:
                     "societe_spfpl.capital_social_lettres",
                 ),
                 "[adresse_siege]": company_siege_display(societe_spfpl, "societe_spfpl"),
-                "[regime_matrimonial]": required_text(
-                    founder.regime_matrimonial,
-                    "actionnaire_unique.regime_matrimonial",
-                ),
-                "[civilite_conjoint]": required_text(
-                    founder.conjoint.civilite_affichage,
-                    "actionnaire_unique.conjoint.civilite_affichage",
-                ),
-                "[prenom_conjoint]": required_text(
-                    founder.conjoint.prenom,
-                    "actionnaire_unique.conjoint.prenom",
-                ),
-                "[nom_conjoint]": required_text(
-                    founder.conjoint.nom,
-                    "actionnaire_unique.conjoint.nom",
-                ),
+                # Retour Rafael 2026-07-02 : les tokens [regime_matrimonial] /
+                # [*_conjoint] de la comparution sont remplaces par [ligne_situation_maritale]
+                # (branche marie/non-marie, construit dans founder_common_replacements).
                 "[ordre_departemental]": required_text(
                     founder.ordre.departement if founder.ordre else None,
                     "actionnaire_unique.ordre.departement",

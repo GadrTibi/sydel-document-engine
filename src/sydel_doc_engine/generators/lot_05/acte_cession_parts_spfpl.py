@@ -6,6 +6,7 @@ from pathlib import Path
 from docx import Document
 
 from sydel_doc_engine.domain.models import DocumentGenerationContext, SpfplPerson
+from sydel_doc_engine.generators.lot_05.scm_cession_common import mentions_conjoint
 from sydel_doc_engine.generators.lot_05.spfpl_common import (
     company_siege_display,
     elision_de,
@@ -151,7 +152,34 @@ class ActeCessionPartsSpfplGenerator:
         cible_capital = required_text(societe_cible.capital_social, "societe_cible.capital_social")
         ordre = cedant.ordre
         conjoint = cedant.conjoint
+        # R0702-02 / Akainu M1 (2026-07-02) : le menu matrimonial complet ouvre le cas NON-MARIE.
+        # Le modele porte « [situation_maritale_cedant] avec [conjoint...] » (« avec » LITTERAL) ->
+        # un non-marie faisait fuiter « célibataire avec (À COMPLÉTER : …) » (conjoint fantome +
+        # placeholder shippe). On branche la ligne comme l'acte d'ACTIONS (garde PARTAGE
+        # mentions_conjoint, R22-02) : marie -> ligne complete BYTE-IDENTIQUE ; sinon -> statut seul.
+        # La cle COMBINEE (plus longue) est traitee AVANT les tokens simples par `_replace`, donc
+        # elle consomme tout le fragment « [situation_maritale_cedant] avec [conjoint...] » de P36.
+        cedant_maritale = required_text(cedant.situation_maritale, "cedant.situation_maritale")
+        if mentions_conjoint(cedant.situation_maritale):
+            conjoint_civilite = required_text(
+                conjoint.civilite_affichage if conjoint else None,
+                "cedant.conjoint.civilite_affichage",
+            )
+            conjoint_prenom = required_text(
+                conjoint.prenom if conjoint else None, "cedant.conjoint.prenom"
+            )
+            conjoint_nom = required_text(conjoint.nom if conjoint else None, "cedant.conjoint.nom")
+            ligne_maritale_cedant = (
+                f"{cedant_maritale} avec {conjoint_civilite} {conjoint_prenom} {conjoint_nom}"
+            )
+        else:
+            conjoint_civilite = conjoint_prenom = conjoint_nom = ""
+            ligne_maritale_cedant = cedant_maritale
         repl = {
+            # Cle COMBINEE (fragment matrimonial complet) : branche marie/non-marie, byte-identique
+            # au modele pour un marie. Placee avant les tokens simples (longest-first dans _replace).
+            "[situation_maritale_cedant] avec [civilite_conjoint_cedant] "
+            "[prenom_conjoint_cedant] [nom_conjoint_cedant]": ligne_maritale_cedant,
             # Cedant (personne physique)
             "[civilite_cedant]": required_text(
                 cedant.civilite_affichage, "cedant.civilite_affichage"
@@ -168,9 +196,10 @@ class ActeCessionPartsSpfplGenerator:
             ),
             "[nationalite_cedant]": required_text(cedant.nationalite, "cedant.nationalite"),
             "[adresse_cedant]": _person_address(cedant, "cedant"),
-            "[situation_maritale_cedant]": required_text(
-                cedant.situation_maritale, "cedant.situation_maritale"
-            ),
+            # Fallback (P36 est deja consomme par la cle combinee ci-dessus ; ces tokens simples
+            # ne restent que pour robustesse s'ils apparaissaient ailleurs). Valeurs conjoint = ""
+            # pour un non-marie (jamais de « (À COMPLÉTER) » ni de conjoint fantome).
+            "[situation_maritale_cedant]": cedant_maritale,
             "[numero_rpps_cedant]": required_text(
                 ordre.numero_rpps if ordre else None, "cedant.ordre.numero_rpps"
             ),
@@ -183,16 +212,9 @@ class ActeCessionPartsSpfplGenerator:
             "[profession_reglementee_pluriel]": required_text(
                 cedant.profession_reglementee_pluriel, "cedant.profession_reglementee_pluriel"
             ),
-            "[civilite_conjoint_cedant]": required_text(
-                conjoint.civilite_affichage if conjoint else None,
-                "cedant.conjoint.civilite_affichage",
-            ),
-            "[prenom_conjoint_cedant]": required_text(
-                conjoint.prenom if conjoint else None, "cedant.conjoint.prenom"
-            ),
-            "[nom_conjoint_cedant]": required_text(
-                conjoint.nom if conjoint else None, "cedant.conjoint.nom"
-            ),
+            "[civilite_conjoint_cedant]": conjoint_civilite,
+            "[prenom_conjoint_cedant]": conjoint_prenom,
+            "[nom_conjoint_cedant]": conjoint_nom,
             # Societe cedee (cible)
             "[denomination_societe_cedee]": required_text(
                 societe_cible.denomination, "societe_cible.denomination"

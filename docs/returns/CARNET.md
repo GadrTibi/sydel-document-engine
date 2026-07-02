@@ -69,3 +69,15 @@
 - **TRAITÉ (≠ validé), en attente retest Rafael** : **les 21** (O24-01→15 + LIVE-01→06) **+ le batch N (N1→N6, 2026-06-24, Akainu-gaté règle 66)**.
 - **VALIDÉ** : aucun → le carnet reste plein (Rafael doit retester une fois le canal de déploiement
   tranché — voir DEBRIEF § 7).
+
+## Retours 2026-07-02 (batch `R0702` — Rafael/Albane, live)
+
+| ID | Verbatim / sens exact | Source | Périmètre | Statut | Validé |
+|---|---|---|---|---|---|
+| R0702-01 | « j'ai toujours des champs dates tout seul au-dessus de date de signature, c'est comme ça partout » | Rafael | tous formulaires (helper `date_input_with_today`) | TRAITÉ (calendrier `st.date_input` orphelin retiré ; commit `aec374e`) | ⬜ |
+| R0702-02 | « le régime matrimonial doit être le même menu déroulant partout, garde le même que sur la SELARL » | Rafael | SPFPL + SAS (seuls divergents /7) | SPFPL TRAITÉ (menu complet + conjoint conditionnel + comparution branche marié/célibataire ; **acte de cession de PARTS branché**, marié byte-identique) — Akainu round 2 en cours ; **SAS : GO Gad pour aligner pareil** (en cours) | ⬜ |
+| R0702-03 | « tout est en police 12 au lieu de 10 ; ajouter de l'espace entre l'en-tête et le cadre des statuts, après l'adresse de l'associé, avant l'article 1 ; l'annexe c'est top » | Albane | statuts civils (injection ; micro-holding testée) | EN COURS (police 10 : forcer la taille sur `new_document_from_model` ; 3 espacements). **Annexe = VALIDÉE Albane** ✅ | ⬜ |
+
+**Triage (règle 68) :**
+- **R0702-02 (menu matrimonial)** : ANTICIPABLE oui (incohérence inter-types) ; CORRECTION d'écart ; **PÉRIMÈTRE = SPFPL + SAS** (5/7 partagent déjà `MATRIMONIAL_STATUS_PRESETS`). *Propagation Akainu-découverte* : ouvrir le non-marié exposait aussi l'**acte de cession de parts** (tokens séparés + « avec » littéral) → branché via le garde partagé `mentions_conjoint` (R22-02).
+- **R0702-03 (police + espacement)** : ANTICIPABLE partiel (le fix famille du 2026-07-01 avait laissé la TAILLE de côté) ; CORRECTION (l'injection hérite Normal=12pt du modèle alors que les runs sources étaient en 10pt explicite ; les from-scratch sont déjà en 10pt) ; BLOC-GOLD (déterministe, aucune décision métier ; valeurs d'aération esthétiques à confirmer Albane) ; PÉRIMÈTRE = tous les statuts civils par injection.

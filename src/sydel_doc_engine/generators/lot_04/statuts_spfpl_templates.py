@@ -14,7 +14,7 @@ STATUTS_SPFPL_CESSION_BLOCKS: tuple[str, ...] = (
     '[profession] de profession',
     'Né le [date_naissance] à [ville_naissance] ([departement_naissance])',
     'Demeurant [adresse_personnelle]',
-    '[situation_maritale] sous le régime de [regime_matrimonial] avec [civilite_conjoint] [prenom_conjoint] [nom_conjoint]',
+    '[ligne_situation_maritale]',
     'De nationalité [nationalite]',
     'Inscrit au tableau de l’Ordre des Chirurgiens-Dentistes de [ordre_departemental] sous le n°[numero_ordre] et sous le numéro RPPS [numero_rpps]',
     'ARTICLE 1 - FORME',

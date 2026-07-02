@@ -5,6 +5,7 @@ from pathlib import Path
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 from sydel_doc_engine.domain.models import DocumentGenerationContext
+from sydel_doc_engine.generators.lot_05.scm_cession_common import mentions_conjoint
 from sydel_doc_engine.generators.lot_05.spfpl_common import (
     company_siege_display,
     format_display_date,
@@ -71,8 +72,7 @@ class AttestationCommissaireApportsGenerator:
             f"{apporteur_profession}, "
             f"de nationalité {required_text(apporteur.nationalite, 'apporteur.nationalite')}, "
             f"demeurant {person_address_display(apporteur, 'apporteur')}, "
-            f"{required_text(apporteur.situation_maritale, 'apporteur.situation_maritale')} "
-            f"avec {_conjoint_nom(apporteur)}",
+            f"{_apporteur_maritale(apporteur)}",
         )
         add_paragraph(
             docx,
@@ -137,3 +137,18 @@ def _conjoint_nom(person) -> str:
     if person.conjoint is None:
         raise ValueError("apporteur.conjoint est obligatoire.")
     return required_text(person.conjoint.nom, "apporteur.conjoint.nom")
+
+
+def _apporteur_maritale(apporteur) -> str:
+    """Ligne matrimoniale de l'apporteur (comparution du commissaire aux apports).
+
+    Akainu M1 round 2 (2026-07-02) : le menu matrimonial complet (R0702-02) ouvre le
+    formulaire SPFPL au NON-MARIE, y compris en operation APPORT. Sans garde, un apporteur
+    non marie rendait « <statut> avec (À COMPLÉTER : apporteur.conjoint.nom) » (conjoint
+    fantome). On branche via le garde PARTAGE `mentions_conjoint` (R22-02), comme les actes de
+    cession : marie -> « <statut> avec <nom conjoint> » BYTE-IDENTIQUE ; sinon -> statut seul.
+    """
+    situation = required_text(apporteur.situation_maritale, "apporteur.situation_maritale")
+    if mentions_conjoint(apporteur.situation_maritale):
+        return f"{situation} avec {_conjoint_nom(apporteur)}"
+    return situation

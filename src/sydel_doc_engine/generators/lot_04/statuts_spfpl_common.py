@@ -14,6 +14,7 @@ from sydel_doc_engine.domain.models import (
     SocieteSpfpl,
     SpfplPerson,
 )
+from sydel_doc_engine.generators.lot_05.scm_cession_common import mentions_conjoint
 from sydel_doc_engine.rendering.docx_builder import (
     STATUTS_SPFPL_COMPACT_STYLE_PROFILE,
     add_paragraph,
@@ -319,6 +320,45 @@ def replace_placeholders(text: str, replacements: dict[str, str]) -> str:
     return rendered
 
 
+def _ligne_situation_maritale(founder: SpfplPerson, field_name: str) -> str:
+    """Ligne de comparution matrimoniale de l'actionnaire fondateur (cession).
+
+    Retour Rafael 2026-07-02 : la comparution SPFPL cession portait une ligne assumant
+    un MARIE (« <statut> sous le régime de <regime> avec <conjoint> »). La SPFPL utilise
+    desormais le menu complet « Situation matrimoniale » : cette ligne BRANCHE sur le STATUT.
+    - MARIE -> ligne complete BYTE-IDENTIQUE a avant (wording PROPRE A LA SPFPL : « avec »,
+      pas « époux/épouse de »). Regime + conjoint rendus via required_text : absents -> marqueur
+      VISIBLE « (À COMPLÉTER) » (R10), JAMAIS une perte silencieuse du regime.
+    - AUTRE (celibataire / pacse / divorce / veuf) -> juste le statut matrimonial.
+
+    Akainu m3 (2026-07-02) : on branche sur le STATUT (« marié »/« mariée ») et NON plus sur
+    « regime present ET conjoint present ». L'ancienne garde faisait du fail-SILENT (un marie
+    sans conjoint retombait sur le statut seul en PERDANT le regime) ; on veut du fail-LOUD
+    (marqueur visible). Cas atteignables inchanges (front : marie => regime+conjoint requis).
+    Akainu n1 (round 2) : garde UNIQUE `mentions_conjoint` (normalisation NFKD, ensemble
+    {marie, mariee}) partagee avec les actes de cession/apport — plus de `startswith` divergent.
+    """
+    statut = required_text(founder.situation_maritale, f"{field_name}.situation_maritale")
+    if not mentions_conjoint(founder.situation_maritale):
+        return statut
+    conjoint = founder.conjoint
+    civilite_conjoint = required_text(
+        conjoint.civilite_affichage if conjoint else None,
+        f"{field_name}.conjoint.civilite_affichage",
+    )
+    prenom_conjoint = required_text(
+        conjoint.prenom if conjoint else None, f"{field_name}.conjoint.prenom"
+    )
+    nom_conjoint = required_text(conjoint.nom if conjoint else None, f"{field_name}.conjoint.nom")
+    regime_matrimonial = required_text(
+        founder.regime_matrimonial, f"{field_name}.regime_matrimonial"
+    )
+    return (
+        f"{statut} sous le régime de {regime_matrimonial} avec "
+        f"{civilite_conjoint} {prenom_conjoint} {nom_conjoint}"
+    )
+
+
 def founder_common_replacements(founder: SpfplPerson, field_name: str) -> dict[str, str]:
     ordre = founder.ordre
     if ordre is None:
@@ -349,6 +389,10 @@ def founder_common_replacements(founder: SpfplPerson, field_name: str) -> dict[s
             founder.situation_maritale,
             f"{field_name}.situation_maritale",
         ),
+        # Ligne de comparution matrimoniale BRANCHEE (marie -> ligne complete ;
+        # sinon -> juste le statut). Seul le modele CESSION porte ce token ; l'apport
+        # rend deja le bare [situation_maritale] (token inoffensif s'il n'apparait pas).
+        "[ligne_situation_maritale]": _ligne_situation_maritale(founder, field_name),
         "[nationalite]": required_text(founder.nationalite, f"{field_name}.nationalite"),
         "[numero_ordre]": required_text(ordre.numero, f"{field_name}.ordre.numero"),
         "[numero_rpps]": required_text(ordre.numero_rpps, f"{field_name}.ordre.numero_rpps"),

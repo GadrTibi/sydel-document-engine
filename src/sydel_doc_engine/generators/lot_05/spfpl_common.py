@@ -14,6 +14,7 @@ from sydel_doc_engine.domain.models import (
     SpfplPerson,
     SpfplRepresentant,
 )
+from sydel_doc_engine.generators.lot_05.scm_cession_common import mentions_conjoint
 from sydel_doc_engine.utils.grammar import elision_de  # noqa: F401
 
 DOCUMENT_CODE = "CODE-SPFPL-AGR-INFO-001"
@@ -200,14 +201,14 @@ def person_signature(person: SpfplPerson, field_name: str) -> str:
 
 
 def person_identity_sentence(person: SpfplPerson, field_name: str) -> str:
-    # R22-02 / propagation 2026-06-22 : DIFFERENCE JUSTIFIEE (tracee, pas implicite). Le
-    # SPFPL est marie-only par design (le formulaire force « marie(e) » et collecte toujours
-    # le conjoint) ; la regle « conjoint affiche seulement si marie » des actes de cession ne
-    # s'applique donc pas ici (le conjoint est toujours present + l'associe toujours marie).
-    # On garde neanmoins le gate-sur-presence ci-dessous (pas d'affichage si conjoint absent).
+    # Akainu M1 round 2 (2026-07-02) : le SPFPL n'est PLUS marie-only (R0702-02 : menu
+    # matrimonial complet). L'ancienne garde « affiche le conjoint si conjoint present » rendait
+    # « avec (À COMPLÉTER) » pour un non-marie (le front pose toujours un conjoint vide). On gate
+    # desormais sur le STATUT via `mentions_conjoint` (garde PARTAGE unique, R22-02), comme les
+    # actes de cession/apport. Marie -> « avec <conjoint> » BYTE-IDENTIQUE ; sinon -> statut seul.
     conjoint = person.conjoint
     conjoint_display = ""
-    if conjoint is not None:
+    if conjoint is not None and mentions_conjoint(person.situation_maritale):
         conjoint_civilite = required_text(
             conjoint.civilite_affichage,
             f"{field_name}.conjoint.civilite_affichage",

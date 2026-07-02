@@ -268,21 +268,33 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
     col_m, col_n = st.columns(2)
     # Parite gold : nationalite en deroulant (NATIONALITY_PRESETS + « Autre »).
     nationalite = render_nationalite_selectbox(prefix, container=col_m)
-    # L6 (Gad 2026-06-24) : plus de case « Régime communautaire (...) ». L'actionnaire fondateur
-    # SPFPL est marié (conjoint requis par la validation) -> on choisit le RÉGIME dans un MENU
-    # (patron menu ratifié SELAS / LIVE-02). Le menu dérive le régime matrimonial ET le
-    # déclencheur DOC-005/006 (communauté légale uniquement), via les mêmes helpers que la SELAS.
-    _married_regimes = tuple(
-        s for s in MATRIMONIAL_STATUS_PRESETS if matrimonial_status_value(s) == "marie"
+    # Retour Rafael 2026-07-02 : la SPFPL utilise DESORMAIS le MEME menu complet
+    # « Situation matrimoniale » que tous les autres types (SELARL, SELAS uni/multi,
+    # SCS, micro holding) — plus de menu « Regime matrimonial » restreint aux regimes
+    # MARIES. On reutilise le patron ratifie (SELAS uni medecin) : le libelle collapse
+    # + accorde est DERIVE (situation_display), le regime matrimonial ET le declencheur
+    # DOC-005/006 (communaute legale uniquement) sont derives via les memes helpers.
+    situation_label = col_n.selectbox(
+        "Situation matrimoniale",
+        MATRIMONIAL_STATUS_PRESETS,
+        key=f"{prefix}_situation",
     )
-    regime_label = col_n.selectbox(
-        "Regime matrimonial",
-        _married_regimes,
-        key=f"{prefix}_regime_label",
-        help="« communauté légale » → renonciation + avertissement au conjoint.",
+    situation_maritale = situation_display(
+        matrimonial_status_value(situation_label),
+        derive_gender_from_civilite(civilite),
     )
-    regime_communautaire = regime_communautaire_from_status(regime_label)
-    regime = regime_matrimonial_from_status(regime_label, regime_communautaire)
+    regime_communautaire = regime_communautaire_from_status(situation_label)
+    # Le regime matrimonial n'a de sens que pour un associe MARIE ; pour tout autre
+    # statut (celibataire, pacse, divorce, veuf) il reste vide (pas de « sous le regime
+    # de ... » dans la comparution).
+    is_marie = matrimonial_status_value(situation_label) == "marie"
+    regime = (
+        regime_matrimonial_from_status(situation_label, regime_communautaire)
+        if is_marie
+        else ""
+    )
+    if regime_communautaire:
+        st.caption("Regime de la communaute : DOC-005 et DOC-006 seront generes.")
     # O24-03 : adresse personnelle sur UNE ligne (parse interne -> num/voie/cp/ville
     # exiges par la DNC du president).
     st.caption("Adresse personnelle + filiation (déclaration de non-condamnation)")
@@ -300,15 +312,22 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
     nom_pere = _t(col_ae, prefix, "nom_pere", "Nom du pere")
     nom_mere = _t(col_af, prefix, "nom_mere", "Nom de la mere")
 
-    st.markdown("Conjoint")
-    col_o, col_p, col_q = st.columns(3)
-    conjoint_civilite = col_o.selectbox(
-        "Civilite conjoint",
-        ("Madame", "Monsieur"),
-        key=f"{prefix}_conjoint_civilite",
-    )
-    conjoint_prenom = _t(col_p, prefix, "conjoint_prenom", "Prenom conjoint")
-    conjoint_nom = _t(col_q, prefix, "conjoint_nom", "Nom conjoint")
+    # Retour Rafael 2026-07-02 : MEME LOGIQUE que la SELAS uni medecin — les champs
+    # conjoint ne s'affichent QUE pour un associe MARIE (la comparution n'utilise le
+    # conjoint que dans ce cas ; un celibataire rend juste son statut). Plus de champs
+    # conjoint parasites (ni de conjoint « vide » residuel) pour un non-marie.
+    if is_marie:
+        st.markdown("Conjoint")
+        col_o, col_p, col_q = st.columns(3)
+        conjoint_civilite = col_o.selectbox(
+            "Civilite conjoint",
+            ("Madame", "Monsieur"),
+            key=f"{prefix}_conjoint_civilite",
+        )
+        conjoint_prenom = _t(col_p, prefix, "conjoint_prenom", "Prenom conjoint")
+        conjoint_nom = _t(col_q, prefix, "conjoint_nom", "Nom conjoint")
+    else:
+        conjoint_civilite = conjoint_prenom = conjoint_nom = ""
 
     st.markdown("Ordre")
     col_r, col_s, col_t = st.columns(3)
@@ -465,6 +484,10 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
         "ville_naissance": ville_naissance,
         "departement_naissance": departement_naissance,
         "nationalite": nationalite,
+        # Retour Rafael 2026-07-02 : le statut matrimonial CHOISI (collapse + accorde)
+        # est porte dans le payload — plus de « marie » hardcode cote moteur. La
+        # comparification (statuts / acte / PV) rend ce libelle verbatim.
+        "situation_maritale": situation_maritale,
         "regime_matrimonial": regime,
         # O24-03 : « adresse » (affichage) derivee du parse de la ligne unique.
         "adresse": _adresse_struct.adresse_affichee if _adresse_struct else "",
@@ -580,10 +603,7 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:  # noqa: C901
         ("ville_naissance", "Ville de naissance requise."),
         ("departement_naissance", "Departement de naissance requis."),
         ("nationalite", "Nationalite requise."),
-        ("regime_matrimonial", "Regime matrimonial requis."),
         ("adresse", "Adresse personnelle requise."),
-        ("conjoint_prenom", "Prenom du conjoint requis."),
-        ("conjoint_nom", "Nom du conjoint requis."),
         ("ordre_departement", "Departement ordre requis."),
         ("numero_ordre", "Numero ordre requis."),
         ("numero_rpps", "Numero RPPS requis."),
@@ -620,6 +640,19 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:  # noqa: C901
     for field, message in required:
         if not str(payload.get(field) or "").strip():
             blockers.append(message)
+    # Retour Rafael 2026-07-02 : le regime matrimonial ET le conjoint ne sont EXIGES
+    # que pour un actionnaire MARIE (menu complet « Situation matrimoniale »). Un
+    # celibataire / pacse / divorce / veuf rend juste son statut, sans conjoint : ne
+    # plus bloquer « Regime matrimonial requis » / « conjoint requis » dans ce cas.
+    if _spfpl_is_marie(payload):
+        marie_required = (
+            ("regime_matrimonial", "Regime matrimonial requis."),
+            ("conjoint_prenom", "Prenom du conjoint requis."),
+            ("conjoint_nom", "Nom du conjoint requis."),
+        )
+        for field, message in marie_required:
+            if not str(payload.get(field) or "").strip():
+                blockers.append(message)
     # Nombre d'actions VARIABLE (defaut 600) : doit etre >= 1 pour deriver une
     # valeur nominale coherente (capital / nb actions). Remplace l'ancien champ
     # « valeur nominale » en saisie libre (desormais calculee, non saisissable).
@@ -691,6 +724,36 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:  # noqa: C901
     return tuple(dict.fromkeys(blockers))
 
 
+def _spfpl_is_marie(payload: dict[str, object]) -> bool:
+    """L'actionnaire fondateur est-il MARIE ? (regime + conjoint requis, comparution
+    avec « sous le régime de ... avec <conjoint> »).
+
+    Retour Rafael 2026-07-02 : le slice pose `situation_maritale` (collapse + accorde).
+    On la teste en priorite (« marié »/« mariée » -> marie) ; a defaut (tests legacy
+    fournissant seulement `regime_matrimonial`), un regime non vide vaut marie."""
+    explicit = str(payload.get("situation_maritale") or "").strip().lower()
+    explicit = explicit.replace("é", "e")
+    if explicit:
+        return explicit.startswith("marie")
+    return bool(str(payload.get("regime_matrimonial") or "").strip())
+
+
+def _spfpl_situation_maritale(payload: dict[str, object], genre: object) -> str:
+    """Statut matrimonial (collapse + accorde au genre) de l'actionnaire fondateur.
+
+    Retour Rafael 2026-07-02 : la SPFPL utilise desormais le menu complet
+    « Situation matrimoniale » (comme les autres types) au lieu d'un « marie »
+    hardcode. Le slice pose deja le libelle accorde dans `situation_maritale` ; on
+    l'utilise en priorite. A defaut (appelants directs / tests legacy qui ne
+    fournissent que `regime_matrimonial` + conjoint), on retombe sur « marié(e) »
+    si un regime matrimonial non vide est present, sinon « célibataire »."""
+    explicit = str(payload.get("situation_maritale") or "").strip()
+    if explicit:
+        return explicit
+    has_regime = bool(str(payload.get("regime_matrimonial") or "").strip())
+    return situation_display("marie" if has_regime else "celibataire", genre)
+
+
 def build_generation_context(payload: dict[str, object]) -> DocumentGenerationContext:
     structure = str(payload["structure"])
     operation = str(payload["operation"])
@@ -734,14 +797,16 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         ville_naissance=str(payload.get("ville_naissance") or ""),
         departement_naissance=str(payload.get("departement_naissance") or ""),
         nationalite=str(payload.get("nationalite") or ""),
-        # O24-11 (MINEUR 2b) : statut ACCENTUE et accorde au genre (« marié »/
-        # « mariée ») au lieu du « marie » nu — l'acte de cession d'actions SPFPL
-        # rend cedant.situation_maritale verbatim. Le SPFPL dentiste est marie par
-        # construction (conjoint requis), seul le genre varie.
-        situation_maritale=situation_display("marie", founder_genre),
+        # Retour Rafael 2026-07-02 : statut matrimonial du CHOIX (menu complet), plus
+        # de « marie » hardcode. Le libelle est le collapse + accorde pose par le slice
+        # (situation_maritale) ; a defaut (appelants directs qui ne fournissent que
+        # regime + conjoint, ex. tests legacy) on retombe sur « marié(e) » si un regime
+        # est present, sinon « célibataire ». L'acte de cession / la comparution rendent
+        # cedant.situation_maritale verbatim (ACCENTUE et accorde au genre).
+        situation_maritale=_spfpl_situation_maritale(payload, founder_genre),
         regime_matrimonial=str(payload.get("regime_matrimonial") or ""),
         conjoint=SpfplConjoint(
-            civilite_affichage=str(payload.get("conjoint_civilite") or "Madame"),
+            civilite_affichage=str(payload.get("conjoint_civilite") or ""),
             prenom=str(payload.get("conjoint_prenom") or ""),
             nom=str(payload.get("conjoint_nom") or ""),
         ),
