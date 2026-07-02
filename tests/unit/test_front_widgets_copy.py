@@ -63,25 +63,31 @@ def test_copyable_text_input_passes_kwargs_through_fb3() -> None:
     assert captured["key"] is None
 
 
-def test_date_input_calendrier_label_collapsed_n2(monkeypatch: pytest.MonkeyPatch) -> None:
-    # N2 (Rafael 2026-06-24, Akainu m1) : le date_input « calendrier » du helper partage doit etre
-    # rendu avec label_visibility="collapsed" pour ne PAS afficher le libelle du champ deux fois.
-    # Verrou : sans ce kwarg, le double libelle (« X (calendrier) » + « X ») reviendrait.
+def test_date_input_no_calendar_only_text_and_today(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Rafael 2026-07-02 : le calendrier `st.date_input` a ete RETIRE du helper — il s'affichait
+    # comme un champ date VIDE (« DD/MM/YYYY ») en double, « tout seul » au-dessus du champ
+    # labellise, sur tous les formulaires. Le helper ne rend plus qu'UNE zone de date : un champ
+    # texte labellise + le bouton « Aujourd'hui ». Verrou : aucun `date_input` ne doit etre appele.
     from datetime import date
 
     from sydel_doc_engine.front_app import front_widgets
 
-    captured: dict[str, object] = {}
+    captured: dict[str, object] = {
+        "date_input_called": False,
+        "text_label": None,
+        "button_called": False,
+    }
 
     class _FakeTarget:
-        def date_input(self, label: str, **kwargs: object) -> None:
-            captured["label"] = label
-            captured["label_visibility"] = kwargs.get("label_visibility")
+        def date_input(self, *_a: object, **_k: object) -> None:
+            captured["date_input_called"] = True
 
         def button(self, *_a: object, **_k: object) -> bool:
+            captured["button_called"] = True
             return False
 
-        def text_input(self, _label: str, **_kwargs: object) -> str:
+        def text_input(self, label: str, **_kwargs: object) -> str:
+            captured["text_label"] = label
             return ""
 
     class _FakeSt:
@@ -92,9 +98,9 @@ def test_date_input_calendrier_label_collapsed_n2(monkeypatch: pytest.MonkeyPatc
         "Date de decision", key="d_n2", value=date(2026, 1, 1), container=_FakeTarget()
     )
 
-    # libelle du calendrier replie -> un seul libelle visible (sur le champ texte)
-    assert captured["label_visibility"] == "collapsed"
-    assert captured["label"] == "Date de decision (calendrier)"
+    assert captured["date_input_called"] is False  # plus AUCUN calendrier (champ date en double)
+    assert captured["text_label"] == "Date de decision"  # une seule zone, le champ texte labellise
+    assert captured["button_called"] is True  # bouton « Aujourd'hui » conserve
 
 
 def test_seed_signature_lieu_force_la_ville_du_siege_su3(monkeypatch: pytest.MonkeyPatch) -> None:

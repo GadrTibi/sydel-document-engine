@@ -48,25 +48,26 @@ def date_input_with_today(
     container=None,
     seed: bool = True,
 ) -> date | None:
-    """Champ de date « JJ/MM/AAAA » + bouton « Aujourd'hui » (helper gold partage).
+    """Champ de date UNIQUE « JJ/MM/AAAA » + bouton « Aujourd'hui » (helper gold partage).
 
     Seede `st.session_state[key]` a `value` si absent (sinon respecte la saisie en
     cours), expose un bouton « Aujourd'hui » qui ecrit la date du jour AVANT que le
     text_input soit instancie (Streamlit interdit la modif post-widget), puis rend
     le text_input + une caption d'erreur de format. Retourne la date parsee ou None.
 
-    NESTING-SAFE : rend le bouton AU-DESSUS du champ (pas de `st.columns` interne)
-    pour pouvoir etre appele AUSSI a l'interieur d'une colonne (`with col:` ...),
-    cas frequent dans les slices (ex. selas_multi_slice signature_date). Le param
-    `container` permet de cibler une colonne precise ; par defaut, le contexte
-    Streamlit courant.
+    Retour Rafael 2026-07-02 (« j'ai toujours des champs dates tout seul au-dessus de date de
+    signature, c'est comme ca partout ») : l'ancien selecteur `st.date_input` natif s'affichait
+    comme un champ date VIDE (« DD/MM/YYYY », label replie) JUSTE AU-DESSUS du champ labellise
+    -> lu comme un « champ date tout seul » en double, sur tous les formulaires. On l'a RETIRE :
+    il n'y a plus qu'UNE zone de date, le champ texte labellise. La saisie reste souple (tape
+    « JJ/MM/AAAA » ou verbatim « 1er janvier », ou clique « Aujourd'hui »).
 
-    `seed` (defaut True) : pre-remplit la cle texte avec `value` si elle est vide.
-    Le mettre a False pour un champ qui NE doit PAS afficher de valeur par defaut
-    (ex. date de NAISSANCE : « aujourd'hui » serait une fausse date) — le champ reste
-    vide tant que l'utilisateur n'a pas tape, choisi au calendrier ou clique
-    « Aujourd'hui ». La saisie texte JJ/MM/AAAA reste la source editable dans tous les
-    cas, donc la saisie verbatim francaise (« 1er aout 1985 ») reste possible (R29-06)."""
+    NESTING-SAFE : rend le bouton AU-DESSUS du champ (pas de `st.columns` interne) pour pouvoir
+    etre appele AUSSI a l'interieur d'une colonne. `container` cible une colonne precise ; par
+    defaut, le contexte Streamlit courant.
+
+    `seed` (defaut True) : pre-remplit la cle texte avec `value` si elle est vide. Le mettre a
+    False pour un champ qui NE doit PAS afficher de valeur par defaut (ex. date de NAISSANCE)."""
     target = container if container is not None else st
 
     current_value = st.session_state.get(key)
@@ -75,29 +76,7 @@ def date_input_with_today(
     elif current_value is None and seed:
         st.session_state[key] = format_french_date(value)
 
-    # R3 (Rafael 2026-06-24) : calendrier en OPTION (pour aller plus vite) + bouton
-    # « Aujourd'hui ». Le calendrier ecrit la date formatee dans la cle TEXTE au changement
-    # (on_change) ; le champ texte JJ/MM/AAAA reste la source editable. NESTING-SAFE (aucun
-    # st.columns interne). value=None -> calendrier vide tant qu'on n'a pas choisi.
-    cal_key = f"{key}_cal"
-
-    def _sync_from_calendar() -> None:
-        picked = st.session_state.get(cal_key)
-        if isinstance(picked, date):
-            st.session_state[key] = format_french_date(picked)
-
-    # N2 (Rafael 2026-06-24) : le libelle du calendrier est REPLIE (label_visibility="collapsed")
-    # pour ne PAS afficher le nom du champ DEUX fois (« X (calendrier) » au-dessus de « X »). Un
-    # seul libelle visible (sur le champ texte editable) ; le calendrier reste un selecteur discret
-    # juste au-dessus. Propage a TOUS les champs date (helper partage).
-    target.date_input(
-        f"{label} (calendrier)",
-        value=None,
-        key=cal_key,
-        format="DD/MM/YYYY",
-        on_change=_sync_from_calendar,
-        label_visibility="collapsed",
-    )
+    # Bouton de confort « Aujourd'hui » (ecrit la date du jour AVANT l'instanciation du champ).
     if target.button("Aujourd'hui", key=f"{key}_today"):
         st.session_state[key] = format_french_date(date.today())
     raw_value = target.text_input(

@@ -4543,21 +4543,25 @@ def _widget_keys(app) -> set[str]:
 
 
 def _assert_date_picker_trio(app, base_key: str) -> None:
-    """Le champ date `base_key` doit exposer texte + calendrier + bouton Aujourd'hui."""
+    """Le champ date `base_key` expose UN champ texte editable + le bouton « Aujourd'hui ».
+
+    Retour Rafael 2026-07-02 : le calendrier `st.date_input` (`{base_key}_cal`) a ete RETIRE —
+    il s'affichait comme un champ date VIDE en double (« tout seul ») au-dessus du champ
+    labellise. Il ne doit donc PLUS exister ; seuls le champ texte + le bouton subsistent."""
     keys = _widget_keys(app)
     assert base_key in keys, f"champ texte editable absent : {base_key}"
-    assert f"{base_key}_cal" in keys, (
-        f"calendrier (st.date_input) absent pour {base_key} "
-        f"-> le champ n'est pas route au helper date_input_with_today (R29-06)"
+    assert f"{base_key}_cal" not in keys, (
+        f"calendrier `{base_key}_cal` encore present -> le champ date en double devait etre "
+        "retire (retour Rafael 2026-07-02, « champs dates tout seul au-dessus »)"
     )
     assert f"{base_key}_today" in keys, (
-        f"bouton « Aujourd'hui » absent pour {base_key} (R29-06)"
+        f"bouton « Aujourd'hui » absent pour {base_key}"
     )
 
 
 def test_r29_06_repeater_naissance_expose_calendrier_et_aujourdhui() -> None:
-    """R29-06 : la date de naissance d'un associe du REPEATER (SCI) expose le
-    calendrier `{key}_cal` ET le bouton `{key}_today`, en plus du champ texte."""
+    """Rafael 2026-07-02 : la date de naissance d'un associe du REPEATER (SCI) expose UN champ
+    texte editable + le bouton `{key}_today`, SANS calendrier `{key}_cal` (retire, cf. helper)."""
     from streamlit.testing.v1 import AppTest
 
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
@@ -4578,9 +4582,9 @@ def test_r29_06_repeater_naissance_expose_calendrier_et_aujourdhui() -> None:
 
 
 def test_r29_06_cession_dates_exposent_calendrier_et_aujourdhui(monkeypatch, tmp_path) -> None:
-    """R29-06 : les dates du sous-formulaire CESSION (date du bail, date d'origine de
-    propriete) — toutes via `_cession_date` refondu sur le helper — exposent le
-    calendrier `{key}_cal` ET le bouton `{key}_today`, en plus du champ texte."""
+    """Rafael 2026-07-02 : les dates du sous-formulaire CESSION (date du bail, date d'acquisition
+    du cabinet) — via `_cession_date` sur le helper — exposent UN champ texte + le bouton
+    `{key}_today`, SANS calendrier `{key}_cal` (retire : plus de champ date « tout seul »)."""
     from streamlit.testing.v1 import AppTest
 
     from sydel_doc_engine.front_app import shell
