@@ -126,12 +126,15 @@ def new_document_from_model(model_path: Any) -> Any:
     # par defaut HERITEE du modele n'est PAS forcement Roboto (ex. le modele micro holding est en
     # Times New Roman). On garde toute la GEOMETRIE / mise en page du modele, mais on IMPOSE la
     # FAMILLE de police de la charte (Roboto) sur les styles -> layout du modele + police SYDEL.
-    # On ne touche NI aux marges NI aux tailles (seule la famille change).
+    # On ne touche NI aux marges NI a la geometrie (seules la famille + la taille par defaut).
     _force_charter_font_family(document, DEFAULT_STYLE_PROFILE.font_name)
+    # Retour Albane 2026-07-02 : idem pour la TAILLE (« tout en 12 au lieu de 10 ») — le « Normal »
+    # herite du modele peut etre a 12 pt ; on impose la taille de la charte (10 pt).
+    _force_charter_font_size(document, DEFAULT_STYLE_PROFILE.font_size_pt)
     return document
 
 
-def _force_charter_font_family(document: Any, font_name: str) -> None:
+def _force_charter_font_family(document: Any, font_name: str) -> None:  # noqa: C901
     """Force la FAMILLE de police `font_name` (charte SYDEL) partout, sans toucher aux tailles
     ni a la geometrie. A appeler apres new_document_from_model pour que la mise en page HERITEE
     du modele s'affiche dans la police SYDEL et non celle (arbitraire) du modele.
@@ -205,6 +208,51 @@ def _force_charter_font_family(document: Any, font_name: str) -> None:
                     rpr = OxmlElement("w:rPr")
                     run_element.insert(0, rpr)
                 _set_rfonts(rpr)
+
+
+def _force_charter_font_size(document: Any, font_size_pt: int) -> None:  # noqa: C901
+    """Force la TAILLE de police `font_size_pt` (charte SYDEL = 10 pt) au niveau des DEFAULTS.
+
+    Retour Albane 2026-07-02 (« tout est en police 12 au lieu de 10 ») : `new_document_from_model`
+    herite la FORME du modele, dont son style « Normal ». Le modele micro holding a un « Normal » a
+    12 pt (alors que ses runs SOURCES portent une taille 10 pt EXPLICITE). Quand le moteur vide le
+    corps et RE-EMET le texte, les nouveaux runs n'ont PAS de taille explicite -> ils heritent de
+    « Normal » = 12 pt. Pendant de `_force_charter_font_family` : on impose la taille de la charte
+    (10 pt) sur les DEFAULTS (docDefaults + style « Normal »), pour que les runs re-emis (heritant
+    de « Normal ») s'affichent en 10 pt. On NE touche PAS aux runs a taille EXPLICITE (cadre
+    « STATUTS », titre), ni a la geometrie. `w:sz` est en demi-points (10 pt -> « 20 »).
+    """
+    half_points = str(int(font_size_pt) * 2)
+
+    def _set_size(rpr: Any) -> None:
+        if rpr is None:
+            return
+        for tag in ("w:sz", "w:szCs"):
+            element = rpr.find(qn(tag))
+            if element is None:
+                element = OxmlElement(tag)
+                rpr.append(element)
+            element.set(qn("w:val"), half_points)
+
+    styles_element = document.styles.element
+    # (1) docDefaults / rPrDefault : taille par defaut de tout le document.
+    doc_defaults = styles_element.find(qn("w:docDefaults"))
+    if doc_defaults is not None:
+        rpr_default = doc_defaults.find(qn("w:rPrDefault"))
+        if rpr_default is not None:
+            rpr = rpr_default.find(qn("w:rPr"))
+            if rpr is None:
+                rpr = OxmlElement("w:rPr")
+                rpr_default.append(rpr)
+            _set_size(rpr)
+    # (2) le style « Normal » (base dont heritent les runs re-emis sans taille explicite).
+    for style in document.styles:
+        try:
+            if style.name == "Normal":
+                _set_size(style.element.get_or_add_rPr())
+                break
+        except (AttributeError, ValueError):
+            continue
 
 
 _SYDEL_LOGO_PATH = Path(__file__).resolve().parent.parent / "assets" / "logo_sydel.png"

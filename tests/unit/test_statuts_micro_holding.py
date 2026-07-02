@@ -336,13 +336,56 @@ def test_micro_holding_inherits_model_form_and_overwrites_client_footer(tmp_path
     normal = document.styles["Normal"]
 
     assert normal.font.name == "Roboto"  # charte SYDEL (imposee), plus le Times du modele
-    assert normal.font.size is not None and normal.font.size.pt == 12.0  # taille du modele conservee
+    # Albane 2026-07-02 (« tout est en police 12 au lieu de 10 ») : la TAILLE de la charte (10 pt)
+    # est desormais imposee sur les defaults (le « Normal » du modele etait a 12 pt -> les runs
+    # re-emis heritaient 12 pt). Plus la taille du modele : la taille de la charte SYDEL.
+    assert normal.font.size is not None and normal.font.size.pt == 10.0
     assert abs(section.page_height - Cm(29.7)) < Cm(0.1)  # A4 du modele conserve
     assert abs(section.page_width - Cm(21.59)) > Cm(0.1)  # pas Letter US SYDEL
     footer_text = " | ".join(p.text for p in section.footer.paragraphs if p.text)
     assert "Micro holding famille Berte - Statuts constitutifs" in footer_text
     # M2 (Akainu 2026-06-30) : pas de paragraphe vide d'amorce en tete -> body[0] = le titre.
     assert document.paragraphs[0].text.strip() != ""
+
+
+def test_micro_holding_police_10pt_rendue_et_espacements_albane(tmp_path: Path) -> None:
+    # Retour Albane 2026-07-02 (verrous Akainu m2 + M1) :
+    #  (m2) TOUT le corps RENDU est a 10 pt — pas seulement le style « Normal ». Un run a taille
+    #       explicite != 10 (regression future) doit casser (verbatim « TOUT est en 12 »).
+    #  (M1) Les 3 espacements demandes sont presents (paragraphe vide, space_after = 6 pt) —
+    #       sinon un add_spacer supprime/deplace regresse SILENCIEUSEMENT sur un retour explicite.
+    from docx.shared import Pt
+
+    document = Document(StatutsMicroHoldingGenerator().generate(_ctx_berte(), tmp_path))
+
+    def _all_runs(doc):
+        for paragraph in doc.paragraphs:
+            yield from paragraph.runs
+        for table in doc.tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    for paragraph in cell.paragraphs:
+                        yield from paragraph.runs
+
+    # (m2) aucun run (corps + tables) ne rend a une taille explicite != 10 pt (herite => Normal=10).
+    for run in _all_runs(document):
+        size = run.font.size
+        assert size is None or size.pt == 10.0, f"run a {size.pt} pt (attendu 10) : {run.text!r}"
+
+    # (M1) les 3 spacers Albane (paragraphe vide, 6 pt) sont presents ET l'un precede « ARTICLE 1 ».
+    paras = document.paragraphs
+    spacers = [
+        i
+        for i, p in enumerate(paras)
+        if not p.text.strip() and p.paragraph_format.space_after == Pt(6)
+    ]
+    assert len(spacers) >= 3, f"attendu >= 3 spacers Albane (vide, 6 pt), trouve {len(spacers)}"
+    art1 = next(i for i, p in enumerate(paras) if p.text.strip().upper().startswith("ARTICLE 1 "))
+    assert art1 - 1 in spacers, "pas de spacer 6 pt juste avant « ARTICLE 1 »"
+    # espace apres la comparution : la derniere ligne « Demeurant … » est suivie d'un spacer 6 pt.
+    demeurant = [i for i, p in enumerate(paras) if p.text.strip().startswith("Demeurant")]
+    assert demeurant, "ligne « Demeurant » (fin de comparution associe) introuvable"
+    assert demeurant[-1] + 1 in spacers, "pas de spacer 6 pt apres l'adresse du dernier associe"
 
 
 def test_micro_holding_footer_no_client_residue_for_other_dossier(tmp_path: Path) -> None:

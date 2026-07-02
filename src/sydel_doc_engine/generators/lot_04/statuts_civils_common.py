@@ -22,6 +22,7 @@ from sydel_doc_engine.generators.lot_04.statuts_sel_exercice_common import (
 )
 from sydel_doc_engine.rendering.docx_builder import (
     add_paragraph,
+    add_spacer,
     add_statuts_article_heading,
     add_statuts_body_paragraph,
     add_statuts_hanging_list_item,
@@ -166,9 +167,17 @@ def generate_statuts_civil_docx(  # noqa: C901
             template.statuts_title_box_before is not None
             and index == template.statuts_title_box_before
         ):
+            # Retour Albane 2026-07-02 : « ajouter de l'espace entre l'en-tete et le cadre des
+            # statuts ». Espace aere (micro holding, le doc teste) avant le cadre « STATUTS ».
+            if template.expected_type == "micro_holding":
+                add_spacer(output_doc, space_after_pt=6)
             add_statuts_title_box(output_doc, "STATUTS")
         if index == template.associate_slice[0]:
             _add_associate_block(output_doc, data)
+            # Retour Albane 2026-07-02 : « ajouter de l'espace ... apres l'adresse de l'associe ».
+            # Espace aere apres le bloc de comparution des associes (micro holding, le doc teste).
+            if template.expected_type == "micro_holding":
+                add_spacer(output_doc, space_after_pt=6)
             skip_until = template.associate_slice[1]
             continue
         if index == template.apport_slice[0]:
@@ -197,6 +206,13 @@ def generate_statuts_civil_docx(  # noqa: C901
         # de la société en formation ») doit SYSTEMATIQUEMENT commencer sur une nouvelle page.
         if rendered.strip().upper() == "ANNEXE":
             output_doc.add_page_break()
+        # Retour Albane 2026-07-02 : « ajouter de l'espace ... avant l'article 1 ». Espace aere
+        # avant le PREMIER article (micro holding, le doc teste) — « ARTICLE 1 » suivi d'un espace
+        # (jamais « ARTICLE 10/15… » qui commencent par « ARTICLE 1 » sans espace juste apres le 1).
+        if template.expected_type == "micro_holding" and rendered.strip().upper().startswith(
+            "ARTICLE 1 "
+        ):
+            add_spacer(output_doc, space_after_pt=6)
         _add_rendered_paragraph(output_doc, rendered, paragraph)
         if template.expected_type == "sci_iris" and index == 561:
             _add_resultat_groupes_block(output_doc, data)
