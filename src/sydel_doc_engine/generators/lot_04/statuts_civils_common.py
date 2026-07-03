@@ -160,6 +160,18 @@ def generate_statuts_civil_docx(  # noqa: C901
 
     replacements = data.common_replacements()
     skip_until = -1
+    # Retour Albane 2026-07-02 (SCI §3.6 / §3.9) : « ajouter un espace entre le nom de la societe
+    # et le corps du texte » (art. 3 DENOMINATION) et « entre l'adresse du siege et le corps »
+    # (art. 4 SIEGE SOCIAL). Le nom (source para 73) suit l'intro « La denomination de la Societe
+    # est : » ; l'adresse (source para 82) suit « Le siege social est fixe au : ». On repere ces
+    # deux intros pour aerer APRES le paragraphe qui les suit immediatement (space_after), sans
+    # toucher au TEXTE. Scope SCI. Robuste au contenu (pas d'index en dur) et sans faux positif :
+    # le nom apparait aussi en titre (para 0) mais n'est PAS precede de l'intro art. 3.
+    _SCI_SPACE_AFTER_INTROS = {
+        "la dénomination de la société est :",
+        "le siège social est fixé au :",
+    }
+    space_after_next_body = False
     for index, paragraph in enumerate(source_doc.paragraphs):
         if index < skip_until:
             continue
@@ -214,6 +226,16 @@ def generate_statuts_civil_docx(  # noqa: C901
         ):
             add_spacer(output_doc, space_after_pt=6)
         _add_rendered_paragraph(output_doc, rendered, paragraph)
+        if template.expected_type == "sci" and space_after_next_body:
+            # Le paragraphe qui vient d'etre rendu est le nom de societe (art. 3) ou l'adresse du
+            # siege (art. 4), juste apres son intro -> on l'aere (space_after) avant le corps.
+            output_doc.paragraphs[-1].paragraph_format.space_after = Pt(10)
+            space_after_next_body = False
+        if (
+            template.expected_type == "sci"
+            and rendered.strip().casefold() in _SCI_SPACE_AFTER_INTROS
+        ):
+            space_after_next_body = True
         if template.expected_type == "sci_iris" and index == 561:
             _add_resultat_groupes_block(output_doc, data)
         if (
@@ -418,6 +440,14 @@ def _bold_paragraph(paragraph) -> None:
 
 def _add_associate_block(document, data: _ResolvedStatutsCivil) -> None:
     micro_holding = data.template.expected_type == "micro_holding"
+    # Retour Albane 2026-07-02 (SCI §3.3 « espace entre chaque soussigne au debut ») : dans la
+    # source SCI, les blocs de comparution sont separes par des paragraphes vides (source paras
+    # 30-31, 37-38) que le moteur ignore (chemin `if not text: continue`) -> a la generation les
+    # soussignes sont COLLES. On restaure la separation en aerant APRES chaque bloc associe
+    # (space_after = 10 pt sur la derniere ligne du bloc), sans toucher aux lignes internes (elles
+    # gardent l'interligne 6 pt actuel) -> zero changement de TEXTE, seul l'espacement inter-bloc.
+    # Scope SCI uniquement (les autres civiles non demandees restent byte-identiques).
+    space_between_blocks = data.template.expected_type == "sci"
     for associe in data.associes:
         start = len(document.paragraphs)
         if _is_morale(associe):
@@ -437,6 +467,10 @@ def _add_associate_block(document, data: _ResolvedStatutsCivil) -> None:
             block = document.paragraphs[start:]
             for para in block[:-1]:
                 para.paragraph_format.space_after = Pt(0)
+            if block:
+                block[-1].paragraph_format.space_after = Pt(10)
+        elif space_between_blocks:
+            block = document.paragraphs[start:]
             if block:
                 block[-1].paragraph_format.space_after = Pt(10)
 

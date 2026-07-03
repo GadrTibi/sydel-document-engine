@@ -48,7 +48,7 @@ class LettreOptionIsGenerator:
         document = new_document(LETTER_WIDE_STYLE_PROFILE)
         _add_tax_office_block(document, tax_office)
         _add_place_date_and_subject(document, ctx.signature.lieu, ctx.signature.date)
-        _add_body_intro(document)
+        _add_body_intro(document, company)
         _add_identification_table(document, company, statuts)
         _add_body_close(document)
         _add_signature(document)
@@ -162,7 +162,19 @@ def _add_place_date_and_subject(document: Any, lieu: str, signature_date: date) 
     )
 
 
-def _add_body_intro(document: Any) -> None:
+def _add_body_intro(document: Any, company: Company) -> None:
+    # Mise en forme (Albane, retour « mise en forme » 2026-07) : le NOM DE LA
+    # SOCIETE doit figurer EN GRAS dans la PREMIERE LIGNE du courrier. La
+    # denomination ne paraissait jusqu'ici que dans la table d'identite, sans
+    # emphase -> on l'ajoute en tete du corps, en gras (choix retenu : premiere
+    # ligne du courrier avant « Madame, Monsieur, », plutot que dans la table,
+    # car Albane demande explicitement « la PREMIERE LIGNE du courrier »).
+    add_paragraph(
+        document,
+        _required_text(company.denomination, "societe.denomination"),
+        bold=True,
+        style_profile=LETTER_WIDE_STYLE_PROFILE,
+    )
     add_paragraph(document, "Madame, Monsieur,", style_profile=LETTER_WIDE_STYLE_PROFILE)
     add_paragraph(
         document,

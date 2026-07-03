@@ -131,7 +131,10 @@ def _context(*, overlay: str, gender: Gender = Gender.MASCULIN) -> DocumentGener
             nombre_titres_total=1000,
             nombre_titres_total_lettres="mille",
             valeur_nominale_titre="1",
-            valeur_nominale_titre_lettres="un euro",
+            # Akainu n-1 (2026-07-03) : valeur RÉALISTE (le front dérive via number_words_from_value
+            # -> « un », SANS « euro » ; le mot « euro » est ajoute par le token [euro_nominal_word]
+            # de l'art.8). « un euro » ici incrustait un double « euro » masque par les assertions.
+            valeur_nominale_titre_lettres="un",
             type_titre="actions" if overlay == "selas_medecin" else "parts_sociales",
         ),
         apport=Apport(montant="1 000", montant_lettres="mille"),
@@ -470,21 +473,24 @@ def test_statuts_selas_medecin_generates_without_second_lieu_by_default(
 
 
 def test_statuts_selas_medecin_article_8_elision_valeur_nominale(tmp_path: Path) -> None:
-    # Akainu B1 (regle 68, propagation) : l'article 8 du modele colle « d’[valeur…] ». Avec une
-    # valeur nominale a initiale CONSONNE (« cent euros »), il faut « actions de cent euros »
-    # (et non « actions d’cent euros »). Le fixture par defaut (« un euro », voyelle) masquait le
-    # bug. Apostrophe COURBE (U+2019) comme le rendu reel.
+    # Akainu B1 (regle 68) : l'article 8 colle « d’[valeur…] ». Valeur a initiale CONSONNE
+    # (« cent ») -> « actions de cent euros » (pas « d’cent »). Valeur a initiale VOYELLE
+    # (« un ») -> « d’un euro ». Apostrophe COURBE (U+2019) comme le rendu reel.
+    # Akainu M-1/n-1 (2026-07-03) : lettres RÉALISTES (« cent »/« un », le front n'incruste pas
+    # « euro »), figure COHÉRENTE (euro_word accorde sur la figure), + garde anti DOUBLE-euro.
     ctx = _context(overlay="selas_medecin")
-    ctx.capital.valeur_nominale_titre_lettres = "cent euros"
+    ctx.capital.valeur_nominale_titre = "100"
+    ctx.capital.valeur_nominale_titre_lettres = "cent"
     text = _docx_text(StatutsSelasMedecinGenerator().generate(ctx, tmp_path))
-    assert "actions de cent euros" in text
+    assert "actions de cent euros" in text  # consonne : pas d'elision + accord pluriel
     assert "d’cent" not in text
     assert "d'cent" not in text
-    # Cas voyelle preserve : « un euro » -> « d’un euro ».
-    ctx_v = _context(overlay="selas_medecin")
-    ctx_v.capital.valeur_nominale_titre_lettres = "un euro"
+    assert "euros euro" not in text and "euro euro" not in text  # jamais de double « euro »
+    # Cas voyelle : « un » -> « d’un euro » (elision + singulier).
+    ctx_v = _context(overlay="selas_medecin")  # valeur nominale 1 / « un » (defaut fixture)
     text_v = _docx_text(StatutsSelasMedecinGenerator().generate(ctx_v, tmp_path))
     assert "actions d’un euro" in text_v
+    assert "euro euro" not in text_v  # pas de double « euro »
 
 
 def test_statuts_selas_medecin_renders_complete_second_lieu(tmp_path: Path) -> None:
@@ -902,3 +908,153 @@ def _render_source_medecin_paragraph(
     if rendered == "Ouverture d’un compte bancaire":
         return "- Ouverture d’un compte bancaire"
     return rendered
+
+
+def _art8_line(text: str) -> str:
+    for line in text.split("\n"):
+        if "Il est divisé en" in line and "actions" in line and "chacune" in line:
+            return line
+    raise AssertionError("ligne article 8 introuvable dans le rendu SELAS")
+
+
+def _paragraphs_with_runs(path: Path):
+    return list(Document(path).paragraphs)
+
+
+def _all_runs_bold(paragraph) -> bool:
+    runs = [run for run in paragraph.runs if run.text.strip()]
+    return bool(runs) and all(run.bold for run in runs)
+
+
+# --- 2.3 euro (uni medecin, valeur nominale reelle number_words) ---------------------------
+
+
+def test_statuts_selas_medecin_article_8_euro_singulier_valeur_reelle(tmp_path: Path) -> None:
+    # Retour Albane 2.3 : art.8 rend « d'un euro (1 €) » quand la valeur nominale en lettres
+    # est la valeur REELLE (front-app : number_words_from_value('1') = « un », SANS euro). Le
+    # token « [euro_nominal_word] » du modele medecin ajoute « euro » accorde (VN=1 -> singulier).
+    from sydel_doc_engine.front_app.field_derivations import number_words_from_value
+
+    ctx = _context(overlay="selas_medecin")
+    ctx.capital.valeur_nominale_titre = "1"
+    ctx.capital.valeur_nominale_titre_lettres = number_words_from_value("1")  # « un »
+    line = _art8_line(_docx_text(StatutsSelasMedecinGenerator().generate(ctx, tmp_path)))
+    assert "actions d’un euro (1 €) chacune" in line
+    assert "euro euro" not in line and "euros euro" not in line  # pas de double euro
+    assert "d’un (1 €)" not in line  # euro ne doit pas manquer
+
+
+def test_statuts_selas_medecin_article_8_euros_pluriel_valeur_reelle(tmp_path: Path) -> None:
+    # Retour Albane 2.3 : VN>=2 -> « euros » pluriel + connecteur « de » (consonne).
+    from sydel_doc_engine.front_app.field_derivations import number_words_from_value
+
+    ctx = _context(overlay="selas_medecin")
+    ctx.capital.valeur_nominale_titre = "10"
+    ctx.capital.valeur_nominale_titre_lettres = number_words_from_value("10")  # « dix »
+    line = _art8_line(_docx_text(StatutsSelasMedecinGenerator().generate(ctx, tmp_path)))
+    assert "actions de dix euros (10 €) chacune" in line
+    assert "de dix (10 €)" not in line  # euro ne doit pas manquer
+
+
+# --- 2.1 dedoublonnage profession / qualification (comparution) ----------------------------
+
+
+def test_statuts_selas_medecin_comparution_dedoublonne_profession_qualification(
+    tmp_path: Path,
+) -> None:
+    # Retour Albane 2.1 : quand la qualification saisie == profession reglementee, la
+    # comparution ne doit emettre le mot QU'UNE fois (« medecin », pas « medecin medecin »).
+    ctx = _context(overlay="selas_medecin")
+    ctx.associes[0].profession_reglementee = "medecin"
+    ctx.associes[0].qualification_principale = "medecin"
+    text = _docx_text(StatutsSelasMedecinGenerator().generate(ctx, tmp_path))
+    assert "medecin medecin" not in text
+    assert "Docteur Camille Martin, medecin, né le" in text
+
+
+def test_statuts_selas_medecin_comparution_preserve_qualification_distincte(
+    tmp_path: Path,
+) -> None:
+    # Retour Albane 2.1 : une qualification DISTINCTE de la profession est preservee
+    # (« medecin cardiologue » = juxtaposition volontaire, non dedoublonnee).
+    ctx = _context(overlay="selas_medecin")
+    ctx.associes[0].profession_reglementee = "medecin"
+    ctx.associes[0].qualification_principale = "cardiologue"
+    text = _docx_text(StatutsSelasMedecinGenerator().generate(ctx, tmp_path))
+    assert "medecin cardiologue" in text
+
+
+# --- 2.6 / 2.7 / 2.8 mise en forme SELAS (gras siege / gras president / sous-articles) -----
+
+
+def test_statuts_selas_medecin_siege_art4_en_gras(tmp_path: Path) -> None:
+    # Retour Albane 2.6 : l'ADRESSE du siege (art.4) rendue en gras (le libelle reste normal).
+    paragraphs = _paragraphs_with_runs(
+        StatutsSelasMedecinGenerator().generate(_context(overlay="selas_medecin"), tmp_path)
+    )
+    siege = next(
+        p for p in paragraphs if "siège" in p.text.lower() and "fixé au" in p.text
+    )
+    # Le libelle (« Le siège social est fixé au ») N'est PAS gras ; l'adresse l'est.
+    label_run = siege.runs[0]
+    adresse_run = siege.runs[-1]
+    assert label_run.bold is not True
+    assert adresse_run.bold is True
+    assert "10 rue de la Paix" in adresse_run.text
+
+
+def test_statuts_selas_medecin_president_designation_art15_en_gras(tmp_path: Path) -> None:
+    # Retour Albane 2.7 : la designation nominative du President (art.15 medecin) en gras.
+    paragraphs = _paragraphs_with_runs(
+        StatutsSelasMedecinGenerator().generate(_context(overlay="selas_medecin"), tmp_path)
+    )
+    nomme = next(
+        p for p in paragraphs if "est nommé" in p.text and "Société et ce pour" in p.text
+    )
+    assert _all_runs_bold(nomme)
+
+
+def test_statuts_selas_medecin_sous_articles_soulignes(tmp_path: Path) -> None:
+    # Retour Albane 2.8 : les en-tetes de sous-articles (« 15.1- », « 16-1 - »...) soulignes.
+    paragraphs = _paragraphs_with_runs(
+        StatutsSelasMedecinGenerator().generate(_context(overlay="selas_medecin"), tmp_path)
+    )
+    subarticles = [
+        p for p in paragraphs if re.match(r"^\s*\d{1,2}\s*[.\-]\s*\d{1,2}\b", p.text)
+    ]
+    assert subarticles, "aucun en-tete de sous-article trouve"
+    for paragraph in subarticles:
+        assert all(run.underline for run in paragraph.runs if run.text.strip())
+
+
+def test_statuts_selas_medecin_corps_sans_faux_positif_gras_souligne(tmp_path: Path) -> None:
+    # Garde-fou anti faux-positif : une ligne de CORPS quelconque (art.8) n'est ni gras
+    # ni soulignee — la mise en forme SELAS ne deborde pas sur le corps.
+    paragraphs = _paragraphs_with_runs(
+        StatutsSelasMedecinGenerator().generate(_context(overlay="selas_medecin"), tmp_path)
+    )
+    art8 = next(p for p in paragraphs if "entièrement libérées" in p.text)
+    assert all(run.bold is not True for run in art8.runs)
+    assert all(run.underline is not True for run in art8.runs)
+
+
+# --- byte-neutralite SELARL : selas_formatting OFF -> aucun gras/souligne parasite ---------
+
+
+def test_statuts_selarl_medecin_sans_mise_en_forme_selas_parasite(tmp_path: Path) -> None:
+    # Le flag selas_formatting est OFF pour SELARL : aucune adresse de siege en gras et
+    # aucun sous-article souligne parasite (la mise en forme SELAS ne fuit pas vers SELARL).
+    paragraphs = _paragraphs_with_runs(
+        StatutsSelarlMedecinGenerator().generate(_context(overlay="selarl_medecin"), tmp_path)
+    )
+    # Sous-articles (« 20.1 – », « 23.1 - »...) : AUCUN souligne (contrairement au SELAS).
+    subarticles = [
+        p for p in paragraphs if re.match(r"^\s*\d{1,2}\s*[.\-]\s*\d{1,2}\b", p.text)
+    ]
+    assert subarticles, "aucun sous-article SELARL trouve (fixture inattendue)"
+    for paragraph in subarticles:
+        assert all(run.underline is not True for run in paragraph.runs)
+    # Ligne du siege SELARL : aucun run en gras parasite.
+    siege = [p for p in paragraphs if "siège" in p.text.lower() and "fixé" in p.text]
+    for paragraph in siege:
+        assert all(run.bold is not True for run in paragraph.runs)

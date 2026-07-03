@@ -1,0 +1,142 @@
+﻿Retours après tests sur les dossiers SELARL et SCI.
+La majorité des demandes concerne la mise en forme des documents générés.
+Objectif général : reprendre au plus proche la mise en forme originale des modèles Word, afin que les documents générés aient un rendu professionnel et homogène.
+________________
+
+
+1. Règles générales à appliquer à tous les modèles concernés
+1.1 Police et interligne
+Si possible, appliquer à tous les actes :
+* Police : Roboto
+* Taille : 10
+* Corps du texte : interligne 0,5 ou 1
+1.2 Déclarations de non-condamnation
+Pour toutes les déclarations sur l’honneur de non-condamnation :
+* ajouter un espace entre la désignation de l’associé / dirigeant et l’affiliation des parents.
+1.3 Procurations
+Pour toutes les procurations :
+* positionner la signature du client à droite.
+1.4 PV
+Pour les PV :
+* mettre l’interligne à 0 pour :
+   * la désignation de la société en en-tête ;
+   * la désignation du client ;
+   * chacune des décisions de l’AG.
+* ajouter un espace entre la première décision et le texte qui suit.
+1.5 Demande d’inscription à l’Ordre
+Pour toutes les demandes d’inscription à l’Ordre :
+* positionner la signature du client à droite.
+1.6 Attestation sur le capital / liste des souscripteurs
+Dans l’attestation sur le capital / liste des souscripteurs :
+* ajouter des espaces après la phrase du type :
+“Le Docteur [Nom] a fait un apport de [montant] euros en numéraire”
+* ajouter de l’espace entre :
+   * le titre du document ;
+   * la désignation de la société ;
+   * le corps du texte.
+1.7 Lettre d’option IS
+Dans la lettre d’option IS :
+   * mettre le nom de la société en gras dans la première ligne.
+1.8 Autorisation de domiciliation
+La mise en forme de l’autorisation de domiciliation est validée.
+Ne pas modifier ce modèle.
+________________
+
+
+2. Statuts SELAS
+Points à corriger
+   1. Corriger la désignation de l’associé : actuellement “médecin médecin” apparaît.
+Il faut supprimer le doublon.
+   2. Adapter la phrase selon le genre :
+      * actuellement : “qu’il a décidé d’instituer”
+      * si l’associé est une femme : “qu’elle a décidé d’instituer”.
+      3. Article 8 : ajouter “euro” dans la phrase :
+“Il est divisé en 1000 parts de 1 euro chacune”.
+À vérifier dans tous les modèles similaires.
+      4. Ajouter le nom du conjoint lorsque l’associé est marié ou pacsé.
+      5. Ajouter / restaurer les tirets dans les énumérations, notamment :
+         * article 1 ;
+         * article 9 ;
+         * et vérifier l’ensemble des articles concernés.
+         6. Article 4 : mettre en gras le lieu du siège social.
+         7. Article 15 : mettre en gras la désignation du président nommé.
+         8. Souligner les sous-articles, par exemple :
+         * 15.1 ;
+         * 15.2 ;
+         * etc.
+         9. Article 38 : supprimer l’espace en trop qui coupe la phrase en deux.
+         10. Sous la signature du client : ajouter un saut de page avant la partie annexe.
+________________
+
+
+3. Statuts SCI
+Points à corriger
+         1. Centrer l’en-tête : Mettre le nom de la société en gras dans l’en-tête.
+         2. Ajouter de l’espace avant et après le cadre “Statuts”.
+         3. Ajouter de l’espace entre chaque soussigné au début du document.
+La présentation SELAS était correcte et peut servir de référence.
+         4. Dans l’en-tête de la société, pour une SCI, afficher :
+“Société Civile Immobilière”
+et non “Société Civile”.
+         5. Dans la partie “soussignés” :
+            * supprimer les espaces excessifs dans la désignation du client ;
+            * ajouter “ET” lorsqu’il y a plusieurs soussignés, ou utiliser des tirets pour améliorer la lisibilité.
+            6. Article 3 :
+            * ajouter un espace entre le nom de la société et le corps du texte.
+            7. Article 2 :
+            * ajouter / restaurer les tirets dans l’énumération.
+À revoir plus largement sur tous les statuts, comme pour la SELAS.
+               8. Aligner les articles avec le reste du texte.
+               9. Article 4 :
+               * ajouter un espace entre l’adresse du siège et le corps du texte.
+               11. Article 6 :
+               * harmoniser la présentation des apports.
+Exemple attendu :
+“Monsieur Jean Durand, la somme de quatre cents euros, ci 400 euros”
+               * éviter les espaces excessifs ;
+               * utiliser des tirets ou des puces si nécessaire.
+________________
+
+
+4. Documents manquants dans les créations de société
+Dans toutes les créations de société, vérifier la présence du document suivant :
+                  * attestation sur le capital
+ou
+                  * attestation sur le capital / liste des souscripteurs
+Ce document semble manquant dans certains parcours de création.
+________________
+
+
+5. Revue globale des modèles
+Demande générale
+Reprendre chaque modèle et revérifier la mise en forme globale avant le prochain contrôle client.
+Points à vérifier :
+                     * police ;
+                     * taille ;
+                     * interlignes ;
+                     * espaces entre les blocs ;
+                     * alignements ;
+                     * cadres ;
+                     * signatures ;
+                     * listes à tirets ;
+                     * sauts de page ;
+                     * cohérence avec les modèles Word originaux.
+Objectif
+Permettre un dernier check société par société sur des documents propres, homogènes et proches des modèles d’origine.
+________________
+
+
+Critères d’acceptation
+Le ticket sera considéré comme traité lorsque :
+                     1. Les documents générés reprennent une mise en forme proche des modèles originaux.
+                     2. Les actes sont en Roboto 10 si techniquement possible.
+                     3. Les interlignes sont harmonisés.
+                     4. Les signatures client sont positionnées à droite dans les procurations et demandes d’inscription à l’Ordre.
+                     5. Les déclarations de non-condamnation ont un espacement correct entre l’identité et l’affiliation des parents.
+                     6. Les PV ont un interligne corrigé et un espacement cohérent entre les décisions.
+                     7. Les attestations sur le capital / listes des souscripteurs sont plus lisibles.
+                     8. La lettre d’option IS affiche le nom de la société en gras.
+                     9. Les statuts SELAS sont corrigés sur les variables, accords, tirets, gras, sous-articles et saut de page avant annexe.
+                     10. Les statuts SCI sont corrigés sur l’en-tête, les soussignés, les articles, les tirets et l’harmonisation des apports.
+                     11. L’attestation sur le capital ou attestation sur le capital / liste des souscripteurs est bien générée dans toutes les créations de société.
+                     12. L’autorisation de domiciliation reste inchangée.

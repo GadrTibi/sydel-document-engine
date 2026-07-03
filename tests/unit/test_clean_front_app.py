@@ -680,6 +680,12 @@ def test_selas_uni_dentiste_generator_matches_dentiste_model_wording(
     assert "A la constitution de la Société, l’associé unique a fait les apports suivants" in text
     assert "- Le Docteur Jean Durand, apporte mille euros" in text
     assert "- Monsieur Jean Durand, cent actions" in text
+    # Retour Albane « mise en forme » 2.3 : le mot « euro(s) » (accorde sur la FIGURE)
+    # figure apres la valeur nominale en lettres. VN=10 (front-app reel -> lettres « dix »,
+    # SANS euro) -> le token « [euro_nominal_word] » du modele dentiste ajoute « euros ».
+    assert "100 actions de 10 € (dix euros) chacune" in text
+    assert "(dix) chacune" not in text  # garde-fou : le mot euro NE doit PAS manquer
+    assert "euros euros" not in text and "euro euros" not in text  # pas de double euro
     # Celibataire : la clause matrimoniale rend juste « celibataire » (pas de conjoint).
     assert "marié" not in text.replace("non marié", "")
     # Propre + accentue.

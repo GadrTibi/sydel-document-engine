@@ -245,9 +245,12 @@ def test_selas_multi_asserts_source_wording(tmp_path: Path) -> None:
     assert "Total des apports\xa0en numéraire" in text
     # Article 8 - Capital / repartition en actions (vocabulaire actions, jamais parts)
     assert "Il est divisé en cent (100) actions d" in text
+    # Retour Albane « mise en forme » 2.3 : le mot « euros » (accorde, VN=10 -> pluriel)
+    # doit figurer apres la valeur en lettres — « de dix euros (10 €) chacune ». L'ancien
+    # rendu « dix (10 €) chacune » (sans euro) etait le DEFAUT corrige (M1).
     assert (
-        "dix (10 €) chacune, entièrement libérées, et attribuées aux associés comme suit\xa0:"
-        in text
+        "de dix euros (10 €) chacune, entièrement libérées, et attribuées aux associés "
+        "comme suit\xa0:" in text
     )
     assert "Madame Claire Durand, associée exerçante, détient 75 actions" in text
     assert "La SOCIETE CIVILE EXEMPLE, associée non exerçante, détient 25 actions" in text
@@ -977,3 +980,65 @@ def test_st7h_signature_cases_dentiste(tmp_path: Path) -> None:
     row = signature_tables[0].rows[0]
     assert row.height is not None and row.height.cm >= 4.9
     assert len(row.cells) == 2
+
+
+def _art8_line(text: str) -> str:
+    """Ligne art.8 « Il est divisé en ... actions ... chacune » du corps rendu."""
+    for line in text.split("\n"):
+        if "Il est divisé en" in line and "actions" in line and "chacune" in line:
+            return line
+    raise AssertionError("ligne article 8 introuvable dans le rendu SELAS multi")
+
+
+def test_selas_multi_article_8_rend_euro_singulier_vn_1(tmp_path: Path) -> None:
+    # Retour Albane « mise en forme » 2.3 (M1) : la SELAS PLURIPERSONNELLE doit rendre
+    # le mot « euro » (accorde) apres la valeur nominale en lettres. VN=1 -> « un euro ».
+    # Le modele multi ne portait PAS le token « [euro_nominal_word] » -> le mot manquait.
+    from sydel_doc_engine.front_app.field_derivations import number_words_from_value
+
+    ctx = _context(
+        associes=[
+            _physical_associe(
+                prenoms="Claire", nom="Durand", nb_actions=75,
+                montant="75", montant_lettres="soixante-quinze",
+            ),
+            _morale_associe(
+                nb_actions=25, montant="25", montant_lettres="vingt-cinq",
+            ),
+        ]
+    )
+    ctx.statuts_selas_multi.valeur_nominale_action = "1"
+    ctx.statuts_selas_multi.valeur_nominale_action_lettres = number_words_from_value("1")
+
+    line = _art8_line(_docx_text(StatutsSelasMultiGenerator().generate(ctx, tmp_path)))
+    # Elision voyelle + euro singulier + figure : « d'un euro (1 €) ».
+    assert "actions d’un euro (1 €) chacune" in line
+    # Pas de double euro, pas de forme sans euro.
+    assert "euro euro" not in line and "euros euro" not in line
+    assert "d’un (1 €)" not in line  # ancien defaut (sans euro)
+
+
+def test_selas_multi_article_8_rend_euros_pluriel_vn_10(tmp_path: Path) -> None:
+    # Retour Albane 2.3 (M1) : VN>=2 -> « euros » au pluriel + connecteur « de » (consonne).
+    line = _art8_line(
+        _docx_text(
+            StatutsSelasMultiGenerator().generate(
+                _context(
+                    associes=[
+                        _physical_associe(
+                            prenoms="Claire", nom="Durand", nb_actions=75,
+                            montant="750", montant_lettres="sept cent cinquante",
+                        ),
+                        _morale_associe(
+                            nb_actions=25, montant="250",
+                            montant_lettres="deux cent cinquante",
+                        ),
+                    ]
+                ),
+                tmp_path,
+            )
+        )
+    )
+    # Contexte par defaut : VN=10 -> « de dix euros (10 €) ».
+    assert "actions de dix euros (10 €) chacune" in line
+    assert "de dix (10 €)" not in line  # ancien defaut (sans euro)

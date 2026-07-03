@@ -166,14 +166,37 @@ def _add_identity_block(
 ) -> None:
     # Bloc identite compact (retour Albane 2026-06-10 : retirer les interlignes
     # de « je soussigne » jusqu'a « de nationalite » et entre les noms des parents).
-    for line, bold in (
+    # Mise en forme (Albane, retour « mise en forme » 2026-07) : AERER entre la
+    # designation de l'associe/dirigeant (sujet -> naissance -> adresse ->
+    # nationalite) et l'affiliation des parents (pere/mere). On garde la compacite
+    # du bloc identite mais on menage un espace (6 pt) APRES la ligne « nationalite »,
+    # juste AVANT la 1re ligne de filiation. Les lignes de filiation restent
+    # compactes entre elles (pere -> mere, sa=0).
+    _IDENTITY_STANDARD_SPACE_AFTER_PT = 6
+    # Ordre FIGE du bloc identite. La ligne « nationalite » est la DERNIERE avant la
+    # filiation : on la cible par son ROLE/POSITION (derniere ligne de designation),
+    # pas par egalite de contenu (m3 : « line == nationality » etait fragile — une
+    # valeur coincidente/vide aurait pu declencher l'espace au mauvais endroit).
+    designation_lines = (
         (subject, True),
         (birth, False),
         (address, False),
         (nationality, False),
+    )
+    filiation_lines = (
         (filiation_father, False),
         (filiation_mother, False),
-    ):
+    )
+    last_designation_index = len(designation_lines) - 1
+    for index, (line, bold) in enumerate(designation_lines):
+        # Espace uniquement APRES la DERNIERE ligne de designation (« de nationalite »),
+        # juste avant la filiation ; le reste du bloc reste compact (sa=0).
+        space_after = (
+            _IDENTITY_STANDARD_SPACE_AFTER_PT if index == last_designation_index else 0
+        )
+        add_paragraph(document, line, bold=bold, space_after_pt=space_after)
+    # Lignes de filiation compactes entre elles (pere -> mere, sa=0).
+    for line, bold in filiation_lines:
         add_paragraph(document, line, bold=bold, space_after_pt=0)
 
 

@@ -170,6 +170,29 @@ def test_declaration_non_condamnation_matches_source_visual_formatting(tmp_path:
     assert all(run.italic for run in second_reminder_paragraph.runs if run.text.strip())
 
 
+def test_declaration_non_condamnation_espace_avant_filiation_seulement(
+    tmp_path: Path,
+) -> None:
+    # Retour Albane « mise en forme » 1.2 : un espace (6 pt) est menage APRES la ligne
+    # « de nationalité » (derniere ligne de designation, ciblee par ROLE/POSITION et non
+    # par egalite de contenu), juste avant la filiation. Le reste du bloc identite ET les
+    # lignes de filiation restent COMPACTS (space_after = 0).
+    document = Document(_generate(tmp_path))
+
+    subject = _find_paragraph(document, "Je soussigné Monsieur Jean Durand")
+    birth = _find_paragraph(document, "Né le 03/02/1990")
+    address = _find_paragraph(document, "demeurant au 12 rue des Lilas")
+    nationality = _find_paragraph(document, "de nationalité française")
+    filiation_father = _find_paragraph(document, "fils de Monsieur Pierre Durand")
+    filiation_mother = _find_paragraph(document, "et de Madame Anne Martin")
+
+    # Seule la ligne « nationalité » (derniere designation) porte l'espace de 6 pt.
+    assert nationality.paragraph_format.space_after == Pt(6)
+    # Tout le reste du bloc reste compact.
+    for compact in (subject, birth, address, filiation_father, filiation_mother):
+        assert compact.paragraph_format.space_after == Pt(0)
+
+
 def test_declaration_non_condamnation_birth_department_in_parentheses(tmp_path: Path) -> None:
     # Retour Albane 2026-06-10 : « né le {date} à {ville} ({département}) » —
     # plus de point après la ville, département entre parenthèses s'il est renseigné.

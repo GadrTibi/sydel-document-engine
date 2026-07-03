@@ -726,3 +726,34 @@ def test_pv_nomination_selarl_garde_intitule_gerant(tmp_path: Path) -> None:
 
     assert "Nomination du gérant" in text
     assert "Bon pour acceptation des fonctions de gérante" in text
+
+
+def _find_para(document: Document, needle: str):
+    return next(p for p in document.paragraphs if needle in p.text)
+
+
+def test_pv_associe_unique_designation_client_en_interligne_simple(
+    tmp_path: Path,
+) -> None:
+    # Retour Albane « mise en forme » 1.4 (M3) : la DESIGNATION DU CLIENT (nom, naissance,
+    # adresse, nationalite) de l'associe unique sort en interligne SIMPLE (1.0), pas en
+    # interligne par defaut. Branche ASSOCIE UNIQUE.
+    document = Document(_generate(tmp_path, _context(associes=_associes(1))))
+    for needle in (
+        "Madame Alice Durand",
+        "Née le 09/07/1986",
+        "Demeurant 3 rue des Lilas",
+        "De nationalité française",
+    ):
+        assert _find_para(document, needle).paragraph_format.line_spacing == 1.0
+
+
+def test_pv_ag_multi_enumeration_associes_en_interligne_simple(tmp_path: Path) -> None:
+    # Retour Albane 1.4 (M3) : la designation des clients (enumeration des associes
+    # presents/representes) de l'AG multi sort en interligne SIMPLE (1.0). Branche MULTI.
+    document = Document(_generate(tmp_path, _context(associes=_associes(2))))
+    for needle in (
+        "Madame Alice Durand, détenant 60",
+        "Monsieur Bruno Martin, détenant 40",
+    ):
+        assert _find_para(document, needle).paragraph_format.line_spacing == 1.0

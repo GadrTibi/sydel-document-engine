@@ -173,6 +173,46 @@ def test_attestation_capital_sas_generates_unique_subscriber_wording(
     assert_no_unaccented_french(text)
 
 
+def test_attestation_capital_sas_aere_titre_designation_corps_et_apports(
+    tmp_path: Path,
+) -> None:
+    # Retour Albane « mise en forme » 1.6 (M2) : MEME aeration que la variante SPFPL —
+    # (a) espace APRES la phrase d'apport et APRES « Total des apports » ; (b) espace entre
+    # la designation de la societe, le bloc titre et le corps (paragraphes-espaceurs 10 pt).
+    from docx.shared import Pt
+
+    document = Document(
+        AttestationCapitalListeSouscripteursSasGenerator().generate(_base_context(), tmp_path)
+    )
+    paragraphs = document.paragraphs
+
+    def _index(predicate) -> int:
+        return next(i for i, p in enumerate(paragraphs) if predicate(p.text))
+
+    designation_idx = _index(lambda t: t.startswith("Siège social :"))
+    titre_idx = _index(lambda t: t.strip() == "ATTESTATION")
+    liste_idx = _index(lambda t: t.strip() == "Liste des souscripteurs")
+    corps_idx = _index(lambda t: "atteste que le capital" in t)
+    apport_idx = _index(lambda t: "fait apport de" in t and "pour une valeur de" in t)
+    total_idx = _index(lambda t: t.startswith("Total des apports en nature"))
+
+    # (b) Un paragraphe-espaceur (vide, 10 pt) separe la designation du titre, et le titre
+    # du corps.
+    spacer_designation_titre = paragraphs[designation_idx + 1]
+    assert not spacer_designation_titre.text.strip()
+    assert spacer_designation_titre.paragraph_format.space_after == Pt(10)
+    assert titre_idx == designation_idx + 2
+
+    spacer_titre_corps = paragraphs[liste_idx + 1]
+    assert not spacer_titre_corps.text.strip()
+    assert spacer_titre_corps.paragraph_format.space_after == Pt(10)
+    assert corps_idx == liste_idx + 2
+
+    # (a) Espace de 10 pt APRES la phrase d'apport et APRES « Total des apports ».
+    assert paragraphs[apport_idx].paragraph_format.space_after == Pt(10)
+    assert paragraphs[total_idx].paragraph_format.space_after == Pt(10)
+
+
 def test_attestation_capital_sas_blocks_multiple_subscribers(tmp_path: Path) -> None:
     ctx = _base_context()
     ctx.capital_souscription.souscripteurs.append(

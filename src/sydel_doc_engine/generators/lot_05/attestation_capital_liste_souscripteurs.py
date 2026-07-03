@@ -18,9 +18,19 @@ from sydel_doc_engine.generators.lot_05.spfpl_common import (
     required_text,
     validate_apport_context,
 )
-from sydel_doc_engine.rendering.docx_builder import add_paragraph, new_document
+from sydel_doc_engine.rendering.docx_builder import add_paragraph, add_spacer, new_document
 
 OUTPUT_FILENAME = "attestation_capital_liste_souscripteurs.docx"
+
+# Mise en forme (Albane, retour « mise en forme » 2026-07) : « ajouter des espaces »
+# sur l'attestation capital / liste des souscripteurs. Deux aerations demandees :
+# (a) espace APRES la phrase d'apport (« ... a fait un apport de ... euros ») et
+#     APRES la ligne « Total des apports » ;
+# (b) espace entre le TITRE (denomination), la DESIGNATION de la societe (forme /
+#     activite / siege) et le CORPS du texte.
+# On aere via des paragraphes-espaceurs (add_spacer) entre les GROUPES et via un
+# space_after renforce sur les lignes visees, sans toucher au wording.
+_ATTESTATION_GROUP_SPACER_PT = 10
 
 
 class AttestationCapitalListeSouscripteursGenerator:
@@ -71,6 +81,9 @@ class AttestationCapitalListeSouscripteursGenerator:
             f"Siège social : {company_siege_display(societe_spfpl, 'societe_spfpl')}",
             alignment=WD_ALIGN_PARAGRAPH.CENTER,
         )
+        # (b) Aeration entre la DESIGNATION de la societe (denomination / forme /
+        # activite / siege) et le titre « ATTESTATION » + le corps.
+        add_spacer(docx, space_after_pt=_ATTESTATION_GROUP_SPACER_PT)
         add_paragraph(docx, "ATTESTATION", alignment=WD_ALIGN_PARAGRAPH.CENTER, bold=True)
         add_paragraph(
             docx,
@@ -78,6 +91,9 @@ class AttestationCapitalListeSouscripteursGenerator:
             alignment=WD_ALIGN_PARAGRAPH.CENTER,
             bold=True,
         )
+        # (b) Aeration entre le bloc TITRE (« ATTESTATION » / « Liste des
+        # souscripteurs ») et le CORPS du texte.
+        add_spacer(docx, space_after_pt=_ATTESTATION_GROUP_SPACER_PT)
         add_paragraph(
             docx,
             f"{_souscripteur_identite(president, 'capital_souscription.president')}, "
@@ -112,8 +128,16 @@ class AttestationCapitalListeSouscripteursGenerator:
             f"{required_text(societe_cible.ville_rcs, 'societe_cible.ville_rcs')} "
             f"sous le numéro {required_text(societe_cible.numero_rcs, 'societe_cible.numero_rcs')} "
             f"pour une valeur de {apport_nature} euros.",
+            # (a) Espace APRES la phrase d'apport (« ... fait apport de ... pour une
+            # valeur de ... euros. »).
+            space_after_pt=_ATTESTATION_GROUP_SPACER_PT,
         )
-        add_paragraph(docx, f"Total des apports en nature {apport_nature} euros")
+        add_paragraph(
+            docx,
+            f"Total des apports en nature {apport_nature} euros",
+            # (a) Espace APRES la ligne « Total des apports ».
+            space_after_pt=_ATTESTATION_GROUP_SPACER_PT,
+        )
         add_paragraph(docx, f"Apports en numéraire : {apports_numeraire}")
         add_paragraph(
             docx,

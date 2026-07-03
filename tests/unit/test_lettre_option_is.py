@@ -128,6 +128,23 @@ def test_lettre_option_is_generates_clean_docx(tmp_path: Path) -> None:
     _assert_clean(text)
 
 
+def test_lettre_option_is_denomination_en_gras_premiere_ligne_du_corps(
+    tmp_path: Path,
+) -> None:
+    # Retour Albane « mise en forme » 1.7 : le NOM DE LA SOCIETE doit figurer EN GRAS
+    # dans la PREMIERE LIGNE du corps du courrier (juste avant « Madame, Monsieur, »).
+    document = Document(LettreOptionIsGenerator().generate(_base_context(), tmp_path))
+    paragraphs = [p for p in document.paragraphs if p.text.strip()]
+    salutation_index = next(
+        index for index, p in enumerate(paragraphs) if p.text.strip() == "Madame, Monsieur,"
+    )
+    # La ligne juste AVANT la salutation porte la denomination, entierement en gras.
+    denomination_line = paragraphs[salutation_index - 1]
+    assert denomination_line.text.strip() == "SCI EXEMPLE"
+    runs = [run for run in denomination_line.runs if run.text.strip()]
+    assert runs and all(run.bold for run in runs)
+
+
 def test_lettre_option_is_siren_always_en_cours_immatriculation(tmp_path: Path) -> None:
     """R3 (Albane 2026-06-30) : meme avec un SIREN saisi, la ligne SIREN doit afficher la
     constante « En cours d'immatriculation » (societe en cours de constitution)."""

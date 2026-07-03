@@ -27,11 +27,21 @@ from sydel_doc_engine.generators.lot_05.spfpl_common import elision_de
 from sydel_doc_engine.rendering.docx_builder import (
     add_company_identity_block,
     add_paragraph,
+    add_spacer,
     new_document,
 )
 from sydel_doc_engine.utils.grammar import euro_word
 
 OUTPUT_FILENAME = "attestation_capital_liste_souscripteurs_sas.docx"
+
+# Mise en forme (Albane, retour « mise en forme » 1.6) : « ajouter des espaces » sur
+# l'attestation capital / liste des souscripteurs. MEME aeration que la variante SPFPL
+# (attestation_capital_liste_souscripteurs.py) : (a) espace APRES la phrase d'apport et
+# APRES la ligne « Total des apports » ; (b) espace entre la DESIGNATION de la societe, le
+# bloc TITRE (« ATTESTATION » / « Liste des souscripteurs ») et le CORPS. On aere via des
+# paragraphes-espaceurs (add_spacer) entre les GROUPES et un space_after renforce sur les
+# lignes visees, sans toucher au wording.
+_ATTESTATION_GROUP_SPACER_PT = 10
 
 
 class AttestationCapitalListeSouscripteursSasGenerator:
@@ -51,6 +61,8 @@ class AttestationCapitalListeSouscripteursSasGenerator:
                 f"Siège social : {data.adresse_siege}",
             ],
         )
+        # (b) Aeration entre la DESIGNATION de la societe et le bloc TITRE.
+        add_spacer(document, space_after_pt=_ATTESTATION_GROUP_SPACER_PT)
         add_paragraph(document, "ATTESTATION", alignment=WD_ALIGN_PARAGRAPH.CENTER, bold=True)
         add_paragraph(
             document,
@@ -58,6 +70,9 @@ class AttestationCapitalListeSouscripteursSasGenerator:
             alignment=WD_ALIGN_PARAGRAPH.CENTER,
             bold=True,
         )
+        # (b) Aeration entre le bloc TITRE (« ATTESTATION » / « Liste des
+        # souscripteurs ») et le CORPS du texte.
+        add_spacer(document, space_after_pt=_ATTESTATION_GROUP_SPACER_PT)
         add_paragraph(
             document,
             f"{data.president_nom} {data.profession_actionnaire}, demeurant "
@@ -84,10 +99,14 @@ class AttestationCapitalListeSouscripteursSasGenerator:
             f"ayant son siège {data.societe_cible_siege}, immatriculée au RCS de "
             f"{data.societe_cible_ville_rcs} sous le numéro {data.societe_cible_numero_rcs} "
             f"pour une valeur de {data.apports_nature_montant} €",
+            # (a) Espace APRES la phrase d'apport.
+            space_after_pt=_ATTESTATION_GROUP_SPACER_PT,
         )
         add_paragraph(
             document,
             f"Total des apports en nature {data.apports_nature_montant} €",
+            # (a) Espace APRES la ligne « Total des apports ».
+            space_after_pt=_ATTESTATION_GROUP_SPACER_PT,
         )
         add_paragraph(document, f"Apports en numéraire : {data.apports_numeraire_montant}")
         add_paragraph(

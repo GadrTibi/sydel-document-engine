@@ -826,6 +826,71 @@ def _render_selarl_two_lieux_article_5(
         add_statuts_body_paragraph(docx, text)
 
 
+# ---------------------------------------------------------------------------
+# Mise en forme SELAS (retours Albane « mise en forme » 2.6 / 2.7 / 2.8).
+#
+# Interception au RENDU par detection de motif (mecanisme le plus coherent avec
+# l'existant, qui intercepte deja par contenu : ANNEXE, siege multi, comparution
+# multi...). Actif UNIQUEMENT quand `selas_formatting=True` (les deux generateurs
+# SELAS uni) -> la SELARL (test ligne-a-ligne byte-identique) reste inchangee.
+#
+#  - 2.6 : l'ADRESSE du siege (art. 4) rendue en gras (le libelle reste normal).
+#  - 2.7 : la designation nominative du President (art. 15 medecin) en gras.
+#  - 2.8 : les en-tetes de sous-articles « 15.1- », « 16-1 - », « 14.1 – »... soulignes.
+# ---------------------------------------------------------------------------
+
+# Ancres de contenu (source, apostrophe typographique) des lignes du siege — art. 4.
+# Le libelle precede l'adresse ; on met en gras UNIQUEMENT l'adresse (apres « fixé au »).
+_SELAS_SIEGE_PREFIXES: tuple[str, ...] = (
+    "Le siège social est fixé au ",
+    "Le siège de la société est fixé au ",
+)
+
+# Lignes SOURCE (avant substitution) de la designation du President — art. 15 SELAS
+# medecin. On ancre sur le BLOC brut (chaines EXACTES du template), pas sur le texte
+# rendu, pour eviter tout faux positif (« L’associé unique... » du corps commence
+# aussi par « L’ »). Ces 3 lignes sont rendues en gras (2.7).
+_SELAS_PRESIDENT_DESIGNATION_BLOCKS: frozenset[str] = frozenset(
+    {
+        "L’[qualite_associe], [civilite] [prenom] [nom], ",
+        "Demeurant [adresse_personnelle]",
+        "est nommé [fonction_dirigeant] de la Société et ce pour [duree_mandat_dirigeant].",
+    }
+)
+
+# En-tete de sous-article a souligner (2.8) : « 15.1- », « 15.4 - », « 16-1 - »,
+# « 14.1 – », « 7.3. – », « 12.1 Modalités... », « 22.1 – »... Motif ancre en DEBUT de
+# ligne : deux niveaux numeriques separes par « . » ou « - » (le tiret/point de fin est
+# facultatif pour couvrir aussi « 12.1 Modalités »). Verifie EXHAUSTIVEMENT sans faux
+# positif sur le corps SELAS medecin+dentiste (seuls les en-tetes de sous-articles
+# matchent ; aucun paragraphe de corps ne commence par « N.M »).
+_SELAS_SUBARTICLE_HEADING = re.compile(r"^\s*\d{1,2}\s*[.\-]\s*\d{1,2}\b")
+
+
+def _selas_siege_split(text: str) -> tuple[str, str] | None:
+    """Si `text` est la ligne du siege (art. 4), renvoie (libelle+prefixe, adresse).
+
+    L'adresse (partie apres « fixé au ») est destinee au gras ; le point final
+    eventuel reste avec l'adresse pour une sortie fidele. None si non concerne.
+    """
+    for prefix in _SELAS_SIEGE_PREFIXES:
+        if text.startswith(prefix):
+            return prefix, text[len(prefix) :]
+    return None
+
+
+def _add_selas_siege_paragraph(docx: Any, label: str, adresse: str) -> None:
+    """Article 4 : libelle normal + adresse du siege en GRAS (2.6)."""
+    paragraph = add_statuts_body_paragraph(docx, "")
+    # add_statuts_body_paragraph a deja pose un run vide ; on le remplace par
+    # deux runs (libelle non gras, adresse en gras) pour un rendu inline fidele.
+    for run in list(paragraph.runs):
+        run._r.getparent().remove(run._r)
+    paragraph.add_run(label)
+    adresse_run = paragraph.add_run(adresse)
+    adresse_run.bold = True
+
+
 def render_statuts_sel_docx(  # noqa: C901
     blocks: tuple[str, ...],
     replacements: dict[str, str],
@@ -836,6 +901,7 @@ def render_statuts_sel_docx(  # noqa: C901
     render_selas_second_lieu: bool = False,
     title_box_bordered: bool = True,
     annex_page_break: bool = False,
+    selas_formatting: bool = False,
     footer_medecin_denomination: str | None = None,
     membres: list[StatutsCivilsAssocie] | None = None,
     multi_zones: SelMultiZones | None = None,
@@ -950,6 +1016,17 @@ def render_statuts_sel_docx(  # noqa: C901
             add_paragraph(docx, text, alignment=WD_ALIGN_PARAGRAPH.CENTER)
         elif text.startswith("-") or text.startswith("-\t"):
             add_statuts_hanging_list_item(docx, text.lstrip("-\t "))
+        elif selas_formatting and _SELAS_SUBARTICLE_HEADING.match(text):
+            # 2.8 : en-tete de sous-article (« 15.1- », « 16-1 - »...) souligne.
+            add_paragraph(docx, text, underline=True)
+        elif selas_formatting and (siege := _selas_siege_split(text)) is not None:
+            # 2.6 : adresse du siege (art. 4) en gras.
+            _add_selas_siege_paragraph(docx, siege[0], siege[1])
+        elif selas_formatting and block in _SELAS_PRESIDENT_DESIGNATION_BLOCKS:
+            # 2.7 : designation nominative du President (art. 15 medecin) en gras.
+            paragraph = add_statuts_body_paragraph(docx, text)
+            for run in paragraph.runs:
+                run.bold = True
         else:
             add_statuts_body_paragraph(docx, text)
 
@@ -986,6 +1063,12 @@ _STATUTS_GENDER_PAIRS: list[tuple[str, str]] = [
     ("né le ", "née le "),
     (", nÃ© le ", ", nÃ©e le "),
     ("nÃ© le ", "nÃ©e le "),
+    # Retour Albane « mise en forme » 2.2 : « qu'il a décidé d'instituer » doit
+    # s'accorder au feminin (« qu'elle a décidé d'instituer ») pour une associee.
+    # La chaine source des blocs SEL utilise l'apostrophe typographique « ’ ». Pour
+    # un homme, `apply_gender_pairs` laisse la forme masculine inchangee.
+    ("qu’il a décidé", "qu’elle a décidé"),
+    ("qu'il a décidé", "qu'elle a décidé"),
 ]
 
 

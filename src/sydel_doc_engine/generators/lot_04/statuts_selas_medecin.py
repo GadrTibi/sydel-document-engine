@@ -68,6 +68,27 @@ def _ordre_professionnel_inscription(associate: Associe) -> str:
     return f"du {nom_ordre}"
 
 
+def _profession_qualification_segment(associate: Associe) -> str:
+    """Segment « profession reglementee + qualification » de la comparution SELAS medecin.
+
+    Retour Albane « mise en forme » 2.1 : la comparution rendait « [profession_reglementee]
+    [qualification_principale] », d'ou « medecin medecin » quand la qualification saisie
+    est identique a la profession reglementee. On dedoublonne A LA RACINE : si les deux
+    valeurs sont equivalentes (comparaison insensible a la casse/aux espaces), on n'emet
+    QU'UNE fois le mot ; sinon, on garde la juxtaposition (« medecin cardiologue »), qui
+    reste une donnee saisie volontairement. Aucun wording juridique invente.
+    """
+    profession = required_text(
+        associate.profession_reglementee, "associes[0].profession_reglementee"
+    )
+    qualification = required_text(
+        associate.qualification_principale, "associes[0].qualification_principale"
+    )
+    if profession.strip().casefold() == qualification.strip().casefold():
+        return profession
+    return f"{profession} {qualification}"
+
+
 class StatutsSelasMedecinGenerator:
     """Generateur from-scratch des statuts SELAS medecin V1."""
 
@@ -133,6 +154,17 @@ class StatutsSelasMedecinGenerator:
                     associate.qualification_principale,
                     "associes[0].qualification_principale",
                 ),
+                # Retour Albane « mise en forme » 2.1 : la comparution juxtapose
+                # « [profession_reglementee] [qualification_principale] ». Quand la
+                # qualification saisie est IDENTIQUE a la profession reglementee (ex.
+                # « medecin » / « medecin »), le rendu doublait le mot (« medecin
+                # medecin »). On dedoublonne A LA RACINE via une cle COMBINEE
+                # (traitee avant les tokens nus, tri par longueur desc de
+                # replace_placeholders) : profession == qualification -> un seul mot ;
+                # qualification distincte -> juxtaposition preservee.
+                "[profession_reglementee] [qualification_principale]": (
+                    _profession_qualification_segment(associate)
+                ),
                 "[qualite_associe]": required_text(
                     associate.qualite,
                     "associes[0].qualite",
@@ -172,4 +204,9 @@ class StatutsSelasMedecinGenerator:
             output_dir / OUTPUT_FILENAME,
             associate=associate,
             render_selas_second_lieu=second_lieu_enabled,
+            # Retours Albane « mise en forme » : mise en forme SELAS (adresse du
+            # siege / designation President en gras, sous-articles soulignes) et
+            # saut de page avant l'ANNEXE (2.10).
+            selas_formatting=True,
+            annex_page_break=True,
         )

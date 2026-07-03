@@ -38,6 +38,15 @@ DOCUMENT_CODE = "CODE-PV-001"
 # au PV pour aerer le document sans impacter les autres generateurs.
 _PV_PARAGRAPH_SPACE_AFTER_PT = 10
 
+# Mise en forme (Albane, retour « mise en forme » 2026-07) : « interligne 0 » sur
+# la designation de la societe (en-tete), la designation du client, et CHAQUE
+# decision de l'AG. « interligne 0 » = interligne SIMPLE/compact (pas d'interligne
+# multiple), et NON une hauteur de ligne nulle. On applique donc un interligne
+# SIMPLE (1.0) explicite sur les paragraphes vises (l'espacement APRES-paragraphe
+# et l'espace-avant des titres de decision sont conserves : l'aeration inter-blocs
+# demeure, seul l'interligne INTRA-paragraphe passe a simple).
+_PV_SINGLE_LINE_SPACING = 1.0
+
 VOTE_FORMULA = "Cette résolution est adoptée à l’unanimité"
 POWERS_TEXT = (
     "L’assemblée générale confère tous les pouvoirs au porteur d’un original à l’effet de procéder "
@@ -374,8 +383,9 @@ def _add_paragraph(
     underline: bool = False,
     space_before: int = 0,
     space_after: int = _PV_PARAGRAPH_SPACE_AFTER_PT,
+    single_line_spacing: bool = False,
 ) -> None:
-    add_paragraph(
+    paragraph = add_paragraph(
         document,
         text,
         alignment=alignment,
@@ -385,17 +395,27 @@ def _add_paragraph(
         space_before_pt=space_before,
         space_after_pt=space_after,
     )
+    # Mise en forme Albane 2026-07 : interligne SIMPLE (1.0) sur les paragraphes
+    # vises (designation societe/client, decisions de l'AG).
+    if single_line_spacing:
+        paragraph.paragraph_format.line_spacing = _PV_SINGLE_LINE_SPACING
 
 
-def _add_list_item(document, text: str) -> None:
+def _add_list_item(document, text: str, *, single_line_spacing: bool = False) -> None:
     # Retour Albane 2026-06-26 (PV3) : aerer entre les paragraphes (espace apres
     # chaque item de liste aligne sur l'espacement renforce du PV).
-    add_hyphen_list_item(
+    paragraph = add_hyphen_list_item(
         document,
         text,
         alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
         space_after_pt=_PV_PARAGRAPH_SPACE_AFTER_PT,
     )
+    # Mise en forme Albane 1.4 : interligne SIMPLE (1.0) sur la designation du
+    # client (item nominatif de l'associe unique ET enumeration des associes en
+    # AG multi). L'espace APRES-paragraphe (aeration inter-items) est conserve ;
+    # seul l'interligne INTRA-paragraphe passe a simple.
+    if single_line_spacing:
+        paragraph.paragraph_format.line_spacing = _PV_SINGLE_LINE_SPACING
 
 
 def _add_decision_title(document, title: str) -> None:
@@ -422,7 +442,11 @@ def _add_company_header(document, company: Company, associes: list[Associe]) -> 
         f"Siège social : {_address_no_comma(siege)}",
         "En cours d’immatriculation",
     ]
-    add_centered_block(document, lines, space_after_pt=2)
+    header_paragraphs = add_centered_block(document, lines, space_after_pt=2)
+    # Mise en forme Albane 2026-07 : interligne SIMPLE sur la designation de la
+    # societe (en-tete).
+    for paragraph in header_paragraphs:
+        paragraph.paragraph_format.line_spacing = _PV_SINGLE_LINE_SPACING
 
 
 def _add_title_and_meeting(document, ctx: DocumentGenerationContext) -> None:
@@ -495,7 +519,12 @@ def _add_introduction(
             f"{_capital_social(company)}, composé de {nb_parts_total} actions, "
             "se sont réunis au siège de la Société."
         )
-        _add_paragraph(document, text, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY)
+        _add_paragraph(
+            document,
+            text,
+            alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
+            single_line_spacing=True,
+        )
         return
     valeur_nominale = _required_text(
         capital.valeur_nominale_part,
@@ -507,7 +536,12 @@ def _add_introduction(
         f"{euro_word(valeur_nominale)} chacune, "
     )
     text = f"Les associés {common}se sont réunis au siège social."
-    _add_paragraph(document, text, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY)
+    _add_paragraph(
+        document,
+        text,
+        alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
+        single_line_spacing=True,
+    )
 
 
 def _company_designation_for_intro(company: Company, denomination: str) -> str:
@@ -553,6 +587,9 @@ def _add_associes_block(
                 f"{associe.civilite_affichage} {associe.prenom} {associe.nom}, "
                 f"détenant {associe.nb_parts} {_parts_label(associe.nb_parts, titre_word)},"
             ),
+            # Mise en forme Albane 1.4 : interligne simple sur la designation des
+            # clients (enumeration des associes presents/representes en AG multi).
+            single_line_spacing=True,
         )
     if titre_word == "action":
         # Clause verbatim du modele PV nominations dirigeants (SELAS).
@@ -654,12 +691,19 @@ def _add_single_nomination_decision(
             "L’assemblée générale décide de désigner en qualité de "
             f"{fonction_affichage}{separator} une durée indéterminée :"
         ),
+        single_line_spacing=True,
     )
     # Phrase d'identite : verbatim du modele si fournie (`identite_phrase`),
     # sinon reconstruite a partir des champs (comportement historique).
     if dirigeant.identite_phrase:
         identite = _required_text(dirigeant.identite_phrase, "dirigeant_nomine.identite_phrase")
-        _add_paragraph(document, identite, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY, bold=True)
+        _add_paragraph(
+            document,
+            identite,
+            alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
+            bold=True,
+            single_line_spacing=True,
+        )
     else:
         address = _required_address(
             dirigeant.adresse_personnelle,
@@ -686,6 +730,7 @@ def _add_single_nomination_decision(
                 f"demeurant au {_address_inline(address)}."
             ),
             alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
+            single_line_spacing=True,
         )
     _add_vote_formula(document)
 
@@ -715,6 +760,7 @@ def _add_borrowing_decision(
             f"{bien_adresse}."
         ),
         alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
+        single_line_spacing=True,
     )
     _add_vote_formula(document)
     return ordinal_index + 1
@@ -722,7 +768,12 @@ def _add_borrowing_decision(
 
 def _add_powers_decision(document, ordinal_index: int) -> None:
     _add_decision_title(document, _ordinal_title(ordinal_index))
-    _add_paragraph(document, POWERS_TEXT, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY)
+    _add_paragraph(
+        document,
+        POWERS_TEXT,
+        alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
+        single_line_spacing=True,
+    )
     _add_vote_formula(document)
 
 
@@ -867,10 +918,16 @@ def _build_associe_unique_pv(
     )
 
     # Identite de l'associe unique (bloc « soussigne » simplifie).
-    _add_list_item(document, f"{civilite} {prenom} {nom}")
-    _add_paragraph(document, f"{_ne_label(genre).capitalize()} le {birth_date} à {birth_city}")
-    _add_paragraph(document, f"Demeurant {_address_inline(address)}")
-    _add_paragraph(document, f"De nationalité {nationality}")
+    # Mise en forme Albane 1.4 : interligne SIMPLE sur la designation du client
+    # (nom, naissance, adresse, nationalite).
+    _add_list_item(document, f"{civilite} {prenom} {nom}", single_line_spacing=True)
+    _add_paragraph(
+        document,
+        f"{_ne_label(genre).capitalize()} le {birth_date} à {birth_city}",
+        single_line_spacing=True,
+    )
+    _add_paragraph(document, f"Demeurant {_address_inline(address)}", single_line_spacing=True)
+    _add_paragraph(document, f"De nationalité {nationality}", single_line_spacing=True)
     _add_paragraph(
         document,
         (
@@ -881,6 +938,7 @@ def _build_associe_unique_pv(
             f"{denomination} en cours de formation."
         ),
         alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
+        single_line_spacing=True,
     )
     _add_paragraph(
         document,
@@ -903,6 +961,7 @@ def _build_associe_unique_pv(
             f"{associe_word_low} unique de la Société. Sa rémunération sera fixée ultérieurement."
         ),
         alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
+        single_line_spacing=True,
     )
 
     # DEUXIEME DECISION : pouvoir (formalites au greffe de la ville du RCS).
@@ -919,6 +978,7 @@ def _build_associe_unique_pv(
             f"Commerce de la Société de {ville_greffe}."
         ),
         alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
+        single_line_spacing=True,
     )
 
     # Cloture + signature de l'associe (« Bon pour acceptation des fonctions de gerant »).

@@ -626,7 +626,9 @@ STATUTS_SELAS_MEDECIN_BLOCKS: tuple[str, ...] = (
     'Elle ne pourra être retirée que sur présentation d’un certificat du greffier attestant l’immatriculation de la société au registre du commerce et des sociétés.',
     'ARTICLE 8 – CAPITAL SOCIAL',
     'Le capital social est fixé à la somme de [capital_lettres] ([capital_social] euros).',
-    'Il est divisé en [nb_actions_lettres] ([nb_actions]) actions d’[valeur_nominale_action_lettres] ([valeur_nominale_action] €) chacune, entièrement libérées, et attribuées en totalité à l’[qualite_associe_article_8], [civilite] [prenom] [nom].',
+    # Retour Albane « mise en forme » 2.3 : ajouter le mot « euro » (accorde) apres la valeur
+    # nominale en lettres (« ...actions d'un euro (1 €) chacune »).
+    'Il est divisé en [nb_actions_lettres] ([nb_actions]) actions d’[valeur_nominale_action_lettres] [euro_nominal_word] ([valeur_nominale_action] €) chacune, entièrement libérées, et attribuées en totalité à l’[qualite_associe_article_8], [civilite] [prenom] [nom].',
     'En aucun cas la répartition du capital ne pourra être modifiée dans des conditions qui retireraient la majorité des droits de vote aux associés exerçant dans la société.',
     "Conformément à l’article 44 de l’ordonnance n°2023-77 du 8 février 2023, une fois par an, la société adresse à l'autorité compétente en matière d'agrément ou d'inscription à l'ordre professionnel dont elle relève, un état de la composition de son capital social et des droits de vote afférents, ainsi qu'une version à jour de ses statuts.",
     'ARTICLE 9 - QUALITÉ D’ASSOCIÉ',
@@ -828,8 +830,10 @@ STATUTS_SELAS_MEDECIN_BLOCKS: tuple[str, ...] = (
     'ARTICLE 37 - POUVOIRS',
     "Tous pouvoirs sont donnés à la présidence à l'effet d'accomplir toutes les formalités prévues par la loi.",
     'ARTICLE 38 – ELECTION DE DOMICILE',
-    "Pour l'exécution des présentes, les ",
-    'parties font élection de domicile avec attribution de juridiction, au siège de la Société.',
+    # Retour Albane « mise en forme » 2.9 : la phrase etait coupee en deux paragraphes
+    # (« ...les » / « parties font... ») -> fusionnee en une seule ligne.
+    "Pour l'exécution des présentes, les parties font élection de domicile avec attribution "
+    "de juridiction, au siège de la Société.",
     'ARTICLE 39 - CONVENTION SUR LA PREUVE – SIGNATURE ELECTRONIQUE',
     "Le présent acte est signé par les Parties au moyen d'un procédé de signature électronique avancée mis en œuvre par un prestataire de services tiers, [prestataire_signature_electronique], qui garantit la sécurité et l'intégrité des copies numériques conformément à l'article 1367 du Code civil et au décret d'application n°2017-1416 du 28 septembre 2017 relatif à la signature électronique, transposant le règlement (UE) n°910/2014 du Parlement européen et du Conseil du 23 juillet 2014 sur l'identification électronique et les services de confiance pour les transactions électroniques au sein du marché intérieur.",
     "Les Parties conviennent expressément que le présent acte, signé électroniquement via [prestataire_signature_electronique], (i) constitue l'original, (ii) constitue une preuve littérale au sens de l'article 1316-1 du Code civil français (c'est-à-dire qu’il a la même force probante qu'un document manuscrit signé sur papier et peut être valablement invoqué à l’encontre des Parties et de la Société), (iii) sa signature électronique doit être considérée comme une signature originale, et (iv) peut être produit en justice, comme preuve littérale, en cas de litige, y compris entre les Parties. En conséquence, les Parties reconnaissent que le présent acte signé électroniquement fait preuve de son contenu, de l'identité et du consentement de chaque signataire.",
@@ -909,7 +913,11 @@ STATUTS_SELAS_DENTISTE_BLOCKS: tuple[str, ...] = (
     'Ci\t\t\t\t\t\t\t\t\t\t\t[capital_social] euros',
     'Total des apports\t\t\t\t\t\t\t\t\t[capital_social] euros',
     'Cette somme a été déposée au crédit du compte ouvert dans les livres de la Banque [nom_banque], [adresse_banque].',
-    'Le capital social est fixé à la somme de [capital_social] € ([capital_lettres]) euros divisé en [nb_actions] actions de [valeur_nominale_action] € ([valeur_nominale_action_lettres]) chacune, entièrement libéré et attribué comme suit\xa0: ',
+    # Retour Albane « mise en forme » 2.3 (propagation DENTISTE) : ajouter le mot
+    # « euro » (accorde) apres la valeur nominale en lettres (« actions de 1 €
+    # (un euro) chacune »). Le token [euro_nominal_word] rend « euro » / « euros »
+    # selon la valeur nominale. Le mot euro manquait sur ce modele (present cote MEDECIN).
+    'Le capital social est fixé à la somme de [capital_social] € ([capital_lettres]) euros divisé en [nb_actions] actions de [valeur_nominale_action] € ([valeur_nominale_action_lettres] [euro_nominal_word]) chacune, entièrement libéré et attribué comme suit\xa0: ',
     # Répartition uni : un seul attributaire (associé unique).
     '- [civilite] [prenom] [nom], [nb_actions_lettres] actions ',
     'Ci\t\t\t\t\t\t\t\t\t\t\t[nb_actions] actions',

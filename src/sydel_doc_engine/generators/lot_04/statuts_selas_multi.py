@@ -32,7 +32,7 @@ from sydel_doc_engine.rendering.docx_builder import (
 from sydel_doc_engine.rendering.docx_builder import (
     add_signature_table as _add_signature_table,
 )
-from sydel_doc_engine.utils.grammar import elision_de
+from sydel_doc_engine.utils.grammar import elision_de, euro_word
 
 DOCUMENT_CODE = "CODE-STATUTS-SELAS-MULTI-001"
 STRUCTURE_SELAS = "SELAS"
@@ -372,16 +372,20 @@ class _ResolvedSelasMulti:
             ),
             # Akainu B1 (regle 68) : le modele art.8 colle « d’[valeur…] » -> elision via le
             # helper partage. Cle combinee traitee en premier (replace_placeholders trie desc).
+            #
+            # Retour Albane « mise en forme » 2.3 : art.8 doit rendre « d’un euro (1 €) » /
+            # « de dix euros (10 €) » — le MOT « euro »/« euros » accorde MANQUAIT sur la SELAS
+            # PLURIPERSONNELLE. Les modeles UNI (medecin/dentiste) portent deja le token
+            # « [euro_nominal_word] » dans leur bloc art.8 ; le modele multi
+            # (Statuts_SELAS_multi_modele.docx, para 86) colle
+            # « d’[valeur_nominale_action_lettres] ([valeur_nominale_action] €) » SANS ce token
+            # -> on injecte le mot euro accorde APRES la valeur en lettres, via le helper partage
+            # euro_word(figure). Le token « [valeur_nominale_action_lettres] » n'apparait QUE
+            # dans art.8 du modele multi (para 86, verifie) -> aucun effet ailleurs.
             "d’[valeur_nominale_action_lettres]": elision_de(
-                _required_text(
-                    selas.valeur_nominale_action_lettres,
-                    "statuts_selas_multi.valeur_nominale_action_lettres",
-                )
+                _valeur_nominale_lettres_euro(selas)
             ),
-            "[valeur_nominale_action_lettres]": _required_text(
-                selas.valeur_nominale_action_lettres,
-                "statuts_selas_multi.valeur_nominale_action_lettres",
-            ),
+            "[valeur_nominale_action_lettres]": _valeur_nominale_lettres_euro(selas),
             "[adresse_siege]": self.adresse_siege,
             "[adresse_lieu_exercice]": _required_text(
                 selas.adresse_lieu_exercice,
@@ -1022,6 +1026,25 @@ def _required_int(value: int | None, field_name: str) -> int:
     if value is None:
         raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
     return value
+
+
+def _valeur_nominale_lettres_euro(selas: StatutsSelasMultiContext) -> str:
+    """Valeur nominale EN LETTRES + mot « euro » accorde (retour Albane 2.3).
+
+    Rend « un euro » (VN=1) / « dix euros » (VN>=2) pour l'art.8 de la SELAS multi.
+    L'accord (« euro » vs « euros ») se calcule sur la FIGURE (valeur_nominale_action,
+    ex. « 1 », « 10 »), pas sur la mise en lettres. Le token cible n'est utilise QUE
+    dans l'art.8 du modele multi (para 86) -> aucune injection parasite d'« euro ».
+    """
+    lettres = _required_text(
+        selas.valeur_nominale_action_lettres,
+        "statuts_selas_multi.valeur_nominale_action_lettres",
+    )
+    figure = _required_text(
+        selas.valeur_nominale_action,
+        "statuts_selas_multi.valeur_nominale_action",
+    )
+    return f"{lettres} {euro_word(figure)}"
 
 
 def _format_display_date(value: date | str | None, field_name: str) -> str:

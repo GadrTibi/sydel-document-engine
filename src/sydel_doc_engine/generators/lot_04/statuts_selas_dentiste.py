@@ -93,4 +93,10 @@ class StatutsSelasDentisteGenerator:
             replacements,
             output_dir / OUTPUT_FILENAME,
             associate=associate,
+            # Retours Albane « mise en forme » : mise en forme SELAS (adresse du
+            # siege en gras, sous-articles soulignes) et saut de page avant
+            # l'ANNEXE (2.10). Le modele dentiste n'a pas de designation President
+            # nominative (art. 19 generique) -> 2.7 sans effet ici (attendu).
+            selas_formatting=True,
+            annex_page_break=True,
         )
