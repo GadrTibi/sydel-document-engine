@@ -185,6 +185,20 @@ def test_statuts_sci_generates_dynamic_associates(tmp_path: Path) -> None:
     assert "Monsieur Alice Martin" in text
     assert "A Paris, le 15/05/2026" in text
     _assert_clean(text)
+    # Retour Albane « mise en forme » 3.2 : le cadre « STATUTS » du SCI (perdu par l'injection,
+    # zone de texte flottante du modele) est RESTAURE (comme SCS/micro) entre l'en-tete et les
+    # soussignes. Verrou : une table du docx porte « STATUTS ».
+    from docx import Document as _Doc
+
+    box_texts = [
+        p.text.strip()
+        for table in _Doc(output_path).tables
+        for row in table.rows
+        for cell in row.cells
+        for p in cell.paragraphs
+        if p.text.strip()
+    ]
+    assert "STATUTS" in box_texts, "cadre « STATUTS » absent du SCI (3.2)"
 
 
 def test_statuts_scs_requires_commandite_and_commanditaire(tmp_path: Path) -> None:

@@ -91,6 +91,11 @@ SCI_TEMPLATE = StatutsCivilTemplate(
     apport_slice=(97, 111),
     capital_slice=(120, 131),
     signature_slice=(612, 623),
+    # Retour Albane « mise en forme » 3.2 : le cadre « STATUTS » du SCI vit dans une zone de texte
+    # FLOTTANTE du modele source (perdue par l'injection qui vide le corps) -> il etait ABSENT du
+    # rendu. On le restaure (comme SCS/micro-holding) entre l'en-tete (P0-P5) et « LES SOUSSIGNES »
+    # (P22) : injection avant le P22, avec espace avant/apres le cadre.
+    statuts_title_box_before=22,
 )
 
 # Micro holding (Albane 2026-06-29) : VRAI modele Albane « societe civile de portefeuille a
@@ -179,9 +184,11 @@ def generate_statuts_civil_docx(  # noqa: C901
             template.statuts_title_box_before is not None
             and index == template.statuts_title_box_before
         ):
-            # Retour Albane 2026-07-02 : « ajouter de l'espace entre l'en-tete et le cadre des
-            # statuts ». Espace aere (micro holding, le doc teste) avant le cadre « STATUTS ».
-            if template.expected_type == "micro_holding":
+            # Retour Albane : « ajouter de l'espace entre l'en-tete et le cadre des statuts »
+            # (2026-07-02 micro-holding) / « espace avant et apres le cadre Statuts » (3.2 SCI).
+            # Espace aere avant le cadre « STATUTS » (l'espace APRES est fourni par le spacer
+            # interne d'add_statuts_title_box). Le cadre lui-meme a ete restaure pour le SCI (3.2).
+            if template.expected_type in ("micro_holding", "sci"):
                 add_spacer(output_doc, space_after_pt=6)
             add_statuts_title_box(output_doc, "STATUTS")
         if index == template.associate_slice[0]:

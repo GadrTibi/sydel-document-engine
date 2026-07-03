@@ -13,7 +13,7 @@
   - **A SELAS** : 2.1 doublon « médecin médecin », 2.2 accord genre, 2.3 art.8 « euro », 2.5 tirets, 2.6 gras siège, 2.7 gras président, 2.8 souligner sous-articles, 2.9 art.38 espace *(2.9 + 2.3-médecin faits inline)*, 2.10 saut page annexe.
   - **B SCI** : 3.2 espace cadre, 3.3 espace soussignés, 3.6 art.3 espace, 3.9 art.4 espace.
   - **C tronc** : 1.2 DNC espace parents, 1.4 PV interligne, 1.6 attestation espaces, 1.7 lettre IS gras.
-  - **D transverse** : 1.1 interligne 0,5/1 (à cadrer : valeur ; touche tous docs).
+  - **D transverse** : 1.1 interligne → **FAIT** (interligne SIMPLE 1,0 forcé sur « Normal » des from-scratch ; les docs partaient à 1,15 ; injections civils inchangées). **3.2 cadre SCI** → **FAIT** (cadre « STATUTS » restauré comme SCS/micro entre en-tête et soussignés + espace avant/après). Gate Akainu → RIEN À REDIRE (MINEUR E501 corrigé).
 - **MÉTIER (7)** → flags Albane (`QUESTIONS_RAFAEL.md`, tracé 2026-07-03) : 2.4 conjoint **pacsé**, 3.4 « Société Civile Immobilière », 3.5 soussignés « ET »/tirets, 4.1/4.9 attestation capital manquante SELARL/SCI/SCM/micro, 4.8 SPFPL cession (pas d'attestation), 4.11 revue globale QA.
 
 ## Points (verbatim condensé)

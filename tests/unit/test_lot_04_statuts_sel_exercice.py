@@ -493,6 +493,15 @@ def test_statuts_selas_medecin_article_8_elision_valeur_nominale(tmp_path: Path)
     assert "euro euro" not in text_v  # pas de double « euro »
 
 
+def test_statuts_selas_interligne_simple(tmp_path: Path) -> None:
+    # Retour Albane « mise en forme » 1.1 : « interligne 0,5 ou 1 ». Les generateurs from-scratch
+    # partaient a 1,15 (defaut python-docx). On impose l'interligne SIMPLE (1,0) sur « Normal ».
+    from docx import Document
+
+    out = StatutsSelasMedecinGenerator().generate(_context(overlay="selas_medecin"), tmp_path)
+    assert Document(out).styles["Normal"].paragraph_format.line_spacing == 1.0
+
+
 def test_statuts_selas_medecin_renders_complete_second_lieu(tmp_path: Path) -> None:
     ctx = _context(overlay="selas_medecin")
     ctx.exercice_social.lieux.append(

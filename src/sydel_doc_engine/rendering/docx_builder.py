@@ -17,6 +17,10 @@ from docx.shared import Cm, Pt, RGBColor
 class SydelDocxStyleProfile:
     font_name: str = "Roboto"
     font_size_pt: int = 10
+    # Retour Albane « mise en forme » 1.1 : « interligne 0,5 ou 1 ». Le defaut python-docx est
+    # 1,15 (docDefaults line=276) -> trop aere. On impose l'interligne SIMPLE (1,0) sur le style
+    # « Normal » des generateurs from-scratch. None = ne pas toucher (heriter du modele/defaut).
+    line_spacing: float | None = 1.0
     margin_top_cm: float = 2.5
     margin_bottom_cm: float = 2.5
     margin_left_cm: float = 2.5
@@ -293,6 +297,10 @@ def apply_style_profile(
     r_fonts = style.element.rPr.rFonts
     for font_attribute in ("w:ascii", "w:hAnsi", "w:eastAsia", "w:cs"):
         r_fonts.set(qn(font_attribute), style_profile.font_name)
+    # 1.1 (Albane) : interligne SIMPLE (1,0) sur « Normal » -> les paragraphes du corps
+    # (line_spacing=None) l'heritent, au lieu du 1,15 par defaut de docDefaults.
+    if style_profile.line_spacing is not None:
+        style.paragraph_format.line_spacing = style_profile.line_spacing
 
 
 def add_paragraph(
