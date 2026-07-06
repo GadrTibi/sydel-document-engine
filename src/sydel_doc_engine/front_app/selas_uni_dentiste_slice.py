@@ -56,8 +56,8 @@ from sydel_doc_engine.front_app.field_derivations import (
     situation_display,
 )
 from sydel_doc_engine.front_app.front_widgets import (
-    date_input_with_today,
     date_input_freeform,
+    date_input_with_today,
     mandataire_inputs,
     seed_closing_date,
     seed_exercice_dates,
@@ -247,9 +247,11 @@ def render_selas_uni_dentiste_form() -> dict[str, object]:
     )
     if regime_communautaire:
         st.caption("Regime de la communaute : DOC-005 et DOC-006 seront generes.")
-    # Champs conjoint affiches UNIQUEMENT pour un associe MARIE (clause matrimoniale).
-    is_marie = "marie" in situation_maritale.lower().replace("é", "e")
-    if is_marie:
+    # Champs conjoint affiches pour un associe MARIE ET desormais PACSE (Albane 6.3/7.3,
+    # RATIFIE 2026-07-06 : « pacsé avec {partenaire} » a la comparution). Autres statuts -> aucun.
+    situation_norm = situation_maritale.lower().replace("é", "e")
+    is_marie_ou_pacse = "marie" in situation_norm or "pacse" in situation_norm
+    if is_marie_ou_pacse:
         conjoint_civilite, conjoint_prenom, conjoint_nom = _render_conjoint()
     else:
         conjoint_civilite = conjoint_prenom = conjoint_nom = ""

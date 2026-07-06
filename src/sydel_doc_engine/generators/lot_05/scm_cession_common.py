@@ -469,6 +469,19 @@ def cedant_display(cedant: ScmCessionCedant) -> str:
     )
 
 
+def _normalize_situation(situation_maritale: str | None) -> str:
+    """Normalise un libelle de situation maritale (NFKD, sans accent, minuscule, trim).
+
+    Robuste au format d'entree : accentue+accorde (« Pacsé »/« pacsée ») OU brut
+    (« pacse »/« pacsee »), avec ou sans majuscule. Les generateurs recoivent selon le
+    type l'un ou l'autre (situation_display cote slices vs valeur brute) — cette
+    normalisation unique garantit un test identique partout."""
+    if not situation_maritale:
+        return ""
+    nfkd = unicodedata.normalize("NFKD", situation_maritale)
+    return "".join(c for c in nfkd if not unicodedata.combining(c)).strip().lower()
+
+
 def mentions_conjoint(situation_maritale: str | None) -> bool:
     """Le conjoint n'est mentionne QUE pour une personne mariee.
 
@@ -477,11 +490,52 @@ def mentions_conjoint(situation_maritale: str | None) -> bool:
     s'aligne sur la garde du gold (statuts SEL) : conjoint affiche seulement si « marie(e) ».
     Helper PARTAGE par les actes de cession (SCM + SPFPL) pour que la regle soit unique.
     """
-    if not situation_maritale:
-        return False
-    nfkd = unicodedata.normalize("NFKD", situation_maritale)
-    norm = "".join(c for c in nfkd if not unicodedata.combining(c)).strip().lower()
+    norm = _normalize_situation(situation_maritale)
     return norm in {"marie", "mariee"} or norm.startswith(("marie ", "mariee "))
+
+
+def mentions_partenaire_pacse(situation_maritale: str | None) -> bool:
+    """Le partenaire n'est mentionne QUE pour une personne PACSEE.
+
+    Albane 6.3/7.3 (RATIFIE 2026-07-06) : « Nom du conjoint/partenaire (marie OU pacse) :
+    ajouter champs nom + prenom ; repris dans les docs ». Symetrique de `mentions_conjoint`
+    (marie) : garde PARTAGEE unique pour le cas pacse, afin que la regle soit codifiee a un
+    seul endroit. NB : le PACS a bien un regime patrimonial (separation des patrimoines par
+    defaut / indivision) MAIS le menu « Pacsé(e) » ne capture pas de sous-regime -> la clause
+    de comparution d'un pacse = « pacse(e) avec {partenaire} », PAS « sous le regime de … ».
+    """
+    norm = _normalize_situation(situation_maritale)
+    return norm in {"pacse", "pacsee"} or norm.startswith(("pacse ", "pacsee "))
+
+
+def mentions_conjoint_ou_partenaire(situation_maritale: str | None) -> bool:
+    """True si la comparution doit afficher le conjoint (marie) OU le partenaire (pacse)."""
+    return mentions_conjoint(situation_maritale) or mentions_partenaire_pacse(
+        situation_maritale
+    )
+
+
+def partenaire_pacse_clause(
+    conjoint: Any | None,
+    *,
+    prefix: str = " avec ",
+) -> str:
+    """Fragment « avec {Civilite Prenom Nom} » du partenaire pacse, ou "" si non renseigne.
+
+    Albane 6.3 (RATIFIE) : « pas de mention PACS/mariage sans nom ». Contrairement au marie
+    (dont le conjoint est requis par le front), le partenaire pacse est OPTIONNEL (« si
+    renseigne »). On n'affiche donc « avec … » QUE si un nom OU un prenom existe ; sinon on
+    renvoie "" (le pacse reste « pacse(e) » nu, jamais « avec (À COMPLÉTER) »). Le fragment
+    inclut la civilite si presente, comme les autres comparutions (« Madame Prenom Nom »)."""
+    if conjoint is None:
+        return ""
+    prenom = (getattr(conjoint, "prenom", None) or "").strip()
+    nom = (getattr(conjoint, "nom", None) or "").strip()
+    if not prenom and not nom:
+        return ""
+    civilite = (getattr(conjoint, "civilite_affichage", None) or "").strip()
+    parts = [p for p in (civilite, prenom, nom) if p]
+    return f"{prefix}{' '.join(parts)}"
 
 
 def conjoint_display(cedant: ScmCessionCedant) -> str:

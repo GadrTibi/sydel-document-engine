@@ -3790,11 +3790,10 @@ def test_selas_vendeur_situation_dissociee_du_regime() -> None:
     assert "(e)" not in affiche and "regime" not in affiche.lower()
 
 
-def test_selas_pacs_n_affiche_pas_conjoint(tmp_path: Path, monkeypatch) -> None:
-    # re-Akainu tour 2 (MAJEUR O24-11) : le PACS est EXCLU de la capture conjoint. L'acte de
-    # cession n'a pas de segment « pacsé avec [conjoint] » → capter le partenaire ferait
-    # disparaître une donnée saisie (jamais retranscrite). Choisir « Pacsé(e) » ne doit donc
-    # PAS afficher les champs conjoint (seul le mariage les déclenche).
+def test_selas_pacs_affiche_partenaire(tmp_path: Path, monkeypatch) -> None:
+    # Albane 6.3/7.3 (RATIFIE 2026-07-06) : SUPERSEDE l'exclusion PACS (O24-11). Le partenaire
+    # d'un associe PACSE est desormais capte et REPRIS dans les docs (« pacsé avec {partenaire} »)
+    # -> choisir « Pacsé(e) » DOIT afficher les champs prenom/nom du partenaire (comme le mariage).
     from streamlit.testing.v1 import AppTest
 
     from sydel_doc_engine.front_app import shell
@@ -3808,8 +3807,8 @@ def test_selas_pacs_n_affiche_pas_conjoint(tmp_path: Path, monkeypatch) -> None:
     app.selectbox(key="selas_associe_0_situation").set_value("Pacsé(e)")
     app = app.run(timeout=180)
     keys = {str(w.key) for w in app.text_input}
-    assert "selas_associe_0_conjoint_prenom" not in keys
-    assert "selas_associe_0_conjoint_nom" not in keys
+    assert "selas_associe_0_conjoint_prenom" in keys
+    assert "selas_associe_0_conjoint_nom" in keys
 
 
 def test_selas_cession_cabinet_meme_adresse_lieu_exercice(tmp_path: Path, monkeypatch) -> None:

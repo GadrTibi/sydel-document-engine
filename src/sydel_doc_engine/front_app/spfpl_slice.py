@@ -305,6 +305,11 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
     # statut (celibataire, pacse, divorce, veuf) il reste vide (pas de « sous le regime
     # de ... » dans la comparution).
     is_marie = matrimonial_status_value(situation_label) == "marie"
+    # Albane 6.3/7.3 (RATIFIE 2026-07-06) : le PARTENAIRE PACSE figure a la comparution
+    # (« pacsé avec {partenaire} ») -> on affiche aussi les champs conjoint pour un pacse.
+    # Le REGIME matrimonial reste MARIE-only (le PACS n'a pas de « sous le régime de … »).
+    is_pacse = matrimonial_status_value(situation_label) == "pacse"
+    is_marie_ou_pacse = is_marie or is_pacse
     regime = (
         regime_matrimonial_from_status(situation_label, regime_communautaire)
         if is_marie
@@ -329,20 +334,21 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
     nom_pere = _t(col_ae, prefix, "nom_pere", "Nom du pere")
     nom_mere = _t(col_af, prefix, "nom_mere", "Nom de la mere")
 
-    # Retour Rafael 2026-07-02 : MEME LOGIQUE que la SELAS uni medecin — les champs
-    # conjoint ne s'affichent QUE pour un associe MARIE (la comparution n'utilise le
-    # conjoint que dans ce cas ; un celibataire rend juste son statut). Plus de champs
-    # conjoint parasites (ni de conjoint « vide » residuel) pour un non-marie.
-    if is_marie:
-        st.markdown("Conjoint")
+    # Retour Rafael 2026-07-02 + Albane 6.3/7.3 (RATIFIE 2026-07-06) : les champs conjoint
+    # s'affichent pour un associe MARIE ou PACSE (la comparution porte le conjoint/partenaire
+    # dans ces deux cas ; un celibataire/divorce/veuf rend juste son statut). Le libelle couvre
+    # les deux (« conjoint / partenaire »). Pour un pacse le partenaire est OPTIONNEL (« si
+    # renseigne ») : laisse vide -> aucune mention (« pas de mention sans nom »).
+    if is_marie_ou_pacse:
+        st.markdown("Conjoint / partenaire")
         col_o, col_p, col_q = st.columns(3)
         conjoint_civilite = col_o.selectbox(
-            "Civilite conjoint",
+            "Civilite conjoint / partenaire",
             ("Madame", "Monsieur"),
             key=f"{prefix}_conjoint_civilite",
         )
-        conjoint_prenom = _t(col_p, prefix, "conjoint_prenom", "Prenom conjoint")
-        conjoint_nom = _t(col_q, prefix, "conjoint_nom", "Nom conjoint")
+        conjoint_prenom = _t(col_p, prefix, "conjoint_prenom", "Prenom conjoint / partenaire")
+        conjoint_nom = _t(col_q, prefix, "conjoint_nom", "Nom conjoint / partenaire")
     else:
         conjoint_civilite = conjoint_prenom = conjoint_nom = ""
 

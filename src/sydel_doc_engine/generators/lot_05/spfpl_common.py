@@ -14,7 +14,11 @@ from sydel_doc_engine.domain.models import (
     SpfplPerson,
     SpfplRepresentant,
 )
-from sydel_doc_engine.generators.lot_05.scm_cession_common import mentions_conjoint
+from sydel_doc_engine.generators.lot_05.scm_cession_common import (
+    mentions_conjoint,
+    mentions_partenaire_pacse,
+    partenaire_pacse_clause,
+)
 from sydel_doc_engine.utils.departements import departement_nom
 from sydel_doc_engine.utils.grammar import (  # noqa: F401
     elision_de,
@@ -224,6 +228,11 @@ def person_identity_sentence(person: SpfplPerson, field_name: str) -> str:
             f"{required_text(conjoint.prenom, f'{field_name}.conjoint.prenom')} "
             f"{required_text(conjoint.nom, f'{field_name}.conjoint.nom')}"
         )
+    elif mentions_partenaire_pacse(person.situation_maritale):
+        # Albane 6.3/7.3 (RATIFIE 2026-07-06) : le PARTENAIRE PACSE s'affiche aussi (« avec
+        # {Civilite Prenom Nom} », pas de « sous le régime de … »). « Pas de mention sans
+        # nom » : partenaire_pacse_clause -> "" si le partenaire n'est pas renseigne.
+        conjoint_display = partenaire_pacse_clause(conjoint)
     return (
         f"{person_display(person, field_name)}, "
         f"{required_text(person.profession, f'{field_name}.profession')}, "

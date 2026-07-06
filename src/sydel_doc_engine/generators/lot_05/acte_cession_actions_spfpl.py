@@ -9,7 +9,11 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import CessionActions, DocumentGenerationContext
-from sydel_doc_engine.generators.lot_05.scm_cession_common import mentions_conjoint
+from sydel_doc_engine.generators.lot_05.scm_cession_common import (
+    mentions_conjoint,
+    mentions_partenaire_pacse,
+    partenaire_pacse_clause,
+)
 from sydel_doc_engine.generators.lot_05.spfpl_common import (
     SPFPL_CESSION_STRUCTURE,
     associe_display_name,
@@ -138,12 +142,20 @@ class ActeCessionActionsSpfplGenerator:
         add_paragraph(docx, "ENTRE LES SOUSSIGNES :", bold=True, space_before_pt=10)
         # R22-02 : conjoint + regime affiches seulement si le cedant est marie (regle
         # partagee mentions_conjoint ; sinon « divorce avec Madame X » fantome).
+        # Albane 6.3/7.3 (RATIFIE 2026-07-06) : le PARTENAIRE PACSE s'affiche aussi. Le PACS
+        # n'a PAS de « sous le régime de … » (le menu « Pacsé(e) » ne capture aucun sous-regime)
+        # -> clause = « pacse(e) avec {partenaire} », jamais un regime marie force. « Pas de
+        # mention sans nom » : partenaire_pacse_clause -> "" si partenaire non renseigne.
         cedant_maritale = required_text(cedant.situation_maritale, "cedant.situation_maritale")
         if mentions_conjoint(cedant.situation_maritale):
             cedant_maritale_clause = (
                 f"{cedant_maritale} sous le régime de "
                 f"{required_text(cedant.regime_matrimonial, 'cedant.regime_matrimonial')} "
                 f"avec {_conjoint_display(ctx)}"
+            )
+        elif mentions_partenaire_pacse(cedant.situation_maritale):
+            cedant_maritale_clause = (
+                f"{cedant_maritale}{partenaire_pacse_clause(cedant.conjoint)}"
             )
         else:
             cedant_maritale_clause = cedant_maritale

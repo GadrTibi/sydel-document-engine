@@ -33,6 +33,11 @@ from sydel_doc_engine.domain.models import (
     DocumentContext,
     DocumentGenerationContext,
 )
+from sydel_doc_engine.generators.lot_05.scm_cession_common import (
+    mentions_conjoint,
+    mentions_partenaire_pacse,
+    partenaire_pacse_clause,
+)
 from sydel_doc_engine.utils.departements import departement_nom
 from sydel_doc_engine.utils.grammar import apply_gender_pairs
 from sydel_doc_engine.utils.months import FRENCH_MONTHS
@@ -401,10 +406,20 @@ def _build_segment_overrides(ctx: DocumentGenerationContext) -> dict[str, str]:
     )
     vendeur = cession.vendeur or CessionVendeur()
     situation = (vendeur.situation_maritale or "").strip()
-    normalized = situation.casefold()
-    if situation and not normalized.startswith("mari"):
+    # Garde PARTAGEE (mentions_conjoint) : remplace le test local `startswith("mari")`
+    # (divergent : NFKD absent) par la regle unique. Un MARIE laisse les segments source
+    # se remplir normalement (regime + conjoint) -> byte-identique au gold.
+    if situation and not mentions_conjoint(vendeur.situation_maritale):
+        # Albane 6.3/7.3 (RATIFIE 2026-07-06) : un PACSE affiche son PARTENAIRE (« pacsé(e)
+        # avec {Civilite Prenom Nom}. »), SANS « sous le régime de … » (le PACS n'a pas de
+        # sous-regime capture). « Pas de mention sans nom » : partenaire_pacse_clause -> "" si
+        # non renseigne -> on retombe sur le statut nu (comme un celibataire/divorce/veuf).
+        if mentions_partenaire_pacse(vendeur.situation_maritale):
+            clause = f"{situation}{partenaire_pacse_clause(vendeur.conjoint)}."
+        else:
+            clause = f"{situation}."
         overrides.update(
-            {segment: f"{situation}." for segment in _VENDEUR_MARITAL_SEGMENTS}
+            {segment: clause for segment in _VENDEUR_MARITAL_SEGMENTS}
         )
     # CE5 (Albane 2026-06-26) : la clause credit-vendeur de l'acte medical est
     # prefixee par l'instruction de redaction « Ajouter en cas de CV : ». Quand le

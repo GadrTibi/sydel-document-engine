@@ -285,6 +285,45 @@ def test_acte_cession_scm_keeps_conjoint_when_married(tmp_path: Path) -> None:
     assert "marié avec Madame Claire Dupont" in text
 
 
+def test_acte_cession_scm_shows_partner_when_pacse_masculin(tmp_path: Path) -> None:
+    # Albane 6.3/7.3 (RATIFIE 2026-07-06) : un cedant PACSE affiche son PARTENAIRE
+    # (« pacsé avec {Civilite Prenom Nom} »), SANS « sous le régime de … ».
+    ctx = _base_context("SELARL")
+    ctx.scm_cession.cedant.situation_maritale = "pacsé"
+    acte = ActeCessionPartsScmGenerator().generate(ctx, tmp_path)
+    text = _docx_text(acte)
+    assert "pacsé avec Madame Claire Dupont" in text
+    assert "sous le régime de" not in text
+    _assert_clean(text)
+
+
+def test_acte_cession_scm_shows_partner_when_pacsee_feminin(tmp_path: Path) -> None:
+    # Genre feminin : « pacsée avec … ».
+    ctx = _base_context("SELARL")
+    ctx.scm_cession.cedant.situation_maritale = "pacsée"
+    ctx.scm_cession.cedant.conjoint = ScmCessionConjoint(
+        civilite_affichage="Monsieur", prenom="Marc", nom="Durand"
+    )
+    acte = ActeCessionPartsScmGenerator().generate(ctx, tmp_path)
+    text = _docx_text(acte)
+    assert "pacsée avec Monsieur Marc Durand" in text
+    _assert_clean(text)
+
+
+def test_acte_cession_scm_pacse_without_partner_no_mention(tmp_path: Path) -> None:
+    # « Pas de mention sans nom » (Albane 6.3) : un pacse SANS partenaire renseigne rend
+    # « pacsé » nu — jamais « avec (À COMPLÉTER) » ni « avec » orphelin.
+    ctx = _base_context("SELARL")
+    ctx.scm_cession.cedant.situation_maritale = "pacsé"
+    ctx.scm_cession.cedant.conjoint = ScmCessionConjoint()
+    acte = ActeCessionPartsScmGenerator().generate(ctx, tmp_path)
+    text = _docx_text(acte)
+    assert "pacsé" in text
+    assert "pacsé avec" not in text
+    assert "COMPLÉTER" not in text
+    _assert_clean(text)
+
+
 def test_scm_cession_non_divisible_capital_now_generates(tmp_path: Path) -> None:
     # N1 (Rafael/Vincent 2026-06-24) : la valeur nominale PEUT etre decimale (regle ratifiee).
     # Un capital de SCM cedee non divisible par le nb de parts ne bloque PLUS le generateur ;

@@ -62,8 +62,8 @@ from sydel_doc_engine.front_app.field_derivations import (
     situation_display,
 )
 from sydel_doc_engine.front_app.front_widgets import (
-    date_input_with_today,
     date_input_freeform,
+    date_input_with_today,
     mandataire_inputs,
     seed_closing_date,
     seed_exercice_dates,
@@ -273,12 +273,13 @@ def render_selas_uni_medecin_form() -> dict[str, object]:
     )
     if regime_communautaire:
         st.caption("Regime de la communaute : DOC-005 et DOC-006 seront generes.")
-    # Retour Rafael 2026-06-25 (#2) : MEME LOGIQUE que la SELAS pluri — les champs conjoint
-    # ne s'affichent QUE pour un associe MARIE (la clause matrimoniale n'utilise le conjoint
-    # que dans ce cas ; un celibataire rend juste « celibataire »). Plus de champs conjoint
-    # parasites pour un celibataire.
-    is_marie = "marie" in situation_maritale.lower().replace("é", "e")
-    if is_marie:
+    # Retour Rafael 2026-06-25 (#2) : les champs conjoint ne s'affichent que si la comparution
+    # peut porter le conjoint/partenaire. Albane 6.3/7.3 (RATIFIE 2026-07-06) : c'est le cas pour
+    # un MARIE (« marié … avec … ») ET desormais un PACSE (« pacsé avec {partenaire} »). Les
+    # autres statuts (celibataire/divorce/veuf) rendent juste leur statut -> pas de champs.
+    situation_norm = situation_maritale.lower().replace("é", "e")
+    is_marie_ou_pacse = "marie" in situation_norm or "pacse" in situation_norm
+    if is_marie_ou_pacse:
         conjoint_civilite, conjoint_prenom, conjoint_nom = _render_conjoint()
     else:
         conjoint_civilite = conjoint_prenom = conjoint_nom = ""

@@ -210,6 +210,11 @@ def render_sas_form() -> dict[str, object]:
     situation_maritale = _statut[:1].upper() + _statut[1:]  # « Marié » (debut de comparution)
     regime_communautaire = regime_communautaire_from_status(situation_label)
     is_marie = matrimonial_status_value(situation_label) == "marie"
+    # Albane 6.3/7.3 (RATIFIE 2026-07-06) : le PARTENAIRE PACSE figure a la comparution
+    # (« pacsé avec {partenaire} ») -> champs conjoint affiches aussi pour un pacse. Le REGIME
+    # reste MARIE-only (pas de « sous le régime de … » pour un PACS).
+    is_pacse = matrimonial_status_value(situation_label) == "pacse"
+    is_marie_ou_pacse = is_marie or is_pacse
     regime = married_regime_display(situation_label) if is_marie else ""
     if regime_communautaire:
         st.caption("Régime de la communauté : lettre de renonciation + avertissement au conjoint.")
@@ -231,18 +236,19 @@ def render_sas_form() -> dict[str, object]:
     nom_pere = _t(col_ae, "nom_pere", "Nom du pere")
     nom_mere = _t(col_af, "nom_mere", "Nom de la mere")
 
-    # R0702-02 : champs conjoint affiches SEULEMENT pour un actionnaire MARIE (meme logique que
-    # SPFPL/SELAS). Un non-marie rend juste son statut (comparution sans « avec <conjoint> »).
-    if is_marie:
-        st.markdown("Conjoint")
+    # R0702-02 + Albane 6.3/7.3 (RATIFIE 2026-07-06) : champs conjoint affiches pour un
+    # actionnaire MARIE ou PACSE (comparution « avec <conjoint/partenaire> » dans les deux cas).
+    # Autres statuts -> juste le statut. Partenaire pacse OPTIONNEL (« si renseigne »).
+    if is_marie_ou_pacse:
+        st.markdown("Conjoint / partenaire")
         col_p, col_q, col_r = st.columns(3)
         conjoint_civilite = col_p.selectbox(
-            "Civilite conjoint",
+            "Civilite conjoint / partenaire",
             ("Madame", "Monsieur"),
             key=f"{PREFIX}_conjoint_civilite",
         )
-        conjoint_prenom = _t(col_q, "conjoint_prenom", "Prenom conjoint")
-        conjoint_nom = _t(col_r, "conjoint_nom", "Nom conjoint")
+        conjoint_prenom = _t(col_q, "conjoint_prenom", "Prenom conjoint / partenaire")
+        conjoint_nom = _t(col_r, "conjoint_nom", "Nom conjoint / partenaire")
     else:
         conjoint_civilite = conjoint_prenom = conjoint_nom = ""
 

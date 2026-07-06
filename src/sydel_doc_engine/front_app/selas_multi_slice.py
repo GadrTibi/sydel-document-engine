@@ -22,7 +22,6 @@ from sydel_doc_engine.app.ui_runtime import (
     generate_zip_file,
 )
 from sydel_doc_engine.domain.enums import Gender
-from sydel_doc_engine.utils.dates import format_date_longue_fr
 from sydel_doc_engine.domain.models import (
     Address,
     Apport,
@@ -78,8 +77,8 @@ from sydel_doc_engine.front_app.field_derivations import (
 )
 from sydel_doc_engine.front_app.front_widgets import (
     copyable_text_input,
-    date_input_with_today,
     date_input_freeform,
+    date_input_with_today,
     seed_closing_date,
     seed_signature_lieu,
 )
@@ -96,6 +95,7 @@ from sydel_doc_engine.orchestrator.service import (
     BAIL_AVENANT_DOCUMENT_ID,
     CESSION_CABINET_DOCUMENT_IDS,
 )
+from sydel_doc_engine.utils.dates import format_date_longue_fr
 
 STRUCTURE = "SELAS"
 DOC_CODE = "DOC-044"
@@ -401,7 +401,7 @@ def render_selas_form(type_key: str = "selas_multi_v1") -> dict[str, object]:
     banque_adresse = _t(
         col_k, "banque_adresse", "Adresse banque", hint="ex : 5 place Bellecour, 69002 Lyon"
     )
-    # Retour Rafael 2026-07-01 : cloture pre-remplie (seed_closing_date) et recurrente -> volet replie.
+    # Retour Rafael 2026-07-01 : cloture pre-remplie (seed_closing_date), recurrente, volet replie.
     with st.expander("Clôture du 1er exercice (pré-rempli — modifier si besoin)", expanded=False):
         date_cloture = date_input_freeform(
             "Date de clôture du 1er exercice (ex : 31 décembre 2028)",
@@ -987,31 +987,32 @@ def _render_conjoint_si_communaute(
     comme le fait deja la SELARL). Les coordonnees vivent dans les cles de session
     `{prefix}_conjoint_*` et sont lues telles quelles par le sous-formulaire de cession.
 
-    PERIMETRE PACS (re-Akainu tour 2, MAJEUR O24-11) : le PACS est VOLONTAIREMENT EXCLU.
-    Le verbatim O24-11 vise le vendeur MARIE, et l'acte de cession ne porte pas de
-    segment « pacse avec [conjoint] » -> capter le partenaire pacse ferait disparaitre
-    une donnee saisie (jamais retranscrite). On s'aligne donc sur « marie » uniquement ;
-    le perimetre PACS est un arbitrage Albane en attente (docs/review/QUESTIONS_RAFAEL.md).
+    PERIMETRE PACS (Albane 6.3/7.3, RATIFIE 2026-07-06) : l'arbitrage en attente est TRANCHE
+    — le partenaire PACSE est desormais capte et REPRIS dans la comparution des statuts
+    (« pacsé avec {partenaire} », via situation_maritale_complete) comme dans les actes
+    (SUPERSEDE l'exclusion O24-11 « PACS volontairement exclu »). Le partenaire pacse est
+    OPTIONNEL (« si renseigne ») : laisse vide -> aucune mention (« pas de mention sans nom »).
 
-    En revanche, l'objet RegimeCommunautaireAssocie — qui DECLENCHE DOC-005
-    (renonciation) + DOC-006 (avertissement) — n'est retourne QUE pour la
-    communaute LEGALE (R10/R11, Rafael 2026-06-23) : les autres regimes maries
-    n'entrainent aucun document complementaire."""
-    if matrimonial_status_value(situation_label) != "marie":
+    L'objet RegimeCommunautaireAssocie — qui DECLENCHE DOC-005 (renonciation) + DOC-006
+    (avertissement) — reste retourne UNIQUEMENT pour la communaute LEGALE (mariage) : le PACS
+    n'entraine AUCUN document de regime (pas de renonciation/avertissement de communaute)."""
+    status_value = matrimonial_status_value(situation_label)
+    if status_value not in {"marie", "pacse"}:
         return None
-    st.caption("Conjoint de cet associé (figure à l'acte ; lettres si communauté légale)")
+    label_conjoint = "Conjoint" if status_value == "marie" else "Partenaire (PACS)"
+    st.caption(f"{label_conjoint} de cet associé (figure à l'acte ; lettres si communauté légale)")
     col_a, col_b, col_c = st.columns(3)
     conjoint_civilite = col_a.selectbox(
-        "Civilité conjoint",
+        f"Civilité {label_conjoint.lower()}",
         ("Madame", "Monsieur"),
         key=f"{prefix}_conjoint_civilite",
     )
-    conjoint_prenom = _ts(col_b, f"{prefix}_conjoint_prenom", "Prénom conjoint")
-    conjoint_nom = _ts(col_c, f"{prefix}_conjoint_nom", "Nom conjoint")
-    # DOC-005/DOC-006 : communaute legale uniquement. Hors communaute legale, le
-    # conjoint est capte (cles de session ci-dessus, pour l'acte) mais aucun document
-    # de regime n'est genere -> on ne retourne pas d'objet RegimeCommunautaireAssocie.
-    if not regime_communautaire_from_status(situation_label):
+    conjoint_prenom = _ts(col_b, f"{prefix}_conjoint_prenom", f"Prénom {label_conjoint.lower()}")
+    conjoint_nom = _ts(col_c, f"{prefix}_conjoint_nom", f"Nom {label_conjoint.lower()}")
+    # DOC-005/DOC-006 : communaute legale (mariage) uniquement. Pour un pacse OU un marie hors
+    # communaute legale, le conjoint/partenaire est capte (cles de session ci-dessus, pour l'acte
+    # et la comparution) mais aucun document de regime n'est genere.
+    if status_value != "marie" or not regime_communautaire_from_status(situation_label):
         return None
     return RegimeCommunautaireAssocie(
         actif=True,
@@ -1815,7 +1816,9 @@ def _build_capital_souscription_selas(
     )
 
 
-def _selas_dirigeant_identite_phrase(entry: dict[str, object], adresse: Address | None) -> str | None:
+def _selas_dirigeant_identite_phrase(
+    entry: dict[str, object], adresse: Address | None
+) -> str | None:
     """A26-PV5 : phrase d'identite COMPLETE du dirigeant pour le PV nomination dirigeant SELAS.
 
     Format du modele Albane (MODELE_PV_nominations_dirigeants) :

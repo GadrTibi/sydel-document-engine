@@ -15,7 +15,11 @@ from sydel_doc_engine.domain.models import (
     SpfplPerson,
     StatutsPresident,
 )
-from sydel_doc_engine.generators.lot_05.scm_cession_common import mentions_conjoint
+from sydel_doc_engine.generators.lot_05.scm_cession_common import (
+    mentions_conjoint,
+    mentions_partenaire_pacse,
+    partenaire_pacse_clause,
+)
 from sydel_doc_engine.rendering.docx_builder import apply_style_profile
 from sydel_doc_engine.rendering.docx_template_fill import fill_docx_template
 from sydel_doc_engine.utils.departements import departement_nom
@@ -168,29 +172,37 @@ def _apply_style_footer_normalize(output_path: Path, denomination: str) -> None:
 
 
 def _collapse_marital_sentence(output_path: Path, actionnaire: SpfplPerson) -> None:
-    """Replie la comparution matrimoniale sur le SEUL statut pour un actionnaire NON MARIE.
+    """Replie la comparution matrimoniale pour un actionnaire NON MARIE.
 
     R0702-02 : le modele SAS ecrit « <statut> sous le régime de <regime> avec <Civ Prénom Nom> » ;
     pour un non-marie, regime + conjoint sont vides (« sous le régime de  avec » orphelin). On
     remplace le paragraphe de comparution par le seul statut (« Célibataire »). Meme approche que la
-    SPFPL (collapse, PAS de wording source invente). Un MARIE n'est PAS touche (byte-identique)."""
+    SPFPL (collapse, PAS de wording source invente). Un MARIE n'est PAS touche (byte-identique).
+
+    Albane 6.3/7.3 (RATIFIE 2026-07-06) : un PACSE n'est PAS reduit au statut nu — on rend
+    « <statut> avec <Civilite Prenom Nom> » (le PACS n'a PAS de « sous le régime de … » : le menu
+    « Pacsé(e) » ne capture aucun sous-regime). « Pas de mention sans nom » : partenaire non
+    renseigne -> partenaire_pacse_clause renvoie "" -> statut nu, comme un celibataire."""
     if mentions_conjoint(actionnaire.situation_maritale):
         return
     statut = _required_text(
         actionnaire.situation_maritale, "actionnaire_unique.situation_maritale"
     )
+    replacement = statut
+    if mentions_partenaire_pacse(actionnaire.situation_maritale):
+        replacement = f"{statut}{partenaire_pacse_clause(actionnaire.conjoint)}"
     document = Document(str(output_path))
     for paragraph in document.paragraphs:
         text = paragraph.text.strip()
         if text.startswith(statut) and "sous le régime de" in text and "avec" in text:
             if paragraph.runs:
-                paragraph.runs[0].text = statut
+                paragraph.runs[0].text = replacement
                 # n3 (Akainu) : SUPPRIME les runs suivants (plus de run vide residuel) plutot que
-                # de les vider — le paragraphe ne porte plus que le seul run « <statut> ».
+                # de les vider — le paragraphe ne porte plus que le seul run.
                 for run in paragraph.runs[1:]:
                     run._element.getparent().remove(run._element)
             else:
-                paragraph.text = statut
+                paragraph.text = replacement
             break
     document.save(str(output_path))
 

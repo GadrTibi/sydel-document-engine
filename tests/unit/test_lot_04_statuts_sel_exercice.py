@@ -306,6 +306,54 @@ def test_statuts_sel_exercice_celibataire_sans_conjoint(tmp_path: Path) -> None:
     _assert_clean(text)
 
 
+def test_statuts_sel_exercice_pacse_shows_partner(tmp_path: Path) -> None:
+    # Albane 6.3/7.3 (RATIFIE 2026-07-06) : un associe PACSE affiche son PARTENAIRE
+    # (« pacsé avec Madame Alice Martin »), SANS « sous le régime de … » (pas de sous-regime PACS).
+    ctx = _context(overlay="selarl_medecin")
+    ctx.associes[0].situation_maritale = "pacsé"
+    ctx.associes[0].regime_matrimonial = ""
+    text = _docx_text(StatutsSelarlMedecinGenerator().generate(ctx, tmp_path))
+    assert "pacsé avec Madame Alice Martin" in text
+    assert "sous le régime de" not in text
+    _assert_clean(text)
+
+
+def test_statuts_sel_exercice_pacse_feminin_sans_partenaire(tmp_path: Path) -> None:
+    # Genre feminin + « pas de mention sans nom » : un pacse SANS partenaire rend « pacsée » nu.
+    ctx = _context(overlay="selarl_medecin", gender=Gender.FEMININ)
+    ctx.associes[0].situation_maritale = "pacsée"
+    ctx.associes[0].regime_matrimonial = ""
+    ctx.associes[0].conjoint = None
+    text = _docx_text(StatutsSelarlMedecinGenerator().generate(ctx, tmp_path))
+    assert "pacsée" in text
+    assert "pacsée avec" not in text
+    assert "sous le régime de" not in text
+    assert "COMPLÉTER" not in text
+    _assert_clean(text)
+
+
+def test_statuts_sel_exercice_pacse_brut_value_accented(tmp_path: Path) -> None:
+    # Le flux SELARL PRINCIPAL passe la valeur BRUTE (« pacse », non accentuee) au generateur ;
+    # `marital_status_display` doit l'ACCENTUER (« pacsé »), comme pour le marie — jamais « pacse
+    # avec … » (accent manquant) en sortie. (Root-cause de l'accent, pas un garde-fou de surface.)
+    ctx = _context(overlay="selarl_medecin")
+    ctx.associes[0].situation_maritale = "pacse"  # BRUT
+    ctx.associes[0].regime_matrimonial = ""
+    text = _docx_text(StatutsSelarlMedecinGenerator().generate(ctx, tmp_path))
+    assert "pacsé avec Madame Alice Martin" in text
+    assert "pacse avec" not in text  # jamais la forme non accentuee
+    _assert_clean(text)
+
+
+def test_statuts_sel_exercice_married_unchanged(tmp_path: Path) -> None:
+    # Non-regression : un MARIE conserve « marié sous le régime de … avec … » (byte-fidele).
+    ctx = _context(overlay="selarl_medecin")  # marie + Alice Martin par defaut
+    text = _docx_text(StatutsSelarlMedecinGenerator().generate(ctx, tmp_path))
+    assert "sous le régime de" in text
+    assert "avec Madame Alice Martin" in text
+    _assert_clean(text)
+
+
 def test_statuts_selarl_medecin_article_8_agrees_female_unique(
     tmp_path: Path,
 ) -> None:

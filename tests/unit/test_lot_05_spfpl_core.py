@@ -361,6 +361,43 @@ def test_acte_cession_ordre_departement_numero_rendered_as_name(tmp_path: Path) 
     assert "de 77" not in text
 
 
+def test_acte_cession_parts_pacse_reprises_partner(tmp_path: Path) -> None:
+    # Albane 6.3/7.3 : un cedant PACSE avec partenaire renseigne -> partenaire repris
+    # (« avec Madame Alice Martin »), SANS « sous le régime de … » (un PACS n'a pas de regime).
+    ctx = _base_context(operation="cession")
+    ctx.cedant.situation_maritale = "pacse"
+    text = _docx_text(ActeCessionPartsSpfplGenerator().generate(ctx, tmp_path))
+    assert "avec Madame Alice Martin" in text
+    assert "sous le régime de" not in text
+
+
+def test_acte_cession_parts_pacse_sans_partenaire_no_mention(tmp_path: Path) -> None:
+    # « Pas de mention sans nom » (Albane 6.3) : pacse SANS partenaire -> pas de reprise.
+    ctx = _base_context(operation="cession")
+    ctx.cedant.situation_maritale = "pacse"
+    ctx.cedant.conjoint = None
+    text = _docx_text(ActeCessionPartsSpfplGenerator().generate(ctx, tmp_path))
+    assert "Alice Martin" not in text
+    assert "(À COMPLÉTER" not in text
+
+
+def test_contrat_apport_pacse_reprises_partner(tmp_path: Path) -> None:
+    # Le modele contrat d'apport reprend le partenaire en prenom+nom (sans civilite, miroir marie).
+    ctx = _base_context(operation="apport")
+    ctx.apporteur.situation_maritale = "pacse"
+    text = _docx_text(ContratApportSpfplGenerator().generate(ctx, tmp_path))
+    assert "avec Alice Martin" in text
+    assert "sous le régime de" not in text
+
+
+def test_attestation_commissaire_pacse_reprises_partner_nom(tmp_path: Path) -> None:
+    # Le modele attestation ne porte que le NOM du conjoint/partenaire (fidelite, miroir marie).
+    ctx = _base_context(operation="apport")
+    ctx.apporteur.situation_maritale = "pacse"
+    text = _docx_text(AttestationCommissaireApportsGenerator().generate(ctx, tmp_path))
+    assert "avec Martin" in text
+
+
 def test_attestation_capital_is_limited_to_unique_souscripteur(tmp_path: Path) -> None:
     ctx = _base_context(operation="apport")
     ctx.capital_souscription.souscripteurs.append(

@@ -1088,11 +1088,22 @@ def _associe(
 
 
 def _needs_conjoint(data: SelarlSliceInput) -> bool:
-    return data.profession == PROFESSION_DENTISTE or data.regime_communautaire or _is_married(data)
+    # Albane 6.3/7.3 (RATIFIE 2026-07-06) : le PARTENAIRE PACSE figure aussi a la comparution
+    # -> le conjoint doit etre transmis au generateur pour un pacse (pas seulement marie/dentiste).
+    return (
+        data.profession == PROFESSION_DENTISTE
+        or data.regime_communautaire
+        or _is_married(data)
+        or _is_pacse(data)
+    )
 
 
 def _is_married(data: SelarlSliceInput) -> bool:
     return "mari" in data.situation_maritale.casefold()
+
+
+def _is_pacse(data: SelarlSliceInput) -> bool:
+    return "pacs" in data.situation_maritale.casefold()
 
 
 def _spfpl_conjoint(data: SelarlSliceInput) -> SpfplConjoint:

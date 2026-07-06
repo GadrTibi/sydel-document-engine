@@ -18,6 +18,8 @@ from sydel_doc_engine.generators.lot_05.scm_cession_common import (
     conjoint_display,
     format_display_date,
     mentions_conjoint,
+    mentions_partenaire_pacse,
+    partenaire_pacse_clause,
     required_text,
     save_clean_document,
     scm_cedee_address_for_acte,
@@ -105,14 +107,20 @@ class ActeCessionPartsScmGenerator:
         cedant_name = cedant_display(cedant)
         # R22-02 : le conjoint n'est mentionne que si le cedant est marie (sinon « divorce
         # avec Madame X » fantome). Regle partagee mentions_conjoint (gold-aligned).
+        # Albane 6.3/7.3 (RATIFIE 2026-07-06) : le PARTENAIRE PACSE s'affiche aussi, meme
+        # wording « avec {partenaire} » (le PACS n'a pas de « sous le régime de … » ici).
+        # « Pas de mention sans nom » : partenaire_pacse_clause renvoie "" si non renseigne.
         cedant_maritale = required_text(
             cedant.situation_maritale, "scm_cession.cedant.situation_maritale"
         )
-        cedant_maritale_clause = (
-            f"{cedant_maritale} avec {conjoint_display(cedant)}"
-            if mentions_conjoint(cedant.situation_maritale)
-            else cedant_maritale
-        )
+        if mentions_conjoint(cedant.situation_maritale):
+            cedant_maritale_clause = f"{cedant_maritale} avec {conjoint_display(cedant)}"
+        elif mentions_partenaire_pacse(cedant.situation_maritale):
+            cedant_maritale_clause = (
+                f"{cedant_maritale}{partenaire_pacse_clause(cedant.conjoint)}"
+            )
+        else:
+            cedant_maritale_clause = cedant_maritale
         document = new_document()
         # Albane 2026-06-26 §S5/§S6 : aerer le cadre-titre (espace avant/apres, marges internes)
         # et ajouter une 3e ligne au cadre = la denomination de la SCM cedee (objet de la cession).

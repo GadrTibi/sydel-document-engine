@@ -252,6 +252,31 @@ def test_statuts_spfpl_cession_generates_source_overlay_without_signature_date(
     assert total_actions.runs[0].bold is True
 
 
+def test_statuts_spfpl_apport_comparution_statut_nu_marie_et_pacse(tmp_path: Path) -> None:
+    # Le modele SPFPL APPORT/constitution rend la situation matrimoniale du soussigne EN STATUT
+    # NU pour TOUS les statuts — un MARIE n'y affiche NI regime NI conjoint (contrairement au
+    # modele CESSION qui porte la ligne combinee). Le PACSE suit donc EXACTEMENT le meme
+    # traitement que le marie sur ce modele : « Pacsé » nu, comme « Marié » nu. Ce n'est PAS un
+    # siloing du partenaire — le modele apport n'a simplement pas de logement « avec conjoint »
+    # dans sa comparution (fidelite : on n'invente pas de wording absent du modele). Verrou de
+    # coherence marie<->pacse pour prevenir toute divergence future.
+    for situ, attendu in (("marié", "Marié"), ("pacsé", "Pacsé")):
+        ctx = _with_exercice(_base_context(operation="apport"))
+        ctx.actionnaire_unique.situation_maritale = situ
+        if situ == "pacsé":
+            ctx.actionnaire_unique.regime_matrimonial = None
+        document = Document(StatutsSpfplApportGenerator().generate(ctx, tmp_path / situ))
+        comparution = [
+            p.text.strip() for p in document.paragraphs if p.text.strip() == attendu
+        ]
+        assert comparution, f"ligne « {attendu} » nue introuvable (apport)"
+        # ni regime ni « avec conjoint » ajoutes sur le modele apport (marie comme pacse)
+        assert not any(
+            f"{attendu} sous le régime de" in p.text or f"{attendu} avec" in p.text
+            for p in document.paragraphs
+        )
+
+
 def test_statuts_spfpl_apport_generates_nature_overlay_and_signature_date(
     tmp_path: Path,
 ) -> None:
@@ -415,6 +440,44 @@ def test_statuts_spfpl_marital_line_capitalized_single(tmp_path: Path) -> None:
     assert marital_lines, "aucune ligne matrimoniale « célibataire » trouvee"
     assert all(line == "Célibataire" for line in marital_lines)
     assert not any(p.text.strip() == "célibataire" for p in document.paragraphs)
+
+
+def test_statuts_spfpl_marital_line_pacse_shows_partner(tmp_path: Path) -> None:
+    """Albane 6.3/7.3 (RATIFIE 2026-07-06) : un actionnaire PACSE affiche son PARTENAIRE
+    (« Pacsé avec Madame Alice Martin »), SANS « sous le régime de … » (le PACS n'a pas de
+    sous-regime capture par le menu). Capitalise en tete (7.2)."""
+    ctx = _with_exercice(_base_context(operation="cession"))
+    ctx.actionnaire_unique.situation_maritale = "pacsé"
+    ctx.actionnaire_unique.regime_matrimonial = None
+    text = _docx_text(StatutsSpfplCessionGenerator().generate(ctx, tmp_path))
+    assert "Pacsé avec Madame Alice Martin" in text
+    assert "pacsé sous le régime" not in text
+    assert "sous le régime" not in text
+
+
+def test_statuts_spfpl_marital_line_pacse_without_partner_no_mention(tmp_path: Path) -> None:
+    """« Pas de mention sans nom » (Albane 6.3) : un pacse SANS partenaire rend « Pacsé » nu."""
+    ctx = _with_exercice(_base_context(operation="cession"))
+    ctx.actionnaire_unique.situation_maritale = "pacsé"
+    ctx.actionnaire_unique.regime_matrimonial = None
+    ctx.actionnaire_unique.conjoint = None
+    document = Document(StatutsSpfplCessionGenerator().generate(ctx, tmp_path))
+    pacse_lines = [
+        p.text.strip() for p in document.paragraphs
+        if p.text.strip().lower().startswith("pacsé")
+    ]
+    assert pacse_lines, "aucune ligne matrimoniale « pacsé » trouvee"
+    assert all(line == "Pacsé" for line in pacse_lines)
+    assert "avec" not in " ".join(pacse_lines)
+    assert not any("COMPLÉTER" in p.text for p in document.paragraphs)
+
+
+def test_statuts_spfpl_marital_line_married_unchanged(tmp_path: Path) -> None:
+    """Non-regression : un MARIE conserve sa clause complete « sous le régime de … avec … »."""
+    ctx = _with_exercice(_base_context(operation="cession"))
+    ctx.actionnaire_unique.situation_maritale = "marié"
+    text = _docx_text(StatutsSpfplCessionGenerator().generate(ctx, tmp_path))
+    assert "Marié sous le régime de la communaute legale avec Madame Alice Martin" in text
 
 
 def test_statuts_spfpl_president_uses_usual_first_name(tmp_path: Path) -> None:

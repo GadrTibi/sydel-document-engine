@@ -5,7 +5,10 @@ from pathlib import Path
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 from sydel_doc_engine.domain.models import DocumentGenerationContext
-from sydel_doc_engine.generators.lot_05.scm_cession_common import mentions_conjoint
+from sydel_doc_engine.generators.lot_05.scm_cession_common import (
+    mentions_conjoint,
+    mentions_partenaire_pacse,
+)
 from sydel_doc_engine.generators.lot_05.spfpl_common import (
     company_siege_display,
     format_display_date,
@@ -151,4 +154,12 @@ def _apporteur_maritale(apporteur) -> str:
     situation = required_text(apporteur.situation_maritale, "apporteur.situation_maritale")
     if mentions_conjoint(apporteur.situation_maritale):
         return f"{situation} avec {_conjoint_nom(apporteur)}"
+    # Albane 6.3/7.3 (RATIFIE 2026-07-06) : le PARTENAIRE PACSE s'affiche aussi (« <statut>
+    # avec <nom> », meme wording que le marie ici — le modele ne porte pas de « sous le régime
+    # de »). « Pas de mention sans nom » : si le partenaire n'a pas de nom -> statut seul.
+    if mentions_partenaire_pacse(apporteur.situation_maritale):
+        conjoint = apporteur.conjoint
+        nom = (getattr(conjoint, "nom", None) or "").strip() if conjoint else ""
+        if nom:
+            return f"{situation} avec {nom}"
     return situation

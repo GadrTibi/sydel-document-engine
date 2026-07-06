@@ -426,20 +426,26 @@ def _situation_display_civil(situation_label: str, genre: Gender) -> str:
 def _render_conjoint_si_communaute_civil(
     prefix: str, situation_label: str
 ) -> RegimeCommunautaireAssocie | None:
-    """SCS4 : conjoint d'un associe physique MARIE (figure a l'acte) + RegimeCommunautaireAssocie
-    (DOC-005 renonciation + DOC-006 avertissement) si communaute LEGALE seulement. Reprise fidele du
-    bloc SELAS pluri (_render_conjoint_si_communaute) : PACS exclu, objet regime retourne uniquement
-    en communaute legale (les autres regimes maries ne generent aucun document complementaire)."""
-    if matrimonial_status_value(situation_label) != "marie":
+    """SCS4 : conjoint d'un associe physique MARIE ou partenaire PACSE (figure a l'acte) +
+    RegimeCommunautaireAssocie (DOC-005 renonciation + DOC-006 avertissement) si communaute
+    LEGALE (mariage) seulement.
+
+    Albane 6.3/7.3 (RATIFIE 2026-07-06) : le partenaire PACSE est desormais capte (figure a
+    l'acte de cession, « pacsé avec {partenaire} ») — SUPERSEDE l'exclusion PACS O24-11. Le
+    partenaire pacse est OPTIONNEL. L'objet RegimeCommunautaireAssocie (DOC-005/006) reste
+    MARIAGE + communaute legale uniquement (un PACS ne genere aucun document de regime)."""
+    status_value = matrimonial_status_value(situation_label)
+    if status_value not in {"marie", "pacse"}:
         return None
-    st.caption("Conjoint de cet associé (figure à l'acte ; lettres si communauté légale)")
+    label = "Conjoint" if status_value == "marie" else "Partenaire (PACS)"
+    st.caption(f"{label} de cet associé (figure à l'acte ; lettres si communauté légale)")
     col_a, col_b, col_c = st.columns(3)
     conjoint_civilite = col_a.selectbox(
-        "Civilité conjoint", ("Madame", "Monsieur"), key=f"{prefix}_conjoint_civilite"
+        f"Civilité {label.lower()}", ("Madame", "Monsieur"), key=f"{prefix}_conjoint_civilite"
     )
-    conjoint_prenom = _text(prefix, "conjoint_prenom", "Prénom conjoint", container=col_b)
-    conjoint_nom = _text(prefix, "conjoint_nom", "Nom conjoint", container=col_c)
-    if not regime_communautaire_from_status(situation_label):
+    conjoint_prenom = _text(prefix, "conjoint_prenom", f"Prénom {label.lower()}", container=col_b)
+    conjoint_nom = _text(prefix, "conjoint_nom", f"Nom {label.lower()}", container=col_c)
+    if status_value != "marie" or not regime_communautaire_from_status(situation_label):
         return None
     return RegimeCommunautaireAssocie(
         actif=True,

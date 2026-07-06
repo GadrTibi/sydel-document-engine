@@ -264,6 +264,51 @@ def test_statuts_sas_non_marie_replie_sur_le_statut(tmp_path: Path, statut) -> N
 
 
 @pytest.mark.parametrize(
+    ("statut", "conjoint_civilite"),
+    [("Pacsé", "Madame"), ("Pacsée", "Monsieur")],
+)
+def test_statuts_sas_pacse_affiche_partenaire(
+    tmp_path: Path, statut, conjoint_civilite
+) -> None:
+    # Albane 6.3/7.3 (RATIFIE 2026-07-06) : un actionnaire PACSE affiche son PARTENAIRE
+    # (« Pacsé avec <Civilite Prenom Nom> »), SANS « sous le régime de … » : la clause mariee
+    # du modele est repliee sur « <statut> avec <partenaire> ». Les 2 genres sont couverts.
+    from docx import Document
+
+    ctx = _context()
+    ctx.actionnaire_unique.situation_maritale = statut
+    ctx.actionnaire_unique.regime_matrimonial = ""
+    ctx.actionnaire_unique.conjoint = SpfplConjoint(
+        civilite_affichage=conjoint_civilite, prenom="Alice", nom="Martin"
+    )
+    out = StatutsSasGenerator().generate(ctx, tmp_path)
+    text = "\n".join(p.text for p in Document(out).paragraphs)
+    assert f"{statut} avec {conjoint_civilite} Alice Martin" in text
+    assert f"{statut} sous le régime de" not in text
+    assert "À COMPLÉTER" not in text
+    assert "[" not in text and "]" not in text
+
+
+@pytest.mark.parametrize("statut", ["Pacsé", "Pacsée"])
+def test_statuts_sas_pacse_sans_partenaire_replie_sur_statut(tmp_path: Path, statut) -> None:
+    # « Pas de mention sans nom » (Albane 6.3) : un pacse SANS partenaire renseigne rend le SEUL
+    # statut (« Pacsé »), sans « avec » orphelin, sans « sous le régime de », sans token/marqueur.
+    from docx import Document
+
+    ctx = _context()
+    ctx.actionnaire_unique.situation_maritale = statut
+    ctx.actionnaire_unique.regime_matrimonial = ""
+    ctx.actionnaire_unique.conjoint = None
+    out = StatutsSasGenerator().generate(ctx, tmp_path)
+    text = "\n".join(p.text for p in Document(out).paragraphs)
+    assert statut in text
+    assert f"{statut} avec" not in text
+    assert f"{statut} sous le régime de" not in text
+    assert "À COMPLÉTER" not in text
+    assert "[" not in text and "]" not in text
+
+
+@pytest.mark.parametrize(
     "regime",
     [
         "la communauté légale",

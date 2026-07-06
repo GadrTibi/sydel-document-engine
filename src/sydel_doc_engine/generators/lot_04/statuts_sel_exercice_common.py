@@ -20,6 +20,11 @@ from sydel_doc_engine.domain.models import (
     DocumentGenerationContext,
     StatutsCivilsAssocie,
 )
+from sydel_doc_engine.generators.lot_05.scm_cession_common import (
+    mentions_conjoint,
+    mentions_partenaire_pacse,
+    partenaire_pacse_clause,
+)
 from sydel_doc_engine.rendering.docx_builder import (
     add_paragraph,
     add_spacer,
@@ -265,8 +270,14 @@ def marital_status_display(associate: Associe) -> str:
         "associes[0].situation_maritale",
     )
     normalized = _normalized_text(value)
+    feminine = associate.genre == Gender.FEMININ
     if normalized in {"marie", "mariee"}:
-        return "mariée" if associate.genre == Gender.FEMININ else "marié"
+        return "mariée" if feminine else "marié"
+    # Albane 6.3/7.3 (RATIFIE 2026-07-06) : le statut PACSE sort ACCENTUE et accorde au genre,
+    # meme quand le flux front passe la valeur BRUTE (« pacse ») — la SELARL principale la pose
+    # non accentuee. Sans ceci, la comparution rendrait « pacse avec … » (accent manquant).
+    if normalized in {"pacse", "pacsee"}:
+        return "pacsée" if feminine else "pacsé"
     return value
 
 
@@ -292,8 +303,14 @@ def matrimonial_regime_display(associate: Associe) -> str:
 
 def statuts_sel_matrimonial_clause(associate: Associe) -> str:
     status = marital_status_display(associate)
-    normalized_status = _normalized_text(status)
-    if normalized_status not in {"marie", "mariee"}:
+    # Garde PARTAGEE (mentions_conjoint) : plus de test local divergent (DRY, R22-02).
+    if not mentions_conjoint(associate.situation_maritale):
+        # Albane 6.3/7.3 (RATIFIE 2026-07-06) : un PACSE affiche son PARTENAIRE (« pacsé(e)
+        # avec {Civilite Prenom Nom} »), SANS « sous le régime de … » (le PACS n'a pas de
+        # sous-regime capture par le menu). « Pas de mention sans nom » : partenaire_pacse_clause
+        # -> "" si non renseigne -> statut nu.
+        if mentions_partenaire_pacse(associate.situation_maritale):
+            return f"{status}{partenaire_pacse_clause(associate.conjoint)}"
         return status
     conjoint = associate.conjoint
     if conjoint is None:

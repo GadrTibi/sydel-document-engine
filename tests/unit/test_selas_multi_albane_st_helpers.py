@@ -98,3 +98,61 @@ def test_st4_non_marie_inchange() -> None:
     assert situation_maritale_complete("Célibataire", Gender.MASCULIN) == "célibataire"
     assert situation_maritale_complete("Divorcé(e)", Gender.FEMININ) == "divorcée"
     assert situation_maritale_complete("Veuf / veuve", Gender.MASCULIN) == "veuf"
+
+
+def test_st4_pacse_avec_partenaire() -> None:
+    # Albane 6.3/7.3 (RATIFIE 2026-07-06) : un PACSE reprend son PARTENAIRE dans la comparution
+    # des statuts SELAS multi (« pacsé avec <Civilite Prenom Nom> »), SANS « sous le régime de … ».
+    result = situation_maritale_complete(
+        "Pacsé(e)",
+        Gender.MASCULIN,
+        conjoint_civilite="Madame",
+        conjoint_prenom="Anne",
+        conjoint_nom="DURANT",
+    )
+    assert result == "pacsé avec Madame Anne DURANT"
+    assert "sous le régime de" not in result
+    # genre feminin
+    result_f = situation_maritale_complete(
+        "Pacsé(e)", Gender.FEMININ, conjoint_prenom="Paul", conjoint_nom="MARTIN"
+    )
+    assert result_f == "pacsée avec Paul MARTIN"
+
+
+def test_st4_pacse_sans_partenaire_nu() -> None:
+    # « Pas de mention sans nom » (Albane 6.3) : un pacse SANS partenaire rend « pacsé(e) » nu.
+    assert situation_maritale_complete("Pacsé(e)", Gender.MASCULIN) == "pacsé"
+    assert situation_maritale_complete("Pacsé(e)", Gender.FEMININ) == "pacsée"
+
+
+def test_st4_pacse_civilite_seule_ne_fuit_pas() -> None:
+    # BLOQUANT (Akainu 2026-07-06) : le CHEMIN DE PRODUCTION passe TOUJOURS une civilite
+    # (le selectbox renvoie « Madame »/« Monsieur », jamais vide). Sans prenom NI nom
+    # partenaire, la comparution ne doit JAMAIS rendre « pacsé avec Madame » (civilite seule) —
+    # « pas de mention sans nom » (6.3). C'est exactement l'appel de selas_multi_slice.
+    assert (
+        situation_maritale_complete(
+            "Pacsé(e)", Gender.MASCULIN,
+            conjoint_civilite="Madame", conjoint_prenom="", conjoint_nom="",
+        )
+        == "pacsé"
+    )
+    assert (
+        situation_maritale_complete(
+            "Pacsé(e)", Gender.FEMININ,
+            conjoint_civilite="Monsieur", conjoint_prenom="", conjoint_nom="",
+        )
+        == "pacsée"
+    )
+
+
+def test_st4_marie_civilite_seule_ne_fuit_pas() -> None:
+    # Symetrie marie : civilite seule (sans prenom/nom) -> pas de « époux de Madame » orphelin,
+    # juste le regime. (Le front exige le conjoint pour un marie, mais la garde reste robuste.)
+    result = situation_maritale_complete(
+        "Marié(e) sous le régime de la séparation de biens",
+        Gender.MASCULIN,
+        conjoint_civilite="Madame",
+    )
+    assert result == "marié sous le régime de la séparation de biens"
+    assert "époux de" not in result

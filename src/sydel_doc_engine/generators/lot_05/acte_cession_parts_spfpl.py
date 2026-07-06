@@ -7,7 +7,11 @@ from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 from sydel_doc_engine.domain.models import DocumentGenerationContext, SpfplPerson
-from sydel_doc_engine.generators.lot_05.scm_cession_common import mentions_conjoint
+from sydel_doc_engine.generators.lot_05.scm_cession_common import (
+    mentions_conjoint,
+    mentions_partenaire_pacse,
+    partenaire_pacse_clause,
+)
 from sydel_doc_engine.generators.lot_05.spfpl_common import (
     company_siege_display,
     elision_de,
@@ -289,7 +293,11 @@ class ActeCessionPartsSpfplGenerator:
         # mentions_conjoint, R22-02) : marie -> ligne complete byte-identique ; sinon statut seul.
         # La cle COMBINEE (plus longue) est traitee AVANT les tokens simples par `_replace`, donc
         # elle consomme tout le fragment « [situation_maritale_cedant] avec [conjoint...] » de P36.
+        # Albane 6.3/7.3 (RATIFIE 2026-07-06) : le PARTENAIRE PACSE s'affiche aussi (« avec
+        # {partenaire} », modele P36 sans regime). « Pas de mention sans nom » :
+        # partenaire_pacse_clause -> "" si partenaire non renseigne (pacse nu).
         cedant_maritale = required_text(cedant.situation_maritale, "cedant.situation_maritale")
+        conjoint_civilite = conjoint_prenom = conjoint_nom = ""
         if mentions_conjoint(cedant.situation_maritale):
             conjoint_civilite = required_text(
                 conjoint.civilite_affichage if conjoint else None,
@@ -302,8 +310,11 @@ class ActeCessionPartsSpfplGenerator:
             ligne_maritale_cedant = (
                 f"{cedant_maritale} avec {conjoint_civilite} {conjoint_prenom} {conjoint_nom}"
             )
+        elif mentions_partenaire_pacse(cedant.situation_maritale):
+            ligne_maritale_cedant = (
+                f"{cedant_maritale}{partenaire_pacse_clause(conjoint)}"
+            )
         else:
-            conjoint_civilite = conjoint_prenom = conjoint_nom = ""
             ligne_maritale_cedant = cedant_maritale
         repl = {
             # Cle COMBINEE (fragment matrimonial complet) : branche marie/non-marie, byte-identique

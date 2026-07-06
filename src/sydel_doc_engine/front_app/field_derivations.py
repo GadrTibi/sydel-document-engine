@@ -361,16 +361,34 @@ def situation_maritale_complete(
     double et non accentue — regression O24-11). Hors « marie », on retombe sur le mot
     d'etat civil accorde (situation_display) : pas de regime ni de conjoint a ajouter."""
     feminine = genre == Gender.FEMININ
-    base = situation_display(matrimonial_status_value(label), genre)
-    if matrimonial_status_value(label) != "marie":
+    status_value = matrimonial_status_value(label)
+    base = situation_display(status_value, genre)
+    # « Pas de mention sans nom » (Albane 6.3, BLOQUANT) : le conjoint/partenaire ne s'affiche
+    # QUE si un PRENOM ou un NOM reel est renseigne. La civilite seule (le selectbox renvoie
+    # TOUJOURS « Madame »/« Monsieur », jamais vide) ne doit JAMAIS declencher « avec Madame »
+    # nu. Symetrique du helper generateur `partenaire_pacse_clause` (prenom OR nom requis).
+    has_name = bool(
+        (conjoint_prenom and str(conjoint_prenom).strip())
+        or (conjoint_nom and str(conjoint_nom).strip())
+    )
+    conjoint = (
+        " ".join(
+            part.strip()
+            for part in (conjoint_civilite, conjoint_prenom, conjoint_nom)
+            if part and str(part).strip()
+        ).strip()
+        if has_name
+        else ""
+    )
+    if status_value == "pacse":
+        # Albane 6.3/7.3 (RATIFIE 2026-07-06) : un PACSE reprend son PARTENAIRE dans la
+        # comparution — « pacsé(e) avec <Civilite Prenom Nom> », SANS « sous le régime de … »
+        # (le menu « Pacsé(e) » ne capture aucun sous-regime PACS). Partenaire sans nom -> nu.
+        return f"{base} avec {conjoint}" if conjoint else base
+    if status_value != "marie":
         return base
     regime = _married_regime_display(label)
     phrase = f"{base} sous le régime de {regime}" if regime else base
-    conjoint = " ".join(
-        part.strip()
-        for part in (conjoint_civilite, conjoint_prenom, conjoint_nom)
-        if part and str(part).strip()
-    ).strip()
     if conjoint:
         lien = "épouse de" if feminine else "époux de"
         phrase = f"{phrase}, {lien} {conjoint}"

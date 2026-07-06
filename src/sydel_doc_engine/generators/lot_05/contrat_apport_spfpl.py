@@ -11,7 +11,11 @@ from sydel_doc_engine.domain.models import (
     DocumentGenerationContext,
     ProfessionalEntity,
 )
-from sydel_doc_engine.generators.lot_05.scm_cession_common import mentions_conjoint
+from sydel_doc_engine.generators.lot_05.scm_cession_common import (
+    mentions_conjoint,
+    mentions_conjoint_ou_partenaire,
+    mentions_partenaire_pacse,
+)
 from sydel_doc_engine.generators.lot_05.spfpl_common import (
     company_siege_display,
     required_apport_titres,
@@ -214,9 +218,12 @@ class ContratApportSpfplGenerator:
             "[situation_maritale]": required_text(
                 apporteur.situation_maritale, "apporteur.situation_maritale"
             ),
+            # Fallback (la cle combinee ci-dessus consomme P8) : conjoint marie OU partenaire
+            # pacse renseigne -> « prenom nom », sinon "" (jamais de conjoint fantome).
             "[nom_conjoint]": (
                 f"{_txt(conjoint.prenom)} {_txt(conjoint.nom)}".strip()
-                if conjoint and mentions_conjoint(apporteur.situation_maritale)
+                if conjoint
+                and mentions_conjoint_ou_partenaire(apporteur.situation_maritale)
                 else ""
             ),
             "[profession_reglementee]": required_text(
@@ -360,6 +367,13 @@ def _apporteur_maritale(apporteur, conjoint) -> str:
     if mentions_conjoint(apporteur.situation_maritale) and conjoint:
         nom = f"{_txt(conjoint.prenom)} {_txt(conjoint.nom)}".strip()
         return f"{situation} avec {nom}"
+    # Albane 6.3/7.3 (RATIFIE 2026-07-06) : le PARTENAIRE PACSE s'affiche aussi (« <statut>
+    # avec <prenom nom> », modele P8 sans regime). « Pas de mention sans nom » : si le
+    # partenaire n'a ni prenom ni nom -> statut seul (jamais un « avec » orphelin).
+    if mentions_partenaire_pacse(apporteur.situation_maritale) and conjoint:
+        nom = f"{_txt(conjoint.prenom)} {_txt(conjoint.nom)}".strip()
+        if nom:
+            return f"{situation} avec {nom}"
     return situation
 
 

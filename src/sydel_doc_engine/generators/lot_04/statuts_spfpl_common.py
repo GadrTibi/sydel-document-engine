@@ -14,7 +14,11 @@ from sydel_doc_engine.domain.models import (
     SocieteSpfpl,
     SpfplPerson,
 )
-from sydel_doc_engine.generators.lot_05.scm_cession_common import mentions_conjoint
+from sydel_doc_engine.generators.lot_05.scm_cession_common import (
+    mentions_conjoint,
+    mentions_partenaire_pacse,
+    partenaire_pacse_clause,
+)
 from sydel_doc_engine.rendering.docx_builder import (
     STATUTS_SPFPL_COMPACT_STYLE_PROFILE,
     add_paragraph,
@@ -340,6 +344,14 @@ def _ligne_situation_maritale(founder: SpfplPerson, field_name: str) -> str:
     """
     statut = required_text(founder.situation_maritale, f"{field_name}.situation_maritale")
     if not mentions_conjoint(founder.situation_maritale):
+        # Albane 6.3/7.3 (RATIFIE 2026-07-06) : un PACSE affiche son PARTENAIRE (« Pacsé avec
+        # {Civilite Prenom Nom} »), SANS « sous le régime de … » (le menu « Pacsé(e) » ne
+        # capture aucun sous-regime PACS). « Pas de mention sans nom » : partenaire_pacse_clause
+        # -> "" si non renseigne -> on retombe sur le statut nu.
+        if mentions_partenaire_pacse(founder.situation_maritale):
+            return _capitalize_first(
+                f"{statut}{partenaire_pacse_clause(founder.conjoint)}"
+            )
         # M1 (Akainu 2026-07-06) : 7.2 exige que CHAQUE element de la liste du soussigne
         # commence par une MAJUSCULE (« Celibataire », pas « celibataire »).
         return _capitalize_first(statut)

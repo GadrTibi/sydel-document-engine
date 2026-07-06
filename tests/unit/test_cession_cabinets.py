@@ -965,6 +965,35 @@ def test_vendeur_celibataire_has_no_marital_remainder(tmp_path: Path) -> None:
         _assert_no_residual_tokens(text)
 
 
+def test_vendeur_pacse_affiche_partenaire(tmp_path: Path) -> None:
+    # Albane 6.3/7.3 (RATIFIE 2026-07-06) : un vendeur PACSE affiche son PARTENAIRE
+    # (« pacsé avec Madame Claire Durand. »), SANS « sous le régime de … » (pas de sous-regime).
+    ctx = _context()
+    vendeur = ctx.cession.vendeur.model_copy(
+        update={"situation_maritale": "pacsé", "regime_matrimonial": None}
+    )
+    ctx = _with_cession_updates(ctx, vendeur=vendeur)
+    text = _docx_text(ActeCessionCabinetMedicalGenerator().generate(ctx, tmp_path))
+    assert "pacsé avec Madame Claire Durand." in text
+    assert "pacsé sous le régime" not in text
+    _assert_no_residual_tokens(text)
+
+
+def test_vendeur_pacse_sans_partenaire_no_mention(tmp_path: Path) -> None:
+    # « Pas de mention sans nom » (Albane 6.3) : un vendeur pacse SANS partenaire -> « pacsé. » nu.
+    ctx = _context()
+    vendeur = ctx.cession.vendeur.model_copy(
+        update={"situation_maritale": "pacsé", "regime_matrimonial": None, "conjoint": None}
+    )
+    ctx = _with_cession_updates(ctx, vendeur=vendeur)
+    text = _docx_text(ActeCessionCabinetMedicalGenerator().generate(ctx, tmp_path))
+    assert "pacsé." in text
+    assert "pacsé avec" not in text
+    assert "Claire Durand" not in text
+    assert "COMPLÉTER" not in text
+    _assert_no_residual_tokens(text)
+
+
 def test_optional_fields_empty_render_blank_zones(tmp_path: Path) -> None:
     # Tickets 2.6 / 2.8 / 3.1 : CA / resultat / loyer / pret vides -> zones a
     # completer a la main, generation NON bloquee, aucun token residuel.
