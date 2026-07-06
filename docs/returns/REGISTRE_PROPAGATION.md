@@ -29,7 +29,7 @@ SELARL-uni · SELARL-multi · SELAS-uni-med · SELAS-uni-dent · SELAS-pluri · 
 | **Saut de page avant annexe** | ✅ | ✅ | ✅ | ✅ | ⬜ | ⬜ | ✅(modèle) | ➖ᵐ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **Adresse sur une ligne** (O24-03) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **DNC par dirigeant** (O24-02) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Attestation capital présente** (création) | ⬜(flag) | ⬜ | ✅ | ✅ | ⏸ DOC-051 bâti, PENDING Albane (B1/M1) | ✅ | ✅ | ✅ | ⬜(flag) | ⬜ | ✅ | ⬜ | ⬜ |
+| **Attestation capital présente** (création) | ⬜(flag) | ⬜ | ✅ | ✅ | ✅ DOC-051 (critère Albane n°14) | ✅ | ✅ | ✅ | ⬜(flag) | ⬜ | ✅ | ⬜ | ⬜ |
 | **Apport associé unique = capital** (uni) | ✅ | ➖ | ✅ | ➖ | ✅ | ✅ | ➖ | ✅ | ✅ | ✅ | ➖ | ✅ | ✅ |
 
 > **Légende maj** : ✅ fait · ⬜ à faire (déclencheur) · ➖ N/A · ➖ᵐ forme dictée par le modèle ratifié (harmoniser = question Albane, pas dette code) · ➖faible risque négligeable (préposition « de » + nom de dept ne commençant quasi jamais par voyelle) · 🔧 fix en cours · ❓ non ré-audité.
