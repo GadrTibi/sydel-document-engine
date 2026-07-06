@@ -1356,6 +1356,9 @@ _SPFPL_CESSION_DOCS = {
     "note_information.docx",
     "pv_agrement_cession_spfpl_plusieurs_associes.docx",
     "acte_cession_parts_spfpl.docx",
+    # Retour Albane 11 : attestation capital / liste des souscripteurs, variante cession
+    # (capital en numeraire). Le bundle cession n'en produisait aucune (DOC-051).
+    "attestation_capital_liste_souscripteurs_cession.docx",
 }
 
 
@@ -1363,7 +1366,8 @@ def test_spfpl_cession_slice_generates_clean(tmp_path: Path) -> None:
     payload = _spfpl_payload("SPFPL cession")
     plan = spfpl_slice.build_spfpl_plan(payload)
     assert plan.can_generate is True
-    # Creation + documents d'operation cession (note + PV agrement plusieurs + acte).
+    # Creation + documents d'operation cession (note + PV agrement plusieurs + acte +
+    # attestation capital cession DOC-051, retour Albane 11).
     assert plan.document_codes == (
         "DOC-035",
         "DOC-001",
@@ -1374,6 +1378,7 @@ def test_spfpl_cession_slice_generates_clean(tmp_path: Path) -> None:
         "DOC-037",
         "DOC-039",
         "DOC-040",
+        "DOC-051",
     )
     generated = spfpl_slice.generate_dossier(payload, tmp_path / "spfpl-cession")
     _assert_bundle_clean(
@@ -1632,6 +1637,7 @@ def test_spfpl_cession_regime_on_adds_regime_docs(tmp_path: Path) -> None:
         "DOC-037",
         "DOC-039",
         "DOC-040",
+        "DOC-051",
     )
     generated = spfpl_slice.generate_dossier(payload, tmp_path / "spfpl-cession-regime")
     _assert_bundle_clean(
@@ -4395,7 +4401,8 @@ def test_a26_pv5_dirigeant_identite_phrase_via_flux_reel() -> None:
     from datetime import date as _date
 
     from sydel_doc_engine.domain.enums import Gender as _G
-    from sydel_doc_engine.domain.models import Address as _A, StatutsCivilsAssocie
+    from sydel_doc_engine.domain.models import Address as _A
+    from sydel_doc_engine.domain.models import StatutsCivilsAssocie
     from sydel_doc_engine.front_app.selas_multi_slice import (
         _build_dirigeants_nomines,
         _build_dirigeants_nomines_payload,
@@ -4426,7 +4433,7 @@ def test_a26_pv5_dirigeant_identite_phrase_via_flux_reel() -> None:
         "avec société d’acquêts, avec Madame Eva ROUAULT, demeurant 31B Boulevard de Sévigné, "
         "35700 RENNES"
     )
-    assert "Docteur" not in phrase  # Akainu B1 : jamais le titre, toujours la profession reglementee
+    assert "Docteur" not in phrase  # Akainu B1 : jamais le titre, la profession reglementee
 
     # Sans profession -> None (repli byte-identique sur la reconstruction par champs du PV).
     entry = payload_list[0]

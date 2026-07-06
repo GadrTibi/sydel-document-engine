@@ -33,6 +33,7 @@ from sydel_doc_engine.domain.models import (
     DocumentContext,
     DocumentGenerationContext,
 )
+from sydel_doc_engine.utils.departements import departement_nom
 from sydel_doc_engine.utils.grammar import apply_gender_pairs
 from sydel_doc_engine.utils.months import FRENCH_MONTHS
 
@@ -939,7 +940,7 @@ def _build_cession_replacements(
     put_opt("[numero_siren_vendeur]", vendeur.numero_siren)
     put_opt("[numero_ordre_vendeur]", vendeur.numero_ordre)
     put_opt("[numero_rpps_vendeur]", vendeur.numero_rpps)
-    put_opt("[ordre_departemental_vendeur]", vendeur.ordre_departemental)
+    put_opt("[ordre_departemental_vendeur]", departement_nom(vendeur.ordre_departemental))
     put("[situation_maritale_vendeur]", vendeur.situation_maritale)
     put_opt("[regime_matrimonial_vendeur]", vendeur.regime_matrimonial)
     put_opt("[civilite_conjoint_vendeur]", conjoint.civilite_affichage)

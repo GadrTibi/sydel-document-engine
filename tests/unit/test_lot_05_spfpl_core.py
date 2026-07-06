@@ -37,6 +37,9 @@ from sydel_doc_engine.generators.lot_05.acte_cession_parts_spfpl import (
 from sydel_doc_engine.generators.lot_05.attestation_capital_liste_souscripteurs import (
     AttestationCapitalListeSouscripteursGenerator,
 )
+from sydel_doc_engine.generators.lot_05.attestation_capital_liste_souscripteurs_cession import (
+    AttestationCapitalListeSouscripteursCessionGenerator,
+)
 from sydel_doc_engine.generators.lot_05.attestation_commissaire_apports import (
     AttestationCommissaireApportsGenerator,
 )
@@ -347,6 +350,17 @@ def test_contrat_apport_empty_address_renders_marker_not_blank(tmp_path: Path) -
     assert "(À COMPLÉTER : societe_spfpl.siege" in text
 
 
+def test_acte_cession_ordre_departement_numero_rendered_as_name(tmp_path: Path) -> None:
+    # Convention Albane 7.4/9.2 propagee a l'acte : le departement de l'Ordre en NUMERO
+    # (« 77 ») doit se rendre en NOM (« Seine-et-Marne »), jamais « de 77 ». Sans
+    # `departement_nom` cable, ce test echouerait (garde d'integration, Akainu DEPT m2).
+    ctx = _base_context()
+    ctx.cedant.ordre.departement = "77"
+    text = _docx_text(ActeCessionPartsSpfplGenerator().generate(ctx, tmp_path))
+    assert "Seine-et-Marne" in text
+    assert "de 77" not in text
+
+
 def test_attestation_capital_is_limited_to_unique_souscripteur(tmp_path: Path) -> None:
     ctx = _base_context(operation="apport")
     ctx.capital_souscription.souscripteurs.append(
@@ -381,6 +395,43 @@ def test_attestation_capital_generates_unique_shareholder_wording(tmp_path: Path
     assert "Le Docteur Camille Martin a fait la totalité des apports" in text
     _assert_no_unaccented_french(text)
     _assert_clean(text)
+
+
+def test_attestation_capital_cession_wording_and_genre(tmp_path: Path) -> None:
+    gen = AttestationCapitalListeSouscripteursCessionGenerator()
+
+    # Civilite PROD-REALISTE « Monsieur » (le slice pose la civilite civile, jamais
+    # « Docteur » — Akainu M2 : la fixture « Docteur » derivait masculin par accident
+    # et ne couvrait pas le feminin). Cas MASCULIN.
+    ctx_m = _base_context(operation="cession")
+    ctx_m.capital_souscription.souscripteurs[0].civilite_affichage = "Monsieur"
+    output_path = gen.generate(ctx_m, tmp_path)
+    text_m = _docx_text(output_path)
+
+    assert output_path.name == "attestation_capital_liste_souscripteurs_cession.docx"
+    # Variante CESSION (retour Albane 11) vs apport DOC-042 : capital deja libere/depose.
+    assert "en numéraire" in text_m
+    assert "entièrement libéré et déposé dans les livres de la banque" in text_m
+    assert "euros en numéraire" in text_m
+    assert "actionnaire unique" in text_m
+    # Gate adversarial : le modele ecrit « au Dr [civilite] [prenom] [nom] » -> on rend
+    # « au Dr [prenom] [nom] » (aligne sur DOC-042), jamais le doublon « Dr Docteur ».
+    assert "Dr Docteur" not in text_m
+    assert "au Dr Camille Martin" in text_m
+    # Accord MASCULIN.
+    assert "Je soussigné " in text_m
+    assert "soussignée" not in text_m
+    _assert_no_unaccented_french(text_m)
+    _assert_clean(text_m)
+
+    # Cas FEMININ « Madame » -> « Je soussignée » (couverture absente avant Akainu M2).
+    ctx_f = _base_context(operation="cession")
+    ctx_f.capital_souscription.souscripteurs[0].civilite_affichage = "Madame"
+    text_f = _docx_text(gen.generate(ctx_f, tmp_path))
+    assert "Je soussignée" in text_f
+    assert "Dr Docteur" not in text_f
+    _assert_no_unaccented_french(text_f)
+    _assert_clean(text_f)
 
 
 def test_attestation_commissaire_apports_renders_single_selected_commissaire(
@@ -422,10 +473,13 @@ def test_elision_de_couvre_voyelle_consonne_h_aspire_onze() -> None:
 
 
 def _acte_price_line(text: str) -> str:
+    # n3 (Albane 2026-07-06) : l'ancre exclut le « de » car l'ELISION le transforme en « d’ »
+    # pour un montant a initiale vocalique (« le prix d’un euro ») -> ancrer sur « moyennant le
+    # prix » (invariant a l'elision), pas « moyennant le prix de ».
     for line in text.split("\n"):
-        if "moyennant le prix de" in line:
+        if "moyennant le prix" in line:
             return line
-    raise AssertionError("ligne de prix (« moyennant le prix de … ») absente de l'acte.")
+    raise AssertionError("ligne de prix (« moyennant le prix … ») absente de l'acte.")
 
 
 def _render_acte_with_price(
@@ -449,7 +503,11 @@ def _render_acte_with_price(
 def test_acte_price_singular_euro_for_one(tmp_path: Path) -> None:
     """12.6 / B1 (Akainu 2026-07-06) — VALEUR : un prix de 1 € rend « un euro » (SINGULIER),
     JAMAIS « un euros ». Le front pose les lettres sans unite (« un ») ; l'acte accorde via
-    `euro_word`. Anti double-euro (« euro euro ») verifie aussi."""
+    `euro_word`. Anti double-euro (« euro euro ») verifie aussi.
+
+    n3 (Albane 2026-07-06) — ELISION euphonique : « de un euro » -> « d’un euro » (apostrophe
+    courbe U+2019) sur le prix UNITAIRE et le prix TOTAL. On verrouille la forme elidee ET
+    l'absence de la forme non elidee « de un euro »."""
     line = _acte_price_line(
         _render_acte_with_price(
             tmp_path,
@@ -459,8 +517,10 @@ def test_acte_price_singular_euro_for_one(tmp_path: Path) -> None:
             prix_total_lettres="un",
         )
     )
-    assert "un euro (1 €) part cédée" in line  # unitaire : singulier + lisible + €
-    assert "soit un prix de un euro (1 €)" in line  # total : singulier
+    # n3 : elision « d’un euro » (unitaire + total), plus de « de un euro ».
+    assert "le prix d’un euro (1 €) part cédée" in line  # unitaire : elide + singulier + € lisible
+    assert "soit un prix d’un euro (1 €)" in line  # total : elide + singulier
+    assert "de un euro" not in line  # forme non elidee proscrite (n3)
     assert "un euros" not in line  # accord incorrect proscrit
     assert "euro euro" not in line  # anti double-unite
     assert "(1) part" not in line  # plus de chiffre nu sans unite avant « part »

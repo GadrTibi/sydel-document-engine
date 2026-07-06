@@ -91,6 +91,9 @@ from sydel_doc_engine.generators.lot_05.acte_cession_parts_spfpl import (
 from sydel_doc_engine.generators.lot_05.attestation_capital_liste_souscripteurs import (
     AttestationCapitalListeSouscripteursGenerator,
 )
+from sydel_doc_engine.generators.lot_05.attestation_capital_liste_souscripteurs_cession import (
+    AttestationCapitalListeSouscripteursCessionGenerator,
+)
 from sydel_doc_engine.generators.lot_05.attestation_capital_liste_souscripteurs_sas import (
     AttestationCapitalListeSouscripteursSasGenerator,
 )
@@ -182,6 +185,9 @@ SPFPL_ACTE_CESSION_PARTS_DOCUMENT_ID = "DOC-040"
 SPFPL_CONTRAT_APPORT_DOCUMENT_ID = "DOC-041"
 SPFPL_ATTESTATION_CAPITAL_DOCUMENT_ID = "DOC-042"
 SPFPL_ATTESTATION_COMMISSAIRE_DOCUMENT_ID = "DOC-043"
+# Attestation capital / liste des souscripteurs SPFPL, VARIANTE CESSION (retour Albane 11) :
+# le bundle cession n'en produisait aucune ; le modele source cession existe et est cable ici.
+SPFPL_ATTESTATION_CAPITAL_CESSION_DOCUMENT_ID = "DOC-051"
 SCM_SATELLITES_DOCUMENT_IDS = {
     "DOC-026": "pacte_associes",
     "DOC-027": "contrat_frais_communs",
@@ -238,6 +244,7 @@ def build_generator_registry() -> dict[str, DocumentGenerator]:
         "DOC-040": ActeCessionPartsSpfplGenerator(),
         "DOC-041": ContratApportSpfplGenerator(),
         "DOC-042": AttestationCapitalListeSouscripteursGenerator(),
+        "DOC-051": AttestationCapitalListeSouscripteursCessionGenerator(),
         "DOC-043": AttestationCommissaireApportsGenerator(),
         "DOC-025": StatutsScmGenerator(),
         "DOC-026": PacteAssociesScmGenerator(),
@@ -362,6 +369,8 @@ def _non_regime_document_enabled(  # noqa: C901
         return _spfpl_apport_document_enabled(ctx)
     if document.doc_id == SPFPL_ATTESTATION_CAPITAL_DOCUMENT_ID:
         return _spfpl_attestation_capital_enabled(ctx)
+    if document.doc_id == SPFPL_ATTESTATION_CAPITAL_CESSION_DOCUMENT_ID:
+        return _spfpl_attestation_capital_cession_enabled(ctx)
     if document.doc_id == SPFPL_ATTESTATION_COMMISSAIRE_DOCUMENT_ID:
         return _spfpl_apport_document_enabled(ctx)
     if document.doc_id in SCM_SATELLITES_DOCUMENT_IDS:
@@ -544,6 +553,17 @@ def _spfpl_apport_document_enabled(ctx: DocumentGenerationContext) -> bool:
 
 def _spfpl_attestation_capital_enabled(ctx: DocumentGenerationContext) -> bool:
     if not _spfpl_apport_document_enabled(ctx):
+        return False
+    if ctx.capital_souscription is None:
+        return False
+    return len(ctx.capital_souscription.souscripteurs) == 1
+
+
+def _spfpl_attestation_capital_cession_enabled(ctx: DocumentGenerationContext) -> bool:
+    # Retour Albane 11 : l'attestation capital VARIANTE CESSION est produite pour toute
+    # cession SPFPL a UN souscripteur (holding acquereur uniperso). Meme gate que l'apport
+    # (DOC-042), mais cote CESSION (structure « SPFPL cession » + operation cession).
+    if not _statuts_spfpl_enabled(ctx, ("SPFPL cession", "cession")):
         return False
     if ctx.capital_souscription is None:
         return False

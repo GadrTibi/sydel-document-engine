@@ -31,6 +31,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_spacer,
     new_document,
 )
+from sydel_doc_engine.utils.departements import departement_nom
 
 OUTPUT_FILENAME = "acte_cession_parts_scm.docx"
 
@@ -138,7 +139,7 @@ class ActeCessionPartsScmGenerator:
                 f"demeurant {required_text(cedant.adresse_affichee, 'scm_cession.cedant.adresse_affichee')}, "
                 f"{cedant_maritale_clause}. "
                 f"Inscrit au Tableau de l'ordre départemental des {_profession_ordre(ctx, cedant)} "
-                f"du {required_text(cedant.ordre.departemental if cedant.ordre else None, 'scm_cession.cedant.ordre.departemental')} "
+                f"du {departement_nom(required_text(cedant.ordre.departemental if cedant.ordre else None, 'scm_cession.cedant.ordre.departemental'))} "
                 f"sous le numéro {required_text(cedant.ordre.numero if cedant.ordre else None, 'scm_cession.cedant.ordre.numero')} "
                 f"et sous le numéro RPPS {required_text(cedant.numero_rpps, 'scm_cession.cedant.numero_rpps')}."
             ),

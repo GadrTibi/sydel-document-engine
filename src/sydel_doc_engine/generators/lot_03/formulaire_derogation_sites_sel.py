@@ -29,6 +29,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_paragraph,
     new_document,
 )
+from sydel_doc_engine.utils.departements import departement_nom
 
 OUTPUT_FILENAME = "formulaire_derogation_sites_sel_formulaire_a_completer.docx"
 
@@ -99,11 +100,14 @@ def _add_identification(
         docx,
         f"Dénomination de la SEL : {required_text(company.denomination, 'societe.denomination')}",
     )
+    dept_inscription = departement_nom(
+        required_text(inscription.departement, "societe.inscription_ordre.departement")
+    )
     add_paragraph(
         docx,
         (
             "Département d'inscription de la SEL : "
-            f"{required_text(inscription.departement, 'societe.inscription_ordre.departement')}"
+            f"{dept_inscription}"
         ),
     )
     add_paragraph(

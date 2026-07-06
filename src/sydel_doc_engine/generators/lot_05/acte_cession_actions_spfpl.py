@@ -30,6 +30,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_signature_lines,
     new_document,
 )
+from sydel_doc_engine.utils.departements import departement_nom
 
 OUTPUT_FILENAME = "acte_cession_actions_spfpl.docx"
 DOCUMENT_CODE = "CODE-ACTE-ACTIONS-001"
@@ -60,9 +61,11 @@ class ActeCessionActionsSpfplGenerator:
             societe_spfpl.numero_rcs,
             "societe_spfpl.numero_rcs",
         )
-        spfpl_ordre_departement = required_text(
-            societe_spfpl.departement_inscription_ordre,
-            "societe_spfpl.departement_inscription_ordre",
+        spfpl_ordre_departement = departement_nom(
+            required_text(
+                societe_spfpl.departement_inscription_ordre,
+                "societe_spfpl.departement_inscription_ordre",
+            )
         )
         rep_civilite = required_text(
             representant.civilite_affichage,
@@ -97,9 +100,11 @@ class ActeCessionActionsSpfplGenerator:
         )
         cible_rcs = required_text(societe_cible.ville_rcs, "societe_cible.ville_rcs")
         cible_numero_rcs = required_text(societe_cible.numero_rcs, "societe_cible.numero_rcs")
-        cible_ordre_departement = required_text(
-            societe_cible.departement_inscription_ordre,
-            "societe_cible.departement_inscription_ordre",
+        cible_ordre_departement = departement_nom(
+            required_text(
+                societe_cible.departement_inscription_ordre,
+                "societe_cible.departement_inscription_ordre",
+            )
         )
         cible_profession = required_text(
             societe_cible.profession_reglementee,
@@ -154,7 +159,7 @@ class ActeCessionActionsSpfplGenerator:
                 f"demeurant {person_address_display(cedant, 'cedant')}, "
                 f"{cedant_maritale_clause}, inscrit au tableau de l'Ordre des "
                 f"{required_text(cedant.profession_reglementee_pluriel, 'cedant.profession_reglementee_pluriel')} "
-                f"du {required_text(cedant.ordre.departement if cedant.ordre else None, 'cedant.ordre.departement')}, "
+                f"du {departement_nom(required_text(cedant.ordre.departement if cedant.ordre else None, 'cedant.ordre.departement'))}, "
                 "et sous le numéro RPPS "
                 f"{required_text(cedant.ordre.numero_rpps if cedant.ordre else None, 'cedant.ordre.numero_rpps')}."
             ),

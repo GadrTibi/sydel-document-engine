@@ -201,7 +201,10 @@ def test_note_information_generates_cession_wording(tmp_path: Path) -> None:
     text = _docx_text(output_path)
 
     assert output_path.name == "note_information.docx"
-    assert "prévoit d'acquérir" in text
+    # Apostrophe COURBE U+2019 + insecable (fidelite au modele, Akainu note m2/n2).
+    assert "prévoit d’acquérir" in text
+    assert "d'acquérir" not in text  # jamais l'apostrophe droite U+0027
+    assert "comme suit :" in text  # insecable avant « : » (typographie FR)
     assert "Après ladite cession" in text
     assert "SPFPL MARTIN, titulaire de 60 parts sociales" in text
     _assert_no_placeholders_or_options(text)

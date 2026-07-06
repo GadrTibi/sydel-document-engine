@@ -996,6 +996,33 @@ def build_seed_catalog() -> list[DocumentDefinition]:
             notes="Document parts distinct de l'acte actions DOC-029.",
         ),
         DocumentDefinition(
+            doc_id="DOC-051",
+            canonical_name="Attestation capital / liste des souscripteurs SPFPL (cession)",
+            generator_name="generate_attestation_capital_liste_souscripteurs_cession",
+            lot=5,
+            category=DocumentCategory.SPECIFIQUE,
+            structures=STATUTS_SPFPL_CESSION_STRUCTURES,
+            general_condition=(
+                "dossier.structure == SPFPL cession et dossier.options.cession == true"
+            ),
+            specific_conditions=[
+                "operation_spfpl.type == cession",
+                "un seul souscripteur",
+            ],
+            dynamic_associates=False,
+            grammar_variants=False,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path=(
+                "project/source_documents/spfpl/"
+                "Attestation sur le capital - cession - liste des souscripteurs.docx"
+            ),
+            specification_path="docs/delivery/lot_05_spfpl_spec_texte_v1.md",
+            notes=(
+                "Retour Albane 11 : variante cession de DOC-042 (capital en numeraire). "
+                "Bundle cession n'en produisait aucune ; modele source cession existant."
+            ),
+        ),
+        DocumentDefinition(
             doc_id="DOC-041",
             canonical_name="Contrat d'apport SEL vers SPFPL",
             generator_name="generate_contrat_apport_spfpl",

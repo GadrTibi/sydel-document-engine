@@ -199,6 +199,22 @@ def test_acte_cession_actions_generates_source_vocabulary_and_clean_docx(
     assert_no_unaccented_french(text)
 
 
+def test_acte_cession_actions_ordre_departement_numero_rendered_as_name(
+    tmp_path: Path,
+) -> None:
+    # Convention Albane 7.4/9.2 propagee aux surfaces SOCIETE de l'acte d'actions (Akainu
+    # DEPT M2) : dept de l'Ordre de la SPFPL ET de la cible en NUMERO « 77 » ->
+    # « Seine-et-Marne », jamais « de/du 77 ». Sans `departement_nom` cable sur ces 2
+    # surfaces, ce test echouerait (garde de regression sur le silo exact du tour 1).
+    ctx = _base_context()
+    ctx.societe_spfpl.departement_inscription_ordre = "77"
+    ctx.societe_cible.departement_inscription_ordre = "77"
+    text = _docx_text(ActeCessionActionsSpfplGenerator().generate(ctx, tmp_path))
+    assert "Seine-et-Marne" in text
+    assert "de 77" not in text
+    assert "du 77" not in text
+
+
 def test_acte_cession_actions_blocks_non_actions_context(tmp_path: Path) -> None:
     ctx = _base_context()
     ctx.operation_spfpl.nature_titres = "parts"

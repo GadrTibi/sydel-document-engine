@@ -18,6 +18,7 @@ from sydel_doc_engine.domain.models import (
 from sydel_doc_engine.generators.lot_05.scm_cession_common import mentions_conjoint
 from sydel_doc_engine.rendering.docx_builder import apply_style_profile
 from sydel_doc_engine.rendering.docx_template_fill import fill_docx_template
+from sydel_doc_engine.utils.departements import departement_nom
 
 DOCUMENT_CODE = "CODE-STATUTS-SAS-001"
 OUTPUT_FILENAME = "statuts_sas_spfpl_medecins.docx"
@@ -128,8 +129,11 @@ def _build_replacements(data: _ResolvedStatutsSas) -> dict[str, str]:
         "[numero_rpps]": _required_text(
             ordre.numero_rpps, "actionnaire_unique.ordre.numero_rpps"
         ),
-        "[ordre_departemental]": _required_text(
-            ordre.departement, "actionnaire_unique.ordre.departement"
+        # Albane 7.4/9.2 (2026-07-06) : le departement de l'Ordre s'affiche par le NOM
+        # (« Seine-et-Marne »), plus par le numero (« 77 »). `departement_nom` convertit
+        # le numero (passthrough si deja un nom).
+        "[ordre_departemental]": departement_nom(
+            _required_text(ordre.departement, "actionnaire_unique.ordre.departement")
         ),
         "[qualification_principale]": _qualification(actionnaire),
         "[nom_banque]": data.banque_nom,

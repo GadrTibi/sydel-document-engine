@@ -348,6 +348,14 @@ CATALOG_DOCUMENTS: tuple[CatalogDocument, ...] = (
         DocumentAvailability.GENERATABLE,
     ),
     CatalogDocument(
+        "attestation_capital_spfpl_cession",
+        "Attestation sur le capital / liste des souscripteurs SPFPL (cession)",
+        "Attestation sur le capital - cession - liste des souscripteurs.docx",
+        "DOC-051",
+        DocumentAvailability.GENERATABLE,
+        "Retour Albane 11 : variante cession de DOC-042 (capital en numeraire).",
+    ),
+    CatalogDocument(
         "attestation_commissaire_apports",
         "Attestation nomination commissaire aux apports",
         "attestation nomination commissaire aux apports - transforme.docx",
@@ -690,6 +698,11 @@ CATALOG_OCCURRENCES: tuple[DocumentOccurrence, ...] = (
         CaseType.SPFPL_CESSION, "autorisation_domiciliation", "Rappel source SPFPL cession"
     ),
     DocumentOccurrence(CaseType.SPFPL_CESSION, "note_information_spfpl", "SPFPL cession"),
+    DocumentOccurrence(
+        CaseType.SPFPL_CESSION,
+        "attestation_capital_spfpl_cession",
+        "SPFPL cession (retour Albane 11 : attestation capital en numeraire)",
+    ),
     DocumentOccurrence(
         CaseType.SPFPL_CESSION,
         "lettre_renonciation_associe",

@@ -4,6 +4,7 @@ import re
 from pathlib import Path
 
 from docx import Document
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 from sydel_doc_engine.domain.models import DocumentGenerationContext, SpfplPerson
 from sydel_doc_engine.generators.lot_05.scm_cession_common import mentions_conjoint
@@ -19,11 +20,8 @@ from sydel_doc_engine.generators.lot_05.spfpl_common import (
     required_text,
     validate_cession_context,
 )
-from sydel_doc_engine.rendering.docx_builder import (
-    add_hyphen_list_item,
-    add_paragraph,
-    new_document,
-)
+from sydel_doc_engine.rendering.docx_builder import new_document_from_model
+from sydel_doc_engine.utils.departements import departement_nom
 
 OUTPUT_FILENAME = "acte_cession_parts_spfpl.docx"
 _SOURCE_NAME = "Acte_cession_SPFPL_tiers_part_modele.docx"
@@ -129,24 +127,31 @@ class ActeCessionPartsSpfplGenerator:
         )
         repartition = _repartition_lines(ctx)
 
+        # 12.1 (Albane 2026-07-06) : RESTAURATION DE LA MISE EN FORME (« quasi illisible »). Le
+        # generateur reconstruisait le corps dans un `new_document()` a plat (tout JUSTIFY/None,
+        # 0 paragraphe vide, aucun gras/centrage) et JETAIT les 145 paragraphes vides d'aeration
+        # du modele -> forme perdue. On herite desormais la FORME du modele via
+        # `new_document_from_model` (marges, page, styles, header/footer, police charte SYDEL) puis
+        # on RECOPIE chaque paragraphe du modele — vides COMPRIS — en reproduisant son alignement,
+        # son espacement et le gras/italique/souligne de CHAQUE run, avec token-replacement PAR RUN.
+        # Aucun token du modele ne traverse une frontiere de run (verifie 2026-07-06) -> le
+        # remplacement par run preserve la forme sans casser les fixes 12.2-12.7 ni l'elision n3.
         source = Document(str(_source_path()))
-        docx = new_document()
+        docx = new_document_from_model(_source_path())
         repartition_block_open = False
         for paragraph in source.paragraphs:
             text = paragraph.text
             if _is_repartition_row(text, repartition_block_open):
-                # Premiere ligne d'un bloc de repartition -> emettre la liste dynamique ;
-                # lignes suivantes du meme bloc fige (personne_2/3) -> absorbees.
+                # Premiere ligne d'un bloc de repartition -> emettre la liste dynamique (fidele au
+                # modele : paragraphe JUSTIFY prefixe « -\t », une ligne par associe reel) ; lignes
+                # suivantes du meme bloc fige (personne_2/3) du modele -> absorbees.
                 if not repartition_block_open:
                     for line in repartition:
-                        add_hyphen_list_item(docx, line)
+                        self._add_repartition_paragraph(docx, line)
                 repartition_block_open = True
                 continue
             repartition_block_open = False
-            rendered = _replace(text, replacements).strip()
-            if not rendered:
-                continue
-            add_paragraph(docx, rendered)
+            self._copy_paragraph(docx, paragraph, replacements)
 
         # SP3 (Akainu M1/M2) : PAS de bloc signature ajoute — le modele source porte DEJA sa
         # ligne de signature (« Dr <cedant> / La société <cessionnaire> / Représentée par … »),
@@ -157,6 +162,48 @@ class ActeCessionPartsSpfplGenerator:
         output_path = output_dir / OUTPUT_FILENAME
         docx.save(output_path)
         return output_path
+
+    @staticmethod
+    def _copy_paragraph(docx, source_paragraph, replacements: dict[str, str]) -> None:
+        """Recopie un paragraphe du MODELE dans la sortie en preservant sa FORME (12.1).
+
+        Reproduit l'alignement, l'espacement (avant/apres, interligne) et le retrait du
+        paragraphe source, puis chaque run avec son gras / italique / souligne, en appliquant
+        le token-replacement PAR RUN (aucun token ne traverse une frontiere de run -> la mise
+        en forme est preservee sans casser les remplacements). Les paragraphes VIDES du modele
+        (aeration) sont recopies tels quels (aucun `continue` : la forme d'aeration est le
+        coeur du retour 12.1)."""
+        new_paragraph = docx.add_paragraph()
+        new_paragraph.alignment = source_paragraph.alignment
+        source_format = source_paragraph.paragraph_format
+        new_format = new_paragraph.paragraph_format
+        new_format.space_before = source_format.space_before
+        new_format.space_after = source_format.space_after
+        new_format.line_spacing = source_format.line_spacing
+        # Retrait recopie DEFENSIVEMENT : certains paragraphes du modele portent une valeur de
+        # retrait non entiere en twips (« 708.9999… ») que python-docx ne sait pas relire (leve
+        # ValueError). Le retrait n'est pas structurant pour la lisibilite visee par 12.1
+        # (alignement + aeration + gras/centrage le sont) -> on ignore un retrait illisible plutot
+        # que d'echouer la generation.
+        for attribute in ("left_indent", "first_line_indent"):
+            try:
+                setattr(new_format, attribute, getattr(source_format, attribute))
+            except (ValueError, TypeError):
+                continue
+        for source_run in source_paragraph.runs:
+            new_run = new_paragraph.add_run(_replace(source_run.text, replacements))
+            new_run.bold = source_run.bold
+            new_run.italic = source_run.italic
+            new_run.underline = source_run.underline
+
+    @staticmethod
+    def _add_repartition_paragraph(docx, line: str) -> None:
+        """Emet une ligne de repartition dynamique, FIDELE au modele : paragraphe JUSTIFY
+        prefixe « -\\t » (le modele porte « -\\tDr <nom> détenant N parts » en JUSTIFY),
+        au lieu de l'ancienne liste a retrait suspendu qui aplatissait la forme (12.1)."""
+        paragraph = docx.add_paragraph()
+        paragraph.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+        paragraph.add_run(f"-\t{line}")
 
     def _build_replacements(
         self, ctx, cedant, cession_parts, societe_spfpl, societe_cible, representant
@@ -287,14 +334,27 @@ class ActeCessionPartsSpfplGenerator:
             # de l'Ordre -> « des chirurgiens-dentistes du Paris » (agrammatical). On rend la
             # preposition correcte via `elision_de` (« de Paris », « d’Ardeche ») avec une cle
             # COMBINEE qui consomme le « du » fige du modele (traitee avant le token simple).
+            # Albane 7.4/9.2 (2026-07-06) : le departement de l'Ordre s'affiche par le NOM
+            # (« Seine-et-Marne »), plus par le numero (« 77 »). `departement_nom` enveloppe la
+            # VALEUR ; `elision_de` reste la couche externe (12.4, preposition correcte).
             "du [ordre_departemental_cedant]": elision_de(
-                required_text(ordre.departement if ordre else None, "cedant.ordre.departement")
+                departement_nom(
+                    required_text(
+                        ordre.departement if ordre else None, "cedant.ordre.departement"
+                    )
+                )
             ),
             "du [departement_inscription_societe]": elision_de(
-                required_text(ordre.departement if ordre else None, "cedant.ordre.departement")
+                departement_nom(
+                    required_text(
+                        ordre.departement if ordre else None, "cedant.ordre.departement"
+                    )
+                )
             ),
-            "[ordre_departemental_cedant]": required_text(
-                ordre.departement if ordre else None, "cedant.ordre.departement"
+            "[ordre_departemental_cedant]": departement_nom(
+                required_text(
+                    ordre.departement if ordre else None, "cedant.ordre.departement"
+                )
             ),
             "[profession_reglementee]": required_text(
                 cedant.profession_reglementee, "cedant.profession_reglementee"
@@ -321,8 +381,10 @@ class ActeCessionPartsSpfplGenerator:
                 societe_cible.numero_rcs, "societe_cible.numero_rcs"
             ),
             "[adresse_siege]": company_siege_display(societe_cible, "societe_cible"),
-            "[departement_inscription_societe]": required_text(
-                ordre.departement if ordre else None, "cedant.ordre.departement"
+            "[departement_inscription_societe]": departement_nom(
+                required_text(
+                    ordre.departement if ordre else None, "cedant.ordre.departement"
+                )
             ),
             # 12.3 (Albane 2026-07-06) : « d’[valeur…] de valeur nominale ». La valeur porte
             # desormais l'unite accordee (« cent euros » / « un euro », cf. valeur_nominale_display)
@@ -372,8 +434,17 @@ class ActeCessionPartsSpfplGenerator:
             # (a) accorder « euro(s) » au prix UNITAIRE et (b) inverser l'ordre du prix TOTAL en
             # LETTRES puis CHIFFRES. La cle unitaire consomme le « euro » fige du modele (l'unite
             # accordee est deja dans `prix_unitaire_fragment`) ; la cle totale consomme « € (…) ».
-            "[prix_unitaire_part_lettres] ([prix_unitaire_part]) euro": prix_unitaire_fragment,
-            "[prix_cession] € ([prix_cession_lettres])": prix_cession_fragment,
+            # n3 (Albane 2026-07-06) : ELISION euphonique « de un euro » -> « d’un euro ». Le
+            # modele colle un « de » LITTERAL devant chaque prix (« le prix de … », « un prix
+            # de … ») ; on etend la cle combinee pour consommer AUSSI ce « de » fige et rendre la
+            # preposition via `elision_de` (« d’un euro » pour 1, « de mille euros » pour >1). La
+            # cle la plus longue (avec « le prix »/« un prix ») est traitee avant les tokens.
+            "le prix de [prix_unitaire_part_lettres] ([prix_unitaire_part]) euro": (
+                f"le prix {elision_de(prix_unitaire_fragment)}"
+            ),
+            "un prix de [prix_cession] € ([prix_cession_lettres])": (
+                f"un prix {elision_de(prix_cession_fragment)}"
+            ),
             "[prix_unitaire_part]": required_text(
                 cession_parts.prix_unitaire, "cession_parts.prix_unitaire"
             ),

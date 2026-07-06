@@ -15,6 +15,7 @@ from sydel_doc_engine.domain.models import (
     SpfplRepresentant,
 )
 from sydel_doc_engine.generators.lot_05.scm_cession_common import mentions_conjoint
+from sydel_doc_engine.utils.departements import departement_nom
 from sydel_doc_engine.utils.grammar import elision_de, euro_word  # noqa: F401
 
 DOCUMENT_CODE = "CODE-SPFPL-AGR-INFO-001"
@@ -263,10 +264,13 @@ def ordre_sentence(person: SpfplPerson, field_name: str) -> str:
         person.profession_reglementee_pluriel,
         f"{field_name}.profession_reglementee_pluriel",
     )
+    ordre_departement = departement_nom(
+        required_text(person.ordre.departement, f"{field_name}.ordre.departement")
+    )
     return (
         "Inscrit au Tableau de l'ordre départemental des "
         f"{profession_pluriel} "
-        f"du {required_text(person.ordre.departement, f'{field_name}.ordre.departement')} "
+        f"du {ordre_departement} "
         "sous le numéro RPPS "
         f"{required_text(person.ordre.numero_rpps, f'{field_name}.ordre.numero_rpps')}."
     )

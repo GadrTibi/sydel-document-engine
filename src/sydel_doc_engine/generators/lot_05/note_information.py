@@ -21,13 +21,14 @@ from sydel_doc_engine.generators.lot_05.spfpl_common import (
 from sydel_doc_engine.rendering.docx_builder import (
     add_hyphen_list_item,
     add_paragraph,
+    add_spacer,
     new_document,
 )
 
 OUTPUT_FILENAME = "note_information.docx"
 
 OPERATION_PHRASES = {
-    OPERATION_CESSION: "d'acquérir",
+    OPERATION_CESSION: "d’acquérir",
     OPERATION_APPORT: "de recevoir en apport en nature",
 }
 
@@ -47,14 +48,34 @@ class NoteInformationGenerator:
         party = operation_party(ctx)
         nb_titres = _operation_nb_titres(ctx, operation_type)
 
+        # Retour Albane 8.1 (2026-07) : « Reprendre la mise en forme selon le modèle d'origine
+        # (lisible). » La note était générée À PLAT (10 paragraphes, aucune aération, titres et
+        # signature non centrés, corps non justifié) alors que le MODÈLE source
+        # (project/source_documents/lot_05/NOTE D'INFORMATION.docx) a 19 paragraphes avec des
+        # LIGNES VIDES d'aération, des titres CENTRÉS/gras, un corps JUSTIFIÉ et un bloc signature
+        # centré. On reproduit fidèlement cette FORME (le TEXTE et le fix 8.2 sur nb_titres restent
+        # inchangés). Cartographie modèle -> code (indices modèle entre crochets) :
+        #   [00] titre centré gras · [01] vide · [02]+[03] sous-titre + dénomination centrés gras
+        #   [04][05] vides · [06] intro justifiée · [07] vide · [08] intro décomposition justifiée
+        #   [09] vide · [10..] lignes tiret justifiées · [12][13] vides · [14] trait signature
+        #   justifié gras · [15] nom signataire centré gras · [16] fonction centrée · [17][18] vides
         docx = new_document()
-        add_paragraph(docx, "Note d'informations", alignment=WD_ALIGN_PARAGRAPH.CENTER, bold=True)
-        add_paragraph(docx, "Constitution de la Société", bold=True)
+        add_paragraph(docx, "Note d’informations", alignment=WD_ALIGN_PARAGRAPH.CENTER, bold=True)
+        add_spacer(docx)  # [01] ligne vide d'aération (modèle)
+        add_paragraph(
+            docx,
+            "Constitution de la Société",
+            alignment=WD_ALIGN_PARAGRAPH.CENTER,
+            bold=True,
+        )
         add_paragraph(
             docx,
             required_text(societe_spfpl.denomination, "societe_spfpl.denomination"),
+            alignment=WD_ALIGN_PARAGRAPH.CENTER,
             bold=True,
         )
+        add_spacer(docx)  # [04] ligne vide d'aération (modèle)
+        add_spacer(docx)  # [05] ligne vide d'aération (modèle)
         add_paragraph(
             docx,
             (
@@ -70,25 +91,41 @@ class NoteInformationGenerator:
                 f"au capital de {_capital_social_cible(societe_cible)} "
                 "divisé en "
                 f"{required_int(societe_cible.nb_parts_total, 'societe_cible.nb_parts_total')} "
-                "parts, dont le siège social est situé "
+                "parts, dont le siège social est situé "
                 f"{company_siege_display(societe_cible, 'societe_cible')}, immatriculée au "
                 f"RCS de {required_text(societe_cible.ville_rcs, 'societe_cible.ville_rcs')} "
                 f"sous le numéro {_numero_rcs_cible(societe_cible)}."
             ),
             alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
         )
+        add_spacer(docx)  # [07] ligne vide d'aération (modèle)
         add_paragraph(
             docx,
             (
                 f"Après {OPERATION_NOMS[operation_type]}, le capital de la "
                 f"{required_text(societe_cible.denomination, 'societe_cible.denomination')} "
-                "sera décomposé comme suit :"
+                "sera décomposé comme suit :"
             ),
+            alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
         )
+        add_spacer(docx)  # [09] ligne vide avant la liste (modèle)
         for line in capital_after_lines(ctx):
-            add_hyphen_list_item(docx, line)
-        add_paragraph(docx, "________________________", space_before_pt=12)
-        add_paragraph(docx, person_signature(party, _party_field_name(operation_type)))
+            add_hyphen_list_item(docx, line, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY)
+        add_spacer(docx)  # [12] ligne vide d'aération (modèle)
+        add_spacer(docx)  # [13] ligne vide d'aération (modèle)
+        add_paragraph(
+            docx,
+            "________________________",
+            alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
+            bold=True,
+            space_before_pt=12,
+        )
+        add_paragraph(
+            docx,
+            person_signature(party, _party_field_name(operation_type)),
+            alignment=WD_ALIGN_PARAGRAPH.CENTER,
+            bold=True,
+        )
         dirigeant = societe_spfpl.dirigeant
         fonction = required_text(
             dirigeant.fonction if dirigeant else None,
@@ -100,7 +137,10 @@ class NoteInformationGenerator:
                 f"{fonction} de la "
                 f"{required_text(societe_spfpl.denomination, 'societe_spfpl.denomination')}"
             ),
+            alignment=WD_ALIGN_PARAGRAPH.CENTER,
         )
+        add_spacer(docx)  # [17] ligne vide de fin (modèle)
+        add_spacer(docx)  # [18] ligne vide de fin (modèle)
 
         output_dir.mkdir(parents=True, exist_ok=True)
         output_path = output_dir / OUTPUT_FILENAME

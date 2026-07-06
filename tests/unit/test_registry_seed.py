@@ -6,9 +6,10 @@ from sydel_doc_engine.registry.catalog import build_seed_catalog
 def test_seed_catalog_contains_fifty_documents() -> None:
     # DOC-046 (statuts SELAS uni dentiste) -> 46 ; DOC-047 (micro holding) -> 47 ;
     # DOC-048/049/050 (SASU Holding : statuts + PV remuneration president + liste
-    # souscripteurs, modele officiel Albane 2026-06-29) -> 50.
+    # souscripteurs, modele officiel Albane 2026-06-29) -> 50. DOC-051 (attestation
+    # capital cession - liste des souscripteurs, retour Albane 11 du 2026-07-06) -> 51.
     catalog = build_seed_catalog()
-    assert len(catalog) == 50
+    assert len(catalog) == 51
 
 
 def test_seed_catalog_contains_lot_one_to_lot_five_entries() -> None:

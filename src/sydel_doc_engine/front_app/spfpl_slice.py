@@ -111,6 +111,10 @@ SPFPL_CESSION_NOTE_CODE = "DOC-037"
 SPFPL_CESSION_ACTE_PARTS_CODE = "DOC-040"
 SPFPL_CESSION_PV_UNIQUE_CODE = "DOC-038"
 SPFPL_CESSION_PV_PLUSIEURS_CODE = "DOC-039"
+# Attestation capital / liste des souscripteurs, VARIANTE CESSION (retour Albane 11) : le
+# bundle cession n'en produisait aucune ; on cable le modele source cession existant. Le
+# capital de la holding acquereuse est en NUMERAIRE (vs apport en nature cote DOC-042).
+SPFPL_CESSION_ATTESTATION_CAPITAL_CODE = "DOC-051"
 
 # Activite standard d'une SPFPL (societe de participations financieres de
 # profession liberale) — boilerplate du type, pas une donnee de dossier.
@@ -345,7 +349,11 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
     ordre_departement = _t(col_r, prefix, "ordre_departement", "Departement ordre")
     numero_ordre = _t(col_s, prefix, "numero_ordre", "Numero ordre")
     numero_rpps = _t(col_t, prefix, "numero_rpps", "Numero RPPS")
-    ordre_conseil = _t(st, prefix, "ordre_conseil", "Conseil departemental")
+    # Retour Albane 9.4 (2026-07-06) : le champ « Conseil departemental » est RETIRE.
+    # Le destinataire de la demande d'inscription (DOC-034) est DERIVE de « Departement
+    # ordre » (+ connecteur) via `_conseil_departemental_lines` ; ce champ libre
+    # `ordre_conseil` ne pilotait plus rien (vestigial) -> retire. Meme cleanup que la
+    # SELAS uni medecin (Rafael 2026-06-25 #3).
     # O24-03 : adresse de l'ordre sur UNE ligne (parse interne -> ligne_1/cp/ville),
     # comme siege/perso/SELAS. Remplace les 3 champs separes ; alimente les MEMES cles
     # -> generateur DOC-034 et gold byte-identique inchanges.
@@ -522,7 +530,6 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
         "ordre_president_feminin": ordre_president_feminin,
         "mandataire_prenom": mandataire_prenom,
         "mandataire_nom": mandataire_nom,
-        "ordre_conseil": ordre_conseil,
         "ordre_adresse_ligne_1": ordre_adresse_ligne_1,
         "ordre_cp": ordre_cp,
         "ordre_ville": ordre_ville,
@@ -577,6 +584,7 @@ def build_spfpl_plan(payload: dict[str, object]) -> SpfplSlicePlan:
             SPFPL_CESSION_NOTE_CODE,
             pv_code,
             SPFPL_CESSION_ACTE_PARTS_CODE,
+            SPFPL_CESSION_ATTESTATION_CAPITAL_CODE,
         )
     blockers = _validate(payload)
     warnings = [
@@ -646,7 +654,6 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:  # noqa: C901
         ("adresse_ville", "Ville personnelle requise (declaration)."),
         ("nom_pere", "Nom du pere requis (declaration)."),
         ("nom_mere", "Nom de la mere requis (declaration)."),
-        ("ordre_conseil", "Conseil departemental de l'ordre requis (demande inscription)."),
         ("ordre_adresse_ligne_1", "Adresse de l'ordre requise (demande inscription)."),
         ("ordre_cp", "Code postal de l'ordre requis (demande inscription)."),
         ("ordre_ville", "Ville de l'ordre requise (demande inscription)."),
@@ -1398,7 +1405,9 @@ def _spfpl_ordre_professionnel(payload: dict[str, object]) -> OrdreProfessionnel
     ville = str(payload.get("ordre_ville") or "")
     bloc = f"{ligne_1}\n{cp} {ville}"
     return OrdreProfessionnel(
-        conseil_departemental_libelle=str(payload.get("ordre_conseil") or ""),
+        # conseil_departemental_libelle : champ vestigial retire du front (retour Albane
+        # 9.4). Le libelle destinataire est DERIVE de departement_inscription (+ connecteur)
+        # par le generateur DOC-034 -> on n'alimente plus ce champ (vide, jamais rendu).
         departement_inscription=str(payload.get("ordre_departement") or ""),
         destinataire_appel=(
             "Madame la Présidente"

@@ -23,6 +23,7 @@ from sydel_doc_engine.generators.lot_05.spfpl_common import (
     required_text,
     validate_apport_context,
 )
+from sydel_doc_engine.utils.departements import departement_nom
 
 OUTPUT_FILENAME = "contrat_apport_spfpl.docx"
 _SOURCE_NAME = "Contrat d_apport SEL SPFPL.docx"
@@ -196,8 +197,11 @@ class ContratApportSpfplGenerator:
             "[ordre_professionnel]": required_text(
                 ordre.professionnel if ordre else None, "apporteur.ordre.professionnel"
             ),
-            "[departement_ordre]": required_text(
-                ordre.departement if ordre else None, "apporteur.ordre.departement"
+            # Albane 7.4/9.2 (2026-07-06) : departement de l'Ordre rendu par le NOM, plus le numero.
+            "[departement_ordre]": departement_nom(
+                required_text(
+                    ordre.departement if ordre else None, "apporteur.ordre.departement"
+                )
             ),
             "[numero_ordre]": required_text(
                 ordre.numero if ordre else None, "apporteur.ordre.numero"

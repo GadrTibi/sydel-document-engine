@@ -32,6 +32,7 @@ from sydel_doc_engine.rendering.docx_builder import (
 from sydel_doc_engine.rendering.docx_builder import (
     add_signature_table as _add_signature_table,
 )
+from sydel_doc_engine.utils.departements import departement_nom
 from sydel_doc_engine.utils.grammar import elision_de, euro_word
 
 DOCUMENT_CODE = "CODE-STATUTS-SELAS-MULTI-001"
@@ -464,11 +465,14 @@ def _add_physical_comparution(
     )
     # Source para 17 : "Inscrit(e) au tableau du conseil de l'ordre des [profession_pluriel] du
     # [ordre_dep] sous le numero departemental [numero_ordre], et sous le numero RPPS [rpps]."
+    ordre_dep = departement_nom(
+        _required_text(associe.ordre_departemental, "associes[].ordre_departemental")
+    )
     add_paragraph(
         document,
         f"{inscrit} au tableau du conseil de l’ordre des "
         f"{profession_pluriel} "
-        f"du {_required_text(associe.ordre_departemental, 'associes[].ordre_departemental')} "
+        f"du {ordre_dep} "
         "sous le numéro départemental "
         f"{_required_text(associe.numero_ordre, 'associes[].numero_ordre')}, "
         "et sous le numéro RPPS "
@@ -644,6 +648,9 @@ def _add_physical_comparution_dentiste(
     feminin = _associe_est_feminin(associe)
     ne = "née" if feminin else "né"
     inscrit = "inscrite" if feminin else "inscrit"
+    ordre_dep = departement_nom(
+        _required_text(associe.ordre_departemental, "associes[].ordre_departemental")
+    )
     add_paragraph(
         document,
         f"{_person_label(associe)}, "
@@ -655,7 +662,7 @@ def _add_physical_comparution_dentiste(
         f"{_required_text(associe.situation_maritale, 'associes[].situation_maritale')}, "
         f"demeurant {_person_address(associe)}, "
         f"{inscrit} au tableau de l’Ordre des {profession_pluriel} "
-        f"de {_required_text(associe.ordre_departemental, 'associes[].ordre_departemental')} "
+        f"de {ordre_dep} "
         "sous le numéro national "
         f"{_required_text(associe.numero_ordre, 'associes[].numero_ordre')} "
         f"et sous le numéro RPPS {_required_text(associe.numero_rpps, 'associes[].numero_rpps')}.",

@@ -31,6 +31,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_statuts_title_box,
     new_document,
 )
+from sydel_doc_engine.utils.departements import departement_nom
 from sydel_doc_engine.utils.grammar import apply_gender_pairs, euro_word
 
 DOCUMENT_CODE = "CODE-STATUTS-SEL-001"
@@ -362,9 +363,14 @@ def add_ordre_replacements(
                 associate.ordre.numero_rpps,
                 "associes[0].ordre.numero_rpps",
             ),
-            "[ordre_departemental]": required_text(
-                associate.ordre.departement,
-                "associes[0].ordre.departement",
+            # Albane 7.4/9.2 (2026-07-06) : le departement de l'Ordre s'affiche par le NOM
+            # (« Seine-et-Marne »), plus par le numero (« 77 »). Ne PAS toucher [ville_ordre]
+            # ci-dessous : c'est la VILLE (fallback departement) pour le template medecin.
+            "[ordre_departemental]": departement_nom(
+                required_text(
+                    associate.ordre.departement,
+                    "associes[0].ordre.departement",
+                )
             ),
             "[ville_ordre]": required_text(
                 associate.ordre.ville or associate.ordre.departement,
@@ -700,7 +706,10 @@ def _multi_physique_identite(
     ne = "née" if feminin else "né"
     inscrit = "Inscrite" if feminin else "Inscrit"
     profession = required_text(membre.profession, "membres[].profession")
-    ordre_dep = required_text(membre.ordre_departemental, "membres[].ordre_departemental")
+    # Albane 7.4/9.2 (2026-07-06) : departement de l'Ordre rendu par le NOM, plus le numero.
+    ordre_dep = departement_nom(
+        required_text(membre.ordre_departemental, "membres[].ordre_departemental")
+    )
     identite = (
         f"{_membre_person_label(membre)}, {profession}, "
         f"{ne} le {format_display_date(membre.date_naissance, 'membres[].date_naissance')} "
