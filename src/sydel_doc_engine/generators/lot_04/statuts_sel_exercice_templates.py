@@ -627,8 +627,10 @@ STATUTS_SELAS_MEDECIN_BLOCKS: tuple[str, ...] = (
     'ARTICLE 8 – CAPITAL SOCIAL',
     'Le capital social est fixé à la somme de [capital_lettres] ([capital_social] euros).',
     # Retour Albane « mise en forme » 2.3 : ajouter le mot « euro » (accorde) apres la valeur
-    # nominale en lettres (« ...actions d'un euro (1 €) chacune »).
-    'Il est divisé en [nb_actions_lettres] ([nb_actions]) actions d’[valeur_nominale_action_lettres] [euro_nominal_word] ([valeur_nominale_action] €) chacune, entièrement libérées, et attribuées en totalité à l’[qualite_associe_article_8], [civilite] [prenom] [nom].',
+    # nominale en lettres (« ...actions d'un euro (1 €) chacune »). 7.5 (Albane 2026-07-06) :
+    # token unique [valeur_nominale_action_avec_unite] = lettres + unite composees (ENTIER
+    # « un euro » byte-identique ; DECIMAL « un centime d'euro », pas de double euro / espace).
+    'Il est divisé en [nb_actions_lettres] ([nb_actions]) actions d’[valeur_nominale_action_avec_unite] ([valeur_nominale_action] €) chacune, entièrement libérées, et attribuées en totalité à l’[qualite_associe_article_8], [civilite] [prenom] [nom].',
     'En aucun cas la répartition du capital ne pourra être modifiée dans des conditions qui retireraient la majorité des droits de vote aux associés exerçant dans la société.',
     "Conformément à l’article 44 de l’ordonnance n°2023-77 du 8 février 2023, une fois par an, la société adresse à l'autorité compétente en matière d'agrément ou d'inscription à l'ordre professionnel dont elle relève, un état de la composition de son capital social et des droits de vote afférents, ainsi qu'une version à jour de ses statuts.",
     'ARTICLE 9 - QUALITÉ D’ASSOCIÉ',
@@ -915,9 +917,10 @@ STATUTS_SELAS_DENTISTE_BLOCKS: tuple[str, ...] = (
     'Cette somme a été déposée au crédit du compte ouvert dans les livres de la Banque [nom_banque], [adresse_banque].',
     # Retour Albane « mise en forme » 2.3 (propagation DENTISTE) : ajouter le mot
     # « euro » (accorde) apres la valeur nominale en lettres (« actions de 1 €
-    # (un euro) chacune »). Le token [euro_nominal_word] rend « euro » / « euros »
-    # selon la valeur nominale. Le mot euro manquait sur ce modele (present cote MEDECIN).
-    'Le capital social est fixé à la somme de [capital_social] € ([capital_lettres]) euros divisé en [nb_actions] actions de [valeur_nominale_action] € ([valeur_nominale_action_lettres] [euro_nominal_word]) chacune, entièrement libéré et attribué comme suit\xa0: ',
+    # (un euro) chacune »). 7.5 (Albane 2026-07-06) : token unique
+    # [valeur_nominale_action_avec_unite] = lettres + unite composees (ENTIER
+    # « un euro » byte-identique ; DECIMAL « un centime d'euro », pas de double euro).
+    'Le capital social est fixé à la somme de [capital_social] € ([capital_lettres]) euros divisé en [nb_actions] actions de [valeur_nominale_action] € ([valeur_nominale_action_avec_unite]) chacune, entièrement libéré et attribué comme suit\xa0: ',
     # Répartition uni : un seul attributaire (associé unique).
     '- [civilite] [prenom] [nom], [nb_actions_lettres] actions ',
     'Ci\t\t\t\t\t\t\t\t\t\t\t[nb_actions] actions',

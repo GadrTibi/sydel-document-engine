@@ -75,6 +75,7 @@ from sydel_doc_engine.front_app.field_derivations import (
     is_capital_divisible,
     matrimonial_status_value,
     number_words_from_value,
+    prix_lettres_from_value,
     regime_communautaire_from_status,
     regime_matrimonial_from_status,
     situation_display,
@@ -91,6 +92,7 @@ from sydel_doc_engine.front_app.front_widgets import (
     seed_signature_lieu,
     siege_same_as_perso_checkbox,
 )
+from sydel_doc_engine.utils.grammar import _has_real_decimal, monetary_words_from_value
 
 OPERATION_BY_STRUCTURE: dict[str, tuple[str, str]] = {
     "SPFPL cession": ("cession", "DOC-035"),
@@ -883,9 +885,9 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
             # B1 (Akainu 2026-07-06) : lettres SANS unite figee (« un », « mille »), comme la
             # valeur nominale art.8. L'acte accorde « euro(s) » au MONTANT via `euro_word`
             # (« un euro » pour 1, « mille euros » pour 1000) -> plus de « un euros » fige.
-            prix_unitaire_lettres=number_words_from_value(prix_unitaire_num),
+            prix_unitaire_lettres=prix_lettres_from_value(prix_unitaire_num),
             prix_total=format_grouped_numeric_value(prix_total_num),
-            prix_total_lettres=number_words_from_value(prix_total_num),
+            prix_total_lettres=prix_lettres_from_value(prix_total_num),
             nombre_exemplaires_lettres="trois",
         )
     ctx = DocumentGenerationContext(
@@ -1031,9 +1033,7 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         actionnaire_unique=founder,
         apport=Apport(
             montant=str(payload.get("apport_montant") or ""),
-            montant_lettres=(number_words_from_value(payload.get("apport_montant")) + " euros")
-            if number_words_from_value(payload.get("apport_montant"))
-            else str(payload.get("apport_montant") or ""),
+            montant_lettres=_montant_apport_lettres(payload.get("apport_montant")),
         ),
         depot_fonds=DepotFonds(
             banque=CessionBanque(
@@ -1350,6 +1350,23 @@ def _render_spfpl_cession_cible(prefix: str) -> dict[str, object]:
         "cible_siege_affiche": cible_siege_affiche,
         "associes": associes,
     }
+
+
+def _montant_apport_lettres(value: object) -> str:
+    """Montant d'apport en lettres AVEC « euros », robuste au DECIMAL (anti double-euro).
+
+    ENTIER : mots nus + « euros » (byte-identique au rendu historique). DECIMAL (7.5,
+    containment 2026-07-06) : on CALCULE la phrase monetaire complete DEPUIS LA FIGURE via
+    `monetary_words_from_value` (« un centime d'euro ») — `number_words_from_value` ne rend plus
+    que la FIGURE sur un decimal, il ne faut plus s'y fier ici. Valeur illisible : figure brute
+    (comportement historique)."""
+    if _has_real_decimal(value):
+        phrase = monetary_words_from_value(value)
+        return phrase or str(value or "")
+    lettres = number_words_from_value(value)
+    if not lettres:
+        return str(value or "")
+    return lettres + " euros"
 
 
 def _parse_amount(value: object) -> int:

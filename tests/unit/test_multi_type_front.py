@@ -519,9 +519,13 @@ def test_spfpl_capital_divisible_by_actions_ok() -> None:
 
 def test_valeur_nominale_decimale_rendue_n1() -> None:
     # N1 (Rafael/Vincent 2026-06-24) : la valeur nominale PEUT etre decimale, PARTOUT. La FIGURE
-    # est arrondie au centime + format FR (« 1,25 »). La mise en LETTRES monetaire d'un decimal
-    # n'est PAS ratifiee -> on met la FIGURE dans le slot lettres (non vide = ni crash ni marqueur,
-    # sans unite = pas de double « euro » ; Akainu 2026-06-24 ; cf. QUESTIONS_RAFAEL).
+    # est arrondie au centime + format FR (« 1,25 »).
+    # Containment 2026-07-06 (re-architecture) : `number_words_from_value` N'EST PLUS
+    # decimal-aware globalement (cause de doubles-euros en cascade). Un decimal -> la FIGURE en
+    # format FR (« 0,01 »), sure pour TOUTE recomposition « lettres + euro » separee ; l'entier
+    # reste des mots NUS (« dix »). La phrase monetaire « un centime d'euro » (Albane 7.5) est
+    # LOCALISEE au SEUL point de composition `grammar.montant_lettres_avec_unite` (teste dans
+    # test_grammar.py + les tests SEL exercice ci-dessous).
     from decimal import Decimal
 
     from sydel_doc_engine.front_app.field_derivations import (
@@ -532,8 +536,42 @@ def test_valeur_nominale_decimale_rendue_n1() -> None:
     assert calculate_nominal_value("1000", 800) == "1,25"
     assert calculate_nominal_value("1000", 3) == "333,33"  # arrondi : plus de decimale infinie
     assert calculate_nominal_value("999", 3) == "333"  # entier reste propre
-    assert number_words_from_value(Decimal("1.25")) == "1,25"  # decimal -> figure (sans unite)
-    assert number_words_from_value(10) == "dix"  # entier inchange
+    # Containment : decimal -> FIGURE (jamais la phrase monetaire, qui doublerait « euro »).
+    assert number_words_from_value(Decimal("1.25")) == "1,25"
+    assert number_words_from_value("0,01") == "0,01"
+    assert number_words_from_value("0,50") == "0,5"
+    assert number_words_from_value("2,50") == "2,5"
+    assert number_words_from_value(10) == "dix"  # entier inchange (mots nus, sans unite)
+
+    # monetary_words_from_value : le batisseur monetaire dedie (formes standard FR).
+    from sydel_doc_engine.front_app.field_derivations import monetary_words_from_value
+
+    assert monetary_words_from_value("1") == "un euro"
+    assert monetary_words_from_value("100") == "cent euros"
+    assert monetary_words_from_value("0,01") == "un centime d’euro"
+    assert monetary_words_from_value("0,50") == "cinquante centimes d’euro"
+    assert monetary_words_from_value("2,50") == "deux euros et cinquante centimes"
+    assert monetary_words_from_value("1,01") == "un euro et un centime"
+
+    # prix_lettres_from_value : le PRIX n'est PAS ratifie en lettres (contrairement a la valeur
+    # nominale 7.5) -> entier = mots nus, DECIMAL = FIGURE (jamais la phrase monetaire, qui
+    # doublerait « euro » a la recomposition « <lettres> + euro_word »). Akainu M1/M2 2026-07-06.
+    from sydel_doc_engine.front_app.field_derivations import prix_lettres_from_value
+
+    assert prix_lettres_from_value("1") == "un"
+    assert prix_lettres_from_value("1000") == "mille"
+    assert prix_lettres_from_value("0,01") == "0,01"  # DECIMAL -> figure, PAS « un centime d'euro »
+    assert prix_lettres_from_value("2,5") == "2,5"
+    assert prix_lettres_from_value("") == ""
+
+    # _euro_amount_letters (prix cabinet SELARL, 3e surface) : recompose « <lettres> <euro> »
+    # -> sur un DECIMAL, jamais de double « euro » ni de phrase monetaire (regression Akainu M1).
+    from sydel_doc_engine.front_app.shell import _euro_amount_letters
+
+    assert _euro_amount_letters("100") == "cent euros"
+    assert _euro_amount_letters("1") == "un euro"
+    assert "euro euro" not in _euro_amount_letters("0,01")
+    assert "centime d’euro" not in _euro_amount_letters("2,50")
 
 
 def test_selas_ajout_associe_preserve_les_precedents_n5() -> None:

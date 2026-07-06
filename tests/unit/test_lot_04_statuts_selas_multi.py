@@ -159,9 +159,10 @@ def test_selas_multi_generates_clean_docx(tmp_path: Path) -> None:
 
 def test_selas_multi_valeur_nominale_decimale_n1(tmp_path: Path) -> None:
     # N1 (Akainu re-gate 2026-06-24) : une valeur nominale DECIMALE (1,25) doit GENERER le SELAS
-    # multi sans crash (_required_text levait sur lettres vide = BLOQUANT B1), sans marqueur
-    # « À COMPLÉTER » dans l'acte (M2), et sans DOUBLE « euro ». La mise en lettres d'un decimal
-    # = la FIGURE (number_words_from_value). Ce test est le verrou bout-en-bout qui manquait.
+    # multi sans crash ni marqueur « À COMPLÉTER », et sans DOUBLE « euro ».
+    # 7.5 (Albane 2026-07-06, verbatim RATIFIE) : la mise en LETTRES monetaire est desormais
+    # ratifiee -> 1,25 rend « un euro et vingt-cinq centimes (1,25 €) » (la figure entre
+    # parentheses est preservee). Plus de figure nue dans le slot lettres.
     from sydel_doc_engine.front_app.field_derivations import number_words_from_value
 
     ctx = _context(
@@ -182,10 +183,9 @@ def test_selas_multi_valeur_nominale_decimale_n1(tmp_path: Path) -> None:
     output_path = StatutsSelasMultiGenerator().generate(ctx, tmp_path)  # ne doit PAS lever
     text = _docx_text(output_path)
 
-    assert "1,25" in text  # figure decimale presente
+    assert "un euro et vingt-cinq centimes (1,25 €)" in text  # 7.5 : lettres + figure
     assert "À COMPLÉTER" not in text  # pas de marqueur technique dans l'acte
     assert "euro euro" not in text and "euros euro" not in text  # pas de double euro
-    assert "centimes" not in text  # pas de forme monetaire non ratifiee emise
 
 
 def test_selas_multi_asserts_source_wording(tmp_path: Path) -> None:

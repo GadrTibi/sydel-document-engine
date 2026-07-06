@@ -16,7 +16,11 @@ from sydel_doc_engine.domain.models import (
 )
 from sydel_doc_engine.generators.lot_05.scm_cession_common import mentions_conjoint
 from sydel_doc_engine.utils.departements import departement_nom
-from sydel_doc_engine.utils.grammar import elision_de, euro_word  # noqa: F401
+from sydel_doc_engine.utils.grammar import (  # noqa: F401
+    elision_de,
+    euro_word,
+    montant_lettres_avec_unite,
+)
 
 DOCUMENT_CODE = "CODE-SPFPL-AGR-INFO-001"
 CORE_DOCUMENT_CODE = "CODE-SPFPL-CORE-001"

@@ -3,11 +3,30 @@ from __future__ import annotations
 import re
 import unicodedata
 from datetime import date
-from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
+from decimal import ROUND_HALF_UP, Decimal
 from typing import Final
 
 from sydel_doc_engine.domain.enums import Gender
+
+# Fonctions PURES nombre -> mots DEPLACEES vers utils.grammar le 2026-07-06
+# (re-architecture « containment » de la mise en lettres monetaire). On les RE-IMPORTE
+# ici pour que tous les imports/tests historiques (`from ...field_derivations import
+# integer_to_french_words`, etc.) continuent de marcher a l'identique. grammar NE DEPEND
+# PAS de field_derivations (pas d'import circulaire).
+from sydel_doc_engine.utils.grammar import (
+    _decimal_from_value,
+    format_numeric_value,
+    integer_to_french_words,
+    monetary_words_from_value,
+)
 from sydel_doc_engine.utils.months import FRENCH_MONTHS
+
+__all__ = [  # noqa: RUF022 - ordre logique (helpers monetaires re-exportes en tete)
+    "_decimal_from_value",
+    "format_numeric_value",
+    "integer_to_french_words",
+    "monetary_words_from_value",
+]
 
 DEFAULT_MANDATAIRE_CIVILITE: Final = "Monsieur"
 DEFAULT_MANDATAIRE_PRENOM: Final = "Jordan"
@@ -42,32 +61,10 @@ MATRIMONIAL_STATUS_PRESETS: Final = (
     "Veuf / veuve",
 )
 
-_SMALL_NUMBERS: Final = {
-    0: "zero",
-    1: "un",
-    2: "deux",
-    3: "trois",
-    4: "quatre",
-    5: "cinq",
-    6: "six",
-    7: "sept",
-    8: "huit",
-    9: "neuf",
-    10: "dix",
-    11: "onze",
-    12: "douze",
-    13: "treize",
-    14: "quatorze",
-    15: "quinze",
-    16: "seize",
-}
-_TENS: Final = {
-    20: "vingt",
-    30: "trente",
-    40: "quarante",
-    50: "cinquante",
-    60: "soixante",
-}
+# _SMALL_NUMBERS / _TENS et le batisseur d'entiers en lettres ont ete DEPLACES vers
+# utils.grammar le 2026-07-06 (containment monetaire) ; `integer_to_french_words` est
+# re-importe en tete de module.
+
 # Règle globale (Rafael 2026-06-23) : les noms de mois en SORTIE sont toujours
 # correctement accentués (février, août, décembre). Les MAPS de parsing (nom -> n°)
 # restent sans accent : le parseur normalise (NFKD) l'entrée avant lookup.
@@ -169,13 +166,8 @@ def situation_display(value: str, genre: object) -> str:
     }.get(value, value)
 
 
-def format_numeric_value(value: object) -> str:
-    number = _decimal_from_value(value)
-    if number is None:
-        return str(value).strip() if value is not None else ""
-    if number == number.to_integral_value():
-        return str(int(number))
-    return format(number.normalize(), "f")
+# format_numeric_value a ete DEPLACE vers utils.grammar (containment 2026-07-06) et
+# re-importe en tete de module.
 
 
 def format_grouped_numeric_value(value: object) -> str:
@@ -188,18 +180,44 @@ def format_grouped_numeric_value(value: object) -> str:
 
 
 def number_words_from_value(value: object) -> str:
+    """Mise en lettres d'une valeur numerique pour les slots « _lettres ».
+
+    - ENTIER -> mots seuls SANS unite (« dix », « cent »). Byte-identique au gold ;
+      l'unite « euro(s) » est accolee separement par les templates (via
+      `grammar.euro_word(figure)` ou un « euros » litteral). NE PAS toucher.
+    - DECIMAL -> la FIGURE en format FR (« 0,01 », « 1 500,50 »). PAS de phrase
+      monetaire ici (revert « containment » 2026-07-06). C'est le SEUL comportement
+      SUR pour TOUTE recomposition « lettres + euro » separee : un decimal donne
+      « 0,01 euros » (figure + unite), jamais « un centime d'euro euro ».
+
+    La phrase monetaire décimale « un centime d'euro » (Albane 7.5) est produite
+    UNIQUEMENT par `grammar.montant_lettres_avec_unite` (qui la CALCULE depuis la
+    figure au point de composition), jamais par ce helper generique.
+    """
     number = _decimal_from_value(value)
     if number is None:
         return ""
     if number == number.to_integral_value():
         return integer_to_french_words(int(number))
-    # N1 (Rafael/Vincent 2026-06-24) : valeur DECIMALE (la valeur nominale peut l'etre, PARTOUT).
-    # La mise en lettres monetaire (« un euro et vingt-cinq centimes ») n'est PAS ratifiee et
-    # provoquait un DOUBLE « euro » la ou le template porte deja l'unite (Akainu). En attendant le
-    # wording (cf. QUESTIONS_RAFAEL), on met la FIGURE dans le slot lettres (« 1,25 ») : NON VIDE
-    # (donc ni crash _required_text cote SELAS multi, ni marqueur « À COMPLÉTER » cote SEL/SPFPL)
-    # et SANS unite (donc pas de double euro). Cosmetique assume : la figure peut apparaitre 2x
-    # (« 1,25 (1,25) ») jusqu'au wording ratifie. NE PAS reintroduire de forme monetaire ici.
+    return format_numeric_value(number).replace(".", ",")
+
+
+def prix_lettres_from_value(value: object) -> str:
+    """Mise en lettres d'un PRIX (hors scope Albane 7.5, contrairement a la valeur nominale).
+
+    Le wording MONETAIRE d'un prix decimal n'est PAS ratifie -> prix ENTIER = mots nus
+    (« un », « mille »), prix DECIMAL = FIGURE en lettres (« 2,5 »). Depuis le revert
+    « containment » 2026-07-06, `number_words_from_value` rend AUSSI la figure sur un
+    decimal, donc ce helper est FONCTIONNELLEMENT equivalent ; on le GARDE tel quel
+    (verrou EXPLICITE, harmless) pour documenter que le prix ne doit JAMAIS basculer en
+    phrase monetaire (double « euro » la ou l'acte accorde l'unite a part via
+    `euro_word` / `_accord_euro`). Akainu M1/M2 2026-07-06 (regression prix SPFPL + SCM).
+    """
+    number = _decimal_from_value(value)
+    if number is None:
+        return ""
+    if number == number.to_integral_value():
+        return integer_to_french_words(int(number))
     return format_numeric_value(number).replace(".", ",")
 
 
@@ -395,56 +413,9 @@ def regime_communautaire_from_status(label: str) -> bool:
     ) and "universelle" not in normalized
 
 
-def _invariable_before_mille(words: str) -> str:
-    """« quatre-vingts » et « cents » sont INVARIABLES devant « mille » (adjectif numéral).
-
-    Akainu 2026-06-26 : « trois cents mille » / « quatre-vingts mille » étaient fautifs ->
-    « trois cent mille » / « quatre-vingt mille ». NB : on ne touche QUE devant « mille » ;
-    devant « millions »/« milliards » (substantifs) le « s » reste (« deux cents millions »).
-    """
-    if words.endswith("vingts"):
-        return words[:-1]
-    if words.endswith("cents"):
-        return words[:-1]
-    return words
-
-
-def integer_to_french_words(value: int) -> str:
-    if value < 0:
-        return "moins " + integer_to_french_words(abs(value))
-    if value < 17:
-        return _SMALL_NUMBERS[value]
-    if value < 20:
-        return "dix-" + _SMALL_NUMBERS[value - 10]
-    if value < 100:
-        return _two_digit_words(value)
-    if value < 1000:
-        return _hundreds_words(value)
-    if value < 1_000_000:
-        thousands, remainder = divmod(value, 1000)
-        prefix = (
-            "mille"
-            if thousands == 1
-            else f"{_invariable_before_mille(integer_to_french_words(thousands))} mille"
-        )
-        return prefix if remainder == 0 else f"{prefix} {integer_to_french_words(remainder)}"
-    if value < 1_000_000_000:
-        millions, remainder = divmod(value, 1_000_000)
-        prefix = (
-            "un million"
-            if millions == 1
-            else f"{integer_to_french_words(millions)} millions"
-        )
-        return prefix if remainder == 0 else f"{prefix} {integer_to_french_words(remainder)}"
-    # Palier milliard (Akainu 2026-06-26) : sans lui, 1 000 000 000 rendait « mille millions »
-    # au lieu de « un milliard » (capital variable micro holding = 10x un capital >= 100 M).
-    milliards, remainder = divmod(value, 1_000_000_000)
-    prefix = (
-        "un milliard"
-        if milliards == 1
-        else f"{integer_to_french_words(milliards)} milliards"
-    )
-    return prefix if remainder == 0 else f"{prefix} {integer_to_french_words(remainder)}"
+# _invariable_before_mille et integer_to_french_words ont ete DEPLACES vers
+# utils.grammar (containment 2026-07-06) ; integer_to_french_words est re-importe en
+# tete de module (utilise ci-dessous par date_to_french_words).
 
 
 def date_to_french_words(value: date | None) -> str:
@@ -461,62 +432,10 @@ def today() -> date:
     return date.today()
 
 
-def _two_digit_words(value: int) -> str:
-    if value < 70:
-        ten, unit = divmod(value, 10)
-        ten_value = ten * 10
-        if unit == 0:
-            return _TENS[ten_value]
-        if unit == 1:
-            return f"{_TENS[ten_value]} et un"
-        return f"{_TENS[ten_value]}-{_SMALL_NUMBERS[unit]}"
-    if value < 80:
-        remainder = value - 60
-        if remainder == 11:
-            return "soixante et onze"
-        return f"soixante-{integer_to_french_words(remainder)}"
-    remainder = value - 80
-    if remainder == 0:
-        return "quatre-vingts"
-    return f"quatre-vingt-{integer_to_french_words(remainder)}"
-
-
-def _hundreds_words(value: int) -> str:
-    hundred, remainder = divmod(value, 100)
-    if hundred == 1:
-        prefix = "cent"
-    else:
-        prefix = f"{_SMALL_NUMBERS[hundred]} cent"
-    if remainder == 0:
-        return prefix + ("s" if hundred > 1 else "")
-    return f"{prefix} {integer_to_french_words(remainder)}"
-
-
-def _decimal_from_value(value: object) -> Decimal | None:
-    if value is None:
-        return None
-    if isinstance(value, bool):
-        return None
-    if isinstance(value, Decimal):
-        return value
-    if isinstance(value, int):
-        return Decimal(value)
-    if isinstance(value, float):
-        return Decimal(str(value))
-    if isinstance(value, str):
-        cleaned = value.strip()
-        if not cleaned:
-            return None
-        cleaned = cleaned.replace("\u00a0", " ").replace(" ", "")
-        cleaned = cleaned.replace(",", ".")
-        cleaned = re.sub(r"[^0-9.-]", "", cleaned)
-        if not cleaned:
-            return None
-        try:
-            return Decimal(cleaned)
-        except InvalidOperation:
-            return None
-    return None
+# _two_digit_words, _hundreds_words et _decimal_from_value ont ete DEPLACES vers
+# utils.grammar (containment 2026-07-06). _decimal_from_value est re-importe en tete de
+# module (utilise par format_grouped_numeric_value, number_words_from_value,
+# prix_lettres_from_value, calculate_nominal_value).
 
 
 def _normalize_label(value: str) -> str:

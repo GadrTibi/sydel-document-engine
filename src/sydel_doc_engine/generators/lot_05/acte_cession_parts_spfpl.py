@@ -12,6 +12,7 @@ from sydel_doc_engine.generators.lot_05.spfpl_common import (
     company_siege_display,
     elision_de,
     euro_word,
+    montant_lettres_avec_unite,
     required_cedant,
     required_cession_parts,
     required_int,
@@ -214,20 +215,22 @@ class ActeCessionPartsSpfplGenerator:
         conjoint = cedant.conjoint
 
         # 12.3 (Albane 2026-07-06) : le modele porte « d’[valeur_nominale_part_lettres] de valeur
-        # nominale ». Le front pose la valeur nominale en lettres SANS unite (« cent ») -> il
-        # manquait « euro(s) » (« de cent de valeur nominale »). On accole l'unite accordee au
-        # MONTANT numerique (`euro_word`) : « cent » + « euros » -> « de cent euros de valeur
-        # nominale ». Idem si la valeur porte deja « euros » (fixture) : on ne double pas.
+        # nominale ». Le front pose la valeur nominale en lettres SANS unite (« cent » pour un
+        # entier ; la FIGURE « 0,01 » pour un decimal depuis le containment 2026-07-06) -> il
+        # manquait « euro(s) ». On compose via le helper partage `montant_lettres_avec_unite`,
+        # SEUL point qui calcule la phrase monetaire DEPUIS LA FIGURE : ENTIER -> « cent euros » ;
+        # DECIMAL (Albane 7.5) -> « un centime d'euro » (aucun double euro). Fixture portant deja
+        # « euros » : le garde `"euro" in lettres` la laisse telle quelle (robustesse).
         valeur_nominale_lettres = required_text(
             societe_cible.valeur_nominale_part_lettres,
             "societe_cible.valeur_nominale_part_lettres",
         )
         if "euro" in valeur_nominale_lettres.lower():
-            valeur_nominale_display = valeur_nominale_lettres
+            valeur_nominale_display = valeur_nominale_lettres.strip()
         else:
-            valeur_nominale_display = (
-                f"{valeur_nominale_lettres} "
-                f"{euro_word(societe_cible.valeur_nominale_part)}"
+            valeur_nominale_display = montant_lettres_avec_unite(
+                valeur_nominale_lettres,
+                societe_cible.valeur_nominale_part,
             )
 
         # 12.2 (Albane 2026-07-06) : identite de l'acquereur (SPFPL en cours de constitution).

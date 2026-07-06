@@ -1067,3 +1067,108 @@ def test_statuts_selarl_medecin_sans_mise_en_forme_selas_parasite(tmp_path: Path
     siege = [p for p in paragraphs if "siège" in p.text.lower() and "fixé" in p.text]
     for paragraph in siege:
         assert all(run.bold is not True for run in paragraph.runs)
+
+
+# ---------------------------------------------------------------------------
+# Containment monetaire 2026-07-06 (re-architecture) — apport/capital SEL DECIMAL.
+# Bug B1/B2 : `number_words_from_value` etait decimal-aware globalement et injectait
+# « un centime d'euro » LA OU le template accolait deja « euros » -> « un centime
+# d'euro euros ». Depuis le revert, `number_words_from_value(decimal)` = FIGURE, donc
+# apport/capital rendent « 0,01 euros » (figure + unite), sans double ; la phrase
+# monetaire 7.5 n'apparait QUE sur la valeur nominale via `montant_lettres_avec_unite`.
+# ---------------------------------------------------------------------------
+
+
+def _apply_capital_from_front(ctx, *, capital: str, vn: str, apport: str) -> None:
+    """Simule ce que POSE le front : les slots `_lettres` derives via number_words_from_value.
+
+    Sur un decimal (containment), number_words_from_value rend la FIGURE ; sur un entier,
+    des mots nus. C'est exactement l'entree que recoivent les generateurs SEL exercice."""
+    from sydel_doc_engine.front_app.field_derivations import number_words_from_value
+
+    ctx.societe.capital_social = capital
+    ctx.societe.capital_social_lettres = number_words_from_value(capital)
+    ctx.capital.montant = capital
+    ctx.capital.montant_lettres = number_words_from_value(capital)
+    ctx.capital.valeur_nominale_titre = vn
+    ctx.capital.valeur_nominale_titre_lettres = number_words_from_value(vn)
+    if ctx.apport is not None:
+        ctx.apport.montant = apport
+        ctx.apport.montant_lettres = number_words_from_value(apport)
+    ctx.associes[0].apport_numeraire = apport
+    ctx.associes[0].apport_numeraire_lettres = number_words_from_value(apport)
+
+
+def _set_dentiste_professions(ctx) -> None:
+    ctx.associes[0].profession = "chirurgien-dentiste"
+    ctx.associes[0].profession_reglementee = "chirurgien-dentiste"
+    ctx.associes[0].profession_reglementee_pluriel = "chirurgiens-dentistes"
+    ctx.associes[0].ordre.professionnel = "Ordre des chirurgiens-dentistes"
+
+
+_SEL_DECIMAL_GENERATORS = [
+    ("selarl_dentiste", StatutsSelarlDentisteGenerator, True),
+    ("selarl_medecin", StatutsSelarlMedecinGenerator, False),
+    ("selas_medecin", StatutsSelasMedecinGenerator, False),
+]
+
+
+@pytest.mark.parametrize("overlay,gen_cls,dentiste", _SEL_DECIMAL_GENERATORS)
+@pytest.mark.parametrize("montant", ["0,01", "1500,50"])
+def test_sel_exercice_apport_capital_decimal_sans_double_euro(
+    tmp_path: Path, overlay: str, gen_cls, dentiste: bool, montant: str
+) -> None:
+    # M1 (Akainu) : apport ET capital decimaux (0,01 / 1500,50) ne doivent JAMAIS produire de
+    # double « euro » (« un centime d'euro euros », « ... euros euros ») ; ils rendent la FIGURE
+    # + « euros » via le template. Aucun token residuel, apostrophe courbe.
+    ctx = _context(overlay=overlay)
+    if dentiste:
+        _set_dentiste_professions(ctx)
+    _apply_capital_from_front(ctx, capital=montant, vn=montant, apport=montant)
+    text = _docx_text(gen_cls().generate(ctx, tmp_path))
+    _assert_clean(text)  # 0 token residuel
+    low = text.lower()
+    assert "euro euro" not in low, f"{overlay}/{montant}: double euro"
+    assert "euros euros" not in low, f"{overlay}/{montant}: double euros"
+    assert "d’euro euro" not in text and "d'euro euro" not in text
+    assert "un centime d’euro euro" not in text
+    # L'apport/capital rendent la FIGURE + unite (jamais la phrase monetaire cote apport).
+    figure = montant if montant == "0,01" else "1500,5"  # normalisation format_numeric_value
+    assert f"{figure} euros" in text or f"{montant} euros" in text
+
+
+@pytest.mark.parametrize(
+    "montant,phrase",
+    [
+        ("0,01", "un centime d’euro (0,01 €)"),
+        ("1500,50", "mille cinq cents euros et cinquante centimes (1500,50 €)"),
+    ],
+)
+def test_selas_medecin_valeur_nominale_decimale_7_5(
+    tmp_path: Path, montant: str, phrase: str
+) -> None:
+    # 7.5 (Albane 2026-07-06) : la VALEUR NOMINALE decimale d'une SELAS medecin (SEL exercice)
+    # rend la phrase monetaire complete « <lettres> (X €) », calculee DEPUIS LA FIGURE par
+    # montant_lettres_avec_unite, meme quand le slot lettres ne porte que la figure (containment).
+    ctx = _context(overlay="selas_medecin")
+    _apply_capital_from_front(ctx, capital="1 000", vn=montant, apport="1 000")
+    text = _docx_text(StatutsSelasMedecinGenerator().generate(ctx, tmp_path))
+    assert phrase in text
+    assert "d’euro euro" not in text
+    _assert_clean(text)
+
+
+def test_sel_exercice_valeur_nominale_entiere_byte_fidele(tmp_path: Path) -> None:
+    # Byte-fidelite ENTIER : « un euro » (SELAS art.8), figure « parts de 1 » (SELARL dentiste),
+    # « parts de 1 euro » (SELARL medecin) — EXACTEMENT comme avant le containment.
+    ctx_selas = _context(overlay="selas_medecin")
+    _apply_capital_from_front(ctx_selas, capital="1 000", vn="1", apport="1 000")
+    text_selas = _docx_text(StatutsSelasMedecinGenerator().generate(ctx_selas, tmp_path))
+    assert "actions d’un euro (1 €) chacune" in text_selas
+    assert "somme de mille" in text_selas  # capital entier byte-fidele
+
+    ctx_med = _context(overlay="selarl_medecin")
+    _apply_capital_from_front(ctx_med, capital="1 000", vn="1", apport="1 000")
+    text_med = _docx_text(StatutsSelarlMedecinGenerator().generate(ctx_med, tmp_path))
+    assert "parts de 1 euro chacune" in text_med
+    assert "somme de mille euros" in text_med

@@ -34,7 +34,24 @@ from sydel_doc_engine.rendering.docx_builder import (
     new_document_from_model,
 )
 from sydel_doc_engine.utils.dates import format_date_longue_fr
-from sydel_doc_engine.utils.grammar import euro_word
+from sydel_doc_engine.utils.grammar import _has_real_decimal, euro_word
+
+
+def _vnp_lettres_civil(vnp_figure: str | None, vnp_lettres: str | None) -> str:
+    """Slot LETTRES de la valeur nominale pour les statuts CIVILS.
+
+    Les civils composent l'unite « euro » A PART (« <lettres> (<figure>) euros ») -> sur un
+    montant DECIMAL il ne faut JAMAIS une phrase monetaire (« un centime d'euro … euros »
+    doublerait l'unite). On garde donc la FIGURE en lettres pour un decimal (byte-fidele :
+    « 0,01 (0,01) euros ») ; l'entier garde ses mots nus. Depuis le containment 2026-07-06,
+    `number_words_from_value` rend deja la figure sur un decimal (`valeur_nominale_part_lettres`
+    n'est PLUS decimal-aware) : ce garde-fou devient redondant mais reste EXPLICITE (harmless).
+    La mise en lettres monetaire des civils n'est PAS ratifiee (7.5 = SPFPL). Akainu 2026-07-06.
+    """
+    figure = (vnp_figure or "").strip()
+    if figure and _has_real_decimal(figure):
+        return figure
+    return (vnp_lettres or "").strip()
 
 DOCUMENT_CODE = "CODE-STATUTS-CIVILS-CORE-001"
 MAX_ASSOCIES = 6
@@ -404,7 +421,9 @@ class _ResolvedStatutsCivil:
                 statuts.valeur_nominale_part,
                 "statuts_civils.valeur_nominale_part",
             ),
-            "[valeur_nominale_part_lettres]": _text_or_empty(statuts.valeur_nominale_part_lettres),
+            "[valeur_nominale_part_lettres]": _vnp_lettres_civil(
+                statuts.valeur_nominale_part, statuts.valeur_nominale_part_lettres
+            ),
             "[plage_parts_total]": _text_or_empty(statuts.plage_parts_totale),
             "[parts_debut]": str(_first_part_number(self.associes)),
             "[parts_fin]": str(_last_part_number(self.associes)),
@@ -722,8 +741,12 @@ def _add_capital_block_micro_holding(document, data: _ResolvedStatutsCivil) -> N
     ).upper()
     nb_parts = _required_int(statuts.nb_parts_total, "statuts_civils.nb_parts_total")
     vnp = _required_text(statuts.valeur_nominale_part, "statuts_civils.valeur_nominale_part")
-    vnp_lettres = _required_text(
-        statuts.valeur_nominale_part_lettres, "statuts_civils.valeur_nominale_part_lettres"
+    vnp_lettres = _vnp_lettres_civil(
+        vnp,
+        _required_text(
+            statuts.valeur_nominale_part_lettres,
+            "statuts_civils.valeur_nominale_part_lettres",
+        ),
     ).upper()
     add_paragraph(document, "Le capital social est variable.")
     add_paragraph(document, f"Le capital social minimal est fixé à {capital_lettres} ({capital}€).")
@@ -766,9 +789,12 @@ def _add_capital_block_scs(document, data: _ResolvedStatutsCivil) -> None:
         data.statuts.valeur_nominale_part,
         "statuts_civils.valeur_nominale_part",
     )
-    valeur_nominale_part_lettres = _required_text(
-        data.statuts.valeur_nominale_part_lettres,
-        "statuts_civils.valeur_nominale_part_lettres",
+    valeur_nominale_part_lettres = _vnp_lettres_civil(
+        valeur_nominale_part,
+        _required_text(
+            data.statuts.valeur_nominale_part_lettres,
+            "statuts_civils.valeur_nominale_part_lettres",
+        ),
     )
     plage_parts_total = _required_text(
         data.statuts.plage_parts_totale,

@@ -22,7 +22,7 @@ from sydel_doc_engine.generators.lot_04.statuts_spfpl_common import (
 from sydel_doc_engine.generators.lot_04.statuts_spfpl_templates import (
     STATUTS_SPFPL_APPORT_BLOCKS,
 )
-from sydel_doc_engine.utils.grammar import euro_word
+from sydel_doc_engine.utils.grammar import montant_lettres_avec_unite
 
 OUTPUT_FILENAME = "statuts_spfpl_apport.docx"
 
@@ -123,12 +123,15 @@ class StatutsSpfplApportGenerator:
                     )
                 ),
                 "[valeur_nominale_part]": valeur_nominale_figure,
-                "[valeur_nominale_part_lettres]": required_text(
-                    apport_titres.valeur_nominale_action_lettres,
-                    "apport_titres.valeur_nominale_action_lettres",
+                # 7.5 : lettres + unite composees en un seul token (anti double-euro / espace).
+                # ENTIER -> « cent euros » (byte-identique) ; DECIMAL -> « un centime d'euro ».
+                "[valeur_nominale_part_avec_unite]": montant_lettres_avec_unite(
+                    required_text(
+                        apport_titres.valeur_nominale_action_lettres,
+                        "apport_titres.valeur_nominale_action_lettres",
+                    ),
+                    valeur_nominale_figure,
                 ),
-                # 7.5 : accord « euro » / « euros » sur la FIGURE de la valeur nominale.
-                "[euro_nominal_word]": euro_word(valeur_nominale_figure),
                 "[fin_exercice]": required_text(
                     ctx.exercice_social.date_cloture_premier_exercice,
                     "exercice_social.date_cloture_premier_exercice",

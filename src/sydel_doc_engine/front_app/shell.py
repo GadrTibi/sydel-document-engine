@@ -52,6 +52,7 @@ from sydel_doc_engine.front_app.field_derivations import (
     matrimonial_status_value,
     number_words_from_value,
     parse_french_date,
+    prix_lettres_from_value,
     regime_communautaire_from_status,
     regime_matrimonial_from_status,
     situation_display,
@@ -956,9 +957,13 @@ def _format_montant(value: str) -> str:
 def _euro_amount_letters(value: str) -> str:
     """Montant en toutes lettres derive du montant saisi (ticket 2.10).
 
-    Montants non entiers ou vides : chaine vide (saisie manuelle possible).
+    Le wording monetaire d'un PRIX n'est PAS ratifie (contrairement a la valeur nominale) ->
+    montant ENTIER = mots-nus + « euro(s) » accorde ; montant DECIMAL = FIGURE (« 2,5 ») +
+    « euro », JAMAIS la phrase monetaire (double « euro » sinon). Vide -> chaine vide (saisie
+    manuelle possible). Akainu M1 2026-07-06 : 3e surface prix, meme famille que SPFPL/SCM ;
+    `number_words_from_value` (decimal-aware pour la valeur nominale) doublait l'unite ici.
     """
-    words = number_words_from_value(value)
+    words = prix_lettres_from_value(value)
     if not words:
         return ""
     return f"{words} {euro_word(value)}"
@@ -2139,7 +2144,7 @@ def _render_scm_cession_form(  # noqa: C901
         # que la valeur nominale calculée), affiché en champ désactivé. Repli sur la valeur
         # de base si le prix n'est pas un montant exploitable (jamais de clé requise vidée).
         prix["global_lettres"] = (
-            number_words_from_value(prix.get("global"))
+            prix_lettres_from_value(prix.get("global"))
             or str(prix.get("global_lettres") or "")
         )
         copyable_text_input(
@@ -2533,9 +2538,16 @@ def _derive_scm_prix_unitaire(prix: dict[str, object], nb_parts: object) -> None
         unitaire = unitaire.to_integral_value()
     figure = format_numeric_value(unitaire).replace(".", ",")
     prix["unitaire"] = figure
-    # number_words_from_value rend les lettres pour un entier (« un »), la figure pour un
-    # decimal (coherent avec calculate_nominal_value / number_words_from_value).
-    prix["unitaire_lettres"] = number_words_from_value(figure) or figure
+    # PRIX SCM (hors scope Albane 7.5) : le slot lettres doit rester SANS unite car l'acte SCM
+    # compose « <unitaire_lettres> (<unitaire>) <euro accorde> par part cédée » (l'unite « euro »
+    # est ajoutee A PART par `_accord_euro`). ENTIER -> mots nus (« un », « cent »). DECIMAL ->
+    # on garde la FIGURE en lettres (« 2,5 ») : la mise en lettres MONETAIRE (« deux euros et
+    # cinquante centimes ») n'est ratifiee que pour la VALEUR NOMINALE (7.5), pas pour le prix,
+    # et injecterait ici un DOUBLE « euro » (« ...centimes (2,5) euros »). Verrou explicite.
+    if unitaire == unitaire.to_integral_value():
+        prix["unitaire_lettres"] = number_words_from_value(figure) or figure
+    else:
+        prix["unitaire_lettres"] = figure
 
 
 def _derive_scm_signataires_pv(presents: list[ScmCessionAssocie]) -> list[str]:

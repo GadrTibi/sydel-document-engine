@@ -23,7 +23,7 @@ from sydel_doc_engine.generators.lot_04.statuts_sel_exercice_common import (
 from sydel_doc_engine.generators.lot_04.statuts_sel_exercice_templates import (
     STATUTS_SELAS_MEDECIN_BLOCKS,
 )
-from sydel_doc_engine.utils.grammar import elision_de
+from sydel_doc_engine.utils.grammar import elision_de, montant_lettres_avec_unite
 
 OUTPUT_FILENAME = "statuts_selas_medecin.docx"
 
@@ -135,16 +135,24 @@ class StatutsSelasMedecinGenerator:
                 ),
                 # Akainu B1 (regle 68) : le modele art.8 colle « d’[valeur…] » -> elision via
                 # le helper partage (« de cent euros », « d’un euro »). Cle combinee traitee en
-                # premier (replace_placeholders trie par longueur desc).
-                "d’[valeur_nominale_action_lettres]": elision_de(
+                # premier (replace_placeholders trie par longueur desc). 7.5 (Albane 2026-07-06) :
+                # token unique lettres+unite ; DECIMAL -> « d’un centime d’euro » /
+                # « de cinquante centimes d’euro » (elision correcte sur la phrase complete).
+                "d’[valeur_nominale_action_avec_unite]": elision_de(
+                    montant_lettres_avec_unite(
+                        required_text(
+                            ctx.capital.valeur_nominale_titre_lettres,
+                            "capital.valeur_nominale_titre_lettres",
+                        ),
+                        ctx.capital.valeur_nominale_titre,
+                    )
+                ),
+                "[valeur_nominale_action_avec_unite]": montant_lettres_avec_unite(
                     required_text(
                         ctx.capital.valeur_nominale_titre_lettres,
                         "capital.valeur_nominale_titre_lettres",
-                    )
-                ),
-                "[valeur_nominale_action_lettres]": required_text(
-                    ctx.capital.valeur_nominale_titre_lettres,
-                    "capital.valeur_nominale_titre_lettres",
+                    ),
+                    ctx.capital.valeur_nominale_titre,
                 ),
                 "[titre_professionnel]": required_text(
                     associate.titre_professionnel or associate.civilite_affichage,

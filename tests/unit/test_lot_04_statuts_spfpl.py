@@ -335,6 +335,40 @@ def test_statuts_spfpl_art8_euro_agreement_singular(tmp_path: Path) -> None:
     assert "euro euro" not in text
 
 
+def test_statuts_spfpl_art8_valeur_nominale_centime_decimal(tmp_path: Path) -> None:
+    """7.5 (Albane 2026-07-06, verbatim RATIFIE) — VALEUR DECIMALE : une valeur nominale
+    de 0,01 rend « un centime d'euro (0,01 €) », PAS la figure nue « 0,01 », et SANS double
+    « euro » (« un centime d'euro euro » interdit) ni espace parasite.
+
+    Containment 2026-07-06 : le slot `valeur_nominale_action_lettres` porte desormais la
+    FIGURE (« 0,01 », ce que produit `number_words_from_value` sur un decimal). La phrase
+    monetaire est CALCULEE DEPUIS LA FIGURE par `montant_lettres_avec_unite` au generateur
+    (SEUL point de composition). On simule donc le vrai front : le slot lettres = figure."""
+    ctx = _with_exercice(_base_context(operation="cession"))
+    ctx.societe_spfpl.valeur_nominale_action = "0,01"
+    ctx.societe_spfpl.valeur_nominale_action_lettres = "0,01"  # front containment : figure
+    ctx.capital_souscription.valeur_nominale_action = "0,01"
+    text = _docx_text(StatutsSpfplCessionGenerator().generate(ctx, tmp_path))
+    assert "actions de un centime d’euro (0,01 €) chacune" in text
+    assert "d’euro euro" not in text
+    assert "d’euro (0,01" in text  # unite deja dans la phrase, pas de « euro » ajoute
+    assert "  (" not in text  # pas d'espace double la ou l'euro etait ajoute
+    # La FIGURE nue ne doit plus occuper le slot rendu (montant_lettres_avec_unite recompose).
+    assert "actions de 0,01 (0,01 €)" not in text
+
+
+def test_statuts_spfpl_art8_valeur_nominale_cinquante_centimes(tmp_path: Path) -> None:
+    """7.5 — VALEUR DECIMALE : 0,50 rend « cinquante centimes d'euro (0,50 €) »
+    (PLURIEL « centimes », unite « d'euro » incluse). Slot lettres = figure (containment)."""
+    ctx = _with_exercice(_base_context(operation="cession"))
+    ctx.societe_spfpl.valeur_nominale_action = "0,50"
+    ctx.societe_spfpl.valeur_nominale_action_lettres = "0,5"  # front containment : figure
+    ctx.capital_souscription.valeur_nominale_action = "0,50"
+    text = _docx_text(StatutsSpfplCessionGenerator().generate(ctx, tmp_path))
+    assert "actions de cinquante centimes d’euro (0,50 €) chacune" in text
+    assert "d’euro euro" not in text
+
+
 def test_statuts_spfpl_ordre_departement_name_not_number(tmp_path: Path) -> None:
     """7.4 (Albane 2026-07-06) — VALEUR : l'Ordre s'affiche par le NOM du departement
     (« de Seine-et-Marne »), JAMAIS le NUMERO (« de 77 »)."""

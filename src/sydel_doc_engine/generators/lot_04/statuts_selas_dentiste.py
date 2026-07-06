@@ -34,6 +34,7 @@ from sydel_doc_engine.generators.lot_04.statuts_sel_exercice_common import (
 from sydel_doc_engine.generators.lot_04.statuts_sel_exercice_templates import (
     STATUTS_SELAS_DENTISTE_BLOCKS,
 )
+from sydel_doc_engine.utils.grammar import montant_lettres_avec_unite
 
 OUTPUT_FILENAME = "statuts_selas_dentiste.docx"
 
@@ -73,9 +74,14 @@ class StatutsSelasDentisteGenerator:
                     ctx.capital.nombre_titres_total_lettres,
                     "capital.nombre_titres_total_lettres",
                 ),
-                "[valeur_nominale_action_lettres]": required_text(
-                    ctx.capital.valeur_nominale_titre_lettres,
-                    "capital.valeur_nominale_titre_lettres",
+                # 7.5 (Albane 2026-07-06) : token unique lettres+unite (anti double-euro / espace).
+                # ENTIER -> « un euro » (byte-identique) ; DECIMAL -> « un centime d’euro ».
+                "[valeur_nominale_action_avec_unite]": montant_lettres_avec_unite(
+                    required_text(
+                        ctx.capital.valeur_nominale_titre_lettres,
+                        "capital.valeur_nominale_titre_lettres",
+                    ),
+                    ctx.capital.valeur_nominale_titre,
                 ),
                 "[titre_professionnel]": required_text(
                     associate.titre_professionnel or associate.civilite_affichage,

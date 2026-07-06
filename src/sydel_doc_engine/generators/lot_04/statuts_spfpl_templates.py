@@ -51,10 +51,12 @@ STATUTS_SPFPL_CESSION_BLOCKS: tuple[str, ...] = (
     "Outre leurs apports, les associés pourront verser ou laisser à disposition de la Société toutes les sommes dont elle pourrait avoir besoin. Ces sommes sont inscrites au crédit d'un compte ouvert au nom de l'associé.",
     "Les comptes courants ne doivent jamais être débiteurs et la Société a la faculté d'en rembourser tout ou partie, après avis donné par écrit trois mois à l'avance, sauf stipulation contraire.",
     'ARTICLE 8 - CAPITAL SOCIAL',
-    # 7.5 (Albane 2026-07-06) : valeur nominale en LETTRES + « euro(s) » accorde + CHIFFRES
-    # entre parentheses (« <lettres> euros (X €) chacune »), pattern SELAS (token
-    # [euro_nominal_word] = euro_word(figure), accord singulier/pluriel).
-    'Le capital social est fixé à la somme de [capital_social] ([capital_lettres]) euros, divisé en [nb_actions] actions de [valeur_nominale_action_lettres] [euro_nominal_word] ([valeur_nominale_action] €) chacune, entièrement libéré et attribué en totalité à l’associé unique :',
+    # 7.5 (Albane 2026-07-06) : valeur nominale en LETTRES + unite accordee + CHIFFRES entre
+    # parentheses (« <lettres+unite> (X €) chacune »). Token unique [valeur_nominale_action_avec_unite]
+    # = montant_lettres_avec_unite(lettres, figure) : ENTIER -> « cent euros » (byte-identique) ;
+    # DECIMAL (Albane 7.5) -> « un centime d'euro » (unite deja dans les lettres, pas de double euro
+    # ni d'espace parasite).
+    'Le capital social est fixé à la somme de [capital_social] ([capital_lettres]) euros, divisé en [nb_actions] actions de [valeur_nominale_action_avec_unite] ([valeur_nominale_action] €) chacune, entièrement libéré et attribué en totalité à l’associé unique :',
     '- Le Docteur [prenom] [nom]………………………………………….…….………..[nb_actions] actions',
     'Total des actions composant le capital social……………………………. [nb_actions] actions',
     'ARTICLE 9 - QUALITE D’ASSOCIE',
@@ -435,9 +437,10 @@ STATUTS_SPFPL_APPORT_BLOCKS: tuple[str, ...] = (
     "Outre leurs apports, les associés pourront verser ou laisser à disposition de la Société toutes sommes dont elle pourrait avoir besoin. Ces sommes sont inscrites au crédit d'un compte ouvert au nom de l'associé.",
     "Les comptes courants ne doivent jamais être débiteurs et la Société a la faculté d'en rembourser tout ou partie, après avis donné par écrit trois mois à l'avance, sauf stipulation contraire.",
     'ARTICLE 8 - CAPITAL SOCIAL',
-    # 7.5 (Albane 2026-07-06) : valeur nominale en LETTRES + « euro(s) » accorde + CHIFFRES
-    # entre parentheses (pattern SELAS, token [euro_nominal_word] = euro_word(figure)).
-    'Le capital social est fixé à la somme de [montant_apports_nature] euros, divisé en [nb_actions] actions de [valeur_nominale_part_lettres] [euro_nominal_word] ([valeur_nominale_part] €) chacune, entièrement libéré et attribué comme suit :',
+    # 7.5 (Albane 2026-07-06) : valeur nominale en LETTRES + unite accordee + CHIFFRES entre
+    # parentheses. Token unique [valeur_nominale_part_avec_unite] = montant_lettres_avec_unite :
+    # ENTIER -> « cent euros » (byte-identique) ; DECIMAL -> « un centime d'euro » (pas de double euro).
+    'Le capital social est fixé à la somme de [montant_apports_nature] euros, divisé en [nb_actions] actions de [valeur_nominale_part_avec_unite] ([valeur_nominale_part] €) chacune, entièrement libéré et attribué comme suit :',
     '- Le Docteur [prenom] [nom]………………………………………….……………..[nb_actions] actions',
     'Total des actions composant le capital social……………………………. [nb_actions] actions',
     'ARTICLE 9 - QUALITE D’ASSOCIE',

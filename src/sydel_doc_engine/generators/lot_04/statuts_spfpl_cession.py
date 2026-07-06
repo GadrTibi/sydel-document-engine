@@ -20,7 +20,7 @@ from sydel_doc_engine.generators.lot_04.statuts_spfpl_templates import (
     STATUTS_SPFPL_CESSION_BLOCKS,
 )
 from sydel_doc_engine.utils.departements import departement_nom
-from sydel_doc_engine.utils.grammar import euro_word
+from sydel_doc_engine.utils.grammar import montant_lettres_avec_unite
 
 OUTPUT_FILENAME = "statuts_spfpl_cession.docx"
 
@@ -107,12 +107,15 @@ class StatutsSpfplCessionGenerator:
                     )
                 ),
                 "[valeur_nominale_action]": valeur_nominale_figure,
-                "[valeur_nominale_action_lettres]": required_text(
-                    societe_spfpl.valeur_nominale_action_lettres,
-                    "societe_spfpl.valeur_nominale_action_lettres",
+                # 7.5 : lettres + unite composees en un seul token (anti double-euro / espace).
+                # ENTIER -> « cent euros » (byte-identique) ; DECIMAL -> « un centime d'euro ».
+                "[valeur_nominale_action_avec_unite]": montant_lettres_avec_unite(
+                    required_text(
+                        societe_spfpl.valeur_nominale_action_lettres,
+                        "societe_spfpl.valeur_nominale_action_lettres",
+                    ),
+                    valeur_nominale_figure,
                 ),
-                # 7.5 : accord « euro » / « euros » sur la FIGURE de la valeur nominale.
-                "[euro_nominal_word]": euro_word(valeur_nominale_figure),
                 "[debut_exercice]": required_text(
                     ctx.exercice_social.debut,
                     "exercice_social.debut",

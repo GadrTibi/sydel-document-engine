@@ -77,6 +77,7 @@ from sydel_doc_engine.front_app.front_widgets import (
     seed_signature_lieu,
     siege_same_as_perso_checkbox,
 )
+from sydel_doc_engine.utils.grammar import _has_real_decimal, monetary_words_from_value
 
 STRUCTURE = "SAS"
 DOC_CODE = "DOC-015"
@@ -384,6 +385,30 @@ def _amount(value: object) -> int:
         return 0
 
 
+def _sas_valeur_nominale_lettres(value: object) -> str:
+    """Valeur nominale SAS en lettres AVEC unite, pour le slot « <lettres> ([figure]) chacune ».
+
+    Le modele SAS ne porte PAS d'unite (« de [valeur_nominale_action_lettres] ([figure]) ») ->
+    l'unite doit venir du slot.
+    - ENTIER : mots nus + « euros » (byte-identique au rendu historique du slice, meme le cas
+      « un euros » : on ne corrige PAS l'accord d'un entier ici pour ne pas bouger le gold ;
+      c'est pourquoi on ne passe PAS par `montant_lettres_avec_unite`, qui accorderait « un euro »).
+    - DECIMAL (Albane 7.5, 2026-07-06) : on CALCULE la phrase monetaire complete DEPUIS LA
+      FIGURE via `monetary_words_from_value` (« un centime d'euro »). Depuis le containment
+      2026-07-06, `number_words_from_value` rend la FIGURE sur un decimal (plus la phrase) -> il
+      ne faut plus s'y fier ici, sinon on aurait « 0,01 euros » (figure + unite) au lieu de la
+      phrase monetaire ratifiee.
+    - Valeur illisible : on renvoie la figure brute (comportement historique du slice).
+    """
+    if _has_real_decimal(value):
+        phrase = monetary_words_from_value(value)
+        return phrase or str(value or "")
+    lettres = number_words_from_value(value)
+    if not lettres:
+        return str(value or "")
+    return lettres + " euros"
+
+
 def _sas_is_marie(payload: dict[str, object]) -> bool:
     """L'actionnaire fondateur SAS est-il MARIE ? (regime + conjoint requis, comparution
     « <statut> sous le régime de ... avec <conjoint> »).
@@ -621,12 +646,9 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
             nb_actions_total=nb_actions,
             nb_actions_total_lettres=number_words_from_value(nb_actions),
             valeur_nominale_action=str(payload.get("valeur_nominale_action") or ""),
-            valeur_nominale_action_lettres=number_words_from_value(
+            valeur_nominale_action_lettres=_sas_valeur_nominale_lettres(
                 payload.get("valeur_nominale_action")
-            )
-            + " euros"
-            if number_words_from_value(payload.get("valeur_nominale_action"))
-            else str(payload.get("valeur_nominale_action") or ""),
+            ),
             profession=profession,
             ville_rcs=str(payload.get("siege_ville") or ""),
             siege=siege_struct,

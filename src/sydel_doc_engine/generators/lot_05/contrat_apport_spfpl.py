@@ -7,6 +7,7 @@ from docx import Document
 
 from sydel_doc_engine.domain.models import (
     Address,
+    ApportTitres,
     DocumentGenerationContext,
     ProfessionalEntity,
 )
@@ -24,6 +25,7 @@ from sydel_doc_engine.generators.lot_05.spfpl_common import (
     validate_apport_context,
 )
 from sydel_doc_engine.utils.departements import departement_nom
+from sydel_doc_engine.utils.grammar import _has_real_decimal, monetary_words_from_value
 
 OUTPUT_FILENAME = "contrat_apport_spfpl.docx"
 _SOURCE_NAME = "Contrat d_apport SEL SPFPL.docx"
@@ -51,6 +53,32 @@ def _date_fr(value: object) -> str:
     if hasattr(value, "strftime"):
         return value.strftime("%d/%m/%Y")
     return str(value or "")
+
+
+def _valeur_nominale_apport_fragment(apport_titres: ApportTitres) -> str:
+    """Fragment « <valeur nominale en lettres> euro » du modele contrat d'apport (7.5).
+
+    Le modele HARDCODE « [valeur_nominale_action_lettres] euro » (unite au SINGULIER).
+    - ENTIER : les lettres sont des mots NUS (« cent ») -> on reconstitue BYTE-IDENTIQUE
+      « cent euro » (on reprend le « euro » singulier du modele ; on ne passe PAS par
+      `montant_lettres_avec_unite`, qui accorderait « cent euros » et casserait le gold).
+    - DECIMAL (Albane 7.5, containment 2026-07-06) : on CALCULE la phrase monetaire complete
+      DEPUIS LA FIGURE via `monetary_words_from_value` (« un centime d'euro ») et on la rend
+      SEULE, ce qui ABSORBE le « euro » du modele via la cle combinee (plus de « ... euro »).
+    Depuis le containment, `valeur_nominale_action_lettres` (= `number_words_from_value`) ne
+    porte plus l'unite sur un decimal -> on ne peut plus discriminer via « euro » dans les
+    lettres : on discrimine sur la FIGURE `valeur_nominale_action`.
+    """
+    lettres = required_text(
+        apport_titres.valeur_nominale_action_lettres,
+        "apport_titres.valeur_nominale_action_lettres",
+    )
+    figure = apport_titres.valeur_nominale_action
+    if _has_real_decimal(figure):
+        # Decimal : phrase monetaire complete calculee depuis la figure ; remplace « <token> euro ».
+        return monetary_words_from_value(figure).strip()
+    # Entier : mots nus + le « euro » singulier du modele (byte-identique).
+    return f"{lettres.strip()} euro"
 
 
 def _addr_display(address: Address | None, field_name: str) -> str:
@@ -284,6 +312,16 @@ class ContratApportSpfplGenerator:
             "[nb_actions_lettres]": required_text(
                 apport_titres.nb_actions_attribuees_lettres,
                 "apport_titres.nb_actions_attribuees_lettres",
+            ),
+            # 7.5 (Albane 2026-07-06) : le modele HARDCODE « [valeur_nominale_action_lettres] euro »
+            # (unite figee au SINGULIER dans le docx). ENTIER -> on reproduit BYTE-IDENTIQUE
+            # « cent euro » (cle nue = lettres seules, le « euro » du modele reste). DECIMAL ->
+            # les lettres portent deja l'unite (« un centime d'euro ») ; on remplace la cle
+            # COMBINEE (« <token> euro », traitee en premier car plus longue dans `_replace` trie
+            # par longueur desc) par la phrase COMPLETE, ce qui ABSORBE le « euro » du modele et
+            # evite « un centime d'euro euro ».
+            "[valeur_nominale_action_lettres] euro": _valeur_nominale_apport_fragment(
+                apport_titres
             ),
             "[valeur_nominale_action_lettres]": required_text(
                 apport_titres.valeur_nominale_action_lettres,

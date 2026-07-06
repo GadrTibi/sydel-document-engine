@@ -735,6 +735,9 @@ def test_s2_prix_unitaire_recalcule_global_sur_nb() -> None:
     prix3 = {"global": "10", "unitaire": "x", "unitaire_lettres": "x"}
     _derive_scm_prix_unitaire(prix3, 4)
     assert prix3["unitaire"] == "2,5"
+    # Akainu m1 2026-07-06 : le slot LETTRES d'un prix decimal garde la FIGURE (jamais la
+    # phrase monetaire « deux euros et cinquante centimes » -> double euro dans l'acte).
+    assert prix3["unitaire_lettres"] == "2,5"
 
     # Donnees absentes / nb == 0 : on ne touche a rien (pas de crash, pas de cle videe).
     prix4 = {"global": "", "unitaire": "100", "unitaire_lettres": "cent"}

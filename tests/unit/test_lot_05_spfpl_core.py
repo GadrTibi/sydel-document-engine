@@ -542,6 +542,26 @@ def test_acte_price_plural_euros_above_one(tmp_path: Path) -> None:
     assert "mille euros (1 000 €) part cédée" in line
     assert "soit un prix de soixante mille euros (60 000 €)" in line
     assert "euros euros" not in line
+
+
+def test_acte_price_decimal_keeps_figure_no_double_euro(tmp_path: Path) -> None:
+    """Akainu M1 2026-07-06 — un prix DECIMAL garde la FIGURE en lettres (« 0,01 »), le
+    wording monetaire (« un centime d'euro ») n'est PAS ratifie pour le PRIX (seulement pour
+    la valeur nominale, 7.5). Le front pose desormais `prix_lettres_from_value` (figure sur
+    decimal) -> l'acte accorde « euro » sur la figure et ne DOUBLE PLUS l'unite (regression
+    « d'un centime d'euro euro » proscrite)."""
+    line = _acte_price_line(
+        _render_acte_with_price(
+            tmp_path,
+            prix_unitaire="0,01",
+            prix_unitaire_lettres="0,01",  # figure = ce que produit prix_lettres_from_value
+            prix_total="0,05",
+            prix_total_lettres="0,05",
+        )
+    )
+    assert "0,01 euro (0,01 €) part cédée" in line  # figure + « euro » accorde une seule fois
+    assert "centime d’euro" not in line  # phrase monetaire proscrite pour le prix
+    assert "euro euro" not in line  # anti double-unite (regression M1)
     assert "euro euro" not in line
 
 

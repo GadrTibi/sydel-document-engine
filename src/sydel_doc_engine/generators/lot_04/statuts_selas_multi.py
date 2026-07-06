@@ -33,7 +33,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_signature_table as _add_signature_table,
 )
 from sydel_doc_engine.utils.departements import departement_nom
-from sydel_doc_engine.utils.grammar import elision_de, euro_word
+from sydel_doc_engine.utils.grammar import elision_de, montant_lettres_avec_unite
 
 DOCUMENT_CODE = "CODE-STATUTS-SELAS-MULTI-001"
 STRUCTURE_SELAS = "SELAS"
@@ -1036,12 +1036,12 @@ def _required_int(value: int | None, field_name: str) -> int:
 
 
 def _valeur_nominale_lettres_euro(selas: StatutsSelasMultiContext) -> str:
-    """Valeur nominale EN LETTRES + mot « euro » accorde (retour Albane 2.3).
+    """Valeur nominale EN LETTRES + unite pour l'art.8 de la SELAS multi (retour Albane 2.3).
 
-    Rend « un euro » (VN=1) / « dix euros » (VN>=2) pour l'art.8 de la SELAS multi.
-    L'accord (« euro » vs « euros ») se calcule sur la FIGURE (valeur_nominale_action,
-    ex. « 1 », « 10 »), pas sur la mise en lettres. Le token cible n'est utilise QUE
-    dans l'art.8 du modele multi (para 86) -> aucune injection parasite d'« euro ».
+    ENTIER : « un euro » (VN=1) / « dix euros » (VN>=2), accord sur la FIGURE.
+    DECIMAL (Albane 7.5, 2026-07-06) : la mise en lettres porte deja l'unite complete
+    (« un centime d'euro ») -> le helper partage n'ajoute rien (pas de double euro).
+    Le token cible n'est utilise QUE dans l'art.8 du modele multi (para 86).
     """
     lettres = _required_text(
         selas.valeur_nominale_action_lettres,
@@ -1051,7 +1051,7 @@ def _valeur_nominale_lettres_euro(selas: StatutsSelasMultiContext) -> str:
         selas.valeur_nominale_action,
         "statuts_selas_multi.valeur_nominale_action",
     )
-    return f"{lettres} {euro_word(figure)}"
+    return montant_lettres_avec_unite(lettres, figure)
 
 
 def _format_display_date(value: date | str | None, field_name: str) -> str:
