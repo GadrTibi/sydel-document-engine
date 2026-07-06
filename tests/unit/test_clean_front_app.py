@@ -1031,7 +1031,9 @@ def test_clean_front_selarl_generation_smoke(tmp_path: Path) -> None:
     assert "Société d’exercice libéral à responsabilité limitée de médecin" in combined_text
     # R5 (Albane) : destinataire FORME LONGUE « Conseil départemental de l’Ordre des
     # <profession_pluriel> <connecteur> <departement> » (profession PUIS departement).
-    assert "Conseil départemental de l’Ordre des médecins de 75" in combined_text
+    # Retour fonctionnel 9.2 (Albane 2026-07-06) : le departement est affiche par son NOM
+    # (« Paris »), pas par son numero (« 75 ») — propage a tous les types via le generateur partage.
+    assert "Conseil départemental de l’Ordre des médecins de Paris" in combined_text
     assert "Au capital de 1 000 euros" in combined_text
     assert "Au capital de 1000" not in combined_text
     assert " medecin" not in combined_text

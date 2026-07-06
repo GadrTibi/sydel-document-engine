@@ -4,14 +4,18 @@ from __future__ import annotations
 # Texte source reconstruit depuis les DOCX Lot 04 SPFPL. Ne pas modifier le wording sans validation juridique.
 
 STATUTS_SPFPL_CESSION_BLOCKS: tuple[str, ...] = (
-    '[denomination_societe]',
+    # 6.8 (Albane 2026-07-06) : titre « Statuts <denomination> » (comme SAS/SELARL),
+    # anciennement « <denomination> » nu.
+    'Statuts [denomination_societe]',
     'Société de Participations Financières de Profession Libérale de Chirurgiens-Dentistes par actions simplifiée',
     'Au capital de [capital_social]',
     'Siège social : [adresse_siege]',
     'STATUTS',
     'Le soussigné :',
-    '- [civilite] [prenoms] [nom]',
-    '[profession] de profession',
+    # 7.1 (Albane 2026-07-06) : comparution du soussigné = prenom USUEL ([prenom]),
+    # plus TOUS les prenoms ([prenoms]).
+    '- [civilite] [prenom] [nom]',
+    '[profession_capitale] de profession',
     'Né le [date_naissance] à [ville_naissance] ([departement_naissance])',
     'Demeurant [adresse_personnelle]',
     '[ligne_situation_maritale]',
@@ -47,7 +51,10 @@ STATUTS_SPFPL_CESSION_BLOCKS: tuple[str, ...] = (
     "Outre leurs apports, les associés pourront verser ou laisser à disposition de la Société toutes les sommes dont elle pourrait avoir besoin. Ces sommes sont inscrites au crédit d'un compte ouvert au nom de l'associé.",
     "Les comptes courants ne doivent jamais être débiteurs et la Société a la faculté d'en rembourser tout ou partie, après avis donné par écrit trois mois à l'avance, sauf stipulation contraire.",
     'ARTICLE 8 - CAPITAL SOCIAL',
-    'Le capital social est fixé à la somme de [capital_social] ([capital_lettres]) euros, divisé en [nb_actions] actions de [valeur_nominale_action] ([valeur_nominale_action_lettres]) chacune, entièrement libéré et attribué en totalité à l’associé unique :',
+    # 7.5 (Albane 2026-07-06) : valeur nominale en LETTRES + « euro(s) » accorde + CHIFFRES
+    # entre parentheses (« <lettres> euros (X €) chacune »), pattern SELAS (token
+    # [euro_nominal_word] = euro_word(figure), accord singulier/pluriel).
+    'Le capital social est fixé à la somme de [capital_social] ([capital_lettres]) euros, divisé en [nb_actions] actions de [valeur_nominale_action_lettres] [euro_nominal_word] ([valeur_nominale_action] €) chacune, entièrement libéré et attribué en totalité à l’associé unique :',
     '- Le Docteur [prenom] [nom]………………………………………….…….………..[nb_actions] actions',
     'Total des actions composant le capital social……………………………. [nb_actions] actions',
     'ARTICLE 9 - QUALITE D’ASSOCIE',
@@ -351,8 +358,12 @@ STATUTS_SPFPL_CESSION_BLOCKS: tuple[str, ...] = (
     "Sont également adressées par les associés de la société, dans les conditions prévues au premier alinéa, les conventions contenant des clauses portant sur l'organisation et les pouvoirs des organes de direction, d'administration ou de surveillance ayant fait l'objet d'une modification au cours de l'exercice écoulé.",
     'ARTICLE 38- NOMINATION DU PRESIDENT',
     'Le Premier Président de la société nommé au terme des présents Statuts sans limitation de durée est :',
-    '- [civilite] [prenoms] [nom]',
-    '[profession] de profession',
+    # 7.1 (Albane 2026-07-06) / M2 (Akainu 2026-07-06) : « Utiliser 'Prénom' (pas 'Prénoms
+    # complets') DANS LES STATUTS » sans reserve -> la nomination du President (dans les statuts)
+    # rend le prenom USUEL ([prenom]), comme la comparution du soussigne. (L'apport rendait deja
+    # [prenom].)
+    '- [civilite] [prenom] [nom]',
+    '[profession_capitale] de profession',
     'Né le [date_naissance] à [ville_naissance] ([departement_naissance])',
     'Demeurant [adresse_personnelle]',
     '[situation_maritale]',
@@ -374,14 +385,15 @@ STATUTS_SPFPL_CESSION_BLOCKS: tuple[str, ...] = (
 )
 
 STATUTS_SPFPL_APPORT_BLOCKS: tuple[str, ...] = (
-    '[denomination_societe]',
+    # 6.8 (Albane 2026-07-06) : titre « Statuts <denomination> » (comme SAS/SELARL).
+    'Statuts [denomination_societe]',
     'Société par actions simplifiées au capital de [capital_social] euros',
     'Société de Participations Financières de Profession Libérale de dentistes',
     'Siège social\xa0: [adresse_siege]',
     'STATUTS',
     'Le soussigné :',
     '- [civilite] [prenom] [nom]',
-    '[profession] de profession',
+    '[profession_capitale] de profession',
     'Né le [date_naissance] à [ville_naissance] ([departement_naissance])',
     'Demeurant [adresse_personnelle]',
     '[situation_maritale]',
@@ -423,7 +435,9 @@ STATUTS_SPFPL_APPORT_BLOCKS: tuple[str, ...] = (
     "Outre leurs apports, les associés pourront verser ou laisser à disposition de la Société toutes sommes dont elle pourrait avoir besoin. Ces sommes sont inscrites au crédit d'un compte ouvert au nom de l'associé.",
     "Les comptes courants ne doivent jamais être débiteurs et la Société a la faculté d'en rembourser tout ou partie, après avis donné par écrit trois mois à l'avance, sauf stipulation contraire.",
     'ARTICLE 8 - CAPITAL SOCIAL',
-    'Le capital social est fixé à la somme de [montant_apports_nature] euros, divisé en [nb_actions] actions de [valeur_nominale_part] ([valeur_nominale_part_lettres]) chacune, entièrement libéré et attribué comme suit :',
+    # 7.5 (Albane 2026-07-06) : valeur nominale en LETTRES + « euro(s) » accorde + CHIFFRES
+    # entre parentheses (pattern SELAS, token [euro_nominal_word] = euro_word(figure)).
+    'Le capital social est fixé à la somme de [montant_apports_nature] euros, divisé en [nb_actions] actions de [valeur_nominale_part_lettres] [euro_nominal_word] ([valeur_nominale_part] €) chacune, entièrement libéré et attribué comme suit :',
     '- Le Docteur [prenom] [nom]………………………………………….……………..[nb_actions] actions',
     'Total des actions composant le capital social……………………………. [nb_actions] actions',
     'ARTICLE 9 - QUALITE D’ASSOCIE',
@@ -729,7 +743,7 @@ STATUTS_SPFPL_APPORT_BLOCKS: tuple[str, ...] = (
     'ARTICLE 38- NOMINATION DU PRESIDENT',
     'Le Premier Président de la société nommé au terme des présents Statuts sans limitation de durée est :',
     '- [civilite] [prenom] [nom]',
-    '[profession] de profession',
+    '[profession_capitale] de profession',
     'Né le [date_naissance] à [ville_naissance] ([departement_naissance])',
     'Demeurant [adresse_personnelle]',
     '[situation_maritale]',

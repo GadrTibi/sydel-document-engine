@@ -10,6 +10,7 @@ from sydel_doc_engine.generators.lot_05.scm_cession_common import mentions_conjo
 from sydel_doc_engine.generators.lot_05.spfpl_common import (
     company_siege_display,
     elision_de,
+    euro_word,
     required_cedant,
     required_cession_parts,
     required_int,
@@ -64,6 +65,13 @@ def _date_fr(value: object) -> str:
     return str(value or "")
 
 
+def _strip_euro(lettres: str) -> str:
+    """Retire une unite « euro(s) » deja presente en fin de lettres (fixtures / robustesse)
+    pour que l'accord `euro_word` sur le MONTANT ne double pas l'unite (« mille euros euros »).
+    Ne touche pas les lettres seules (« mille » -> « mille »)."""
+    return re.sub(r"\s+euros?$", "", lettres.strip(), flags=re.IGNORECASE)
+
+
 def _person_address(person: SpfplPerson, field_name: str) -> str:
     if person.adresse_personnelle_affichee:
         return person.adresse_personnelle_affichee.strip()
@@ -86,6 +94,11 @@ def _repartition_lines(ctx: DocumentGenerationContext) -> list[str]:
     for index, associe in enumerate(associes):
         field = f"associes_cible[{index}]"
         nb_parts = required_int(associe.nb_parts_avant, f"{field}.nb_parts_avant")
+        # 12.5(a) (Albane 2026-07-06) : ne PAS emettre la ligne d'un associe/SPFPL
+        # detenant 0 part (ex. l'acquereur pre-liste avant la cession) — une ligne
+        # « detenant 0 parts » n'a pas de sens dans la repartition du capital.
+        if nb_parts <= 0:
+            continue
         label = "part" if nb_parts == 1 else "parts"
         if associe.type == "personne_morale":
             who = required_text(associe.denomination, f"{field}.denomination")
@@ -152,11 +165,78 @@ class ActeCessionPartsSpfplGenerator:
         cible_capital = required_text(societe_cible.capital_social, "societe_cible.capital_social")
         ordre = cedant.ordre
         conjoint = cedant.conjoint
+
+        # 12.3 (Albane 2026-07-06) : le modele porte « d’[valeur_nominale_part_lettres] de valeur
+        # nominale ». Le front pose la valeur nominale en lettres SANS unite (« cent ») -> il
+        # manquait « euro(s) » (« de cent de valeur nominale »). On accole l'unite accordee au
+        # MONTANT numerique (`euro_word`) : « cent » + « euros » -> « de cent euros de valeur
+        # nominale ». Idem si la valeur porte deja « euros » (fixture) : on ne double pas.
+        valeur_nominale_lettres = required_text(
+            societe_cible.valeur_nominale_part_lettres,
+            "societe_cible.valeur_nominale_part_lettres",
+        )
+        if "euro" in valeur_nominale_lettres.lower():
+            valeur_nominale_display = valeur_nominale_lettres
+        else:
+            valeur_nominale_display = (
+                f"{valeur_nominale_lettres} "
+                f"{euro_word(societe_cible.valeur_nominale_part)}"
+            )
+
+        # 12.2 (Albane 2026-07-06) : identite de l'acquereur (SPFPL en cours de constitution).
+        # Le front injecte la forme ABREGEE (« par actions simplifiee », non accentuee) dans
+        # `forme_sociale` -> la 2e ligne d'identite rendait « par actions simplifiee » au lieu de
+        # la forme LEGALE COMPLETE. On rend la forme complete validee (identique au titre des
+        # statuts SPFPL, cf. statuts_spfpl_templates) : « Société de Participations Financières de
+        # Profession Libérale de <Profession-Plurielle> par actions simplifiée ». La profession
+        # plurielle vient du cedant (donnee de dossier), titre-casee (« Chirurgiens-Dentistes »).
+        profession_pluriel = required_text(
+            cedant.profession_reglementee_pluriel,
+            "cedant.profession_reglementee_pluriel",
+        )
+        forme_sociale_complete_acquereur = (
+            "Société de Participations Financières de Profession Libérale de "
+            f"{profession_pluriel.title()} par actions simplifiée"
+        )
+
+        # 12.6 (Albane 2026-07-06) / B1 (Akainu 2026-07-06) : prix — accord « euro(s) » sur le
+        # MONTANT et ordre LETTRES puis CHIFFRES. Le front pose desormais les lettres SANS unite
+        # figee (« un », « mille ») ; on ACCORDE l'unite au montant via `euro_word` (« un euro »
+        # pour 1, « mille euros » pour >1) -> plus de « un euros ». `_strip_euro` neutralise une
+        # unite deja presente dans une fixture (« mille euros ») pour eviter un double « euro ».
+        # (a) PRIX UNITAIRE : modele « [prix_unitaire_part_lettres] ([prix_unitaire_part]) euro
+        #     part cedee ». Fragment LISIBLE « <lettres> euro(s) (<chiffres> €) » -> la ligne rend
+        #     « prix de un euro (1 €) part cedee » (unite accolee aux lettres, lien euro<->part
+        #     preserve, plus de « (1 000) part cedee » sans unite).
+        # (b) PRIX TOTAL : modele « [prix_cession] € ([prix_cession_lettres]) » (chiffres puis
+        #     lettres). Albane veut LETTRES puis CHIFFRES -> « <lettres> euro(s) (<chiffres> €) ».
+        prix_unitaire_chiffres = required_text(
+            cession_parts.prix_unitaire, "cession_parts.prix_unitaire"
+        )
+        prix_unitaire_lettres = _strip_euro(
+            required_text(
+                cession_parts.prix_unitaire_lettres, "cession_parts.prix_unitaire_lettres"
+            )
+        )
+        prix_unitaire_euro = euro_word(cession_parts.prix_unitaire)
+        prix_unitaire_fragment = (
+            f"{prix_unitaire_lettres} {prix_unitaire_euro} ({prix_unitaire_chiffres} €)"
+        )
+        prix_cession_chiffres = required_text(
+            cession_parts.prix_total, "cession_parts.prix_total"
+        )
+        prix_cession_lettres = _strip_euro(
+            required_text(cession_parts.prix_total_lettres, "cession_parts.prix_total_lettres")
+        )
+        prix_cession_euro = euro_word(cession_parts.prix_total)
+        prix_cession_fragment = (
+            f"{prix_cession_lettres} {prix_cession_euro} ({prix_cession_chiffres} €)"
+        )
         # R0702-02 / Akainu M1 (2026-07-02) : le menu matrimonial complet ouvre le cas NON-MARIE.
         # Le modele porte « [situation_maritale_cedant] avec [conjoint...] » (« avec » LITTERAL) ->
         # un non-marie faisait fuiter « célibataire avec (À COMPLÉTER : …) » (conjoint fantome +
         # placeholder shippe). On branche la ligne comme l'acte d'ACTIONS (garde PARTAGE
-        # mentions_conjoint, R22-02) : marie -> ligne complete BYTE-IDENTIQUE ; sinon -> statut seul.
+        # mentions_conjoint, R22-02) : marie -> ligne complete byte-identique ; sinon statut seul.
         # La cle COMBINEE (plus longue) est traitee AVANT les tokens simples par `_replace`, donc
         # elle consomme tout le fragment « [situation_maritale_cedant] avec [conjoint...] » de P36.
         cedant_maritale = required_text(cedant.situation_maritale, "cedant.situation_maritale")
@@ -177,7 +257,7 @@ class ActeCessionPartsSpfplGenerator:
             ligne_maritale_cedant = cedant_maritale
         repl = {
             # Cle COMBINEE (fragment matrimonial complet) : branche marie/non-marie, byte-identique
-            # au modele pour un marie. Placee avant les tokens simples (longest-first dans _replace).
+            # au modele pour un marie. Placee avant les tokens simples (longest-first, _replace).
             "[situation_maritale_cedant] avec [civilite_conjoint_cedant] "
             "[prenom_conjoint_cedant] [nom_conjoint_cedant]": ligne_maritale_cedant,
             # Cedant (personne physique)
@@ -202,6 +282,16 @@ class ActeCessionPartsSpfplGenerator:
             "[situation_maritale_cedant]": cedant_maritale,
             "[numero_rpps_cedant]": required_text(
                 ordre.numero_rpps if ordre else None, "cedant.ordre.numero_rpps"
+            ),
+            # 12.4 (Albane 2026-07-06) : le modele fige « du [departement] » devant le departement
+            # de l'Ordre -> « des chirurgiens-dentistes du Paris » (agrammatical). On rend la
+            # preposition correcte via `elision_de` (« de Paris », « d’Ardeche ») avec une cle
+            # COMBINEE qui consomme le « du » fige du modele (traitee avant le token simple).
+            "du [ordre_departemental_cedant]": elision_de(
+                required_text(ordre.departement if ordre else None, "cedant.ordre.departement")
+            ),
+            "du [departement_inscription_societe]": elision_de(
+                required_text(ordre.departement if ordre else None, "cedant.ordre.departement")
             ),
             "[ordre_departemental_cedant]": required_text(
                 ordre.departement if ordre else None, "cedant.ordre.departement"
@@ -234,26 +324,20 @@ class ActeCessionPartsSpfplGenerator:
             "[departement_inscription_societe]": required_text(
                 ordre.departement if ordre else None, "cedant.ordre.departement"
             ),
-            # SP3 (Akainu M3) : champ CTX « cent euros » + elision corrigee. Le modele colle
-            # « d’[valeur…] » : « cent euros » commence par une consonne -> « DE cent euros »
-            # (pas « d’cent euros »). La cle combinee (plus longue) est traitee en premier.
-            "d’[valeur_nominale_part_lettres]": elision_de(
-                required_text(
-                    societe_cible.valeur_nominale_part_lettres,
-                    "societe_cible.valeur_nominale_part_lettres",
-                )
-            ),
-            "[valeur_nominale_part_lettres]": required_text(
-                societe_cible.valeur_nominale_part_lettres,
-                "societe_cible.valeur_nominale_part_lettres",
-            ),
+            # 12.3 (Albane 2026-07-06) : « d’[valeur…] de valeur nominale ». La valeur porte
+            # desormais l'unite accordee (« cent euros » / « un euro », cf. valeur_nominale_display)
+            # -> plus de « de cent de valeur nominale ». Elision : « cent euros » commence par une
+            # consonne -> « DE cent euros » (pas « d’cent euros »). La cle combinee (plus longue)
+            # est traitee en premier.
+            "d’[valeur_nominale_part_lettres]": elision_de(valeur_nominale_display),
+            "[valeur_nominale_part_lettres]": valeur_nominale_display,
             # Societe cessionnaire (SPFPL acquereur)
             "[denomination_societe_cessionnaire]": required_text(
                 societe_spfpl.denomination, "societe_spfpl.denomination"
             ),
-            "[forme_sociale_acquereur]": required_text(
-                societe_spfpl.forme_sociale, "societe_spfpl.forme_sociale"
-            ),
+            # 12.2 (Albane 2026-07-06) : forme LEGALE COMPLETE de l'acquereur (SPFPL en cours de
+            # constitution), pas l'abrege « par actions simplifiee » injecte par le front.
+            "[forme_sociale_acquereur]": forme_sociale_complete_acquereur,
             "[capital_social_cessionnaire]": required_text(
                 societe_spfpl.capital_social, "societe_spfpl.capital_social"
             ),
@@ -284,6 +368,12 @@ class ActeCessionPartsSpfplGenerator:
             "[nb_parts_cedees_lettres]": required_text(
                 cession_parts.nb_parts_lettres, "cession_parts.nb_parts_lettres"
             ),
+            # 12.6 (Albane 2026-07-06) : cles COMBINEES (traitees avant les tokens simples) pour
+            # (a) accorder « euro(s) » au prix UNITAIRE et (b) inverser l'ordre du prix TOTAL en
+            # LETTRES puis CHIFFRES. La cle unitaire consomme le « euro » fige du modele (l'unite
+            # accordee est deja dans `prix_unitaire_fragment`) ; la cle totale consomme « € (…) ».
+            "[prix_unitaire_part_lettres] ([prix_unitaire_part]) euro": prix_unitaire_fragment,
+            "[prix_cession] € ([prix_cession_lettres])": prix_cession_fragment,
             "[prix_unitaire_part]": required_text(
                 cession_parts.prix_unitaire, "cession_parts.prix_unitaire"
             ),
@@ -301,6 +391,13 @@ class ActeCessionPartsSpfplGenerator:
                 cession_parts.nombre_exemplaires_lettres
                 or (ctx.document.nombre_exemplaires_lettres if ctx.document else None),
                 "cession_parts.nombre_exemplaires_lettres",
+            ),
+            # 12.7 (Albane 2026-07-06) : phrase de paiement — « par le moyen … ou d’un virement »
+            # (incorrect) -> wording valide d'Albane « Le prix est payé au moyen d’un chèque ou
+            # virement. ». Texte FIXE du modele : on le remplace mot pour mot (apostrophe courbe
+            # U+2019, byte-identique au modele). Aucun crochet -> hors garde anti-résidu.
+            "Le prix est payé ce jour par le moyen d’un chèque ou d’un virement.": (
+                "Le prix est payé au moyen d’un chèque ou virement."
             ),
         }
         return repl

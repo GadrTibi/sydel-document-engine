@@ -80,11 +80,13 @@ from sydel_doc_engine.front_app.field_derivations import (
     situation_display,
 )
 from sydel_doc_engine.front_app.front_widgets import (
-    date_input_with_today,
+    copyable_text_input,
     date_input_freeform,
+    date_input_with_today,
     mandataire_inputs,
     seed_closing_date,
     seed_exercice_dates,
+    seed_if_empty,
     seed_siege_from_perso,
     seed_signature_lieu,
     siege_same_as_perso_checkbox,
@@ -186,6 +188,11 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
     seed_closing_date(prefix)
     # Parite gold (RAF-003a) : recopie siege <- adresse perso si la case est cochee.
     seed_siege_from_perso(prefix)
+    # §6.5 / §6.6 (retours Albane) : la profession de l'associe unique ET la profession
+    # reglementee de la societe cible sont pre-remplies « chirurgien-dentiste » (SPFPL
+    # dentiste), MODIFIABLES. Seede AVANT les widgets (Streamlit interdit la modif post-widget).
+    seed_if_empty(f"{prefix}_profession_associe_unique", "chirurgien-dentiste")
+    seed_if_empty(f"{prefix}_cible_profession", "chirurgien-dentiste")
     st.subheader("Donnees a saisir")
     st.markdown(f"**Societe SPFPL ({operation})**")
     denomination = _t(st, prefix, "denomination", "Denomination SPFPL")
@@ -251,6 +258,10 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
     prenom = _t(col_f, prefix, "prenom", "Prenom")
     prenoms = _t(col_g, prefix, "prenoms", "Prenoms complets (etat civil)")
     nom = _t(st, prefix, "nom", "Nom")
+    # §6.6 (retour Albane) : profession de l'associe unique pre-remplie « chirurgien-dentiste »,
+    # MODIFIABLE (le titre « Docteur » des mentions ordinales reste separe — titre_affichage).
+    # Ne bloque PAS la validation (repli sur « chirurgien-dentiste » cote moteur).
+    profession_associe_unique = _t(st, prefix, "profession_associe_unique", "Profession")
     col_j, col_k, col_l = st.columns(3)
     # R29-06 (Rafael) : selecteur de date (calendrier) + « Aujourd'hui » sur la date de
     # naissance SPFPL. Champ texte JJ/MM/AAAA conserve, cle `{prefix}_date_naissance`
@@ -375,8 +386,8 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
 
     st.markdown("**Societe cible**")
     col_z, col_aa2 = st.columns(2)
-    cible_denomination = _t(col_z, prefix, "cible_denomination", "Denomination cible")
-    cible_siege = _t(col_aa2, prefix, "cible_siege", "Siege cible (affiche)")
+    cible_denomination = _t(col_z, prefix, "cible_denomination", "Dénomination cible (SEL)")
+    cible_siege = _t(col_aa2, prefix, "cible_siege", "Siège cible (affiché)")
     col_ab, col_ac = st.columns(2)
     cible_ville_rcs = _t(col_ab, prefix, "cible_ville_rcs", "RCS cible (ville)")
     cible_numero_rcs = _t(col_ac, prefix, "cible_numero_rcs", "Numero RCS cible")
@@ -477,6 +488,9 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
         "prenom": prenom,
         "prenoms": prenoms or prenom,
         "nom": nom,
+        # §6.6 : profession saisie de l'associe unique (defaut « chirurgien-dentiste »,
+        # modifiable). Propagee a founder.profession dans build_generation_context.
+        "profession_associe_unique": profession_associe_unique,
         # §14.2 : genre derive de la civilite CIVILE (M./Mme), plus de selecteur
         # « Genre civil » redondant.
         "genre": derive_gender_from_civilite(civilite),
@@ -787,7 +801,10 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         prenoms=str(payload.get("prenoms") or payload.get("prenom") or ""),
         nom=str(payload.get("nom") or ""),
         genre=founder_genre,
-        profession="chirurgien-dentiste",
+        # §6.6 (retour Albane) : profession de l'associe unique SAISIE (defaut
+        # « chirurgien-dentiste », modifiable). Repli sur le defaut pour les appelants
+        # directs / tests legacy qui ne fournissent pas le champ.
+        profession=str(payload.get("profession_associe_unique") or "chirurgien-dentiste"),
         profession_reglementee="chirurgiens-dentistes",
         profession_reglementee_pluriel="chirurgiens-dentistes",
         # LIVE-03 : date de naissance a saisie LIBRE -> re-accentue les mois avant
@@ -856,9 +873,12 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
             nb_parts_lettres=number_words_from_value(nb_cedees),
             plage_parts=str(cession_data.get("plage_cedee") or ""),  # type: ignore[union-attr]
             prix_unitaire=format_grouped_numeric_value(prix_unitaire_num),
-            prix_unitaire_lettres=_euros_lettres(prix_unitaire_num),
+            # B1 (Akainu 2026-07-06) : lettres SANS unite figee (« un », « mille »), comme la
+            # valeur nominale art.8. L'acte accorde « euro(s) » au MONTANT via `euro_word`
+            # (« un euro » pour 1, « mille euros » pour 1000) -> plus de « un euros » fige.
+            prix_unitaire_lettres=number_words_from_value(prix_unitaire_num),
             prix_total=format_grouped_numeric_value(prix_total_num),
-            prix_total_lettres=_euros_lettres(prix_total_num),
+            prix_total_lettres=number_words_from_value(prix_total_num),
             nombre_exemplaires_lettres="trois",
         )
     ctx = DocumentGenerationContext(
@@ -1199,13 +1219,60 @@ def _professional_entity(payload: dict[str, object], role: str) -> ProfessionalE
     )
 
 
+def _spfpl_cible_siege_input(prefix: str) -> str:
+    """Adresse du siege de la cible + case « Meme adresse que le siege de la SPFPL ».
+
+    §6.1 (retour Albane) : reutilise le patron O24-12 SELAS (shell.py:1414-1439). La
+    SAISIE MANUELLE vit dans `manual_key` (jamais ecrasee par le report) ; le champ
+    visible (`field_key`) est pilote par l'etat de la case :
+      - cochee + siege SPFPL renseigne -> MIROIR du siege SPFPL, champ DESACTIVE ;
+      - sinon (decochee, ou cochee mais siege vide) -> EDITABLE, valeur = saisie manuelle.
+    A la transition coche->decoche on RESTAURE `manual_key`. En mode editable on
+    resynchronise `manual_key` APRES le widget -> la saisie survit a tout cycle coche/decoche.
+    """
+    field_key = f"{prefix}_cible_siege_cession"
+    prev_key = f"{prefix}_cible_siege_meme_spfpl_prev"
+    manual_key = f"{prefix}_cible_siege_manuelle"
+    if field_key not in st.session_state:
+        st.session_state[field_key] = ""
+    # Adresse du siege de la SPFPL saisie plus haut dans le meme run (champ une-ligne).
+    siege_spfpl = str(st.session_state.get(f"{prefix}_siege") or "").strip()
+    was_checked = bool(st.session_state.get(prev_key))
+    checked = st.checkbox(
+        "Même adresse que le siège de la SPFPL",
+        key=f"{prefix}_cible_siege_meme_spfpl",
+        help="Coché : recopie l'adresse du siège de la SPFPL dans l'adresse de la cible.",
+    )
+    locked = False
+    if checked and siege_spfpl:
+        st.session_state[field_key] = siege_spfpl  # miroir non editable
+        locked = True
+    elif was_checked and not checked:
+        # Coche -> decoche : restaurer la derniere saisie manuelle.
+        st.session_state[field_key] = str(st.session_state.get(manual_key) or "")
+    st.session_state[prev_key] = checked
+    value = str(
+        copyable_text_input(
+            st,
+            "Adresse du siège de la cible (N° et voie, CP Ville)",
+            key=field_key,
+            disabled=locked,
+        )
+    ).strip()
+    if not locked:
+        # En mode editable, la valeur courante EST la saisie manuelle -> memorisee
+        # pour survivre a un futur report (coche).
+        st.session_state[manual_key] = value
+    return value
+
+
 def _render_spfpl_cession_cible(prefix: str) -> dict[str, object]:
     """Sous-formulaire cession SPFPL : repartition des associes de la cible
     (avant/apres), parts cedees au holding, prix par part, forme complete de la cible.
     Alimente la note d'info (DOC-037), le PV d'agrement (DOC-038/039) et l'acte (DOC-040)."""
     st.markdown("**Cession — repartition de la cible & prix**")
     col_a, col_b, col_c = st.columns(3)
-    nb_cedees = _i(col_a, prefix, "cession_nb_parts_cedees", "Parts cedees au holding")
+    nb_cedees = _i(col_a, prefix, "cession_nb_parts_cedees", "Parts cédées à la holding")
     prix_unitaire = _t(
         col_b, prefix, "cession_prix_unitaire", "Prix par part", hint="ex : 1 000"
     )
@@ -1220,9 +1287,10 @@ def _render_spfpl_cession_cible(prefix: str) -> dict[str, object]:
     # O24-03 : siege de la cible sur UNE ligne (parse interne -> num/voie/cp/ville
     # exiges par l'acte/PV de cession). Remplace l'ancienne grille No/Voie/CP/Ville
     # ET le champ « Siege cible (affiche) » du bloc principal (double-saisie).
-    cible_siege_ligne = _t(
-        st, prefix, "cible_siege_cession", "Adresse du siège de la cible (N° et voie, CP Ville)"
-    )
+    # §6.1 (retour Albane) : case « Meme adresse que le siege de la SPFPL » -> recopie
+    # l'adresse du siege SPFPL dans l'adresse cible ; champ desactive (miroir) mais la
+    # saisie manuelle survit a la decoche (patron O24-12 SELAS, shell.py:1414-1439).
+    cible_siege_ligne = _spfpl_cible_siege_input(prefix)
     _cible_struct = _parse_address_full(cible_siege_ligne)
     cible_siege_num = _cible_struct.num_voie if _cible_struct else ""
     cible_siege_voie = _cible_struct.voie if _cible_struct else ""
@@ -1282,12 +1350,6 @@ def _parse_amount(value: object) -> int:
     raw = str(value or "").replace(" ", "").replace(" ", "").replace("\xa0", "")
     digits = "".join(c for c in raw if c.isdigit())
     return int(digits) if digits else 0
-
-
-def _euros_lettres(amount: int) -> str:
-    """Montant en lettres + « euros » (ex. 60000 -> « soixante mille euros »)."""
-    lettres = number_words_from_value(amount)
-    return f"{lettres} euros" if lettres else ""
 
 
 def _annee_lettres(value: object) -> str:

@@ -268,3 +268,61 @@ def test_pv_plusieurs_associes_blocks_missing_total_presence(tmp_path: Path) -> 
 
     with pytest.raises(ValueError, match="totalite des parts"):
         PvAgrementCessionSpfplPlusieursAssociesGenerator().generate(ctx, tmp_path)
+
+
+# ---------------------------------------------------------------------------
+# Verrous de VALEUR / OMISSION (Akainu 2026-07-06).
+# ---------------------------------------------------------------------------
+
+
+def test_note_information_shows_ceded_parts_not_spfpl_actions(tmp_path: Path) -> None:
+    """8.2 (Albane 2026-07-06) — VALEUR : en cession, la note affiche le nombre de PARTS
+    CÉDÉES a la holding (`cession_parts.nb_parts`), JAMAIS le nombre d'actions de la SPFPL
+    (`operation_titres.nb_titres`). On rend les deux DIFFERENTS (60 parts vs 600 actions)
+    pour que le test attrape une inversion — une simple presence ne le ferait pas."""
+    ctx = _unique_context()
+    assert ctx.cession_parts is not None
+    ctx.cession_parts.nb_parts = 60  # parts cedees a la holding
+    ctx.operation_titres = OperationTitres(nb_titres=600)  # actions SPFPL (leurre)
+
+    text = _docx_text(NoteInformationGenerator().generate(ctx, tmp_path))
+    assert "60 parts de la" in text  # parts cedees
+    assert "600 parts de la" not in text  # jamais le nb d'actions SPFPL
+
+
+def _premiere_resolution_line(text: str) -> str:
+    """La PREMIÈRE RÉSOLUTION (« … autorise la cession … à compter de ce jour. »), ou
+    s'insere (ou non) la mention § 13 « numérotées de <plage> inclus »."""
+    for line in text.split("\n"):
+        if "autorise la cession" in line:
+            return line
+    raise AssertionError("PREMIÈRE RÉSOLUTION (« autorise la cession ») absente du PV.")
+
+
+def test_pv_agrement_plage_mention_present_when_range_set(tmp_path: Path) -> None:
+    """13 (Albane 2026-07-06) — la mention « numérotées de <plage> inclus » est PRESENTE
+    dans la resolution quand la plage est renseignee (fixture « 41 a 100 »)."""
+    ctx = _unique_context()
+    assert ctx.cession_parts is not None
+    assert ctx.cession_parts.plage_parts  # fixture non vide
+    text = _docx_text(
+        PvAgrementCessionSpfplAssocieUniqueGenerator().generate(ctx, tmp_path)
+    )
+    resolution = _premiere_resolution_line(text)
+    assert "numérotées de 41 a 100 inclus à compter de ce jour." in resolution
+
+
+def test_pv_agrement_plage_mention_omitted_when_range_empty(tmp_path: Path) -> None:
+    """13 (Albane 2026-07-06) — OMISSION : plage vide -> la mention « numérotées de … inclus »
+    est ENTIEREMENT omise de la resolution (pas de « numérotées de  inclus » incomplet) ;
+    la phrase enchaine directement « … à la <SPFPL>, à compter de ce jour. »."""
+    ctx = _unique_context()
+    assert ctx.cession_parts is not None
+    ctx.cession_parts.plage_parts = ""  # plage non renseignee
+    text = _docx_text(
+        PvAgrementCessionSpfplAssocieUniqueGenerator().generate(ctx, tmp_path)
+    )
+    resolution = _premiere_resolution_line(text)
+    assert "numérotées de" not in resolution  # mention omise dans la resolution
+    assert "inclus" not in resolution
+    assert "à la SPFPL MARTIN, à compter de ce jour." in resolution

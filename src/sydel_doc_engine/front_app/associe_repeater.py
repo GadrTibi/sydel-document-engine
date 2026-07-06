@@ -35,6 +35,7 @@ from sydel_doc_engine.front_app.field_derivations import (
     NATIONALITY_PRESETS,
     accentuate_french_months,
     derive_gender_from_civilite,
+    format_numeric_value,
     matrimonial_status_value,
     number_words_from_value,
     regime_communautaire_from_status,
@@ -208,15 +209,41 @@ def _int(prefix: str, field: str, label: str, *, container=st) -> int:
     return int(container.number_input(label, min_value=0, step=1, key=key))
 
 
+def _societe_capital_montant(config: RepeaterConfig) -> str:
+    """Montant du capital social de la societe, lu depuis l'etat de saisie.
+
+    Retour Albane §1 (2026-06-28) : dans une societe UNIPERSONNELLE, on ne demande
+    PAS le montant d'apport de l'associe unique — il vaut FORCEMENT le capital social
+    (« si le capital est de 1.000 €, l'apport de l'associe unique est de 1.000 € »).
+    Le slice civil (`civil_statuts_slice`) ecrit le capital dans la cle de session
+    `{prefix}_capital_social` (number_input) ; on le reformate ici EXACTEMENT comme le
+    payload (`format_numeric_value`) pour rester byte-fidele a une saisie manuelle
+    (« 1000 »). Vide tant que le capital n'est pas saisi -> apport vide, comme avant.
+    """
+    return format_numeric_value(
+        st.session_state.get(f"{config.key_prefix}_capital_social", "")
+    )
+
+
 def _parts_block(
     config: RepeaterConfig,
     prefix: str,
     role_statutaire: str | None,
 ) -> tuple[StatutsCivilsApport, StatutsCivilsParts, int]:
     unite = config.titre_unite
-    col_a, col_b = st.columns(2)
-    apport_montant = _text(prefix, "apport_montant", "Apport (montant)", container=col_a)
-    nb_titres = _int(prefix, "nb_titres", f"Nombre de {unite}", container=col_b)
+    # §1 (Albane) : societe UNIPERSONNELLE (un seul associe) -> le montant d'apport de
+    # l'associe unique n'est plus saisi ; on reprend AUTOMATIQUEMENT le capital social.
+    # SEL d'exercice (SELAS, `collect_exercice_fields`) exclu : ses apports en actions
+    # sont geres par la couche exercice, hors de ce chemin civil. Pluripersonnel (>=2)
+    # inchange : chaque associe garde son apport individuel (apports repartis).
+    unipersonnel = not config.collect_exercice_fields and associe_count(config) == 1
+    if unipersonnel:
+        apport_montant = _societe_capital_montant(config)
+        nb_titres = _int(prefix, "nb_titres", f"Nombre de {unite}")
+    else:
+        col_a, col_b = st.columns(2)
+        apport_montant = _text(prefix, "apport_montant", "Apport (montant)", container=col_a)
+        nb_titres = _int(prefix, "nb_titres", f"Nombre de {unite}", container=col_b)
 
     apport = StatutsCivilsApport(
         montant=apport_montant,

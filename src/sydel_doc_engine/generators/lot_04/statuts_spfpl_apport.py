@@ -22,6 +22,7 @@ from sydel_doc_engine.generators.lot_04.statuts_spfpl_common import (
 from sydel_doc_engine.generators.lot_04.statuts_spfpl_templates import (
     STATUTS_SPFPL_APPORT_BLOCKS,
 )
+from sydel_doc_engine.utils.grammar import euro_word
 
 OUTPUT_FILENAME = "statuts_spfpl_apport.docx"
 
@@ -45,6 +46,13 @@ class StatutsSpfplApportGenerator:
             raise ValueError(f"commissaire_aux_apports est obligatoire pour {DOCUMENT_CODE}.")
         if ctx.exercice_social is None:
             raise ValueError(f"exercice_social est obligatoire pour {DOCUMENT_CODE}.")
+
+        # 7.5 : figure de la valeur nominale (chiffres) reutilisee pour l'accord euro(s).
+        valeur_nominale_figure = required_text(
+            capital_souscription.valeur_nominale_action
+            or apport_titres.valeur_nominale_action,
+            "capital_souscription.valeur_nominale_action",
+        )
 
         replacements = founder_common_replacements(founder, "actionnaire_unique")
         replacements.update(
@@ -114,15 +122,13 @@ class StatutsSpfplApportGenerator:
                         "capital_souscription.nb_actions_total",
                     )
                 ),
-                "[valeur_nominale_part]": required_text(
-                    capital_souscription.valeur_nominale_action
-                    or apport_titres.valeur_nominale_action,
-                    "capital_souscription.valeur_nominale_action",
-                ),
+                "[valeur_nominale_part]": valeur_nominale_figure,
                 "[valeur_nominale_part_lettres]": required_text(
                     apport_titres.valeur_nominale_action_lettres,
                     "apport_titres.valeur_nominale_action_lettres",
                 ),
+                # 7.5 : accord « euro » / « euros » sur la FIGURE de la valeur nominale.
+                "[euro_nominal_word]": euro_word(valeur_nominale_figure),
                 "[fin_exercice]": required_text(
                     ctx.exercice_social.date_cloture_premier_exercice,
                     "exercice_social.date_cloture_premier_exercice",

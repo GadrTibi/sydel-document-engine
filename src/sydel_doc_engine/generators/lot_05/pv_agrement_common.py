@@ -97,6 +97,10 @@ def add_resolution_agrement(
     societe_cible = required_societe_cible(ctx)
     cedant = required_cedant(ctx)
     cession_parts = required_cession_parts(ctx)
+    # Retour Albane 13 (2026-07) : la mention « numérotées de [plage] inclus » doit être OMISE
+    # entièrement quand la plage de parts n'est pas renseignée (sinon la phrase reste incomplète).
+    # Plage renseignée -> phrase complète inchangée ; plage vide/None -> on saute la mention.
+    plage_mention = _plage_mention(cession_parts)
     add_paragraph(docx, "PREMIÈRE RÉSOLUTION", bold=True, space_before_pt=10)
     add_paragraph(
         docx,
@@ -106,8 +110,7 @@ def add_resolution_agrement(
             "qu'il détient de la "
             f"{required_text(societe_cible.denomination, 'societe_cible.denomination')}, à la "
             f"{required_text(societe_spfpl.denomination, 'societe_spfpl.denomination')}, "
-            f"numérotées de {_plage_parts(cession_parts)} "
-            "inclus à compter de ce jour."
+            f"{plage_mention}à compter de ce jour."
         ),
         alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
     )
@@ -185,8 +188,14 @@ def _capital_social(societe_cible) -> str:
     return required_text(societe_cible.capital_social, "societe_cible.capital_social")
 
 
-def _plage_parts(cession_parts) -> str:
-    return required_text(cession_parts.plage_parts, "cession_parts.plage_parts")
+def _plage_mention(cession_parts) -> str:
+    # Retour Albane 13 : plage renseignee -> « numérotées de <plage> inclus » (mention complete,
+    # espace final pour enchainer sur « à compter de ce jour. ») ; plage vide/None -> chaine vide
+    # (la mention est entierement omise, on ne rend PAS le marqueur « (À COMPLÉTER ...) »).
+    plage = cession_parts.plage_parts
+    if plage is None or not plage.strip():
+        return ""
+    return f"numérotées de {plage.strip()} inclus "
 
 
 def _capital_social_lettres(societe_cible) -> str:

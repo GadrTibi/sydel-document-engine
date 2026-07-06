@@ -23,6 +23,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     new_document,
 )
 from sydel_doc_engine.utils.dates import format_date_fr
+from sydel_doc_engine.utils.departements import departement_nom
 
 OUTPUT_FILENAME = "demande_inscription_ordre.docx"
 DOCUMENT_CODE = "CODE-ORDRE-001"
@@ -192,9 +193,15 @@ def _conseil_departemental_lines(
     # `profession_ligne_destinataire` porte deja la profession AU PLURIEL (cf. prefill
     # front : `profession_pluriel`), comme « médecins » / « chirurgiens-dentistes ».
     if ordre.departement_inscription and ordre.departement_inscription.strip():
-        departement = _required_text(
-            ordre.departement_inscription,
-            "ordre.departement_inscription",
+        # 9.2 (Albane 2026-07-06) : le destinataire s'affiche par le NOM du departement
+        # (« du Rhône », « de Seine-et-Marne »), plus par le numero (« de 77 »). Le champ
+        # porte parfois le numero -> `departement_nom` le convertit (passthrough si deja
+        # un nom, ex. « Rhône »). Le connecteur grammatical (R6) reste geré separement.
+        departement = departement_nom(
+            _required_text(
+                ordre.departement_inscription,
+                "ordre.departement_inscription",
+            )
         )
         # R6 (retours Rafael 2026-06-18) : connecteur grammatical configurable
         # (« de » / « du » / « des ») avant le departement, pour gerer l'accord. Defaut

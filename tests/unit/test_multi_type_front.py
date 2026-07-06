@@ -1433,6 +1433,8 @@ def test_spfpl_cession_comparution_marie_ligne_complete(
     # La comparution des statuts de cession rend EXACTEMENT « <statut accorde> sous le régime
     # de <regime> avec <conjoint> » (wording propre a la SPFPL : « avec », pas « époux/épouse
     # de »). Assertion de ligne COMPLETE (pas une sous-chaine d'un seul regime/genre).
+    # M1 (Akainu 2026-07-06) : 7.2 exige une MAJUSCULE en tete de chaque element du soussigne
+    # -> la ligne matrimoniale commence desormais par « Marié »/« Mariée » (capitalisee).
     payload = _spfpl_payload("SPFPL cession")
     payload["genre"] = genre
     payload["civilite"] = civilite
@@ -1443,8 +1445,11 @@ def test_spfpl_cession_comparution_marie_ligne_complete(
         p for p in generated.docx_paths if p.name == "statuts_spfpl_cession.docx"
     )
     text = _docx_text(statuts)
-    expected = f"{statut} sous le régime de {regime} avec Madame Alice Martin"
+    statut_capitalise = statut[0].upper() + statut[1:]  # « marié » -> « Marié »
+    expected = f"{statut_capitalise} sous le régime de {regime} avec Madame Alice Martin"
     assert expected in text, f"comparution mariee attendue absente ({slug}) : {expected!r}"
+    # M1 : jamais la version minuscule en tete de la ligne matrimoniale.
+    assert f"\n{statut} sous le régime" not in text
 
 
 @pytest.mark.parametrize("structure", ["SPFPL cession", "SPFPL apport"])
@@ -2650,6 +2655,58 @@ def test_front_routes_to_sci_slice_and_generates(tmp_path: Path, monkeypatch) ->
     download_labels = [item.label for item in app.get("download_button")]
     assert "Telecharger statuts_sci.docx" in download_labels
     assert "Telecharger le dossier ZIP" in download_labels
+
+
+def test_sci_unipersonnel_apport_derived_from_capital(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """§1 (Albane) — VALEUR / DERIVATION : une societe UNIPERSONNELLE (un seul associe)
+    ne SAISIT PLUS le montant d'apport de l'associe unique — il vaut FORCEMENT le capital
+    social (pas de double saisie). Verrou de bout en bout sur le FLUX REEL (repeater) :
+    - le champ « Apport (montant) » de l'associe unique n'existe PAS (widget absent) ;
+    - les statuts SCI rendent le capital comme apport (« La somme de mille euros, ») ;
+    - une seule ligne « La somme de » (pas d'apport separe qui doublerait le montant)."""
+    from streamlit.testing.v1 import AppTest
+
+    from sydel_doc_engine.front_app import shell
+
+    monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-sci-uni")
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
+    app.selectbox(key="clean_dossier_type").set_value("SCI creation V1")
+    app = app.run(timeout=180)
+    next(b for b in app.button if "test_data" in str(b.key)).click()
+    app = app.run(timeout=180)
+    # Passer en UNIPERSONNEL : retirer le 2e associe seede par les donnees de test.
+    next(b for b in app.button if str(b.key) == "sci_remove").click()
+    app = app.run(timeout=180)
+
+    # §1 : le champ d'apport de l'associe unique a DISPARU (repris auto du capital).
+    assert "sci_associe_0_apport_montant" not in [str(w.key) for w in app.text_input]
+
+    def set_number(key: str, value: int) -> None:
+        next(w for w in app.number_input if str(w.key) == key).set_value(value)
+
+    # Aligner le total de parts sur l'associe unique restant + capital = 1000 €.
+    parts_unique = next(
+        w for w in app.number_input if str(w.key) == "sci_associe_0_nb_titres"
+    ).value
+    set_number("sci_nb_parts_total", int(parts_unique))
+    set_number("sci_capital_social", 1000)
+    app = app.run(timeout=180)
+
+    generate_button = next(
+        b for b in app.button if str(b.key) == "clean_typed_generate_dossier"
+    )
+    assert generate_button.disabled is False
+    assert not any("Blocage" in item.value for item in app.caption)
+    generate_button.click()
+    app = app.run(timeout=180)
+
+    text = _dir_docx_text(tmp_path / "ui-sci-uni")
+    # L'apport de l'associe unique = capital (1000 €) rendu en lettres.
+    assert "La somme de mille euros," in text
+    # Pas de double saisie : une seule ligne d'apport (le capital), jamais deux.
+    assert text.count("La somme de mille euros,") == 1
 
 
 @pytest.mark.parametrize(

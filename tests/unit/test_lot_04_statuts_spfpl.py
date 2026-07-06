@@ -210,7 +210,9 @@ def test_statuts_spfpl_cession_generates_source_overlay_without_signature_date(
     # FORME (FIDELITY_AUDIT_V1, volet 2) : la mise en forme doit coller au modele source DOCX.
     # FIX-F1 / STYLE-1 : bloc de titre centre (denomination en gras via Heading 3 source).
     denomination = document.paragraphs[0]
-    assert denomination.text.strip() == "SPFPL MARTIN"
+    # Retour fonctionnel 6.8 (Albane 2026-07-06) : le titre reprend le nom de la societe
+    # (« Statuts [Nom] »), comme les autres types.
+    assert denomination.text.strip() == "Statuts SPFPL MARTIN"
     assert denomination.alignment == WD_ALIGN_PARAGRAPH.CENTER
     assert denomination.runs[0].bold is True
     for needle in ("Société de Participations", "Au capital de", "Siège social"):
@@ -224,8 +226,13 @@ def test_statuts_spfpl_cession_generates_source_overlay_without_signature_date(
     soussigne = _para_by_text(document, "Le soussigné")
     assert soussigne.runs[0].underline is True
     # FIX-F3 / STYLE-3 : la ligne d'identite est en gras (run unique incl. le tiret), JUSTIFY.
-    identites = _paras_by_prefix(document, "- Docteur Camille Andre Martin")
-    assert len(identites) == 2  # soussigne + nomination Président
+    # Retour fonctionnel 7.1 (Albane 2026-07-06) / M2 (Akainu 2026-07-06) : « Utiliser 'Prénom'
+    # (pas 'Prénoms complets') DANS LES STATUTS » SANS RESERVE -> le soussigne ET la nomination
+    # du President rendent le PRENOM usuel (« Camille »). Plus AUCUN « Camille Andre » (prenoms
+    # complets) dans les statuts ; les DEUX lignes d'identite = « - Docteur Camille Martin ».
+    assert "Camille Andre" not in text
+    identites = _paras_by_prefix(document, "- Docteur Camille Martin")
+    assert len(identites) == 2  # soussigne + nomination President, tous deux en prenom usuel
     for identite in identites:
         assert identite.alignment == WD_ALIGN_PARAGRAPH.JUSTIFY
         assert identite.runs[0].bold is True
@@ -266,7 +273,9 @@ def test_statuts_spfpl_apport_generates_nature_overlay_and_signature_date(
     document = Document(output_path)
     # FORME (FIDELITY_AUDIT_V1, volet 2) — meme exigences que la cession, sur le modele apport.
     denomination = document.paragraphs[0]
-    assert denomination.text.strip() == "SPFPL MARTIN"
+    # Retour fonctionnel 6.8 (Albane 2026-07-06) : le titre reprend le nom de la societe
+    # (« Statuts [Nom] »), comme les autres types.
+    assert denomination.text.strip() == "Statuts SPFPL MARTIN"
     assert denomination.alignment == WD_ALIGN_PARAGRAPH.CENTER
     assert denomination.runs[0].bold is True
     for needle in ("Société par actions", "Société de Participations", "Siège social"):
@@ -296,3 +305,89 @@ def test_statuts_spfpl_blocks_multi_associes(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="multi-associes"):
         StatutsSpfplCessionGenerator().generate(ctx, tmp_path)
+
+
+# ---------------------------------------------------------------------------
+# Verrous de VALEUR (Akainu 2026-07-06, regle 65/68 : accord / conversion / casse).
+# ---------------------------------------------------------------------------
+
+
+def test_statuts_spfpl_art8_euro_agreement_plural(tmp_path: Path) -> None:
+    """7.5 (Albane 2026-07-06) — VALEUR : la valeur nominale de l'action porte « euro(s) »
+    ACCORDE au montant (100 -> « cent euros (100 €) »). Anti double-euro."""
+    ctx = _with_exercice(_base_context(operation="cession"))
+    text = _docx_text(StatutsSpfplCessionGenerator().generate(ctx, tmp_path))
+    assert "actions de cent euros (100 €) chacune" in text
+    assert "euro euro" not in text
+    assert "euros euros" not in text
+
+
+def test_statuts_spfpl_art8_euro_agreement_singular(tmp_path: Path) -> None:
+    """7.5 / accord euro (Akainu 2026-07-06) — VALEUR : une valeur nominale de 1 rend
+    « un euro » (SINGULIER), JAMAIS « un euros »."""
+    ctx = _with_exercice(_base_context(operation="cession"))
+    ctx.societe_spfpl.valeur_nominale_action = "1"
+    ctx.societe_spfpl.valeur_nominale_action_lettres = "un"
+    ctx.capital_souscription.valeur_nominale_action = "1"
+    text = _docx_text(StatutsSpfplCessionGenerator().generate(ctx, tmp_path))
+    assert "actions de un euro (1 €) chacune" in text
+    assert "un euros" not in text
+    assert "euro euro" not in text
+
+
+def test_statuts_spfpl_ordre_departement_name_not_number(tmp_path: Path) -> None:
+    """7.4 (Albane 2026-07-06) — VALEUR : l'Ordre s'affiche par le NOM du departement
+    (« de Seine-et-Marne »), JAMAIS le NUMERO (« de 77 »)."""
+    ctx = _with_exercice(_base_context(operation="cession"))
+    ctx.actionnaire_unique.ordre.departement = "77"
+    text = _docx_text(StatutsSpfplCessionGenerator().generate(ctx, tmp_path))
+    assert "Seine-et-Marne" in text
+    assert "de 77" not in text
+    assert "des Chirurgiens-Dentistes de 77" not in text
+
+
+def test_statuts_spfpl_title_reprises_company_name(tmp_path: Path) -> None:
+    """6.8 (Albane 2026-07-06) — le titre du document reprend le nom de la societe
+    (« Statuts SPFPL MARTIN »). Verrou explicite (deja couvert par le test de forme)."""
+    ctx = _with_exercice(_base_context(operation="cession"))
+    document = Document(StatutsSpfplCessionGenerator().generate(ctx, tmp_path))
+    assert document.paragraphs[0].text.strip() == "Statuts SPFPL MARTIN"
+
+
+def test_statuts_spfpl_marital_line_capitalized_married(tmp_path: Path) -> None:
+    """M1 (Akainu 2026-07-06) — 7.2 : la ligne matrimoniale du soussigne commence par une
+    MAJUSCULE (« Marié sous le régime … »), pas en minuscule."""
+    ctx = _with_exercice(_base_context(operation="cession"))
+    ctx.actionnaire_unique.situation_maritale = "marié"
+    text = _docx_text(StatutsSpfplCessionGenerator().generate(ctx, tmp_path))
+    assert "Marié sous le régime de la communaute legale avec Madame Alice Martin" in text
+    assert "marié sous le régime" not in text  # jamais en minuscule
+
+
+def test_statuts_spfpl_marital_line_capitalized_single(tmp_path: Path) -> None:
+    """M1 (Akainu 2026-07-06) — 7.2 : un statut NON marie (« célibataire ») sort AUSSI
+    capitalise (« Célibataire »), dans la comparution ET dans la nomination du President
+    (bare token [situation_maritale], propagation regle 68 Q4). Jamais de minuscule en tete."""
+    ctx = _with_exercice(_base_context(operation="cession"))
+    ctx.actionnaire_unique.situation_maritale = "célibataire"
+    ctx.actionnaire_unique.conjoint = None
+    ctx.actionnaire_unique.regime_matrimonial = None
+    document = Document(StatutsSpfplCessionGenerator().generate(ctx, tmp_path))
+    marital_lines = [
+        p.text.strip() for p in document.paragraphs
+        if p.text.strip().lower() == "célibataire"
+    ]
+    # comparution + nomination President : les DEUX lignes existent et sont capitalisees.
+    assert marital_lines, "aucune ligne matrimoniale « célibataire » trouvee"
+    assert all(line == "Célibataire" for line in marital_lines)
+    assert not any(p.text.strip() == "célibataire" for p in document.paragraphs)
+
+
+def test_statuts_spfpl_president_uses_usual_first_name(tmp_path: Path) -> None:
+    """M2 (Akainu 2026-07-06) — 7.1 : la nomination du President utilise le PRENOM USUEL
+    (« Camille »), pas les prenoms complets (« Camille Andre ») ; « Prénom DANS LES STATUTS »
+    sans reserve. Deux lignes d'identite « - Docteur Camille Martin » (soussigne + President)."""
+    ctx = _with_exercice(_base_context(operation="cession"))
+    text = _docx_text(StatutsSpfplCessionGenerator().generate(ctx, tmp_path))
+    assert "Camille Andre" not in text
+    assert text.count("- Docteur Camille Martin") == 2

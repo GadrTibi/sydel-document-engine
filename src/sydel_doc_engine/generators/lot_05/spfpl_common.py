@@ -15,7 +15,7 @@ from sydel_doc_engine.domain.models import (
     SpfplRepresentant,
 )
 from sydel_doc_engine.generators.lot_05.scm_cession_common import mentions_conjoint
-from sydel_doc_engine.utils.grammar import elision_de  # noqa: F401
+from sydel_doc_engine.utils.grammar import elision_de, euro_word  # noqa: F401
 
 DOCUMENT_CODE = "CODE-SPFPL-AGR-INFO-001"
 CORE_DOCUMENT_CODE = "CODE-SPFPL-CORE-001"

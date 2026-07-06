@@ -19,6 +19,8 @@ from sydel_doc_engine.generators.lot_04.statuts_spfpl_common import (
 from sydel_doc_engine.generators.lot_04.statuts_spfpl_templates import (
     STATUTS_SPFPL_CESSION_BLOCKS,
 )
+from sydel_doc_engine.utils.departements import departement_nom
+from sydel_doc_engine.utils.grammar import euro_word
 
 OUTPUT_FILENAME = "statuts_spfpl_cession.docx"
 
@@ -47,6 +49,13 @@ class StatutsSpfplCessionGenerator:
         # comparution matrimoniale est branchee dans `founder_common_replacements`
         # (marie -> ligne complete avec conjoint ; sinon -> juste le statut).
 
+        # 7.5 : figure de la valeur nominale (chiffres) reutilisee pour l'accord euro(s).
+        valeur_nominale_figure = required_text(
+            capital_souscription.valeur_nominale_action
+            or societe_spfpl.valeur_nominale_action,
+            "capital_souscription.valeur_nominale_action",
+        )
+
         replacements = founder_common_replacements(founder, "actionnaire_unique")
         replacements.update(
             {
@@ -66,9 +75,15 @@ class StatutsSpfplCessionGenerator:
                 # Retour Rafael 2026-07-02 : les tokens [regime_matrimonial] /
                 # [*_conjoint] de la comparution sont remplaces par [ligne_situation_maritale]
                 # (branche marie/non-marie, construit dans founder_common_replacements).
-                "[ordre_departemental]": required_text(
-                    founder.ordre.departement if founder.ordre else None,
-                    "actionnaire_unique.ordre.departement",
+                # 7.4 (Albane 2026-07-06) : l'Ordre s'affiche par le NOM du departement
+                # (« de Seine-et-Marne »), plus par le numero (« de 77 »). Le champ
+                # `ordre.departement` porte le numero -> `departement_nom` le convertit
+                # (passthrough si deja un nom).
+                "[ordre_departemental]": departement_nom(
+                    required_text(
+                        founder.ordre.departement if founder.ordre else None,
+                        "actionnaire_unique.ordre.departement",
+                    )
                 ),
                 "[montant_apport]": required_text(ctx.apport.montant, "apport.montant"),
                 "[montant_apport_lettres]": required_text(
@@ -91,15 +106,13 @@ class StatutsSpfplCessionGenerator:
                         "capital_souscription.nb_actions_total",
                     )
                 ),
-                "[valeur_nominale_action]": required_text(
-                    capital_souscription.valeur_nominale_action
-                    or societe_spfpl.valeur_nominale_action,
-                    "capital_souscription.valeur_nominale_action",
-                ),
+                "[valeur_nominale_action]": valeur_nominale_figure,
                 "[valeur_nominale_action_lettres]": required_text(
                     societe_spfpl.valeur_nominale_action_lettres,
                     "societe_spfpl.valeur_nominale_action_lettres",
                 ),
+                # 7.5 : accord « euro » / « euros » sur la FIGURE de la valeur nominale.
+                "[euro_nominal_word]": euro_word(valeur_nominale_figure),
                 "[debut_exercice]": required_text(
                     ctx.exercice_social.debut,
                     "exercice_social.debut",

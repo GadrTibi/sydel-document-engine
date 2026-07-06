@@ -413,3 +413,115 @@ def test_elision_de_couvre_voyelle_consonne_h_aspire_onze() -> None:
     assert elision_de("huit euros") == "de huit euros"
     assert elision_de("") == "de "
 
+
+# ---------------------------------------------------------------------------
+# Verrous de VALEUR (Akainu 2026-07-06, regle 65/68 : assertions d'accord / ordre /
+# omission, pas de simple presence). Le front pose les lettres SANS unite figee ; l'acte
+# accorde « euro(s) » au MONTANT. On regenere l'acte avec des prix distincts.
+# ---------------------------------------------------------------------------
+
+
+def _acte_price_line(text: str) -> str:
+    for line in text.split("\n"):
+        if "moyennant le prix de" in line:
+            return line
+    raise AssertionError("ligne de prix (« moyennant le prix de … ») absente de l'acte.")
+
+
+def _render_acte_with_price(
+    tmp_path: Path,
+    *,
+    prix_unitaire: str,
+    prix_unitaire_lettres: str,
+    prix_total: str,
+    prix_total_lettres: str,
+) -> str:
+    ctx = _base_context(operation="cession")
+    cp = ctx.cession_parts
+    assert cp is not None
+    cp.prix_unitaire = prix_unitaire
+    cp.prix_unitaire_lettres = prix_unitaire_lettres
+    cp.prix_total = prix_total
+    cp.prix_total_lettres = prix_total_lettres
+    return _docx_text(ActeCessionPartsSpfplGenerator().generate(ctx, tmp_path))
+
+
+def test_acte_price_singular_euro_for_one(tmp_path: Path) -> None:
+    """12.6 / B1 (Akainu 2026-07-06) — VALEUR : un prix de 1 € rend « un euro » (SINGULIER),
+    JAMAIS « un euros ». Le front pose les lettres sans unite (« un ») ; l'acte accorde via
+    `euro_word`. Anti double-euro (« euro euro ») verifie aussi."""
+    line = _acte_price_line(
+        _render_acte_with_price(
+            tmp_path,
+            prix_unitaire="1",
+            prix_unitaire_lettres="un",
+            prix_total="1",
+            prix_total_lettres="un",
+        )
+    )
+    assert "un euro (1 €) part cédée" in line  # unitaire : singulier + lisible + €
+    assert "soit un prix de un euro (1 €)" in line  # total : singulier
+    assert "un euros" not in line  # accord incorrect proscrit
+    assert "euro euro" not in line  # anti double-unite
+    assert "(1) part" not in line  # plus de chiffre nu sans unite avant « part »
+
+
+def test_acte_price_plural_euros_above_one(tmp_path: Path) -> None:
+    """12.6 / 12.3 (Akainu 2026-07-06) — VALEUR : un prix > 1 rend « euros » (PLURIEL) et
+    l'ordre LETTRES puis CHIFFRES. Robustesse : des lettres deja suffixees « euros »
+    (fixture) ne doublent pas l'unite."""
+    line = _acte_price_line(
+        _render_acte_with_price(
+            tmp_path,
+            prix_unitaire="1 000",
+            prix_unitaire_lettres="mille euros",  # fixture avec unite -> ne doit pas doubler
+            prix_total="60 000",
+            prix_total_lettres="soixante mille euros",
+        )
+    )
+    assert "mille euros (1 000 €) part cédée" in line
+    assert "soit un prix de soixante mille euros (60 000 €)" in line
+    assert "euros euros" not in line
+    assert "euro euro" not in line
+
+
+def test_acte_acquereur_full_legal_form(tmp_path: Path) -> None:
+    """12.2 (Albane 2026-07-06) — VALEUR : l'acquereur (SPFPL) porte sa forme LEGALE COMPLETE
+    (« Société de Participations Financières … par actions simplifiée »), JAMAIS l'abrege
+    « par actions simplifiee » (non accentue) injecte par le front."""
+    text = _docx_text(ActeCessionPartsSpfplGenerator().generate(_base_context(), tmp_path))
+    assert (
+        "Société de Participations Financières de Profession Libérale de "
+        "Chirurgiens-Dentistes par actions simplifiée" in text
+    )
+    assert "par action simplifié" not in text  # ni singulier ni non-accentue
+    assert "par actions simplifiee" not in text  # abrege front non accentue proscrit
+
+
+def test_acte_payment_wording_au_moyen(tmp_path: Path) -> None:
+    """12.7 (Albane 2026-07-06) — VALEUR : la phrase de paiement est « au moyen d’un chèque ou
+    virement », plus « par le moyen d’un chèque ou d’un virement »."""
+    text = _docx_text(ActeCessionPartsSpfplGenerator().generate(_base_context(), tmp_path))
+    assert "Le prix est payé au moyen d’un chèque ou virement." in text
+    assert "par le moyen" not in text
+
+
+def test_acte_repartition_omits_zero_part_line(tmp_path: Path) -> None:
+    """12.5(a) (Albane 2026-07-06) — OMISSION : un associe / une SPFPL detenant 0 part ne
+    figure PAS dans la repartition du capital (« détenant 0 part » n'a pas de sens)."""
+    ctx = _base_context(operation="cession")
+    ctx.associes_cible.append(
+        AssocieCible(
+            type="personne_morale",
+            denomination="SPFPL ACQUEREUR",
+            nb_parts_avant=0,  # pre-liste avant cession -> ligne omise
+            nb_parts_apres=60,
+        )
+    )
+    text = _docx_text(ActeCessionPartsSpfplGenerator().generate(ctx, tmp_path))
+    assert "SPFPL ACQUEREUR" not in text  # la ligne 0 part est omise
+    assert "détenant 0 part" not in text
+    assert "detenant 0 part" not in text
+    # les associes a parts > 0 restent presents.
+    assert "Dr Camille Martin détenant 70 parts" in text
+

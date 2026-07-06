@@ -340,7 +340,9 @@ def _ligne_situation_maritale(founder: SpfplPerson, field_name: str) -> str:
     """
     statut = required_text(founder.situation_maritale, f"{field_name}.situation_maritale")
     if not mentions_conjoint(founder.situation_maritale):
-        return statut
+        # M1 (Akainu 2026-07-06) : 7.2 exige que CHAQUE element de la liste du soussigne
+        # commence par une MAJUSCULE (« Celibataire », pas « celibataire »).
+        return _capitalize_first(statut)
     conjoint = founder.conjoint
     civilite_conjoint = required_text(
         conjoint.civilite_affichage if conjoint else None,
@@ -353,10 +355,21 @@ def _ligne_situation_maritale(founder: SpfplPerson, field_name: str) -> str:
     regime_matrimonial = required_text(
         founder.regime_matrimonial, f"{field_name}.regime_matrimonial"
     )
-    return (
+    # M1 (Akainu 2026-07-06) : idem — la ligne matrimoniale complete commence par une MAJUSCULE
+    # (« Marié sous le régime de … »). `_capitalize_first` preserve le reste (accents, casse).
+    return _capitalize_first(
         f"{statut} sous le régime de {regime_matrimonial} avec "
         f"{civilite_conjoint} {prenom_conjoint} {nom_conjoint}"
     )
+
+
+def _capitalize_first(value: str) -> str:
+    """Capitalise la 1re lettre en preservant le reste (« chirurgien-dentiste » ->
+    « Chirurgien-dentiste »). N'utilise PAS str.capitalize() qui abaisserait le reste
+    (« ... -Dentiste » deviendrait « ...-dentiste »)."""
+    if not value:
+        return value
+    return value[0].upper() + value[1:]
 
 
 def founder_common_replacements(founder: SpfplPerson, field_name: str) -> dict[str, str]:
@@ -372,6 +385,13 @@ def founder_common_replacements(founder: SpfplPerson, field_name: str) -> dict[s
         "[prenoms]": required_text(founder.prenoms or founder.prenom, f"{field_name}.prenoms"),
         "[nom]": required_text(founder.nom, f"{field_name}.nom"),
         "[profession]": required_text(founder.profession, f"{field_name}.profession"),
+        # 7.2 (Albane 2026-07-06) : dans la liste du soussigne, « <Profession> de
+        # profession » commence en MAJUSCULE comme les autres lignes (Civilite / Ne /
+        # Demeurant...). Token DISTINCT de [profession] (utilise ailleurs en minuscule) :
+        # seule la 1re lettre est capitalisee, le reste du libelle est preserve.
+        "[profession_capitale]": _capitalize_first(
+            required_text(founder.profession, f"{field_name}.profession")
+        ),
         "[date_naissance]": format_display_date(
             founder.date_naissance,
             f"{field_name}.date_naissance",
@@ -385,9 +405,16 @@ def founder_common_replacements(founder: SpfplPerson, field_name: str) -> dict[s
             f"{field_name}.departement_naissance",
         ),
         "[adresse_personnelle]": person_address_display(founder, field_name),
-        "[situation_maritale]": required_text(
-            founder.situation_maritale,
-            f"{field_name}.situation_maritale",
+        # M1 (Akainu 2026-07-06, propagation regle 68 Q4) : ce token bare porte le statut
+        # matrimonial SEUL dans la nomination du President (cession) et la comparution
+        # (apport). 7.2 exige une MAJUSCULE en tete de chaque element -> « Célibataire »,
+        # « Marié », comme la ligne combinee. (La ligne combinee marie de la comparution
+        # cession passe par [ligne_situation_maritale], traite longest-first.)
+        "[situation_maritale]": _capitalize_first(
+            required_text(
+                founder.situation_maritale,
+                f"{field_name}.situation_maritale",
+            )
         ),
         # Ligne de comparution matrimoniale BRANCHEE (marie -> ligne complete ;
         # sinon -> juste le statut). Seul le modele CESSION porte ce token ; l'apport

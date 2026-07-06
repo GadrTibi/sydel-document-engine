@@ -278,6 +278,26 @@ def test_demande_inscription_ordre_spfpl_recipient_uses_long_form(tmp_path: Path
     assert "Des chirurgiens-dentistes" not in text
 
 
+def test_demande_inscription_ordre_renders_departement_name_not_number(
+    tmp_path: Path,
+) -> None:
+    """9.2 / 7.4 (Albane 2026-07-06) — verrou de VALEUR : un `departement_inscription`
+    saisi en NUMERO (« 77 ») s'affiche par son NOM (« Seine-et-Marne ») dans la ligne
+    destinataire, JAMAIS « du 77 » (regression B-DEPT). Passthrough : un nom deja correct
+    reste tel quel."""
+    ordre = _spfpl_ordre()
+    ordre.departement_inscription = "77"
+    text = _docx_text(
+        _generate(tmp_path, _context("SPFPL cession", ordre=ordre,
+                                     mandataire=_configured_mandataire()))
+    )
+    # Le NOM du departement remplace le NUMERO (le connecteur « du » est gere par le champ
+    # client, hors perimetre de ce verrou : on ne teste QUE la conversion numero -> nom).
+    assert "Ordre des chirurgiens-dentistes du Seine-et-Marne" in text
+    assert "du 77" not in text
+    assert "de 77" not in text
+
+
 def test_demande_inscription_ordre_recipient_falls_back_without_departement(
     tmp_path: Path,
 ) -> None:

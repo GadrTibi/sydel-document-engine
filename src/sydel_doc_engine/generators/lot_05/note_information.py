@@ -45,7 +45,7 @@ class NoteInformationGenerator:
         societe_spfpl = required_societe_spfpl(ctx)
         societe_cible = required_societe_cible(ctx)
         party = operation_party(ctx)
-        nb_titres = _operation_nb_titres(ctx)
+        nb_titres = _operation_nb_titres(ctx, operation_type)
 
         docx = new_document()
         add_paragraph(docx, "Note d'informations", alignment=WD_ALIGN_PARAGRAPH.CENTER, bold=True)
@@ -108,11 +108,21 @@ class NoteInformationGenerator:
         return output_path
 
 
-def _operation_nb_titres(ctx: DocumentGenerationContext) -> int:
-    if ctx.operation_titres is not None and ctx.operation_titres.nb_titres is not None:
-        return ctx.operation_titres.nb_titres
-    if ctx.cession_parts is not None and ctx.cession_parts.nb_parts is not None:
-        return ctx.cession_parts.nb_parts
+def _operation_nb_titres(ctx: DocumentGenerationContext, operation_type: str) -> int:
+    # Retour Albane 8.2 (2026-07) : en CESSION, la note d'information doit afficher le nombre de
+    # PARTS CÉDÉES à la holding (`cession_parts.nb_parts`), pas le nombre d'actions de la SPFPL
+    # (`operation_titres.nb_titres`). L'ordre de priorite etait inverse -> on prend cession_parts
+    # EN PREMIER en cession. En apport, cession_parts n'existe pas : on garde operation_titres.
+    if operation_type == OPERATION_CESSION:
+        if ctx.cession_parts is not None and ctx.cession_parts.nb_parts is not None:
+            return ctx.cession_parts.nb_parts
+        if ctx.operation_titres is not None and ctx.operation_titres.nb_titres is not None:
+            return ctx.operation_titres.nb_titres
+    else:
+        if ctx.operation_titres is not None and ctx.operation_titres.nb_titres is not None:
+            return ctx.operation_titres.nb_titres
+        if ctx.cession_parts is not None and ctx.cession_parts.nb_parts is not None:
+            return ctx.cession_parts.nb_parts
     raise ValueError(
         "operation_titres.nb_titres ou cession_parts.nb_parts est obligatoire pour "
         "CODE-SPFPL-AGR-INFO-001."
