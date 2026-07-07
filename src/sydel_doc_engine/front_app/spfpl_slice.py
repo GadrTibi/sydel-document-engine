@@ -408,12 +408,26 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
     apport_plage = (
         _t(col_y, prefix, "apport_plage", "Plage de parts (ex: 41 à 100)") if is_apport else ""
     )
-    apport_valeur_globale = _t(st, prefix, "apport_valeur_globale", "Valeur globale apportee")
+    # Retour Rafael 2026-07-07 (fusion doublon) : « Valeur globale apportee » portait
+    # TOUJOURS la meme valeur que « Montant de l'apport » (la valeur des parts
+    # apportees) -> UNE seule saisie ; `apport_valeur_globale` est DERIVE (payload
+    # inchange pour les generateurs : ApportTitres.valeur_globale, DOC-041/042/043).
+    apport_valeur_globale = apport_montant
 
     st.markdown("**Societe cible**")
-    col_z, col_aa2 = st.columns(2)
-    cible_denomination = _t(col_z, prefix, "cible_denomination", "Dénomination cible (SEL)")
-    cible_siege = _t(col_aa2, prefix, "cible_siege", "Siège cible (affiché)")
+    cible_denomination = _t(st, prefix, "cible_denomination", "Dénomination cible (SEL)")
+    # Retour Rafael 2026-07-07 : suppression du champ libre « Siege cible (affiche) »
+    # (redondant). En CESSION, l'adresse de la cible est saisie au sous-formulaire
+    # cession (ligne unique + case « Meme adresse que le siege de la SPFPL », cf.
+    # _spfpl_cible_siege_input) -> plus de double-saisie. En APPORT (seul flux qui
+    # consommait encore `cible_siege` : adresse_affichee de la societe cible,
+    # DOC-036/041/042/043), on REUTILISE le meme patron ligne-unique + case ; la
+    # cle payload `cible_siege` reste alimentee (derivee) -> generateurs inchanges.
+    if is_apport:
+        _cible_apport_struct = _parse_address_full(_spfpl_cible_siege_input(prefix))
+        cible_siege = _cible_apport_struct.adresse_affichee if _cible_apport_struct else ""
+    else:
+        cible_siege = ""
     col_ab, col_ac = st.columns(2)
     cible_ville_rcs = _t(col_ab, prefix, "cible_ville_rcs", "RCS cible (ville)")
     cible_numero_rcs = _t(col_ac, prefix, "cible_numero_rcs", "Numero RCS cible")
@@ -655,9 +669,9 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:  # noqa: C901
         ("banque_nom", "Banque requise."),
         ("banque_adresse", "Adresse banque requise."),
         ("apport_montant", "Montant de l'apport requis."),
-        ("apport_valeur_globale", "Valeur globale apportee requise."),
+        # Fusion Rafael 2026-07-07 : `apport_valeur_globale` est DERIVE de
+        # `apport_montant` (plus de saisie propre) -> plus de blocker dedie.
         ("cible_denomination", "Denomination de la societe cible requise."),
-        ("cible_siege", "Siege de la societe cible requis."),
         ("cible_ville_rcs", "RCS (ville) cible requis."),
         ("cible_numero_rcs", "Numero RCS cible requis."),
         ("exercice_debut", "Debut d'exercice requis."),
@@ -727,6 +741,11 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:  # noqa: C901
             # n'existe plus (la plage cedee est derivee).
             ("apport_plage", "Plage de parts apportees requise."),
             ("apport_valeur_par_titre", "Valeur d'un titre apporte requise (contrat d'apport)."),
+            # Retour Rafael 2026-07-07 : le siege de la cible n'est plus un champ
+            # commun (« Siege cible (affiche) » supprime) ; en APPORT il est saisi
+            # via la ligne unique + case meme-adresse et DERIVE dans `cible_siege`.
+            # En cession, le sous-formulaire porte ses propres gardes structurees.
+            ("cible_siege", "Siege de la societe cible requis."),
             ("cible_forme", "Forme sociale de la cible requise (contrat d'apport)."),
             ("cible_capital", "Capital social de la cible requis (contrat d'apport)."),
             (
@@ -1137,7 +1156,8 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
                 cp=str(cession_data.get("cible_siege_cp") or ""),  # type: ignore[union-attr]
                 ville=str(cession_data.get("cible_siege_ville") or ""),  # type: ignore[union-attr]
                 # O24-03 : affichage derive du parse de la ligne unique (cession),
-                # repli sur le champ « affiche » du bloc principal (apport / legacy).
+                # repli sur `cible_siege` (APPORT : derive de la ligne unique du
+                # bloc « Societe cible » depuis Rafael 2026-07-07 ; legacy : brut).
                 adresse_affichee=str(
                     cession_data.get("cible_siege_affiche")  # type: ignore[union-attr]
                     or payload.get("cible_siege")
@@ -1287,6 +1307,11 @@ def _professional_entity(payload: dict[str, object], role: str) -> ProfessionalE
 
 def _spfpl_cible_siege_input(prefix: str) -> str:
     """Adresse du siege de la cible + case « Meme adresse que le siege de la SPFPL ».
+
+    Partage CESSION (sous-formulaire) / APPORT (bloc « Societe cible » — retour
+    Rafael 2026-07-07 : remplace le champ libre « Siege cible (affiche) » supprime).
+    La cle de widget `*_cible_siege_cession` est historique (nee cote cession) et
+    conservee telle quelle pour les deux flux (un seul des deux rend le widget).
 
     §6.1 (retour Albane) : reutilise le patron O24-12 SELAS (shell.py:1414-1439). La
     SAISIE MANUELLE vit dans `manual_key` (jamais ecrasee par le report) ; le champ

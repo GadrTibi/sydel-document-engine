@@ -196,8 +196,19 @@ def validate_note_context(ctx: DocumentGenerationContext) -> str:
 
 
 def person_display(person: SpfplPerson, field_name: str) -> str:
+    # R3 durci (Rafael 2026-07-07, defense en profondeur) : cette soeur rendait la
+    # civilite BRUTE alors que person_short_identity / representant_display /
+    # associe_display_name etaient deja routees -> tout slot de personne passe par
+    # civilite_civile (sortie byte-identique quand la donnee est deja civile, cas
+    # nominal §14.2 ; un « Docteur »/« Dr » pose en civilite devient Monsieur/Madame).
+    # getattr : certains appelants passent des modeles SANS genre (ex. ReunionPresident
+    # du PV d'agrement) -> None (masculin par defaut si titre), comme associe_display_name.
+    civilite = civilite_civile(
+        required_text(person.civilite_affichage, f"{field_name}.civilite_affichage"),
+        getattr(person, "genre", None),
+    )
     return (
-        f"{required_text(person.civilite_affichage, f'{field_name}.civilite_affichage')} "
+        f"{civilite} "
         f"{required_text(person.prenom, f'{field_name}.prenom')} "
         f"{required_text(person.nom, f'{field_name}.nom')}"
     )
@@ -219,9 +230,15 @@ def person_identity_sentence(person: SpfplPerson, field_name: str) -> str:
     conjoint = person.conjoint
     conjoint_display = ""
     if conjoint is not None and mentions_conjoint(person.situation_maritale):
-        conjoint_civilite = required_text(
-            conjoint.civilite_affichage,
-            f"{field_name}.conjoint.civilite_affichage",
+        # R3 durci (Rafael 2026-07-07, defense en profondeur) : civilite du conjoint
+        # routee aussi (SpfplConjoint ne porte pas de genre -> masculin par defaut si
+        # un titre y etait pose ; M./Mme/Monsieur/Madame passent inchanges).
+        conjoint_civilite = civilite_civile(
+            required_text(
+                conjoint.civilite_affichage,
+                f"{field_name}.conjoint.civilite_affichage",
+            ),
+            None,
         )
         conjoint_display = (
             " avec "

@@ -95,8 +95,9 @@ def attach_attestation_to_ctx(
 
     No-op (ctx renvoye tel quel) si le dossier n'est pas attestable. Sinon construit
     `societe_spfpl`, `depot_fonds` et `capital_souscription` (un unique souscripteur =
-    l'associe president) et les pose sur le contexte. Le titre du president reprend
-    son titre d'affichage (« Docteur »), parite modele « par le Président, Docteur X »."""
+    l'associe president) et les pose sur le contexte. R3 durci (Rafael 2026-07-07) :
+    le titre d'affichage transmis est rendu CIVIL par le generateur (civilite_civile,
+    accord au genre du signataire) — « Docteur » ne sort plus dans DOC-045."""
     if not selas_uni_attestable(payload):
         return ctx
 
@@ -116,11 +117,16 @@ def attach_attestation_to_ctx(
     civilite = ""
     prenom = str(payload.get("prenom") or "")
     nom = str(payload.get("nom") or "")
+    genre = sig.genre if sig is not None else None
     if sig is not None:
         civilite = str(sig.titre_affichage or "") or civilite
         prenom = prenom or str(sig.prenom or "")
         nom = nom or str(sig.nom or "")
     civilite = civilite or str(payload.get("titre_affichage") or "") or "Docteur"
+    # R3 durci (Rafael 2026-07-07, supersede la « parite modele » ci-dessus) : le
+    # genre accompagne la civilite — le generateur DOC-045 route TOUT slot de
+    # personne par civilite_civile (le titre « Docteur » devient Monsieur/Madame
+    # accorde au genre de l'associe unique).
 
     ctx.societe_spfpl = SocieteSpfpl(
         denomination=str(payload.get("denomination") or ""),
@@ -136,6 +142,7 @@ def attach_attestation_to_ctx(
     )
     souscripteur = CapitalSouscripteur(
         civilite_affichage=civilite,
+        genre=genre,
         prenom=prenom,
         nom=nom,
         nb_actions=nb_actions_total,
@@ -146,6 +153,7 @@ def attach_attestation_to_ctx(
         apports_numeraire_montant=capital,
         president=CapitalSouscripteur(
             civilite_affichage=civilite,
+            genre=genre,
             prenom=prenom,
             nom=nom,
         ),

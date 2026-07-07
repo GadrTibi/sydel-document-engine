@@ -35,6 +35,11 @@ class AttestationCapitalSouscripteursSelasGenerator:
     genere une ligne de repartition et une ligne d'apport en numeraire ; le
     montant en numeraire d'un souscripteur est determine par
     nb_actions x valeur_nominale (capital SELAS = numeraire pur).
+
+    EXCEPTION au verbatim — R3 durci (Rafael 2026-07-07, supersede A26-45/49) :
+    les slots de personne du modele (« au Dr X », « Le Docteur X a fait un
+    apport », « par le President, Docteur X ») rendent la civilite CIVILE
+    (Monsieur/Madame accordee au genre), « Docteur »/« Dr » ne sort jamais.
     """
 
     def generate(self, ctx: DocumentGenerationContext, output_dir: Path) -> Path:
@@ -167,13 +172,25 @@ class _ResolvedAttestationSelas:
             field = f"capital_souscription.souscripteurs[{index}]"
             nb_actions = _required_int(souscripteur.nb_actions, f"{field}.nb_actions")
             total_actions += nb_actions
-            # Modele : « au Dr {PRENOM NOM} » et « Le Docteur {PRENOM NOM} » (le titre
-            # « Dr / Docteur » porte deja la civilite, comme dans le generateur SAS).
+            # R3 durci (Rafael 2026-07-07, siloing) : « au Dr X » / « Le Docteur X a
+            # fait un apport » etaient RESTES dans cette variante pluripersonnelle
+            # alors que l'unipersonnelle etait deja civile -> les DEUX slots rendent
+            # la civilite CIVILE du souscripteur (Monsieur/Madame, accordee a SON
+            # genre), jamais le titre « Dr / Docteur ».
             nom_complet = _souscripteur_signature(souscripteur, field)
-            repartition_lignes.append(f"{nb_actions} actions attribuées au Dr {nom_complet},")
+            civilite = civilite_civile(
+                _required_text(
+                    souscripteur.civilite_affichage,
+                    f"{field}.civilite_affichage",
+                ),
+                souscripteur.genre,
+            )
+            repartition_lignes.append(
+                f"{nb_actions} actions attribuées à {civilite} {nom_complet},"
+            )
             montant_numeraire = _format_amount(valeur_nominale * Decimal(nb_actions))
             apport_lignes.append(
-                f"Le Docteur {nom_complet} a fait un apport de {montant_numeraire} "
+                f"{civilite} {nom_complet} a fait un apport de {montant_numeraire} "
                 "euros en numéraire."
             )
 
@@ -184,14 +201,16 @@ class _ResolvedAttestationSelas:
             )
 
         # R3 (Albane 2026-07-07) : « Docteur » n'est pas une civilité — le slot
-        # « par le Président, __ » rend la civilité CIVILE (Monsieur/Madame,
-        # accordée au genre du signataire), jamais le titre d'affichage.
+        # « par le Président, __ » rend la civilité CIVILE (Monsieur/Madame),
+        # jamais le titre d'affichage. R3 durci (Rafael 2026-07-07) : accord au
+        # genre DU PRESIDENT quand le modele le porte ; repli sur le genre du
+        # signataire (appelants legacy sans genre — comportement historique).
         president_civilite = civilite_civile(
             _required_text(
                 president.civilite_affichage,
                 "capital_souscription.president.civilite_affichage",
             ),
-            ctx.personne_signataire.genre,
+            president.genre or ctx.personne_signataire.genre,
         )
         president_signature = _souscripteur_signature(
             president,

@@ -1735,15 +1735,19 @@ def test_spfpl_titre_docteur_automatic_civilite_is_civil() -> None:
     assert ctx.dirigeant_nomine.civilite_affichage == "Monsieur"
 
 
-def test_spfpl_demande_ordre_uses_docteur_title(tmp_path: Path) -> None:
-    # §14.2 : la demande d'inscription a l'ordre (titre_affichage) affiche « Docteur »
-    # automatiquement, meme si la civilite civile est « Monsieur ».
+def test_spfpl_demande_ordre_uses_civil_civilite(tmp_path: Path) -> None:
+    # R3 durci (Rafael 2026-07-07, « partout ») — SUPERSEDE §14.2 : la demande
+    # d'inscription a l'ordre rend la civilite CIVILE (« Monsieur Camille Martin »),
+    # plus le titre « Docteur » (titre_affichage reste porte au contexte mais ne
+    # sort plus sur ce document).
     payload = _spfpl_payload("SPFPL cession")
     generated = spfpl_slice.generate_dossier(payload, tmp_path / "spfpl-titre-ordre")
     text = _docx_text(
         next(p for p in generated.docx_paths if p.name == "demande_inscription_ordre.docx")
     )
-    assert "Docteur Camille Martin" in text
+    assert "Monsieur Camille Martin" in text
+    assert "Docteur" not in text
+    assert "Dr " not in text
 
 
 def test_spfpl_form_civilite_drops_docteur_and_genre_selector() -> None:
@@ -2352,12 +2356,12 @@ def test_selas_multi_all_physical_generates_attestation_souscripteurs(
     """ANO-045 : un dossier SELAS multi entierement PHYSIQUE (somme actions == total)
     produit l'attestation souscripteurs, bien remplie (une ligne de repartition + une
     d'apport par souscripteur), header profession au pluriel capitalise."""
-    payload = _selas_payload_n(
-        [
-            _selas_phys("Claire", "Durand", 60),
-            _selas_phys("Paul", "Martin", 40),
-        ]
-    )
+    # R3 durci (Rafael 2026-07-07) : associee FEMININE pour verrouiller l'accord de
+    # la civilite civile (« à Madame Claire Durand »), Paul reste masculin.
+    claire = _selas_phys("Claire", "Durand", 60)
+    claire.civilite_affichage = "Madame"
+    claire.genre = Gender.FEMININ
+    payload = _selas_payload_n([claire, _selas_phys("Paul", "Martin", 40)])
     plan = selas_multi_slice.build_selas_plan(payload)
     assert plan.can_generate is True
     assert "DOC-045" in plan.document_codes
@@ -2369,20 +2373,22 @@ def test_selas_multi_all_physical_generates_attestation_souscripteurs(
     assert "Liste des souscripteurs" in text
     # Header : profession reglementee au pluriel, capitalisee (parite modele Albane).
     assert "par Actions simplifiées de Médecins" in text
-    # Une ligne de repartition + une ligne d'apport PAR souscripteur (« au Dr ... »).
-    assert "60 actions attribuées au Dr Claire Durand," in text
-    assert "40 actions attribuées au Dr Paul Martin," in text
-    assert "Le Docteur Claire Durand a fait un apport de 600 euros en numéraire." in text
-    assert "Le Docteur Paul Martin a fait un apport de 400 euros en numéraire." in text
-    # R3 (Albane 2026-07-07, supersede l'ancien verrou « titre professionnel ») :
-    # « Docteur » n'est pas une civilité — le slot « par le Président, __ » rend la
-    # civilité CIVILE accordée au genre du signataire (fixture : genre MASCULIN) ;
-    # le TITRE « Le Docteur X » des phrases d'apport ci-dessus reste légitime.
+    # R3 durci (Rafael 2026-07-07, siloing) : repartition + apport rendent la
+    # civilite CIVILE accordee au genre du souscripteur — supersede les anciens
+    # verrous « au Dr X » / « Le Docteur X a fait un apport » de cette variante
+    # pluripersonnelle (l'unipersonnelle etait deja civile).
+    assert "60 actions attribuées à Madame Claire Durand," in text
+    assert "40 actions attribuées à Monsieur Paul Martin," in text
+    assert "Madame Claire Durand a fait un apport de 600 euros en numéraire." in text
+    assert "Monsieur Paul Martin a fait un apport de 400 euros en numéraire." in text
+    # R3 (Albane 2026-07-07) + R3 durci : le slot « par le Président, __ » rend la
+    # civilite CIVILE accordee au genre du PRESIDENT (ici Claire, feminine).
     assert (
-        "certifié exact, sincère et véritable par le Président, Monsieur Claire Durand"
+        "certifié exact, sincère et véritable par le Président, Madame Claire Durand"
         in text
     )
-    assert "Président, Docteur" not in text
+    assert "Docteur" not in text
+    assert "au Dr " not in text
     assert "[" not in text and "]" not in text
 
 
@@ -2484,11 +2490,14 @@ def test_selas_uni_medecin_generates_attestation_souscripteurs(tmp_path: Path) -
     )
     text = _docx_text(attestation)
     assert "par Actions simplifiées de Médecins" in text
-    assert "100 actions attribuées au Dr Alain Fedorowsky," in text
+    # R3 durci (Rafael 2026-07-07) : civilite CIVILE (titre « Docteur » du payload
+    # converti, accord au genre du signataire) — plus de « au Dr » / « Le Docteur ».
+    assert "100 actions attribuées à Monsieur Alain Fedorowsky," in text
     assert (
-        "Le Docteur Alain Fedorowsky a fait un apport de 1000 euros en numéraire."
+        "Monsieur Alain Fedorowsky a fait un apport de 1000 euros en numéraire."
         in text
     )
+    assert "Docteur" not in text
     assert "[" not in text and "]" not in text
 
 
@@ -2507,7 +2516,9 @@ def test_selas_uni_dentiste_generates_attestation_souscripteurs(tmp_path: Path) 
     )
     text = _docx_text(attestation)
     assert "par Actions simplifiées de Chirurgiens-dentistes" in text
-    assert "100 actions attribuées au Dr Alain Fedorowsky," in text
+    # R3 durci (Rafael 2026-07-07) : civilite CIVILE, plus de « au Dr ».
+    assert "100 actions attribuées à Monsieur Alain Fedorowsky," in text
+    assert "Docteur" not in text
     assert "[" not in text and "]" not in text
 
 
@@ -3596,7 +3607,10 @@ def test_o24_03_adresses_une_ligne_par_type(
 
 def test_o24_03_spfpl_cession_cible_siege_une_ligne(tmp_path: Path, monkeypatch) -> None:
     """O24-03 : le siege de la societe cible (cession SPFPL) est sur UNE ligne — plus de
-    grille No/Voie/CP/Ville ni double-saisie avec le champ « Siege cible (affiche) »."""
+    grille No/Voie/CP/Ville ni double-saisie avec le champ « Siege cible (affiche) ».
+    Retour Rafael 2026-07-07 : le champ « Siege cible (affiche) » (`cible_siege`) et la
+    saisie « Valeur globale apportee » (`apport_valeur_globale`, fusionnee dans
+    « Montant de l'apport ») ont DISPARU du formulaire."""
     from streamlit.testing.v1 import AppTest
 
     from sydel_doc_engine.front_app import shell
@@ -3612,11 +3626,54 @@ def test_o24_03_spfpl_cession_cible_siege_une_ligne(tmp_path: Path, monkeypatch)
     assert "spfpl_cession_cible_siege_cession" in keys
     for comp in ("cible_siege_num", "cible_siege_voie", "cible_siege_cp", "cible_siege_ville"):
         assert f"spfpl_cession_{comp}" not in keys, f"{comp} doit avoir disparu (O24-03)"
+    # Rafael 2026-07-07 : plus de champ « Siege cible (affiche) » ni « Valeur globale ».
+    assert "spfpl_cession_cible_siege" not in keys
+    assert "spfpl_cession_apport_valeur_globale" not in keys
     generate_button = next(
         b for b in app.button if str(b.key) == "clean_typed_generate_dossier"
     )
     assert generate_button.disabled is False
     assert not any("Blocage" in item.value for item in app.caption)
+
+
+def test_spfpl_apport_cible_siege_une_ligne_et_valeur_globale_derivee(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Retour Rafael 2026-07-07 (APPORT) : le bloc « Societe cible » porte la ligne
+    unique + case « Meme adresse que le siege de la SPFPL » (patron cession reutilise)
+    a la place du champ libre « Siege cible (affiche) » ; « Valeur globale apportee »
+    n'est plus saisie (derivee de « Montant de l'apport »). La generation APPORT
+    complete (bundle creation + DOC-041/042/043) reste possible et aboutit."""
+    from streamlit.testing.v1 import AppTest
+
+    from sydel_doc_engine.front_app import shell
+
+    monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-spfpl-apport")
+    app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
+    app.selectbox(key="clean_dossier_type").set_value("SPFPL dentistes - apport creation V1")
+    app = app.run(timeout=180)
+    next(b for b in app.button if "test_data" in str(b.key)).click()
+    app = app.run(timeout=180)
+
+    keys = {str(w.key) for w in app.text_input}
+    assert "spfpl_apport_cible_siege_cession" in keys  # ligne unique partagee
+    assert "spfpl_apport_cible_siege" not in keys  # champ libre supprime
+    assert "spfpl_apport_apport_valeur_globale" not in keys  # fusion : plus de saisie
+    checkbox_keys = {str(w.key) for w in app.checkbox}
+    assert "spfpl_apport_cible_siege_meme_spfpl" in checkbox_keys  # case meme-adresse
+
+    generate_button = next(
+        b for b in app.button if str(b.key) == "clean_typed_generate_dossier"
+    )
+    assert generate_button.disabled is False
+    assert not any("Blocage" in item.value for item in app.caption)
+    # Generation apport COMPLETE de bout en bout (verifie la derivation cible_siege +
+    # apport_valeur_globale jusqu'aux DOCX : le ZIP + les telechargements apparaissent).
+    generate_button.click()
+    app = app.run(timeout=300)
+    labels = [item.label for item in app.get("download_button")]
+    assert any("ZIP" in label for label in labels)
+    assert any("contrat_apport" in label for label in labels)
 
 
 def test_o24_03_selarl_adresses_une_ligne(tmp_path: Path, monkeypatch) -> None:

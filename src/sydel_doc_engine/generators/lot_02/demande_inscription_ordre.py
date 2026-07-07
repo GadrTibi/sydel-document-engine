@@ -13,6 +13,7 @@ from sydel_doc_engine.domain.models import (
     OrdreProfessionnel,
     Person,
 )
+from sydel_doc_engine.generators.lot_01.civilite import civilite_civile
 from sydel_doc_engine.rendering.docx_builder import (
     add_letter_place_date,
     add_paragraph,
@@ -152,13 +153,20 @@ def _personal_address_lines(adresse_personnelle: str) -> list[str]:
 
 
 def _signataire_name(signataire: Person) -> str:
-    titre = _required_text(
+    # R3 durci (Rafael 2026-07-07, « partout ») : la demande d'inscription rendait
+    # encore le TITRE (« Docteur X ») en en-tete + signature via titre_affichage.
+    # SUPERSEDE §14.2 (qui posait volontairement « Docteur » automatique sur ce
+    # document) : le slot rend la civilite CIVILE (Monsieur/Madame accordee au
+    # genre), comme tous les slots de personne. Repli sur titre_affichage si la
+    # civilite est vide (appelants legacy) — civilite_civile le convertit alors.
+    civilite_source = (signataire.civilite or "").strip() or _required_text(
         signataire.titre_affichage,
         "personne_signataire.titre_affichage",
     )
+    civilite = civilite_civile(civilite_source, signataire.genre)
     prenom = _required_text(signataire.prenom, "personne_signataire.prenom")
     nom = _required_text(signataire.nom, "personne_signataire.nom")
-    return f"{titre} {prenom} {nom}"
+    return f"{civilite} {prenom} {nom}"
 
 
 def _profession_ligne_destinataire(ordre: OrdreProfessionnel) -> str:

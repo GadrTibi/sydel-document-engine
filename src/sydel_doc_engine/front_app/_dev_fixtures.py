@@ -630,9 +630,11 @@ def _spfpl_prefill_values(prefix: str) -> dict[str, object]:
         f"{prefix}_apport_montant": "60000",
         f"{prefix}_apport_nb_parts": 60,
         f"{prefix}_apport_plage": "41 a 100",
-        f"{prefix}_apport_valeur_globale": "60000",
+        # Fusion Rafael 2026-07-07 : « Valeur globale apportee » n'est plus saisie
+        # (derivee de « Montant de l'apport ») ; « Siege cible (affiche) » supprime
+        # (cession : sous-formulaire ; apport : ligne unique `*_cible_siege_cession`
+        # seedee plus bas) -> plus de prefill de cles de widgets disparus.
         f"{prefix}_cible_denomination": "SELARL CABINET MARTIN",
-        f"{prefix}_cible_siege": "12 avenue des Ternes, 75017 Paris",
         f"{prefix}_cible_ville_rcs": "Paris",
         f"{prefix}_cible_numero_rcs": "900 000 001",
         # Operation cession (DOC-037 note + DOC-038/039 PV + DOC-040 acte) :

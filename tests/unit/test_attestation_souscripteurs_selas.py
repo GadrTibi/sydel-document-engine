@@ -58,18 +58,24 @@ def _base_context() -> DocumentGenerationContext:
             apports_numeraire_montant="1.000",
             president=CapitalSouscripteur(
                 civilite_affichage="Docteur",
+                genre=Gender.MASCULIN,
                 prenom="Alain",
                 nom="Fedorowsky",
             ),
+            # R3 durci (Rafael 2026-07-07) : le titre « Docteur » pose en civilite est
+            # rendu CIVIL et accorde au genre du souscripteur (Claire = FEMININ pour
+            # verrouiller « à Madame »).
             souscripteurs=[
                 CapitalSouscripteur(
                     civilite_affichage="Docteur",
+                    genre=Gender.MASCULIN,
                     prenom="Alain",
                     nom="Fedorowsky",
                     nb_actions=510,
                 ),
                 CapitalSouscripteur(
                     civilite_affichage="Docteur",
+                    genre=Gender.FEMININ,
                     prenom="Claire",
                     nom="Martin",
                     nb_actions=490,
@@ -114,22 +120,25 @@ def test_attestation_selas_generates_multi_subscriber_wording(tmp_path: Path) ->
     ) in text
     assert "Capital social : 1.000 € en numéraire" in text
     assert "Nombre d'actions: 1000 actions d'un montant de 1 euro chacune" in text
-    # Une ligne de repartition + une ligne d'apport en numeraire PAR souscripteur.
-    assert "510 actions attribuées au Dr Alain Fedorowsky," in text
-    assert "490 actions attribuées au Dr Claire Martin," in text
+    # R3 durci (Rafael 2026-07-07, siloing pluripersonnel) : repartition + apport
+    # rendent la civilite CIVILE accordee au genre du souscripteur — supersede les
+    # anciens verrous « au Dr X » / « Le Docteur X a fait un apport » (A26-45/49).
+    assert "510 actions attribuées à Monsieur Alain Fedorowsky," in text
+    assert "490 actions attribuées à Madame Claire Martin," in text
     assert (
         "Capital social de 1.000 € entièrement libéré et déposé dans les livres de la "
         "banque Crédit Agricole"
     ) in text
-    assert "Le Docteur Alain Fedorowsky a fait un apport de 510 euros en numéraire." in text
-    assert "Le Docteur Claire Martin a fait un apport de 490 euros en numéraire." in text
+    assert "Monsieur Alain Fedorowsky a fait un apport de 510 euros en numéraire." in text
+    assert "Madame Claire Martin a fait un apport de 490 euros en numéraire." in text
     # R3 (Albane 2026-07-07) : « Docteur » n'est pas une civilité — le slot
     # « par le Président, __ » rend la civilité CIVILE (accord au genre du
-    # signataire) ; le TITRE « Le Docteur X » des phrases d'apport reste (A26-45/49).
+    # president, repli signataire).
     assert (
         "certifié exact, sincère et véritable par le Président, Monsieur Alain Fedorowsky"
     ) in text
-    assert "Président, Docteur" not in text
+    assert "Docteur" not in text
+    assert "au Dr " not in text
     assert "Fait à Rennes" in text
     assert "Le 15/06/2026" in text
     _assert_clean(text)
@@ -137,12 +146,14 @@ def test_attestation_selas_generates_multi_subscriber_wording(tmp_path: Path) ->
 
 
 def test_attestation_selas_three_subscribers(tmp_path: Path) -> None:
+    # R3 durci (Rafael 2026-07-07) : civilite CIVILE partout ; Hugo SANS genre
+    # (appelant legacy) -> masculin par defaut, comme derive_gender_from_civilite.
     ctx = _base_context()
     ctx.capital_souscription.souscripteurs = [
-        CapitalSouscripteur(civilite_affichage="Docteur", prenom="Alain", nom="Fedorowsky",
-                            nb_actions=400),
-        CapitalSouscripteur(civilite_affichage="Docteur", prenom="Claire", nom="Martin",
-                            nb_actions=400),
+        CapitalSouscripteur(civilite_affichage="Docteur", genre=Gender.MASCULIN,
+                            prenom="Alain", nom="Fedorowsky", nb_actions=400),
+        CapitalSouscripteur(civilite_affichage="Docteur", genre=Gender.FEMININ,
+                            prenom="Claire", nom="Martin", nb_actions=400),
         CapitalSouscripteur(civilite_affichage="Docteur", prenom="Hugo", nom="Bernard",
                             nb_actions=200),
     ]
@@ -150,10 +161,11 @@ def test_attestation_selas_three_subscribers(tmp_path: Path) -> None:
     output_path = AttestationCapitalSouscripteursSelasGenerator().generate(ctx, tmp_path)
     text = _docx_text(output_path)
 
-    assert "400 actions attribuées au Dr Alain Fedorowsky," in text
-    assert "400 actions attribuées au Dr Claire Martin," in text
-    assert "200 actions attribuées au Dr Hugo Bernard," in text
-    assert "Le Docteur Hugo Bernard a fait un apport de 200 euros en numéraire." in text
+    assert "400 actions attribuées à Monsieur Alain Fedorowsky," in text
+    assert "400 actions attribuées à Madame Claire Martin," in text
+    assert "200 actions attribuées à Monsieur Hugo Bernard," in text
+    assert "Monsieur Hugo Bernard a fait un apport de 200 euros en numéraire." in text
+    assert "Docteur" not in text
     _assert_clean(text)
 
 

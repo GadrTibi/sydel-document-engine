@@ -154,7 +154,11 @@ def test_demande_inscription_ordre_selarl_uses_structured_ordinal_address(
     paragraphs = _paragraphs(output_path)
 
     assert output_path == tmp_path / "demande_inscription_ordre.docx"
-    assert "Dr Jean Durand" in text
+    # R3 durci (Rafael 2026-07-07, « partout » — supersede §14.2) : en-tete +
+    # signature rendent la civilite CIVILE, plus le titre « Dr »/« Docteur ».
+    assert "Monsieur Jean Durand" in text
+    assert "Dr Jean Durand" not in text
+    assert "Docteur" not in text
     # R5 (Albane, AUTORITE METIER) : destinataire FORME LONGUE
     # « Conseil départemental de l’Ordre des <profession_pluriel> <connecteur> <departement> »
     # (profession PUIS departement — forme du MODELE d'Albane doc_08 26/06 « des médecins du
@@ -185,7 +189,7 @@ def test_demande_inscription_ordre_selarl_uses_structured_ordinal_address(
         "Conseil départemental de l’Ordre des chirurgiens-dentistes de la Loire-Atlantique",
     )[0]
     assert recipient.paragraph_format.left_indent > Cm(8)
-    assert _matching_paragraphs(output_path, "Dr Jean Durand")[-1].alignment == (
+    assert _matching_paragraphs(output_path, "Monsieur Jean Durand")[-1].alignment == (
         WD_ALIGN_PARAGRAPH.RIGHT
     )
     _assert_no_source_placeholders(text)

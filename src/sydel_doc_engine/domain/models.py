@@ -594,6 +594,11 @@ class ProfessionalEntity(BaseModel):
 
 class CapitalSouscripteur(BaseModel):
     civilite_affichage: str | None = None
+    # R3 durci (Rafael 2026-07-07) : genre du souscripteur pour ACCORDER la civilite
+    # civile (Monsieur/Madame) quand un titre (« Docteur ») est pose en civilite.
+    # Optionnel (appelants legacy) : absent -> masculin par defaut, comme
+    # derive_gender_from_civilite cote front.
+    genre: Gender | None = None
     prenom: str | None = None
     nom: str | None = None
     profession: str | None = None

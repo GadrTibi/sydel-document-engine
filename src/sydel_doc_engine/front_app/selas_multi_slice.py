@@ -1827,9 +1827,13 @@ def _build_capital_souscription_selas(
     `_selas_attestable` (le generateur revalide de toute facon)."""
     if not _selas_attestable(payload):
         return None
+    # R3 durci (Rafael 2026-07-07) : chaque souscripteur porte SON genre — le
+    # generateur DOC-045 rend desormais la civilite CIVILE accordee (« a Madame X »,
+    # « Madame X a fait un apport »), plus jamais « au Dr X » / « Le Docteur X ».
     souscripteurs = [
         CapitalSouscripteur(
             civilite_affichage=associe.civilite_affichage or "",
+            genre=associe.genre,
             prenom=associe.prenom or associe.prenoms or "",
             nom=associe.nom or "",
             nb_actions=associe.nb_actions or 0,
@@ -1840,11 +1844,13 @@ def _build_capital_souscription_selas(
         president_index = 0
     president_associe = associes[president_index]
     # Le generateur rend « certifie ... par le President, {civilite} {prenom} {nom} ».
-    # Le modele d'Albane porte le TITRE professionnel a cet emplacement (parite avec
-    # « au Dr X » / « Le Docteur X » du corps) : on utilise le titre de l'associe
-    # (« Docteur » par defaut en SELAS multi), pas la civilite civile (Monsieur/Madame).
+    # R3 durci (Rafael 2026-07-07, supersede la « parite titre » A26-45/49) : on passe
+    # la CIVILITE de l'associe president + son genre (plus le titre/profession pose en
+    # civilite — un « Medecin » en profession sortait tel quel dans le slot). Le
+    # generateur route par civilite_civile -> Monsieur/Madame accorde.
     president = CapitalSouscripteur(
-        civilite_affichage=(president_associe.profession or "Docteur"),
+        civilite_affichage=(president_associe.civilite_affichage or "Monsieur"),
+        genre=president_associe.genre,
         prenom=president_associe.prenom or president_associe.prenoms or "",
         nom=president_associe.nom or "",
     )

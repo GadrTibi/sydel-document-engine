@@ -85,13 +85,23 @@ def rule_r2_numero_en_cours(text: str) -> list[str]:
 # R3 — « Docteur » n'est pas une civilité
 # ---------------------------------------------------------------------------
 
-_R3 = re.compile(r"soussignée?[\s,]+Docteur\b|Président,\s+Docteur\b")
+_R3 = re.compile(
+    r"soussignée?[\s,]+Docteur\b|Président,\s+Docteur\b"
+    # R3 durci (Rafael 2026-07-07, siloing attestation pluripersonnelle) : les slots
+    # de repartition / d'apport des attestations souscripteurs rendent la civilite
+    # CIVILE — « attribuées au Dr X » et « Le Docteur X a fait un apport » interdits.
+    r"|attribuées? au Dr\b"
+    r"|Le Docteur [^\n]{1,80} a fait"
+)
 
 
 def rule_r3_docteur_civilite(text: str) -> list[str]:
-    """« soussigné(e) Docteur » / « Président, Docteur » interdits.
+    """« soussigné(e) Docteur » / « Président, Docteur » / « attribuées au Dr X » /
+    « Le Docteur X a fait … » interdits.
 
-    La civilité est Monsieur/Madame ; « le Docteur X » comme TITRE reste permis.
+    La civilité est Monsieur/Madame ; « le Docteur X » comme TITRE ne reste permis
+    que là où le modèle source le porte verbatim (statuts art. 6/8, acte « Dr X
+    détenant »), jamais dans les slots de civilité (R3 durci Rafael 2026-07-07).
     """
     return _find_all(text, _R3)
 
