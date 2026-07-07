@@ -234,7 +234,9 @@ def build_corpus(base_dir: Path) -> dict[str, dict[str, str]]:  # noqa: C901 - a
         for name, text in _bundle(
             spfpl_slice.generate_dossier(vn1_payload, base_dir / "spfpl_cession_vn1")
         ).items()
-        if name == "statuts_spfpl_cession.docx"
+        # R10 (Rafael 2026-07-07) : le fichier statuts porte la denomination
+        # (« Statuts SPFPL MARTIN.docx ») — filtre par prefixe, robuste au payload.
+        if name.startswith("Statuts ")
     }
 
     # --- SAS (SPFPL médecins forme SAS) + SASU holding ---------------------------

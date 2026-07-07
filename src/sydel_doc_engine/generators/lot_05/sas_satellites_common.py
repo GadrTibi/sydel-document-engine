@@ -13,6 +13,7 @@ from sydel_doc_engine.domain.models import (
     SpfplPerson,
     StatutsPresident,
 )
+from sydel_doc_engine.generators.lot_01.civilite import civilite_civile
 
 DOCUMENT_CODE = "CODE-SAS-SATELLITES-001"
 SAS_STRUCTURE = "SAS"
@@ -164,8 +165,15 @@ def personal_address_for_pv(person: SpfplPerson, field_name: str) -> str:
 
 
 def person_name(person: SpfplPerson | StatutsPresident, field_name: str) -> str:
+    # R3 durci (Rafael 2026-07-07, supersede A26-45/49) : « Docteur »/« Dr » ne sort
+    # JAMAIS — un titre professionnel posé en civilite_affichage est rendu en civilité
+    # CIVILE (Monsieur/Madame, accordée au genre quand le modèle le porte).
+    civilite = civilite_civile(
+        required_text(person.civilite_affichage, f"{field_name}.civilite_affichage"),
+        getattr(person, "genre", None),
+    )
     return (
-        f"{required_text(person.civilite_affichage, f'{field_name}.civilite_affichage')} "
+        f"{civilite} "
         f"{required_text(person.prenom, f'{field_name}.prenom')} "
         f"{required_text(person.nom, f'{field_name}.nom')}"
     )

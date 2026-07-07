@@ -537,7 +537,8 @@ def test_statuts_selas_medecin_generates_without_second_lieu_by_default(
 
     text = _docx_text(output_path)
 
-    assert output_path.name == "statuts_selas_medecin.docx"
+    # R10 (Rafael 2026-07-07) : le fichier statuts porte la denomination.
+    assert output_path.name == "Statuts SEL MARTIN.docx"
     assert "Societe d'exercice liberal par actions simplifiee" in text
     assert "President" in text
     assert "nom_lieu_exercice_2" not in text

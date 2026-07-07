@@ -29,6 +29,7 @@ from sydel_doc_engine.generators.lot_04.statuts_sel_exercice_common import (
     render_statuts_sel_docx,
     required_associe_unique,
     required_text,
+    statuts_output_filename,
     validate_sel_context,
 )
 from sydel_doc_engine.generators.lot_04.statuts_sel_exercice_templates import (
@@ -94,10 +95,16 @@ class StatutsSelasDentisteGenerator:
             }
         )
 
+        # Retour Rafael 2026-07-07 : TOUS les statuts sont nommes
+        # « Statuts <denomination>.docx » (helper partage, fallback historique si vide).
         return render_statuts_sel_docx(
             STATUTS_SELAS_DENTISTE_BLOCKS,
             replacements,
-            output_dir / OUTPUT_FILENAME,
+            output_dir
+            / statuts_output_filename(
+                ctx.societe.denomination if ctx.societe else None,
+                OUTPUT_FILENAME,
+            ),
             associate=associate,
             # Retours Albane « mise en forme » : mise en forme SELAS (adresse du
             # siege en gras, sous-articles soulignes) et saut de page avant

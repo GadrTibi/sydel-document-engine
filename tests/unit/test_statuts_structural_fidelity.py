@@ -51,10 +51,14 @@ _HEADING_RE = re.compile(r"^\s*(ARTICLE|TITRE)\b", re.IGNORECASE)
 # statuts. Le rendu remplace l'en-tete SOURCE (cle) par sa version transformee (valeur) ; le
 # verrou de fidelite verifie donc la presence de la VERSION TRANSFORMEE, pas du verbatim source.
 # Tout le reste des en-tetes doit rester verbatim.
+# NB cles : depuis R10 (Rafael 2026-07-07), les fichiers statuts portent la DENOMINATION
+# (« Statuts <denomination>.docx ») — plusieurs cas partagent le meme nom (SAS et SPFPL
+# rendent tous « Statuts SPFPL MARTIN.docx ») -> les dicts sont keyes par CASE_KEY (id du
+# cas parametrique), plus par nom de fichier.
 _HEADING_TRANSFORMS: dict[str, dict[str, str]] = {
     # ST7g (Albane 2026-06-26) : les titres a casse cassee du modele medecin (art. 16/17/22)
     # sont mis en MAJUSCULES integrales (cf. _SELAS_MEDECIN_BROKEN_TITLE_SOURCES du generateur).
-    "Statuts SELAS EXEMPLE.docx": {
+    "SELAS-multi": {
         "ARTICLE 16 – des DECISIONS sociales": "ARTICLE 16 – DES DECISIONS SOCIALES",
         "ARTICLE 17 - CONVENTIONS ENTRE leS DIRIgerantS ou les associes et la societe": (
             "ARTICLE 17 - CONVENTIONS ENTRE LES DIRIGERANTS OU LES ASSOCIES ET LA SOCIETE"
@@ -94,15 +98,18 @@ def _gen_statuts(generated, name_part: str) -> Path:
     raise FileNotFoundError(f"statuts {name_part} absent du dossier genere")
 
 
-# (label, fonction de generation -> GeneratedDossier, fragment du nom de fichier statuts,
-#  resolveur du modele source)
+# (fonction de generation -> GeneratedDossier, fragment du nom de fichier statuts,
+#  resolveur du modele source, case_key = cle des dicts transforms/allowlist)
+# R10 (Rafael 2026-07-07) : TOUS les fichiers statuts portent la denomination du payload
+# (« Statuts <denomination>.docx », helper partage statuts_output_filename).
 _CASES = [
     pytest.param(
         lambda d: css.generate_dossier(
             _civil_base("SCI", "sci", [_pp("Jean", "Durand", 100, 1, 100, 1000)]), d
         ),
-        "statuts_sci.docx",
+        "Statuts SCI EXEMPLE.docx",
         lambda: _source("Modèle statuts SCI", exclude="IRIS"),
+        "SCI",
         id="SCI",
     ),
     pytest.param(
@@ -114,8 +121,9 @@ _CASES = [
             ),
             d,
         ),
-        "statuts_sci_iris.docx",
+        "Statuts SCI IRIS EXEMPLE.docx",
         lambda: _source("SCI IRIS"),
+        "SCI-IRIS",
         id="SCI-IRIS",
     ),
     pytest.param(
@@ -132,6 +140,7 @@ _CASES = [
         ),
         "Statuts SCS EXEMPLE.docx",
         lambda: _source("SCS"),
+        "SCS",
         id="SCS",
     ),
     pytest.param(
@@ -143,26 +152,30 @@ _CASES = [
             ),
             d,
         ),
-        "statuts_scm.docx",
+        "Statuts SCM EXEMPLE.docx",
         lambda: _source("Statuts SCM"),
+        "SCM",
         id="SCM",
     ),
     pytest.param(
         lambda d: sas_slice.generate_dossier(_sas_payload(), d),
-        "statuts_sas",
+        "Statuts SPFPL MARTIN.docx",
         lambda: _source("SAS", "medecins"),
+        "SAS",
         id="SAS",
     ),
     pytest.param(
         lambda d: spfpl_slice.generate_dossier(_spfpl_payload("SPFPL cession"), d),
-        "statuts_spfpl_cession",
+        "Statuts SPFPL MARTIN.docx",
         lambda: _source("SPFPLAS", "cession"),
+        "SPFPL-cession",
         id="SPFPL-cession",
     ),
     pytest.param(
         lambda d: spfpl_slice.generate_dossier(_spfpl_payload("SPFPL apport"), d),
-        "statuts_spfpl_apport",
+        "Statuts SPFPL MARTIN.docx",
         lambda: _source("SPFPLAS", "apport"),
+        "SPFPL-apport",
         id="SPFPL-apport",
     ),
     pytest.param(
@@ -171,19 +184,20 @@ _CASES = [
         # (« Statuts SELAS EXEMPLE.docx »), comme les autres types nommes (cf. SCS).
         "Statuts SELAS EXEMPLE.docx",
         lambda: _source("SELAS", "multi"),
+        "SELAS-multi",
         id="SELAS-multi",
     ),
 ]
 
 
-@pytest.mark.parametrize("generate, statuts_name, source_resolver", _CASES)
+@pytest.mark.parametrize("generate, statuts_name, source_resolver, case_key", _CASES)
 def test_statuts_source_headings_all_present(
-    tmp_path: Path, generate, statuts_name: str, source_resolver
+    tmp_path: Path, generate, statuts_name: str, source_resolver, case_key: str
 ) -> None:
     generated = generate(tmp_path)
     statuts_path = _gen_statuts(generated, statuts_name)
 
-    transforms = _HEADING_TRANSFORMS.get(statuts_name, {})
+    transforms = _HEADING_TRANSFORMS.get(case_key, {})
     # On applique les transformations sanctionnees a l'en-tete SOURCE avant comparaison : le
     # rendu doit porter la version transformee (ST7g : MAJUSCULES), pas le verbatim a casse cassee.
     source_headings = [transforms.get(h, h) for h in _headings(source_resolver())]
@@ -208,16 +222,16 @@ def test_statuts_source_headings_all_present(
 # en-tetes). Les lignes intentionnellement absentes (blocs reinjectes dynamiquement, ou lignes
 # supprimees par decision client) sont allowlistees PAR TYPE avec raison.
 
-# Marqueurs (substring) des lignes du modele LEGITIMEMENT absentes du rendu, par type, avec raison.
+# Marqueurs (substring) des lignes du modele LEGITIMEMENT absentes du rendu, par CASE_KEY (cf.
+# note _HEADING_TRANSFORMS : les noms de fichiers R10 ne sont plus uniques), avec raison.
 # Une ligne source manquante n'echoue PAS si elle contient l'un de ces marqueurs. Tout le RESTE
 # du corps statique doit apparaitre verbatim.
 _BODY_ALLOWLIST: dict[str, tuple[str, ...]] = {
     # O24-01 (Rafael) : lignes d'annexe « lettre de mission » + « acompte des honoraires » du
     # cabinet Sydel, supprimees de TOUS les statuts a la demande du client.
-    "statuts_sci.docx": ("lettre de mission", "acompte des honoraires"),
-    "statuts_sci_iris.docx": ("lettre de mission", "acompte des honoraires"),
-    "statuts_spfpl_cession": ("lettre de mission", "acompte des honoraires"),
-    # ST1 (Albane 2026-06-26) : nom de fichier porte la denomination -> cle alignee.
+    "SCI": ("lettre de mission", "acompte des honoraires"),
+    "SCI-IRIS": ("lettre de mission", "acompte des honoraires"),
+    "SPFPL-cession": ("lettre de mission", "acompte des honoraires"),
     # ST7g (Albane 2026-06-26) : titres art. 16/17/22 a casse cassee RENDUS en MAJUSCULES
     # integrales (transformation sanctionnee, cf. _HEADING_TRANSFORMS) -> la ligne SOURCE a casse
     # cassee n'apparait plus verbatim (sa version MAJUSCULES est presente, verifiee par le verrou
@@ -226,7 +240,7 @@ _BODY_ALLOWLIST: dict[str, tuple[str, ...]] = {
     # nomme(e) president(e) ... ») et le paragraphe de REMUNERATION qui suit ont ete RETIRES du
     # statut a la demande d'Albane (le PV de nomination reste le seul a nommer nominativement le
     # dirigeant ; pas de doublon). La clause GENERIQUE de gerance reste presente et verifiee.
-    "Statuts SELAS EXEMPLE.docx": (
+    "SELAS-multi": (
         "lettre de mission",
         "acompte des honoraires",
         "des DECISIONS sociales",
@@ -238,7 +252,7 @@ _BODY_ALLOWLIST: dict[str, tuple[str, ...]] = {
     # SCM : O24-01 + « ci- 510 € » = valeur d'EXEMPLE du modele (montant reinjecte dynamiquement) ;
     # « Faire preceder » / « Lu et approuve » = artefact du modele source SCM (texte de la mention
     # de signature DUPLIQUE dans un meme paragraphe), rendu de-duplique cote sortie.
-    "statuts_scm.docx": (
+    "SCM": (
         "lettre de mission",
         "acompte des honoraires",
         "ci- 510",
@@ -270,14 +284,14 @@ def _static_body_lines(path: Path) -> list[str]:
     return out
 
 
-@pytest.mark.parametrize("generate, statuts_name, source_resolver", _CASES)
+@pytest.mark.parametrize("generate, statuts_name, source_resolver, case_key", _CASES)
 def test_statuts_source_body_lines_present(
-    tmp_path: Path, generate, statuts_name: str, source_resolver
+    tmp_path: Path, generate, statuts_name: str, source_resolver, case_key: str
 ) -> None:
     generated = generate(tmp_path)
     statuts_path = _gen_statuts(generated, statuts_name)
     output = _normalized_full_text(statuts_path)
-    allow = _BODY_ALLOWLIST.get(statuts_name, ())
+    allow = _BODY_ALLOWLIST.get(case_key, ())
     missing = [
         line
         for line in _static_body_lines(source_resolver())
@@ -304,7 +318,7 @@ def test_statuts_civil_first_page_formatting_matches_source(tmp_path: Path) -> N
         ),
         tmp_path,
     )
-    doc = Document(_gen_statuts(generated, "statuts_sci_iris.docx"))
+    doc = Document(_gen_statuts(generated, "Statuts SCI IRIS EXEMPLE.docx"))
     paras = [p for p in doc.paragraphs if p.text.strip()]
 
     def find(prefix: str):

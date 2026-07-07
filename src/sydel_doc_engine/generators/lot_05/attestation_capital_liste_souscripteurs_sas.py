@@ -74,10 +74,9 @@ class AttestationCapitalListeSouscripteursSasGenerator:
         # (b) Aeration entre le bloc TITRE (« ATTESTATION » / « Liste des
         # souscripteurs ») et le CORPS du texte.
         add_spacer(document, space_after_pt=_ATTESTATION_GROUP_SPACER_PT)
-        # R3 (Albane 2026-07-07) : « Docteur » n'est pas une civilité — les slots
-        # de civilité (tête de désignation, « par le Président, __ », signature)
-        # rendent la civilité CIVILE (Monsieur/Madame) ; le TITRE « le Docteur X »
-        # du corps (phrase d'apport) reste, lui, légitime (A26-45/49).
+        # R3 durci (Rafael 2026-07-07, supersede A26-45/49) : « Docteur »/« Dr » ne
+        # sort JAMAIS — tous les slots nommant une personne (désignation, répartition,
+        # phrase d'apport, « par le Président, __ », signature) sont CIVILS.
         add_paragraph(
             document,
             f"{data.president_identite_civile} {data.profession_actionnaire}, demeurant "
@@ -93,8 +92,8 @@ class AttestationCapitalListeSouscripteursSasGenerator:
         )
         add_paragraph(
             document,
-            f"Répartition : {data.nb_actions_souscripteur} actions attribuées au Dr "
-            f"{data.actionnaire_signature}, actionnaire unique",
+            f"Répartition : {data.nb_actions_souscripteur} actions attribuées à "
+            f"{data.actionnaire_identite_civile}, actionnaire unique",
         )
         add_paragraph(document, "Apports en nature :", bold=True)
         add_paragraph(
@@ -116,7 +115,7 @@ class AttestationCapitalListeSouscripteursSasGenerator:
         add_paragraph(document, f"Apports en numéraire : {data.apports_numeraire_montant}")
         add_paragraph(
             document,
-            f"Le {data.president_nom} a fait la totalité des apports en nature.",
+            f"{data.president_identite_civile} a fait la totalité des apports en nature.",
         )
         add_paragraph(
             document,
@@ -147,6 +146,7 @@ class _ResolvedAttestationCapitalSas:
         president_nom: str,
         president_identite_civile: str,
         actionnaire_nom: str,
+        actionnaire_identite_civile: str,
         actionnaire_signature: str,
         profession_actionnaire: str,
         adresse_actionnaire: str,
@@ -171,6 +171,7 @@ class _ResolvedAttestationCapitalSas:
         self.president_nom = president_nom
         self.president_identite_civile = president_identite_civile
         self.actionnaire_nom = actionnaire_nom
+        self.actionnaire_identite_civile = actionnaire_identite_civile
         self.actionnaire_signature = actionnaire_signature
         self.profession_actionnaire = profession_actionnaire
         self.adresse_actionnaire = adresse_actionnaire
@@ -226,6 +227,19 @@ class _ResolvedAttestationCapitalSas:
             president_nom=person_name(president, "president"),
             president_identite_civile=president_identite_civile,
             actionnaire_nom=person_name(actionnaire, "actionnaire_unique"),
+            # R3 (Rafael 2026-07-07, 2e insistance) : la repartition rend l'identite
+            # CIVILE de l'actionnaire (« Monsieur X »), plus jamais « au Dr X ».
+            actionnaire_identite_civile=(
+                civilite_civile(
+                    required_text(
+                        actionnaire.civilite_affichage,
+                        "actionnaire_unique.civilite_affichage",
+                    ),
+                    actionnaire.genre or ctx.personne_signataire.genre,
+                )
+                + f" {required_text(actionnaire.prenom, 'actionnaire_unique.prenom')}"
+                + f" {required_text(actionnaire.nom, 'actionnaire_unique.nom')}"
+            ),
             actionnaire_signature=(
                 f"{required_text(actionnaire.prenom, 'actionnaire_unique.prenom')} "
                 f"{required_text(actionnaire.nom, 'actionnaire_unique.nom')}"

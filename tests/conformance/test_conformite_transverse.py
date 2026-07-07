@@ -8,7 +8,9 @@ silencieusement sur aucun type (gate registre de propagation, règle 68 Q4).
 Règles (détail : ``_conformance_rules``) :
   R1 tokens résiduels · R2 « numéro en cours » · R3 « Docteur » ≠ civilité ·
   R4 français accentué · R5 montants groupés · R6 élision « d'un » ·
-  R7 double unité · R8 double répartition (acte) · R9 clause Ordre + département.
+  R7 double unité · R8 double répartition (acte) · R9 clause Ordre + département ·
+  R10 nom de fichier statuts = « Statuts <dénomination>.docx » (Rafael 2026-07-07 —
+  appliquée au NOM du document, cf. ``FILENAME_RULES``).
 
 Marquage : les cellules (type × règle) ROUGES au constat initial (2026-07-07,
 worklist = ``RAPPORT_INITIAL.md``) portent ``xfail(strict=True)`` — quand le fix
@@ -20,7 +22,7 @@ from __future__ import annotations
 
 import pytest
 from _conformance_corpus import CORPUS_KEYS
-from _conformance_rules import RULE_LABELS, RULES
+from _conformance_rules import FILENAME_RULES, RULE_LABELS, RULES
 
 # ---------------------------------------------------------------------------
 # Cellules (type × règle) en échec au constat initial — worklist des fixes.
@@ -29,15 +31,12 @@ from _conformance_rules import RULE_LABELS, RULES
 
 _REASON = "retour Albane 2026-07-07 — fix à venir"
 
-# Fix-sprint 2026-07-07 : les 25 cellules initialement rouges (R2/R3/R4/R5/R6/R8/R9,
-# cf. RAPPORT_INITIAL.md) sont passées au VERT (XPASS strict constaté) -> marqueurs
-# retirés, ces cellules sont désormais des ASSERTIONS DURES permanentes.
-# Seul reste xfail le verbatim source SCM (décision de fidélité à arbitrer avec Albane).
-KNOWN_FAILURES: dict[tuple[str, str], str] = {
-    ("scm", "R4"): (
-        f"{_REASON} (pacte « Associe » + règlement « repartis » — verbatim source à arbitrer)"
-    ),
-}
+# Fix-sprint 2026-07-07 : les 26 cellules initialement rouges (R2/R3/R4/R5/R6/R8/R9,
+# cf. RAPPORT_INITIAL.md) sont TOUTES passées au VERT -> marqueurs retirés, assertions
+# DURES permanentes. Y compris scm-R4 : les typos verbatim du modèle source SCM
+# (« Associe », « repartis ») ont été corrigées sur insistance client (Rafael 2026-07-07,
+# « tout le texte doit être correct » — supersede la fidélité au modèle).
+KNOWN_FAILURES: dict[tuple[str, str], str] = {}
 
 
 def _cell_params():
@@ -59,7 +58,9 @@ def test_conformite_transverse(
     rule = RULES[rule_id]
     violations: list[str] = []
     for doc_name in sorted(bundle):
-        for extract in rule(bundle[doc_name]):
+        # R10 (FILENAME_RULES) porte sur le NOM du document ; les autres sur le texte.
+        subject = doc_name if rule_id in FILENAME_RULES else bundle[doc_name]
+        for extract in rule(subject):
             violations.append(f"({type_key} × {doc_name} × {rule_id}) {extract}")
     assert not violations, (
         f"{rule_id} — {RULE_LABELS[rule_id]} : {len(violations)} violation(s)\n"
@@ -84,15 +85,15 @@ _PIVOT_DOC: dict[str, str] = {
     "selas_uni_medecin": "attestation_capital_souscripteurs_selas.docx",
     "selas_uni_dentiste": "attestation_capital_souscripteurs_selas.docx",
     "spfpl_cession": "acte_cession_parts_spfpl.docx",
-    "spfpl_cession_vn1": "statuts_spfpl_cession.docx",
+    "spfpl_cession_vn1": "Statuts SPFPL MARTIN.docx",
     "spfpl_apport": "contrat_apport_spfpl.docx",
     "sas": "attestation_capital_liste_souscripteurs_sas.docx",
-    "sasu_holding": "statuts_sasu_holding.docx",
+    "sasu_holding": "Statuts MLG.docx",
     "sci": "lettre_option_is.docx",
-    "sci_iris": "statuts_sci_iris.docx",
+    "sci_iris": "Statuts SCI IRIS EXEMPLE.docx",
     "scm": "reglement_interieur_scm.docx",
     "scs": "liste_souscripteurs_scs.docx",
-    "micro_holding": "statuts_micro_holding.docx",
+    "micro_holding": "Statuts MA MICRO HOLDING.docx",
 }
 
 

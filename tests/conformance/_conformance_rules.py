@@ -1,4 +1,4 @@
-"""Règles de conformité transversales client (R1..R9).
+"""Règles de conformité transversales client (R1..R10).
 
 Chaque règle codifie un retour client (Albane/Rafael) en assertion PERMANENTE,
 appliquée à CHAQUE document de CHAQUE type par ``test_conformite_transverse.py``.
@@ -260,6 +260,27 @@ def rule_r9_ordre_departement(text: str) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
+# R10 — nom de fichier des statuts : « Statuts <dénomination>.docx »
+# ---------------------------------------------------------------------------
+
+# Retour Rafael 2026-07-07 : « TOUS les documents de statuts doivent être nommés
+# "Statuts [Nom de la société]" ». Règle de NOM DE FICHIER (pas de contenu) : tout
+# document dont le nom logique contient « statuts » doit s'appeler
+# « Statuts <dénomination>.docx » (helper partagé ``statuts_output_filename``).
+# Elle reçoit donc le NOM du document, pas son texte (cf. ``FILENAME_RULES``).
+_R10_OK = re.compile(r"^Statuts \S.*\.docx$")
+
+
+def rule_r10_nom_fichier_statuts(doc_name: str) -> list[str]:
+    """Un document de statuts est nommé « Statuts <dénomination>.docx »."""
+    if "statuts" not in doc_name.casefold():
+        return []
+    if _R10_OK.match(doc_name):
+        return []
+    return [f"nom de fichier « {doc_name} » — attendu « Statuts <dénomination>.docx »"]
+
+
+# ---------------------------------------------------------------------------
 # Registre des règles
 # ---------------------------------------------------------------------------
 
@@ -273,7 +294,11 @@ RULES: dict[str, Callable[[str], list[str]]] = {
     "R7": rule_r7_double_unite,
     "R8": rule_r8_double_repartition,
     "R9": rule_r9_ordre_departement,
+    "R10": rule_r10_nom_fichier_statuts,
 }
+
+# Règles appliquées au NOM DE FICHIER du document (les autres reçoivent le texte).
+FILENAME_RULES: frozenset[str] = frozenset({"R10"})
 
 RULE_LABELS: dict[str, str] = {
     "R1": "tokens résiduels ([ ] / À COMPLÉTER)",
@@ -285,4 +310,5 @@ RULE_LABELS: dict[str, str] = {
     "R7": "double unité / double titre",
     "R8": "double bloc de répartition (acte)",
     "R9": "clause Ordre sans département",
+    "R10": "nom de fichier statuts ≠ « Statuts <dénomination>.docx »",
 }

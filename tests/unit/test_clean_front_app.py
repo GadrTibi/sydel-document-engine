@@ -490,10 +490,12 @@ def test_clean_front_ui_prefill_selas_uni_dentiste_generates(
     app = app.run(timeout=180)
 
     generated = app.session_state[shell.TYPED_GENERATED_STATE_KEY]
+    # R10 (Rafael 2026-07-07) : le fichier statuts porte la denomination (prefill
+    # « SELAS EXEMPLE »), plus le nom fixe « statuts_selas_dentiste.docx ».
     statuts_text = next(
         _docx_text(Path(path))
         for path in generated["docx_paths"]
-        if "statuts_selas_dentiste" in Path(path).name
+        if Path(path).name == "Statuts SELAS EXEMPLE.docx"
     )
     # Corpus dentiste (verbatim du modele source dentiste pluri, uni-fie).
     assert "chirurgien-dentiste" in statuts_text
@@ -541,7 +543,7 @@ def test_clean_front_ui_prefill_micro_holding_generates(
     generated = app.session_state[shell.TYPED_GENERATED_STATE_KEY]
     names = {Path(path).name for path in generated["docx_paths"]}
     # Statuts micro holding + tronc commun + PV gerant + lettre d'option IS (prefill IS actif).
-    assert "statuts_micro_holding.docx" in names
+    assert "Statuts MICRO HOLDING EXEMPLE.docx" in names  # R10 : denomination au nom
     assert "pv_nomination_gerant.docx" in names
     assert "lettre_option_is.docx" in names
     combined_text = "\n".join(_docx_text(Path(path)) for path in generated["docx_paths"])
@@ -582,7 +584,7 @@ def test_clean_front_ui_prefill_sasu_holding_generates(
     generated = app.session_state[shell.TYPED_GENERATED_STATE_KEY]
     names = {Path(path).name for path in generated["docx_paths"]}
     # 6 pieces : statuts + tronc commun (DNC/domic/procuration) + PV remu president + souscripteurs.
-    assert "statuts_sasu_holding.docx" in names
+    assert "Statuts SASU HOLDING EXEMPLE.docx" in names  # R10 : denomination au nom
     assert "pv_remuneration_president_sasu_holding.docx" in names
     assert "liste_souscripteurs_sasu_holding.docx" in names
     assert len(generated["docx_paths"]) == 6

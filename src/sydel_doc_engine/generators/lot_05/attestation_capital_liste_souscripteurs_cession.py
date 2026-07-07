@@ -6,7 +6,10 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 from sydel_doc_engine.domain.models import DocumentGenerationContext
 from sydel_doc_engine.front_app.field_derivations import derive_gender_from_civilite
-from sydel_doc_engine.generators.lot_01.civilite import est_titre_professionnel
+from sydel_doc_engine.generators.lot_01.civilite import (
+    civilite_civile,
+    est_titre_professionnel,
+)
 from sydel_doc_engine.generators.lot_05.attestation_capital_liste_souscripteurs import (
     _ATTESTATION_GROUP_SPACER_PT,
     _adresse,
@@ -139,16 +142,21 @@ class AttestationCapitalListeSouscripteursCessionGenerator:
             f"{required_int(capital.nb_actions_total, 'capital_souscription.nb_actions_total')} "
             f"actions d’un montant de {valeur_nominale} {euro_word(valeur_nominale)} chacune",
         )
-        # [15] Repartition : X actions attribuees au Dr <prenom> <nom>, actionnaire unique.
-        # Le modele cession ecrit « au Dr [civilite] [prenom] [nom] », mais [civilite] est
-        # rempli par civilite_affichage = « Docteur » -> « au Dr Docteur » (doublon, meme
-        # famille que le B1 « Docteur Docteur » deja corrige). On aligne sur l'apport DOC-042
-        # (« au Dr [prenom] [nom] », sans civilite) -> sortie correcte « au Dr Camille Martin ».
+        # [15] Repartition : X actions attribuees a <civilite civile> <prenom> <nom>,
+        # actionnaire unique. R3 durci (Rafael 2026-07-07, supersede A26-45/49 et le
+        # « au Dr » du modele) : « Docteur »/« Dr » ne sort JAMAIS -> civilité CIVILE.
+        souscripteur_civilite = civilite_civile(
+            required_text(
+                souscripteur.civilite_affichage,
+                _souscripteur_field("civilite_affichage"),
+            ),
+            president_genre,
+        )
         add_paragraph(
             docx,
             "Répartition\xa0: "
             f"{required_int(souscripteur.nb_actions, _souscripteur_field('nb_actions'))} "
-            "actions attribuées au Dr "
+            f"actions attribuées à {souscripteur_civilite} "
             f"{souscripteur_prenom} {souscripteur_nom}, "
             "actionnaire unique",
         )
@@ -159,11 +167,12 @@ class AttestationCapitalListeSouscripteursCessionGenerator:
             f"Capital social\xa0de {spfpl_capital} € entièrement libéré et déposé "
             "dans les livres de la banque ",
         )
-        # [17] Le Docteur <prenom> <nom> a fait un apport de <capital> euros en numeraire.
+        # [17] <Civilité civile> <prenom> <nom> a fait un apport de <capital> euros en
+        # numeraire. R3 durci (Rafael 2026-07-07) : plus de « Le Docteur X » en corps.
         add_paragraph(
             docx,
-            f"Le Docteur {souscripteur_prenom} {souscripteur_nom} a fait un apport de "
-            f"{spfpl_capital} euros en numéraire.",
+            f"{souscripteur_civilite} {souscripteur_prenom} {souscripteur_nom} "
+            f"a fait un apport de {spfpl_capital} euros en numéraire.",
             space_after_pt=_ATTESTATION_GROUP_SPACER_PT,
         )
         # [19] Le present etat ... le VERSEMENT de la somme de X euros ... certifie exact ...

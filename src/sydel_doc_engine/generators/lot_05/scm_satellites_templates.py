@@ -272,7 +272,7 @@ PACTE_ASSOCIES_BLOCKS: list[TemplateBlock] = [('p', 'PACTE D’ASSOCIES'),
   "l’exécution forcée de la Promesse de Vente ou de la Promesse d’Achat afin d'obtenir la "
   'réalisation du Transfert des Parts objet de la Promesse de Vente et/ou d’Achat, dans les '
   'conditions prévues aux présentes.'),
- ('p', 'Date de Départ d’un Associe'),
+ ('p', 'Date de Départ d’un Associé'),
  ('p',
   "Pour l'application de l’Article 6 du Pacte, la date de départ de l’Associé partant (la «\xa0"
   'Date de Départ\xa0») sera\xa0:'),
@@ -739,7 +739,7 @@ REGLEMENT_INTERIEUR_SCM_BLOCKS: list[TemplateBlock] = [('table', [['REGLEMENT IN
   'patients.'),
  ('p',
   'Les patients n’ayant pas fait la demande expresse d’être reçu par un des praticiens seront '
-  'repartis égalitairement sur les plages de rendez-vous du planning de chaque praticien, en '
+  'répartis égalitairement sur les plages de rendez-vous du planning de chaque praticien, en '
   'favorisant une prise de rendez-vous / prorata du nombre de jours travaillés.'),
  ('p',
   'Chaque année, un état des lieux sera tenu afin d’aménager la clé de répartition le cas échéant '

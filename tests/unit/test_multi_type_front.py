@@ -233,7 +233,7 @@ def test_sci_slice_generates_clean(tmp_path: Path) -> None:
     assert plan.can_generate is True
     assert plan.document_codes == ("DOC-020", "DOC-001", "DOC-002", "DOC-003", "DOC-004")
     generated = css.generate_dossier(payload, tmp_path / "sci")
-    _assert_bundle_clean(generated, _TRONC_DOCS | {"statuts_sci.docx"})
+    _assert_bundle_clean(generated, _TRONC_DOCS | {"Statuts SCI EXEMPLE.docx"})
 
 
 # Centre des impots requis par la lettre d'option IS (DOC-022) ; saisies utilisateur.
@@ -284,7 +284,7 @@ def test_sci_option_is_on_adds_lettre_option_is(tmp_path: Path) -> None:
     generated = css.generate_dossier(payload, tmp_path / "sci-is-on")
     _assert_bundle_clean(
         generated,
-        _TRONC_DOCS | {"statuts_sci.docx", "lettre_option_is.docx"},
+        _TRONC_DOCS | {"Statuts SCI EXEMPLE.docx", "lettre_option_is.docx"},
     )
 
 
@@ -301,7 +301,7 @@ def test_sci_iris_option_is_on_adds_lettre_option_is(tmp_path: Path) -> None:
     generated = css.generate_dossier(payload, tmp_path / "iris-is-on")
     _assert_bundle_clean(
         generated,
-        _TRONC_DOCS | {"statuts_sci_iris.docx", "lettre_option_is.docx"},
+        _TRONC_DOCS | {"Statuts SCI IRIS EXEMPLE.docx", "lettre_option_is.docx"},
     )
 
 
@@ -342,7 +342,7 @@ def test_scm_slice_generates_clean(tmp_path: Path) -> None:
         generated,
         _TRONC_DOCS
         | {
-            "statuts_scm.docx",
+            "Statuts SCM EXEMPLE.docx",
             "demande_inscription_ordre.docx",
             "pacte_associes_scm.docx",
             "liste_depenses_communes_scm.docx",
@@ -414,7 +414,7 @@ def test_scm_inter_sel_adds_frais_communs_reglement(tmp_path: Path) -> None:
         generated,
         _TRONC_DOCS
         | {
-            "statuts_scm.docx",
+            "Statuts SCM EXEMPLE.docx",
             "pacte_associes_scm.docx",
             "liste_depenses_communes_scm.docx",
         }
@@ -822,7 +822,7 @@ def test_sci_iris_slice_generates_clean(tmp_path: Path) -> None:
     assert plan.can_generate is True
     assert plan.document_codes == ("DOC-021", "DOC-001", "DOC-002", "DOC-003", "DOC-004")
     generated = css.generate_dossier(payload, tmp_path / "iris")
-    _assert_bundle_clean(generated, _TRONC_DOCS | {"statuts_sci_iris.docx"})
+    _assert_bundle_clean(generated, _TRONC_DOCS | {"Statuts SCI IRIS EXEMPLE.docx"})
 
 
 def test_sci_iris_pv_forme_is_sci_not_internal_key(tmp_path: Path) -> None:
@@ -852,9 +852,9 @@ def test_sci_standard_allows_personne_morale(tmp_path: Path) -> None:
     assert plan.can_generate is True
     assert plan.document_codes == ("DOC-020", "DOC-001", "DOC-002", "DOC-003", "DOC-004")
     generated = css.generate_dossier(payload, tmp_path / "sci_pm")
-    _assert_bundle_clean(generated, _TRONC_DOCS | {"statuts_sci.docx"})
+    _assert_bundle_clean(generated, _TRONC_DOCS | {"Statuts SCI EXEMPLE.docx"})
     statuts_text = _docx_text(
-        next(p for p in generated.docx_paths if p.name == "statuts_sci.docx")
+        next(p for p in generated.docx_paths if p.name == "Statuts SCI EXEMPLE.docx")
     )
     # L'identite morale de l'associe societe apparait dans les statuts.
     assert "SEL IRIS" in statuts_text
@@ -895,9 +895,9 @@ def test_sci_three_associes_generates_clean(tmp_path: Path) -> None:
     assert plan.can_generate is True
     assert plan.document_codes == ("DOC-020", "DOC-001", "DOC-002", "DOC-003", "DOC-004")
     generated = css.generate_dossier(payload, tmp_path / "sci3")
-    _assert_bundle_clean(generated, _TRONC_DOCS | {"statuts_sci.docx"})
+    _assert_bundle_clean(generated, _TRONC_DOCS | {"Statuts SCI EXEMPLE.docx"})
     # Les 3 associes apparaissent dans les statuts ET sont listes au PV nomination.
-    statuts_text = _names_in(generated, "statuts_sci.docx")
+    statuts_text = _names_in(generated, "Statuts SCI EXEMPLE.docx")
     pv_text = _names_in(generated, "pv_nomination_gerant.docx")
     for nom in ("Durand", "Martin", "Petit"):
         assert nom in statuts_text
@@ -919,8 +919,8 @@ def test_sci_five_associes_generates_clean(tmp_path: Path) -> None:
     plan = css.build_civil_plan(payload)
     assert plan.can_generate is True
     generated = css.generate_dossier(payload, tmp_path / "sci5")
-    _assert_bundle_clean(generated, _TRONC_DOCS | {"statuts_sci.docx"})
-    statuts_text = _names_in(generated, "statuts_sci.docx")
+    _assert_bundle_clean(generated, _TRONC_DOCS | {"Statuts SCI EXEMPLE.docx"})
+    statuts_text = _names_in(generated, "Statuts SCI EXEMPLE.docx")
     for nom in ("Durand", "Martin", "Petit", "Robert", "Bernard"):
         assert nom in statuts_text
 
@@ -965,7 +965,7 @@ def test_sci_iris_three_associes_generates_clean(tmp_path: Path) -> None:
     assert plan.document_codes == ("DOC-021", "DOC-001", "DOC-002", "DOC-003", "DOC-004")
     generated = css.generate_dossier(payload, tmp_path / "iris3")
     # Les groupes de resultat IRIS sont produits sans token residuel pour 3 plages.
-    _assert_bundle_clean(generated, _TRONC_DOCS | {"statuts_sci_iris.docx"})
+    _assert_bundle_clean(generated, _TRONC_DOCS | {"Statuts SCI IRIS EXEMPLE.docx"})
 
 
 def test_scm_three_associes_drops_satellites(tmp_path: Path) -> None:
@@ -999,7 +999,7 @@ def test_scm_three_associes_drops_satellites(tmp_path: Path) -> None:
     assert "liste_depenses_communes_scm.docx" not in names
     _assert_bundle_clean(
         generated,
-        _TRONC_DOCS | {"statuts_scm.docx", "demande_inscription_ordre.docx"},
+        _TRONC_DOCS | {"Statuts SCM EXEMPLE.docx", "demande_inscription_ordre.docx"},
     )
 
 
@@ -1103,7 +1103,7 @@ def test_sas_slice_generates_clean(tmp_path: Path) -> None:
     _assert_bundle_clean(
         generated,
         {
-            "statuts_sas_spfpl_medecins.docx",
+            "Statuts SPFPL MARTIN.docx",
             "declaration_non_condamnation.docx",
             "autorisation_domiciliation.docx",
             "procuration.docx",
@@ -1421,7 +1421,7 @@ def test_spfpl_cession_slice_generates_clean(tmp_path: Path) -> None:
     generated = spfpl_slice.generate_dossier(payload, tmp_path / "spfpl-cession")
     _assert_bundle_clean(
         generated,
-        _SPFPL_BUNDLE_TRONC | {"statuts_spfpl_cession.docx"} | _SPFPL_CESSION_DOCS,
+        _SPFPL_BUNDLE_TRONC | {"Statuts SPFPL MARTIN.docx"} | _SPFPL_CESSION_DOCS,
     )
 
 
@@ -1485,7 +1485,7 @@ def test_spfpl_cession_comparution_marie_ligne_complete(
     slug = f"{statut}-{regime.split()[-1]}"
     generated = spfpl_slice.generate_dossier(payload, tmp_path / f"spfpl-cession-marie-{slug}")
     statuts = next(
-        p for p in generated.docx_paths if p.name == "statuts_spfpl_cession.docx"
+        p for p in generated.docx_paths if p.name == "Statuts SPFPL MARTIN.docx"
     )
     text = _docx_text(statuts)
     statut_capitalise = statut[0].upper() + statut[1:]  # « marié » -> « Marié »
@@ -1636,7 +1636,7 @@ def test_spfpl_apport_slice_generates_clean(tmp_path: Path) -> None:
     generated = spfpl_slice.generate_dossier(payload, tmp_path / "spfpl-apport")
     _assert_bundle_clean(
         generated,
-        _SPFPL_BUNDLE_TRONC | {"statuts_spfpl_apport.docx"} | _SPFPL_APPORT_DOCS,
+        _SPFPL_BUNDLE_TRONC | {"Statuts SPFPL MARTIN.docx"} | _SPFPL_APPORT_DOCS,
     )
 
 
@@ -1681,7 +1681,7 @@ def test_spfpl_cession_regime_on_adds_regime_docs(tmp_path: Path) -> None:
     _assert_bundle_clean(
         generated,
         _SPFPL_BUNDLE_TRONC
-        | {"statuts_spfpl_cession.docx"}
+        | {"Statuts SPFPL MARTIN.docx"}
         | _SPFPL_CESSION_DOCS
         | _REGIME_DOCS,
     )
@@ -1697,7 +1697,7 @@ def test_spfpl_apport_regime_on_adds_regime_docs(tmp_path: Path) -> None:
     generated = spfpl_slice.generate_dossier(payload, tmp_path / "spfpl-apport-regime")
     _assert_bundle_clean(
         generated,
-        _SPFPL_BUNDLE_TRONC | {"statuts_spfpl_apport.docx"} | _SPFPL_APPORT_DOCS | _REGIME_DOCS,
+        _SPFPL_BUNDLE_TRONC | {"Statuts SPFPL MARTIN.docx"} | _SPFPL_APPORT_DOCS | _REGIME_DOCS,
     )
 
 
@@ -1709,7 +1709,7 @@ def test_spfpl_apport_capital_not_duplicated(tmp_path: Path) -> None:
     payload = _spfpl_payload("SPFPL apport")
     generated = spfpl_slice.generate_dossier(payload, tmp_path / "spfpl-apport-cap")
     text = _docx_text(
-        next(p for p in generated.docx_paths if p.name == "statuts_spfpl_apport.docx")
+        next(p for p in generated.docx_paths if p.name == "Statuts SPFPL MARTIN.docx")
     )
     assert "60000euros" not in text  # plus de « euros » colle
     assert "€ 60000" not in text  # plus de montant duplique apres le €
@@ -1774,7 +1774,10 @@ def test_sas_attestation_no_double_docteur(tmp_path: Path) -> None:
         )
     )
     assert "Docteur Docteur" not in text
-    assert "Le Docteur Camille Martin a fait" in text
+    # R3 Rafael 2026-07-07 : Docteur retiré partout (supersede A26-45/49) — la phrase
+    # d'apport rend la civilité CIVILE, plus de titre « Le Docteur X a fait ».
+    assert "Monsieur Camille Martin a fait la totalité des apports en nature." in text
+    assert "Docteur" not in text
 
 
 def _selas_payload():
@@ -2704,7 +2707,7 @@ def test_front_routes_to_sci_slice_and_generates(tmp_path: Path, monkeypatch) ->
     app = app.run(timeout=180)
 
     download_labels = [item.label for item in app.get("download_button")]
-    assert "Telecharger statuts_sci.docx" in download_labels
+    assert "Telecharger Statuts SCI EXEMPLE.docx" in download_labels
     assert "Telecharger le dossier ZIP" in download_labels
 
 
@@ -2765,17 +2768,19 @@ def test_sci_unipersonnel_apport_derived_from_capital(
 @pytest.mark.parametrize(
     "label, statuts_name",
     [
-        ("SCM creation V1", "statuts_scm.docx"),
-        ("SCI creation V1", "statuts_sci.docx"),
-        ("SCI IRIS creation V1", "statuts_sci_iris.docx"),
+        # R10 (Rafael 2026-07-07) : TOUS les statuts portent la denomination du prefill
+        # dans le nom de fichier (« Statuts <denomination>.docx »).
+        ("SCM creation V1", "Statuts SCM DES DOCTEURS EXEMPLE.docx"),
+        ("SCI creation V1", "Statuts SCI EXEMPLE.docx"),
+        ("SCI IRIS creation V1", "Statuts SCI IRIS EXEMPLE.docx"),
         ("SCS creation V1", "Statuts SCS EXEMPLE.docx"),
         # Micro holding (Albane 2026-06-26) : societe civile a capital variable, socle civil.
-        ("Micro holding creation V1", "statuts_micro_holding.docx"),
-        ("SPFPL medecins (forme SAS) creation V1", "statuts_sas_spfpl_medecins.docx"),
+        ("Micro holding creation V1", "Statuts MICRO HOLDING EXEMPLE.docx"),
+        ("SPFPL medecins (forme SAS) creation V1", "Statuts SPFPL MARTIN.docx"),
         # SASU Holding (Albane 2026-06-29) : SAS unipersonnelle generaliste, slice dedie.
-        ("SASU Holding (holding patrimoniale) creation V1", "statuts_sasu_holding.docx"),
-        ("SPFPL dentistes - cession creation V1", "statuts_spfpl_cession.docx"),
-        ("SPFPL dentistes - apport creation V1", "statuts_spfpl_apport.docx"),
+        ("SASU Holding (holding patrimoniale) creation V1", "Statuts SASU HOLDING EXEMPLE.docx"),
+        ("SPFPL dentistes - cession creation V1", "Statuts SPFPL MARTIN.docx"),
+        ("SPFPL dentistes - apport creation V1", "Statuts SPFPL MARTIN.docx"),
         ("SELAS pluripersonnelle creation V1", "Statuts SELAS EXEMPLE.docx"),
     ],
 )
@@ -2825,9 +2830,10 @@ def _set_text_widget(app, key: str, value: str) -> None:
 
 def test_sci_repeater_live03_accentuates_date_naissance(tmp_path: Path, monkeypatch) -> None:
     """LIVE-03 (date_naissance via le REPEATER, SCI) : une date de naissance saisie sans
-    accent (« 1er aout 1980 ») dans le repeater d'associes ressort accentuee dans
-    statuts_sci.docx. Exerce le code REEL du formulaire (associe_repeater._render_personne_physique
-    -> accentuate_french_months), pas un associe pre-construit."""
+    accent (« 1er aout 1980 ») dans le repeater d'associes ressort accentuee dans les
+    statuts SCI (« Statuts SCI EXEMPLE.docx »). Exerce le code REEL du formulaire
+    (associe_repeater._render_personne_physique -> accentuate_french_months), pas un
+    associe pre-construit."""
     from streamlit.testing.v1 import AppTest
 
     from sydel_doc_engine.front_app import shell
@@ -4613,7 +4619,7 @@ def test_selas_uni_medecin_generates_doc018_bundle(tmp_path: Path) -> None:
     _assert_bundle_clean(
         generated,
         {
-            "statuts_selas_medecin.docx",
+            "Statuts SELAS MARTIN.docx",
             "declaration_non_condamnation.docx",
             "autorisation_domiciliation.docx",
             "procuration.docx",
@@ -4623,7 +4629,7 @@ def test_selas_uni_medecin_generates_doc018_bundle(tmp_path: Path) -> None:
         },
     )
     statuts_text = _docx_text(
-        next(p for p in generated.docx_paths if p.name == "statuts_selas_medecin.docx")
+        next(p for p in generated.docx_paths if p.name == "Statuts SELAS MARTIN.docx")
     )
     assert "SELAS MARTIN" in statuts_text
 
@@ -4658,7 +4664,7 @@ def test_selas_uni_medecin_celibataire_can_generate(tmp_path: Path) -> None:
 
     generated = uni.generate_dossier(payload, tmp_path / "selas-uni-celibataire")
     statuts_text = _docx_text(
-        next(p for p in generated.docx_paths if p.name == "statuts_selas_medecin.docx")
+        next(p for p in generated.docx_paths if p.name == "Statuts SELAS MARTIN.docx")
     )
     assert "célibataire" in statuts_text
     assert "sous le régime de" not in statuts_text

@@ -1,12 +1,15 @@
-"""Civilité d'adresse CIVILE — R3 (Albane 2026-07-07).
+"""Civilité d'adresse CIVILE — R3 (Albane 2026-07-07, durci Rafael 2026-07-07).
 
 Verbatim Albane : « "Docteur" n'est pas une civilité ! La retirer partout où
-elle existe » (comme civilité). Le TITRE professionnel « le Docteur X » dans le
-corps des actes reste légitime (retours A26-45/49) : seuls les SLOTS de civilité
-(« Je soussigné __ », « par le Président, __ », bloc signature, tête de
-désignation de personne) passent par ce helper, qui substitue Monsieur/Madame
-(accordé au genre) à un titre professionnel (« Docteur »/« Dr ») posé en
-civilité. Une civilité déjà civile (Monsieur/Madame…) est renvoyée inchangée.
+elle existe ». Rafael (2026-07-07, 2ᵉ insistance, tranche la contradiction
+tracée) : « Docteur »/« Dr » est retiré de TOUTES les sorties, Y COMPRIS le
+TITRE du corps des actes (« Le Docteur X a fait… » -> « Monsieur/Madame X
+a fait… ») — SUPERSEDE A26-45/49 qui gardait le titre légitime dans le corps.
+TOUT slot nommant une personne (« Je soussigné __ », « par le Président, __ »,
+bloc signature, tête de désignation, phrase d'apport, répartition du capital)
+passe par ce helper, qui substitue Monsieur/Madame (accordé au genre) à un
+titre professionnel (« Docteur »/« Dr ») posé en civilité. Une civilité déjà
+civile (Monsieur/Madame…) est renvoyée inchangée.
 """
 
 from __future__ import annotations

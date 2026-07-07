@@ -141,7 +141,10 @@ def test_pv_remuneration_president_generates_source_wording(tmp_path: Path) -> N
 
     assert output_path.name == "pv_remuneration_president.docx"
     assert "PROCES-VERBAL DES DECISIONS" in text
-    assert "Docteur Camille Martin, actionnaire unique, décide qu'il ne percevra" in text
+    # R3 Rafael 2026-07-07 : Docteur retiré partout (supersede A26-45/49) — la décision
+    # rend la civilité CIVILE (fixture « Docteur » -> « Monsieur »).
+    assert "Monsieur Camille Martin, actionnaire unique, décide qu'il ne percevra" in text
+    assert "Docteur" not in text
     assert "Fait à Paris en trois exemplaires" in text
     _assert_clean(text)
     assert_no_unaccented_french(text)
@@ -167,16 +170,24 @@ def test_attestation_capital_sas_generates_unique_subscriber_wording(
 
     assert output_path.name == "attestation_capital_liste_souscripteurs_sas.docx"
     assert "Liste des souscripteurs" in text
-    assert "Répartition : 600 actions attribuées au Dr Camille Martin, actionnaire unique" in text
+    # R3 Rafael 2026-07-07 : Docteur retiré partout (supersede A26-45/49) — répartition
+    # « à Monsieur X » (plus « au Dr X »).
+    assert (
+        "Répartition : 600 actions attribuées à Monsieur Camille Martin, actionnaire unique"
+        in text
+    )
+    assert "au Dr " not in text
     assert "Apports en nature" in text
     # R3 (Albane 2026-07-07) : « Docteur » n'est pas une civilité — tête de
     # désignation, « par le Président, __ » et signature rendent la civilité CIVILE
-    # (Monsieur/Madame) ; le TITRE « Le Docteur X » de la phrase d'apport reste.
+    # (Monsieur/Madame) ; durci Rafael 2026-07-07 : la phrase d'apport aussi (plus de
+    # titre « Le Docteur X », supersede A26-45/49).
     assert "Monsieur Camille Martin médecin, demeurant" in text
     assert "par le Président, Monsieur Camille Martin." in text
     assert "Président, Docteur" not in text
     assert text.rstrip().endswith("Monsieur Camille Martin")
-    assert "Le Docteur Camille Martin a fait la totalité des apports en nature." in text
+    assert "Monsieur Camille Martin a fait la totalité des apports en nature." in text
+    assert "Docteur" not in text
     _assert_clean(text)
     assert_no_unaccented_french(text)
 

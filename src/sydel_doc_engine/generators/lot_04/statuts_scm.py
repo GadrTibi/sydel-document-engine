@@ -14,6 +14,9 @@ from sydel_doc_engine.domain.models import (
     StatutsCivilsContext,
 )
 from sydel_doc_engine.generators.lot_04.annexe_filter import is_creation_fee_annexe_line
+from sydel_doc_engine.generators.lot_04.statuts_sel_exercice_common import (
+    statuts_output_filename,
+)
 from sydel_doc_engine.rendering.docx_builder import (
     add_paragraph,
     add_statuts_article_heading,
@@ -83,7 +86,9 @@ class StatutsScmGenerator:
             raise ValueError(f"placeholder source residuel dans le rendu {DOCUMENT_CODE}.")
 
         output_dir.mkdir(parents=True, exist_ok=True)
-        output_path = output_dir / OUTPUT_FILENAME
+        # Retour Rafael 2026-07-07 : TOUS les statuts sont nommes
+        # « Statuts <denomination>.docx » (helper partage, fallback historique si vide).
+        output_path = output_dir / statuts_output_filename(data.denomination, OUTPUT_FILENAME)
         output_doc.save(output_path)
         return output_path
 

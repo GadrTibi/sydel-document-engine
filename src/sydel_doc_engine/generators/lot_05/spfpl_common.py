@@ -14,6 +14,7 @@ from sydel_doc_engine.domain.models import (
     SpfplPerson,
     SpfplRepresentant,
 )
+from sydel_doc_engine.generators.lot_01.civilite import civilite_civile
 from sydel_doc_engine.generators.lot_05.scm_cession_common import (
     mentions_conjoint,
     mentions_partenaire_pacse,
@@ -263,8 +264,14 @@ def person_address_display(person: SpfplPerson, field_name: str) -> str:
 
 
 def person_short_identity(person: SpfplPerson, field_name: str) -> str:
+    # R3 durci (Rafael 2026-07-07, supersede A26-45/49) : jamais « Docteur »/« Dr »
+    # en sortie — civilité CIVILE accordée au genre porté par la personne.
+    civilite = civilite_civile(
+        required_text(person.civilite_affichage, f"{field_name}.civilite_affichage"),
+        person.genre,
+    )
     return (
-        f"{required_text(person.civilite_affichage, f'{field_name}.civilite_affichage')} "
+        f"{civilite} "
         f"{required_text(person.prenom, f'{field_name}.prenom')} "
         f"{required_text(person.nom, f'{field_name}.nom')}"
     )
@@ -340,8 +347,15 @@ def required_representant(
 
 
 def representant_display(representant: SpfplRepresentant, field_name: str) -> str:
+    # R3 durci (Rafael 2026-07-07) : un titre (« Docteur »/« Dr ») posé en civilité de
+    # représentant est rendu civil (le modèle SpfplRepresentant ne porte pas de genre
+    # -> masculin par défaut, comme derive_gender_from_civilite côté front).
+    civilite = civilite_civile(
+        required_text(representant.civilite_affichage, f"{field_name}.civilite_affichage"),
+        None,
+    )
     return (
-        f"{required_text(representant.civilite_affichage, f'{field_name}.civilite_affichage')} "
+        f"{civilite} "
         f"{required_text(representant.prenom, f'{field_name}.prenom')} "
         f"{required_text(representant.nom, f'{field_name}.nom')}"
     )
@@ -350,8 +364,14 @@ def representant_display(representant: SpfplRepresentant, field_name: str) -> st
 def associe_display_name(associe: AssocieCible, field_name: str) -> str:
     if associe.type == "personne_morale":
         return required_text(associe.denomination, f"{field_name}.denomination")
+    # R3 durci (Rafael 2026-07-07) : « Docteur » (option historique du sélecteur des
+    # associés cible) est rendu civil ; Monsieur/Madame passent inchangés.
+    civilite = civilite_civile(
+        required_text(associe.civilite_affichage, f"{field_name}.civilite_affichage"),
+        getattr(associe, "genre", None),
+    )
     return (
-        f"{required_text(associe.civilite_affichage, f'{field_name}.civilite_affichage')} "
+        f"{civilite} "
         f"{required_text(associe.prenom, f'{field_name}.prenom')} "
         f"{required_text(associe.nom, f'{field_name}.nom')}"
     )
@@ -410,8 +430,9 @@ def capital_before_lines(ctx: DocumentGenerationContext) -> list[str]:
         nb_parts = required_int(associe.nb_parts_avant, f"{field_name}.nb_parts_avant")
         total_before += nb_parts
         part_label = "part" if nb_parts == 1 else "parts"
+        # Orthographe (Rafael 2026-07-07) : « détenant » accentué.
         lines.append(
-            f"{associe_display_name(associe, field_name)} detenant {nb_parts} {part_label}"
+            f"{associe_display_name(associe, field_name)} détenant {nb_parts} {part_label}"
         )
 
     if total_before != total:
@@ -434,8 +455,9 @@ def presence_lines(ctx: DocumentGenerationContext) -> list[str]:
         nb_parts = required_int(associe.nb_parts_avant, f"{field_name}.nb_parts_avant")
         total_present += nb_parts
         part_label = "part" if nb_parts == 1 else "parts"
+        # Orthographe (Rafael 2026-07-07) : « détenant » accentué.
         lines.append(
-            f"{associe_display_name(associe, field_name)} detenant {nb_parts} {part_label}"
+            f"{associe_display_name(associe, field_name)} détenant {nb_parts} {part_label}"
         )
 
     if not lines:

@@ -97,10 +97,17 @@ class AttestationCapitalListeSouscripteursGenerator:
         # (b) Aeration entre le bloc TITRE (« ATTESTATION » / « Liste des
         # souscripteurs ») et le CORPS du texte.
         add_spacer(docx, space_after_pt=_ATTESTATION_GROUP_SPACER_PT)
-        # R3 (Albane 2026-07-07) : « Docteur » n'est pas une civilité — les slots de
-        # civilité (tête de désignation, « par le Président, __ », signature) rendent
-        # la civilité CIVILE (Monsieur/Madame, genre du signataire) ; le TITRE
-        # « Le Docteur X » de la phrase d'apport reste, lui, légitime (A26-45/49).
+        # R3 durci (Rafael 2026-07-07, supersede A26-45/49) : « Docteur »/« Dr » ne sort
+        # JAMAIS — tous les slots nommant une personne (désignation, répartition,
+        # phrase d'apport, « par le Président, __ », signature) sont CIVILS
+        # (Monsieur/Madame, genre du signataire).
+        souscripteur_civilite = civilite_civile(
+            required_text(
+                souscripteur.civilite_affichage,
+                _souscripteur_field("civilite_affichage"),
+            ),
+            ctx.personne_signataire.genre,
+        )
         president_identite = _souscripteur_identite(
             president,
             "capital_souscription.president",
@@ -128,7 +135,8 @@ class AttestationCapitalListeSouscripteursGenerator:
             docx,
             "Répartition : "
             f"{required_int(souscripteur.nb_actions, _souscripteur_field('nb_actions'))} "
-            f"actions attribuées au Dr {souscripteur_prenom} {souscripteur_nom}, "
+            f"actions attribuées à {souscripteur_civilite} "
+            f"{souscripteur_prenom} {souscripteur_nom}, "
             "actionnaire unique",
         )
         add_paragraph(docx, "Apports en nature :", bold=True)
@@ -156,8 +164,8 @@ class AttestationCapitalListeSouscripteursGenerator:
         add_paragraph(docx, f"Apports en numéraire : {apports_numeraire}")
         add_paragraph(
             docx,
-            "Le "
-            f"{_souscripteur_nom(souscripteur)} a fait la totalité des apports en nature.",
+            f"{souscripteur_civilite} {souscripteur_prenom} {souscripteur_nom} "
+            "a fait la totalité des apports en nature.",
         )
         add_paragraph(
             docx,
@@ -204,18 +212,6 @@ def _souscripteur_identite(
         f"{required_text(souscripteur.prenom, f'{field_name}.prenom')} "
         f"{required_text(souscripteur.nom, f'{field_name}.nom')} "
         f"{required_text(souscripteur.profession, f'{field_name}.profession')}"
-    )
-
-
-def _souscripteur_nom(souscripteur: CapitalSouscripteur) -> str:
-    # Slot TITRE (« Le Docteur X a fait la totalité des apports », convention A26-45/49) :
-    # toujours le titre professionnel « Docteur » (les souscripteurs SPFPL sont des
-    # praticiens), JAMAIS la civilité civile posée par le front (SP2 : M./Mme) — sinon
-    # « Le Monsieur X » (défaut pré-existant, rapport conformité 2026-07-07 l.182).
-    return (
-        "Docteur "
-        f"{required_text(souscripteur.prenom, _souscripteur_field('prenom'))} "
-        f"{required_text(souscripteur.nom, _souscripteur_field('nom'))}"
     )
 
 

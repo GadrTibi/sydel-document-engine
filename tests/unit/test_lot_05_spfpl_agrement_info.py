@@ -244,16 +244,29 @@ def test_pv_associe_unique_generates_cession_wording(tmp_path: Path) -> None:
 
 
 def test_pv_plusieurs_associes_generates_presence_and_signatures(tmp_path: Path) -> None:
+    # R3 Rafael 2026-07-07 : Docteur retiré partout (supersede A26-45/49). Civilité
+    # PROD-RÉALISTE « Monsieur » sur les slots posés par le slice (cédant, président de
+    # séance — le flux réel pose la civilité CIVILE, jamais « Docteur ») ; les associés
+    # cible gardent « Docteur » (Camille, option historique -> conversion civile) et
+    # « Madame » (Louise, civilité déjà civile -> passe inchangée).
+    ctx = _plural_context()
+    ctx.cedant.civilite_affichage = "Monsieur"
+    ctx.reunion.president.civilite_affichage = "Monsieur"
+    ctx.associes_cible[1].civilite_affichage = "Madame"
     output_path = PvAgrementCessionSpfplPlusieursAssociesGenerator().generate(
-        _plural_context(),
+        ctx,
         tmp_path,
     )
 
     text = _docx_text(output_path)
 
     assert output_path.name == "pv_agrement_cession_spfpl_plusieurs_associes.docx"
-    assert "Docteur Camille Martin detenant 70 parts" in text
-    assert "Docteur Louise Bernard detenant 30 parts" in text
+    # R3 Rafael 2026-07-07 : « Docteur X detenant N parts » -> civilité CIVILE
+    # (+ « détenant » accentué, Rafael 2026-07-07).
+    assert "Monsieur Camille Martin détenant 70 parts" in text
+    assert "Madame Louise Bernard détenant 30 parts" in text
+    # R3 Rafael 2026-07-07 : verrou de la convention — plus jamais « Docteur » en sortie.
+    assert "Docteur" not in text
     assert "Projet du contrat de cession" in text
     assert "Camille Martin" in text
     assert "Louise Bernard" in text

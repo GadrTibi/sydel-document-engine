@@ -179,7 +179,8 @@ def test_statuts_sci_generates_dynamic_associates(tmp_path: Path) -> None:
     output_path = StatutsSciGenerator().generate(ctx, tmp_path)
     text = _docx_text(output_path)
 
-    assert output_path.name == "statuts_sci.docx"
+    # R10 (Rafael 2026-07-07) : le fichier statuts porte la denomination.
+    assert output_path.name == "Statuts SCI EXEMPLE.docx"
     assert "ARTICLE 1 - FORME" in text
     assert "Monsieur Jean Durand" in text
     assert "Monsieur Alice Martin" in text
@@ -366,7 +367,8 @@ def test_statuts_sci_iris_generates_morale_and_result_groups(tmp_path: Path) -> 
         for paragraph in cell.paragraphs
     )
 
-    assert output_path.name == "statuts_sci_iris.docx"
+    # R10 (Rafael 2026-07-07) : le fichier statuts porte la denomination.
+    assert output_path.name == "Statuts SCI IRIS EXEMPLE.docx"
     assert "SCI IRIS" in text
     # R4 (Albane 2026-07-07) : « représentée » accentué (comparution + signature),
     # bloc morale « siège / immatriculée / numéro » accentué (constat conformité).

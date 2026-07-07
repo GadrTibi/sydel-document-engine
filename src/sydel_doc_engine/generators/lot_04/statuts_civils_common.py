@@ -273,18 +273,14 @@ def generate_statuts_civil_docx(  # noqa: C901
         raise ValueError(f"placeholder source residuel dans le rendu {DOCUMENT_CODE}.")
 
     output_dir.mkdir(parents=True, exist_ok=True)
-    # SCS6 (Albane 2026-06-25) : pour la SCS, le fichier statuts porte la denomination
-    # (« Statuts <denomination>.docx ») au lieu du nom fixe « statuts_scs.docx » — meme
-    # convention que la SELARL, deja ratifiee (2026-06-10, helper statuts_output_filename).
-    # Le « _ » du verbatim « Statuts_{denomination_sociale} » est sa notation placeholder
-    # (cf. le snake_case « denomination_sociale ») -> on aligne sur la convention espace
-    # ratifiee. Les autres civiles (SCI / SCI IRIS / SCM) gardent leur nom fixe.
-    filename = (
-        statuts_output_filename(data.denomination, template.output_filename)
-        if template.expected_structure == "SCS"
-        else template.output_filename
+    # SCS6 (Albane 2026-06-25) puis retour Rafael 2026-07-07 (propagation Q4) : TOUS les
+    # statuts portent la denomination dans le nom de fichier (« Statuts <denomination>.docx »,
+    # helper partage statuts_output_filename, convention SELARL 2026-06-10). Initialement
+    # limite a la SCS ; generalise a toutes les civiles (SCI / SCI IRIS / micro holding) —
+    # fallback = nom fixe historique du template si denomination vide/non sanitizable.
+    output_path = output_dir / statuts_output_filename(
+        data.denomination, template.output_filename
     )
-    output_path = output_dir / filename
     output_doc.save(output_path)
     return output_path
 

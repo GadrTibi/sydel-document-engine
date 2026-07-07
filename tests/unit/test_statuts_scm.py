@@ -135,7 +135,8 @@ def test_statuts_scm_generates_dynamic_associates_apports_parts_and_signatures(
     )
     lu_approuve = next(p for p in document.paragraphs if "Lu et approuvé" in p.text)
 
-    assert output_path.name == "statuts_scm.docx"
+    # R10 (Rafael 2026-07-07) : le fichier statuts porte la denomination.
+    assert output_path.name == "Statuts SCM CABINET DURAND MARTIN.docx"
     assert "Article 4 ‐ Objet social" in text
     # Ligne d'apport personne morale : le modele source (para 81) porte "La [denomination]
     # apporte ..." SANS representant ("representee par ..." n'existe qu'en comparution).

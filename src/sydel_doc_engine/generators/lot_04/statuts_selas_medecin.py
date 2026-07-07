@@ -18,6 +18,7 @@ from sydel_doc_engine.generators.lot_04.statuts_sel_exercice_common import (
     required_associe_unique,
     required_company,
     required_text,
+    statuts_output_filename,
     validate_sel_context,
     validate_selas_second_lieu,
 )
@@ -207,10 +208,12 @@ class StatutsSelasMedecinGenerator:
                 }
             )
 
+        # Retour Rafael 2026-07-07 : TOUS les statuts sont nommes
+        # « Statuts <denomination>.docx » (helper partage, fallback historique si vide).
         return render_statuts_sel_docx(
             STATUTS_SELAS_MEDECIN_BLOCKS,
             replacements,
-            output_dir / OUTPUT_FILENAME,
+            output_dir / statuts_output_filename(company.denomination, OUTPUT_FILENAME),
             associate=associate,
             render_selas_second_lieu=second_lieu_enabled,
             # Retours Albane « mise en forme » : mise en forme SELAS (adresse du

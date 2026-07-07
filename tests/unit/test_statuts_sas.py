@@ -142,7 +142,8 @@ def test_statuts_sas_generates_spfpl_medecins_unique_shareholder_docx(
         p for p in document.paragraphs if "Bon pour acceptation des fonctions" in p.text
     )
 
-    assert output_path.name == "statuts_sas_spfpl_medecins.docx"
+    # R10 (Rafael 2026-07-07) : le fichier statuts porte la denomination.
+    assert output_path.name == "Statuts SPFPL MARTIN.docx"
     assert "SPFPL MARTIN" in text
     assert "Société de Participations Financières de Profession Libérale de Médecins" in text
     assert "Par le Docteur Camille Martin 12 000" in text

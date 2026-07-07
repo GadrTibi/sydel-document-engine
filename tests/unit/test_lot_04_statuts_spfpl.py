@@ -193,7 +193,8 @@ def test_statuts_spfpl_cession_generates_source_overlay_without_signature_date(
         p for p in document.paragraphs if "Bon pour acceptation des fonctions" in p.text
     )
 
-    assert output_path.name == "statuts_spfpl_cession.docx"
+    # R10 (Rafael 2026-07-07) : le fichier statuts porte la denomination.
+    assert output_path.name == "Statuts SPFPL MARTIN.docx"
     assert "Société de Participations Financières de Profession Libérale" in text
     assert "BANQUE EXEMPLE sise 1 boulevard Haussmann, 75009 Paris" in text
     assert "Le\nDocteur Camille Martin" in text
@@ -287,7 +288,8 @@ def test_statuts_spfpl_apport_generates_nature_overlay_and_signature_date(
 
     text = _docx_text(output_path)
 
-    assert output_path.name == "statuts_spfpl_apport.docx"
+    # R10 (Rafael 2026-07-07) : le fichier statuts porte la denomination.
+    assert output_path.name == "Statuts SPFPL MARTIN.docx"
     assert "Apports en nature" in text
     assert "SELARL CABINET MARTIN" in text
     assert "ayant son siège 12 avenue des Ternes, 75017 Paris" in text

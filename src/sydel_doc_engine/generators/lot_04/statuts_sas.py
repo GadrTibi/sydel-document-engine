@@ -15,6 +15,9 @@ from sydel_doc_engine.domain.models import (
     SpfplPerson,
     StatutsPresident,
 )
+from sydel_doc_engine.generators.lot_04.statuts_sel_exercice_common import (
+    statuts_output_filename,
+)
 from sydel_doc_engine.generators.lot_05.scm_cession_common import (
     mentions_conjoint,
     mentions_partenaire_pacse,
@@ -64,7 +67,9 @@ class StatutsSasGenerator:
         data = _ResolvedStatutsSas.from_context(ctx)
         replacements = _build_replacements(data)
         output_dir.mkdir(parents=True, exist_ok=True)
-        output_path = output_dir / OUTPUT_FILENAME
+        # Retour Rafael 2026-07-07 : TOUS les statuts sont nommes
+        # « Statuts <denomination>.docx » (helper partage, fallback historique si vide).
+        output_path = output_dir / statuts_output_filename(data.denomination, OUTPUT_FILENAME)
         fill_docx_template(_resolve_model_path(), replacements, output_path)
         _apply_style_footer_normalize(output_path, data.denomination)
         # R0702-02 : pour un actionnaire NON MARIE, replie la comparution matrimoniale du modele

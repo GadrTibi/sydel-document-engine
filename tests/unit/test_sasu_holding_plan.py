@@ -111,7 +111,8 @@ def test_sasu_holding_context_routes_doc_048_not_sas_medecins() -> None:
 def test_sasu_holding_generates_bundle(tmp_path: Path) -> None:
     result = sasu_holding_slice.generate_dossier(_payload(), tmp_path)
     names = {p.name for p in result.docx_paths}
-    assert "statuts_sasu_holding.docx" in names
+    # R10 (Rafael 2026-07-07) : le fichier statuts porte la denomination (« MLG »).
+    assert "Statuts MLG.docx" in names
     assert "pv_remuneration_president_sasu_holding.docx" in names
     assert "liste_souscripteurs_sasu_holding.docx" in names
     # 6 pieces du bundle (statuts + tronc commun + 2 satellites generalistes) generees.

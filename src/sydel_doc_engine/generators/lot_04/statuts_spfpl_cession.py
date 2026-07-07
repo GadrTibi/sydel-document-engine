@@ -3,6 +3,9 @@ from __future__ import annotations
 from pathlib import Path
 
 from sydel_doc_engine.domain.models import DocumentGenerationContext
+from sydel_doc_engine.generators.lot_04.statuts_sel_exercice_common import (
+    statuts_output_filename,
+)
 from sydel_doc_engine.generators.lot_04.statuts_spfpl_common import (
     DOCUMENT_CODE,
     OPERATION_CESSION,
@@ -151,8 +154,11 @@ class StatutsSpfplCessionGenerator:
             }
         )
 
+        # Retour Rafael 2026-07-07 : TOUS les statuts sont nommes
+        # « Statuts <denomination>.docx » (helper partage, fallback historique si vide).
         return render_statuts_docx(
             STATUTS_SPFPL_CESSION_BLOCKS,
             replacements,
-            output_dir / OUTPUT_FILENAME,
+            output_dir
+            / statuts_output_filename(societe_spfpl.denomination, OUTPUT_FILENAME),
         )

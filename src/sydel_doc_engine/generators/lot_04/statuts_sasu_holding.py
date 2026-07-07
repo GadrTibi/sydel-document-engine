@@ -10,6 +10,9 @@ from sydel_doc_engine.domain.models import (
     Person,
     StatutsSasuHoldingContext,
 )
+from sydel_doc_engine.generators.lot_04.statuts_sel_exercice_common import (
+    statuts_output_filename,
+)
 from sydel_doc_engine.rendering.docx_template_fill import fill_docx_template
 from sydel_doc_engine.utils.months import FRENCH_MONTHS
 
@@ -53,7 +56,11 @@ class StatutsSasuHoldingGenerator:
         gender_pairs = [(associe.genre, _SOUSSIGNE_PAIRS)]
 
         output_dir.mkdir(parents=True, exist_ok=True)
-        output_path = output_dir / OUTPUT_FILENAME
+        # Retour Rafael 2026-07-07 : TOUS les statuts sont nommes
+        # « Statuts <denomination>.docx » (helper partage, fallback historique si vide).
+        output_path = output_dir / statuts_output_filename(
+            societe.denomination, OUTPUT_FILENAME
+        )
         return fill_docx_template(
             _SOURCE_MODEL, replacements, output_path, gender_pairs=gender_pairs
         )

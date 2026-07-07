@@ -489,14 +489,18 @@ def test_attestation_capital_generates_unique_shareholder_wording(tmp_path: Path
     # Akainu Bilan de Santé (fidélité) : B1 doublon « Le Docteur Docteur » corrigé +
     # M1 texte juridique ACCENTUÉ (le from-scratch sortait tout non accentué).
     assert "Docteur Docteur" not in text
-    assert "Le Docteur Camille Martin a fait la totalité des apports" in text
+    # R3 Rafael 2026-07-07 : Docteur retiré partout (supersede A26-45/49) — la phrase
+    # d'apport rend la civilité CIVILE, plus de titre « Le Docteur X a fait ».
+    assert "Monsieur Camille Martin a fait la totalité des apports en nature." in text
     # R3 (Albane 2026-07-07) : la fixture pose civilite_affichage="Docteur" -> les
     # slots de civilité (tête de désignation, « par le Président, __ », signature)
-    # rendent la civilité CIVILE ; seul le TITRE « Le Docteur X » ci-dessus reste.
+    # rendent la civilité CIVILE ; durci Rafael 2026-07-07 : plus AUCUN « Docteur »
+    # en sortie, titre du corps compris.
     assert "Monsieur Camille Martin chirurgien-dentiste, demeurant" in text
     assert "par le Président, Monsieur Camille Martin chirurgien-dentiste." in text
     assert "Docteur Camille Martin chirurgien-dentiste" not in text
     assert "Président, Docteur" not in text
+    assert "Docteur" not in text
     _assert_no_unaccented_french(text)
     _assert_clean(text)
 
@@ -518,10 +522,13 @@ def test_attestation_capital_cession_wording_and_genre(tmp_path: Path) -> None:
     assert "entièrement libéré et déposé dans les livres de la banque" in text_m
     assert "euros en numéraire" in text_m
     assert "actionnaire unique" in text_m
-    # Gate adversarial : le modele ecrit « au Dr [civilite] [prenom] [nom] » -> on rend
-    # « au Dr [prenom] [nom] » (aligne sur DOC-042), jamais le doublon « Dr Docteur ».
+    # R3 Rafael 2026-07-07 : Docteur retiré partout (supersede A26-45/49) — la
+    # répartition rend « à [civilité civile] [prenom] [nom] », plus l'abrégé
+    # « au Dr [prenom] [nom] » (ni le doublon « Dr Docteur »).
     assert "Dr Docteur" not in text_m
-    assert "au Dr Camille Martin" in text_m
+    assert "à Monsieur Camille Martin" in text_m
+    assert "au Dr " not in text_m
+    assert "Docteur" not in text_m
     # Accord MASCULIN.
     assert "Je soussigné " in text_m
     assert "soussignée" not in text_m
@@ -534,6 +541,8 @@ def test_attestation_capital_cession_wording_and_genre(tmp_path: Path) -> None:
     text_f = _docx_text(gen.generate(ctx_f, tmp_path))
     assert "Je soussignée" in text_f
     assert "Dr Docteur" not in text_f
+    # R3 Rafael 2026-07-07 : Docteur retiré partout (supersede A26-45/49).
+    assert "Docteur" not in text_f
     _assert_no_unaccented_french(text_f)
     _assert_clean(text_f)
 
@@ -545,6 +554,9 @@ def test_attestation_capital_cession_wording_and_genre(tmp_path: Path) -> None:
     assert "Je soussigné Monsieur Camille Martin chirurgien-dentiste" in text_d
     assert "soussigné Docteur" not in text_d
     assert "Président, Docteur" not in text_d
+    # R3 Rafael 2026-07-07 : Docteur retiré partout (supersede A26-45/49) — même avec la
+    # fixture-titre « Docteur », AUCUN « Docteur » ne sort.
+    assert "Docteur" not in text_d
     # R4 (Albane 2026-07-07, explicite) : « d'un montant de 100 d'euro chacune » ->
     # « de 100 euros chacune » (accord euro_word, aligné variante SAS).
     assert "actions d’un montant de 100 euros chacune" in text_d
