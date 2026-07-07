@@ -82,13 +82,17 @@ class NoteInformationGenerator:
                 f"La {required_text(societe_spfpl.denomination, 'societe_spfpl.denomination')}, "
                 "en cours de constitution, dont le siège est situé "
                 f"{company_siege_display(societe_spfpl, 'societe_spfpl')}, au capital de "
-                f"{required_text(societe_spfpl.capital_social, 'societe_spfpl.capital_social')}, "
+                # M1 (Akainu doc-entier 2026-07-07) : unite « euros » obligatoire apres le
+                # montant (convention transverse 07-07) — plus jamais « au capital de 60 000, ».
+                f"{required_text(societe_spfpl.capital_social, 'societe_spfpl.capital_social')}"
+                " euros, "
                 f"prévoit {OPERATION_PHRASES[operation_type]}, dès son immatriculation, "
                 f"{nb_titres} parts de la "
                 f"{required_text(societe_cible.denomination, 'societe_cible.denomination')}, "
                 f"{required_text(societe_cible.forme_sociale, 'societe_cible.forme_sociale')} "
                 f"de {_profession_reglementee(societe_cible)} "
-                f"au capital de {_capital_social_cible(societe_cible)} "
+                # M2 (idem) : unite « euros » sur le capital de la cible.
+                f"au capital de {_capital_social_cible(societe_cible)} euros "
                 "divisé en "
                 f"{required_int(societe_cible.nb_parts_total, 'societe_cible.nb_parts_total')} "
                 "parts, dont le siège social est situé "

@@ -10,6 +10,7 @@ from sydel_doc_engine.generators.lot_01.civilite import civilite_civile
 from sydel_doc_engine.generators.lot_05.spfpl_common import (
     company_siege_display,
     elision_de,
+    euro_word,
     person_short_identity,
     required_apport_titres,
     required_apporteur,
@@ -115,10 +116,13 @@ class AttestationCapitalListeSouscripteursGenerator:
         add_paragraph(docx, f"Capital social : {spfpl_capital} euros")
         add_paragraph(
             docx,
-            "Nombre d'actions : "
+            # M1 (Akainu doc-entier 2026-07-07) : accord euro/euros via euro_word (le
+            # « euros » fige rendait « 1 euros » pour une valeur nominale de 1) — aligne
+            # sur le cousin cession DOC-051 (siloing regle 68 Q4 rattrape).
+            "Nombre d’actions : "
             f"{required_int(capital.nb_actions_total, 'capital_souscription.nb_actions_total')} "
-            f"actions d'un montant {elision_de(str(_valeur_nominale_action(capital)))} "
-            "euros chacune",
+            f"actions d’un montant {elision_de(str(_valeur_nominale_action(capital)))} "
+            f"{euro_word(_valeur_nominale_action(capital))} chacune",
         )
         add_paragraph(
             docx,
@@ -157,8 +161,8 @@ class AttestationCapitalListeSouscripteursGenerator:
         )
         add_paragraph(
             docx,
-            f"Le présent état qui constate la souscription d'actions de la société {spfpl_name}, "
-            "ainsi que l'apport de la somme de "
+            f"Le présent état qui constate la souscription d’actions de la société {spfpl_name}, "
+            "ainsi que l’apport de la somme de "
             f"{apport_nature} euros correspondant à la totalité du nominal desdites actions, est "
             "certifié exact, sincère et véritable par le Président, "
             f"{president_identite}.",

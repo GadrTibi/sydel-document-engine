@@ -406,7 +406,7 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
     # champ ni affiche ni exige. Il reste saisi en APPORT : le contrat DOC-041 et les
     # statuts d'apport le rendent verbatim ([plage_parts_apportees]/[plage_parts_cedees]).
     apport_plage = (
-        _t(col_y, prefix, "apport_plage", "Plage de parts (ex: 41 a 100)") if is_apport else ""
+        _t(col_y, prefix, "apport_plage", "Plage de parts (ex: 41 à 100)") if is_apport else ""
     )
     apport_valeur_globale = _t(st, prefix, "apport_valeur_globale", "Valeur globale apportee")
 
@@ -929,7 +929,7 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         cession_parts_obj = CessionParts(
             nb_parts=nb_apportees,
             nb_parts_lettres=number_words_from_value(nb_apportees),
-            plage_parts=str(payload.get("apport_plage") or ""),
+            plage_parts=_normalize_plage(payload.get("apport_plage")),
         )
     else:
         cession_parts_obj = CessionParts(
@@ -1102,7 +1102,7 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
             nb_parts=nb_parts,
             nb_parts_lettres=number_words_from_value(nb_parts),
             nature_titres=nature_titres,
-            plage_parts=str(payload.get("apport_plage") or ""),
+            plage_parts=_normalize_plage(payload.get("apport_plage")),
             valeur_par_titre=valeur_par_titre,
             valeur_par_titre_lettres=number_words_from_value(valeur_par_titre),
             valeur_globale=valeur_globale,
@@ -1539,6 +1539,15 @@ def _parse_amount(value: object) -> int:
     raw = str(value or "").replace(" ", "").replace(" ", "").replace("\xa0", "")
     digits = "".join(c for c in raw if c.isdigit())
     return int(digits) if digits else 0
+
+
+def _normalize_plage(value: object) -> str:
+    """Normalise l'accent d'une plage saisie en texte libre (« 41 a 100 » -> « 41 à 100 »).
+
+    M3 (Akainu doc-entier 2026-07-07) : la plage APPORT reste saisie a la main et partait
+    verbatim dans les statuts/contrat (« numérotées de 41 a 100 ») — un « a » nu induit par
+    l'ancien exemple du libelle. La plage CESSION est, elle, auto-derivee accentuee (N4)."""
+    return str(value or "").replace(" a ", " à ")
 
 
 def _annee_lettres(value: object) -> str:

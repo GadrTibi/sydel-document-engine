@@ -27,3 +27,13 @@
 
 - Un fix de composition monétaire (« lettres (chiffres) euros », groupement, élision) doit être **régénéré et diffé sur les 6 cousins** — c'est la famille la plus siloée du moteur.
 - DOC-024 (SAS) exige apports en NATURE structurés ; DOC-042/051 = numéraire — ne pas uniformiser les wordings d'apport entre cousins sans modèle.
+
+## Traces gate doc-entier 2026-07-07 (règle 66 — MINEUR tracés)
+- [x] M1 accord « 1 euro » (DOC-042 « euros » figé) — CORRIGÉ (euro_word, aligné DOC-051).
+- [x] m1 apostrophes droites DOC-042 — CORRIGÉ (courbes U+2019, convention projet).
+- [ ] m2 espaces avant « : » incohérents (DOC-051 mélange `\xa0:` et rien ; DOC-042 espace normal)
+  — VERBATIM des modèles sources respectifs ; homogénéiser = décision Albane (tracé, non corrigé).
+- [ ] « Le Docteur X » dans le CORPS (phrase d'apport, statuts art.6/8) — CONTRADICTION
+  A26-45/49 (Albane demandait d'AJOUTER « le docteur ») ⟂ 07-07 « Docteur n'est pas une
+  civilité » : lecture retenue = civilité→M./Mme (fait), TITRE dans le corps→conservé.
+  À confirmer par Albane si le titre doit aussi disparaître du corps.
