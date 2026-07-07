@@ -151,8 +151,10 @@ def _context(*, overlay: str, gender: Gender = Gender.MASCULIN) -> DocumentGener
             lieux=[ExerciceLieu(adresse_affichee="12 avenue de la Republique, 75011 Paris")],
         ),
         gerance=GeranceContext(
-            seuil_achat_materiel="10 000 euros",
-            seuil_emprunt="50 000 euros",
+            # R5 (Albane 2026-07-07) : valeurs REPRESENTATIVES du flux réel
+            # (DEFAULT_SEUIL_* = figures non groupées) — le générateur groupe.
+            seuil_achat_materiel="5000",
+            seuil_emprunt="10000",
         ),
         document=DocumentContext(
             nombre_exemplaires_lettres="trois",
@@ -256,7 +258,11 @@ def test_statuts_selarl_medecin_skips_personne_2_source_alias(tmp_path: Path) ->
     assert output_path.name == "Statuts SEL MARTIN.docx"
     assert "Conseil" in text
     assert "personne_2" not in text
-    assert "50 000 euros" in text
+    # R5 (Albane 2026-07-07) : seuils gérance GROUPÉS à l'affichage — le flux pose
+    # « 5000 »/« 10000 » (défauts réels), la sortie rend « 5 000 € »/« 10 000 € ».
+    assert "achat d’un matériel au-delà de 5 000 €" in text
+    assert "souscription d’un emprunt supérieur à 10 000 €" in text
+    assert "5000 €" not in text and "10000 €" not in text
     assert (
         "sous le numéro national 12345 et sous le numéro RPPS 10000000001, "
         "marié sous le régime de la communauté avec Madame Alice Martin."
@@ -342,6 +348,33 @@ def test_statuts_sel_exercice_pacse_brut_value_accented(tmp_path: Path) -> None:
     text = _docx_text(StatutsSelarlMedecinGenerator().generate(ctx, tmp_path))
     assert "pacsé avec Madame Alice Martin" in text
     assert "pacse avec" not in text  # jamais la forme non accentuee
+    _assert_clean(text)
+
+
+def test_statuts_sel_exercice_celibataire_brut_value_accented(tmp_path: Path) -> None:
+    # R4 (Albane 2026-07-07, « accents irréprochables partout ») : le flux SELARL
+    # passe aussi « celibataire » BRUT — la comparution sortait « ..., celibataire. »
+    # nu (constat conformité). marital_status_display accentue désormais tout le
+    # menu (célibataire / divorcé(e) / veuf-veuve), root-cause comme le pacsé.
+    ctx = _context(overlay="selarl_medecin")
+    ctx.associes[0].situation_maritale = "celibataire"  # BRUT
+    ctx.associes[0].regime_matrimonial = ""
+    ctx.associes[0].conjoint = None
+    text = _docx_text(StatutsSelarlMedecinGenerator().generate(ctx, tmp_path))
+    assert "célibataire" in text
+    assert "celibataire" not in text
+    _assert_clean(text)
+
+
+def test_statuts_sel_exercice_divorce_brut_value_accented(tmp_path: Path) -> None:
+    # R4 (propagation menu complet) : « divorce » BRUT -> « divorcé » (accord genre).
+    ctx = _context(overlay="selarl_medecin")
+    ctx.associes[0].situation_maritale = "divorce"  # BRUT
+    ctx.associes[0].regime_matrimonial = ""
+    ctx.associes[0].conjoint = None
+    text = _docx_text(StatutsSelarlMedecinGenerator().generate(ctx, tmp_path))
+    assert "divorcé" in text
+    assert "divorce," not in text and "divorce." not in text
     _assert_clean(text)
 
 
@@ -517,6 +550,10 @@ def test_statuts_selas_medecin_generates_without_second_lieu_by_default(
         "marié sous le régime de la communauté avec Madame Alice Martin, "
         "inscrit au Tableau de l’Ordre des medecins sous le numéro RPPS 10000000001."
     ) in text
+    # R4 (Albane 2026-07-07) : le flux pose « associe unique » BRUT -> le token nu
+    # [qualite_associe] sortait « L'associe unique, … ». Accentué désormais.
+    assert "L’associé unique," in text
+    assert "associe unique" not in text
     _assert_clean(text)
 
 
@@ -800,6 +837,10 @@ def test_statuts_selarl_medecin_multi_two_physical_associates(tmp_path: Path) ->
     assert "LES SOUSSIGNÉS" in text
     assert "Monsieur Camille Martin, medecin," in text
     assert "Madame Lea Bernard, medecin," in text
+    # R4 (Albane 2026-07-07) : la surface membre MULTI accentue aussi la situation
+    # matrimoniale (« celibataire » brut du flux -> « célibataire. »).
+    assert "célibataire." in text
+    assert "celibataire" not in text
     # Article 7 : un apport par membre + total.
     assert "Monsieur Camille Martin apporte à la Société la somme de 600 euros." in text
     assert "Madame Lea Bernard apporte à la Société la somme de 400 euros." in text
@@ -941,8 +982,10 @@ def _render_source_medecin_paragraph(
         "[adresse_banque]": ctx.depot_fonds.banque.adresse_affichee,
         "[nb_parts_total]": str(ctx.capital.nombre_titres_total),
         "[valeur_nominale_part]": ctx.capital.valeur_nominale_titre,
-        "[seuil_achat_materiel]": ctx.gerance.seuil_achat_materiel,
-        "[seuil_emprunt_gerance]": ctx.gerance.seuil_emprunt,
+        # R5 (Albane 2026-07-07) : le générateur GROUPE les seuils saisis en
+        # figures (« 5000 » -> « 5 000 ») — verrou du groupement à l'affichage.
+        "[seuil_achat_materiel]": "5 000",
+        "[seuil_emprunt_gerance]": "10 000",
         "[date_cloture_exercice_1]": ctx.exercice_social.date_cloture_premier_exercice,
         "[lieu_signature]": ctx.signature.lieu,
         "[date_signature]": ctx.signature.date.strftime("%d/%m/%Y"),

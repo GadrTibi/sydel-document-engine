@@ -978,13 +978,16 @@ def _add_physical_identity(document, associe: StatutsCivilsAssocie) -> None:
 def _add_morale_identity(document, associe: StatutsCivilsAssocie) -> None:
     # R22-06 : la ligne d'identite du comparant est en gras dans la source (comparution).
     _bold_paragraph(add_paragraph(document, _signature_label(associe)))
+    # R4 (Albane 2026-07-07, « accents irréprochables partout ») : le bloc personne
+    # morale sortait « siege / immatriculee / numero / Representee » NUS (constat
+    # conformité, statuts SCI IRIS) — accentué comme le bloc morale micro holding.
     add_paragraph(
         document,
         f"{_required_text(associe.forme_juridique, 'associes[].forme_juridique')} "
         f"au capital de {_required_text(associe.capital_social, 'associes[].capital_social')}, "
-        f"ayant son siege {_address_display(associe.siege, 'associes[].siege')}, "
-        f"immatriculee au RCS de {_required_text(associe.ville_rcs, 'associes[].ville_rcs')} "
-        f"sous le numero {_required_text(associe.numero_rcs, 'associes[].numero_rcs')}.",
+        f"ayant son siège {_address_display(associe.siege, 'associes[].siege')}, "
+        f"immatriculée au RCS de {_required_text(associe.ville_rcs, 'associes[].ville_rcs')} "
+        f"sous le numéro {_required_text(associe.numero_rcs, 'associes[].numero_rcs')}.",
     )
     if associe.representant is None:
         raise ValueError(
@@ -992,7 +995,7 @@ def _add_morale_identity(document, associe: StatutsCivilsAssocie) -> None:
         )
     add_paragraph(
         document,
-        "Representee par "
+        "Représentée par "
         f"{_required_text(associe.representant.civilite_affichage, 'representant.civilite')} "
         f"{_required_text(associe.representant.prenom, 'associes[].representant.prenom')} "
         f"{_required_text(associe.representant.nom, 'associes[].representant.nom')}, "
@@ -1323,8 +1326,10 @@ def _signature_label(associe: StatutsCivilsAssocie) -> str:
         denomination = _required_text(associe.denomination, "associes[].denomination")
         if associe.representant is None:
             return denomination
+        # R4 (Albane 2026-07-07) : « representee » accentué (même famille que le
+        # bloc morale de la comparution).
         return (
-            f"{denomination}, representee par "
+            f"{denomination}, représentée par "
             f"{_required_text(associe.representant.civilite_affichage, 'representant.civilite')} "
             f"{_required_text(associe.representant.prenom, 'associes[].representant.prenom')} "
             f"{_required_text(associe.representant.nom, 'associes[].representant.nom')}"

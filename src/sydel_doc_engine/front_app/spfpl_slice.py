@@ -69,15 +69,18 @@ from sydel_doc_engine.front_app.field_derivations import (
     accentuate_french_months,
     calculate_nominal_value,
     date_to_french_words,
+    derive_cumulative_plages,
     derive_gender_from_civilite,
     format_grouped_numeric_value,
     format_numeric_value,
+    group_montant,
     is_capital_divisible,
     matrimonial_status_value,
     number_words_from_value,
     prix_lettres_from_value,
     regime_communautaire_from_status,
     regime_matrimonial_from_status,
+    shift_repeater_rows_down,
     situation_display,
 )
 from sydel_doc_engine.front_app.front_widgets import (
@@ -394,10 +397,17 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
     banque_adresse = _t(
         col_v, prefix, "banque_adresse", "Adresse banque", hint="ex : 5 place Bellecour, 69002 Lyon"
     )
-    col_w, col_x, col_y = st.columns(3)
+    col_w, col_x, col_y = st.columns(3) if is_apport else (*st.columns(2), None)
     apport_montant = _t(col_w, prefix, "apport_montant", "Montant de l'apport")
     apport_nb_parts = _i(col_x, prefix, "apport_nb_parts", "Nombre de parts apportees")
-    apport_plage = _t(col_y, prefix, "apport_plage", "Plage de parts (ex: 41 a 100)")
+    # Retour Albane 2026-07-07 (« je ne vois pas la possibilite de retirer la plage de
+    # parts ??? ») : en CESSION, aucun document du bundle ne consomme `apport_plage`
+    # (le PV/acte rendent la plage CEDEE, derivee — cf. _derive_cession_repartition) ->
+    # champ ni affiche ni exige. Il reste saisi en APPORT : le contrat DOC-041 et les
+    # statuts d'apport le rendent verbatim ([plage_parts_apportees]/[plage_parts_cedees]).
+    apport_plage = (
+        _t(col_y, prefix, "apport_plage", "Plage de parts (ex: 41 a 100)") if is_apport else ""
+    )
     apport_valeur_globale = _t(st, prefix, "apport_valeur_globale", "Valeur globale apportee")
 
     st.markdown("**Societe cible**")
@@ -443,7 +453,12 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
     # repartition des associes de la cible (avant/apres), parts cedees au holding, prix.
     cession_data: dict[str, object] = {"associes": []}
     if not is_apport:
-        cession_data = _render_spfpl_cession_cible(prefix)
+        # Retour Albane 2026-07-07 : le CEDANT de la repartition = l'actionnaire
+        # fondateur (le flux DOC-035/040 est mono-cedant) -> son identite pilote la
+        # derivation « parts apres » (avant - cedees).
+        cession_data = _render_spfpl_cession_cible(
+            prefix, founder_prenom=prenom, founder_nom=nom
+        )
 
     # Retour Rafael 2026-07-01 : exercice/cloture pre-remplis et recurrents -> volet replie.
     with st.expander(
@@ -640,7 +655,6 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:  # noqa: C901
         ("banque_nom", "Banque requise."),
         ("banque_adresse", "Adresse banque requise."),
         ("apport_montant", "Montant de l'apport requis."),
-        ("apport_plage", "Plage de parts apportees requise."),
         ("apport_valeur_globale", "Valeur globale apportee requise."),
         ("cible_denomination", "Denomination de la societe cible requise."),
         ("cible_siege", "Siege de la societe cible requis."),
@@ -708,6 +722,10 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:  # noqa: C901
     # la forme/capital de la cible (sinon le generateur leve `required_*`).
     if bool(payload.get("is_apport")):
         apport_required = (
+            # Retour Albane 2026-07-07 : la plage apportee n'est exigee qu'en APPORT
+            # (seuls DOC-041 + statuts d'apport la rendent) ; en cession le champ
+            # n'existe plus (la plage cedee est derivee).
+            ("apport_plage", "Plage de parts apportees requise."),
             ("apport_valeur_par_titre", "Valeur d'un titre apporte requise (contrat d'apport)."),
             ("cible_forme", "Forme sociale de la cible requise (contrat d'apport)."),
             ("cible_capital", "Capital social de la cible requis (contrat d'apport)."),
@@ -750,6 +768,27 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:  # noqa: C901
                 blockers.append(
                     f"Associe cible {index} : civilite, prenom et nom requis (cession)."
                 )
+        # Retour Albane 2026-07-07 : « parts apres » du cedant = avant - cedees (derive).
+        # Un nb cede superieur aux parts AVANT du cedant rendrait une repartition fausse
+        # (la derivation plafonne a 0) -> blocage explicite plutot qu'un crash aval.
+        associes_cd = list(cd.get("associes") or [])  # type: ignore[union-attr]
+        nb_cedees_cd = int(cd.get("nb_cedees") or 0)  # type: ignore[union-attr]
+        if associes_cd and nb_cedees_cd >= 1:
+            cedant_data = (
+                associes_cd[
+                    _cession_cedant_index(
+                        associes_cd,
+                        str(payload.get("prenom") or ""),
+                        str(payload.get("nom") or ""),
+                    )
+                ]
+                or {}
+            )
+            if nb_cedees_cd > int(cedant_data.get("avant") or 0):
+                blockers.append(
+                    "Parts cedees au holding superieures aux parts detenues avant "
+                    "cession par le cedant (l'actionnaire fondateur) (cession)."
+                )
     return tuple(dict.fromkeys(blockers))
 
 
@@ -787,17 +826,23 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
     structure = str(payload["structure"])
     operation = str(payload["operation"])
     is_apport = bool(payload["is_apport"])
-    capital = str(payload.get("capital_social") or "")
+    # R5 (Albane 2026-07-07) : tous les champs MONTANT sont groupes par 3 (« 60 000 »)
+    # A LA SOURCE (construction du contexte) — le capital partait brut (« 60000 ») dans
+    # les statuts, attestations, PV, note d'information et actes. Idempotent, et les
+    # derivations aval (lettres, valeur nominale) parsent les espaces.
+    capital = group_montant(str(payload.get("capital_social") or ""))
     nb_parts = int(payload.get("apport_nb_parts") or 0)
     # Nombre d'actions du capital : VARIABLE (defaut 600 = ancien codage en dur,
     # preserve la sortie byte-identique des dossiers existants). La valeur nominale
     # derive de capital / nb_actions ; on respecte une valeur deja calculee fournie
     # par le slice, sinon on la (re)calcule pour les appelants directs.
     nb_actions_total = int(payload.get("nb_actions_total") or 600)
-    valeur_action = str(
-        payload.get("valeur_nominale_action")
-        or calculate_nominal_value(capital, nb_actions_total)
-        or ""
+    valeur_action = group_montant(
+        str(
+            payload.get("valeur_nominale_action")
+            or calculate_nominal_value(capital, nb_actions_total)
+            or ""
+        )
     )
     # Detail des titres apportes (operation apport). La valeur globale est saisie ;
     # la valeur par titre est saisie (valeur d'un titre de la cible apporte). Les
@@ -805,8 +850,10 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
     # d'actions SPFPL attribuees en contrepartie = le nombre total d'actions du
     # holding (l'apporteur, associe unique, recoit toutes les actions).
     nature_titres = str(payload.get("apport_nature_titres") or "parts sociales")
-    valeur_par_titre = str(payload.get("apport_valeur_par_titre") or "")
-    valeur_globale = str(payload.get("apport_valeur_globale") or "")
+    # R5 : valeurs d'apport groupees par 3 (contrat d'apport DOC-041, attestations
+    # DOC-042/043, article 6/8 des statuts d'apport).
+    valeur_par_titre = group_montant(str(payload.get("apport_valeur_par_titre") or ""))
+    valeur_globale = group_montant(str(payload.get("apport_valeur_globale") or ""))
 
     founder_genre = payload.get("genre") or Gender.MASCULIN
     founder = SpfplPerson(
@@ -866,7 +913,9 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         ville=str(payload.get("adresse_ville") or ""),
         adresse_affichee=str(payload.get("adresse") or ""),
     )
-    cible_capital = str(payload.get("cible_capital") or "")
+    # R5 : capital de la cible groupe par 3 (acte de cession, note d'information,
+    # PV d'agrement : « au capital de 10 000 euros »).
+    cible_capital = group_montant(str(payload.get("cible_capital") or ""))
     nb_apportees = nb_parts
     regime_communautaire_actif = bool(payload.get("regime_communautaire"))
     # --- Operation cession : repartition de la cible + pricing (DOC-037/038/039/040).
@@ -1038,7 +1087,9 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         ),
         actionnaire_unique=founder,
         apport=Apport(
-            montant=str(payload.get("apport_montant") or ""),
+            # R5 : montant d'apport groupe par 3 ; les lettres derivent de la valeur
+            # brute (parse insensible aux espaces, sortie identique).
+            montant=group_montant(str(payload.get("apport_montant") or "")),
             montant_lettres=_montant_apport_lettres(payload.get("apport_montant")),
         ),
         depot_fonds=DepotFonds(
@@ -1075,7 +1126,8 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
             capital_social=cible_capital,
             capital_social_lettres=number_words_from_value(cible_capital),
             nb_parts_total=int(payload.get("cible_nb_parts") or 0),
-            valeur_nominale_part=str(payload.get("cible_valeur_part") or ""),
+            # R5 : valeur nominale d'une part de la cible groupee par 3 (acte de cession).
+            valeur_nominale_part=group_montant(str(payload.get("cible_valeur_part") or "")),
             valeur_nominale_part_lettres=number_words_from_value(
                 payload.get("cible_valeur_part")
             ),
@@ -1220,7 +1272,8 @@ def _professional_entity(payload: dict[str, object], role: str) -> ProfessionalE
     return ProfessionalEntity(
         denomination=denomination,
         forme_sociale=str(payload.get(f"{role}_forme") or ""),
-        capital_social=str(payload.get(f"{role}_capital") or ""),
+        # R5 : capital du commissaire / evaluateur groupe par 3 (presentation DOC-041/043).
+        capital_social=group_montant(str(payload.get(f"{role}_capital") or "")),
         siege=Address(adresse_affichee=str(payload.get(f"{role}_siege") or "")),
         ville_rcs=str(payload.get(f"{role}_ville_rcs") or ""),
         numero_rcs=str(payload.get(f"{role}_numero_rcs") or ""),
@@ -1279,17 +1332,119 @@ def _spfpl_cible_siege_input(prefix: str) -> str:
     return value
 
 
-def _render_spfpl_cession_cible(prefix: str) -> dict[str, object]:
-    """Sous-formulaire cession SPFPL : repartition des associes de la cible
-    (avant/apres), parts cedees au holding, prix par part, forme complete de la cible.
-    Alimente la note d'info (DOC-037), le PV d'agrement (DOC-038/039) et l'acte (DOC-040)."""
+def _cession_cedant_index(
+    associes: list[dict[str, object]], founder_prenom: str, founder_nom: str
+) -> int:
+    """Ligne du CEDANT dans la repartition de la cible (Albane 2026-07-07).
+
+    Le flux SPFPL cession est MONO-cedant : le cedant de l'acte (DOC-040) est TOUJOURS
+    l'actionnaire fondateur du holding (`cedant=founder` au contexte). On le retrouve
+    par prenom + nom (insensible a la casse/espaces) ; a defaut de correspondance, la
+    1re ligne (le fondateur se liste en premier — convention des fixtures et des
+    dossiers valides).
+    """
+    target = (founder_prenom.strip().casefold(), founder_nom.strip().casefold())
+    if target[1]:
+        for index, associe in enumerate(associes):
+            pair = (
+                str(associe.get("prenom") or "").strip().casefold(),
+                str(associe.get("nom") or "").strip().casefold(),
+            )
+            if pair == target:
+                return index
+    return 0
+
+
+def _derive_cession_repartition(
+    associes: list[dict[str, object]],
+    nb_cedees: int,
+    founder_prenom: str,
+    founder_nom: str,
+) -> tuple[str, int]:
+    """Derive IN PLACE la repartition APRES cession + les plages (Albane 2026-07-07).
+
+    « Le systeme parts avant / parts apres / plage n'est pas intuitif ni pertinent
+    puisqu'il peut etre DEDUIT. Calcul automatique. » :
+      - parts APRES = parts avant, sauf le CEDANT (l'actionnaire fondateur) qui perd
+        les parts cedees au holding (plancher 0 ; l'exces est bloque par _validate) ;
+      - plages = attribution contigue sequentielle sur la repartition APRES, dans
+        l'ordre des lignes, holding acquereur en DERNIER (patron ratifie du repeater
+        civil §18.5 et de la SCM N4) — reproduit exactement les plages des dossiers
+        valides (« 1 à 10 » / « 11 à 40 » / « 41 à 100 »).
+    Complete chaque associe (cles `apres` + `plage`, memes cles payload qu'avant) et
+    renvoie (plage_cedee, index_cedant). Un nb <= 0 rend une plage vide (la mention
+    « numérotées de ... » est alors omise par les generateurs, comportement historique).
+    """
+    cedant_index = _cession_cedant_index(associes, founder_prenom, founder_nom)
+    for index, associe in enumerate(associes):
+        avant = int(associe.get("avant") or 0)
+        associe["apres"] = max(avant - nb_cedees, 0) if index == cedant_index else avant
+    plages = derive_cumulative_plages(
+        [int(a.get("apres") or 0) for a in associes] + [max(nb_cedees, 0)]
+    )
+    for associe, plage in zip(associes, plages[:-1], strict=True):
+        associe["plage"] = plage
+    return plages[-1], cedant_index
+
+
+def _remove_cession_associe(prefix: str, index: int) -> None:
+    """Retire l'associe cible `index` (bouton par ligne — retour Albane 2026-07-07).
+
+    Callback `on_click` (pre-rerun) : recopie les lignes suivantes d'un cran et
+    decremente le number_input compteur AVANT son instanciation (seule fenetre ou
+    Streamlit autorise ces mutations de session_state).
+    """
+    count_key = f"{prefix}_cession_nb_associes"
+    count = int(st.session_state.get(count_key) or 0)
+    if count <= 1:
+        return
+    shift_repeater_rows_down(st.session_state, f"{prefix}_cession_assoc_", index, count)
+    st.session_state[count_key] = count - 1
+
+
+def _display_cession_repartition(
+    associes: list[dict[str, object]],
+    nb_cedees: int,
+    plage_cedee: str,
+    cedant_index: int,
+) -> None:
+    """Affichage LECTURE SEULE de la repartition apres cession (Albane 2026-07-07 :
+    plus de saisie manuelle « parts apres » / « plage » — valeurs deduites)."""
+    st.caption("Répartition après cession — calculée automatiquement :")
+    for index, associe in enumerate(associes):
+        nb = int(associe.get("apres") or 0)
+        who = " ".join(
+            str(associe.get(champ) or "").strip()
+            for champ in ("civilite", "prenom", "nom")
+        ).strip()
+        marque = " (cédant)" if index == cedant_index else ""
+        plage = str(associe.get("plage") or "")
+        mention = f", numérotées de {plage}" if plage else ""
+        st.caption(f"– {who or f'Associé cible {index + 1}'}{marque} : {nb} part(s){mention}")
+    mention = f", numérotées de {plage_cedee}" if plage_cedee else ""
+    st.caption(f"– Holding acquéreur : {nb_cedees} part(s) cédée(s){mention}")
+
+
+def _render_spfpl_cession_cible(
+    prefix: str, founder_prenom: str = "", founder_nom: str = ""
+) -> dict[str, object]:
+    """Sous-formulaire cession SPFPL : repartition des associes de la cible,
+    parts cedees au holding, prix par part, forme complete de la cible.
+    Alimente la note d'info (DOC-037), le PV d'agrement (DOC-038/039) et l'acte (DOC-040).
+
+    Retour Albane 2026-07-07 : « parts apres » et « plage » ne se SAISISSENT plus —
+    ils sont DEDUITS (cf. _derive_cession_repartition) et affiches en lecture seule ;
+    chaque ligne d'associe porte son bouton « Retirer » (plus seulement le dernier).
+    """
     st.markdown("**Cession — repartition de la cible & prix**")
-    col_a, col_b, col_c = st.columns(3)
+    col_a, col_b = st.columns(2)
     nb_cedees = _i(col_a, prefix, "cession_nb_parts_cedees", "Parts cédées à la holding")
     prix_unitaire = _t(
         col_b, prefix, "cession_prix_unitaire", "Prix par part", hint="ex : 1 000"
     )
-    plage_cedee = _t(col_c, prefix, "cession_plage_cedee", "Plage parts cedees (ex: 41 a 100)")
+    # Retour Albane 2026-07-07 (« je ne vois pas la possibilite de retirer la plage de
+    # parts ») : le champ « Plage parts cedees » est RETIRE — la plage cedee est DERIVEE
+    # (dernieres parts de la numerotation apres cession, cf. _derive_cession_repartition).
     cible_forme_complete = _t(
         st,
         prefix,
@@ -1330,20 +1485,24 @@ def _render_spfpl_cession_cible(prefix: str) -> dict[str, object]:
         )
         pre = _t(c2, prefix, f"cession_assoc_{i}_prenom", "Prenom")
         nom = _t(c3, prefix, f"cession_assoc_{i}_nom", "Nom")
-        c4, c5, c6 = st.columns(3)
+        # Retour Albane 2026-07-07 : seules les parts AVANT se saisissent ; « parts
+        # apres » et « plage » sont DEDUITS (affiches en lecture seule sous le bloc).
+        c4, c5 = st.columns([1, 2])
         avant = _i(c4, prefix, f"cession_assoc_{i}_avant", "Parts avant")
-        apres = _i(c5, prefix, f"cession_assoc_{i}_apres", "Parts apres")
-        plage = _t(c6, prefix, f"cession_assoc_{i}_plage", "Plage (ex: 1 a 10)")
-        associes.append(
-            {
-                "civilite": civ,
-                "prenom": pre,
-                "nom": nom,
-                "avant": avant,
-                "apres": apres,
-                "plage": plage,
-            }
+        # Retour Albane 2026-07-07 : bouton « Retirer » PAR associe (aujourd'hui on ne
+        # peut que supprimer le dernier ajoute). on_click : recopie pre-rerun des cles.
+        c5.button(
+            "Retirer cet associé",
+            key=f"{prefix}_cession_remove_assoc_{i}",
+            on_click=_remove_cession_associe,
+            args=(prefix, i),
+            disabled=nb_associes <= 1,
         )
+        associes.append({"civilite": civ, "prenom": pre, "nom": nom, "avant": avant})
+    plage_cedee, cedant_index = _derive_cession_repartition(
+        associes, nb_cedees, founder_prenom, founder_nom
+    )
+    _display_cession_repartition(associes, nb_cedees, plage_cedee, cedant_index)
     return {
         "nb_cedees": nb_cedees,
         "prix_unitaire": prix_unitaire,

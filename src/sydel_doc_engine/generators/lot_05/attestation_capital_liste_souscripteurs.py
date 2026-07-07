@@ -4,7 +4,9 @@ from pathlib import Path
 
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
+from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import CapitalSouscripteur, DocumentGenerationContext
+from sydel_doc_engine.generators.lot_01.civilite import civilite_civile
 from sydel_doc_engine.generators.lot_05.spfpl_common import (
     company_siege_display,
     elision_de,
@@ -94,9 +96,18 @@ class AttestationCapitalListeSouscripteursGenerator:
         # (b) Aeration entre le bloc TITRE (« ATTESTATION » / « Liste des
         # souscripteurs ») et le CORPS du texte.
         add_spacer(docx, space_after_pt=_ATTESTATION_GROUP_SPACER_PT)
+        # R3 (Albane 2026-07-07) : « Docteur » n'est pas une civilité — les slots de
+        # civilité (tête de désignation, « par le Président, __ », signature) rendent
+        # la civilité CIVILE (Monsieur/Madame, genre du signataire) ; le TITRE
+        # « Le Docteur X » de la phrase d'apport reste, lui, légitime (A26-45/49).
+        president_identite = _souscripteur_identite(
+            president,
+            "capital_souscription.president",
+            genre=ctx.personne_signataire.genre,
+        )
         add_paragraph(
             docx,
-            f"{_souscripteur_identite(president, 'capital_souscription.president')}, "
+            f"{president_identite}, "
             f"demeurant {_adresse(president, 'capital_souscription.president')}, "
             f"atteste que le capital de la société {spfpl_name} "
             "est réparti de la manière suivante :",
@@ -150,11 +161,11 @@ class AttestationCapitalListeSouscripteursGenerator:
             "ainsi que l'apport de la somme de "
             f"{apport_nature} euros correspondant à la totalité du nominal desdites actions, est "
             "certifié exact, sincère et véritable par le Président, "
-            f"{_souscripteur_identite(president, 'capital_souscription.president')}.",
+            f"{president_identite}.",
         )
         add_paragraph(docx, f"Fait à {ctx.signature.lieu}")
         add_paragraph(docx, f"Le {ctx.signature.date.strftime('%d/%m/%Y')}")
-        add_paragraph(docx, _souscripteur_identite(president, "capital_souscription.president"))
+        add_paragraph(docx, president_identite)
 
         output_dir.mkdir(parents=True, exist_ok=True)
         output_path = output_dir / OUTPUT_FILENAME
@@ -171,9 +182,21 @@ def _unique_souscripteur(souscripteurs: list[CapitalSouscripteur]) -> CapitalSou
     return souscripteurs[0]
 
 
-def _souscripteur_identite(souscripteur: CapitalSouscripteur, field_name: str) -> str:
+def _souscripteur_identite(
+    souscripteur: CapitalSouscripteur,
+    field_name: str,
+    *,
+    genre: Gender | None,
+) -> str:
+    # R3 (Albane 2026-07-07) : identité de SLOT de civilité — un titre professionnel
+    # (« Docteur »/« Dr ») posé en civilite_affichage est substitué par la civilité
+    # CIVILE accordée au genre ; une civilité déjà civile passe inchangée.
+    civilite = civilite_civile(
+        required_text(souscripteur.civilite_affichage, f"{field_name}.civilite_affichage"),
+        genre,
+    )
     return (
-        f"{required_text(souscripteur.civilite_affichage, f'{field_name}.civilite_affichage')} "
+        f"{civilite} "
         f"{required_text(souscripteur.prenom, f'{field_name}.prenom')} "
         f"{required_text(souscripteur.nom, f'{field_name}.nom')} "
         f"{required_text(souscripteur.profession, f'{field_name}.profession')}"
@@ -181,12 +204,12 @@ def _souscripteur_identite(souscripteur: CapitalSouscripteur, field_name: str) -
 
 
 def _souscripteur_nom(souscripteur: CapitalSouscripteur) -> str:
-    civilite = required_text(
-        souscripteur.civilite_affichage,
-        _souscripteur_field("civilite_affichage"),
-    )
+    # Slot TITRE (« Le Docteur X a fait la totalité des apports », convention A26-45/49) :
+    # toujours le titre professionnel « Docteur » (les souscripteurs SPFPL sont des
+    # praticiens), JAMAIS la civilité civile posée par le front (SP2 : M./Mme) — sinon
+    # « Le Monsieur X » (défaut pré-existant, rapport conformité 2026-07-07 l.182).
     return (
-        f"{civilite} "
+        "Docteur "
         f"{required_text(souscripteur.prenom, _souscripteur_field('prenom'))} "
         f"{required_text(souscripteur.nom, _souscripteur_field('nom'))}"
     )

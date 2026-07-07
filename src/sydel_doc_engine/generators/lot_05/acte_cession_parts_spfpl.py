@@ -7,6 +7,7 @@ from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 from sydel_doc_engine.domain.models import DocumentGenerationContext, SpfplPerson
+from sydel_doc_engine.front_app.field_derivations import format_grouped_numeric_value
 from sydel_doc_engine.generators.lot_05.scm_cession_common import (
     mentions_conjoint,
     mentions_partenaire_pacse,
@@ -45,6 +46,28 @@ _SOURCE_NAME = "Acte_cession_SPFPL_tiers_part_modele.docx"
 # repartition DYNAMIQUE (une ligne par associe reel via capital_before_lines).
 _REPARTITION_MARKER = "[parts_personne_"
 
+# R8 (Albane 2026-07-07) : « la répartition du capital apparaît deux fois, conserver un seul
+# bloc ». Le modele porte DEUX recitals de repartition (EXPOSE PREALABLE « réparti à ce jour
+# comme suit » + ORIGINE DE PROPRIETE « actuellement détenu comme suit ») ; on ne garde que
+# celui de l'EXPOSE PREALABLE. La phrase d'intro du 2e bloc (ci-dessous) est retiree avec sa
+# liste ; la phrase « [cedant] déclare qu'il est propriétaire… » qui suit est CONSERVEE.
+# SUPERSEDE la fidelite « 2 recitals comme le modele » (le retour 07-07 prime).
+_ORIGINE_REPARTITION_INTRO = "actuellement détenu comme suit"
+
+# R2 (Albane 2026-07-07) : la SPFPL acquereuse n'est PAS immatriculee (le front pose
+# numero_rcs="en cours") -> son identite porte « en cours de constitution » (formulation du
+# corpus : note d'information SPFPL) et la ligne RCS devient « En cours d’immatriculation au
+# RCS de <ville> » (formulation du modele source du contrat d'apport SPFPL), au lieu de
+# « Immatriculée au RCS de <ville> sous le numéro en cours ». Un VRAI numero RCS (societe
+# deja immatriculee) conserve la ligne du modele, remplie a l'identique. Predicat PARTAGE
+# avec l'acte de cession d'ACTIONS (meme bloc identite, meme donnee front).
+_RCS_EN_COURS_VALUES = frozenset({"", "en cours"})
+
+
+def rcs_en_cours(numero_rcs: str | None) -> bool:
+    """True si la societe n'est pas encore immatriculee (numero RCS absent ou « en cours »)."""
+    return (numero_rcs or "").strip().lower() in _RCS_EN_COURS_VALUES
+
 
 def _is_repartition_row(text: str, block_open: bool) -> bool:
     """Une ligne de repartition du capital : porte le placeholder fige
@@ -73,6 +96,19 @@ def _strip_euro(lettres: str) -> str:
     pour que l'accord `euro_word` sur le MONTANT ne double pas l'unite (« mille euros euros »).
     Ne touche pas les lettres seules (« mille » -> « mille »)."""
     return re.sub(r"\s+euros?$", "", lettres.strip(), flags=re.IGNORECASE)
+
+
+def _capital_lettres_chiffres_euros(
+    lettres: str | None, figure: str, field_name: str
+) -> str:
+    """Capital en « <lettres> (<chiffres groupes>) euro(s) » (Albane 2026-07-07).
+
+    « soixante mille (60 000) euros » : lettres du champ `_lettres` du contexte (le front pose
+    les mots NUS ; `_strip_euro` neutralise une unite deja presente dans une fixture), chiffres
+    groupes par milliers via `format_grouped_numeric_value`, unite accordee au montant via
+    `euro_word` (« euro » pour 1, « euros » sinon)."""
+    lettres_nues = _strip_euro(required_text(lettres, field_name))
+    return f"{lettres_nues} ({format_grouped_numeric_value(figure)}) {euro_word(figure)}"
 
 
 def _person_address(person: SpfplPerson, field_name: str) -> str:
@@ -144,15 +180,24 @@ class ActeCessionPartsSpfplGenerator:
         source = Document(str(_source_path()))
         docx = new_document_from_model(_source_path())
         repartition_block_open = False
+        repartition_emitted = False
         for paragraph in source.paragraphs:
             text = paragraph.text
+            # R8 (Albane 2026-07-07) : la phrase d'intro du 2e recital (« Aux termes des statuts
+            # le capital social de la SOCIETE est actuellement détenu comme suit : ») est retiree
+            # avec sa liste — une seule repartition, celle de l'EXPOSE PREALABLE.
+            if _ORIGINE_REPARTITION_INTRO in text:
+                continue
             if _is_repartition_row(text, repartition_block_open):
-                # Premiere ligne d'un bloc de repartition -> emettre la liste dynamique (fidele au
-                # modele : paragraphe JUSTIFY prefixe « -\t », une ligne par associe reel) ; lignes
-                # suivantes du meme bloc fige (personne_2/3) du modele -> absorbees.
-                if not repartition_block_open:
+                # Premiere ligne du PREMIER bloc de repartition -> emettre la liste dynamique
+                # (fidele au modele : paragraphe JUSTIFY prefixe « -\t », une ligne par associe
+                # reel). Lignes suivantes du meme bloc fige (personne_2/3) -> absorbees. Tout
+                # bloc SUIVANT (ORIGINE DE PROPRIETE) -> entierement absorbe, sans re-emission
+                # (R8 : une seule repartition dans l'acte).
+                if not repartition_block_open and not repartition_emitted:
                     for line in repartition:
                         self._add_repartition_paragraph(docx, line)
+                    repartition_emitted = True
                 repartition_block_open = True
                 continue
             repartition_block_open = False
@@ -217,6 +262,12 @@ class ActeCessionPartsSpfplGenerator:
         cible_capital = required_text(societe_cible.capital_social, "societe_cible.capital_social")
         ordre = cedant.ordre
         conjoint = cedant.conjoint
+        # 12.4 + Albane 7.4/9.2 : departement de l'Ordre du cedant rendu par le NOM
+        # (« Seine-et-Marne ») — calcule UNE fois, reutilise par l'identite, l'expose et la
+        # clause de communication au Conseil de l'Ordre (R9, Albane 2026-07-07).
+        ordre_departement = departement_nom(
+            required_text(ordre.departement if ordre else None, "cedant.ordre.departement")
+        )
 
         # 12.3 (Albane 2026-07-06) : le modele porte « d’[valeur_nominale_part_lettres] de valeur
         # nominale ». Le front pose la valeur nominale en lettres SANS unite (« cent » pour un
@@ -251,6 +302,41 @@ class ActeCessionPartsSpfplGenerator:
         forme_sociale_complete_acquereur = (
             "Société de Participations Financières de Profession Libérale de "
             f"{profession_pluriel.title()} par actions simplifiée"
+        )
+        # R2 (Albane 2026-07-07) : SPFPL acquereuse non immatriculee -> l'identite porte
+        # « en cours de constitution » (apres la forme legale complete, comme la note
+        # d'information du corpus) et la ligne RCS du modele (« Immatriculée au RCS de
+        # <ville> sous le numéro en cours ») est remplacee par la formulation du corpus
+        # « En cours d’immatriculation au RCS de <ville> » (modele source du contrat
+        # d'apport SPFPL). Un vrai numero RCS conserve la ligne du modele a l'identique.
+        ville_rcs_cessionnaire = required_text(
+            societe_spfpl.ville_rcs, "societe_spfpl.ville_rcs"
+        )
+        if rcs_en_cours(societe_spfpl.numero_rcs):
+            forme_sociale_complete_acquereur += " en cours de constitution"
+            ligne_rcs_cessionnaire = (
+                f"En cours d’immatriculation au RCS de {ville_rcs_cessionnaire}"
+            )
+        else:
+            ligne_rcs_cessionnaire = (
+                f"Immatriculée au RCS de {ville_rcs_cessionnaire} sous le numéro "
+                f"{required_text(societe_spfpl.numero_rcs, 'societe_spfpl.numero_rcs')}"
+            )
+
+        # Capitaux en « lettres (chiffres groupes) euros » (Albane 2026-07-07) : le bloc
+        # acquereur rendait « Au capital de 60000 » et l'expose « au capital social de 10000
+        # divisé » -> on rend « soixante mille (60 000) euros » / « dix mille (10 000) euros ».
+        # Lettres depuis les champs `_lettres` du contexte (poses par le front), chiffres
+        # groupes via `format_grouped_numeric_value`, unite accordee via `euro_word`.
+        capital_cessionnaire_display = _capital_lettres_chiffres_euros(
+            societe_spfpl.capital_social_lettres,
+            required_text(societe_spfpl.capital_social, "societe_spfpl.capital_social"),
+            "societe_spfpl.capital_social_lettres",
+        )
+        capital_cedee_display = _capital_lettres_chiffres_euros(
+            societe_cible.capital_social_lettres,
+            cible_capital,
+            "societe_cible.capital_social_lettres",
         )
 
         # 12.6 (Albane 2026-07-06) / B1 (Akainu 2026-07-06) : prix — accord « euro(s) » sur le
@@ -351,25 +437,9 @@ class ActeCessionPartsSpfplGenerator:
             # Albane 7.4/9.2 (2026-07-06) : le departement de l'Ordre s'affiche par le NOM
             # (« Seine-et-Marne »), plus par le numero (« 77 »). `departement_nom` enveloppe la
             # VALEUR ; `elision_de` reste la couche externe (12.4, preposition correcte).
-            "du [ordre_departemental_cedant]": elision_de(
-                departement_nom(
-                    required_text(
-                        ordre.departement if ordre else None, "cedant.ordre.departement"
-                    )
-                )
-            ),
-            "du [departement_inscription_societe]": elision_de(
-                departement_nom(
-                    required_text(
-                        ordre.departement if ordre else None, "cedant.ordre.departement"
-                    )
-                )
-            ),
-            "[ordre_departemental_cedant]": departement_nom(
-                required_text(
-                    ordre.departement if ordre else None, "cedant.ordre.departement"
-                )
-            ),
+            "du [ordre_departemental_cedant]": elision_de(ordre_departement),
+            "du [departement_inscription_societe]": elision_de(ordre_departement),
+            "[ordre_departemental_cedant]": ordre_departement,
             "[profession_reglementee]": required_text(
                 cedant.profession_reglementee, "cedant.profession_reglementee"
             ),
@@ -386,7 +456,9 @@ class ActeCessionPartsSpfplGenerator:
             "[forme_sociale_complete]": required_text(
                 societe_cible.forme_sociale_complete, "societe_cible.forme_sociale_complete"
             ),
-            "[capital_social_societe_cedee]": cible_capital,
+            # Albane 2026-07-07 : capital de la societe cedee en « lettres (chiffres) euros »
+            # (« au capital social de dix mille (10 000) euros divisé en 100 parts… »).
+            "[capital_social_societe_cedee]": capital_cedee_display,
             "[nb_parts_total_societe_cedee]": str(cible_total),
             "[ville_rcs_societe_cedee]": required_text(
                 societe_cible.ville_rcs, "societe_cible.ville_rcs"
@@ -395,10 +467,15 @@ class ActeCessionPartsSpfplGenerator:
                 societe_cible.numero_rcs, "societe_cible.numero_rcs"
             ),
             "[adresse_siege]": company_siege_display(societe_cible, "societe_cible"),
-            "[departement_inscription_societe]": departement_nom(
-                required_text(
-                    ordre.departement if ordre else None, "cedant.ordre.departement"
-                )
+            "[departement_inscription_societe]": ordre_departement,
+            # R9 (Albane 2026-07-07) : la clause « COMMUNICATION DU PRESENT CONTRAT AU CONSEIL
+            # DE L'ORDRE » nomme le departement de l'Ordre du CEDANT, en NOM avec la preposition
+            # correcte (« au Conseil départemental de l’Ordre de Seine-et-Marne »), via la meme
+            # convention `elision_de(departement_nom(…))` que la 12.4 ratifiee. Cle STATIQUE du
+            # modele (sans crochets, un seul run) consommee avant les tokens (longest-first).
+            "communiqué au Conseil départemental de l’Ordre en vue": (
+                "communiqué au Conseil départemental de l’Ordre "
+                f"{elision_de(ordre_departement)} en vue"
             ),
             # 12.3 (Albane 2026-07-06) : « d’[valeur…] de valeur nominale ». La valeur porte
             # desormais l'unite accordee (« cent euros » / « un euro », cf. valeur_nominale_display)
@@ -413,13 +490,19 @@ class ActeCessionPartsSpfplGenerator:
             ),
             # 12.2 (Albane 2026-07-06) : forme LEGALE COMPLETE de l'acquereur (SPFPL en cours de
             # constitution), pas l'abrege « par actions simplifiee » injecte par le front.
+            # R2 (Albane 2026-07-07) : suffixee « en cours de constitution » si non immatriculee.
             "[forme_sociale_acquereur]": forme_sociale_complete_acquereur,
-            "[capital_social_cessionnaire]": required_text(
-                societe_spfpl.capital_social, "societe_spfpl.capital_social"
-            ),
-            "[ville_rcs_cessionnaire]": required_text(
-                societe_spfpl.ville_rcs, "societe_spfpl.ville_rcs"
-            ),
+            # Albane 2026-07-07 : capital de l'acquereur en « lettres (chiffres) euros »
+            # (« Au capital de soixante mille (60 000) euros »).
+            "[capital_social_cessionnaire]": capital_cessionnaire_display,
+            # R2 (Albane 2026-07-07) : la ligne RCS du modele est consommee EN BLOC (cle
+            # combinee, traitee avant les tokens simples) -> « En cours d’immatriculation au
+            # RCS de <ville> » pour la SPFPL en cours, plus jamais « sous le numéro en cours ».
+            "Immatriculée au RCS de [ville_rcs_cessionnaire] sous le numéro "
+            "[numero_rcs_acquereur]": ligne_rcs_cessionnaire,
+            # Fallbacks (la cle combinee ci-dessus consomme la ligne du modele ; robustesse si
+            # ces tokens apparaissaient isolement ailleurs).
+            "[ville_rcs_cessionnaire]": ville_rcs_cessionnaire,
             "[numero_rcs_acquereur]": required_text(
                 societe_spfpl.numero_rcs, "societe_spfpl.numero_rcs"
             ),

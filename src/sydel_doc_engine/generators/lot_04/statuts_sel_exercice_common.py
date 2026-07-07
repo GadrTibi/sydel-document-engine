@@ -269,15 +269,31 @@ def marital_status_display(associate: Associe) -> str:
         associate.situation_maritale,
         "associes[0].situation_maritale",
     )
+    return situation_maritale_accentuee(value, feminine=associate.genre == Gender.FEMININ)
+
+
+def situation_maritale_accentuee(value: str, *, feminine: bool) -> str:
+    """Situation matrimoniale ACCENTUEE et accordee au genre, depuis la valeur brute.
+
+    Albane 6.3/7.3 (RATIFIE 2026-07-06) : le statut PACSE sort ACCENTUE et accorde au genre,
+    meme quand le flux front passe la valeur BRUTE (« pacse ») — la SELARL principale la pose
+    non accentuee. R4 (Albane 2026-07-07, « accents irréprochables partout ») : meme regle
+    generalisee au reste du menu (« celibataire » -> « célibataire », « divorce(e) » ->
+    « divorcé(e) », « veuf » accorde), la comparution SELARL/SELAS sortant sinon
+    « celibataire. » nu. Une valeur deja accentuee est renvoyee accentuee a l'identique ;
+    une valeur hors menu (libelle libre) passe inchangee.
+    """
     normalized = _normalized_text(value)
-    feminine = associate.genre == Gender.FEMININ
     if normalized in {"marie", "mariee"}:
         return "mariée" if feminine else "marié"
-    # Albane 6.3/7.3 (RATIFIE 2026-07-06) : le statut PACSE sort ACCENTUE et accorde au genre,
-    # meme quand le flux front passe la valeur BRUTE (« pacse ») — la SELARL principale la pose
-    # non accentuee. Sans ceci, la comparution rendrait « pacse avec … » (accent manquant).
     if normalized in {"pacse", "pacsee"}:
         return "pacsée" if feminine else "pacsé"
+    if normalized == "celibataire":
+        return "célibataire"
+    if normalized in {"divorce", "divorcee"}:
+        return "divorcée" if feminine else "divorcé"
+    if normalized in {"veuf", "veuve"}:
+        return "veuve" if feminine else "veuf"
     return value
 
 
@@ -357,6 +373,20 @@ def article_8_associate_label(
     if all(other.genre == Gender.FEMININ for other in ctx.associes):
         return "associées"
     return "associés"
+
+
+def qualite_associe_display(associate: Associe) -> str:
+    """Qualite d'associe ACCENTUEE pour le token nu `[qualite_associe]`.
+
+    R4 (Albane 2026-07-07) : le flux SELARL/SELAS uni pose la valeur BRUTE
+    « associe unique » (non accentuee) -> la designation sortait « L'associe
+    unique, ... ». On accentue et accorde au genre la valeur du menu ; toute autre
+    qualite (libelle libre deja propre) passe inchangee.
+    """
+    value = required_text(associate.qualite, "associes[0].qualite")
+    if _normalized_text(value) in {"associe unique", "associee unique"}:
+        return "associée unique" if associate.genre == Gender.FEMININ else "associé unique"
+    return value
 
 
 def _normalized_text(value: str) -> str:
@@ -727,6 +757,12 @@ def _multi_physique_identite(
     ordre_dep = departement_nom(
         required_text(membre.ordre_departemental, "membres[].ordre_departemental")
     )
+    # R4 (Albane 2026-07-07) : situation matrimoniale ACCENTUEE aussi sur la
+    # surface membre multi (dette tracee), au lieu de l'echo brut du front.
+    situation = situation_maritale_accentuee(
+        required_text(membre.situation_maritale, "membres[].situation_maritale"),
+        feminine=feminin,
+    )
     identite = (
         f"{_membre_person_label(membre)}, {profession}, "
         f"{ne} le {format_display_date(membre.date_naissance, 'membres[].date_naissance')} "
@@ -734,7 +770,7 @@ def _multi_physique_identite(
         f"({required_text(membre.departement_naissance, 'membres[].departement_naissance')}), "
         f"de nationalité {required_text(membre.nationalite, 'membres[].nationalite')}, "
         f"demeurant {_membre_person_address(membre)}, "
-        f"{required_text(membre.situation_maritale, 'membres[].situation_maritale')}."
+        f"{situation}."
     )
     inscription = (
         f"{inscrit} au tableau de l’ordre des {profession_pluriel} de {ordre_dep} "

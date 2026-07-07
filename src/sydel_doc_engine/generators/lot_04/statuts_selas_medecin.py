@@ -13,6 +13,7 @@ from sydel_doc_engine.generators.lot_04.statuts_sel_exercice_common import (
     add_exercice_replacements,
     add_ordre_replacements,
     common_replacements,
+    qualite_associe_display,
     render_statuts_sel_docx,
     required_associe_unique,
     required_company,
@@ -173,10 +174,10 @@ class StatutsSelasMedecinGenerator:
                 "[profession_reglementee] [qualification_principale]": (
                     _profession_qualification_segment(associate)
                 ),
-                "[qualite_associe]": required_text(
-                    associate.qualite,
-                    "associes[0].qualite",
-                ),
+                # R4 (Albane 2026-07-07) : le flux pose « associe unique » BRUT ->
+                # la designation rendait « L'associe unique, … ». Token route par
+                # qualite_associe_display (accentue + accorde au genre).
+                "[qualite_associe]": qualite_associe_display(associate),
                 "[fonction_dirigeant]": required_text(
                     ctx.dirigeant_nomine.fonction_affichage,
                     "dirigeant_nomine.fonction_affichage",

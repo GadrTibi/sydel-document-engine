@@ -10,6 +10,8 @@ from sydel_doc_engine.generators.lot_04.statuts_spfpl_common import (
     company_siege_display,
     format_display_date,
     founder_common_replacements,
+    groupe_milliers,
+    montant_en_lettres,
     render_statuts_docx,
     required_actionnaire_unique,
     required_apport_titres,
@@ -22,7 +24,7 @@ from sydel_doc_engine.generators.lot_04.statuts_spfpl_common import (
 from sydel_doc_engine.generators.lot_04.statuts_spfpl_templates import (
     STATUTS_SPFPL_APPORT_BLOCKS,
 )
-from sydel_doc_engine.utils.grammar import montant_lettres_avec_unite
+from sydel_doc_engine.utils.grammar import elision_de, montant_lettres_avec_unite
 
 OUTPUT_FILENAME = "statuts_spfpl_apport.docx"
 
@@ -61,18 +63,28 @@ class StatutsSpfplApportGenerator:
                     societe_spfpl.denomination,
                     "societe_spfpl.denomination",
                 ),
-                "[capital_social]": required_text(
-                    societe_spfpl.capital_social,
-                    "societe_spfpl.capital_social",
+                # Albane 2026-07-07 (fix 3) : en-tete « au capital de 60 000 euros » — montant
+                # toujours GROUPE.
+                "[capital_social]": groupe_milliers(
+                    required_text(
+                        societe_spfpl.capital_social,
+                        "societe_spfpl.capital_social",
+                    )
                 ),
                 "[adresse_siege]": company_siege_display(societe_spfpl, "societe_spfpl"),
                 "[adresse_siege_societe_cible]": company_siege_display(
                     societe_cible,
                     "societe_cible",
                 ),
-                "[forme_sociale]": required_text(
-                    societe_spfpl.forme_sociale,
-                    "societe_spfpl.forme_sociale",
+                # Albane 2026-07-07 (fix 6 / R4) : « simplifiée(s) » ACCENTUE — orthographe
+                # irreprochable, prime sur la typo « simplifiee » du verbatim source/front
+                # (valeur injectee par spfpl_slice). Couvre « par actions simplifiee régie »,
+                # « aux sociétés par actions simplifiee » et « [forme_sociale]s » (denomination).
+                "[forme_sociale]": _forme_sociale_accentuee(
+                    required_text(
+                        societe_spfpl.forme_sociale,
+                        "societe_spfpl.forme_sociale",
+                    )
                 ),
                 "[profession_reglementee]": required_text(
                     founder.profession_reglementee,
@@ -110,9 +122,24 @@ class StatutsSpfplApportGenerator:
                     societe_cible.numero_rcs,
                     "societe_cible.numero_rcs",
                 ),
-                "[montant_apports_nature]": required_text(
-                    apport_titres.valeur_globale,
-                    "apport_titres.valeur_globale",
+                # Albane 2026-07-07 (fixes 1+3+4, propagation) : montant en chiffres GROUPE
+                # (« 60 000 € » art. 6, « (60 000) euros » art. 8) ; art. 8 en LETTRES puis
+                # (chiffres) — lettres du front (`valeur_globale_lettres`) avec repli calcule
+                # depuis la figure, cle combinee « de [...] » via elision_de (R6).
+                "[montant_apports_nature]": groupe_milliers(
+                    required_text(
+                        apport_titres.valeur_globale,
+                        "apport_titres.valeur_globale",
+                    )
+                ),
+                "de [montant_apports_nature_lettres]": elision_de(
+                    montant_en_lettres(
+                        apport_titres.valeur_globale_lettres,
+                        required_text(
+                            apport_titres.valeur_globale,
+                            "apport_titres.valeur_globale",
+                        ),
+                    )
                 ),
                 "[nb_actions]": str(
                     required_text(
@@ -125,12 +152,17 @@ class StatutsSpfplApportGenerator:
                 "[valeur_nominale_part]": valeur_nominale_figure,
                 # 7.5 : lettres + unite composees en un seul token (anti double-euro / espace).
                 # ENTIER -> « cent euros » (byte-identique) ; DECIMAL -> « un centime d'euro ».
-                "[valeur_nominale_part_avec_unite]": montant_lettres_avec_unite(
-                    required_text(
-                        apport_titres.valeur_nominale_action_lettres,
-                        "apport_titres.valeur_nominale_action_lettres",
-                    ),
-                    valeur_nominale_figure,
+                # Albane 2026-07-07 (fix 2 / R6) : cle combinee « de [...] » via elision_de ->
+                # « d'un euro » / « d'un centime d'euro » (jamais « de un ») ; « de cent euros »
+                # reste inchange.
+                "de [valeur_nominale_part_avec_unite]": elision_de(
+                    montant_lettres_avec_unite(
+                        required_text(
+                            apport_titres.valeur_nominale_action_lettres,
+                            "apport_titres.valeur_nominale_action_lettres",
+                        ),
+                        valeur_nominale_figure,
+                    )
                 ),
                 "[fin_exercice]": required_text(
                     ctx.exercice_social.date_cloture_premier_exercice,
@@ -146,6 +178,18 @@ class StatutsSpfplApportGenerator:
             replacements,
             output_dir / OUTPUT_FILENAME,
         )
+
+
+def _forme_sociale_accentuee(forme_sociale: str) -> str:
+    """« par actions simplifiee » -> « par actions simplifiée » (Albane 2026-07-07, fix 6 / R4).
+
+    Orthographe irreprochable : l'accent prime sur la typo du verbatim source (le modele
+    apport tokenise portait « simplifiee » via la valeur front, `spfpl_slice.py`). Correction
+    au POINT D'INJECTION du chemin statuts SPFPL uniquement — la meme valeur front alimente
+    aussi des documents lot_05 (contrat d'apport, attestation commissaire), hors perimetre ici."""
+    return forme_sociale.replace("simplifiee", "simplifiée").replace(
+        "Simplifiee", "Simplifiée"
+    )
 
 
 def _apport_blocks_with_contextual_siege() -> tuple[str, ...]:

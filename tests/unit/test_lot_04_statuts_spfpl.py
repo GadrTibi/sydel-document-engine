@@ -349,13 +349,15 @@ def test_statuts_spfpl_art8_euro_agreement_plural(tmp_path: Path) -> None:
 
 def test_statuts_spfpl_art8_euro_agreement_singular(tmp_path: Path) -> None:
     """7.5 / accord euro (Akainu 2026-07-06) — VALEUR : une valeur nominale de 1 rend
-    « un euro » (SINGULIER), JAMAIS « un euros »."""
+    « un euro » (SINGULIER), JAMAIS « un euros ». Albane 2026-07-07 (R6) : ELIDE —
+    « d'un euro », plus « de un euro »."""
     ctx = _with_exercice(_base_context(operation="cession"))
     ctx.societe_spfpl.valeur_nominale_action = "1"
     ctx.societe_spfpl.valeur_nominale_action_lettres = "un"
     ctx.capital_souscription.valeur_nominale_action = "1"
     text = _docx_text(StatutsSpfplCessionGenerator().generate(ctx, tmp_path))
-    assert "actions de un euro (1 €) chacune" in text
+    assert "actions d’un euro (1 €) chacune" in text
+    assert "de un euro" not in text  # R6 : forme non elidee proscrite
     assert "un euros" not in text
     assert "euro euro" not in text
 
@@ -374,7 +376,9 @@ def test_statuts_spfpl_art8_valeur_nominale_centime_decimal(tmp_path: Path) -> N
     ctx.societe_spfpl.valeur_nominale_action_lettres = "0,01"  # front containment : figure
     ctx.capital_souscription.valeur_nominale_action = "0,01"
     text = _docx_text(StatutsSpfplCessionGenerator().generate(ctx, tmp_path))
-    assert "actions de un centime d’euro (0,01 €) chacune" in text
+    # Albane 2026-07-07 (R6) : ELIDE — « d'un centime d'euro », plus « de un centime ».
+    assert "actions d’un centime d’euro (0,01 €) chacune" in text
+    assert "de un centime" not in text  # R6 : forme non elidee proscrite
     assert "d’euro euro" not in text
     assert "d’euro (0,01" in text  # unite deja dans la phrase, pas de « euro » ajoute
     assert "  (" not in text  # pas d'espace double la ou l'euro etait ajoute
@@ -488,3 +492,140 @@ def test_statuts_spfpl_president_uses_usual_first_name(tmp_path: Path) -> None:
     text = _docx_text(StatutsSpfplCessionGenerator().generate(ctx, tmp_path))
     assert "Camille Andre" not in text
     assert text.count("- Docteur Camille Martin") == 2
+
+
+# ---------------------------------------------------------------------------
+# Verrous Albane 2026-07-07 (retours statuts SPFPL + rapport conformance R4/R5/R6).
+# ---------------------------------------------------------------------------
+
+
+def _table_texts(document: Document) -> list[str]:
+    return [
+        "\n".join(
+            paragraph.text
+            for row in table.rows
+            for cell in row.cells
+            for paragraph in cell.paragraphs
+        )
+        for table in document.tables
+    ]
+
+
+def test_statuts_spfpl_art8_capital_lettres_puis_chiffres_groupes(tmp_path: Path) -> None:
+    """Fix 1 (Albane 2026-07-07) — art. 8 cession : capital en LETTRES puis (CHIFFRES GROUPES) —
+    « soixante mille (60 000) euros », plus « 60000 (soixante mille) ». Le montant brut du front
+    (« 60000 ») est groupe au rendu."""
+    ctx = _with_exercice(_base_context(operation="cession"))
+    ctx.societe_spfpl.capital_social = "60000"  # brut, comme injecte par le front
+    text = _docx_text(StatutsSpfplCessionGenerator().generate(ctx, tmp_path))
+    assert "fixé à la somme de soixante mille (60 000) euros" in text
+    assert "(soixante mille)" not in text  # ancien ordre chiffres (lettres) proscrit
+    assert "60000" not in text  # jamais de montant non groupe
+
+
+def test_statuts_spfpl_art8_capital_six_euros_verbatim_albane(tmp_path: Path) -> None:
+    """Fix 1+2 (Albane 2026-07-07, VERBATIM) : capital 6 € / 600 actions -> « six (6) euros »
+    (pas « 6 (six) ») et « d'un centime d'euro (0,01 €) chacune » (R6, pas « de un »)."""
+    ctx = _with_exercice(_base_context(operation="cession"))
+    ctx.societe_spfpl.capital_social = "6"
+    ctx.societe_spfpl.capital_social_lettres = "six"
+    ctx.societe_spfpl.valeur_nominale_action = "0,01"
+    ctx.societe_spfpl.valeur_nominale_action_lettres = "0,01"  # front containment : figure
+    ctx.capital_souscription.valeur_nominale_action = "0,01"
+    text = _docx_text(StatutsSpfplCessionGenerator().generate(ctx, tmp_path))
+    assert "fixé à la somme de six (6) euros" in text
+    assert "6 (six)" not in text
+    assert "actions d’un centime d’euro (0,01 €) chacune" in text
+    assert "de un" not in text
+
+
+def test_statuts_spfpl_apport_art8_capital_lettres_puis_chiffres(tmp_path: Path) -> None:
+    """Fix 1 (Albane 2026-07-07, propagation cession->apport) — art. 8 apport : « soixante mille
+    (60 000) euros ». Lettres calculees en repli depuis la figure quand le slot front
+    (`valeur_globale_lettres`) est absent (cas du builder de test)."""
+    ctx = _with_exercice(_base_context(operation="apport"))
+    ctx.apport_titres.valeur_globale = "60000"  # brut
+    text = _docx_text(StatutsSpfplApportGenerator().generate(ctx, tmp_path))
+    assert "fixé à la somme de soixante mille (60 000) euros" in text
+    assert "somme de 60000 euros" not in text
+    assert "60000" not in text
+
+
+def test_statuts_spfpl_entete_capital_groupe_avec_euros_cession(tmp_path: Path) -> None:
+    """Fix 3 (Albane 2026-07-07) — en-tete cession : « Au capital de 60 000 euros »
+    (montant GROUPE + mot « euros »), plus « Au capital de 60000 » nu."""
+    ctx = _with_exercice(_base_context(operation="cession"))
+    ctx.societe_spfpl.capital_social = "60000"  # brut
+    document = Document(StatutsSpfplCessionGenerator().generate(ctx, tmp_path))
+    entete = _para_by_text(document, "Au capital de")
+    assert entete.text.strip() == "Au capital de 60 000 euros"
+
+
+def test_statuts_spfpl_entete_capital_groupe_apport(tmp_path: Path) -> None:
+    """Fix 3 (Albane 2026-07-07) — en-tete apport : montant GROUPE (« au capital de
+    60 000 euros », le mot « euros » etait deja porte par le template)."""
+    ctx = _with_exercice(_base_context(operation="apport"))
+    ctx.societe_spfpl.capital_social = "60000"  # brut
+    text = _docx_text(StatutsSpfplApportGenerator().generate(ctx, tmp_path))
+    assert "au capital de 60 000 euros" in text
+    assert "au capital de 60000" not in text
+
+
+def test_statuts_spfpl_ci_montant_groupe_symbole_euro(tmp_path: Path) -> None:
+    """Fix 4 (Albane 2026-07-07) — art. 6 cession : « Ci … 60 000 € » (groupe + symbole €),
+    plus « 60000 » nu. Meme token pour la ligne « Total des apports » (propagation)."""
+    ctx = _with_exercice(_base_context(operation="cession"))
+    ctx.apport.montant = "60000"  # brut
+    document = Document(StatutsSpfplCessionGenerator().generate(ctx, tmp_path))
+    ligne_ci = next(p for p in document.paragraphs if p.text.strip().startswith("Ci"))
+    assert ligne_ci.text.rstrip().endswith("60 000 €")
+    total = _para_by_text(document, "Total des apports")
+    assert total.text.rstrip().endswith("60 000 €")
+
+
+def test_statuts_spfpl_annexe_cadre_unique(tmp_path: Path) -> None:
+    """Fix 5 (Albane 2026-07-07) — l'annexe (« ANNEXE 1 » + titre sur 2 lignes) sort dans UN
+    SEUL cadre (« cadres multiples inutiles » proscrits), sur les DEUX modeles."""
+    for operation, generator in (
+        ("cession", StatutsSpfplCessionGenerator()),
+        ("apport", StatutsSpfplApportGenerator()),
+    ):
+        ctx = _with_exercice(_base_context(operation=operation))
+        document = Document(generator.generate(ctx, tmp_path / operation))
+        annexe_tables = [t for t in _table_texts(document) if "ANNEXE 1" in t]
+        assert len(annexe_tables) == 1, f"annexe {operation} : cadre unique attendu"
+        # Les 3 lignes du titre d'annexe vivent dans le MEME cadre…
+        assert "ETAT DES ENGAGEMENTS PRIS AVANT" in annexe_tables[0]
+        assert "LA CONSTITUTION DE LA SOCIETE" in annexe_tables[0]
+        # … et dans AUCUN autre cadre (plus de cadres empiles).
+        autres = [
+            t
+            for t in _table_texts(document)
+            if "ETAT DES ENGAGEMENTS PRIS AVANT" in t and "ANNEXE 1" not in t
+        ]
+        assert not autres, f"annexe {operation} : cadres multiples detectes"
+
+
+def test_statuts_spfpl_annexe_titres_isolees_intacts(tmp_path: Path) -> None:
+    """Fix 5 — NON-REGRESSION : les titres majeurs ISOLES (« DECISIONS DES ACTIONNAIRES »,
+    « RESULTATS SOCIAUX »…) gardent chacun leur cadre propre (le regroupement ne touche que
+    les titres CONSECUTIFS de l'annexe)."""
+    ctx = _with_exercice(_base_context(operation="cession"))
+    document = Document(StatutsSpfplCessionGenerator().generate(ctx, tmp_path))
+    tables = _table_texts(document)
+    for titre in ("DECISIONS DES ACTIONNAIRES", "RESULTATS SOCIAUX", "CONTESTATIONS"):
+        porteurs = [t for t in tables if titre in t]
+        assert len(porteurs) == 1
+        assert "ANNEXE" not in porteurs[0]
+
+
+def test_statuts_spfpl_apport_simplifiee_accentuee(tmp_path: Path) -> None:
+    """Fix 6 / R4 (Albane 2026-07-07) — « simplifiée(s) » ACCENTUE dans les statuts apport
+    (« par actions simplifiée régie », « …libérales par actions simplifiées »). L'orthographe
+    irreprochable prime sur la typo « simplifiee » du verbatim source/front."""
+    ctx = _with_exercice(_base_context(operation="apport"))
+    text = _docx_text(StatutsSpfplApportGenerator().generate(ctx, tmp_path))
+    assert "par actions simplifiée régie" in text
+    assert "par actions simplifiées »" in text
+    assert "simplifiee" not in text  # typo non accentuee proscrite (R4)
+    assert "simplifiees" not in text

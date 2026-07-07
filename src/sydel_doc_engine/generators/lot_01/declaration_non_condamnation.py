@@ -6,6 +6,7 @@ from pathlib import Path
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 from sydel_doc_engine.domain.models import Address, DocumentGenerationContext
+from sydel_doc_engine.generators.lot_01.civilite import civilite_civile
 from sydel_doc_engine.rendering.docx_builder import (
     add_framed_title,
     add_legal_reminder,
@@ -50,7 +51,13 @@ class DeclarationNonCondamnationGenerator:
         if address is None:
             raise ValueError("personne_signataire.adresse_perso est obligatoire pour DOC-001.")
 
-        civilite = _required_text(person.civilite, "personne_signataire.civilite")
+        # R3 (Albane 2026-07-07) : « Docteur » n'est pas une civilité — le slot
+        # « Je soussigné __ » rend la civilité CIVILE (Monsieur/Madame, accordée
+        # au genre du signataire), jamais le titre professionnel posé par le flux.
+        civilite = civilite_civile(
+            _required_text(person.civilite, "personne_signataire.civilite"),
+            person.genre,
+        )
         prenom = _required_text(person.prenom, "personne_signataire.prenom")
         nom = _required_text(person.nom, "personne_signataire.nom")
         date_naissance = _required_date(

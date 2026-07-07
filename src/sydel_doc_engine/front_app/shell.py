@@ -55,6 +55,7 @@ from sydel_doc_engine.front_app.field_derivations import (
     prix_lettres_from_value,
     regime_communautaire_from_status,
     regime_matrimonial_from_status,
+    shift_repeater_rows_down,
     situation_display,
 )
 from sydel_doc_engine.front_app.front_widgets import (
@@ -210,11 +211,12 @@ def _render_selarl_membres(
     if count_key not in st.session_state:
         st.session_state[count_key] = 1
     nombre = max(1, min(5, int(st.session_state[count_key])))
-    add_col, remove_col = st.columns(2)
+    add_col = st.columns([1, 3])[0]
     if add_col.button("Ajouter un associe", key="selarl_membres_add"):
         st.session_state[count_key] = min(5, nombre + 1)
-    if remove_col.button("Retirer un associe", key="selarl_membres_remove"):
-        st.session_state[count_key] = max(1, nombre - 1)
+    # Retour Albane 2026-07-07 (propagation) : le bouton global « Retirer un associe »
+    # (qui ne supprimait que le DERNIER) est remplace par un bouton « Retirer cet
+    # associe » PAR LIGNE (cf. _remove_selarl_membre_at), comme le repeater civil.
     # N5 (Albane 2026-06-24) : re-lire le nombre APRES les boutons +/- au lieu de st.rerun().
     # Le st.rerun() premature s'executait avant la boucle membres -> Streamlit garbage-collectait
     # l'etat des widgets membres non instancies -> les champs des associes PRECEDENTS etaient
@@ -234,9 +236,36 @@ def _render_selarl_membres(
     }
 
 
+def _remove_selarl_membre_at(index: int) -> None:
+    """Retire le membre additionnel `index` (bouton par ligne — Albane 2026-07-07).
+
+    Callback `on_click` : il s'execute AVANT l'instanciation des widgets du rerun, seule
+    fenetre ou Streamlit autorise la recopie des cles `selarl_membre_{i}_*` (les lignes
+    suivantes remontent d'un cran) et la decrementation du compteur. Pas de st.rerun()
+    manuel (lecon N5 : un rerun avant le rendu des lignes efface l'etat des widgets non
+    instancies). Plancher 1 membre additionnel (le mode multi = praticien + au moins 1).
+    """
+    count_key = "selarl_membres_count"
+    count = max(1, min(5, int(st.session_state.get(count_key) or 1)))
+    if count <= 1:
+        return
+    shift_repeater_rows_down(st.session_state, "selarl_membre_", index, count)
+    st.session_state[count_key] = count - 1
+
+
 def _render_one_selarl_membre(index: int) -> StatutsCivilsAssocie | None:
     prefix = f"selarl_membre_{index}"
     with st.expander(f"Associe additionnel {index + 2}", expanded=index == 0):
+        # Retour Albane 2026-07-07 (propagation) : chaque ligne porte son bouton
+        # « Retirer » (on ne pouvait supprimer que le dernier ajoute). Desactive au
+        # plancher 1 membre. on_click OBLIGATOIRE : recopie des cles pre-rerun.
+        st.button(
+            "Retirer cet associe",
+            key=f"selarl_membres_remove_{index}",
+            on_click=_remove_selarl_membre_at,
+            args=(index,),
+            disabled=int(st.session_state.get("selarl_membres_count") or 1) <= 1,
+        )
         type_personne = st.selectbox(
             "Type d'associe",
             ("personne_physique", "personne_morale"),
@@ -881,7 +910,9 @@ def _scm_cessionnaire_overrides(
     if denomination:
         overrides["denomination"] = denomination
     if capital:
-        overrides["capital_social"] = capital
+        # R5 (Albane 2026-07-07) : capital du cessionnaire groupe par 3 (« 60 000 »),
+        # comme l'acquereur de l'acte cabinet (format_grouped_numeric_value, L1377).
+        overrides["capital_social"] = _format_montant(capital)
     if ville_rcs:
         overrides["ville_rcs"] = ville_rcs
     if siege:
@@ -1989,10 +2020,11 @@ def _render_scm_cession_form(  # noqa: C901
         # exposait pas : capital 3 000, 300 parts, nominal 10, plage 1 a 300
         # s'imprimaient en dur). On les rend editables, preremplis avec la base.
         col_c, col_d = st.columns(2)
-        scm_cedee["capital_social"] = _cession_text(
+        # R5 (Albane 2026-07-07) : capital de la SCM cedee groupe par 3 (« 3 000 »).
+        scm_cedee["capital_social"] = _format_montant(_cession_text(
             col_c, "Capital social SCM", section="scm_cedee", field="capital_social",
             default=str(scm_cedee.get("capital_social") or ""),
-        )
+        ))
         nb_parts_saisi = _cession_text(
             col_d, "Nombre total de parts", section="scm_cedee", field="nb_parts_total",
             default=str(scm_cedee.get("nb_parts_total") or ""),
@@ -2134,10 +2166,12 @@ def _render_scm_cession_form(  # noqa: C901
             col_b.caption(
                 "Plage des parts cedees : calculee automatiquement (dernieres parts du cedant)."
             )
-        prix["global"] = _cession_text(
+        # R5 (Albane 2026-07-07) : prix global groupe par 3 (« 20 000 »), comme les
+        # autres montants de cession (_format_montant partout).
+        prix["global"] = _format_montant(_cession_text(
             col_c, "Prix global", section="scm_prix", field="global",
             default=str(prix.get("global") or ""),
-        )
+        ))
         # FA7 (Albane, Lot Formulaire) : « SCM / prix : en mettant le prix global est-ce
         # qu'il peut se mettre d'office en lettre ? » -> le prix global en lettres est
         # DÉRIVÉ AUTOMATIQUEMENT du prix global saisi (même helper number_words_from_value

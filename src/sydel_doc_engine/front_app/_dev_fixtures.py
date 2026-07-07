@@ -639,7 +639,8 @@ def _spfpl_prefill_values(prefix: str) -> dict[str, object]:
         # repartition de la cible + prix + siege structure. 1 associe cible -> PV unique.
         f"{prefix}_cession_nb_parts_cedees": 60,
         f"{prefix}_cession_prix_unitaire": "1000",
-        f"{prefix}_cession_plage_cedee": "41 a 100",
+        # Retour Albane 2026-07-07 : plus de prefill « plage cedee » / « parts apres » /
+        # « plage » par associe — ces champs ne se saisissent plus (valeurs DERIVEES).
         f"{prefix}_cible_forme_complete": "societe d'exercice liberal a responsabilite limitee",
         # O24-03 : siege de la cible (cession) sur UNE ligne (le slice reparse les composants).
         f"{prefix}_cible_siege_cession": "12 avenue des Ternes, 75017 Paris",
@@ -648,8 +649,6 @@ def _spfpl_prefill_values(prefix: str) -> dict[str, object]:
         f"{prefix}_cession_assoc_0_prenom": "Camille",
         f"{prefix}_cession_assoc_0_nom": "Martin",
         f"{prefix}_cession_assoc_0_avant": 100,
-        f"{prefix}_cession_assoc_0_apres": 40,
-        f"{prefix}_cession_assoc_0_plage": "1 a 40",
         f"{prefix}_cible_forme": "SELARL",
         f"{prefix}_cible_profession": "chirurgien-dentiste",
         f"{prefix}_cible_capital": "10000",
@@ -686,7 +685,12 @@ def _spfpl_prefill_values(prefix: str) -> dict[str, object]:
 
 
 def _prefill_spfpl_cession_test_data() -> None:
-    _commit_civil_prefill(_spfpl_prefill_values("spfpl_cession"))
+    values = _spfpl_prefill_values("spfpl_cession")
+    # Retour Albane 2026-07-07 : « Plage de parts » est un champ APPORT uniquement
+    # (retire du parcours cession, ou la plage cedee est derivee) -> pas de prefill
+    # d'une cle de widget qui n'existe plus sur ce parcours.
+    values.pop("spfpl_cession_apport_plage")
+    _commit_civil_prefill(values)
 
 
 def _prefill_spfpl_apport_test_data() -> None:

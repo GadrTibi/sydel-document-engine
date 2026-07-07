@@ -123,7 +123,13 @@ def test_attestation_selas_generates_multi_subscriber_wording(tmp_path: Path) ->
     ) in text
     assert "Le Docteur Alain Fedorowsky a fait un apport de 510 euros en numéraire." in text
     assert "Le Docteur Claire Martin a fait un apport de 490 euros en numéraire." in text
-    assert "certifié exact, sincère et véritable par le Président, Docteur Alain Fedorowsky" in text
+    # R3 (Albane 2026-07-07) : « Docteur » n'est pas une civilité — le slot
+    # « par le Président, __ » rend la civilité CIVILE (accord au genre du
+    # signataire) ; le TITRE « Le Docteur X » des phrases d'apport reste (A26-45/49).
+    assert (
+        "certifié exact, sincère et véritable par le Président, Monsieur Alain Fedorowsky"
+    ) in text
+    assert "Président, Docteur" not in text
     assert "Fait à Rennes" in text
     assert "Le 15/06/2026" in text
     _assert_clean(text)

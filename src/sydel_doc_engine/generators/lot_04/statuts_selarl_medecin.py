@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from sydel_doc_engine.domain.models import DocumentGenerationContext
+from sydel_doc_engine.front_app.field_derivations import format_grouped_numeric_value
 from sydel_doc_engine.generators.lot_04.statuts_sel_exercice_common import (
     DOCUMENT_CODE,
     OVERLAY_SELARL_MEDECIN,
@@ -73,13 +74,21 @@ class StatutsSelarlMedecinGenerator:
             raise ValueError(f"gerance est obligatoire pour {DOCUMENT_CODE}.")
         replacements.update(
             {
-                "[seuil_achat_materiel]": required_text(
-                    ctx.gerance.seuil_achat_materiel,
-                    "gerance.seuil_achat_materiel",
+                # R5 (Albane 2026-07-07, groupement des montants) : les seuils du
+                # flux arrivent NON groupés (« 5000 »/« 10000 » par défaut) -> on
+                # groupe à l'affichage (« 5 000 € »/« 10 000 € ») ; une valeur non
+                # numérique (« 10 000 euros ») passe inchangée.
+                "[seuil_achat_materiel]": format_grouped_numeric_value(
+                    required_text(
+                        ctx.gerance.seuil_achat_materiel,
+                        "gerance.seuil_achat_materiel",
+                    )
                 ),
-                "[seuil_emprunt_gerance]": required_text(
-                    ctx.gerance.seuil_emprunt,
-                    "gerance.seuil_emprunt",
+                "[seuil_emprunt_gerance]": format_grouped_numeric_value(
+                    required_text(
+                        ctx.gerance.seuil_emprunt,
+                        "gerance.seuil_emprunt",
+                    )
                 ),
                 "[nombre_exemplaires_lettres]": required_text(
                     ctx.document.nombre_exemplaires_lettres if ctx.document else None,

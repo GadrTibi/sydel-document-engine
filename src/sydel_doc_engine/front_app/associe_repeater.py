@@ -39,6 +39,7 @@ from sydel_doc_engine.front_app.field_derivations import (
     matrimonial_status_value,
     number_words_from_value,
     regime_communautaire_from_status,
+    shift_repeater_rows_down,
 )
 from sydel_doc_engine.front_app.front_widgets import (
     copyable_text_input,
@@ -100,17 +101,18 @@ def render_associe_repeater(config: RepeaterConfig) -> list[StatutsCivilsAssocie
     _seed(_count_key(config), config.nb_defaut)
     nombre = associe_count(config)
 
-    cols = st.columns([1, 1, 3])
+    cols = st.columns([1, 4])
     if cols[0].button("Ajouter un associe", key=f"{config.key_prefix}_add"):
         st.session_state[_count_key(config)] = min(config.nb_max, nombre + 1)
-    if cols[1].button("Retirer un associe", key=f"{config.key_prefix}_remove"):
-        st.session_state[_count_key(config)] = max(config.nb_min, nombre - 1)
+    # Retour Albane 2026-07-07 : le bouton global « Retirer un associe » (qui ne
+    # supprimait que le DERNIER) est remplace par un bouton « Retirer cet associe »
+    # PAR LIGNE (cf. _remove_associe_at) — « je veux pouvoir retirer celui que je veux ».
     # N5 (Albane 2026-06-24) : re-lire le nombre APRES +/- au lieu de st.rerun() (qui se declenchait
     # AVANT le rendu des associes -> Streamlit garbage-collectait l'etat des widgets non instancies
     # -> champs des associes PRECEDENTS EFFACES). Sans rerun, la boucle rend le nouveau nombre.
     nombre = associe_count(config)
     st.markdown(f"**Associes ({nombre})**")
-    cols[2].caption(
+    cols[1].caption(
         f"Entre {config.nb_min} et {config.nb_max} associes. Vocabulaire : {config.titre_unite}."
     )
 
@@ -149,9 +151,36 @@ def _assign_cumulative_part_ranges(associes: list[StatutsCivilsAssocie]) -> None
         cursor = fin + 1
 
 
+def _remove_associe_at(config: RepeaterConfig, index: int) -> None:
+    """Retire l'associe `index` (bouton par ligne — retour Albane 2026-07-07).
+
+    Callback `on_click` : il s'execute AVANT l'instanciation des widgets du rerun, seule
+    fenetre ou Streamlit autorise la recopie des cles `{prefix}_associe_{i}_*` (les
+    lignes suivantes remontent d'un cran). Pas de st.rerun() manuel (lecon N5 : un rerun
+    avant le rendu des lignes efface l'etat des widgets non instancies).
+    """
+    nombre = associe_count(config)
+    if nombre <= config.nb_min:
+        return
+    shift_repeater_rows_down(
+        st.session_state, f"{config.key_prefix}_associe_", index, nombre
+    )
+    st.session_state[_count_key(config)] = nombre - 1
+
+
 def _render_one_associe(config: RepeaterConfig, index: int) -> StatutsCivilsAssocie:
     prefix = f"{config.key_prefix}_associe_{index}"
     with st.expander(f"Associe {index + 1}", expanded=index == 0):
+        # Retour Albane 2026-07-07 : chaque ligne porte son bouton « Retirer » (on ne
+        # pouvait supprimer que le dernier ajoute). Desactive au plancher nb_min.
+        # on_click OBLIGATOIRE : la recopie des cles doit courir avant le rendu.
+        st.button(
+            "Retirer cet associe",
+            key=f"{config.key_prefix}_remove_associe_{index}",
+            on_click=_remove_associe_at,
+            args=(config, index),
+            disabled=associe_count(config) <= config.nb_min,
+        )
         type_personne = PERSONNE_PHYSIQUE
         if config.allow_personne_morale:
             type_key = f"{prefix}_type"

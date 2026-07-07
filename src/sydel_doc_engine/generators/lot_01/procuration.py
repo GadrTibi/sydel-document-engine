@@ -5,6 +5,7 @@ from pathlib import Path
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 from sydel_doc_engine.domain.models import Address, Company, DocumentGenerationContext
+from sydel_doc_engine.generators.lot_01.civilite import civilite_civile
 from sydel_doc_engine.rendering.docx_builder import (
     add_centered_block,
     add_framed_title,
@@ -53,7 +54,13 @@ class ProcurationGenerator:
         )
         company_address = _required_address(company.siege, "societe.siege")
 
-        civilite = _required_text(person.civilite, "personne_signataire.civilite")
+        # R3 (Albane 2026-07-07) : « Docteur » n'est pas une civilité — le slot
+        # « Je soussigné __ » rend la civilité CIVILE (Monsieur/Madame), jamais le
+        # titre professionnel posé par le flux (SAS et partout).
+        civilite = civilite_civile(
+            _required_text(person.civilite, "personne_signataire.civilite"),
+            person.genre,
+        )
         prenom = _required_text(person.prenom, "personne_signataire.prenom")
         nom = _required_text(person.nom, "personne_signataire.nom")
         fonction_dirigeant = _required_text(

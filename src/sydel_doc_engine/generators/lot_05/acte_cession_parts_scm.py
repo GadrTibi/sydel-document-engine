@@ -34,6 +34,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     new_document,
 )
 from sydel_doc_engine.utils.departements import departement_nom
+from sydel_doc_engine.utils.grammar import elision_de
 
 OUTPUT_FILENAME = "acte_cession_parts_scm.docx"
 
@@ -381,6 +382,19 @@ def _credit_vendeur_retard(ctx: DocumentGenerationContext, credit) -> str:
 
 
 def _add_source_tail(document, ctx: DocumentGenerationContext, scm_cession) -> None:
+    # R9 (Albane 2026-07-07) : la clause de communication au Conseil de l'Ordre nomme le
+    # departement de l'Ordre du CEDANT, en NOM avec la preposition correcte (« au Conseil
+    # départemental de l'Ordre de Seine-et-Marne »), via la meme convention
+    # `elision_de(departement_nom(…))` que la 12.4 SPFPL ratifiee.
+    cedant = scm_cession.cedant
+    ordre_departement = elision_de(
+        departement_nom(
+            required_text(
+                cedant.ordre.departemental if cedant and cedant.ordre else None,
+                "scm_cession.cedant.ordre.departemental",
+            )
+        )
+    )
     sections = [
         (
             "DISPENSE DE GARANTIE D'ACTIF ET DE PASSIF",
@@ -425,7 +439,9 @@ def _add_source_tail(document, ctx: DocumentGenerationContext, scm_cession) -> N
         (
             "COMMUNICATION DU PRESENT CONTRAT AU CONSEIL DE L'ORDRE",
             [
-                "Le présent contrat sera, sans délai, communiqué au Conseil départemental de l'Ordre en vue de ses observations éventuelles.",
+                # R9 (Albane 2026-07-07) : departement de l'Ordre du cedant, en nom.
+                "Le présent contrat sera, sans délai, communiqué au Conseil départemental "
+                f"de l'Ordre {ordre_departement} en vue de ses observations éventuelles.",
             ],
         ),
         (

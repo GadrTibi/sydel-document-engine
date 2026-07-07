@@ -145,6 +145,23 @@ def test_autorisation_domiciliation_opening_agrees_feminine(tmp_path: Path) -> N
     assert "Je soussignée Madame Marie Durand autorise la domiciliation" in text
 
 
+def test_autorisation_domiciliation_docteur_civilite_civile(tmp_path: Path) -> None:
+    # R3 (Albane 2026-07-07) : « Docteur » n'est pas une civilité — le flux SAS
+    # posait « Je soussigné Docteur Camille Martin ». Le token [civilite] rend la
+    # civilité CIVILE accordée au genre du signataire (M./Mme).
+    ctx = _context()
+    ctx.personne_signataire.civilite = "Docteur"
+    text = _docx_text(AutorisationDomiciliationGenerator().generate(ctx, tmp_path))
+    assert "Je soussigné Monsieur Jean Durand autorise la domiciliation" in text
+    assert "Docteur" not in text
+
+    ctx_f = _context(Gender.FEMININ)
+    ctx_f.personne_signataire.civilite = "Docteur"
+    text_f = _docx_text(AutorisationDomiciliationGenerator().generate(ctx_f, tmp_path))
+    assert "Je soussignée Madame Marie Durand autorise la domiciliation" in text_f
+    assert "Docteur" not in text_f
+
+
 def test_autorisation_domiciliation_ignores_free_address_for_wording(
     tmp_path: Path,
 ) -> None:

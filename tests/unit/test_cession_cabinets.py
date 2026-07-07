@@ -298,6 +298,33 @@ def test_cession_cabinet_generators_render_docx(
     _assert_no_residual_tokens(text)
 
 
+@pytest.mark.parametrize(
+    ("generator", "etape", "type_cabinet"),
+    [
+        (ActeCessionCabinetMedicalGenerator(), "acte", "medical"),
+        (ActeCessionCabinetDentaireGenerator(), "acte", "dentaire"),
+        (CompromisCessionCabinetMedicalGenerator(), "compromis", "medical"),
+        (CompromisCessionCabinetDentaireGenerator(), "compromis", "dentaire"),
+    ],
+)
+def test_r9_clause_ordre_porte_departement_du_vendeur(
+    generator, etape: str, type_cabinet: str, tmp_path: Path
+) -> None:
+    # R9 (Albane 2026-07-07) : la clause « communiqué au Conseil départemental de l’Ordre »
+    # nomme le departement de l'Ordre du VENDEUR en NOM avec la preposition correcte
+    # (« de Paris » sur la fixture ; numero « 77 » -> « de Seine-et-Marne »). Le segment
+    # existe dans les 4 modeles (actes ET compromis) -> propagation a toutes les variantes.
+    ctx = _context(etape=etape, type_cabinet=type_cabinet)
+    text = _docx_text(generator.generate(ctx, tmp_path))
+    assert "communiqué au Conseil départemental de l’Ordre de Paris en vue" in text
+    assert "de l’Ordre en vue" not in text  # plus jamais la clause nue sans departement
+
+    ctx2 = _context(etape=etape, type_cabinet=type_cabinet)
+    ctx2.cession.vendeur.ordre_departemental = "77"
+    text2 = _docx_text(generator.generate(ctx2, tmp_path / "dep77"))
+    assert "communiqué au Conseil départemental de l’Ordre de Seine-et-Marne en vue" in text2
+
+
 def test_o24_14_compromis_genere_meme_si_cession_etape_acte(tmp_path: Path) -> None:
     # O24-14 (onglet 24) : en SELAS l'acte ET le compromis sont produits ENSEMBLE, donc le
     # compromis est généré alors que cession.etape est forcée à 'acte'. Avant le fix,

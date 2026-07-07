@@ -6,6 +6,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 from sydel_doc_engine.domain.models import DocumentGenerationContext
 from sydel_doc_engine.front_app.field_derivations import derive_gender_from_civilite
+from sydel_doc_engine.generators.lot_01.civilite import est_titre_professionnel
 from sydel_doc_engine.generators.lot_05.attestation_capital_liste_souscripteurs import (
     _ATTESTATION_GROUP_SPACER_PT,
     _adresse,
@@ -22,7 +23,7 @@ from sydel_doc_engine.generators.lot_05.spfpl_common import (
     validate_cession_context,
 )
 from sydel_doc_engine.rendering.docx_builder import add_paragraph, add_spacer, new_document
-from sydel_doc_engine.utils.grammar import subject_line
+from sydel_doc_engine.utils.grammar import euro_word, subject_line
 
 OUTPUT_FILENAME = "attestation_capital_liste_souscripteurs_cession.docx"
 
@@ -60,11 +61,22 @@ class AttestationCapitalListeSouscripteursCessionGenerator:
         spfpl_capital = required_text(societe_spfpl.capital_social, "societe_spfpl.capital_social")
         souscripteur_prenom = required_text(souscripteur.prenom, _souscripteur_field("prenom"))
         souscripteur_nom = required_text(souscripteur.nom, _souscripteur_field("nom"))
-        president_genre = derive_gender_from_civilite(
-            required_text(
-                president.civilite_affichage,
-                "capital_souscription.president.civilite_affichage",
-            )
+        # R3 (Albane 2026-07-07) : « Docteur » (titre) ne porte pas le genre — on
+        # accorde alors sur le genre du signataire (= le président dans ce flux) ;
+        # une civilité civile (Monsieur/Madame) continue de porter l'accord seule.
+        president_civilite = required_text(
+            president.civilite_affichage,
+            "capital_souscription.president.civilite_affichage",
+        )
+        president_genre = (
+            ctx.personne_signataire.genre
+            if est_titre_professionnel(president_civilite)
+            else derive_gender_from_civilite(president_civilite)
+        )
+        president_identite = _souscripteur_identite(
+            president,
+            "capital_souscription.president",
+            genre=president_genre,
         )
 
         docx = new_document()
@@ -103,23 +115,29 @@ class AttestationCapitalListeSouscripteursCessionGenerator:
         add_spacer(docx, space_after_pt=_ATTESTATION_GROUP_SPACER_PT)
         # --- Corps (verbatim modele cession). ---
         # [12] « Je soussigné(e) <president>, demeurant <adresse>, atteste que ... »
+        # R3 (Albane 2026-07-07) : civilité CIVILE dans le slot « Je soussigné __ »
+        # (jamais « Docteur », via _souscripteur_identite).
         add_paragraph(
             docx,
             f"{subject_line(president_genre)} "
-            f"{_souscripteur_identite(president, 'capital_souscription.president')}, "
+            f"{president_identite}, "
             f"demeurant {_adresse(president, 'capital_souscription.president')}, "
             f"atteste que le capital de la société {spfpl_name} "
             "est réparti de la manière suivante\xa0:",
         )
         # [13] Capital social : X € en numeraire (nbsp avant « : » comme le modele).
         add_paragraph(docx, f"Capital social\xa0: {spfpl_capital} € en numéraire")
-        # [14] Nombre d'actions: X actions d'un montant de <valeur> d'euro chacune
-        # (verbatim modele : PAS d'espace avant « : », « de <valeur> d'euro »).
+        # [14] Nombre d'actions: X actions d'un montant de <valeur> euros chacune
+        # (verbatim modele : PAS d'espace avant « : »). R4 (Albane 2026-07-07,
+        # explicite — supersede la fidélité modèle) : « de 100 d'euro chacune » ->
+        # « de 100 euros chacune » ; accord singulier/pluriel via euro_word
+        # (« 1 euro » / « 100 euros »), comme la variante SAS.
+        valeur_nominale = _valeur_nominale_action(capital)
         add_paragraph(
             docx,
             "Nombre d’actions: "
             f"{required_int(capital.nb_actions_total, 'capital_souscription.nb_actions_total')} "
-            f"actions d’un montant de {_valeur_nominale_action(capital)} d’euro chacune",
+            f"actions d’un montant de {valeur_nominale} {euro_word(valeur_nominale)} chacune",
         )
         # [15] Repartition : X actions attribuees au Dr <prenom> <nom>, actionnaire unique.
         # Le modele cession ecrit « au Dr [civilite] [prenom] [nom] », mais [civilite] est
@@ -155,14 +173,14 @@ class AttestationCapitalListeSouscripteursCessionGenerator:
             "ainsi que le versement de la somme de "
             f"{spfpl_capital} euros correspondant à la totalité du nominal desdites actions, est "
             "certifié exact, sincère et véritable par le Président, "
-            f"{_souscripteur_identite(president, 'capital_souscription.president')}",
+            f"{president_identite}",
         )
         # [20]-[23] Fait a / Le / signature. Le modele cession met « Fait a [ville_siege] » ;
         # ctx.signature.lieu est FORCE a la ville du siege cote front (SU3, spfpl_slice) ->
         # equivalent et identique a l'apport (DOC-042).
         add_paragraph(docx, f"Fait à {ctx.signature.lieu}")
         add_paragraph(docx, f"Le {ctx.signature.date.strftime('%d/%m/%Y')}")
-        add_paragraph(docx, _souscripteur_identite(president, "capital_souscription.president"))
+        add_paragraph(docx, president_identite)
 
         output_dir.mkdir(parents=True, exist_ok=True)
         output_path = output_dir / OUTPUT_FILENAME

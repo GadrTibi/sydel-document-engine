@@ -60,13 +60,15 @@ from sydel_doc_engine.front_app.field_derivations import (
     accentuate_french_months,
     calculate_nominal_value,
     format_numeric_value,
+    group_montant,
+    groupe_montants_associe,
     is_capital_divisible,
     number_words_from_value,
     parse_french_date,
 )
 from sydel_doc_engine.front_app.front_widgets import (
-    date_input_with_today,
     date_input_freeform,
+    date_input_with_today,
     mandataire_inputs,
     seed_closing_date,
     siege_same_as_perso_checkbox,
@@ -309,7 +311,7 @@ def render_civil_form(structure: str) -> dict[str, object]:
     banque_adresse = _text(
         col_l, prefix, "banque_adresse", "Adresse banque", hint="ex : 5 place Bellecour, 69002 Lyon"
     )
-    # Retour Rafael 2026-07-01 : cloture pre-remplie (seed_closing_date) et recurrente -> volet replie.
+    # Retour Rafael 2026-07-01 : cloture pre-remplie (seed_closing_date), recurrente, volet replie.
     with st.expander("Clôture du 1er exercice (pré-rempli — modifier si besoin)", expanded=False):
         date_cloture = date_input_freeform(
             "Date de clôture du 1er exercice (ex : 31 décembre 2028)",
@@ -699,7 +701,9 @@ def _build_inter_sel_context(
                 societe=ScmSocietePartie(
                     denomination=str(sel.get("denomination") or "") or None,
                     forme_juridique=forme,
-                    capital_social=str(sel.get("capital") or "") or None,
+                    # R5 : capital de la SEL groupe par 3 SI purement numerique ; une
+                    # saisie avec unite (« 1 000 euros », hint du champ) reste intacte.
+                    capital_social=group_montant(str(sel.get("capital") or "")) or None,
                     siege=Address(adresse_affichee=str(sel.get("siege") or "") or None),
                     ville_rcs=str(sel.get("ville_rcs") or "") or None,
                     numero_rcs=str(sel.get("numero_rcs") or "") or None,
@@ -731,7 +735,8 @@ def _build_inter_sel_context(
         )
     )
     reglement = ReglementInterieurScmContext(
-        seuil_depense_commune=str(payload.get("inter_sel_seuil") or "") or None,
+        # R5 : seuil groupe par 3 SI purement numerique (saisie avec unite intacte).
+        seuil_depense_commune=group_montant(str(payload.get("inter_sel_seuil") or "")) or None,
         annee_reference_charges=str(payload.get("inter_sel_annee_ref") or "") or None,
         date_fin_gestion_administrative=(
             accentuate_french_months(str(payload.get("inter_sel_date_fin_gestion") or "")) or None
@@ -1145,7 +1150,15 @@ def _associe_named(associe: StatutsCivilsAssocie) -> bool:
 def build_generation_context(payload: dict[str, object]) -> DocumentGenerationContext:
     structure = str(payload["structure"])
     statuts_type = str(payload["statuts_type"])
-    associes: list[StatutsCivilsAssocie] = list(payload.get("associes") or [])
+    # R5 (Albane 2026-07-07) : montants des associes (apport individuel, capital d'une
+    # personne morale) groupes par 3 a la construction du contexte (copies pydantic,
+    # payload jamais mute). MICRO_HOLDING exclu : son modele Albane 2026-06-29 porte sa
+    # propre convention (separateur de milliers a POINT, `_fmt_dot_thousands`) — dans le
+    # doute entre les deux conventions, on ne touche pas au micro (fidelite au modele).
+    associes: list[StatutsCivilsAssocie] = [
+        (a if structure == "MICRO_HOLDING" else groupe_montants_associe(a))
+        for a in (payload.get("associes") or [])
+    ]
 
     siege = Address(
         num_voie=str(payload.get("siege_num") or ""),
@@ -1154,16 +1167,21 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         ville=str(payload.get("siege_ville") or ""),
         adresse_affichee=_siege_display(payload),
     )
+    # R5 : capital social groupe par 3 (« 60 000 ») a la construction du contexte.
+    # MICRO_HOLDING exclu (convention POINT du modele Albane, cf. ci-dessus).
     capital = str(payload.get("capital_social") or "")
+    if structure != "MICRO_HOLDING":
+        capital = group_montant(capital)
     nb_parts = int(payload.get("nb_parts_total") or 0)
     # Valeurs DERIVEES (retours Albane 2026-06-17) : valeur nominale auto-calculee
     # (§18.2), forme sociale derivee de la structure (§18.1), duree figee a 99 ans
     # (§18.3), lieu de signature = ville du siege (§18.4). On honore une valeur
     # explicite deja presente dans le payload (chemin de test direct), sinon on
-    # derive.
-    valeur_nominale_part = str(
-        payload.get("valeur_nominale_part") or ""
-    ) or calculate_nominal_value(capital, nb_parts)
+    # derive. R5 : groupee par 3 des 4 chiffres.
+    valeur_nominale_part = group_montant(
+        str(payload.get("valeur_nominale_part") or "")
+        or calculate_nominal_value(capital, nb_parts)
+    )
     forme_sociale = str(payload.get("forme_sociale") or "") or civil_forme_sociale(structure)
     # SU3 (Albane 2026-06-25) : la ville de signature EST la ville du siege DANS TOUS LES CAS.
     # On FORCE = siege (avant toute valeur de payload divergente). Couvre signature ET renonciation.
@@ -1184,7 +1202,9 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
     else:
         capital_value = capital
         capital_lettres = number_words_from_value(capital)
-        capital_maximal_value = str(cap_int * 10) if cap_int else None
+        # R5 : capital maximal (capital variable, 10x le capital) groupe par 3 —
+        # « dix mille euros (10 000 €) » et non « (10000 €) » (statuts SCI / SCI IRIS).
+        capital_maximal_value = group_montant(cap_int * 10) if cap_int else None
         capital_maximal_lettres = number_words_from_value(cap_int * 10) if cap_int else None
 
     statuts_civils = StatutsCivilsContext(
@@ -1456,7 +1476,13 @@ def _common_docs_input(
     )
     return cc.CommonDocsInput(
         founder=founder,
-        capital_social=str(payload.get("capital_social") or ""),
+        # R5 : capital groupe par 3 (PV nomination gerant via cc.capital_context).
+        # MICRO_HOLDING exclu (convention POINT du modele Albane micro).
+        capital_social=(
+            str(payload.get("capital_social") or "")
+            if structure == "MICRO_HOLDING"
+            else group_montant(str(payload.get("capital_social") or ""))
+        ),
         nb_parts_total=int(payload.get("nb_parts_total") or 0),
         valeur_nominale_part=valeur_nominale_part
         or str(payload.get("valeur_nominale_part") or ""),
@@ -1572,7 +1598,13 @@ def _generate_regime_civil_par_associe(
             ctx = ctx.model_copy(
                 update={
                     "apport": Apport(
-                        montant=associe.apport.montant,
+                        # R5 : apport individuel groupe par 3 (lettres de regime :
+                        # « informé de l'apport de 10 000 euros »).
+                        montant=(
+                            group_montant(associe.apport.montant)
+                            if associe.apport.montant
+                            else associe.apport.montant
+                        ),
                         montant_lettres=(
                             associe.apport.montant_lettres
                             or number_words_from_value(associe.apport.montant)
@@ -1639,7 +1671,8 @@ def _sum_apports(associes: list[StatutsCivilsAssocie], *, role: str) -> str:
     for associe in associes:
         if associe.role_statutaire == role and associe.apport and associe.apport.montant:
             total += _safe_int(associe.apport.montant)
-    return str(total) if total else ""
+    # R5 : total des apports groupe par 3 des 4 chiffres (statuts SCS).
+    return group_montant(total) if total else ""
 
 
 def _apply_iris_result_groups(

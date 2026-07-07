@@ -256,9 +256,13 @@ class ContratApportSpfplGenerator:
             "[denomination_societe]": required_text(
                 societe_spfpl.denomination, "societe_spfpl.denomination"
             ),
+            # R4 (Albane 2026-07-07, « orthographe irréprochable ») : le front pose la forme
+            # abregee NON accentuee (« par actions simplifiee ») -> accent restaure a la
+            # sortie (« par actions simplifiée »). Texte genere (valeur de token), pas un
+            # verbatim du modele source.
             "[forme_sociale]": required_text(
                 societe_spfpl.forme_sociale, "societe_spfpl.forme_sociale"
-            ),
+            ).replace("simplifiee", "simplifiée"),
             "[capital_social]": required_text(
                 societe_spfpl.capital_social, "societe_spfpl.capital_social"
             ),

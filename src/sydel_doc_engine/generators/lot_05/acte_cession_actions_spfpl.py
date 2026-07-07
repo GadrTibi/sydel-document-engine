@@ -9,6 +9,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import CessionActions, DocumentGenerationContext
+from sydel_doc_engine.generators.lot_05.acte_cession_parts_spfpl import rcs_en_cours
 from sydel_doc_engine.generators.lot_05.scm_cession_common import (
     mentions_conjoint,
     mentions_partenaire_pacse,
@@ -55,7 +56,11 @@ class ActeCessionActionsSpfplGenerator:
             raise ValueError("societe_spfpl.representant est obligatoire.")
 
         spfpl_name = required_text(societe_spfpl.denomination, "societe_spfpl.denomination")
-        spfpl_forme = required_text(societe_spfpl.forme_sociale, "societe_spfpl.forme_sociale")
+        # R4 (Albane 2026-07-07, propagation) : le front pose la forme abregee NON accentuee
+        # (« par actions simplifiee ») -> accent restaure a la sortie (« simplifiée »).
+        spfpl_forme = required_text(
+            societe_spfpl.forme_sociale, "societe_spfpl.forme_sociale"
+        ).replace("simplifiee", "simplifiée")
         spfpl_capital = required_text(
             societe_spfpl.capital_social,
             "societe_spfpl.capital_social",
@@ -180,17 +185,29 @@ class ActeCessionActionsSpfplGenerator:
         add_paragraph(docx, "D'une part,")
         add_paragraph(docx, "ET", alignment=WD_ALIGN_PARAGRAPH.CENTER, bold=True)
         add_paragraph(docx, f"- La Société {spfpl_name}")
+        # R2 (Albane 2026-07-07, propage de l'acte de PARTS — meme bloc identite) : la SPFPL
+        # acquereuse n'est pas immatriculee (le front pose numero_rcs="en cours") -> identite
+        # « en cours de constitution » + ligne RCS « En cours d'immatriculation au RCS de
+        # <ville> » (formulation du corpus), plus jamais « sous le numéro en cours ». Un vrai
+        # numero RCS conserve le rendu d'origine.
+        spfpl_en_constitution = rcs_en_cours(societe_spfpl.numero_rcs)
         add_paragraph(
             docx,
             (
-                f"{spfpl_forme} inscrite au tableau de l'Ordre des "
+                f"{spfpl_forme}"
+                f"{' en cours de constitution,' if spfpl_en_constitution else ''}"
+                " inscrite au tableau de l'Ordre des "
                 f"{cible_profession_pluriel} du {spfpl_ordre_departement}."
             ),
         )
         add_paragraph(docx, f"Au capital de {spfpl_capital}")
         add_paragraph(
             docx,
-            f"Immatriculée au RCS de {spfpl_rcs} sous le numéro {spfpl_numero_rcs}",
+            (
+                f"En cours d'immatriculation au RCS de {spfpl_rcs}"
+                if spfpl_en_constitution
+                else f"Immatriculée au RCS de {spfpl_rcs} sous le numéro {spfpl_numero_rcs}"
+            ),
         )
         add_paragraph(docx, f"Siège social : {company_siege_display(societe_spfpl, 'societe_spfpl')}")
         add_paragraph(

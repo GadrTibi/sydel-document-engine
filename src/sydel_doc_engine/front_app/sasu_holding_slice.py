@@ -49,12 +49,13 @@ from sydel_doc_engine.front_app.field_derivations import (
     accentuate_french_months,
     derive_gender_from_civilite,
     format_numeric_value,
+    group_montant,
     number_words_from_value,
     parse_associe_birthdate,
 )
 from sydel_doc_engine.front_app.front_widgets import (
-    date_input_with_today,
     date_input_freeform,
+    date_input_with_today,
     mandataire_inputs,
     seed_closing_date,
     seed_exercice_dates,
@@ -185,7 +186,9 @@ def render_sasu_holding_form() -> dict[str, object]:
     signature_lieu = _t(col_o, "signature_lieu", "Lieu de signature")
     # Retour Rafael 2026-07-01 : dates d'exercice/cloture pre-remplies et quasi toujours identiques
     # -> masquees dans un volet replie (modifiable). Valeurs seedees conservees, sortie inchangee.
-    with st.expander("Exercice comptable et clôture (pré-rempli — modifier si besoin)", expanded=False):
+    with st.expander(
+        "Exercice comptable et clôture (pré-rempli — modifier si besoin)", expanded=False
+    ):
         col_p, col_q, col_r = st.columns(3)
         exercice_debut = date_input_freeform(
             "Début de l'exercice comptable (ex : 1er janvier)",
@@ -307,7 +310,9 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:
 
 
 def build_generation_context(payload: dict[str, object]) -> DocumentGenerationContext:
-    capital = str(payload.get("capital_social") or "")
+    # R5 (Albane 2026-07-07) : capital groupe par 3 (« 60 000 ») a la construction du
+    # contexte (statuts + satellites SASU holding).
+    capital = group_montant(str(payload.get("capital_social") or ""))
     nb_actions = int(payload.get("nb_actions") or 0)
     genre = payload.get("genre") or Gender.MASCULIN
     forme_sociale = str(payload.get("forme_sociale") or "")

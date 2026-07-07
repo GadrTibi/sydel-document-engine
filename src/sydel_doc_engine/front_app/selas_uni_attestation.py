@@ -29,6 +29,7 @@ from sydel_doc_engine.domain.models import (
     DocumentGenerationContext,
     SocieteSpfpl,
 )
+from sydel_doc_engine.front_app.field_derivations import group_montant
 
 # Code de l'attestation souscripteurs SELAS (parite selas_multi_slice).
 DOC_ATTESTATION_SELAS = "DOC-045"
@@ -99,7 +100,8 @@ def attach_attestation_to_ctx(
     if not selas_uni_attestable(payload):
         return ctx
 
-    capital = str(payload.get("capital_social") or "")
+    # R5 (Albane 2026-07-07) : capital groupe par 3 (« 60 000 ») — attestation DOC-045.
+    capital = group_montant(str(payload.get("capital_social") or ""))
     nb_actions_total = int(payload.get("nb_actions_total") or 0)
     # Valeur nominale d'une action : le formulaire UI ne la porte pas toujours dans le
     # payload (champ calcule, affichage seul). On la reprend du contexte SELARL reutilise
@@ -108,6 +110,7 @@ def attach_attestation_to_ctx(
     valeur_action = str(payload.get("valeur_nominale_action") or "")
     if not valeur_action and ctx.capital is not None:
         valeur_action = str(ctx.capital.valeur_nominale_part or "")
+    valeur_action = group_montant(valeur_action)  # R5 : groupee des 4 chiffres
 
     sig = ctx.personne_signataire
     civilite = ""

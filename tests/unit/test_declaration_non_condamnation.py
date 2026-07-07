@@ -89,6 +89,23 @@ def test_declaration_non_condamnation_creates_docx(tmp_path: Path) -> None:
     assert output_path.is_file()
 
 
+def test_declaration_non_condamnation_docteur_civilite_civile(tmp_path: Path) -> None:
+    # R3 (Albane 2026-07-07) : « Docteur » n'est pas une civilité — le flux SAS
+    # posait « Je soussigné Docteur Camille Martin ». Le slot rend la civilité
+    # CIVILE accordée au genre du signataire (M./Mme), partout où la DNC est émise.
+    ctx = _context()
+    ctx.personne_signataire.civilite = "Docteur"
+    text = _docx_text(DeclarationNonCondamnationGenerator().generate(ctx, tmp_path))
+    assert "Je soussigné Monsieur Jean Durand" in text
+    assert "Docteur" not in text
+
+    ctx_f = _context(Gender.FEMININ)
+    ctx_f.personne_signataire.civilite = "Docteur"
+    text_f = _docx_text(DeclarationNonCondamnationGenerator().generate(ctx_f, tmp_path))
+    assert "Je soussignée Madame Marie Durand" in text_f
+    assert "Docteur" not in text_f
+
+
 def test_declaration_non_condamnation_contains_essential_texts(tmp_path: Path) -> None:
     text = _docx_text(_generate(tmp_path))
 

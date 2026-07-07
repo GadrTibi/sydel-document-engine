@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from datetime import date
 from pathlib import Path
 
@@ -29,6 +30,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_statuts_signature_block,
     new_document,
 )
+from sydel_doc_engine.utils.grammar import integer_to_french_words
 
 DOCUMENT_CODE = "CODE-STATUTS-SPFPL-001"
 SPFPL_CESSION_STRUCTURE = "SPFPL cession"
@@ -159,6 +161,64 @@ def person_address_display(person: SpfplPerson, field_name: str) -> str:
     )
 
 
+# --- Montants (Albane 2026-07-07, R5/R6 rapport conformance) -------------------------------
+#
+# Le front injecte les montants BRUTS tels que saisis (« 60000 ») ; Albane exige des montants
+# GROUPES en sortie (« 60 000 »). Groupage LOCAL au chemin SPFPL (les autres types = lots/agents
+# separes) ; toute valeur non purement numerique (marqueur « (À COMPLÉTER : …) ») passe telle
+# quelle — fail-safe, aucune invention.
+
+# NB : `\s` (str, Unicode) couvre aussi les separateurs de milliers insecables (U+00A0, U+202F).
+_MONTANT_NUMERIQUE = re.compile(r"(\d[\d\s]*)(?:[.,](\d+))?")
+
+
+def _montant_numerique_groupe(value: str) -> str | None:
+    """« 60000 » / « 60 000 » -> « 60 000 » (idempotent) ; « 60000,50 » -> « 60 000,50 » ;
+    valeur non purement numerique -> None."""
+    cleaned = value.strip()
+    match = _MONTANT_NUMERIQUE.fullmatch(cleaned)
+    if match is None:
+        return None
+    digits = re.sub(r"\D", "", match.group(1))
+    grouped = f"{int(digits):,}".replace(",", " ")
+    if match.group(2):
+        return f"{grouped},{match.group(2)}"
+    return grouped
+
+
+def groupe_milliers(value: str) -> str:
+    """Groupage FR des milliers d'un montant en chiffres (« 60000 » -> « 60 000 »)."""
+    grouped = _montant_numerique_groupe(value)
+    return grouped if grouped is not None else value.strip()
+
+
+def montant_euro_symbole(value: str) -> str:
+    """« 60000 » / « 60 000 € » -> « 60 000 € » (groupe + symbole €, sans doublon).
+
+    Albane 2026-07-07 (fix 4) : la ligne « Ci … [montant] » (et le total qui la suit,
+    meme token) rend « 60 000 € », pas « 60000 » nu. Une valeur non numerique
+    (marqueur « À COMPLÉTER ») est rendue telle quelle, sans symbole invente."""
+    cleaned = value.strip()
+    if cleaned.endswith("€"):
+        cleaned = cleaned[:-1].rstrip()
+    grouped = _montant_numerique_groupe(cleaned)
+    if grouped is None:
+        return value.strip()
+    return f"{grouped} €"
+
+
+def montant_en_lettres(lettres: str | None, figure: str) -> str:
+    """Lettres d'un montant pour l'art. 8 : slot front (`*_lettres`) si present, sinon repli
+    CALCULE depuis la figure (entier -> mots via `integer_to_french_words`, semantique
+    identique a `number_words_from_value` cote front ; non-entier -> figure telle quelle)."""
+    if lettres and lettres.strip():
+        return lettres.strip()
+    digits = re.sub(r"\s", "", figure.strip())
+    if digits.isdigit():
+        return integer_to_french_words(int(digits))
+    return figure.strip()
+
+
 def render_statuts_docx(  # noqa: C901
     blocks: tuple[str, ...],
     replacements: dict[str, str],
@@ -195,7 +255,18 @@ def render_statuts_docx(  # noqa: C901
             )
             paragraph.runs[0].font.size = Pt(12)
         elif _is_major_heading(text):
-            add_statuts_part_heading(docx, text, mode="boxed", style_profile=style_profile)
+            # Albane 2026-07-07 (fix 5) : des titres majeurs CONSECUTIFS (annexe : « ANNEXE 1 »
+            # + « ETAT DES ENGAGEMENTS PRIS AVANT » + « LA CONSTITUTION DE LA SOCIETE ») sortaient
+            # en PLUSIEURS cadres empiles (« cadres multiples inutiles ») -> UN SEUL cadre
+            # multi-lignes. Un titre isole garde le rendu historique (byte-identique).
+            heading_lines = [text]
+            while index + 1 < len(blocks):
+                next_text = replace_placeholders(blocks[index + 1], replacements)
+                if not _is_major_heading(next_text):
+                    break
+                heading_lines.append(next_text)
+                index += 1
+            _add_major_heading_box(docx, heading_lines, style_profile=style_profile)
         elif text.startswith("ARTICLE "):
             add_statuts_article_heading(docx, text, underline=False, style_profile=style_profile)
         elif text.startswith("Fait à ") or text.startswith("Fait a "):
@@ -436,6 +507,35 @@ def founder_common_replacements(founder: SpfplPerson, field_name: str) -> dict[s
         "[numero_ordre]": required_text(ordre.numero, f"{field_name}.ordre.numero"),
         "[numero_rpps]": required_text(ordre.numero_rpps, f"{field_name}.ordre.numero_rpps"),
     }
+
+
+def _add_major_heading_box(
+    docx,  # noqa: ANN001 - type docx interne python-docx
+    lines: list[str],
+    *,
+    style_profile,  # noqa: ANN001
+):
+    """Titre(s) majeur(s) encadre(s). UNE ligne -> délégation pure a `add_statuts_part_heading`
+    (rendu historique byte-identique). PLUSIEURS lignes consecutives (annexe) -> le MEME cadre
+    accueille les lignes suivantes via des sauts de ligne dans le paragraphe de la cellule
+    (Albane 2026-07-07, fix 5 : un cadre UNIQUE au lieu de cadres empiles).
+
+    Modif limitee au chemin SPFPL : le builder PARTAGE (`add_statuts_part_heading` /
+    `add_statuts_title_box`, utilise par d'autres types de statuts) n'est PAS modifie."""
+    table = add_statuts_part_heading(
+        docx, lines[0], mode="boxed", style_profile=style_profile
+    )
+    if len(lines) == 1:
+        return table
+    paragraph = table.cell(0, 0).paragraphs[0]
+    reference_run = paragraph.runs[0]
+    for line in lines[1:]:
+        paragraph.runs[-1].add_break()
+        run = paragraph.add_run(line)
+        run.bold = True
+        run.font.name = reference_run.font.name
+        run.font.size = reference_run.font.size
+    return table
 
 
 def _is_major_heading(text: str) -> bool:

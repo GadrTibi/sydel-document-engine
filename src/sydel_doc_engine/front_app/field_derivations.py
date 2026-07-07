@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 import unicodedata
+from collections.abc import MutableMapping, Sequence
 from datetime import date
 from decimal import ROUND_HALF_UP, Decimal
 from typing import Final
@@ -177,6 +178,127 @@ def format_grouped_numeric_value(value: object) -> str:
     if number == number.to_integral_value():
         return f"{int(number):,}".replace(",", " ")
     return format(number.normalize(), "f").replace(".", ",")
+
+
+# R5 (Albane 2026-07-07) : tout MONTANT >= 4 chiffres sort groupe par 3 (« 60 000 »),
+# PARTOUT, pour TOUS les types. Le groupement s'applique a la CONSTRUCTION du contexte
+# cote front (jamais dans les generateurs, echos fideles des modeles). Contrat STRICT
+# anti-degat : seule une valeur PUREMENT numerique est regroupee — ce helper ne devine
+# jamais ou finit un montant dans un texte libre (« 1 500 euros » reste intact).
+_MONTANT_PUR_RE: Final = re.compile(r"(\d[\d   ]*)([.,]\d+)?")
+
+
+def group_montant(value: object) -> str:
+    """Groupe par 3 (espaces) la partie entiere d'un champ MONTANT (R5, Albane 2026-07-07).
+
+    « 60000 » -> « 60 000 » ; idempotent (« 60 000 » -> « 60 000 ») ; « 600 » inchange.
+    Une partie decimale est PRESERVEE verbatim (« 1500,50 » -> « 1 500,50 », jamais de
+    perte du zero final — difference voulue avec `format_grouped_numeric_value`, qui
+    normalise via Decimal). Valeur non purement numerique (unite accolee « 1 500 euros »,
+    plage « 41 a 100 », texte, vide) -> renvoyee INTACTE : dans le doute, on ne touche pas.
+    Le format a POINT du modele micro holding (« 1.020 ») est lui aussi laisse intact
+    (fidelite au modele Albane 2026-06-29). NE PAS appliquer aux identifiants
+    (SIREN/RCS, RPPS, numeros, annees, codes postaux) : le choix du CHAMP appartient a
+    l'appelant — champs MONTANT uniquement.
+    """
+    raw = "" if value is None else str(value)
+    match = _MONTANT_PUR_RE.fullmatch(raw.strip())
+    if match is None:
+        return raw
+    digits = re.sub(r"\D", "", match.group(1))
+    if len(digits) < 4:
+        return raw
+    grouped = f"{int(digits):,}".replace(",", " ")
+    return grouped + (match.group(2) or "")
+
+
+def groupe_montants_associe(associe):
+    """Copie d'un associe « statuts civils » avec ses champs MONTANT groupes (R5).
+
+    Champs concernes : `apport.montant` (apport individuel rendu dans les statuts et
+    les lettres de regime) et `capital_social` (personne morale : « SELARL au capital
+    de 1 000 euros »). `montant_lettres` est independant du groupement (la mise en
+    lettres parse les espaces). Retourne l'objet D'ORIGINE si rien ne change (pas de
+    copie inutile) ; sinon une copie pydantic (`model_copy`) — les objets du payload
+    appelant ne sont JAMAIS mutes. Helper PARTAGE (civil / SELARL multi / SELAS multi),
+    jamais duplique par slice.
+    """
+    update: dict[str, object] = {}
+    capital = getattr(associe, "capital_social", None)
+    if capital:
+        grouped = group_montant(capital)
+        if grouped != capital:
+            update["capital_social"] = grouped
+    apport = getattr(associe, "apport", None)
+    if apport is not None and apport.montant:
+        grouped = group_montant(apport.montant)
+        if grouped != apport.montant:
+            update["apport"] = apport.model_copy(update={"montant": grouped})
+    if not update:
+        return associe
+    return associe.model_copy(update=update)
+
+
+def derive_cumulative_plages(counts: Sequence[int], *, start: int = 1) -> list[str]:
+    """Plages de parts CONTIGUES sequentielles derivees des nb de parts saisis.
+
+    Retour Albane 2026-07-07 (SPFPL cession) : la plage « peut etre DEDUITE — pas une
+    obligation de renseigner a la main. Exemple : 20 parts -> automatiquement de 1 a
+    20 ». Meme patron ratifie que le repeater civil (`_assign_cumulative_part_ranges`,
+    §18.5) et la SCM (N4) : attribution dans l'ordre des lignes, « à » accentue
+    (« 1 à 20 », « 21 à 100 »). Un nb <= 0 rend une plage VIDE (aucune mention dans les
+    documents) et n'avance pas le curseur.
+    """
+    plages: list[str] = []
+    cursor = start
+    for nb in counts:
+        if nb <= 0:
+            plages.append("")
+            continue
+        plages.append(f"{cursor} à {cursor + nb - 1}")
+        cursor += nb
+    return plages
+
+
+def shift_repeater_rows_down(
+    state: MutableMapping[str, object],
+    row_key_base: str,
+    removed_index: int,
+    count: int,
+) -> None:
+    """Retire la ligne `removed_index` d'un repeater indexe en session_state.
+
+    Retour Albane 2026-07-07 : « retirer un associe EN PARTICULIER » (aujourd'hui on ne
+    peut que supprimer le dernier). Les cles suivent le patron
+    `{row_key_base}{index}_{champ}` : chaque ligne au-dela de l'index retire est
+    RECOPIEE sur la precedente (tous champs), puis les cles de la DERNIERE ligne sont
+    supprimees (une ligne re-ajoutee ensuite repart VIERGE). Le compteur de lignes (cle
+    hors patron) reste a la charge de l'appelant. A executer dans un callback
+    `on_click` UNIQUEMENT : Streamlit n'autorise la mutation des cles de widgets
+    qu'AVANT leur instanciation dans le rerun. Les cles non assignables (boutons, ex.
+    suffixe `_today`) sont ignorees a la recopie — leur etat est ephemere.
+    """
+    pattern = re.compile(re.escape(row_key_base) + r"(\d+)_(.+)$")
+    rows: dict[int, dict[str, object]] = {}
+    for key in list(state.keys()):
+        match = pattern.fullmatch(key)
+        if match is None:
+            continue
+        index = int(match.group(1))
+        if removed_index <= index < count:
+            rows.setdefault(index, {})[match.group(2)] = state[key]
+    for index, fields in rows.items():
+        for suffix in fields:
+            try:
+                del state[f"{row_key_base}{index}_{suffix}"]
+            except Exception:  # cle non supprimable -> on n'ecrase pas, on ignore
+                continue
+    for index in range(removed_index, count - 1):
+        for suffix, value in (rows.get(index + 1) or {}).items():
+            try:
+                state[f"{row_key_base}{index}_{suffix}"] = value
+            except Exception:  # cle bouton Streamlit (non assignable) : etat ephemere
+                continue
 
 
 def number_words_from_value(value: object) -> str:

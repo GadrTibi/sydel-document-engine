@@ -12,6 +12,7 @@ from docx.oxml.ns import qn
 from docx.shared import Pt
 
 from sydel_doc_engine.domain.models import Address, Company, DocumentGenerationContext
+from sydel_doc_engine.generators.lot_01.civilite import civilite_civile
 from sydel_doc_engine.rendering.docx_template_fill import fill_docx_template
 
 ROBOTO_FONT = "Roboto"
@@ -90,7 +91,13 @@ def _build_replacements(ctx: DocumentGenerationContext) -> dict[str, str]:
     person = ctx.personne_signataire
     company = _required_company(ctx.societe)
 
-    civilite = _required_text(person.civilite, "personne_signataire.civilite")
+    # R3 (Albane 2026-07-07) : « Docteur » n'est pas une civilité — le token
+    # [civilite] du modèle ouvre « Je soussigné(e) __ » : civilité CIVILE
+    # (Monsieur/Madame), jamais le titre professionnel posé par le flux.
+    civilite = civilite_civile(
+        _required_text(person.civilite, "personne_signataire.civilite"),
+        person.genre,
+    )
     prenom = _required_text(person.prenom, "personne_signataire.prenom")
     nom = _required_text(person.nom, "personne_signataire.nom")
     denomination_societe = _required_text(company.denomination, "societe.denomination")

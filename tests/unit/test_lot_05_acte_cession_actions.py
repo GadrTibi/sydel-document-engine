@@ -194,6 +194,13 @@ def test_acte_cession_actions_generates_source_vocabulary_and_clean_docx(
     assert "de cent euros de valeur nominale" in text
     assert "d'cent" not in text
     assert "d’cent" not in text
+    # R2 (Albane 2026-07-07, propage de l'acte de PARTS — meme bloc identite) : la SPFPL
+    # acquereuse n'est pas immatriculee (numero_rcs="en cours" cote front) -> identite
+    # « en cours de constitution » + « En cours d'immatriculation au RCS de <ville> »,
+    # plus jamais « sous le numéro en cours ».
+    assert "en cours de constitution, inscrite au tableau de l'Ordre" in text
+    assert "En cours d'immatriculation au RCS de Paris" in text
+    assert "sous le numéro en cours" not in text
     assert "[" not in text
     assert "]" not in text
     assert_no_unaccented_french(text)
@@ -213,6 +220,24 @@ def test_acte_cession_actions_ordre_departement_numero_rendered_as_name(
     assert "Seine-et-Marne" in text
     assert "de 77" not in text
     assert "du 77" not in text
+
+
+def test_acte_cession_actions_forme_simplifiee_accentuee_et_vrai_rcs(tmp_path: Path) -> None:
+    # R4 (Albane 2026-07-07, propagation) : la forme abregee NON accentuee posee par le
+    # front (« par actions simplifiee ») ressort accentuee (« par actions simplifiée »).
+    ctx = _base_context()
+    ctx.societe_spfpl.forme_sociale = "par actions simplifiee"  # valeur reelle du front
+    text = _docx_text(ActeCessionActionsSpfplGenerator().generate(ctx, tmp_path))
+    assert "par actions simplifiée" in text
+    assert "simplifiee" not in text
+
+    # R2 — garde-fou inverse : un VRAI numero RCS conserve la ligne « Immatriculée … sous
+    # le numéro … » sans « en cours de constitution » parasite.
+    ctx2 = _base_context()
+    ctx2.societe_spfpl.numero_rcs = "912 345 678"
+    text2 = _docx_text(ActeCessionActionsSpfplGenerator().generate(ctx2, tmp_path / "rcs"))
+    assert "Immatriculée au RCS de Paris sous le numéro 912 345 678" in text2
+    assert "en cours de constitution" not in text2
 
 
 def test_acte_cession_actions_blocks_non_actions_context(tmp_path: Path) -> None:

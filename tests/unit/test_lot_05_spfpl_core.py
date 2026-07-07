@@ -66,6 +66,9 @@ def _base_context(*, operation: str = "cession") -> DocumentGenerationContext:
             denomination="SPFPL MARTIN",
             forme_sociale="SPFPLAS",
             capital_social="60 000",
+            # Albane 2026-07-07 : le capital du bloc acquereur se rend « lettres (chiffres)
+            # euros » -> le front pose les lettres nues (number_words_from_value).
+            capital_social_lettres="soixante mille",
             activite="participations financières de profession libérale",
             profession="chirurgien-dentiste",
             ville_rcs="Paris",
@@ -287,6 +290,28 @@ def test_acte_cession_parts_generates_dynamic_capital_and_preserves_source_frais
     assert "de cent euros de valeur nominale" in text
     assert "d’cent" not in text
     assert "d'cent" not in text
+    # R2 (Albane 2026-07-07) : SPFPL acquereuse non immatriculee -> identite « en cours de
+    # constitution » + « En cours d’immatriculation au RCS de <ville> » ; plus jamais
+    # « Immatriculée … sous le numéro en cours ».
+    assert "par actions simplifiée en cours de constitution" in text
+    assert "En cours d’immatriculation au RCS de Paris" in text
+    assert "sous le numéro en cours" not in text
+    # R8 (Albane 2026-07-07) : UNE SEULE repartition du capital (recital de l'EXPOSE
+    # PREALABLE conserve, liste + intro du bloc ORIGINE DE PROPRIETE retirees, phrase
+    # « déclare qu'il est propriétaire » conservee). Supersede les « 2 recitals fideles ».
+    assert "Le capital social est réparti à ce jour comme suit" in text
+    assert "actuellement détenu comme suit" not in text
+    assert text.count("Dr Camille Martin détenant 70 parts") == 1
+    assert text.count("Dr Louise Bernard détenant 30 parts") == 1
+    assert "déclare qu’il est propriétaire des parts" in text
+    # R9 (Albane 2026-07-07) : clause de communication au Conseil de l'Ordre AVEC le
+    # departement de l'Ordre du cedant en nom (fixture : « Paris »).
+    assert "communiqué au Conseil départemental de l’Ordre de Paris en vue" in text
+    assert "de l’Ordre en vue" not in text
+    # Albane 2026-07-07 : capitaux en « lettres (chiffres groupes) euros ».
+    assert "Au capital de soixante mille (60 000) euros" in text
+    assert "Au capital de 60" not in text  # plus de figure nue dans le bloc acquereur
+    assert "au capital social de dix mille (10 000) euros divisé" in text
     _assert_clean(text)
 
 
@@ -359,6 +384,9 @@ def test_acte_cession_ordre_departement_numero_rendered_as_name(tmp_path: Path) 
     text = _docx_text(ActeCessionPartsSpfplGenerator().generate(ctx, tmp_path))
     assert "Seine-et-Marne" in text
     assert "de 77" not in text
+    # R9 (Albane 2026-07-07, verbatim) : la clause Ordre porte aussi le departement en nom
+    # (« au Conseil départemental de l’Ordre de Seine-et-Marne »).
+    assert "communiqué au Conseil départemental de l’Ordre de Seine-et-Marne en vue" in text
 
 
 def test_acte_cession_parts_pacse_reprises_partner(tmp_path: Path) -> None:
@@ -398,6 +426,38 @@ def test_attestation_commissaire_pacse_reprises_partner_nom(tmp_path: Path) -> N
     assert "avec Martin" in text
 
 
+def test_acte_cession_vrai_numero_rcs_garde_ligne_immatriculee(tmp_path: Path) -> None:
+    # R2 (Albane 2026-07-07) — garde-fou inverse : une SPFPL acquereuse DEJA immatriculee
+    # (vrai numero RCS) conserve la ligne du modele « Immatriculée au RCS de <ville> sous le
+    # numéro <numero> », sans « en cours de constitution » parasite.
+    ctx = _base_context()
+    ctx.societe_spfpl.numero_rcs = "912 345 678"
+    text = _docx_text(ActeCessionPartsSpfplGenerator().generate(ctx, tmp_path))
+    assert "Immatriculée au RCS de Paris sous le numéro 912 345 678" in text
+    assert "en cours de constitution" not in text
+    assert "En cours d’immatriculation" not in text
+
+
+def test_contrat_apport_forme_simplifiee_accentuee(tmp_path: Path) -> None:
+    # R4 (Albane 2026-07-07) : le front pose la forme abregee NON accentuee
+    # (« par actions simplifiee ») -> la sortie doit rendre « par actions simplifiée ».
+    ctx = _base_context(operation="apport")
+    ctx.societe_spfpl.forme_sociale = "par actions simplifiee"  # valeur reelle du front
+    text = _docx_text(ContratApportSpfplGenerator().generate(ctx, tmp_path))
+    assert "par actions simplifiée" in text
+    assert "simplifiee" not in text
+
+
+def test_attestation_commissaire_forme_simplifiee_accentuee(tmp_path: Path) -> None:
+    # R4 (Albane 2026-07-07) : idem attestation du commissaire aux apports (« … par actions
+    # simplifiee de chirurgien-dentiste en cours de formation » etait non accentue).
+    ctx = _base_context(operation="apport")
+    ctx.societe_spfpl.forme_sociale = "par actions simplifiee"  # valeur reelle du front
+    text = _docx_text(AttestationCommissaireApportsGenerator().generate(ctx, tmp_path))
+    assert "par actions simplifiée de chirurgien-dentiste en cours de formation" in text
+    assert "simplifiee" not in text
+
+
 def test_attestation_capital_is_limited_to_unique_souscripteur(tmp_path: Path) -> None:
     ctx = _base_context(operation="apport")
     ctx.capital_souscription.souscripteurs.append(
@@ -430,6 +490,13 @@ def test_attestation_capital_generates_unique_shareholder_wording(tmp_path: Path
     # M1 texte juridique ACCENTUÉ (le from-scratch sortait tout non accentué).
     assert "Docteur Docteur" not in text
     assert "Le Docteur Camille Martin a fait la totalité des apports" in text
+    # R3 (Albane 2026-07-07) : la fixture pose civilite_affichage="Docteur" -> les
+    # slots de civilité (tête de désignation, « par le Président, __ », signature)
+    # rendent la civilité CIVILE ; seul le TITRE « Le Docteur X » ci-dessus reste.
+    assert "Monsieur Camille Martin chirurgien-dentiste, demeurant" in text
+    assert "par le Président, Monsieur Camille Martin chirurgien-dentiste." in text
+    assert "Docteur Camille Martin chirurgien-dentiste" not in text
+    assert "Président, Docteur" not in text
     _assert_no_unaccented_french(text)
     _assert_clean(text)
 
@@ -469,6 +536,21 @@ def test_attestation_capital_cession_wording_and_genre(tmp_path: Path) -> None:
     assert "Dr Docteur" not in text_f
     _assert_no_unaccented_french(text_f)
     _assert_clean(text_f)
+
+    # R3 (Albane 2026-07-07) : civilite « Docteur » (titre) -> slot « Je soussigné __ »
+    # rendu en civilité CIVILE, accordée au genre du SIGNATAIRE (le titre ne porte
+    # pas le genre) ; fixture de base = « Docteur » + signataire masculin.
+    ctx_d = _base_context(operation="cession")  # souscripteur « Docteur » (fixture)
+    text_d = _docx_text(gen.generate(ctx_d, tmp_path))
+    assert "Je soussigné Monsieur Camille Martin chirurgien-dentiste" in text_d
+    assert "soussigné Docteur" not in text_d
+    assert "Président, Docteur" not in text_d
+    # R4 (Albane 2026-07-07, explicite) : « d'un montant de 100 d'euro chacune » ->
+    # « de 100 euros chacune » (accord euro_word, aligné variante SAS).
+    assert "actions d’un montant de 100 euros chacune" in text_d
+    assert "d’euro chacune" not in text_d
+    _assert_no_unaccented_french(text_d)
+    _assert_clean(text_d)
 
 
 def test_attestation_commissaire_apports_renders_single_selected_commissaire(

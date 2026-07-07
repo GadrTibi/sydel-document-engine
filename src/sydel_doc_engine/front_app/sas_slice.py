@@ -59,6 +59,7 @@ from sydel_doc_engine.front_app.field_derivations import (
     calculate_nominal_value,
     derive_gender_from_civilite,
     format_numeric_value,
+    group_montant,
     is_capital_divisible,
     married_regime_display,
     matrimonial_status_value,
@@ -548,8 +549,18 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:  # noqa: C901
 
 def build_generation_context(payload: dict[str, object]) -> DocumentGenerationContext:
     nb_actions = int(payload.get("nb_actions_total") or 0)
-    capital = str(payload.get("capital_social") or "")
-    profession = "medecin"
+    # R5 (Albane 2026-07-07) : capital groupe par 3 (« 12 000 ») a la construction du
+    # contexte — il partait brut dans les statuts, l'attestation capital, la
+    # domiciliation et le PV remuneration.
+    capital = group_montant(str(payload.get("capital_social") or ""))
+    # R4 (rapport conformite 2026-07-07, sas_slice.py:552) : « medecin » accentue —
+    # le litteral non accentue fuyait dans l'attestation (« Profession Libérale de
+    # medecin »). Les gates generateurs normalisent les accents (statuts_sas
+    # `_normalize_profession`, satellites SUPPORTED_PROFESSIONS = {"medecin", "médecin"}).
+    profession = "médecin"
+    # R5 : valeur nominale groupee par 3 des qu'elle atteint 4 chiffres (statuts +
+    # attestation capital) ; « 100 » reste inchange (byte-fidele).
+    valeur_nominale = group_montant(str(payload.get("valeur_nominale_action") or ""))
     actionnaire = SpfplPerson(
         civilite_affichage=str(payload.get("civilite") or "Docteur"),
         prenom=str(payload.get("prenom") or ""),
@@ -598,8 +609,9 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         ville=str(payload.get("adresse_ville") or ""),
         adresse_affichee=str(payload.get("adresse") or ""),
     )
-    apports_nature = str(payload.get("apports_nature_montant") or "")
-    apports_numeraire = str(payload.get("apports_numeraire_montant") or "")
+    # R5 : montants d'apports groupes par 3 (« 10 000 » / « 2 000 », attestation capital).
+    apports_nature = group_montant(str(payload.get("apports_nature_montant") or ""))
+    apports_numeraire = group_montant(str(payload.get("apports_numeraire_montant") or ""))
     return DocumentGenerationContext(
         structure="SAS",
         dossier_options=DossierOptions(associe_unique=True, apport=True),
@@ -651,7 +663,7 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
             capital_social_lettres=number_words_from_value(capital),
             nb_actions_total=nb_actions,
             nb_actions_total_lettres=number_words_from_value(nb_actions),
-            valeur_nominale_action=str(payload.get("valeur_nominale_action") or ""),
+            valeur_nominale_action=valeur_nominale,
             valeur_nominale_action_lettres=_sas_valeur_nominale_lettres(
                 payload.get("valeur_nominale_action")
             ),
@@ -702,7 +714,7 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         ),
         capital_souscription=CapitalSouscription(
             nb_actions_total=nb_actions,
-            valeur_nominale_action=str(payload.get("valeur_nominale_action") or ""),
+            valeur_nominale_action=valeur_nominale,
             apports_nature_montant=apports_nature,
             apports_numeraire_montant=apports_numeraire,
             souscripteurs=[

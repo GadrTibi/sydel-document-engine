@@ -66,6 +66,8 @@ from sydel_doc_engine.front_app.field_derivations import (
     calculate_nominal_value,
     date_to_french_words,
     format_grouped_numeric_value,
+    group_montant,
+    groupe_montants_associe,
     is_capital_divisible,
     number_words_from_value,
     split_numero_voie,
@@ -547,8 +549,13 @@ def build_generation_context(data: SelarlSliceInput) -> DocumentGenerationContex
         data.prestataire_signature_electronique
         or DEFAULT_PRESTATAIRE_SIGNATURE_ELECTRONIQUE
     )
-    seuil_achat_materiel = data.seuil_achat_materiel or DEFAULT_SEUIL_ACHAT_MATERIEL
-    seuil_emprunt = data.seuil_emprunt or DEFAULT_SEUIL_EMPRUNT
+    # R5 (Albane 2026-07-07) : seuils de gerance groupes par 3 (« 5 000 € », « 10 000 € »)
+    # a la construction du contexte — les defauts (« 5000 »/« 10000 ») et une saisie brute
+    # partaient non groupes dans l'article 17 des statuts.
+    seuil_achat_materiel = group_montant(
+        data.seuil_achat_materiel or DEFAULT_SEUIL_ACHAT_MATERIEL
+    )
+    seuil_emprunt = group_montant(data.seuil_emprunt or DEFAULT_SEUIL_EMPRUNT)
     profession_label = _profession_label(data.profession)
     profession_plural = _profession_plural(data.profession)
     associes = _context_associes(data, person_address, profession_label, profession_plural)
@@ -1014,7 +1021,10 @@ def _statuts_membres(
         ),
         est_signataire=True,
     )
-    return [praticien, *data.membres_additionnels]
+    # R5 (Albane 2026-07-07) : montants des membres additionnels (apport individuel,
+    # capital d'une personne morale) groupes par 3 a la construction du contexte —
+    # copies pydantic, les objets saisis au shell / scenarios ne sont jamais mutes.
+    return [praticien, *(groupe_montants_associe(m) for m in data.membres_additionnels)]
 
 
 def _praticien_apport_montant(data: SelarlSliceInput) -> str:

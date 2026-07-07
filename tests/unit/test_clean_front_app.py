@@ -924,8 +924,9 @@ def test_clean_front_selarl_context_derives_hidden_ux_values() -> None:
     assert ctx.reunion.president.nom_personne_seance == "Martin"
     assert ctx.signature.prestataire_signature_electronique == "Yousign"
     assert ctx.gerance is not None
-    assert ctx.gerance.seuil_achat_materiel == "5000"
-    assert ctx.gerance.seuil_emprunt == "10000"
+    # R5 (Albane 2026-07-07) : seuils groupes par 3 des la construction du contexte.
+    assert ctx.gerance.seuil_achat_materiel == "5 000"
+    assert ctx.gerance.seuil_emprunt == "10 000"
     assert ctx.mandataire is not None
     assert ctx.mandataire.cabinet == "SYDEL"
     assert ctx.exercice_social is not None

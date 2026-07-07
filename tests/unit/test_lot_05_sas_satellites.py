@@ -169,6 +169,14 @@ def test_attestation_capital_sas_generates_unique_subscriber_wording(
     assert "Liste des souscripteurs" in text
     assert "Répartition : 600 actions attribuées au Dr Camille Martin, actionnaire unique" in text
     assert "Apports en nature" in text
+    # R3 (Albane 2026-07-07) : « Docteur » n'est pas une civilité — tête de
+    # désignation, « par le Président, __ » et signature rendent la civilité CIVILE
+    # (Monsieur/Madame) ; le TITRE « Le Docteur X » de la phrase d'apport reste.
+    assert "Monsieur Camille Martin médecin, demeurant" in text
+    assert "par le Président, Monsieur Camille Martin." in text
+    assert "Président, Docteur" not in text
+    assert text.rstrip().endswith("Monsieur Camille Martin")
+    assert "Le Docteur Camille Martin a fait la totalité des apports en nature." in text
     _assert_clean(text)
     assert_no_unaccented_french(text)
 

@@ -8,7 +8,9 @@ STATUTS_SPFPL_CESSION_BLOCKS: tuple[str, ...] = (
     # anciennement « <denomination> » nu.
     'Statuts [denomination_societe]',
     'Société de Participations Financières de Profession Libérale de Chirurgiens-Dentistes par actions simplifiée',
-    'Au capital de [capital_social]',
+    # Albane 2026-07-07 (fix 3) : l'en-tete porte le montant GROUPE (« 60 000 », groupage au
+    # generateur) + le mot « euros » (« Au capital de 60 000 euros »), plus « Au capital de 60000 » nu.
+    'Au capital de [capital_social] euros',
     'Siège social : [adresse_siege]',
     'STATUTS',
     'Le soussigné :',
@@ -56,7 +58,12 @@ STATUTS_SPFPL_CESSION_BLOCKS: tuple[str, ...] = (
     # = montant_lettres_avec_unite(lettres, figure) : ENTIER -> « cent euros » (byte-identique) ;
     # DECIMAL (Albane 7.5) -> « un centime d'euro » (unite deja dans les lettres, pas de double euro
     # ni d'espace parasite).
-    'Le capital social est fixé à la somme de [capital_social] ([capital_lettres]) euros, divisé en [nb_actions] actions de [valeur_nominale_action_avec_unite] ([valeur_nominale_action] €) chacune, entièrement libéré et attribué en totalité à l’associé unique :',
+    # Albane 2026-07-07 (fix 1) : capital en LETTRES puis (CHIFFRES groupes) — « soixante mille
+    # (60 000) euros », plus « 60000 (soixante mille) » (verbatim : « six (6) euros » pas « 6 (six) »).
+    # Albane 2026-07-07 (fix 2 / R6) : les segments « de [capital_lettres] » et
+    # « de [valeur_nominale_action_avec_unite] » sont remplaces VIA elision_de au generateur
+    # (« d'un euro », « d'un centime d'euro » ; « de cent euros » inchange).
+    'Le capital social est fixé à la somme de [capital_lettres] ([capital_social]) euros, divisé en [nb_actions] actions de [valeur_nominale_action_avec_unite] ([valeur_nominale_action] €) chacune, entièrement libéré et attribué en totalité à l’associé unique :',
     '- Le Docteur [prenom] [nom]………………………………………….…….………..[nb_actions] actions',
     'Total des actions composant le capital social……………………………. [nb_actions] actions',
     'ARTICLE 9 - QUALITE D’ASSOCIE',
@@ -440,7 +447,11 @@ STATUTS_SPFPL_APPORT_BLOCKS: tuple[str, ...] = (
     # 7.5 (Albane 2026-07-06) : valeur nominale en LETTRES + unite accordee + CHIFFRES entre
     # parentheses. Token unique [valeur_nominale_part_avec_unite] = montant_lettres_avec_unite :
     # ENTIER -> « cent euros » (byte-identique) ; DECIMAL -> « un centime d'euro » (pas de double euro).
-    'Le capital social est fixé à la somme de [montant_apports_nature] euros, divisé en [nb_actions] actions de [valeur_nominale_part_avec_unite] ([valeur_nominale_part] €) chacune, entièrement libéré et attribué comme suit :',
+    # Albane 2026-07-07 (fix 1, propagation cession->apport) : capital en LETTRES puis (CHIFFRES
+    # groupes) — « soixante mille (60 000) euros », plus « 60000 euros » nu. Les lettres viennent
+    # de apport_titres.valeur_globale_lettres (front) avec repli calcule depuis la figure.
+    # Albane 2026-07-07 (fix 2 / R6) : « de [...] » remplaces via elision_de au generateur.
+    'Le capital social est fixé à la somme de [montant_apports_nature_lettres] ([montant_apports_nature]) euros, divisé en [nb_actions] actions de [valeur_nominale_part_avec_unite] ([valeur_nominale_part] €) chacune, entièrement libéré et attribué comme suit :',
     '- Le Docteur [prenom] [nom]………………………………………….……………..[nb_actions] actions',
     'Total des actions composant le capital social……………………………. [nb_actions] actions',
     'ARTICLE 9 - QUALITE D’ASSOCIE',

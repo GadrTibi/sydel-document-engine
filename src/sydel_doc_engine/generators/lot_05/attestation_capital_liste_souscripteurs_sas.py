@@ -8,6 +8,7 @@ from sydel_doc_engine.domain.models import (
     CapitalSouscripteur,
     DocumentGenerationContext,
 )
+from sydel_doc_engine.generators.lot_01.civilite import civilite_civile
 from sydel_doc_engine.generators.lot_05.sas_satellites_common import (
     DOCUMENT_CODE,
     address_display,
@@ -73,9 +74,13 @@ class AttestationCapitalListeSouscripteursSasGenerator:
         # (b) Aeration entre le bloc TITRE (« ATTESTATION » / « Liste des
         # souscripteurs ») et le CORPS du texte.
         add_spacer(document, space_after_pt=_ATTESTATION_GROUP_SPACER_PT)
+        # R3 (Albane 2026-07-07) : « Docteur » n'est pas une civilité — les slots
+        # de civilité (tête de désignation, « par le Président, __ », signature)
+        # rendent la civilité CIVILE (Monsieur/Madame) ; le TITRE « le Docteur X »
+        # du corps (phrase d'apport) reste, lui, légitime (A26-45/49).
         add_paragraph(
             document,
-            f"{data.president_nom} {data.profession_actionnaire}, demeurant "
+            f"{data.president_identite_civile} {data.profession_actionnaire}, demeurant "
             f"{data.adresse_actionnaire}, atteste que le capital de la société "
             f"{data.denomination} est réparti de la manière suivante :",
         )
@@ -119,11 +124,11 @@ class AttestationCapitalListeSouscripteursSasGenerator:
             f"{data.denomination}, ainsi que l'apport de la somme de "
             f"{data.apports_nature_montant} euros correspondant à la totalité du nominal "
             "desdites actions, est certifié exact, sincère et véritable par le Président, "
-            f"{data.president_nom}.",
+            f"{data.president_identite_civile}.",
         )
         add_paragraph(document, f"Fait à {data.lieu_signature}")
         add_paragraph(document, f"Le {data.date_signature}")
-        add_paragraph(document, data.president_nom)
+        add_paragraph(document, data.president_identite_civile)
 
         output_dir.mkdir(parents=True, exist_ok=True)
         output_path = output_dir / OUTPUT_FILENAME
@@ -140,6 +145,7 @@ class _ResolvedAttestationCapitalSas:
         profession_societe: str,
         adresse_siege: str,
         president_nom: str,
+        president_identite_civile: str,
         actionnaire_nom: str,
         actionnaire_signature: str,
         profession_actionnaire: str,
@@ -163,6 +169,7 @@ class _ResolvedAttestationCapitalSas:
         self.profession_societe = profession_societe
         self.adresse_siege = adresse_siege
         self.president_nom = president_nom
+        self.president_identite_civile = president_identite_civile
         self.actionnaire_nom = actionnaire_nom
         self.actionnaire_signature = actionnaire_signature
         self.profession_actionnaire = profession_actionnaire
@@ -198,12 +205,26 @@ class _ResolvedAttestationCapitalSas:
         validate_capital_consistency(societe, capital)
         _validate_souscripteur_matches_context(souscripteur, actionnaire, capital)
 
+        # R3 (Albane 2026-07-07) : forme CIVILE du président pour les slots de
+        # civilité — « Docteur » (titre) -> Monsieur/Madame, accordé au genre de
+        # l'actionnaire unique (= le président en SAS V1 ; fallback signataire).
+        president_civilite = civilite_civile(
+            required_text(president.civilite_affichage, "president.civilite_affichage"),
+            actionnaire.genre or ctx.personne_signataire.genre,
+        )
+        president_identite_civile = (
+            f"{president_civilite} "
+            f"{required_text(president.prenom, 'president.prenom')} "
+            f"{required_text(president.nom, 'president.nom')}"
+        )
+
         return cls(
             denomination=required_text(societe.denomination, "societe_spfpl.denomination"),
             capital_social=required_text(societe.capital_social, "societe_spfpl.capital_social"),
             profession_societe=required_text(societe.profession, "societe_spfpl.profession"),
             adresse_siege=address_display(societe.siege, "societe_spfpl.siege"),
             president_nom=person_name(president, "president"),
+            president_identite_civile=president_identite_civile,
             actionnaire_nom=person_name(actionnaire, "actionnaire_unique"),
             actionnaire_signature=(
                 f"{required_text(actionnaire.prenom, 'actionnaire_unique.prenom')} "

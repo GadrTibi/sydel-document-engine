@@ -39,7 +39,7 @@ from sydel_doc_engine.generators.lot_05.scm_cession_common import (
     partenaire_pacse_clause,
 )
 from sydel_doc_engine.utils.departements import departement_nom
-from sydel_doc_engine.utils.grammar import apply_gender_pairs
+from sydel_doc_engine.utils.grammar import apply_gender_pairs, elision_de
 from sydel_doc_engine.utils.months import FRENCH_MONTHS
 
 DOCUMENT_CODE = "CODE-CESSION-CAB-001"
@@ -431,6 +431,19 @@ def _build_segment_overrides(ctx: DocumentGenerationContext) -> dict[str, str]:
     credit_vendeur = financement.credit_vendeur or CessionCreditVendeur()
     if credit_vendeur.actif:
         overrides["Ajouter en cas de CV : "] = ""
+    # R9 (Albane 2026-07-07) : la clause « communiqué au Conseil départemental de l’Ordre »
+    # nomme le departement de l'Ordre du VENDEUR, en NOM avec la preposition correcte
+    # (« au Conseil départemental de l’Ordre de Seine-et-Marne »), via la meme convention
+    # `elision_de(departement_nom(…))` que la 12.4 SPFPL ratifiee. Le segment est present
+    # dans les 4 modeles (actes ET compromis, medical + dentaire) -> propagation a toutes
+    # les variantes qui portent la clause (regle 68 Q4). Departement absent -> clause du
+    # modele inchangee (pas de « de  » orphelin).
+    ordre_departement = (vendeur.ordre_departemental or "").strip()
+    if ordre_departement:
+        overrides["communiqué au Conseil départemental de l’Ordre en vue"] = (
+            "communiqué au Conseil départemental de l’Ordre "
+            f"{elision_de(departement_nom(ordre_departement))} en vue"
+        )
     return overrides
 
 

@@ -1713,7 +1713,10 @@ def test_spfpl_apport_capital_not_duplicated(tmp_path: Path) -> None:
     )
     assert "60000euros" not in text  # plus de « euros » colle
     assert "€ 60000" not in text  # plus de montant duplique apres le €
-    assert "60000 euros" in text  # forme propre
+    # Albane 2026-07-07 (statuts SPFPL) : montants GROUPES -> la forme propre est desormais
+    # « 60 000 euros » (en-tete), « 60000 » nu n'apparait plus dans les statuts.
+    assert "60 000 euros" in text  # forme propre groupee
+    assert "60000" not in text
 
 
 # --- §14.2 : SPFPL dentiste, « Docteur » automatique (hors deroulante civilite) -
@@ -2368,11 +2371,15 @@ def test_selas_multi_all_physical_generates_attestation_souscripteurs(
     assert "40 actions attribuées au Dr Paul Martin," in text
     assert "Le Docteur Claire Durand a fait un apport de 600 euros en numéraire." in text
     assert "Le Docteur Paul Martin a fait un apport de 400 euros en numéraire." in text
-    # President identite = titre professionnel (« Docteur »), pas la civilite civile.
+    # R3 (Albane 2026-07-07, supersede l'ancien verrou « titre professionnel ») :
+    # « Docteur » n'est pas une civilité — le slot « par le Président, __ » rend la
+    # civilité CIVILE accordée au genre du signataire (fixture : genre MASCULIN) ;
+    # le TITRE « Le Docteur X » des phrases d'apport ci-dessus reste légitime.
     assert (
-        "certifié exact, sincère et véritable par le Président, Docteur Claire Durand"
+        "certifié exact, sincère et véritable par le Président, Monsieur Claire Durand"
         in text
     )
+    assert "Président, Docteur" not in text
     assert "[" not in text and "]" not in text
 
 
@@ -2721,7 +2728,9 @@ def test_sci_unipersonnel_apport_derived_from_capital(
     next(b for b in app.button if "test_data" in str(b.key)).click()
     app = app.run(timeout=180)
     # Passer en UNIPERSONNEL : retirer le 2e associe seede par les donnees de test.
-    next(b for b in app.button if str(b.key) == "sci_remove").click()
+    # Retour Albane 2026-07-07 : le bouton global « Retirer un associe » (dernier
+    # seulement) est remplace par un bouton PAR LIGNE -> on retire la ligne index 1.
+    next(b for b in app.button if str(b.key) == "sci_remove_associe_1").click()
     app = app.run(timeout=180)
 
     # §1 : le champ d'apport de l'associe unique a DISPARU (repris auto du capital).

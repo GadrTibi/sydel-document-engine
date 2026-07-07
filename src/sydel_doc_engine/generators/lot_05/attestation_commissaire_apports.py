@@ -77,11 +77,16 @@ class AttestationCommissaireApportsGenerator:
             f"demeurant {person_address_display(apporteur, 'apporteur')}, "
             f"{_apporteur_maritale(apporteur)}",
         )
+        # R4 (Albane 2026-07-07, « orthographe irréprochable ») : le front pose la forme
+        # abregee NON accentuee (« par actions simplifiee ») -> accent restaure a la sortie.
+        spfpl_forme = required_text(
+            societe_spfpl.forme_sociale, "societe_spfpl.forme_sociale"
+        ).replace("simplifiee", "simplifiée")
         add_paragraph(
             docx,
             "seul futur associé de la société "
             f"{required_text(societe_spfpl.denomination, 'societe_spfpl.denomination')} "
-            f"{required_text(societe_spfpl.forme_sociale, 'societe_spfpl.forme_sociale')} "
+            f"{spfpl_forme} "
             f"de {required_text(societe_spfpl.profession, 'societe_spfpl.profession')} "
             "en cours de formation,",
         )

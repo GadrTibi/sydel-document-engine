@@ -67,12 +67,15 @@ from sydel_doc_engine.front_app.field_derivations import (
     date_to_french_words,
     derive_gender_from_civilite,
     format_numeric_value,
+    group_montant,
+    groupe_montants_associe,
     is_capital_divisible,
     matrimonial_status_value,
     number_words_from_value,
     pad_birthdate_day,
     parse_associe_birthdate,
     regime_communautaire_from_status,
+    shift_repeater_rows_down,
     situation_maritale_complete,
 )
 from sydel_doc_engine.front_app.front_widgets import (
@@ -577,11 +580,12 @@ def _render_selas_associes() -> tuple[
     if _count_key() not in st.session_state:
         st.session_state[_count_key()] = SELAS_NB_MIN
     nombre = _associe_count()
-    cols = st.columns([1, 1, 3])
+    cols = st.columns([1, 4])
     if cols[0].button("Ajouter un associe", key=f"{PREFIX}_add"):
         st.session_state[_count_key()] = min(SELAS_NB_MAX, nombre + 1)
-    if cols[1].button("Retirer un associe", key=f"{PREFIX}_remove"):
-        st.session_state[_count_key()] = max(SELAS_NB_MIN, nombre - 1)
+    # Retour Albane 2026-07-07 (propagation) : le bouton global « Retirer un associe »
+    # (qui ne supprimait que le DERNIER) est remplace par un bouton « Retirer cet
+    # associe » PAR LIGNE (cf. _remove_selas_associe_at), comme le repeater civil.
     # N5 (Albane 2026-06-24) : re-lire le nombre APRES +/- au lieu de st.rerun(). Le st.rerun()
     # se declenchait AVANT le rendu de la boucle associes -> Streamlit garbage-collectait l'etat
     # des widgets associes (non instancies sur ce run) -> les champs des associes PRECEDENTS
@@ -590,7 +594,7 @@ def _render_selas_associes() -> tuple[
     st.markdown(
         f"**Associes ({nombre})** — {SELAS_NB_MIN} a {SELAS_NB_MAX}, exercants / non exercants"
     )
-    cols[2].caption(
+    cols[1].caption(
         "Cochez le(s) dirigeant(s) sur un associe (President et/ou Directeur General) ; "
         "a defaut, le premier associe physique est president."
     )
@@ -653,9 +657,35 @@ def _build_dirigeants_nomines_payload(
     return payload
 
 
+def _remove_selas_associe_at(index: int) -> None:
+    """Retire l'associe `index` (bouton par ligne — retour Albane 2026-07-07, propagation).
+
+    Callback `on_click` : il s'execute AVANT l'instanciation des widgets du rerun, seule
+    fenetre ou Streamlit autorise la recopie des cles `selas_associe_{i}_*` (les lignes
+    suivantes remontent d'un cran) et la decrementation du compteur. Pas de st.rerun()
+    manuel (lecon N5 : un rerun avant le rendu des lignes efface l'etat des widgets non
+    instancies).
+    """
+    nombre = _associe_count()
+    if nombre <= SELAS_NB_MIN:
+        return
+    shift_repeater_rows_down(st.session_state, f"{PREFIX}_associe_", index, nombre)
+    st.session_state[_count_key()] = nombre - 1
+
+
 def _render_one_associe(index: int) -> StatutsCivilsAssocie:
     prefix = f"{PREFIX}_associe_{index}"
     with st.expander(f"Associe {index + 1}", expanded=index == 0):
+        # Retour Albane 2026-07-07 (propagation) : chaque ligne porte son bouton
+        # « Retirer » (on ne pouvait supprimer que le dernier ajoute). Desactive au
+        # plancher SELAS_NB_MIN. on_click OBLIGATOIRE : recopie des cles pre-rerun.
+        st.button(
+            "Retirer cet associe",
+            key=f"{PREFIX}_remove_associe_{index}",
+            on_click=_remove_selas_associe_at,
+            args=(index,),
+            disabled=_associe_count() <= SELAS_NB_MIN,
+        )
         type_key = f"{prefix}_type"
         if type_key not in st.session_state:
             st.session_state[type_key] = "personne_physique"
@@ -1036,7 +1066,8 @@ def _morale(prefix: str, nb_actions: int, montant: str) -> StatutsCivilsAssocie:
     denomination = _ts(st, f"{prefix}_denomination", "Denomination (personne morale)")
     col_a, col_b = st.columns(2)
     forme = _ts(col_a, f"{prefix}_forme", "Forme juridique")
-    capital = _ts(col_b, f"{prefix}_capital", "Capital social (affiche)")
+    # R5 : capital de la personne morale groupe par 3 des la saisie (« 60 000 »).
+    capital = group_montant(_ts(col_b, f"{prefix}_capital", "Capital social (affiche)"))
     siege = _ts(st, f"{prefix}_siege", "Siege (affiche)")
     col_c, col_d = st.columns(2)
     numero_rcs = _ts(col_c, f"{prefix}_numero_rcs", "Numero RCS")
@@ -1077,7 +1108,8 @@ def _apport(montant: str):
     from sydel_doc_engine.domain.models import StatutsCivilsApport
 
     return StatutsCivilsApport(
-        montant=montant or None,
+        # R5 : montant d'apport groupe par 3 des la collecte (« 60 000 »).
+        montant=group_montant(montant) or None,
         montant_lettres=number_words_from_value(montant) if montant else None,
     )
 
@@ -1481,7 +1513,12 @@ def _render_selas_cession(
 
 
 def build_generation_context(payload: dict[str, object]) -> DocumentGenerationContext:
-    associes: list[StatutsCivilsAssocie] = list(payload.get("associes") or [])
+    # R5 (Albane 2026-07-07) : montants des associes (apport, capital d'une personne
+    # morale) groupes par 3 a la construction du contexte (copies pydantic, payload
+    # jamais mute).
+    associes: list[StatutsCivilsAssocie] = [
+        groupe_montants_associe(a) for a in (payload.get("associes") or [])
+    ]
     president_index = _resolve_president_index(payload, associes)
     signataire_associe = associes[president_index] if associes else None
     genre = (signataire_associe.genre if signataire_associe else None) or Gender.FEMININ
@@ -1507,13 +1544,17 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         ville=str(payload.get("siege_ville") or ""),
         adresse_affichee=str(payload.get("siege") or "") or _struct_display(payload, "siege"),
     )
-    capital = str(payload.get("capital_social") or "")
+    # R5 : capital groupe par 3 (« 60 000 ») a la construction du contexte — societe,
+    # apport, capital, statuts, attestation souscripteurs (une seule source `capital`).
+    capital = group_montant(str(payload.get("capital_social") or ""))
     nb_actions_total = int(payload.get("nb_actions_total") or 0)
     # Valeur nominale d'une action : calculee (capital / nb actions) si non fournie
     # explicitement (SCREEN-2). Le chemin de test direct peut fournir une valeur.
-    valeur_action = str(
-        payload.get("valeur_nominale_action") or ""
-    ) or calculate_nominal_value(capital, nb_actions_total)
+    # R5 : groupee par 3 des 4 chiffres.
+    valeur_action = group_montant(
+        str(payload.get("valeur_nominale_action") or "")
+        or calculate_nominal_value(capital, nb_actions_total)
+    )
     titre = str(payload.get("signataire_titre") or "Docteur")
 
     signataire = Person(
@@ -2307,7 +2348,8 @@ def _apporteur_apport(associe: StatutsCivilsAssocie) -> Apport | None:
     montant_lettres = (
         (indiv.montant_lettres if indiv else None) or number_words_from_value(montant)
     )
-    return Apport(montant=montant, montant_lettres=montant_lettres)
+    # R5 : apport individuel groupe par 3 (lettres de regime per-associe).
+    return Apport(montant=group_montant(montant), montant_lettres=montant_lettres)
 
 
 def _associe_signataire_address(

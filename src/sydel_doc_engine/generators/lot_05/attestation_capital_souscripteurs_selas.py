@@ -12,6 +12,7 @@ from sydel_doc_engine.domain.models import (
     DocumentGenerationContext,
     SocieteSpfpl,
 )
+from sydel_doc_engine.generators.lot_01.civilite import civilite_civile
 from sydel_doc_engine.rendering.docx_builder import (
     add_company_identity_block,
     add_paragraph,
@@ -182,6 +183,21 @@ class _ResolvedAttestationSelas:
                 f"capital_souscription.nb_actions_total pour {DOCUMENT_CODE}."
             )
 
+        # R3 (Albane 2026-07-07) : « Docteur » n'est pas une civilité — le slot
+        # « par le Président, __ » rend la civilité CIVILE (Monsieur/Madame,
+        # accordée au genre du signataire), jamais le titre d'affichage.
+        president_civilite = civilite_civile(
+            _required_text(
+                president.civilite_affichage,
+                "capital_souscription.president.civilite_affichage",
+            ),
+            ctx.personne_signataire.genre,
+        )
+        president_signature = _souscripteur_signature(
+            president,
+            "capital_souscription.president",
+        )
+
         return cls(
             denomination=_required_text(societe.denomination, "societe_spfpl.denomination"),
             profession=_required_text(societe.profession, "societe_spfpl.profession"),
@@ -198,11 +214,8 @@ class _ResolvedAttestationSelas:
             apport_lignes=apport_lignes,
             soussigne=subject_line(ctx.personne_signataire.genre),
             president_civilite_phrase=_addressing_civilite(ctx.personne_signataire.genre),
-            president_identite=_souscripteur_identite(president, "capital_souscription.president"),
-            president_signature=_souscripteur_signature(
-                president,
-                "capital_souscription.president",
-            ),
+            president_identite=f"{president_civilite} {president_signature}",
+            president_signature=president_signature,
             date_signature=ctx.signature.date.strftime("%d/%m/%Y"),
         )
 
@@ -282,14 +295,6 @@ def _format_amount(amount: Decimal) -> str:
     if normalized == normalized.to_integral_value():
         return f"{int(normalized)}"
     return format(normalized, "f").replace(".", ",")
-
-
-def _souscripteur_identite(souscripteur: CapitalSouscripteur, field_name: str) -> str:
-    return (
-        f"{_required_text(souscripteur.civilite_affichage, f'{field_name}.civilite_affichage')} "
-        f"{_required_text(souscripteur.prenom, f'{field_name}.prenom')} "
-        f"{_required_text(souscripteur.nom, f'{field_name}.nom')}"
-    )
 
 
 def _souscripteur_signature(souscripteur: CapitalSouscripteur, field_name: str) -> str:

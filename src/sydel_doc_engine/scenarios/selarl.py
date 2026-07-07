@@ -432,9 +432,12 @@ def _scm_cession_selarl() -> ScmCessionContext:
                 "date_naissance": "1er janvier 1980",
                 "ville_naissance": "Paris",
                 "departement_naissance": "75",
-                "nationalite": "francaise",
+                # R4 (rapport conformite 2026-07-07) : fixture accentuee comme le chemin
+                # UI reel (deroulant « française », derivation O24-11 « marié ») — la
+                # forme nue court-circuitait la derivation et fuyait dans l'acte SCM.
+                "nationalite": "française",
                 "adresse_affichee": "1 rue du Cedant, 75008 Paris",
-                "situation_maritale": "marie",
+                "situation_maritale": "marié",
                 "ordre": {"departemental": "Paris", "numero": "12345"},
                 "numero_rpps": "10000000001",
                 "conjoint": {"civilite_affichage": "Madame", "prenom": "Claire", "nom": "Dupont"},

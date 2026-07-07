@@ -258,8 +258,24 @@ def test_scm_cession_selarl_generates_three_clean_docx(tmp_path: Path) -> None:
     assert "SCM SCM CABINET CENTRAL" not in texts["courrier_sde_cession_scm.docx"]
     assert "chirurgiens-dentistes" in texts["acte_cession_parts_scm.docx"]
     assert "Yousign" in texts["acte_cession_parts_scm.docx"]
+    # R9 (Albane 2026-07-07) : la clause de communication au Conseil de l'Ordre porte le
+    # departement de l'Ordre du cedant en NOM (fixture : « Paris »), jamais la clause nue.
+    assert (
+        "communiqué au Conseil départemental de l'Ordre de Paris en vue"
+        in texts["acte_cession_parts_scm.docx"]
+    )
+    assert "de l'Ordre en vue" not in texts["acte_cession_parts_scm.docx"]
     for text in texts.values():
         _assert_clean(text)
+
+
+def test_acte_cession_scm_ordre_departement_numero_rendu_en_nom(tmp_path: Path) -> None:
+    # R9 (Albane 2026-07-07) : departement de l'Ordre saisi en NUMERO (« 77 ») -> rendu en
+    # NOM avec la preposition correcte (« de Seine-et-Marne »), convention 7.4/9.2 + 12.4.
+    ctx = _base_context("SELARL")
+    ctx.scm_cession.cedant.ordre.departemental = "77"
+    text = _docx_text(ActeCessionPartsScmGenerator().generate(ctx, tmp_path))
+    assert "communiqué au Conseil départemental de l'Ordre de Seine-et-Marne en vue" in text
 
 
 def test_acte_cession_scm_omits_conjoint_when_not_married(tmp_path: Path) -> None:

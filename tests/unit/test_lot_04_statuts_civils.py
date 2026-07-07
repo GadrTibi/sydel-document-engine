@@ -368,7 +368,16 @@ def test_statuts_sci_iris_generates_morale_and_result_groups(tmp_path: Path) -> 
 
     assert output_path.name == "statuts_sci_iris.docx"
     assert "SCI IRIS" in text
-    assert "SEL IRIS, representee par Monsieur Jean Durand" in text
+    # R4 (Albane 2026-07-07) : « représentée » accentué (comparution + signature),
+    # bloc morale « siège / immatriculée / numéro » accentué (constat conformité).
+    assert "SEL IRIS, représentée par Monsieur Jean Durand" in text
+    assert "representee" not in text
+    assert "ayant son siège 2 rue Pro, 75000 Paris" in text
+    assert "immatriculée au RCS de Paris sous le numéro 900 000 001." in text
+    assert "Représentée par Monsieur Jean Durand, gerant." in text
+    assert "ayant son siege" not in text
+    assert "immatriculee" not in text
+    assert "sous le numero" not in text
     # En-tete + lignes du tableau resultat reaccentues, fideles au modele source IRIS
     # ("Quote-part du résultat exceptionnel", "Parts numérotées de [debut] à [fin]").
     assert "Quote-part du résultat exceptionnel" in matrix_table_text
