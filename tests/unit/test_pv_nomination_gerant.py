@@ -757,3 +757,77 @@ def test_pv_ag_multi_enumeration_associes_en_interligne_simple(tmp_path: Path) -
         "Monsieur Bruno Martin, détenant 40",
     ):
         assert _find_para(document, needle).paragraph_format.line_spacing == 1.0
+
+
+# ---------------------------------------------------------------------------
+# Micro holding (retours Albane 2026-07-09) : societe civile a capital variable.
+# C1 (« Société civile » fige), C2 (capital variable), C3 (date encadre
+# « JJ MOIS AAAA » majuscule), C4 (chaque associe signe sous son nom + espace).
+# Scope MICRO_HOLDING : les autres types restent inchanges (cf. tests SCI/SELARL/SELAS).
+# ---------------------------------------------------------------------------
+
+
+def _micro_context(*, associes: list[Associe] | None = None) -> DocumentGenerationContext:
+    ctx = _context(associes=associes)
+    ctx.structure = "MICRO_HOLDING"
+    ctx.societe.denomination = "MA MICRO HOLDING"
+    ctx.societe.forme_sociale = "société civile"
+    # Avant C1, la cle interne de structure fuyait en en-tete / 1re phrase.
+    ctx.societe.forme_sociale_affichage = "MICRO_HOLDING"
+    ctx.societe.forme_sociale_libelle_long = None
+    ctx.societe.forme_sociale_complete = None
+    ctx.societe.capital = "1020"
+    ctx.societe.capital_social = "1020"
+    # C3 : la date de decision arrive en « JJ/MM/AAAA » dans le flux reel.
+    ctx.decision = DecisionContext(date="13/05/2026")
+    return ctx
+
+
+def test_pv_micro_holding_c1_forme_societe_civile(tmp_path: Path) -> None:
+    # C1 : « Société civile » (texte fige) en en-tete ET dans la 1re phrase ; jamais
+    # la cle interne « MICRO_HOLDING ».
+    paragraphs = _paragraphs(_generate(tmp_path, _micro_context()))
+    assert "Société civile" in paragraphs
+    assert "MICRO_HOLDING" not in "\n".join(paragraphs)
+    intro = next(p for p in paragraphs if p.startswith("Les associés de la"))
+    assert intro.startswith("Les associés de la Société civile MA MICRO HOLDING,")
+
+
+def test_pv_micro_holding_c2_capital_variable(tmp_path: Path) -> None:
+    # C2 : mention capital variable (meme wording que la domiciliation micro) ;
+    # plus jamais « Au capital de <montant> euros ».
+    text = _docx_text(_generate(tmp_path, _micro_context()))
+    assert (
+        "À capital variable au capital minimum de 1 020 € et au capital effectif de 1 020 €"
+    ) in text
+    assert "Au capital de 1 020 euros" not in text
+
+
+def test_pv_micro_holding_c3_date_encadre_majuscule(tmp_path: Path) -> None:
+    # C3 : date de l'encadre au format « JJ MOIS AAAA » (mois MAJUSCULE accentue).
+    document = Document(_generate(tmp_path, _micro_context()))
+    framed = "\n".join(
+        cell.text for table in document.tables for row in table.rows for cell in row.cells
+    )
+    assert "DU 13 MAI 2026" in framed
+    assert "13/05/2026" not in framed
+
+
+def test_pv_micro_holding_c4_signature_par_associe_avec_espace(tmp_path: Path) -> None:
+    # C4 : chaque associe signe SOUS SON NOM ; une zone de signature (paragraphe vide)
+    # suit chaque nom (au lieu des noms empiles sans espace).
+    document = Document(_generate(tmp_path, _micro_context()))
+    paras = list(document.paragraphs)
+    idx_alice = next(i for i, p in enumerate(paras) if p.text == "Alice Durand")
+    idx_bruno = next(i for i, p in enumerate(paras) if p.text == "Bruno Martin")
+    assert paras[idx_alice + 1].text.strip() == ""  # zone de signature sous Alice
+    assert idx_bruno > idx_alice + 1  # Bruno vient apres la zone d'Alice
+    assert paras[idx_bruno + 1].text.strip() == ""  # zone de signature sous Bruno
+
+
+def test_pv_non_micro_capital_line_unchanged(tmp_path: Path) -> None:
+    # Non-regression : sans structure micro, la ligne de capital reste « Au capital
+    # de <montant> euros » et aucune mention capital-variable n'apparait.
+    text = _docx_text(_generate(tmp_path))
+    assert "Au capital de 1 000 euros" in text
+    assert "À capital variable au capital minimum" not in text

@@ -14,6 +14,7 @@ collecter et router vers le moteur existant.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
@@ -72,6 +73,7 @@ from sydel_doc_engine.front_app.front_widgets import (
     date_input_with_today,
     mandataire_inputs,
     seed_closing_date,
+    seed_if_empty,
     siege_same_as_perso_checkbox,
 )
 from sydel_doc_engine.front_app.selas_multi_slice import (
@@ -248,19 +250,18 @@ def render_civil_form(structure: str) -> dict[str, object]:
     # N+1 », modifiable. Le modele civil ne consomme QUE la cloture (pas debut/fin) ->
     # on ne seede pas exercice_debut/fin (difference justifiee).
     seed_closing_date(prefix, field="date_cloture_premier_exercice")
-    # RAF-003a : si « siege = adresse perso » coche, recopier l'adresse du gerant
-    # (memorisee au run precedent sous des cles stables) dans le siege AVANT son
-    # widget (cross-rerun : le gerant est designe dans le repeater, apres le siege).
-    # O24-03 : le siege est desormais UN champ une-ligne (`{prefix}_siege_adresse`)
-    # -> on recompose la ligne « N° voie, CP Ville » a partir des composants memorises.
+    # RAF-003a / A2 (BUG, Albane 2026-07-09) : si « siege = adresse perso » coche, recopier
+    # l'adresse PERSONNELLE du gerant (champ une-ligne) dans le siege AVANT son widget.
+    # On lit DIRECTEMENT l'adresse saisie de l'associe gerant depuis st.session_state (valeur
+    # commitee par Streamlit AVANT le rerun) -> recopie SANS latence et INDEPENDANTE de l'ordre
+    # de saisie. L'ancien mecanisme reconstruisait depuis un memo ecrit en FIN de rendu du run
+    # PRECEDENT : cocher la case AVANT de saisir l'adresse (flux naturel : la case est en haut,
+    # l'adresse dans le repeater plus bas) ne remplissait alors JAMAIS le siege (bug A2).
     if st.session_state.get(f"{prefix}_siege_same_as_perso"):
-        _g = {
-            _f: str(st.session_state.get(f"{prefix}_gerant_adresse_{_f}") or "")
-            for _f in ("num", "voie", "cp", "ville")
-        }
-        if any(_g.values()):
-            _ligne = f"{_g['num']} {_g['voie']}, {_g['cp']} {_g['ville']}".strip(" ,")
-            st.session_state[f"{prefix}_siege_adresse"] = _ligne
+        _gi = _resolve_gerant_index_from_state(prefix)
+        _perso_line = str(st.session_state.get(f"{prefix}_associe_{_gi}_adresse") or "").strip()
+        if _perso_line:
+            st.session_state[f"{prefix}_siege_adresse"] = _perso_line
 
     # Forme sociale (libelle) : DERIVEE de la structure, plus saisie (§18.1).
     forme_sociale = civil_forme_sociale(structure)
@@ -385,12 +386,10 @@ def render_civil_form(structure: str) -> dict[str, object]:
     # La DNC / filiation du gerant (saisie sous l'associe coche) alimente les cles
     # signataire_* lues par les documents communs.
     payload.update(_collect_gerant_sig(associes, gerant_index, prefix))
-    # RAF-003a : memoriser l'adresse du gerant sous des cles stables pour que la case
-    # « siege = adresse perso » puisse la recopier au run suivant (cas multi-associe).
-    for _gf in ("num", "voie", "cp", "ville"):
-        st.session_state[f"{prefix}_gerant_adresse_{_gf}"] = str(
-            payload.get(f"signataire_adresse_{_gf}") or ""
-        )
+    # A2 (Albane 2026-07-09) : la recopie « siege = adresse perso » lit desormais l'adresse
+    # une-ligne de l'associe gerant DIRECTEMENT en haut du rendu (via
+    # _resolve_gerant_index_from_state) -> plus de memo `{prefix}_gerant_adresse_*` a maintenir
+    # ici (supprime : c'etait la source du bug de latence / dependance a l'ordre de saisie).
     return payload
 
 
@@ -406,14 +405,22 @@ def _render_common_docs_form(structure: str, prefix: str) -> dict[str, object]:
     """
 
     st.markdown("**Documents communs (decision, gerant)**")
+    # A5 (Albane 2026-07-09) : « Titre d'affichage » etait incompris. C'est le TITRE
+    # PROFESSIONNEL affiche (ex. Docteur), OPTIONNEL (defaut « Docteur »). On clarifie le libelle
+    # sans changer ce qu'il alimente (founder.titre_affichage, lu par la DNC / procuration / PV).
+    _titre_label = "Titre professionnel affiché (ex : Docteur) — optionnel"
     if structure == "SCS":
         # SCS3 (Albane 2026-06-25) : pour la SCS, champ « Fonction » retire -> toujours « gérant ».
         fonction = "gérant"
-        titre = _text(st, prefix, "signataire_titre", "Titre d'affichage") or "Docteur"
+        titre = _text(st, prefix, "signataire_titre", _titre_label) or "Docteur"
     else:
         col_g, col_h = st.columns(2)
-        fonction = _text(col_g, prefix, "signataire_fonction", "Fonction (ex: gerant)") or "gérant"
-        titre = _text(col_h, prefix, "signataire_titre", "Titre d'affichage") or "Docteur"
+        # A5 (Albane 2026-07-09) : en societe civile le gerant a TOUJOURS la meme fonction ->
+        # pre-remplir « gérant » (valeur deja effective via le defaut ; on la rend VISIBLE pour
+        # lever la confusion « je ne sais pas quoi remplir »). Champ reste editable.
+        seed_if_empty(f"{prefix}_signataire_fonction", "gérant")
+        fonction = _text(col_g, prefix, "signataire_fonction", "Fonction (ex : gérant)") or "gérant"
+        titre = _text(col_h, prefix, "signataire_titre", _titre_label) or "Docteur"
     # SU4/SCS2 (Albane) : la date du PV de decision = la date de signature dans TOUS les cas
     # (decision_context la derive de signature_date). Le champ « Date de decision (PV gerant) »
     # dedie etait mort (jamais lu) + requis + trompeur. Supprime du formulaire (#8 onglet 24).
@@ -486,23 +493,45 @@ def _render_common_docs_form(structure: str, prefix: str) -> dict[str, object]:
             }
         )
     if structure in OPTION_IS_STRUCTURES:
-        common.update(_render_option_is_form(prefix))
+        common.update(_render_option_is_form(prefix, structure))
     return common
 
 
-def _render_option_is_form(prefix: str) -> dict[str, object]:
-    """Conditionnel canon « Si IS » (SCI / SCI IRIS) : lettre d'option IS (DOC-022).
+def _split_cp_ville(raw: str) -> tuple[str, str]:
+    """A7 (Albane 2026-07-09) : decoupe « 75002 Paris » en (cp, ville).
 
-    Toggle + centre des impots requis par le generateur de la lettre + SIREN de
-    la societe. Inactif -> aucun document ajoute, bundle de base inchange.
+    CP = 1er groupe de 5 chiffres ; ville = le reste. Sans CP a 5 chiffres, tout part en
+    ville (la validation « CP requis » s'applique alors comme avant)."""
+    text = (raw or "").strip()
+    match = re.search(r"\b(\d{5})\b", text)
+    if match is None:
+        return "", text
+    cp = match.group(1)
+    ville = (text[: match.start()] + " " + text[match.end():]).strip(" ,")
+    return cp, ville
+
+
+def _render_option_is_form(prefix: str, structure: str) -> dict[str, object]:
+    """Lettre d'option IS (DOC-022) : centre des impots + SIREN.
+
+    - SCI / SCI IRIS : conditionnel canon « Si IS » -> case a cocher (option reelle IR/IS) ;
+      inactif -> aucun document ajoute, bundle de base inchange.
+    - MICRO HOLDING (A6, Albane 2026-07-09) : societe civile TOUJOURS a l'IS -> la lettre est
+      generee SYSTEMATIQUEMENT, la case a cocher est RETIREE (« pas besoin de la cocher, elle
+      doit etre toujours presente »). Les champs du destinataire sont alors toujours affiches.
     """
-    option_key = f"{prefix}_option_is"
-    if option_key not in st.session_state:
-        st.session_state[option_key] = False
-    actif = st.checkbox(
-        "Option IS (ajoute la lettre d'option pour l'impot sur les societes)",
-        key=option_key,
-    )
+    micro = structure == "MICRO_HOLDING"
+    if micro:
+        st.markdown("**Lettre d'option IS (générée systématiquement — société civile à l'IS)**")
+        actif = True
+    else:
+        option_key = f"{prefix}_option_is"
+        if option_key not in st.session_state:
+            st.session_state[option_key] = False
+        actif = st.checkbox(
+            "Option IS (ajoute la lettre d'option pour l'impot sur les societes)",
+            key=option_key,
+        )
     if not actif:
         return {"option_is": False}
     st.caption("Centre des impots destinataire (lettre d'option IS)")
@@ -512,9 +541,11 @@ def _render_option_is_form(prefix: str) -> dict[str, object]:
     impots_service = _text(st, prefix, "impots_service", "Service des impots des entreprises (SIE)")
     impots_ligne_1 = _text(st, prefix, "impots_adresse_ligne_1", "Adresse (ligne 1)")
     impots_ligne_2 = _text(st, prefix, "impots_adresse_ligne_2", "Adresse (ligne 2)")
-    col_c, col_d = st.columns(2)
-    impots_cp = _text(col_c, prefix, "impots_cp", "CP")
-    impots_ville = _text(col_d, prefix, "impots_ville", "Ville")
+    # A7 (Albane 2026-07-09) : CP + Ville regroupes sur UNE ligne (comme les adresses O24-03)
+    # au lieu de deux champs separes. Le generateur DOC-022 lit cp / ville separement -> on parse.
+    impots_cp, impots_ville = _split_cp_ville(
+        _text(st, prefix, "impots_cp_ville", "Code postal et ville", hint="ex : 75002 Paris")
+    )
     return {
         "option_is": True,
         "siren": siren,
@@ -1142,6 +1173,31 @@ def _resolve_gerant_index(
     if 0 <= idx < len(associes) and associes[idx].type_personne == "personne_physique":
         return idx
     return default_index
+
+
+def _resolve_gerant_index_from_state(prefix: str) -> int:
+    """Index du gerant lu depuis st.session_state, AVANT le rendu du repeater (A2).
+
+    Mirroir de `_derive_gerant_index` mais depuis l'etat PERSISTE : la recopie « siege =
+    adresse perso » court en HAUT du rendu, avant que le repeater ne produise la liste
+    d'associes. Renvoie le 1er associe physique coche « Dirigeant (gerant) », a defaut le 1er
+    associe physique, a defaut 0."""
+    try:
+        nombre = int(st.session_state.get(f"{prefix}_nb_associes") or 0)
+    except (TypeError, ValueError):
+        nombre = 0
+    if nombre <= 0:
+        nombre = CIVIL_NB_MAX_ASSOCIES  # compteur pas encore seede : borne haute de securite
+    first_physique: int | None = None
+    for i in range(nombre):
+        type_p = str(st.session_state.get(f"{prefix}_associe_{i}_type") or "personne_physique")
+        if type_p != "personne_physique":
+            continue
+        if first_physique is None:
+            first_physique = i
+        if bool(st.session_state.get(f"{prefix}_associe_{i}_is_dirigeant")):
+            return i
+    return first_physique if first_physique is not None else 0
 
 
 def _derive_gerant_index(associes: list[StatutsCivilsAssocie], prefix: str) -> int:

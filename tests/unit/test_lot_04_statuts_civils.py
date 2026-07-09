@@ -202,6 +202,27 @@ def test_statuts_sci_generates_dynamic_associates(tmp_path: Path) -> None:
     assert "STATUTS" in box_texts, "cadre « STATUTS » absent du SCI (3.2)"
 
 
+def test_statuts_sci_birthdate_reformats_numeric_input(tmp_path: Path) -> None:
+    # B1 (Albane 2026-07-09) : la date de naissance saisie au format numerique « JJ/MM/AAAA »
+    # (ou ISO) sort en francais lettre « JJ mois AAAA » dans les statuts civils (propagation
+    # SCI / SCM / SCS / micro via le socle partage). Une date deja lettree reste inchangee.
+    jean = _person_associe(prenom="Jean", nom="Durand", nb_parts=40, debut=1, fin=40)
+    jean.date_naissance = "10/03/1975"
+    ctx = _base_context(
+        structure="SCI",
+        statuts_type="sci",
+        associes=[
+            jean,
+            _person_associe(prenom="Alice", nom="Martin", nb_parts=60, debut=41, fin=100),
+        ],
+    )
+    text = _docx_text(StatutsSciGenerator().generate(ctx, tmp_path))
+    assert "Né le 10 mars 1975" in text
+    assert "10/03/1975" not in text
+    # Le second associe garde sa date deja lettree (« 1 janvier 1980 ») telle quelle.
+    assert "1 janvier 1980" in text
+
+
 def test_statuts_scs_requires_commandite_and_commanditaire(tmp_path: Path) -> None:
     ctx = _base_context(
         structure="SCS",

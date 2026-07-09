@@ -6,8 +6,8 @@ from datetime import date
 from pathlib import Path
 
 from docx import Document
-from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.shared import Pt
+from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_TAB_ALIGNMENT, WD_TAB_LEADER
+from docx.shared import Cm, Pt
 
 from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import (
@@ -33,7 +33,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_statuts_title_box,
     new_document_from_model,
 )
-from sydel_doc_engine.utils.dates import format_date_longue_fr
+from sydel_doc_engine.utils.dates import format_birthdate_fr, format_date_longue_fr
 from sydel_doc_engine.utils.grammar import (
     _has_real_decimal,
     accord_euros_apres_montant,
@@ -574,7 +574,7 @@ def _add_physical_identity_micro_holding(document, associe: StatutsCivilsAssocie
     )
     add_paragraph(
         document,
-        f"{born} le {_format_display_date(associe.date_naissance, 'associes[].date_naissance')} "
+        f"{born} le {_format_birthdate(associe.date_naissance, 'associes[].date_naissance')} "
         f"à {_required_text(associe.ville_naissance, 'associes[].ville_naissance')} "
         f"({_required_text(associe.departement_naissance, 'associes[].departement_naissance')})",
     )
@@ -745,6 +745,30 @@ def _add_apport_block_micro_holding(document, data: _ResolvedStatutsCivil) -> No
     )
 
 
+def _add_mh_repartition_line(document, label: str, count_text: str, *, tiret: bool) -> None:
+    """Ligne de répartition des parts (art. 7 micro holding, Albane 2026-07-09 B3).
+
+    Tiret optionnel devant l'associé, nombre de parts aligné à DROITE via un taquet à points
+    (comme le modèle source qui utilise des points de conduite), aération inter-lignes.
+    Le taquet est posé sur la largeur de texte utile pour rester dans la marge quel que soit
+    le format de page hérité du modèle.
+    """
+    prefix = "- " if tiret else ""
+    paragraph = add_paragraph(document, f"{prefix}{label}\t{count_text}", space_after_pt=6)
+    section = document.sections[0]
+    page_width = section.page_width
+    left = section.left_margin
+    right = section.right_margin
+    position = (
+        page_width - left - right
+        if None not in (page_width, left, right)
+        else Cm(15.5)
+    )
+    paragraph.paragraph_format.tab_stops.add_tab_stop(
+        position, WD_TAB_ALIGNMENT.RIGHT, WD_TAB_LEADER.DOTS
+    )
+
+
 def _add_capital_block_micro_holding(document, data: _ResolvedStatutsCivil) -> None:
     # Art. 7 CAPITAL SOCIAL variable (modele Albane P100-P113). Lettres en MAJUSCULES (verbatim
     # modele). Repartition des parts par associe (« <label> \t<nb> parts »).
@@ -783,10 +807,17 @@ def _add_capital_block_micro_holding(document, data: _ResolvedStatutsCivil) -> N
         f"({vnp_lettres} {euro_word(vnp).upper()}) chacune.",
     )
     add_paragraph(document, f"Elles sont réparties entre les associés comme suit{_NBSP}:")
+    # Art. 7 (Albane 2026-07-09, B3) : « présentation comme dans les modèles » — un TIRET
+    # devant chaque associé, les nombres de parts ALIGNÉS à droite (taquet à points comme le
+    # modèle source) et un peu d'AÉRATION entre les lignes.
     for associe in data.associes:
         parts = _required_parts(associe)
-        add_paragraph(document, f"{_mh_short_label(associe)} \t{parts.nb} parts")
-    add_paragraph(document, f"Composant le capital social effectif\t{nb_parts} parts")
+        _add_mh_repartition_line(
+            document, _mh_short_label(associe), f"{parts.nb} parts", tiret=True
+        )
+    _add_mh_repartition_line(
+        document, "Composant le capital social effectif", f"{nb_parts} parts", tiret=False
+    )
 
 
 def _add_capital_block_scs(document, data: _ResolvedStatutsCivil) -> None:
@@ -883,17 +914,25 @@ def _mh_signature_label(associe: StatutsCivilsAssocie) -> str:
 def _add_signature_block(document, data: _ResolvedStatutsCivil) -> None:
     if data.template.expected_type == "micro_holding":
         # Modele Albane P461-P464 : « Fait a <lieu> » / « Le <date longue> » sur deux lignes, puis
-        # les signataires cote a cote (physiques d'abord, morales ensuite) separes par des
-        # tabulations. MH signature (Albane 2026-07-01, « comme les modeles ») : date en FORME
-        # LONGUE « Le 22 mai 2026 » (et non « 22/05/2026 ») + civilite ABREGEE « Mme »/« M. »
-        # dans le libelle signataire (cf. _mh_signature_label).
+        # les signataires (physiques d'abord, morales ensuite). MH signature (Albane 2026-07-01,
+        # « comme les modeles ») : date en FORME LONGUE « Le 22 mai 2026 » (et non « 22/05/2026 »)
+        # + civilite ABREGEE « Mme »/« M. » dans le libelle signataire (cf. _mh_signature_label).
+        # B4 (Albane 2026-07-09) : chaque signataire CENTRE sur SA propre ligne avec un espace
+        # pour signer (l'ancien rendu cote a cote separe par des tabulations est SUPERSEDE).
         add_paragraph(document, f"Fait à {data.signature_lieu}")
         add_paragraph(document, f"Le {data.signature_date_longue}")
         physiques = [a for a in data.associes if a.est_signataire and not _is_morale(a)]
         morales = [a for a in data.associes if a.est_signataire and _is_morale(a)]
         signers = [_mh_signature_label(a) for a in (physiques + morales)]
-        if signers:
-            add_paragraph(document, "\t\t\t\t\t".join(signers))
+        # B4 (Albane 2026-07-09) : chaque signataire CENTRÉ, sur SA propre ligne, avec un
+        # espace pour signer (au lieu des noms côte à côte séparés par des tabulations).
+        for label in signers:
+            add_paragraph(
+                document,
+                label,
+                alignment=WD_ALIGN_PARAGRAPH.CENTER,
+                space_after_pt=48,
+            )
         return
     if data.template.signature_slice is not None:
         add_paragraph(document, f"A {data.signature_lieu}, le {data.signature_date}")
@@ -986,7 +1025,7 @@ def _add_physical_identity(document, associe: StatutsCivilsAssocie) -> None:
     )
     add_paragraph(
         document,
-        f"{born} le {_format_display_date(associe.date_naissance, 'associes[].date_naissance')} "
+        f"{born} le {_format_birthdate(associe.date_naissance, 'associes[].date_naissance')} "
         f"à {_required_text(associe.ville_naissance, 'associes[].ville_naissance')} "
         f"({_required_text(associe.departement_naissance, 'associes[].departement_naissance')})",
     )
@@ -1325,6 +1364,18 @@ def _format_display_date(value: date | str | None, field_name: str) -> str:
     if isinstance(value, date):
         return value.strftime("%d/%m/%Y")
     return _required_text(value, field_name)
+
+
+def _format_birthdate(value: date | str | None, field_name: str) -> str:
+    """Date de NAISSANCE des statuts en « JJ mois AAAA » (Albane 2026-07-09, B1).
+
+    Une valeur numerique saisie (« 10/03/1975 », ISO ou objet date) est reformatee en
+    francais lettre (« 10 mars 1975 ») ; une date deja lettree reste inchangee. Reservee
+    aux dates de naissance : la date de SIGNATURE garde son format propre (court / longue).
+    """
+    if value is None:
+        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+    return format_birthdate_fr(value)
 
 
 def _format_display_date_longue(value: date | str | None, field_name: str) -> str:

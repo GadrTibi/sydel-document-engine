@@ -273,15 +273,107 @@ def test_micro_holding_signature_date_longue_et_civilite_abregee(tmp_path: Path)
     # MH signature (Albane 2026-07-01, « comme les modeles ») : zone signature du modele
     # Statuts_Micro_holding.docx = « Fait à Nancy » / « Le 22 mai 2026 » (date LONGUE) puis
     # « Mme Jessica GOSSET \t...\t SPFPL DU DR JESSICA GOSSET » (civilite ABREGEE « Mme »).
-    out = StatutsMicroHoldingGenerator().generate(_ctx_berte(), tmp_path)
-    text = _docx_text(out)
+    document = Document(StatutsMicroHoldingGenerator().generate(_ctx_berte(), tmp_path))
+    text = "\n".join(p.text for p in document.paragraphs if p.text)
     assert "Fait à Nancy" in text
     assert "Le 22 mai 2026" in text  # forme longue (date signature = 22/05/2026)
     assert "Le 22/05/2026" not in text  # plus la date courte dans la zone signature
     assert "Mme Jessica GOSSET" in text  # civilite abregee
-    # La zone signature ne porte plus la civilite pleine (« Madame Jessica GOSSET » suivi d'une
-    # tabulation = ligne signataire) ; la comparution garde « Madame » ailleurs, non testee ici.
-    assert "Madame Jessica GOSSET\t" not in text
+    # La ZONE SIGNATURE (apres « Fait à ») ne porte plus la civilite pleine « Madame Jessica
+    # GOSSET » (elle est abregee « Mme ») ; la comparution et l'art. 7 gardent « Madame » ailleurs.
+    fait_idx = next(
+        i for i, p in enumerate(document.paragraphs) if p.text.strip().startswith("Fait à")
+    )
+    zone_signature = "\n".join(p.text for p in document.paragraphs[fait_idx:] if p.text)
+    assert "Madame Jessica GOSSET" not in zone_signature
+
+
+# --- B1 (Albane 2026-07-09) : date de naissance en « JJ mois AAAA » dans les statuts ----------
+
+
+def test_micro_holding_birthdate_reformats_numeric_input(tmp_path: Path) -> None:
+    # B1 : une date de naissance saisie au format numerique (objet date OU chaine « JJ/MM/AAAA »
+    # / ISO) doit sortir en francais lettre « JJ mois AAAA » (jour sur 2 chiffres, mois accentue).
+    for born, attendu in (
+        (date(1978, 12, 1), "Née le 01 décembre 1978"),
+        ("10/03/1975", "Née le 10 mars 1975"),
+        ("1975-03-10", "Née le 10 mars 1975"),
+    ):
+        ctx = _ctx_berte()
+        phys = next(
+            a for a in ctx.statuts_civils.associes if a.type_personne == "personne_physique"
+        )
+        phys.date_naissance = born
+        text = _docx_text(StatutsMicroHoldingGenerator().generate(ctx, tmp_path))
+        assert attendu in text, f"date {born!r} non reformatee : attendu {attendu!r}"
+        assert "01/12/1978" not in text
+        assert "10/03/1975" not in text
+
+
+def test_micro_holding_birthdate_lettree_inchangee(tmp_path: Path) -> None:
+    # Fidelite B1 : une date DEJA lettree (« 1er décembre 1978 ») reste byte-identique
+    # (on ne renormalise pas « 1er » en « 01 » quand la saisie est deja en toutes lettres).
+    ctx = _ctx_berte()  # gosset.date_naissance = "1er décembre 1978"
+    text = _docx_text(StatutsMicroHoldingGenerator().generate(ctx, tmp_path))
+    assert "Née le 1er décembre 1978" in text
+
+
+# --- B3 (Albane 2026-07-09) : art. 7 « comme les modeles » (tiret + alignement + aeration) ----
+
+
+def test_micro_holding_art7_repartition_tirets_et_alignement(tmp_path: Path) -> None:
+    from docx.enum.text import WD_TAB_ALIGNMENT
+
+    document = Document(StatutsMicroHoldingGenerator().generate(_ctx_berte(), tmp_path))
+    paras = document.paragraphs
+    intro_idx = next(
+        i for i, p in enumerate(paras) if p.text.strip().startswith("Elles sont réparties")
+    )
+    # Les lignes de repartition suivent immediatement l'intro : 2 associes puis le total.
+    associe_lines = [paras[intro_idx + 1], paras[intro_idx + 2]]
+    total_line = paras[intro_idx + 3]
+    assert total_line.text.startswith("Composant le capital social effectif")
+    assert len(associe_lines) == 2  # SPFPL + Gosset
+    for p in associe_lines:
+        # Tiret devant chaque associe (« - La SPFPL … », « - Madame … »).
+        assert p.text.startswith("- "), f"pas de tiret : {p.text!r}"
+        # Nombre de parts aligne a DROITE via un taquet (alignement des colonnes).
+        tab_stops = list(p.paragraph_format.tab_stops)
+        assert tab_stops, f"pas de taquet d'alignement : {p.text!r}"
+        assert tab_stops[-1].alignment == WD_TAB_ALIGNMENT.RIGHT
+        # Aeration : espace apres chaque ligne.
+        assert p.paragraph_format.space_after is not None
+        assert p.paragraph_format.space_after.pt >= 6
+    # La ligne de total n'est PAS un associe -> pas de tiret, mais meme alignement.
+    assert not total_line.text.startswith("- ")
+    assert list(total_line.paragraph_format.tab_stops)
+
+
+# --- B4 (Albane 2026-07-09) : signatures centrees, une par ligne, avec espace pour signer ------
+
+
+def test_micro_holding_signatures_centrees_une_par_ligne(tmp_path: Path) -> None:
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+
+    document = Document(StatutsMicroHoldingGenerator().generate(_ctx_berte(), tmp_path))
+    paras = document.paragraphs
+    fait_idx = next(i for i, p in enumerate(paras) if p.text.strip().startswith("Fait à"))
+    signataire_paras = [
+        p
+        for p in paras[fait_idx:]
+        if p.text.strip() in {"Mme Jessica GOSSET", "SPFPL DU DR JESSICA GOSSET"}
+    ]
+    # Deux signataires -> deux paragraphes DISTINCTS (plus de ligne unique tab-jointe).
+    assert len(signataire_paras) == 2
+    for p in signataire_paras:
+        assert p.alignment == WD_ALIGN_PARAGRAPH.CENTER
+        # Espace pour signer sous chaque nom.
+        assert p.paragraph_format.space_after is not None
+        assert p.paragraph_format.space_after.pt >= 24
+    # L'ancien rendu cote a cote (noms separes par des tabulations) a disparu.
+    assert "Mme Jessica GOSSET\t" not in _docx_text(
+        StatutsMicroHoldingGenerator().generate(_ctx_berte(), tmp_path)
+    )
 
 
 # --- capital variable, max = 10x min (separateur a point), accords ------------

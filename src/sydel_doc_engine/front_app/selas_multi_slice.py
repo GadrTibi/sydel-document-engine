@@ -934,7 +934,9 @@ def _physique(prefix: str, nb_actions: int, montant: str) -> StatutsCivilsAssoci
     )
     date_naissance = str(st.session_state.get(f"{prefix}_date_naissance") or "").strip()
     ville_naissance = _ts(col_e, f"{prefix}_ville_naissance", "Ville naissance")
-    departement = _ts(col_f, f"{prefix}_departement", "Departement naissance")
+    departement = _ts(
+        col_f, f"{prefix}_departement", "Departement naissance (ou pays si étranger)"
+    )
     nationalite = render_nationalite_selectbox(prefix, container=st)
     # #9 (onglet 24) : le champ « profession » est RETIRE du formulaire (redondant
     # avec la qualification). Le titre « Docteur » est derive (defaut) pour NE PAS

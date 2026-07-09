@@ -47,6 +47,8 @@ def date_input_with_today(
     value: date,
     container=None,
     seed: bool = True,
+    show_format_hint: bool = True,
+    placeholder: str | None = "JJ/MM/AAAA",
 ) -> date | None:
     """Champ de date UNIQUE « JJ/MM/AAAA » + bouton « Aujourd'hui » (helper gold partage).
 
@@ -67,7 +69,14 @@ def date_input_with_today(
     defaut, le contexte Streamlit courant.
 
     `seed` (defaut True) : pre-remplit la cle texte avec `value` si elle est vide. Le mettre a
-    False pour un champ qui NE doit PAS afficher de valeur par defaut (ex. date de NAISSANCE)."""
+    False pour un champ qui NE doit PAS afficher de valeur par defaut (ex. date de NAISSANCE).
+
+    `show_format_hint` (defaut True) : affiche la caption « Format attendu : JJ/MM/AAAA » quand la
+    saisie n'est pas parsable en JJ/MM/AAAA. A1 (Albane 2026-07-09) : les champs date en SAISIE
+    LIBRE (`date_input_freeform` : cloture, exercice, marqueurs recurrents « 31 décembre 2028 »)
+    acceptent un libelle TEXTUEL de mois -> le hint « JJ/MM/AAAA » y est INCOHERENT. Ces champs
+    passent `show_format_hint=False` (et un placeholder neutre) ; les vraies dates JJ/MM/AAAA
+    (signature, naissance) gardent le hint."""
     target = container if container is not None else st
 
     current_value = st.session_state.get(key)
@@ -82,10 +91,10 @@ def date_input_with_today(
     raw_value = target.text_input(
         label,
         key=key,
-        placeholder="JJ/MM/AAAA",
+        placeholder=placeholder or None,
     )
     parsed = parse_french_date(raw_value)
-    if str(raw_value).strip() and parsed is None:
+    if show_format_hint and str(raw_value).strip() and parsed is None:
         target.caption("Format attendu : JJ/MM/AAAA")
     return parsed
 
@@ -100,8 +109,19 @@ def date_input_freeform(label: str, *, key: str, container=None) -> str:
     None. On garde donc le meme widget que les autres dates (parite visuelle = selecteur) mais on
     lit la valeur TEXTE de `session_state[key]` (la saisie verbatim « 1er janvier » est preservee).
     `seed=False` : le pre-remplissage est fait en amont (seed_exercice_dates / seed_closing_date).
-    """
-    date_input_with_today(label, key=key, value=date.today(), container=container, seed=False)
+
+    A1 (Albane 2026-07-09) : ces champs acceptent un mois TEXTUEL (« 31 décembre 2028 ») -> on
+    RETIRE le hint « Format attendu : JJ/MM/AAAA » (incoherent ici) et le placeholder JJ/MM/AAAA ;
+    l'exemple reste porte par le label."""
+    date_input_with_today(
+        label,
+        key=key,
+        value=date.today(),
+        container=container,
+        seed=False,
+        show_format_hint=False,
+        placeholder=None,
+    )
     return str(st.session_state.get(key) or "")
 
 

@@ -342,7 +342,7 @@ def _render_one_selarl_membre(index: int) -> StatutsCivilsAssocie | None:
             col_f, "Ville de naissance", key=f"{prefix}_ville_naissance"
         )
         dep_naissance = copyable_text_input(
-            col_g, "Departement naissance", key=f"{prefix}_dep_naissance"
+            col_g, "Departement naissance (ou pays si étranger)", key=f"{prefix}_dep_naissance"
         )
         col_h, col_i = st.columns(2)
         nationalite = copyable_text_input(col_h, "Nationalite", key=f"{prefix}_nationalite")
@@ -450,7 +450,7 @@ def _render_praticien(*, profession: str) -> dict[str, object]:
         help="Affiche 'ne au ...' au lieu de 'ne a ...' dans la DNC.",
     )
     departement_naissance = copyable_text_input(col_h,
-        "Departement naissance",
+        "Departement naissance (ou pays si étranger)",
         key="selarl_departement_naissance",
     )
     col_i, col_j = st.columns(2)
@@ -1299,7 +1299,7 @@ def _render_cession_form(  # noqa: C901
                 default="",
             )
             departement_naissance = _cession_text(
-                col_f, "Departement de naissance",
+                col_f, "Departement de naissance (ou pays si étranger)",
                 section="vendeur", field="departement_naissance", default="",
             )
             col_g, col_h = st.columns(2)

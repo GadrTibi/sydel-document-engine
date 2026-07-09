@@ -206,11 +206,15 @@ def _add_final_block(
     date_signature: str,
     signatory_name: str,
 ) -> None:
-    # PR1 (Albane 2026-06-26) : « que "fait a le" soit a gauche » -> bloc final aligne
-    # a GAUCHE (au lieu de l'alignement a droite par defaut du helper signature).
+    # PR1 (Albane 2026-06-26) : « que "fait a le" soit a gauche » -> « Fait à … » et
+    # « Le … » restent alignes a GAUCHE.
     add_spacer(document)
-    for line in (f"Fait à {lieu_signature}", f"Le {date_signature}", signatory_name):
+    for line in (f"Fait à {lieu_signature}", f"Le {date_signature}"):
         _add_paragraph(document, line, alignment=WD_ALIGN_PARAGRAPH.LEFT)
+    # C5 (Albane 2026-07-09) : le NOM du mandant (associe) est aligne a DROITE,
+    # comme la signature client a droite deja adoptee ailleurs. La zone manuscrite
+    # de signature suit sous le nom, egalement a droite.
+    _add_paragraph(document, signatory_name, alignment=WD_ALIGN_PARAGRAPH.RIGHT)
     signature_zone = document.add_paragraph()
-    signature_zone.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    signature_zone.alignment = WD_ALIGN_PARAGRAPH.RIGHT
     signature_zone.add_run("\n\n\n")

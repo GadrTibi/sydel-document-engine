@@ -194,7 +194,9 @@ def render_sas_form() -> dict[str, object]:
     )
     date_naissance = str(st.session_state.get(f"{PREFIX}_date_naissance") or "").strip()
     ville_naissance = _t(col_l, "ville_naissance", "Ville de naissance")
-    departement_naissance = _t(col_m, "departement_naissance", "Departement naissance")
+    departement_naissance = _t(
+        col_m, "departement_naissance", "Departement naissance (ou pays si étranger)"
+    )
     col_n, col_o = st.columns(2)
     # Parite gold : nationalite en deroulant (NATIONALITY_PRESETS + « Autre »).
     nationalite = render_nationalite_selectbox(PREFIX, container=col_n)

@@ -223,3 +223,30 @@ def test_autorisation_domiciliation_uses_signature_paragraphs_without_table(
     assert "Le 12/05/2026" in paragraphs
     # Modele a jour (Drive) : la ligne de signature est « [prenom] [nom] » (sans civilite).
     assert "Jean Durand" in paragraphs
+
+
+def test_autorisation_domiciliation_civil_omits_du_cabinet(tmp_path: Path) -> None:
+    # B6 (Albane 2026-07-09) : pour TOUTES les societes CIVILES, la domiciliation dit
+    # « dans les locaux au <adresse> » (retrait de « du cabinet »).
+    for structure in ("SCI", "SCI IRIS", "SCM", "SCS", "MICRO_HOLDING"):
+        ctx = _context()
+        ctx.structure = structure
+        out = AutorisationDomiciliationGenerator().generate(
+            ctx, tmp_path / structure.replace(" ", "_")
+        )
+        text = _docx_text(out)
+        assert "dans les locaux au 80 avenue Marceau, 75008 Paris" in text, structure
+        assert "du cabinet" not in text, structure
+
+
+def test_autorisation_domiciliation_sel_keeps_du_cabinet(tmp_path: Path) -> None:
+    # B6 : SEL / SPFPL conservent « du cabinet » (OK dans leur modele). SAS aussi
+    # (hors perimetre civil ; non touche).
+    for structure in ("SELARL", "SELAS", "SPFPL", "SAS"):
+        ctx = _context()
+        ctx.structure = structure
+        out = AutorisationDomiciliationGenerator().generate(ctx, tmp_path / structure)
+        text = _docx_text(out)
+        assert (
+            "dans les locaux du cabinet au 80 avenue Marceau, 75008 Paris"
+        ) in text, structure

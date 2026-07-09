@@ -359,6 +359,22 @@ def calculate_nominal_value(capital_social: object, nb_parts_total: object) -> s
     return format_numeric_value(quotient).replace(".", ",")
 
 
+def derive_parts_from_apport(apport: object, valeur_nominale: object) -> int | None:
+    """Nb de parts DERIVE de l'apport (A3, Albane 2026-07-09).
+
+    « le nombre de parts peut-il se mettre d'office avec une formule » : parts = montant
+    apport / valeur nominale d'une part. Renvoie None si l'apport OU la valeur nominale est
+    absent / illisible / nul (on laisse alors la saisie manuelle : cf. « si la valeur nominale
+    n'est pas encore saisie, laisser saisir »). Arrondi a l'entier le plus proche (les cas non
+    entiers restent surfaces par la coherence somme parts == total). Helper PUR (testable),
+    jamais de dependance Streamlit ici."""
+    apport_d = _decimal_from_value(apport)
+    valeur_d = _decimal_from_value(valeur_nominale)
+    if apport_d is None or valeur_d is None or valeur_d == 0:
+        return None
+    return int((apport_d / valeur_d).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+
+
 def is_capital_divisible(capital_social: object, nb_parts_total: object) -> bool:
     """RETIRE le 2026-06-24 (retour Rafael N1) : la contrainte « valeur nominale entiere »
     n'etait dans AUCUNE source de verite (garde dogfood 2026-06-22). Une valeur nominale PEUT

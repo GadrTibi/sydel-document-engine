@@ -286,7 +286,9 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
     )
     date_naissance = str(st.session_state.get(f"{prefix}_date_naissance") or "").strip()
     ville_naissance = _t(col_k, prefix, "ville_naissance", "Ville de naissance")
-    departement_naissance = _t(col_l, prefix, "departement_naissance", "Departement naissance")
+    departement_naissance = _t(
+        col_l, prefix, "departement_naissance", "Departement naissance (ou pays si étranger)"
+    )
     col_m, col_n = st.columns(2)
     # Parite gold : nationalite en deroulant (NATIONALITY_PRESETS + « Autre »).
     nationalite = render_nationalite_selectbox(prefix, container=col_m)

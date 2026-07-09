@@ -22,6 +22,14 @@ ROBOTO_FONT = "Roboto"
 DOCUMENT_CODE = "DOC-002"
 OUTPUT_FILENAME = "autorisation_domiciliation.docx"
 
+# B6 (Albane 2026-07-09) : pour TOUTES les societes CIVILES, la domiciliation dit
+# « dans les locaux au <adresse> » (sans « du cabinet »). SEL / SPFPL conservent
+# « du cabinet » (OK dans leur modele) ; la SASU Holding a deja son propre wording
+# (« dans les locaux situes a … »), traite plus bas.
+_CIVIL_STRUCTURES: frozenset[str] = frozenset(
+    {"SCI", "SCI IRIS", "SCM", "SCS", "MICRO_HOLDING"}
+)
+
 # Dossier des modeles Word tokenises, resolu independamment du cwd.
 # parents[4] depuis src/sydel_doc_engine/generators/lot_01/ = racine du repo.
 _SOURCE_MODELS_DIR = (
@@ -76,6 +84,11 @@ class AutorisationDomiciliationGenerator:
         # M1/M2). Remplacement structure-aware (les autres structures ne sont PAS touchees).
         if ctx.structure == "SASU_HOLDING":
             _apply_sasu_holding_locaux(filled)
+        # B6 (Albane 2026-07-09) : societes civiles -> « dans les locaux au <adresse> »
+        # (retrait de « du cabinet »). Applique apres la mention capital variable du
+        # micro (segments distincts du meme paragraphe). SEL/SPFPL non touches.
+        if ctx.structure in _CIVIL_STRUCTURES:
+            _apply_civil_locaux(filled)
         # Retour Albane 2026-06-10 : police Roboto 10 sur l'autorisation (« le
         # reste c'est top »). Le modele est une lettre courte SANS titre distinct :
         # le « titre en 11 » demande par Albane n'a pas de cible ici (a confirmer
@@ -194,6 +207,29 @@ def _apply_micro_holding_capital_variable(output_path: Path, capital: str) -> No
         f"à capital variable au capital minimum de {capital_groupe} € "
         f"et au capital effectif de {capital_groupe} €, en cours de formation"
     )
+    document = Document(str(output_path))
+    for paragraph in document.paragraphs:
+        if old in paragraph.text:
+            new_text = paragraph.text.replace(old, new)
+            if paragraph.runs:
+                paragraph.runs[0].text = new_text
+                for run in paragraph.runs[1:]:
+                    run.text = ""
+            else:
+                paragraph.text = new_text
+    document.save(str(output_path))
+
+
+def _apply_civil_locaux(output_path: Path) -> None:
+    """B6 (Albane 2026-07-09) : societes civiles -> retrait de « du cabinet » :
+    « dans les locaux du cabinet au <adresse> » -> « dans les locaux au <adresse> ».
+
+    Remplacement au niveau du paragraphe (le segment couvre plusieurs runs apres le
+    remplissage des tokens et l'eventuelle mention capital variable) ; la police est
+    re-appliquee ensuite par _apply_roboto_font.
+    """
+    old = "dans les locaux du cabinet au "
+    new = "dans les locaux au "
     document = Document(str(output_path))
     for paragraph in document.paragraphs:
         if old in paragraph.text:

@@ -239,7 +239,9 @@ def render_selas_uni_medecin_form() -> dict[str, object]:
     col_p, col_q, col_r = st.columns(3)
     date_naissance = _date(col_p, "date_naissance", "Date de naissance", seed=False)
     ville_naissance = _t(col_q, "ville_naissance", "Ville de naissance")
-    departement_naissance = _t(col_r, "departement_naissance", "Departement naissance")
+    departement_naissance = _t(
+        col_r, "departement_naissance", "Departement naissance (ou pays si étranger)"
+    )
     col_s, col_t = st.columns(2)
     nationalite = render_nationalite_selectbox(PREFIX, container=col_s)
     titre_affichage = _t(col_t, "titre_affichage", "Titre (ex: Docteur)") or DEFAULT_TITRE_AFFICHAGE

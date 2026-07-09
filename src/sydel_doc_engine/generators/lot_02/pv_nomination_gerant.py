@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from datetime import date
 from pathlib import Path
 
@@ -29,9 +30,59 @@ from sydel_doc_engine.rendering.docx_builder import (
     new_document,
 )
 from sydel_doc_engine.utils.grammar import euro_word, montant_avec_euros
+from sydel_doc_engine.utils.months import FRENCH_MONTHS
 
 OUTPUT_FILENAME = "pv_nomination_gerant.docx"
 DOCUMENT_CODE = "CODE-PV-001"
+
+# Retours Albane 2026-07-09 (PV micro holding). Ces trois conventions sont
+# SCOPEES a la micro holding (societe civile a capital variable) : les autres
+# types (SELARL / SELAS / SCI / SCM / SCS...) restent byte-identiques.
+#   C1 : entete + 1re phrase affichent « Societe civile » (texte fige) au lieu de
+#        la cle interne de structure (« MICRO_HOLDING »).
+#   C2 : la mention de capital (entete + 1re phrase) reflete le capital VARIABLE,
+#        avec la formulation deja validee sur la domiciliation micro
+#        (« a capital variable au capital minimum de X € et au capital effectif
+#        de X € »).
+#   C3 : la date de l'encadre du PV au format « 09 JUILLET 2026 » (jour 2 chiffres,
+#        mois en toutes lettres MAJUSCULES accentuees, annee).
+_MICRO_HOLDING_FORME_DISPLAY = "Société civile"
+_DDMMYYYY_RE = re.compile(r"^(\d{1,2})/(\d{1,2})/(\d{4})$")
+
+
+def _is_micro_holding(ctx: DocumentGenerationContext) -> bool:
+    return (ctx.structure or "").strip().upper() == "MICRO_HOLDING"
+
+
+def _capital_variable_line(company: Company, *, capitalize: bool) -> str:
+    """C2 : mention capital variable REUTILISEE du modele micro de la domiciliation
+    (autorisation_domiciliation `_apply_micro_holding_capital_variable`) :
+    « à capital variable au capital minimum de X € et au capital effectif de X € ».
+
+    `capitalize=True` -> « À » en tete de la ligne d'en-tete (le reste du wording est
+    strictement identique a la domiciliation, montant groupe par 3 via group_montant).
+    """
+    cap = group_montant(_capital_social(company))
+    prefix = "À" if capitalize else "à"
+    return (
+        f"{prefix} capital variable au capital minimum de {cap} € "
+        f"et au capital effectif de {cap} €"
+    )
+
+
+def _framed_date_display(value: date | str | None, *, is_micro: bool) -> str:
+    """Date de l'encadre du PV. Comportement historique (DD/MM/AAAA) pour tous les
+    types ; C3 (micro holding) : « JJ MOIS AAAA » (mois MAJUSCULE accentue)."""
+    base = _required_display_value(value, "decision.date")
+    if not is_micro:
+        return base
+    match = _DDMMYYYY_RE.match(base.strip())
+    if match is None:
+        return base  # forme inattendue : ne pas inventer de date
+    day, month, year = (int(part) for part in match.groups())
+    if not 1 <= month <= 12:
+        return base
+    return f"{day:02d} {FRENCH_MONTHS[month].upper()} {year}"
 
 # Retour Albane 2026-06-26 (PV3) : « mettre de l'espace entre les paragraphes ».
 # Espacement apres paragraphe renforce (10 pt vs 6 pt du profil standard), local
@@ -71,6 +122,7 @@ class PvNominationGerantGenerator:
     def generate(self, ctx: DocumentGenerationContext, output_dir: Path) -> Path:
         company = _required_company(ctx.societe)
         associes = _required_associes(ctx.associes)
+        is_micro = _is_micro_holding(ctx)
 
         # Retour Albane 2026-06-10 : avec UN SEUL associe, le PV est un PV des
         # DECISIONS DE L'ASSOCIE UNIQUE (pas d'assemblee generale, pas de bloc
@@ -78,7 +130,7 @@ class PvNominationGerantGenerator:
         # Les types reellement multi-associes (SCI/SCM/SCS/SELAS...) conservent la
         # structure AG existante.
         if len(associes) == 1:
-            document = _build_associe_unique_pv(ctx, company, associes[0])
+            document = _build_associe_unique_pv(ctx, company, associes[0], is_micro=is_micro)
         else:
             capital = _required_capital(ctx.capital)
             # Liste des dirigeants nommes : extension ADDITIVE (modele PV
@@ -93,9 +145,9 @@ class PvNominationGerantGenerator:
             titre_word = _titre_word(capital)
 
             document = new_document()
-            _add_company_header(document, company, associes)
-            _add_title_and_meeting(document, ctx)
-            _add_introduction(document, company, capital, associes)
+            _add_company_header(document, company, associes, is_micro=is_micro)
+            _add_title_and_meeting(document, ctx, is_micro=is_micro)
+            _add_introduction(document, company, capital, associes, is_micro=is_micro)
             _add_associes_block(document, represented_associes, represented_parts, titre_word)
             _add_order_of_business(document, ctx, dirigeants, emprunt, bien_immobilier)
             ordinal_index = _add_nomination_decisions(document, dirigeants)
@@ -103,7 +155,7 @@ class PvNominationGerantGenerator:
                 document, emprunt, bien_immobilier, ordinal_index
             )
             _add_powers_decision(document, ordinal_index)
-            _add_closing_and_signatures(document, ctx, associes, dirigeants)
+            _add_closing_and_signatures(document, ctx, associes, dirigeants, is_micro=is_micro)
 
         output_dir.mkdir(parents=True, exist_ok=True)
         output_path = output_dir / OUTPUT_FILENAME
@@ -433,12 +485,28 @@ def _add_vote_formula(document) -> None:
     _add_paragraph(document, VOTE_FORMULA, italic=True)
 
 
-def _add_company_header(document, company: Company, associes: list[Associe]) -> None:
+def _add_company_header(
+    document,
+    company: Company,
+    associes: list[Associe],
+    *,
+    is_micro: bool = False,
+) -> None:
     siege = _required_address(company.siege, "societe.siege")
+    # C1 : « Société civile » (texte fige) en entete pour la micro holding, au lieu
+    #      de la cle interne de structure. C2 : ligne de capital VARIABLE.
+    forme_line = (
+        _MICRO_HOLDING_FORME_DISPLAY if is_micro else _forme_sociale_header(company, associes)
+    )
+    capital_line = (
+        _capital_variable_line(company, capitalize=True)
+        if is_micro
+        else f"Au capital de {_capital_social_header(company)}"
+    )
     lines = [
         (_required_text(company.denomination, "societe.denomination"), True, False),
-        _forme_sociale_header(company, associes),
-        f"Au capital de {_capital_social_header(company)}",
+        forme_line,
+        capital_line,
         f"Siège social : {_address_no_comma(siege)}",
         "En cours d’immatriculation",
     ]
@@ -449,7 +517,12 @@ def _add_company_header(document, company: Company, associes: list[Associe]) -> 
         paragraph.paragraph_format.line_spacing = _PV_SINGLE_LINE_SPACING
 
 
-def _add_title_and_meeting(document, ctx: DocumentGenerationContext) -> None:
+def _add_title_and_meeting(
+    document,
+    ctx: DocumentGenerationContext,
+    *,
+    is_micro: bool = False,
+) -> None:
     decision = ctx.decision
     reunion = ctx.reunion
     if decision is None:
@@ -463,7 +536,7 @@ def _add_title_and_meeting(document, ctx: DocumentGenerationContext) -> None:
         [
             "PROCES-VERBAL DES DECISIONS",
             " DE L’ASSEMBLEE GENERALE",
-            f" DU {_required_display_value(decision.date, 'decision.date')}",
+            f" DU {_framed_date_display(decision.date, is_micro=is_micro)}",
         ],
     )
     _add_paragraph(document, f"Le {_required_text(reunion.date_lettres, 'reunion.date_lettres')}")
@@ -506,9 +579,13 @@ def _add_introduction(
     company: Company,
     capital: CapitalContext,
     associes: list[Associe],
+    *,
+    is_micro: bool = False,
 ) -> None:
     denomination = _required_text(company.denomination, "societe.denomination")
-    company_designation = _company_designation_for_intro(company, denomination)
+    company_designation = _company_designation_for_intro(
+        company, denomination, is_micro=is_micro
+    )
     nb_parts_total = _required_positive_int(capital.nb_parts_total, "capital.nb_parts_total")
     titre_word = _titre_word(capital)
     if titre_word == "action":
@@ -530,8 +607,16 @@ def _add_introduction(
         capital.valeur_nominale_part,
         "capital.valeur_nominale_part",
     )
+    # C2 : pour la micro holding (capital variable), la 1re phrase reflete le capital
+    # variable (meme wording que la domiciliation) ; les autres civils gardent
+    # « au capital de <montant> ».
+    capital_clause = (
+        _capital_variable_line(company, capitalize=False)
+        if is_micro
+        else f"au capital de {group_montant(_capital_social(company))}"
+    )
     common = (
-        f"de la {company_designation}, au capital de {group_montant(_capital_social(company))}, "
+        f"de la {company_designation}, {capital_clause}, "
         f"composé de {nb_parts_total} parts de {valeur_nominale} "
         f"{euro_word(valeur_nominale)} chacune, "
     )
@@ -544,8 +629,14 @@ def _add_introduction(
     )
 
 
-def _company_designation_for_intro(company: Company, denomination: str) -> str:
-    forme = _forme_sociale_affichage(company)
+def _company_designation_for_intro(
+    company: Company,
+    denomination: str,
+    *,
+    is_micro: bool = False,
+) -> str:
+    # C1 : « Société civile <denomination> » (texte fige) pour la micro holding.
+    forme = _MICRO_HOLDING_FORME_DISPLAY if is_micro else _forme_sociale_affichage(company)
     if _denomination_starts_with_form(denomination, company, forme):
         return denomination
     return f"{forme} {denomination}"
@@ -782,6 +873,8 @@ def _add_closing_and_signatures(
     ctx: DocumentGenerationContext,
     associes: list[Associe],
     dirigeants: list[DirigeantNomine],
+    *,
+    is_micro: bool = False,
 ) -> None:
     lieu_signature = _required_text(ctx.signature.lieu, "signature.lieu")
     # Retour Albane 2026-06-26 (PV6) : supprimer la mention « en quatre
@@ -800,12 +893,26 @@ def _add_closing_and_signatures(
         dirigeant.fonction_affichage,
         "dirigeant_nomine.fonction_affichage",
     )
-    add_signature_lines(
-        document,
-        [f"{associe.prenom} {associe.nom}" for associe in associes],
-        alignment=WD_ALIGN_PARAGRAPH.CENTER,
-        bold=True,
-    )
+    if is_micro:
+        # C4 (Albane 2026-07-09, presentation cible img_09) : chaque associe signe
+        # SOUS SON PROPRE NOM, avec une zone de signature dediee sous chaque nom (au
+        # lieu des noms empiles sans espace). La mention « Bon pour acceptation... »
+        # est conservee (une fois, comme le modele existant).
+        for associe in associes:
+            add_signature_lines(
+                document,
+                [f"{associe.prenom} {associe.nom}"],
+                alignment=WD_ALIGN_PARAGRAPH.CENTER,
+                bold=True,
+            )
+            _add_signature_space(document)
+    else:
+        add_signature_lines(
+            document,
+            [f"{associe.prenom} {associe.nom}" for associe in associes],
+            alignment=WD_ALIGN_PARAGRAPH.CENTER,
+            bold=True,
+        )
     _add_paragraph(
         document,
         (
@@ -815,6 +922,13 @@ def _add_closing_and_signatures(
         alignment=WD_ALIGN_PARAGRAPH.CENTER,
         italic=True,
     )
+
+
+def _add_signature_space(document) -> None:
+    """Zone manuscrite de signature (lignes vides) sous un nom d'associe (C4)."""
+    paragraph = document.add_paragraph()
+    paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    paragraph.add_run("\n\n")
 
 
 def _add_multi_dirigeant_signatures(
@@ -866,6 +980,8 @@ def _build_associe_unique_pv(
     ctx: DocumentGenerationContext,
     company: Company,
     associe: Associe,
+    *,
+    is_micro: bool = False,
 ):
     decision = ctx.decision
     reunion = ctx.reunion
@@ -902,14 +1018,14 @@ def _build_associe_unique_pv(
     denomination = _required_text(company.denomination, "societe.denomination")
 
     document = new_document()
-    _add_company_header(document, company, [associe])
+    _add_company_header(document, company, [associe], is_micro=is_micro)
     add_spacer(document)
     add_framed_title(
         document,
         [
             "PROCES-VERBAL DES DECISIONS",
             " DE L’ASSOCIE UNIQUE",
-            f" DU {_required_display_value(decision.date, 'decision.date')}",
+            f" DU {_framed_date_display(decision.date, is_micro=is_micro)}",
         ],
     )
     _add_paragraph(

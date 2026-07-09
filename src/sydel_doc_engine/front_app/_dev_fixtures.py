@@ -390,8 +390,9 @@ def _option_is_prefill(prefix: str) -> dict[str, object]:
         f"{prefix}_impots_service": "Service des impots des entreprises de Paris 8e",
         f"{prefix}_impots_adresse_ligne_1": "6 rue Paul Baudry",
         f"{prefix}_impots_adresse_ligne_2": "TSA 00001",
-        f"{prefix}_impots_cp": "75008",
-        f"{prefix}_impots_ville": "Paris",
+        # A7 (Albane 2026-07-09) : CP + Ville regroupes sur UNE ligne (`{prefix}_impots_cp_ville`) ;
+        # l'ancienne saisie separee impots_cp / impots_ville n'existe plus au front.
+        f"{prefix}_impots_cp_ville": "75008 Paris",
     }
 
 

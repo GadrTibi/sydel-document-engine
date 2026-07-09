@@ -26,6 +26,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_statuts_title_box,
     new_document_from_model,
 )
+from sydel_doc_engine.utils.dates import format_birthdate_fr
 from sydel_doc_engine.utils.grammar import capitalize_first, euro_word, montant_avec_euros
 
 DOCUMENT_CODE = "CODE-STATUTS-SCM-001"
@@ -334,7 +335,7 @@ def _add_physical_identity(document, associe: StatutsCivilsAssocie) -> None:
     )
     add_paragraph(
         document,
-        f"{born} le {_format_display_date(associe.date_naissance, 'associes[].date_naissance')} "
+        f"{born} le {_format_birthdate(associe.date_naissance, 'associes[].date_naissance')} "
         f"à {_required_text(associe.ville_naissance, 'associes[].ville_naissance')}",
     )
     add_paragraph(document, f"Demeurant {_person_address(associe)}")
@@ -528,6 +529,18 @@ def _format_display_date(value: date | str | None, field_name: str) -> str:
     if isinstance(value, date):
         return value.strftime("%d/%m/%Y")
     return _required_text(value, field_name)
+
+
+def _format_birthdate(value: date | str | None, field_name: str) -> str:
+    """Date de NAISSANCE des statuts SCM en « JJ mois AAAA » (Albane 2026-07-09, B1).
+
+    Une valeur numerique saisie (« 10/03/1975 », ISO ou objet date) est reformatee en
+    francais lettre ; une date deja lettree reste inchangee. La date de SIGNATURE conserve
+    son format court (``_format_display_date``).
+    """
+    if value is None:
+        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+    return format_birthdate_fr(value)
 
 
 def _required_text(value: str | None, field_name: str) -> str:

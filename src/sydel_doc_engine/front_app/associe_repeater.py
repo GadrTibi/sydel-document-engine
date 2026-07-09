@@ -34,7 +34,9 @@ from sydel_doc_engine.front_app.field_derivations import (
     MATRIMONIAL_STATUS_PRESETS,
     NATIONALITY_PRESETS,
     accentuate_french_months,
+    calculate_nominal_value,
     derive_gender_from_civilite,
+    derive_parts_from_apport,
     format_numeric_value,
     matrimonial_status_value,
     number_words_from_value,
@@ -254,6 +256,48 @@ def _societe_capital_montant(config: RepeaterConfig) -> str:
     )
 
 
+def _societe_valeur_nominale(config: RepeaterConfig) -> str:
+    """Valeur nominale d'une part de la societe (capital / nb parts total), lue depuis
+    l'etat de saisie du slice civil (`{prefix}_capital_social` / `{prefix}_nb_parts_total`).
+
+    Sert a DERIVER le nb de parts d'un associe depuis son apport (A3, Albane 2026-07-09).
+    Vide tant que le capital OU le nb de parts total manque -> derivation impossible, la saisie
+    manuelle du nb de parts reste ouverte."""
+    capital = st.session_state.get(f"{config.key_prefix}_capital_social")
+    nb_parts_total = st.session_state.get(f"{config.key_prefix}_nb_parts_total")
+    return calculate_nominal_value(capital, nb_parts_total)
+
+
+def _nb_parts_field(
+    prefix: str,
+    unite: str,
+    apport_montant: str,
+    valeur_nominale: str,
+    *,
+    container=st,
+) -> int:
+    """Champ « Nombre de <unite> » : DERIVE (lecture seule) de l'apport / valeur nominale quand
+    c'est calculable (A3, Albane 2026-07-09), sinon saisie MANUELLE (comportement historique).
+
+    La cle de session `{prefix}_nb_titres` est CONSERVEE dans les deux cas (aval inchange :
+    StatutsCivilsParts.nb). En mode derive on ecrit la valeur AVANT le widget (contrainte
+    Streamlit) et on rend un number_input `disabled`."""
+    derived = derive_parts_from_apport(apport_montant, valeur_nominale)
+    if derived is not None:
+        key = f"{prefix}_nb_titres"
+        st.session_state[key] = derived
+        container.number_input(
+            f"Nombre de {unite} (calculé : apport / valeur nominale)",
+            min_value=0,
+            step=1,
+            key=key,
+            disabled=True,
+            help="Dérivé automatiquement : montant de l'apport ÷ valeur nominale d'une part.",
+        )
+        return derived
+    return _int(prefix, "nb_titres", f"Nombre de {unite}", container=container)
+
+
 def _parts_block(
     config: RepeaterConfig,
     prefix: str,
@@ -266,13 +310,19 @@ def _parts_block(
     # sont geres par la couche exercice, hors de ce chemin civil. Pluripersonnel (>=2)
     # inchange : chaque associe garde son apport individuel (apports repartis).
     unipersonnel = not config.collect_exercice_fields and associe_count(config) == 1
+    # A3 (Albane 2026-07-09) : le nb de parts se derive de l'apport quand la valeur nominale
+    # d'une part est connue (capital / nb parts total). SEL d'exercice exclu (actions gerees par
+    # la couche exercice, valeur nominale d'action distincte).
+    valeur_nominale = "" if config.collect_exercice_fields else _societe_valeur_nominale(config)
     if unipersonnel:
         apport_montant = _societe_capital_montant(config)
-        nb_titres = _int(prefix, "nb_titres", f"Nombre de {unite}")
+        nb_titres = _nb_parts_field(prefix, unite, apport_montant, valeur_nominale)
     else:
         col_a, col_b = st.columns(2)
         apport_montant = _text(prefix, "apport_montant", "Apport (montant)", container=col_a)
-        nb_titres = _int(prefix, "nb_titres", f"Nombre de {unite}", container=col_b)
+        nb_titres = _nb_parts_field(
+            prefix, unite, apport_montant, valeur_nominale, container=col_b
+        )
 
     apport = StatutsCivilsApport(
         montant=apport_montant,
@@ -381,8 +431,10 @@ def _render_personne_physique(
     )
     date_naissance = str(st.session_state.get(f"{prefix}_date_naissance") or "").strip()
     ville_naissance = _text(prefix, "ville_naissance", "Ville de naissance", container=col_e)
+    # A4 (Albane 2026-07-09) : le champ accepte un PAYS pour un associe ne a l'etranger.
     departement_naissance = _text(
-        prefix, "departement_naissance", "Departement naissance", container=col_f
+        prefix, "departement_naissance", "Departement naissance (ou pays si étranger)",
+        container=col_f,
     )
 
     col_g, col_h = st.columns(2)

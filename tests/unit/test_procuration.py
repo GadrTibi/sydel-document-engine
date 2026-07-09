@@ -226,13 +226,15 @@ def test_procuration_uses_signature_paragraphs_without_table(tmp_path: Path) -> 
     assert "Jean Durand" in paragraphs
 
 
-def test_procuration_final_block_is_left_aligned(tmp_path: Path) -> None:
-    # PR1 (Albane 2026-06-26) : « que "fait a le" soit a gauche ». Le bloc final
-    # (Fait a / Le / signataire) doit etre aligne a GAUCHE, plus a droite.
+def test_procuration_final_block_alignment(tmp_path: Path) -> None:
+    # PR1 (Albane 2026-06-26) : « Fait à … » / « Le … » restent alignes a GAUCHE.
+    # C5 (Albane 2026-07-09) : le NOM du mandant est desormais aligne a DROITE
+    # (comme la signature client a droite adoptee ailleurs).
     document = Document(_generate(tmp_path))
 
     fait_a = next(p for p in document.paragraphs if p.text == "Fait à Paris")
     le_date = next(p for p in document.paragraphs if p.text == "Le 12/05/2026")
+    nom = next(p for p in document.paragraphs if p.text == "Jean Durand")
     assert fait_a.alignment == WD_ALIGN_PARAGRAPH.LEFT
     assert le_date.alignment == WD_ALIGN_PARAGRAPH.LEFT
-    assert fait_a.alignment != WD_ALIGN_PARAGRAPH.RIGHT
+    assert nom.alignment == WD_ALIGN_PARAGRAPH.RIGHT
