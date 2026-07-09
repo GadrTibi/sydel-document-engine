@@ -315,22 +315,33 @@ def _oneline_address(
 
 
 def _render_dirigeant_civil(prefix: str, index: int) -> None:
-    """Case « Dirigeant (gerant) » + filiation du gerant designe (civils).
+    """Case « Dirigeant (gerant) » de l'associe (civils).
 
-    Le gerant est un associe ; on le designe par une case et on saisit SOUS lui
-    les NOMS DES PARENTS de la declaration de non-condamnation. L'ADRESSE du gerant
+    Le gerant est un associe ; on le designe par une case. L'ADRESSE du gerant
     est REPRISE de l'adresse personnelle deja saisie pour cet associe (§18.5,
     retours Albane 2026-06-17 : plus d'adresse supplementaire). A defaut, le 1er
-    associe physique est gerant (historique).
+    associe physique est gerant (historique). La filiation (DNC) n'est plus
+    saisie ici : une DNC est due pour CHAQUE associe physique (Rafael
+    2026-07-09), la filiation est donc collectee sur chaque associe
+    (cf. ``_render_filiation_dnc``).
     """
     dirigeant_key = f"{prefix}_is_dirigeant"
     _seed(dirigeant_key, index == 0)
-    if not st.checkbox("Dirigeant (gerant)", key=dirigeant_key):
-        return
-    st.caption("Declaration de non-condamnation du gerant (noms des parents)")
+    st.checkbox("Dirigeant (gerant)", key=dirigeant_key)
+
+
+def _render_filiation_dnc(prefix: str) -> tuple[str, str]:
+    """Filiation (noms des parents) de la DNC — pour CHAQUE associe physique.
+
+    Retour Rafael 2026-07-09 : « une declaration de non-condamnation pour CHAQUE
+    associe » (2 associes -> 2 documents), dans tous les cas. Les cles de session
+    ``{prefix}_sig_nom_pere/mere`` sont CONSERVEES (celles du gerant restent lues
+    par ``_collect_gerant_sig`` pour le tronc commun de l'orchestrateur)."""
+    st.caption("Declaration de non-condamnation (noms des parents)")
     col_a, col_b = st.columns(2)
-    _text(prefix, "sig_nom_pere", "Nom du pere", container=col_a)
-    _text(prefix, "sig_nom_mere", "Nom de la mere", container=col_b)
+    nom_pere = _text(prefix, "sig_nom_pere", "Nom du pere", container=col_a)
+    nom_mere = _text(prefix, "sig_nom_mere", "Nom de la mere", container=col_b)
+    return nom_pere, nom_mere
 
 
 def _render_personne_physique(
@@ -403,6 +414,10 @@ def _render_personne_physique(
     )
     adresse_affichee = adresse_perso.adresse_affichee if adresse_perso else ""
 
+    # DNC par associe (Rafael 2026-07-09) : filiation saisie pour CHAQUE associe
+    # personne physique (plus seulement sous la case « Dirigeant »).
+    nom_pere, nom_mere = _render_filiation_dnc(prefix)
+
     apport, parts, _nb = _parts_block(config, prefix, role_statutaire)
 
     if config.collect_dirigeant:
@@ -428,6 +443,9 @@ def _render_personne_physique(
         situation_maritale=situation or None,
         adresse_personnelle=adresse_perso,
         adresse_personnelle_affichee=adresse_affichee or None,
+        # DNC par associe (Rafael 2026-07-09) : filiation portee par le modele.
+        nom_pere=nom_pere or None,
+        nom_mere=nom_mere or None,
         apport=apport,
         parts=parts,
         regime_communautaire_associe=regime_associe,  # SCS4 : DOC-005/006 si communaute

@@ -95,7 +95,6 @@ from sydel_doc_engine.front_app.front_widgets import (
     seed_signature_lieu,
     siege_same_as_perso_checkbox,
 )
-from sydel_doc_engine.utils.grammar import _has_real_decimal, monetary_words_from_value
 
 OPERATION_BY_STRUCTURE: dict[str, tuple[str, str]] = {
     "SPFPL cession": ("cession", "DOC-035"),
@@ -103,10 +102,13 @@ OPERATION_BY_STRUCTURE: dict[str, tuple[str, str]] = {
 }
 
 # Documents d'OPERATION apport (canon « Si apport ») — gates moteur sur
-# dossier_options.apport : contrat d'apport (DOC-041) + attestation capital /
-# liste des souscripteurs (DOC-042) + attestation du commissaire aux apports
-# (DOC-043). Ils s'ajoutent au bundle de creation des que l'operation = apport.
-SPFPL_APPORT_OPERATION_CODES: tuple[str, ...] = ("DOC-041", "DOC-042", "DOC-043")
+# dossier_options.apport : note d'information (DOC-037 — Rafael 2026-07-09 : le
+# document porte cession ET apport, il manquait au bundle apport alors que le
+# generateur et le gate orchestrateur supportaient deja l'apport) + contrat
+# d'apport (DOC-041) + attestation capital / liste des souscripteurs (DOC-042)
+# + attestation du commissaire aux apports (DOC-043). Ils s'ajoutent au bundle
+# de creation des que l'operation = apport.
+SPFPL_APPORT_OPERATION_CODES: tuple[str, ...] = ("DOC-037", "DOC-041", "DOC-042", "DOC-043")
 
 # Documents d'OPERATION cession (canon « Si cession ») : note d'information (DOC-037),
 # PV d'agrement (DOC-038 si la cible a UN associe reel / DOC-039 si PLUSIEURS), acte de
@@ -759,6 +761,17 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:  # noqa: C901
         for field, message in apport_required:
             if not str(payload.get(field) or "").strip():
                 blockers.append(message)
+        # Rafael 2026-07-09 : la note d'information (DOC-037, desormais dans le bundle
+        # apport) rend la repartition APRES apport -> parts totales de la cible requises
+        # et parts apportees <= parts totales (sinon repartition negative/incoherente).
+        nb_total_cible = int(payload.get("cible_nb_parts") or 0)
+        nb_apportees_cible = int(payload.get("apport_nb_parts") or 0)
+        if nb_total_cible < 1:
+            blockers.append("Parts totales de la cible requises (note d'information).")
+        elif nb_apportees_cible > nb_total_cible:
+            blockers.append(
+                "Parts apportees superieures aux parts totales de la societe cible (apport)."
+            )
     if str(payload.get("operation") or "") == "cession":
         # Operation cession : repartition de la cible + prix + siege cible exiges par
         # la note d'info (DOC-037), le PV d'agrement (DOC-038/039) et l'acte (DOC-040).
@@ -1108,8 +1121,14 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         apport=Apport(
             # R5 : montant d'apport groupe par 3 ; les lettres derivent de la valeur
             # brute (parse insensible aux espaces, sortie identique).
+            # Rafael 2026-07-09 (double unite lettres DOC-005/006) : lettres NUES
+            # (« soixante mille »), contrat IDENTIQUE aux slices SELARL/SELAS. Les
+            # lettres portaient « euros » -> la lettre d'avertissement au conjoint
+            # rendait « soixante mille euros (60 000) euros » et la renonciation
+            # « (soixante mille euros) euros ». L'unite est composee au POINT DE
+            # RENDU (statuts cession art. 6 : montant_lettres_avec_unite).
             montant=group_montant(str(payload.get("apport_montant") or "")),
-            montant_lettres=_montant_apport_lettres(payload.get("apport_montant")),
+            montant_lettres=number_words_from_value(payload.get("apport_montant")),
         ),
         depot_fonds=DepotFonds(
             banque=CessionBanque(
@@ -1168,7 +1187,15 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
             numero_rcs=str(payload.get("cible_numero_rcs") or ""),
         ),
         cession_parts=cession_parts_obj,
-        associes_cible=(_build_associes_cible(payload) if not is_apport else []),
+        # Rafael 2026-07-09 : la note d'information (DOC-037) sort AUSSI en apport ->
+        # elle exige la repartition APRES operation. En apport elle est DERIVEE (pas de
+        # roster saisi, flux mono-detenteur V1) : le fondateur garde (total - apportees),
+        # le holding recoit les parts apportees (plage saisie).
+        associes_cible=(
+            _build_associes_cible(payload)
+            if not is_apport
+            else _build_associes_cible_apport(payload)
+        ),
         capital_souscription=CapitalSouscription(
             nb_actions_total=nb_actions_total,
             valeur_nominale_action=valeur_action,
@@ -1542,23 +1569,6 @@ def _render_spfpl_cession_cible(
     }
 
 
-def _montant_apport_lettres(value: object) -> str:
-    """Montant d'apport en lettres AVEC « euros », robuste au DECIMAL (anti double-euro).
-
-    ENTIER : mots nus + « euros » (byte-identique au rendu historique). DECIMAL (7.5,
-    containment 2026-07-06) : on CALCULE la phrase monetaire complete DEPUIS LA FIGURE via
-    `monetary_words_from_value` (« un centime d'euro ») — `number_words_from_value` ne rend plus
-    que la FIGURE sur un decimal, il ne faut plus s'y fier ici. Valeur illisible : figure brute
-    (comportement historique)."""
-    if _has_real_decimal(value):
-        phrase = monetary_words_from_value(value)
-        return phrase or str(value or "")
-    lettres = number_words_from_value(value)
-    if not lettres:
-        return str(value or "")
-    return lettres + " euros"
-
-
 def _parse_amount(value: object) -> int:
     """Parse un montant saisi (« 1 000 », « 1000 ») en entier (espaces/insecables retires)."""
     raw = str(value or "").replace(" ", "").replace(" ", "").replace("\xa0", "")
@@ -1613,6 +1623,41 @@ def _build_associes_cible(payload: dict[str, object]) -> list[object]:
         )
     )
     return associes
+
+
+def _build_associes_cible_apport(payload: dict[str, object]) -> list[object]:
+    """Repartition APRES apport de la cible, DERIVEE (Rafael 2026-07-09, DOC-037 apport).
+
+    Le flux apport V1 est mono-detenteur : l'actionnaire fondateur detient les parts de
+    la cible et en apporte une partie au holding. Apres l'operation :
+      - le fondateur garde `cible_nb_parts - apport_nb_parts` (plage restante NON saisie
+        -> omise, la note n'ecrit jamais une numerotation inventee) ;
+      - le holding (personne morale) recoit `apport_nb_parts`, plage = la plage
+        apportee SAISIE (normalisee « 41 à 100 »).
+    La somme vaut `cible_nb_parts` par construction (garde `_validate` : apportees
+    <= parts totales de la cible).
+    """
+    from sydel_doc_engine.domain.models import AssocieCible
+
+    nb_total = int(payload.get("cible_nb_parts") or 0)
+    nb_apportees = int(payload.get("apport_nb_parts") or 0)
+    return [
+        AssocieCible(
+            civilite_affichage=str(payload.get("civilite") or "Monsieur"),
+            prenom=str(payload.get("prenom") or ""),
+            nom=str(payload.get("nom") or ""),
+            nb_parts_avant=nb_total,
+            nb_parts_apres=max(nb_total - nb_apportees, 0),
+        ),
+        AssocieCible(
+            type="personne_morale",
+            denomination=str(payload.get("denomination") or ""),
+            nb_parts_avant=0,
+            nb_parts_apres=nb_apportees,
+            plage_parts=_normalize_plage(payload.get("apport_plage")),
+            est_present_ou_represente=False,
+        ),
+    ]
 
 
 def _spfpl_ordre_professionnel(payload: dict[str, object]) -> OrdreProfessionnel:

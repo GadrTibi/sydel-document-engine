@@ -99,7 +99,8 @@ def date_input_freeform(label: str, *, key: str, container=None) -> str:
     « 31 decembre ») qu'un calendrier ne peut pas representer et que `parse_french_date` renvoie
     None. On garde donc le meme widget que les autres dates (parite visuelle = selecteur) mais on
     lit la valeur TEXTE de `session_state[key]` (la saisie verbatim « 1er janvier » est preservee).
-    `seed=False` : le pre-remplissage est fait en amont (seed_exercice_dates / seed_closing_date)."""
+    `seed=False` : le pre-remplissage est fait en amont (seed_exercice_dates / seed_closing_date).
+    """
     date_input_with_today(label, key=key, value=date.today(), container=container, seed=False)
     return str(st.session_state.get(key) or "")
 

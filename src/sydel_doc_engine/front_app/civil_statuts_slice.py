@@ -56,6 +56,7 @@ from sydel_doc_engine.front_app.address_oneline import (
     parse_address_full as _parse_address_full,
 )
 from sydel_doc_engine.front_app.associe_repeater import RepeaterConfig, render_associe_repeater
+from sydel_doc_engine.front_app.dnc_par_associe import generate_dnc_autres_associes
 from sydel_doc_engine.front_app.field_derivations import (
     accentuate_french_months,
     calculate_nominal_value,
@@ -575,12 +576,14 @@ def _render_scm_inter_sel(
         st.markdown(f"SEL de l'associe {idx} — {nom_assoc or f'associe {idx}'}")
         col_a, col_b = st.columns(2)
         denom = _text(col_a, prefix, f"inter_sel_{idx}_denomination", "Denomination de la SEL")
+        # Rafael 2026-07-09 (transverse devise) : l'utilisateur ne tape QUE le montant ;
+        # l'unite « euros » est derivee par le moteur (satellites SCM).
         capital = _text(
             col_b,
             prefix,
             f"inter_sel_{idx}_capital",
             "Capital social (affiche)",
-            hint="ex : 1 000 euros",
+            hint="ex : 1 000 (« euros » ajoute automatiquement)",
         )
         siege = _text(st, prefix, f"inter_sel_{idx}_siege", "Adresse du siege de la SEL")
         col_c, col_d, col_e = st.columns(3)
@@ -626,8 +629,13 @@ def _render_scm_inter_sel(
     )
     date_effet = str(st.session_state.get(f"{prefix}_inter_sel_date_effet") or "").strip()
     col_r1, col_r2 = st.columns(2)
+    # Rafael 2026-07-09 (transverse devise) : montant nu, unite derivee par le moteur.
     seuil = _text(
-        col_r1, prefix, "inter_sel_seuil", "Seuil de depense commune", hint="ex : 1 500 euros"
+        col_r1,
+        prefix,
+        "inter_sel_seuil",
+        "Seuil de depense commune",
+        hint="ex : 1 500 (« euros » ajoute automatiquement)",
     )
     annee = _text(
         col_r2, prefix, "inter_sel_annee_ref", "Annee de reference des charges", hint="ex : 2027"
@@ -969,8 +977,33 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:  # noqa: C901
         blockers.extend(_validate_scm_satellites_pair(payload))
     blockers.extend(_validate_inter_sel(payload))
     blockers.extend(_validate_common_docs(payload, structure))
+    blockers.extend(_validate_associes_dnc(payload))
     blockers.extend(_validate_option_is(payload, structure))
     return tuple(dict.fromkeys(blockers))
+
+
+def _validate_associes_dnc(payload: dict[str, object]) -> list[str]:
+    """DNC par associe (Rafael 2026-07-09) : filiation (noms des parents) requise
+    pour CHAQUE associe personne physique autre que le gerant — sa DNC est generee
+    d'office. Celle du gerant est deja validee via les cles ``signataire_*``
+    (tronc commun, ``_validate_common_docs``)."""
+    associes = payload.get("associes") or []
+    if not isinstance(associes, list) or not associes:
+        return []
+    gerant_index = _resolve_gerant_index(payload, associes)
+    blockers: list[str] = []
+    for idx, associe in enumerate(associes):
+        if idx == gerant_index or associe.type_personne != "personne_physique":
+            continue
+        pere = str(associe.nom_pere or "").strip()
+        mere = str(associe.nom_mere or "").strip()
+        if not pere or not mere:
+            nom = associe.nom or associe.prenom or f"associe {idx + 1}"
+            blockers.append(
+                f"Associe {nom} : filiation (nom du pere et de la mere) requise "
+                "pour sa declaration de non-condamnation."
+            )
+    return blockers
 
 
 def _validate_inter_sel(payload: dict[str, object]) -> list[str]:
@@ -1535,6 +1568,12 @@ def generate_dossier(payload: dict[str, object], output_dir: Path) -> GeneratedD
     )
     # O24-02 : la DNC porte le nom du dirigeant (gerant) dans tous les cas.
     docx_paths = rename_dnc_with_signataire(docx_paths, ctx)
+    # DNC par associe (Rafael 2026-07-09) : une declaration de non-condamnation PAR
+    # associe personne physique. Celle du gerant vient de l'orchestrateur (renommee
+    # juste au-dessus) ; on genere celle de chaque AUTRE associe physique, nommee
+    # par son nom (helper partage, tous types civils : SCI / SCI IRIS / SCM / SCS /
+    # micro holding).
+    docx_paths = [*docx_paths, *_generate_dnc_autres_associes_civil(payload, ctx, output_dir)]
     # SCS4 : couple regime (DOC-005/006) per-associe marie sous communaute.
     docx_paths = [*docx_paths, *_generate_regime_civil_par_associe(payload, ctx, output_dir)]
     # SCS5 (Albane 2026-06-25) : liste des souscripteurs (parts/President), SCS uniquement.
@@ -1550,6 +1589,23 @@ def generate_dossier(payload: dict[str, object], output_dir: Path) -> GeneratedD
 
 
 # --- helpers internes ---------------------------------------------------------
+
+
+def _generate_dnc_autres_associes_civil(
+    payload: dict[str, object],
+    base_ctx: DocumentGenerationContext,
+    output_dir: Path,
+) -> list[Path]:
+    """DNC par associe (Rafael 2026-07-09) : la DNC de chaque associe personne
+    physique AUTRE que le gerant (la sienne est produite par l'orchestrateur puis
+    renommee O24-02). Helper partage ``generate_dnc_autres_associes`` — les
+    personnes morales n'ont pas de DNC."""
+    associes = payload.get("associes") or []
+    if not isinstance(associes, list) or not associes:
+        return []
+    gerant_index = _resolve_gerant_index(payload, associes)
+    autres = [a for i, a in enumerate(associes) if i != gerant_index]
+    return generate_dnc_autres_associes(base_ctx, autres, output_dir)
 
 
 def _generate_regime_civil_par_associe(

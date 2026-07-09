@@ -73,6 +73,33 @@ CORPUS_KEYS: tuple[str, ...] = (
     "micro_holding",
 )
 
+# R11 (Rafael 2026-07-09) : nombre d'ASSOCIÉS PERSONNES PHYSIQUES du payload de
+# chaque type du corpus — le bundle doit porter EXACTEMENT une DNC par associé
+# physique. Tenu ALIGNÉ sur les payloads assemblés par ``build_corpus`` (tout
+# changement de roster d'associés dans un payload doit mettre cette table à jour ;
+# le test R11 échoue sinon, c'est son rôle).
+EXPECTED_DNC_PP: dict[str, int] = {
+    "selarl": 1,  # unipersonnelle
+    "selarl_regime": 1,
+    "selarl_cession_medical": 1,
+    "selarl_cession_dentaire": 1,
+    "selarl_cession_scm": 1,
+    "selas_multi": 1,  # 1 personne physique + 1 personne morale (pas de DNC PM)
+    "selas_multi_phys": 2,  # Durand + Martin
+    "selas_uni_medecin": 1,
+    "selas_uni_dentiste": 1,
+    "spfpl_cession": 1,  # associé unique (multi bloqué par le moteur)
+    "spfpl_cession_vn1": 0,  # bundle FILTRÉ aux statuts seuls (aucune DNC attendue)
+    "spfpl_apport": 1,
+    "sas": 1,  # actionnaire unique
+    "sasu_holding": 1,
+    "sci": 2,  # Durand + Martin
+    "sci_iris": 1,  # 1 personne morale + 1 personne physique
+    "scm": 2,
+    "scs": 2,  # commandité + commanditaire
+    "micro_holding": 2,  # Durand + Martin
+}
+
 
 def _normalise_civil(payload: dict) -> dict:
     """Aligne le payload civil des tests sur ce que l'UI RÉELLE envoie.
@@ -219,8 +246,22 @@ def build_corpus(base_dir: Path) -> dict[str, dict[str, str]]:  # noqa: C901 - a
     corpus["spfpl_cession"] = _bundle(
         spfpl_slice.generate_dossier(_spfpl_payload_ui("SPFPL cession"), base_dir / "spfpl_cession")
     )
+    # Rafael 2026-07-09 : actionnaire MARIE sous communaute legale -> DOC-005/006
+    # (renonciation + avertissement conjoint) entrent dans le corpus. La double unite
+    # « soixante mille euros (60 000) euros » de la lettre avait echappe a R7 parce que
+    # le bundle scanne ne CONTENAIT pas la lettre (payload sans regime communautaire).
+    # Valeurs accentuees = ce que l'UI reelle derive (situation_display /
+    # regime_matrimonial_from_status).
+    spfpl_apport_payload = _spfpl_payload_ui("SPFPL apport")
+    spfpl_apport_payload.update(
+        {
+            "situation_maritale": "marié",
+            "regime_matrimonial": "la communauté légale",
+            "regime_communautaire": True,
+        }
+    )
     corpus["spfpl_apport"] = _bundle(
-        spfpl_slice.generate_dossier(_spfpl_payload_ui("SPFPL apport"), base_dir / "spfpl_apport")
+        spfpl_slice.generate_dossier(spfpl_apport_payload, base_dir / "spfpl_apport")
     )
     # Variante valeur nominale = 1 € : surface du retour élision (« actions de un
     # euro » attendu « d'un euro », R6). Bundle restreint aux STATUTS : les autres

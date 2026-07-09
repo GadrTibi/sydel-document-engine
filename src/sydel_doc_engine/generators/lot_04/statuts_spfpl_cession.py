@@ -103,9 +103,16 @@ class StatutsSpfplCessionGenerator:
                 "[montant_apport]": montant_euro_symbole(
                     required_text(ctx.apport.montant, "apport.montant")
                 ),
-                "[montant_apport_lettres]": required_text(
-                    ctx.apport.montant_lettres,
-                    "apport.montant_lettres",
+                # Rafael 2026-07-09 (double unite) : le slice fournit desormais des
+                # lettres NUES (« soixante mille », contrat commun SELARL/SELAS/SPFPL) ;
+                # l'unite est composee ICI (« soixante mille euros », byte-identique au
+                # rendu historique ; DECIMAL -> phrase monetaire « un centime d'euro »).
+                "[montant_apport_lettres]": montant_lettres_avec_unite(
+                    required_text(
+                        ctx.apport.montant_lettres,
+                        "apport.montant_lettres",
+                    ),
+                    required_text(ctx.apport.montant, "apport.montant"),
                 ),
                 "[nom_banque]": required_text(
                     ctx.depot_fonds.banque.nom,

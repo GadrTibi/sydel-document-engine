@@ -26,6 +26,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_statuts_title_box,
     new_document_from_model,
 )
+from sydel_doc_engine.utils.grammar import capitalize_first, euro_word, montant_avec_euros
 
 DOCUMENT_CODE = "CODE-STATUTS-SCM-001"
 MAX_ASSOCIES = 6
@@ -163,14 +164,19 @@ class _ResolvedStatutsScm:
 
     def replacements(self) -> dict[str, str]:
         depot = self.statuts.capital_depot
+        capital_social = _required_text(
+            self.statuts.capital_social,
+            "statuts_civils.capital_social",
+        )
         return {
             "[denomination_societe]": self.denomination,
             "[denomination_societe_courte]": self.denomination_courte,
             "[forme_sociale]": self.forme_sociale,
-            "[capital_social]": _required_text(
-                self.statuts.capital_social,
-                "statuts_civils.capital_social",
-            ),
+            # Rafael 2026-07-09 (R12/devise, en-tete) : le modele tokenise a perdu
+            # l'espace (« [capital_social]euros ») -> cle COMBINEE traitee AVANT la
+            # cle nue (ordre du dict), qui restaure « 1 000 euros ».
+            "[capital_social]euros": f"{capital_social} euros",
+            "[capital_social]": capital_social,
             "[capital_lettres]": _required_text(
                 self.statuts.capital_social_lettres,
                 "statuts_civils.capital_social_lettres",
@@ -209,16 +215,21 @@ def _add_associate_block(document, data: _ResolvedStatutsScm) -> None:
 
 
 def _add_apport_block(document, data: _ResolvedStatutsScm) -> None:
+    # Rafael 2026-07-09 (SCM art. 6, devise automatique) : lettres + « euros »
+    # (accord euro/euros au montant) et chiffres + « € », derives par le moteur —
+    # l'utilisateur ne redige jamais l'unite.
     for associe in data.associes:
         apport = _required_apport(associe)
+        montant = _required_text(apport.montant, "associes[].apport.montant")
         add_paragraph(
             document,
             f"{_apport_label(associe)} apporte à la Société la somme de "
-            f"{_required_text(apport.montant_lettres, 'associes[].apport.montant_lettres')}",
+            f"{_required_text(apport.montant_lettres, 'associes[].apport.montant_lettres')} "
+            f"{euro_word(montant)}",
         )
         add_paragraph(
             document,
-            f"ci- {_required_text(apport.montant, 'associes[].apport.montant')}.",
+            f"ci- {montant} €.",
         )
     capital_lettres = _required_text(
         data.statuts.capital_social_lettres,
@@ -230,7 +241,7 @@ def _add_apport_block(document, data: _ResolvedStatutsScm) -> None:
     )
     add_paragraph(
         document,
-        f"Total des apports {capital_lettres} ({capital_social})",
+        f"Total des apports {capital_lettres} {euro_word(capital_social)} ({capital_social} €)",
     )
     depot = data.statuts.capital_depot
     banque_nom = _required_text(
@@ -281,9 +292,10 @@ def _add_morale_identity(document, associe: StatutsCivilsAssocie) -> None:
         f"{_required_text(associe.forme_juridique, 'associes[].forme_juridique')} de "
         f"{_required_text(associe.profession, 'associes[].profession')}",
     )
+    # Rafael 2026-07-09 (transverse devise) : unite DERIVEE si montant nu (idempotent).
     add_paragraph(
         document,
-        f"Au capital social de {capital_social}",
+        f"Au capital social de {montant_avec_euros(capital_social)}",
     )
     add_paragraph(
         document,
@@ -310,9 +322,13 @@ def _add_physical_identity(document, associe: StatutsCivilsAssocie) -> None:
     gender = associe.genre or Gender.MASCULIN
     born = "Née" if gender == Gender.FEMININ else "Né"
     add_paragraph(document, _signature_label(associe))
+    # Rafael 2026-07-09 (R12) : chaque element du bloc liste commence par une MAJUSCULE
+    # (« Chirurgien-dentiste de profession », « Célibataire »), comme les lignes voisines
+    # (7.2 Albane, patron SPFPL/SELAS).
     add_paragraph(
         document,
-        f"{_required_text(associe.profession, 'associes[].profession')} de profession",
+        f"{capitalize_first(_required_text(associe.profession, 'associes[].profession'))}"
+        " de profession",
     )
     add_paragraph(
         document,
@@ -326,7 +342,9 @@ def _add_physical_identity(document, associe: StatutsCivilsAssocie) -> None:
     )
     add_paragraph(
         document,
-        _required_text(associe.situation_maritale, "associes[].situation_maritale"),
+        capitalize_first(
+            _required_text(associe.situation_maritale, "associes[].situation_maritale")
+        ),
     )
 
 

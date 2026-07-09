@@ -446,6 +446,36 @@ def _ligne_situation_maritale(founder: SpfplPerson, field_name: str) -> str:
     )
 
 
+def _situation_maritale_avec_conjoint(founder: SpfplPerson, field_name: str) -> str:
+    """Statut matrimonial + conjoint/partenaire, SANS regime (Rafael 2026-07-09).
+
+    Retour Rafael 2026-07-09 (statuts SPFPL apport, comparution) : « Marié » nu ->
+    « Marié avec {Prénom Nom} » (« pas de mention sans nom »). Meme wording que le
+    contrat d'apport (DOC-041, cle modele « [situation_maritale] avec [nom_conjoint] » :
+    prenom + nom, sans civilite). Branche via les gardes PARTAGEES :
+      - MARIE (`mentions_conjoint`) -> « Marié avec <prenom nom> » (required_text :
+        conjoint absent -> marqueur visible, fail-loud, le front l'exige de toute facon) ;
+      - PACSE (`mentions_partenaire_pacse`) -> clause partenaire ratifiee Albane 6.3/7.3
+        (« Pacsé avec {Civilite Prenom Nom} », "" si non renseigne) ;
+      - AUTRE -> statut seul.
+    M1 (7.2) : 1re lettre en MAJUSCULE, comme chaque element de la liste du soussigne.
+    Remplace le bare [situation_maritale] aux 3 blocs liste des statuts SPFPL
+    (comparution apport + nomination du President apport/cession — propagation
+    regle 68 Q4 : meme surface « bloc liste identite », meme intention).
+    """
+    statut = required_text(founder.situation_maritale, f"{field_name}.situation_maritale")
+    if mentions_conjoint(founder.situation_maritale):
+        conjoint = founder.conjoint
+        prenom = required_text(
+            conjoint.prenom if conjoint else None, f"{field_name}.conjoint.prenom"
+        )
+        nom = required_text(conjoint.nom if conjoint else None, f"{field_name}.conjoint.nom")
+        return _capitalize_first(f"{statut} avec {prenom} {nom}")
+    if mentions_partenaire_pacse(founder.situation_maritale):
+        return _capitalize_first(f"{statut}{partenaire_pacse_clause(founder.conjoint)}")
+    return _capitalize_first(statut)
+
+
 def _capitalize_first(value: str) -> str:
     """Capitalise la 1re lettre en preservant le reste (« chirurgien-dentiste » ->
     « Chirurgien-dentiste »). N'utilise PAS str.capitalize() qui abaisserait le reste
@@ -489,19 +519,24 @@ def founder_common_replacements(founder: SpfplPerson, field_name: str) -> dict[s
         ),
         "[adresse_personnelle]": person_address_display(founder, field_name),
         # M1 (Akainu 2026-07-06, propagation regle 68 Q4) : ce token bare porte le statut
-        # matrimonial SEUL dans la nomination du President (cession) et la comparution
-        # (apport). 7.2 exige une MAJUSCULE en tete de chaque element -> « Célibataire »,
-        # « Marié », comme la ligne combinee. (La ligne combinee marie de la comparution
-        # cession passe par [ligne_situation_maritale], traite longest-first.)
+        # matrimonial SEUL. 7.2 exige une MAJUSCULE en tete de chaque element ->
+        # « Célibataire », « Marié ». Conserve pour compatibilite (plus reference par les
+        # templates SPFPL depuis Rafael 2026-07-09 — remplace par le token _avec_conjoint).
         "[situation_maritale]": _capitalize_first(
             required_text(
                 founder.situation_maritale,
                 f"{field_name}.situation_maritale",
             )
         ),
-        # Ligne de comparution matrimoniale BRANCHEE (marie -> ligne complete ;
-        # sinon -> juste le statut). Seul le modele CESSION porte ce token ; l'apport
-        # rend deja le bare [situation_maritale] (token inoffensif s'il n'apparait pas).
+        # Rafael 2026-07-09 : statut + conjoint/partenaire SANS regime (« Marié avec
+        # Marine Le Painnisse ») pour les blocs liste (comparution apport + nomination
+        # du President). NB substring-safe : « [situation_maritale] » (crochet fermant)
+        # n'est PAS un sous-texte de ce token.
+        "[situation_maritale_avec_conjoint]": _situation_maritale_avec_conjoint(
+            founder, field_name
+        ),
+        # Ligne de comparution matrimoniale BRANCHEE (marie -> ligne complete AVEC
+        # regime ; sinon -> juste le statut). Seul le modele CESSION porte ce token.
         "[ligne_situation_maritale]": _ligne_situation_maritale(founder, field_name),
         "[nationalite]": required_text(founder.nationalite, f"{field_name}.nationalite"),
         "[numero_ordre]": required_text(ordre.numero, f"{field_name}.ordre.numero"),

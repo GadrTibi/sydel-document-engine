@@ -56,7 +56,9 @@ def _morale_associe(*, parts: int = 70, apport: str = "700") -> StatutsCivilsAss
             nom="Durand",
             fonction="gerant",
         ),
-        apport=StatutsCivilsApport(montant=apport, montant_lettres="sept cents euros"),
+        # Rafael 2026-07-09 : lettres NUES comme le front reel (number_words_from_value) ;
+        # l'unite « euro(s) » est desormais DERIVEE par le generateur (art. 6).
+        apport=StatutsCivilsApport(montant=apport, montant_lettres="sept cents"),
         parts=StatutsCivilsParts(nb=parts),
     )
 
@@ -75,7 +77,8 @@ def _person_associe(*, parts: int = 50, apport: str = "500") -> StatutsCivilsAss
         nationalite="francaise",
         situation_maritale="celibataire",
         adresse_personnelle_affichee="2 rue Exemple, 69000 Lyon",
-        apport=StatutsCivilsApport(montant=apport, montant_lettres="cinq cents euros"),
+        # Rafael 2026-07-09 : lettres NUES (unite derivee par le generateur, art. 6).
+        apport=StatutsCivilsApport(montant=apport, montant_lettres="cinq cents"),
         parts=StatutsCivilsParts(nb=parts),
     )
 
@@ -105,7 +108,8 @@ def _context() -> DocumentGenerationContext:
             type="scm",
             forme_sociale="Societe civile de moyens",
             capital_social="1200",
-            capital_social_lettres="mille deux cents euros",
+            # Rafael 2026-07-09 : lettres NUES (unite derivee par le generateur).
+            capital_social_lettres="mille deux cents",
             nb_parts_total=120,
             valeur_nominale_part="10 euros",
             capital_depot=StatutsCivilsCapitalDepot(
@@ -148,7 +152,12 @@ def test_statuts_scm_generates_dynamic_associates_apports_parts_and_signatures(
     assert "SELARL DURAND, représentée par Monsieur Jean Durand apporte" not in text
     assert "SELARL DURAND, représentée par Monsieur Jean Durand 70 parts" not in text
     assert "Madame Alice Martin 50 parts" in text
-    assert "ci- 500." in text
+    # Rafael 2026-07-09 (SCM art. 6, devise automatique) : lettres + « euros » et
+    # chiffres + « € », derives par le moteur — assertion de conformite du jour meme.
+    assert "ci- 500 €." in text
+    assert "ci- 700 €." in text
+    assert "Total des apports mille deux cents euros (1200 €)" in text
+    assert "euros euros" not in text
     assert "510" not in text
     assert "« Lu et approuvé »" in text
     assert "STATUTS" in table_text

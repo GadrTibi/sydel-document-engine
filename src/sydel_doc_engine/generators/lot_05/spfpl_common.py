@@ -24,6 +24,7 @@ from sydel_doc_engine.utils.departements import departement_nom
 from sydel_doc_engine.utils.grammar import (  # noqa: F401
     elision_de,
     euro_word,
+    montant_avec_euros,
     montant_lettres_avec_unite,
 )
 
@@ -331,10 +332,14 @@ def professional_entity_presentation(entity: ProfessionalEntity, field_name: str
     if entity.siege is None:
         raise ValueError(f"{field_name}.siege est obligatoire pour {CORE_DOCUMENT_CODE}.")
     representant = required_representant(entity.representant, f"{field_name}.representant")
+    # Rafael 2026-07-09 (transverse devise) : unite derivee si montant nu (idempotent).
+    capital = montant_avec_euros(
+        required_text(entity.capital_social, f"{field_name}.capital_social")
+    )
     return (
         f"{required_text(entity.denomination, f'{field_name}.denomination')}, "
         f"{required_text(entity.forme_sociale, f'{field_name}.forme_sociale')} "
-        f"au capital de {required_text(entity.capital_social, f'{field_name}.capital_social')}, "
+        f"au capital de {capital}, "
         f"dont le siège est situé {address_display(entity.siege, f'{field_name}.siege')}, "
         "immatriculée au Registre du Commerce et des Sociétés de "
         f"{required_text(entity.ville_rcs, f'{field_name}.ville_rcs')} "

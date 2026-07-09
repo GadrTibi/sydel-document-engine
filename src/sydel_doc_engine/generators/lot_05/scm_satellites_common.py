@@ -22,6 +22,7 @@ from sydel_doc_engine.domain.models import (
 )
 from sydel_doc_engine.generators.lot_05.scm_satellites_templates import TemplateBlock
 from sydel_doc_engine.rendering.docx_builder import add_paragraph, new_document
+from sydel_doc_engine.utils.grammar import montant_avec_euros
 
 DOCUMENT_CODE = "CODE-SCM-SAT-DOCX-001"
 SCM_STRUCTURE = "SCM"
@@ -77,9 +78,13 @@ def societe_replacements(ctx: DocumentGenerationContext) -> dict[str, str]:
     return {
         "[denomination_societe]": _required_text(company.denomination, "societe.denomination"),
         "[forme_sociale]": _company_forme_juridique(company),
-        "[capital_social]": _required_text(
-            company.capital_social or company.capital,
-            "societe.capital_social",
+        # Rafael 2026-07-09 (transverse devise) : « Au capital de [capital_social] »
+        # du modele n'a pas d'unite -> derivee ici (montant nu -> « 1 000 euros »).
+        "[capital_social]": montant_avec_euros(
+            _required_text(
+                company.capital_social or company.capital,
+                "societe.capital_social",
+            )
         ),
         "[adresse_siege]": _address_display(company.siege, "societe.siege"),
         "[ville_rcs]": _required_text(company.ville_rcs, "societe.ville_rcs"),
@@ -120,9 +125,12 @@ def liste_depenses_communes_replacements(ctx: DocumentGenerationContext) -> dict
     return {
         "[denomination_societe]": _required_text(company.denomination, "societe.denomination"),
         "[forme_sociale]": _company_forme_juridique(company),
-        "[capital_social]": _required_text(
-            company.capital_social or company.capital,
-            "societe.capital_social",
+        # Rafael 2026-07-09 (transverse devise) : unite derivee (cf. societe_replacements).
+        "[capital_social]": montant_avec_euros(
+            _required_text(
+                company.capital_social or company.capital,
+                "societe.capital_social",
+            )
         ),
         "[adresse_siege]": _address_display(company.siege, "societe.siege"),
         "[ville_rcs]": _required_text(company.ville_rcs, "societe.ville_rcs"),
@@ -182,9 +190,13 @@ def reglement_interieur_replacements(ctx: DocumentGenerationContext) -> dict[str
                 locals_context.adresse_affichee,
                 "locaux.adresse_affichee",
             ),
-            "[seuil_depense_commune]": _required_text(
-                ctx.reglement_interieur.seuil_depense_commune,
-                "reglement_interieur.seuil_depense_commune",
+            # Rafael 2026-07-09 (transverse devise) : « excède la somme de [seuil] »
+            # -> unite derivee si montant nu (l'utilisateur ne tape plus « euros »).
+            "[seuil_depense_commune]": montant_avec_euros(
+                _required_text(
+                    ctx.reglement_interieur.seuil_depense_commune,
+                    "reglement_interieur.seuil_depense_commune",
+                )
             ),
             "[annee_reference_charges]": _required_text(
                 ctx.reglement_interieur.annee_reference_charges,
@@ -306,9 +318,13 @@ def _party_replacements(
             societe.forme_juridique,
             f"{prefix}.societe.forme_juridique",
         ),
-        f"[capital_social_societe_{source_index}]": _required_text(
-            societe.capital_social,
-            f"{prefix}.societe.capital_social",
+        # Rafael 2026-07-09 (transverse devise) : « au capital de [capital_social_societe_N] »
+        # du modele n'a pas d'unite -> derivee ici (idempotent sur « 1 000 euros »).
+        f"[capital_social_societe_{source_index}]": montant_avec_euros(
+            _required_text(
+                societe.capital_social,
+                f"{prefix}.societe.capital_social",
+            )
         ),
         f"[adresse_siege_societe_{source_index}]": _address_display(
             societe.siege,

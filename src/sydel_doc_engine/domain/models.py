@@ -714,6 +714,12 @@ class StatutsCivilsAssocie(BaseModel):
     # generes UNE FOIS PAR personne concernee. Tant que le moteur n'emet pas par
     # personne, ce bloc alimente le formulaire et l'agregation (cf. slice SELAS).
     regime_communautaire_associe: RegimeCommunautaireAssocie | None = None
+    # DNC par ASSOCIE (Rafael 2026-07-09) : filiation propre a CHAQUE associe
+    # personne physique — une declaration de non-condamnation (DOC-001) PAR associe
+    # dans tous les types multi-associes, plus seulement celle du dirigeant.
+    # Champs additifs et optionnels (None pour une personne morale).
+    nom_pere: str | None = None
+    nom_mere: str | None = None
 
 
 class StatutsCivilsCapitalDepot(BaseModel):

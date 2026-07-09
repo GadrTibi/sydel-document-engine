@@ -63,7 +63,19 @@ def parse_address_full(text: str) -> Address | None:
     if m:
         num_voie, voie = m.group(1).strip(), m.group(2).strip()
     else:
-        num_voie, voie = "", before
+        # Complement d'adresse AVANT le numero (nom de residence / batiment / lieu-dit) :
+        # « Maison Blanche 14 boulevard Carabacel ». Bug Albane 2026-07-08 : le parseur
+        # exigeait un chiffre EN TETE -> toute adresse a complement etait rejetee (None)
+        # et bloquait la generation (« adresse/CP/ville requis ») alors qu'elle etait
+        # saisie. On capte le PREMIER numero de voie et on garde le complement COLLE au
+        # numero (num_voie) : ordre d'origine preserve, zero perte (le complement doit
+        # figurer dans l'adresse). Regression nulle sur les adresses commencant deja par
+        # un chiffre (branche `if m` ci-dessus, inchangee).
+        m2 = re.match(r"(.+?\d+\s*(?:bis|ter|quater|[a-z])?)[\s,]+(.+)", before, re.IGNORECASE)
+        if m2:
+            num_voie, voie = m2.group(1).strip(), m2.group(2).strip()
+        else:
+            num_voie, voie = "", before
     if not (num_voie and voie and cp and ville):
         return None
     return Address(

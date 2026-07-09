@@ -349,6 +349,12 @@ def _render_one_selarl_membre(index: int) -> StatutsCivilsAssocie | None:
         situation = copyable_text_input(col_i, "Situation matrimoniale", key=f"{prefix}_situation")
         profession = copyable_text_input(st, "Profession", key=f"{prefix}_profession")
         adresse = copyable_text_input(st, "Adresse personnelle (affichee)", key=f"{prefix}_adresse")
+        # DNC par associe (Rafael 2026-07-09) : chaque associe personne physique a sa
+        # propre declaration de non-condamnation -> filiation saisie PAR membre.
+        st.caption("Declaration de non-condamnation (noms des parents)")
+        col_pere, col_mere = st.columns(2)
+        nom_pere = copyable_text_input(col_pere, "Nom du pere", key=f"{prefix}_sig_nom_pere")
+        nom_mere = copyable_text_input(col_mere, "Nom de la mere", key=f"{prefix}_sig_nom_mere")
         col_j, col_k, col_l = st.columns(3)
         ordre_dep = copyable_text_input(col_j, "Departement ordre", key=f"{prefix}_ordre_dep")
         numero_ordre = copyable_text_input(col_k, "Numero ordre", key=f"{prefix}_numero_ordre")
@@ -370,7 +376,12 @@ def _render_one_selarl_membre(index: int) -> StatutsCivilsAssocie | None:
             departement_naissance=dep_naissance or None,
             nationalite=nationalite or None,
             situation_maritale=situation or None,
+            # DNC par associe : adresse STRUCTUREE derivee de la saisie affichee (meme
+            # parseur O24-03 que les autres slices) — requise par DOC-001 du membre.
+            adresse_personnelle=_parse_address_full(adresse),
             adresse_personnelle_affichee=adresse or None,
+            nom_pere=nom_pere or None,
+            nom_mere=nom_mere or None,
             ordre_departemental=ordre_dep or None,
             numero_ordre=numero_ordre or None,
             numero_rpps=numero_rpps or None,

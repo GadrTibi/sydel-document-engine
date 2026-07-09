@@ -11,6 +11,7 @@ from sydel_doc_engine.domain.models import (
     DocumentGenerationContext,
     StatutsCivilsAssocie,
 )
+from sydel_doc_engine.utils.grammar import montant_avec_euros
 
 OUTPUT_FILENAME = "liste_souscripteurs_scs.docx"
 _SOURCE_NAME = "Liste_souscripteurs_SCS_modele.docx"
@@ -129,7 +130,11 @@ class ListeSouscripteursScsGenerator:
                 (company.forme_sociale_complete if company else None)
                 or (company.forme_sociale if company else None)
             ),
-            "[capital_social]": _txt(company.capital_social if company else None),
+            # Rafael 2026-07-09 (transverse devise) : « au capital de [capital_social] »
+            # du modele n'a pas d'unite -> derivee (montant nu -> « 1 000 euros »).
+            "[capital_social]": montant_avec_euros(
+                _txt(company.capital_social if company else None)
+            ),
             "[adresse_siege]": _siege(company),
             "[ville_rcs]": _txt(company.ville_rcs if company else None),
             "[montant_sous]": str(total_montant),

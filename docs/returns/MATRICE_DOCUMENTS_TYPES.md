@@ -21,7 +21,7 @@
 
 | DOC | Nom | Générateur | Fichier de sortie | Types porteurs | Condition d'activation | Partage |
 |---|---|---|---|---|---|---|
-| DOC-001 | Déclaration sur l'honneur de non-condamnation | `lot_01/declaration_non_condamnation.py` | `declaration_non_condamnation.docx` (renommée avec le nom du dirigeant, O24-02, via `rename_dnc_with_signataire`) | **TOUS (11)** | tous les dossiers ; une DNC PAR dirigeant | **Partagé** |
+| DOC-001 | Déclaration sur l'honneur de non-condamnation | `lot_01/declaration_non_condamnation.py` | `declaration_non_condamnation_<Nom>.docx` (nom du signataire O24-02 via `rename_dnc_with_signataire` ; celles des AUTRES associés via le helper partagé `front_app/dnc_par_associe.py`) | **TOUS (11)** | tous les dossiers ; **une DNC PAR ASSOCIÉ personne physique** (Rafael 2026-07-09 — 2 associés → 2 documents, pas de DNC pour une personne morale ; verrou R11) | **Partagé** |
 | DOC-002 | Autorisation de domiciliation | `lot_01/autorisation_domiciliation.py` | `autorisation_domiciliation.docx` | **TOUS (11)** | tous les dossiers | **Partagé structure-aware** (mention capital variable MICRO_HOLDING) — ⚠️ **VALIDÉE Albane, ne pas modifier** (mise en forme 1.8) |
 | DOC-003 | Procuration | `lot_01/procuration.py` | `procuration.docx` | **TOUS (11)** | tous les dossiers | **Partagé structure-aware** (« Fait pour servir » omis pour SASU_HOLDING, `procuration.py:91`) |
 | DOC-004 | PV nomination dirigeant (clé technique `pv_nomination_gerant`) | `lot_02/pv_nomination_gerant.py` | `pv_nomination_gerant.docx` | SELARL, SELAS, SPFPL cession, SPFPL apport, SCS, SCI, SCI IRIS, SCM, MICRO_HOLDING (9) | toujours pour ces types | **Partagé** (label affiché « dirigeant », A26-24/A26-label) |

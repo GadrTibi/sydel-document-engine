@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import re
 import unicodedata
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 
 from _accents import MOTS_NON_ACCENTUES_INTERDITS
 
@@ -224,12 +224,19 @@ def rule_r6_elision(text: str) -> list[str]:
 # R7 — double unité / double titre
 # ---------------------------------------------------------------------------
 
-_R7 = re.compile(r"euros? euros?\b|d['’]euro euros?\b|Dr Docteur\b|Docteur Docteur\b")
+# Rafael 2026-07-09 (lettre avertissement conjoint SPFPL apport) : la double unité
+# AUTOUR d'une parenthèse échappait au motif adjacent — « soixante mille euros
+# (60 000) euros » et « (soixante mille euros) euros » sont désormais couverts.
+_R7 = re.compile(
+    r"euros? euros?\b|d['’]euro euros?\b|Dr Docteur\b|Docteur Docteur\b"
+    r"|euros?\s*\([\d\s  .,]+\)\s*euros?\b"
+    r"|euros?\)\s*euros?\b"
+)
 
 
 def rule_r7_double_unite(text: str) -> list[str]:
     """« euro euro », « euros euros », « d'euro euros », « Dr Docteur »,
-    « Docteur Docteur » interdits."""
+    « Docteur Docteur », « euros (60 000) euros », « (… euros) euros » interdits."""
     return _find_all(text, _R7)
 
 
@@ -291,6 +298,96 @@ def rule_r10_nom_fichier_statuts(doc_name: str) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
+# R11 — une DNC PAR associé personne physique (règle de BUNDLE)
+# ---------------------------------------------------------------------------
+
+# Retour Rafael 2026-07-09 : « il faut une déclaration de non-condamnation pour
+# CHAQUE associé — 2 associés = 2 documents », dans TOUS les cas (SCI, SCI IRIS,
+# SCS cités ; règle générale partout). Règle de BUNDLE (pas de texte) : elle reçoit
+# les NOMS des documents d'un bundle + le nombre attendu d'associés personnes
+# physiques, et vérifie que le compte de DNC est exact. Ne figure pas dans RULES
+# (signature différente) — appliquée par ``test_r11_dnc_par_associe``.
+_R11_DNC_PREFIX = "declaration_non_condamnation"
+
+
+def rule_r11_dnc_par_associe(
+    doc_names: Iterable[str], nb_associes_pp: int
+) -> list[str]:
+    """Le bundle porte EXACTEMENT une DNC par associé personne physique."""
+    dnc = sorted(
+        name
+        for name in doc_names
+        if name.startswith(_R11_DNC_PREFIX) and name.endswith(".docx")
+    )
+    if len(dnc) == nb_associes_pp:
+        return []
+    return [
+        f"{len(dnc)} DNC générée(s) ({', '.join(dnc) or 'aucune'}) "
+        f"pour {nb_associes_pp} associé(s) personne physique"
+    ]
+
+
+R11_LABEL = "nb de DNC ≠ nb d'associés personnes physiques"
+
+
+# ---------------------------------------------------------------------------
+# R12 — majuscule en début de paragraphe (Rafael 2026-07-09)
+# ---------------------------------------------------------------------------
+
+# Un paragraphe qui commence par une minuscule (latin accentué compris) = violation,
+# HORS listes/tirets/plages connues (verbatim Rafael). Concrètement :
+#   - listes/tirets : le marqueur « - » est DANS le texte des items (ils ne commencent
+#     pas par une lettre minuscule) ; les marqueurs alphabétiques « a) / b) » sont
+#     exclus explicitement ;
+#   - CONTINUATION de phrase : une minuscule est légitime quand le paragraphe
+#     précédent n'a PAS terminé sa phrase (fin sans « . ! ? … » — identités de type
+#     DNC « demeurant / fils de », retours à la ligne en milieu de phrase des modèles,
+#     énumérations après « : » ou « , »). On ne flague donc qu'une minuscule qui OUVRE
+#     une phrase (après un paragraphe terminé par une ponctuation finale) ;
+#   - continuations connues même après ponctuation : « la somme de … » (apports
+#     SCS/SCM, suite de « - X apporte, ») et les renvois comptables « ci- / ci<TAB> » ;
+#   - plage connue : « sous réserve des interdictions légales … » — VERBATIM du modèle
+#     source des statuts SEL (typo du modèle, byte-locké ; correction = décision
+#     Albane, cf. rapport Rafael 2026-07-09).
+_R12_MINUSCULE = re.compile(r"^[a-zà-öø-ÿœ]")
+_R12_FIN_DE_PHRASE = re.compile(r"[.!?…]\s*[»\"')]*\s*$")
+_R12_EXCEPTIONS = (
+    re.compile(r"^la somme de "),
+    re.compile(r"^ci[-\s ]"),
+    re.compile(r"^[a-z]\)"),  # marqueur d'énumération « a) / b) »
+    re.compile(r"^sous réserve des interdictions légales"),  # modèle SEL verbatim
+    # Énumérations SANS tiret des modèles sources (items de liste verbatim dont
+    # l'item précédent finit par un point) : pacte SCM (bloc adhésion « Déclare : »)
+    # et actes de cession de cabinet (liste des éléments cédés).
+    re.compile(r"^avoir pris connaissance des termes du pacte"),  # pacte SCM verbatim
+    re.compile(r"^les dossiers, archives et informations"),  # actes cession verbatim
+)
+
+
+def rule_r12_majuscule_debut(text: str) -> list[str]:
+    """Chaque paragraphe qui OUVRE une phrase commence par une MAJUSCULE (hors
+    listes/tirets, continuations de phrase et plages connues des modèles)."""
+    violations: list[str] = []
+    offset = 0
+    previous = ""
+    for line in text.split("\n"):
+        stripped = line.lstrip(" \t  ")
+        starts_sentence = not previous or bool(_R12_FIN_DE_PHRASE.search(previous))
+        if (
+            stripped
+            and starts_sentence
+            and _R12_MINUSCULE.match(stripped)
+            and not any(pattern.match(stripped) for pattern in _R12_EXCEPTIONS)
+        ):
+            start = offset + (len(line) - len(stripped))
+            violations.append(_extract(text, start, min(start + 40, len(text))))
+        if stripped:
+            previous = stripped
+        offset += len(line) + 1
+    return violations
+
+
+# ---------------------------------------------------------------------------
 # Registre des règles
 # ---------------------------------------------------------------------------
 
@@ -305,6 +402,9 @@ RULES: dict[str, Callable[[str], list[str]]] = {
     "R8": rule_r8_double_repartition,
     "R9": rule_r9_ordre_departement,
     "R10": rule_r10_nom_fichier_statuts,
+    # NB : R11 est portée par le chantier DNC parallèle (2026-07-09) — numérotation
+    # réservée, ne pas réutiliser.
+    "R12": rule_r12_majuscule_debut,
 }
 
 # Règles appliquées au NOM DE FICHIER du document (les autres reçoivent le texte).
@@ -321,4 +421,5 @@ RULE_LABELS: dict[str, str] = {
     "R8": "double bloc de répartition (acte)",
     "R9": "clause Ordre sans département",
     "R10": "nom de fichier statuts ≠ « Statuts <dénomination>.docx »",
+    "R12": "paragraphe commençant par une minuscule",
 }

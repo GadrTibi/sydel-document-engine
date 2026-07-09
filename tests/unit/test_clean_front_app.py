@@ -1274,11 +1274,10 @@ def test_clean_front_streamlit_generation_exposes_download_buttons(
     ]
 
 
-def test_clean_front_selarl_multi_associes_generates_statuts(tmp_path: Path) -> None:
-    # Retours V3 2026-06-17 (SELARL multi-associes) — ADDITIF. Praticien (60 parts)
-    # + 1 membre additionnel personne physique (40 parts) = 100 parts (= capital).
-    dossier_type = dossier_type_by_label("SELARL creation V1")
-    membre = StatutsCivilsAssocie(
+def _membre_bernard() -> StatutsCivilsAssocie:
+    """Membre additionnel SELARL multi VALIDE (donnees DOC-001 completes — DNC par
+    associe, Rafael 2026-07-09 : filiation requise pour chaque membre physique)."""
+    return StatutsCivilsAssocie(
         type_personne="personne_physique",
         civilite_affichage="Madame",
         prenom="Lea",
@@ -1290,12 +1289,21 @@ def test_clean_front_selarl_multi_associes_generates_statuts(tmp_path: Path) -> 
         nationalite="française",
         situation_maritale="celibataire",
         adresse_personnelle_affichee="8 rue Centrale, 69001 Lyon",
+        nom_pere="Laurent Bernard",
+        nom_mere="Julie Bernard",
         ordre_departemental="69",
         numero_ordre="ORD-999",
         numero_rpps="20000000002",
         apport=StatutsCivilsApport(montant="400", montant_lettres="quatre cents"),
         parts=StatutsCivilsParts(nb=40, nb_lettres="quarante"),
     )
+
+
+def test_clean_front_selarl_multi_associes_generates_statuts(tmp_path: Path) -> None:
+    # Retours V3 2026-06-17 (SELARL multi-associes) — ADDITIF. Praticien (60 parts)
+    # + 1 membre additionnel personne physique (40 parts) = 100 parts (= capital).
+    dossier_type = dossier_type_by_label("SELARL creation V1")
+    membre = _membre_bernard()
     data = _valid_selarl_input(
         PROFESSION_MEDECIN,
         dossier_unipersonnel=False,
@@ -1315,6 +1323,56 @@ def test_clean_front_selarl_multi_associes_generates_statuts(tmp_path: Path) -> 
     assert "Madame Lea Bernard" in text
     assert "1° Jean Martin, détenant 60 parts ;" in text
     assert "2° Lea Bernard, détenant 40 parts." in text
+
+
+def test_clean_front_selarl_multi_dnc_une_par_associe(tmp_path: Path) -> None:
+    # DNC par associe (Rafael 2026-07-09) : en multi-associes, UNE declaration de
+    # non-condamnation PAR associe personne physique — praticien (Martin, DNC de
+    # l'orchestrateur renommee O24-02) + membre additionnel (Bernard, generee et
+    # nommee par son nom). 2 associes -> 2 documents.
+    data = _valid_selarl_input(
+        PROFESSION_MEDECIN,
+        dossier_unipersonnel=False,
+        praticien_nb_parts=60,
+        praticien_apport="600",
+        membres_additionnels=(_membre_bernard(),),
+    )
+    result = generate_selarl_dossier(data, tmp_path / "selarl-multi-dnc")
+    names = {p.name for p in result.docx_paths}
+    assert "declaration_non_condamnation_Martin.docx" in names  # praticien
+    assert "declaration_non_condamnation_Bernard.docx" in names  # membre
+    assert "declaration_non_condamnation.docx" not in names
+    assert sum(1 for n in names if n.startswith("declaration_non_condamnation")) == 2
+    # La DNC du membre porte SON identite (signataire = Lea Bernard) et SA filiation.
+    dnc_bernard = _docx_text(
+        next(
+            p
+            for p in result.docx_paths
+            if p.name == "declaration_non_condamnation_Bernard.docx"
+        )
+    )
+    assert "Madame Lea Bernard" in dnc_bernard
+    assert "Laurent Bernard" in dnc_bernard
+    assert "Julie Bernard" in dnc_bernard
+    assert "Jean Martin" not in dnc_bernard
+
+
+def test_clean_front_selarl_multi_membre_sans_filiation_blocks() -> None:
+    # DNC par associe (Rafael 2026-07-09) : membre sans filiation -> la generation
+    # de SA declaration de non-condamnation crasherait ; on bloque en amont.
+    membre = _membre_bernard().model_copy(update={"nom_pere": None, "nom_mere": None})
+    data = _valid_selarl_input(
+        PROFESSION_MEDECIN,
+        dossier_unipersonnel=False,
+        praticien_nb_parts=60,
+        praticien_apport="600",
+        membres_additionnels=(membre,),
+    )
+    dossier_type = dossier_type_by_label("SELARL creation V1")
+    plan = build_clean_generation_plan(dossier_type, data)
+    assert plan.can_generate is False
+    assert any("nom du pere du membre 2" in b for b in plan.blockers), plan.blockers
+    assert any("nom de la mere du membre 2" in b for b in plan.blockers), plan.blockers
 
 
 def test_clean_front_selarl_multi_membre_sans_ordre_blocks() -> None:

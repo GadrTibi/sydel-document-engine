@@ -55,7 +55,9 @@ class PvRemunerationPresidentSasuHoldingGenerator:
             document,
             f"{data.qualite_associe} de la SASU en cours de formation.",
         )
-        add_paragraph(document, f"a pris la décision suivante{_NBSP}: ")
+        # Rafael 2026-07-09 (R12) : majuscule en debut de phrase — la ligne suit un
+        # point (« … en cours de formation. »).
+        add_paragraph(document, f"A pris la décision suivante{_NBSP}: ")
         add_paragraph(document, f"Fixation de la rémunération du {data.fonction_president}")
         add_paragraph(document, "DECISION UNIQUE")
         add_paragraph(

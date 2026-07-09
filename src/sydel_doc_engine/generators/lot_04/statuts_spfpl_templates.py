@@ -375,7 +375,9 @@ STATUTS_SPFPL_CESSION_BLOCKS: tuple[str, ...] = (
     '[profession_capitale] de profession',
     'Né le [date_naissance] à [ville_naissance] ([departement_naissance])',
     'Demeurant [adresse_personnelle]',
-    '[situation_maritale]',
+    # Rafael 2026-07-09 : « pas de mention sans nom » — statut + conjoint/partenaire
+    # (« Marié avec Marine Le Painnisse »), sans regime (blocs liste identite).
+    '[situation_maritale_avec_conjoint]',
     'De nationalité [nationalite]',
     'ARTICLE 39-ACTES PASSES POUR LA SOCIETE EN FORMATION',
     "Le Président, agira au nom et pour le compte de la Société en formation, jusqu'à son immatriculation au Registre du Commerce et des Sociétés. Il passera les actes et prendra les engagements suivants au nom et pour le compte de la Société qu'il jugera nécessaires au bon fonctionnement de la société.",
@@ -405,7 +407,9 @@ STATUTS_SPFPL_APPORT_BLOCKS: tuple[str, ...] = (
     '[profession_capitale] de profession',
     'Né le [date_naissance] à [ville_naissance] ([departement_naissance])',
     'Demeurant [adresse_personnelle]',
-    '[situation_maritale]',
+    # Rafael 2026-07-09 : « pas de mention sans nom » — statut + conjoint/partenaire
+    # (« Marié avec Marine Le Painnisse »), sans regime (blocs liste identite).
+    '[situation_maritale_avec_conjoint]',
     'De nationalité [nationalite]',
     'Inscrit au tableau de l’Ordre des [profession_reglementee] de [ville_ordre] sous le n°[numero_ordre] et sous le numéro RPPS [numero_rpps]',
     'ARTICLE 1 - FORME',
@@ -760,7 +764,9 @@ STATUTS_SPFPL_APPORT_BLOCKS: tuple[str, ...] = (
     '[profession_capitale] de profession',
     'Né le [date_naissance] à [ville_naissance] ([departement_naissance])',
     'Demeurant [adresse_personnelle]',
-    '[situation_maritale]',
+    # Rafael 2026-07-09 : « pas de mention sans nom » — statut + conjoint/partenaire
+    # (« Marié avec Marine Le Painnisse »), sans regime (blocs liste identite).
+    '[situation_maritale_avec_conjoint]',
     'De nationalité [nationalite]',
     'ARTICLE 39-ACTES PASSES POUR LA SOCIETE EN FORMATION',
     "Le Président, agira au nom et pour le compte de la Société en formation, jusqu'à son immatriculation au Registre du Commerce et des Sociétés. Il passera les actes et prendra les engagements suivants au nom et pour le compte de la Société qu'il jugera nécessaires au bon fonctionnement de la société.",

@@ -175,7 +175,10 @@ def test_pv_remuneration_president_fidelity(tmp_path: Path) -> None:
         "Monsieur Malo LE GUEN",
         "Demeurant 5 Allée de la Clarté, 56700 KERVIGNAC",
         "Associé unique et Président de la SASU en cours de formation.",
-        f"a pris la décision suivante{_NBSP}: ",
+        # Rafael 2026-07-09 (R12) : majuscule en debut de phrase (la ligne suit un
+        # point) — supersede la minuscule du modele (precedent « tout le texte doit
+        # etre correct », Rafael 2026-07-07).
+        f"A pris la décision suivante{_NBSP}: ",
         "Fixation de la rémunération du Président",
         "DECISION UNIQUE",
         (

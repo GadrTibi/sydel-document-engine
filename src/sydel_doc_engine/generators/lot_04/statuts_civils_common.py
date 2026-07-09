@@ -34,7 +34,12 @@ from sydel_doc_engine.rendering.docx_builder import (
     new_document_from_model,
 )
 from sydel_doc_engine.utils.dates import format_date_longue_fr
-from sydel_doc_engine.utils.grammar import _has_real_decimal, euro_word
+from sydel_doc_engine.utils.grammar import (
+    _has_real_decimal,
+    capitalize_first,
+    euro_word,
+    montant_avec_euros,
+)
 
 
 def _vnp_lettres_civil(vnp_figure: str | None, vnp_lettres: str | None) -> str:
@@ -569,9 +574,13 @@ def _add_physical_identity_micro_holding(document, associe: StatutsCivilsAssocie
         document,
         f"De nationalité {_required_text(associe.nationalite, 'associes[].nationalite')}",
     )
+    # Rafael 2026-07-09 (R12) : chaque element du bloc liste commence par une
+    # MAJUSCULE (« Célibataire »), comme les lignes voisines (7.2 Albane, SPFPL/SELAS).
     add_paragraph(
         document,
-        _required_text(associe.situation_maritale, "associes[].situation_maritale"),
+        capitalize_first(
+            _required_text(associe.situation_maritale, "associes[].situation_maritale")
+        ),
     )
     add_paragraph(document, f"Demeurant {_person_address(associe)}")
 
@@ -608,9 +617,10 @@ def _add_apport_block_scs(document, data: _ResolvedStatutsCivil) -> None:
         "statuts_civils.total_apports_commandites",
     )
     # Source para 49 : "Le montant total verse par le commandite est de \t\t\t  [total]."
+    # Rafael 2026-07-09 (SCS art. 6, devise automatique) : montant en chiffres + « € ».
     add_paragraph(
         document,
-        f"Le montant total versé par le commandité est de \t\t\t  {total_commandites}.",
+        f"Le montant total versé par le commandité est de \t\t\t  {total_commandites} €.",
     )
     # Source para 51 : "Associé commanditaire\xa0:" (singulier, accent, NBSP avant deux-points).
     add_paragraph(document, "Associé commanditaire :")
@@ -618,17 +628,21 @@ def _add_apport_block_scs(document, data: _ResolvedStatutsCivil) -> None:
     for associe in commanditaires:
         _add_apport_line(document, associe, expected_type="scs", commanditaire=True)
     # Source para 56 : "Le montant total verse par le commanditaire est de \t\t\t   [montant]."
+    # Rafael 2026-07-09 (SCS art. 6, devise automatique) : montant en chiffres + « € ».
     total_commanditaires = _format_amount_total(commanditaires, commanditaire=True)
     add_paragraph(
         document,
-        f"Le montant total versé par le commanditaire est de \t\t\t   {total_commanditaires}.",
+        f"Le montant total versé par le commanditaire est de \t\t\t   {total_commanditaires} €.",
     )
     capital_social = _required_text(data.statuts.capital_social, "statuts_civils.capital_social")
     # Source para 57 : "Total des apports en numeraires\xa0: \t\t\t\t\t  [capital]" (NBSP avant
     # les deux-points) puis depot SCS.
+    # Rafael 2026-07-09 (SCS art. 6, devise automatique) : « Total des apports en
+    # numéraires : 1 000 € ». La ligne de depot qui suit (« Cette somme de mille
+    # (1 000) a été… ») reste SANS unite ajoutee (verbatim Rafael).
     add_paragraph(
         document,
-        f"Total des apports en numéraires : \t\t\t\t\t  {capital_social}",
+        f"Total des apports en numéraires : \t\t\t\t\t  {capital_social} €",
     )
     capital_lettres = _required_text(
         data.statuts.capital_social_lettres,
@@ -941,8 +955,13 @@ def _add_apport_line(
     else:
         # Format SCS source para 43-44 : "- [label] apporte," puis
         # "la somme de [lettres], <TAB>[montant]" (virgule + espace + TAB).
+        # Rafael 2026-07-09 (SCS art. 6, devise automatique) : lettres + « euros »
+        # (accord euro/euros au montant) et chiffres + « € », derives par le moteur.
         add_paragraph(document, f"- {_signature_label(associe)} apporte,")
-        add_paragraph(document, f"la somme de {montant_lettres}, \t{montant}")
+        add_paragraph(
+            document,
+            f"la somme de {montant_lettres} {euro_word(montant)}, \t{montant} €",
+        )
 
 
 def _add_physical_identity(document, associe: StatutsCivilsAssocie) -> None:
@@ -964,9 +983,12 @@ def _add_physical_identity(document, associe: StatutsCivilsAssocie) -> None:
         document,
         f"De nationalité {_required_text(associe.nationalite, 'associes[].nationalite')}",
     )
+    # Rafael 2026-07-09 (R12) : majuscule en tete d'element de liste (« Célibataire »).
     add_paragraph(
         document,
-        _required_text(associe.situation_maritale, "associes[].situation_maritale"),
+        capitalize_first(
+            _required_text(associe.situation_maritale, "associes[].situation_maritale")
+        ),
     )
     add_paragraph(document, f"Demeurant {_person_address(associe)}")
 
@@ -977,10 +999,16 @@ def _add_morale_identity(document, associe: StatutsCivilsAssocie) -> None:
     # R4 (Albane 2026-07-07, « accents irréprochables partout ») : le bloc personne
     # morale sortait « siege / immatriculee / numero / Representee » NUS (constat
     # conformité, statuts SCI IRIS) — accentué comme le bloc morale micro holding.
+    # Rafael 2026-07-09 (transverse devise) : l'utilisateur ne tape plus « euros » —
+    # l'unite est DERIVEE (montant nu -> « 1 000 euros » ; saisie legacy avec unite
+    # -> intacte, idempotent).
+    capital = montant_avec_euros(
+        _required_text(associe.capital_social, "associes[].capital_social")
+    )
     add_paragraph(
         document,
         f"{_required_text(associe.forme_juridique, 'associes[].forme_juridique')} "
-        f"au capital de {_required_text(associe.capital_social, 'associes[].capital_social')}, "
+        f"au capital de {capital}, "
         f"ayant son siège {_address_display(associe.siege, 'associes[].siege')}, "
         f"immatriculée au RCS de {_required_text(associe.ville_rcs, 'associes[].ville_rcs')} "
         f"sous le numéro {_required_text(associe.numero_rcs, 'associes[].numero_rcs')}.",

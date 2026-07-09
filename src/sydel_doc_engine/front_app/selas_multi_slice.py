@@ -8,11 +8,9 @@ repeater generique en mode "exercice" (actions + qualite capital + ordre).
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
-from unicodedata import combining, normalize
 
 import streamlit as st
 
@@ -58,6 +56,15 @@ from sydel_doc_engine.front_app.address_oneline import (
     parse_address_full as _parse_address_full,
 )
 from sydel_doc_engine.front_app.associe_repeater import render_nationalite_selectbox
+from sydel_doc_engine.front_app.dnc_par_associe import (
+    associe_filename_slug as _associe_filename_slug,
+)
+from sydel_doc_engine.front_app.dnc_par_associe import (
+    dnc_context_for_associe,
+)
+from sydel_doc_engine.front_app.dnc_par_associe import (
+    rename_with_slug as _rename_with_slug,
+)
 from sydel_doc_engine.front_app.field_derivations import (
     DEFAULT_MANDATAIRE_NOM,
     DEFAULT_MANDATAIRE_PRENOM,
@@ -738,13 +745,9 @@ def _render_dirigeant_choice(prefix: str, index: int) -> None:
             "Général Associé ajoutent chacun une décision de nomination au PV."
         ),
     )
-    # #8 / B4 (onglet 24) : la filiation (parents) est la SEULE info propre au
-    # dirigeant pour la DNC. L'adresse personnelle ET la date de naissance sont
-    # reprises de l'associe (saisies une seule fois plus haut) -> plus de re-saisie.
-    st.caption("Declaration de non-condamnation du dirigeant (filiation des parents)")
-    col_a, col_b = st.columns(2)
-    _ts(col_a, f"{prefix}_sig_nom_pere", "Nom du pere")
-    _ts(col_b, f"{prefix}_sig_nom_mere", "Nom de la mere")
+    # DNC par associe (Rafael 2026-07-09) : la filiation n'est plus saisie sous la
+    # case « Dirigeant » — une DNC est due pour CHAQUE associe physique, la
+    # filiation est donc collectee sur chaque associe (cf. _physique).
 
 
 def _derive_president_index(associes: list[StatutsCivilsAssocie]) -> int:
@@ -846,24 +849,31 @@ def _validate_roles_dirigeants(associes: list[StatutsCivilsAssocie]) -> list[str
     return blockers
 
 
-def _validate_dirigeants_filiation(
+def _validate_associes_filiation(
     payload: dict[str, object], associes: list[StatutsCivilsAssocie]
 ) -> list[str]:
-    """R7 (Rafael 2026-06-23) : une DNC par dirigeant -> la filiation (nom du père et
-    de la mère) est requise pour CHAQUE dirigeant autre que le président (celle du
-    président est déjà validée via le tronc commun)."""
+    """DNC par associe (Rafael 2026-07-09, etend R7) : une DNC par ASSOCIE personne
+    physique -> la filiation (nom du père et de la mère) est requise pour CHAQUE
+    associe physique autre que le président (celle du président est déjà validée
+    via le tronc commun). Lue sur le MODELE (posee par le formulaire, cles
+    `_sig_nom_pere/mere`), avec repli sur la session pour les etats de saisie
+    anterieurs a la collecte par associe."""
     president_index = _resolve_president_index(payload, associes)
     blockers: list[str] = []
-    for index, _role in _collect_dirigeants_nomines_indices(associes, president_index):
-        if index == president_index:
+    for index, associe in enumerate(associes):
+        if index == president_index or associe.type_personne != "personne_physique":
             continue
         prefix = f"{PREFIX}_associe_{index}"
-        pere = str(st.session_state.get(f"{prefix}_sig_nom_pere") or "").strip()
-        mere = str(st.session_state.get(f"{prefix}_sig_nom_mere") or "").strip()
+        pere = str(
+            associe.nom_pere or st.session_state.get(f"{prefix}_sig_nom_pere") or ""
+        ).strip()
+        mere = str(
+            associe.nom_mere or st.session_state.get(f"{prefix}_sig_nom_mere") or ""
+        ).strip()
         if not pere or not mere:
-            nom = associes[index].nom or associes[index].prenom or f"associé {index + 1}"
+            nom = associe.nom or associe.prenom or f"associé {index + 1}"
             blockers.append(
-                f"Dirigeant {nom} : filiation (nom du père et de la mère) requise "
+                f"Associé {nom} : filiation (nom du père et de la mère) requise "
                 "pour sa déclaration de non-condamnation."
             )
     return blockers
@@ -955,6 +965,14 @@ def _physique(prefix: str, nb_actions: int, montant: str) -> StatutsCivilsAssoci
     numero_ordre = _ts(col_l, f"{prefix}_numero_ordre", "Numero ordre")
     numero_rpps = _ts(col_m, f"{prefix}_numero_rpps", "Numero RPPS")
     qualite = _ts(st, f"{prefix}_qualite", "Qualite au capital (ex: associee exercante)")
+    # DNC par associe (Rafael 2026-07-09) : filiation (noms des parents) saisie pour
+    # CHAQUE associe physique — une declaration de non-condamnation par associe,
+    # plus seulement pour les dirigeants (R7). Cles `_sig_nom_pere/mere` conservees
+    # (le president alimente toujours le tronc commun via _collect_dirigeant_sig).
+    st.caption("Declaration de non-condamnation (noms des parents)")
+    col_n, col_o = st.columns(2)
+    nom_pere = _ts(col_n, f"{prefix}_sig_nom_pere", "Nom du pere")
+    nom_mere = _ts(col_o, f"{prefix}_sig_nom_mere", "Nom de la mere")
     regime_associe = _render_conjoint_si_communaute(prefix, situation_label)
     # ST4 (Albane 2026-06-26) : la comparution d'un associe MARIE doit porter le REGIME
     # (« marie(e) sous le regime de ... ») ET le nom du conjoint, pas un « marie » nu.
@@ -1002,6 +1020,9 @@ def _physique(prefix: str, nb_actions: int, montant: str) -> StatutsCivilsAssoci
         nb_actions_lettres=number_words_from_value(nb_actions) if nb_actions else None,
         apport=_apport(montant),
         regime_communautaire_associe=regime_associe,
+        # DNC par associe (Rafael 2026-07-09) : filiation portee par le modele.
+        nom_pere=nom_pere or None,
+        nom_mere=nom_mere or None,
     )
 
 
@@ -1223,8 +1244,9 @@ def _validate(payload: dict[str, object]) -> tuple[str, ...]:  # noqa: C901
                 )
         # #7 (onglet 24) : roles de direction non cumulatifs (1 President, 1 DG max).
         blockers.extend(_validate_roles_dirigeants(associes))
-        # R7 : DNC par dirigeant -> filiation requise pour chaque dirigeant non-president.
-        blockers.extend(_validate_dirigeants_filiation(payload, associes))
+        # DNC par associe (Rafael 2026-07-09, etend R7) : filiation requise pour
+        # chaque associe physique non-president.
+        blockers.extend(_validate_associes_filiation(payload, associes))
     blockers.extend(_validate_common_docs(payload))
     blockers.extend(_validate_regime_communautaire(payload))
     blockers.extend(_validate_cession_exercices(payload))
@@ -2138,49 +2160,21 @@ def _display_date(value) -> str | None:
     return value.strftime("%d/%m/%Y")
 
 
-def _dnc_context_for_dirigeant(
-    base_ctx: DocumentGenerationContext,
-    associe: StatutsCivilsAssocie,
-    index: int,
-) -> DocumentGenerationContext:
-    """Contexte DNC d'UN dirigeant (R7, Rafael 2026-06-23) : signataire = ce dirigeant.
-
-    Identite + adresse + date reprises de l'associe (saisie unique, #8) ; filiation
-    depuis sa case « Dirigeant » (cles `_sig_nom_pere/mere`)."""
-    from sydel_doc_engine.domain.models import Address, Person
-
-    prefix = f"{PREFIX}_associe_{index}"
-    adresse = associe.adresse_personnelle or Address()
-    person = Person(
-        genre=associe.genre or Gender.MASCULIN,
-        civilite=associe.civilite_affichage or "Monsieur",
-        prenom=associe.prenom or associe.prenoms or "",
-        nom=associe.nom or "",
-        date_naissance=parse_associe_birthdate(associe.date_naissance),
-        ville_naissance=associe.ville_naissance or "",
-        departement_naissance=associe.departement_naissance or None,
-        nationalite=associe.nationalite or "",
-        nom_pere=str(st.session_state.get(f"{prefix}_sig_nom_pere") or ""),
-        nom_mere=str(st.session_state.get(f"{prefix}_sig_nom_mere") or ""),
-        adresse_perso=adresse,
-        adresse_personnelle_affichee=adresse.adresse_affichee,
-        qualification_principale=associe.qualification_principale or "",
-    )
-    return base_ctx.model_copy(update={"personne_signataire": person})
-
-
-def _generate_dnc_par_dirigeant(
+def _generate_dnc_par_associe(
     payload: dict[str, object],
     base_ctx: DocumentGenerationContext,
     docx_paths: list[Path],
     output_dir: Path,
 ) -> list[Path]:
-    """#2 + R7 (Rafael 2026-06-23) : la DNC porte le nom du dirigeant ET il y en a UNE
-    PAR dirigeant (President + chaque Directeur General / DG Associe).
+    """DNC par ASSOCIE (Rafael 2026-07-09, etend R7 « une DNC par dirigeant ») :
+    la DNC porte le nom de l'associe ET il y en a UNE PAR associe personne
+    physique (2 associes -> 2 documents).
 
-    La DNC du president est produite par l'orchestrateur (etape 1) : on la renomme.
-    Pour chaque AUTRE dirigeant, on derive un contexte (signataire = ce dirigeant) et
-    on genere sa propre DNC, nommee par son nom."""
+    La DNC du president est produite par l'orchestrateur (etape 1) : on la
+    renomme. Pour chaque AUTRE associe physique (dirigeant ou non), on derive un
+    contexte (signataire = cet associe, filiation portee par le modele) et on
+    genere sa propre DNC, nommee par son nom (helper partage
+    ``dnc_context_for_associe``). Les personnes morales n'ont pas de DNC."""
     associes = list(payload.get("associes") or [])
     president_index = _resolve_president_index(payload, associes)
     if not (0 <= president_index < len(associes)):
@@ -2193,12 +2187,12 @@ def _generate_dnc_par_dirigeant(
         else:
             renamed.append(path)
     generator = DeclarationNonCondamnationGenerator()
-    for index, _role in _collect_dirigeants_nomines_indices(associes, president_index):
-        if index == president_index:
+    for index, associe in enumerate(associes):
+        if index == president_index or associe.type_personne != "personne_physique":
             continue
-        ctx = _dnc_context_for_dirigeant(base_ctx, associes[index], index)
+        ctx = dnc_context_for_associe(base_ctx, associe)
         produced = generator.generate(ctx, output_dir)
-        renamed.append(_rename_with_slug(produced, _associe_filename_slug(associes[index])))
+        renamed.append(_rename_with_slug(produced, _associe_filename_slug(associe)))
     return renamed
 
 
@@ -2212,9 +2206,10 @@ def generate_dossier(payload: dict[str, object], output_dir: Path) -> GeneratedD
     docx_paths = generate_docx_files_for_document_codes(
         ctx, output_dir, _orchestrator_codes(payload)
     )
-    # 1bis) #2 + R7 (Rafael 2026-06-23) : la DNC porte le nom du dirigeant ET il y en a
-    #    UNE PAR dirigeant (President renomme + une generee par DG / DG Associe).
-    docx_paths = _generate_dnc_par_dirigeant(payload, ctx, docx_paths, output_dir)
+    # 1bis) DNC par associe (Rafael 2026-07-09, etend #2 + R7) : la DNC porte le nom
+    #    de l'associe ET il y en a UNE PAR associe personne physique (President
+    #    renomme + une generee par CHAQUE autre associe physique).
+    docx_paths = _generate_dnc_par_associe(payload, ctx, docx_paths, output_dir)
     # 2) R7 : un couple renonciation (DOC-005) + avertissement (DOC-006) PAR associe
     #    physique marie sous communaute, hors orchestrateur, avec des fichiers de
     #    noms distincts. Ne s'active QUE par le chemin per-associe (toggle global
@@ -2385,44 +2380,10 @@ def _associe_label(associe: StatutsCivilsAssocie, index: int) -> str:
     return nom or f"Associé {index + 1}"
 
 
-def _associe_filename_slug(associe: StatutsCivilsAssocie) -> str:
-    """Slug de nom de fichier base sur le nom de l'associe (R7).
-
-    Inclut le nom de l'associe pour distinguer les couples DOC-005/006 quand
-    plusieurs associes sont maries. Repli sur le prenom puis sur l'index si le
-    nom est vide. Sans accents ni caracteres exotiques (compatibilite OS)."""
-    base = (associe.nom or associe.prenom or associe.prenoms or "associe").strip()
-    normalized = "".join(
-        c for c in normalize("NFKD", base) if not combining(c)
-    )
-    cleaned = re.sub(r"[^A-Za-z0-9]+", "_", normalized).strip("_")
-    return cleaned or "associe"
-
-
-def _rename_with_slug(path: Path, slug: str) -> Path:
-    """Renomme un fichier genere en y insérant le slug de l'associe.
-
-    « lettre_renonciation_associe.docx » -> « lettre_renonciation_associe_Dupont.docx ».
-    En cas de collision improbable (deux associes au meme slug), suffixe un index.
-    """
-    # Idempotence (re-Akainu tour 6, MINEUR O24-05) : si la source a deja ete consommee
-    # (renommee par un run anterieur / etat FS perime / race Windows), ne JAMAIS lever de
-    # FileNotFoundError -> retenir la cible deja produite, sinon le chemin tel quel. (Meme
-    # robustesse que ui_runtime.rename_dnc_with_signataire ; cause de la flakiness ~20 %.)
-    base_target = path.with_name(f"{path.stem}_{slug}{path.suffix}")
-    if not path.exists():
-        return base_target if base_target.exists() else path
-    target = base_target
-    if target.exists() and target != path:
-        index = 2
-        while True:
-            candidate = path.with_name(f"{path.stem}_{slug}_{index}{path.suffix}")
-            if not candidate.exists():
-                target = candidate
-                break
-            index += 1
-    path.replace(target)
-    return target
+# _associe_filename_slug / _rename_with_slug : helpers PARTAGES (front_app/
+# dnc_par_associe), importes en tete de module — extraits d'ici lors du chantier
+# « DNC par associe » (Rafael 2026-07-09) pour etre reutilises par le socle civil
+# et la SELARL multi sans reimplementation par type.
 
 
 def _address(adresse_affichee: str):

@@ -281,6 +281,47 @@ def montant_lettres_avec_unite(lettres: str, figure: object) -> str:
     return f"{lettres} {euro_word(figure)}".strip()
 
 
+# Montant purement numerique (groupes d'espaces / insecables / separateur decimal
+# FR ou point) : seul candidat a l'ajout automatique d'unite (jamais de devinette
+# sur du texte libre). Unite deja presente (« euros », « euro », « € ») -> passthrough.
+_MONTANT_NU_RE: Final = re.compile(r"\d[\d\s  ]*(?:[.,]\d+)?")
+_UNITE_EURO_FIN_RE: Final = re.compile(r"(?:euros?|€)\s*$", re.IGNORECASE)
+
+
+def montant_avec_euros(value: str | None) -> str:
+    """Devise automatique d'un montant AFFICHE : « 1 000 » -> « 1 000 euros ».
+
+    Retour Rafael 2026-07-09 (transverse) : l'utilisateur ne redige JAMAIS
+    « euros » — le moteur derive l'unite. Idempotent et prudent :
+    - montant nu purement numerique -> unite accordee accolée (« 1 euro » /
+      « 600 euros ») ;
+    - unite deja presente (« 1 000 euros », « 600 € ») -> INTACT (pas de doublon) ;
+    - texte non purement numerique (marqueur « (À COMPLÉTER : …) », plage, vide)
+      -> INTACT : dans le doute, on ne touche pas.
+    """
+    text = (value or "").strip()
+    if not text:
+        return text
+    if _UNITE_EURO_FIN_RE.search(text):
+        return text
+    if _MONTANT_NU_RE.fullmatch(text) is None:
+        return text
+    return f"{text} {euro_word(text)}"
+
+
+def capitalize_first(value: str) -> str:
+    """Capitalise la 1re lettre en préservant le reste (« célibataire » ->
+    « Célibataire », « chirurgien-dentiste » -> « Chirurgien-dentiste »).
+
+    N'utilise PAS ``str.capitalize()`` (qui abaisserait le reste). Rafael
+    2026-07-09 (R12) : chaque élément d'un bloc liste d'identité commence par
+    une MAJUSCULE — même règle que 7.2 (Albane) côté SPFPL/SELAS.
+    """
+    if not value:
+        return value
+    return value[0].upper() + value[1:]
+
+
 def subject_line(genre: Gender) -> str:
     return "Je soussignée" if genre == Gender.FEMININ else "Je soussigné"
 

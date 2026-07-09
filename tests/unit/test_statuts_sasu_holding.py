@@ -127,3 +127,27 @@ def test_sasu_holding_requires_structure(tmp_path: Path) -> None:
     ctx.structure = "SAS"
     with pytest.raises(ValueError, match="SASU_HOLDING"):
         StatutsSasuHoldingGenerator().generate(ctx, tmp_path)
+
+
+def test_sasu_holding_sans_surlignage_et_annexe_nouvelle_page(tmp_path: Path) -> None:
+    # Rafael 2026-07-09 : (1) AUCUN surlignage dans le document genere (le modele
+    # source Albane porte un run surligne d'edition « MLG » que le token-replacement
+    # preservait) ; (2) l'annexe demarre TOUJOURS en debut de nouvelle page
+    # (page_break_before sur le titre « ANNEXE »).
+    from docx.oxml.ns import qn
+
+    document = Document(StatutsSasuHoldingGenerator().generate(_ctx(), tmp_path))
+
+    surlignes = [
+        run.text
+        for paragraph in document.paragraphs
+        for run in paragraph.runs
+        if run._element.find(qn("w:rPr")) is not None
+        and run._element.find(qn("w:rPr")).find(qn("w:highlight")) is not None
+    ]
+    assert not surlignes, f"runs surlignes residuels : {surlignes!r}"
+
+    annexe = next(
+        p for p in document.paragraphs if p.text.strip().upper().startswith("ANNEXE")
+    )
+    assert annexe.paragraph_format.page_break_before is True

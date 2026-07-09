@@ -151,6 +151,9 @@ def _scm_associe_prefill_values(
         f"{p}_situation_maritale": "celibataire",
         f"{p}_profession": "Medecin",
         f"{p}_adresse": adresse,
+        # DNC par associe (Rafael 2026-07-09) : filiation requise pour CHAQUE associe.
+        f"{p}_sig_nom_pere": f"Pierre {nom}",
+        f"{p}_sig_nom_mere": f"Anne {nom}",
         f"{p}_apport_montant": apport,
         f"{p}_nb_titres": nb,
     }
@@ -319,6 +322,9 @@ def _civil_pp_associe_prefill(
         f"{p}_situation_maritale": "celibataire",
         f"{p}_profession": "Medecin",
         f"{p}_adresse": adresse,
+        # DNC par associe (Rafael 2026-07-09) : filiation requise pour CHAQUE associe.
+        f"{p}_sig_nom_pere": f"Pierre {nom}",
+        f"{p}_sig_nom_mere": f"Anne {nom}",
         f"{p}_apport_montant": apport,
         f"{p}_nb_titres": nb,
     }
@@ -733,6 +739,9 @@ def _selas_associe_prefill(
         f"{p}_numero_ordre": numero_ordre,
         f"{p}_numero_rpps": numero_rpps,
         f"{p}_qualite": qualite,
+        # DNC par associe (Rafael 2026-07-09) : filiation requise pour CHAQUE associe.
+        f"{p}_sig_nom_pere": f"Pierre {nom}",
+        f"{p}_sig_nom_mere": f"Anne {nom}",
     }
 
 

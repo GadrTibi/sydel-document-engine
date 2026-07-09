@@ -52,6 +52,10 @@ from sydel_doc_engine.domain.models import (
     StatutsCivilsParts,
     StatutsSel,
 )
+from sydel_doc_engine.front_app.address_oneline import (
+    parse_address_full as _parse_address_full,
+)
+from sydel_doc_engine.front_app.dnc_par_associe import generate_dnc_autres_associes
 from sydel_doc_engine.front_app.field_derivations import (
     DEFAULT_MANDATAIRE_CABINET,
     DEFAULT_MANDATAIRE_CIVILITE,
@@ -70,6 +74,7 @@ from sydel_doc_engine.front_app.field_derivations import (
     groupe_montants_associe,
     is_capital_divisible,
     number_words_from_value,
+    parse_associe_birthdate,
     split_numero_voie,
 )
 from sydel_doc_engine.front_data import AddressUsage, BusinessRole, build_document_status_for_code
@@ -437,10 +442,46 @@ def _multi_membres_blockers(data: SelarlSliceInput) -> list[str]:  # noqa: C901
                     blockers.append(
                         f"Multi-associes : {name} du membre {index} requis."
                     )
+            # DNC par associe (Rafael 2026-07-09) : chaque membre personne physique a
+            # sa propre declaration de non-condamnation -> ses donnees DOC-001
+            # (naissance, nationalite, adresse structurée, filiation) sont requises.
+            blockers.extend(_membre_dnc_blockers(membre, index))
     if data.nb_parts_total and total != data.nb_parts_total:
         blockers.append(
             "Multi-associes : la somme des parts (praticien + membres) doit egaler "
             f"le nombre total de parts ({data.nb_parts_total})."
+        )
+    return blockers
+
+
+def _membre_dnc_blockers(membre: StatutsCivilsAssocie, index: int) -> list[str]:
+    """DNC par associe (Rafael 2026-07-09) : donnees DOC-001 requises PAR membre
+    personne physique (sa DNC est generee d'office). Remonte tot les saisies
+    incompletes qui feraient crasher le generateur a la generation."""
+    blockers: list[str] = []
+    if parse_associe_birthdate(membre.date_naissance) is None:
+        blockers.append(
+            f"Multi-associes : date de naissance du membre {index} requise "
+            "(JJ/MM/AAAA ou « 1 janvier 1980 ») pour sa declaration de non-condamnation."
+        )
+    for field, name in (
+        ("ville_naissance", "ville de naissance"),
+        ("nationalite", "nationalite"),
+        ("nom_pere", "nom du pere"),
+        ("nom_mere", "nom de la mere"),
+    ):
+        if not str(getattr(membre, field, "") or "").strip():
+            blockers.append(
+                f"Multi-associes : {name} du membre {index} requis(e) "
+                "pour sa declaration de non-condamnation."
+            )
+    adresse_structuree = membre.adresse_personnelle or _parse_address_full(
+        str(membre.adresse_personnelle_affichee or "")
+    )
+    if adresse_structuree is None:
+        blockers.append(
+            f"Multi-associes : adresse personnelle du membre {index} requise "
+            "(N° et voie, CP Ville) pour sa declaration de non-condamnation."
         )
     return blockers
 
@@ -738,6 +779,17 @@ def generate_selarl_dossier(data: SelarlSliceInput, output_dir: Path) -> Generat
     )
     # O24-02 : la DNC porte le nom du dirigeant (gerant) dans tous les cas.
     docx_paths = rename_dnc_with_signataire(docx_paths, ctx)
+    # DNC par associe (Rafael 2026-07-09) : en multi-associes, une declaration de
+    # non-condamnation PAR membre additionnel personne physique (celle du praticien
+    # vient de l'orchestrateur, renommee juste au-dessus). Helper partage — les
+    # personnes morales n'ont pas de DNC.
+    if data.is_multi_associes:
+        docx_paths = [
+            *docx_paths,
+            *generate_dnc_autres_associes(
+                ctx, list(data.membres_additionnels), output_dir
+            ),
+        ]
     zip_path = generate_zip_file(output_dir, docx_paths)
     return GeneratedDossier(
         output_dir=output_dir,

@@ -150,6 +150,9 @@ def _payload(capital_min: int = 1020) -> dict:
             nationalite="française",
             situation_maritale="célibataire",
             adresse_personnelle_affichee="1 rue Exemple, 75000 Paris",
+            # DNC par associe (Rafael 2026-07-09) : filiation requise pour CHAQUE associe.
+            nom_pere=f"Pierre {nom}",
+            nom_mere=f"Anne {nom}",
             apport=StatutsCivilsApport(montant=str(montant), montant_lettres=str(montant)),
             parts=StatutsCivilsParts(nb=nb, nb_lettres=str(nb), debut=debut, fin=fin),
         )
@@ -244,9 +247,11 @@ def test_micro_holding_comparution_nom_usage_epouse(tmp_path: Path) -> None:
     # Q4/MH-épouse (Albane 2026-07-01, « comme les modeles ») : quand un NOM DE NAISSANCE distinct
     # est saisi, la comparution physique porte le nom d'usage « <maiden> épouse <nom> » (modele
     # micro holding « Madame Jessica GOSSET épouse BERTE, » — SANS virgule avant « épouse »).
-    # Convention : nom = nom d'usage (apport/signature) ; nom_naissance = maiden (comparution seule).
+    # Convention : nom = nom d'usage (apport/signature) ; nom_naissance = maiden (comparution).
     ctx = _ctx_berte()
-    physique = next(a for a in ctx.statuts_civils.associes if a.type_personne == "personne_physique")
+    physique = next(
+        a for a in ctx.statuts_civils.associes if a.type_personne == "personne_physique"
+    )
     physique.nom = "BERTE"  # nom d'usage marital
     physique.nom_naissance = "GOSSET"  # nom de naissance (maiden)
     out = StatutsMicroHoldingGenerator().generate(ctx, tmp_path)

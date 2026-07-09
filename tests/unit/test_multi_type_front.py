@@ -114,6 +114,9 @@ def _pp(prenom, nom, nb, debut, fin, apport, role=None, prof="chirurgien-dentist
         nationalite="francaise",
         situation_maritale="celibataire",
         adresse_personnelle_affichee="1 rue Exemple, 75000 Paris",
+        # DNC par associe (Rafael 2026-07-09) : filiation requise pour CHAQUE associe.
+        nom_pere=f"Pierre {nom}",
+        nom_mere=f"Anne {nom}",
         apport=StatutsCivilsApport(montant=str(apport), montant_lettres=str(apport)),
         parts=StatutsCivilsParts(
             nb=nb,
@@ -1381,8 +1384,11 @@ _SPFPL_BUNDLE_TRONC = {
     "demande_inscription_ordre.docx",
 }
 
-# Documents d'operation apport (DOC-041/042/043) ajoutes au bundle de creation.
+# Documents d'operation apport (DOC-037/041/042/043) ajoutes au bundle de creation.
+# Rafael 2026-07-09 : la note d'information (DOC-037) porte cession ET apport — elle
+# manquait au bundle apport.
 _SPFPL_APPORT_DOCS = {
+    "note_information.docx",
     "contrat_apport_spfpl.docx",
     "attestation_capital_liste_souscripteurs.docx",
     "attestation_commissaire_apports.docx",
@@ -1620,8 +1626,9 @@ def test_spfpl_apport_slice_generates_clean(tmp_path: Path) -> None:
     payload = _spfpl_payload("SPFPL apport")
     plan = spfpl_slice.build_spfpl_plan(payload)
     assert plan.can_generate is True
-    # L'apport complete le bundle de creation par ses 3 documents d'operation
-    # (contrat d'apport DOC-041 + attestations capital DOC-042 / commissaire DOC-043).
+    # L'apport complete le bundle de creation par ses 4 documents d'operation :
+    # note d'information DOC-037 (Rafael 2026-07-09 : cession ET apport) + contrat
+    # d'apport DOC-041 + attestations capital DOC-042 / commissaire DOC-043.
     assert plan.document_codes == (
         "DOC-036",
         "DOC-001",
@@ -1629,6 +1636,7 @@ def test_spfpl_apport_slice_generates_clean(tmp_path: Path) -> None:
         "DOC-003",
         "DOC-004",
         "DOC-034",
+        "DOC-037",
         "DOC-041",
         "DOC-042",
         "DOC-043",
@@ -1638,6 +1646,16 @@ def test_spfpl_apport_slice_generates_clean(tmp_path: Path) -> None:
         generated,
         _SPFPL_BUNDLE_TRONC | {"Statuts SPFPL MARTIN.docx"} | _SPFPL_APPORT_DOCS,
     )
+    # Rafael 2026-07-09 : la note d'information (DOC-037) sort en APPORT avec la
+    # repartition APRES operation DERIVEE — le fondateur garde (100 - 60) parts sans
+    # numerotation inventee, le holding recoit les 60 parts apportees (plage saisie).
+    note = _docx_text(
+        next(p for p in generated.docx_paths if p.name == "note_information.docx")
+    )
+    assert "prévoit de recevoir en apport en nature" in note
+    assert "Après ledit apport" in note
+    assert "Monsieur Camille Martin, titulaire de 40 parts sociales" in note
+    assert "SPFPL MARTIN, titulaire de 60 parts sociales, numérotées de 41 à 100" in note
 
 
 _REGIME_DOCS = {
@@ -1699,6 +1717,19 @@ def test_spfpl_apport_regime_on_adds_regime_docs(tmp_path: Path) -> None:
         generated,
         _SPFPL_BUNDLE_TRONC | {"Statuts SPFPL MARTIN.docx"} | _SPFPL_APPORT_DOCS | _REGIME_DOCS,
     )
+    # Rafael 2026-07-09 : plus JAMAIS de double unite dans les lettres de regime —
+    # avertissement conjoint « soixante mille (60 000) euros » (et non « soixante
+    # mille euros (60 000) euros ») ; renonciation « 60 000 (soixante mille) euros ».
+    avertissement = _docx_text(
+        next(p for p in generated.docx_paths if p.name == "lettre_avertissement_conjoint.docx")
+    )
+    assert "de soixante mille (60 000) euros" in avertissement
+    assert "euros (60 000) euros" not in avertissement
+    renonciation = _docx_text(
+        next(p for p in generated.docx_paths if p.name == "lettre_renonciation_associe.docx")
+    )
+    assert "60 000 (soixante mille) euros" in renonciation
+    assert "(soixante mille euros) euros" not in renonciation
 
 
 # --- Regressions « variables mal injectees » (audit 2026-06-09) ---------------
@@ -1806,6 +1837,9 @@ def _selas_payload():
         qualite_capital="associée exerçante",
         nb_actions=75,
         nb_actions_lettres="soixante-quinze",
+        # DNC par associe (Rafael 2026-07-09) : filiation requise pour CHAQUE associe.
+        nom_pere="Pierre Durand",
+        nom_mere="Anne Durand",
         apport=StatutsCivilsApport(montant="750", montant_lettres="sept cent cinquante"),
     )
     mor = StatutsCivilsAssocie(
@@ -1877,12 +1911,150 @@ def test_selas_multi_slice_generates_clean(tmp_path: Path) -> None:
 
 def test_selas_dnc_filename_carries_dirigeant_name(tmp_path: Path) -> None:
     # #2 (onglet 24) : la declaration de non-condamnation porte le NOM DU DIRIGEANT
-    # (president, ici « Durand ») dans son nom de fichier.
+    # (president, ici « Durand ») dans son nom de fichier. L'associe personne MORALE
+    # n'a pas de DNC (le document declare une personne physique) -> 1 seule DNC ici.
     payload = _selas_payload()
     generated = selas_multi_slice.generate_dossier(payload, tmp_path / "selas-dnc")
     names = {p.name for p in generated.docx_paths}
     assert "declaration_non_condamnation_Durand.docx" in names
     assert "declaration_non_condamnation.docx" not in names
+    assert sum(1 for n in names if n.startswith("declaration_non_condamnation")) == 1
+
+
+# --- DNC par associe (Rafael 2026-07-09) --------------------------------------
+# « Il faut une declaration de non-condamnation pour CHAQUE associe » (2 associes
+# -> 2 documents, 100 -> 100), TOUS les cas — plus seulement les dirigeants (R7).
+
+
+def test_selas_dnc_une_par_associe_meme_non_dirigeant(tmp_path: Path) -> None:
+    # 3 associes physiques, SEUL le president (Durand, defaut) est dirigeant : les
+    # 2 autres associes (Martin, Petit) recoivent quand meme CHACUN leur DNC.
+    payload = _selas_payload_n(
+        [
+            _selas_phys("Claire", "Durand", 40),
+            _selas_phys("Paul", "Martin", 30),
+            _selas_phys("Marie", "Petit", 30),
+        ]
+    )
+    generated = selas_multi_slice.generate_dossier(payload, tmp_path / "selas-dnc-n")
+    names = {p.name for p in generated.docx_paths}
+    assert "declaration_non_condamnation_Durand.docx" in names  # president (renommee)
+    assert "declaration_non_condamnation_Martin.docx" in names  # associe non dirigeant
+    assert "declaration_non_condamnation_Petit.docx" in names  # associe non dirigeant
+    assert "declaration_non_condamnation.docx" not in names
+    assert sum(1 for n in names if n.startswith("declaration_non_condamnation")) == 3
+    # La DNC d'un associe non dirigeant porte SON identite et SA filiation.
+    dnc_martin = _docx_text(
+        next(
+            p
+            for p in generated.docx_paths
+            if p.name == "declaration_non_condamnation_Martin.docx"
+        )
+    )
+    assert "Paul Martin" in dnc_martin
+    assert "Pierre Martin" in dnc_martin  # nom du pere (helper _selas_phys)
+    assert "Anne Martin" in dnc_martin  # nom de la mere
+    assert "Claire Durand" not in dnc_martin
+
+
+def test_selas_associe_sans_filiation_bloque(tmp_path: Path) -> None:
+    # Un associe physique NON dirigeant sans filiation -> sa DNC serait ingenerable :
+    # le plan bloque explicitement (nom de l'associe dans le message).
+    associe_sans_filiation = _selas_phys("Paul", "Martin", 40).model_copy(
+        update={"nom_pere": None, "nom_mere": None}
+    )
+    payload = _selas_payload_n(
+        [_selas_phys("Claire", "Durand", 60), associe_sans_filiation]
+    )
+    plan = selas_multi_slice.build_selas_plan(payload)
+    assert plan.can_generate is False
+    assert any(
+        "Martin" in b and "filiation" in b and "non-condamnation" in b
+        for b in plan.blockers
+    ), plan.blockers
+
+
+def test_civil_dnc_une_par_associe(tmp_path: Path) -> None:
+    # SCI a 2 associes physiques -> 2 DNC, nommees par associe (gerant Durand via
+    # l'orchestrateur renommee O24-02 ; Martin generee par le chemin par-associe).
+    payload = _civil_base(
+        "SCI",
+        "sci",
+        [
+            _pp("Jean", "Durand", 40, 1, 40, 400),
+            _pp("Alice", "Martin", 60, 41, 100, 600),
+        ],
+    )
+    generated = css.generate_dossier(payload, tmp_path / "sci-dnc")
+    names = {p.name for p in generated.docx_paths}
+    assert "declaration_non_condamnation_Durand.docx" in names
+    assert "declaration_non_condamnation_Martin.docx" in names
+    assert "declaration_non_condamnation.docx" not in names
+    assert sum(1 for n in names if n.startswith("declaration_non_condamnation")) == 2
+    # La DNC du 2e associe porte SON identite, SA filiation et SON adresse.
+    dnc_martin = _docx_text(
+        next(
+            p
+            for p in generated.docx_paths
+            if p.name == "declaration_non_condamnation_Martin.docx"
+        )
+    )
+    assert "Alice Martin" in dnc_martin
+    assert "Pierre Martin" in dnc_martin  # nom du pere (helper _pp)
+    assert "Anne Martin" in dnc_martin  # nom de la mere
+    assert "Jean Durand" not in dnc_martin
+
+
+def test_civil_dnc_trois_associes_scs(tmp_path: Path) -> None:
+    # SCS (commandite + 2 commanditaires) -> 3 DNC nommees, une par associe physique.
+    payload = _civil_base(
+        "SCS",
+        "scs",
+        [
+            _pp("Jean", "Durand", 60, 1, 60, 600, role="commandite"),
+            _pp("Alice", "Martin", 20, 61, 80, 200, role="commanditaire"),
+            _pp("Marc", "Petit", 20, 81, 100, 200, role="commanditaire"),
+        ],
+    )
+    generated = css.generate_dossier(payload, tmp_path / "scs-dnc")
+    names = {p.name for p in generated.docx_paths}
+    assert sum(1 for n in names if n.startswith("declaration_non_condamnation")) == 3
+    assert "declaration_non_condamnation_Durand.docx" in names
+    assert "declaration_non_condamnation_Martin.docx" in names
+    assert "declaration_non_condamnation_Petit.docx" in names
+
+
+def test_civil_dnc_personne_morale_sans_dnc(tmp_path: Path) -> None:
+    # SCI IRIS (1 personne morale + 1 physique) : la personne morale n'a PAS de
+    # DNC -> exactement 1 declaration, celle de l'associe physique (gerant).
+    payload = _civil_base(
+        "SCI IRIS",
+        "sci_iris",
+        [_pm(40, 1, 40, 400), _pp("Alice", "Martin", 60, 41, 100, 600)],
+    )
+    generated = css.generate_dossier(payload, tmp_path / "sci-iris-dnc")
+    names = {p.name for p in generated.docx_paths}
+    assert "declaration_non_condamnation_Martin.docx" in names
+    assert sum(1 for n in names if n.startswith("declaration_non_condamnation")) == 1
+
+
+def test_civil_associe_sans_filiation_bloque() -> None:
+    # Un associe physique NON gerant sans filiation -> sa DNC serait ingenerable :
+    # le plan bloque explicitement (nom de l'associe dans le message).
+    associe_sans_filiation = _pp("Alice", "Martin", 60, 41, 100, 600).model_copy(
+        update={"nom_pere": None, "nom_mere": None}
+    )
+    payload = _civil_base(
+        "SCI",
+        "sci",
+        [_pp("Jean", "Durand", 40, 1, 40, 400), associe_sans_filiation],
+    )
+    plan = css.build_civil_plan(payload)
+    assert plan.can_generate is False
+    assert any(
+        "Martin" in b and "filiation" in b and "non-condamnation" in b
+        for b in plan.blockers
+    ), plan.blockers
 
 
 def test_selas_ordre_conseil_derive_sans_champ_libelle(tmp_path: Path) -> None:
@@ -2255,6 +2427,9 @@ def _selas_phys(prenom, nom, nb_actions, qualite="associé exerçant"):
         qualite_capital=qualite,
         nb_actions=nb_actions,
         nb_actions_lettres=str(nb_actions),
+        # DNC par associe (Rafael 2026-07-09) : filiation requise pour CHAQUE associe.
+        nom_pere=f"Pierre {nom}",
+        nom_mere=f"Anne {nom}",
         apport=StatutsCivilsApport(
             montant=str(nb_actions * 10), montant_lettres=str(nb_actions * 10)
         ),
@@ -2695,6 +2870,9 @@ def test_front_routes_to_sci_slice_and_generates(tmp_path: Path, monkeypatch) ->
         "sci_associe_1_situation_maritale": "celibataire",
         # O24-03 : adresse personnelle sur UNE ligne.
         "sci_associe_1_adresse": "2 rue Exemple, 69000 Lyon",
+        # DNC par associe (Rafael 2026-07-09) : filiation de CHAQUE associe.
+        "sci_associe_1_sig_nom_pere": "Pierre Martin",
+        "sci_associe_1_sig_nom_mere": "Anne Martin",
         "sci_associe_1_apport_montant": "600",
     }
     for key, value in associes_text.items():
@@ -2949,6 +3127,9 @@ def test_selarl_membre_additionnel_live03_accentuates_date_naissance(
     _set_text_widget(app, "selarl_membre_0_situation", "celibataire")
     _set_text_widget(app, "selarl_membre_0_profession", "medecin")
     _set_text_widget(app, "selarl_membre_0_adresse", "8 rue Centrale, 69001 Lyon")
+    # DNC par associe (Rafael 2026-07-09) : filiation du membre requise (sa DNC).
+    _set_text_widget(app, "selarl_membre_0_sig_nom_pere", "Laurent Bernard")
+    _set_text_widget(app, "selarl_membre_0_sig_nom_mere", "Julie Bernard")
     _set_text_widget(app, "selarl_membre_0_ordre_dep", "69")
     _set_text_widget(app, "selarl_membre_0_numero_ordre", "ORD-999")
     _set_text_widget(app, "selarl_membre_0_numero_rpps", "20000000002")
@@ -3734,6 +3915,24 @@ def test_parse_address_full_tolere_formes_usuelles() -> None:
     assert a.adresse_affichee == "10 avenue du 8 Mai 1945, 33700 Mérignac"
     a = _parse_address_full("5 rue du 11 Novembre 1918, 69100 Villeurbanne")
     assert a is not None and a.cp == "69100" and a.ville == "Villeurbanne"
+
+    # Bug Albane 2026-07-08 : une adresse avec COMPLEMENT en tete (nom de residence /
+    # batiment / lieu-dit AVANT le numero) etait rejetee (None) -> generation bloquee
+    # a tort (« adresse/CP/ville de l'ordre requis ») alors que le champ etait rempli.
+    # Le complement est colle au numero (num_voie), ordre preserve, zero perte.
+    a = _parse_address_full("Maison Blanche 14 boulevard Carabacel, 06000 NICE")
+    assert a is not None
+    assert (a.num_voie, a.voie, a.cp, a.ville) == (
+        "Maison Blanche 14",
+        "boulevard Carabacel",
+        "06000",
+        "NICE",
+    )
+    assert a.adresse_affichee == "Maison Blanche 14 boulevard Carabacel, 06000 NICE"
+    a = _parse_address_full("Résidence Les Tilleuls, 12 rue de la Paix, 75001 Paris")
+    assert a is not None and a.cp == "75001" and a.num_voie == "Résidence Les Tilleuls, 12"
+    # Non-regression : lieu-dit SANS aucun numero reste None (arbitrage Albane en attente).
+    assert _parse_address_full("Place de l'Église, 75001 Paris") is None
 
     # re-Akainu tour 2 (NITPICK O24-03) : suffixe bis/ter/quater détaché du numéro, en
     # MAJUSCULES comme en minuscules.

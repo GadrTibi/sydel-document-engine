@@ -24,6 +24,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_paragraph,
     new_document,
 )
+from sydel_doc_engine.utils.grammar import capitalize_first
 
 OUTPUT_FILENAME = "pv_remuneration_president.docx"
 REMUNERATION_TYPE_ABSENCE = "absence_remuneration"
@@ -56,12 +57,14 @@ class PvRemunerationPresidentGenerator:
         )
         add_paragraph(document, data.actionnaire_nom)
         add_paragraph(document, f"Demeurant {data.adresse_actionnaire}.")
+        # Rafael 2026-07-09 (R12) : majuscule en debut de phrase — ces deux lignes
+        # suivent un point (« … Paris. » / « … en cours de formation. »).
         add_paragraph(
             document,
-            f"{data.qualite_associe} et {data.fonction_president} de la Société "
-            f"{data.denomination} en cours de formation.",
+            f"{capitalize_first(data.qualite_associe)} et {data.fonction_president} "
+            f"de la Société {data.denomination} en cours de formation.",
         )
-        add_paragraph(document, "a pris la décision suivante :")
+        add_paragraph(document, "A pris la décision suivante :")
         add_paragraph(document, f"Fixation de la rémunération du {data.fonction_president}")
         add_paragraph(document, "DECISION UNIQUE", bold=True)
         add_paragraph(

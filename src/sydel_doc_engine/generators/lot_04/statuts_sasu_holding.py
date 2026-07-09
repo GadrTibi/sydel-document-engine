@@ -3,6 +3,9 @@ from __future__ import annotations
 from datetime import date
 from pathlib import Path
 
+from docx import Document
+from docx.oxml.ns import qn
+
 from sydel_doc_engine.domain.models import (
     Address,
     Company,
@@ -61,9 +64,47 @@ class StatutsSasuHoldingGenerator:
         output_path = output_dir / statuts_output_filename(
             societe.denomination, OUTPUT_FILENAME
         )
-        return fill_docx_template(
+        fill_docx_template(
             _SOURCE_MODEL, replacements, output_path, gender_pairs=gender_pairs
         )
+        # Rafael 2026-07-09 : (1) retirer TOUT surlignage herite du modele source
+        # (runs surlignes d'edition, ex. « MLG ») ; (2) l'annexe demarre TOUJOURS en
+        # debut de nouvelle page (saut de page avant le titre « ANNEXE »).
+        _postprocess_sasu_statuts(output_path)
+        return output_path
+
+
+def _postprocess_sasu_statuts(output_path: Path) -> None:
+    """Post-traitement de forme des statuts SASU Holding (Rafael 2026-07-09).
+
+    - Retire tout surlignage (`w:highlight`) des runs : le modele source Albane porte
+      des residus de surlignage d'edition (run « MLG ») que le token-replacement
+      preserve — aucun surlignage ne doit sortir dans un acte livre.
+    - Le titre « ANNEXE » demarre en debut de NOUVELLE page : `page_break_before` pose
+      sur son paragraphe (robuste a la pagination, contrairement a un saut manuel).
+    Le TEXTE juridique n'est pas touche (forme uniquement).
+    """
+    document = Document(str(output_path))
+    for paragraph in _iter_paragraphs_with_tables(document):
+        for run in paragraph.runs:
+            rpr = run._element.find(qn("w:rPr"))  # noqa: SLF001 - acces XML python-docx
+            if rpr is None:
+                continue
+            for highlight in rpr.findall(qn("w:highlight")):
+                rpr.remove(highlight)
+    for paragraph in document.paragraphs:
+        if paragraph.text.strip().upper().startswith("ANNEXE"):
+            paragraph.paragraph_format.page_break_before = True
+            break
+    document.save(str(output_path))
+
+
+def _iter_paragraphs_with_tables(document):
+    yield from document.paragraphs
+    for table in document.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                yield from cell.paragraphs
 
 
 # Accords de genre de l'associe unique (modele fige au masculin). Pour une associee unique

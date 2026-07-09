@@ -94,7 +94,9 @@ def _base_context(*, operation: str) -> DocumentGenerationContext:
             siege=Address(adresse_affichee="10 rue de la Paix, 75002 Paris"),
         ),
         actionnaire_unique=founder,
-        apport=Apport(montant="60 000", montant_lettres="soixante mille euros"),
+        # Rafael 2026-07-09 : contrat commun `Apport.montant_lettres` = lettres NUES
+        # (le slice fournit number_words_from_value ; l'unite est composee au rendu).
+        apport=Apport(montant="60 000", montant_lettres="soixante mille"),
         depot_fonds=DepotFonds(
             banque=CessionBanque(
                 nom="BANQUE EXEMPLE",
@@ -253,29 +255,46 @@ def test_statuts_spfpl_cession_generates_source_overlay_without_signature_date(
     assert total_actions.runs[0].bold is True
 
 
-def test_statuts_spfpl_apport_comparution_statut_nu_marie_et_pacse(tmp_path: Path) -> None:
-    # Le modele SPFPL APPORT/constitution rend la situation matrimoniale du soussigne EN STATUT
-    # NU pour TOUS les statuts — un MARIE n'y affiche NI regime NI conjoint (contrairement au
-    # modele CESSION qui porte la ligne combinee). Le PACSE suit donc EXACTEMENT le meme
-    # traitement que le marie sur ce modele : « Pacsé » nu, comme « Marié » nu. Ce n'est PAS un
-    # siloing du partenaire — le modele apport n'a simplement pas de logement « avec conjoint »
-    # dans sa comparution (fidelite : on n'invente pas de wording absent du modele). Verrou de
-    # coherence marie<->pacse pour prevenir toute divergence future.
-    for situ, attendu in (("marié", "Marié"), ("pacsé", "Pacsé")):
+def test_statuts_spfpl_apport_comparution_marie_avec_conjoint_et_pacse(tmp_path: Path) -> None:
+    # Rafael 2026-07-09 (supersede le verrou « statut nu » du 2026-07-06) : la comparution
+    # des statuts APPORT porte le CONJOINT du marie — « Marié avec Alice Martin » (prenom +
+    # nom, sans civilite : meme wording que le contrat d'apport DOC-041), SANS « sous le
+    # régime de … » (reserve au modele CESSION, ligne combinee). Le PACSE affiche son
+    # partenaire via la clause ratifiee Albane 6.3/7.3 (« Pacsé avec Madame Alice Martin »,
+    # civilite incluse). « Pas de mention sans nom » : partenaire pacse absent -> statut nu.
+    cases = (
+        ("marié", "Marié avec Alice Martin"),
+        ("pacsé", "Pacsé avec Madame Alice Martin"),
+    )
+    for situ, attendu in cases:
         ctx = _with_exercice(_base_context(operation="apport"))
         ctx.actionnaire_unique.situation_maritale = situ
         if situ == "pacsé":
             ctx.actionnaire_unique.regime_matrimonial = None
         document = Document(StatutsSpfplApportGenerator().generate(ctx, tmp_path / situ))
-        comparution = [
-            p.text.strip() for p in document.paragraphs if p.text.strip() == attendu
-        ]
-        assert comparution, f"ligne « {attendu} » nue introuvable (apport)"
-        # ni regime ni « avec conjoint » ajoutes sur le modele apport (marie comme pacse)
-        assert not any(
-            f"{attendu} sous le régime de" in p.text or f"{attendu} avec" in p.text
-            for p in document.paragraphs
-        )
+        lignes = [p.text.strip() for p in document.paragraphs if p.text.strip() == attendu]
+        # comparution du soussigne + nomination du President (meme token, 2 blocs liste).
+        assert lignes, f"ligne « {attendu} » introuvable (apport)"
+        # jamais de regime sur le modele apport (marie comme pacse)
+        assert not any("sous le régime de" in p.text for p in document.paragraphs)
+
+
+def test_statuts_spfpl_apport_pacse_sans_partenaire_statut_nu(tmp_path: Path) -> None:
+    # « Pas de mention sans nom » (Albane 6.3, conserve par Rafael 2026-07-09) : un pacse
+    # SANS partenaire renseigne rend « Pacsé » nu — jamais « avec (À COMPLÉTER) ».
+    ctx = _with_exercice(_base_context(operation="apport"))
+    ctx.actionnaire_unique.situation_maritale = "pacsé"
+    ctx.actionnaire_unique.regime_matrimonial = None
+    ctx.actionnaire_unique.conjoint = None
+    document = Document(StatutsSpfplApportGenerator().generate(ctx, tmp_path))
+    pacse_lines = [
+        p.text.strip()
+        for p in document.paragraphs
+        if p.text.strip().lower().startswith("pacsé")
+    ]
+    assert pacse_lines, "aucune ligne matrimoniale « pacsé » trouvee (apport)"
+    assert all(line == "Pacsé" for line in pacse_lines)
+    assert not any("COMPLÉTER" in p.text for p in document.paragraphs)
 
 
 def test_statuts_spfpl_apport_generates_nature_overlay_and_signature_date(

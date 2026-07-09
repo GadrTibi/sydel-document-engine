@@ -97,6 +97,27 @@ _PIVOT_DOC: dict[str, str] = {
 }
 
 
+# ---------------------------------------------------------------------------
+# R11 — une DNC PAR associé personne physique (règle de BUNDLE, Rafael 2026-07-09)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("type_key", CORPUS_KEYS)
+def test_r11_dnc_par_associe(corpus: dict[str, dict[str, str]], type_key: str) -> None:
+    """« Une déclaration de non-condamnation pour CHAQUE associé » (2 associés =
+    2 documents), tous types. Compte les DNC du bundle contre le nombre d'associés
+    personnes physiques du payload (table ``EXPECTED_DNC_PP``, alignée sur
+    ``build_corpus``)."""
+    from _conformance_corpus import EXPECTED_DNC_PP
+    from _conformance_rules import R11_LABEL, rule_r11_dnc_par_associe
+
+    assert set(EXPECTED_DNC_PP) == set(CORPUS_KEYS), (
+        "EXPECTED_DNC_PP désaligné des types du corpus"
+    )
+    violations = rule_r11_dnc_par_associe(corpus[type_key], EXPECTED_DNC_PP[type_key])
+    assert not violations, f"R11 — {R11_LABEL} ({type_key}) :\n" + "\n".join(violations)
+
+
 def test_corpus_couvre_tous_les_types(corpus: dict[str, dict[str, str]]) -> None:
     assert set(corpus) == set(CORPUS_KEYS)
     assert set(_PIVOT_DOC) == set(CORPUS_KEYS)

@@ -300,9 +300,16 @@ def test_statuts_scs_generates_roles_and_lu_approuve(tmp_path: Path) -> None:
     assert "Associes commandites" not in text
     assert "Associes commanditaires" not in text
     # Totaux fideles SCS (source paras 49/56/57/75, NBSP source compris), pas "SOIT AU TOTAL".
+    # Rafael 2026-07-09 (SCS art. 6, devise automatique) : lettres + « euros » et
+    # chiffres + « € », derives par le moteur (assertion de conformite du jour meme).
+    assert "la somme de 600 euros, 	600 €" in text
     assert "Le montant total versé par le commandité est de" in text
+    assert "600 €." in text
     assert "Le montant total versé par le commanditaire est de" in text
+    assert "400 €." in text
     assert "Total des apports en numéraires :" in text
+    assert "1000 €" in text  # capital fixture non groupe (le front groupe en amont)
+    assert "euros euros" not in text
     assert "Total des parts sociales composant le capital :" in text
     assert "SOIT AU TOTAL" not in text
     # Depot SCS (source para 57).
