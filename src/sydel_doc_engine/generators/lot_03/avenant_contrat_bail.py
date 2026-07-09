@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from pathlib import Path
 
 from docx.enum.table import WD_ROW_HEIGHT_RULE
@@ -123,23 +124,41 @@ def _clean(value: str | None) -> str:
     return (value or "").strip()
 
 
-def _display_date_or_empty(value) -> str:
+def _coerce_date(value):
+    """Rafael 2026-07-09 : les champs date de l'avenant arrivent parfois en CHAINE ISO
+    (« 1975-03-10 ») -> l'ancien fallback `str(value)` sortait l'ISO brut au lieu du format
+    francais du reste du moteur. On parse ISO (YYYY-MM-DD) et JJ/MM/AAAA en objet date."""
     if value is None:
-        return ""
-    if hasattr(value, "strftime"):
-        return value.strftime("%d/%m/%Y")
-    return str(value).strip()
+        return None
+    if hasattr(value, "year") and hasattr(value, "month") and hasattr(value, "day"):
+        return value
+    raw = str(value).strip()
+    if not raw:
+        return None
+    for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y"):
+        try:
+            return datetime.strptime(raw, fmt).date()
+        except ValueError:
+            continue
+    return None
+
+
+def _display_date_or_empty(value) -> str:
+    parsed = _coerce_date(value)
+    if parsed is not None:
+        return parsed.strftime("%d/%m/%Y")
+    return "" if value is None else str(value).strip()
 
 
 def _display_birthdate(value) -> str:
     # AV2 (Albane 2026-06-26) : « que le chiffre ne soit pas 1 janvier mais 01 janvier »
     # -> date de naissance en « JJ mois AAAA » avec jour sur 2 chiffres et mois accentue
     # en toutes lettres (meme presentation que cession_cabinets_common §A26-33/A26-69).
-    if value is None:
-        return ""
-    if hasattr(value, "year") and hasattr(value, "month") and hasattr(value, "day"):
-        return f"{value.day:02d} {FRENCH_MONTHS[value.month]} {value.year}"
-    return str(value).strip()
+    # Rafael 2026-07-09 : parse une chaine ISO/numerique avant formatage (plus de « 1975-03-10 »).
+    parsed = _coerce_date(value)
+    if parsed is not None:
+        return f"{parsed.day:02d} {FRENCH_MONTHS[parsed.month]} {parsed.year}"
+    return "" if value is None else str(value).strip()
 
 
 def _locataire_nom_avec_titre(locataire: BailParty, article: str = "") -> str:

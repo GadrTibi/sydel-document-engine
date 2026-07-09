@@ -210,6 +210,19 @@ def test_avenant_av2_birthdate_zero_padded_day_with_month_name(tmp_path: Path) -
     assert "né le 5 janvier" not in text
 
 
+def test_avenant_date_iso_string_rendue_en_francais() -> None:
+    # Rafael 2026-07-09 : une date arrivant en CHAINE ISO (« 1975-03-10 ») sortait brute
+    # au lieu du format francais -> parse + formatage (plus jamais « 1975-03-10 »).
+    from sydel_doc_engine.generators.lot_03.avenant_contrat_bail import (
+        _display_birthdate,
+        _display_date_or_empty,
+    )
+
+    assert _display_birthdate("1975-03-10") == "10 mars 1975"
+    assert _display_date_or_empty("2021-09-01") == "01/09/2021"
+    assert "1975-03-10" not in _display_birthdate("1975-03-10")
+
+
 def test_avenant_av3_le_docteur_in_articles(tmp_path: Path) -> None:
     # Rafael 2026-07-09 « supprimer partout » : « Docteur »/« Dr » n'est plus une civilite.
     # L'ancien wording « le Docteur … » (AV3) est SUPERSEDE -> le locataire personne physique
