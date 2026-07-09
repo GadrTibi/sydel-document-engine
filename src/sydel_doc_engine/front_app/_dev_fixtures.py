@@ -515,7 +515,7 @@ def _prefill_sas_test_data() -> None:
         "sas_valeur_nominale_action": "100",
         "sas_apports_nature_montant": "10000",
         "sas_apports_numeraire_montant": "2000",
-        "sas_civilite": "Docteur",
+        "sas_civilite": "Monsieur",
         "sas_prenom": "Camille",
         "sas_nom": "Martin",
         "sas_genre_label": "Monsieur",
@@ -653,7 +653,7 @@ def _spfpl_prefill_values(prefix: str) -> dict[str, object]:
         # O24-03 : siege de la cible (cession) sur UNE ligne (le slice reparse les composants).
         f"{prefix}_cible_siege_cession": "12 avenue des Ternes, 75017 Paris",
         f"{prefix}_cession_nb_associes": 1,
-        f"{prefix}_cession_assoc_0_civ": "Docteur",
+        f"{prefix}_cession_assoc_0_civ": "Madame",
         f"{prefix}_cession_assoc_0_prenom": "Camille",
         f"{prefix}_cession_assoc_0_nom": "Martin",
         f"{prefix}_cession_assoc_0_avant": 100,
@@ -974,7 +974,7 @@ def _cession_prefill_values(profession: str) -> dict[str, object]:
     if dentaire:
         values.update(
             {
-                "selarl_cession_cabinet_precedent_civilite": "Docteur",
+                "selarl_cession_cabinet_precedent_civilite": "Monsieur",
                 "selarl_cession_cabinet_precedent_prenom": "Henri",
                 "selarl_cession_cabinet_precedent_nom": "Petit",
                 "selarl_cession_cabinet_origine_prix": "150 000",

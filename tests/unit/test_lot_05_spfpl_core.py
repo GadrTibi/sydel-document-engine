@@ -104,7 +104,7 @@ def _base_context(*, operation: str = "cession") -> DocumentGenerationContext:
         ),
         associes_cible=[
             AssocieCible(
-                civilite_affichage="Docteur",
+                civilite_affichage="Monsieur",
                 prenom="Camille",
                 nom="Martin",
                 nb_parts_avant=70,
@@ -112,7 +112,7 @@ def _base_context(*, operation: str = "cession") -> DocumentGenerationContext:
                 plage_parts="1 a 10",
             ),
             AssocieCible(
-                civilite_affichage="Docteur",
+                civilite_affichage="Madame",
                 prenom="Louise",
                 nom="Bernard",
                 nb_parts_avant=30,
@@ -151,7 +151,7 @@ def _base_context(*, operation: str = "cession") -> DocumentGenerationContext:
             apports_numeraire_montant="0 euro",
             souscripteurs=[
                 CapitalSouscripteur(
-                    civilite_affichage="Docteur",
+                    civilite_affichage="Monsieur",
                     prenom="Camille",
                     nom="Martin",
                     profession="chirurgien-dentiste",
@@ -270,7 +270,7 @@ def test_acte_cession_parts_generates_dynamic_capital_and_preserves_source_frais
     assert "Dr " not in text
     # Repartition dynamique : civilite civile + « détenant » accentue.
     assert "Monsieur Camille Martin détenant 70 parts" in text
-    assert "Monsieur Louise Bernard détenant 30 parts" in text
+    assert "Madame Louise Bernard détenant 30 parts" in text
     # Clauses du modele source qui MANQUAIENT dans l'ancien from-scratch (SP1 « tout revoir »).
     assert "GARANTIE D’ACTIF ET DE PASSIF" in text
     assert "AFFIRMATION DE SINCERITE" in text
@@ -302,7 +302,7 @@ def test_acte_cession_parts_generates_dynamic_capital_and_preserves_source_frais
     assert "actuellement détenu comme suit" not in text
     # Rafael 2026-07-09 « supprimer partout » : civilite civile en repartition, plus « Dr ».
     assert text.count("Monsieur Camille Martin détenant 70 parts") == 1
-    assert text.count("Monsieur Louise Bernard détenant 30 parts") == 1
+    assert text.count("Madame Louise Bernard détenant 30 parts") == 1
     assert "déclare qu’il est propriétaire des parts" in text
     # R9 (Albane 2026-07-07) : clause de communication au Conseil de l'Ordre AVEC le
     # departement de l'Ordre du cedant en nom (fixture : « Paris »).
@@ -462,7 +462,7 @@ def test_attestation_capital_is_limited_to_unique_souscripteur(tmp_path: Path) -
     ctx = _base_context(operation="apport")
     ctx.capital_souscription.souscripteurs.append(
         CapitalSouscripteur(
-            civilite_affichage="Docteur",
+            civilite_affichage="Madame",
             prenom="Louise",
             nom="Bernard",
             profession="chirurgien-dentiste",

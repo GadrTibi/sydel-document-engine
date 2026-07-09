@@ -165,9 +165,11 @@ def render_sas_form() -> dict[str, object]:
 
     st.markdown("**Actionnaire unique / president (medecin)**")
     col_f, col_g, col_h = st.columns(3)
+    # Akainu M1 (2026-07-09) : « Docteur » n'est PAS une civilite -> M./Mme seulement
+    # (le titre professionnel reste separe). Racine du retour recurrent Rafael cote saisie.
     civilite = col_f.selectbox(
         "Civilite affichee",
-        ("Docteur", "Monsieur", "Madame"),
+        ("Monsieur", "Madame"),
         key=f"{PREFIX}_civilite",
     )
     prenom = _t(col_g, "prenom", "Prenom")

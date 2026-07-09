@@ -1530,9 +1530,12 @@ def _render_spfpl_cession_cible(
     for i in range(nb_associes):
         st.caption(f"Associe cible {i + 1}")
         c1, c2, c3 = st.columns(3)
+        # Akainu M1 (2026-07-09) : « Docteur » n'est PAS une civilite (racine du retour
+        # recurrent Rafael) -> selectbox M./Mme seulement. Le genre en derive -> la
+        # repartition rend « Madame Louise Bernard » (plus de defaut masculin sur « Docteur »).
         civ = c1.selectbox(
             "Civilite",
-            ("Docteur", "Monsieur", "Madame"),
+            ("Monsieur", "Madame"),
             key=f"{prefix}_cession_assoc_{i}_civ",
         )
         pre = _t(c2, prefix, f"cession_assoc_{i}_prenom", "Prenom")
