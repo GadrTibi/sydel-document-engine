@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 from _accents import assert_no_unaccented_french
 from docx import Document
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import (
@@ -209,6 +210,17 @@ def test_note_information_generates_cession_wording(tmp_path: Path) -> None:
     assert "SPFPL MARTIN, titulaire de 60 parts sociales" in text
     _assert_no_placeholders_or_options(text)
     _assert_no_unaccented_french(text)
+    # N2 (Rafael 2026-07-09) : le trait de signature est CENTRE (aligne sous/avec le nom du
+    # client, egalement centre), plus JUSTIFY (rendu a gauche, desaligne).
+    document = Document(output_path)
+    trait = next(
+        para for para in document.paragraphs if set(para.text.strip()) == {"_"}
+    )
+    assert trait.alignment == WD_ALIGN_PARAGRAPH.CENTER
+    name = next(
+        para for para in document.paragraphs if para.text.strip() == "Camille Martin"
+    )
+    assert name.alignment == WD_ALIGN_PARAGRAPH.CENTER  # trait et nom dans la meme colonne centree
 
 
 def test_note_information_generates_apport_wording(tmp_path: Path) -> None:
@@ -342,3 +354,86 @@ def test_pv_agrement_plage_mention_omitted_when_range_empty(tmp_path: Path) -> N
     assert "numérotées de" not in resolution  # mention omise dans la resolution
     assert "inclus" not in resolution
     assert "à la SPFPL MARTIN, à compter de ce jour." in resolution
+
+
+# ---------------------------------------------------------------------------
+# Retours Rafael 2026-07-09 (soir) — PV d'agrement cession (C1/C2/C3/C4).
+# Verbatim = spec : en-tete titre en gras, date en lettres NON dupliquee, tirets
+# sur les enonciations des decisions, n° d'article capital SAISISSABLE.
+# ---------------------------------------------------------------------------
+
+
+def _find_paragraph_by_text(path: Path, text: str):
+    return next(p for p in Document(path).paragraphs if p.text == text)
+
+
+def test_pv_agrement_unique_entete_titre_societe_en_gras(tmp_path: Path) -> None:
+    # C1 : uniformiser l'en-tete — le titre de la societe (denomination) en GRAS.
+    path = PvAgrementCessionSpfplAssocieUniqueGenerator().generate(_unique_context(), tmp_path)
+    denomination = _find_paragraph_by_text(path, "SELARL CABINET MARTIN")
+    assert denomination.runs[0].bold is True
+    # La ligne de forme sociale n'est PAS mise en gras (seul le titre l'est).
+    forme = _find_paragraph_by_text(path, "SELARL")
+    assert not any(r.bold for r in forme.runs)
+
+
+def test_pv_agrement_plusieurs_entete_titre_societe_en_gras(tmp_path: Path) -> None:
+    # C1 : idem sur le PV « plusieurs associes ».
+    path = PvAgrementCessionSpfplPlusieursAssociesGenerator().generate(_plural_context(), tmp_path)
+    denomination = _find_paragraph_by_text(path, "SELARL CABINET MARTIN")
+    assert denomination.runs[0].bold is True
+
+
+def test_pv_agrement_date_lettres_annee_non_dupliquee(tmp_path: Path) -> None:
+    # C2 : l'annee en lettres n'apparait qu'UNE fois (« L'an <annee>, » puis
+    # « Le <jour mois>, a <heure>, » SANS repeter l'annee).
+    cases = (
+        ("unique", PvAgrementCessionSpfplAssocieUniqueGenerator(), _unique_context()),
+        ("plural", PvAgrementCessionSpfplPlusieursAssociesGenerator(), _plural_context()),
+    )
+    for name, generator, ctx in cases:
+        text = _docx_text(generator.generate(ctx, tmp_path / name))
+        assert "L'an deux mille vingt-six," in text
+        assert "Le quatorze mai, à 10 heures," in text
+        # L'ancienne date, qui repetait l'annee, ne doit plus apparaitre.
+        assert "Le quatorze mai deux mille vingt-six" not in text
+        # « deux mille vingt-six » n'apparait qu'UNE fois (la ligne « L'an … »).
+        assert text.count("deux mille vingt-six") == 1
+
+
+def test_pv_agrement_ordre_du_jour_en_tirets(tmp_path: Path) -> None:
+    # C3 : les enonciations des decisions (ordre du jour) sont prefixees d'un tiret « - ».
+    cases = (
+        ("unique", PvAgrementCessionSpfplAssocieUniqueGenerator(), _unique_context()),
+        ("plural", PvAgrementCessionSpfplPlusieursAssociesGenerator(), _plural_context()),
+    )
+    for name, generator, ctx in cases:
+        path = generator.generate(ctx, tmp_path / name)
+        paras = [p.text for p in Document(path).paragraphs if p.text]
+        assert "- Agrément d'un nouvel associé, la SPFPL MARTIN ;" in paras
+        assert "- Modification corrélative des statuts ;" in paras
+        assert "- Pouvoirs pour l'accomplissement des formalités." in paras
+        # La phrase d'amorce n'est PAS une enonciation -> pas de tiret.
+        assert "Dès lors, il est décidé de ce qui suit :" in paras
+
+
+def test_pv_agrement_article_capital_numero_defaut_7bis(tmp_path: Path) -> None:
+    # C4 : sans saisie, le n° d'article du capital reste « 7 bis » aux 2 endroits (byte-neutre).
+    text = _docx_text(
+        PvAgrementCessionSpfplAssocieUniqueGenerator().generate(_unique_context(), tmp_path)
+    )
+    assert "l'article 7 bis des statuts sera modifié comme suit" in text
+    assert "« Article 7 bis - Capital social" in text
+
+
+def test_pv_agrement_article_capital_numero_saisissable(tmp_path: Path) -> None:
+    # C4 : n° d'article saisissable (ctx.metadata["pv_article_capital_numero"]) — les 2
+    # occurrences (phrase de modification ET en-tete du bloc) suivent la saisie.
+    ctx = _unique_context()
+    ctx.metadata = {"pv_article_capital_numero": "8"}
+    text = _docx_text(
+        PvAgrementCessionSpfplAssocieUniqueGenerator().generate(ctx, tmp_path)
+    )
+    assert "l'article 8 des statuts sera modifié comme suit" in text
+    assert "« Article 8 - Capital social" in text
+    assert "7 bis" not in text

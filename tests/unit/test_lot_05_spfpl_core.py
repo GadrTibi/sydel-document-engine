@@ -286,7 +286,10 @@ def test_acte_cession_parts_generates_dynamic_capital_and_preserves_source_frais
     # Akainu M3 : valeur nominale = champ ctx « cent euros » AVEC elision correcte « de cent euros »
     # (le modele colle « d’ » au placeholder ; consonne -> « de »). NB apostrophe COURBE (’, U+2019)
     # comme dans le rendu reel — l'apostrophe droite (') passait faussement vert.
-    assert "de cent euros de valeur nominale" in text
+    # A4 (Rafael 2026-07-09) : les nombres en lettres s'affichent en MAJUSCULES dans l'acte
+    # (« CENT euros », unite en minuscules) ; supersede « cent euros » minuscule.
+    assert "de CENT euros de valeur nominale" in text
+    assert "de cent euros de valeur nominale" not in text
     assert "d’cent" not in text
     assert "d'cent" not in text
     # R2 (Albane 2026-07-07) : SPFPL acquereuse non immatriculee -> identite « en cours de
@@ -308,11 +311,52 @@ def test_acte_cession_parts_generates_dynamic_capital_and_preserves_source_frais
     # departement de l'Ordre du cedant en nom (fixture : « Paris »).
     assert "communiqué au Conseil départemental de l’Ordre de Paris en vue" in text
     assert "de l’Ordre en vue" not in text
-    # Albane 2026-07-07 : capitaux en « lettres (chiffres groupes) euros ».
-    assert "Au capital de soixante mille (60 000) euros" in text
+    # Albane 2026-07-07 : capitaux en « lettres (chiffres groupes) euros » ; A4 (Rafael
+    # 2026-07-09) : lettres en MAJUSCULES (« SOIXANTE MILLE », « DIX MILLE »), unite/chiffres
+    # intacts.
+    assert "Au capital de SOIXANTE MILLE (60 000) euros" in text
     assert "Au capital de 60" not in text  # plus de figure nue dans le bloc acquereur
-    assert "au capital social de dix mille (10 000) euros divisé" in text
+    assert "au capital social de DIX MILLE (10 000) euros divisé" in text
+    # A4 : prix, nombre de parts et nombre d'exemplaires en lettres MAJUSCULES.
+    assert "le prix de MILLE euros (1 000 €)" in text
+    assert "un prix de SOIXANTE MILLE euros (60 000 €)" in text
+    assert "la pleine propriété de SOIXANTE (60) parts" in text
+    assert "En TROIS exemplaires originaux" in text
+    # Aucune fuite de la casse minuscule des nombres en lettres du perimetre A4.
+    assert "soixante mille" not in text
+    assert "dix mille" not in text
     _assert_clean(text)
+
+    # A1 (Rafael 2026-07-09) : saut de page entre la 1re page de presentation et le debut de
+    # l'acte (« ENTRE LES SOUSSIGNES : »).
+    document = Document(output_path)
+    paragraphs = document.paragraphs
+    entre_index = next(
+        index
+        for index, para in enumerate(paragraphs)
+        if para.text.strip().startswith("ENTRE LES SOUSSIGNES")
+    )
+    xml_before_entre = "".join(para._p.xml for para in paragraphs[:entre_index])
+    assert 'w:type="page"' in xml_before_entre  # un saut de page precede l'acte
+    # A2 (Rafael 2026-07-09) : la designation du cedant garde le gras UNIQUEMENT sur nom+prenom,
+    # le reste de la ligne (profession, naissance, adresse) repasse en maigre.
+    designation = next(
+        para
+        for para in paragraphs
+        if para.text.startswith("Monsieur Camille Martin, chirurgien-dentiste")
+    )
+    assert designation.runs[0].text == "Monsieur Camille Martin"
+    assert designation.runs[0].bold is True
+    assert any(
+        run.text.startswith(", chirurgien-dentiste") and not run.bold
+        for run in designation.runs
+    )
+    # A5 (Rafael 2026-07-09) : chaque enonciation de « DÉCLARATIONS DES PARTIES » est prefixee
+    # d'un tiret ; l'intro et le titre de section suivant n'en portent pas.
+    assert "-\tque leur état civil" in text
+    assert "-\tQu'ils sont résidents français" in text
+    assert "-\tLe Cédant et le Cessionnaire déclarent" not in text
+    assert "-\tGARANTIE" not in text
 
 
 def test_contrat_apport_uses_context_evaluateur_and_commissaire(tmp_path: Path) -> None:
@@ -501,6 +545,12 @@ def test_attestation_capital_generates_unique_shareholder_wording(tmp_path: Path
     assert "Docteur Camille Martin chirurgien-dentiste" not in text
     assert "Président, Docteur" not in text
     assert "Docteur" not in text
+    # AT1 (Rafael 2026-07-09, propage depuis la variante cession) : la ligne de SIGNATURE porte
+    # le nom SANS profession ; la profession reste dans « par le Président, … ».
+    signature_paragraphs = [
+        para.text for para in Document(output_path).paragraphs if para.text.strip()
+    ]
+    assert signature_paragraphs[-1] == "Monsieur Camille Martin"
     _assert_no_unaccented_french(text)
     _assert_clean(text)
 
@@ -532,6 +582,17 @@ def test_attestation_capital_cession_wording_and_genre(tmp_path: Path) -> None:
     # Accord MASCULIN.
     assert "Je soussigné " in text_m
     assert "soussignée" not in text_m
+    # AT1 (Rafael 2026-07-09) : la profession n'apparait qu'UNE fois pres du nom dans le bloc
+    # signature -> la ligne de SIGNATURE porte le nom SANS profession (« Monsieur Camille
+    # Martin »), la profession restant dans « par le Président, … chirurgien-dentiste ».
+    signature_paragraphs = [
+        para.text for para in Document(output_path).paragraphs if para.text.strip()
+    ]
+    assert signature_paragraphs[-1] == "Monsieur Camille Martin"
+    assert "par le Président, Monsieur Camille Martin chirurgien-dentiste" in text_m
+    # « Monsieur Camille Martin chirurgien-dentiste » = « Je soussigné … » + « par le Président
+    # … » (2×) ; la ligne de signature ne le porte PLUS (supersede l'ancien 3e).
+    assert text_m.count("Monsieur Camille Martin chirurgien-dentiste") == 2
     _assert_no_unaccented_french(text_m)
     _assert_clean(text_m)
 
@@ -648,11 +709,14 @@ def test_acte_price_singular_euro_for_one(tmp_path: Path) -> None:
             prix_total_lettres="un",
         )
     )
-    # n3 : elision « d’un euro » (unitaire + total), plus de « de un euro ».
-    assert "le prix d’un euro (1 €) part cédée" in line  # unitaire : elide + singulier + € lisible
-    assert "soit un prix d’un euro (1 €)" in line  # total : elide + singulier
+    # n3 : elision « d’UN euro » (unitaire + total), plus de « de un euro ». A4 (Rafael
+    # 2026-07-09) : le nombre en lettres est en MAJUSCULES (« UN »), l'unite reste minuscule.
+    assert "le prix d’UN euro (1 €) part cédée" in line  # unitaire : elide + singulier + € lisible
+    assert "soit un prix d’UN euro (1 €)" in line  # total : elide + singulier
     assert "de un euro" not in line  # forme non elidee proscrite (n3)
+    assert "d’un euro" not in line  # casse minuscule du nombre proscrite (A4)
     assert "un euros" not in line  # accord incorrect proscrit
+    assert "UN euros" not in line  # accord incorrect proscrit (variante majuscule)
     assert "euro euro" not in line  # anti double-unite
     assert "(1) part" not in line  # plus de chiffre nu sans unite avant « part »
 
@@ -670,9 +734,11 @@ def test_acte_price_plural_euros_above_one(tmp_path: Path) -> None:
             prix_total_lettres="soixante mille euros",
         )
     )
-    assert "mille euros (1 000 €) part cédée" in line
-    assert "soit un prix de soixante mille euros (60 000 €)" in line
+    # A4 (Rafael 2026-07-09) : nombre en lettres en MAJUSCULES, unite/chiffres intacts.
+    assert "MILLE euros (1 000 €) part cédée" in line
+    assert "soit un prix de SOIXANTE MILLE euros (60 000 €)" in line
     assert "euros euros" not in line
+    assert "soixante mille euros" not in line  # casse minuscule proscrite (A4)
 
 
 def test_acte_price_decimal_keeps_figure_no_double_euro(tmp_path: Path) -> None:

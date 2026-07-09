@@ -178,7 +178,16 @@ class AttestationCapitalListeSouscripteursGenerator:
         )
         add_paragraph(docx, f"Fait à {ctx.signature.lieu}")
         add_paragraph(docx, f"Le {ctx.signature.date.strftime('%d/%m/%Y')}")
-        add_paragraph(docx, president_identite)
+        # AT1 (Rafael 2026-07-09) : la ligne de SIGNATURE porte le nom SANS profession (la
+        # profession reste dans « par le Président, … » juste au-dessus — une seule mention).
+        add_paragraph(
+            docx,
+            _souscripteur_nom_civil(
+                president,
+                "capital_souscription.president",
+                genre=ctx.personne_signataire.genre,
+            ),
+        )
 
         output_dir.mkdir(parents=True, exist_ok=True)
         output_path = output_dir / OUTPUT_FILENAME
@@ -213,6 +222,28 @@ def _souscripteur_identite(
         f"{required_text(souscripteur.prenom, f'{field_name}.prenom')} "
         f"{required_text(souscripteur.nom, f'{field_name}.nom')} "
         f"{required_text(souscripteur.profession, f'{field_name}.profession')}"
+    )
+
+
+def _souscripteur_nom_civil(
+    souscripteur: CapitalSouscripteur,
+    field_name: str,
+    *,
+    genre: Gender | None,
+) -> str:
+    """AT1 (Rafael 2026-07-09) : identite de SIGNATURE = « <civilite civile> <prenom> <nom> »,
+    SANS la profession. Le bloc signature affichait la profession DEUX FOIS pres du nom (« par le
+    Président, <nom> <profession> » puis la ligne de signature « <nom> <profession> ») ; on retire
+    la profession de la ligne de signature (le modele source la porte SANS profession) — une seule
+    mention subsiste, dans la phrase « par le Président, … »."""
+    civilite = civilite_civile(
+        required_text(souscripteur.civilite_affichage, f"{field_name}.civilite_affichage"),
+        genre,
+    )
+    return (
+        f"{civilite} "
+        f"{required_text(souscripteur.prenom, f'{field_name}.prenom')} "
+        f"{required_text(souscripteur.nom, f'{field_name}.nom')}"
     )
 
 

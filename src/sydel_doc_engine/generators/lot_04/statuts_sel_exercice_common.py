@@ -1024,6 +1024,10 @@ def render_statuts_sel_docx(  # noqa: C901
             # « trop proche de l'en-tete »). ADDITIF, purement visuel.
             add_spacer(docx, space_after_pt=10)
             add_statuts_title_box(docx, "STATUTS", bordered=title_box_bordered)
+            # S2 (Rafael 2026-07-09) : SAUT DE PAGE apres l'encadre « STATUTS » -> le deroule
+            # de l'acte (comparution + articles) commence sur une nouvelle page. Convention de
+            # presentation propagee depuis les statuts SPFPL (meme rendu de premiere page).
+            docx.add_page_break()
 
         if multi and multi_zones is not None:
             # Interception par CONTENU (chaines source exactes) des 4 fenetres dynamiques.
@@ -1045,8 +1049,13 @@ def render_statuts_sel_docx(  # noqa: C901
             if block == multi_zones.signature_line:
                 signataires = [m for m in multi_membres if m.est_signataire]
                 for membre in signataires:
+                    # S5 (Rafael 2026-07-09) : signatures alignees a DROITE (meme convention
+                    # que le mono ; « Fait a … » reste a gauche).
                     add_statuts_signature_block(
-                        docx, [_membre_short_label(membre)], bold=True
+                        docx,
+                        [_membre_short_label(membre)],
+                        bold=True,
+                        alignment=WD_ALIGN_PARAGRAPH.RIGHT,
                     )
                 signature_mode = True
                 continue
@@ -1079,6 +1088,12 @@ def render_statuts_sel_docx(  # noqa: C901
         elif block == "[denomination_societe]":
             # Article 3 : nom de la societe en gras et centre (retour Albane 2026-06-10).
             add_paragraph(docx, text, alignment=WD_ALIGN_PARAGRAPH.CENTER, bold=True)
+        elif _is_soussigne_header(text):
+            # S3 (Rafael 2026-07-09) : pas d'espacement superflu apres « LE(S) SOUSSIGNE(S) »
+            # -> space_after=0, la comparution enchaine immediatement (bloc compact).
+            add_paragraph(
+                docx, text, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY, space_after_pt=0
+            )
         elif text.startswith("Fait à ") or text.startswith("Fait a "):
             signature_mode = True
             # « Fait a » aligne a GAUCHE (retour Albane 2026-06-10).
@@ -1091,10 +1106,18 @@ def render_statuts_sel_docx(  # noqa: C901
             or text.startswith("«")
             or text.startswith("Â«")
         ):
-            add_statuts_signature_block(docx, [], mention_lines=[text])
+            # S5 (Rafael 2026-07-09) : la mention accompagne la signature -> alignee a DROITE
+            # (meme zone que le nom du signataire).
+            add_statuts_signature_block(
+                docx, [], mention_lines=[text], alignment=WD_ALIGN_PARAGRAPH.RIGHT
+            )
         elif signature_mode:
             # Nom du client (signataire) en GRAS (retour Albane 2026-06-10).
-            add_statuts_signature_block(docx, [text], bold=True)
+            # S5 (Rafael 2026-07-09) : signature du client alignee a DROITE (« Fait a … / Le … »
+            # restent a gauche) -> zone de signature a droite.
+            add_statuts_signature_block(
+                docx, [text], bold=True, alignment=WD_ALIGN_PARAGRAPH.RIGHT
+            )
         elif text.startswith("Liste des actes"):
             # Derniere page : ligne « Liste des actes accomplis... » centree (Albane).
             add_paragraph(docx, text, alignment=WD_ALIGN_PARAGRAPH.CENTER)
@@ -1324,6 +1347,17 @@ def _dirigeant_is_unique_associe(ctx: DocumentGenerationContext) -> bool:
     return (
         ctx.dirigeant_nomine.prenom == associate.prenom
         and ctx.dirigeant_nomine.nom == associate.nom
+    )
+
+
+def _is_soussigne_header(text: str) -> bool:
+    """Ligne d'ouverture de la comparution : « LE SOUSSIGNE : » / « LA SOUSSIGNEE : » /
+    « LES SOUSSIGNES : » (accord de genre/nombre applique en amont). S3 (Rafael 2026-07-09)."""
+    normalized = text.strip().upper().replace("\xa0", " ")
+    return (
+        normalized.startswith("LE SOUSSIGN")
+        or normalized.startswith("LA SOUSSIGN")
+        or normalized.startswith("LES SOUSSIGN")
     )
 
 

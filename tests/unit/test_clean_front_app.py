@@ -1929,7 +1929,9 @@ def test_clean_front_demande_ordre_presidente_and_conseiller(tmp_path: Path) -> 
     # Retour Albane 2026-06-10 (demande d'inscription a l'ordre) :
     # - « Madame la Présidente » si la présidente de l'ordre est une femme ;
     # - nom du conseiller (mandataire) adaptable au lieu de Jordan ELBAZ en dur ;
-    # - CP + ville de l'adresse perso sur une ligne séparée.
+    # - CP + ville de l'adresse sur une ligne séparée.
+    # D1 (Rafael 2026-07-09) : l'en-tete porte desormais l'adresse du SIEGE de la societe,
+    # PAS l'adresse personnelle du signataire (supersede « adresse perso » de 2026-06-10).
     from dataclasses import replace
 
     base = build_selarl_scenario("selarl_medecin_simple")
@@ -1958,9 +1960,11 @@ def test_clean_front_demande_ordre_presidente_and_conseiller(tmp_path: Path) -> 
     assert "Monsieur le Président" not in custom_text
     assert "Sophie MARTIN" in custom_text
     assert "Jordan ELBAZ" not in custom_text
-    # Adresse perso sur deux lignes (rue / CP ville).
-    assert "10 rue Test" in paragraphs
-    assert "75001 Paris" in paragraphs
+    # D1 (Rafael 2026-07-09) : l'en-tete porte l'adresse du SIEGE (deux lignes : rue / CP ville),
+    # PAS l'adresse personnelle du signataire.
+    assert "20 avenue du Siege" in paragraphs
+    assert "75002 Paris" in paragraphs
+    assert "10 rue Test" not in custom_text  # adresse personnelle NON affichee dans l'en-tete
 
 
 def test_clean_front_selarl_pv_decision_reunion_signature_divergent_b1(tmp_path: Path) -> None:

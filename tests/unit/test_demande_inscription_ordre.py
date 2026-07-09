@@ -10,6 +10,7 @@ from docx.shared import Cm
 
 from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import (
+    Address,
     Company,
     DocumentGenerationContext,
     DossierOptions,
@@ -42,7 +43,12 @@ def _context(
             nom="Durand",
             adresse_personnelle_affichee="12 rue des Lilas\n75008 Paris",
         ),
-        societe=Company(denomination="SEL EXEMPLE"),
+        # D1 (Rafael 2026-07-09) : l'en-tete porte le SIEGE de la societe (tous les fronts
+        # SEL/SPFPL/SCM/SAS posent `societe.siege`), plus l'adresse personnelle du signataire.
+        societe=Company(
+            denomination="SEL EXEMPLE",
+            siege=Address(adresse_affichee="15 avenue du Siège, 69003 Lyon"),
+        ),
         ordre=ordre or _selarl_selas_ordre(),
         mandataire=mandataire or _detailed_mandataire(),
         signature=Signature(lieu="Paris", date=date(2026, 5, 14)),
@@ -159,6 +165,12 @@ def test_demande_inscription_ordre_selarl_uses_structured_ordinal_address(
     assert "Monsieur Jean Durand" in text
     assert "Dr Jean Durand" not in text
     assert "Docteur" not in text
+    # D1 (Rafael 2026-07-09) : l'en-tete porte le SIEGE de la societe (deux lignes), PAS
+    # l'adresse personnelle du signataire.
+    assert "15 avenue du Siège" in paragraphs
+    assert "69003 Lyon" in paragraphs
+    assert "12 rue des Lilas" not in text  # adresse personnelle NON affichee dans l'en-tete
+    assert "75008 Paris" not in text
     # R5 (Albane, AUTORITE METIER) : destinataire FORME LONGUE
     # « Conseil départemental de l’Ordre des <profession_pluriel> <connecteur> <departement> »
     # (profession PUIS departement — forme du MODELE d'Albane doc_08 26/06 « des médecins du

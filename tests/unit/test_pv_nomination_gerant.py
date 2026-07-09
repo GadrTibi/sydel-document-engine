@@ -21,8 +21,10 @@ from sydel_doc_engine.domain.models import (
     ReunionContext,
     ReunionPresident,
     Signature,
+    SpfplPerson,
 )
 from sydel_doc_engine.generators.lot_02.pv_nomination_gerant import (
+    _PV_COMPACT_SPACE_AFTER_PT,
     VOTE_FORMULA,
     PvNominationGerantGenerator,
 )
@@ -839,3 +841,132 @@ def test_pv_non_micro_capital_line_unchanged(tmp_path: Path) -> None:
     text = _docx_text(_generate(tmp_path))
     assert "Au capital de 1 000 euros" in text
     assert "À capital variable au capital minimum" not in text
+
+
+# ---------------------------------------------------------------------------
+# Retours Rafael 2026-07-09 (soir) — PV nomination (P1/P2).
+# P1 : espacement COMPACT sur la designation du client + les decisions.
+# P2 : en-tete SPFPLAS = forme legale complete (profession reglementee au pluriel).
+# ---------------------------------------------------------------------------
+
+
+def _spfplas_context() -> DocumentGenerationContext:
+    """Contexte d'un PV nomination d'une SPFPL par actions simplifiee (SPFPLAS),
+    calque sur le flux reel (spfpl_slice) : forme abregee « SPFPL », libelle front
+    « société de participations financières de professions libérales », cedant
+    portant `profession_reglementee_pluriel`, titres = actions."""
+    ctx = _context(associes=_associes(1))
+    ctx.societe.forme_sociale = "SPFPL"
+    ctx.societe.forme_sociale_affichage = "SPFPL"
+    ctx.societe.forme_sociale_abregee = "SPFPL"
+    ctx.societe.forme_sociale_complete = (
+        "société de participations financières de professions libérales"
+    )
+    ctx.societe.forme_sociale_libelle_long = (
+        "Société de participations financières de professions libérales"
+    )
+    ctx.societe.denomination = "SPFPL DURAND"
+    ctx.capital.type_titre = "actions"
+    ctx.dirigeant_nomine.fonction_affichage = "président"
+    ctx.cedant = SpfplPerson(
+        civilite_affichage="Monsieur",
+        prenom="Alice",
+        nom="Durand",
+        genre=Gender.FEMININ,
+        profession_reglementee_pluriel="chirurgiens-dentistes",
+    )
+    return ctx
+
+
+def test_pv_nomination_spfplas_header_forme_legale_complete(tmp_path: Path) -> None:
+    # P2 : l'en-tete SPFPLAS rend la forme LEGALE COMPLETE (bonne casse, profession
+    # reglementee AU PLURIEL titre-casee, forme « par actions simplifiée »), au lieu du
+    # libelle « société de participations financières de professions libérales » du front.
+    ctx = _spfplas_context()
+    paragraphs = _paragraphs(_generate(tmp_path, ctx))
+    text = _docx_text(_generate(tmp_path / "second", ctx))
+
+    assert (
+        "Société de Participations Financières de Profession Libérale de "
+        "Chirurgiens-Dentistes par actions simplifiée"
+    ) in paragraphs
+    assert "société de participations financières de professions libérales" not in text
+    assert "professions libérales" not in text  # jamais le pluriel « professions »
+
+
+def test_pv_nomination_spfplas_header_uses_associe_plural_fallback(tmp_path: Path) -> None:
+    # P2 (repli) : sans cedant/apporteur, la profession plurielle est prise sur l'associe
+    # s'il la porte (`profession_reglementee_pluriel`).
+    ctx = _spfplas_context()
+    ctx.cedant = None
+    ctx.associes[0].profession_reglementee_pluriel = "chirurgiens-dentistes"
+    paragraphs = _paragraphs(_generate(tmp_path, ctx))
+    assert (
+        "Société de Participations Financières de Profession Libérale de "
+        "Chirurgiens-Dentistes par actions simplifiée"
+    ) in paragraphs
+
+
+def test_pv_nomination_spfplas_header_without_plural_falls_back(tmp_path: Path) -> None:
+    # P2 (garde-fou) : sans profession plurielle connue, on ne DEVINE rien -> repli sur le
+    # libelle existant (pas de format SPFPLAS incomplet, pas de crash).
+    ctx = _spfplas_context()
+    ctx.cedant = None
+    ctx.associes[0].profession_reglementee_pluriel = None
+    text = _docx_text(_generate(tmp_path, ctx))
+    # Repli = le libelle existant (forme_sociale_complete du front, non modifie).
+    assert "société de participations financières de professions libérales" in text
+    assert "Profession Libérale de" not in text  # pas de format SPFPLAS incomplet
+
+
+def test_pv_associe_unique_designation_client_compact_spacing(tmp_path: Path) -> None:
+    # P1 : la designation du client (nom / naissance / adresse / nationalite / qualite) sort
+    # en espacement COMPACT (plus d'« espace parasite » de 10 pt entre chaque ligne).
+    document = Document(_generate(tmp_path, _context(associes=_associes(1))))
+    for needle in (
+        "Madame Alice Durand",
+        "Née le 09/07/1986",
+        "Demeurant au 3 rue des Lilas",
+        "De nationalité française",
+        "Associée unique, propriétaire",
+    ):
+        assert (
+            _find_para(document, needle).paragraph_format.space_after.pt
+            == _PV_COMPACT_SPACE_AFTER_PT
+        )
+
+
+def test_pv_associe_unique_decisions_compact_but_keep_inter_decision_space(
+    tmp_path: Path,
+) -> None:
+    # P1 : le corps des decisions est resserre (espacement COMPACT) MAIS l'aeration ENTRE
+    # decisions reste (space_before du titre de decision = 10 pt).
+    document = Document(_generate(tmp_path, _context(associes=_associes(1))))
+    body = _find_para(document, "L’associée unique décide de désigner")
+    assert body.paragraph_format.space_after.pt == _PV_COMPACT_SPACE_AFTER_PT
+    # Ordre du jour (enonciations des decisions) compact aussi.
+    assert (
+        _find_paragraph(document, "- Nomination du gérant").paragraph_format.space_after.pt
+        == _PV_COMPACT_SPACE_AFTER_PT
+    )
+    # Aeration entre decisions preservee.
+    assert _find_paragraph(document, "DEUXIEME DECISION").paragraph_format.space_before.pt == 10.0
+
+
+def test_pv_ag_multi_designation_and_decisions_compact_spacing(tmp_path: Path) -> None:
+    # P1 : idem sur la branche AG multi — enumeration des associes (designation client) +
+    # corps des decisions en espacement COMPACT, aeration inter-decisions preservee.
+    document = Document(_generate(tmp_path, _context(associes=_associes(2))))
+    for needle in (
+        "Madame Alice Durand, détenant 60",
+        "Monsieur Bruno Martin, détenant 40",
+    ):
+        assert (
+            _find_para(document, needle).paragraph_format.space_after.pt
+            == _PV_COMPACT_SPACE_AFTER_PT
+        )
+    body = _find_para(document, "Madame Claire Bernard, née le")
+    assert body.paragraph_format.space_after.pt == _PV_COMPACT_SPACE_AFTER_PT
+    vote = _find_paragraph(document, VOTE_FORMULA)
+    assert vote.paragraph_format.space_after.pt == _PV_COMPACT_SPACE_AFTER_PT
+    assert _find_paragraph(document, "PREMIERE DECISION").paragraph_format.space_before.pt == 10.0

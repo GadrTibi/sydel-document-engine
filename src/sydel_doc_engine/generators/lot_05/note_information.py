@@ -119,10 +119,13 @@ class NoteInformationGenerator:
             add_hyphen_list_item(docx, line, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY)
         add_spacer(docx)  # [12] ligne vide d'aération (modèle)
         add_spacer(docx)  # [13] ligne vide d'aération (modèle)
+        # N2 (Rafael 2026-07-09) : le trait de signature etait JUSTIFY (rendu a GAUCHE) alors
+        # que le nom du signataire est CENTRE -> desalignement. On CENTRE le trait pour qu'il
+        # s'aligne exactement avec le nom du client (meme colonne centree, trait au-dessus du nom).
         add_paragraph(
             docx,
             "________________________",
-            alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
+            alignment=WD_ALIGN_PARAGRAPH.CENTER,
             bold=True,
             space_before_pt=12,
         )

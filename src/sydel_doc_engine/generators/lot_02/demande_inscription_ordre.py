@@ -53,10 +53,10 @@ class DemandeInscriptionOrdreGenerator:
             ordre.profession_signataire_affichee,
             "ordre.profession_signataire_affichee",
         )
-        adresse_personnelle = _required_text(
-            signataire.adresse_personnelle_affichee,
-            "personne_signataire.adresse_personnelle_affichee",
-        )
+        # D1 (Rafael 2026-07-09) : l'en-tete (haut a gauche) porte l'adresse du SIEGE de la
+        # societe, PAS l'adresse personnelle du signataire (tous les fronts SEL/SPFPL/SCM/SAS
+        # posent `societe.siege`). Propage a tous les overlays (convention d'en-tete universelle).
+        siege_lines = _siege_address_lines(company)
         profession_ligne_destinataire = _profession_ligne_destinataire(ordre)
         conseil_lines = _conseil_departemental_lines(
             ordre,
@@ -81,7 +81,7 @@ class DemandeInscriptionOrdreGenerator:
             document,
             signataire_name=signataire_name,
             profession_signataire=profession_signataire,
-            adresse_personnelle=adresse_personnelle,
+            siege_lines=siege_lines,
             conseil_lines=conseil_lines,
             adresse_ordre_lines=adresse_ordre_lines,
         )
@@ -141,15 +141,35 @@ def _split_display_lines(value: str | None, field_name: str) -> list[str]:
 
 
 def _personal_address_lines(adresse_personnelle: str) -> list[str]:
-    """Adresse personnelle sur deux lignes : « rue » puis « CP ville » (retour
-    Albane 2026-06-10). On coupe sur la PREMIERE virgule (format « num voie, cp
-    ville ») ; sans virgule, l'adresse reste sur une seule ligne.
+    """Adresse sur deux lignes : « rue » puis « CP ville » (retour Albane 2026-06-10).
+    On coupe sur la PREMIERE virgule (format « num voie, cp ville ») ; sans virgule,
+    l'adresse reste sur une seule ligne.
     """
-    text = _required_text(adresse_personnelle, "adresse_personnelle")
+    text = _required_text(adresse_personnelle, "adresse")
     street, separator, rest = text.partition(",")
     if separator and rest.strip():
         return [street.strip(), rest.strip()]
     return [text]
+
+
+def _siege_address_lines(company: Company) -> list[str]:
+    """D1 (Rafael 2026-07-09) : lignes d'adresse du SIEGE de la societe pour l'en-tete (haut a
+    gauche), en remplacement de l'adresse personnelle du signataire. Deux lignes : voie, puis
+    « CP Ville » — a partir de `siege.adresse_affichee` (retour a la ligne OU premiere virgule)
+    ou des sous-champs structures."""
+    siege = company.siege
+    if siege is None:
+        raise ValueError(f"societe.siege est obligatoire pour {DOCUMENT_CODE}.")
+    affichee = (siege.adresse_affichee or "").strip()
+    if affichee:
+        if "\n" in affichee:
+            return [line.strip() for line in affichee.splitlines() if line.strip()]
+        return _personal_address_lines(affichee)
+    num_voie = (siege.num_voie or "").strip()
+    voie = _required_text(siege.voie, "societe.siege.voie")
+    cp = _required_text(siege.cp, "societe.siege.cp")
+    ville = _required_text(siege.ville, "societe.siege.ville")
+    return [f"{num_voie} {voie}".strip(), f"{cp} {ville}"]
 
 
 def _signataire_name(signataire: Person) -> str:
@@ -299,14 +319,14 @@ def _add_header(
     *,
     signataire_name: str,
     profession_signataire: str,
-    adresse_personnelle: str,
+    siege_lines: list[str],
     conseil_lines: list[str],
     adresse_ordre_lines: list[str],
 ) -> None:
     _add_lines(document, [signataire_name, profession_signataire])
-    # Retour Albane 2026-06-10 : adresse personnelle sur DEUX lignes (rue, puis
-    # CP + ville en dessous) au lieu d'une seule ligne.
-    _add_lines(document, _personal_address_lines(adresse_personnelle))
+    # D1 (Rafael 2026-07-09) : l'en-tete porte l'adresse du SIEGE de la societe (deux lignes :
+    # rue, puis CP + ville), plus l'adresse personnelle du signataire.
+    _add_lines(document, siege_lines)
     add_spacer(document, space_after_pt=10)
     # Retour Albane 2026-06-10 : nom de l'ordre ALIGNE avec son adresse (meme
     # retrait, plus de decalage de premiere ligne).

@@ -204,6 +204,11 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
     # dentiste), MODIFIABLES. Seede AVANT les widgets (Streamlit interdit la modif post-widget).
     seed_if_empty(f"{prefix}_profession_associe_unique", "chirurgien-dentiste")
     seed_if_empty(f"{prefix}_cible_profession", "chirurgien-dentiste")
+    # C4 (retour Rafael 2026-07-09 soir) : n° de l'article du capital social de la SEL
+    # cible dans la 2e resolution du PV d'agrement (DOC-038/039) — code en dur « 7 bis »
+    # cote generateur, rendu SAISISSABLE. Seede AVANT le widget (Streamlit interdit la
+    # modif post-widget) ; « 7 bis » = defaut historique conserve si non renseigne.
+    seed_if_empty(f"{prefix}_pv_article_capital_numero", "7 bis")
     st.subheader("Donnees a saisir")
     st.markdown(f"**Societe SPFPL ({operation})**")
     denomination = _t(st, prefix, "denomination", "Denomination SPFPL")
@@ -442,6 +447,27 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
     col_ag2, col_ah2 = st.columns(2)
     cible_nb_parts = _i(col_ag2, prefix, "cible_nb_parts", "Parts totales cible")
     cible_valeur_part = _t(col_ah2, prefix, "cible_valeur_part", "Valeur nominale part cible")
+    # N1 (retour Rafael 2026-07-09 soir) : selon que la societe cible emet des ACTIONS
+    # (SELAS) ou des PARTS SOCIALES (SELARL), la note d'information (DOC-037) et les
+    # PV/actes doivent employer le bon terme. La forme de la cible est un champ TEXTE
+    # LIBRE (`cible_forme` / `cible_forme_complete`) -> le type de titre n'est PAS
+    # deterministe depuis une donnee structuree ; on ajoute donc une saisie explicite
+    # (suggestion Rafael « une case en plus »). Defaut « parts sociales » = comportement
+    # actuel (flux SELARL cible valide, sortie byte-identique). En APPORT la nature est
+    # deja saisie plus bas (« Nature des titres apportes ») -> on la REUTILISE au moment
+    # d'assembler le payload (pas de double-saisie).
+    cible_nature_titres = "parts sociales"
+    if not is_apport:
+        cible_nature_titres = st.selectbox(
+            "Titres émis par la société cible",
+            ("parts sociales", "actions"),
+            key=f"{prefix}_cible_nature_titres",
+            help=(
+                "Pilote le vocabulaire (parts sociales / actions) dans la note "
+                "d'information et les actes de cession. SELARL = parts sociales, "
+                "SELAS = actions."
+            ),
+        )
 
     # --- Operation apport (DOC-041 contrat + DOC-042/043 attestations) :
     # detail des titres apportes + organes de controle (commissaire aux apports
@@ -587,6 +613,10 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
         "cible_forme": cible_forme,
         "cible_profession": cible_profession,
         "cible_capital": cible_capital,
+        # N1 : nature des titres de la cible (parts sociales / actions). En cession =
+        # la saisie explicite ci-dessus ; en apport = la « Nature des titres apportes »
+        # deja saisie (les titres apportes SONT ceux de la cible) -> source unique.
+        "cible_nature_titres": (apport_nature_titres if is_apport else cible_nature_titres),
         "cible_nb_parts": cible_nb_parts,
         "cible_valeur_part": cible_valeur_part,
         "apport_nature_titres": apport_nature_titres,
@@ -1089,7 +1119,18 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         cedant=founder if not is_apport else None,
         apporteur=founder if is_apport else None,
         operation_titres=OperationTitres(nb_titres=nb_apportees),
-        operation_spfpl=OperationSpfpl(type=operation),
+        # N1 (Rafael 2026-07-09 soir) : nature des titres de la cible (parts sociales /
+        # actions) portee sur le champ CANON `operation_spfpl.nature_titres` (deja
+        # reference par la selection de documents, cf. orchestrator `_acte_cession_*`).
+        # Defaut « parts sociales » = comportement historique : « != actions » reste vrai
+        # -> selection de documents inchangee, et les generateurs qui echoent encore
+        # « parts » sortent a l'identique. Le generateur de la note d'information
+        # (DOC-037) + PV agrement (DOC-038/039) doit lire ce champ pour basculer le
+        # vocabulaire parts<->actions (travail d'un autre agent, cf. rapport).
+        operation_spfpl=OperationSpfpl(
+            type=operation,
+            nature_titres=str(payload.get("cible_nature_titres") or "parts sociales"),
+        ),
         societe_spfpl=SocieteSpfpl(
             denomination=str(payload.get("denomination") or ""),
             forme_sociale="par actions simplifiee",
@@ -1237,7 +1278,19 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         evaluateur_apport=(
             _professional_entity(payload, "evaluateur") if is_apport else None
         ),
-        metadata={"front_slice": f"track_b_spfpl_{operation}_v1"},
+        metadata={
+            "front_slice": f"track_b_spfpl_{operation}_v1",
+            # C4 (Rafael 2026-07-09 soir) : n° de l'article du capital social de la SEL
+            # cible dans le PV d'agrement (DOC-038/039), aujourd'hui code en dur « 7 bis »
+            # cote generateur (pv_agrement_common.add_article_7_bis, DEUX occurrences).
+            # Le front le rend saisissable et le passe via metadata (canal front->generation
+            # deja utilise, cf. slices SELAS) ; le generateur (autre agent) doit lire
+            # ctx.metadata.get("pv_article_capital_numero", "7 bis"). Defaut « 7 bis »
+            # -> sortie inchangee tant que non modifie.
+            "pv_article_capital_numero": str(
+                cession_data.get("article_capital_numero") or "7 bis"
+            ),
+        },
     )
     return ctx
 
@@ -1506,6 +1559,16 @@ def _render_spfpl_cession_cible(
         "Forme complete de la cible",
         hint="ex : societe d'exercice liberal a responsabilite limitee",
     )
+    # C4 (retour Rafael 2026-07-09 soir) : n° de l'article du capital social de la SEL
+    # cible dans la 2e resolution du PV d'agrement (DOC-038/039). Etait code en dur
+    # « 7 bis » cote generateur -> SAISISSABLE (defaut « 7 bis » seede dans render_spfpl_form).
+    article_capital_numero = _t(
+        st,
+        prefix,
+        "pv_article_capital_numero",
+        "N° de l'article du capital social de la SEL cible",
+        hint="défaut : 7 bis",
+    )
     # O24-03 : siege de la cible sur UNE ligne (parse interne -> num/voie/cp/ville
     # exiges par l'acte/PV de cession). Remplace l'ancienne grille No/Voie/CP/Ville
     # ET le champ « Siege cible (affiche) » du bloc principal (double-saisie).
@@ -1565,6 +1628,9 @@ def _render_spfpl_cession_cible(
         "prix_unitaire": prix_unitaire,
         "plage_cedee": plage_cedee,
         "cible_forme_complete": cible_forme_complete,
+        # C4 : n° d'article capital de la SEL cible (defaut « 7 bis »), consomme par le
+        # generateur PV d'agrement via ctx.metadata["pv_article_capital_numero"].
+        "article_capital_numero": article_capital_numero or "7 bis",
         "cible_siege_num": cible_siege_num,
         "cible_siege_voie": cible_siege_voie,
         "cible_siege_cp": cible_siege_cp,

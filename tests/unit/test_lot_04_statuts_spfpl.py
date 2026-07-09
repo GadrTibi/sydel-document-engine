@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.shared import Pt
 
 from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import (
@@ -215,21 +216,46 @@ def test_statuts_spfpl_cession_generates_source_overlay_without_signature_date(
     # FORME (FIDELITY_AUDIT_V1, volet 2) : la mise en forme doit coller au modele source DOCX.
     # FIX-F1 / STYLE-1 : bloc de titre centre (denomination en gras via Heading 3 source).
     denomination = document.paragraphs[0]
-    # Retour fonctionnel 6.8 (Albane 2026-07-06) : le titre reprend le nom de la societe
-    # (« Statuts [Nom] »), comme les autres types.
-    assert denomination.text.strip() == "Statuts SPFPL MARTIN"
+    # S1 (Rafael 2026-07-09) SUPERSEDE 6.8 (Albane 2026-07-06) : le bloc-titre porte la SEULE
+    # denomination (plus « Statuts <Nom> »), SANS espacement entre les lignes de l'en-tete.
+    assert denomination.text.strip() == "SPFPL MARTIN"
     assert denomination.alignment == WD_ALIGN_PARAGRAPH.CENTER
     assert denomination.runs[0].bold is True
+    assert denomination.paragraph_format.space_after == Pt(0)
     for needle in ("Société de Participations", "Au capital de", "Siège social"):
-        assert _para_by_text(document, needle).alignment == WD_ALIGN_PARAGRAPH.CENTER
-    # FIX-F4 / STYLE-5 : "STATUTS" centre, gras, taille 12.
-    statuts = _para_by_text(document, "STATUTS")
-    assert statuts.alignment == WD_ALIGN_PARAGRAPH.CENTER
-    assert statuts.runs[0].bold is True
-    assert statuts.runs[0].font.size is not None and statuts.runs[0].font.size.pt == 12
-    # FIX-F2 / STYLE-2 : "Le soussigné :" souligne.
+        header_line = _para_by_text(document, needle)
+        assert header_line.alignment == WD_ALIGN_PARAGRAPH.CENTER
+        assert header_line.paragraph_format.space_after == Pt(0)
+    # S2 (Rafael 2026-07-09) : « STATUTS » dans un ENCADRE (table 1x1), plus un top-level
+    # paragraphe ; le deroule commence apres un SAUT DE PAGE. Deux sauts au total (apres
+    # l'encadre STATUTS + avant l'ANNEXE, S5).
+    box_texts = [
+        para.text.strip()
+        for table in document.tables
+        for row in table.rows
+        for cell in row.cells
+        for para in cell.paragraphs
+    ]
+    assert "STATUTS" in box_texts
+    assert "STATUTS" not in [p.text.strip() for p in document.paragraphs]
+    assert document.element.body.xml.count('w:type="page"') >= 2
+    # FIX-F2 / STYLE-2 : "Le soussigné :" souligne. S3 : pas d'espacement superflu apres.
     soussigne = _para_by_text(document, "Le soussigné")
     assert soussigne.runs[0].underline is True
+    assert soussigne.paragraph_format.space_after == Pt(0)
+    # S4 (Rafael 2026-07-09) : l'ARTICLE 26 (source « ARTICLE\t26 », tabulation) est en GRAS
+    # comme les autres titres d'article (il tombait auparavant en paragraphe de corps).
+    article_26 = _para_by_text(document, "CONTROLE DES ASSOCIES")
+    assert article_26.text.strip().startswith("ARTICLE")
+    assert article_26.runs[0].bold is True
+    # S5 (Rafael 2026-07-09) : « Fait a … » a GAUCHE, signature client (nom) + mention a DROITE.
+    assert _para_by_text(document, "Fait à").alignment == WD_ALIGN_PARAGRAPH.LEFT
+    signataire = next(
+        p for p in document.paragraphs if p.text.strip() == "Monsieur Camille Martin"
+    )
+    assert signataire.alignment == WD_ALIGN_PARAGRAPH.RIGHT
+    assert signataire.runs[0].bold is True
+    assert acceptance.alignment == WD_ALIGN_PARAGRAPH.RIGHT
     # FIX-F3 / STYLE-3 : la ligne d'identite est en gras (run unique incl. le tiret), JUSTIFY.
     # Retour fonctionnel 7.1 (Albane 2026-07-06) / M2 (Akainu 2026-07-06) : « Utiliser 'Prénom'
     # (pas 'Prénoms complets') DANS LES STATUTS » SANS RESERVE -> le soussigne ET la nomination
@@ -327,18 +353,32 @@ def test_statuts_spfpl_apport_generates_nature_overlay_and_signature_date(
     document = Document(output_path)
     # FORME (FIDELITY_AUDIT_V1, volet 2) — meme exigences que la cession, sur le modele apport.
     denomination = document.paragraphs[0]
-    # Retour fonctionnel 6.8 (Albane 2026-07-06) : le titre reprend le nom de la societe
-    # (« Statuts [Nom] »), comme les autres types.
-    assert denomination.text.strip() == "Statuts SPFPL MARTIN"
+    # S1 (Rafael 2026-07-09) SUPERSEDE 6.8 : le bloc-titre porte la SEULE denomination
+    # (plus « Statuts <Nom> »), sans espacement entre les lignes de l'en-tete.
+    assert denomination.text.strip() == "SPFPL MARTIN"
     assert denomination.alignment == WD_ALIGN_PARAGRAPH.CENTER
     assert denomination.runs[0].bold is True
+    assert denomination.paragraph_format.space_after == Pt(0)
     for needle in ("Société par actions", "Société de Participations", "Siège social"):
         assert _para_by_text(document, needle).alignment == WD_ALIGN_PARAGRAPH.CENTER
-    statuts = _para_by_text(document, "STATUTS")
-    assert statuts.alignment == WD_ALIGN_PARAGRAPH.CENTER
-    assert statuts.runs[0].bold is True
-    assert statuts.runs[0].font.size is not None and statuts.runs[0].font.size.pt == 12
-    assert _para_by_text(document, "Le soussigné").runs[0].underline is True
+    # S2 : « STATUTS » dans un encadre (plus un top-level paragraphe) + saut(s) de page.
+    box_texts = [
+        para.text.strip()
+        for table in document.tables
+        for row in table.rows
+        for cell in row.cells
+        for para in cell.paragraphs
+    ]
+    assert "STATUTS" in box_texts
+    assert "STATUTS" not in [p.text.strip() for p in document.paragraphs]
+    assert document.element.body.xml.count('w:type="page"') >= 2
+    # S3 : « Le soussigné » souligne, sans espacement superflu apres.
+    soussigne = _para_by_text(document, "Le soussigné")
+    assert soussigne.runs[0].underline is True
+    assert soussigne.paragraph_format.space_after == Pt(0)
+    # S4 : ARTICLE 26 (source « ARTICLE\t26 ») en gras.
+    article_26 = _para_by_text(document, "CONTROLE DES ASSOCIES")
+    assert article_26.runs[0].bold is True
     # Rafael 2026-07-09 « supprimer partout » : civilite CIVILE, plus « Docteur ». Match EXACT :
     # la ligne de repartition commence aussi par « - Monsieur Camille Martin » (+ suffixe actions)
     # -> on ne compte que les 2 lignes d'identite pures (soussigne + President).
@@ -445,11 +485,12 @@ def test_statuts_spfpl_ordre_departement_name_not_number(tmp_path: Path) -> None
 
 
 def test_statuts_spfpl_title_reprises_company_name(tmp_path: Path) -> None:
-    """6.8 (Albane 2026-07-06) — le titre du document reprend le nom de la societe
-    (« Statuts SPFPL MARTIN »). Verrou explicite (deja couvert par le test de forme)."""
+    """S1 (Rafael 2026-07-09) SUPERSEDE 6.8 (Albane 2026-07-06) — le bloc-titre porte la
+    SEULE denomination (« SPFPL MARTIN »), le mot « Statuts » est retire (le titre « STATUTS »
+    figure dans l'encadre plus bas). Verrou explicite (deja couvert par le test de forme)."""
     ctx = _with_exercice(_base_context(operation="cession"))
     document = Document(StatutsSpfplCessionGenerator().generate(ctx, tmp_path))
-    assert document.paragraphs[0].text.strip() == "Statuts SPFPL MARTIN"
+    assert document.paragraphs[0].text.strip() == "SPFPL MARTIN"
 
 
 def test_statuts_spfpl_marital_line_capitalized_married(tmp_path: Path) -> None:

@@ -24,11 +24,13 @@ from sydel_doc_engine.generators.lot_05.scm_cession_common import (
 from sydel_doc_engine.rendering.docx_builder import (
     STATUTS_SPFPL_COMPACT_STYLE_PROFILE,
     add_paragraph,
+    add_spacer,
     add_statuts_article_heading,
     add_statuts_body_paragraph,
     add_statuts_hanging_list_item,
     add_statuts_part_heading,
     add_statuts_signature_block,
+    add_statuts_title_box,
     new_document,
 )
 from sydel_doc_engine.utils.grammar import (
@@ -241,23 +243,24 @@ def render_statuts_docx(  # noqa: C901
         if index < title_block_count:
             # FIX-F1 / STYLE-1 : bloc de titre (denomination / sous-titre / capital / siege)
             # centre dans la source ; la 1re ligne (denomination) est en gras (style Heading 3).
+            # S1 (Rafael 2026-07-09) : AUCUN espace entre les lignes de l'en-tete (comme le
+            # modele source) -> space_after=0 (l'en-tete est un bloc compact).
             add_paragraph(
                 docx,
                 text,
                 alignment=WD_ALIGN_PARAGRAPH.CENTER,
                 bold=(index == 0),
+                space_after_pt=0,
                 style_profile=style_profile,
             )
         elif text == "STATUTS":
-            # FIX-F4 / STYLE-5 : "STATUTS" est en Heading 3 taille 12 dans la source (run sz=12).
-            paragraph = add_paragraph(
-                docx,
-                text,
-                alignment=WD_ALIGN_PARAGRAPH.CENTER,
-                bold=True,
-                style_profile=style_profile,
-            )
-            paragraph.runs[0].font.size = Pt(12)
+            # S2 (Rafael 2026-07-09) : « STATUTS » dans un ENCADRE (lisibilite), place un peu
+            # PLUS BAS que l'en-tete (espaceur avant), PUIS un SAUT DE PAGE pour commencer le
+            # deroule de l'acte (comparution + articles) sur une nouvelle page. Le meme encadre
+            # partage (add_statuts_title_box) que les statuts SEL/civils -> rendu homogene.
+            add_spacer(docx, space_after_pt=10)
+            add_statuts_title_box(docx, "STATUTS", style_profile=style_profile)
+            docx.add_page_break()
         elif _is_major_heading(text):
             # Albane 2026-07-07 (fix 5) : des titres majeurs CONSECUTIFS (annexe : « ANNEXE 1 »
             # + « ETAT DES ENGAGEMENTS PRIS AVANT » + « LA CONSTITUTION DE LA SOCIETE ») sortaient
@@ -270,29 +273,36 @@ def render_statuts_docx(  # noqa: C901
                     break
                 heading_lines.append(next_text)
                 index += 1
+            # S5 (Rafael 2026-07-09) : la partie « ANNEXE » demarre sur une NOUVELLE PAGE
+            # (saut de page avant l'encadre de titre de l'annexe).
+            if heading_lines[0].startswith("ANNEXE"):
+                docx.add_page_break()
             _add_major_heading_box(docx, heading_lines, style_profile=style_profile)
-        elif text.startswith("ARTICLE "):
+        elif _is_article_heading(text):
+            # S4 (Rafael 2026-07-09) : detection ROBUSTE au separateur — l'art. 26 source
+            # porte « ARTICLE\t26 » (tabulation, pas espace) ; l'ancienne garde
+            # `startswith("ARTICLE ")` (espace) le manquait -> il tombait en paragraphe de
+            # corps (ni gras ni style de titre). On matche « ARTICLE » suivi de tout blanc.
             add_statuts_article_heading(docx, text, underline=False, style_profile=style_profile)
         elif text.startswith("Fait à ") or text.startswith("Fait a "):
-            signature_lines, mention_lines, index = _collect_signature_lines(
+            index = _add_signature_split(
+                docx,
                 blocks,
                 replacements,
                 index,
-            )
-            add_statuts_signature_block(
-                docx,
-                signature_lines,
-                mention_lines=mention_lines,
                 style_profile=style_profile,
             )
             continue
         elif _is_soussigne_line(block):
             # FIX-F2 / STYLE-2 : "Le soussigne :" est souligne dans la source (JUSTIFY + souligne).
+            # S3 (Rafael 2026-07-09) : pas d'espacement superflu apres la ligne « Le soussigne »
+            # -> space_after=0 (la comparution enchaine immediatement).
             add_paragraph(
                 docx,
                 text,
                 alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
                 underline=True,
+                space_after_pt=0,
                 style_profile=style_profile,
             )
         elif _is_identity_line(block):
@@ -626,6 +636,72 @@ def _collect_signature_lines(
             signature_lines.append(rendered)
         index += 1
     return signature_lines, mention_lines, index
+
+
+_ARTICLE_HEADING_RE = re.compile(r"ARTICLE\s")
+
+
+def _is_article_heading(text: str) -> bool:
+    """Un titre d'article = « ARTICLE » suivi d'un blanc (espace, tabulation ou insecable).
+
+    S4 (Rafael 2026-07-09) : l'art. 26 des modeles SPFPL porte « ARTICLE\t26 » (tabulation) ;
+    la garde `startswith("ARTICLE ")` (espace seul) le manquait et il n'etait pas mis en gras.
+    `\\s` couvre l'espace, la tabulation et l'insecable (mode Unicode) -> tous les titres, quel
+    que soit le separateur source, passent par le style de titre d'article (gras)."""
+    return bool(_ARTICLE_HEADING_RE.match(text))
+
+
+def _is_fait_ou_le_line(line: str) -> bool:
+    """Ligne de datation du bloc signature (« Fait a <lieu> » / « Le [<date>] »)."""
+    return (
+        line.startswith("Fait à ")
+        or line.startswith("Fait a ")
+        or line == "Le"
+        or line.startswith("Le ")
+    )
+
+
+def _add_signature_split(
+    docx,  # noqa: ANN001 - type docx interne python-docx
+    blocks: tuple[str, ...],
+    replacements: dict[str, str],
+    start_index: int,
+    *,
+    style_profile,  # noqa: ANN001
+) -> int:
+    """Bloc signature de la DERNIERE PAGE (S5, Rafael 2026-07-09).
+
+    « Fait a … » et « Le … » alignes a GAUCHE ; la signature du client (nom) et la mention
+    « Bon pour acceptation … » alignees a DROITE (meme zone de signature). Retourne l'index
+    du prochain bloc a traiter (les lignes de signature/mention sont consommees ici)."""
+    signature_lines, mention_lines, next_index = _collect_signature_lines(
+        blocks, replacements, start_index
+    )
+    for line in signature_lines:
+        if _is_fait_ou_le_line(line):
+            add_statuts_signature_block(
+                docx,
+                [line],
+                alignment=WD_ALIGN_PARAGRAPH.LEFT,
+                style_profile=style_profile,
+            )
+        else:
+            add_statuts_signature_block(
+                docx,
+                [line],
+                alignment=WD_ALIGN_PARAGRAPH.RIGHT,
+                bold=True,
+                style_profile=style_profile,
+            )
+    for line in mention_lines:
+        add_statuts_signature_block(
+            docx,
+            [],
+            mention_lines=[line],
+            alignment=WD_ALIGN_PARAGRAPH.RIGHT,
+            style_profile=style_profile,
+        )
+    return next_index
 
 
 def _looks_like_numbered_list_item(text: str) -> bool:

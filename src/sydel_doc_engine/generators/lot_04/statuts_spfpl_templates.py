@@ -4,9 +4,10 @@ from __future__ import annotations
 # Texte source reconstruit depuis les DOCX Lot 04 SPFPL. Ne pas modifier le wording sans validation juridique.
 
 STATUTS_SPFPL_CESSION_BLOCKS: tuple[str, ...] = (
-    # 6.8 (Albane 2026-07-06) : titre « Statuts <denomination> » (comme SAS/SELARL),
-    # anciennement « <denomination> » nu.
-    'Statuts [denomination_societe]',
+    # S1 (Rafael 2026-07-09) SUPERSEDE 6.8 (Albane 2026-07-06) : le bloc-titre porte la
+    # SEULE denomination — le mot « Statuts » est RETIRE du titre (le titre « STATUTS »
+    # figure deja dans l'encadre place plus bas). Retour le plus recent prime (regle 68).
+    '[denomination_societe]',
     'Société de Participations Financières de Profession Libérale de Chirurgiens-Dentistes par actions simplifiée',
     # Albane 2026-07-07 (fix 3) : l'en-tete porte le montant GROUPE (« 60 000 », groupage au
     # generateur) + le mot « euros » (« Au capital de 60 000 euros »), plus « Au capital de 60000 » nu.
@@ -396,8 +397,10 @@ STATUTS_SPFPL_CESSION_BLOCKS: tuple[str, ...] = (
 )
 
 STATUTS_SPFPL_APPORT_BLOCKS: tuple[str, ...] = (
-    # 6.8 (Albane 2026-07-06) : titre « Statuts <denomination> » (comme SAS/SELARL).
-    'Statuts [denomination_societe]',
+    # S1 (Rafael 2026-07-09) SUPERSEDE 6.8 (Albane 2026-07-06) : le bloc-titre porte la
+    # SEULE denomination — « Statuts » est RETIRE du titre (le titre « STATUTS » figure
+    # deja dans l'encadre place plus bas). Retour le plus recent prime (regle 68).
+    '[denomination_societe]',
     'Société par actions simplifiées au capital de [capital_social] euros',
     'Société de Participations Financières de Profession Libérale de dentistes',
     'Siège social\xa0: [adresse_siege]',

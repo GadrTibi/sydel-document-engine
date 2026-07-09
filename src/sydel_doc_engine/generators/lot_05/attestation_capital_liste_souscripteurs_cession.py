@@ -14,6 +14,7 @@ from sydel_doc_engine.generators.lot_05.attestation_capital_liste_souscripteurs 
     _ATTESTATION_GROUP_SPACER_PT,
     _adresse,
     _souscripteur_identite,
+    _souscripteur_nom_civil,
     _unique_souscripteur,
     _valeur_nominale_action,
 )
@@ -189,7 +190,16 @@ class AttestationCapitalListeSouscripteursCessionGenerator:
         # equivalent et identique a l'apport (DOC-042).
         add_paragraph(docx, f"Fait à {ctx.signature.lieu}")
         add_paragraph(docx, f"Le {ctx.signature.date.strftime('%d/%m/%Y')}")
-        add_paragraph(docx, president_identite)
+        # AT1 (Rafael 2026-07-09) : la ligne de SIGNATURE porte le nom SANS profession (la
+        # profession reste dans « par le Président, … » juste au-dessus — une seule mention).
+        add_paragraph(
+            docx,
+            _souscripteur_nom_civil(
+                president,
+                "capital_souscription.president",
+                genre=president_genre,
+            ),
+        )
 
         output_dir.mkdir(parents=True, exist_ok=True)
         output_path = output_dir / OUTPUT_FILENAME

@@ -174,6 +174,10 @@ class StatutsSelasMultiGenerator:
                 # helper partage (sept autres appelants : statuts civils, SELARL...).
                 _add_statuts_box_spacer(output_doc)
                 add_statuts_title_box(output_doc, "STATUTS")
+                # S2 (Rafael 2026-07-09) : SAUT DE PAGE apres l'encadre « STATUTS » -> le
+                # deroule de l'acte commence sur une nouvelle page (meme convention de
+                # premiere page que les statuts SPFPL/SEL ; l'ANNEXE a deja son saut).
+                output_doc.add_page_break()
             if index == profile.comparution_slice[0]:
                 profile.add_comparution(output_doc, data)
                 skip_until = profile.comparution_slice[1]

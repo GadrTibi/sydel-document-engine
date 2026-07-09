@@ -79,6 +79,14 @@ def _is_repartition_row(text: str, block_open: bool) -> bool:
     return block_open and bool(re.match(r"^\s*-\s", text)) and "detenant" in text.lower()
 
 
+def _is_section_heading(paragraph) -> bool:
+    """A5 : un titre de section de l'acte est un paragraphe NON vide dont chaque run porte le
+    souligne (les titres du modele sont en gras+souligne ; les enonciations sont en maigre). Sert
+    a fermer le mode « tirets » de DÉCLARATIONS DES PARTIES au titre de section suivant."""
+    runs = [run for run in paragraph.runs if run.text.strip()]
+    return bool(runs) and all(run.underline for run in runs)
+
+
 def _source_path() -> Path:
     path = Path("project/source_documents/lot_05") / _SOURCE_NAME
     if not path.exists():
@@ -97,6 +105,41 @@ def _strip_euro(lettres: str) -> str:
     pour que l'accord `euro_word` sur le MONTANT ne double pas l'unite (« mille euros euros »).
     Ne touche pas les lettres seules (« mille » -> « mille »)."""
     return re.sub(r"\s+euros?$", "", lettres.strip(), flags=re.IGNORECASE)
+
+
+# A4 (Rafael 2026-07-09) : dans l'acte de cession, tout NOMBRE ecrit EN LETTRES s'affiche en
+# MAJUSCULES (« SOIXANTE MILLE », « CENT », « UN »), l'exemple client etant « SOIXANTE MILLE au
+# lieu de soixante mille ». Seule la portion NOMBRE-EN-LETTRES passe en capitales : l'unite
+# monetaire (« euro(s) », « centime(s) », « d'euro »), le connecteur « et » et les CHIFFRES entre
+# parentheses (« (60 000) », « (1 000 €) ») restent inchanges (l'exemple exclut l'unite). PERIMETRE
+# CONFIRME = cet acte uniquement ; une generalisation transverse (regle de conformite) est proposee
+# separement, pas appliquee ici.
+_MONETARY_UNIT_WORDS = frozenset(
+    {
+        "euro",
+        "euros",
+        "centime",
+        "centimes",
+        "d’euro",
+        "d'euro",
+        "d’euros",
+        "d'euros",
+        "et",
+    }
+)
+
+
+def _upper_nombre_lettres(phrase: str) -> str:
+    """Met en MAJUSCULES la portion NOMBRE-EN-LETTRES d'un fragment monetaire (A4).
+
+    Les mots d'unite monetaire (« euro(s) », « centime(s) », « d'euro », « et ») restent en
+    minuscules ; les chiffres et symboles ne portent pas de casse (« (60 000) », « € »
+    inchanges). Idempotent (« SOIXANTE MILLE » -> « SOIXANTE MILLE »)."""
+
+    def _up(token: str) -> str:
+        return token if token.lower() in _MONETARY_UNIT_WORDS else token.upper()
+
+    return " ".join(_up(token) for token in phrase.split(" "))
 
 
 def _capital_lettres_chiffres_euros(
@@ -186,10 +229,50 @@ class ActeCessionPartsSpfplGenerator:
         # son espacement et le gras/italique/souligne de CHAQUE run, avec token-replacement PAR RUN.
         # Aucun token du modele ne traverse une frontiere de run (verifie 2026-07-06) -> le
         # remplacement par run preserve la forme sans casser les fixes 12.2-12.7 ni l'elision n3.
+        # A2 (Rafael 2026-07-09) : la designation du cedant (« Monsieur Prenom Nom, profession,
+        # né le … ») etait ENTIEREMENT en gras -> gras superflu. On ne garde le gras que sur le
+        # NOM + PRENOM (« Monsieur Prenom Nom »), le reste de la ligne repasse en maigre. Prefixe
+        # reconstruit depuis les tokens simples deja resolus dans `replacements`.
+        designation_prefix = (
+            f"{replacements['[civilite_cedant]']} "
+            f"{replacements['[prenom_cedant]']} "
+            f"{replacements['[nom_cedant]']}"
+        )
+
         source = Document(str(_source_path()))
         docx = new_document_from_model(_source_path())
+        self._render_body(docx, source, replacements, repartition, designation_prefix)
+
+        # SP3 (Akainu M1/M2) : PAS de bloc signature ajoute — le modele source porte DEJA sa
+        # ligne de signature (« Dr <cedant> / La société <cessionnaire> / Représentée par … »),
+        # rendue fidelement (accentuee) par le token-replacement ci-dessus. Un bloc ajoute la
+        # dupliquait ET perdait les accents (« La societe »/« Representee »).
+        self._assert_no_residual(docx)
+        # Rafael/Albane 2026-07-09 : « demeurant [adresse] » -> « demeurant au [adresse] ».
+        ensure_demeurant_au(docx)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        output_path = output_dir / OUTPUT_FILENAME
+        docx.save(output_path)
+        return output_path
+
+    def _render_body(  # noqa: C901 (dispatch fidele au modele : recital, A1, A2, A5)
+        self,
+        docx,
+        source,
+        replacements: dict[str, str],
+        repartition: list[str],
+        designation_prefix: str,
+    ) -> None:
+        """Recopie le corps du modele paragraphe par paragraphe (12.1) en appliquant les
+        transformations fideles : UNE seule repartition dynamique (R8), saut de page avant l'acte
+        (A1), gras limite au nom+prenom de la designation du cedant (A2), tirets sur les
+        enonciations de « DÉCLARATIONS DES PARTIES » (A5)."""
         repartition_block_open = False
         repartition_emitted = False
+        # A5 (Rafael 2026-07-09) : dans « DÉCLARATIONS DES PARTIES », chaque enonciation est
+        # prefixee d'un tiret (« - … »). Le mode s'ouvre a la phrase d'intro et se ferme au titre
+        # de section suivant.
+        declarations_mode = False
         for paragraph in source.paragraphs:
             text = paragraph.text
             # R8 (Albane 2026-07-07) : la phrase d'intro du 2e recital (« Aux termes des statuts
@@ -210,31 +293,37 @@ class ActeCessionPartsSpfplGenerator:
                 repartition_block_open = True
                 continue
             repartition_block_open = False
+            # A1 (Rafael 2026-07-09) : saut de page entre la 1re page de presentation et le debut
+            # de l'acte (« ENTRE LES SOUSSIGNES : »).
+            if text.strip().startswith("ENTRE LES SOUSSIGNES"):
+                docx.add_page_break()
+                self._copy_paragraph(docx, paragraph, replacements)
+                continue
+            # A2 : designation du cedant (nom+prenom en gras, reste maigre).
+            if text.startswith("[civilite_cedant] [prenom_cedant] [nom_cedant],") and (
+                "[profession_cedant]" in text
+            ):
+                self._copy_cedant_designation(
+                    docx, paragraph, replacements, designation_prefix
+                )
+                continue
+            # A5 : ouverture du mode « tirets » a la phrase d'intro de DÉCLARATIONS DES PARTIES.
+            if "chacun en ce qui le concerne" in text:
+                declarations_mode = True
+                self._copy_paragraph(docx, paragraph, replacements)
+                continue
+            if declarations_mode:
+                if _is_section_heading(paragraph):
+                    declarations_mode = False  # fin du bloc : titre de section suivant.
+                elif text.strip():
+                    self._copy_paragraph(docx, paragraph, replacements, prefix="-\t")
+                    continue
             self._copy_paragraph(docx, paragraph, replacements)
 
-        # SP3 (Akainu M1/M2) : PAS de bloc signature ajoute — le modele source porte DEJA sa
-        # ligne de signature (« Dr <cedant> / La société <cessionnaire> / Représentée par … »),
-        # rendue fidelement (accentuee) par le token-replacement ci-dessus. Un bloc ajoute la
-        # dupliquait ET perdait les accents (« La societe »/« Representee »).
-        self._assert_no_residual(docx)
-        # Rafael/Albane 2026-07-09 : « demeurant [adresse] » -> « demeurant au [adresse] ».
-        ensure_demeurant_au(docx)
-        output_dir.mkdir(parents=True, exist_ok=True)
-        output_path = output_dir / OUTPUT_FILENAME
-        docx.save(output_path)
-        return output_path
-
     @staticmethod
-    def _copy_paragraph(docx, source_paragraph, replacements: dict[str, str]) -> None:
-        """Recopie un paragraphe du MODELE dans la sortie en preservant sa FORME (12.1).
-
-        Reproduit l'alignement, l'espacement (avant/apres, interligne) et le retrait du
-        paragraphe source, puis chaque run avec son gras / italique / souligne, en appliquant
-        le token-replacement PAR RUN (aucun token ne traverse une frontiere de run -> la mise
-        en forme est preservee sans casser les remplacements). Les paragraphes VIDES du modele
-        (aeration) sont recopies tels quels (aucun `continue` : la forme d'aeration est le
-        coeur du retour 12.1)."""
-        new_paragraph = docx.add_paragraph()
+    def _copy_paragraph_format(new_paragraph, source_paragraph) -> None:
+        """Reproduit l'alignement, l'espacement (avant/apres, interligne) et le retrait du
+        paragraphe source sur le paragraphe de sortie (12.1)."""
         new_paragraph.alignment = source_paragraph.alignment
         source_format = source_paragraph.paragraph_format
         new_format = new_paragraph.paragraph_format
@@ -251,11 +340,51 @@ class ActeCessionPartsSpfplGenerator:
                 setattr(new_format, attribute, getattr(source_format, attribute))
             except (ValueError, TypeError):
                 continue
+
+    @classmethod
+    def _copy_paragraph(
+        cls, docx, source_paragraph, replacements: dict[str, str], prefix: str = ""
+    ) -> None:
+        """Recopie un paragraphe du MODELE dans la sortie en preservant sa FORME (12.1).
+
+        Reproduit l'alignement, l'espacement (avant/apres, interligne) et le retrait du
+        paragraphe source, puis chaque run avec son gras / italique / souligne, en appliquant
+        le token-replacement PAR RUN (aucun token ne traverse une frontiere de run -> la mise
+        en forme est preservee sans casser les remplacements). Les paragraphes VIDES du modele
+        (aeration) sont recopies tels quels (aucun `continue` : la forme d'aeration est le
+        coeur du retour 12.1). Un `prefix` optionnel (ex. « -\\t » pour A5) est emis en maigre
+        AVANT les runs du modele."""
+        new_paragraph = docx.add_paragraph()
+        cls._copy_paragraph_format(new_paragraph, source_paragraph)
+        if prefix:
+            new_paragraph.add_run(prefix)
         for source_run in source_paragraph.runs:
             new_run = new_paragraph.add_run(_replace(source_run.text, replacements))
             new_run.bold = source_run.bold
             new_run.italic = source_run.italic
             new_run.underline = source_run.underline
+
+    @classmethod
+    def _copy_cedant_designation(
+        cls, docx, source_paragraph, replacements: dict[str, str], designation_prefix: str
+    ) -> None:
+        """A2 : recopie la designation du cedant avec le gras limite au NOM + PRENOM.
+
+        Le paragraphe modele est ENTIEREMENT en gras ; on emet « <civilite> <prenom> <nom> » en
+        gras puis le RESTE de la ligne (profession, naissance, adresse, situation maritale) en
+        maigre. Si le texte rendu ne commence pas par le prefixe attendu (cas degrade), toute la
+        ligne repasse en maigre (le gras superflu disparait dans tous les cas)."""
+        new_paragraph = docx.add_paragraph()
+        cls._copy_paragraph_format(new_paragraph, source_paragraph)
+        full_text = _replace(source_paragraph.text, replacements)
+        if full_text.startswith(designation_prefix):
+            prefix_run = new_paragraph.add_run(designation_prefix)
+            prefix_run.bold = True
+            reste = full_text[len(designation_prefix):]
+            if reste:
+                new_paragraph.add_run(reste).bold = False
+        else:
+            new_paragraph.add_run(full_text).bold = False
 
     @staticmethod
     def _add_repartition_paragraph(docx, line: str) -> None:
@@ -298,6 +427,8 @@ class ActeCessionPartsSpfplGenerator:
                 valeur_nominale_lettres,
                 societe_cible.valeur_nominale_part,
             )
+        # A4 : « cent euros » -> « CENT euros » (nombre en lettres en majuscules, unite intacte).
+        valeur_nominale_display = _upper_nombre_lettres(valeur_nominale_display)
 
         # 12.2 (Albane 2026-07-06) : identite de l'acquereur (SPFPL en cours de constitution).
         # Le front injecte la forme ABREGEE (« par actions simplifiee », non accentuee) dans
@@ -339,15 +470,20 @@ class ActeCessionPartsSpfplGenerator:
         # divisé » -> on rend « soixante mille (60 000) euros » / « dix mille (10 000) euros ».
         # Lettres depuis les champs `_lettres` du contexte (poses par le front), chiffres
         # groupes via `format_grouped_numeric_value`, unite accordee via `euro_word`.
-        capital_cessionnaire_display = _capital_lettres_chiffres_euros(
-            societe_spfpl.capital_social_lettres,
-            required_text(societe_spfpl.capital_social, "societe_spfpl.capital_social"),
-            "societe_spfpl.capital_social_lettres",
+        # A4 : nombres en lettres en MAJUSCULES (« SOIXANTE MILLE (60 000) euros »).
+        capital_cessionnaire_display = _upper_nombre_lettres(
+            _capital_lettres_chiffres_euros(
+                societe_spfpl.capital_social_lettres,
+                required_text(societe_spfpl.capital_social, "societe_spfpl.capital_social"),
+                "societe_spfpl.capital_social_lettres",
+            )
         )
-        capital_cedee_display = _capital_lettres_chiffres_euros(
-            societe_cible.capital_social_lettres,
-            cible_capital,
-            "societe_cible.capital_social_lettres",
+        capital_cedee_display = _upper_nombre_lettres(
+            _capital_lettres_chiffres_euros(
+                societe_cible.capital_social_lettres,
+                cible_capital,
+                "societe_cible.capital_social_lettres",
+            )
         )
 
         # 12.6 (Albane 2026-07-06) / B1 (Akainu 2026-07-06) : prix — accord « euro(s) » sur le
@@ -370,7 +506,8 @@ class ActeCessionPartsSpfplGenerator:
             )
         )
         prix_unitaire_euro = euro_word(cession_parts.prix_unitaire)
-        prix_unitaire_fragment = (
+        # A4 : « mille euros (1 000 €) » -> « MILLE euros (1 000 €) ».
+        prix_unitaire_fragment = _upper_nombre_lettres(
             f"{prix_unitaire_lettres} {prix_unitaire_euro} ({prix_unitaire_chiffres} €)"
         )
         prix_cession_chiffres = required_text(
@@ -380,7 +517,8 @@ class ActeCessionPartsSpfplGenerator:
             required_text(cession_parts.prix_total_lettres, "cession_parts.prix_total_lettres")
         )
         prix_cession_euro = euro_word(cession_parts.prix_total)
-        prix_cession_fragment = (
+        # A4 : « soixante mille euros (60 000 €) » -> « SOIXANTE MILLE euros (60 000 €) ».
+        prix_cession_fragment = _upper_nombre_lettres(
             f"{prix_cession_lettres} {prix_cession_euro} ({prix_cession_chiffres} €)"
         )
         # R0702-02 / Akainu M1 (2026-07-02) : le menu matrimonial complet ouvre le cas NON-MARIE.
@@ -549,8 +687,11 @@ class ActeCessionPartsSpfplGenerator:
             "[nb_parts_cedees]": str(
                 required_int(cession_parts.nb_parts, "cession_parts.nb_parts")
             ),
-            "[nb_parts_cedees_lettres]": required_text(
-                cession_parts.nb_parts_lettres, "cession_parts.nb_parts_lettres"
+            # A4 : nombre de parts cedees en lettres en MAJUSCULES (« SOIXANTE (60) parts »).
+            "[nb_parts_cedees_lettres]": _upper_nombre_lettres(
+                required_text(
+                    cession_parts.nb_parts_lettres, "cession_parts.nb_parts_lettres"
+                )
             ),
             # 12.6 (Albane 2026-07-06) : cles COMBINEES (traitees avant les tokens simples) pour
             # (a) accorder « euro(s) » au prix UNITAIRE et (b) inverser l'ordre du prix TOTAL en
@@ -570,20 +711,29 @@ class ActeCessionPartsSpfplGenerator:
             "[prix_unitaire_part]": required_text(
                 cession_parts.prix_unitaire, "cession_parts.prix_unitaire"
             ),
-            "[prix_unitaire_part_lettres]": required_text(
-                cession_parts.prix_unitaire_lettres, "cession_parts.prix_unitaire_lettres"
+            # A4 : fallbacks lettres en MAJUSCULES (les cles combinees ci-dessus consomment
+            # deja les occurrences du modele ; ces tokens simples restent pour robustesse).
+            "[prix_unitaire_part_lettres]": _upper_nombre_lettres(
+                required_text(
+                    cession_parts.prix_unitaire_lettres, "cession_parts.prix_unitaire_lettres"
+                )
             ),
             "[prix_cession]": required_text(cession_parts.prix_total, "cession_parts.prix_total"),
-            "[prix_cession_lettres]": required_text(
-                cession_parts.prix_total_lettres, "cession_parts.prix_total_lettres"
+            "[prix_cession_lettres]": _upper_nombre_lettres(
+                required_text(
+                    cession_parts.prix_total_lettres, "cession_parts.prix_total_lettres"
+                )
             ),
             # Signature
             "[lieu_signature]": required_text(ctx.signature.lieu, "signature.lieu"),
             "[date_signature]": _date_fr(ctx.signature.date),
-            "[nombre_exemplaires_lettres]": required_text(
-                cession_parts.nombre_exemplaires_lettres
-                or (ctx.document.nombre_exemplaires_lettres if ctx.document else None),
-                "cession_parts.nombre_exemplaires_lettres",
+            # A4 : nombre d'exemplaires en lettres en MAJUSCULES (« En TROIS exemplaires »).
+            "[nombre_exemplaires_lettres]": _upper_nombre_lettres(
+                required_text(
+                    cession_parts.nombre_exemplaires_lettres
+                    or (ctx.document.nombre_exemplaires_lettres if ctx.document else None),
+                    "cession_parts.nombre_exemplaires_lettres",
+                )
             ),
             # 12.7 (Albane 2026-07-06) : phrase de paiement — « par le moyen … ou d’un virement »
             # (incorrect) -> wording valide d'Albane « Le prix est payé au moyen d’un chèque ou
