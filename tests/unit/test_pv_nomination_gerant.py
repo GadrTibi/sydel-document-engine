@@ -209,6 +209,10 @@ def test_pv_nomination_gerant_repeats_two_associes(tmp_path: Path) -> None:
     paragraphs = _paragraphs(_generate(tmp_path / "second"))
 
     assert "Les associés de la Société civile immobilière SCI TEST" in text
+    # Rafael 2026-07-09 : le capital de la 1re phrase porte « euros » (accorde) comme
+    # l'en-tete, plus jamais « au capital de <montant> » nu (montant_avec_euros).
+    assert "au capital de 1 000 euros, composé de" in text
+    assert "au capital de 1 000, composé de" not in text
     assert "composé de 100 parts de 1 euro chacune, se sont réunis au siège social." in text
     # Pluriel « euros » des que la valeur nominale est >= 2 (bug remonte Rafael 2026-06-08 :
     # « 10 euro » sans s). Singulier conserve a 1 euro (cf. assertion ci-dessus).
@@ -543,6 +547,8 @@ def test_pv_nomination_selas_actions_vocabulary(tmp_path: Path) -> None:
     ctx = _selas_context(dirigeants=_selas_dirigeants())
     text = _docx_text(_generate(tmp_path, ctx))
 
+    # Rafael 2026-07-09 : le capital porte « euros » (accorde) sur le chemin actions aussi.
+    assert "au capital de 1 000 euros, composé de 100 actions" in text
     assert "composé de 100 actions, se sont réunis au siège de la Société." in text
     assert "Monsieur Alain FEDOROWSKY, détenant 60 actions," in text
     assert "Monsieur Jean-Pierre HUBERMAN, détenant 40 actions," in text

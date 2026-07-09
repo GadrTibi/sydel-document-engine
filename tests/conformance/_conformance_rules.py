@@ -474,6 +474,39 @@ R14_LABEL = "adresse de résidence non précédée de « au » (« Demeurant <nu
 
 
 # ---------------------------------------------------------------------------
+# R15 — accord en genre de la FONCTION d'une personne (Rafael 2026-07-09)
+# ---------------------------------------------------------------------------
+#
+# Retour Rafael 2026-07-09 (règlement intérieur SCM) : « Représentée par Madame Alice
+# Martin, gérant » -> « gérante ». Convention UNIVERSELLE : une FONCTION rendue pour
+# une personne FÉMININE s'accorde au féminin (même classe que né/née). On code
+# l'INTENTION (« Madame <Nom>, <fonction au masculin> » = accord manquant), JAMAIS une
+# liste de tournures (leçon R3 2026-07-09). Signal : une civilité féminine
+# (« Madame »/« Mme »), suivie du nom puis d'une virgule, puis d'une fonction au
+# MASCULIN directement = violation. Un homme (« Monsieur <Nom>, gérant ») est LÉGITIME
+# et n'est jamais flagué (le motif n'ancre que « Madame »/« Mme » — aucune whitelist à
+# écrire). Les formes féminines (« gérante », « présidente », « associée ») échappent
+# au motif par la frontière de mot (« gérant\b » ne mord pas « gérante »). La fenêtre
+# ne franchit jamais la 1re virgule : seule la fonction ACCOLÉE au nom est visée.
+_R15_FONCTION_MASC = (
+    r"(?:co-?g[ée]rant|vice-pr[ée]sident|cog[ée]rant|g[ée]rant|pr[ée]sident|associé"
+    r"|administrateur|directeur|cofondateur|fondateur|tr[ée]sorier)"
+)
+_R15 = re.compile(r"\b(?:Madame|Mme)\b[^,\n]{0,40},\s*" + _R15_FONCTION_MASC + r"\b")
+
+
+def rule_r15_accord_fonction(text: str) -> list[str]:
+    """« Madame <Nom>, <fonction au masculin> » interdit : la fonction d'une personne
+    féminine s'accorde au féminin (« gérante », « présidente », « associée »…). Règle
+    par INTENTION (accord manquant), pas liste de tournures. « Monsieur <Nom>, gérant »
+    (masculin) reste légitime — le motif n'ancre que « Madame »/« Mme »."""
+    return _find_all(text, _R15)
+
+
+R15_LABEL = "accord en genre de la fonction (« Madame <Nom>, gérant » interdit)"
+
+
+# ---------------------------------------------------------------------------
 # Registre des règles
 # ---------------------------------------------------------------------------
 
@@ -493,6 +526,7 @@ RULES: dict[str, Callable[[str], list[str]]] = {
     "R12": rule_r12_majuscule_debut,
     # R13 tourne sur le corpus cap1 séparé (test_r13_accord_euro), pas ici.
     "R14": rule_r14_demeurant_au,
+    "R15": rule_r15_accord_fonction,
 }
 
 # Règles appliquées au NOM DE FICHIER du document (les autres reçoivent le texte).
@@ -511,4 +545,5 @@ RULE_LABELS: dict[str, str] = {
     "R10": "nom de fichier statuts ≠ « Statuts <dénomination>.docx »",
     "R12": "paragraphe commençant par une minuscule",
     "R14": "adresse de résidence non précédée de « au »",
+    "R15": "accord en genre de la fonction (« Madame <Nom>, gérant »)",
 }

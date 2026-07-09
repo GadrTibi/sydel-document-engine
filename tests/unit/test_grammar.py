@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.utils.grammar import (
+    accord_fonction,
     apply_gender_pairs,
     birth_label,
     euro_word,
@@ -9,6 +10,43 @@ from sydel_doc_engine.utils.grammar import (
     montant_lettres_avec_unite,
     subject_line,
 )
+
+
+def test_accord_fonction_feminise_les_fonctions_connues() -> None:
+    # Rafael 2026-07-09 : une fonction rendue pour une personne feminine s'accorde.
+    assert accord_fonction("gérant", Gender.FEMININ) == "gérante"
+    assert accord_fonction("président", Gender.FEMININ) == "présidente"
+    assert accord_fonction("associé", Gender.FEMININ) == "associée"
+    assert accord_fonction("administrateur", Gender.FEMININ) == "administratrice"
+    assert accord_fonction("directeur", Gender.FEMININ) == "directrice"
+    assert accord_fonction("cogérant", Gender.FEMININ) == "cogérante"
+    assert accord_fonction("co-gérant", Gender.FEMININ) == "co-gérante"
+
+
+def test_accord_fonction_masculin_inchange() -> None:
+    assert accord_fonction("gérant", Gender.MASCULIN) == "gérant"
+    assert accord_fonction("président", Gender.MASCULIN) == "président"
+
+
+def test_accord_fonction_idempotent_et_bidirectionnel() -> None:
+    # Deja au bon genre -> intact ; feminin attribue a un homme -> re-masculinise.
+    assert accord_fonction("gérante", Gender.FEMININ) == "gérante"
+    assert accord_fonction("gérante", Gender.MASCULIN) == "gérant"
+    assert accord_fonction("gérant", Gender.FEMININ) == "gérante"
+
+
+def test_accord_fonction_multi_mots_et_casse() -> None:
+    assert accord_fonction("directeur général", Gender.FEMININ) == "directrice générale"
+    assert accord_fonction("Gérant", Gender.FEMININ) == "Gérante"
+    # Pluriel regulier accorde.
+    assert accord_fonction("gérants", Gender.FEMININ) == "gérantes"
+
+
+def test_accord_fonction_hors_lexique_intact() -> None:
+    # Aucune devinette sur les terminaisons : un mot inconnu est laisse tel quel.
+    assert accord_fonction("notaire", Gender.FEMININ) == "notaire"
+    assert accord_fonction("", Gender.FEMININ) == ""
+    assert accord_fonction(None, Gender.FEMININ) == ""
 
 
 def test_euro_word_singulier_sous_deux() -> None:

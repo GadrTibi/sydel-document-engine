@@ -29,7 +29,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_spacer,
     new_document,
 )
-from sydel_doc_engine.utils.grammar import euro_word, montant_avec_euros
+from sydel_doc_engine.utils.grammar import accord_fonction, euro_word, montant_avec_euros
 from sydel_doc_engine.utils.months import FRENCH_MONTHS
 
 OUTPUT_FILENAME = "pv_nomination_gerant.docx"
@@ -591,9 +591,12 @@ def _add_introduction(
     if titre_word == "action":
         # Phrase verbatim du modele PV nominations dirigeants (SELAS) : pas de
         # clause « de {valeur} euro chacune », « au siege de la Societe ».
+        # Rafael 2026-07-09 : le capital porte « euros » (accorde) comme l'en-tete —
+        # montant_avec_euros (groupe + unite) au lieu de group_montant (montant nu).
         text = (
             f"Les associés de la {company_designation}, au capital de "
-            f"{group_montant(_capital_social(company))}, composé de {nb_parts_total} actions, "
+            f"{montant_avec_euros(_capital_social(company))}, "
+            f"composé de {nb_parts_total} actions, "
             "se sont réunis au siège de la Société."
         )
         _add_paragraph(
@@ -610,10 +613,13 @@ def _add_introduction(
     # C2 : pour la micro holding (capital variable), la 1re phrase reflete le capital
     # variable (meme wording que la domiciliation) ; les autres civils gardent
     # « au capital de <montant> ».
+    # Rafael 2026-07-09 : hors micro (capital variable en « € »), le capital de la
+    # 1re phrase porte « euros » (accorde), aligne sur l'en-tete (_capital_social_header)
+    # au lieu du montant nu group_montant qui laissait « au capital de 1 000 ».
     capital_clause = (
         _capital_variable_line(company, capitalize=False)
         if is_micro
-        else f"au capital de {group_montant(_capital_social(company))}"
+        else f"au capital de {montant_avec_euros(_capital_social(company))}"
     )
     common = (
         f"de la {company_designation}, {capital_clause}, "
@@ -970,10 +976,10 @@ def _add_multi_dirigeant_signatures(
 
 
 def _fonction_accordee(fonction_affichage: str, genre: Gender) -> str:
+    # Rafael 2026-07-09 : accord en genre par INTENTION via le helper partage
+    # (gerant/president/associe... -> feminin), plus seulement « gerant » en dur.
     base = _required_text(fonction_affichage, "dirigeant_nomine.fonction_affichage")
-    if genre == Gender.FEMININ and base.strip().casefold() == "gérant":
-        return "gérante"
-    return base
+    return accord_fonction(base, genre)
 
 
 def _build_associe_unique_pv(

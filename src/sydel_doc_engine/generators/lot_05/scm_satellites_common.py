@@ -20,10 +20,11 @@ from sydel_doc_engine.domain.models import (
     ScmRepresentant,
     ScmSocietePartie,
 )
+from sydel_doc_engine.front_app.field_derivations import derive_gender_from_civilite
 from sydel_doc_engine.generators.lot_01.civilite import civilite_civile
 from sydel_doc_engine.generators.lot_05.scm_satellites_templates import TemplateBlock
 from sydel_doc_engine.rendering.docx_builder import add_paragraph, new_document
-from sydel_doc_engine.utils.grammar import montant_avec_euros
+from sydel_doc_engine.utils.grammar import accord_fonction, montant_avec_euros
 
 DOCUMENT_CODE = "CODE-SCM-SAT-DOCX-001"
 SCM_STRUCTURE = "SCM"
@@ -89,7 +90,11 @@ def societe_replacements(ctx: DocumentGenerationContext) -> dict[str, str]:
         ),
         "[adresse_siege]": _address_display(company.siege, "societe.siege"),
         "[ville_rcs]": _required_text(company.ville_rcs, "societe.ville_rcs"),
-        "[numero_rcs]": _required_text(company.numero_rcs, "societe.numero_rcs"),
+        # Rafael 2026-07-09 : la SCM du pacte est la societe EN CREATION (non
+        # immatriculee) -> le numero RCS est du TEXTE FIGE « en cours de constitution »
+        # dans le modele (cf. scm_satellites_templates), plus un token [numero_rcs].
+        # On ne requiert donc plus societe.numero_rcs pour le pacte (aucune autre
+        # surface de societe_replacements ne l'utilise).
         "[nb_parts_sociales]": str(
             _required_value(company.nb_parts_total, "societe.nb_parts_total")
         ),
@@ -356,9 +361,16 @@ def _party_replacements(
             representant.nom,
             f"{prefix}.representant.nom",
         ),
-        f"[fonction_representant_societe_{source_index}]": _required_text(
-            representant.fonction,
-            f"{prefix}.representant.fonction",
+        # Rafael 2026-07-09 (reglement interieur SCM : « Madame Alice Martin, gerant »
+        # -> « gerante ») : la FONCTION d'un representant est ACCORDEE au genre de la
+        # personne (meme classe que ne/nee), par INTENTION. Genre pris sur la fiche
+        # representant ; a defaut derive de la civilite (Madame -> feminin). Applique
+        # a TOUT rendu de fonction pour une personne genree (reglement + contrat frais
+        # communs) ; les fonctions d'entites neutres ne passent pas par ce token.
+        f"[fonction_representant_societe_{source_index}]": accord_fonction(
+            _required_text(representant.fonction, f"{prefix}.representant.fonction"),
+            representant.genre
+            or derive_gender_from_civilite(representant.civilite_affichage or ""),
         ),
     }
     if reglement:

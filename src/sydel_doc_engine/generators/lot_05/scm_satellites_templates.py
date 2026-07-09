@@ -20,7 +20,7 @@ PACTE_ASSOCIES_BLOCKS: list[TemplateBlock] = [('p', 'PACTE D’ASSOCIES'),
  ('p', '[forme_sociale]'),
  ('p', 'Au capital de [capital_social]'),
  ('p', 'Siège social : [adresse_siege]'),
- ('p', 'Immatriculée au RCS de …. [ville_rcs] sous le n°[numero_rcs]'),
+ ('p', 'Immatriculée au RCS de [ville_rcs] sous le n° en cours de constitution'),
  ('p',
   'ci-après dénommées ensemble, les «\xa0Parties\xa0» et prises individuellement, une «\xa0'
   'Partie\xa0».'),

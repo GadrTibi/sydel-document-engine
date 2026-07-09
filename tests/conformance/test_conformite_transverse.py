@@ -151,6 +151,38 @@ def test_r13_accord_euro(corpus_cap1: dict[str, dict[str, str]], type_key: str) 
     )
 
 
+# ---------------------------------------------------------------------------
+# R15 — accord en genre de la FONCTION d'une personne (Rafael 2026-07-09)
+# ---------------------------------------------------------------------------
+#
+# Le corpus transverse (``_pp`` -> tous masculins) ne porte pas de représentante
+# féminine : R15 y est vraie mais VACUE. Ce test cible la LOGIQUE de la règle (par
+# INTENTION) pour garantir ses dents : « Madame <Nom>, <fonction masculine> » flaguée,
+# forme féminine / « Monsieur » / fonction non accolée non flaguées.
+
+
+def test_r15_flague_madame_fonction_masculine() -> None:
+    from _conformance_rules import rule_r15_accord_fonction
+
+    assert rule_r15_accord_fonction("Représentée par Madame Alice Martin, gérant")
+    assert rule_r15_accord_fonction("Madame Claire Bernard, président")
+    assert rule_r15_accord_fonction("Mme Alice Martin, associé de la société")
+    assert rule_r15_accord_fonction("Madame Eva Roux, directeur")
+
+
+def test_r15_ne_flague_pas_les_cas_legitimes() -> None:
+    from _conformance_rules import rule_r15_accord_fonction
+
+    # Forme féminine correcte.
+    assert not rule_r15_accord_fonction("Représentée par Madame Alice Martin, gérante")
+    assert not rule_r15_accord_fonction("Madame Alice Martin, présidente")
+    assert not rule_r15_accord_fonction("Madame Alice Martin, associée")
+    # Homme -> masculin légitime.
+    assert not rule_r15_accord_fonction("Représentée par Monsieur Jean Durand, gérant")
+    # Fonction NON accolée au nom (autre segment de virgule) -> hors périmètre.
+    assert not rule_r15_accord_fonction("Madame Alice Martin, née le 1er janvier 1980, gérante")
+
+
 def test_corpus_cap1_couvre_les_types(corpus_cap1: dict[str, dict[str, str]]) -> None:
     """Le corpus cap1 couvre exactement ``CORPUS_CAP1_KEYS`` (bundles non vides)."""
     assert set(corpus_cap1) == set(CORPUS_CAP1_KEYS)

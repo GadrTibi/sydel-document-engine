@@ -377,6 +377,79 @@ def capitalize_first(value: str) -> str:
     return value[0].upper() + value[1:]
 
 
+# ---------------------------------------------------------------------------
+# Accord en GENRE d'une FONCTION / d'un mandat porte par une personne (Rafael
+# 2026-07-09, reglement interieur SCM : « Madame Alice Martin, gerant » -> « gerante »).
+# Meme classe grammaticale que ne/nee : on ACCORDE une fonction rendue pour une
+# personne genree. Lexique par INTENTION (accord d'une fonction connue), JAMAIS une
+# liste de tournures : chaque mot-fonction connu est accorde, au singulier comme au
+# pluriel, dans les DEUX sens (idempotent). Un mot HORS lexique est laisse INTACT
+# (aucune regex sur « -e/-ee » qui abimerait un mot inconnu). Multi-mots accordes mot
+# a mot (« directeur general » -> « directrice generale »).
+# ---------------------------------------------------------------------------
+_FONCTION_PAIRS_MF: Final = (
+    ("gérant", "gérante"),
+    ("cogérant", "cogérante"),
+    ("co-gérant", "co-gérante"),
+    ("président", "présidente"),
+    ("vice-président", "vice-présidente"),
+    ("associé", "associée"),
+    ("coassocié", "coassociée"),
+    ("administrateur", "administratrice"),
+    ("directeur", "directrice"),
+    ("cofondateur", "cofondatrice"),
+    ("fondateur", "fondatrice"),
+    ("trésorier", "trésorière"),
+    ("délégué", "déléguée"),
+    ("adjoint", "adjointe"),
+    ("général", "générale"),
+)
+
+
+def _build_fonction_maps() -> tuple[dict[str, str], dict[str, str]]:
+    vers_feminin: dict[str, str] = {}
+    vers_masculin: dict[str, str] = {}
+    for masculin, feminin in _FONCTION_PAIRS_MF:
+        # Les DEUX formes (masculin, feminin) sont des cles -> idempotent et
+        # bidirectionnel : une fonction deja au bon genre reste intacte, une fonction
+        # feminine attribuee a un homme redevient masculine.
+        for forme in (masculin, feminin):
+            vers_feminin[forme] = feminin
+            vers_masculin[forme] = masculin
+            # Pluriel regulier (+ s) : « gerants »/« gerantes », « associes »/« associees ».
+            vers_feminin[forme + "s"] = feminin + "s"
+            vers_masculin[forme + "s"] = masculin + "s"
+    return vers_feminin, vers_masculin
+
+
+_FONCTION_VERS_FEMININ, _FONCTION_VERS_MASCULIN = _build_fonction_maps()
+_FONCTION_TOKEN_RE: Final = re.compile(r"(\s+)")
+
+
+def _accord_fonction_token(token: str, mapping: dict[str, str]) -> str:
+    cible = mapping.get(token.casefold())
+    if cible is None:
+        return token
+    # Preserve la MAJUSCULE initiale eventuelle (« Gérant » -> « Gérante »).
+    if token[:1].isupper():
+        return cible[:1].upper() + cible[1:]
+    return cible
+
+
+def accord_fonction(fonction: str | None, genre: Gender | None) -> str:
+    """Accorde une FONCTION au genre d'une personne.
+
+    « gérant » -> « gérante » au feminin ; masculin (ou genre absent) laisse la forme
+    masculine. Idempotent et bidirectionnel (cf. ``_build_fonction_maps``). Un mot hors
+    lexique est renvoye tel quel — on n'invente jamais de terminaison. Multi-mots
+    accordes mot a mot (« directeur général » -> « directrice générale »)."""
+    if not fonction:
+        return fonction or ""
+    mapping = _FONCTION_VERS_FEMININ if genre == Gender.FEMININ else _FONCTION_VERS_MASCULIN
+    tokens = _FONCTION_TOKEN_RE.split(fonction)
+    return "".join(_accord_fonction_token(token, mapping) for token in tokens)
+
+
 def subject_line(genre: Gender) -> str:
     return "Je soussignée" if genre == Gender.FEMININ else "Je soussigné"
 

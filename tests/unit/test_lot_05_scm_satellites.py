@@ -69,11 +69,14 @@ def _party(index: int, *, forme_juridique: str = "SELARL") -> PartieFraisCommuns
         ),
         representant=ScmRepresentant(
             civilite_affichage="Monsieur" if index == 1 else "Madame",
+            # Rafael 2026-07-09 : genre du representant propage (comme le front reel) ->
+            # accord de la civilite CIVILE et de la FONCTION (gerant/gerante).
+            genre=Gender.MASCULIN if index == 1 else Gender.FEMININ,
             prenom="Jean" if index == 1 else "Alice",
             nom="Durand" if index == 1 else "Martin",
             identite_affichee="Jean Durand" if index == 1 else "Alice Martin",
             titre_affichage="Docteur",
-            fonction="gerant",
+            fonction="gérant",
         ),
     )
 
@@ -157,6 +160,24 @@ def test_scm_satellite_generators_create_clean_docx(tmp_path: Path) -> None:
     assert "PACTE D" in texts["pacte_associes_scm.docx"]
     assert "SCM SANTE PARIS" in texts["pacte_associes_scm.docx"]
     assert "Monsieur Jean Durand" in texts["pacte_associes_scm.docx"]
+    # Rafael 2026-07-09 (ITEM 1) : la SCM est EN CREATION -> ligne RCS figee « sous le
+    # n° en cours de constitution », sans « …. » parasite ni token [numero_rcs].
+    assert (
+        "Immatriculée au RCS de Paris sous le n° en cours de constitution"
+        in texts["pacte_associes_scm.docx"]
+    )
+    assert "…." not in texts["pacte_associes_scm.docx"]
+    assert "900 111 222" not in texts["pacte_associes_scm.docx"]
+    # Rafael 2026-07-09 (ITEM 2) : la fonction du representant s'accorde au genre —
+    # « Madame Alice Martin, gérante » (feminin) ; « Monsieur Jean Durand, gérant » (masculin).
+    assert (
+        "Représentée par Madame Alice Martin, gérante"
+        in texts["reglement_interieur_scm.docx"]
+    )
+    assert (
+        "Représentée par Monsieur Jean Durand, gérant"
+        in texts["reglement_interieur_scm.docx"]
+    )
     assert "CONTRAT D'EXERCICE PROFESSIONNEL" in texts["contrat_frais_communs.docx"]
     assert "1er juin 2026" in texts["contrat_frais_communs.docx"]
     assert "DENOMINATION DE LA DEPENSE" in texts["liste_depenses_communes_scm.docx"]
