@@ -97,10 +97,13 @@ _R3 = re.compile(
     r"|\bDr\b\.?\s+[A-ZÉÈ]"  # « Dr X » / « Dr. X » (abreviation devant un nom propre)
 )
 
-# Contextes ou « Docteur »/« Dr » reste LEGITIME (aucun a ce jour — Rafael : supprimer
-# partout). Si un vrai libelle legal l'impose un jour, l'ajouter ICI avec sa raison,
-# jamais en re-narrant R3 vers une liste de phrases.
-_R3_WHITELIST: tuple[str, ...] = ()
+# Contextes ou « Docteur » reste LEGITIME = titre professionnel en PROSE (pas une
+# civilite). Whitelist EXPLICITE et raisonnee (jamais une liste de phrases a attraper) :
+# marqueurs de l'annuaire telephonique du reglement SCM ou le modele source ratifie porte
+# « le Docteur <identite> » (message repondeur / rotation) — Rafael 2026-07-09 : « garde
+# Docteur UNIQUEMENT pour ca ». Un match dont l'extrait contient l'un de ces marqueurs est
+# le titre-pro-en-prose de l'annuaire, autorise ; partout ailleurs « Docteur » reste interdit.
+_R3_WHITELIST: tuple[str, ...] = ("joindre", "en charge du message")
 
 
 def rule_r3_docteur_civilite(text: str) -> list[str]:

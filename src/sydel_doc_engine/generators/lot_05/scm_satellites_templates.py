@@ -1073,16 +1073,16 @@ REGLEMENT_INTERIEUR_SCM_BLOCKS: list[TemplateBlock] = [('table', [['REGLEMENT IN
   'les associés.'),
  ('p', 'Le message sera le suivant\xa0:'),
  ('p', '«\xa0Le numéro de téléphone de votre correspondant a changé\xa0:'),
- ('p', 'Pour joindre [civilite_praticien_1] [identite_praticien_1] composez le n° [telephone_praticien_1]'),
- ('p', 'Pour joindre [civilite_praticien_2] [identite_praticien_2] composez le n° [telephone_praticien_2]'),
+ ('p', 'Pour joindre le Docteur [identite_praticien_1] composez le n° [telephone_praticien_1]'),
+ ('p', 'Pour joindre le Docteur [identite_praticien_2] composez le n° [telephone_praticien_2]'),
  ('p',
   'Les praticiens ont convenu que l’annonce sera changée tous les mois selon les modalités '
   'suivantes\xa0:'),
  ('p',
-  'Les mois pairs, [civilite_praticien_1] [identite_praticien_1] sera en charge du message et son nom sera '
+  'Les mois pairs, le Docteur [identite_praticien_1] sera en charge du message et son nom sera '
   'cité en premier,'),
  ('p',
-  'Les mois impairs, [civilite_praticien_2] [identite_praticien_2] sera en charge du message et son nom sera '
+  'Les mois impairs, le Docteur [identite_praticien_2] sera en charge du message et son nom sera '
   'cité en premier.'),
  ('p', 'Information aux patients'),
  ('p',

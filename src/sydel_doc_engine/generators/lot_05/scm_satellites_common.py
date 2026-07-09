@@ -219,14 +219,11 @@ def reglement_interieur_replacements(ctx: DocumentGenerationContext) -> dict[str
                 practitioners[1].identite_affichee,
                 "praticiens[1].identite_affichee",
             ),
-            # R3 « supprimer PARTOUT » (Rafael 2026-07-09) : le modele nommait « le Docteur
-            # <identite> » (annuaire telephonique + rotation du message). On rend la civilite
-            # CIVILE (Monsieur/Madame accorde au genre ; absent -> masculin). CAS LIMITE signale :
-            # ici « Docteur » est un TITRE PRO EN PROSE d'annuaire, pas une civilite — Rafael
-            # tranche « supprimer partout », donc applique ; un eventuel maintien du titre pro en
-            # prose annuaire serait un arbitrage Albane.
-            "[civilite_praticien_1]": civilite_civile("Docteur", practitioners[0].genre),
-            "[civilite_praticien_2]": civilite_civile("Docteur", practitioners[1].genre),
+            # Annuaire telephonique SCM : « le Docteur <identite> » RESTAURE en dur au
+            # verbatim du modele source (Rafael 2026-07-09 : « garde Docteur UNIQUEMENT
+            # pour ca »). Ici « Docteur » est un TITRE PRO EN PROSE (message repondeur),
+            # PAS une civilite -> seule exception a l'eradication ; whitelistee dans R3
+            # (marqueurs « joindre » / « en charge du message »). Plus de token civilite ici.
             "[telephone_praticien_1]": _required_text(
                 practitioners[0].telephone,
                 "praticiens[0].telephone",
