@@ -73,31 +73,36 @@ CORPUS_KEYS: tuple[str, ...] = (
     "micro_holding",
 )
 
-# R11 (Rafael 2026-07-09) : nombre d'ASSOCIÉS PERSONNES PHYSIQUES du payload de
-# chaque type du corpus — le bundle doit porter EXACTEMENT une DNC par associé
-# physique. Tenu ALIGNÉ sur les payloads assemblés par ``build_corpus`` (tout
-# changement de roster d'associés dans un payload doit mettre cette table à jour ;
+# R11 (Albane, Direction Juridique, + Rafael 2026-07-09) : nombre de GÉRANTS PERSONNES
+# PHYSIQUES du payload de chaque type — le bundle doit porter EXACTEMENT une DNC par
+# gérant physique. SUPERSEDE le retour Rafael du matin « 1 DNC par associé » (verrou R11
+# initial) : la DNC ne se génère QUE pour les gérants, pas pour les associés non-gérants
+# (Rafael a confirmé « Albane a raison »). Tenu ALIGNÉ sur les payloads assemblés par
+# ``build_corpus`` (tout changement de gouvernance/roster doit mettre cette table à jour ;
 # le test R11 échoue sinon, c'est son rôle).
-EXPECTED_DNC_PP: dict[str, int] = {
-    "selarl": 1,  # unipersonnelle
+#   - civils multi (sci/scm/scs/micro_holding) : 1 gérant (gerant_index, 1er physique).
+#   - selas_multi_phys : 1 dirigeant (seul le président Durand est coché dirigeant).
+#   - unipersonnels : l'associé unique EST gérant → 1.
+EXPECTED_DNC_GERANTS: dict[str, int] = {
+    "selarl": 1,  # unipersonnelle — le praticien est gérant
     "selarl_regime": 1,
     "selarl_cession_medical": 1,
     "selarl_cession_dentaire": 1,
     "selarl_cession_scm": 1,
-    "selas_multi": 1,  # 1 personne physique + 1 personne morale (pas de DNC PM)
-    "selas_multi_phys": 2,  # Durand + Martin
+    "selas_multi": 1,  # 1 PP (président/dirigeant) + 1 PM (pas de DNC PM)
+    "selas_multi_phys": 1,  # Durand + Martin, seul Durand (président) est dirigeant
     "selas_uni_medecin": 1,
     "selas_uni_dentiste": 1,
     "spfpl_cession": 1,  # associé unique (multi bloqué par le moteur)
     "spfpl_cession_vn1": 0,  # bundle FILTRÉ aux statuts seuls (aucune DNC attendue)
     "spfpl_apport": 1,
-    "sas": 1,  # actionnaire unique
+    "sas": 1,  # actionnaire unique = président
     "sasu_holding": 1,
-    "sci": 2,  # Durand + Martin
-    "sci_iris": 1,  # 1 personne morale + 1 personne physique
-    "scm": 2,
-    "scs": 2,  # commandité + commanditaire
-    "micro_holding": 2,  # Durand + Martin
+    "sci": 1,  # Durand + Martin, 1 seul gérant (Durand)
+    "sci_iris": 1,  # 1 PM + 1 PP (le PP est gérant)
+    "scm": 1,  # 2 associés, 1 gérant
+    "scs": 1,  # commandité (gérant) + commanditaire (pas de DNC)
+    "micro_holding": 1,  # Durand + Martin, 1 gérant (gérante Durand)
 }
 
 

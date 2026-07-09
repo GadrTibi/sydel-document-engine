@@ -122,7 +122,8 @@ def test_lettre_option_is_generates_clean_docx(tmp_path: Path) -> None:
     # JAMAIS le numero saisi (« 123 456 789 » fourni au contexte est volontairement ignore).
     assert "En cours d’immatriculation" in text
     assert "123 456 789" not in text
-    assert "Monsieur Jean Durand, demeurant 1 rue Exemple, 75000 Paris" in text
+    # Rafael/Albane 2026-07-09 : « Demeurant [adresse] » -> « Demeurant au [adresse] ».
+    assert "Monsieur Jean Durand, demeurant au 1 rue Exemple, 75000 Paris" in text
     assert "La société SEL IRIS, ayant son siège social au 2 rue Pro, 75000 Paris" in text
     assert "Le gérant" in text
     _assert_clean(text)

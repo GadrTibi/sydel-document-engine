@@ -613,7 +613,7 @@ def test_lettre_option_is_micro_holding_fidelity(tmp_path: Path) -> None:
     assert "Micro holding famille Berte" in text
     assert "En cours d’immatriculation" in text
     assert (
-        "Madame Jessica GOSSET, demeurant 19 rue Sainte Catherine, 54000 NANCY, gérante, "
+        "Madame Jessica GOSSET, demeurant au 19 rue Sainte Catherine, 54000 NANCY, gérante, "
         "détenant 10 parts." in text
     )
     assert (

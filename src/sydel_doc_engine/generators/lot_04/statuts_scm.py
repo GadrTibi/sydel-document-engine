@@ -338,7 +338,7 @@ def _add_physical_identity(document, associe: StatutsCivilsAssocie) -> None:
         f"{born} le {_format_birthdate(associe.date_naissance, 'associes[].date_naissance')} "
         f"à {_required_text(associe.ville_naissance, 'associes[].ville_naissance')}",
     )
-    add_paragraph(document, f"Demeurant {_person_address(associe)}")
+    add_paragraph(document, f"Demeurant au {_person_address(associe)}")
     add_paragraph(
         document,
         f"De nationalité {_required_text(associe.nationalite, 'associes[].nationalite')}",

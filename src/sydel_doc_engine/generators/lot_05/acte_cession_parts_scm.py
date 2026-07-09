@@ -145,7 +145,7 @@ class ActeCessionPartsScmGenerator:
                 f"à {required_text(cedant.ville_naissance, 'scm_cession.cedant.ville_naissance')} "
                 f"({required_text(cedant.departement_naissance, 'scm_cession.cedant.departement_naissance')}), "
                 f"de nationalité {required_text(cedant.nationalite, 'scm_cession.cedant.nationalite')}, "
-                f"demeurant {required_text(cedant.adresse_affichee, 'scm_cession.cedant.adresse_affichee')}, "
+                f"demeurant au {required_text(cedant.adresse_affichee, 'scm_cession.cedant.adresse_affichee')}, "
                 f"{cedant_maritale_clause}. "
                 f"Inscrit au Tableau de l'ordre départemental des {_profession_ordre(ctx, cedant)} "
                 f"du {departement_nom(required_text(cedant.ordre.departemental if cedant.ordre else None, 'scm_cession.cedant.ordre.departemental'))} "

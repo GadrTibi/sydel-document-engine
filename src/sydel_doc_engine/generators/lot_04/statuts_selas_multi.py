@@ -466,7 +466,7 @@ def _add_physical_comparution(
         f"à {_required_text(associe.ville_naissance, 'associes[].ville_naissance')} "
         f"({_required_text(associe.departement_naissance, 'associes[].departement_naissance')}), "
         f"de nationalité {_required_text(associe.nationalite, 'associes[].nationalite')}, "
-        f"demeurant {_person_address(associe)}, "
+        f"demeurant au {_person_address(associe)}, "
         f"{_required_text(associe.situation_maritale, 'associes[].situation_maritale')}.",
     )
     # Source para 17 : "Inscrit(e) au tableau du conseil de l'ordre des [profession_pluriel] du
@@ -668,7 +668,7 @@ def _add_physical_comparution_dentiste(
         f"à {_required_text(associe.ville_naissance, 'associes[].ville_naissance')} "
         f"({_required_text(associe.departement_naissance, 'associes[].departement_naissance')}), "
         f"{_required_text(associe.situation_maritale, 'associes[].situation_maritale')}, "
-        f"demeurant {_person_address(associe)}, "
+        f"demeurant au {_person_address(associe)}, "
         f"{inscrit} au tableau de l’Ordre des {profession_pluriel} "
         f"de {ordre_dep} "
         "sous le numéro national "

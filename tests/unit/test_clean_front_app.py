@@ -1330,11 +1330,11 @@ def test_clean_front_selarl_multi_associes_generates_statuts(tmp_path: Path) -> 
     assert "2° Lea Bernard, détenant 40 parts." in text
 
 
-def test_clean_front_selarl_multi_dnc_une_par_associe(tmp_path: Path) -> None:
-    # DNC par associe (Rafael 2026-07-09) : en multi-associes, UNE declaration de
-    # non-condamnation PAR associe personne physique — praticien (Martin, DNC de
-    # l'orchestrateur renommee O24-02) + membre additionnel (Bernard, generee et
-    # nommee par son nom). 2 associes -> 2 documents.
+def test_clean_front_selarl_multi_dnc_gerant_uniquement(tmp_path: Path) -> None:
+    # DNC = GERANT UNIQUEMENT (Albane, Direction Juridique, 2026-07-09 — supersede le
+    # retour Rafael du matin « 1 DNC par associe »). En SELARL le gerant est le
+    # praticien (Martin, DNC de l'orchestrateur renommee O24-02) ; le membre additionnel
+    # NON gerant (Bernard) ne recoit PAS de DNC. 2 associes -> 1 seul document.
     data = _valid_selarl_input(
         PROFESSION_MEDECIN,
         dossier_unipersonnel=False,
@@ -1344,27 +1344,15 @@ def test_clean_front_selarl_multi_dnc_une_par_associe(tmp_path: Path) -> None:
     )
     result = generate_selarl_dossier(data, tmp_path / "selarl-multi-dnc")
     names = {p.name for p in result.docx_paths}
-    assert "declaration_non_condamnation_Martin.docx" in names  # praticien
-    assert "declaration_non_condamnation_Bernard.docx" in names  # membre
+    assert "declaration_non_condamnation_Martin.docx" in names  # praticien (gerant)
+    assert "declaration_non_condamnation_Bernard.docx" not in names  # membre non gerant
     assert "declaration_non_condamnation.docx" not in names
-    assert sum(1 for n in names if n.startswith("declaration_non_condamnation")) == 2
-    # La DNC du membre porte SON identite (signataire = Lea Bernard) et SA filiation.
-    dnc_bernard = _docx_text(
-        next(
-            p
-            for p in result.docx_paths
-            if p.name == "declaration_non_condamnation_Bernard.docx"
-        )
-    )
-    assert "Madame Lea Bernard" in dnc_bernard
-    assert "Laurent Bernard" in dnc_bernard
-    assert "Julie Bernard" in dnc_bernard
-    assert "Jean Martin" not in dnc_bernard
+    assert sum(1 for n in names if n.startswith("declaration_non_condamnation")) == 1
 
 
-def test_clean_front_selarl_multi_membre_sans_filiation_blocks() -> None:
-    # DNC par associe (Rafael 2026-07-09) : membre sans filiation -> la generation
-    # de SA declaration de non-condamnation crasherait ; on bloque en amont.
+def test_clean_front_selarl_multi_membre_sans_filiation_ne_bloque_pas(tmp_path: Path) -> None:
+    # Albane 2026-07-09 : un membre NON gerant sans filiation ne bloque PLUS (il n'a
+    # plus de DNC). Seule la DNC du praticien (gerant) est generee.
     membre = _membre_bernard().model_copy(update={"nom_pere": None, "nom_mere": None})
     data = _valid_selarl_input(
         PROFESSION_MEDECIN,
@@ -1375,9 +1363,12 @@ def test_clean_front_selarl_multi_membre_sans_filiation_blocks() -> None:
     )
     dossier_type = dossier_type_by_label("SELARL creation V1")
     plan = build_clean_generation_plan(dossier_type, data)
-    assert plan.can_generate is False
-    assert any("nom du pere du membre 2" in b for b in plan.blockers), plan.blockers
-    assert any("nom de la mere du membre 2" in b for b in plan.blockers), plan.blockers
+    assert plan.can_generate is True, plan.blockers
+    result = generate_selarl_dossier(data, tmp_path / "selarl-multi-nofil")
+    names = {p.name for p in result.docx_paths}
+    assert "declaration_non_condamnation_Martin.docx" in names  # praticien (gerant)
+    assert "declaration_non_condamnation_Bernard.docx" not in names
+    assert sum(1 for n in names if n.startswith("declaration_non_condamnation")) == 1
 
 
 def test_clean_front_selarl_multi_membre_sans_ordre_blocks() -> None:

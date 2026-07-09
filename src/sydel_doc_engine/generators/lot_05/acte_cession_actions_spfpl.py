@@ -173,7 +173,7 @@ class ActeCessionActionsSpfplGenerator:
                 f"à {required_text(cedant.ville_naissance, 'cedant.ville_naissance')} "
                 f"({required_text(cedant.departement_naissance, 'cedant.departement_naissance')}), "
                 f"de nationalité {required_text(cedant.nationalite, 'cedant.nationalite')}, "
-                f"demeurant {person_address_display(cedant, 'cedant')}, "
+                f"demeurant au {person_address_display(cedant, 'cedant')}, "
                 f"{cedant_maritale_clause}, inscrit au tableau de l'Ordre des "
                 f"{required_text(cedant.profession_reglementee_pluriel, 'cedant.profession_reglementee_pluriel')} "
                 f"du {departement_nom(required_text(cedant.ordre.departement if cedant.ordre else None, 'cedant.ordre.departement'))}, "

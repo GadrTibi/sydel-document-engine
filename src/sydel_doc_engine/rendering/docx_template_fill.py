@@ -27,6 +27,7 @@ from pathlib import Path
 from docx import Document
 
 from sydel_doc_engine.domain.enums import Gender
+from sydel_doc_engine.rendering.docx_builder import ensure_demeurant_au
 from sydel_doc_engine.utils.grammar import accord_euros_apres_montant, apply_gender_pairs
 
 _TOKEN_RE = re.compile(r"\[[^\]\[]+\]")
@@ -78,6 +79,10 @@ def fill_docx_template(
             f"Tokens non remplacés dans {template_path.name} : {joined}."
         )
 
+    # Rafael/Albane 2026-07-09 : « Demeurant [adresse] » -> « Demeurant au [adresse] »
+    # (convention universelle). Le mot est fige dans le modele source ; on insere « au »
+    # apres remplissage des tokens (run-safe, idempotent).
+    ensure_demeurant_au(document)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     document.save(str(output_path))
     return output_path

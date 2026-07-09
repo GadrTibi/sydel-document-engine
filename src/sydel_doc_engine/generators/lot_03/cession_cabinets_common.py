@@ -39,6 +39,7 @@ from sydel_doc_engine.generators.lot_05.scm_cession_common import (
     mentions_partenaire_pacse,
     partenaire_pacse_clause,
 )
+from sydel_doc_engine.rendering.docx_builder import ensure_demeurant_au
 from sydel_doc_engine.utils.departements import departement_nom
 from sydel_doc_engine.utils.grammar import apply_gender_pairs, elision_de
 from sydel_doc_engine.utils.months import FRENCH_MONTHS
@@ -651,6 +652,9 @@ def render_cession_from_template(  # noqa: C901
             f"Tokens non remplaces dans {model_path.name} pour {DOCUMENT_CODE} : {joined}."
         )
 
+    # Rafael/Albane 2026-07-09 : « demeurant [adresse] » -> « demeurant au [adresse] »
+    # (convention universelle) ; le mot est fige dans le modele source d'acte de cession.
+    ensure_demeurant_au(document)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     document.save(str(output_path))
     return output_path

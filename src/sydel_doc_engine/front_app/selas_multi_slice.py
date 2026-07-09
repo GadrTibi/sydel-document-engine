@@ -852,16 +852,23 @@ def _validate_roles_dirigeants(associes: list[StatutsCivilsAssocie]) -> list[str
 def _validate_associes_filiation(
     payload: dict[str, object], associes: list[StatutsCivilsAssocie]
 ) -> list[str]:
-    """DNC par associe (Rafael 2026-07-09, etend R7) : une DNC par ASSOCIE personne
-    physique -> la filiation (nom du père et de la mère) est requise pour CHAQUE
-    associe physique autre que le président (celle du président est déjà validée
-    via le tronc commun). Lue sur le MODELE (posee par le formulaire, cles
-    `_sig_nom_pere/mere`), avec repli sur la session pour les etats de saisie
-    anterieurs a la collecte par associe."""
+    """DNC = GERANT UNIQUEMENT (Albane, Direction Juridique, 2026-07-09 — supersede le
+    retour Rafael du matin « 1 DNC par associe » + verrou R11). La filiation (nom du
+    père et de la mère) n'est requise QUE pour un DIRIGEANT (President + DG / DG Associe),
+    car elle ne sert qu'a SA déclaration de non-condamnation. Le président est déjà
+    validé via le tronc commun ; un associe NON dirigeant n'a plus besoin de filiation
+    (retour Albane : « je n'ai volontairement pas complété les parents de mon 2e associé
+    car il n'est pas gérant, mais ça bloque »). Lue sur le MODELE (posee par le
+    formulaire, cles `_sig_nom_pere/mere`), avec repli sur la session."""
     president_index = _resolve_president_index(payload, associes)
+    dirigeant_indices = {
+        index for index, _role in _collect_dirigeants_nomines_indices(associes, president_index)
+    }
     blockers: list[str] = []
     for index, associe in enumerate(associes):
-        if index == president_index or associe.type_personne != "personne_physique":
+        if index == president_index or index not in dirigeant_indices:
+            continue
+        if associe.type_personne != "personne_physique":
             continue
         prefix = f"{PREFIX}_associe_{index}"
         pere = str(
@@ -1929,7 +1936,7 @@ def _selas_dirigeant_identite_phrase(
     ]
     if situation:
         parts.append(situation)
-    return ", ".join(parts) + f", demeurant {adresse_inline}"
+    return ", ".join(parts) + f", demeurant au {adresse_inline}"
 
 
 def _build_dirigeants_nomines(
@@ -2162,21 +2169,46 @@ def _display_date(value) -> str | None:
     return value.strftime("%d/%m/%Y")
 
 
+def _dnc_dirigeant_indices(
+    payload: dict[str, object],
+    associes: list[StatutsCivilsAssocie],
+    president_index: int,
+) -> set[int]:
+    """Index des associes DIRIGEANTS (= « gerants » d'une SELAS : President + chaque
+    Directeur General / DG Associe coche). La DNC ne concerne QU'EUX (Albane, Direction
+    Juridique, 2026-07-09 — DNC = gerant uniquement). Lu depuis `dirigeants_nomines`
+    (charge utile serialisee du formulaire, `ref_associe_index`), authoritative a la
+    generation ; a defaut (payload nu / fixture), seul le president est dirigeant."""
+    indices: set[int] = {president_index}
+    dirigeants = payload.get("dirigeants_nomines")
+    if isinstance(dirigeants, list):
+        for entry in dirigeants:
+            ref = (
+                entry.get("ref_associe_index")
+                if isinstance(entry, dict)
+                else getattr(entry, "ref_associe_index", None)
+            )
+            if isinstance(ref, int) and 0 <= ref < len(associes):
+                indices.add(ref)
+    return indices
+
+
 def _generate_dnc_par_associe(
     payload: dict[str, object],
     base_ctx: DocumentGenerationContext,
     docx_paths: list[Path],
     output_dir: Path,
 ) -> list[Path]:
-    """DNC par ASSOCIE (Rafael 2026-07-09, etend R7 « une DNC par dirigeant ») :
-    la DNC porte le nom de l'associe ET il y en a UNE PAR associe personne
-    physique (2 associes -> 2 documents).
+    """DNC = GERANT UNIQUEMENT (Albane, Direction Juridique, 2026-07-09 — supersede le
+    retour Rafael du matin « 1 DNC par associe » + verrou R11 ; Rafael a confirme
+    « Albane a raison »). En SELAS les « gerants » sont les DIRIGEANTS : le President et
+    chaque Directeur General / DG Associe coche. Un associe NON dirigeant ne recoit PAS
+    de declaration de non-condamnation.
 
-    La DNC du president est produite par l'orchestrateur (etape 1) : on la
-    renomme. Pour chaque AUTRE associe physique (dirigeant ou non), on derive un
-    contexte (signataire = cet associe, filiation portee par le modele) et on
-    genere sa propre DNC, nommee par son nom (helper partage
-    ``dnc_context_for_associe``). Les personnes morales n'ont pas de DNC."""
+    La DNC du president est produite par l'orchestrateur (etape 1) : on la renomme. Pour
+    chaque AUTRE dirigeant personne physique, on derive un contexte (signataire = ce
+    dirigeant) et on genere sa propre DNC, nommee par son nom. Les personnes morales et
+    les associes non dirigeants n'ont pas de DNC."""
     associes = list(payload.get("associes") or [])
     president_index = _resolve_president_index(payload, associes)
     if not (0 <= president_index < len(associes)):
@@ -2188,9 +2220,12 @@ def _generate_dnc_par_associe(
             renamed.append(_rename_with_slug(path, pres_slug))
         else:
             renamed.append(path)
+    dirigeant_indices = _dnc_dirigeant_indices(payload, associes, president_index)
     generator = DeclarationNonCondamnationGenerator()
     for index, associe in enumerate(associes):
-        if index == president_index or associe.type_personne != "personne_physique":
+        if index == president_index or index not in dirigeant_indices:
+            continue
+        if associe.type_personne != "personne_physique":
             continue
         ctx = dnc_context_for_associe(base_ctx, associe)
         produced = generator.generate(ctx, output_dir)

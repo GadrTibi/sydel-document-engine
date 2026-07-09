@@ -261,7 +261,8 @@ def test_pv_nomination_gerant_one_associe_is_associe_unique_pv(
     # Identite de l'associe unique.
     assert "- Madame Alice Durand" in paragraphs
     assert "Née le 09/07/1986 à Lyon" in text
-    assert "Demeurant 3 rue des Lilas, 69003 Lyon" in text
+    # Rafael/Albane 2026-07-09 : « Demeurant [adresse] » -> « Demeurant au [adresse] ».
+    assert "Demeurant au 3 rue des Lilas, 69003 Lyon" in text
     assert (
         "Associée unique, propriétaire de toutes les parts de la société SCI TEST "
         "en cours de formation."
@@ -274,7 +275,7 @@ def test_pv_nomination_gerant_one_associe_is_associe_unique_pv(
     assert (
         "L’associée unique décide de désigner en qualité de gérante Madame Alice Durand, "
         "médecin de profession, née le 09/07/1986 à Lyon, de nationalité française, "
-        "demeurant 3 rue des Lilas, 69003 Lyon associée unique de la Société."
+        "demeurant au 3 rue des Lilas, 69003 Lyon associée unique de la Société."
     ) in text
     assert "Sa rémunération sera fixée ultérieurement." in text
     assert (
@@ -517,7 +518,8 @@ def test_pv_nomination_selas_rend_identite_phrase_complete(tmp_path: Path) -> No
     phrase = (
         "Monsieur Jean-Guillaume FUCHS, chirurgien-dentiste, de nationalité française, "
         "né le 20 février 1994 à RENNES (35), marié sous le régime de la séparation des biens "
-        "avec société d’acquêts, avec Madame Eva ROUAULT, demeurant 31B Boulevard de Sévigné, "
+        # Rafael/Albane 2026-07-09 : « demeurant [adresse] » -> « demeurant au [adresse] ».
+        "avec société d’acquêts, avec Madame Eva ROUAULT, demeurant au 31B Boulevard de Sévigné, "
         "35700 RENNES"
     )
     dirigeant = DirigeantNomine(
@@ -742,7 +744,7 @@ def test_pv_associe_unique_designation_client_en_interligne_simple(
     for needle in (
         "Madame Alice Durand",
         "Née le 09/07/1986",
-        "Demeurant 3 rue des Lilas",
+        "Demeurant au 3 rue des Lilas",
         "De nationalité française",
     ):
         assert _find_para(document, needle).paragraph_format.line_spacing == 1.0

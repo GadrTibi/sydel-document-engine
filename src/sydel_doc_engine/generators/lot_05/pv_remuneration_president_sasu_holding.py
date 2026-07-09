@@ -50,7 +50,7 @@ class PvRemunerationPresidentSasuHoldingGenerator:
             ],
         )
         add_paragraph(document, data.associe_nom)
-        add_paragraph(document, f"Demeurant {data.adresse_associe}")
+        add_paragraph(document, f"Demeurant au {data.adresse_associe}")
         add_paragraph(
             document,
             f"{data.qualite_associe} de la SASU en cours de formation.",

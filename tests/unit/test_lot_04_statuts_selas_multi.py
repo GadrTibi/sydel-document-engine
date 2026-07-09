@@ -220,7 +220,8 @@ def test_selas_multi_asserts_source_wording(tmp_path: Path) -> None:
     # pas dans le generateur (echo fidele) -> ce builder direct conserve « 1 janvier ».
     assert (
         "Madame Claire Durand, qualifiée en médecine générale, née le 1 janvier 1980 "
-        "à Lyon (69), de nationalité française, demeurant 10 rue de l'Exemple, 69000 Lyon, "
+        # Rafael/Albane 2026-07-09 : « demeurant [adresse] » -> « demeurant au [adresse] ».
+        "à Lyon (69), de nationalité française, demeurant au 10 rue de l'Exemple, 69000 Lyon, "
         "célibataire." in text
     )
     assert (
@@ -502,13 +503,13 @@ def test_selas_multi_dentiste_genere_depuis_le_corpus_dentiste(tmp_path: Path) -
     assert (
         "Monsieur Jean-Guillaume FUCHS, chirurgien-dentiste, de nationalité française, né le "
         "20 février 1994 à RENNES (35), marié sous le régime de la séparation des biens, "
-        "demeurant 31B Boulevard de Sévigné, 35700 RENNES, inscrit au tableau de l’Ordre des "
+        "demeurant au 31B Boulevard de Sévigné, 35700 RENNES, inscrit au tableau de l’Ordre des "
         "chirurgiens-dentistes de l’Ille et Vilaine sous le numéro national 79630 et sous le "
         "numéro RPPS 10101676194." in text
     )
     assert (
         "Madame Marie LEROUX, chirurgien-dentiste, de nationalité française, née le 20 février "
-        "1994 à RENNES (35), mariée sous le régime de la communauté, demeurant 31B Boulevard "
+        "1994 à RENNES (35), mariée sous le régime de la communauté, demeurant au 31B Boulevard "
         "de Sévigné, 35700 RENNES, inscrite au tableau de l’Ordre des chirurgiens-dentistes de "
         "l’Ille et Vilaine sous le numéro national 79630 et sous le numéro RPPS 10101676194."
         in text
@@ -829,7 +830,7 @@ def test_st7f_president_designation_nominative_supprimee(tmp_path: Path) -> None
     # Le bloc nominatif du president (« Monsieur Jean Durant » + « Demeurant … ») n'est PLUS
     # injecte a l'art. 14.1 : aucun paragraphe ne porte ce nom seul, ni l'adresse en designation.
     nom_pres = _find_paras(document, lambda t: t == "Monsieur Jean Durant")
-    adresse_pres = _find_paras(document, lambda t: t.startswith("Demeurant 10 rue de l'Exemple"))
+    adresse_pres = _find_paras(document, lambda t: t.startswith("Demeurant au 10 rue de l'Exemple"))
     assert not nom_pres, "le nom nominatif du president ne doit plus figurer a l'art. 14.1"
     assert not adresse_pres, "l'adresse nominative du president ne doit plus figurer a l'art. 14.1"
 

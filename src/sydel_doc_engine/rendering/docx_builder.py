@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -11,6 +12,59 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Cm, Pt, RGBColor
+
+# ---------------------------------------------------------------------------
+# Post-fill : « Demeurant [adresse] » -> « Demeurant au [adresse] » (Rafael/Albane
+# 2026-07-09, convention UNIVERSELLE). Pour les documents rendus par TOKEN-REPLACEMENT
+# sur un modele .docx binaire (actes de cession, contrat d'apport, statuts SASU/SAS),
+# le mot « Demeurant » est FIGE dans le modele source (lecture seule) : on ne peut pas
+# l'editer a la source comme pour les generateurs from-scratch. On insere donc « au »
+# APRES remplissage des tokens, au niveau des RUNS (formatage preserve : noms en gras,
+# etc.). Idempotent (« demeurant au 5 » n'est plus suivi d'un chiffre -> jamais double).
+# Regle par INTENTION identique a la R14 de conformite : un « [Dd]emeurant » suivi
+# DIRECTEMENT d'un numero de voie (chiffre) recoit « au ». « demeurant a <Ville> »
+# (ville seule, sans numero) n'est jamais touche (aucun chiffre ne suit). Le supersede
+# de fidelite au modele est trace (retour le plus recent prime, regle 68).
+_DEMEURANT_SAME_RUN = re.compile(r"(?i)(demeurant)(\s+)(\d)")
+_DEMEURANT_RUN_END = re.compile(r"(?i)demeurant\s*$")
+_ADDRESS_RUN_START = re.compile(r"^(\s*)(\d)")
+
+
+def _fix_demeurant_paragraph(paragraph: Any) -> None:
+    # Cas 1 — « demeurant » et le numero dans le MEME run.
+    for run in paragraph.runs:
+        if run.text:
+            fixed = _DEMEURANT_SAME_RUN.sub(r"\1\2au \3", run.text)
+            if fixed != run.text:
+                run.text = fixed
+    # Cas 2 — « demeurant » en fin de run, numero au debut d'un run SUIVANT (token
+    # « Demeurant [adresse] » : Word eclate le mot et la valeur en runs distincts, parfois
+    # separes par des runs vides / d'espaces — on saute ces runs pour retrouver l'adresse).
+    runs = [run for run in paragraph.runs if run.text]
+    for index, current in enumerate(runs):
+        if not _DEMEURANT_RUN_END.search(current.text):
+            continue
+        for following in runs[index + 1 :]:
+            if not following.text.strip():
+                continue  # run d'espaces intercalaire — on l'ignore
+            if _ADDRESS_RUN_START.match(following.text):
+                following.text = _ADDRESS_RUN_START.sub(r"\1au \2", following.text)
+            break
+
+
+def ensure_demeurant_au(document: Any) -> None:
+    """Insere « au » entre « Demeurant » et un numero de voie dans TOUT le document
+    (corps + cellules de tableaux), au niveau des runs (formatage preserve). Idempotent.
+
+    A appeler APRES remplissage des tokens, juste avant la sauvegarde, sur les
+    generateurs par modele .docx binaire (le from-scratch se corrige a la source)."""
+    for paragraph in document.paragraphs:
+        _fix_demeurant_paragraph(paragraph)
+    for table in document.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                for paragraph in cell.paragraphs:
+                    _fix_demeurant_paragraph(paragraph)
 
 
 @dataclass(frozen=True)

@@ -307,7 +307,7 @@ def _associe_physique_table_text(
     return (
         f"{_required_text(associe.civilite_affichage, f'{field_name}.civilite_affichage')} "
         f"{_required_text(associe.prenom, f'{field_name}.prenom')} "
-        f"{_required_text(associe.nom, f'{field_name}.nom')}, demeurant {address_display}, "
+        f"{_required_text(associe.nom, f'{field_name}.nom')}, demeurant au {address_display}, "
         f"{qualite}, détenant {nb_parts} parts."
     )
 

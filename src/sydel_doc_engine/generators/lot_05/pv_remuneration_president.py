@@ -56,7 +56,7 @@ class PvRemunerationPresidentGenerator:
             ],
         )
         add_paragraph(document, data.actionnaire_nom)
-        add_paragraph(document, f"Demeurant {data.adresse_actionnaire}.")
+        add_paragraph(document, f"Demeurant au {data.adresse_actionnaire}.")
         # Rafael 2026-07-09 (R12) : majuscule en debut de phrase — ces deux lignes
         # suivent un point (« … Paris. » / « … en cours de formation. »).
         add_paragraph(

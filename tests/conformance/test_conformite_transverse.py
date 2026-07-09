@@ -103,23 +103,25 @@ _PIVOT_DOC: dict[str, str] = {
 
 
 # ---------------------------------------------------------------------------
-# R11 — une DNC PAR associé personne physique (règle de BUNDLE, Rafael 2026-07-09)
+# R11 — une DNC PAR GÉRANT personne physique (règle de BUNDLE)
+# Albane (Direction Juridique) + Rafael 2026-07-09 : DNC = gérants uniquement, supersede
+# le retour Rafael du matin « 1 DNC par associé ».
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize("type_key", CORPUS_KEYS)
-def test_r11_dnc_par_associe(corpus: dict[str, dict[str, str]], type_key: str) -> None:
-    """« Une déclaration de non-condamnation pour CHAQUE associé » (2 associés =
-    2 documents), tous types. Compte les DNC du bundle contre le nombre d'associés
-    personnes physiques du payload (table ``EXPECTED_DNC_PP``, alignée sur
-    ``build_corpus``)."""
-    from _conformance_corpus import EXPECTED_DNC_PP
-    from _conformance_rules import R11_LABEL, rule_r11_dnc_par_associe
+def test_r11_dnc_par_gerant(corpus: dict[str, dict[str, str]], type_key: str) -> None:
+    """« Une déclaration de non-condamnation par GÉRANT » (Albane 2026-07-09 —
+    supersede « 1 DNC par associé » du matin), tous types. Compte les DNC du bundle
+    contre le nombre de GÉRANTS personnes physiques du payload (table
+    ``EXPECTED_DNC_GERANTS``, alignée sur ``build_corpus``)."""
+    from _conformance_corpus import EXPECTED_DNC_GERANTS
+    from _conformance_rules import R11_LABEL, rule_r11_dnc_par_gerant
 
-    assert set(EXPECTED_DNC_PP) == set(CORPUS_KEYS), (
-        "EXPECTED_DNC_PP désaligné des types du corpus"
+    assert set(EXPECTED_DNC_GERANTS) == set(CORPUS_KEYS), (
+        "EXPECTED_DNC_GERANTS désaligné des types du corpus"
     )
-    violations = rule_r11_dnc_par_associe(corpus[type_key], EXPECTED_DNC_PP[type_key])
+    violations = rule_r11_dnc_par_gerant(corpus[type_key], EXPECTED_DNC_GERANTS[type_key])
     assert not violations, f"R11 — {R11_LABEL} ({type_key}) :\n" + "\n".join(violations)
 
 

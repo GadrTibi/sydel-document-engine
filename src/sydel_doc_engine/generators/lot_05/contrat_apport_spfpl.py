@@ -28,6 +28,7 @@ from sydel_doc_engine.generators.lot_05.spfpl_common import (
     required_text,
     validate_apport_context,
 )
+from sydel_doc_engine.rendering.docx_builder import ensure_demeurant_au
 from sydel_doc_engine.utils.departements import departement_nom
 from sydel_doc_engine.utils.grammar import (
     _has_real_decimal,
@@ -185,6 +186,8 @@ class ContratApportSpfplGenerator:
                             _set_para_text(paragraph, rendered)
 
         self._assert_no_residual(document)
+        # Rafael/Albane 2026-07-09 : « Demeurant [adresse] » -> « Demeurant au [adresse] ».
+        ensure_demeurant_au(document)
         output_dir.mkdir(parents=True, exist_ok=True)
         output_path = output_dir / OUTPUT_FILENAME
         document.save(output_path)

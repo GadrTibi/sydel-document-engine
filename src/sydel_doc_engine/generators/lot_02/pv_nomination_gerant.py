@@ -1042,7 +1042,7 @@ def _build_associe_unique_pv(
         f"{_ne_label(genre).capitalize()} le {birth_date} à {birth_city}",
         single_line_spacing=True,
     )
-    _add_paragraph(document, f"Demeurant {_address_inline(address)}", single_line_spacing=True)
+    _add_paragraph(document, f"Demeurant au {_address_inline(address)}", single_line_spacing=True)
     _add_paragraph(document, f"De nationalité {nationality}", single_line_spacing=True)
     _add_paragraph(
         document,
@@ -1073,7 +1073,7 @@ def _build_associe_unique_pv(
             f"L’{associe_word_low} unique décide de désigner en qualité de {fonction} "
             f"{civilite} {prenom} {nom}, "
             f"{profession_clause}{_ne_label(genre)} le {birth_date} à {birth_city}, "
-            f"de nationalité {nationality}, demeurant {_address_inline(address)} "
+            f"de nationalité {nationality}, demeurant au {_address_inline(address)} "
             f"{associe_word_low} unique de la Société. Sa rémunération sera fixée ultérieurement."
         ),
         alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,

@@ -27,7 +27,7 @@ from sydel_doc_engine.generators.lot_05.spfpl_common import (
     required_text,
     validate_cession_context,
 )
-from sydel_doc_engine.rendering.docx_builder import new_document_from_model
+from sydel_doc_engine.rendering.docx_builder import ensure_demeurant_au, new_document_from_model
 from sydel_doc_engine.utils.departements import departement_nom
 
 OUTPUT_FILENAME = "acte_cession_parts_spfpl.docx"
@@ -217,6 +217,8 @@ class ActeCessionPartsSpfplGenerator:
         # rendue fidelement (accentuee) par le token-replacement ci-dessus. Un bloc ajoute la
         # dupliquait ET perdait les accents (« La societe »/« Representee »).
         self._assert_no_residual(docx)
+        # Rafael/Albane 2026-07-09 : « demeurant [adresse] » -> « demeurant au [adresse] ».
+        ensure_demeurant_au(docx)
         output_dir.mkdir(parents=True, exist_ok=True)
         output_path = output_dir / OUTPUT_FILENAME
         docx.save(output_path)

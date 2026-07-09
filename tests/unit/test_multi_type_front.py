@@ -1921,14 +1921,17 @@ def test_selas_dnc_filename_carries_dirigeant_name(tmp_path: Path) -> None:
     assert sum(1 for n in names if n.startswith("declaration_non_condamnation")) == 1
 
 
-# --- DNC par associe (Rafael 2026-07-09) --------------------------------------
-# « Il faut une declaration de non-condamnation pour CHAQUE associe » (2 associes
-# -> 2 documents, 100 -> 100), TOUS les cas — plus seulement les dirigeants (R7).
+# --- DNC = GERANT UNIQUEMENT (Albane, Direction Juridique, 2026-07-09) ---------
+# La declaration de non-condamnation ne se genere QUE pour les GERANTS (en SELAS =
+# les dirigeants : President + DG / DG Associe). Un associe NON dirigeant n'a PAS de
+# DNC. SUPERSEDE le retour Rafael du matin « 1 DNC par associe » (+ verrou R11) :
+# Rafael a confirme « Albane a raison ».
 
 
-def test_selas_dnc_une_par_associe_meme_non_dirigeant(tmp_path: Path) -> None:
+def test_selas_dnc_gerants_uniquement_pas_les_associes(tmp_path: Path) -> None:
     # 3 associes physiques, SEUL le president (Durand, defaut) est dirigeant : les
-    # 2 autres associes (Martin, Petit) recoivent quand meme CHACUN leur DNC.
+    # 2 autres associes (Martin, Petit) NON dirigeants ne recoivent PAS de DNC.
+    # Payload nu (sans dirigeants_nomines) -> seul le president est gerant.
     payload = _selas_payload_n(
         [
             _selas_phys("Claire", "Durand", 40),
@@ -1938,28 +1941,17 @@ def test_selas_dnc_une_par_associe_meme_non_dirigeant(tmp_path: Path) -> None:
     )
     generated = selas_multi_slice.generate_dossier(payload, tmp_path / "selas-dnc-n")
     names = {p.name for p in generated.docx_paths}
-    assert "declaration_non_condamnation_Durand.docx" in names  # president (renommee)
-    assert "declaration_non_condamnation_Martin.docx" in names  # associe non dirigeant
-    assert "declaration_non_condamnation_Petit.docx" in names  # associe non dirigeant
+    assert "declaration_non_condamnation_Durand.docx" in names  # president (gerant)
+    assert "declaration_non_condamnation_Martin.docx" not in names  # non dirigeant
+    assert "declaration_non_condamnation_Petit.docx" not in names  # non dirigeant
     assert "declaration_non_condamnation.docx" not in names
-    assert sum(1 for n in names if n.startswith("declaration_non_condamnation")) == 3
-    # La DNC d'un associe non dirigeant porte SON identite et SA filiation.
-    dnc_martin = _docx_text(
-        next(
-            p
-            for p in generated.docx_paths
-            if p.name == "declaration_non_condamnation_Martin.docx"
-        )
-    )
-    assert "Paul Martin" in dnc_martin
-    assert "Pierre Martin" in dnc_martin  # nom du pere (helper _selas_phys)
-    assert "Anne Martin" in dnc_martin  # nom de la mere
-    assert "Claire Durand" not in dnc_martin
+    assert sum(1 for n in names if n.startswith("declaration_non_condamnation")) == 1
 
 
-def test_selas_associe_sans_filiation_bloque(tmp_path: Path) -> None:
-    # Un associe physique NON dirigeant sans filiation -> sa DNC serait ingenerable :
-    # le plan bloque explicitement (nom de l'associe dans le message).
+def test_selas_associe_non_dirigeant_sans_filiation_ne_bloque_pas(tmp_path: Path) -> None:
+    # Albane 2026-07-09 : un associe physique NON dirigeant sans filiation ne bloque
+    # PLUS (il n'a plus de DNC). « Je n'ai volontairement pas complete les parents de
+    # mon 2e associe car il n'est pas gerant, mais ca bloque » -> corrige.
     associe_sans_filiation = _selas_phys("Paul", "Martin", 40).model_copy(
         update={"nom_pere": None, "nom_mere": None}
     )
@@ -1967,16 +1959,19 @@ def test_selas_associe_sans_filiation_bloque(tmp_path: Path) -> None:
         [_selas_phys("Claire", "Durand", 60), associe_sans_filiation]
     )
     plan = selas_multi_slice.build_selas_plan(payload)
-    assert plan.can_generate is False
-    assert any(
-        "Martin" in b and "filiation" in b and "non-condamnation" in b
-        for b in plan.blockers
-    ), plan.blockers
+    assert plan.can_generate is True, plan.blockers
+    generated = selas_multi_slice.generate_dossier(payload, tmp_path / "selas-nofil")
+    names = {p.name for p in generated.docx_paths}
+    # Seule la DNC du president (gerant) est generee ; Martin non dirigeant -> aucune.
+    assert "declaration_non_condamnation_Durand.docx" in names
+    assert "declaration_non_condamnation_Martin.docx" not in names
+    assert sum(1 for n in names if n.startswith("declaration_non_condamnation")) == 1
 
 
-def test_civil_dnc_une_par_associe(tmp_path: Path) -> None:
-    # SCI a 2 associes physiques -> 2 DNC, nommees par associe (gerant Durand via
-    # l'orchestrateur renommee O24-02 ; Martin generee par le chemin par-associe).
+def test_civil_dnc_gerant_uniquement(tmp_path: Path) -> None:
+    # SCI a 2 associes physiques -> UNE seule DNC, celle du GERANT (Durand, 1er
+    # physique, via l'orchestrateur renommee O24-02). Albane 2026-07-09 : l'associe
+    # NON gerant (Martin) ne recoit PAS de DNC (supersede « 1 DNC par associe »).
     payload = _civil_base(
         "SCI",
         "sci",
@@ -1987,26 +1982,15 @@ def test_civil_dnc_une_par_associe(tmp_path: Path) -> None:
     )
     generated = css.generate_dossier(payload, tmp_path / "sci-dnc")
     names = {p.name for p in generated.docx_paths}
-    assert "declaration_non_condamnation_Durand.docx" in names
-    assert "declaration_non_condamnation_Martin.docx" in names
+    assert "declaration_non_condamnation_Durand.docx" in names  # gerant
+    assert "declaration_non_condamnation_Martin.docx" not in names  # non gerant
     assert "declaration_non_condamnation.docx" not in names
-    assert sum(1 for n in names if n.startswith("declaration_non_condamnation")) == 2
-    # La DNC du 2e associe porte SON identite, SA filiation et SON adresse.
-    dnc_martin = _docx_text(
-        next(
-            p
-            for p in generated.docx_paths
-            if p.name == "declaration_non_condamnation_Martin.docx"
-        )
-    )
-    assert "Alice Martin" in dnc_martin
-    assert "Pierre Martin" in dnc_martin  # nom du pere (helper _pp)
-    assert "Anne Martin" in dnc_martin  # nom de la mere
-    assert "Jean Durand" not in dnc_martin
+    assert sum(1 for n in names if n.startswith("declaration_non_condamnation")) == 1
 
 
-def test_civil_dnc_trois_associes_scs(tmp_path: Path) -> None:
-    # SCS (commandite + 2 commanditaires) -> 3 DNC nommees, une par associe physique.
+def test_civil_dnc_trois_associes_scs_gerant_uniquement(tmp_path: Path) -> None:
+    # SCS (commandite gerant + 2 commanditaires) -> UNE seule DNC, celle du gerant
+    # (Durand, commandite, 1er physique). Les commanditaires non gerants -> pas de DNC.
     payload = _civil_base(
         "SCS",
         "scs",
@@ -2018,10 +2002,10 @@ def test_civil_dnc_trois_associes_scs(tmp_path: Path) -> None:
     )
     generated = css.generate_dossier(payload, tmp_path / "scs-dnc")
     names = {p.name for p in generated.docx_paths}
-    assert sum(1 for n in names if n.startswith("declaration_non_condamnation")) == 3
-    assert "declaration_non_condamnation_Durand.docx" in names
-    assert "declaration_non_condamnation_Martin.docx" in names
-    assert "declaration_non_condamnation_Petit.docx" in names
+    assert sum(1 for n in names if n.startswith("declaration_non_condamnation")) == 1
+    assert "declaration_non_condamnation_Durand.docx" in names  # gerant (commandite)
+    assert "declaration_non_condamnation_Martin.docx" not in names
+    assert "declaration_non_condamnation_Petit.docx" not in names
 
 
 def test_civil_dnc_personne_morale_sans_dnc(tmp_path: Path) -> None:
@@ -2038,9 +2022,10 @@ def test_civil_dnc_personne_morale_sans_dnc(tmp_path: Path) -> None:
     assert sum(1 for n in names if n.startswith("declaration_non_condamnation")) == 1
 
 
-def test_civil_associe_sans_filiation_bloque() -> None:
-    # Un associe physique NON gerant sans filiation -> sa DNC serait ingenerable :
-    # le plan bloque explicitement (nom de l'associe dans le message).
+def test_civil_associe_non_gerant_sans_filiation_ne_bloque_pas(tmp_path: Path) -> None:
+    # Albane 2026-07-09 : un associe physique NON gerant sans filiation ne bloque PLUS
+    # (il n'a plus de DNC). « Je n'ai volontairement pas complete les parents de mon
+    # 2e associe car il n'est pas gerant, mais ca bloque » -> corrige.
     associe_sans_filiation = _pp("Alice", "Martin", 60, 41, 100, 600).model_copy(
         update={"nom_pere": None, "nom_mere": None}
     )
@@ -2050,11 +2035,11 @@ def test_civil_associe_sans_filiation_bloque() -> None:
         [_pp("Jean", "Durand", 40, 1, 40, 400), associe_sans_filiation],
     )
     plan = css.build_civil_plan(payload)
-    assert plan.can_generate is False
-    assert any(
-        "Martin" in b and "filiation" in b and "non-condamnation" in b
-        for b in plan.blockers
-    ), plan.blockers
+    assert plan.can_generate is True, plan.blockers
+    generated = css.generate_dossier(payload, tmp_path / "sci-nofil")
+    names = {p.name for p in generated.docx_paths}
+    assert "declaration_non_condamnation_Durand.docx" in names  # gerant
+    assert sum(1 for n in names if n.startswith("declaration_non_condamnation")) == 1
 
 
 def test_selas_ordre_conseil_derive_sans_champ_libelle(tmp_path: Path) -> None:
@@ -4739,7 +4724,8 @@ def test_a26_pv5_dirigeant_identite_phrase_via_flux_reel() -> None:
     assert phrase == (
         "Monsieur Jean-Guillaume FUCHS, chirurgien-dentiste, de nationalité française, "
         "né le 20 février 1994 à RENNES (35), marié sous le régime de la séparation des biens "
-        "avec société d’acquêts, avec Madame Eva ROUAULT, demeurant 31B Boulevard de Sévigné, "
+        # Rafael/Albane 2026-07-09 : « demeurant [adresse] » -> « demeurant au [adresse] ».
+        "avec société d’acquêts, avec Madame Eva ROUAULT, demeurant au 31B Boulevard de Sévigné, "
         "35700 RENNES"
     )
     assert "Docteur" not in phrase  # Akainu B1 : jamais le titre, la profession reglementee

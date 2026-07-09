@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+import unicodedata
 from datetime import date, datetime
 
 from sydel_doc_engine.utils.months import FRENCH_MONTHS
@@ -7,6 +9,28 @@ from sydel_doc_engine.utils.months import FRENCH_MONTHS
 # Formats numeriques acceptes en ENTREE d'une date de naissance saisie librement
 # (l'UI civile passe une chaine texte : « 10/03/1975 », un ISO ou un objet date).
 _BIRTHDATE_INPUT_FORMATS = ("%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y")
+
+# Mois FR sans accent -> forme accentuee (Rafael 2026-07-09 : une date SAISIE en toutes
+# lettres « 1er aout 1980 » / « 1er decembre 1978 » ne doit pas garder le mois non accentue).
+_MONTHS_ACCENT = {
+    unicodedata.normalize("NFKD", m).encode("ascii", "ignore").decode("ascii"): m
+    for m in FRENCH_MONTHS
+    if m
+}
+
+
+def accentuate_months(text: str) -> str:
+    """Re-accentue tout nom de mois FR ecrit sans accent dans une chaine (« aout » -> « août »,
+    « decembre » -> « décembre », « fevrier » -> « février »). Insensible a la casse, borne mot."""
+
+    def _repl(match: re.Match[str]) -> str:
+        accented = _MONTHS_ACCENT[match.group(0).lower()]
+        return accented.upper() if match.group(0).isupper() else accented
+
+    pattern = "|".join(re.escape(k) for k in _MONTHS_ACCENT if k not in FRENCH_MONTHS)
+    if not pattern:
+        return text
+    return re.sub(rf"\b({pattern})\b", _repl, text, flags=re.IGNORECASE)
 
 
 def format_date_fr(value: date) -> str:
@@ -48,7 +72,9 @@ def format_birthdate_fr(value: date | str | None) -> str:
     parsed = coerce_date(value)
     if parsed is not None:
         return f"{parsed.day:02d} {FRENCH_MONTHS[parsed.month]} {parsed.year}"
-    return "" if value is None else str(value).strip()
+    # Date DEJA lettree (non parsable) : conservee, mais le mois est RE-ACCENTUE
+    # (« 1er aout 1980 » -> « 1er août 1980 ») — retour accents Rafael 2026-07-09.
+    return "" if value is None else accentuate_months(str(value).strip())
 
 
 def format_date_longue_fr(value: date) -> str:

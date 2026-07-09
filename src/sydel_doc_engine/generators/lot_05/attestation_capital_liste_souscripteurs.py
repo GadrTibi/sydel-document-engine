@@ -117,7 +117,7 @@ class AttestationCapitalListeSouscripteursGenerator:
         add_paragraph(
             docx,
             f"{president_identite}, "
-            f"demeurant {_adresse(president, 'capital_souscription.president')}, "
+            f"demeurant au {_adresse(president, 'capital_souscription.president')}, "
             f"atteste que le capital de la société {spfpl_name} "
             "est réparti de la manière suivante :",
         )

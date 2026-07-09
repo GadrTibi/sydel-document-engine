@@ -79,7 +79,7 @@ class AttestationCapitalListeSouscripteursSasGenerator:
         # phrase d'apport, « par le Président, __ », signature) sont CIVILS.
         add_paragraph(
             document,
-            f"{data.president_identite_civile} {data.profession_actionnaire}, demeurant "
+            f"{data.president_identite_civile} {data.profession_actionnaire}, demeurant au "
             f"{data.adresse_actionnaire}, atteste que le capital de la société "
             f"{data.denomination} est réparti de la manière suivante :",
         )

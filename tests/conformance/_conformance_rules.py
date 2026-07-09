@@ -326,36 +326,41 @@ def rule_r10_nom_fichier_statuts(doc_name: str) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
-# R11 — une DNC PAR associé personne physique (règle de BUNDLE)
+# R11 — une DNC PAR GÉRANT personne physique (règle de BUNDLE)
 # ---------------------------------------------------------------------------
 
-# Retour Rafael 2026-07-09 : « il faut une déclaration de non-condamnation pour
-# CHAQUE associé — 2 associés = 2 documents », dans TOUS les cas (SCI, SCI IRIS,
-# SCS cités ; règle générale partout). Règle de BUNDLE (pas de texte) : elle reçoit
-# les NOMS des documents d'un bundle + le nombre attendu d'associés personnes
-# physiques, et vérifie que le compte de DNC est exact. Ne figure pas dans RULES
-# (signature différente) — appliquée par ``test_r11_dnc_par_associe``.
+# Retour Albane (Direction Juridique) + Rafael 2026-07-09 : la déclaration de
+# non-condamnation ne se génère QUE pour les GÉRANTS (dirigeants), PAS pour les
+# associés non-gérants. Ça SUPERSEDE le retour Rafael du matin « 1 DNC par associé »
+# (Rafael a confirmé « Albane a raison »). Règle de BUNDLE (pas de texte) : elle reçoit
+# les NOMS des documents d'un bundle + le nombre attendu de GÉRANTS personnes physiques,
+# et vérifie que le compte de DNC est exact. Ne figure pas dans RULES (signature
+# différente) — appliquée par ``test_r11_dnc_par_gerant``.
+#   - civils (SCI / SCI IRIS / SCM / SCS / micro holding), SELARL : 1 gérant.
+#   - SELAS : les gérants = les dirigeants (Président + chaque DG / DG Associé).
+#   - unipersonnels (SAS, SASU, SELAS uni, SPFPL, SELARL uni) : l'associé unique EST
+#     gérant → 1 DNC.
 _R11_DNC_PREFIX = "declaration_non_condamnation"
 
 
-def rule_r11_dnc_par_associe(
-    doc_names: Iterable[str], nb_associes_pp: int
+def rule_r11_dnc_par_gerant(
+    doc_names: Iterable[str], nb_gerants_pp: int
 ) -> list[str]:
-    """Le bundle porte EXACTEMENT une DNC par associé personne physique."""
+    """Le bundle porte EXACTEMENT une DNC par GÉRANT personne physique."""
     dnc = sorted(
         name
         for name in doc_names
         if name.startswith(_R11_DNC_PREFIX) and name.endswith(".docx")
     )
-    if len(dnc) == nb_associes_pp:
+    if len(dnc) == nb_gerants_pp:
         return []
     return [
         f"{len(dnc)} DNC générée(s) ({', '.join(dnc) or 'aucune'}) "
-        f"pour {nb_associes_pp} associé(s) personne physique"
+        f"pour {nb_gerants_pp} gérant(s) personne physique"
     ]
 
 
-R11_LABEL = "nb de DNC ≠ nb d'associés personnes physiques"
+R11_LABEL = "nb de DNC ≠ nb de gérants personnes physiques"
 
 
 # ---------------------------------------------------------------------------
@@ -440,6 +445,35 @@ R13_LABEL = "accord euro/euros — « 1 euros » (montant singulier) interdit"
 
 
 # ---------------------------------------------------------------------------
+# R14 — adresse de résidence précédée de « au » (Rafael/Albane 2026-07-09)
+# ---------------------------------------------------------------------------
+#
+# Retour Rafael/Albane 2026-07-09 : « Demeurant [adresse] » -> « Demeurant au
+# [adresse] », « il faut adapter à chaque adresse ». Convention UNIVERSELLE : la
+# procuration portait déjà « demeurant au » ; statuts, PV, actes, attestations et
+# lettre IS ne l'avaient pas. On code l'INTENTION (l'adresse postale de résidence est
+# introduite par « au »), JAMAIS une liste de tournures (leçon R3 2026-07-09). Signal
+# opérationnel : un « [Dd]emeurant » suivi DIRECTEMENT d'un numéro de voie (chiffre)
+# sans « au » = violation. « demeurant à <Ville> » (ville seule, sans numéro de voie)
+# reste légitime et n'est jamais flaguée — aucun chiffre ne suit « demeurant » (pas de
+# whitelist à écrire). Limite documentée : une adresse à complément NON numérique
+# (« Résidence Les Tilleuls, 4 … ») garde « au » par défaut (exigence client) mais
+# échappe à CETTE détection ; cas rare, byte-vérifié à la génération.
+_R14 = re.compile(r"\b[Dd]emeurant\s+\d")
+
+
+def rule_r14_demeurant_au(text: str) -> list[str]:
+    """« Demeurant <numéro> … » interdit : l'adresse de résidence doit être précédée
+    de « au » (« Demeurant au <numéro> … »). Règle par INTENTION (adresse postale
+    introduite par « au »), pas liste de tournures. « demeurant à <Ville> » (ville
+    seule) reste légitime — aucun chiffre ne suit « demeurant »."""
+    return _find_all(text, _R14)
+
+
+R14_LABEL = "adresse de résidence non précédée de « au » (« Demeurant <numéro> »)"
+
+
+# ---------------------------------------------------------------------------
 # Registre des règles
 # ---------------------------------------------------------------------------
 
@@ -457,6 +491,8 @@ RULES: dict[str, Callable[[str], list[str]]] = {
     # NB : R11 est portée par le chantier DNC parallèle (2026-07-09) — numérotation
     # réservée, ne pas réutiliser.
     "R12": rule_r12_majuscule_debut,
+    # R13 tourne sur le corpus cap1 séparé (test_r13_accord_euro), pas ici.
+    "R14": rule_r14_demeurant_au,
 }
 
 # Règles appliquées au NOM DE FICHIER du document (les autres reçoivent le texte).
@@ -474,4 +510,5 @@ RULE_LABELS: dict[str, str] = {
     "R9": "clause Ordre sans département",
     "R10": "nom de fichier statuts ≠ « Statuts <dénomination>.docx »",
     "R12": "paragraphe commençant par une minuscule",
+    "R14": "adresse de résidence non précédée de « au »",
 }

@@ -189,7 +189,7 @@ def _party_other_segments(party: BailParty) -> list[str]:
     if _clean(party.nationalite):
         segments.append(f"de nationalité {_clean(party.nationalite)}")
     if _clean(party.adresse_affichee):
-        segments.append(f"demeurant {_clean(party.adresse_affichee)}")
+        segments.append(f"demeurant au {_clean(party.adresse_affichee)}")
     return segments
 
 

@@ -74,7 +74,7 @@ class AttestationCommissaireApportsGenerator:
             f"({apporteur_departement_naissance}), "
             f"{apporteur_profession}, "
             f"de nationalité {required_text(apporteur.nationalite, 'apporteur.nationalite')}, "
-            f"demeurant {person_address_display(apporteur, 'apporteur')}, "
+            f"demeurant au {person_address_display(apporteur, 'apporteur')}, "
             f"{_apporteur_maritale(apporteur)}",
         )
         # R4 (Albane 2026-07-07, « orthographe irréprochable ») : le front pose la forme

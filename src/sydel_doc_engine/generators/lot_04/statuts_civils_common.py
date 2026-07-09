@@ -590,7 +590,7 @@ def _add_physical_identity_micro_holding(document, associe: StatutsCivilsAssocie
             _required_text(associe.situation_maritale, "associes[].situation_maritale")
         ),
     )
-    add_paragraph(document, f"Demeurant {_person_address(associe)}")
+    add_paragraph(document, f"Demeurant au {_person_address(associe)}")
 
 
 def _add_apport_block(document, data: _ResolvedStatutsCivil) -> None:
@@ -1040,7 +1040,7 @@ def _add_physical_identity(document, associe: StatutsCivilsAssocie) -> None:
             _required_text(associe.situation_maritale, "associes[].situation_maritale")
         ),
     )
-    add_paragraph(document, f"Demeurant {_person_address(associe)}")
+    add_paragraph(document, f"Demeurant au {_person_address(associe)}")
 
 
 def _add_morale_identity(document, associe: StatutsCivilsAssocie) -> None:

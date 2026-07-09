@@ -259,7 +259,7 @@ def person_identity_sentence(person: SpfplPerson, field_name: str) -> str:
         f"a {required_text(person.ville_naissance, f'{field_name}.ville_naissance')} "
         f"({required_text(person.departement_naissance, f'{field_name}.departement_naissance')}) "
         f"de nationalite {required_text(person.nationalite, f'{field_name}.nationalite')}, "
-        f"demeurant {person_address_display(person, field_name)}, "
+        f"demeurant au {person_address_display(person, field_name)}, "
         f"{required_text(person.situation_maritale, f'{field_name}.situation_maritale')}"
         f"{conjoint_display}."
     )

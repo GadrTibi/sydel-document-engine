@@ -173,7 +173,8 @@ def test_pv_remuneration_president_fidelity(tmp_path: Path) -> None:
     # (sans « le » : pas de double article — gate Akainu B1).
     expected_lines = [
         "Monsieur Malo LE GUEN",
-        "Demeurant 5 Allée de la Clarté, 56700 KERVIGNAC",
+        # Rafael 2026-07-09 : « Demeurant au <adresse> » (R14, « au » sur chaque adresse).
+        "Demeurant au 5 Allée de la Clarté, 56700 KERVIGNAC",
         "Associé unique et Président de la SASU en cours de formation.",
         # Rafael 2026-07-09 (R12) : majuscule en debut de phrase (la ligne suit un
         # point) — supersede la minuscule du modele (precedent « tout le texte doit

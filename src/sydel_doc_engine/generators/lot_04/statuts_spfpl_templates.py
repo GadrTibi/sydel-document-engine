@@ -19,7 +19,7 @@ STATUTS_SPFPL_CESSION_BLOCKS: tuple[str, ...] = (
     '- [civilite] [prenom] [nom]',
     '[profession_capitale] de profession',
     'Né le [date_naissance] à [ville_naissance] ([departement_naissance])',
-    'Demeurant [adresse_personnelle]',
+    'Demeurant au [adresse_personnelle]',
     '[ligne_situation_maritale]',
     'De nationalité [nationalite]',
     'Inscrit au tableau de l’Ordre des Chirurgiens-Dentistes de [ordre_departemental] sous le n°[numero_ordre] et sous le numéro RPPS [numero_rpps]',
@@ -374,7 +374,7 @@ STATUTS_SPFPL_CESSION_BLOCKS: tuple[str, ...] = (
     '- [civilite] [prenom] [nom]',
     '[profession_capitale] de profession',
     'Né le [date_naissance] à [ville_naissance] ([departement_naissance])',
-    'Demeurant [adresse_personnelle]',
+    'Demeurant au [adresse_personnelle]',
     # Rafael 2026-07-09 : « pas de mention sans nom » — statut + conjoint/partenaire
     # (« Marié avec Marine Le Painnisse »), sans regime (blocs liste identite).
     '[situation_maritale_avec_conjoint]',
@@ -406,7 +406,7 @@ STATUTS_SPFPL_APPORT_BLOCKS: tuple[str, ...] = (
     '- [civilite] [prenom] [nom]',
     '[profession_capitale] de profession',
     'Né le [date_naissance] à [ville_naissance] ([departement_naissance])',
-    'Demeurant [adresse_personnelle]',
+    'Demeurant au [adresse_personnelle]',
     # Rafael 2026-07-09 : « pas de mention sans nom » — statut + conjoint/partenaire
     # (« Marié avec Marine Le Painnisse »), sans regime (blocs liste identite).
     '[situation_maritale_avec_conjoint]',
@@ -763,7 +763,7 @@ STATUTS_SPFPL_APPORT_BLOCKS: tuple[str, ...] = (
     '- [civilite] [prenom] [nom]',
     '[profession_capitale] de profession',
     'Né le [date_naissance] à [ville_naissance] ([departement_naissance])',
-    'Demeurant [adresse_personnelle]',
+    'Demeurant au [adresse_personnelle]',
     # Rafael 2026-07-09 : « pas de mention sans nom » — statut + conjoint/partenaire
     # (« Marié avec Marine Le Painnisse »), sans regime (blocs liste identite).
     '[situation_maritale_avec_conjoint]',

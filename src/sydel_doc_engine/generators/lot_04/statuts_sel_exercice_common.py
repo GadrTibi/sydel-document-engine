@@ -616,7 +616,7 @@ SELARL_MEDECIN_MULTI_ZONES = SelMultiZones(
     identite_lines=(
         "[civilite] [prenom] [nom], [profession], né le [date_naissance] à "
         "[ville_naissance] ([departement_naissance]), de nationalité [nationalite], "
-        "demeurant [adresse_personnelle], inscrit au tableau du Conseil départemental "
+        "demeurant au [adresse_personnelle], inscrit au tableau du Conseil départemental "
         "de [ville_ordre] sous le numéro national [numero_ordre] et sous le numéro RPPS "
         "[numero_rpps], [situation_matrimoniale_statuts]. ",
     ),
@@ -646,7 +646,7 @@ SELARL_DENTISTE_MULTI_ZONES = SelMultiZones(
     identite_lines=(
         "[civilite] [prenom] [nom], [profession], né le [date_naissance] à "
         "[ville_naissance] ([departement_naissance]), de nationalité [nationalite], "
-        "demeurant [adresse_personnelle], [situation_matrimoniale_statuts]",
+        "demeurant au [adresse_personnelle], [situation_matrimoniale_statuts]",
         "Inscrit au Tableau de l’ordre départemental des [profession_reglementee_pluriel] "
         "de [ordre_departemental] [mention_inscription_ordre_rpps]. ",
     ),
@@ -791,7 +791,7 @@ def _multi_physique_identite(
         f"à {required_text(membre.ville_naissance, 'membres[].ville_naissance')} "
         f"({required_text(membre.departement_naissance, 'membres[].departement_naissance')}), "
         f"de nationalité {required_text(membre.nationalite, 'membres[].nationalite')}, "
-        f"demeurant {_membre_person_address(membre)}, "
+        f"demeurant au {_membre_person_address(membre)}, "
         f"{situation}."
     )
     inscription = (
@@ -937,7 +937,7 @@ _SELAS_SIEGE_PREFIXES: tuple[str, ...] = (
 _SELAS_PRESIDENT_DESIGNATION_BLOCKS: frozenset[str] = frozenset(
     {
         "L’[qualite_associe], [civilite] [prenom] [nom], ",
-        "Demeurant [adresse_personnelle]",
+        "Demeurant au [adresse_personnelle]",
         "est nommé [fonction_dirigeant] de la Société et ce pour [duree_mandat_dirigeant].",
     }
 )

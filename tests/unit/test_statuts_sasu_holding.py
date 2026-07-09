@@ -108,7 +108,8 @@ def test_sasu_holding_tokens_filled(tmp_path: Path) -> None:
     assert "Associé unique et Président" in text  # qualite
     # Comparution reconstruite (proxy P022 casse) : identite complete propre.
     assert (
-        "né le 1er janvier 1990 à Lorient, de nationalité française, demeurant "
+        # Rafael/Albane 2026-07-09 : « demeurant [adresse] » -> « demeurant au [adresse] ».
+        "né le 1er janvier 1990 à Lorient, de nationalité française, demeurant au "
         "5 Allée de la Clarté" in text
     )
 
