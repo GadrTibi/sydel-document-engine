@@ -528,6 +528,13 @@ def test_attestation_capital_generates_unique_shareholder_wording(tmp_path: Path
     text = _docx_text(output_path)
 
     assert output_path.name == "attestation_capital_liste_souscripteurs.docx"
+    # m1 (Akainu doc-entier 2026-07-09, propage depuis la variante cession) : designation
+    # legale COMPLETE (P2) — pluriel capitalise + « par actions simplifiée ».
+    assert (
+        "Société de Participations Financières de Profession Libérale de "
+        "Chirurgiens-Dentistes par actions simplifiée" in text
+    )
+    assert "Profession Libérale de chirurgien-dentiste" not in text
     assert "actionnaire unique" in text
     assert "Apports en numéraire : 0 euro" in text
     # Akainu Bilan de Santé (fidélité) : B1 doublon « Le Docteur Docteur » corrigé +
@@ -567,6 +574,16 @@ def test_attestation_capital_cession_wording_and_genre(tmp_path: Path) -> None:
     text_m = _docx_text(output_path)
 
     assert output_path.name == "attestation_capital_liste_souscripteurs_cession.docx"
+    # m1 (Akainu doc-entier 2026-07-09) : designation legale COMPLETE (P2) — pluriel capitalise
+    # + « par actions simplifiée », comme l'acte / les statuts (plus le singulier minuscule).
+    assert (
+        "Société de Participations Financières de Profession Libérale de "
+        "Chirurgiens-Dentistes par actions simplifiée" in text_m
+    )
+    assert "Profession Libérale de chirurgien-dentiste" not in text_m
+    # n1 (Akainu doc-entier 2026-07-09) : espace INSECABLE avant « : », comme les autres lignes.
+    assert "Nombre d’actions\xa0:" in text_m
+    assert "Nombre d’actions:" not in text_m
     # Variante CESSION (retour Albane 11) vs apport DOC-042 : capital deja libere/depose.
     assert "en numéraire" in text_m
     assert "entièrement libéré et déposé dans les livres de la banque" in text_m

@@ -20,6 +20,7 @@ from sydel_doc_engine.generators.lot_05.spfpl_common import (
     required_societe_cible,
     required_societe_spfpl,
     required_text,
+    spfpl_forme_sociale_complete,
     validate_apport_context,
 )
 from sydel_doc_engine.rendering.docx_builder import add_paragraph, add_spacer, new_document
@@ -74,10 +75,18 @@ class AttestationCapitalListeSouscripteursGenerator:
             f"Société par actions simplifiée au capital de {montant_avec_euros(spfpl_capital)}",
             alignment=WD_ALIGN_PARAGRAPH.CENTER,
         )
+        # m1 (Akainu doc-entier 2026-07-09, propage depuis la variante cession) : designation
+        # legale COMPLETE (convention P2) — profession au PLURIEL capitalisee + « par actions
+        # simplifiée », comme l'acte et le titre des statuts (plus « … de chirurgien-dentiste »
+        # au singulier minuscule, sans forme legale).
         add_paragraph(
             docx,
-            "Société de Participations Financières de Profession Libérale de "
-            f"{required_text(societe_spfpl.profession, 'societe_spfpl.profession')}",
+            spfpl_forme_sociale_complete(
+                required_text(
+                    apporteur.profession_reglementee_pluriel,
+                    "apporteur.profession_reglementee_pluriel",
+                )
+            ),
             alignment=WD_ALIGN_PARAGRAPH.CENTER,
         )
         add_paragraph(

@@ -30,6 +30,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_signature_lines,
     new_document,
 )
+from sydel_doc_engine.utils.grammar import elision_de
 
 OUTPUT_FILENAME = "pv_agrement_cession_spfpl_plusieurs_associes.docx"
 
@@ -107,11 +108,15 @@ def _add_president_sentence(docx, ctx: DocumentGenerationContext) -> None:
     if ctx.reunion is None or ctx.reunion.president is None:
         raise ValueError("reunion.president est obligatoire pour CODE-SPFPL-AGR-INFO-001.")
     president = ctx.reunion.president
+    # M1 (Akainu doc-entier 2026-07-09) : elision « de <qualite> » -> « d'associé »/« de gérant »
+    # via elision_de (plus de « en qualité de associé »). La qualite exacte du president de seance
+    # pour une cible MULTI-associes est portee par le front (associe_unique_cible -> « associé »
+    # generique) et reste a confirmer cote metier.
     add_paragraph(
         docx,
         (
             f"{person_display(president, 'reunion.president')} préside la séance en qualité "
-            f"de {required_text(president.qualite, 'reunion.president.qualite')}."
+            f"{elision_de(required_text(president.qualite, 'reunion.president.qualite'))}."
         ),
         alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
     )

@@ -1467,16 +1467,16 @@ def test_spfpl_cession_acte_situation_cedant_accentuee(
     [(Gender.MASCULIN, "Monsieur", "marié"), (Gender.FEMININ, "Madame", "mariée")],
 )
 @pytest.mark.parametrize(
-    "regime",
+    ("regime", "regime_affiche"),
     [
-        "la communaute legale",
-        "la separation de biens",
-        "la communaute universelle",
-        "la participation aux acquets",
+        ("la communaute legale", "la communauté légale"),
+        ("la separation de biens", "la séparation de biens"),
+        ("la communaute universelle", "la communauté universelle"),
+        ("la participation aux acquets", "la participation aux acquêts"),
     ],
 )
 def test_spfpl_cession_comparution_marie_ligne_complete(
-    tmp_path: Path, genre, civilite, statut, regime
+    tmp_path: Path, genre, civilite, statut, regime, regime_affiche
 ) -> None:
     # Akainu m1 (2026-07-02) : byte-fidelite du cas MARIE sur les 4 REGIMES x 2 GENRES.
     # La comparution des statuts de cession rend EXACTEMENT « <statut accorde> sous le régime
@@ -1484,6 +1484,8 @@ def test_spfpl_cession_comparution_marie_ligne_complete(
     # de »). Assertion de ligne COMPLETE (pas une sous-chaine d'un seul regime/genre).
     # M1 (Akainu 2026-07-06) : 7.2 exige une MAJUSCULE en tete de chaque element du soussigne
     # -> la ligne matrimoniale commence desormais par « Marié »/« Mariée » (capitalisee).
+    # B1 (Akainu doc-entier 2026-07-09) : le regime sort ACCENTUE (« la communauté légale »…),
+    # avec une SEULE preposition « de » (plus l'echo brut non accentue du preset).
     payload = _spfpl_payload("SPFPL cession")
     payload["genre"] = genre
     payload["civilite"] = civilite
@@ -1495,10 +1497,13 @@ def test_spfpl_cession_comparution_marie_ligne_complete(
     )
     text = _docx_text(statuts)
     statut_capitalise = statut[0].upper() + statut[1:]  # « marié » -> « Marié »
-    expected = f"{statut_capitalise} sous le régime de {regime} avec Madame Alice Martin"
+    expected = f"{statut_capitalise} sous le régime de {regime_affiche} avec Madame Alice Martin"
     assert expected in text, f"comparution mariee attendue absente ({slug}) : {expected!r}"
     # M1 : jamais la version minuscule en tete de la ligne matrimoniale.
     assert f"\n{statut} sous le régime" not in text
+    # B1 : jamais la preposition doublee ni le regime non accentue.
+    assert "sous le régime de la communaute" not in text
+    assert "de regime de" not in text
 
 
 @pytest.mark.parametrize("structure", ["SPFPL cession", "SPFPL apport"])

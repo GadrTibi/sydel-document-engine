@@ -21,9 +21,11 @@ from sydel_doc_engine.generators.lot_05.attestation_capital_liste_souscripteurs 
 from sydel_doc_engine.generators.lot_05.spfpl_common import (
     company_siege_display,
     required_capital_souscription,
+    required_cedant,
     required_int,
     required_societe_spfpl,
     required_text,
+    spfpl_forme_sociale_complete,
     validate_cession_context,
 )
 from sydel_doc_engine.rendering.docx_builder import add_paragraph, add_spacer, new_document
@@ -58,6 +60,7 @@ class AttestationCapitalListeSouscripteursCessionGenerator:
     def generate(self, ctx: DocumentGenerationContext, output_dir: Path) -> Path:
         validate_cession_context(ctx)
         societe_spfpl = required_societe_spfpl(ctx)
+        cedant = required_cedant(ctx)
         capital = required_capital_souscription(ctx)
         souscripteur = _unique_souscripteur(capital.souscripteurs)
         president = capital.president or souscripteur
@@ -96,10 +99,18 @@ class AttestationCapitalListeSouscripteursCessionGenerator:
             f"Société par actions simplifiée au capital de {montant_avec_euros(spfpl_capital)}",
             alignment=WD_ALIGN_PARAGRAPH.CENTER,
         )
+        # m1 (Akainu doc-entier 2026-07-09) : designation legale COMPLETE (convention P2) —
+        # profession au PLURIEL capitalisee + « par actions simplifiée », comme l'acte de
+        # cession et le titre des statuts (plus « … Profession Libérale de chirurgien-dentiste »
+        # au singulier minuscule, sans forme legale).
         add_paragraph(
             docx,
-            "Société de Participations Financières de Profession Libérale de "
-            f"{required_text(societe_spfpl.profession, 'societe_spfpl.profession')}",
+            spfpl_forme_sociale_complete(
+                required_text(
+                    cedant.profession_reglementee_pluriel,
+                    "cedant.profession_reglementee_pluriel",
+                )
+            ),
             alignment=WD_ALIGN_PARAGRAPH.CENTER,
         )
         add_paragraph(
@@ -131,15 +142,16 @@ class AttestationCapitalListeSouscripteursCessionGenerator:
         )
         # [13] Capital social : X € en numeraire (nbsp avant « : » comme le modele).
         add_paragraph(docx, f"Capital social\xa0: {spfpl_capital} € en numéraire")
-        # [14] Nombre d'actions: X actions d'un montant de <valeur> euros chacune
-        # (verbatim modele : PAS d'espace avant « : »). R4 (Albane 2026-07-07,
-        # explicite — supersede la fidélité modèle) : « de 100 d'euro chacune » ->
-        # « de 100 euros chacune » ; accord singulier/pluriel via euro_word
-        # (« 1 euro » / « 100 euros »), comme la variante SAS.
+        # [14] Nombre d'actions : X actions d'un montant de <valeur> euros chacune.
+        # n1 (Akainu doc-entier 2026-07-09) : espace INSECABLE avant « : », comme les autres
+        # lignes de l'attestation (« Capital social\xa0: », « Répartition\xa0: ») — plus de
+        # « Nombre d’actions: » colle. R4 (Albane 2026-07-07, explicite — supersede la fidélité
+        # modèle) : « de 100 d'euro chacune » -> « de 100 euros chacune » ; accord singulier/
+        # pluriel via euro_word (« 1 euro » / « 100 euros »), comme la variante SAS.
         valeur_nominale = _valeur_nominale_action(capital)
         add_paragraph(
             docx,
-            "Nombre d’actions: "
+            "Nombre d’actions\xa0: "
             f"{required_int(capital.nb_actions_total, 'capital_souscription.nb_actions_total')} "
             f"actions d’un montant de {valeur_nominale} {euro_word(valeur_nominale)} chacune",
         )

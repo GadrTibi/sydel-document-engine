@@ -76,6 +76,31 @@ def test_article_capital_saisi_passe_en_metadata() -> None:
     assert ctx.metadata.get("pv_article_capital_numero") == "8 ter"
 
 
+# --------------------------------------------- M1 : qualite du president = realite de la cible
+
+
+def test_president_qualite_reflects_cible_associate_count() -> None:
+    """M1 (Akainu doc-entier 2026-07-09) : la qualite du president de seance (PV agrement)
+    reflete la CIBLE. Le payload canon (2 associes reels -> DOC-039 plusieurs) rend « associé »
+    generique (« associé unique » y serait CONTRADICTOIRE) ; une cible a 1 associe reel
+    (DOC-038) rend « associé unique »."""
+    ctx_multi = spfpl_slice.build_generation_context(_spfpl_payload("SPFPL cession"))
+    assert ctx_multi.reunion.president.qualite == "associé"
+
+    payload_unique = _spfpl_payload("SPFPL cession")
+    payload_unique["cession_data"] = {
+        **payload_unique["cession_data"],
+        "associes": [
+            {
+                "civilite": "Monsieur", "prenom": "Camille", "nom": "Martin",
+                "avant": 100, "apres": 40, "plage": "1 a 40",
+            },
+        ],
+    }
+    ctx_unique = spfpl_slice.build_generation_context(payload_unique)
+    assert ctx_unique.reunion.president.qualite == "associé unique"
+
+
 def test_bundle_cession_defaut_inchange(tmp_path: Path) -> None:
     # Preuve byte-neutre du cote FRONT : avec les defauts (parts sociales / 7 bis), le PV
     # d'agrement genere contient toujours « 7 bis » et « parts sociales » (le generateur

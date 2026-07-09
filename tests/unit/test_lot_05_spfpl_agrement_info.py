@@ -290,6 +290,20 @@ def test_pv_plusieurs_associes_generates_presence_and_signatures(tmp_path: Path)
     _assert_no_placeholders_or_options(text)
 
 
+def test_pv_plusieurs_associes_president_qualite_elision(tmp_path: Path) -> None:
+    """M1 (Akainu doc-entier 2026-07-09) : « en qualité de <qualite> » ELIDE devant voyelle
+    (« d'associé ») — plus de « en qualité de associé ». La qualite EXACTE du president de seance
+    pour une cible MULTI reste a confirmer cote metier (defaut generique « associé »)."""
+    ctx = _plural_context()
+    ctx.reunion.president.civilite_affichage = "Monsieur"
+    ctx.reunion.president.qualite = "associé"
+    text = _docx_text(
+        PvAgrementCessionSpfplPlusieursAssociesGenerator().generate(ctx, tmp_path)
+    )
+    assert "préside la séance en qualité d’associé." in text
+    assert "en qualité de associé" not in text
+
+
 def test_pv_plusieurs_associes_blocks_missing_total_presence(tmp_path: Path) -> None:
     ctx = _plural_context()
     ctx.associes_cible[1].nb_parts_avant = 20

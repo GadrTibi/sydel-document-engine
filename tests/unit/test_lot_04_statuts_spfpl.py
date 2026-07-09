@@ -272,6 +272,17 @@ def test_statuts_spfpl_cession_generates_source_overlay_without_signature_date(
     for identite in identites:
         assert identite.alignment == WD_ALIGN_PARAGRAPH.JUSTIFY
         assert identite.runs[0].bold is True
+        # M2 (Akainu doc-entier 2026-07-09) : la name line OUVRE le bloc identite compact (2pt),
+        # comme « Le soussigné : » (0) et le PV de nomination (bloc identite a 2pt) — coherence.
+        assert identite.paragraph_format.space_after == Pt(2)
+    # M2 : les lignes CIVILES du bloc identite (adresse, situation maritale) sont AUSSI compactees
+    # a 2pt (elles gardaient 6pt : « S3 a moitie »).
+    assert _para_by_text(document, "Demeurant au").paragraph_format.space_after == Pt(2)
+    assert (
+        _para_by_text(document, "sous le régime de la communauté légale avec Madame")
+        .paragraph_format.space_after
+        == Pt(2)
+    )
     # FIX-F3 / STYLE-4 : lignes de capital / total (Art. 6 & 8) en gras.
     total_apports = _para_by_text(document, "Total des apports")
     assert total_apports.runs[0].bold is True
@@ -499,7 +510,9 @@ def test_statuts_spfpl_marital_line_capitalized_married(tmp_path: Path) -> None:
     ctx = _with_exercice(_base_context(operation="cession"))
     ctx.actionnaire_unique.situation_maritale = "marié"
     text = _docx_text(StatutsSpfplCessionGenerator().generate(ctx, tmp_path))
-    assert "Marié sous le régime de la communaute legale avec Madame Alice Martin" in text
+    # B1 (Akainu doc-entier 2026-07-09) : regime ACCENTUE + preposition unique (plus de
+    # « sous le régime de regime de communaute » ni « communaute » non accentue).
+    assert "Marié sous le régime de la communauté légale avec Madame Alice Martin" in text
     assert "marié sous le régime" not in text  # jamais en minuscule
 
 
@@ -557,7 +570,30 @@ def test_statuts_spfpl_marital_line_married_unchanged(tmp_path: Path) -> None:
     ctx = _with_exercice(_base_context(operation="cession"))
     ctx.actionnaire_unique.situation_maritale = "marié"
     text = _docx_text(StatutsSpfplCessionGenerator().generate(ctx, tmp_path))
-    assert "Marié sous le régime de la communaute legale avec Madame Alice Martin" in text
+    assert "Marié sous le régime de la communauté légale avec Madame Alice Martin" in text
+
+
+def test_statuts_spfpl_marital_regime_from_raw_derivation_values(tmp_path: Path) -> None:
+    """B1 (Akainu doc-entier 2026-07-09) — les valeurs BRUTES posees par
+    field_derivations.regime_matrimonial_from_status (le chemin de generation REEL, que la
+    fixture « la communaute legale » masquait) rendent la forme ACCENTUEE, avec une SEULE
+    preposition « de », jamais « sous le régime de regime de communaute »."""
+    cases = {
+        "regime de communaute": "la communauté légale",
+        "communaute universelle": "la communauté universelle",
+        "separation de biens": "la séparation de biens",
+        "participation aux acquets": "la participation aux acquêts",
+    }
+    for raw, expected in cases.items():
+        ctx = _with_exercice(_base_context(operation="cession"))
+        ctx.actionnaire_unique.situation_maritale = "marié"
+        ctx.actionnaire_unique.regime_matrimonial = raw
+        text = _docx_text(StatutsSpfplCessionGenerator().generate(ctx, tmp_path))
+        assert f"Marié sous le régime de {expected} avec Madame Alice Martin" in text
+        # preposition JAMAIS doublee, regime JAMAIS non accentue.
+        assert "régime de regime de" not in text
+        assert "de communaute avec" not in text
+        assert "separation de biens avec" not in text
 
 
 def test_statuts_spfpl_president_uses_usual_first_name(tmp_path: Path) -> None:

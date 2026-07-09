@@ -53,6 +53,20 @@ def required_int(value: int | None, field_name: str) -> int:
     return value
 
 
+def spfpl_forme_sociale_complete(profession_pluriel: str) -> str:
+    """Designation legale COMPLETE de la SPFPL (convention P2, Albane 2026-07-06/07) :
+    « Société de Participations Financières de Profession Libérale de <Profession-Plurielle>
+    par actions simplifiée ». MEME construction que l'acte de cession
+    (acte_cession_parts_spfpl) et que le titre des statuts (statuts_spfpl_templates) :
+    profession au PLURIEL, titre-casee (« Chirurgiens-Dentistes »), forme legale complete
+    ACCENTUEE — jamais le singulier ni l'abrege « par actions simplifiee ».
+    """
+    return (
+        "Société de Participations Financières de Profession Libérale de "
+        f"{profession_pluriel.title()} par actions simplifiée"
+    )
+
+
 def format_display_date(value: date | str | None, field_name: str) -> str:
     if value is None:
         raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")

@@ -1110,7 +1110,13 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
                 civilite_affichage=str(payload.get("civilite") or "Monsieur"),
                 prenom=str(payload.get("prenom") or ""),
                 nom=str(payload.get("nom") or ""),
-                qualite="associé unique",
+                # M1 (Akainu doc-entier 2026-07-09) : la qualite du president de seance reflete la
+                # CIBLE. Cible a UN associe reel (DOC-038) -> « associé unique » ; cible MULTI
+                # (DOC-039) -> « associé » GENERIQUE (le PV plusieurs contredisait « associé
+                # unique »). La fonction EXACTE du president multi (gérant / associé) n'est pas
+                # derivable du front (pas de champ dedie) -> defaut generique « associé », a
+                # CONFIRMER cote metier. DOC-038 n'utilise pas ce champ (il rend le cedant).
+                qualite="associé unique" if associe_unique_cible else "associé",
                 civilite_president_seance=str(payload.get("civilite") or "Monsieur"),
                 prenom_president_seance=str(payload.get("prenom") or ""),
                 nom_personne_seance=str(payload.get("nom") or ""),

@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 from datetime import date
 from pathlib import Path
+from unicodedata import normalize
 
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Pt
@@ -39,6 +40,9 @@ from sydel_doc_engine.utils.grammar import (
 )
 
 DOCUMENT_CODE = "CODE-STATUTS-SPFPL-001"
+# M2 (Akainu doc-entier 2026-07-09) : espacement COMPACT du bloc identite (soussigne +
+# nomination President), aligne sur le PV de nomination (bloc identite a 2pt) — coherence.
+_IDENTITY_BLOCK_SPACE_AFTER_PT = 2
 SPFPL_CESSION_STRUCTURE = "SPFPL cession"
 SPFPL_APPORT_STRUCTURE = "SPFPL apport"
 OPERATION_CESSION = "cession"
@@ -237,9 +241,15 @@ def render_statuts_docx(  # noqa: C901
     style_profile = STATUTS_SPFPL_COMPACT_STYLE_PROFILE
     title_block_count = _title_block_count(blocks, replacements)
     index = 0
+    # M2 (Akainu doc-entier 2026-07-09) : le bloc identite (name line « - [civilite] … [nom] »
+    # + lignes civiles qui suivent : profession, naissance, adresse, situation maritale,
+    # nationalite, inscription) est COMPACTE a 2pt. Le flag reste actif tant qu'on enchaine des
+    # lignes d'identite ; toute autre ligne (titre, article, liste, signature) le remet a False.
+    in_identity_block = False
     while index < len(blocks):
         block = blocks[index]
         text = replace_placeholders(block, replacements)
+        continues_identity = False
         if index < title_block_count:
             # FIX-F1 / STYLE-1 : bloc de titre (denomination / sous-titre / capital / siege)
             # centre dans la source ; la 1re ligne (denomination) est en gras (style Heading 3).
@@ -285,6 +295,7 @@ def render_statuts_docx(  # noqa: C901
             # corps (ni gras ni style de titre). On matche « ARTICLE » suivi de tout blanc.
             add_statuts_article_heading(docx, text, underline=False, style_profile=style_profile)
         elif text.startswith("Fait à ") or text.startswith("Fait a "):
+            in_identity_block = False
             index = _add_signature_split(
                 docx,
                 blocks,
@@ -308,13 +319,16 @@ def render_statuts_docx(  # noqa: C901
         elif _is_identity_line(block):
             # FIX-F3 / STYLE-3 : la ligne d'identite "- [civilite] [prenom(s)] [nom]" est en gras
             # (run unique incl. le tiret) et JUSTIFY dans la source, pas un item de liste.
+            # M2 : la name line OUVRE le bloc identite compact (2pt).
             add_paragraph(
                 docx,
                 text,
                 alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
                 bold=True,
+                space_after_pt=_IDENTITY_BLOCK_SPACE_AFTER_PT,
                 style_profile=style_profile,
             )
+            continues_identity = True
         elif block in _BOLD_CAPITAL_BLOCKS:
             # FIX-F3 / STYLE-4 : lignes de capital / total (Art. 6 & 8) en gras dans la source.
             _add_bold_segments_paragraph(docx, block, replacements, style_profile=style_profile)
@@ -322,8 +336,20 @@ def render_statuts_docx(  # noqa: C901
             add_statuts_hanging_list_item(docx, text[2:], style_profile=style_profile)
         elif _looks_like_numbered_list_item(text):
             add_statuts_hanging_list_item(docx, text, marker=None, style_profile=style_profile)
+        elif in_identity_block:
+            # M2 : lignes civiles du bloc identite (profession, naissance, adresse, situation
+            # maritale, nationalite, inscription ordre) -> corps JUSTIFY compacte a 2pt.
+            add_paragraph(
+                docx,
+                text,
+                alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
+                space_after_pt=_IDENTITY_BLOCK_SPACE_AFTER_PT,
+                style_profile=style_profile,
+            )
+            continues_identity = True
         else:
             add_statuts_body_paragraph(docx, text, style_profile=style_profile)
+        in_identity_block = continues_identity
         index += 1
 
     full_text = "\n".join(paragraph.text for paragraph in docx.paragraphs)
@@ -460,10 +486,44 @@ def _ligne_situation_maritale(founder: SpfplPerson, field_name: str) -> str:
     )
     # M1 (Akainu 2026-07-06) : idem — la ligne matrimoniale complete commence par une MAJUSCULE
     # (« Marié sous le régime de … »). `_capitalize_first` preserve le reste (accents, casse).
+    # B1 (Akainu doc-entier 2026-07-09) : `regime_matrimonial` accentue + preposition unique via
+    # `_regime_matrimonial_display` (plus de « sous le régime de regime de communaute »).
     return _capitalize_first(
-        f"{statut} sous le régime de {regime_matrimonial} avec "
+        f"{statut} sous le régime de {_regime_matrimonial_display(regime_matrimonial)} avec "
         f"{civilite_conjoint} {prenom_conjoint} {nom_conjoint}"
     )
+
+
+def _regime_matrimonial_display(value: str) -> str:
+    """Libelle ACCENTUE du regime matrimonial pour la clause « sous le régime de … » des
+    statuts SPFPL cession. Meme PATRON que les statuts SEL
+    (statuts_sel_exercice_common.matrimonial_regime_display / statuts_sel_matrimonial_regime) :
+    on mappe vers la forme accentuee, avec strip d'un eventuel prefixe « (sous le )régime de »
+    en repli.
+
+    B1 (Akainu doc-entier 2026-07-09) : la valeur BRUTE posee par
+    field_derivations.regime_matrimonial_from_status (« regime de communaute »,
+    « separation de biens », « communaute universelle », « participation aux acquets »)
+    partait telle quelle apres « sous le régime de » -> preposition DOUBLEE
+    (« de regime de communaute ») + accents perdus. Pour la SPFPL, une communaute NON
+    universelle est TOUJOURS la communaute LEGALE (le regime communautaire du menu ne
+    capture que le regime legal ; l'universelle porte son propre libelle) -> « la communauté
+    légale ».
+    """
+    normalized = normalize("NFKD", value).encode("ascii", "ignore").decode("ascii")
+    normalized = " ".join(normalized.lower().split())
+    if "separation" in normalized and "bien" in normalized:
+        return "la séparation de biens"
+    if "communaute" in normalized and "universelle" in normalized:
+        return "la communauté universelle"
+    if "communaute" in normalized:
+        return "la communauté légale"
+    if "participation" in normalized and "acquet" in normalized:
+        return "la participation aux acquêts"
+    for prefix in ("sous le régime de ", "sous le regime de ", "régime de ", "regime de "):
+        if value.lower().startswith(prefix):
+            return value[len(prefix) :].strip()
+    return value
 
 
 def _situation_maritale_avec_conjoint(founder: SpfplPerson, field_name: str) -> str:
