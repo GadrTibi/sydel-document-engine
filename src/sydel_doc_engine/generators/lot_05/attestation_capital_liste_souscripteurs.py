@@ -91,7 +91,7 @@ class AttestationCapitalListeSouscripteursGenerator:
         )
         add_paragraph(
             docx,
-            f"Siège social : {company_siege_display(societe_spfpl, 'societe_spfpl')}",
+            f"Siège social : {company_siege_display(societe_spfpl, 'societe_spfpl')}",
             alignment=WD_ALIGN_PARAGRAPH.CENTER,
         )
         # (b) Aeration entre la DESIGNATION de la societe (denomination / forme /

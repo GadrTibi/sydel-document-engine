@@ -115,7 +115,7 @@ class AttestationCapitalListeSouscripteursCessionGenerator:
         )
         add_paragraph(
             docx,
-            f"Siège social : {company_siege_display(societe_spfpl, 'societe_spfpl')}",
+            f"Siège social : {company_siege_display(societe_spfpl, 'societe_spfpl')}",
             alignment=WD_ALIGN_PARAGRAPH.CENTER,
         )
         add_spacer(docx, space_after_pt=_ATTESTATION_GROUP_SPACER_PT)
