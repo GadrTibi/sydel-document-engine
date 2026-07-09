@@ -232,6 +232,7 @@ def _bail_avenant_medecin() -> BailContext:
             "locataire": {
                 "civilite_affichage": "Docteur",
                 "civilite_courte": "Docteur",
+                "genre": "masculin",
                 "prenom": "Jean",
                 "nom": "Durand",
                 "profession": "médecin",
@@ -376,6 +377,7 @@ def _bail_avenant_dentaire() -> BailContext:
             "locataire": {
                 "civilite_affichage": "Docteur",
                 "civilite_courte": "Docteur",
+                "genre": "masculin",
                 "prenom": "Camille",
                 "nom": "Martin",
                 "profession": "chirurgien-dentiste",

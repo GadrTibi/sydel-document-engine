@@ -211,16 +211,20 @@ def test_avenant_av2_birthdate_zero_padded_day_with_month_name(tmp_path: Path) -
 
 
 def test_avenant_av3_le_docteur_in_articles(tmp_path: Path) -> None:
-    # AV3 : « Art 1 : devant Docteur, mettre "le docteur" (pareil a l'art 2 sur la
-    # seconde phrase) ».
+    # Rafael 2026-07-09 « supprimer partout » : « Docteur »/« Dr » n'est plus une civilite.
+    # L'ancien wording « le Docteur … » (AV3) est SUPERSEDE -> le locataire personne physique
+    # est nomme par sa civilite CIVILE (Monsieur/Madame), SANS article (« le » disparait avec
+    # « Docteur »). Le titre professionnel ne doit plus apparaitre nulle part.
     text = _docx_text(AvenantContratBailGenerator().generate(_context(), tmp_path))
 
-    # Article 1 (milieu de phrase -> minuscule)
-    assert "a pour locataire le Docteur Camille Martin" in text
-    # Article 2, 2e phrase (debut de phrase -> majuscule)
-    assert "Le Docteur Camille Martin s’engage à fournir au Bailleur" in text
-    # pas de « Monsieur » parasite injecte par le fix de titre
+    # Article 1 (milieu de phrase) : civilite civile, sans article
+    assert "a pour locataire Monsieur Camille Martin" in text
+    # Article 2, 2e phrase (debut de phrase) : civilite civile, sans article
+    assert "Monsieur Camille Martin s’engage à fournir au Bailleur" in text
+    # « Docteur » eradique et pas d'article parasite « le Monsieur »
+    assert "Docteur" not in text
     assert "le Monsieur Camille Martin" not in text
+    assert "le Docteur" not in text
 
 
 def test_avenant_av3_no_article_before_plain_civility(tmp_path: Path) -> None:

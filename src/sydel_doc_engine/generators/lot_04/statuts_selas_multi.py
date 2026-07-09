@@ -16,6 +16,7 @@ from sydel_doc_engine.domain.models import (
     StatutsSelasMultiContext,
     StatutsSelasMultiPresident,
 )
+from sydel_doc_engine.generators.lot_01.civilite import civilite_civile
 from sydel_doc_engine.generators.lot_04.annexe_filter import is_creation_fee_annexe_line
 from sydel_doc_engine.generators.lot_04.statuts_sel_exercice_common import (
     statuts_output_filename,
@@ -814,10 +815,15 @@ def _dentiste_boilerplate_replacements(data: _ResolvedSelasMulti) -> dict[str, s
 
 
 def _apporteur_label_dentiste(associe: StatutsCivilsAssocie) -> str:
-    # Corpus dentiste : l'apporteur personne physique est designe "Le Docteur [prenoms] [nom]".
+    # R3 « supprimer PARTOUT » (Rafael 2026-07-09) : le corpus dentiste designait l'apporteur
+    # « Le Docteur [prenoms] [nom] » ; « Docteur » n'est jamais une civilite -> civilite CIVILE
+    # (Monsieur/Madame accorde au genre), SANS article (« Monsieur X apporte », plus « le »).
     prenoms = associe.prenoms or associe.prenom
+    civilite = civilite_civile(associe.civilite_affichage or "", associe.genre) or (
+        "Madame" if associe.genre == Gender.FEMININ else "Monsieur"
+    )
     return (
-        f"Le Docteur {_required_text(prenoms, 'associes[].prenoms')} "
+        f"{civilite} {_required_text(prenoms, 'associes[].prenoms')} "
         f"{_required_text(associe.nom, 'associes[].nom')}"
     )
 
@@ -986,9 +992,15 @@ def _replace_placeholders(text: str, replacements: dict[str, str]) -> str:
 
 
 def _person_label(associe: StatutsCivilsAssocie) -> str:
+    # R3 « supprimer PARTOUT » (Rafael 2026-07-09) : civilite CIVILE (Monsieur/Madame accorde au
+    # genre) — un titre professionnel « Docteur »/« Dr » n'apparait jamais dans la sortie.
     prenoms = associe.prenoms or associe.prenom
+    civilite = civilite_civile(
+        _required_text(associe.civilite_affichage, "associes[].civilite_affichage"),
+        associe.genre,
+    )
     return (
-        f"{_required_text(associe.civilite_affichage, 'associes[].civilite_affichage')} "
+        f"{civilite} "
         f"{_required_text(prenoms, 'associes[].prenoms')} "
         f"{_required_text(associe.nom, 'associes[].nom')}"
     )

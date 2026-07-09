@@ -13,6 +13,7 @@ from sydel_doc_engine.domain.models import (
     DocumentGenerationContext,
     Mandataire,
 )
+from sydel_doc_engine.generators.lot_01.civilite import civilite_civile
 from sydel_doc_engine.generators.lot_03.bail_appel_common import (
     CABINET_DENTAIRE,
     CABINET_MEDICAL,
@@ -182,8 +183,14 @@ def _destinataire_label(destinataire: CessionDestinataire | None) -> str:
 
 
 def _vendeur_label(vendeur: CessionVendeur) -> str:
+    # R3 « supprimer PARTOUT » (Rafael 2026-07-09) : le vendeur nomme dans « de <vendeur> »
+    # (« de Docteur X » -> « de Monsieur/Madame X ») porte la civilite CIVILE, pas le titre
+    # professionnel. `civilite_civile` accorde au genre du vendeur (defaut masculin si absent).
+    civilite = required_text(
+        vendeur.civilite_affichage, "cession.vendeur.civilite_affichage"
+    )
     return (
-        f"{required_text(vendeur.civilite_affichage, 'cession.vendeur.civilite_affichage')} "
+        f"{civilite_civile(civilite, vendeur.genre)} "
         f"{required_text(vendeur.prenom, 'cession.vendeur.prenom')} "
         f"{required_text(vendeur.nom, 'cession.vendeur.nom')}"
     )

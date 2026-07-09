@@ -33,6 +33,7 @@ from sydel_doc_engine.domain.models import (
     DocumentContext,
     DocumentGenerationContext,
 )
+from sydel_doc_engine.generators.lot_01.civilite import civilite_civile
 from sydel_doc_engine.generators.lot_05.scm_cession_common import (
     mentions_conjoint,
     mentions_partenaire_pacse,
@@ -259,31 +260,11 @@ def _build_line_fixes(
             )
         )
 
-    # --- CE3 (Albane 2026-06-26) : section III « PROMESSE SYNALLAGMATIQUE » ---
-    # Aux DEUX endroits ou le vendeur est nomme « Docteur ... », inserer « le » ->
-    # « le Docteur ... ». Conditionne a une civilite vendeur EXACTEMENT « Docteur »
-    # (verbatim « lorsqu'il y a docteur »). On ancre les fragments litteraux du
-    # modele pour ne toucher QUE ces deux phrases (pas les autres occurrences du
-    # document). Les fixes sont appliques APRES remplissage des tokens, donc le
-    # texte porte deja « Docteur » a la place de [civilite_vendeur].
-    vendeur = cession.vendeur or CessionVendeur()
-    civilite = (vendeur.civilite_affichage or "").strip()
-    if civilite == "Docteur":
-        fixes.append(
-            _LineFix(
-                anchor="Par les présentes, Docteur",
-                pattern=re.compile(r"Par les présentes, Docteur"),
-                replacement="Par les présentes, le Docteur",
-            )
-        )
-        fixes.append(
-            _LineFix(
-                anchor="s’oblige envers Docteur",
-                pattern=re.compile(r"s’oblige envers Docteur"),
-                replacement="s’oblige envers le Docteur",
-            )
-        )
-
+    # CE3 (Albane 2026-06-26) « le Docteur … » SUPPRIME : Rafael 2026-07-09 « supprimer partout »
+    # -> le token [civilite_vendeur] rend desormais la civilite CIVILE (Monsieur/Madame), qui ne
+    # prend pas d'article. L'insertion de « le » devant « Docteur » n'a donc plus lieu d'etre (elle
+    # ne matcherait plus « Docteur » de toute facon). Le bloc signature 9.8 reste porte par les
+    # tokens [signature_*].
     return fixes
 
 
@@ -385,6 +366,20 @@ def _build_segment_overrides(ctx: DocumentGenerationContext) -> dict[str, str]:
     if cession is None:
         return {}
     overrides: dict[str, str] = {}
+    # R3 « supprimer PARTOUT » (Rafael 2026-07-09) : deux LITERALS des modeles echappent au
+    # token [civilite_vendeur] (deja civil : Monsieur/Madame) —
+    #   (a) acte MEDICAL P46 « Le [civilite_vendeur] … vend » : l'article « Le » est correct
+    #       devant « Docteur » mais fautif devant « Monsieur » -> on retire « Le » (segment override
+    #       AVANT le remplissage) ; le token se remplit ensuite normalement (« Monsieur X vend ») ;
+    #   (b) acte DENTAIRE signature (cellule de tableau) « Dr [prenom_vendeur] [nom_vendeur] » :
+    #       le « Dr » fige -> remplace par le token [civilite_vendeur] (civil).
+    # Segments propres a un seul modele -> inoffensifs pour les autres (chaine absente).
+    overrides["Le [civilite_vendeur] [prenom_vendeur] [nom_vendeur] vend"] = (
+        "[civilite_vendeur] [prenom_vendeur] [nom_vendeur] vend"
+    )
+    overrides["Dr [prenom_vendeur] [nom_vendeur]"] = (
+        "[civilite_vendeur] [prenom_vendeur] [nom_vendeur]"
+    )
     # Fidelite forme acquereur : SEUL le modele de l'acte medical fige « SELARL »
     # en DUR sur la ligne « SELARL au capital de [capital_social_acquereur] » (les 3
     # autres modeles — acte dentaire, compromis medical/dentaire — utilisent deja le
@@ -953,7 +948,12 @@ def _build_cession_replacements(
         replacements[token] = "" if value is None else str(value)
 
     # --- Vendeur ---
-    put("[civilite_vendeur]", vendeur.civilite_affichage)
+    # R3 « supprimer PARTOUT » (Rafael 2026-07-09) : le vendeur (soussigne, « Le Docteur X vend »,
+    # origine de propriete, « Représentée par sa gérant, Docteur X », signature) porte la civilite
+    # CIVILE (Monsieur/Madame accorde au genre), jamais le titre professionnel. Le token
+    # [civilite_vendeur] est donc rempli avec la civilite civile, ce qui purge TOUTES ses
+    # occurrences dans le corps ET le bloc signature (SUPERSEDE CE3, cf. _build_line_fixes).
+    put("[civilite_vendeur]", civilite_civile(vendeur.civilite_affichage, vendeur.genre))
     put("[prenom_vendeur]", vendeur.prenom)
     put("[nom_vendeur]", vendeur.nom)
     put("[profession_vendeur]", vendeur.profession)
@@ -988,7 +988,12 @@ def _build_cession_replacements(
         "[date_inscription_ordre_acquereur]",
         _french_date(acquereur.date_inscription_ordre),
     )
-    put("[civilite_acquereur_representant]", representant.civilite_affichage)
+    # R3 (Rafael 2026-07-09) : le representant de l'acquereur (« Représentée par son gérant,
+    # <civilite> X ») porte la civilite CIVILE (« Madame Alice Moreau », plus « Docteur »).
+    put(
+        "[civilite_acquereur_representant]",
+        civilite_civile(representant.civilite_affichage, representant.genre),
+    )
     put("[prenom_acquereur_representant]", representant.prenom)
     put("[nom_acquereur_representant]", representant.nom)
     put("[fonction_acquereur_representant]", representant.fonction)
@@ -1004,7 +1009,12 @@ def _build_cession_replacements(
     put_opt("[annees_acquisition_patientele]", cabinet.annees_acquisition_patientele)
     put_opt("[prix_origine_propriete]", cabinet.prix_origine_propriete)
     if precedent is not None:
-        put_opt("[civilite_precedent_proprietaire]", precedent.civilite_affichage)
+        # R3 (Rafael 2026-07-09) : civilite CIVILE du precedent proprietaire (pas de genre
+        # capture -> masculin par defaut).
+        put_opt(
+            "[civilite_precedent_proprietaire]",
+            civilite_civile(precedent.civilite_affichage, None),
+        )
         put_opt("[prenom_precedent_proprietaire]", precedent.prenom)
         put_opt("[nom_precedent_proprietaire]", precedent.nom)
     # Origine de propriete (modeles MEDICAUX) : phrase decrivant le VENDEUR,
@@ -1105,9 +1115,20 @@ def _put_signature_tokens(
     ACTE et autres etapes : comportement d'origine conserve (vendeur a gauche du
     token vendeur, representant a droite du token acquereur) — hors perimetre 9.8.
     """
-    vendeur_label = _person_label(vendeur.civilite_affichage, vendeur.prenom, vendeur.nom)
+    # R3 (Rafael 2026-07-09) : le cedant signe sous sa civilite CIVILE (« Monsieur X »),
+    # jamais « Dr X » / « Docteur X ». Le representant de la societe garde son propre titre
+    # (M./Mme via le token courte ailleurs) : ici on route seulement le vendeur.
+    vendeur_label = _person_label(
+        civilite_civile(vendeur.civilite_affichage, vendeur.genre),
+        vendeur.prenom,
+        vendeur.nom,
+    )
+    # Le representant de la societe signe aussi sous civilite CIVILE (acte : « Madame Alice
+    # Moreau », plus « Docteur Alice Moreau »). `representant.genre` accorde M./Mme.
     representant_label = _person_label(
-        representant.civilite_affichage, representant.prenom, representant.nom
+        civilite_civile(representant.civilite_affichage, representant.genre),
+        representant.prenom,
+        representant.nom,
     )
     if variant.etape == COMPROMIS:
         societe_label = _societe_signature_label(acquereur, representant)
@@ -1211,7 +1232,13 @@ def _build_origine_propriete_phrase(cession: CessionContext) -> str | None:
     vendeur = cession.vendeur or CessionVendeur()
 
     mode = (cabinet.origine_propriete_mode or ORIGINE_MODE_CREE).strip().lower()
-    sujet = _person_label(vendeur.civilite_affichage, vendeur.prenom, vendeur.nom)
+    # R3 (Rafael 2026-07-09) : « <vendeur> est propriétaire … » nomme le cedant sous sa civilite
+    # CIVILE (« Monsieur Jean Durand est propriétaire … », plus « Docteur »).
+    sujet = _person_label(
+        civilite_civile(vendeur.civilite_affichage, vendeur.genre),
+        vendeur.prenom,
+        vendeur.nom,
+    )
     description = (cabinet.description_origine_propriete or "").strip()
 
     # Cas COMPLEXE / non standard -> texte libre saisi a la main (relecture humaine).
@@ -1234,8 +1261,14 @@ def _build_origine_propriete_phrase(cession: CessionContext) -> str | None:
         )
     else:  # ORIGINE_MODE_ACHETE
         precedent = cabinet.precedent_proprietaire
+        # R3 (Rafael 2026-07-09) : le precedent proprietaire (« acquis auprès de <precedent> »)
+        # porte la civilite CIVILE. Pas de genre capture sur ce champ -> masculin par defaut.
         precedent_label = (
-            _person_label(precedent.civilite_affichage, precedent.prenom, precedent.nom)
+            _person_label(
+                civilite_civile(precedent.civilite_affichage, None),
+                precedent.prenom,
+                precedent.nom,
+            )
             if precedent is not None
             else None
         )

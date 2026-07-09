@@ -671,7 +671,7 @@ REGLEMENT_INTERIEUR_SCM_BLOCKS: list[TemplateBlock] = [('table', [['REGLEMENT IN
  ('p', 'Sise [adresse_siege_societe_1]'),
  ('p', 'Immatriculée au RCS de [ville_rcs_societe_1] sous le numéro [numero_rcs_societe_1]'),
  ('p',
-  'Représentée par le [titre_representant_societe_1] [identite_representant_societe_1], '
+  'Représentée par [titre_representant_societe_1] [identite_representant_societe_1], '
   '[fonction_representant_societe_1]'),
  ('p', 'D’UNE PART'),
  ('p', '[denomination_societe_2]'),
@@ -680,7 +680,7 @@ REGLEMENT_INTERIEUR_SCM_BLOCKS: list[TemplateBlock] = [('table', [['REGLEMENT IN
  ('p', 'Sise [adresse_siege_societe_2]'),
  ('p', 'Immatriculée au RCS de [ville_rcs_societe_2] sous le numéro [numero_rcs_societe_2]'),
  ('p',
-  'Représentée par le [titre_representant_societe_2] [identite_representant_societe_2], '
+  'Représentée par [titre_representant_societe_2] [identite_representant_societe_2], '
   '[fonction_representant_societe_2]'),
  ('p', 'D’UNE AUTRE PART'),
  ('p', 'IL A ETE CONVENU ET ARRETE CE QUI SUIT\xa0:'),
@@ -1073,16 +1073,16 @@ REGLEMENT_INTERIEUR_SCM_BLOCKS: list[TemplateBlock] = [('table', [['REGLEMENT IN
   'les associés.'),
  ('p', 'Le message sera le suivant\xa0:'),
  ('p', '«\xa0Le numéro de téléphone de votre correspondant a changé\xa0:'),
- ('p', 'Pour joindre le Docteur [identite_praticien_1] composez le n° [telephone_praticien_1]'),
- ('p', 'Pour joindre le Docteur [identite_praticien_2] composez le n° [telephone_praticien_2]'),
+ ('p', 'Pour joindre [civilite_praticien_1] [identite_praticien_1] composez le n° [telephone_praticien_1]'),
+ ('p', 'Pour joindre [civilite_praticien_2] [identite_praticien_2] composez le n° [telephone_praticien_2]'),
  ('p',
   'Les praticiens ont convenu que l’annonce sera changée tous les mois selon les modalités '
   'suivantes\xa0:'),
  ('p',
-  'Les mois pairs, le Docteur [identite_praticien_1] sera en charge du message et son nom sera '
+  'Les mois pairs, [civilite_praticien_1] [identite_praticien_1] sera en charge du message et son nom sera '
   'cité en premier,'),
  ('p',
-  'Les mois impairs, le Docteur [identite_praticien_2] sera en charge du message et son nom sera '
+  'Les mois impairs, [civilite_praticien_2] [identite_praticien_2] sera en charge du message et son nom sera '
   'cité en premier.'),
  ('p', 'Information aux patients'),
  ('p',
@@ -1149,9 +1149,9 @@ REGLEMENT_INTERIEUR_SCM_BLOCKS: list[TemplateBlock] = [('table', [['REGLEMENT IN
  ('p', 'Le [date_signature]'),
  ('p', 'En quatre exemplaires'),
  ('p', 'Pour la [denomination_societe_1]'),
- ('p', 'Le [titre_representant_societe_1] [identite_representant_societe_1]'),
+ ('p', '[titre_representant_societe_1] [identite_representant_societe_1]'),
  ('p', 'Pour la [denomination_societe_2]'),
- ('p', 'Le [titre_representant_societe_2] [identite_representant_societe_2]')]
+ ('p', '[titre_representant_societe_2] [identite_representant_societe_2]')]
 
 LISTE_DEPENSES_COMMUNES_SCM_BLOCKS: list[TemplateBlock] = [
     ("p", "[denomination_societe]"),

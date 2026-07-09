@@ -42,7 +42,7 @@ STATUTS_SPFPL_CESSION_BLOCKS: tuple[str, ...] = (
     "Au moins un an avant la date d'expiration de la société, le Président devra convoquer l'Assemblée Générale des associés afin de décider de la prorogation de la Société, dans les conditions requises pour les décisions collectives extraordinaires. La décision de proroger la Société sera immédiatement portée à la connaissance de l'Ordre des Chirurgiens-Dentistes auprès duquel la Société est inscrite, par le Président.",
     'ARTICLE 6 - APPORTS',
     'A la constitution de la Société, le soussigné fait les apports suivants :',
-    '- Le Docteur [prenom] [nom], associé unique, apporte [montant_apport_lettres]',
+    '- [civilite_apport] [prenom] [nom], associé unique, apporte [montant_apport_lettres]',
     'Ci\t\t\t\t\t\t\t\t\t\t\t[montant_apport]',
     '___________',
     'Total des apports\t\t\t\t\t\t\t\t\t[montant_apport]',
@@ -64,7 +64,7 @@ STATUTS_SPFPL_CESSION_BLOCKS: tuple[str, ...] = (
     # « de [valeur_nominale_action_avec_unite] » sont remplaces VIA elision_de au generateur
     # (« d'un euro », « d'un centime d'euro » ; « de cent euros » inchange).
     'Le capital social est fixé à la somme de [capital_lettres] ([capital_social]) euros, divisé en [nb_actions] actions de [valeur_nominale_action_avec_unite] ([valeur_nominale_action] €) chacune, entièrement libéré et attribué en totalité à l’associé unique :',
-    '- Le Docteur [prenom] [nom]………………………………………….…….………..[nb_actions] actions',
+    '- [civilite_apport] [prenom] [nom]………………………………………….…….………..[nb_actions] actions',
     'Total des actions composant le capital social……………………………. [nb_actions] actions',
     'ARTICLE 9 - QUALITE D’ASSOCIE',
     "I. En application de l’article 114 et suivants de l’Ordonnance n°2023-77, plus de la moitié du capital et des droits de vote est détenue par des personnes, y compris des personnes européennes, qui exercent l'une des professions exercées par la ou les sociétés faisant l'objet d'une prise de participation.",
@@ -456,7 +456,7 @@ STATUTS_SPFPL_APPORT_BLOCKS: tuple[str, ...] = (
     # de apport_titres.valeur_globale_lettres (front) avec repli calcule depuis la figure.
     # Albane 2026-07-07 (fix 2 / R6) : « de [...] » remplaces via elision_de au generateur.
     'Le capital social est fixé à la somme de [montant_apports_nature_lettres] ([montant_apports_nature]) euros, divisé en [nb_actions] actions de [valeur_nominale_part_avec_unite] ([valeur_nominale_part] €) chacune, entièrement libéré et attribué comme suit :',
-    '- Le Docteur [prenom] [nom]………………………………………….……………..[nb_actions] actions',
+    '- [civilite_apport] [prenom] [nom]………………………………………….……………..[nb_actions] actions',
     'Total des actions composant le capital social……………………………. [nb_actions] actions',
     'ARTICLE 9 - QUALITE D’ASSOCIE',
     "I. En application de l’article 114 et suivant de l’Ordonnance n°2023-77, plus de la moitié du capital et des droits de vote est détenue par des personnes, y compris des personnes européennes, qui exercent l'une des professions exercées par la ou les sociétés faisant l'objet d'une prise de participation.",

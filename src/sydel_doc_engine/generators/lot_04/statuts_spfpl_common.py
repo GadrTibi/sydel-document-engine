@@ -15,6 +15,7 @@ from sydel_doc_engine.domain.models import (
     SocieteSpfpl,
     SpfplPerson,
 )
+from sydel_doc_engine.generators.lot_01.civilite import civilite_civile
 from sydel_doc_engine.generators.lot_05.scm_cession_common import (
     mentions_conjoint,
     mentions_partenaire_pacse,
@@ -330,17 +331,19 @@ def render_statuts_docx(  # noqa: C901
 # segments (is_bold, fragment-de-template) ; chaque fragment est ensuite substitue puis ajoute en
 # run distinct, ce qui reproduit le decoupage gras / non-gras du modele.
 #
-# Cession Art. 8 : "- Le Docteur [prenom] [nom]" en gras, le bourrage de points et "[nb] actions"
-# non gras (source : runs idx116 / idx117). Apport Art. 8 : ligne entiere en gras (source idx127 /
-# idx128). Cession Art. 6 "Total des apports\t..." : ligne entiere en gras (source idx106).
+# Cession Art. 8 : "- [civilite_apport] [prenom] [nom]" en gras, le bourrage de points et "[nb]
+# actions" non gras (source : runs idx116 / idx117). Apport Art. 8 : ligne entiere en gras (source
+# idx127 / idx128). Cession Art. 6 "Total des apports\t..." : ligne entiere en gras (source idx106).
+# R3 « supprimer PARTOUT » (Rafael 2026-07-09) : « - Le Docteur … » -> « - [civilite_apport] … »
+# (Monsieur/Madame accorde au genre, sans article) — le token remplace le literal « Le Docteur ».
 _BOLD_CAPITAL_SEGMENTS: dict[str, tuple[tuple[bool, str], ...]] = {
     # Cession Art. 6 — total des apports (run unique en gras dans la source)
     "Total des apports\t\t\t\t\t\t\t\t\t[montant_apport]": (
         (True, "Total des apports\t\t\t\t\t\t\t\t\t[montant_apport]"),
     ),
     # Cession Art. 8 — repartition (gras sur l'identite uniquement)
-    "- Le Docteur [prenom] [nom]………………………………………….…….………..[nb_actions] actions": (
-        (True, "- Le Docteur [prenom] [nom]"),
+    "- [civilite_apport] [prenom] [nom]………………………………………….…….………..[nb_actions] actions": (
+        (True, "- [civilite_apport] [prenom] [nom]"),
         (False, "………………………………………….…….………..[nb_actions] actions"),
     ),
     # Art. 8 — total des actions (chaine IDENTIQUE cession/apport). Source apport idx128 : ligne
@@ -351,8 +354,8 @@ _BOLD_CAPITAL_SEGMENTS: dict[str, tuple[tuple[bool, str], ...]] = {
         (True, "Total des actions composant le capital social……………………………. [nb_actions] actions"),
     ),
     # Apport Art. 8 — repartition (ligne entiere en gras dans la source)
-    "- Le Docteur [prenom] [nom]………………………………………….……………..[nb_actions] actions": (
-        (True, "- Le Docteur [prenom] [nom]………………………………………….……………..[nb_actions] actions"),
+    "- [civilite_apport] [prenom] [nom]………………………………………….……………..[nb_actions] actions": (
+        (True, "- [civilite_apport] [prenom] [nom]………………………………………….……………..[nb_actions] actions"),
     ),
 }
 _BOLD_CAPITAL_BLOCKS = frozenset(_BOLD_CAPITAL_SEGMENTS)
@@ -496,11 +499,21 @@ def founder_common_replacements(founder: SpfplPerson, field_name: str) -> dict[s
     ordre = founder.ordre
     if ordre is None:
         raise ValueError(f"{field_name}.ordre est obligatoire pour {DOCUMENT_CODE}.")
+    # R3 « supprimer PARTOUT » (Rafael 2026-07-09) : « Docteur »/« Dr » n'est jamais une
+    # civilite dans la sortie. La comparution (« - [civilite] Prenom Nom ») ET la phrase
+    # d'apport/repartition (anciennement « Le Docteur Prenom Nom », literal des templates,
+    # cf. [civilite_apport]) passent par la civilite CIVILE (Monsieur/Madame accorde au genre).
+    civilite = civilite_civile(founder.civilite_affichage, founder.genre)
     return {
         "[civilite]": required_text(
-            founder.civilite_affichage,
+            civilite,
             f"{field_name}.civilite_affichage",
         ),
+        # R3 : remplace le literal « Le Docteur » des templates d'apport/repartition (SPFPL
+        # cession art. 6 + art. 8, SPFPL apport art. 8). Monsieur/Madame ne prend PAS d'article
+        # (« Monsieur X apporte », pas « le Monsieur X ») -> le « Le » literal est retire des
+        # templates en meme temps que « Docteur ».
+        "[civilite_apport]": civilite,
         "[prenom]": required_text(founder.prenom, f"{field_name}.prenom"),
         "[prenoms]": required_text(founder.prenoms or founder.prenom, f"{field_name}.prenoms"),
         "[nom]": required_text(founder.nom, f"{field_name}.nom"),

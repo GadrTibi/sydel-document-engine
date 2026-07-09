@@ -703,6 +703,9 @@ def _build_inter_sel_context(
         prenom = str(getattr(associe, "prenom", "") or "")
         nom = str(getattr(associe, "nom", "") or "")
         civ = str(getattr(associe, "civilite_affichage", "") or "")
+        # R3 (Rafael 2026-07-09) : genre de l'associe (= praticien = gerant de sa SEL) propage au
+        # representant et au praticien du reglement interieur, pour accorder la civilite CIVILE.
+        associe_genre = getattr(associe, "genre", None)
         identite = f"{prenom} {nom}".strip()
         parties.append(
             PartieFraisCommuns(
@@ -722,6 +725,7 @@ def _build_inter_sel_context(
                     nom=nom or None,
                     identite_affichee=identite or None,
                     titre_affichage=titre,
+                    genre=associe_genre,
                     fonction="gérant",
                 ),
             )
@@ -730,6 +734,7 @@ def _build_inter_sel_context(
             PraticienScm(
                 identite_affichee=identite or None,
                 telephone=str(sel.get("telephone") or "") or None,
+                genre=associe_genre,
             )
         )
     locaux = LocauxContext(adresse_affichee=str(payload.get("inter_sel_locaux") or "") or None)

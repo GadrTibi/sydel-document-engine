@@ -234,9 +234,11 @@ def test_statuts_selarl_dentiste_generates_unique_associate_docx(tmp_path: Path)
     assert "apporte à la Société la somme de 1 000 euros." in text
     assert "Total des apports en numéraire : ci- 1 000 euros." in text
     assert "Le capital social est fixé à la somme de mille euros." in text
+    # Rafael 2026-07-09 « supprimer partout » : civilite CIVILE, plus « Docteur ».
     assert (
-        "à Docteur Camille Martin, mille parts sociales en pleine propriété, ci"
+        "à Monsieur Camille Martin, mille parts sociales en pleine propriété, ci"
     ) in text
+    assert "Docteur" not in text
     assert "1000 parts" in text
     assert "chirurgiens-dentistes" in text
     assert "Yousign" in text
@@ -267,7 +269,9 @@ def test_statuts_selarl_medecin_skips_personne_2_source_alias(tmp_path: Path) ->
         "sous le numéro national 12345 et sous le numéro RPPS 10000000001, "
         "marié sous le régime de la communauté avec Madame Alice Martin."
     ) in text
-    assert "Docteur Camille Martin, associé unique." in text
+    # Rafael 2026-07-09 « supprimer partout » : art. 8 attribue « à Monsieur … », plus « Docteur ».
+    assert "à Monsieur Camille Martin, associé unique." in text
+    assert "Docteur" not in text
     assert "- Ouverture d’un compte bancaire" in text
     _assert_annex_starts_next_page(output_path)
     _assert_clean(text)
@@ -396,7 +400,10 @@ def test_statuts_selarl_medecin_article_8_agrees_female_unique(
 
     text = _docx_text(output_path)
 
-    assert "Docteur Camille Martin, associée unique." in text
+    # Rafael 2026-07-09 « supprimer partout » : civilite CIVILE accordee au FEMININ (« Madame »),
+    # plus « Docteur ». L'accord « associée unique » (feminin) reste verifie.
+    assert "à Madame Camille Martin, associée unique." in text
+    assert "Docteur" not in text
     _assert_clean(text)
 
 
@@ -700,8 +707,11 @@ def test_statuts_selas_article_8_uses_dynamic_associate_label(tmp_path: Path) ->
         )
     )
 
-    assert "attribuées en totalité à l’associé unique, Docteur Camille Martin." in masc
-    assert "attribuées en totalité à l’associée unique, Docteur Camille Martin." in fem
+    # Rafael 2026-07-09 « supprimer partout » : civilite CIVILE accordee au genre, plus « Docteur ».
+    assert "attribuées en totalité à l’associé unique, Monsieur Camille Martin." in masc
+    assert "attribuées en totalité à l’associée unique, Madame Camille Martin." in fem
+    assert "Docteur" not in masc
+    assert "Docteur" not in fem
     _assert_clean(masc)
     _assert_clean(fem)
 
@@ -937,7 +947,9 @@ def test_statuts_selarl_single_member_list_stays_mono(tmp_path: Path) -> None:
     text = _docx_text(output_path)
     assert "LE SOUSSIGNE" in text
     assert "LES SOUSSIGNÉS" not in text
-    assert "Docteur Camille Martin, associé unique." in text
+    # Rafael 2026-07-09 « supprimer partout » : civilite CIVILE, plus « Docteur ».
+    assert "à Monsieur Camille Martin, associé unique." in text
+    assert "Docteur" not in text
     _assert_clean(text)
 
 
@@ -958,11 +970,22 @@ def _render_source_medecin_paragraph(
     ctx: DocumentGenerationContext,
 ) -> str:
     associate = ctx.associes[0]
+    # Rafael 2026-07-09 « supprimer partout » : le DOCX source SELARL medecin porte encore
+    # « Dr <nom> apporte » (art. 7) et « attribuées en totalité au Docteur <nom> » (art. 8) ;
+    # le generateur les rend desormais en civilite CIVILE (Monsieur/Madame) sans « Docteur »/« Dr ».
+    # On aligne le rendu SOURCE (attendu) sur cette regle pour la comparaison ligne-a-ligne.
+    civilite_civile_associe = "Madame" if associate.genre == Gender.FEMININ else "Monsieur"
+    paragraph = paragraph.replace(
+        "Dr [prenom] [nom] apporte", f"{civilite_civile_associe} [prenom] [nom] apporte"
+    ).replace(
+        "attribuées en totalité au Docteur [prenom] [nom]",
+        f"attribuées en totalité à {civilite_civile_associe} [prenom] [nom]",
+    )
     replacements = {
         "[denomination_societe]": ctx.societe.denomination,
         "[capital_social]": ctx.capital.montant,
         "[adresse_siege]": ctx.societe.siege.adresse_affichee,
-        "[civilite]": associate.civilite_affichage,
+        "[civilite]": civilite_civile_associe,
         "[prenom]": associate.prenom,
         "[nom]": associate.nom,
         "[profession]": associate.profession,
@@ -1070,7 +1093,9 @@ def test_statuts_selas_medecin_comparution_dedoublonne_profession_qualification(
     ctx.associes[0].qualification_principale = "medecin"
     text = _docx_text(StatutsSelasMedecinGenerator().generate(ctx, tmp_path))
     assert "medecin medecin" not in text
-    assert "Docteur Camille Martin, medecin, né le" in text
+    # Rafael 2026-07-09 « supprimer partout » : comparution en civilite CIVILE, plus « Docteur ».
+    assert "Monsieur Camille Martin, medecin, né le" in text
+    assert "Docteur" not in text
 
 
 def test_statuts_selas_medecin_comparution_preserve_qualification_distincte(

@@ -32,6 +32,7 @@ from sydel_doc_engine.utils.departements import departement_nom
 from sydel_doc_engine.utils.grammar import (
     _has_real_decimal,
     accord_euros_apres_montant,
+    euro_word,
     monetary_words_from_value,
 )
 
@@ -85,8 +86,11 @@ def _valeur_nominale_apport_fragment(apport_titres: ApportTitres) -> str:
     if _has_real_decimal(figure):
         # Decimal : phrase monetaire complete calculee depuis la figure ; remplace « <token> euro ».
         return monetary_words_from_value(figure).strip()
-    # Entier : mots nus + le « euro » singulier du modele (byte-identique).
-    return f"{lettres.strip()} euro"
+    # Entier : mots nus + euro/euros ACCORDE sur la figure (Akainu batch2 M2, 2026-07-09).
+    # L'ancien « euro » singulier fige du modele rendait « cent euro » (faux, valeur=100) :
+    # le retour Rafael 09-07 « 100 -> euros » SUPERSEDE cet arbitrage de fidelite (regle 68
+    # lecon 1 : partout = partout, on ne s'auto-arbitre jamais pour garder le modele).
+    return f"{lettres.strip()} {euro_word(figure)}"
 
 
 def _addr_display(address: Address | None, field_name: str) -> str:

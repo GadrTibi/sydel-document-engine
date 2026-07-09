@@ -146,8 +146,11 @@ def test_statuts_sas_generates_spfpl_medecins_unique_shareholder_docx(
     assert output_path.name == "Statuts SPFPL MARTIN.docx"
     assert "SPFPL MARTIN" in text
     assert "Société de Participations Financières de Profession Libérale de Médecins" in text
-    assert "Par le Docteur Camille Martin 12 000" in text
-    assert "Le Docteur Camille Martin 120 actions" in text
+    # Rafael 2026-07-09 « supprimer partout » : « Par le Docteur … » / « Le Docteur … » du modele
+    # -> civilite CIVILE (« Monsieur … »), sans article, plus jamais « Docteur ».
+    assert "Par Monsieur Camille Martin 12 000" in text
+    assert "Monsieur Camille Martin 120 actions" in text
+    assert "Docteur" not in text
     assert "L’Associé Unique, Monsieur Camille Martin" in text
     assert "BANQUE EXEMPLE" in text
     assert "SPFPL MARTIN – Statuts constitutifs" in text

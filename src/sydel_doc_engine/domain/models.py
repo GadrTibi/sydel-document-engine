@@ -170,6 +170,10 @@ class DerogationContext(BaseModel):
 class BailParty(BaseModel):
     civilite_affichage: str | None = None
     civilite_courte: str | None = None
+    # R3 « supprimer PARTOUT » (Rafael 2026-07-09) : genre pour accorder la civilite CIVILE
+    # (Monsieur/Madame) quand la saisie porte un titre professionnel « Docteur »/« Dr ».
+    # Optionnel/additif ; absent -> masculin par defaut (cf. civilite_civile).
+    genre: Gender | None = None
     prenom: str | None = None
     nom: str | None = None
     profession: str | None = None
@@ -1126,6 +1130,9 @@ class ScmRepresentant(BaseModel):
     nom: str | None = None
     identite_affichee: str | None = None
     titre_affichage: str | None = None
+    # R3 « supprimer PARTOUT » (Rafael 2026-07-09) : genre pour accorder la civilite CIVILE
+    # (Monsieur/Madame) quand titre_affichage/civilite portent « Docteur »/« Dr ».
+    genre: Gender | None = None
     fonction: str | None = None
 
 
@@ -1137,6 +1144,10 @@ class PartieFraisCommuns(BaseModel):
 class PraticienScm(BaseModel):
     identite_affichee: str | None = None
     telephone: str | None = None
+    # R3 « supprimer PARTOUT » (Rafael 2026-07-09) : le reglement interieur SCM nomme le
+    # praticien « le Docteur <identite> » (annuaire + rotation du message) ; on rend desormais
+    # sa civilite CIVILE (Monsieur/Madame accorde au genre ; absent -> masculin par defaut).
+    genre: Gender | None = None
 
 
 class LocauxContext(BaseModel):

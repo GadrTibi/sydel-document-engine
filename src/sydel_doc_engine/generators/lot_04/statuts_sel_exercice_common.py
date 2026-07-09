@@ -20,6 +20,7 @@ from sydel_doc_engine.domain.models import (
     DocumentGenerationContext,
     StatutsCivilsAssocie,
 )
+from sydel_doc_engine.generators.lot_01.civilite import civilite_civile
 from sydel_doc_engine.generators.lot_05.scm_cession_common import (
     mentions_conjoint,
     mentions_partenaire_pacse,
@@ -178,10 +179,18 @@ def common_replacements(
             company.forme_sociale_complete or company.forme_sociale_libelle_long,
             "societe.forme_sociale_complete",
         ),
+        # R3 « supprimer PARTOUT » (Rafael 2026-07-09) : « Docteur »/« Dr » n'est jamais une
+        # civilite. La comparution ([civilite]) ET les phrases d'apport/repartition SELARL
+        # (« Dr … apporte » art. 7, « au Docteur … » art. 8 — literals des templates, remplaces
+        # par [civilite_apport]) rendent la civilite CIVILE (Monsieur/Madame accorde au genre).
         "[civilite]": required_text(
-            associate.civilite_affichage,
+            civilite_civile(associate.civilite_affichage, associate.genre),
             "associes[0].civilite_affichage",
         ),
+        # SELARL art. 7 : « [civilite_apport] Prenom Nom apporte » (le literal « Dr » est retire) ;
+        # art. 8 : « attribuées en totalité à [civilite_apport] Prenom Nom » (le literal « au
+        # Docteur » -> preposition « à » + civilite civile, cf. template).
+        "[civilite_apport]": civilite_civile(associate.civilite_affichage, associate.genre),
         "[prenom]": required_text(associate.prenom, "associes[0].prenom"),
         "[nom]": required_text(associate.nom, "associes[0].nom"),
         "[PRENOM]": required_text(associate.prenom, "associes[0].prenom"),
@@ -611,15 +620,18 @@ SELARL_MEDECIN_MULTI_ZONES = SelMultiZones(
         "de [ville_ordre] sous le numéro national [numero_ordre] et sous le numéro RPPS "
         "[numero_rpps], [situation_matrimoniale_statuts]. ",
     ),
+    # R3 « supprimer PARTOUT » (Rafael 2026-07-09) : ancres alignees sur le template modifie
+    # (« [civilite_apport] … apporte », « attribuées en totalité à [civilite_apport] … »). Sans
+    # cet alignement, le mode multi n'intercepte plus le bloc mono et le laisse fuiter.
     apport_line=(
-        "Dr [prenom] [nom] apporte à la Société la somme de [capital_lettres] euros "
+        "[civilite_apport] [prenom] [nom] apporte à la Société la somme de [capital_lettres] euros "
         "([capital_social] €)"
     ),
     apport_total_line="ci- [capital_social] €.",
     capital_attribution_line=(
         "Il est divisé en [nb_parts_total] parts de [valeur_nominale_part] "
         "[euro_nominal_word] chacune, entièrement souscrites et libérées dans les "
-        "conditions exposées ci-dessus et attribuées en totalité au Docteur [prenom] "
+        "conditions exposées ci-dessus et attribuées en totalité à [civilite_apport] [prenom] "
         "[nom], [qualite_associe_article_8]."
     ),
     capital_total_line=(
@@ -669,9 +681,15 @@ def _membre_est_feminin(membre: StatutsCivilsAssocie) -> bool:
 
 
 def _membre_person_label(membre: StatutsCivilsAssocie) -> str:
+    # R3 « supprimer PARTOUT » (Rafael 2026-07-09) : comparution + apport d'un membre SELARL multi
+    # -> civilite CIVILE (Monsieur/Madame accorde au genre), jamais « Docteur »/« Dr ».
     prenoms = membre.prenoms or membre.prenom
+    civilite = civilite_civile(
+        required_text(membre.civilite_affichage, "membres[].civilite_affichage"),
+        membre.genre,
+    )
     return (
-        f"{required_text(membre.civilite_affichage, 'membres[].civilite_affichage')} "
+        f"{civilite} "
         f"{required_text(prenoms, 'membres[].prenom')} "
         f"{required_text(membre.nom, 'membres[].nom')}"
     )

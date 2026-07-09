@@ -12,6 +12,7 @@ from sydel_doc_engine.domain.models import (
     Company,
     DocumentGenerationContext,
 )
+from sydel_doc_engine.generators.lot_01.civilite import civilite_civile
 from sydel_doc_engine.generators.lot_03.bail_appel_common import (
     DOCUMENT_CODE,
     format_display_date,
@@ -142,18 +143,16 @@ def _display_birthdate(value) -> str:
 
 
 def _locataire_nom_avec_titre(locataire: BailParty, article: str = "") -> str:
-    # AV3 (Albane 2026-06-26) : « le Docteur ... » -> on s'aligne sur l'art 2, 1re phrase,
-    # qui utilise le titre COURT (« Docteur »). M1 (Akainu 2026-06-26) : l'article « le/Le »
-    # ne se met QUE devant un titre PROFESSIONNEL (civilite_courte, ex « Docteur ») ; devant
-    # une civilite simple (« Monsieur »/« Madame ») on n'ajoute PAS d'article, sinon
-    # « le Monsieur ... ». Fallback sur la civilite d'affichage (sans article) si pas de titre.
-    titre_pro = _clean(locataire.civilite_courte)
-    titre = titre_pro or _clean(locataire.civilite_affichage)
+    # R3 « supprimer PARTOUT » (Rafael 2026-07-09) : « le Docteur … » n'existe plus. La civilite
+    # d'un locataire personne physique est CIVILE (Monsieur/Madame accorde au genre) et ne prend
+    # JAMAIS d'article (« Monsieur X », pas « le Monsieur X »). On resout donc le titre par
+    # `civilite_civile` (le titre court « Docteur »/« Dr » -> Monsieur/Madame ; une civilite deja
+    # civile est renvoyee inchangee) et on IGNORE le parametre `article` — SUPERSEDE AV3 (l'article
+    # « le/Le » ne se posait que devant un titre professionnel, qui n'apparait plus).
+    titre_source = _clean(locataire.civilite_courte) or _clean(locataire.civilite_affichage)
+    titre = civilite_civile(titre_source, locataire.genre) if titre_source else ""
     parts = [titre, _clean(locataire.prenom), _clean(locataire.nom)]
-    label = " ".join(part for part in parts if part)
-    if article and titre_pro:
-        return f"{article} {label}"
-    return label
+    return " ".join(part for part in parts if part)
 
 
 def _party_other_segments(party: BailParty) -> list[str]:
@@ -180,7 +179,10 @@ def _party_full_runs(party: BailParty, field_name: str) -> list[tuple[str, bool]
     # (sauf son nom), peut-etre pareil pour le bailleur » -> seul le NOM (prenom + nom)
     # reste en gras ; la civilite et tout le reste de l'identite passent en non gras.
     # Applique au LOCATAIRE comme au BAILLEUR.
-    civilite = _clean(party.civilite_affichage)
+    # R3 « supprimer PARTOUT » (Rafael 2026-07-09) : la civilite de tete d'identite est CIVILE
+    # (« Docteur X » -> « Monsieur/Madame X », accorde au genre), jamais un titre professionnel.
+    civilite_source = _clean(party.civilite_affichage)
+    civilite = civilite_civile(civilite_source, party.genre) if civilite_source else ""
     nom_complet = " ".join(
         part for part in (_clean(party.prenom), _clean(party.nom)) if part
     )

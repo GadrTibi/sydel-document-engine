@@ -533,9 +533,11 @@ def test_selas_multi_dentiste_genere_depuis_le_corpus_dentiste(tmp_path: Path) -
     assert "Banque BPGO" not in text
     assert "102.000 actions" not in text
 
-    # Apports (Article 6, wording dentiste) : "- Le Docteur X, apporte [LETTRES] euros" + "Ci".
-    assert "- Le Docteur Jean-Guillaume FUCHS, apporte CINQ CENT DIX euros" in text
-    assert "- Le Docteur Marie LEROUX, apporte CINQ CENT DIX euros" in text
+    # Apports (Article 6, wording dentiste). Rafael 2026-07-09 « supprimer partout » : l'apporteur
+    # designe « Le Docteur X » -> civilite CIVILE accordee au genre (Monsieur/Madame), sans article.
+    assert "- Monsieur Jean-Guillaume FUCHS, apporte CINQ CENT DIX euros" in text
+    assert "- Madame Marie LEROUX, apporte CINQ CENT DIX euros" in text
+    assert "Docteur" not in text
     assert "Total des apports\t\t\t\t\t\t\t\t\t1 020 euros" in text
     # Repartition du capital (Article 6, wording dentiste) : "- [civilite] X, [LETTRES] actions".
     assert "- Monsieur Jean-Guillaume FUCHS, 510 actions" in text

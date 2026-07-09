@@ -199,7 +199,9 @@ def test_statuts_spfpl_cession_generates_source_overlay_without_signature_date(
     assert output_path.name == "Statuts SPFPL MARTIN.docx"
     assert "Société de Participations Financières de Profession Libérale" in text
     assert "BANQUE EXEMPLE sise 1 boulevard Haussmann, 75009 Paris" in text
-    assert "Le\nDocteur Camille Martin" in text
+    # Rafael 2026-07-09 « supprimer partout » : civilite CIVILE (« Monsieur »), plus « Docteur ».
+    assert "Le\nMonsieur Camille Martin" in text
+    assert "Docteur" not in text
     assert "Le 14/05/2026" not in text
     assert "Nomination d’un commissaire aux apports" not in text
     assert "DECISIONS DES ACTIONNAIRES" in table_text
@@ -232,9 +234,14 @@ def test_statuts_spfpl_cession_generates_source_overlay_without_signature_date(
     # Retour fonctionnel 7.1 (Albane 2026-07-06) / M2 (Akainu 2026-07-06) : « Utiliser 'Prénom'
     # (pas 'Prénoms complets') DANS LES STATUTS » SANS RESERVE -> le soussigne ET la nomination
     # du President rendent le PRENOM usuel (« Camille »). Plus AUCUN « Camille Andre » (prenoms
-    # complets) dans les statuts ; les DEUX lignes d'identite = « - Docteur Camille Martin ».
+    # complets) dans les statuts. Rafael 2026-07-09 « supprimer partout » : les DEUX lignes
+    # d'identite (soussigne + President) sont en civilite CIVILE = « - Monsieur Camille Martin ».
+    # Match EXACT (les lignes d'apport/repartition commencent aussi par « - Monsieur Camille
+    # Martin » depuis R3 -> on ne compte que les lignes d'identite pures).
     assert "Camille Andre" not in text
-    identites = _paras_by_prefix(document, "- Docteur Camille Martin")
+    identites = [
+        p for p in document.paragraphs if p.text.strip() == "- Monsieur Camille Martin"
+    ]
     assert len(identites) == 2  # soussigne + nomination President, tous deux en prenom usuel
     for identite in identites:
         assert identite.alignment == WD_ALIGN_PARAGRAPH.JUSTIFY
@@ -242,11 +249,12 @@ def test_statuts_spfpl_cession_generates_source_overlay_without_signature_date(
     # FIX-F3 / STYLE-4 : lignes de capital / total (Art. 6 & 8) en gras.
     total_apports = _para_by_text(document, "Total des apports")
     assert total_apports.runs[0].bold is True
-    # Art. 8 (cession) : "- Le Docteur ... actions" → identite en gras, bourrage de points non gras.
+    # Art. 8 (cession) : "- Monsieur ... actions" → identite en gras, bourrage de points non gras
+    # (Rafael 2026-07-09 « supprimer partout » : civilite civile, plus « Le Docteur »).
     repartition = next(
         p
         for p in document.paragraphs
-        if p.text.strip().startswith("- Le Docteur Camille Martin")
+        if p.text.strip().startswith("- Monsieur Camille Martin")
         and p.text.strip().endswith("actions")
     )
     assert repartition.runs[0].bold is True
@@ -331,13 +339,19 @@ def test_statuts_spfpl_apport_generates_nature_overlay_and_signature_date(
     assert statuts.runs[0].bold is True
     assert statuts.runs[0].font.size is not None and statuts.runs[0].font.size.pt == 12
     assert _para_by_text(document, "Le soussigné").runs[0].underline is True
-    identites = _paras_by_prefix(document, "- Docteur Camille Martin")
+    # Rafael 2026-07-09 « supprimer partout » : civilite CIVILE, plus « Docteur ». Match EXACT :
+    # la ligne de repartition commence aussi par « - Monsieur Camille Martin » (+ suffixe actions)
+    # -> on ne compte que les 2 lignes d'identite pures (soussigne + President).
+    identites = [
+        p for p in document.paragraphs if p.text.strip() == "- Monsieur Camille Martin"
+    ]
     assert len(identites) == 2
     for identite in identites:
         assert identite.alignment == WD_ALIGN_PARAGRAPH.JUSTIFY
         assert identite.runs[0].bold is True
     # Art. 8 apport : repartition et total des actions en gras (source idx127/128).
-    assert _para_by_text(document, "- Le Docteur Camille Martin").runs[0].bold is True
+    # Rafael 2026-07-09 « supprimer partout » : « - Le Docteur … » -> « - Monsieur … ».
+    assert _para_by_text(document, "- Monsieur Camille Martin").runs[0].bold is True
     assert _para_by_text(document, "Total des actions composant").runs[0].bold is True
     # Art. 6 apport : les totaux d'apports ne sont PAS en gras dans la source (pas d'ajout).
     assert _para_by_text(document, "Total des apports en nature").runs[0].bold in (False, None)
@@ -508,11 +522,15 @@ def test_statuts_spfpl_marital_line_married_unchanged(tmp_path: Path) -> None:
 def test_statuts_spfpl_president_uses_usual_first_name(tmp_path: Path) -> None:
     """M2 (Akainu 2026-07-06) — 7.1 : la nomination du President utilise le PRENOM USUEL
     (« Camille »), pas les prenoms complets (« Camille Andre ») ; « Prénom DANS LES STATUTS »
-    sans reserve. Deux lignes d'identite « - Docteur Camille Martin » (soussigne + President)."""
+    sans reserve. Deux lignes d'identite « - Monsieur Camille Martin » (soussigne + President).
+    Rafael 2026-07-09 « supprimer partout » : civilite CIVILE, plus « Docteur »."""
     ctx = _with_exercice(_base_context(operation="cession"))
     text = _docx_text(StatutsSpfplCessionGenerator().generate(ctx, tmp_path))
     assert "Camille Andre" not in text
-    assert text.count("- Docteur Camille Martin") == 2
+    # Match EXACT par ligne : les lignes d'apport/repartition COMMENCENT aussi par « - Monsieur
+    # Camille Martin » (R3) mais portent une suite ; on ne compte que les 2 lignes d'identite pures.
+    assert [line.strip() for line in text.splitlines()].count("- Monsieur Camille Martin") == 2
+    assert "Docteur" not in text
 
 
 # ---------------------------------------------------------------------------

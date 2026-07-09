@@ -15,6 +15,7 @@ from sydel_doc_engine.domain.models import (
     SpfplPerson,
     StatutsPresident,
 )
+from sydel_doc_engine.generators.lot_01.civilite import civilite_civile
 from sydel_doc_engine.generators.lot_04.statuts_sel_exercice_common import (
     statuts_output_filename,
 )
@@ -100,7 +101,19 @@ def _build_replacements(data: _ResolvedStatutsSas) -> dict[str, str]:
         _nom_conjoint = _required_text(conjoint.nom, "actionnaire_unique.conjoint.nom")
     else:
         _regime_token = _civilite_conjoint = _prenom_conjoint = _nom_conjoint = ""
+    # R3 « supprimer PARTOUT » (Rafael 2026-07-09) : « Docteur »/« Dr » n'est jamais une civilite.
+    # Le token [civilite] (comparution) ET les phrases d'apport/repartition du modele
+    # (« Par le Docteur … » art. 6, « Le Docteur … » art. 8, cf. cles litterales ci-dessous)
+    # rendent la civilite CIVILE (Monsieur/Madame accorde au genre de l'actionnaire), sans article.
+    civilite = civilite_civile(actionnaire.civilite_affichage, actionnaire.genre)
     return {
+        # Cles LITTERALES du modele (P93 « Par le Docteur … », P103 « Le Docteur … ») : la civilite
+        # civile ne prend pas d'article -> l'article « le »/« Le » disparait avec « Docteur », mais
+        # la preposition « Par » (P93 : « il a été apporté … Par le Docteur X ») est CONSERVEE
+        # (« Par Monsieur X »). Cle « Par le Docteur » (la plus longue) traitee avant « Le Docteur »
+        # par le tri longest-first ; « le Docteur » (minuscule) ne chevauche pas « Le Docteur ».
+        "Par le Docteur": f"Par {civilite}",
+        "Le Docteur": civilite,
         "[denomination_societe]": data.denomination,
         "[capital_social]": data.capital_social,
         "[capital_lettres]": data.capital_social_lettres,
@@ -110,7 +123,7 @@ def _build_replacements(data: _ResolvedStatutsSas) -> dict[str, str]:
         "[valeur_nominale_action]": data.valeur_nominale_action,
         "[valeur_nominale_action_lettres]": data.valeur_nominale_action_lettres,
         "[civilite]": _required_text(
-            actionnaire.civilite_affichage, "actionnaire_unique.civilite_affichage"
+            civilite, "actionnaire_unique.civilite_affichage"
         ),
         "[prenom]": _required_text(actionnaire.prenom, "actionnaire_unique.prenom"),
         "[nom]": _required_text(actionnaire.nom, "actionnaire_unique.nom"),

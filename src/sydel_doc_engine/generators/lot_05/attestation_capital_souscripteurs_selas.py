@@ -18,7 +18,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_paragraph,
     new_document,
 )
-from sydel_doc_engine.utils.grammar import montant_avec_euros, subject_line
+from sydel_doc_engine.utils.grammar import euro_word, montant_avec_euros, subject_line
 
 OUTPUT_FILENAME = "attestation_capital_souscripteurs_selas.docx"
 DOCUMENT_CODE = "CODE-SELAS-ATTESTATION-CAPITAL-001"
@@ -74,8 +74,10 @@ class AttestationCapitalSouscripteursSelasGenerator:
         add_paragraph(document, f"Capital social : {data.capital_social} € en numéraire")
         add_paragraph(
             document,
+            # Akainu batch2 M1 (2026-07-09) : accord euro/euros via euro_word (« euro » etait
+            # code en dur -> « 10 euro » ; siloing vs les 3 attestations soeurs SAS/SPFPL/cession).
             f"Nombre d'actions: {data.nb_actions_total} actions d'un montant de "
-            f"{data.valeur_nominale_action} euro chacune",
+            f"{data.valeur_nominale_action} {euro_word(data.valeur_nominale_action)} chacune",
         )
         add_paragraph(document, "Répartition : ")
         for repartition in data.repartition_lignes:

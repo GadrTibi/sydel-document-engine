@@ -459,8 +459,10 @@ def test_origine_propriete_describes_vendeur_created_by_default(tmp_path: Path) 
     ):
         ctx = _context(etape=etape, credit_vendeur=(etape == "acte"))
         text = _docx_text(generator.generate(ctx, tmp_path / etape))
-        # Sujet = vendeur (Docteur Jean Durand), pas l'acquereur (Alice Moreau).
-        assert "Docteur Jean Durand est propriétaire des éléments constitutifs du cabinet" in text
+        # Sujet = vendeur, pas l'acquereur (Alice Moreau). Rafael 2026-07-09 « supprimer
+        # partout » : civilite CIVILE (« Monsieur Jean Durand »), plus « Docteur ».
+        assert "Monsieur Jean Durand est propriétaire des éléments constitutifs du cabinet" in text
+        assert "Docteur" not in text
         # A26-33 (Albane 2026-06-26) : jour sur 2 chiffres (« 01 janvier », pas « 1 janvier »).
         assert "pour l’avoir régulièrement créé le 01 janvier 2020." in text
         assert "Alice Moreau est propriétaire" not in text
@@ -473,8 +475,10 @@ def test_origine_propriete_purchased_describes_vendeur(tmp_path: Path) -> None:
     ctx.cession.cabinet.origine_propriete_mode = "achete"
     text = _docx_text(ActeCessionCabinetMedicalGenerator().generate(ctx, tmp_path))
 
-    assert "Docteur Jean Durand est propriétaire des éléments constitutifs du cabinet" in text
-    assert "pour les avoir régulièrement acquis auprès de Docteur Paul Bernard" in text
+    # Rafael 2026-07-09 « supprimer partout » : civilite CIVILE, plus « Docteur ».
+    assert "Monsieur Jean Durand est propriétaire des éléments constitutifs du cabinet" in text
+    assert "pour les avoir régulièrement acquis auprès de Monsieur Paul Bernard" in text
+    assert "Docteur" not in text
     # Wording source « au prix de <prix> euros » : la donnee porte le seul montant.
     assert "au prix de 120 000 euros." in text
     _assert_no_residual_tokens(text)
@@ -1259,8 +1263,9 @@ def test_compromis_signatories_cedant_then_societe(
 
     left, _, right = line.partition("\t")
     right = right.strip()
-    # Gauche = le cedant (vendeur).
-    assert left.strip() == "Docteur Jean Durand"
+    # Gauche = le cedant (vendeur). Rafael 2026-07-09 « supprimer partout » : civilite CIVILE
+    # (« Monsieur Jean Durand »), plus « Docteur »/« Dr ».
+    assert left.strip() == "Monsieur Jean Durand"
     # Droite = la societe acquereur (denomination + representant civil), pas une
     # 2e personne physique « Docteur ».
     assert right.startswith("Pour la SELARL CABINET DURAND")
@@ -1330,7 +1335,8 @@ def _identity_paragraph(path: Path) -> tuple[str, list[tuple[str, bool]]]:
     document = Document(path)
     for paragraph in document.paragraphs:
         t = paragraph.text
-        if t.startswith("Docteur Jean Durand") and ("né" in t or "née" in t):
+        # Rafael 2026-07-09 « supprimer partout » : la tete d'identite est civile (« Monsieur »).
+        if t.startswith("Monsieur Jean Durand") and ("né" in t or "née" in t):
             runs = [(r.text, bool(r.bold)) for r in paragraph.runs if r.text.strip()]
             return t, runs
     raise AssertionError("paragraphe d'identite vendeur introuvable")
@@ -1347,7 +1353,7 @@ def _identity_paragraph(path: Path) -> tuple[str, list[tuple[str, bool]]]:
 )
 def test_ce1_only_vendeur_name_is_bold(generator, etape, type_cabinet, tmp_path: Path) -> None:
     # CE1 : dans l'identite du vendeur, SEUL le nom (« Durand ») est en gras ;
-    # la civilite/prenom (« Docteur », « Jean ») ne le sont PAS.
+    # la civilite/prenom (« Monsieur » [R3, ex-« Docteur »], « Jean ») ne le sont PAS.
     salaries = (
         [CessionSalarie(civilite_affichage="Madame", prenom="Lea", nom="Petit")]
         if (etape == "acte" and type_cabinet == "dentaire")
@@ -1359,10 +1365,12 @@ def test_ce1_only_vendeur_name_is_bold(generator, etape, type_cabinet, tmp_path:
     _, runs = _identity_paragraph(out)
     # Le nom « Durand » est porte par un run gras.
     assert any(is_bold and "Durand" in text for text, is_bold in runs), runs
-    # Aucune civilite/prenom en gras dans la zone d'identite.
+    # Aucune civilite/prenom en gras dans la zone d'identite (civilite = « Monsieur » depuis
+    # R3 « supprimer partout », 2026-07-09 ; « Docteur » ne doit plus apparaitre du tout).
     for text, is_bold in runs:
         if is_bold:
-            assert "Docteur" not in text, f"civilite ne doit pas etre en gras : {text!r}"
+            assert "Monsieur" not in text, f"civilite ne doit pas etre en gras : {text!r}"
+            assert "Docteur" not in text, f"« Docteur » eradique : {text!r}"
             assert "Jean" not in text, f"prenom ne doit pas etre en gras : {text!r}"
 
 
@@ -1416,16 +1424,17 @@ def test_ce2_exercices_date_range_and_euro_on_resultat(
     ],
 )
 def test_ce3_promesse_prefixes_le_docteur(generator, type_cabinet, tmp_path: Path) -> None:
-    # CE3 : dans la section III (promesse), les 2 occurrences « Docteur ... » sont
-    # precedees de « le » -> « le Docteur ... ».
+    # Rafael 2026-07-09 « supprimer partout » : « le Docteur … » de la section III (promesse)
+    # est SUPERSEDE (CE3) -> le cedant y est nomme par sa civilite CIVILE (« Monsieur … »),
+    # sans article. « Docteur »/« Dr » ne doit plus apparaitre du tout dans le compromis.
     ctx = _context(etape="compromis", type_cabinet=type_cabinet)
     text = _docx_text(generator.generate(ctx, tmp_path))
 
-    assert "Par les présentes, le Docteur Jean Durand" in text
-    assert "s’oblige envers le Docteur Jean Durand" in text
-    # Pas de « Docteur » nu (sans « le ») a ces deux emplacements.
-    assert "Par les présentes, Docteur Jean" not in text
-    assert "s’oblige envers Docteur Jean" not in text
+    assert "Par les présentes, Monsieur Jean Durand" in text
+    assert "s’oblige envers Monsieur Jean Durand" in text
+    # Plus aucune trace « Docteur » ni article parasite « le Monsieur ».
+    assert "Docteur" not in text
+    assert "le Monsieur Jean" not in text
 
 
 def test_ce3_non_docteur_civilite_untouched(tmp_path: Path) -> None:

@@ -8,6 +8,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 from sydel_doc_engine.domain.models import DocumentGenerationContext, SpfplPerson
 from sydel_doc_engine.front_app.field_derivations import format_grouped_numeric_value
+from sydel_doc_engine.generators.lot_01.civilite import civilite_civile
 from sydel_doc_engine.generators.lot_05.scm_cession_common import (
     mentions_conjoint,
     mentions_partenaire_pacse,
@@ -124,8 +125,15 @@ def _person_address(person: SpfplPerson, field_name: str) -> str:
 
 
 def _repartition_lines(ctx: DocumentGenerationContext) -> list[str]:
-    """Repartition du capital, FIDELE au modele : « Dr <prenom> <nom> detenant N part(s) »
-    (abrege « Dr », accents preserves), une ligne par associe reel."""
+    """Repartition du capital : « <civilite civile> <prenom> <nom> detenant N part(s) »,
+    une ligne par associe reel.
+
+    R3 « supprimer PARTOUT » (Rafael 2026-07-09) : le modele abregeait « Dr <prenom> <nom> » ;
+    « Docteur »/« Dr » n'est jamais une civilite -> on rend la civilite CIVILE (Monsieur/Madame).
+    `AssocieCible` ne porte pas de genre -> `civilite_civile(..., None)` = masculin par defaut
+    (limite documentee : l'accord au feminin d'un associe cible n'est pas capturable ici). Une
+    civilite deja civile (« Monsieur ») est renvoyee inchangee ; une civilite absente retombe sur
+    « Monsieur » (defaut du menu SP2)."""
     associes = ctx.associes_cible or []
     if not associes:
         raise ValueError(f"associes_cible est obligatoire pour {OUTPUT_FILENAME}.")
@@ -144,7 +152,8 @@ def _repartition_lines(ctx: DocumentGenerationContext) -> list[str]:
         else:
             prenom = required_text(associe.prenom, f"{field}.prenom")
             nom = required_text(associe.nom, f"{field}.nom")
-            who = f"Dr {prenom} {nom}"
+            civilite = civilite_civile(associe.civilite_affichage or "", None) or "Monsieur"
+            who = f"{civilite} {prenom} {nom}"
         lines.append(f"{who} détenant {nb_parts} {label}")
     return lines
 
@@ -402,15 +411,29 @@ class ActeCessionPartsSpfplGenerator:
             )
         else:
             ligne_maritale_cedant = cedant_maritale
+        # R3 « supprimer PARTOUT » (Rafael 2026-07-09) : la civilite du cedant est CIVILE
+        # (Monsieur/Madame accorde au genre). Le token [civilite_cedant] la porte partout ; la
+        # ligne de SIGNATURE du modele (« Dr [prenom_cedant] [nom_cedant] », P247) fige « Dr » en
+        # LITERAL -> on la consomme via une cle COMBINEE (longest-first) qui rend « <civilite>
+        # Prenom Nom », sans « Dr ».
+        civilite_cedant = civilite_civile(
+            required_text(cedant.civilite_affichage, "cedant.civilite_affichage"),
+            cedant.genre,
+        )
         repl = {
             # Cle COMBINEE (fragment matrimonial complet) : branche marie/non-marie, byte-identique
             # au modele pour un marie. Placee avant les tokens simples (longest-first, _replace).
             "[situation_maritale_cedant] avec [civilite_conjoint_cedant] "
             "[prenom_conjoint_cedant] [nom_conjoint_cedant]": ligne_maritale_cedant,
-            # Cedant (personne physique)
-            "[civilite_cedant]": required_text(
-                cedant.civilite_affichage, "cedant.civilite_affichage"
+            # R3 : ligne signature « Dr [prenom_cedant] [nom_cedant] » -> civilite civile (P247).
+            # Cle plus longue que « [civilite_cedant] … » -> traitee en premier par `_replace`.
+            "Dr [prenom_cedant] [nom_cedant]": (
+                f"{civilite_cedant} "
+                f"{required_text(cedant.prenom, 'cedant.prenom')} "
+                f"{required_text(cedant.nom, 'cedant.nom')}"
             ),
+            # Cedant (personne physique)
+            "[civilite_cedant]": civilite_cedant,
             "[prenom_cedant]": required_text(cedant.prenom, "cedant.prenom"),
             "[nom_cedant]": required_text(cedant.nom, "cedant.nom"),
             "[profession_cedant]": required_text(cedant.profession, "cedant.profession"),

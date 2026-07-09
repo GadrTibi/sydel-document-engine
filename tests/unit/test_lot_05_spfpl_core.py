@@ -258,20 +258,19 @@ def test_acte_cession_parts_generates_dynamic_capital_and_preserves_source_frais
 
     # SP1/SP3/SP4 (Albane 2026-06-25) : acte rebati en TOKEN-REPLACEMENT fidele au modele
     # source -> texte legal COMPLET (clauses GAP / SIGNIFICATION / AFFIRMATION DE SINCERITE,
-    # absentes de l'ancien from-scratch), accents preserves, repartition « Dr <nom> détenant N
-    # parts » (abrege « Dr », accentue). Fidelite de STRUCTURE (aucun .docx gold de sortie
-    # n'existe pour cet acte). NB SP2 « civilite » : la phrase d'identite rend [civilite_cedant]
-    # = la donnee (« Docteur » tant que §14.2 le pose) -> assertion volontairement non posee ici,
-    # cf. flag metier QUESTIONS_RAFAEL (civilite civile M./Mme a trancher Albane).
+    # absentes de l'ancien from-scratch), accents preserves. Fidelite de STRUCTURE (aucun .docx
+    # gold de sortie n'existe pour cet acte).
+    # Rafael 2026-07-09 « supprimer partout » : « Docteur »/« Dr » n'est jamais une civilite -> la
+    # phrase d'identite ET la repartition rendent la civilite CIVILE (« Monsieur »). SUPERSEDE
+    # l'ancien « Dr <nom> détenant … » abrege du modele. `AssocieCible` sans genre -> masculin par
+    # defaut (limite documentee : accord feminin non capturable ici).
     assert output_path.name == "acte_cession_parts_spfpl.docx"
-    # SP2 (Rafael 2026-06-25) : la civilite du cedant dans la phrase d'identite est CIVILE
-    # (« Monsieur Camille Martin »), pas « Docteur Camille Martin » (le titre reste « Dr »
-    # uniquement la ou le modele l'abrege, ex. repartition).
     assert "Monsieur Camille Martin" in text
-    assert "Docteur Camille Martin" not in text
-    # Repartition dynamique fidele : « Dr » abrege + « détenant » accentue.
-    assert "Dr Camille Martin détenant 70 parts" in text
-    assert "Dr Louise Bernard détenant 30 parts" in text
+    assert "Docteur" not in text
+    assert "Dr " not in text
+    # Repartition dynamique : civilite civile + « détenant » accentue.
+    assert "Monsieur Camille Martin détenant 70 parts" in text
+    assert "Monsieur Louise Bernard détenant 30 parts" in text
     # Clauses du modele source qui MANQUAIENT dans l'ancien from-scratch (SP1 « tout revoir »).
     assert "GARANTIE D’ACTIF ET DE PASSIF" in text
     assert "AFFIRMATION DE SINCERITE" in text
@@ -301,8 +300,9 @@ def test_acte_cession_parts_generates_dynamic_capital_and_preserves_source_frais
     # « déclare qu'il est propriétaire » conservee). Supersede les « 2 recitals fideles ».
     assert "Le capital social est réparti à ce jour comme suit" in text
     assert "actuellement détenu comme suit" not in text
-    assert text.count("Dr Camille Martin détenant 70 parts") == 1
-    assert text.count("Dr Louise Bernard détenant 30 parts") == 1
+    # Rafael 2026-07-09 « supprimer partout » : civilite civile en repartition, plus « Dr ».
+    assert text.count("Monsieur Camille Martin détenant 70 parts") == 1
+    assert text.count("Monsieur Louise Bernard détenant 30 parts") == 1
     assert "déclare qu’il est propriétaire des parts" in text
     # R9 (Albane 2026-07-07) : clause de communication au Conseil de l'Ordre AVEC le
     # departement de l'Ordre du cedant en nom (fixture : « Paris »).
@@ -733,6 +733,6 @@ def test_acte_repartition_omits_zero_part_line(tmp_path: Path) -> None:
     assert "SPFPL ACQUEREUR" not in text  # la ligne 0 part est omise
     assert "détenant 0 part" not in text
     assert "detenant 0 part" not in text
-    # les associes a parts > 0 restent presents.
-    assert "Dr Camille Martin détenant 70 parts" in text
+    # les associes a parts > 0 restent presents (civilite civile, R3 2026-07-09).
+    assert "Monsieur Camille Martin détenant 70 parts" in text
 

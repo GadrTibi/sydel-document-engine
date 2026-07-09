@@ -1933,6 +1933,9 @@ def _render_cession_form(  # noqa: C901
             "bailleur_accepte_changement_locataire": True,
             "bailleur": {
                 "civilite_affichage": bailleur_civilite,
+                # R3 (Rafael 2026-07-09) : genre pour accorder la civilite civile si un titre
+                # professionnel etait saisi (« Docteur » -> Monsieur/Madame).
+                "genre": derive_gender_from_civilite(bailleur_civilite),
                 "prenom": bailleur_prenom,
                 "nom": bailleur_nom,
                 "profession": "",
@@ -1941,6 +1944,9 @@ def _render_cession_form(  # noqa: C901
             "locataire": {
                 "civilite_affichage": DEFAULT_TITRE_AFFICHAGE,
                 "civilite_courte": DEFAULT_TITRE_AFFICHAGE,
+                # R3 (Rafael 2026-07-09) : le titre par defaut « Docteur » est rendu en civilite
+                # civile (Monsieur/Madame) accordee au genre du praticien locataire.
+                "genre": praticien_genre,
                 "prenom": praticien_prenom,
                 "nom": praticien_nom,
                 "profession": profession_label,

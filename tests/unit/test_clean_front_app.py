@@ -503,7 +503,9 @@ def test_clean_front_ui_prefill_selas_uni_dentiste_generates(
     # Uni-fication : un seul soussigne, un seul apporteur, « A établi » (singulier).
     assert "LE SOUSSIGNE" in statuts_text
     assert "A établi ainsi qu’il suit" in statuts_text
-    assert "- Le Docteur Jean Durand, apporte" in statuts_text
+    # Rafael 2026-07-09 « supprimer partout » : civilite CIVILE, plus « Docteur ».
+    assert "- Monsieur Jean Durand, apporte" in statuts_text
+    assert "Docteur" not in statuts_text
     # Article President dentiste GENERIQUE (jamais nomme) preserve.
     assert "Article 19 - Président de La société" in statuts_text
     # Marie sous communaute -> clause conjoint rendue (avec Madame Alice Durand).
@@ -680,8 +682,11 @@ def test_selas_uni_dentiste_generator_matches_dentiste_model_wording(
     assert "Article 20 - Directeur Général" in text
     # Uni-fication : associe unique, un seul apporteur / attributaire.
     assert "A la constitution de la Société, l’associé unique a fait les apports suivants" in text
-    assert "- Le Docteur Jean Durand, apporte mille euros" in text
+    # Rafael 2026-07-09 « supprimer partout » : apport ET repartition en civilite CIVILE, plus
+    # « Docteur »/« Le Docteur » (le titre professionnel n'apparait plus dans la sortie).
+    assert "- Monsieur Jean Durand, apporte mille euros" in text
     assert "- Monsieur Jean Durand, cent actions" in text
+    assert "Docteur" not in text
     # Retour Albane « mise en forme » 2.3 : le mot « euro(s) » (accorde sur la FIGURE)
     # figure apres la valeur nominale en lettres. VN=10 (front-app reel -> lettres « dix »,
     # SANS euro) -> le token « [euro_nominal_word] » du modele dentiste ajoute « euros ».

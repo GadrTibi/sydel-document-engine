@@ -20,6 +20,7 @@ from sydel_doc_engine.domain.models import (
     ScmRepresentant,
     ScmSocietePartie,
 )
+from sydel_doc_engine.generators.lot_01.civilite import civilite_civile
 from sydel_doc_engine.generators.lot_05.scm_satellites_templates import TemplateBlock
 from sydel_doc_engine.rendering.docx_builder import add_paragraph, new_document
 from sydel_doc_engine.utils.grammar import montant_avec_euros
@@ -218,6 +219,14 @@ def reglement_interieur_replacements(ctx: DocumentGenerationContext) -> dict[str
                 practitioners[1].identite_affichee,
                 "praticiens[1].identite_affichee",
             ),
+            # R3 « supprimer PARTOUT » (Rafael 2026-07-09) : le modele nommait « le Docteur
+            # <identite> » (annuaire telephonique + rotation du message). On rend la civilite
+            # CIVILE (Monsieur/Madame accorde au genre ; absent -> masculin). CAS LIMITE signale :
+            # ici « Docteur » est un TITRE PRO EN PROSE d'annuaire, pas une civilite — Rafael
+            # tranche « supprimer partout », donc applique ; un eventuel maintien du titre pro en
+            # prose annuaire serait un arbitrage Albane.
+            "[civilite_praticien_1]": civilite_civile("Docteur", practitioners[0].genre),
+            "[civilite_praticien_2]": civilite_civile("Docteur", practitioners[1].genre),
             "[telephone_praticien_1]": _required_text(
                 practitioners[0].telephone,
                 "praticiens[0].telephone",
@@ -358,9 +367,16 @@ def _party_replacements(
     if reglement:
         replacements.update(
             {
-                f"[titre_representant_societe_{source_index}]": _required_text(
-                    representant.titre_affichage,
-                    f"{prefix}.representant.titre_affichage",
+                # R3 « supprimer PARTOUT » (Rafael 2026-07-09) : « Représentée par le Docteur X »
+                # / signature « Le Docteur X » -> civilite CIVILE (Monsieur/Madame accorde au
+                # genre du representant). L'article « le/Le » du modele est retire en meme temps
+                # que « Docteur » (Monsieur ne prend pas d'article, cf. templates reglement).
+                f"[titre_representant_societe_{source_index}]": civilite_civile(
+                    _required_text(
+                        representant.titre_affichage,
+                        f"{prefix}.representant.titre_affichage",
+                    ),
+                    representant.genre,
                 ),
                 f"[identite_representant_societe_{source_index}]": _representant_identity(
                     representant,

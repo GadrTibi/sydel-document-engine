@@ -85,25 +85,34 @@ def rule_r2_numero_en_cours(text: str) -> list[str]:
 # R3 — « Docteur » n'est pas une civilité
 # ---------------------------------------------------------------------------
 
+# R3 UNIVERSELLE (Gad 2026-07-09, remise en question) : ne plus lister des PHRASES
+# precises (« soussigne Docteur », « au Dr X »…) — chaque nouvelle formulation du meme
+# defaut passait au vert (appel_fond « de Docteur X » non liste -> livre a Albane). La LOI
+# est : « Docteur » n'est PAS une civilite, Rafael veut « supprime PARTOUT » (07-07 bis +
+# 09-07). Donc on interdit le MOT « Docteur » et l'abreviation « Dr » comme titre-devant-nom
+# dans TOUTE sortie generee. Defaut = interdit ; toute exception legale reelle = whitelistee
+# EXPLICITEMENT ci-dessous (aucune a ce jour). Une nouvelle tournure ne peut plus fuir.
 _R3 = re.compile(
-    r"soussignée?[\s,]+Docteur\b|Président,\s+Docteur\b"
-    # R3 durci (Rafael 2026-07-07, siloing attestation pluripersonnelle) : les slots
-    # de repartition / d'apport des attestations souscripteurs rendent la civilite
-    # CIVILE — « attribuées au Dr X » et « Le Docteur X a fait un apport » interdits.
-    r"|attribuées? au Dr\b"
-    r"|Le Docteur [^\n]{1,80} a fait"
+    r"\bDocteurs?\b"  # le mot, sous toutes ses formes
+    r"|\bDr\b\.?\s+[A-ZÉÈ]"  # « Dr X » / « Dr. X » (abreviation devant un nom propre)
 )
+
+# Contextes ou « Docteur »/« Dr » reste LEGITIME (aucun a ce jour — Rafael : supprimer
+# partout). Si un vrai libelle legal l'impose un jour, l'ajouter ICI avec sa raison,
+# jamais en re-narrant R3 vers une liste de phrases.
+_R3_WHITELIST: tuple[str, ...] = ()
 
 
 def rule_r3_docteur_civilite(text: str) -> list[str]:
-    """« soussigné(e) Docteur » / « Président, Docteur » / « attribuées au Dr X » /
-    « Le Docteur X a fait … » interdits.
+    """« Docteur » / « Dr <Nom> » interdits dans TOUTE sortie (loi universelle).
 
-    La civilité est Monsieur/Madame ; « le Docteur X » comme TITRE ne reste permis
-    que là où le modèle source le porte verbatim (statuts art. 6/8, acte « Dr X
-    détenant »), jamais dans les slots de civilité (R3 durci Rafael 2026-07-07).
+    « Docteur » n'est pas une civilité (Rafael 2026-07-07 puis 2026-07-09 : « supprimé
+    partout »). La civilité est Monsieur/Madame ; le titre professionnel « Docteur » ne
+    doit apparaître nulle part dans les documents générés. Règle par INTENTION (le mot),
+    pas par formulation — sinon une nouvelle tournure fuit (leçon appel_fond 2026-07-09).
     """
-    return _find_all(text, _R3)
+    hits = _find_all(text, _R3)
+    return [h for h in hits if not any(w in h for w in _R3_WHITELIST)]
 
 
 # ---------------------------------------------------------------------------
@@ -223,11 +232,16 @@ def rule_r5_montants_groupes(text: str) -> list[str]:
 # R6 — élision « d'un » (« de un euro » interdit)
 # ---------------------------------------------------------------------------
 
-_R6 = re.compile(r"\b[dD]e un (?:euro|centime)")
+# R6 UNIVERSELLE (audit règles 2026-07-09) : « de un » est TOUJOURS fautif en français
+# (« un » commence par une voyelle -> élision « d'un » obligatoire), pas seulement devant
+# « euro/centime ». On code l'INTENTION (élision manquante) et non la liste euro/centime,
+# sinon « de un euro » corrigé mais « de une part » / « de un associé » fuiraient.
+_R6 = re.compile(r"\b[dD]e une? \b")
 
 
 def rule_r6_elision(text: str) -> list[str]:
-    """« de un euro » / « de un centime » interdits (élision « d'un » attendue)."""
+    """« de un … » / « de une … » interdits : élision « d'un »/« d'une » obligatoire
+    (« un »/« une » commencent par une voyelle). Règle par INTENTION, pas liste de mots."""
     return _find_all(text, _R6)
 
 
