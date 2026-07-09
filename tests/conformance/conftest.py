@@ -28,3 +28,11 @@ def corpus(tmp_path_factory: pytest.TempPathFactory) -> dict[str, dict[str, str]
     from _conformance_corpus import build_corpus
 
     return build_corpus(tmp_path_factory.mktemp("conformance_corpus"))
+
+
+@pytest.fixture(scope="session")
+def corpus_cap1(tmp_path_factory: pytest.TempPathFactory) -> dict[str, dict[str, str]]:
+    """Corpus « montant unitaire = 1 € » (R13, accord euro/euros — Rafael 2026-07-09)."""
+    from _conformance_corpus import build_corpus_cap1
+
+    return build_corpus_cap1(tmp_path_factory.mktemp("conformance_corpus_cap1"))

@@ -12,8 +12,10 @@ from docx.oxml.ns import qn
 from docx.shared import Pt
 
 from sydel_doc_engine.domain.models import Address, Company, DocumentGenerationContext
+from sydel_doc_engine.front_app.field_derivations import group_montant
 from sydel_doc_engine.generators.lot_01.civilite import civilite_civile
 from sydel_doc_engine.rendering.docx_template_fill import fill_docx_template
+from sydel_doc_engine.utils.grammar import montant_avec_euros
 
 ROBOTO_FONT = "Roboto"
 
@@ -119,8 +121,9 @@ def _build_replacements(ctx: DocumentGenerationContext) -> dict[str, str]:
         "[denomination_societe]": denomination_societe,
         # Retour Albane 2026-06-17 (ticket lot 2, §11) : le modele fige
         # « au capital de [capital_social] en cours de formation » sans unite ;
-        # on suffixe « euros » a la valeur (le token n'apparait qu'a cet endroit).
-        "[capital_social]": f"{capital_social} euros",
+        # on suffixe l'unite ACCORDEE (Rafael 2026-07-09 : « 1 euro » / « 600 euros »,
+        # jamais « 1 euros ») via montant_avec_euros (idempotent, R13).
+        "[capital_social]": montant_avec_euros(capital_social),
         "[num_voie_siege]": num_voie_siege,
         "[voie_siege]": voie_siege,
         "[cp_siege]": cp_siege,
@@ -182,10 +185,14 @@ def _apply_micro_holding_capital_variable(output_path: Path, capital: str) -> No
     denomination reelle de la societe (« de la <denomination> ») la ou le modele Albane
     ecrit la forme generique « de la Societe micro holding ».
     """
-    old = f"au capital de {capital} euros en cours de formation"
+    # R5 (Rafael 2026-07-09) : capital groupé des 4 chiffres (« 1 020 »), y compris dans
+    # la mention capital-variable ; group_montant préserve le format à point Albane
+    # (« 1.020 ») et ne touche pas un montant déjà groupé.
+    capital_groupe = group_montant(capital)
+    old = f"au capital de {montant_avec_euros(capital)} en cours de formation"
     new = (
-        f"à capital variable au capital minimum de {capital} € "
-        f"et au capital effectif de {capital} €, en cours de formation"
+        f"à capital variable au capital minimum de {capital_groupe} € "
+        f"et au capital effectif de {capital_groupe} €, en cours de formation"
     )
     document = Document(str(output_path))
     for paragraph in document.paragraphs:

@@ -10,6 +10,7 @@ from sydel_doc_engine.generators.lot_05.spfpl_common import (
     OPERATION_CESSION,
     capital_after_lines,
     company_siege_display,
+    montant_avec_euros,
     operation_party,
     person_signature,
     required_int,
@@ -82,17 +83,18 @@ class NoteInformationGenerator:
                 f"La {required_text(societe_spfpl.denomination, 'societe_spfpl.denomination')}, "
                 "en cours de constitution, dont le siège est situé "
                 f"{company_siege_display(societe_spfpl, 'societe_spfpl')}, au capital de "
-                # M1 (Akainu doc-entier 2026-07-07) : unite « euros » obligatoire apres le
-                # montant (convention transverse 07-07) — plus jamais « au capital de 60 000, ».
-                f"{required_text(societe_spfpl.capital_social, 'societe_spfpl.capital_social')}"
-                " euros, "
+                # M1 (Akainu doc-entier 2026-07-07) : unite obligatoire apres le montant ;
+                # Rafael 2026-07-09 : ACCORDEE (« 1 euro » / « 60 000 euros »), jamais
+                # « 1 euros » — montant_avec_euros idempotent.
+                f"{montant_avec_euros(required_text(societe_spfpl.capital_social, 'societe_spfpl.capital_social'))}"  # noqa: E501
+                ", "
                 f"prévoit {OPERATION_PHRASES[operation_type]}, dès son immatriculation, "
                 f"{nb_titres} parts de la "
                 f"{required_text(societe_cible.denomination, 'societe_cible.denomination')}, "
                 f"{required_text(societe_cible.forme_sociale, 'societe_cible.forme_sociale')} "
                 f"de {_profession_reglementee(societe_cible)} "
                 # M2 (idem) : unite « euros » sur le capital de la cible.
-                f"au capital de {_capital_social_cible(societe_cible)} euros "
+                f"au capital de {montant_avec_euros(_capital_social_cible(societe_cible))} "
                 "divisé en "
                 f"{required_int(societe_cible.nb_parts_total, 'societe_cible.nb_parts_total')} "
                 "parts, dont le siège social est situé "

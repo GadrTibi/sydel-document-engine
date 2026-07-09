@@ -7,10 +7,15 @@ silencieusement sur aucun type (gate registre de propagation, règle 68 Q4).
 
 Règles (détail : ``_conformance_rules``) :
   R1 tokens résiduels · R2 « numéro en cours » · R3 « Docteur » ≠ civilité ·
-  R4 français accentué · R5 montants groupés · R6 élision « d'un » ·
-  R7 double unité · R8 double répartition (acte) · R9 clause Ordre + département ·
-  R10 nom de fichier statuts = « Statuts <dénomination>.docx » (Rafael 2026-07-07 —
-  appliquée au NOM du document, cf. ``FILENAME_RULES``).
+  R4 français accentué · R5 montants groupés (seuil abaissé à 4 chiffres, Rafael
+  2026-07-09 : « 1000 » -> « 1 000 ») · R6 élision « d'un » · R7 double unité ·
+  R8 double répartition (acte) · R9 clause Ordre + département · R10 nom de fichier
+  statuts = « Statuts <dénomination>.docx » (Rafael 2026-07-07 — appliquée au NOM du
+  document, cf. ``FILENAME_RULES``) · R12 majuscule en tête de phrase.
+
+R13 (accord euro/euros — Rafael 2026-07-09) tourne sur un corpus SÉPARÉ « montant
+unitaire = 1 € » (``build_corpus_cap1``) : cf. ``test_r13_accord_euro`` plus bas. Un
+montant singulier suivi de « euros » (« 1 euros ») échoue sur TOUS les types à la fois.
 
 Marquage : les cellules (type × règle) ROUGES au constat initial (2026-07-07,
 worklist = ``RAPPORT_INITIAL.md``) portent ``xfail(strict=True)`` — quand le fix
@@ -21,7 +26,7 @@ des assertions DURES : toute régression future échoue immédiatement.
 from __future__ import annotations
 
 import pytest
-from _conformance_corpus import CORPUS_KEYS
+from _conformance_corpus import CORPUS_CAP1_KEYS, CORPUS_KEYS
 from _conformance_rules import FILENAME_RULES, RULE_LABELS, RULES
 
 # ---------------------------------------------------------------------------
@@ -116,6 +121,42 @@ def test_r11_dnc_par_associe(corpus: dict[str, dict[str, str]], type_key: str) -
     )
     violations = rule_r11_dnc_par_associe(corpus[type_key], EXPECTED_DNC_PP[type_key])
     assert not violations, f"R11 — {R11_LABEL} ({type_key}) :\n" + "\n".join(violations)
+
+
+# ---------------------------------------------------------------------------
+# R13 — accord euro/euros après un montant SINGULIER (Rafael 2026-07-09)
+# ---------------------------------------------------------------------------
+#
+# « si montant = 1 -> 1 euro, si 100 -> 100 euros » : PARTOUT, tous types, tous
+# documents. Appliquée au corpus « montant unitaire = 1 € » (``build_corpus_cap1``) :
+# tout « 1 euros » / « (1) euros » / « un euros » / « 0 euros » (accord singulier faux)
+# est une VIOLATION. Un spot silo-é (hardcodé Python OU figé dans un modèle source)
+# échoue ICI, sur TOUS les types concernés à la fois (gate registre, règle 68 Q4).
+
+
+@pytest.mark.parametrize("type_key", CORPUS_CAP1_KEYS)
+def test_r13_accord_euro(corpus_cap1: dict[str, dict[str, str]], type_key: str) -> None:
+    """Aucun « 1 euros » (montant singulier + pluriel) sur AUCUN document, cap 1 €."""
+    from _conformance_rules import R13_LABEL, rule_r13_accord_euro
+
+    bundle = corpus_cap1[type_key]
+    violations: list[str] = []
+    for doc_name in sorted(bundle):
+        for extract in rule_r13_accord_euro(bundle[doc_name]):
+            violations.append(f"({type_key} × {doc_name} × R13) {extract}")
+    assert not violations, (
+        f"R13 — {R13_LABEL} : {len(violations)} violation(s)\n" + "\n".join(violations)
+    )
+
+
+def test_corpus_cap1_couvre_les_types(corpus_cap1: dict[str, dict[str, str]]) -> None:
+    """Le corpus cap1 couvre exactement ``CORPUS_CAP1_KEYS`` (bundles non vides)."""
+    assert set(corpus_cap1) == set(CORPUS_CAP1_KEYS)
+    for type_key in CORPUS_CAP1_KEYS:
+        bundle = corpus_cap1[type_key]
+        assert bundle, f"{type_key} : bundle cap1 vide"
+        for doc_name, text in bundle.items():
+            assert text.strip(), f"{type_key} × {doc_name} : document cap1 vide"
 
 
 def test_corpus_couvre_tous_les_types(corpus: dict[str, dict[str, str]]) -> None:

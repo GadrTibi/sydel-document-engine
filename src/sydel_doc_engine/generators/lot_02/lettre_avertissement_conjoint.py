@@ -33,6 +33,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_subject_heading,
     new_document,
 )
+from sydel_doc_engine.utils.grammar import euro_word, montant_avec_euros
 
 OUTPUT_FILENAME = "lettre_avertissement_conjoint.docx"
 
@@ -84,7 +85,9 @@ class LettreAvertissementConjointGenerator:
             (
                 "d'une somme en numéraire de "
                 f"{required_text(apport.montant_lettres, 'apport.montant_lettres')} "
-                f"({required_text(apport.montant, 'apport.montant')}) euros dépendant "
+                f"({required_text(apport.montant, 'apport.montant')}) "
+                # Accord euro/euros (Rafael 2026-07-09) sur le montant en parentheses.
+                f"{euro_word(required_text(apport.montant, 'apport.montant'))} dépendant "
                 "de notre communauté."
             ),
             alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
@@ -257,7 +260,7 @@ def _mention_manuscrite(
     informe = _conjoint_informe(ctx)
     return (
         f"(Faire précéder de la mention « j’atteste avoir été {informe} de l’apport de "
-        f"{montant} euros par {apporteur_label} {destination} »)"
+        f"{montant_avec_euros(montant)} par {apporteur_label} {destination} »)"
     )
 
 

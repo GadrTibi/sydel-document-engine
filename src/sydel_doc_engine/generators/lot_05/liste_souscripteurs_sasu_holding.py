@@ -20,11 +20,13 @@ from datetime import date
 from pathlib import Path
 
 from sydel_doc_engine.domain.models import DocumentGenerationContext, Person
+from sydel_doc_engine.front_app.field_derivations import group_montant
 from sydel_doc_engine.rendering.docx_builder import (
     add_bordered_data_table,
     add_paragraph,
     new_document,
 )
+from sydel_doc_engine.utils.grammar import montant_avec_euros
 
 DOCUMENT_CODE = "DOC-050"
 OUTPUT_FILENAME = "liste_souscripteurs_sasu_holding.docx"
@@ -52,8 +54,14 @@ class ListeSouscripteursSasuHoldingGenerator:
                 "Montant des souscriptions",
             ],
             [
-                [data.souscripteur_nom, f"{data.nb_actions_dot} ", f"{data.montant} "],
-                ["TOTAL", f"{data.nb_actions_dot} actions", f"{data.montant} euros"],
+                [
+                    data.souscripteur_nom,
+                    f"{data.nb_actions_dot} ",
+                    # R5 (Rafael 2026-07-09) : montant groupe des 4 chiffres (« 1 000 »).
+                    f"{group_montant(data.montant)} ",
+                ],
+                # TOTAL : montant groupe + unite « euros » derivee/accordee (« 1 000 euros »).
+                ["TOTAL", f"{data.nb_actions_dot} actions", f"{montant_avec_euros(data.montant)}"],
             ],
         )
         add_paragraph(document, f"Fait à {data.lieu_signature}")

@@ -33,7 +33,12 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_signature_table as _add_signature_table,
 )
 from sydel_doc_engine.utils.departements import departement_nom
-from sydel_doc_engine.utils.grammar import elision_de, montant_lettres_avec_unite
+from sydel_doc_engine.utils.grammar import (
+    elision_de,
+    euro_word,
+    montant_avec_euros,
+    montant_lettres_avec_unite,
+)
 
 DOCUMENT_CODE = "CODE-STATUTS-SELAS-MULTI-001"
 STRUCTURE_SELAS = "SELAS"
@@ -497,7 +502,7 @@ def _add_morale_comparution(document, associe: StatutsCivilsAssocie) -> None:
         f"La {_required_text(associe.denomination, 'associes[].denomination')}, "
         f"{_required_text(associe.forme_juridique, 'associes[].forme_juridique')}, "
         "au capital de "
-        f"{_required_text(associe.capital_social, 'associes[].capital_social')} euros "
+        f"{montant_avec_euros(_required_text(associe.capital_social, 'associes[].capital_social'))} "  # noqa: E501
         f"dont le siège social est situé au {_address_display(associe.siege, 'associes[].siege')}, "
         f"immatriculée au RCS de {_required_text(associe.ville_rcs, 'associes[].ville_rcs')} "
         f"sous le numéro {_required_text(associe.numero_rcs, 'associes[].numero_rcs')}, "
@@ -523,15 +528,17 @@ def _add_apports_block(document, data: _ResolvedSelasMulti) -> None:
             add_paragraph(
                 document,
                 f"La {_required_text(associe.denomination, 'associes[].denomination')}, "
-                f"apporte à la société la somme de {montant_lettres} ({montant}) euros.",
+                f"apporte à la société la somme de {montant_lettres} ({montant}) "
+                f"{euro_word(montant)}.",
             )
         else:
             # Source para 72 : "[civilite] [prenoms] [nom], apporte a la societe la somme de
             # [lettres] ([montant]) euros" (pas de point final pour la personne physique).
+            # Accord euro/euros (Rafael 2026-07-09) sur le montant en parentheses.
             add_paragraph(
                 document,
                 f"{_person_label(associe)}, apporte à la société la somme de "
-                f"{montant_lettres} ({montant}) euros",
+                f"{montant_lettres} ({montant}) {euro_word(montant)}",
             )
 
 
@@ -681,26 +688,31 @@ def _add_apports_block_dentiste(document, data: _ResolvedSelasMulti) -> None:
         montant_lettres = _required_text(
             apport.montant_lettres, "associes[].apport.montant_lettres"
         )
+        # Accord euro/euros (Rafael 2026-07-09) sur les lettres ET le chiffre.
         if _is_morale(associe):
             # Variante personne morale : "- La [denomination], apporte [LETTRES] euros".
             add_paragraph(
                 document,
                 f"- La {_required_text(associe.denomination, 'associes[].denomination')}, "
-                f"apporte {montant_lettres} euros ",
+                f"apporte {montant_lettres} {euro_word(montant)} ",
             )
         else:
             # Source para 71 : "- Le Docteur [prenoms] [nom], apporte [LETTRES] euros ".
             add_paragraph(
                 document,
-                f"- {_apporteur_label_dentiste(associe)}, apporte {montant_lettres} euros ",
+                f"- {_apporteur_label_dentiste(associe)}, apporte {montant_lettres} "
+                f"{euro_word(montant)} ",
             )
         # Source para 72 : "Ci\t...\t[montant] euros" (onze tabulations).
-        add_paragraph(document, f"Ci\t\t\t\t\t\t\t\t\t\t\t{montant} euros")
+        add_paragraph(document, f"Ci\t\t\t\t\t\t\t\t\t\t\t{montant_avec_euros(montant)}")
     # Source para 76 : trait separateur "\t...\t___________" (onze tabulations).
     add_paragraph(document, "\t\t\t\t\t\t\t\t\t\t\t___________")
     add_paragraph(document, "")
     # Source para 78 : "Total des apports\t...\t[total] euros" (neuf tabulations).
-    add_paragraph(document, f"Total des apports\t\t\t\t\t\t\t\t\t{capital_social} euros")
+    add_paragraph(
+        document,
+        f"Total des apports\t\t\t\t\t\t\t\t\t{montant_avec_euros(capital_social)}",
+    )
 
 
 def _add_capital_block_dentiste(document, data: _ResolvedSelasMulti) -> None:

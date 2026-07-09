@@ -33,7 +33,10 @@ RAPPEL_TITLE_SUFFIX = chr(0x00A0) + ": Article L123-5 du code de commerce"
 RAPPEL_PARAGRAPH_1 = (
     "Le fait de donner, de mauvaise foi, des indications inexactes ou incomplètes en vue d’une "
     "immatriculation, d’une radiation ou d’une mention complémentaire ou rectificative au registre "
-    "du commerce et des sociétés est puni d’une amende de 4500 euros et d’un emprisonnement de "
+    # Rafael 2026-07-09 (R5, groupement des milliers dès 4 chiffres, « partout ») : le
+    # montant de l'amende légale (art. L123-5) est groupé « 4 500 euros » comme tout
+    # montant ≥ 4 chiffres. Sens juridique inchangé (typographie française standard).
+    "du commerce et des sociétés est puni d’une amende de 4 500 euros et d’un emprisonnement de "
     "six mois."
 )
 RAPPEL_PARAGRAPH_2 = (

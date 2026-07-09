@@ -30,7 +30,10 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_statuts_signature_block,
     new_document,
 )
-from sydel_doc_engine.utils.grammar import integer_to_french_words
+from sydel_doc_engine.utils.grammar import (
+    accord_euros_apres_montant,
+    integer_to_french_words,
+)
 
 DOCUMENT_CODE = "CODE-STATUTS-SPFPL-001"
 SPFPL_CESSION_STRUCTURE = "SPFPL cession"
@@ -392,7 +395,11 @@ def replace_placeholders(text: str, replacements: dict[str, str]) -> str:
     rendered = text
     for placeholder, value in replacements.items():
         rendered = rendered.replace(placeholder, value)
-    return rendered
+    # Accord euro/euros (Rafael 2026-07-09, « partout = partout ») : l'unite « euros »
+    # est FIGEE dans les blocs sources SPFPL (« Au capital de [capital_social] euros »,
+    # « fixé à la somme d'un ([capital_social]) euros ») -> accordee « 1 euro » quand la
+    # valeur substituee est singuliere (0/1). Le pluriel n'est jamais touche.
+    return accord_euros_apres_montant(rendered)
 
 
 def _ligne_situation_maritale(founder: SpfplPerson, field_name: str) -> str:

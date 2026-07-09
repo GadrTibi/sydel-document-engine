@@ -37,7 +37,11 @@ from sydel_doc_engine.rendering.docx_builder import (
     new_document,
 )
 from sydel_doc_engine.utils.departements import departement_nom
-from sydel_doc_engine.utils.grammar import apply_gender_pairs, euro_word
+from sydel_doc_engine.utils.grammar import (
+    accord_euros_apres_montant,
+    apply_gender_pairs,
+    euro_word,
+)
 
 DOCUMENT_CODE = "CODE-STATUTS-SEL-001"
 STRUCTURE_SELARL = "SELARL"
@@ -1108,7 +1112,12 @@ def replace_placeholders(text: str, replacements: dict[str, str]) -> str:
     # Akainu B1 regle 68) doit etre traitee AVANT le token nu « [valeur…] » qu'elle contient.
     for placeholder in sorted(replacements, key=len, reverse=True):
         rendered = rendered.replace(placeholder, replacements[placeholder])
-    return rendered
+    # Accord euro/euros (Rafael 2026-07-09, « partout = partout ») : l'unite « euros »
+    # est FIGEE dans les blocs sources SEL (« Au capital de [capital_social] euros »,
+    # « la somme de [montant_apport] euros ») — apres substitution d'une valeur
+    # singuliere (0/1) elle devient fautive « 1 euros » -> accordee « 1 euro ». Le
+    # pluriel n'est jamais touche (« 600 euros », « 21 euros » intacts).
+    return accord_euros_apres_montant(rendered)
 
 
 # Paires d'accord en genre des statuts SEL, pilotees par le genre de l'associe.

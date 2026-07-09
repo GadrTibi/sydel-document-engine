@@ -24,7 +24,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_paragraph,
     new_document,
 )
-from sydel_doc_engine.utils.grammar import capitalize_first
+from sydel_doc_engine.utils.grammar import capitalize_first, montant_avec_euros
 
 OUTPUT_FILENAME = "pv_remuneration_president.docx"
 REMUNERATION_TYPE_ABSENCE = "absence_remuneration"
@@ -42,7 +42,7 @@ class PvRemunerationPresidentGenerator:
             [
                 data.denomination,
                 data.forme_sociale,
-                f"Au capital de {data.capital_social} euros",
+                f"Au capital de {montant_avec_euros(data.capital_social)}",
                 f"Siège social : {data.adresse_siege}",
                 f"En cours d'immatriculation au RCS de {data.ville_rcs}",
             ],

@@ -162,3 +162,25 @@ Lot Albane « mise en forme » (SELARL/SELAS/SCI). Points **non buildables sans 
 
 ### Tracé 2026-07-02 (Akainu n1 — propagation police, question métier Albane)
 - **Police 10 pt sur les civils À HIÉRARCHIE DE TITRES (SCI / SCI-IRIS)** : le retour Albane « tout en police 12 au lieu de 10 » a été corrigé sur le **micro-holding** (le doc qu'elle a testé) — son en-tête est tout en style « Normal » → forçage 10 pt correct, aucun titre aplati. Le fix `_force_charter_font_size` (docDefaults + « Normal ») s'applique à TOUS les civils par injection, MAIS SCI / SCI-IRIS ont en plus une **vraie hiérarchie de styles de titre** propre à leur modèle Albane (style `Title` = 14 pt, style `heading 1` = 12 pt sur le bloc en-tête dénomination/forme/capital/adresse + sous-labels « Préemption »/« Agrément », pagination footer 8 pt). Ces tailles sont **pré-existantes et byte-identiques à HEAD** (design du modèle, PAS le bug corps-à-12 du micro-holding) → volontairement NON forcées à 10 pt (les forcer APLATIRAIT la hiérarchie voulue). **À CONFIRMER Albane** : si elle ouvre un SCI, son bloc en-tête (dénomination/forme/capital) sera à 12 pt et le titre à 14 pt — est-ce l'intention (hiérarchie de titres conservée), ou « tout en 10 » doit-il s'appliquer AUSSI au corps de ces documents à titres ? Défaut actuel = hiérarchie du modèle préservée (non inventé). P2.
+
+## Lot 2026-07-09 — devise art.7 + variable (remontés par le fix devise art.6)
+- **SCS art.7 / SCM art.7** : « capital minimal fixé à mille (1 000) » et « divisé en 100 parts de 10 » SANS unité (slots du modèle tokenisé). La convention devise 07-09 (art.6 : « euros »/« € ») s'y applique-t-elle par défaut ? (défaut retenu = OUI, propager ; à confirmer si un format « capital variable » différent est voulu).
+- **En-têtes « a capital variable »** (SCI/SCS/micro) : « à » attendu (accent) ? La domiciliation corrige déjà en « à » → incohérence inter-docs à trancher.
+- **Contrat d'apport SPFPL** : « chirurgiens-dentistes de profession » au PLURIEL pour UNE personne → « chirurgien-dentiste » singulier attendu ? (non attrapé par R12, continuation de phrase).
+
+## Lot 2026-07-09 — accord euro/euros (R13) + groupement dès 4 chiffres (R5 abaissé)
+- **Amende légale DNC « 4 500 euros » (art. L123-5)** : le montant de l'amende, verbatim
+  du texte légal, était rendu **non groupé** (« 4500 euros »). Le seuil de groupement R5 a
+  été abaissé à **4 chiffres** (Rafael 2026-07-09, « 1000 → 1 000 partout ») → l'amende sort
+  désormais « **4 500 euros** » (typographie française standard, sens juridique inchangé).
+  **À CONFIRMER Albane/Rafael** si le montant statutaire d'une amende doit rester verbatim
+  non groupé ; défaut retenu = groupé comme tout montant (cohérence R5 « partout »).
+- **Cellules de tableau de montants (€ vs euros)** : le modèle SCS ne tranche pas l'unité des
+  cellules « Montant des souscriptions » (par associé : montant nu ; TOTAL : « euros »). Défaut
+  retenu = **cohérence intra-document** = celle du modèle (par associé nu groupé « 600 » ;
+  TOTAL groupé + « euros » dérivé « 1 000 euros »). À confirmer si un « € » homogène est voulu.
+
+## Gate Akainu doc-entier 2026-07-09 — 2 points tracés (MINEUR/NITPICK, inatteignables ou verbatim modèle)
+- **[m1] SPFPL marié sans conjoint** : le générateur rend « Marié avec (À COMPLÉTER…) » si conjoint non saisi. INATTEIGNABLE en prod : le front SPFPL BLOQUE la génération tant que le conjoint n'est pas renseigné (ValueError « Prénom du conjoint requis »). Décision retenue : la garde front est le mécanisme ; §6.3 « pas de mention sans nom » ne s'applique pas ici car SPFPL IMPOSE le nom du conjoint. À confirmer Rafael SI un marié-sans-conjoint doit être autorisé (→ alors statut nu « Marié » sans « avec »).
+- **[n1] Lettre conjoint « à la SPFPL SPFPL MARTIN »** : doublon apparent « SPFPL » = le modèle source juxtapose littéralement [forme_abregee] [denomination] et la dénomination contient déjà « SPFPL ». Moteur byte-fidèle. Dé-dupliquer = décision Albane (fidélité modèle vs lisibilité).
+- **[modèle] « alinéa 1 er », « a capital variable »** : typos verbatim des modèles source byte-lockés → correction = décision Albane (fidélité vs orthographe irréprochable 07-07).

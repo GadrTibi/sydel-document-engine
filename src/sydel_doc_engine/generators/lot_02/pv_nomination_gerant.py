@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 from datetime import date
 from pathlib import Path
 
@@ -18,6 +17,7 @@ from sydel_doc_engine.domain.models import (
     Emprunt,
     ReunionPresident,
 )
+from sydel_doc_engine.front_app.field_derivations import group_montant
 from sydel_doc_engine.rendering.docx_builder import (
     add_centered_block,
     add_framed_title,
@@ -28,7 +28,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_spacer,
     new_document,
 )
-from sydel_doc_engine.utils.grammar import euro_word
+from sydel_doc_engine.utils.grammar import euro_word, montant_avec_euros
 
 OUTPUT_FILENAME = "pv_nomination_gerant.docx"
 DOCUMENT_CODE = "CODE-PV-001"
@@ -277,10 +277,10 @@ def _capital_social(company: Company) -> str:
 
 
 def _capital_social_header(company: Company) -> str:
-    capital = _capital_social(company)
-    if re.search(r"\b(?:euro|euros|eur|€)\s*$", capital, flags=re.IGNORECASE):
-        return capital
-    return f"{capital} euros"
+    # Rafael 2026-07-09 : unite ACCORDEE (« 1 euro » / « 600 euros », jamais
+    # « 1 euros ») ; montant_avec_euros est idempotent (saisie legacy avec unite
+    # -> intacte) et couvre la garde « euro/eur/€ deja present » ci-dessus (R13).
+    return montant_avec_euros(_capital_social(company))
 
 
 def _forme_sociale_affichage(company: Company) -> str:
@@ -516,7 +516,7 @@ def _add_introduction(
         # clause « de {valeur} euro chacune », « au siege de la Societe ».
         text = (
             f"Les associés de la {company_designation}, au capital de "
-            f"{_capital_social(company)}, composé de {nb_parts_total} actions, "
+            f"{group_montant(_capital_social(company))}, composé de {nb_parts_total} actions, "
             "se sont réunis au siège de la Société."
         )
         _add_paragraph(
@@ -531,7 +531,7 @@ def _add_introduction(
         "capital.valeur_nominale_part",
     )
     common = (
-        f"de la {company_designation}, au capital de {_capital_social(company)}, "
+        f"de la {company_designation}, au capital de {group_montant(_capital_social(company))}, "
         f"composé de {nb_parts_total} parts de {valeur_nominale} "
         f"{euro_word(valeur_nominale)} chacune, "
     )

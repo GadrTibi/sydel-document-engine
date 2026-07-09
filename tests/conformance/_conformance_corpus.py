@@ -367,3 +367,220 @@ def build_corpus(base_dir: Path) -> dict[str, dict[str, str]]:  # noqa: C901 - a
     if missing:  # défense : la liste statique et le bâtisseur doivent rester alignés
         raise RuntimeError(f"types du corpus non générés : {sorted(missing)}")
     return corpus
+
+
+# ---------------------------------------------------------------------------
+# Corpus « montant unitaire = 1 » (R13, accord euro/euros — Rafael 2026-07-09)
+# ---------------------------------------------------------------------------
+#
+# But : régénérer chaque type avec un CAPITAL / APPORT de 1 euro pour surfacer TOUT
+# « 1 euros » (accord singulier faux) — hardcodé en Python OU figé dans un modèle
+# source. Un spot silo-é (« 1 euros » resté sur un seul type/document) échoue ICI, sur
+# TOUS les types concernés à la fois (gate registre de propagation, règle 68 Q4).
+#
+# Périmètre : les types dont le capital/apport se force PROPREMENT à 1 (1 part de 1 €,
+# ou apport de 1 € par associé) sans casser un validateur de roster ni un champ
+# « lettres » figé. Les scénarios de CESSION SELARL (figés) et la micro holding (capital
+# variable, jamais 1 €) ne sont PAS régénérés à 1 € : leurs générateurs sont partagés et
+# déjà couverts par les types ci-dessous (statuts_civils_common, autorisation, PV…).
+CORPUS_CAP1_KEYS: tuple[str, ...] = (
+    "selarl",
+    "selarl_regime",
+    "selas_multi",
+    "selas_multi_phys",
+    "selas_uni_medecin",
+    "selas_uni_dentiste",
+    "spfpl_cession",
+    "spfpl_apport",
+    "sas",
+    "sasu_holding",
+    "sci",
+    "sci_iris",
+    "scm",
+    "scs",
+)
+
+
+def _apport_1_euro(associe):
+    """Copie pydantic d'un associé dont l'apport est forcé à 1 euro (1 action/part)."""
+    from sydel_doc_engine.domain.models import StatutsCivilsApport
+
+    update: dict[str, object] = {
+        "apport": StatutsCivilsApport(montant="1", montant_lettres="un")
+    }
+    if getattr(associe, "nb_actions", None) is not None:
+        update["nb_actions"] = 1
+    return associe.model_copy(update=update)
+
+
+def build_corpus_cap1(base_dir: Path) -> dict[str, dict[str, str]]:  # noqa: C901 - assemblage séquentiel, pas de logique
+    """Génère le bundle de chaque type de ``CORPUS_CAP1_KEYS`` avec un montant = 1 €."""
+    import test_clean_front_app as cfa
+    import test_multi_type_front as mtf
+    import test_sasu_holding_plan as sasu_tests
+
+    from sydel_doc_engine.front_app import (
+        civil_statuts_slice as css,
+    )
+    from sydel_doc_engine.front_app import (
+        sas_slice,
+        sasu_holding_slice,
+        selas_multi_slice,
+        spfpl_slice,
+    )
+    from sydel_doc_engine.front_app import (
+        selas_uni_dentiste_slice as sd,
+    )
+    from sydel_doc_engine.front_app import (
+        selas_uni_medecin_slice as sm,
+    )
+    from sydel_doc_engine.front_app.selarl_slice import (
+        PROFESSION_MEDECIN,
+        generate_selarl_dossier,
+    )
+
+    corpus: dict[str, dict[str, str]] = {}
+
+    # --- SELARL création : 1 part de 1 euro (capital = 1). --------------------
+    selarl_cap1 = {
+        "siege_voie": "avenue de Breteuil",
+        "capital_social": "1",
+        "nb_parts_total": 1,
+        "valeur_nominale_part": "1",
+    }
+    corpus["selarl"] = _bundle(
+        generate_selarl_dossier(
+            cfa._valid_selarl_input(PROFESSION_MEDECIN, **selarl_cap1),
+            base_dir / "selarl",
+        )
+    )
+    corpus["selarl_regime"] = _bundle(
+        generate_selarl_dossier(
+            cfa._valid_selarl_input(PROFESSION_MEDECIN, regime_communautaire=True, **selarl_cap1),
+            base_dir / "selarl_regime",
+        )
+    )
+
+    # --- SELAS pluripersonnelle : apport de 1 euro par associé (capital = 2). ---
+    _cap2 = {"capital_social": "2", "nb_actions_total": 2, "valeur_nominale_action": "1"}
+    selas_mixte = mtf._selas_payload()
+    selas_mixte["associes"] = [_apport_1_euro(a) for a in selas_mixte["associes"]]
+    selas_mixte.update(_cap2)
+    corpus["selas_multi"] = _bundle(
+        selas_multi_slice.generate_dossier(selas_mixte, base_dir / "selas_multi")
+    )
+    selas_phys = mtf._selas_payload_n(
+        [_apport_1_euro(mtf._selas_phys("Claire", "Durand", 1)),
+         _apport_1_euro(mtf._selas_phys("Paul", "Martin", 1))]
+    )
+    selas_phys.update(_cap2)
+    corpus["selas_multi_phys"] = _bundle(
+        selas_multi_slice.generate_dossier(selas_phys, base_dir / "selas_multi_phys")
+    )
+
+    # --- SELAS unipersonnelles : capital = 1 euro (1 action de 1 €). -----------
+    def _selas_uni_cap1(slice_mod, key: str):
+        payload = mtf._selas_uni_payload()
+        payload.update(
+            {"capital_social": "1", "nb_actions_total": 1, "valeur_nominale_action": "1"}
+        )
+        return slice_mod.generate_dossier(payload, base_dir / key)
+
+    corpus["selas_uni_medecin"] = _bundle(_selas_uni_cap1(sm, "selas_uni_medecin"))
+    corpus["selas_uni_dentiste"] = _bundle(_selas_uni_cap1(sd, "selas_uni_dentiste"))
+
+    # --- SPFPL cession / apport : capital = 1 euro (1 action de 1 €). ----------
+    def _spfpl_cap1(structure: str, key: str, extra: dict | None = None):
+        payload = mtf._spfpl_payload(structure)
+        payload["nationalite"] = "française"
+        payload["cession_data"] = {
+            **payload["cession_data"],
+            "cible_forme_complete": "société d'exercice libéral à responsabilité limitée",
+        }
+        payload.update(
+            {
+                "capital_social": "1",
+                "nb_actions_total": 1,
+                "valeur_nominale_action": "1",
+                "apport_montant": "1",
+                "apport_nb_parts": 1,
+                "apport_valeur_globale": "1",
+            }
+        )
+        if extra:
+            payload.update(extra)
+        return spfpl_slice.generate_dossier(payload, base_dir / key)
+
+    corpus["spfpl_cession"] = _bundle(_spfpl_cap1("SPFPL cession", "spfpl_cession"))
+    corpus["spfpl_apport"] = _bundle(
+        _spfpl_cap1(
+            "SPFPL apport",
+            "spfpl_apport",
+            {
+                "situation_maritale": "marié",
+                "regime_matrimonial": "la communauté légale",
+                "regime_communautaire": True,
+            },
+        )
+    )
+
+    # --- SAS : capital = 1 euro (numéraire 1 €, aucun apport en nature). -------
+    sas_payload = dict(mtf._sas_payload())
+    sas_payload["nationalite"] = "française"
+    sas_payload.update(
+        {
+            "capital_social": "1",
+            "nb_actions_total": 1,
+            "valeur_nominale_action": "1",
+            "apports_nature_montant": "0",
+            "apports_numeraire_montant": "1",
+            "apport_nb_parts": 1,
+        }
+    )
+    corpus["sas"] = _bundle(sas_slice.generate_dossier(sas_payload, base_dir / "sas"))
+
+    # --- SASU holding : capital = 1 euro (1 action). --------------------------
+    sasu_payload = dict(sasu_tests._payload())
+    sasu_payload.update({"capital_social": "1", "nb_actions": 1})
+    corpus["sasu_holding"] = _bundle(
+        sasu_holding_slice.generate_dossier(sasu_payload, base_dir / "sasu_holding")
+    )
+
+    # --- Types civils : 1 part de 1 euro par associé. -------------------------
+    def _civil_cap1(structure: str, stype: str, associes, extra: dict | None = None):
+        payload = mtf._civil_base(structure, stype, associes)
+        payload.update(
+            {
+                "capital_social": str(len(associes)),
+                "nb_parts_total": len(associes),
+                "valeur_nominale_part": "1",
+            }
+        )
+        if extra:
+            payload.update(extra)
+        return _bundle(css.generate_dossier(_normalise_civil(payload), base_dir / stype))
+
+    corpus["sci"] = _civil_cap1("SCI", "sci", [mtf._pp("Jean", "Durand", 1, 1, 1, "1")])
+    corpus["sci_iris"] = _civil_cap1(
+        "SCI IRIS",
+        "sci_iris",
+        [mtf._pm(1, 1, 1, "1"), mtf._pp("Alice", "Martin", 1, 2, 2, "1")],
+    )
+    corpus["scm"] = _civil_cap1(
+        "SCM",
+        "scm",
+        [mtf._pp("Jean", "Durand", 1, 1, 1, "1"), mtf._pp("Alice", "Martin", 1, 2, 2, "1")],
+    )
+    corpus["scs"] = _civil_cap1(
+        "SCS",
+        "scs",
+        [
+            mtf._pp("Jean", "Durand", 1, 1, 1, "1", role="commandite"),
+            mtf._pp("Alice", "Martin", 1, 2, 2, "1", role="commanditaire"),
+        ],
+    )
+
+    missing = set(CORPUS_CAP1_KEYS) - set(corpus)
+    if missing:
+        raise RuntimeError(f"types du corpus cap1 non générés : {sorted(missing)}")
+    return corpus

@@ -11,6 +11,7 @@ from sydel_doc_engine.generators.lot_05.spfpl_common import (
     company_siege_display,
     elision_de,
     euro_word,
+    montant_avec_euros,
     person_short_identity,
     required_apport_titres,
     required_apporteur,
@@ -70,7 +71,7 @@ class AttestationCapitalListeSouscripteursGenerator:
         )
         add_paragraph(
             docx,
-            f"Société par actions simplifiée au capital de {spfpl_capital} euros",
+            f"Société par actions simplifiée au capital de {montant_avec_euros(spfpl_capital)}",
             alignment=WD_ALIGN_PARAGRAPH.CENTER,
         )
         add_paragraph(
@@ -120,7 +121,7 @@ class AttestationCapitalListeSouscripteursGenerator:
             f"atteste que le capital de la société {spfpl_name} "
             "est réparti de la manière suivante :",
         )
-        add_paragraph(docx, f"Capital social : {spfpl_capital} euros")
+        add_paragraph(docx, f"Capital social : {montant_avec_euros(spfpl_capital)}")
         add_paragraph(
             docx,
             # M1 (Akainu doc-entier 2026-07-07) : accord euro/euros via euro_word (le
@@ -150,14 +151,14 @@ class AttestationCapitalListeSouscripteursGenerator:
             "immatriculée au RCS de "
             f"{required_text(societe_cible.ville_rcs, 'societe_cible.ville_rcs')} "
             f"sous le numéro {required_text(societe_cible.numero_rcs, 'societe_cible.numero_rcs')} "
-            f"pour une valeur de {apport_nature} euros.",
+            f"pour une valeur de {montant_avec_euros(apport_nature)}.",
             # (a) Espace APRES la phrase d'apport (« ... fait apport de ... pour une
             # valeur de ... euros. »).
             space_after_pt=_ATTESTATION_GROUP_SPACER_PT,
         )
         add_paragraph(
             docx,
-            f"Total des apports en nature {apport_nature} euros",
+            f"Total des apports en nature {montant_avec_euros(apport_nature)}",
             # (a) Espace APRES la ligne « Total des apports ».
             space_after_pt=_ATTESTATION_GROUP_SPACER_PT,
         )
@@ -171,7 +172,7 @@ class AttestationCapitalListeSouscripteursGenerator:
             docx,
             f"Le présent état qui constate la souscription d’actions de la société {spfpl_name}, "
             "ainsi que l’apport de la somme de "
-            f"{apport_nature} euros correspondant à la totalité du nominal desdites actions, est "
+            f"{montant_avec_euros(apport_nature)} correspondant à la totalité du nominal desdites actions, est "  # noqa: E501
             "certifié exact, sincère et véritable par le Président, "
             f"{president_identite}.",
         )

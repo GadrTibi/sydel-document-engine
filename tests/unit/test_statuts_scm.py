@@ -165,6 +165,20 @@ def test_statuts_scm_generates_dynamic_associates_apports_parts_and_signatures(
     _assert_clean(text)
 
 
+def test_statuts_scm_entete_capital_accord_singulier(tmp_path: Path) -> None:
+    # Akainu M1 (2026-07-09) : l'en-tete « [capital_social]euros » codait « euros » en dur
+    # -> « Au capital de 1 euros » a capital=1. Accord via montant_avec_euros -> « 1 euro ».
+    ctx = _context()
+    ctx.statuts_civils.capital_social = "1"
+    ctx.statuts_civils.capital_social_lettres = "un"
+    ctx.statuts_civils.nb_parts_total = 1
+    ctx.statuts_civils.valeur_nominale_part = "1"
+    ctx.statuts_civils.associes = [_morale_associe(parts=1, apport="1")]
+    text = _docx_text(StatutsScmGenerator().generate(ctx, tmp_path))
+    assert "Au capital de 1 euro" in text
+    assert "Au capital de 1 euros" not in text
+
+
 def test_statuts_scm_inherits_model_form_single_logo(tmp_path: Path) -> None:
     # R1 (Albane 2026-06-30) : la SCM herite la FORME du modele (page custom ~21 x 29,7,
     # marges du modele) et son header porte le logo SYDEL DEJA present dans le modele. Le rendu

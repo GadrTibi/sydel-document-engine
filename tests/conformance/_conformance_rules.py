@@ -172,10 +172,11 @@ def rule_r4_francais_accentue(text: str) -> list[str]:
 # R5 — groupement des montants (« 60000 » interdit en contexte monétaire)
 # ---------------------------------------------------------------------------
 
-# Run de ≥ 5 chiffres : jamais une partie d'un nombre groupé (un nombre groupé n'a
-# jamais 5 chiffres consécutifs) ; le lookbehind à 2 caractères écarte la QUEUE d'un
-# nombre groupé partiel (« 123 45678 ») sans écarter « de 60000 » (espace seul).
-_R5_DIGITS = re.compile(r"(?<!\d)(?<!\d[\s.,\u00a0\u202f])(\d{5,})(?!\d)")
+# Run de ≥ 4 chiffres (Rafael 2026-07-09, live SCS : « 1000 euros » doit sortir
+# « 1 000 euros » — seuil abaissé de 5 à 4 chiffres). Un montant correctement groupé n'a
+# jamais 4 chiffres consécutifs (« 1 000 » porte un espace) ; le lookbehind à 2 caractères
+# écarte la QUEUE d'un nombre groupé partiel (« 12 3456 ») sans écarter « de 1000 ».
+_R5_DIGITS = re.compile(r"(?<!\d)(?<!\d[\s.,\u00a0\u202f])(\d{4,})(?!\d)")
 _R5_MONEY_AFTER = re.compile(r"^\s?(?:€|euros?\b)")
 _R5_MONEY_BEFORE = re.compile(
     r"(?:capital(?: social)?(?: de| est fixé à| fixé à)|somme de|prix(?: global| total)?"
@@ -187,22 +188,32 @@ _R5_WHITELIST = re.compile(
     r"[^\n]{0,25}$",
     re.IGNORECASE,
 )
+# Le seuil à 4 chiffres croise les ANNÉES (19xx/20xx) : une année n'est JAMAIS un
+# montant à grouper (« le 31 décembre 2026 »). On l'épargne SAUF si une unité monétaire
+# la suit directement (jamais le cas d'une date).
+_R5_ANNEE = re.compile(r"^(?:19|20)\d{2}$")
 
 
 def rule_r5_montants_groupes(text: str) -> list[str]:
-    """Un montant ≥ 5 chiffres non groupé adjacent à un marqueur monétaire est interdit.
+    """Un montant ≥ 4 chiffres non groupé adjacent à un marqueur monétaire est interdit.
 
     Liste blanche par contexte : identifiants (RPPS 11 chiffres, SIREN/RCS, numéros,
-    téléphone) exclus via le contexte AMONT.
+    téléphone) exclus via le contexte AMONT ; les années (19xx/20xx) épargnées sauf si
+    l'unité monétaire les suit directement (jamais le cas d'une date).
     """
     violations: list[str] = []
     for match in _R5_DIGITS.finditer(text):
+        digits = match.group(1)
         start, end = match.span(1)
         before = text[max(0, start - 45) : start]
         after = text[end : end + 12]
         if _R5_WHITELIST.search(before):
             continue
-        monetary = bool(_R5_MONEY_AFTER.search(after)) or bool(_R5_MONEY_BEFORE.search(before))
+        money_after = bool(_R5_MONEY_AFTER.search(after))
+        # Une année (19xx/20xx) sans unité monétaire directe -> date, pas un montant.
+        if _R5_ANNEE.match(digits) and not money_after:
+            continue
+        monetary = money_after or bool(_R5_MONEY_BEFORE.search(before))
         if monetary:
             violations.append(_extract(text, start, end))
     return violations
@@ -385,6 +396,30 @@ def rule_r12_majuscule_debut(text: str) -> list[str]:
             previous = stripped
         offset += len(line) + 1
     return violations
+
+
+# ---------------------------------------------------------------------------
+# R13 — accord euro/euros après un montant SINGULIER (Rafael 2026-07-09)
+# ---------------------------------------------------------------------------
+#
+# « si montant = 1 -> 1 euro, si 100 -> 100 euros » : PARTOUT, tous types, tous
+# documents. Appliquée au corpus « montant unitaire = 1 € » (``build_corpus_cap1``) :
+# tout « 1 euros » (accord singulier faux), « (1) euros », « un/une euros », « 0 euros »
+# (« zéro euro » est singulier en français) est une VIOLATION. « 1 euro » est attendu.
+# Le lookbehind écarte la QUEUE d'un nombre plus grand (« 21 euros », « 101 euros »,
+# « 1 000 euros » = mille euros -> pluriel légitime, jamais flagués).
+_R13_FIGURE = re.compile(r"(?<![\d   ][\d.,])(?<![0-9])([01](?:[.,]0+)?)(?:\s*[)€  ]?\s*)euros\b")
+_R13_LETTRES = re.compile(r"\b(une?)\s+euros\b")
+
+
+def rule_r13_accord_euro(text: str) -> list[str]:
+    """Aucun montant singulier (0/1, « un »/« une ») suivi de « euros » (pluriel)."""
+    violations = _find_all(text, _R13_FIGURE)
+    violations += _find_all(text, _R13_LETTRES)
+    return violations
+
+
+R13_LABEL = "accord euro/euros — « 1 euros » (montant singulier) interdit"
 
 
 # ---------------------------------------------------------------------------

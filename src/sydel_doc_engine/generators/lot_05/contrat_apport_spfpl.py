@@ -29,7 +29,11 @@ from sydel_doc_engine.generators.lot_05.spfpl_common import (
     validate_apport_context,
 )
 from sydel_doc_engine.utils.departements import departement_nom
-from sydel_doc_engine.utils.grammar import _has_real_decimal, monetary_words_from_value
+from sydel_doc_engine.utils.grammar import (
+    _has_real_decimal,
+    accord_euros_apres_montant,
+    monetary_words_from_value,
+)
 
 OUTPUT_FILENAME = "contrat_apport_spfpl.docx"
 _SOURCE_NAME = "Contrat d_apport SEL SPFPL.docx"
@@ -395,7 +399,10 @@ def _replace(text: str, replacements: dict[str, str]) -> str:
     for token in sorted(replacements, key=len, reverse=True):
         if token in out:
             out = out.replace(token, replacements[token])
-    return out
+    # Accord euro/euros (Rafael 2026-07-09, « partout = partout ») : l'unite « euros »
+    # figee dans le DOCX source du contrat d'apport (« prix global de [lettres]
+    # ([figure] €) euros ») devient fautive « 1 euros » pour une valeur singuliere.
+    return accord_euros_apres_montant(out)
 
 
 def _exemplaires(ctx: DocumentGenerationContext) -> str:

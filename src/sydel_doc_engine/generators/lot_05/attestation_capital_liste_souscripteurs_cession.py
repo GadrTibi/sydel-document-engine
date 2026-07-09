@@ -26,7 +26,7 @@ from sydel_doc_engine.generators.lot_05.spfpl_common import (
     validate_cession_context,
 )
 from sydel_doc_engine.rendering.docx_builder import add_paragraph, add_spacer, new_document
-from sydel_doc_engine.utils.grammar import euro_word, subject_line
+from sydel_doc_engine.utils.grammar import euro_word, montant_avec_euros, subject_line
 
 OUTPUT_FILENAME = "attestation_capital_liste_souscripteurs_cession.docx"
 
@@ -92,7 +92,7 @@ class AttestationCapitalListeSouscripteursCessionGenerator:
         )
         add_paragraph(
             docx,
-            f"Société par actions simplifiée au capital de {spfpl_capital} euros",
+            f"Société par actions simplifiée au capital de {montant_avec_euros(spfpl_capital)}",
             alignment=WD_ALIGN_PARAGRAPH.CENTER,
         )
         add_paragraph(
@@ -172,7 +172,7 @@ class AttestationCapitalListeSouscripteursCessionGenerator:
         add_paragraph(
             docx,
             f"{souscripteur_civilite} {souscripteur_prenom} {souscripteur_nom} "
-            f"a fait un apport de {spfpl_capital} euros en numéraire.",
+            f"a fait un apport de {montant_avec_euros(spfpl_capital)} en numéraire.",
             space_after_pt=_ATTESTATION_GROUP_SPACER_PT,
         )
         # [19] Le present etat ... le VERSEMENT de la somme de X euros ... certifie exact ...
@@ -180,7 +180,7 @@ class AttestationCapitalListeSouscripteursCessionGenerator:
             docx,
             f"Le présent état qui constate la souscription d’actions de la société {spfpl_name}, "
             "ainsi que le versement de la somme de "
-            f"{spfpl_capital} euros correspondant à la totalité du nominal desdites actions, est "
+            f"{montant_avec_euros(spfpl_capital)} correspondant à la totalité du nominal desdites actions, est "  # noqa: E501
             "certifié exact, sincère et véritable par le Président, "
             f"{president_identite}",
         )

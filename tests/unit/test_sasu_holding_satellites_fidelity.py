@@ -250,10 +250,11 @@ def test_liste_souscripteurs_fidelity(tmp_path: Path) -> None:
         f"Nombre d{_APOS}actions souscrites",
         "Montant des souscriptions",
     ]
-    # Ligne souscripteur unique (nb actions formate a POINT comme le modele : « 10.000 »).
-    assert rows[1] == ["Monsieur Malo LE GUEN", "10.000 ", "1000 "]
-    # Ligne TOTAL verbatim.
-    assert rows[2] == ["TOTAL", "10.000 actions", "1000 euros"]
+    # Ligne souscripteur unique (nb actions formate a POINT comme le modele : « 10.000 » ;
+    # montant groupe des 4 chiffres « 1 000 » — R5, Rafael 2026-07-09).
+    assert rows[1] == ["Monsieur Malo LE GUEN", "10.000 ", "1 000 "]
+    # Ligne TOTAL : montant groupe + unite « euros » derivee (« 1 000 euros »).
+    assert rows[2] == ["TOTAL", "10.000 actions", "1 000 euros"]
 
     # Signature : « Fait à <lieu> » / « Le <jj/mm/aaaa> » / « <prenom> <nom> » (espace de tete).
     assert "Fait à KERVIGNAC" in body

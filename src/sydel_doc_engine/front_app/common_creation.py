@@ -183,6 +183,11 @@ def founder_person(common: CommonDocsInput) -> Person:
         adresse_perso=address,
         date_naissance=f.date_naissance,
         ville_naissance=f.ville_naissance,
+        # Akainu M2 (2026-07-09) : le dept de naissance manquait sur le Person du gerant
+        # -> sa DNC rendait « ne a Paris » (sans « (75) ») alors que les DNC des autres
+        # associes (dnc_par_associe) portaient « a Paris (75) » : formats incoherents dans
+        # le meme bundle. On aligne (le champ existe deja, cf. builders l.276/356).
+        departement_naissance=f.departement_naissance,
         nationalite=f.nationalite,
         nom_pere=f.nom_pere,
         nom_mere=f.nom_mere,

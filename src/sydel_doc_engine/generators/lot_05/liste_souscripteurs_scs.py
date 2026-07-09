@@ -11,6 +11,7 @@ from sydel_doc_engine.domain.models import (
     DocumentGenerationContext,
     StatutsCivilsAssocie,
 )
+from sydel_doc_engine.front_app.field_derivations import group_montant
 from sydel_doc_engine.utils.grammar import montant_avec_euros
 
 OUTPUT_FILENAME = "liste_souscripteurs_scs.docx"
@@ -137,7 +138,11 @@ class ListeSouscripteursScsGenerator:
             ),
             "[adresse_siege]": _siege(company),
             "[ville_rcs]": _txt(company.ville_rcs if company else None),
-            "[montant_sous]": str(total_montant),
+            # Rafael 2026-07-09 (SCS liste souscripteurs, live) : le TOTAL et la somme
+            # du corps (P13 « la somme de [montant_sous] euros ») sortaient NON GROUPES
+            # (« 1000 euros ») car total_montant est une somme entiere brute -> groupee
+            # des 4 chiffres (« 1 000 »). L'unite « euros » est portee par le modele.
+            "[montant_sous]": group_montant(str(total_montant)),
             "[lieu_signature]": _txt(signature.lieu if signature else None),
             "[date_signature]": _date(signature),
             "[prenom]": _txt(certificateur.prenom),
@@ -195,13 +200,18 @@ class ListeSouscripteursScsGenerator:
                 "[nom]": "",
                 "[adresse_personnelle]": adresse,
                 "[nb_actions]": str(_associe_nb_parts(associe)),
-                "[montant_sous]": _associe_montant(associe) or "0",
+                # Montant de souscription par associe groupe des 4 chiffres (Rafael
+                # 2026-07-09) — « 1 200 » et non « 1200 » si un apport atteint le millier.
+                "[montant_sous]": group_montant(_associe_montant(associe) or "0"),
             }
             for cell in row.cells:
                 for paragraph in cell.paragraphs:
                     _apply_to_paragraph(paragraph, per)
-        # Ligne TOTAL : total parts + total montant.
-        total_repl = {"[nb_actions]": str(total_parts), "[montant_sous]": str(total_montant)}
+        # Ligne TOTAL : total parts + total montant (groupe des 4 chiffres, Rafael 2026-07-09).
+        total_repl = {
+            "[nb_actions]": str(total_parts),
+            "[montant_sous]": group_montant(str(total_montant)),
+        }
         for cell in total_row.cells:
             for paragraph in cell.paragraphs:
                 _apply_to_paragraph(paragraph, total_repl)

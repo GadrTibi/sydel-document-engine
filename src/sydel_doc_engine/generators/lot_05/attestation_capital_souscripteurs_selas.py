@@ -18,7 +18,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_paragraph,
     new_document,
 )
-from sydel_doc_engine.utils.grammar import subject_line
+from sydel_doc_engine.utils.grammar import montant_avec_euros, subject_line
 
 OUTPUT_FILENAME = "attestation_capital_souscripteurs_selas.docx"
 DOCUMENT_CODE = "CODE-SELAS-ATTESTATION-CAPITAL-001"
@@ -52,7 +52,7 @@ class AttestationCapitalSouscripteursSelasGenerator:
                 data.denomination,
                 "Société d'exercice libérale par Actions simplifiées de "
                 f"{data.profession}",
-                f"Au capital de {data.capital_social} euros",
+                f"Au capital de {montant_avec_euros(data.capital_social)}",
                 f"Siège social : {data.adresse_siege}",
                 "En cours d'immatriculation",
             ],
@@ -91,7 +91,7 @@ class AttestationCapitalSouscripteursSelasGenerator:
             document,
             "Le présent état qui constate la souscription d'actions de la société "
             f"{data.denomination}, ainsi que le versement de la somme de "
-            f"{data.capital_social} euros correspondant à la totalité du nominal "
+            f"{montant_avec_euros(data.capital_social)} correspondant à la totalité du nominal "
             "desdites actions, est certifié exact, sincère et véritable par le Président, "
             f"{data.president_identite}",
         )
@@ -190,8 +190,8 @@ class _ResolvedAttestationSelas:
             )
             montant_numeraire = _format_amount(valeur_nominale * Decimal(nb_actions))
             apport_lignes.append(
-                f"{civilite} {nom_complet} a fait un apport de {montant_numeraire} "
-                "euros en numéraire."
+                f"{civilite} {nom_complet} a fait un apport de "
+                f"{montant_avec_euros(montant_numeraire)} en numéraire."
             )
 
         if total_actions != nb_actions_total:

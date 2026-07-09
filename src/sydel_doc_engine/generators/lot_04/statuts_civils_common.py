@@ -36,6 +36,7 @@ from sydel_doc_engine.rendering.docx_builder import (
 from sydel_doc_engine.utils.dates import format_date_longue_fr
 from sydel_doc_engine.utils.grammar import (
     _has_real_decimal,
+    accord_euros_apres_montant,
     capitalize_first,
     euro_word,
     montant_avec_euros,
@@ -238,6 +239,11 @@ def generate_statuts_civil_docx(  # noqa: C901
         if not text:
             continue
         rendered = _replace_placeholders(text, replacements)
+        # Accord euro/euros (Rafael 2026-07-09, « partout = partout ») : l'unite « euros »
+        # est FIGEE dans le DOCX source (« Au capital de [capital_social] euros ») — apres
+        # substitution d'une valeur singuliere (0/1) elle devient fautive « 1 euros ». On
+        # accorde sur le TEXTE rendu du modele, sans jamais toucher au pluriel.
+        rendered = accord_euros_apres_montant(rendered)
         rendered = _strip_editorial_marker(rendered)
         if not rendered:
             continue
@@ -528,7 +534,9 @@ def _add_morale_identity_micro_holding(document, associe: StatutsCivilsAssocie) 
     _bold_paragraph(add_paragraph(document, f"- {_mh_morale_denomination(associe)}"))
     add_paragraph(document, _required_text(associe.forme_juridique, "associes[].forme_juridique"))
     capital_morale = _required_text(associe.capital_social, "associes[].capital_social")
-    add_paragraph(document, f"Au capital de {capital_morale} euros")
+    # Accord euro/euros (Rafael 2026-07-09) : « 1 euro » / « 1 000 euros », jamais
+    # « 1 euros » — montant_avec_euros idempotent (capital deja groupe cote front).
+    add_paragraph(document, f"Au capital de {montant_avec_euros(capital_morale)}")
     add_paragraph(
         document, f"Siège social : {_address_display(associe.siege, 'associes[].siege')}"
     )
@@ -601,7 +609,7 @@ def _add_apport_block(document, data: _ResolvedStatutsCivil) -> None:
     # accents compris, par le chemin source standard. Cf. _CIVILS_FIX_SPEC_V1.md.
     add_paragraph(
         document,
-        f"SOIT AU TOTAL {capital_social} euros",
+        f"SOIT AU TOTAL {montant_avec_euros(capital_social)}",
     )
 
 
@@ -711,17 +719,17 @@ def _add_apport_block_micro_holding(document, data: _ResolvedStatutsCivil) -> No
     # moteur, cf. SCI « ci\t<montant> euros ») -> seul ecart cosmetique, sans valeur juridique.
     for associe in data.associes:
         apport = _required_apport(associe)
+        mh_montant = _required_text(apport.montant, "associes[].apport.montant")
+        # Accord euro/euros (Rafael 2026-07-09) sur les lettres ET le chiffre.
         add_paragraph(
             document,
             f"{_mh_short_label(associe)} apporte la somme de "
-            f"{_required_text(apport.montant_lettres, 'associes[].apport.montant_lettres')} euros",
+            f"{_required_text(apport.montant_lettres, 'associes[].apport.montant_lettres')} "
+            f"{euro_word(mh_montant)}",
         )
-        add_paragraph(
-            document,
-            f"\tCi\t{_required_text(apport.montant, 'associes[].apport.montant')} euros",
-        )
+        add_paragraph(document, f"\tCi\t{montant_avec_euros(mh_montant)}")
     capital_social = _required_text(data.statuts.capital_social, "statuts_civils.capital_social")
-    add_paragraph(document, f"Total des apports : \t{capital_social} euros")
+    add_paragraph(document, f"Total des apports : \t{montant_avec_euros(capital_social)}")
     depot = data.statuts.capital_depot
     banque_nom = _required_text(
         depot.banque_nom if depot else None, "statuts_civils.capital_depot.banque_nom"
@@ -812,7 +820,8 @@ def _add_capital_block_scs(document, data: _ResolvedStatutsCivil) -> None:
     )
     add_paragraph(
         document,
-        f"Le capital social effectif est fixé à {capital_lettres}({capital_social}) euros. "
+        f"Le capital social effectif est fixé à {capital_lettres}({capital_social}) "
+        f"{euro_word(capital_social)}. "
         f"Il est divisé en {nb_parts_total_lettres} ({nb_parts_total}) parts sociales de "
         f"{valeur_nominale_part_lettres} ({valeur_nominale_part}) "
         f"{euro_word(valeur_nominale_part)} chacune de valeur nominale, "
@@ -950,8 +959,10 @@ def _add_apport_line(
         # [lettres], [montant]" etait le format SCS, croise par erreur sur la SCI
         # (ni "euros", ni "ci", "apporte" invente).
         add_paragraph(document, _signature_label(associe))
-        add_paragraph(document, f"La somme de {montant_lettres} euros,")
-        add_paragraph(document, f"ci\t{montant} euros")
+        # Accord euro/euros (Rafael 2026-07-09) sur les DEUX rendus (lettres + chiffre) :
+        # « un euro » / « ci 1 euro » pour 1, « mille euros » / « ci 1 000 euros » sinon.
+        add_paragraph(document, f"La somme de {montant_lettres} {euro_word(montant)},")
+        add_paragraph(document, f"ci\t{montant_avec_euros(montant)}")
     else:
         # Format SCS source para 43-44 : "- [label] apporte," puis
         # "la somme de [lettres], <TAB>[montant]" (virgule + espace + TAB).

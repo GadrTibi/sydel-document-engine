@@ -251,6 +251,37 @@ def euro_word(value: object) -> str:
     return "euro" if abs(int(integer_part)) < 2 else "euros"
 
 
+_ACCORD_EUROS_FIGURE: Final = re.compile(
+    # « euros » pluriel precede — apres separateurs NEUTRES (espaces, insecables, « ) »,
+    # « € ») — d'une quantite SINGULIERE : figure dont la partie entiere vaut 0 ou 1
+    # (« 1 », « (1) », « 1 € », « 1,00 »). Le lookbehind negatif empeche de mordre la
+    # QUEUE d'un nombre plus grand (« 21 euros », « 101 euros » : le « 1 » y est precede
+    # d'un chiffre -> non singulier).
+    r"(?<![\d   ][\d.,])(?<![0-9])([01](?:[.,]0+)?)"
+    r"(\s*(?:€|\)| | )?\s*)euros\b"
+)
+_ACCORD_EUROS_LETTRES: Final = re.compile(
+    # Mot « un »/« une » (mise en lettres du 1) directement suivi — via separateurs
+    # neutres eventuels — de « euros » : « un euros » -> « un euro » ; « une euros ».
+    r"\b(une?)(\s+)euros\b"
+)
+
+
+def accord_euros_apres_montant(text: str) -> str:
+    """Corrige l'accord « euros » -> « euro » APRES un montant SINGULIER, sur un texte
+    DEJA rendu (Rafael 2026-07-09, « partout = partout »).
+
+    Cible les surfaces verbatim-modele dont l'unite « euros » est FIGEE dans le DOCX
+    source (statuts SCI/SCS : « Au capital de [capital_social] euros ») : quand la valeur
+    substituee vaut 0 ou 1, « 1 euros » est fautif -> « 1 euro ». On n'agit QUE sur un
+    montant strictement singulier ; « 600 euros », « 21 euros », « 2,50 euros » restent
+    intacts. La forme en lettres du 1 (« un euros » / « une euros ») est aussi accordee.
+    Idempotent (« 1 euro » -> « 1 euro »). Ne touche jamais le pluriel.
+    """
+    text = _ACCORD_EUROS_FIGURE.sub(lambda m: f"{m.group(1)}{m.group(2)}euro", text)
+    return _ACCORD_EUROS_LETTRES.sub(lambda m: f"{m.group(1)}{m.group(2)}euro", text)
+
+
 def montant_lettres_avec_unite(lettres: str, figure: object) -> str:
     """Compose « <lettres> <unité euro> » sans espace parasite — anti double-euro.
 
@@ -288,13 +319,36 @@ _MONTANT_NU_RE: Final = re.compile(r"\d[\d\s  ]*(?:[.,]\d+)?")
 _UNITE_EURO_FIN_RE: Final = re.compile(r"(?:euros?|€)\s*$", re.IGNORECASE)
 
 
-def montant_avec_euros(value: str | None) -> str:
-    """Devise automatique d'un montant AFFICHE : « 1 000 » -> « 1 000 euros ».
+# Partie entiere / decimale d'un montant nu (separateurs d'espace, insecables tolérés).
+_MONTANT_PARTS_RE: Final = re.compile(r"(\d[\d\s\u00a0\u202f]*?)([.,]\d+)?$")
 
-    Retour Rafael 2026-07-09 (transverse) : l'utilisateur ne redige JAMAIS
-    « euros » — le moteur derive l'unite. Idempotent et prudent :
-    - montant nu purement numerique -> unite accordee accolée (« 1 euro » /
-      « 600 euros ») ;
+
+def _group_integer_part(text: str) -> str:
+    """Groupe par 3 (espaces) la partie entiere d'un montant nu ; décimale préservée.
+
+    « 1000 » -> « 1 000 » ; « 60000,50 » -> « 60 000,50 » ; idempotent
+    (« 1 000 » -> « 1 000 ») ; « 600 » (< 4 chiffres) inchangé. Autonome (grammar reste
+    sans dépendance sur field_derivations) ; même règle des 4 chiffres que
+    ``field_derivations.group_montant`` (R5, Rafael 2026-07-09).
+    """
+    match = _MONTANT_PARTS_RE.fullmatch(text)
+    if match is None:
+        return text
+    digits = re.sub(r"\D", "", match.group(1))
+    if len(digits) < 4:
+        return text
+    grouped = f"{int(digits):,}".replace(",", " ")
+    return grouped + (match.group(2) or "")
+
+
+def montant_avec_euros(value: str | None) -> str:
+    """Devise automatique d'un montant AFFICHE : « 1000 » -> « 1 000 euros ».
+
+    Retour Rafael 2026-07-09 (transverse) : l'utilisateur ne redige JAMAIS « euros » —
+    le moteur derive l'unite ET groupe les milliers (R5, seuil 4 chiffres). Idempotent
+    et prudent :
+    - montant nu purement numerique -> groupé + unité accordée (« 1 euro » / « 600
+      euros » / « 1 000 euros ») ;
     - unite deja presente (« 1 000 euros », « 600 € ») -> INTACT (pas de doublon) ;
     - texte non purement numerique (marqueur « (À COMPLÉTER : …) », plage, vide)
       -> INTACT : dans le doute, on ne touche pas.
@@ -306,7 +360,8 @@ def montant_avec_euros(value: str | None) -> str:
         return text
     if _MONTANT_NU_RE.fullmatch(text) is None:
         return text
-    return f"{text} {euro_word(text)}"
+    grouped = _group_integer_part(text)
+    return f"{grouped} {euro_word(grouped)}"
 
 
 def capitalize_first(value: str) -> str:

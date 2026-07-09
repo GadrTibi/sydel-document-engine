@@ -27,7 +27,7 @@ from pathlib import Path
 from docx import Document
 
 from sydel_doc_engine.domain.enums import Gender
-from sydel_doc_engine.utils.grammar import apply_gender_pairs
+from sydel_doc_engine.utils.grammar import accord_euros_apres_montant, apply_gender_pairs
 
 _TOKEN_RE = re.compile(r"\[[^\]\[]+\]")
 
@@ -63,6 +63,13 @@ def fill_docx_template(
     if gender_pairs:
         for paragraph in _iter_all_paragraphs(document):
             _apply_gender_pairs_to_paragraph(paragraph, gender_pairs)
+
+    # Accord euro/euros (Rafael 2026-07-09, « partout = partout ») : l'unite « euros »
+    # figee dans les modeles tokenises devient fautive (« 1 euros ») quand la valeur
+    # substituee est singuliere (0/1) -> accordee « 1 euro ». Post-pass au niveau du
+    # paragraphe (comme l'accord de genre) ; le pluriel n'est JAMAIS touche (byte-fidele).
+    for paragraph in _iter_all_paragraphs(document):
+        _accord_euros_paragraph(paragraph)
 
     residual = _collect_residual_tokens(document)
     if residual:
@@ -141,6 +148,29 @@ def _apply_gender_pairs_to_paragraph(
     if paragraph.text != expected_text:
         runs = paragraph.runs
         runs[0].text = expected_text
+        for run in runs[1:]:
+            run.text = ""
+
+
+def _accord_euros_paragraph(paragraph) -> None:
+    """Accorde « euros » -> « euro » apres un montant singulier dans un paragraphe.
+
+    Comme l'accord de genre : on tente run par run (preserve la mise en forme) ; si la
+    correction attendue au niveau du paragraphe n'est pas atteinte (« 1 » et « euros »
+    eclates sur deux runs), on reecrit le texte fusionne sur le 1er run. Idempotent et
+    sans effet sur le pluriel -> aucun risque de regression byte sur « 600 euros ».
+    """
+    if not paragraph.runs or "euro" not in paragraph.text:
+        return
+    original = paragraph.text
+    for run in paragraph.runs:
+        accorded = accord_euros_apres_montant(run.text)
+        if accorded != run.text:
+            run.text = accorded
+    expected = accord_euros_apres_montant(original)
+    if paragraph.text != expected:
+        runs = paragraph.runs
+        runs[0].text = expected
         for run in runs[1:]:
             run.text = ""
 

@@ -31,7 +31,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_spacer,
     new_document,
 )
-from sydel_doc_engine.utils.grammar import euro_word
+from sydel_doc_engine.utils.grammar import euro_word, montant_avec_euros
 
 OUTPUT_FILENAME = "attestation_capital_liste_souscripteurs_sas.docx"
 
@@ -56,7 +56,7 @@ class AttestationCapitalListeSouscripteursSasGenerator:
             document,
             [
                 data.denomination,
-                f"Société par actions simplifiée au capital de {data.capital_social} euros",
+                f"Société par actions simplifiée au capital de {montant_avec_euros(data.capital_social)}",  # noqa: E501
                 "Société de Participations Financières de Profession Libérale de "
                 f"{data.profession_societe}",
                 f"Siège social : {data.adresse_siege}",
@@ -121,7 +121,7 @@ class AttestationCapitalListeSouscripteursSasGenerator:
             document,
             "Le présent état qui constate la souscription d'actions de la société "
             f"{data.denomination}, ainsi que l'apport de la somme de "
-            f"{data.apports_nature_montant} euros correspondant à la totalité du nominal "
+            f"{montant_avec_euros(data.apports_nature_montant)} correspondant à la totalité du nominal "  # noqa: E501
             "desdites actions, est certifié exact, sincère et véritable par le Président, "
             f"{data.president_identite_civile}.",
         )

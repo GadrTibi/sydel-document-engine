@@ -174,8 +174,10 @@ class _ResolvedStatutsScm:
             "[forme_sociale]": self.forme_sociale,
             # Rafael 2026-07-09 (R12/devise, en-tete) : le modele tokenise a perdu
             # l'espace (« [capital_social]euros ») -> cle COMBINEE traitee AVANT la
-            # cle nue (ordre du dict), qui restaure « 1 000 euros ».
-            "[capital_social]euros": f"{capital_social} euros",
+            # cle nue (ordre du dict), qui restaure « 1 000 euros ». Akainu M1 2026-07-09 :
+            # accord euro/euros via montant_avec_euros (capital=1 -> « 1 euro », plus
+            # jamais « 1 euros »), aligne sur le corps de l'art.6 et « Au capital social de ».
+            "[capital_social]euros": montant_avec_euros(capital_social),
             "[capital_social]": capital_social,
             "[capital_lettres]": _required_text(
                 self.statuts.capital_social_lettres,

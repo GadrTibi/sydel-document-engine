@@ -2668,8 +2668,9 @@ def test_selas_uni_medecin_generates_attestation_souscripteurs(tmp_path: Path) -
     # R3 durci (Rafael 2026-07-07) : civilite CIVILE (titre « Docteur » du payload
     # converti, accord au genre du signataire) — plus de « au Dr » / « Le Docteur ».
     assert "100 actions attribuées à Monsieur Alain Fedorowsky," in text
+    # R5 (Rafael 2026-07-09) : montant groupe des 4 chiffres (« 1 000 euros », plus « 1000 »).
     assert (
-        "Monsieur Alain Fedorowsky a fait un apport de 1000 euros en numéraire."
+        "Monsieur Alain Fedorowsky a fait un apport de 1 000 euros en numéraire."
         in text
     )
     assert "Docteur" not in text
