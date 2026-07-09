@@ -450,6 +450,32 @@ def accord_fonction(fonction: str | None, genre: Gender | None) -> str:
     return "".join(_accord_fonction_token(token, mapping) for token in tokens)
 
 
+def accord_participe_e(mot: str | None, genre: Gender | None) -> str:
+    """Accorde en genre un participe/adjectif se terminant par « -é » (« domicilié » ->
+    « domiciliée », « désigné » -> « désignée »). Akainu batch2+3 M2 (2026-07-09) : coder
+    l'INTENTION (tout le segment referant a une personne s'accorde), pas le seul mot fonction.
+    Feminin + « -é » (pas deja « -ée ») -> +e ; sinon inchange (jamais d'invention)."""
+    if not mot:
+        return mot or ""
+    if genre == Gender.FEMININ and mot.endswith("é"):
+        return mot + "e"
+    return mot
+
+
+# Voyelles/h muet devant lesquels le possessif feminin reste « son » (« son associée »,
+# « son école ») ; sinon feminin -> « sa » (« sa gérante », « sa présidente »).
+_VOYELLES_ELISION = "aeiouyàâäéèêëîïôöûü"
+
+
+def possessif_singulier(mot_suivant: str, genre: Gender | None) -> str:
+    """« son »/« sa » accorde au genre + a l'initiale du mot suivant (Akainu M1 2026-07-09 :
+    « son gérante » -> « sa gérante »). Masculin -> « son » ; feminin -> « sa » sauf devant
+    une voyelle/h muet (« son associée »)."""
+    if genre == Gender.FEMININ and mot_suivant[:1].lower() not in _VOYELLES_ELISION:
+        return "sa"
+    return "son"
+
+
 def subject_line(genre: Gender) -> str:
     return "Je soussignée" if genre == Gender.FEMININ else "Je soussigné"
 

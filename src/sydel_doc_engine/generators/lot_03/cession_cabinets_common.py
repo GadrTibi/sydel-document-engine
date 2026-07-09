@@ -521,6 +521,12 @@ _CESSION_VENDEUR_PAIRS: list[tuple[str, str]] = [
 ]
 _CESSION_REPRESENTANT_PAIRS: list[tuple[str, str]] = [
     ("domicilié en cette qualité", "domiciliée en cette qualité"),
+    # Akainu R15 batch2+3 (2026-07-09) : possessif « son » -> « sa » devant la fonction
+    # feminine de la representante (« Représentée par son gérante » -> « sa gérante »).
+    # Pilote par le genre du representant (jamais applique a un homme). La fonction
+    # usuelle du representant est a initiale consonne (gérante/présidente/directrice) ;
+    # le cas rare « son associée » (voyelle -> « son ») n'apparait pas dans ces modeles.
+    ("Représentée par son ", "Représentée par sa "),
 ]
 
 

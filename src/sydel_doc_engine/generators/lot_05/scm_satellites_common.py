@@ -24,7 +24,12 @@ from sydel_doc_engine.front_app.field_derivations import derive_gender_from_civi
 from sydel_doc_engine.generators.lot_01.civilite import civilite_civile
 from sydel_doc_engine.generators.lot_05.scm_satellites_templates import TemplateBlock
 from sydel_doc_engine.rendering.docx_builder import add_paragraph, new_document
-from sydel_doc_engine.utils.grammar import accord_fonction, montant_avec_euros
+from sydel_doc_engine.utils.grammar import (
+    accord_fonction,
+    accord_participe_e,
+    montant_avec_euros,
+    possessif_singulier,
+)
 
 DOCUMENT_CODE = "CODE-SCM-SAT-DOCX-001"
 SCM_STRUCTURE = "SCM"
@@ -320,6 +325,15 @@ def _party_replacements(
     representant = partie.representant
     if societe is None or representant is None:
         raise ValueError(f"{prefix} est incomplet pour {DOCUMENT_CODE}.")
+    # Genre du representant (fiche, sinon derive de la civilite) calcule UNE fois : sert a
+    # accorder la fonction, le possessif « son/sa » et le participe « domicilie(e) ».
+    _rep_genre = representant.genre or derive_gender_from_civilite(
+        representant.civilite_affichage or ""
+    )
+    _rep_fonction = accord_fonction(
+        _required_text(representant.fonction, f"{prefix}.representant.fonction"),
+        _rep_genre,
+    )
     replacements = {
         f"[denomination_societe_{source_index}]": _required_text(
             societe.denomination,
@@ -367,10 +381,15 @@ def _party_replacements(
         # representant ; a defaut derive de la civilite (Madame -> feminin). Applique
         # a TOUT rendu de fonction pour une personne genree (reglement + contrat frais
         # communs) ; les fonctions d'entites neutres ne passent pas par ce token.
-        f"[fonction_representant_societe_{source_index}]": accord_fonction(
-            _required_text(representant.fonction, f"{prefix}.representant.fonction"),
-            representant.genre
-            or derive_gender_from_civilite(representant.civilite_affichage or ""),
+        f"[fonction_representant_societe_{source_index}]": _rep_fonction,
+        # Akainu batch2+3 M1/M2 (2026-07-09) : accord du SEGMENT ENTIER referant au
+        # representant (pas seulement la fonction) — « son gerante » -> « sa gerante »
+        # (possessif) et « domicilie » -> « domiciliee » (participe) pour une femme.
+        f"[possessif_representant_societe_{source_index}]": possessif_singulier(
+            _rep_fonction, _rep_genre
+        ),
+        f"[domicilie_representant_societe_{source_index}]": accord_participe_e(
+            "domicilié", _rep_genre
         ),
     }
     if reglement:

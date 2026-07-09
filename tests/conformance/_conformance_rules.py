@@ -494,13 +494,32 @@ _R15_FONCTION_MASC = (
 )
 _R15 = re.compile(r"\b(?:Madame|Mme)\b[^,\n]{0,40},\s*" + _R15_FONCTION_MASC + r"\b")
 
+# Akainu batch2+3 M1/M2 (2026-07-09) : coder l'INTENTION COMPLÈTE — dans un segment
+# « Représentée par … Madame/Mme … », TOUS les termes accordés au représentant féminin
+# doivent l'être, pas seulement la fonction. On flag les FUITES masculines résiduelles :
+# « domicilié » (participe non accordé, attendu « domiciliée ») et « son <fonction féminine
+# à initiale consonne> » (possessif non accordé, attendu « sa gérante »). Segment = une
+# ligne « Représentée par … » (les représentés d'un même acte sont sur des lignes distinctes).
+_R15_REPR_FEMININ = re.compile(r"Repr[ée]sent[ée]e? par\b[^\n]*\b(?:Madame|Mme)\b[^\n]*")
+_R15_DOMICILIE_MASC = re.compile(r"\bdomicilié\b(?!e)")
+_R15_SON_FONCTION_FEM = re.compile(
+    r"\bson\s+(?:g[ée]rante|pr[ée]sidente|directrice|tr[ée]sori[èe]re|cog[ée]rante"
+    r"|administratrice|cofondatrice|fondatrice)\b"
+)
+
 
 def rule_r15_accord_fonction(text: str) -> list[str]:
-    """« Madame <Nom>, <fonction au masculin> » interdit : la fonction d'une personne
-    féminine s'accorde au féminin (« gérante », « présidente », « associée »…). Règle
-    par INTENTION (accord manquant), pas liste de tournures. « Monsieur <Nom>, gérant »
-    (masculin) reste légitime — le motif n'ancre que « Madame »/« Mme »."""
-    return _find_all(text, _R15)
+    """Accord en genre COMPLET du segment « Représentée par … » pour une représentante
+    féminine : fonction, participe « domicilié(e) » ET possessif « son/sa ». Règle par
+    INTENTION (tout le segment s'accorde), pas liste de tournures — leçon Akainu 2026-07-09
+    (« son gérante »/« gérante … domicilié » fuyaient l'ancienne R15). « Monsieur … gérant »
+    (masculin) reste légitime."""
+    violations = _find_all(text, _R15)
+    for segment in _R15_REPR_FEMININ.finditer(text):
+        seg = segment.group(0)
+        if _R15_DOMICILIE_MASC.search(seg) or _R15_SON_FONCTION_FEM.search(seg):
+            violations.append(_extract(text, segment.start(), segment.end()))
+    return violations
 
 
 R15_LABEL = "accord en genre de la fonction (« Madame <Nom>, gérant » interdit)"

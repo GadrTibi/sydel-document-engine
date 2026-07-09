@@ -559,16 +559,17 @@ CONTRAT_FRAIS_COMMUNS_BLOCKS: list[TemplateBlock] = [('p', "CONTRAT D'EXERCICE P
  ('p', 'Immatriculée au RCS de [ville_rcs_societe_1] sous le numéro [numero_rcs_societe_1]'),
  ('p',
   'Représentée par [civilite_representant_societe_1] [prenom_representant_societe_1] '
-  '[nom_representant_societe_1] en qualité de [fonction_representant_societe_1], domicilié en '
-  'cette qualité audit siège.'),
+  '[nom_representant_societe_1] en qualité de [fonction_representant_societe_1], '
+  '[domicilie_representant_societe_1] en cette qualité audit siège.'),
  ('p', 'ET'),
  ('p', '[denomination_societe_2]'),
  ('p', '[forme_sociale_societe_2] au capital de [capital_social_societe_2]'),
  ('p', 'Ayant son siège au [adresse_locaux]'),
  ('p', 'Immatriculée au RCS de [ville_rcs_societe_2] sous le numéro [numero_rcs_societe_2]'),
  ('p',
-  'Représentée par son [fonction_representant_societe_2], [civilite_representant_societe_2] '
-  '[prenom_representant_societe_2] [nom_representant_societe_2], domicilié en cette qualité audit '
+  'Représentée par [possessif_representant_societe_2] [fonction_representant_societe_2], '
+  '[civilite_representant_societe_2] [prenom_representant_societe_2] '
+  '[nom_representant_societe_2], [domicilie_representant_societe_2] en cette qualité audit '
   'siège.'),
  ('p', 'IL A ETE CONVENU ET ARRETE CE QUI SUIT :'),
  ('p',
