@@ -221,6 +221,17 @@ MAJEUR + MINEUR corrigés (commit `81f48c5`). Nitpicks tracés (aucun défaut de
   « LE CÉDANT », pas à la personne — défendable). **À confirmer Albane** si le label doit se féminiser.
 - **[n5] O2 corporel = total − incorporel** : déjà flagué ci-dessus (Albane l'a posé « à confirmer »).
 
+## Gate Akainu SELARL ronde 5 (2026-07-12) — 1 MINEUR de convention tracé (décision Albane)
+- **[M-1 conv] « soussigné(e) de seconde part » du co-contractant PERSONNE MORALE** : dans les
+  actes/compromis de cession de CABINET, l'acquéreur (une SELARL, personne morale) est rendu
+  « le soussigné de seconde part » (**masculin**, accordé à « l'acquéreur »). Mais l'acte de
+  cession de PARTS SCM rend le même construit « **Soussignée** de seconde part » (féminin, accordé
+  à « la société »). **Deux conventions divergentes dans le même bundle.** Défendable des deux
+  côtés (entité = « l'acquéreur » masc, ou « la société » fém). **À trancher Albane** : accorder au
+  genre grammatical de l'entité (« la société » → soussignée) PARTOUT, ou garder « le soussigné de
+  seconde part » (entité = l'acquéreur) PARTOUT ? La convention retenue sera appliquée uniformément
+  (actes cabinet + SCM) + assertion de conformité. Défaut actuel = fidélité modèle par modèle.
+
 ## Gate Akainu SELARL ronde 4 (2026-07-12) — 1 nitpick tracé
 - **[n6] Civilité du représentant abrégée différemment acte vs compromis** : l'acte de cession
   cabinet rend « Représentée par sa gérante, **Madame** Sophie Lefevre » ; le compromis rend

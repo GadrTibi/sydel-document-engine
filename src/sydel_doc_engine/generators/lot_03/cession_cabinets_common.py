@@ -286,14 +286,21 @@ def _build_line_fixes(
     9.2 — « Représentée par son <fonction>, ... » : le modele COMPROMIS dentaire
     pointe le VENDEUR (mauvaise personne) et le compromis affiche « Docteur ». On
     reecrit l'identite du representant de la societe avec un titre CIVIL (M./Mme).
-    Perimetre = compromis (cible du ticket) ; l'acte n'est pas touche.
+
+    M-2 (Akainu SELARL ronde 5, 2026-07-12) : la reecriture s'applique desormais a TOUTES les
+    variantes (acte + compromis). L'acte MEDICAL et les compromis pointent deja le representant
+    par tokens -> la reecriture est byte-identique (meme identite). L'acte DENTAIRE, lui, rendait
+    la ligne « Représentée par son <fonction>, … » depuis les tokens du VENDEUR : avec un vendeur
+    DISTINCT du fondateur (case decochee), le cedant apparaissait a tort comme gerant de la SELARL
+    acquereuse (mauvaise personne + genre incoherent). La reecriture depuis acquereur.representant
+    (le fondateur, dont le genre est capture) corrige la personne ET l'accord partout.
 
     (Le bloc signature 9.8 est traite en amont, au niveau des tokens
     [signature_acquereur]/[signature_vendeur] dans _build_cession_replacements.)
     """
     fixes: list[_LineFix] = []
     cession = ctx.cession
-    if cession is None or variant.etape != COMPROMIS:
+    if cession is None:
         return fixes
 
     acquereur = cession.acquereur or CessionAcquereur()
