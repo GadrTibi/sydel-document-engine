@@ -206,5 +206,20 @@ Restent 4 points qui dépendent d'une info/décision métier Albane (jamais inve
   bail … ») est à confirmer côté Albane (la révision ajoutait/retirait ce fragment) — build propre,
   mais l'arbitrage du wording final lui appartient.
 
+## Gate Akainu SELARL ronde 1 (2026-07-12) — 5 nitpicks tracés (cosmétique/convention/métier)
+MAJEUR + MINEUR corrigés (commit `81f48c5`). Nitpicks tracés (aucun défaut de build net) :
+- **[n1] « créé » (médical, singulier) vs « créés » (dentaire, pluriel)** dans la clause d'origine.
+  Model-fidèle (« l'avoir créé » pour le fonds vs « les avoir créés » pour les éléments constitutifs) ;
+  le verbatim O1 d'Albane écrit « les avoir créés » (pluriel). **À trancher Albane** : phrasing uniforme ?
+- **[n2] Date « 01 janvier » au lieu de « 1er janvier »** pour un premier du mois (origine, transfert).
+  Polish de mise en forme des dates, généralisable à tout le corpus → **lot dédié « dates 1er »** (touche
+  le formateur partagé, hors périmètre accord genre ; pas fait mid-audit pour éviter la régression large).
+- **[n3] Style de puce hétérogène** (acte SCM = préfixe « • » ; acte/compromis cabinet = vraies listes
+  Word ; statuts/PV = « - »/« 1° »). Cœur SC5 respecté (chaque doc a un marqueur). **À trancher Albane** :
+  puce unique « • » partout, ou style par document ?
+- **[n4] « ci-après dénommé LE CÉDANT »** reste au masculin sur une cédante (référence au label défini
+  « LE CÉDANT », pas à la personne — défendable). **À confirmer Albane** si le label doit se féminiser.
+- **[n5] O2 corporel = total − incorporel** : déjà flagué ci-dessus (Albane l'a posé « à confirmer »).
+
 ## Gate Docteur 2026-07-09 — 1 NITPICK tracé (pré-existant, hors Docteur)
 - **[n1] avenant_contrat_bail** : dates au format ISO brut (« né le 1975-03-10 », « en date du 2021-09-01 ») au lieu du format lettré du reste du corpus (« né le 10 mars 1975 »). Pré-existant, NON introduit par l'éradication Docteur. À traiter dans un lot mise-en-forme dates (avenant bail non branché sur le formateur de dates français).
