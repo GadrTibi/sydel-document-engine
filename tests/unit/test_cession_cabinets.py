@@ -836,6 +836,50 @@ def test_acte_medical_birth_form_accorded_female(tmp_path: Path) -> None:
     assert "né(e) le" not in fem
 
 
+@pytest.mark.parametrize(
+    ("generator", "etape", "type_cabinet"),
+    [
+        (ActeCessionCabinetMedicalGenerator(), "acte", "medical"),
+        (ActeCessionCabinetDentaireGenerator(), "acte", "dentaire"),
+        (CompromisCessionCabinetMedicalGenerator(), "compromis", "medical"),
+        (CompromisCessionCabinetDentaireGenerator(), "compromis", "dentaire"),
+    ],
+)
+def test_vendeuse_accord_genre_intention(
+    generator, etape, type_cabinet, tmp_path: Path
+) -> None:
+    # Akainu SELARL ronde 2+3 (2026-07-12) — SC4 « soussigné de première part -> féminin, et
+    # PARTOUT ailleurs » : pour une VENDEUSE, AUCUN terme masculin referant a elle ne doit
+    # subsister (regle 68 : on code l'INTENTION, pas une tournure). Verrou de non-regression sur
+    # actes ET compromis, dentaire ET medical. La forme contractee « du soussigné de première
+    # part » (ronde 3) est incluse.
+    salaries = (
+        [CessionSalarie(civilite_affichage="Madame", prenom="Lea", nom="Petit")]
+        if (etape == "acte" and type_cabinet == "dentaire")
+        else None
+    )
+    text = _docx_text(
+        generator.generate(
+            _context(
+                etape=etape,
+                type_cabinet=type_cabinet,
+                credit_vendeur=(etape == "acte" and type_cabinet == "medical"),
+                vendeur_genre=Gender.FEMININ,
+                salaries=salaries,
+            ),
+            tmp_path,
+        )
+    )
+    # Aucune forme masculine du sujet « soussigné de première part » (le/du/au) ne subsiste.
+    assert not re.search(r"\b(?:le|du|au) soussigné de première part", text), text
+    assert "soussignée de première part" in text
+    # Autres termes referant a la vendeuse : feminises, jamais masculins residuels.
+    assert "Ci-après désigné " not in text and "Ci-après désigné\xa0" not in text
+    assert "inscrit au" not in text  # -> « inscrite au » (tableau ET répertoire SIREN)
+    assert "né(e) le" not in text  # -> « née le » (genre connu)
+    assert not re.search(r"\bmarié\b(?!e)", text)  # « marié » nu -> « mariée »
+
+
 def test_acte_medical_renders_conjoint_prenom_and_nom(tmp_path: Path) -> None:
     # Retour UAT Rafael (DOC-009) : la clause de situation maritale doit afficher
     # le PRENOM ET le NOM du conjoint (« marié(e) à Prenom Nom, sous le régime... »).

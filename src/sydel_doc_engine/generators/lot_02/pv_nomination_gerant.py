@@ -325,15 +325,23 @@ def _parts_label(nb_parts: int, titre_word: str = "part") -> str:
     return titre_word if nb_parts == 1 else f"{titre_word}s"
 
 
-def _nomination_agenda_label(fonction_affichage: str) -> str:
+def _nomination_agenda_label(
+    fonction_affichage: str, genre: Gender | None = None
+) -> str:
+    # m-r3 (Akainu SELARL ronde 3, 2026-07-12) : le libelle de l'ordre du jour s'accorde au
+    # genre du dirigeant nomme (« Nomination de la gérante » pour une femme), coherent avec le
+    # corps du PV qui feminise partout. Genre absent -> masculin (appelants legacy sans genre).
     normalized = fonction_affichage.strip().lower()
+    feminin = genre == Gender.FEMININ
+    article = "de la" if feminin else "du"
     if "gérant" in normalized or "gerant" in normalized:
         if normalized.endswith("s"):
             return "Nomination des premiers gérants"
-        return "Nomination du gérant"
+        return f"Nomination {article} {'gérante' if feminin else 'gérant'}"
     if normalized.endswith("s"):
         return f"Nomination des {fonction_affichage}"
-    return f"Nomination du {fonction_affichage}"
+    fonction = accord_fonction(fonction_affichage, genre) if genre else fonction_affichage
+    return f"Nomination {article} {fonction}"
 
 
 def _ne_label(genre: Gender) -> str:
@@ -817,7 +825,7 @@ def _add_order_of_business(
         )
         _add_list_item(
             document,
-            _nomination_agenda_label(fonction_affichage),
+            _nomination_agenda_label(fonction_affichage, dirigeant.genre),
             space_after=_PV_COMPACT_SPACE_AFTER_PT,
         )
     if emprunt.actif:
@@ -1199,7 +1207,7 @@ def _build_associe_unique_pv(
     # P1 (Rafael 2026-07-09) : enonciations des decisions en espacement COMPACT.
     _add_list_item(
         document,
-        _nomination_agenda_label(dirigeant.fonction_affichage),
+        _nomination_agenda_label(dirigeant.fonction_affichage, dirigeant.genre),
         space_after=_PV_COMPACT_SPACE_AFTER_PT,
     )
     _add_list_item(document, "Pouvoir", space_after=_PV_COMPACT_SPACE_AFTER_PT)

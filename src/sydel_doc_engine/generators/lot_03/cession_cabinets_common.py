@@ -620,8 +620,13 @@ _CESSION_VENDEUR_PAIRS: list[tuple[str, str]] = [
     ("marié", "mariée"),
     ("Marié", "Mariée"),
     ("Ci-après désigné ", "Ci-après désignée "),
+    # « soussigné de première part » = la vendeuse, CONCEPT accorde quelle que soit l'article /
+    # preposition contractee qui le precede (Akainu ronde 3 : « du soussigné de première part »
+    # dans « sous la garde et la surveillance du … » fuyait). SC4 « partout ailleurs ».
     ("le soussigné de première part", "la soussignée de première part"),
     ("Le soussigné de première part", "La soussignée de première part"),
+    ("du soussigné de première part", "de la soussignée de première part"),
+    ("au soussigné de première part", "à la soussignée de première part"),
 ]
 _CESSION_REPRESENTANT_PAIRS: list[tuple[str, str]] = [
     ("domicilié en cette qualité", "domiciliée en cette qualité"),
