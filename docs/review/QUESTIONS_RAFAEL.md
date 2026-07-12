@@ -185,5 +185,26 @@ Lot Albane « mise en forme » (SELARL/SELAS/SCI). Points **non buildables sans 
 - **[n1] Lettre conjoint « à la SPFPL SPFPL MARTIN »** : doublon apparent « SPFPL » = le modèle source juxtapose littéralement [forme_abregee] [denomination] et la dénomination contient déjà « SPFPL ». Moteur byte-fidèle. Dé-dupliquer = décision Albane (fidélité modèle vs lisibilité).
 - **[modèle] « alinéa 1 er », « a capital variable »** : typos verbatim des modèles source byte-lockés → correction = décision Albane (fidélité vs orthographe irréprochable 07-07).
 
+## Lot SELARL unipersonnelle 2026-07-10 (mail Albane) — flags métier non-constructibles
+Tout le reste du mail (statuts/procuration/actes/front, ~26 retours) est TRAITÉ + poussé (`6455b26`).
+Restent 4 points qui dépendent d'une info/décision métier Albane (jamais inventer) :
+
+- **[MD3] Attestation sur le capital (SELARL cession)** : Albane la signale « pas éditée ».
+  **Aucun modèle** de cette attestation dans le corpus → wording juridique non extractible.
+  Le compromis (MD1) et le PV de nomination du gérant (MD2) sont eux générés. **Besoin : le
+  modèle .docx de l'attestation capital** (ou son texte de référence) pour la brancher. Sans
+  modèle = NO-GO génération (jamais inventer un texte d'attestation légal).
+- **[Q1] Courriers d'une page** : Albane référence des « documents d'une page (courriers) »
+  envoyés précédemment, à ajouter — « seulement pour les SEL ? ». **Besoin : re-récupérer ces
+  courriers** + périmètre (SEL uniquement ou aussi SPFPL/autres). Défaut retenu tant qu'absents :
+  non branchés (on ne devine pas le contenu d'un courrier).
+- **[O2] Prix origine acquise : corporel = total − incorporel ?** Albane l'écrit « (à confirmer) ».
+  Défaut retenu = **OUI, dériver** le corporel comme différence quand total+incorporel saisis
+  (cohérent avec la saisie minimale voulue). À confirmer avant de figer.
+- **[AC3] Révision Word acte cabinet** : le track-change résiduel a été résolu pour un rendu
+  propre (plus de marque de révision). **Le texte final visible** de la clause concernée (« … au
+  bail … ») est à confirmer côté Albane (la révision ajoutait/retirait ce fragment) — build propre,
+  mais l'arbitrage du wording final lui appartient.
+
 ## Gate Docteur 2026-07-09 — 1 NITPICK tracé (pré-existant, hors Docteur)
 - **[n1] avenant_contrat_bail** : dates au format ISO brut (« né le 1975-03-10 », « en date du 2021-09-01 ») au lieu du format lettré du reste du corpus (« né le 10 mars 1975 »). Pré-existant, NON introduit par l'éradication Docteur. À traiter dans un lot mise-en-forme dates (avenant bail non branché sur le formateur de dates français).

@@ -20,6 +20,33 @@ j'ajoute UNE ligne ici : `- [AAAA-MM-JJ HH:MM] [TYPE] description (réf : SHA / 
 
 ---
 
+## 2026-07-10/12 — Lot SELARL unipersonnelle (mail direct Albane « on touche au bout »)
+Carnet verbatim : `docs/returns/CARNET_ALBANE_SELARL_2026-07-10.md` (~26 retours + 4 flags métier).
+- [2026-07-12] [ACTION] (`6455b26`) Lot SELARL intégré + poussé sur `sprint/engine-completion` :
+  5 chantiers parallèles (statuts / procuration / acte cession cabinet dentaire / acte cession
+  parts SCM / front+wiring+docs manquants) + helper `accord_terme_genre` (accord genre par
+  INTENTION : inscrit→inscrite, soussigné→soussignée, il→elle, le cédant→la cédante) + règle
+  conformité **R15 étendue** (comparution à SUJET féminin ⇒ aucun terme masculin résiduel ;
+  0 faux positif conjoint/homme). **1384 verts, ruff propre.**
+  - Statuts : cadre STATUTS descendu+agrandi (ST1), soussigné en gras (ST2), espaces (ST3/ST7),
+    « inscrite » (ST4), point après régime (ST5), préposition ordre « du » (ST6, token connecteur).
+  - Procuration : 1re ligne justifiée (PR1), « gérante » (PR2), préposition « du » (PR3).
+  - Acte cabinet : cédant en gras (AC1), origine créé/acquis branchée (O1/AC2), révision Word
+    neutralisée (AC3), date transfert vierge (AC4), « sur sept pages » (AC5, était 20).
+  - Acte parts SCM : parties espacées + noms/SCM en gras (SC1), gérants inventés → VIERGE (SC2),
+    « qu'elle »/« soussignée » (SC3/SC4), puces dans les listes (SC5), 2 cadres signature (SC6).
+  - Front : origine créé/acquis exposée (O1), corporel dérivé total−incorporel (O2, défaut),
+    seeds SCM retirés (F1), blocages référence-dossier/banque levés (F2/F3). Procuration SEL 2e
+    génération (SPFPL cession). Compromis (MD1) + PV nomination (MD2) câblés ; MD2 = faux manquant.
+- [2026-07-12] [DÉCISION] fb8b : l'ancien test verrouillait 3 cogérants INVENTÉS (Paul Bernard /
+  Jean Dupont / Anne Martin) — c'était exactement le bug Albane SC2. Test corrigé → `cogerants == []`
+  (Albane supersede l'ancien lock Akainu). Leçon : le plus récent fait foi (règle 68).
+- [2026-07-12] [Q-ALBANE] 4 flags métier non-constructibles tracés dans `QUESTIONS_RAFAEL.md` :
+  MD3 attestation capital SELARL (aucun modèle → besoin du .docx), Q1 courriers 1 page (à
+  re-récupérer), O2 dérivation corporel (à confirmer), AC3 wording final clause « au bail ».
+- [2026-07-12] [AUDIT] gate Akainu doc-entier lancé sur le lot SELARL (régénération réelle des
+  .docx, chaque retour vs verbatim + cohérence inter-docs) → boucle fix jusqu'à RIEN À REDIRE.
+
 ## 2026-06-26 — Lot « Formulaire-A » Albane (Chopper) : préremplissages + bugs front cession
 
 > Sous-formulaire cession PARTAGÉ SELARL/SELAS (`front_app/shell.py::_render_cession_form`
