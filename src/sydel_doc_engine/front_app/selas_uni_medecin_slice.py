@@ -591,8 +591,8 @@ def build_selas_uni_medecin_plan(payload: dict[str, object]) -> SelasUniMedecinP
     ]
     if _is_regime_communautaire(payload):
         warnings_list.append(
-            "Regime communautaire actif : DOC-005 (renonciation) et DOC-006 "
-            "(avertissement conjoint) seront generes."
+            "Régime communautaire actif : la lettre de renonciation et la "
+            "lettre d'avertissement au conjoint seront générées."
         )
     warnings = tuple(warnings_list)
     if blockers:

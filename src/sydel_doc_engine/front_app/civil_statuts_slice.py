@@ -807,7 +807,7 @@ def build_civil_plan(payload: dict[str, object]) -> CivilSlicePlan:
     )
     blockers = _validate(payload)
     satellites = (
-        " avec ses satellites (pacte d'associés, dépenses communes)"
+        " avec ses satellites (pacte d'associés et liste des dépenses communes)"
         if structure == "SCM"
         else ""
     )

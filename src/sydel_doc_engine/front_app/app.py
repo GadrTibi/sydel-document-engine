@@ -4,5 +4,5 @@ import streamlit as st
 
 from sydel_doc_engine.front_app.shell import render_clean_front
 
-st.set_page_config(page_title="SYDEL Track B", layout="wide")
+st.set_page_config(page_title="SYDEL", layout="wide")
 render_clean_front()

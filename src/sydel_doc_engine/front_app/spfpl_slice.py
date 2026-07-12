@@ -328,7 +328,10 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
         else ""
     )
     if regime_communautaire:
-        st.caption("Regime de la communaute : DOC-005 et DOC-006 seront generes.")
+        st.caption(
+            "Régime de la communauté : la lettre de renonciation et la "
+            "lettre d'avertissement au conjoint seront générées."
+        )
     # O24-03 : adresse personnelle sur UNE ligne (parse interne -> num/voie/cp/ville
     # exiges par la DNC du president).
     st.caption("Adresse personnelle + filiation (déclaration de non-condamnation)")

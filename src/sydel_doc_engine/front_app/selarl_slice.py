@@ -400,7 +400,7 @@ def validate_selarl_input(data: SelarlSliceInput) -> tuple[str, ...]:  # noqa: C
                     ("conjoint_nom", "Nom du conjoint requis."),
                     (
                         "regime_matrimonial",
-                        "Regime matrimonial requis quand DOC-005 est genere.",
+                        "Régime matrimonial requis.",
                     ),
                 ),
             )

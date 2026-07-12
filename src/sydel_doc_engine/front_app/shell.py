@@ -2693,13 +2693,16 @@ def _render_generation_zone(data_entry: CleanDataEntry, plan: CleanGenerationPla
         if len(plan.blockers) > 8:
             st.caption(f"{len(plan.blockers) - 8} autres champs requis.")
 
-    st.markdown("**Documents du dossier**")
-    for row in plan.document_rows:
-        # Produit fini : on liste les documents GENERES par leur nom, sans le code technique
-        # interne (doc_code), le statut brut ni le message de perimetre. Les documents hors
-        # perimetre du dossier ne sont pas listes.
-        if _row_is_included(row.status):
-            st.caption(f"• {row.label}")
+    # Produit fini : on liste les documents GENERES par leur nom, sans le code technique interne
+    # (doc_code), le statut brut ni le message de perimetre. L'entete n'apparait que s'il y a au
+    # moins un document (evite une section « Documents » vide sur un formulaire non rempli).
+    documents_inclus = [
+        row.label for row in plan.document_rows if _row_is_included(row.status)
+    ]
+    if documents_inclus:
+        st.markdown("**Documents du dossier**")
+        for label in documents_inclus:
+            st.caption(f"• {label}")
 
     if st.button(
         "Generer le dossier",
