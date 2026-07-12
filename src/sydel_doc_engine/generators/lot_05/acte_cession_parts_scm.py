@@ -8,6 +8,9 @@ from docx.shared import Cm, Pt
 
 from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import DocumentGenerationContext
+from sydel_doc_engine.generators.lot_04.statuts_sel_exercice_common import (
+    situation_maritale_accentuee,
+)
 from sydel_doc_engine.generators.lot_05.scm_cession_common import (
     acte_signature_prestataire,
     add_body_paragraph,
@@ -183,8 +186,15 @@ class ActeCessionPartsScmGenerator:
         # Albane 6.3/7.3 (RATIFIE 2026-07-06) : le PARTENAIRE PACSE s'affiche aussi, meme
         # wording « avec {partenaire} » (le PACS n'a pas de « sous le régime de … » ici).
         # « Pas de mention sans nom » : partenaire_pacse_clause renvoie "" si non renseigne.
-        cedant_maritale = required_text(
-            cedant.situation_maritale, "scm_cession.cedant.situation_maritale"
+        # m3 (Akainu 2026-07-12) : le statut matrimonial s'accorde au genre du cedant
+        # (« marié » -> « mariée », « divorcé » -> « divorcée », « veuf » -> « veuve »),
+        # PARITE avec les statuts (meme helper situation_maritale_accentuee). No-op au masculin ;
+        # valeur hors menu renvoyee telle quelle (aucune invention).
+        cedant_maritale = situation_maritale_accentuee(
+            required_text(
+                cedant.situation_maritale, "scm_cession.cedant.situation_maritale"
+            ),
+            feminine=genre_cedant == Gender.FEMININ,
         )
         if mentions_conjoint(cedant.situation_maritale):
             cedant_maritale_clause = f"{cedant_maritale} avec {conjoint_display(cedant)}"
@@ -410,9 +420,16 @@ def _add_declarations_and_cession(document, scm_cession, cedant_name: str, genre
     # SC5 (Albane 2026-07-10) : les items de la liste de declarations sont rendus en PUCES (•),
     # le chapeau « Le CEDANT déclare : » reste un paragraphe de corps.
     add_body_paragraph(document, "Le CEDANT déclare :")
+    # SC4 « partout ailleurs » (Akainu 2026-07-12, M2) : les items de declaration referant au
+    # CEDANT s'accordent au genre — pronom (« qu'il » -> « qu'elle ») ET adjectifs (« resident
+    # francais » -> « residente francaise »). Codage par INTENTION via accord_terme_genre ;
+    # no-op au masculin. Les items impersonnels (parts sociales...) restent inchanges.
+    pronom = accord_terme_genre("il", genre)
+    resident = accord_terme_genre("résident", genre)
+    francais = accord_terme_genre("français", genre)
     for text in [
-        "qu'il dispose de la pleine capacité juridique d'aliéner ;",
-        "qu'il est résident français ;",
+        f"qu'{pronom} dispose de la pleine capacité juridique d'aliéner ;",
+        f"qu'{pronom} est {resident} {francais} ;",
         "que les parts sociales cédées sont libres de tout nantissement et de tout droit quelconque ;",
         "que les parts sociales cédées sont des biens propres.",
     ]:

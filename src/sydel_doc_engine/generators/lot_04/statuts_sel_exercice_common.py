@@ -1279,6 +1279,10 @@ _STATUTS_GENDER_PAIRS: list[tuple[str, str]] = [
     # un homme, `apply_gender_pairs` laisse la forme masculine inchangee.
     ("qu’il a décidé", "qu’elle a décidé"),
     ("qu'il a décidé", "qu'elle a décidé"),
+    # m1 (Akainu 2026-07-12) : ARTICLE 1 « Il est formé par le soussigné » -> « par la
+    # soussignée » pour une fondatrice (coherent avec « LA SOUSSIGNÉE »/« qu'elle a décidé »
+    # de la meme page). Le « Il est formé » impersonnel reste inchange (seul le sujet accorde).
+    ("par le soussigné", "par la soussignée"),
 ]
 
 

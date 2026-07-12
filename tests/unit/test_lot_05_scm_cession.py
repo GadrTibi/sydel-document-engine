@@ -314,8 +314,12 @@ def test_acte_cession_scm_shows_partner_when_pacse_masculin(tmp_path: Path) -> N
 
 
 def test_acte_cession_scm_shows_partner_when_pacsee_feminin(tmp_path: Path) -> None:
-    # Genre feminin : « pacsée avec … ».
+    # Genre feminin : « pacsée avec … ». m3 (Akainu 2026-07-12) : le statut matrimonial
+    # s'accorde au GENRE DU CEDANT (derive de sa civilite) -> la cedante doit etre Madame
+    # pour que « pacsée » reste au feminin (fixture coherent : un cedant Monsieur re-rend
+    # « pacsé », comportement voulu).
     ctx = _base_context("SELARL")
+    ctx.scm_cession.cedant.civilite_affichage = "Madame"
     ctx.scm_cession.cedant.situation_maritale = "pacsée"
     ctx.scm_cession.cedant.conjoint = ScmCessionConjoint(
         civilite_affichage="Monsieur", prenom="Marc", nom="Durand"

@@ -1305,12 +1305,16 @@ def test_compromis_pages_count_is_seven_not_twenty(
     assert "vingt pages" not in text
 
 
-def test_acte_pages_count_unchanged(tmp_path: Path) -> None:
-    # 9.9 hors perimetre : l'acte conserve la valeur du contexte (non mappee).
+def test_acte_pages_count_medical_sept(tmp_path: Path) -> None:
+    # AC5 PROPAGE (Akainu 2026-07-12) : l'acte MEDICAL retombait sur le placeholder « vingt »
+    # (factuellement faux) -> l'intention d'AC5 (nombre de pages correct, pas de placeholder)
+    # s'applique aussi au medical, quasi-parite avec le dentaire (« sept »). Supersede l'ancien
+    # lock « vingt » (comme fb8b : le retour Albane le plus recent fait foi).
     ctx = _context(credit_vendeur=True)
     text = _docx_text(ActeCessionCabinetMedicalGenerator().generate(ctx, tmp_path))
 
-    assert "Sur vingt pages." in text
+    assert "Sur sept pages." in text
+    assert "vingt pages" not in text
 
 
 # ---------------------------------------------------------------------------

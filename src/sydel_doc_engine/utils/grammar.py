@@ -470,6 +470,14 @@ _TERMES_VERS_FEMININ: Final[dict[str, str]] = {
     "ce dernier": "cette dernière",
     "le cédant": "la cédante",
     "un cédant": "une cédante",
+    # Akainu SELARL 2026-07-12 (M2/M3) : adjectifs de qualite/nationalite et fonctions
+    # accordes a la personne (declarations acte SCM « resident francais » ; demande ordre
+    # « associe/praticien/exercant »). INTENTION : tout terme accorde a une personne genree.
+    "résident": "résidente",
+    "français": "française",
+    "associé": "associée",
+    "praticien": "praticienne",
+    "exerçant": "exerçante",
 }
 _TERMES_VERS_MASCULIN: Final[dict[str, str]] = {v: k for k, v in _TERMES_VERS_FEMININ.items()}
 

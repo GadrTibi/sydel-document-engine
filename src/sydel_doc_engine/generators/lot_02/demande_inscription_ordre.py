@@ -4,6 +4,7 @@ from pathlib import Path
 
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
+from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import (
     Company,
     DocumentGenerationContext,
@@ -25,6 +26,7 @@ from sydel_doc_engine.rendering.docx_builder import (
 )
 from sydel_doc_engine.utils.dates import format_date_fr
 from sydel_doc_engine.utils.departements import departement_nom
+from sydel_doc_engine.utils.grammar import accord_terme_genre
 
 OUTPUT_FILENAME = "demande_inscription_ordre.docx"
 DOCUMENT_CODE = "CODE-ORDRE-001"
@@ -93,6 +95,7 @@ class DemandeInscriptionOrdreGenerator:
             profession_reglementee=profession_reglementee,
             mandataire_libelle=mandataire_libelle,
             derogation_suffixe=derogation_suffixe,
+            genre=signataire.genre,
         )
         _add_final_signature(document, signataire_name)
 
@@ -367,6 +370,7 @@ def _add_body(
     profession_reglementee: str,
     mandataire_libelle: str,
     derogation_suffixe: str,
+    genre: Gender,
 ) -> None:
     add_paragraph(document, f"{destinataire_appel},")
     document.add_paragraph()
@@ -377,12 +381,19 @@ def _add_body(
             f"{denomination_societe}."
         ),
     )
+    # M3 (Akainu 2026-07-12) : comparution de la fondatrice -> les 3 termes de qualite
+    # s'accordent au genre du signataire (« associé et praticien et exerçant » -> « associée
+    # et praticienne et exerçante »). Theme transversal du carnet (« tout terme accorde a une
+    # personne genree »). No-op au masculin. accord_terme_genre = INTENTION, pas regex.
+    associe = accord_terme_genre("associé", genre)
+    praticien = accord_terme_genre("praticien", genre)
+    exercant = accord_terme_genre("exerçant", genre)
     _add_body_paragraph(
         document,
         (
             "Je sollicite l’inscription de ma société au tableau de l’Ordre des "
-            f"{profession_reglementee}. Je précise que je ne serai associé et praticien et "
-            f"exerçant que dans une seule structure.{derogation_suffixe}"
+            f"{profession_reglementee}. Je précise que je ne serai {associe} et {praticien} et "
+            f"{exercant} que dans une seule structure.{derogation_suffixe}"
         ),
     )
     _add_body_paragraph(

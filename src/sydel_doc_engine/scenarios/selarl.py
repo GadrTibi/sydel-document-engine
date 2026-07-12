@@ -297,6 +297,12 @@ def _cession_cabinet_dentaire_acte() -> CessionContext:
                 "telephone": "01 45 00 00 00",
                 "superficie_local": "90",
                 "description_origine_propriete": "Origine de propriété validée manuellement.",
+                # m2 (Akainu 2026-07-12) : mode d'origine EXPLICITE pour que l'acte ET le
+                # compromis dentaires s'accordent (le compromis derive de l'acte). Ce scenario
+                # porte les donnees « acquis » (precedent proprietaire + prix) -> mode "achete"
+                # (le medical demontre "cree" -> les deux branches sont couvertes). Aligne sur
+                # le front, qui fixe TOUJOURS le mode (plus de defaut divergent entre generateurs).
+                "origine_propriete_mode": "achete",
                 "date_origine_propriete": "2019-01-01",
                 "annees_acquisition_patientele": "2019",
                 "prix_origine_propriete": "150 000",

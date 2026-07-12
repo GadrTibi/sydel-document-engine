@@ -85,10 +85,14 @@ NEANT = "Néant."
 # pagination -> flag, cf. retour). Supersede la valeur « huit » du retour 9.9.
 # AC5 (Albane 2026-07-10) : l'acte DENTAIRE affichait « vingt » pages (constante unique du
 # front) alors qu'il en fait SEPT -> on fige « sept » pour cette variante (meme raison :
-# python-docx ne pagine pas). L'acte MEDICAL n'a PAS de retour client sur sa longueur : il
-# reste sur la valeur du contexte (front) tant qu'Albane ne l'a pas verifiee (flag).
+# python-docx ne pagine pas).
+# AC5 PROPAGE (Akainu 2026-07-12, regle 68 Q4) : l'acte MEDICAL retombait sur le placeholder
+# « vingt » du front -> factuellement FAUX (238 paragraphes, quasi-parite avec le dentaire a
+# 227 = sept pages). L'intention d'AC5 (pas de nombre placeholder faux) s'applique PARTOUT ->
+# on fige « sept » aussi pour l'acte medical. Nombre exact a confirmer Albane (flag QUESTIONS).
 _PAGES_LETTRES_BY_VARIANT: dict[tuple[str, str], str] = {
     (ACTE, DENTAIRE): "sept",
+    (ACTE, MEDICAL): "sept",
     (COMPROMIS, DENTAIRE): "sept",
     (COMPROMIS, MEDICAL): "sept",
 }
