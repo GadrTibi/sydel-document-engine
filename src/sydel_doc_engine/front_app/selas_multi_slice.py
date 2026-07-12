@@ -1161,10 +1161,16 @@ def build_selas_plan(payload: dict[str, object]) -> SelasSlicePlan:
     # informe simplement l'operateur du nombre de couples produits.
     maries = _associes_maries_communaute(payload)
     if len(maries) > 1:
-        noms = ", ".join(f"{a.prenoms or a.prenom or ''} {a.nom or ''}".strip() for a in maries)
+        noms = ", ".join(
+            f"{a.prenoms or a.prenom or ''} {a.nom or ''}".strip() for a in maries
+        ).strip(", ")
+        # Produit fini : on ne montre les noms entre parentheses que s'ils sont saisis
+        # (evite un « (, ) » vide pendant la saisie).
+        detail = f" ({noms})" if noms else ""
         warnings.append(
-            f"{len(maries)} associes maries sous communaute detectes ({noms}) : un couple "
-            "renonciation + avertissement sera genere POUR CHACUN (fichiers nommes par associe)."
+            f"{len(maries)} associés mariés sous le régime de la communauté{detail} : "
+            "une lettre de renonciation et une lettre d'avertissement au conjoint "
+            "seront générées pour chacun."
         )
     if blockers:
         return SelasSlicePlan(

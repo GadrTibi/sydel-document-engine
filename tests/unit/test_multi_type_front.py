@@ -2215,7 +2215,9 @@ def test_selas_deux_associes_maries_flag_multiplication(tmp_path: Path) -> None:
     payload = _selas_payload_deux_maries()
     plan = selas_multi_slice.build_selas_plan(payload)
     assert plan.can_generate is True
-    assert any("2 associes maries" in w and "POUR CHACUN" in w for w in plan.warnings)
+    assert any(
+        "2 associés mariés" in w and "pour chacun" in w for w in plan.warnings
+    )
 
 
 def test_selas_deux_maries_generent_deux_couples_distincts(tmp_path: Path) -> None:
