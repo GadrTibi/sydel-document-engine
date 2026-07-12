@@ -1131,11 +1131,15 @@ def _build_associe_unique_pv(
         spfpl_profession_pluriel=_spfpl_profession_pluriel(ctx),
     )
     add_spacer(document)
+    # m2 (Akainu ronde 2, 2026-07-12) : le titre encadre du PV s'accorde au genre de l'associe
+    # unique (« DE L’ASSOCIÉE UNIQUE » pour une femme), coherent avec le corps (« L'associée
+    # unique »). Masculin inchange (« ASSOCIE »).
+    associe_unique_titre = "ASSOCIÉE" if genre == Gender.FEMININ else "ASSOCIE"
     add_framed_title(
         document,
         [
             "PROCES-VERBAL DES DECISIONS",
-            " DE L’ASSOCIE UNIQUE",
+            f" DE L’{associe_unique_titre} UNIQUE",
             f" DU {_framed_date_display(decision.date, is_micro=is_micro)}",
         ],
     )

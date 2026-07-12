@@ -237,7 +237,7 @@ class ActeCessionPartsScmGenerator:
                     f"{cedant_maritale_clause}. "
                     f"{accord_terme_genre('Inscrit', genre_cedant)} au Tableau de l'ordre départemental des "
                     f"{_profession_ordre(ctx, cedant)} "
-                    f"du {departement_nom(required_text(cedant.ordre.departemental if cedant.ordre else None, 'scm_cession.cedant.ordre.departemental'))} "
+                    f"{elision_de(departement_nom(required_text(cedant.ordre.departemental if cedant.ordre else None, 'scm_cession.cedant.ordre.departemental')))} "
                     f"sous le numéro {required_text(cedant.ordre.numero if cedant.ordre else None, 'scm_cession.cedant.ordre.numero')} "
                     f"et sous le numéro RPPS {required_text(cedant.numero_rpps, 'scm_cession.cedant.numero_rpps')}.",
                     False,

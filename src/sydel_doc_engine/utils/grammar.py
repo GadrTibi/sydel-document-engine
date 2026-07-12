@@ -478,6 +478,9 @@ _TERMES_VERS_FEMININ: Final[dict[str, str]] = {
     "associé": "associée",
     "praticien": "praticienne",
     "exerçant": "exerçante",
+    # Akainu SELARL ronde 2 (M2) : « en qualité de futur gérant » -> « future gérante »
+    # (lettre d'avertissement au conjoint), accorde au genre du dirigeant signataire.
+    "futur": "future",
 }
 _TERMES_VERS_MASCULIN: Final[dict[str, str]] = {v: k for k, v in _TERMES_VERS_FEMININ.items()}
 

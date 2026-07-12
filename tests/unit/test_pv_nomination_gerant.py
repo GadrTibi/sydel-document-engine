@@ -260,7 +260,10 @@ def test_pv_nomination_gerant_one_associe_is_associe_unique_pv(
     paragraphs = _paragraphs(_generate(tmp_path / "second", ctx))
 
     # Titre + structure associe unique (pas d'assemblee generale, pas de bloc presents).
-    assert "DE L’ASSOCIE UNIQUE" in text
+    # m2 (Akainu SELARL ronde 2, 2026-07-12) : l'associee unique de ce cas est une FEMME
+    # (« Madame Alice Durand », « Née le ») -> le titre encadre s'accorde « DE L’ASSOCIÉE UNIQUE »
+    # (coherent avec le corps « L'associée unique »). Supersede l'ancien lock masculin.
+    assert "DE L’ASSOCIÉE UNIQUE" in text
     assert "ASSEMBLEE GENERALE" not in text
     assert "Sont présents ou représentés" not in text
     assert "se sont réunis au siège social" not in text

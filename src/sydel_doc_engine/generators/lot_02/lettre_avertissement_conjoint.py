@@ -33,7 +33,12 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_subject_heading,
     new_document,
 )
-from sydel_doc_engine.utils.grammar import euro_word, montant_avec_euros
+from sydel_doc_engine.utils.grammar import (
+    accord_fonction,
+    accord_terme_genre,
+    euro_word,
+    montant_avec_euros,
+)
 
 OUTPUT_FILENAME = "lettre_avertissement_conjoint.docx"
 
@@ -234,7 +239,13 @@ def _add_apporteur_signature_block(document, ctx: DocumentGenerationContext) -> 
     nom = required_text(apporteur.nom, "apporteur.nom")
     fonction = required_text(apporteur.fonction_dirigeant, "apporteur.fonction_dirigeant")
     add_paragraph(document, f"{civilite} {prenom} {nom}")
-    add_italic_instruction(document, f"Agissant en qualité de futur {fonction}")
+    # M2 (Akainu ronde 2, 2026-07-12) : « futur gérant » s'accorde au genre du dirigeant
+    # signataire (« future gérante »), coherent avec la procuration (PR2) et le PV nomination.
+    futur = accord_terme_genre("futur", apporteur.genre)
+    fonction_accordee = accord_fonction(fonction, apporteur.genre)
+    add_italic_instruction(
+        document, f"Agissant en qualité de {futur} {fonction_accordee}"
+    )
 
 
 def _mention_manuscrite(

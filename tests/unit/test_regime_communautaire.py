@@ -151,9 +151,11 @@ def test_regime_communautaire_selas_generates_both_documents(tmp_path: Path) -> 
         WD_ALIGN_PARAGRAPH.RIGHT
     )
     assert "Le 15/05/2026" not in renonciation_text
+    # m3 (Akainu SELARL ronde 2, 2026-07-12) : la conjointe signataire (Claire Durand, Madame)
+    # renonce a la qualite « d'associée » (accord au genre du conjoint). Supersede « d'associé ».
     renonciation_subject = _matching_paragraphs(
         renonciation,
-        "Objet : Lettre de renonciation à revendiquer la qualité d'associé",
+        "Objet : Lettre de renonciation à revendiquer la qualité d'associée",
     )[0]
     assert renonciation_subject.runs[0].bold is True
     assert renonciation_subject.runs[0].underline is True
@@ -335,8 +337,9 @@ def test_renonciation_R1_destinataire_block_at_top(tmp_path: Path) -> None:
     )
     # Il est au-dessus de la ligne « À Paris » et de l'objet (corps descendu).
     ville_idx = paragraphs.index("À Paris")
+    # m3 (Akainu ronde 2) : conjointe signataire -> objet « d'associée » (accord au genre).
     objet_idx = paragraphs.index(
-        "Objet : Lettre de renonciation à revendiquer la qualité d'associé"
+        "Objet : Lettre de renonciation à revendiquer la qualité d'associée"
     )
     assert dest_idx < ville_idx < objet_idx
 

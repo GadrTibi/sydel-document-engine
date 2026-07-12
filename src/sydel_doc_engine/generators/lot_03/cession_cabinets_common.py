@@ -69,6 +69,11 @@ SUPPORTED_ORIGINE_MODES = {ORIGINE_MODE_CREE, ORIGINE_MODE_ACHETE}
 # Ancre = literal STABLE de la clause « acquis » du modele (present avant remplissage des tokens).
 # Defaut (mode absent / "achete" / autre) = clause du modele INCHANGEE (byte-fidele au gold).
 _ORIGINE_ACQUIS_ANCHOR_DENTAIRE = "pour les avoir régulièrement acquis auprès de"
+# B1 (Akainu ronde 2, 2026-07-12) : le modele du COMPROMIS dentaire fige la clause « créés »
+# (contrairement a l'acte qui fige « acquis ») -> ancre pour piloter le compromis par le mode
+# d'origine, symetriquement a l'acte. Sans ca, un cabinet « acheté » rend un compromis « créés »
+# alors que l'acte co-genere rend « acquis » = origines contradictoires dans le meme bundle.
+_ORIGINE_CREES_ANCHOR_DENTAIRE = "pour les avoir régulièrement créés le"
 
 # Convention systeme : une liste vide (0 element) se rend "Néant", a l'image des
 # apports en nature inexistants. Utilisee pour la reprise des salaries (0/1/N).
@@ -491,6 +496,41 @@ def _build_segment_overrides(ctx: DocumentGenerationContext) -> dict[str, str]:
     return overrides
 
 
+def _build_origine_overrides(
+    variant: CessionCabinetVariant,
+    cabinet: CessionCabinet,
+) -> dict[str, str | None]:
+    """Surcharges de la clause d'origine de propriete des modeles DENTAIRES, pilotees par
+    `origine_propriete_mode` (le medical branche via [origine_propriete_phrase]).
+
+    - AC2 (Albane 2026-07-10, verbatim O1) : ACTE dentaire, mode "cree" -> la clause « acquis »
+      figee du modele devient « ... pour les avoir régulièrement créés le <date>. ».
+    - B1 (Akainu ronde 2, 2026-07-12) : COMPROMIS dentaire, mode "achete" -> la clause « créés »
+      figee devient la clause « acquis » VERBATIM de l'acte (identite vendeur + precedent + date
+      + prix), pour que l'acte ET le compromis co-generes portent la MEME origine.
+    Mode absent / autre -> clause du modele inchangee (byte-fidele au gold). Tokens remplis ensuite.
+    """
+    overrides: dict[str, str | None] = {}
+    if variant.type_cabinet != DENTAIRE:
+        return overrides
+    mode = (cabinet.origine_propriete_mode or "").strip().lower()
+    if variant.etape == ACTE and mode == ORIGINE_MODE_CREE:
+        overrides[_ORIGINE_ACQUIS_ANCHOR_DENTAIRE] = (
+            "[civilite_vendeur] [prenom_vendeur] [nom_vendeur] est propriétaire des "
+            "éléments constitutifs du cabinet pour les avoir régulièrement créés "
+            "le [date_origine_propriete]."
+        )
+    elif variant.etape == COMPROMIS and mode == ORIGINE_MODE_ACHETE:
+        overrides[_ORIGINE_CREES_ANCHOR_DENTAIRE] = (
+            "[civilite_vendeur] [prenom_vendeur] [nom_vendeur] est propriétaire des "
+            "éléments constitutifs du cabinet pour les avoir régulièrement acquis auprès de "
+            "[civilite_precedent_proprietaire] [prenom_precedent_proprietaire] "
+            "[nom_precedent_proprietaire], le [date_origine_propriete] au prix de "
+            "[prix_origine_propriete] euros."
+        )
+    return overrides
+
+
 def _build_paragraph_overrides(
     ctx: DocumentGenerationContext,
     variant: CessionCabinetVariant,
@@ -521,20 +561,7 @@ def _build_paragraph_overrides(
         # Une superficie renseignee (scenarios existants) conserve la phrase du
         # modele avec le token remplace.
         overrides["[superficie_local]"] = None
-    # AC2 (Albane 2026-07-10, verbatim O1) : sur l'acte DENTAIRE, un cabinet CREE (mode "cree")
-    # remplace la clause « acquis » figee du modele par « ... pour les avoir régulièrement créés
-    # le <date>. ». Meme squelette que la clause « acquis » (« pour les avoir régulièrement
-    # <verbe> »), verbe = créés. Les tokens du texte de remplacement (identite vendeur + date)
-    # sont remplis ensuite par le moteur. Mode absent / "achete" / autre -> clause modele
-    # inchangee (defaut acquis, byte-fidele). Le medical branche deja via [origine_propriete_phrase].
-    if variant.etape == ACTE and variant.type_cabinet == DENTAIRE:
-        mode = (cabinet.origine_propriete_mode or "").strip().lower()
-        if mode == ORIGINE_MODE_CREE:
-            overrides[_ORIGINE_ACQUIS_ANCHOR_DENTAIRE] = (
-                "[civilite_vendeur] [prenom_vendeur] [nom_vendeur] est propriétaire des "
-                "éléments constitutifs du cabinet pour les avoir régulièrement créés "
-                "le [date_origine_propriete]."
-            )
+    overrides.update(_build_origine_overrides(variant, cabinet))
     # R5-contrats (verbatim Albane IMG_7837, 2026-06-29) : la clause de reprise des contrats
     # de travail (point 3, APRES « De payer tous frais ») est remplie EN PLACE, a sa position
     # du modele : token [clause_reprise_salaries] (dentaire) / ligne statique « De reprendre les
@@ -567,19 +594,34 @@ def _build_paragraph_overrides(
 
 
 # Paires d'accord en genre des modeles de cession, pilotees par la BONNE personne.
-# Chaines EXACTES figees relevees dans project/source_documents/lot_03/ :
-#  - Acte dentaire : fige au FEMININ ("née le", "Inscrite au tableau",
-#    "domiciliée en cette qualité").
-#  - Compromis dentaire / medical : fige au MASCULIN ("né le", "inscrit au tableau",
-#    "domicilié en cette qualité").
-#  - Acte medical : "né(e) le" inclusif (non touche : aucune paire ne le matche).
-# JAMAIS de regex de terminaison : uniquement ces chaines litterales ancrees.
-# "désigné" (role/invariant) et "Représentée" (la societe, toujours feminin) ne
-# sont PAS dans les paires : on n'y touche pas.
+# Chaines EXACTES figees relevees dans project/source_documents/lot_03/.
+#
+# Akainu SELARL ronde 2 (2026-07-12) — leçon regle 68 (« coder l'INTENTION, jamais une liste
+# de tournures ») : l'ancienne version ne couvrait que « né le »/« inscrit au tableau » -> une
+# VENDEUSE fuyait au masculin sur « inscrit au répertoire SIREN », « marié à/sous », « Ci-après
+# désigné », « le soussigné de première part » (fuites confirmees sur rendu reel H+F). On accorde
+# donc CHAQUE terme referant a la vendeuse, ancre au CONCEPT (pas a la phrase signalee) :
+#  - inscription : « inscrit au » couvre TOUS les registres du modele (Ordre + répertoire SIREN) ;
+#  - statut matrimonial : « marié » suivi de à/sous/avec ;
+#  - designation & qualite de PARTIE : « Ci-après désigné », « le/Le soussigné de première part »
+#    (la SECONDE part = l'acquereur, accordee par _CESSION_REPRESENTANT_PAIRS, jamais ici).
+# Bidirectionnel (apply_gender_pairs) : un modele fige au feminin (acte dentaire) redevient
+# masculin pour un homme. Le « né(e) le » inclusif du modele medical reste inclusif pour un
+# HOMME (pre-existant, non signale) et devient « née le » pour une femme (genre connu).
+# "Représentée" (la societe, toujours feminin) n'est PAS accordee ici.
 _CESSION_VENDEUR_PAIRS: list[tuple[str, str]] = [
     ("né le ", "née le "),
-    ("Inscrit au tableau", "Inscrite au tableau"),
-    ("inscrit au tableau", "inscrite au tableau"),
+    ("né(e) le ", "née le "),
+    ("Inscrit au ", "Inscrite au "),
+    ("inscrit au ", "inscrite au "),
+    # Statut matrimonial du vendeur, CONCEPT (regle 68) : « marié » quel que soit ce qui suit
+    # (« marié à/sous/avec … », « marié. » nu du compromis). apply_gender_pairs est prefix-safe
+    # (« marié » ⊂ « mariée » protege), donc pas de double accord.
+    ("marié", "mariée"),
+    ("Marié", "Mariée"),
+    ("Ci-après désigné ", "Ci-après désignée "),
+    ("le soussigné de première part", "la soussignée de première part"),
+    ("Le soussigné de première part", "La soussignée de première part"),
 ]
 _CESSION_REPRESENTANT_PAIRS: list[tuple[str, str]] = [
     ("domicilié en cette qualité", "domiciliée en cette qualité"),
@@ -1094,7 +1136,7 @@ def _resolve_model_path(variant: CessionCabinetVariant) -> Path:
 # ---------------------------------------------------------------------------
 
 
-def _build_cession_replacements(
+def _build_cession_replacements(  # noqa: C901
     ctx: DocumentGenerationContext,
     variant: CessionCabinetVariant,
 ) -> dict[str, str]:
@@ -1150,6 +1192,17 @@ def _build_cession_replacements(
     put_opt("[numero_siren_vendeur]", vendeur.numero_siren)
     put_opt("[numero_ordre_vendeur]", vendeur.numero_ordre)
     put_opt("[numero_rpps_vendeur]", vendeur.numero_rpps)
+    # m1 (Akainu ronde 2, 2026-07-12) : SEUL le modele du compromis dentaire fige « Conseil
+    # départemental du [ordre_departemental_vendeur] » -> « du Paris » (faute). Le groupe
+    # « du [token] » est CONTIGU dans un seul run (run-safe) : on le remplace par la preposition
+    # ELIDEE correcte (« de Paris » / « d'Ardèche » / « du Rhône »), insere AVANT le token nu ->
+    # remplace en premier dans la boucle. Les autres modeles (« de [token] », « [token] » nu) ne
+    # portent pas ce groupe -> inchanges. Departement absent -> pas de cle (ligne modele figee).
+    ordre_dep_vendeur = (vendeur.ordre_departemental or "").strip()
+    if ordre_dep_vendeur:
+        replacements["du [ordre_departemental_vendeur]"] = elision_de(
+            departement_nom(ordre_dep_vendeur)
+        )
     put_opt("[ordre_departemental_vendeur]", departement_nom(vendeur.ordre_departemental))
     put("[situation_maritale_vendeur]", vendeur.situation_maritale)
     put_opt("[regime_matrimonial_vendeur]", vendeur.regime_matrimonial)

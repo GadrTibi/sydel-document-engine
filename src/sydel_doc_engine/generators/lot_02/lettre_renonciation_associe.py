@@ -26,6 +26,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_subject_heading,
     new_document,
 )
+from sydel_doc_engine.utils.grammar import accord_terme_genre
 
 OUTPUT_FILENAME = "lettre_renonciation_associe.docx"
 
@@ -66,9 +67,16 @@ class LettreRenonciationAssocieGenerator:
         )
         # Descend le corps/objet (R1 : « que le texte avec objet soit bien plus bas »).
         add_spacer(document, space_after_pt=48)
+        # m3 (Akainu ronde 2, 2026-07-12) : la lettre est signee par le CONJOINT qui renonce
+        # -> « associé » s'accorde a SON genre (« associée » pour une conjointe), a l'objet
+        # comme dans le corps (« devenir personnellement associé/associée »).
+        conjoint_genre = _required_conjoint(ctx).genre
         add_subject_heading(
             document,
-            "Objet : Lettre de renonciation à revendiquer la qualité d'associé",
+            (
+                "Objet : Lettre de renonciation à revendiquer la qualité "
+                f"d'{accord_terme_genre('associé', conjoint_genre)}"
+            ),
             space_after_pt=12,
         )
         add_paragraph(document, _apporteur_appel(ctx))
@@ -99,7 +107,8 @@ class LettreRenonciationAssocieGenerator:
             document,
             (
                 "Je te notifie, par la présente, mon intention de renoncer à la faculté de "
-                f"devenir personnellement {qualite_renoncee} de cette société."
+                f"devenir personnellement {accord_terme_genre(qualite_renoncee, conjoint_genre)} "
+                "de cette société."
             ),
             alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
         )

@@ -812,9 +812,9 @@ def test_compromis_medical_vendeur_masculin_agreement(tmp_path: Path) -> None:
     _assert_no_residual_tokens(text)
 
 
-def test_acte_medical_keeps_inclusive_birth_form(tmp_path: Path) -> None:
-    # L'acte medical fige la forme inclusive « né(e) le » : jamais accordee,
-    # quel que soit le genre du vendeur (aucune paire ne la matche).
+def test_acte_medical_birth_form_accorded_female(tmp_path: Path) -> None:
+    # Akainu SELARL ronde 2 (2026-07-12) : l'acte medical fige « né(e) le » inclusif ; le genre
+    # CONNU s'accorde -> « née le » pour une vendeuse. Un homme garde la forme inclusive du modele.
     masc = _docx_text(
         ActeCessionCabinetMedicalGenerator().generate(
             _context(credit_vendeur=True, vendeur_genre=Gender.MASCULIN),
@@ -828,8 +828,12 @@ def test_acte_medical_keeps_inclusive_birth_form(tmp_path: Path) -> None:
         )
     )
 
+    # Akainu SELARL ronde 2 (2026-07-12) : le genre CONNU s'accorde -> une VENDEUSE rend
+    # « née le » (plus « né(e) le »). Un homme garde la forme inclusive « né(e) le » du modele
+    # medical (pre-existant, non signale). Supersede l'ancien lock « inclusif tout genre ».
     assert "né(e) le 10 mars 1975" in masc
-    assert "né(e) le 10 mars 1975" in fem
+    assert "née le 10 mars 1975" in fem
+    assert "né(e) le" not in fem
 
 
 def test_acte_medical_renders_conjoint_prenom_and_nom(tmp_path: Path) -> None:
