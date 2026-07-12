@@ -155,10 +155,9 @@ class PvAgeCessionScmGenerator:
         # president (« gerante associee » si femme, « gerant associe » si homme). Le sexe est
         # derive de la civilite d'affichage deja saisie (« Madame » -> feminin), pas d'un champ
         # nouveau.
+        president_feminin = _est_feminin(president.civilite_affichage)
         qualite_president = (
-            "gérante associée"
-            if _est_feminin(president.civilite_affichage)
-            else "gérant associé"
+            "gérante associée" if president_feminin else "gérant associé"
         )
         _body(
             document,
@@ -169,7 +168,10 @@ class PvAgeCessionScmGenerator:
         )
         _body(
             document,
-            "Le Président dépose et met à la disposition des associés les documents suivants :",
+            _accord_role_president(
+                "Le Président dépose et met à la disposition des associés les documents suivants :",
+                president_feminin,
+            ),
         )
         # Liste A (puces tiret) : documents deposes par le President (retour UAT Rafael).
         for item in [
@@ -185,7 +187,7 @@ class PvAgeCessionScmGenerator:
             "L'assemblée lui donne acte de ses déclarations et reconnaît la validité de la convocation.",
             "Puis le Président rappelle l'ordre du jour :",
         ]:
-            _body(document, text)
+            _body(document, _accord_role_president(text, president_feminin))
         # Liste B (puces tiret) : ordre du jour (retour UAT Rafael).
         for item in [
             "Lecture du rapport de la gérance ;",
@@ -198,7 +200,7 @@ class PvAgeCessionScmGenerator:
             "Une discussion sans débat s'engage entre les associés.",
             "Plus personne ne demandant la parole, le Président met successivement aux voix les résolutions inscrites à l'ordre du jour.",
         ]:
-            _body(document, text)
+            _body(document, _accord_role_president(text, president_feminin))
 
         add_heading(
             document, "PREMIERE RESOLUTION", space_before_pt=_RESOLUTION_SPACE_BEFORE_PT
@@ -298,6 +300,22 @@ def _est_feminin(civilite_affichage: str | None) -> bool:
     if not civilite_affichage:
         return False
     return civilite_affichage.strip().casefold().startswith("madame")
+
+
+def _accord_role_president(text: str, feminin: bool) -> str:
+    # M3 (Akainu SELARL ronde 4, 2026-07-12) : les references de ROLE du president de seance
+    # (« Le Président » / « le président ») s'accordent au genre, comme la qualite deja
+    # feminisee (§P3a). No-op au masculin. Casse (article + nom) preservee.
+    if not feminin:
+        return text
+    for masc, fem in (
+        ("Le Président", "La Présidente"),
+        ("le Président", "la Présidente"),
+        ("Le président", "La présidente"),
+        ("le président", "la présidente"),
+    ):
+        text = text.replace(masc, fem)
+    return text
 
 
 def _add_resolution2_paragraph(document, numero_article: str) -> None:

@@ -221,5 +221,12 @@ MAJEUR + MINEUR corrigés (commit `81f48c5`). Nitpicks tracés (aucun défaut de
   « LE CÉDANT », pas à la personne — défendable). **À confirmer Albane** si le label doit se féminiser.
 - **[n5] O2 corporel = total − incorporel** : déjà flagué ci-dessus (Albane l'a posé « à confirmer »).
 
+## Gate Akainu SELARL ronde 4 (2026-07-12) — 1 nitpick tracé
+- **[n6] Civilité du représentant abrégée différemment acte vs compromis** : l'acte de cession
+  cabinet rend « Représentée par sa gérante, **Madame** Sophie Lefevre » ; le compromis rend
+  « … **Mme** Sophie Lefevre » (symétrique en H : « Monsieur » vs « M. »). Pré-existant, piloté
+  par deux modèles source distincts (probable fidélité gold). **À confirmer Albane** : uniformiser
+  Madame/Mme entre les deux documents, ou conserver la fidélité modèle par modèle ?
+
 ## Gate Docteur 2026-07-09 — 1 NITPICK tracé (pré-existant, hors Docteur)
 - **[n1] avenant_contrat_bail** : dates au format ISO brut (« né le 1975-03-10 », « en date du 2021-09-01 ») au lieu du format lettré du reste du corpus (« né le 10 mars 1975 »). Pré-existant, NON introduit par l'éradication Docteur. À traiter dans un lot mise-en-forme dates (avenant bail non branché sur le formateur de dates français).

@@ -588,8 +588,10 @@ def test_pv_age_renders_hyphen_bullets_on_two_lists(tmp_path: Path) -> None:
     assert "- Agrément d'un nouvel associé, la SELARL CABINET DUPONT ;" in para_texts
     assert "- Modification corrélative des statuts." in para_texts
     # Garde-fou : les phrases hors liste ne sont PAS transformees en puces.
+    # M3 (Akainu SELARL ronde 4) : la presidente de seance (« Madame », dernière associée) rend
+    # « La Présidente » accorde (comme la qualite « gérante associée » §P3a). Supersede le masculin.
     assert (
-        "Le Président dépose et met à la disposition des associés les documents suivants :"
+        "La Présidente dépose et met à la disposition des associés les documents suivants :"
         in para_texts
     )
 

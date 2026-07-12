@@ -30,6 +30,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_spacer,
     new_document,
 )
+from sydel_doc_engine.utils.grammar import accord_terme_genre
 from sydel_doc_engine.utils.months import FRENCH_MONTHS
 
 OUTPUT_FILENAME = "avenant_contrat_bail.docx"
@@ -181,11 +182,15 @@ def _party_other_segments(party: BailParty) -> list[str]:
     if _clean(party.profession):
         segments.append(_clean(party.profession))
     naissance = _display_birthdate(party.date_naissance)
+    # M1 (Akainu SELARL ronde 4, 2026-07-12) : « né le / né à » s'accorde au genre de la partie
+    # (locataire OU bailleur) -> « née » pour une femme (parite avec les actes de cession). No-op
+    # au masculin. Theme transversal ACCORD EN GENRE, propage a l'avenant (regle 68 « partout »).
+    ne = accord_terme_genre("né", party.genre)
     if naissance:
         ville = _clean(party.ville_naissance)
-        segments.append(f"né le {naissance}" + (f", à {ville}" if ville else ""))
+        segments.append(f"{ne} le {naissance}" + (f", à {ville}" if ville else ""))
     elif _clean(party.ville_naissance):
-        segments.append(f"né à {_clean(party.ville_naissance)}")
+        segments.append(f"{ne} à {_clean(party.ville_naissance)}")
     if _clean(party.nationalite):
         segments.append(f"de nationalité {_clean(party.nationalite)}")
     if _clean(party.adresse_affichee):
@@ -271,7 +276,9 @@ def _add_article_2(docx, locataire: BailParty) -> None:
     # sur le nom obligatoire.
     required_text(locataire.nom, "bail.locataire.nom")
     domicile = _clean(locataire.adresse_affichee)
-    domicile_segment = f", domicilié {domicile}" if domicile else ""
+    # M1 (Akainu ronde 4) : « domicilié » accorde au genre du locataire (« domiciliée »).
+    domicilie = accord_terme_genre("domicilié", locataire.genre)
+    domicile_segment = f", {domicilie} {domicile}" if domicile else ""
     add_paragraph(
         docx,
         (
@@ -322,16 +329,20 @@ def _add_party_line(docx, party: BailParty, field_name: str) -> None:
 def _add_parties(docx, bailleur: BailParty, locataire: BailParty) -> None:
     add_paragraph(docx, "Entre les soussign\u00e9s :", style_profile=BAIL_COMPACT_STYLE_PROFILE)
     _add_party_line(docx, bailleur, "bail.bailleur")
+    # M1 (Akainu ronde 4) : le participe "designe" accorde au genre de la partie
+    # ("designee" pour une femme). Le LABEL "le Bailleur"/"le Locataire" reste (juridique, [n4]).
+    designe_bailleur = accord_terme_genre("d\u00e9sign\u00e9", bailleur.genre)
+    designe_locataire = accord_terme_genre("d\u00e9sign\u00e9", locataire.genre)
     add_party_marker(
         docx,
-        "Ci-apr\u00e8s d\u00e9sign\u00e9 \u00ab le Bailleur \u00bb",
+        f"Ci-apr\u00e8s {designe_bailleur} \u00ab le Bailleur \u00bb",
         style_profile=BAIL_COMPACT_STYLE_PROFILE,
     )
     add_paragraph(docx, "ET :", bold=True, style_profile=BAIL_COMPACT_STYLE_PROFILE)
     _add_party_line(docx, locataire, "bail.locataire")
     add_party_marker(
         docx,
-        "Ci-apr\u00e8s d\u00e9sign\u00e9 \u00ab le Locataire \u00bb",
+        f"Ci-apr\u00e8s {designe_locataire} \u00ab le Locataire \u00bb",
         style_profile=BAIL_COMPACT_STYLE_PROFILE,
     )
     add_paragraph(

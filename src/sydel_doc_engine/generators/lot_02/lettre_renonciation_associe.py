@@ -5,6 +5,7 @@ from unicodedata import normalize
 
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
+from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import Address, DocumentGenerationContext, Person
 from sydel_doc_engine.generators.lot_02.regime_communautaire_common import (
     city_line,
@@ -112,11 +113,19 @@ class LettreRenonciationAssocieGenerator:
             ),
             alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
         )
+        # M2 (Akainu SELARL ronde 4, 2026-07-12) : « mon conjoint » designe l'APPORTEUR
+        # (personne_signataire, celui qui a fait l'apport) -> « ma conjointe » quand l'apporteur
+        # est une femme. Distinct de l'accord « associé(e) » de l'objet (genre du CONJOINT
+        # signataire). Coder l'INTENTION (regle 68), pas la seule tournure « associé ».
+        apporteur_genre = ctx.personne_signataire.genre
+        mon_conjoint = (
+            "ma conjointe" if apporteur_genre == Gender.FEMININ else "mon conjoint"
+        )
         add_paragraph(
             document,
             (
                 "En tout état de cause, et conformément aux dispositions du Code civil, je "
-                "déclare donner mon consentement à l'apport effectué par mon conjoint."
+                f"déclare donner mon consentement à l'apport effectué par {mon_conjoint}."
             ),
             alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
         )
