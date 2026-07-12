@@ -4,7 +4,9 @@ from __future__ import annotations
 from pathlib import Path
 
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.shared import Cm, Pt
 
+from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import DocumentGenerationContext
 from sydel_doc_engine.generators.lot_05.scm_cession_common import (
     acte_signature_prestataire,
@@ -27,6 +29,7 @@ from sydel_doc_engine.generators.lot_05.scm_cession_common import (
     validate_acte_context,
 )
 from sydel_doc_engine.rendering.docx_builder import (
+    DEFAULT_STYLE_PROFILE,
     add_framed_title,
     add_paragraph,
     add_signature_table,
@@ -34,7 +37,13 @@ from sydel_doc_engine.rendering.docx_builder import (
     new_document,
 )
 from sydel_doc_engine.utils.departements import departement_nom
-from sydel_doc_engine.utils.grammar import elision_de
+from sydel_doc_engine.utils.grammar import (
+    accord_fonction,
+    accord_participe_e,
+    accord_terme_genre,
+    elision_de,
+    possessif_singulier,
+)
 
 OUTPUT_FILENAME = "acte_cession_parts_scm.docx"
 
@@ -85,6 +94,66 @@ def _party_marker(document, text: str) -> None:
     )
 
 
+# SC1 (Albane 2026-07-10) : espace entre chaque PARTIE (cedant | cessionnaire | LA SOCIETE)
+# pour separer les blocs comparants, comme le modele.
+_PARTY_SPACING_PT = 8
+# SC1 : le bloc d'identite du cessionnaire est COMPACT (interligne superflu retire) — ses
+# lignes se suivent serrees comme un bloc d'adresse, au lieu du space_after standard (6 pt).
+_CESSIONNAIRE_LINE_SPACE_AFTER_PT = 2
+
+
+class _Bullet(str):
+    """Marqueur SC5 : element de liste d'article a rendre en PUCE (•)."""
+
+    __slots__ = ()
+
+
+def _cedant_genre(cedant) -> Gender:
+    """Genre du cedant, derive de sa civilite d'affichage deja saisie (« Madame » -> feminin).
+
+    SC3/SC4 (Albane 2026-07-10) : le cedant SCM ne porte pas de champ `genre` ; on lit sa
+    civilite comme le PV AGE cession SCM (`_est_feminin`). Sert a accorder « il »->« elle »
+    (SC3) et « soussigné »->« soussignée » (SC4) via `accord_terme_genre`."""
+    civilite = (cedant.civilite_affichage or "").strip().casefold()
+    feminines = ("madame", "mme", "mademoiselle", "mlle")
+    return Gender.FEMININ if civilite.startswith(feminines) else Gender.MASCULIN
+
+
+def _le_soussigne_premiere_part(genre: Gender) -> str:
+    """« Le soussigné » -> « La soussignée » si le cedant est une femme (SC4).
+
+    L'article ET le participe s'accordent : masculin -> « Le soussigné » (inchangé)."""
+    article = "La" if genre == Gender.FEMININ else "Le"
+    return f"{article} {accord_terme_genre('soussigné', genre)}"
+
+
+def _add_party_line(document, segments, *, space_after_pt: int | None = None) -> None:
+    """Paragraphe de corps JUSTIFIE compose de segments (texte, gras).
+
+    SC1 : les NOMS des parties (et de la SCM) sont en GRAS, le reste de la ligne en normal."""
+    paragraph = document.add_paragraph()
+    paragraph.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+    paragraph.paragraph_format.space_after = Pt(
+        DEFAULT_STYLE_PROFILE.standard_space_after_pt if space_after_pt is None else space_after_pt
+    )
+    for text, bold in segments:
+        if not text:
+            continue
+        run = paragraph.add_run(text)
+        run.bold = bool(bold)
+
+
+def _add_bullet_item(document, text: str) -> None:
+    """Element de liste d'article rendu en vraie PUCE (•) a retrait pendant (SC5)."""
+    paragraph = document.add_paragraph()
+    paragraph.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+    paragraph.paragraph_format.left_indent = Cm(0.7)
+    paragraph.paragraph_format.first_line_indent = Cm(-0.35)
+    paragraph.paragraph_format.space_after = Pt(DEFAULT_STYLE_PROFILE.standard_space_after_pt)
+    paragraph.add_run("• ")
+    paragraph.add_run(text)
+
+
 class ActeCessionPartsScmGenerator:
     """Generateur from-scratch de l'acte de cession de parts SCM V1."""
 
@@ -106,6 +175,9 @@ class ActeCessionPartsScmGenerator:
             raise ValueError("scm_cession est incomplet pour l'acte de cession SCM.")
 
         cedant_name = cedant_display(cedant)
+        # SC3/SC4 (Albane 2026-07-10) : genre du cedant pour accorder « il »->« elle » et
+        # « soussigné »->« soussignée » ; masculin -> formes inchangees (byte-neutre).
+        genre_cedant = _cedant_genre(cedant)
         # R22-02 : le conjoint n'est mentionne que si le cedant est marie (sinon « divorce
         # avec Madame X » fantome). Regle partagee mentions_conjoint (gold-aligned).
         # Albane 6.3/7.3 (RATIFIE 2026-07-06) : le PARTENAIRE PACSE s'affiche aussi, meme
@@ -137,25 +209,46 @@ class ActeCessionPartsScmGenerator:
         add_spacer(document, space_after_pt=12)
 
         add_body_paragraph(document, "Entre les soussignés :", bold=True)
+        # SC1 : nom du cedant (partie) en GRAS ; le reste de sa ligne d'identite en normal.
+        _add_party_line(
+            document,
+            [
+                (cedant_name, True),
+                (
+                    f", {required_text(cedant.profession, 'scm_cession.cedant.profession')}, "
+                    # Accord genre (Albane 2026-07-10, sweep intention) : « né/Inscrit » accordés
+                    # au genre du cédant (« née »/« Inscrite » si femme) via accord_terme_genre.
+                    f"{accord_terme_genre('né', genre_cedant)} le "
+                    f"{format_display_date(cedant.date_naissance, 'scm_cession.cedant.date_naissance')} "
+                    f"à {required_text(cedant.ville_naissance, 'scm_cession.cedant.ville_naissance')} "
+                    f"({required_text(cedant.departement_naissance, 'scm_cession.cedant.departement_naissance')}), "
+                    f"de nationalité {required_text(cedant.nationalite, 'scm_cession.cedant.nationalite')}, "
+                    f"demeurant au {required_text(cedant.adresse_affichee, 'scm_cession.cedant.adresse_affichee')}, "
+                    f"{cedant_maritale_clause}. "
+                    f"{accord_terme_genre('Inscrit', genre_cedant)} au Tableau de l'ordre départemental des "
+                    f"{_profession_ordre(ctx, cedant)} "
+                    f"du {departement_nom(required_text(cedant.ordre.departemental if cedant.ordre else None, 'scm_cession.cedant.ordre.departemental'))} "
+                    f"sous le numéro {required_text(cedant.ordre.numero if cedant.ordre else None, 'scm_cession.cedant.ordre.numero')} "
+                    f"et sous le numéro RPPS {required_text(cedant.numero_rpps, 'scm_cession.cedant.numero_rpps')}.",
+                    False,
+                ),
+            ],
+        )
+        # SC4 : « Soussigné » de première part accorde au genre du cedant (« Soussignée » si femme).
+        _party_marker(
+            document,
+            f"{accord_terme_genre('Soussigné', genre_cedant)} de première part, ci-après dénommé « LE CÉDANT »,",
+        )
+        # SC1 : espace entre la partie CEDANT et la partie CESSIONNAIRE.
+        add_spacer(document, space_after_pt=_PARTY_SPACING_PT)
+        add_body_paragraph(document, "ET :", bold=True)
+        # SC1 : denomination du cessionnaire (partie) en GRAS + bloc d'identite COMPACT.
         add_body_paragraph(
             document,
-            (
-                f"{cedant_name}, {required_text(cedant.profession, 'scm_cession.cedant.profession')}, "
-                f"né le {format_display_date(cedant.date_naissance, 'scm_cession.cedant.date_naissance')} "
-                f"à {required_text(cedant.ville_naissance, 'scm_cession.cedant.ville_naissance')} "
-                f"({required_text(cedant.departement_naissance, 'scm_cession.cedant.departement_naissance')}), "
-                f"de nationalité {required_text(cedant.nationalite, 'scm_cession.cedant.nationalite')}, "
-                f"demeurant au {required_text(cedant.adresse_affichee, 'scm_cession.cedant.adresse_affichee')}, "
-                f"{cedant_maritale_clause}. "
-                f"Inscrit au Tableau de l'ordre départemental des {_profession_ordre(ctx, cedant)} "
-                f"du {departement_nom(required_text(cedant.ordre.departemental if cedant.ordre else None, 'scm_cession.cedant.ordre.departemental'))} "
-                f"sous le numéro {required_text(cedant.ordre.numero if cedant.ordre else None, 'scm_cession.cedant.ordre.numero')} "
-                f"et sous le numéro RPPS {required_text(cedant.numero_rpps, 'scm_cession.cedant.numero_rpps')}."
-            ),
+            required_text(cessionnaire.denomination, "scm_cession.cessionnaire.denomination"),
+            bold=True,
+            space_after_pt=_CESSIONNAIRE_LINE_SPACE_AFTER_PT,
         )
-        _party_marker(document, "Soussigné de première part, ci-après dénommé « LE CÉDANT »,")
-        add_body_paragraph(document, "ET :", bold=True)
-        add_body_paragraph(document, required_text(cessionnaire.denomination, "scm_cession.cessionnaire.denomination"))
         add_body_paragraph(
             document,
             (
@@ -163,26 +256,46 @@ class ActeCessionPartsScmGenerator:
                 f"{required_text(cessionnaire.capital_social, 'scm_cession.cessionnaire.capital_social')}"
                 f"{' €' if ctx.structure == 'SELARL' else ''}"
             ),
+            space_after_pt=_CESSIONNAIRE_LINE_SPACE_AFTER_PT,
         )
         add_body_paragraph(
             document,
             f"Ayant son siège au {address_display(cessionnaire.siege, 'scm_cession.cessionnaire.siege')}",
+            space_after_pt=_CESSIONNAIRE_LINE_SPACE_AFTER_PT,
         )
         add_body_paragraph(
             document,
             f"En cours d'immatriculation au RCS de {required_text(cessionnaire.ville_rcs, 'scm_cession.cessionnaire.ville_rcs')}",
+            space_after_pt=_CESSIONNAIRE_LINE_SPACE_AFTER_PT,
+        )
+        # SC4-adjacent (Albane 2026-07-10, accord genre) : le représentant du cessionnaire EST
+        # le cedant (garde _validate_representant_matches_cedant) ; pour une femme, tout le
+        # segment « Représentée par … » s'accorde — possessif « son »->« sa », fonction
+        # « gérant »->« gérante » / « président »->« présidente », participe « domicilié »->
+        # « domiciliée ». Masculin -> formes inchangées (byte-neutre). Sans quoi la règle de
+        # conformité R15 (accord fonction, existante) flague le rendu féminin.
+        _representant_fonction = accord_fonction(
+            cessionnaire_representant_fonction(ctx, cessionnaire), genre_cedant
         )
         add_body_paragraph(
             document,
             (
-                f"Représentée par son {cessionnaire_representant_fonction(ctx, cessionnaire)}, "
-                f"{cedant_name}, domicilié en cette qualité audit siège."
+                f"Représentée par {possessif_singulier(_representant_fonction, genre_cedant)} "
+                f"{_representant_fonction}, "
+                f"{cedant_name}, {accord_participe_e('domicilié', genre_cedant)} en cette qualité audit siège."
             ),
+            space_after_pt=_CESSIONNAIRE_LINE_SPACE_AFTER_PT,
         )
         _party_marker(document, "Soussignée de seconde part, ci-après dénommé « LE CESSIONNAIRE »,")
-        add_body_paragraph(
+        # SC1 : espace entre la partie CESSIONNAIRE et la partie LA SOCIETE + nom de la SCM en GRAS.
+        add_spacer(document, space_after_pt=_PARTY_SPACING_PT)
+        _add_party_line(
             document,
-            f"Ont procédé de la manière suivante à la cession des parts de la Société {required_text(scm_cedee.denomination, 'scm_cession.scm_cedee.denomination')}.",
+            [
+                ("Ont procédé de la manière suivante à la cession des parts de la Société ", False),
+                (required_text(scm_cedee.denomination, "scm_cession.scm_cedee.denomination"), True),
+                (".", False),
+            ],
         )
         _party_marker(document, "Ci-après dénommé « LA SOCIETE »,")
 
@@ -208,10 +321,10 @@ class ActeCessionPartsScmGenerator:
                 f"{_cogerants_display(scm_cession)}."
             ),
         )
-        _add_origin_property(document, scm_cession)
-        _add_declarations_and_cession(document, scm_cession, cedant_name)
+        _add_origin_property(document, scm_cession, genre_cedant)
+        _add_declarations_and_cession(document, scm_cession, cedant_name, genre_cedant)
         _add_price_and_payment(document, ctx, scm_cession, cedant_name)
-        _add_source_tail(document, ctx, scm_cession)
+        _add_source_tail(document, ctx, scm_cession, genre_cedant)
         # Aération (§13.1) : espace avant la zone de clôture / signature.
         add_spacer(document, space_after_pt=12)
         add_body_paragraph(document, f"Fait à {ctx.signature.lieu},")
@@ -221,11 +334,12 @@ class ActeCessionPartsScmGenerator:
         )
         add_body_paragraph(document, f"Le {scm_cession.date_acte_affichee or ''}")
         add_spacer(document, space_after_pt=18)
-        # Albane 2026-06-26 §S12 : les signatures cedant / cessionnaire sont mises COTE A COTE
-        # (table 2 colonnes), au lieu d'etre empilees et serrees. La zone manuscrite (espace
-        # de signature) est integree par add_signature_table. Les libelles « Le cédant » / « Le
-        # cessionnaire » sont CONSERVES (Albane laissait le choix de les retirer « si plus
-        # simple » — on garde la qualite, plus claire ; le cote-a-cote suffit a aerer).
+        # SC6 (Albane 2026-07-10) : 2 CADRES pour 2 signataires (une seule RANGEE de 2 cellules),
+        # pas 4. Le cadre du HAUT (rangee de titres « Le cédant » / « Le cessionnaire ») est
+        # SUPPRIME : le libelle est desormais integre DANS son propre cadre, au-dessus du nom et
+        # de la zone manuscrite. Resultat : exactement 2 cadres cote a cote (§S12 : cote-a-cote
+        # conserve). Albane laissait aussi le choix « ou pas de cadre » — on garde les cadres,
+        # plus clairs, mais reduits a 2.
         cessionnaire_signataire = (
             "Représentée par "
             f"{required_text(cessionnaire.representant.civilite_courte, 'scm_cession.cessionnaire.representant.civilite_courte')} "
@@ -235,13 +349,12 @@ class ActeCessionPartsScmGenerator:
         add_signature_table(
             document,
             [
-                ["Le cédant", "Le cessionnaire"],
                 [
-                    cedant_name,
-                    f"{required_text(cessionnaire.denomination, 'scm_cession.cessionnaire.denomination')}\n{cessionnaire_signataire}",
+                    f"Le cédant\n{cedant_name}",
+                    f"Le cessionnaire\n{required_text(cessionnaire.denomination, 'scm_cession.cessionnaire.denomination')}\n{cessionnaire_signataire}",
                 ],
             ],
-            min_row_height_cm=2.5,
+            min_row_height_cm=3.0,
         )
         return save_clean_document(document, output_dir, OUTPUT_FILENAME)
 
@@ -256,21 +369,20 @@ def _profession_ordre(ctx: DocumentGenerationContext, cedant) -> str:
 
 
 def _cogerants_display(scm_cession) -> str:
+    # SC2 (Albane 2026-07-10) : « aucun gérant saisi dans la SCM mais 3 noms inventés
+    # apparaissent -> laisser VIERGE si non rempli ». L'ancien fallback fabriquait des
+    # cogerants a partir des associes ([0], cedant, [2]) — des noms INVENTES (et une source
+    # d'IndexError des que < 3 associes). On ne genere plus AUCUN nom par defaut : quand la
+    # saisie ne fournit pas de cogerant, on rend le marqueur « a completer » (convention R10,
+    # jamais un nom inventé).
     scm_cedee = scm_cession.scm_cedee
-    if scm_cedee and scm_cedee.cogerants:
-        return ", ".join(scm_cedee.cogerants)
-    associes = scm_cession.associes_avant_cession
-    cedant = scm_cession.cedant
-    if cedant is None:
-        raise ValueError("scm_cession.cedant est obligatoire.")
-    return (
-        f"{associe_display(associes[0], 'scm_cession.associes_avant_cession[0]')}, "
-        f"{cedant_display(cedant)} et "
-        f"{associe_display(associes[2], 'scm_cession.associes_avant_cession[2]')}"
-    )
+    cogerants = [c for c in (scm_cedee.cogerants if scm_cedee else []) if c and str(c).strip()]
+    if cogerants:
+        return ", ".join(cogerants)
+    return required_text(None, "scm_cession.scm_cedee.cogerants")
 
 
-def _add_origin_property(document, scm_cession) -> None:
+def _add_origin_property(document, scm_cession, genre: Gender) -> None:
     _section_heading(document, "ORIGINE DE PROPRIETE")
     add_body_paragraph(
         document,
@@ -284,28 +396,34 @@ def _add_origin_property(document, scm_cession) -> None:
             document,
             f"{index}° {associe_display(associe, f'scm_cession.associes_avant_cession[{index - 1}]')}, représentant {parts.nb} parts sociales",
         )
+    # SC3 (Albane 2026-07-10) : « le cédant déclare qu'il » -> « qu'elle » si le cedant est
+    # une femme (accord genre via accord_terme_genre ; masculin -> « qu'il » inchangé).
     add_body_paragraph(
         document,
-        f"{cedant_display(scm_cession.cedant)}, le CEDANT, déclare qu'il est propriétaire des parts sociales pour les avoir souscrites à la constitution de la société.",
+        f"{cedant_display(scm_cession.cedant)}, le CEDANT, déclare qu'{accord_terme_genre('il', genre)} est propriétaire des parts sociales pour les avoir souscrites à la constitution de la société.",
     )
 
 
-def _add_declarations_and_cession(document, scm_cession, cedant_name: str) -> None:
+def _add_declarations_and_cession(document, scm_cession, cedant_name: str, genre: Gender) -> None:
     _section_heading(document, "CECI EXPOSE, IL EST CONVENU CE QUI SUIT :")
     _section_heading(document, "DECLARATIONS")
+    # SC5 (Albane 2026-07-10) : les items de la liste de declarations sont rendus en PUCES (•),
+    # le chapeau « Le CEDANT déclare : » reste un paragraphe de corps.
+    add_body_paragraph(document, "Le CEDANT déclare :")
     for text in [
-        "Le CEDANT déclare :",
-        "- qu'il dispose de la pleine capacité juridique d'aliéner ;",
-        "- qu'il est résident français ;",
-        "- que les parts sociales cédées sont libres de tout nantissement et de tout droit quelconque ;",
-        "- que les parts sociales cédées sont des biens propres.",
+        "qu'il dispose de la pleine capacité juridique d'aliéner ;",
+        "qu'il est résident français ;",
+        "que les parts sociales cédées sont libres de tout nantissement et de tout droit quelconque ;",
+        "que les parts sociales cédées sont des biens propres.",
     ]:
-        add_body_paragraph(document, text)
+        _add_bullet_item(document, text)
     _section_heading(document, "CESSION")
+    # SC4 : « soussigné de première part » (le CEDANT) accorde au genre ; « soussignée de
+    # deuxième part » designe la SOCIETE cessionnaire (feminine) et reste inchangé.
     add_body_paragraph(
         document,
         (
-            f"Par les présentes, {cedant_name}, soussigné de première part, cède et transporte sous les garanties ordinaires de fait ou de droit à la société "
+            f"Par les présentes, {cedant_name}, {accord_terme_genre('soussigné', genre)} de première part, cède et transporte sous les garanties ordinaires de fait ou de droit à la société "
             f"{required_text(scm_cession.cessionnaire.denomination, 'scm_cession.cessionnaire.denomination')}, soussignée de deuxième part qui accepte la pleine propriété de "
             f"{scm_cession.parts_cedees.nb} parts de la {required_text(scm_cession.scm_cedee.denomination, 'scm_cession.scm_cedee.denomination')}, numérotées de "
             f"{required_text(scm_cession.parts_cedees.plage, 'scm_cession.parts_cedees.plage')} inclus."
@@ -381,7 +499,7 @@ def _credit_vendeur_retard(ctx: DocumentGenerationContext, credit) -> str:
     )
 
 
-def _add_source_tail(document, ctx: DocumentGenerationContext, scm_cession) -> None:
+def _add_source_tail(document, ctx: DocumentGenerationContext, scm_cession, genre: Gender) -> None:
     # R9 (Albane 2026-07-07) : la clause de communication au Conseil de l'Ordre nomme le
     # departement de l'Ordre du CEDANT, en NOM avec la preposition correcte (« au Conseil
     # départemental de l'Ordre de Seine-et-Marne »), via la meme convention
@@ -407,13 +525,17 @@ def _add_source_tail(document, ctx: DocumentGenerationContext, scm_cession) -> N
         (
             "DÉCLARATIONS GÉNÉRALES",
             [
+                # SC5 : items d'article en PUCES (•) ; les chapeaux « ... déclare(nt) : » restent
+                # des paragraphes de corps. SC4 : « Le soussigné de première part » (le CEDANT)
+                # accorde au genre -> « La soussignée » si femme ; le pluriel « Les soussignés »
+                # (cedant + societe) reste au masculin generique (parties mixtes).
                 "Les soussignés de première et seconde part déclarent, chacun en ce qui le concerne :",
-                "qu'ils ont la pleine capacité civile pour s'obliger dans le cadre des présentes et de leurs suites et, plus spécialement, qu'ils ne font pas présentement l'objet d'une procédure collective dans le cadre de la loi du 13 juillet 1967 ou de celle du 25 janvier 1985, ni ne sont susceptibles de l'être en raison de leurs professions et fonctions, ni ne sont en état de cessation de paiements ou déconfiture ;",
-                "et qu'ils sont résidents français au sens de la réglementation des relations financières avec l'étranger.",
-                "Le soussigné de première part déclare :",
-                "qu'il n'existe de son chef ou de celui des précédents propriétaires des parts cédées, aucune restriction d'ordre légal ou contractuel à la libre disposition de celles-ci, notamment par suite de promesses ou offres consenties à des tiers ou de saisies ;",
-                "que les parts cédées sont libres de tout nantissement ou promesse de nantissement ;",
-                "que la société dont les parts sont présentement cédées n'est pas en cessation de paiements, ni n'a fait l'objet d'une procédure de règlement amiable des entreprises en difficulté ou de redressement et liquidation judiciaire.",
+                _Bullet("qu'ils ont la pleine capacité civile pour s'obliger dans le cadre des présentes et de leurs suites et, plus spécialement, qu'ils ne font pas présentement l'objet d'une procédure collective dans le cadre de la loi du 13 juillet 1967 ou de celle du 25 janvier 1985, ni ne sont susceptibles de l'être en raison de leurs professions et fonctions, ni ne sont en état de cessation de paiements ou déconfiture ;"),
+                _Bullet("et qu'ils sont résidents français au sens de la réglementation des relations financières avec l'étranger."),
+                f"{_le_soussigne_premiere_part(genre)} de première part déclare :",
+                _Bullet("qu'il n'existe de son chef ou de celui des précédents propriétaires des parts cédées, aucune restriction d'ordre légal ou contractuel à la libre disposition de celles-ci, notamment par suite de promesses ou offres consenties à des tiers ou de saisies ;"),
+                _Bullet("que les parts cédées sont libres de tout nantissement ou promesse de nantissement ;"),
+                _Bullet("que la société dont les parts sont présentement cédées n'est pas en cessation de paiements, ni n'a fait l'objet d'une procédure de règlement amiable des entreprises en difficulté ou de redressement et liquidation judiciaire."),
             ],
         ),
         (
@@ -462,4 +584,7 @@ def _add_source_tail(document, ctx: DocumentGenerationContext, scm_cession) -> N
     for heading, paragraphs in sections:
         _section_heading(document, heading)
         for text in paragraphs:
-            add_body_paragraph(document, text)
+            if isinstance(text, _Bullet):
+                _add_bullet_item(document, text)
+            else:
+                add_body_paragraph(document, text)

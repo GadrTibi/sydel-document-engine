@@ -401,6 +401,10 @@ class SpfplOrdre(BaseModel):
     ville: str | None = None
     numero: str | None = None
     numero_rpps: str | None = None
+    # ST6 (Albane 2026-07-10) : preposition grammaticale « de / du / des » placee avant le
+    # departement de l'Ordre dans la ligne d'identite des statuts SEL. Defaut None -> « de »
+    # (comportement historique byte-identique pour tout caller qui ne la renseigne pas).
+    connecteur_departement: str | None = None
 
 
 class SpfplDirigeant(BaseModel):

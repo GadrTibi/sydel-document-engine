@@ -504,13 +504,14 @@ def _scm_cession_selarl() -> ScmCessionContext:
 
 
 def _cession_cabinet_medical_compromis() -> CessionContext:
-    """Compromis de cession médical (DOC-010) : étape compromis, sans crédit-vendeur ni SCM
-    (réservés à l'acte médical par les règles métier des générateurs)."""
-    base = _cession_cabinet_medical_acte()
-    financement = base.financement.model_copy(update={"credit_vendeur": None})
-    return base.model_copy(
-        update={"etape": "compromis", "financement": financement, "scm": None}
-    )
+    """Compromis de cession médical (DOC-010), étape compromis.
+
+    MD1 (Albane 2026-07-10) : la SELARL produit DÉSORMAIS l'acte ET le compromis ENSEMBLE
+    (comme la SELAS). Le contexte doit donc rester valide pour l'ACTE médical co-généré, qui
+    exige le crédit-vendeur (clause figée du modèle) -> on ne le retire plus. Le compromis
+    lui-même ignore le crédit-vendeur / la clause SCM ; on part de l'acte et on ne change
+    que l'étape."""
+    return _cession_cabinet_medical_acte().model_copy(update={"etape": "compromis"})
 
 
 def _cession_cabinet_dentaire_compromis() -> CessionContext:

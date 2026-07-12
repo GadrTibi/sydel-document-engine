@@ -255,9 +255,13 @@ def test_fb8b_cases_gerant_derivent_les_cogerants(monkeypatch) -> None:
     assert "Madame Anne Martin" in cogerants
 
 
-def test_fb8b_aucune_case_cochee_ne_remplace_pas_le_fallback(monkeypatch) -> None:
-    # FB-8b (revers) : si aucune case gérant n'est cochée, on n'écrase pas la liste de
-    # base (le générateur garde son repli) -> les cogerants de la fixture subsistent.
+def test_fb8b_aucune_case_cochee_laisse_les_cogerants_vides(monkeypatch) -> None:
+    # SC2 (Albane 2026-07-10) SUPERSEDE FB-8b : « je n'ai mis aucun gérant dans la SCM et
+    # là j'ai 3 noms inventés, il est préférable de laisser vierge si ce n'est pas rempli ».
+    # Aucune case gérant cochée -> liste cogerants VIDE (plus de repli sur les 3 noms
+    # inventés de la fixture « Paul Bernard/Jean Dupont/Anne Martin » que le générateur
+    # rendait dans le doc). L'ancien verrou du fallback (m1 Akainu 2026-06-26) est levé :
+    # le fallback lui-même était le bug signalé par Albane.
     session_state = {
         "selarl_cession_scm_presents_count": 1,
         "selarl_cession_scm_present_0_civilite": "Monsieur",
@@ -270,14 +274,7 @@ def test_fb8b_aucune_case_cochee_ne_remplace_pas_le_fallback(monkeypatch) -> Non
     }
     scm = _render(session_state, monkeypatch)
     assert scm is not None
-    # La fixture porte 3 cogerants ; aucune case cochée -> liste de base conservée
-    # À L'IDENTIQUE (m1 Akainu 2026-06-26 : verrouiller le contenu exact du fallback,
-    # pas juste « non vide » -> une régression du repli serait sinon invisible).
-    assert scm.scm_cedee.cogerants == [
-        "Monsieur Paul Bernard",
-        "Monsieur Jean Dupont",
-        "Madame Anne Martin",
-    ]
+    assert scm.scm_cedee.cogerants == []
 
 
 # --------------------------------------------------------------------------- FB-6 / FB-8a

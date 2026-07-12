@@ -40,6 +40,7 @@ from sydel_doc_engine.rendering.docx_builder import (
 from sydel_doc_engine.utils.departements import departement_nom
 from sydel_doc_engine.utils.grammar import (
     accord_euros_apres_montant,
+    accord_terme_genre,
     apply_gender_pairs,
     euro_word,
 )
@@ -432,6 +433,14 @@ def add_ordre_replacements(
                     "associes[0].ordre.departement",
                 )
             ),
+            # ST6 (Albane 2026-07-10) : preposition grammaticale « de / du / des » choisie
+            # au formulaire, placee AVANT le departement de l'Ordre dans la ligne d'identite
+            # des statuts (« ... de l'Ordre des ... DU Jura »). Le rendu figeait « de » ; on
+            # respecte desormais la preposition saisie. Defaut « de » = byte-identique pour
+            # tout flux qui ne la renseigne pas.
+            "[connecteur_ordre]": (
+                (associate.ordre.connecteur_departement or "de").strip() or "de"
+            ),
             "[ville_ordre]": required_text(
                 associate.ordre.ville or associate.ordre.departement,
                 "associes[0].ordre.ville",
@@ -617,7 +626,8 @@ SELARL_MEDECIN_MULTI_ZONES = SelMultiZones(
         "[civilite] [prenom] [nom], [profession], né le [date_naissance] à "
         "[ville_naissance] ([departement_naissance]), de nationalité [nationalite], "
         "demeurant au [adresse_personnelle], inscrit au tableau du Conseil départemental "
-        "de [ville_ordre] sous le numéro national [numero_ordre] et sous le numéro RPPS "
+        "[connecteur_ordre] [ville_ordre] sous le numéro national [numero_ordre] "
+        "et sous le numéro RPPS "
         "[numero_rpps], [situation_matrimoniale_statuts]. ",
     ),
     # R3 « supprimer PARTOUT » (Rafael 2026-07-09) : ancres alignees sur le template modifie
@@ -648,7 +658,7 @@ SELARL_DENTISTE_MULTI_ZONES = SelMultiZones(
         "[ville_naissance] ([departement_naissance]), de nationalité [nationalite], "
         "demeurant au [adresse_personnelle], [situation_matrimoniale_statuts]",
         "Inscrit au Tableau de l’ordre départemental des [profession_reglementee_pluriel] "
-        "de [ordre_departemental] [mention_inscription_ordre_rpps]. ",
+        "[connecteur_ordre] [ordre_departemental] [mention_inscription_ordre_rpps]. ",
     ),
     apport_line=(
         "[civilite] [prenom] [nom] apporte à la Société la somme de [montant_apport] euros.   "
@@ -975,6 +985,39 @@ def _add_selas_siege_paragraph(docx: Any, label: str, adresse: str) -> None:
     adresse_run.bold = True
 
 
+def _accord_inscription(text: str, genre: Gender | None) -> str:
+    """ST4 (Albane 2026-07-10) : accorde le participe « inscrit(e) » referant a l'associe
+    (« inscrit au tableau » -> « inscrite au tableau » pour une femme), via
+    ``accord_terme_genre`` (INTENTION, pas regex de terminaison).
+
+    Ancre sur « inscrit au »/« Inscrit au » (le participe SUIVI de « au ») : cette forme
+    n'apparait QUE dans les lignes d'identite/inscription de l'associe. Les autres « inscrit »
+    du corps referent a des choses (« la resolution ... inscrite au Registre », « mouvement
+    inscrit sur le registre », « la Societe est inscrite. ») et ne matchent pas ce motif —
+    aucune de ces surfaces n'est touchee, dans les deux sens. No-op au masculin
+    (``accord_terme_genre`` renvoie la forme masculine inchangee)."""
+    for participle in ("Inscrit", "inscrit"):
+        accorded = accord_terme_genre(participle, genre)
+        if accorded != participle:
+            text = text.replace(f"{participle} au ", f"{accorded} au ")
+    return text
+
+
+def _add_mono_identite_bold_name(docx: Any, text: str) -> Any:
+    """ST2 (Albane 2026-07-10) : la ligne d'identite du SOUSSIGNE rend « Civilite Prenom Nom »
+    (jusqu'a la 1re virgule) en GRAS, le reste en normal. Meme mecanique de double-run que
+    l'adresse du siege SELAS (``_add_selas_siege_paragraph``)."""
+    paragraph = add_statuts_body_paragraph(docx, "")
+    for run in list(paragraph.runs):
+        run._r.getparent().remove(run._r)
+    name, separator, rest = text.partition(",")
+    name_run = paragraph.add_run(name)
+    name_run.bold = True
+    if separator:
+        paragraph.add_run(separator + rest)
+    return paragraph
+
+
 def render_statuts_sel_docx(  # noqa: C901
     blocks: tuple[str, ...],
     replacements: dict[str, str],
@@ -999,6 +1042,14 @@ def render_statuts_sel_docx(  # noqa: C901
     multi_membres: list[StatutsCivilsAssocie] = list(membres) if multi else []
     # Lignes d'identite source a SAUTER en multi (remplacees par la comparution iteree).
     skip_identite = set(multi_zones.identite_lines) if multi and multi_zones else set()
+    # Comparution SELARL mono (retours Albane 2026-07-10, ST2/ST3/ST4/ST5) : les ancres de
+    # `multi_zones` reperent les lignes d'identite du soussigné. Ce traitement de mise en forme
+    # n'est arme QUE pour la SELARL uni (medecin/dentiste, seuls a fournir `multi_zones`) ; la
+    # SELAS (multi_zones=None) garde sa comparution actuelle.
+    selarl_comparution = not multi and multi_zones is not None
+    mono_identite = (
+        set(multi_zones.identite_lines) if selarl_comparution and multi_zones else set()
+    )
 
     docx = new_document()
     signature_mode = False
@@ -1022,8 +1073,18 @@ def render_statuts_sel_docx(  # noqa: C901
             # Aere la 1re page entre l'en-tete (denomination/forme/capital/siege,
             # index 0-3, tres compact) et l'encadre STATUTS (retour Albane §2.1 :
             # « trop proche de l'en-tete »). ADDITIF, purement visuel.
-            add_spacer(docx, space_after_pt=10)
-            add_statuts_title_box(docx, "STATUTS", bordered=title_box_bordered)
+            # ST1 (Albane 2026-07-10) : DESCENDRE l'encadre (« plus centre verticalement »)
+            # -> espaceur avant l'encadre nettement plus grand ; et AGRANDIR le cadre (« espace
+            # avant/apres le mot STATUTS dans le cadre ») -> marges de cellule + espaces internes
+            # plus grands passes au helper partage (les autres types de statuts gardent le defaut).
+            add_spacer(docx, space_after_pt=90)
+            add_statuts_title_box(
+                docx,
+                "STATUTS",
+                bordered=title_box_bordered,
+                cell_margin_vertical_dxa=240,
+                inner_space_pt=12,
+            )
             # S2 (Rafael 2026-07-09) : SAUT DE PAGE apres l'encadre « STATUTS » -> le deroule
             # de l'acte (comparution + articles) commence sur une nouvelle page. Convention de
             # presentation propagee depuis les statuts SPFPL (meme rendu de premiere page).
@@ -1060,8 +1121,36 @@ def render_statuts_sel_docx(  # noqa: C901
                 signature_mode = True
                 continue
 
+        if block in mono_identite:
+            # Comparution SELARL uni (retours Albane 2026-07-10) : ST2 (nom du soussigne en
+            # gras), ST4 (« inscrit » -> « inscrite »), ST5 (point apres le regime matrimonial),
+            # ST3 (respiration apres les infos RPPS).
+            text = replace_placeholders(block, replacements)
+            text = apply_gender_variants(text, associate)
+            text = _accord_inscription(text, associate.genre)  # ST4
+            # ST5 : la ligne d'identite dentiste finit par le token matrimonial NU (sans point)
+            # -> on garantit un point final ; la variante medecin porte deja « . » (elle finit
+            # par « ]. ») et n'est donc pas retouchee (double point evite).
+            ends_on_matrimonial = block.rstrip().endswith("[situation_matrimoniale_statuts]")
+            if ends_on_matrimonial and not text.rstrip().endswith("."):
+                text = text.rstrip() + "."
+            # ST2 : la ligne qui PORTE le nom (commence par [civilite]) rend « Civilite Prenom
+            # Nom » en gras ; l'eventuelle 2e ligne d'identite (« Inscrit … ») reste normale.
+            if block.startswith("[civilite]"):
+                _add_mono_identite_bold_name(docx, text)
+            else:
+                add_statuts_body_paragraph(docx, text)
+            # ST3 : respiration apres la ligne qui porte le RPPS, avant « A etabli … ».
+            if "[numero_rpps]" in block or "[mention_inscription_ordre_rpps]" in block:
+                add_spacer(docx, space_after_pt=0)
+            continue
+
         text = replace_placeholders(block, replacements)
         text = apply_gender_variants(text, associate)
+        # ST4 (Albane 2026-07-10) : « inscrit » -> « inscrite » accorde a l'associe, propage a
+        # toutes les surfaces SEL (SELAS comprise) ; sur-mesure et sans effet sur les « inscrit(e) »
+        # referant a une chose (cf. _accord_inscription). No-op au masculin.
+        text = _accord_inscription(text, associate.genre)
         # Entete (denomination / forme sociale / capital / siege) centree et
         # compacte (retour Albane 2026-06-10 : centrer l'entete, reduire les
         # interlignes). Denomination (index 0) en gras.
@@ -1084,16 +1173,21 @@ def render_statuts_sel_docx(  # noqa: C901
             else:
                 add_paragraph(docx, text, alignment=WD_ALIGN_PARAGRAPH.CENTER, bold=True)
         elif text.startswith("ARTICLE "):
-            add_statuts_article_heading(docx, text)
+            # ST7 (Albane 2026-07-10) : « un petit espace entre chaque article » -> espace avant
+            # l'en-tete d'article un peu plus grand que le defaut (10 pt), sur tous les statuts SEL.
+            add_statuts_article_heading(docx, text, space_before_pt=16)
         elif block == "[denomination_societe]":
             # Article 3 : nom de la societe en gras et centre (retour Albane 2026-06-10).
             add_paragraph(docx, text, alignment=WD_ALIGN_PARAGRAPH.CENTER, bold=True)
         elif _is_soussigne_header(text):
-            # S3 (Rafael 2026-07-09) : pas d'espacement superflu apres « LE(S) SOUSSIGNE(S) »
-            # -> space_after=0, la comparution enchaine immediatement (bloc compact).
+            # S3 (Rafael 2026-07-09) : comparution compacte (space_after=0). ST3 (Albane
+            # 2026-07-10) SUPERSEDE pour la SELARL uni : une respiration APRES « LE SOUSSIGNE »
+            # (« espace apres le soussigne »). La SELAS garde le rendu compact.
             add_paragraph(
                 docx, text, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY, space_after_pt=0
             )
+            if selarl_comparution:
+                add_spacer(docx, space_after_pt=0)
         elif text.startswith("Fait à ") or text.startswith("Fait a "):
             signature_mode = True
             # « Fait a » aligne a GAUCHE (retour Albane 2026-06-10).
@@ -1134,6 +1228,10 @@ def render_statuts_sel_docx(  # noqa: C901
             paragraph = add_statuts_body_paragraph(docx, text)
             for run in paragraph.runs:
                 run.bold = True
+        elif selarl_comparution and "tabli ainsi qu" in block:
+            # ST3 (Albane 2026-07-10) : respiration entre « A etabli … » et la suite (article 1).
+            add_statuts_body_paragraph(docx, text)
+            add_spacer(docx, space_after_pt=0)
         else:
             add_statuts_body_paragraph(docx, text)
 

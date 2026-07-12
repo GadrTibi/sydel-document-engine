@@ -1801,6 +1801,14 @@ def generate_dossier(payload: dict[str, object], output_dir: Path) -> GeneratedD
     ctx = build_generation_context(payload)
     docx_paths = generate_docx_files_for_document_codes(ctx, output_dir, plan.document_codes)
     docx_paths = rename_dnc_with_signataire(docx_paths, ctx)  # O24-02 : DNC nommee par le dirigeant
+    # Procuration SEL (Albane 2026-07-10, IMG_7852) : en CESSION, DEUX procurations sont
+    # requises — une au nom de la SPFPL (deja dans docx_paths) + une au nom de la SOCIETE
+    # CIBLE (SEL). Meme modele DOC-003, regenere avec la societe = cible, sous un nom de
+    # fichier distinct « procuration_SEL.docx ». L'attestation de depot des parts n'est PAS
+    # requise (rien a faire de ce cote).
+    sel_procuration = _generate_procuration_sel(ctx, output_dir)
+    if sel_procuration is not None:
+        docx_paths = [*docx_paths, sel_procuration]
     zip_path = generate_zip_file(output_dir, docx_paths)
     return GeneratedDossier(
         output_dir=output_dir,
@@ -1808,6 +1816,67 @@ def generate_dossier(payload: dict[str, object], output_dir: Path) -> GeneratedD
         pdf_results=[],
         zip_path=zip_path,
     )
+
+
+def _generate_procuration_sel(
+    ctx: DocumentGenerationContext, output_dir: Path
+) -> Path | None:
+    """2e procuration (DOC-003) au nom de la SOCIETE CIBLE (SEL) — cession SPFPL uniquement.
+
+    Meme modele que la procuration SPFPL, regenere avec `ctx.societe` = la cible SEL
+    (denomination / forme / siege / capital / RCS). Ecrit « procuration_SEL.docx » (distinct
+    de « procuration.docx »). No-op si l'operation n'est pas une cession ou si les donnees
+    minimales de la cible (forme + denomination + siege) manquent -> jamais bloquant.
+
+    NB metier a confirmer avec Albane : le REPRESENTANT de la SEL dans cette procuration
+    reste le signataire du dossier (le fondateur / associe unique de la SPFPL). Si la SEL
+    cible a un dirigeant distinct, ce champ devra etre saisi separement.
+    """
+    options = ctx.dossier_options
+    if options is None or not options.cession:
+        return None
+    cible = ctx.societe_cible
+    if cible is None:
+        return None
+    siege = cible.siege
+    siege_ok = siege is not None and bool(
+        (siege.adresse_affichee or "").strip()
+        or ((siege.voie or "").strip() and (siege.ville or "").strip())
+    )
+    if not (
+        (cible.forme_sociale or "").strip()
+        and (cible.denomination or "").strip()
+        and siege_ok
+    ):
+        return None
+    cible_company = Company(
+        forme_sociale=cible.forme_sociale or "",
+        forme_sociale_affichage=cible.forme_sociale or "",
+        forme_sociale_abregee=cible.forme_sociale or "",
+        forme_sociale_complete=cible.forme_sociale_complete or cible.forme_sociale or "",
+        denomination=cible.denomination or "",
+        denomination_courte=cible.denomination or "",
+        capital=cible.capital_social or "",
+        capital_social=cible.capital_social or "",
+        siege=siege,
+        ville_rcs=cible.ville_rcs or "",
+    )
+    cible_ctx = ctx.model_copy(update={"societe": cible_company})
+    tmp_dir = output_dir / "_procuration_sel"
+    generated = generate_docx_files_for_document_codes(
+        cible_ctx, tmp_dir, (cc.DOC_PROCURATION,)
+    )
+    if not generated:
+        return None
+    target = output_dir / "procuration_SEL.docx"
+    if target.exists():
+        target.unlink()
+    generated[0].replace(target)
+    try:
+        tmp_dir.rmdir()
+    except OSError:
+        pass
+    return target
 
 
 def _t(container, prefix: str, field: str, label: str, hint: str | None = None) -> str:

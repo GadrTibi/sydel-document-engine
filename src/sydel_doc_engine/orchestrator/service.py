@@ -408,10 +408,12 @@ def _cession_cabinet_enabled(doc_id: str, ctx: DocumentGenerationContext) -> boo
     expected_etape, expected_type = CESSION_CABINET_DOCUMENT_IDS[doc_id]
     if ctx.cession.type_cabinet.strip().lower() != expected_type:
         return False
-    # #14 (onglet 24) : en SELAS, l'acte ET le compromis sont generes ENSEMBLE pour
-    # le type de cabinet (l'etape n'est plus filtrante). Hors SELAS : comportement
-    # historique (l'etape saisie selectionne un seul document).
-    if (ctx.structure or "").strip().upper().startswith("SELAS"):
+    # #14 (onglet 24) : en SELAS, l'acte ET le compromis sont generes ENSEMBLE pour le type
+    # de cabinet (l'etape n'est plus filtrante). MD1 (Albane 2026-07-10) : meme regle etendue
+    # a la SELARL (le compromis manquait au bundle acte). Les seules structures qui produisent
+    # ces documents sont les SEL -> pour toute SEL (SELARL / SELAS), acte + compromis ensemble.
+    # Toute autre structure (defensif) conserve le comportement historique filtre par l'etape.
+    if (ctx.structure or "").strip().upper().startswith("SEL"):
         return True
     if ctx.cession.etape is None:
         return False

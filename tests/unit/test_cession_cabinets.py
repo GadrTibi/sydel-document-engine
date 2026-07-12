@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from datetime import date
 from pathlib import Path
 
@@ -899,7 +900,10 @@ def test_compromis_titre_inscription_reflete_forme_acquereur(tmp_path: Path) -> 
         )
 
 
-def test_orchestrator_selects_only_requested_cession_cabinet_document() -> None:
+def test_orchestrator_selects_both_cession_cabinet_documents_for_sel() -> None:
+    # MD1 (Albane 2026-07-10) : une cession SEL (SELARL, ici) produit l'ACTE ET le COMPROMIS
+    # ENSEMBLE pour le type de cabinet (l'etape n'est plus filtrante, comme la SELAS). Seuls
+    # les documents de l'AUTRE type de cabinet restent exclus.
     orchestrator = DocumentOrchestrator(build_seed_catalog())
 
     selected_ids = {
@@ -909,10 +913,12 @@ def test_orchestrator_selects_only_requested_cession_cabinet_document() -> None:
         )
     }
 
+    # Dentaire : acte (DOC-011) ET compromis (DOC-012) produits ensemble.
+    assert "DOC-011" in selected_ids
     assert "DOC-012" in selected_ids
+    # Type medical exclu (mauvais type de cabinet).
     assert "DOC-009" not in selected_ids
     assert "DOC-010" not in selected_ids
-    assert "DOC-011" not in selected_ids
 
 
 # ---------------------------------------------------------------------------
@@ -1345,9 +1351,10 @@ def _identity_paragraph(path: Path) -> tuple[str, list[tuple[str, bool]]]:
 @pytest.mark.parametrize(
     ("generator", "etape", "type_cabinet"),
     [
-        (ActeCessionCabinetMedicalGenerator(), "acte", "medical"),
+        # CE1 (nom SEUL en gras) reste vrai sur le COMPROMIS (hors perimetre AC1 2026-07-10).
+        # Sur l'ACTE, CE1 est SUPERSEDE par AC1 (designation ENTIERE en gras) —
+        # cf. test_ac1_acte_cedant_designation_fully_bold ci-dessous.
         (CompromisCessionCabinetMedicalGenerator(), "compromis", "medical"),
-        (ActeCessionCabinetDentaireGenerator(), "acte", "dentaire"),
         (CompromisCessionCabinetDentaireGenerator(), "compromis", "dentaire"),
     ],
 )
@@ -1372,6 +1379,37 @@ def test_ce1_only_vendeur_name_is_bold(generator, etape, type_cabinet, tmp_path:
             assert "Monsieur" not in text, f"civilite ne doit pas etre en gras : {text!r}"
             assert "Docteur" not in text, f"« Docteur » eradique : {text!r}"
             assert "Jean" not in text, f"prenom ne doit pas etre en gras : {text!r}"
+
+
+@pytest.mark.parametrize(
+    ("generator", "type_cabinet"),
+    [
+        (ActeCessionCabinetMedicalGenerator(), "medical"),
+        (ActeCessionCabinetDentaireGenerator(), "dentaire"),
+    ],
+)
+def test_ac1_acte_cedant_designation_fully_bold(generator, type_cabinet, tmp_path: Path) -> None:
+    # AC1 (Albane 2026-07-10) : sur l'ACTE, la tete de la designation du cedant
+    # (« Monsieur Jean Durand ») passe ENTIEREMENT en gras — civilite + prenom + nom — et le
+    # RESTE de la ligne (profession, naissance...) reste en maigre. SUPERSEDE CE1 (nom seul) sur
+    # l'acte, meme patron que l'acte de cession de parts SPFPL (A2). Le compromis garde CE1.
+    salaries = (
+        [CessionSalarie(civilite_affichage="Madame", prenom="Lea", nom="Petit")]
+        if type_cabinet == "dentaire"
+        else None
+    )
+    ctx = _context(etape="acte", type_cabinet=type_cabinet, salaries=salaries)
+    text, runs = _identity_paragraph(generator.generate(ctx, tmp_path))
+
+    bold = [t for t, is_bold in runs if is_bold]
+    maigre = [t for t, is_bold in runs if not is_bold]
+    # Les runs gras couvrent EXACTEMENT « Monsieur Jean Durand » (civilite + prenom + nom).
+    assert "".join(bold) == "Monsieur Jean Durand", runs
+    # Le reste de la ligne est en maigre (commence par la virgule, porte la profession/naissance).
+    assert maigre and maigre[0].startswith(","), runs
+    assert "né" in "".join(maigre), runs
+    # « Docteur » eradique (R3) et jamais en gras.
+    assert "Docteur" not in text
 
 
 @pytest.mark.parametrize(
@@ -1546,3 +1584,93 @@ def test_ce8_scm_denomination_empty_renders_blank_zone(tmp_path: Path) -> None:
 
     assert "De céder l’intégralité des parts qu’il détient de la SCM" in text
     _assert_no_residual_tokens(text)
+
+
+# ---------------------------------------------------------------------------
+# Retours Albane 2026-07-10 — ACTE CESSION CABINET (dentaire) : AC1..AC5
+# ---------------------------------------------------------------------------
+
+_AC_DENT_SALARIES = [CessionSalarie(civilite_affichage="Madame", prenom="Lea", nom="Petit")]
+
+
+def _ac_dentaire_acte_text(tmp_path: Path, **cabinet_updates) -> str:
+    ctx = _context(type_cabinet="dentaire", salaries=_AC_DENT_SALARIES)
+    for key, value in cabinet_updates.items():
+        setattr(ctx.cession.cabinet, key, value)
+    return _docx_text(ActeCessionCabinetDentaireGenerator().generate(ctx, tmp_path))
+
+
+def test_ac2_acte_dentaire_origine_cree(tmp_path: Path) -> None:
+    # AC2 (verbatim O1) : cabinet CREE (origine_propriete_mode="cree") -> clause
+    # « ... est propriétaire des éléments constitutifs du cabinet pour les avoir régulièrement
+    # créés le <date>. » (a la place de la clause « acquis » figee du modele dentaire).
+    text = _ac_dentaire_acte_text(tmp_path, origine_propriete_mode="cree")
+    assert (
+        "Monsieur Jean Durand est propriétaire des éléments constitutifs du cabinet "
+        "pour les avoir régulièrement créés le 01 janvier 2020." in text
+    )
+    assert "acquis auprès de" not in text  # la clause « acquis » a bien ete remplacee
+    _assert_no_residual_tokens(text)
+
+
+def test_ac2_acte_dentaire_origine_acquis_default(tmp_path: Path) -> None:
+    # AC2 : mode absent (defaut) -> clause « acquis » du modele CONSERVEE (byte-fidele au gold).
+    text = _ac_dentaire_acte_text(tmp_path)  # origine_propriete_mode = None
+    assert (
+        "Monsieur Jean Durand est propriétaire des éléments constitutifs du cabinet "
+        "pour les avoir régulièrement acquis auprès de Monsieur Paul Bernard, "
+        "le 01 janvier 2020 au prix de 120 000 euros." in text
+    )
+    assert "créés le" not in text
+    _assert_no_residual_tokens(text)
+
+
+def test_ac2_acte_dentaire_origine_achete_explicit_keeps_model(tmp_path: Path) -> None:
+    # AC2 : mode "achete" explicite -> meme clause « acquis » du modele (aucune bascule « cree »).
+    text = _ac_dentaire_acte_text(tmp_path, origine_propriete_mode="achete")
+    assert "pour les avoir régulièrement acquis auprès de Monsieur Paul Bernard" in text
+    assert "créés le" not in text
+    _assert_no_residual_tokens(text)
+
+
+def test_ac3_acte_dentaire_no_residual_word_revision(tmp_path: Path) -> None:
+    # AC3 : le modele dentaire acte porte une revision Word residuelle (« Sur le droit
+    # ~~d'exercer dans les lieux~~ au bail », controle de contenu Google « goog_rdk »). Le
+    # document genere ne doit porter AUCUNE marque de revision, et le titre doit lire le texte
+    # ACCEPTE « Sur le droit au bail » (coherent avec le corps « Le droit au bail des locaux… »).
+    ctx = _context(type_cabinet="dentaire", salaries=_AC_DENT_SALARIES)
+    out = ActeCessionCabinetDentaireGenerator().generate(ctx, tmp_path)
+
+    doc_xml = _docx_document_xml(out)
+    # w:ins / w:del ELEMENTS (le motif exclut <w:insideH>/<w:delText> par le caractere suivant).
+    assert not re.search(r"<w:ins[ />]", doc_xml)
+    assert not re.search(r"<w:del[ />]", doc_xml)
+    assert "w:delText" not in doc_xml
+    assert "w:rPrChange" not in doc_xml
+    assert "w:pPrChange" not in doc_xml
+    assert "goog_rdk" not in doc_xml  # controles de contenu de revision aplatis
+    assert "<w:sdt>" not in doc_xml and "<w:sdt " not in doc_xml
+
+    text = _docx_text(out)
+    assert "Sur le droit au bail" in text  # revision acceptee (texte deja visible), sans marque
+    _assert_no_residual_tokens(text)
+
+
+def test_ac4_acte_dentaire_transfert_date_left_blank(tmp_path: Path) -> None:
+    # AC4 : la DATE DU TRANSFERT DE PROPRIETE (page 6) etait fausse -> laissee VIERGE (aucune
+    # variable). La phrase de transfert subsiste, mais « à la date du » n'est plus suivi d'une date.
+    text = _ac_dentaire_acte_text(tmp_path)
+    assert "le transfert de propriété auront lieu" in text  # la clause de transfert existe
+    assert "à la date du ." in text  # zone vide a completer a la main (pas de date injectee)
+    # La date de debut de bail (01 janvier 2021) n'est jamais rendue comme date de transfert.
+    m = re.search(r"à la date du ([^.\n]*)\.", text)
+    assert m is not None and m.group(1).strip() == "", m
+    _assert_no_residual_tokens(text)
+
+
+def test_ac5_acte_dentaire_pages_count_is_seven(tmp_path: Path) -> None:
+    # AC5 : l'acte dentaire indiquait « vingt » pages (constante du front) alors qu'il en fait
+    # SEPT -> « Sur sept pages. ».
+    text = _ac_dentaire_acte_text(tmp_path)
+    assert "Sur sept pages." in text
+    assert "vingt pages" not in text

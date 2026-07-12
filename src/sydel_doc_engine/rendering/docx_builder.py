@@ -666,6 +666,8 @@ def add_statuts_title_box(
     text: str,
     *,
     bordered: bool = True,
+    cell_margin_vertical_dxa: int = 120,
+    inner_space_pt: int | None = None,
     style_profile: SydelDocxStyleProfile = DEFAULT_STYLE_PROFILE,
 ) -> Any:
     table = document.add_table(rows=1, cols=1)
@@ -680,11 +682,23 @@ def add_statuts_title_box(
     # Encadre STATUTS agrandi (retour Albane §2.1 : cadre trop petit / trop
     # proche de l'en-tete). ADDITIF : on AGRANDIT le cadre via des marges de
     # cellule + un paragraphe plus haut (space_before/after), bordures conservees.
-    _set_cell_margins(cell, top=120, bottom=120, left=160, right=160)
+    # ST1 (Albane 2026-07-10) : les statuts SEL passent des marges/espaces plus
+    # grands (« espace avant/apres le mot STATUTS dans le cadre ») ; les autres
+    # types de statuts gardent les valeurs par defaut (cadre byte-identique).
+    _set_cell_margins(
+        cell,
+        top=cell_margin_vertical_dxa,
+        bottom=cell_margin_vertical_dxa,
+        left=160,
+        right=160,
+    )
+    inner_space = (
+        style_profile.standard_space_after_pt if inner_space_pt is None else inner_space_pt
+    )
     paragraph = cell.paragraphs[0]
     paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    paragraph.paragraph_format.space_before = Pt(style_profile.standard_space_after_pt)
-    paragraph.paragraph_format.space_after = Pt(style_profile.standard_space_after_pt)
+    paragraph.paragraph_format.space_before = Pt(inner_space)
+    paragraph.paragraph_format.space_after = Pt(inner_space)
     run = paragraph.add_run(text)
     run.bold = True
     run.font.name = style_profile.font_name

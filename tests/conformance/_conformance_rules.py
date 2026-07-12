@@ -507,18 +507,34 @@ _R15_SON_FONCTION_FEM = re.compile(
     r"|administratrice|cofondatrice|fondatrice)\b"
 )
 
+# Sweep genre INTENTION (Albane SELARL 2026-07-10) : une COMPARUTION dont le SUJET est
+# féminin (la 1re civilité de la ligne = « Madame/Mme ») ne doit contenir AUCUN
+# participe/adjectif au masculin réfèrant a la personne — « né le »/« Inscrit »/
+# « soussigné »/« marié » -> forme feminine attendue. On regarde la 1re civilité de la
+# LIGNE (le sujet), JAMAIS un « Madame » conjoint mid-phrase (« marié avec Madame X » d'un
+# cédant HOMME reste légitime — faux positif écarté). Formes feminines (née/Inscrite/
+# soussignée/mariée) + prénom « Marie » échappent par la frontière de mot.
+_R15_TERME_MASC = re.compile(r"(?:né le|Né le|\b[Ii]nscrit\b|\b[Ss]oussigné\b|\b[Mm]arié\b)")
+# Le SUJET féminin doit ouvrir la ligne (« Madame X, … ») — pas un « Madame » conjoint
+# mid-phrase (« Marié … avec Madame X » d'un homme, sur une ligne de continuation).
+_R15_SUJET_FEM = re.compile(r"^\s*[-••]?\s*(?:Madame|Mme)\b")
+
 
 def rule_r15_accord_fonction(text: str) -> list[str]:
-    """Accord en genre COMPLET du segment « Représentée par … » pour une représentante
-    féminine : fonction, participe « domicilié(e) » ET possessif « son/sa ». Règle par
-    INTENTION (tout le segment s'accorde), pas liste de tournures — leçon Akainu 2026-07-09
-    (« son gérante »/« gérante … domicilié » fuyaient l'ancienne R15). « Monsieur … gérant »
-    (masculin) reste légitime."""
+    """Accord en genre COMPLET pour une personne FÉMININE : fonction (« gérante »),
+    participe (« domiciliée »/« née »/« inscrite »/« soussignée »), possessif (« sa »),
+    adjectif matrimonial (« mariée »). Règle par INTENTION (tout terme réfèrant a la
+    personne s'accorde), pas liste de tournures — leçon Akainu 2026-07-09 + Albane
+    2026-07-10. « Monsieur … né/gérant/inscrit » (masculin) reste légitime."""
     violations = _find_all(text, _R15)
     for segment in _R15_REPR_FEMININ.finditer(text):
         seg = segment.group(0)
         if _R15_DOMICILIE_MASC.search(seg) or _R15_SON_FONCTION_FEM.search(seg):
             violations.append(_extract(text, segment.start(), segment.end()))
+    # Comparution dont la ligne OUVRE sur un sujet féminin + terme masculin résiduel.
+    for line in text.split("\n"):
+        if _R15_SUJET_FEM.match(line) and _R15_TERME_MASC.search(line):
+            violations.append(f"…{line.strip()[:140]}…")
     return violations
 
 

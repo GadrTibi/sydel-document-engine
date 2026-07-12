@@ -175,6 +175,32 @@ def test_procuration_uses_feminine_agreement(tmp_path: Path) -> None:
     assert "Je soussignée Madame Marie Durand" in text
 
 
+def test_procuration_accords_fonction_to_gender(tmp_path: Path) -> None:
+    # PR2 (Albane SELARL 2026-07-10) : « gérant » s'accorde au genre du mandant —
+    # « gérante » pour une femme, inchangé pour un homme. Le flux peut fournir la
+    # forme masculine ; l'accord se fait au rendu (idempotent).
+    ctx_h = _context()
+    ctx_h.personne_signataire.fonction_dirigeant = "gérant"
+    text_h = _docx_text(ProcurationGenerator().generate(ctx_h, tmp_path))
+    assert "agissant en qualité de gérant de la" in text_h
+
+    ctx_f = _context(Gender.FEMININ)
+    ctx_f.personne_signataire.fonction_dirigeant = "gérant"
+    text_f = _docx_text(ProcurationGenerator().generate(ctx_f, tmp_path))
+    assert "agissant en qualité de gérante de la" in text_f
+    assert "gérant de la" not in text_f
+
+
+def test_procuration_first_body_line_is_justified(tmp_path: Path) -> None:
+    # PR1 (Albane SELARL 2026-07-10) : la 1re ligne du corps (« Je soussigné … »)
+    # est justifiée.
+    document = Document(_generate(tmp_path))
+    body = next(
+        p for p in document.paragraphs if p.text.startswith("Je soussigné Monsieur Jean Durand")
+    )
+    assert body.alignment == WD_ALIGN_PARAGRAPH.JUSTIFY
+
+
 def test_procuration_composes_personal_address_with_postal_code_before_city(
     tmp_path: Path,
 ) -> None:

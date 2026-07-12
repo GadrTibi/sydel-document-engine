@@ -3982,6 +3982,11 @@ def test_selarl_scm_cedee_valeur_nominale_calculee(tmp_path: Path, monkeypatch) 
     app = app.run(timeout=180)
     app.checkbox(key="selarl_scm").set_value(True)
     app = app.run(timeout=180)
+    # F1 (Albane 2026-07-10) : le flux SCM ne préremplit plus les champs -> on saisit
+    # capital 3 000 / 300 parts pour vérifier la dérivation de la valeur nominale (= 10).
+    _set_text_widget(app, "selarl_cession_scm_cedee_capital_social", "3 000")
+    _set_text_widget(app, "selarl_cession_scm_cedee_nb_parts_total", "300")
+    app = app.run(timeout=180)
     # le champ valeur nominale de la SCM cédée : désactivé + auto-calculé (label distinct de
     # la valeur nominale de la société pour éviter un DuplicateWidgetID).
     scm_vn = next(
@@ -3989,7 +3994,7 @@ def test_selarl_scm_cedee_valeur_nominale_calculee(tmp_path: Path, monkeypatch) 
         if "Valeur nominale d'une part de SCM (calculee)" in str(w.label)
     )
     assert scm_vn.disabled is True
-    # SCM cédée préremplie (capital 3 000 / 300 parts) -> valeur nominale 10 affichée.
+    # Capital 3 000 / 300 parts saisis -> valeur nominale 10 dérivée et affichée.
     assert scm_vn.value == "10"
     # plus aucun champ « Valeur nominale d'une part » LIBRE (éditable) ne subsiste.
     assert not any(

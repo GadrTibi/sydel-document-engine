@@ -421,6 +421,83 @@ def test_statuts_selarl_dentiste_deposit_agrees_female_unique(
     _assert_clean(text)
 
 
+def test_statuts_selarl_dentiste_comparution_albane_2026_07_10(tmp_path: Path) -> None:
+    # Retours Albane 2026-07-10 (STATUTS SELARL uni) : ST2 (civilite+prenom+nom du soussigne
+    # en GRAS), ST4 (« Inscrit » -> « Inscrite » pour une femme), ST5 (POINT apres le regime
+    # matrimonial), ST6 (preposition « du » de l'Ordre respectee).
+    ctx = _context(overlay="selarl_dentiste", gender=Gender.FEMININ)
+    ctx.associes[0].profession = "chirurgien-dentiste"
+    ctx.associes[0].profession_reglementee = "chirurgien-dentiste"
+    ctx.associes[0].profession_reglementee_pluriel = "chirurgiens-dentistes"
+    ctx.associes[0].ordre.professionnel = "Ordre des chirurgiens-dentistes"
+    ctx.associes[0].ordre.departement = "Jura"
+    ctx.associes[0].ordre.connecteur_departement = "du"
+
+    output_path = StatutsSelarlDentisteGenerator().generate(ctx, tmp_path)
+    document = Document(output_path)
+    text = _docx_text(output_path)
+
+    # ST4 : participe accorde « Inscrite » (femme). Le corps « ... inscrite au Registre du
+    # Commerce » (art. 12, feminin, referant a la resolution) reste intact.
+    assert "Inscrite au Tableau de l’ordre départemental" in text
+    assert "Inscrit au Tableau" not in text
+    assert "inscrite au Registre du Commerce" in text
+    # ST6 : preposition de l'Ordre = « du » (choisie), plus « de » fige.
+    assert "chirurgiens-dentistes du Jura" in text
+    assert "chirurgiens-dentistes de Jura" not in text
+    # ST5 : la ligne d'identite (regime matrimonial) finit par un point.
+    identite = next(p for p in document.paragraphs if "Alice Martin" in p.text)
+    assert identite.text.rstrip().endswith(".")
+    # ST2 : « Madame Camille Martin » (civilite + prenom + nom) en gras, le reste en normal.
+    name_par = next(
+        p for p in document.paragraphs if p.text.startswith("Madame Camille Martin,")
+    )
+    assert name_par.runs[0].text == "Madame Camille Martin"
+    assert name_par.runs[0].bold is True
+    assert name_par.runs[1].bold is not True
+    _assert_clean(text)
+
+
+def test_statuts_selarl_dentiste_male_inscrit_corpus_safe(tmp_path: Path) -> None:
+    # Non-regression ST4 : un HOMME garde « Inscrit au Tableau » a la comparution, et le corps
+    # feminin « ... inscrite au Registre du Commerce » (art. 12) n'est JAMAIS de-feminise par
+    # l'accord du soussigne (l'accord ne cible que « inscrit au » referant a la personne).
+    ctx = _context(overlay="selarl_dentiste", gender=Gender.MASCULIN)
+    ctx.associes[0].profession = "chirurgien-dentiste"
+    ctx.associes[0].profession_reglementee = "chirurgien-dentiste"
+    ctx.associes[0].profession_reglementee_pluriel = "chirurgiens-dentistes"
+    ctx.associes[0].ordre.professionnel = "Ordre des chirurgiens-dentistes"
+    ctx.associes[0].ordre.departement = "Jura"
+    text = _docx_text(StatutsSelarlDentisteGenerator().generate(ctx, tmp_path))
+    assert "Inscrit au Tableau de l’ordre départemental" in text
+    assert "Inscrite au Tableau" not in text
+    assert "inscrite au Registre du Commerce" in text
+    assert "inscrit au Registre" not in text
+    # ST6 : preposition par defaut « de » quand non renseignee (byte-identique historique).
+    assert "chirurgiens-dentistes de Jura" in text
+    _assert_clean(text)
+
+
+def test_statuts_selarl_medecin_female_inscrite(tmp_path: Path) -> None:
+    # ST4 propage a la SELARL medecin : « inscrit au tableau » -> « inscrite au tableau »
+    # (minuscule, structure medecin) pour une femme ; un homme garde « inscrit ».
+    fem = _docx_text(
+        StatutsSelarlMedecinGenerator().generate(
+            _context(overlay="selarl_medecin", gender=Gender.FEMININ), tmp_path / "f"
+        )
+    )
+    masc = _docx_text(
+        StatutsSelarlMedecinGenerator().generate(
+            _context(overlay="selarl_medecin", gender=Gender.MASCULIN), tmp_path / "m"
+        )
+    )
+    assert "inscrite au tableau du Conseil départemental" in fem
+    assert "inscrit au tableau" not in fem
+    assert "inscrit au tableau du Conseil départemental" in masc
+    _assert_clean(fem)
+    _assert_clean(masc)
+
+
 def test_statuts_selarl_medecin_matches_source_docx_line_by_line(
     tmp_path: Path,
 ) -> None:

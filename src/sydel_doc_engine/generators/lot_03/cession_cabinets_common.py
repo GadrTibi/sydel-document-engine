@@ -62,6 +62,14 @@ ORIGINE_MODE_CREE = "cree"
 ORIGINE_MODE_ACHETE = "achete"
 SUPPORTED_ORIGINE_MODES = {ORIGINE_MODE_CREE, ORIGINE_MODE_ACHETE}
 
+# AC2 (Albane 2026-07-10) : sur l'acte DENTAIRE, l'origine de propriete doit gerer le cabinet
+# CREE (pas seulement acquis). Le modele dentaire fige la clause « acquis » (tokens en place) ;
+# quand le front indique le mode « cree » (cle attendue : cession.cabinet.origine_propriete_mode
+# == "cree"), on remplace ce paragraphe par la formulation « ... créés le <date>. » (verbatim O1).
+# Ancre = literal STABLE de la clause « acquis » du modele (present avant remplissage des tokens).
+# Defaut (mode absent / "achete" / autre) = clause du modele INCHANGEE (byte-fidele au gold).
+_ORIGINE_ACQUIS_ANCHOR_DENTAIRE = "pour les avoir régulièrement acquis auprès de"
+
 # Convention systeme : une liste vide (0 element) se rend "Néant", a l'image des
 # apports en nature inexistants. Utilisee pour la reprise des salaries (0/1/N).
 NEANT = "Néant."
@@ -75,7 +83,12 @@ NEANT = "Néant."
 # CE4 (Albane 2026-06-26) : le compromis fait en pratique SEPT pages (et non huit) ;
 # le defaut est donc « sept » (l'auto-comptage reel est impossible sans moteur de
 # pagination -> flag, cf. retour). Supersede la valeur « huit » du retour 9.9.
+# AC5 (Albane 2026-07-10) : l'acte DENTAIRE affichait « vingt » pages (constante unique du
+# front) alors qu'il en fait SEPT -> on fige « sept » pour cette variante (meme raison :
+# python-docx ne pagine pas). L'acte MEDICAL n'a PAS de retour client sur sa longueur : il
+# reste sur la valeur du contexte (front) tant qu'Albane ne l'a pas verifiee (flag).
 _PAGES_LETTRES_BY_VARIANT: dict[tuple[str, str], str] = {
+    (ACTE, DENTAIRE): "sept",
     (COMPROMIS, DENTAIRE): "sept",
     (COMPROMIS, MEDICAL): "sept",
 }
@@ -131,6 +144,37 @@ def generate_cession_cabinet_docx(
         highlight_anchors=_build_highlight_anchors(variant),
         clause_removals=_build_clause_removals(ctx, variant),
         clause_insertions=_build_clause_insertions(ctx, variant),
+        # AC3 (Albane 2026-07-10) : le modele dentaire acte porte une revision Word residuelle
+        # (« Sur le droit au bail ») a neutraliser. On resout les revisions (accept-all, neutre
+        # pour le texte) sur les ACTES ; le medical acte n'en porte aucune (no-op). Compromis
+        # HORS PERIMETRE de ce ticket -> non touche (leurs marques residuelles = flag separe).
+        resolve_revisions=(variant.etape == ACTE),
+        # AC1 (Albane 2026-07-10) : sur l'ACTE, la tete de la designation du cedant passe en gras.
+        bold_designation_prefix=_build_cedant_designation_prefix(ctx, variant),
+    )
+
+
+def _build_cedant_designation_prefix(
+    ctx: DocumentGenerationContext,
+    variant: CessionCabinetVariant,
+) -> str | None:
+    """Tete de la designation du cedant a mettre en GRAS sur l'ACTE (AC1, Albane 2026-07-10).
+
+    « <civilite civile> <prenom> <nom> » (ex. « Monsieur Jean Durand ») — meme patron que
+    l'acte de cession de parts SPFPL (A2, 2026-07-09) : le prefixe en gras, le RESTE de la ligne
+    en maigre. SUPERSEDE CE1 (2026-06-26, nom SEUL en gras) pour l'acte. Le compromis reste hors
+    perimetre de ce ticket (flag de propagation). None hors ACTE ou identite vendeur incomplete.
+    """
+    if variant.etape != ACTE:
+        return None
+    cession = ctx.cession
+    if cession is None:
+        return None
+    vendeur = cession.vendeur or CessionVendeur()
+    return _person_label(
+        civilite_civile(vendeur.civilite_affichage, vendeur.genre),
+        vendeur.prenom,
+        vendeur.nom,
     )
 
 
@@ -473,6 +517,20 @@ def _build_paragraph_overrides(
         # Une superficie renseignee (scenarios existants) conserve la phrase du
         # modele avec le token remplace.
         overrides["[superficie_local]"] = None
+    # AC2 (Albane 2026-07-10, verbatim O1) : sur l'acte DENTAIRE, un cabinet CREE (mode "cree")
+    # remplace la clause « acquis » figee du modele par « ... pour les avoir régulièrement créés
+    # le <date>. ». Meme squelette que la clause « acquis » (« pour les avoir régulièrement
+    # <verbe> »), verbe = créés. Les tokens du texte de remplacement (identite vendeur + date)
+    # sont remplis ensuite par le moteur. Mode absent / "achete" / autre -> clause modele
+    # inchangee (defaut acquis, byte-fidele). Le medical branche deja via [origine_propriete_phrase].
+    if variant.etape == ACTE and variant.type_cabinet == DENTAIRE:
+        mode = (cabinet.origine_propriete_mode or "").strip().lower()
+        if mode == ORIGINE_MODE_CREE:
+            overrides[_ORIGINE_ACQUIS_ANCHOR_DENTAIRE] = (
+                "[civilite_vendeur] [prenom_vendeur] [nom_vendeur] est propriétaire des "
+                "éléments constitutifs du cabinet pour les avoir régulièrement créés "
+                "le [date_origine_propriete]."
+            )
     # R5-contrats (verbatim Albane IMG_7837, 2026-06-29) : la clause de reprise des contrats
     # de travail (point 3, APRES « De payer tous frais ») est remplie EN PLACE, a sa position
     # du modele : token [clause_reprise_salaries] (dentaire) / ligne statique « De reprendre les
@@ -566,6 +624,8 @@ def render_cession_from_template(  # noqa: C901
     highlight_anchors: list[str] | None = None,
     clause_removals: list[str] | None = None,
     clause_insertions: list[tuple[str, str]] | None = None,
+    resolve_revisions: bool = False,
+    bold_designation_prefix: str | None = None,
 ) -> Path:
     """Charge le modele tokenise et remplace chaque token [xxx] run par run.
 
@@ -602,6 +662,11 @@ def render_cession_from_template(  # noqa: C901
     # (annotations de relecture). Ils sont strippes a la generation pour ne
     # jamais fuir dans le document client. No-op si le modele n'en porte pas.
     _strip_word_comments(document)
+
+    # AC3 (Albane 2026-07-10) : neutraliser les revisions Word residuelles (track changes) AVANT
+    # tout traitement de texte, pour qu'aucune marque de revision ne subsiste. No-op si aucune.
+    if resolve_revisions:
+        _resolve_tracked_changes(document)
 
     if paragraph_overrides:
         _apply_paragraph_overrides(document, paragraph_overrides)
@@ -650,6 +715,11 @@ def render_cession_from_template(  # noqa: C901
         # runs statiques cibles (zones a completer a la main).
         for paragraph in _iter_all_paragraphs(document):
             _apply_highlight_anchors_to_paragraph(paragraph, highlight_anchors)
+
+    # AC1 (Albane 2026-07-10) : mettre en gras la tete de la designation du cedant (texte final,
+    # apres remplissage + accord en genre). Applique en dernier pour operer sur le texte definitif.
+    if bold_designation_prefix:
+        _apply_bold_designation(document, bold_designation_prefix)
 
     residual = _collect_residual_tokens(document)
     if residual:
@@ -741,6 +811,104 @@ def _strip_word_comments(document) -> None:
         partname = str(getattr(related, "partname", ""))
         if partname.endswith(_COMMENT_PART_SUFFIXES):
             main_part.drop_rel(rel_id)
+
+
+def _resolve_tracked_changes(document) -> None:
+    """AC3 (Albane 2026-07-10) : neutralise les revisions Word residuelles (track changes) du
+    modele en les RESOLVANT (accept-all), pour qu'aucune marque de revision ne subsiste dans le
+    document client.
+
+    Resolution deterministe et NEUTRE POUR LE TEXTE VISIBLE. Les modeles Google-Docs exportent la
+    revision enveloppee dans des controles de contenu w:sdt (« goog_rdk_… ») : le texte insere est
+    « Sur le droit <ins>au bail</ins> » et le texte supprime « <del>d'exercer dans les lieux</del> »
+    (revision d'Albane, coherente avec le corps « Le droit au bail des locaux… »). On resout ainsi :
+      - w:ins / w:moveTo  -> deballes (les enfants remontent a la place du wrapper) ;
+      - w:del / w:moveFrom -> supprimes en entier (texte supprime abandonne) ;
+      - w:rPrChange / w:pPrChange -> supprimes (on garde le formatage courant) ;
+      - w:sdt -> APLATIS (remplaces par le contenu de leur w:sdtContent) : sinon le run insere
+        « au bail », une fois sorti du w:ins, resterait piege dans un w:sdtContent que python-docx
+        (et le remplissage de tokens) ne parcourent pas -> texte perdu. Aplatir rend le run visible
+        et normal, identique sous Word. Resultat : « Sur le droit au bail », sans marque.
+    No-op complet si le modele ne porte ni revision ni w:sdt. GATE ACTE UNIQUEMENT (le compromis,
+    hors perimetre, embarque des w:sdt PORTEURS DE TOKENS et des suppressions de tokens : a ne pas
+    aplatir ici).
+    """
+    body = document.element.body
+    # Deballer insertions et deplacements-vers : remonter les enfants a la place du wrapper.
+    for tag in ("w:ins", "w:moveTo"):
+        for node in body.findall(".//" + qn(tag)):
+            _unwrap_xml_element(node)
+    # Supprimer suppressions/deplacements-depuis (texte abandonne) et enregistrements de format.
+    for tag in ("w:del", "w:moveFrom", "w:rPrChange", "w:pPrChange"):
+        for node in body.findall(".//" + qn(tag)):
+            _remove_xml_element(node)
+    # Aplatir les controles de contenu w:sdt (les runs de leur w:sdtContent remontent a la place
+    # du sdt). Traitement du PLUS PROFOND au PLUS externe (findall en ordre document = parent avant
+    # enfant -> reversed = enfant avant parent) pour gerer les sdt imbriques (« goog_rdk » niche).
+    for sdt in reversed(body.findall(".//" + qn("w:sdt"))):
+        _flatten_sdt(sdt)
+
+
+def _unwrap_xml_element(node) -> None:
+    """Remplace un element par ses enfants, a la position qu'il occupait chez son parent."""
+    parent = node.getparent()
+    if parent is None:
+        return
+    index = parent.index(node)
+    for child in reversed(list(node)):
+        parent.insert(index, child)
+    parent.remove(node)
+
+
+def _remove_xml_element(node) -> None:
+    """Retire un element de son parent (no-op s'il est deja detache)."""
+    parent = node.getparent()
+    if parent is not None:
+        parent.remove(node)
+
+
+def _flatten_sdt(sdt) -> None:
+    """Aplatit un controle de contenu w:sdt : les enfants de son w:sdtContent remontent a la
+    place du sdt chez le parent (le wrapper sdt + sdtPr disparaissent, les runs restent)."""
+    parent = sdt.getparent()
+    if parent is None:
+        return
+    content = sdt.find(qn("w:sdtContent"))
+    index = parent.index(sdt)
+    if content is not None:
+        for child in reversed(list(content)):
+            parent.insert(index, child)
+    parent.remove(sdt)
+
+
+def _apply_bold_designation(document, prefix: str) -> None:
+    """AC1 (Albane 2026-07-10) : met en GRAS la tete de la designation du cedant
+    (« <civilite> <prenom> <nom> ») et laisse le RESTE de la ligne en maigre (acte).
+
+    La designation est le paragraphe dont le texte rempli commence par « <prefix>, » : la ligne
+    « <prefix>, <profession>, né(e) le … » (« de premiere part »). Les AUTRES occurrences du nom
+    ne commencent PAS par « <prefix>, » et sont donc epargnees : origine de propriete
+    (« <prefix> est propriétaire… »), bloc signature (« <prefix> » seul / avec tabulation),
+    « Représentée par… ». Le paragraphe est reecrit en DEUX runs — prefixe gras + reste maigre —
+    meme patron que l'acte SPFPL (A2) et l'avenant de bail (AV1). Une seule designation par acte.
+    """
+    needle = prefix + ","
+    for paragraph in _iter_all_paragraphs(document):
+        text = paragraph.text
+        if not paragraph.runs or not text.startswith(needle):
+            continue
+        rest = text[len(prefix):]
+        runs = paragraph.runs
+        runs[0].text = prefix
+        runs[0].bold = True
+        if len(runs) > 1:
+            runs[1].text = rest
+            runs[1].bold = False
+            for run in runs[2:]:
+                run.text = ""
+        elif rest:
+            paragraph.add_run(rest).bold = False
+        return
 
 
 def _apply_line_fixes_to_paragraph(paragraph, line_fixes: list[_LineFix]) -> None:
@@ -1086,7 +1254,15 @@ def _build_cession_replacements(
     #
     # [date_entree_jouissance] (dentaire) : source choisie = date de debut du bail
     # professionnel (entree en jouissance des locaux). A confirmer cote metier.
-    put("[date_entree_jouissance]", _french_date(bail.date_debut))
+    # AC4 (Albane 2026-07-10) : sur l'acte DENTAIRE, la DATE DU TRANSFERT DE PROPRIETE (page 6,
+    # « ... à la date du [date_entree_jouissance]. » — SEULE occurrence du token, propre au
+    # modele dentaire) etait FAUSSE. Verbatim : « ne pas mettre de variable, laisser vierge ».
+    # -> zone VIDE a completer a la main (put_opt None). Les autres variants (ou le token n'existe
+    # pas dans leur modele) gardent le comportement anterieur, inoffensif.
+    if variant.etape == ACTE and variant.type_cabinet == DENTAIRE:
+        put_opt("[date_entree_jouissance]", None)
+    else:
+        put("[date_entree_jouissance]", _french_date(bail.date_debut))
 
     # --- Exercices ---
     for index in (0, 1, 2):

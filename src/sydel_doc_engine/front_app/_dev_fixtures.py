@@ -975,6 +975,10 @@ def _cession_prefill_values(profession: str) -> dict[str, object]:
     if dentaire:
         values.update(
             {
+                # O1 (Albane 2026-07-10) : le choix cree/acquis est desormais ouvert au dentaire
+                # (avant force en achete). Le jeu de DEMO dentaire garde l'origine « achetee »
+                # (precedent proprietaire + prix ci-dessous) -> on pose explicitement le mode.
+                "selarl_cession_cabinet_origine_mode": "Cabinet achete par le vendeur",
                 "selarl_cession_cabinet_precedent_civilite": "Monsieur",
                 "selarl_cession_cabinet_precedent_prenom": "Henri",
                 "selarl_cession_cabinet_precedent_nom": "Petit",
@@ -1055,6 +1059,11 @@ def _scm_cession_prefill_values(person: dict[str, str]) -> dict[str, object]:
     ]
     values: dict[str, object] = {
         "selarl_cession_scm_cedee_denomination": scm_cedee.get("denomination") or "",
+        # F1 (Albane 2026-07-10) : le siege de la SCM cedee n'est plus pre-rempli par la
+        # fixture cote LIVE form -> le jeu de DEMO le pose explicitement pour rester generable.
+        "selarl_cession_scm_cedee_siege": (
+            (scm_cedee.get("siege") or {}).get("adresse_affichee") or ""
+        ),
         "selarl_cession_scm_cedee_rcs_ville": scm_cedee.get("ville_rcs") or "",
         "selarl_cession_scm_cedee_numero_rcs": scm_cedee.get("numero_rcs") or "",
         "selarl_cession_scm_cedee_capital_social": scm_cedee.get("capital_social") or "",

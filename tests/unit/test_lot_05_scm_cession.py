@@ -895,17 +895,22 @@ def test_s11_origine_propriete_commence_par_majuscule(tmp_path: Path) -> None:
     assert origine.text.startswith("Monsieur ")
 
 
-def test_s12_signatures_cote_a_cote(tmp_path: Path) -> None:
-    # S12 : « pour les signatures il faudrait soit les mettre côte à côte soit avec plus
-    # d'espace ». On rend une table 2 colonnes (cedant | cessionnaire) cote a cote.
+def test_s12_sc6_signatures_deux_cadres_cote_a_cote(tmp_path: Path) -> None:
+    # S12 + SC6 (Albane 2026-07-10) : « seulement 2 cadres (pas 4 pour 2 signataires) ;
+    # supprimer le cadre du haut (cédant/cessionnaire) ». Une SEULE rangee de 2 cellules
+    # (cedant | cessionnaire) cote a cote ; le libelle est integre DANS son cadre.
     ctx = _base_context("SELARL")
     document = Document(ActeCessionPartsScmGenerator().generate(ctx, tmp_path))
     signature_table = document.tables[-1]
+    # SC6 : plus de rangee de titres separee -> 1 rangee x 2 colonnes = EXACTEMENT 2 cadres.
+    assert len(signature_table.rows) == 1
     assert len(signature_table.columns) == 2
+    cells = [cell for row in signature_table.rows for cell in row.cells]
+    assert len(cells) == 2  # 2 cadres, jamais 4
     assert signature_table.cell(0, 0).text.startswith("Le cédant")
+    assert "Jean Dupont" in signature_table.cell(0, 0).text
     assert signature_table.cell(0, 1).text.startswith("Le cessionnaire")
-    assert "Jean Dupont" in signature_table.cell(1, 0).text
-    assert "CABINET DUPONT" in signature_table.cell(1, 1).text
+    assert "CABINET DUPONT" in signature_table.cell(0, 1).text
 
 
 def test_s10_section_headings_have_space_after(tmp_path: Path) -> None:
@@ -1137,3 +1142,212 @@ def test_c3_objet_corps_plus_bas(tmp_path: Path) -> None:
     objet = next(p for p in document.paragraphs if p.text.startswith("Objet :"))
     assert objet.paragraph_format.space_before is not None
     assert objet.paragraph_format.space_before >= Pt(12)
+
+
+# ==========================================================================
+# Albane 2026-07-10 — LOT « acte de cession de parts SCM » (SC1..SC6).
+# Tests ADVERSARIAUX : verifient le DEFAUT corrige (pas seulement la presence),
+# avec preuve de non-regression MASCULIN (byte-neutre) pour les correctifs genre.
+# ==========================================================================
+
+
+def _female_cedant_context(structure: str = "SELARL") -> DocumentGenerationContext:
+    # Cedant FEMME pour SC3/SC4. Le representant du cessionnaire DOIT correspondre au cedant
+    # (garde _validate_representant_matches_cedant) : on aligne les deux sur « Sophie Durand ».
+    ctx = _base_context(structure)
+    cedant = ctx.scm_cession.cedant
+    cedant.civilite_affichage = "Madame"
+    cedant.prenom = "Sophie"
+    cedant.nom = "Durand"
+    cedant.situation_maritale = "mariée"
+    cedant.conjoint = ScmCessionConjoint(
+        civilite_affichage="Monsieur", prenom="Marc", nom="Durand"
+    )
+    rep = ctx.scm_cession.cessionnaire.representant
+    rep.civilite_affichage = "Madame"
+    rep.civilite_courte = "Mme"
+    rep.prenom = "Sophie"
+    rep.nom = "Durand"
+    return ctx
+
+
+def test_sc1_noms_parties_et_scm_en_gras(tmp_path: Path) -> None:
+    # SC1 : « noms des parties ET de la SCM en GRAS ». Le nom du cedant, la denomination du
+    # cessionnaire et le nom de la SCM (partie « LA SOCIETE ») sont rendus en gras.
+    ctx = _base_context("SELARL")
+    document = Document(ActeCessionPartsScmGenerator().generate(ctx, tmp_path))
+
+    # Nom du cedant en gras (1er run de sa ligne d'identite), le reste en normal.
+    cedant_line = next(
+        p for p in document.paragraphs if p.text.startswith("Monsieur Jean Dupont, chirurgien")
+    )
+    assert cedant_line.runs[0].text == "Monsieur Jean Dupont"
+    assert cedant_line.runs[0].bold is True
+    assert any(r.bold is not True and r.text for r in cedant_line.runs[1:])
+
+    # Denomination du cessionnaire (ligne seule) en gras.
+    cessionnaire_line = next(
+        p for p in document.paragraphs if p.text == "SELARL CABINET DUPONT"
+    )
+    assert cessionnaire_line.runs[0].bold is True
+
+    # Nom de la SCM en gras dans la ligne d'introduction de « LA SOCIETE ».
+    societe_line = next(
+        p for p in document.paragraphs if p.text.startswith("Ont procédé de la manière")
+    )
+    scm_run = next(r for r in societe_line.runs if r.text == "SCM CABINET CENTRAL")
+    assert scm_run.bold is True
+
+
+def test_sc1_bloc_cessionnaire_compact(tmp_path: Path) -> None:
+    # SC1 : « enlever l'interligne superflu du cessionnaire ». Les lignes d'identite du
+    # cessionnaire portent un space_after COMPACT (< standard 6 pt).
+    from docx.shared import Pt
+
+    ctx = _base_context("SELARL")
+    document = Document(ActeCessionPartsScmGenerator().generate(ctx, tmp_path))
+    for text_start in ("SELARL au capital de", "Ayant son siège au", "En cours d'immatriculation"):
+        line = next(p for p in document.paragraphs if p.text.startswith(text_start))
+        assert line.paragraph_format.space_after is not None
+        assert line.paragraph_format.space_after < Pt(6)
+
+
+def test_sc1_espace_entre_parties(tmp_path: Path) -> None:
+    # SC1 : « espacer entre chaque partie ». Un spacer (paragraphe vide) separe la partie
+    # CEDANT de « ET : » (partie cessionnaire) et la partie cessionnaire de « Ont procédé ».
+    from docx.shared import Pt
+
+    ctx = _base_context("SELARL")
+    document = Document(ActeCessionPartsScmGenerator().generate(ctx, tmp_path))
+    paras = document.paragraphs
+    et_index = next(i for i, p in enumerate(paras) if p.text == "ET :")
+    # Le paragraphe juste avant « ET : » est un spacer vide (espace entre parties).
+    assert paras[et_index - 1].text == ""
+    assert paras[et_index - 1].paragraph_format.space_after >= Pt(6)
+
+
+def test_sc2_cogerants_vierge_si_non_saisis(tmp_path: Path) -> None:
+    # SC2 : « aucun gérant saisi mais 3 noms inventés apparaissent -> laisser VIERGE ».
+    # Sans cogerants saisis, l'acte ne fabrique AUCUN nom (ni Paul Bernard, ni Anne Martin) ;
+    # il rend le marqueur « à compléter » (convention R10), jamais un nom inventé.
+    ctx = _base_context("SELARL")
+    ctx.scm_cession.scm_cedee.cogerants = []
+    text = _docx_text(ActeCessionPartsScmGenerator().generate(ctx, tmp_path))
+    assert "dont les cogérants sont" in text
+    assert "cogerants" in text  # marqueur (À COMPLÉTER : scm_cession.scm_cedee.cogerants)
+    # Aucun nom inventé a partir des associes.
+    assert "Paul Bernard, Monsieur Jean Dupont et Madame Anne Martin" not in text
+
+
+def test_sc2_cogerants_affiches_si_saisis(tmp_path: Path) -> None:
+    # SC2 contre-epreuve : des cogerants REELLEMENT saisis s'affichent tels quels.
+    ctx = _base_context("SELARL")
+    ctx.scm_cession.scm_cedee.cogerants = ["Madame Sophie Leroy", "Monsieur Marc Petit"]
+    text = _docx_text(ActeCessionPartsScmGenerator().generate(ctx, tmp_path))
+    assert "dont les cogérants sont Madame Sophie Leroy, Monsieur Marc Petit." in text
+    assert "COMPLÉTER" not in text
+
+
+def test_sc3_origine_qu_elle_si_feminin(tmp_path: Path) -> None:
+    # SC3 : « le cédant déclare qu'il » -> « qu'elle » si le cedant est une femme.
+    ctx = _female_cedant_context("SELARL")
+    text = _docx_text(ActeCessionPartsScmGenerator().generate(ctx, tmp_path))
+    assert "le CEDANT, déclare qu'elle est propriétaire" in text
+    assert "déclare qu'il est propriétaire" not in text
+
+
+def test_sc3_origine_qu_il_si_masculin_non_regression(tmp_path: Path) -> None:
+    # SC3 non-regression : un cedant homme garde « qu'il » (byte-neutre).
+    ctx = _base_context("SELARL")
+    text = _docx_text(ActeCessionPartsScmGenerator().generate(ctx, tmp_path))
+    assert "le CEDANT, déclare qu'il est propriétaire" in text
+    assert "qu'elle est propriétaire" not in text
+
+
+def test_sc4_soussignee_partout_si_feminin(tmp_path: Path) -> None:
+    # SC4 : « soussigné » de première part -> « soussignée » si femme, PARTOUT (balaye tous
+    # les « soussigné » referant au cedant). La SOCIETE cessionnaire (2de part) reste feminine.
+    ctx = _female_cedant_context("SELARL")
+    document = Document(ActeCessionPartsScmGenerator().generate(ctx, tmp_path))
+    text = _docx_text(ActeCessionPartsScmGenerator().generate(ctx, tmp_path))
+
+    # (1) marqueur de partie : « Soussignée de première part ».
+    marker = next(
+        p for p in document.paragraphs
+        if p.text.startswith(("Soussigné de première", "Soussignée de première"))
+    )
+    assert marker.text.startswith("Soussignée de première part")
+    # (2) clause CESSION : « soussignée de première part ».
+    assert "soussignée de première part, cède et transporte" in text
+    # (3) DECLARATIONS GENERALES : « La soussignée de première part déclare : ».
+    assert "La soussignée de première part déclare :" in text
+    assert "Le soussigné de première part déclare :" not in text
+    # La SOCIETE (2de part) reste feminine, non touchee par le genre du cedant.
+    assert "soussignée de deuxième part qui accepte" in text
+    assert "Soussignée de seconde part, ci-après dénommé « LE CESSIONNAIRE »," in text
+
+
+def test_sc4_soussigne_masculin_non_regression(tmp_path: Path) -> None:
+    # SC4 non-regression : un cedant homme garde « Soussigné » / « soussigné » (byte-neutre).
+    ctx = _base_context("SELARL")
+    document = Document(ActeCessionPartsScmGenerator().generate(ctx, tmp_path))
+    text = _docx_text(ActeCessionPartsScmGenerator().generate(ctx, tmp_path))
+    assert any(
+        p.text.startswith("Soussigné de première part") for p in document.paragraphs
+    )
+    assert "soussigné de première part, cède et transporte" in text
+    assert "Le soussigné de première part déclare :" in text
+    assert "soussignée de première part" not in text
+
+
+def test_sc4_cessionnaire_representation_accordee_si_feminin(tmp_path: Path) -> None:
+    # SC4-adjacent (accord genre) : le représentant du cessionnaire EST le cedant ; pour une
+    # femme, le segment « Représentée par … » s'accorde entierement (sa gérante … domiciliée)
+    # — sinon la règle de conformité R15 (accord fonction) flague le rendu féminin.
+    ctx = _female_cedant_context("SELARL")
+    text = _docx_text(ActeCessionPartsScmGenerator().generate(ctx, tmp_path))
+    assert (
+        "Représentée par sa gérante, Madame Sophie Durand, domiciliée en cette qualité audit siège."
+        in text
+    )
+    assert "son gérant" not in text
+    # SELAS : « sa présidente … domiciliée ».
+    text_selas = _docx_text(
+        ActeCessionPartsScmGenerator().generate(_female_cedant_context("SELAS"), tmp_path)
+    )
+    assert (
+        "Représentée par sa présidente, Madame Sophie Durand, domiciliée en cette qualité"
+        in text_selas
+    )
+
+
+def test_sc4_cessionnaire_representation_masculin_non_regression(tmp_path: Path) -> None:
+    # Non-regression : un cedant homme garde « son gérant … domicilié » (byte-neutre).
+    ctx = _base_context("SELARL")
+    text = _docx_text(ActeCessionPartsScmGenerator().generate(ctx, tmp_path))
+    assert (
+        "Représentée par son gérant, Monsieur Jean Dupont, domicilié en cette qualité audit siège."
+        in text
+    )
+
+
+def test_sc5_puces_dans_les_listes_des_articles(tmp_path: Path) -> None:
+    # SC5 : « remettre les PUCES (list bullets) dans les listes des articles ». Les items des
+    # listes de declarations sont rendus en puces (•) ; plus aucun tiret « - » residuel.
+    ctx = _base_context("SELARL")
+    document = Document(ActeCessionPartsScmGenerator().generate(ctx, tmp_path))
+    para_texts = [p.text for p in document.paragraphs]
+
+    # DECLARATIONS (chapeau + 4 items en puces).
+    assert "Le CEDANT déclare :" in para_texts
+    assert "• qu'il dispose de la pleine capacité juridique d'aliéner ;" in para_texts
+    assert "• que les parts sociales cédées sont des biens propres." in para_texts
+    # DECLARATIONS GENERALES (items en puces).
+    assert any(
+        t.startswith("• qu'ils ont la pleine capacité civile") for t in para_texts
+    )
+    assert any(
+        t.startswith("• que la société dont les parts sont présentement cédées") for t in para_texts
+    )
+    # Plus aucun item de declaration prefixe d'un tiret « - » (ancienne mise en forme).
+    assert not any(t.startswith("- qu'il ") for t in para_texts)

@@ -450,6 +450,47 @@ def accord_fonction(fonction: str | None, genre: Gender | None) -> str:
     return "".join(_accord_fonction_token(token, mapping) for token in tokens)
 
 
+# Termes (participes/adjectifs/pronoms) accordés au genre d'une personne dans les actes,
+# au-dela des seules FONCTIONS (Albane SELARL 2026-07-10 : « inscrit » -> « inscrite »,
+# « soussigné » -> « soussignée », « le cédant déclare qu'il » -> « qu'elle »). Codage par
+# INTENTION (tout terme referant a la personne s'accorde), lexique explicite — jamais de
+# regex de terminaison qui inventerait un feminin. Casse preservee, idempotent.
+_TERMES_VERS_FEMININ: Final[dict[str, str]] = {
+    "inscrit": "inscrite",
+    "soussigné": "soussignée",
+    "domicilié": "domiciliée",
+    "marié": "mariée",
+    "pacsé": "pacsée",
+    "né": "née",
+    "désigné": "désignée",
+    "propriétaire": "propriétaire",  # invariant (explicite = « ne pas toucher »)
+    "il": "elle",
+    "celui": "celle",
+    "lui-même": "elle-même",
+    "ce dernier": "cette dernière",
+    "le cédant": "la cédante",
+    "un cédant": "une cédante",
+}
+_TERMES_VERS_MASCULIN: Final[dict[str, str]] = {v: k for k, v in _TERMES_VERS_FEMININ.items()}
+
+
+def accord_terme_genre(terme: str | None, genre: Gender | None) -> str:
+    """Accorde un TERME (participe/adjectif/pronom) au genre d'une personne : « inscrit »
+    -> « inscrite », « soussigné » -> « soussignée », « il » -> « elle ». Idempotent,
+    bidirectionnel, casse preservee. Mot hors lexique renvoye tel quel (aucune invention)."""
+    if not terme:
+        return terme or ""
+    mapping = _TERMES_VERS_FEMININ if genre == Gender.FEMININ else _TERMES_VERS_MASCULIN
+    cible = mapping.get(terme.lower())
+    if cible is None:
+        return terme
+    if terme.isupper():
+        return cible.upper()
+    if terme[:1].isupper():
+        return cible[:1].upper() + cible[1:]
+    return cible
+
+
 def accord_participe_e(mot: str | None, genre: Gender | None) -> str:
     """Accorde en genre un participe/adjectif se terminant par « -é » (« domicilié » ->
     « domiciliée », « désigné » -> « désignée »). Akainu batch2+3 M2 (2026-07-09) : coder

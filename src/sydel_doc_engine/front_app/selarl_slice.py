@@ -279,10 +279,14 @@ def selected_selarl_document_codes(data: SelarlSliceInput) -> tuple[str, ...]:
             )
         )
     if data.cession_context is not None:
-        etape = (data.cession_context.etape or "").strip().lower()
         type_cabinet = (data.cession_context.type_cabinet or "").strip().lower()
-        for doc_id, (expected_etape, expected_type) in CESSION_CABINET_DOCUMENT_IDS.items():
-            if etape == expected_etape and type_cabinet == expected_type:
+        # MD1 (Albane 2026-07-10) : le COMPROMIS de cession doit etre edite AU MEME TITRE que
+        # l'acte. On genere DESORMAIS l'acte ET le compromis ENSEMBLE pour le type de cabinet
+        # (comme la SELAS depuis O24-14) — l'etape n'est plus filtrante (le gate orchestrateur
+        # `_cession_cabinet_enabled` autorise les deux pour une SEL). Avant : seul le document
+        # correspondant a l'etape saisie sortait -> le compromis manquait au bundle acte.
+        for doc_id, (_expected_etape, expected_type) in CESSION_CABINET_DOCUMENT_IDS.items():
+            if type_cabinet == expected_type:
                 codes.append(doc_id)
         # Appel de fonds = document commun « Si cession » : present pour toute cession
         # (medical comme dentaire), des que le type de cabinet est renseigne.
@@ -336,6 +340,10 @@ def validate_selarl_input(data: SelarlSliceInput) -> tuple[str, ...]:  # noqa: C
         blockers.append("Cession demandee mais donnees cession manquantes.")
     if data.scm and data.scm_cession_context is None:
         blockers.append("Cession de parts SCM demandee mais donnees SCM manquantes.")
+    # F1 (Albane 2026-07-10) : les champs SCM ne sont plus PRE-REMPLIS par la fixture ->
+    # ils demarrent vides. Les champs REQUIS par les generateurs SCM (DOC-031/032/033) sont
+    # bloques ICI avec un message clair, plutot que de laisser crasher la generation.
+    blockers.extend(_scm_cession_blockers(data.scm_cession_context))
     # O24-05 (re-Akainu tour 3, MAJEUR) : la valeur nominale de la SCM cedee est auto-calculee
     # (capital / nb parts). Sans garde de divisibilite, un capital non divisible produit une
     # valeur fractionnaire a precision infinie imprimee CRUMENT dans le DOCX. Meme garde que
@@ -556,6 +564,48 @@ def _cession_blockers(data: SelarlSliceInput) -> list[str]:  # noqa: C901
         scm = cession.scm
         if scm is not None and scm.actif and not (scm.nb_parts_a_ceder or "").strip():
             blockers.append("Cession de parts SCM : nombre de parts a ceder requis.")
+    return blockers
+
+
+def _scm_cession_blockers(scm_cession: ScmCessionContext | None) -> list[str]:
+    """Bloqueurs des champs SCM REQUIS par les generateurs (DOC-031/032/033).
+
+    F1 (Albane 2026-07-10) : les champs SCM ne sont plus pre-remplis par la fixture ;
+    on remonte donc TOT, avant generation, les champs indispensables laisses vides
+    (identite / capital / RCS de la SCM cedee, nombre de parts cedees, prix global) —
+    sinon les generateurs levent (« ... est obligatoire ») en pleine generation.
+    """
+    if scm_cession is None:
+        return []
+    blockers: list[str] = []
+    cedee = scm_cession.scm_cedee
+    if cedee is None:
+        blockers.append("Cession de parts SCM : identite de la SCM cedee requise.")
+    else:
+        siege_ok = cedee.siege is not None and bool(
+            (cedee.siege.adresse_affichee or "").strip()
+        )
+        text_fields = (
+            ((cedee.denomination or "").strip(), "denomination de la SCM cedee"),
+            ((cedee.capital_social or "").strip(), "capital social de la SCM cedee"),
+            ((cedee.ville_rcs or "").strip(), "ville du RCS de la SCM cedee"),
+            ((cedee.numero_rcs or "").strip(), "numero RCS de la SCM cedee"),
+        )
+        for value, label in text_fields:
+            if not value:
+                blockers.append(f"Cession de parts SCM : {label} requise.")
+        if not siege_ok:
+            blockers.append("Cession de parts SCM : siege de la SCM cedee requis.")
+        if not (cedee.nb_parts_total or 0) > 0:
+            blockers.append(
+                "Cession de parts SCM : nombre total de parts de la SCM cedee requis (> 0)."
+            )
+    parts_cedees = scm_cession.parts_cedees
+    if parts_cedees is None or not (parts_cedees.nb or 0) > 0:
+        blockers.append("Cession de parts SCM : nombre de parts cedees requis (> 0).")
+    prix = scm_cession.prix
+    if prix is None or not (prix.global_ or "").strip():
+        blockers.append("Cession de parts SCM : prix global requis.")
     return blockers
 
 
@@ -849,7 +899,8 @@ def _warning_messages(data: SelarlSliceInput) -> tuple[str, ...]:
 
 def _missing_text_blockers(data: SelarlSliceInput) -> list[str]:
     base_fields = (
-        ("dossier_reference", "Reference dossier requise."),
+        # F2 (Albane 2026-07-10) : la reference dossier ne BLOQUE plus l'edition (inutile,
+        # on ne telecharge pas le formulaire). Le champ reste saisi (metadata) mais optionnel.
         ("civilite", "Civilite du praticien requise."),
         ("prenom", "Prenom du praticien requis."),
         ("nom", "Nom du praticien requis."),
@@ -879,9 +930,10 @@ def _missing_text_blockers(data: SelarlSliceInput) -> list[str]:
         ("ordre_cp", "Code postal de l'ordre requis."),
         ("ordre_ville", "Ville de l'ordre requise."),
         ("signature_lieu", "Lieu de signature requis."),
-        ("depot_banque_nom", "Banque du depot des fonds requise."),
-        # Adresse de la banque : FACULTATIVE (retours client 2026-06-11, ticket
-        # 3.2) — vide, les statuts laissent une zone a completer a la main.
+        # F3 (Albane 2026-07-10) : la BANQUE du depot des fonds ne BLOQUE plus l'edition
+        # (rarement connue au debut — coherent avec l'assouplissement micro-holding A8
+        # 2026-07-09). Vide, les statuts / l'attestation laissent une zone a completer.
+        # Adresse de la banque : deja FACULTATIVE (retours client 2026-06-11, ticket 3.2).
         ("exercice_debut", "Debut d'exercice social requis."),
         ("exercice_fin", "Fin d'exercice social requise."),
         ("exercice_cloture_premier", "Date de cloture du premier exercice requise."),
@@ -1137,6 +1189,9 @@ def _associe(
             ville=data.ordre_ville,
             numero=data.numero_ordre,
             numero_rpps=data.numero_rpps,
+            # ST6 (Albane 2026-07-10) : preposition « de / du » choisie au formulaire, cablee
+            # jusqu'a la ligne d'identite des statuts SEL. Defaut « de » si non renseignee.
+            connecteur_departement=data.connecteur_departement or "de",
         ),
         apport_numeraire=apport_montant,
         apport_numeraire_lettres=number_words_from_value(apport_montant),

@@ -14,7 +14,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     new_document,
 )
 from sydel_doc_engine.utils.dates import format_date_fr
-from sydel_doc_engine.utils.grammar import subject_line
+from sydel_doc_engine.utils.grammar import accord_fonction, subject_line
 
 OUTPUT_FILENAME = "procuration.docx"
 
@@ -63,9 +63,15 @@ class ProcurationGenerator:
         )
         prenom = _required_text(person.prenom, "personne_signataire.prenom")
         nom = _required_text(person.nom, "personne_signataire.nom")
-        fonction_dirigeant = _required_text(
-            person.fonction_dirigeant,
-            "personne_signataire.fonction_dirigeant",
+        # PR2 (Albane SELARL 2026-07-10) : « gérant » s'accorde au genre du mandant
+        # (« gérante » pour une femme). Meme lexique par INTENTION que le reglement
+        # interieur SCM ; idempotent si la fonction est deja au bon genre.
+        fonction_dirigeant = accord_fonction(
+            _required_text(
+                person.fonction_dirigeant,
+                "personne_signataire.fonction_dirigeant",
+            ),
+            person.genre,
         )
         forme_sociale = _required_text(company.forme_sociale, "societe.forme_sociale")
         denomination_societe = _required_text(company.denomination, "societe.denomination")
@@ -74,6 +80,8 @@ class ProcurationGenerator:
 
         document = new_document()
         _add_title(document)
+        # PR1 (Albane SELARL 2026-07-10) : justifier la premiere ligne du corps de la
+        # procuration (1er paragraphe de corps).
         _add_paragraph(
             document,
             (
@@ -82,6 +90,7 @@ class ProcurationGenerator:
                 f"{company_designation}, dont le siège est situé "
                 f"{company_address}"
             ),
+            alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
         )
         _add_paragraph(document, "Donne par les présentes pouvoir à :")
         # Aération (Albane 2026-06-17, §5) : espace avant le bloc mandataire.

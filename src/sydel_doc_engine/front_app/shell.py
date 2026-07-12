@@ -43,6 +43,7 @@ from sydel_doc_engine.front_app.field_derivations import (
     DEFAULT_TITRE_AFFICHAGE,
     MATRIMONIAL_STATUS_PRESETS,
     NATIONALITY_PRESETS,
+    _decimal_from_value,
     accentuate_french_months,
     calculate_nominal_value,
     derive_gender_from_civilite,
@@ -1191,17 +1192,19 @@ def _render_cession_form(  # noqa: C901
         etape = "acte"
         st.session_state[etape_key] = "acte"
     else:
-        with st.expander("Type & etape", expanded=True):
-            col_a, col_b = st.columns(2)
-            type_cabinet = col_a.selectbox(
+        # MD1 (Albane 2026-07-10) : la SELARL produit DESORMAIS l'acte ET le compromis
+        # ENSEMBLE (comme la SELAS depuis #14) -> l'ETAPE n'est plus un choix (elle etait
+        # filtrante et faisait manquer le compromis). On force « acte » : les champs
+        # specifiques a l'acte (credit-vendeur, salaries) restent conditionnes sur
+        # etape=='acte', et les champs du compromis (pret, date limite) sont montres pour
+        # toute cession SEL (cf. conditions ci-dessous). Le TYPE de cabinet reste choisi.
+        etape = "acte"
+        st.session_state[etape_key] = "acte"
+        with st.expander("Type de cabinet", expanded=True):
+            type_cabinet = st.selectbox(
                 "Type de cabinet",
                 tuple(CESSION_TYPE_LABELS),
                 key=type_key,
-            )
-            etape = col_b.selectbox(
-                "Etape",
-                tuple(CESSION_ETAPE_LABELS),
-                key=etape_key,
             )
 
     profession_label = _profession_label(profession)
@@ -1489,21 +1492,33 @@ def _render_cession_form(  # noqa: C901
             default="",
         )
         st.markdown("Origine de propriete du vendeur")
-        if type_cabinet == "medical":
-            mode_key = f"{_CESSION_PREFIX}_cession_cabinet_origine_mode"
-            _seed_default(mode_key, "Cabinet cree par le vendeur")
-            mode_label = st.selectbox(
-                "Le vendeur a...",
-                ("Cabinet cree par le vendeur", "Cabinet achete par le vendeur"),
-                key=mode_key,
-            )
-            origine_mode = "achete" if "achete" in mode_label else "cree"
-        else:
-            # La clause du modele dentaire decrit une acquisition : les champs
-            # ci-dessous alimentent ses tokens (vides -> zones a completer).
-            origine_mode = "achete"
+        # O1 (Albane 2026-07-10) : le cabinet peut avoir ete CREE (pas seulement acquis).
+        # Choix « cree / acquis » pour TOUS les types (medical ET dentaire) — le generateur
+        # d'acte (medical comme dentaire) rend la clause adaptee via `origine_propriete_mode` :
+        #   - "cree"   -> « ... proprietaire ... pour les avoir regulierement crees le <date> »
+        #                 (seule la date de creation se saisit) ;
+        #   - "achete" -> « ... acquis aupres de <precedent>, le <date> au prix de <prix> »
+        #                 (date + precedent proprietaire + prix).
+        # Auparavant le dentaire etait FORCE en "achete" ; le modele dentaire supporte la
+        # variante "cree" (verifie : clause « crees le <date> » rendue), donc le choix est
+        # ouvert aux deux professions. Cle de contexte consommee par l'acte :
+        # `cession.cabinet.origine_propriete_mode`.
+        mode_key = f"{_CESSION_PREFIX}_cession_cabinet_origine_mode"
+        _seed_default(mode_key, "Cabinet cree par le vendeur")
+        mode_label = st.selectbox(
+            "Le vendeur a...",
+            ("Cabinet cree par le vendeur", "Cabinet achete par le vendeur"),
+            key=mode_key,
+        )
+        origine_mode = "achete" if "achete" in mode_label else "cree"
+        # Le libelle de la date suit le mode : « creation » (cree) vs « acquisition » (achete).
+        date_origine_label = (
+            "Date d'acquisition du cabinet par le vendeur (JJ/MM/AAAA)"
+            if origine_mode == "achete"
+            else "Date de creation du cabinet par le vendeur (JJ/MM/AAAA)"
+        )
         date_origine = _cession_date(
-            st, "Date d'acquisition du cabinet par le vendeur (JJ/MM/AAAA)",
+            st, date_origine_label,
             section="cabinet", field="origine_date",
         )
         precedent_payload: dict[str, str] | None = None
@@ -1650,16 +1665,36 @@ def _render_cession_form(  # noqa: C901
         if lettres_auto:
             col_b.caption(f"Automatique : {lettres_auto}")
         col_c, col_d = st.columns(2)
-        prix_corporels = _format_montant(
-            _cession_text(
-                col_c, "Elements corporels",
-                section="prix", field="corporels", default="",
-            )
-        )
+        # O2 (Albane 2026-07-10) : si le PRIX TOTAL et les ELEMENTS INCORPORELS sont saisis,
+        # les ELEMENTS CORPORELS sont derives par defaut = total - incorporels (modifiable).
+        # On rend d'abord l'incorporel (col_d), puis on preseed le corporel (col_c) tant qu'il
+        # est vide -> la saisie manuelle du corporel prime toujours (seed uniquement si vide).
         prix_incorporels = _format_montant(
             _cession_text(
                 col_d, "Elements incorporels",
                 section="prix", field="incorporels", default="",
+            )
+        )
+        _total_dec = _decimal_from_value(prix_total)
+        _incorp_dec = _decimal_from_value(prix_incorporels)
+        corporels_key = f"{_CESSION_PREFIX}_cession_prix_corporels"
+        if (
+            _total_dec is not None
+            and _incorp_dec is not None
+            and not str(st.session_state.get(corporels_key) or "").strip()
+        ):
+            st.session_state[corporels_key] = format_grouped_numeric_value(
+                _total_dec - _incorp_dec
+            )
+        if _total_dec is not None and _incorp_dec is not None:
+            col_c.caption(
+                f"Automatique : {format_grouped_numeric_value(_total_dec - _incorp_dec)} "
+                "(= total - incorporels)"
+            )
+        prix_corporels = _format_montant(
+            _cession_text(
+                col_c, "Elements corporels",
+                section="prix", field="corporels", default="",
             )
         )
         prix_payload = {
@@ -1698,8 +1733,10 @@ def _render_cession_form(  # noqa: C901
         )
         pret_payload: dict[str, str] = {"montant": "", "taux": "", "duree": ""}
         # O24-14 : en SELAS le compromis est produit en plus de l'acte -> on expose ses
-        # champs propres (prêt) même si l'étape affichée est 'acte'.
-        if etape == "compromis" or prefix == "selas":
+        # champs propres (prêt) même si l'étape affichée est 'acte'. MD1 (Albane 2026-07-10) :
+        # la SELARL produit aussi l'acte + le compromis -> mêmes champs prêt exposés (prefix
+        # 'selarl'). Toute cession SEL affiche donc le prêt du compromis.
+        if etape == "compromis" or prefix in ("selas", "selarl"):
             # Lot Formulaire (Albane) — préremplissages déterministes du prêt :
             #  FA1 « montant du prêt (compromis) = prix de cession » -> défaut = prix total
             #       saisi plus haut (auto, modifiable). On (re)seede tant que l'utilisateur
@@ -1854,7 +1891,10 @@ def _render_cession_form(  # noqa: C901
                     )
 
     date_limite_realisation = ""
-    if etape == "compromis" or prefix == "selas":  # O24-14 : compromis produit aussi en SELAS
+    # O24-14 : compromis produit aussi en SELAS ; MD1 (Albane 2026-07-10) : idem SELARL
+    # (acte + compromis) -> la date limite de realisation du compromis est exposee pour
+    # toute cession SEL.
+    if etape == "compromis" or prefix in ("selas", "selarl"):
         # FA5 (Albane, Lot Formulaire) : « date limite de la réalisation : par défaut à
         # +6 mois de la date des actes ». On préremplit la date limite = date de
         # signature (date des actes, `generation["signature_date"]`) + 6 mois, tant que
@@ -1985,12 +2025,20 @@ def _render_scm_cession_form(  # noqa: C901
     st.markdown("**Cession de parts de SCM**")
     base = scm_cession_fixture()
     payload = base.model_dump(by_alias=True)
+    # F1 (Albane 2026-07-10) : le flux SCM ne PRE-REMPLIT plus les champs SAISIS avec les
+    # donnees d'EXEMPLE de la fixture (« SCM CABINET CENTRAL », « 3 000 », « 300 », siege /
+    # RCS / prix / parts cedees inventes) -> ils demarrent VIDES. On conserve seulement les
+    # seeds qui ont du sens : forme juridique (constante SCM), et les champs back-office NON
+    # exposes requis par les generateurs (agrement, enregistrement, signataire SDE) — ces
+    # derniers portent encore des valeurs d'exemple (cf. SIGNAL : a exposer / rendre optionnels
+    # cote generateur). Les champs saisis vides sont bloques par validate_selarl_input (message
+    # clair au lieu d'un crash generateur).
 
     scm_cedee = payload.setdefault("scm_cedee", {}) or {}
     with st.expander("SCM cedee", expanded=True):
         scm_cedee["denomination"] = _cession_text(
             st, "Denomination SCM", section="scm_cedee", field="denomination",
-            default=str(scm_cedee.get("denomination") or ""),
+            default="",
         )
         # FB-6 (Albane 2026-06-26) : « l'adresse du siege dans le PV doit provenir d'un
         # champ saisi (ou par defaut le siege de la SEL), pas d'une valeur fixe ». FB-8a :
@@ -2003,10 +2051,10 @@ def _render_scm_cession_form(  # noqa: C901
             str(st.session_state.get(f"{prefix}_siege") or "").strip()
             or _siege_display(societe)
         )
+        # F1 : plus de pre-remplissage du siege SCM avec la valeur d'exemple de la fixture
+        # (« 12 rue des Soins, 75008 Paris ») -> champ vide (ou report du siege SEL si la
+        # case ci-dessous est cochee).
         siege_scm_existant = ""
-        _siege_scm_base = scm_cedee.get("siege")
-        if isinstance(_siege_scm_base, dict):
-            siege_scm_existant = str(_siege_scm_base.get("adresse_affichee") or "")
         siege_same_key = f"{_CESSION_PREFIX}_cession_scm_cedee_siege_same_as_sel"
         _seed_default(siege_same_key, False)
         siege_same = st.checkbox(
@@ -2022,35 +2070,37 @@ def _render_scm_cession_form(  # noqa: C901
             section="scm_cedee", field="siege",
             default=siege_scm_existant,
         )
+        # F1 : siege VIDE -> on efface la valeur d'exemple de la fixture (sinon elle survivait
+        # dans le payload et fuyait dans le PV / l'acte).
         if scm_cedee_siege_saisi:
             scm_cedee["siege"] = {"adresse_affichee": scm_cedee_siege_saisi}
+        else:
+            scm_cedee["siege"] = None
         col_a, col_b = st.columns(2)
         scm_cedee["ville_rcs"] = _cession_text(
             col_a, "RCS (ville)", section="scm_cedee", field="rcs_ville",
-            default=str(scm_cedee.get("ville_rcs") or ""),
+            default="",
         )
         scm_cedee["numero_rcs"] = _cession_text(
             col_b, "Numero RCS", section="scm_cedee", field="numero_rcs",
-            default=str(scm_cedee.get("numero_rcs") or ""),
+            default="",
         )
-        # §4.1 — capital / parts / nominal / plage pilotables (la fixture ne les
-        # exposait pas : capital 3 000, 300 parts, nominal 10, plage 1 a 300
-        # s'imprimaient en dur). On les rend editables, preremplis avec la base.
+        # §4.1 — capital / parts / nominal / plage pilotables. F1 : plus de pre-remplissage
+        # avec les valeurs d'exemple (capital 3 000, 300 parts) -> champs vides.
         col_c, col_d = st.columns(2)
         # R5 (Albane 2026-07-07) : capital de la SCM cedee groupe par 3 (« 3 000 »).
         scm_cedee["capital_social"] = _format_montant(_cession_text(
             col_c, "Capital social SCM", section="scm_cedee", field="capital_social",
-            default=str(scm_cedee.get("capital_social") or ""),
+            default="",
         ))
         nb_parts_saisi = _cession_text(
             col_d, "Nombre total de parts", section="scm_cedee", field="nb_parts_total",
-            default=str(scm_cedee.get("nb_parts_total") or ""),
+            default="",
         )
-        # nb_parts_total est un entier cote modele : on ne remplace la base que
-        # si la saisie est un entier valide, sinon on conserve la valeur de base
-        # (jamais de cle requise videe / cassee).
-        if nb_parts_saisi.isdigit():
-            scm_cedee["nb_parts_total"] = int(nb_parts_saisi)
+        # nb_parts_total est un entier cote modele. F1 : saisie vide -> 0 (on n'herite plus
+        # de la valeur d'exemple de la fixture ; le blocage validate_selarl_input demande la
+        # saisie avant generation).
+        scm_cedee["nb_parts_total"] = int(nb_parts_saisi) if nb_parts_saisi.isdigit() else 0
         col_e, col_f = st.columns(2)
         # O24-05 (re-Akainu 2026-06-23) : valeur nominale « calculee automatiquement ET
         # affichee » s'applique a TOUS les types — y compris la SCM cedee, qui porte son
@@ -2158,12 +2208,12 @@ def _render_scm_cession_form(  # noqa: C901
     prix = payload.setdefault("prix", {}) or {}
     with st.expander("Parts cedees & prix"):
         col_a, col_b, col_c = st.columns(3)
+        # F1 : plus de pre-remplissage du nb de parts cedees avec la valeur d'exemple.
         nb_cedees_saisi = _cession_text(
             col_a, "Nombre de parts cedees", section="scm_parts", field="nb",
-            default=str(parts_cedees.get("nb") or ""),
+            default="",
         )
-        if nb_cedees_saisi.isdigit():
-            parts_cedees["nb"] = int(nb_cedees_saisi)
+        parts_cedees["nb"] = int(nb_cedees_saisi) if nb_cedees_saisi.isdigit() else 0
         # FB-4 (Albane 2026-06-26) : « pour les plages cédées est-ce qu'on peut prendre la
         # main ? en pratique le mec détient 10 parts numérotées de 1 à 5 et 21 à 25 ». -> on
         # rouvre une SAISIE MANUELLE OPTIONNELLE de la plage cédée. Renseignée -> elle OVERRIDE
@@ -2185,19 +2235,19 @@ def _render_scm_cession_form(  # noqa: C901
             )
         # R5 (Albane 2026-07-07) : prix global groupe par 3 (« 20 000 »), comme les
         # autres montants de cession (_format_montant partout).
+        # F1 : plus de pre-remplissage du prix global avec la valeur d'exemple (« 5 000 »).
         prix["global"] = _format_montant(_cession_text(
             col_c, "Prix global", section="scm_prix", field="global",
-            default=str(prix.get("global") or ""),
+            default="",
         ))
         # FA7 (Albane, Lot Formulaire) : « SCM / prix : en mettant le prix global est-ce
         # qu'il peut se mettre d'office en lettre ? » -> le prix global en lettres est
         # DÉRIVÉ AUTOMATIQUEMENT du prix global saisi (même helper number_words_from_value
         # que la valeur nominale calculée), affiché en champ désactivé. Repli sur la valeur
         # de base si le prix n'est pas un montant exploitable (jamais de clé requise vidée).
-        prix["global_lettres"] = (
-            prix_lettres_from_value(prix.get("global"))
-            or str(prix.get("global_lettres") or "")
-        )
+        # F1 : lettres DERIVEES du prix global saisi ; vide si le prix est vide (plus de
+        # repli sur la valeur d'exemple de la fixture « cinq mille »).
+        prix["global_lettres"] = prix_lettres_from_value(prix.get("global"))
         copyable_text_input(
             st, "Prix global en lettres (automatique)",
             value=prix["global_lettres"],
@@ -2380,10 +2430,11 @@ def _render_scm_cession_associes_presents(  # noqa: C901
                 f"total de parts de la SCM ({nb_total_scm}). La generation du PV "
                 "sera bloquee tant que les deux ne coincident pas."
             )
-        # FB-8b : la liste des cogerants derive des cases cochees (override le fallback
-        # hardcode du generateur). Vide -> on n'ecrase pas (le generateur garde son repli).
-        if cogerants:
-            scm_cedee["cogerants"] = cogerants
+        # FB-8b : la liste des cogerants derive des cases cochees. F1 (Albane 2026-07-10) :
+        # on ecrase TOUJOURS la liste d'exemple de la fixture (« Paul Bernard / Jean Dupont /
+        # Anne Martin ») — vide si aucune case cochee, pour ne plus faire fuiter des cogerants
+        # inventes (cf. SC2 cote generateur : « laisser vierge si non rempli »).
+        scm_cedee["cogerants"] = cogerants
         # FB-7 : le president de seance (par defaut le cedant) doit figurer en DERNIERE
         # position (le generateur PV prend associes_presents[-1]). On expose le choix.
         presents = _scm_reorder_president_last(presents, cedant)
