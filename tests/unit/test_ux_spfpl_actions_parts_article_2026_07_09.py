@@ -139,7 +139,7 @@ def test_apptest_spfpl_cession_widgets_nature_et_article(tmp_path: Path, monkeyp
 
     monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-spfpl-actions-parts")
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
-    app.selectbox(key="clean_dossier_type").set_value("SPFPL dentistes - cession creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SPFPL dentistes — cession")
     app = app.run(timeout=180)
     next(b for b in app.button if "test_data" in str(b.key)).click()
     app = app.run(timeout=180)
@@ -172,7 +172,7 @@ def test_apptest_spfpl_apport_pas_de_double_selecteur_nature(tmp_path: Path, mon
 
     monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-spfpl-apport-nature")
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
-    app.selectbox(key="clean_dossier_type").set_value("SPFPL dentistes - apport creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SPFPL dentistes — apport")
     app = app.run(timeout=180)
 
     selectbox_keys = {str(w.key) for w in app.selectbox}

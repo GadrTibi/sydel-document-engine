@@ -19,7 +19,7 @@ from sydel_doc_engine.front_app.selarl_slice import (
     SelarlSliceInput,
 )
 
-SELARL_DOSSIER_LABEL = "SELARL creation V1"
+SELARL_DOSSIER_LABEL = "SELARL"
 
 
 def _base_kwargs(

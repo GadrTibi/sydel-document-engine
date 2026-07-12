@@ -65,7 +65,7 @@ def _assert_clean(text: str) -> None:
 
 def test_registry_exposes_all_ready_types() -> None:
     labels = dossier_type_labels()
-    assert labels[0] == "SELARL creation V1"  # SELARL TOUJOURS en premier (defaut)
+    assert labels[0] == "SELARL"  # SELARL TOUJOURS en premier (defaut)
     structures = {item.structure for item in registered_types()}
     assert {
         "SELARL",
@@ -88,7 +88,7 @@ def test_registry_exposes_all_ready_types() -> None:
 
 
 def test_selarl_option_unchanged() -> None:
-    option = dossier_type_by_label("SELARL creation V1")
+    option = dossier_type_by_label("SELARL")
     assert option.key == "selarl_v1"
     assert option.structure == "SELARL"
     assert option.generation_enabled is True
@@ -585,7 +585,7 @@ def test_selas_ajout_associe_preserve_les_precedents_n5() -> None:
     from streamlit.testing.v1 import AppTest
 
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
-    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle")
     app = app.run(timeout=180)
     next(w for w in app.number_input if str(w.key) == "selas_associe_0_nb_actions").set_value(60)
     next(w for w in app.number_input if str(w.key) == "selas_associe_1_nb_actions").set_value(40)
@@ -604,7 +604,7 @@ def test_civil_repeater_ajout_associe_preserve_les_precedents_n5() -> None:
     from streamlit.testing.v1 import AppTest
 
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
-    app.selectbox(key="clean_dossier_type").set_value("SCM creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SCM")
     app = app.run(timeout=180)
     ti = {str(w.key): w for w in app.text_input}
     ti["scm_associe_0_profession"].set_value("Medecin")
@@ -624,7 +624,7 @@ def test_selarl_multi_ajout_associe_preserve_les_precedents_n5() -> None:
     from streamlit.testing.v1 import AppTest
 
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
-    app.selectbox(key="clean_dossier_type").set_value("SELARL creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SELARL")
     app = app.run(timeout=180)
     # Passer en mode multi-associes : decocher « Dossier unipersonnel » (defaut coche).
     next(w for w in app.checkbox if str(w.key) == "selarl_dossier_unipersonnel").set_value(False)
@@ -1550,7 +1550,7 @@ def test_spfpl_form_situation_menu_complet_et_conjoint_conditionnel() -> None:
     from sydel_doc_engine.front_app.field_derivations import MATRIMONIAL_STATUS_PRESETS
 
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=120)
-    app.selectbox(key="clean_dossier_type").set_value("SPFPL dentistes - cession creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SPFPL dentistes — cession")
     app = app.run(timeout=120)
 
     situation_box = next(
@@ -1584,7 +1584,7 @@ def test_sas_form_situation_menu_complet_et_conjoint_conditionnel() -> None:
     from sydel_doc_engine.front_app.field_derivations import MATRIMONIAL_STATUS_PRESETS
 
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=120)
-    app.selectbox(key="clean_dossier_type").set_value("SPFPL medecins (forme SAS) creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SPFPL médecins (forme SAS)")
     app = app.run(timeout=120)
 
     situation_box = next(s for s in app.selectbox if str(s.key) == "sas_situation")
@@ -1792,7 +1792,7 @@ def test_spfpl_form_civilite_drops_docteur_and_genre_selector() -> None:
     from streamlit.testing.v1 import AppTest
 
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=120)
-    app.selectbox(key="clean_dossier_type").set_value("SPFPL dentistes - cession creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SPFPL dentistes — cession")
     app = app.run(timeout=120)
 
     civilite_box = next(s for s in app.selectbox if str(s.key) == "spfpl_cession_civilite")
@@ -2772,21 +2772,21 @@ def test_front_dropdown_lists_all_types_with_selarl_default() -> None:
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=120)
 
     selector = app.selectbox(key="clean_dossier_type")
-    assert selector.value == "SELARL creation V1"
+    assert selector.value == "SELARL"
     assert list(selector.options) == [
-        "SELARL creation V1",
-        "SCM creation V1",
-        "SCI creation V1",
-        "SCI IRIS creation V1",
-        "SCS creation V1",
-        "Micro holding creation V1",
-        "SPFPL medecins (forme SAS) creation V1",
-        "SASU Holding (holding patrimoniale) creation V1",
-        "SPFPL dentistes - cession creation V1",
-        "SPFPL dentistes - apport creation V1",
-        "SELAS pluripersonnelle creation V1",
-        "SELAS unipersonnelle medecin creation V1",
-        "SELAS unipersonnelle dentiste creation V1",
+        "SELARL",
+        "SCM",
+        "SCI",
+        "SCI IRIS",
+        "SCS",
+        "Micro holding",
+        "SPFPL médecins (forme SAS)",
+        "SASU Holding (holding patrimoniale)",
+        "SPFPL dentistes — cession",
+        "SPFPL dentistes — apport",
+        "SELAS pluripersonnelle",
+        "SELAS unipersonnelle médecin",
+        "SELAS unipersonnelle dentiste",
     ]
     # Surface SELARL inchangee : aucun expander sur le defaut.
     assert len(app.expander) == 0
@@ -2799,7 +2799,7 @@ def test_front_routes_to_sci_slice_and_generates(tmp_path: Path, monkeypatch) ->
 
     monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-sci")
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
-    app.selectbox(key="clean_dossier_type").set_value("SCI creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SCI")
     app = app.run(timeout=180)
 
     def set_text(key: str, value: str) -> None:
@@ -2906,7 +2906,7 @@ def test_sci_unipersonnel_apport_derived_from_capital(
 
     monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-sci-uni")
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
-    app.selectbox(key="clean_dossier_type").set_value("SCI creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SCI")
     app = app.run(timeout=180)
     next(b for b in app.button if "test_data" in str(b.key)).click()
     app = app.run(timeout=180)
@@ -2950,18 +2950,18 @@ def test_sci_unipersonnel_apport_derived_from_capital(
     [
         # R10 (Rafael 2026-07-07) : TOUS les statuts portent la denomination du prefill
         # dans le nom de fichier (« Statuts <denomination>.docx »).
-        ("SCM creation V1", "Statuts SCM DES DOCTEURS EXEMPLE.docx"),
-        ("SCI creation V1", "Statuts SCI EXEMPLE.docx"),
-        ("SCI IRIS creation V1", "Statuts SCI IRIS EXEMPLE.docx"),
-        ("SCS creation V1", "Statuts SCS EXEMPLE.docx"),
+        ("SCM", "Statuts SCM DES DOCTEURS EXEMPLE.docx"),
+        ("SCI", "Statuts SCI EXEMPLE.docx"),
+        ("SCI IRIS", "Statuts SCI IRIS EXEMPLE.docx"),
+        ("SCS", "Statuts SCS EXEMPLE.docx"),
         # Micro holding (Albane 2026-06-26) : societe civile a capital variable, socle civil.
-        ("Micro holding creation V1", "Statuts MICRO HOLDING EXEMPLE.docx"),
-        ("SPFPL medecins (forme SAS) creation V1", "Statuts SPFPL MARTIN.docx"),
+        ("Micro holding", "Statuts MICRO HOLDING EXEMPLE.docx"),
+        ("SPFPL médecins (forme SAS)", "Statuts SPFPL MARTIN.docx"),
         # SASU Holding (Albane 2026-06-29) : SAS unipersonnelle generaliste, slice dedie.
-        ("SASU Holding (holding patrimoniale) creation V1", "Statuts SASU HOLDING EXEMPLE.docx"),
-        ("SPFPL dentistes - cession creation V1", "Statuts SPFPL MARTIN.docx"),
-        ("SPFPL dentistes - apport creation V1", "Statuts SPFPL MARTIN.docx"),
-        ("SELAS pluripersonnelle creation V1", "Statuts SELAS EXEMPLE.docx"),
+        ("SASU Holding (holding patrimoniale)", "Statuts SASU HOLDING EXEMPLE.docx"),
+        ("SPFPL dentistes — cession", "Statuts SPFPL MARTIN.docx"),
+        ("SPFPL dentistes — apport", "Statuts SPFPL MARTIN.docx"),
+        ("SELAS pluripersonnelle", "Statuts SELAS EXEMPLE.docx"),
     ],
 )
 def test_typed_test_data_button_generates(
@@ -3020,7 +3020,7 @@ def test_sci_repeater_live03_accentuates_date_naissance(tmp_path: Path, monkeypa
 
     monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-sci-live03")
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
-    app.selectbox(key="clean_dossier_type").set_value("SCI creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SCI")
     app = app.run(timeout=180)
     next(b for b in app.button if "test_data" in str(b.key)).click()
     app = app.run(timeout=180)
@@ -3049,7 +3049,7 @@ def test_selas_multi_live03_accentuates_date_naissance(tmp_path: Path, monkeypat
 
     monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selas-live03")
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
-    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle")
     app = app.run(timeout=180)
     next(b for b in app.button if "test_data" in str(b.key)).click()
     app = app.run(timeout=180)
@@ -3081,7 +3081,7 @@ def test_selarl_membre_additionnel_live03_accentuates_date_naissance(
 
     monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selarl-live03")
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
-    app.selectbox(key="clean_dossier_type").set_value("SELARL creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SELARL")
     app = app.run(timeout=180)
     next(b for b in app.button if "test_data" in str(b.key)).click()
     app = app.run(timeout=180)
@@ -3217,7 +3217,7 @@ def test_selas_cession_masque_le_bloc_acquereur(tmp_path: Path, monkeypatch) -> 
 
     monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selas-cess")
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
-    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle")
     app = app.run(timeout=180)
     next(b for b in app.button if "test_data" in str(b.key)).click()
     app = app.run(timeout=180)
@@ -3542,7 +3542,7 @@ def test_selas_cession_vendeur_selectionnable(tmp_path: Path, monkeypatch) -> No
 
     monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selas-vendeur")
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
-    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle")
     app = app.run(timeout=180)
     next(b for b in app.button if "test_data" in str(b.key)).click()
     app = app.run(timeout=180)
@@ -3570,7 +3570,7 @@ def test_selas_profession_field_removed(tmp_path: Path, monkeypatch) -> None:
 
     monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selas-prof")
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
-    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle")
     app = app.run(timeout=180)
     next(b for b in app.button if "test_data" in str(b.key)).click()
     app = app.run(timeout=180)
@@ -3590,7 +3590,7 @@ def test_selas_adresses_sur_une_ligne(tmp_path: Path, monkeypatch) -> None:
 
     monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selas-adresses")
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
-    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle")
     app = app.run(timeout=180)
     next(b for b in app.button if "test_data" in str(b.key)).click()
     app = app.run(timeout=180)
@@ -3619,9 +3619,9 @@ def test_selas_adresses_sur_une_ligne(tmp_path: Path, monkeypatch) -> None:
         # O24-03 (re-Akainu T4) : adresse de l'ORDRE sur UNE ligne pour les types restants
         # (SELAS multi deja couvert par test_selas_adresses_sur_une_ligne). Le SELARL suit
         # sa convention de suffixe « _ligne » (comme siege_ligne / adresse_ligne).
-        ("SELARL creation V1", "selarl", "selarl_ordre_adresse_ligne"),
-        ("SCM creation V1", "scm", "scm_ordre_adresse"),
-        ("SPFPL dentistes - cession creation V1", "spfpl_cession", "spfpl_cession_ordre_adresse"),
+        ("SELARL", "selarl", "selarl_ordre_adresse_ligne"),
+        ("SCM", "scm", "scm_ordre_adresse"),
+        ("SPFPL dentistes — cession", "spfpl_cession", "spfpl_cession_ordre_adresse"),
     ],
 )
 def test_ordre_adresse_sur_une_ligne(
@@ -3658,7 +3658,7 @@ def test_selas_uni_medecin_ordre_adresse_sur_une_ligne(tmp_path: Path, monkeypat
 
     monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-ordre-selas-uni")
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
-    app.selectbox(key="clean_dossier_type").set_value("SELAS unipersonnelle medecin creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SELAS unipersonnelle médecin")
     app = app.run(timeout=180)
 
     keys = {str(w.key) for w in app.text_input}
@@ -3679,7 +3679,7 @@ def test_su1_selas_uni_situation_un_seul_champ_menu(tmp_path: Path, monkeypatch)
 
     monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-su1-selas-uni")
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
-    app.selectbox(key="clean_dossier_type").set_value("SELAS unipersonnelle medecin creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SELAS unipersonnelle médecin")
     app = app.run(timeout=180)
 
     selectbox_keys = {str(w.key) for w in app.selectbox}
@@ -3723,14 +3723,14 @@ def test_r5_selas_uni_destinataire_forme_longue_connecteur_des(tmp_path: Path) -
     [
         # O24-03 (propagation Q4) : siege + adresse perso sur UNE ligne pour TOUS les
         # types restants (civils via repeater partage, SAS double-saisie, SPFPL).
-        ("SCI creation V1", "sci", True, ("sci_associe_0_adresse",)),
-        ("SCM creation V1", "scm", True, ("scm_associe_0_adresse",)),
-        ("SCS creation V1", "scs", True, ("scs_associe_0_adresse",)),
-        ("SCI IRIS creation V1", "sci_iris", True, ("sci_iris_associe_1_adresse",)),
-        ("SPFPL medecins (forme SAS) creation V1", "sas", True, ("sas_adresse",)),
-        ("SPFPL dentistes - apport creation V1", "spfpl_apport", True, ("spfpl_apport_adresse",)),
+        ("SCI", "sci", True, ("sci_associe_0_adresse",)),
+        ("SCM", "scm", True, ("scm_associe_0_adresse",)),
+        ("SCS", "scs", True, ("scs_associe_0_adresse",)),
+        ("SCI IRIS", "sci_iris", True, ("sci_iris_associe_1_adresse",)),
+        ("SPFPL médecins (forme SAS)", "sas", True, ("sas_adresse",)),
+        ("SPFPL dentistes — apport", "spfpl_apport", True, ("spfpl_apport_adresse",)),
         (
-            "SPFPL dentistes - cession creation V1",
+            "SPFPL dentistes — cession",
             "spfpl_cession",
             True,
             ("spfpl_cession_adresse",),
@@ -3789,7 +3789,7 @@ def test_o24_03_spfpl_cession_cible_siege_une_ligne(tmp_path: Path, monkeypatch)
 
     monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-spfpl-cession")
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
-    app.selectbox(key="clean_dossier_type").set_value("SPFPL dentistes - cession creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SPFPL dentistes — cession")
     app = app.run(timeout=180)
     next(b for b in app.button if "test_data" in str(b.key)).click()
     app = app.run(timeout=180)
@@ -3822,7 +3822,7 @@ def test_spfpl_apport_cible_siege_une_ligne_et_valeur_globale_derivee(
 
     monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-spfpl-apport")
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
-    app.selectbox(key="clean_dossier_type").set_value("SPFPL dentistes - apport creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SPFPL dentistes — apport")
     app = app.run(timeout=180)
     next(b for b in app.button if "test_data" in str(b.key)).click()
     app = app.run(timeout=180)
@@ -3949,7 +3949,7 @@ def test_selarl_valeur_nominale_affichee_dans_un_champ(tmp_path: Path, monkeypat
 
     monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selarl-vn")
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
-    app.selectbox(key="clean_dossier_type").set_value("SELARL creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SELARL")
     app = app.run(timeout=180)
     labels = [str(w.label) for w in app.text_input]
     assert any("Valeur nominale d'une part (calculee)" in s for s in labels), labels
@@ -3978,7 +3978,7 @@ def test_selarl_scm_cedee_valeur_nominale_calculee(tmp_path: Path, monkeypatch) 
 
     monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selarl-scm-vn")
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
-    app.selectbox(key="clean_dossier_type").set_value("SELARL creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SELARL")
     app = app.run(timeout=180)
     app.checkbox(key="selarl_scm").set_value(True)
     app = app.run(timeout=180)
@@ -4014,7 +4014,7 @@ def test_selas_cession_vendeur_regime_complet(tmp_path: Path, monkeypatch) -> No
     preset_sep = "Marié(e) sous le régime de la séparation de biens"
     monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selas-vendeur-regime")
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
-    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle")
     app = app.run(timeout=180)
     next(b for b in app.button if "test_data" in str(b.key)).click()
     app = app.run(timeout=180)
@@ -4067,7 +4067,7 @@ def test_selas_pacs_affiche_partenaire(tmp_path: Path, monkeypatch) -> None:
 
     monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selas-pacs")
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
-    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle")
     app = app.run(timeout=180)
     next(b for b in app.button if "test_data" in str(b.key)).click()
     app = app.run(timeout=180)
@@ -4088,7 +4088,7 @@ def test_selas_cession_cabinet_meme_adresse_lieu_exercice(tmp_path: Path, monkey
 
     monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selas-cabinet")
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
-    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle")
     app = app.run(timeout=180)
     next(b for b in app.button if "test_data" in str(b.key)).click()
     app = app.run(timeout=180)
@@ -4145,7 +4145,7 @@ def test_selas_cession_cabinet_meme_adresse_etat_disabled_aux_3_phases(
 
     monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selas-disabled")
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
-    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle")
     app = app.run(timeout=180)
     next(b for b in app.button if "test_data" in str(b.key)).click()
     app = app.run(timeout=180)
@@ -4187,7 +4187,7 @@ def test_selas_cession_cabinet_meme_adresse_lieu_vide_reste_editable(
 
     monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selas-lieu-vide")
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
-    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle")
     app = app.run(timeout=180)
     next(b for b in app.button if "test_data" in str(b.key)).click()
     app = app.run(timeout=180)
@@ -4249,7 +4249,7 @@ def test_front_selas_dentiste_pluri_uses_dentiste_corpus(
 
     monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selas-dentiste")
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
-    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle")
     app = app.run(timeout=180)
 
     next(b for b in app.button if "test_data" in str(b.key)).click()
@@ -4288,7 +4288,7 @@ def test_front_selas_change_dirigeant_generates(tmp_path: Path, monkeypatch) -> 
 
     monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selas-dir")
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
-    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle")
     app = app.run(timeout=180)
 
     # Prefill (2 associes, dirigeant = associe 0 par defaut).
@@ -4353,7 +4353,7 @@ def test_selas_deux_directeurs_generaux_bloque(tmp_path: Path, monkeypatch) -> N
 
     monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selas-dg")
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
-    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle")
     app = app.run(timeout=180)
     next(b for b in app.button if "test_data" in str(b.key)).click()
     app = app.run(timeout=180)
@@ -4383,7 +4383,7 @@ def test_selas_role_directeur_general_associe(tmp_path: Path, monkeypatch) -> No
 
     monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selas-dga")
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
-    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle")
     app = app.run(timeout=180)
     next(b for b in app.button if "test_data" in str(b.key)).click()
     app = app.run(timeout=180)
@@ -4423,7 +4423,7 @@ def test_selas_zero_president_bloque(tmp_path: Path, monkeypatch) -> None:
 
     monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selas-no-pres")
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
-    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle")
     app = app.run(timeout=180)
     next(b for b in app.button if "test_data" in str(b.key)).click()
     app = app.run(timeout=180)
@@ -4522,7 +4522,7 @@ def test_selas_dnc_une_par_dirigeant(tmp_path: Path, monkeypatch) -> None:
 
     monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selas-dnc-multi")
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
-    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle")
     app = app.run(timeout=180)
     next(b for b in app.button if "test_data" in str(b.key)).click()
     app = app.run(timeout=180)
@@ -4568,7 +4568,7 @@ def test_selas_situation_communaute_genere_docs_conjoint(tmp_path: Path, monkeyp
 
     monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selas-commu")
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
-    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle")
     app = app.run(timeout=180)
     next(b for b in app.button if "test_data" in str(b.key)).click()
     app = app.run(timeout=180)
@@ -4612,7 +4612,7 @@ def test_front_today_button_fills_date_non_selarl() -> None:
     from sydel_doc_engine.front_app.field_derivations import format_french_date
 
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=120)
-    app.selectbox(key="clean_dossier_type").set_value("SCI creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SCI")
     app = app.run(timeout=120)
 
     today_buttons = [b for b in app.button if str(b.key).endswith("_today")]
@@ -4752,7 +4752,7 @@ def test_repeater_nationalite_dropdown_lowercased() -> None:
     from streamlit.testing.v1 import AppTest
 
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=120)
-    app.selectbox(key="clean_dossier_type").set_value("SCI creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SCI")
     app = app.run(timeout=120)
 
     # Le selectbox de nationalite de l'associe 0 existe (plus de text_input libre).
@@ -4775,12 +4775,12 @@ def test_civil_non_scm_does_not_collect_profession() -> None:
     from streamlit.testing.v1 import AppTest
 
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=120)
-    app.selectbox(key="clean_dossier_type").set_value("SCI creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SCI")
     app = app.run(timeout=120)
     assert not any(str(w.key) == "sci_associe_0_profession" for w in app.text_input)
 
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=120)
-    app.selectbox(key="clean_dossier_type").set_value("SCM creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SCM")
     app = app.run(timeout=120)
     assert any(str(w.key) == "scm_associe_0_profession" for w in app.text_input)
 
@@ -4791,13 +4791,13 @@ def test_civil_non_scm_does_not_collect_profession() -> None:
 def test_selas_uni_medecin_present_in_dropdown() -> None:
     # §17.1 : le cas etait orphelin (generateur DOC-018 sans entree de menu). Il
     # doit desormais figurer dans la deroulante, par son nom, generation activee.
-    option = dossier_type_by_label("SELAS unipersonnelle medecin creation V1")
+    option = dossier_type_by_label("SELAS unipersonnelle médecin")
     assert option.key == "selas_uni_medecin_v1"
     assert option.structure == "SELAS uni medecin"
     assert option.generation_enabled is True
     assert option.slice_module == "sydel_doc_engine.front_app.selas_uni_medecin_slice"
     # La SELARL reste en premiere position (defaut historique).
-    assert dossier_type_labels()[0] == "SELARL creation V1"
+    assert dossier_type_labels()[0] == "SELARL"
 
 
 def _selas_uni_medecin_payload():
@@ -5096,7 +5096,7 @@ def test_r29_06_repeater_naissance_expose_calendrier_et_aujourdhui() -> None:
     from streamlit.testing.v1 import AppTest
 
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
-    app.selectbox(key="clean_dossier_type").set_value("SCI creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SCI")
     app = app.run(timeout=180)
     next(b for b in app.button if "test_data" in str(b.key)).click()
     app = app.run(timeout=180)

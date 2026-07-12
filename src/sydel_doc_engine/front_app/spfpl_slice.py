@@ -659,11 +659,13 @@ def build_spfpl_plan(payload: dict[str, object]) -> SpfplSlicePlan:
         )
     blockers = _validate(payload)
     warnings = [
-        f"{structure} V1 = associe unique (multi-associes bloque par le moteur). Bundle de "
-        "creation : statuts + tronc commun + PV gerant + demande ordre + note d'information.",
+        f"Dossier de création {structure} : associé unique.",
     ]
     if regime_communautaire:
-        warnings.append("Regime communautaire actif : DOC-005 et DOC-006 seront generes.")
+        warnings.append(
+            "Régime communautaire actif : la lettre de renonciation et la "
+            "lettre d'avertissement au conjoint seront générées."
+        )
     warnings = tuple(warnings)
     if blockers:
         return SpfplSlicePlan(
@@ -677,7 +679,7 @@ def build_spfpl_plan(payload: dict[str, object]) -> SpfplSlicePlan:
     return SpfplSlicePlan(
         can_generate=True,
         status="ready",
-        reason=f"Pret pour generation {structure} V1 (bundle de creation).",
+        reason=f"Prêt pour la génération du dossier {structure}.",
         document_codes=document_codes,
         blockers=(),
         warnings=warnings,

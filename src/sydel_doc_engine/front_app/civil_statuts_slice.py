@@ -806,13 +806,16 @@ def build_civil_plan(payload: dict[str, object]) -> CivilSlicePlan:
         regime_communautaire=regime_actif,
     )
     blockers = _validate(payload)
+    satellites = (
+        " avec ses satellites (pacte d'associés, dépenses communes)"
+        if structure == "SCM"
+        else ""
+    )
     warnings_list = [
-        f"{structure} : bundle de creation (statuts + tronc commun + PV gerant"
-        + (" + demande ordre + satellites SCM" if structure == "SCM" else "")
-        + "). Le moteur valide la coherence des parts / du capital.",
+        f"Dossier de création {structure}{satellites}.",
     ]
     if option_is:
-        warnings_list.append("Option IS active : la lettre d'option IS (DOC-022) sera generee.")
+        warnings_list.append("Option IS active : la lettre d'option IS sera générée.")
     warnings = tuple(warnings_list)
     if blockers:
         return CivilSlicePlan(
@@ -827,7 +830,7 @@ def build_civil_plan(payload: dict[str, object]) -> CivilSlicePlan:
     return CivilSlicePlan(
         can_generate=True,
         status="ready",
-        reason=f"Pret pour generation {structure} V1 (bundle de creation).",
+        reason=f"Prêt pour la génération du dossier {structure}.",
         document_codes=document_codes,
         blockers=(),
         warnings=warnings,

@@ -56,7 +56,7 @@ def _selas_cession_app():
 
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=200)
     app.selectbox(key="clean_dossier_type").set_value(
-        "SELAS pluripersonnelle creation V1"
+        "SELAS pluripersonnelle"
     )
     app = app.run(timeout=200)
     next(b for b in app.button if "test_data" in str(b.key)).click()

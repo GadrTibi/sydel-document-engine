@@ -25,7 +25,7 @@ ADDR = "10 rue de la Paix, 75002 Paris"
 
 def _load_micro() -> AppTest:
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=240)
-    app.selectbox(key="clean_dossier_type").set_value("Micro holding creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("Micro holding")
     return app.run(timeout=240)
 
 

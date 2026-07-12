@@ -43,7 +43,7 @@ def test_clean_front_routes_are_minimal() -> None:
 
 
 def test_clean_front_selarl_slice_is_generable_for_medecin() -> None:
-    dossier_type = dossier_type_by_label("SELARL creation V1")
+    dossier_type = dossier_type_by_label("SELARL")
     data_entry = _valid_selarl_input(PROFESSION_MEDECIN)
 
     plan = build_clean_generation_plan(dossier_type, data_entry)
@@ -63,7 +63,7 @@ def test_clean_front_selarl_slice_is_generable_for_medecin() -> None:
 
 
 def test_clean_front_selarl_slice_switches_statuts_for_dentiste() -> None:
-    dossier_type = dossier_type_by_label("SELARL creation V1")
+    dossier_type = dossier_type_by_label("SELARL")
     data_entry = _valid_selarl_input(PROFESSION_DENTISTE)
 
     plan = build_clean_generation_plan(dossier_type, data_entry)
@@ -74,7 +74,7 @@ def test_clean_front_selarl_slice_switches_statuts_for_dentiste() -> None:
 
 
 def test_clean_front_selarl_slice_adds_regime_batch_only_for_regime() -> None:
-    dossier_type = dossier_type_by_label("SELARL creation V1")
+    dossier_type = dossier_type_by_label("SELARL")
     data_entry = _valid_selarl_input(PROFESSION_MEDECIN, regime_communautaire=True)
 
     plan = build_clean_generation_plan(dossier_type, data_entry)
@@ -113,7 +113,7 @@ def test_clean_front_selarl_medecin_regime_derives_conjoint_only_when_active() -
 
 
 def test_clean_front_selarl_regime_does_not_require_conjoint_address() -> None:
-    dossier_type = dossier_type_by_label("SELARL creation V1")
+    dossier_type = dossier_type_by_label("SELARL")
     kwargs = _valid_selarl_kwargs(PROFESSION_MEDECIN, regime_communautaire=True)
     data_entry = build_clean_data_entry(dossier_type, **kwargs)
 
@@ -129,7 +129,7 @@ def test_clean_front_selarl_regime_does_not_require_conjoint_address() -> None:
 def test_clean_front_selarl_medecin_separation_de_biens_generates_statuts(
     tmp_path: Path,
 ) -> None:
-    dossier_type = dossier_type_by_label("SELARL creation V1")
+    dossier_type = dossier_type_by_label("SELARL")
     data_entry = _valid_selarl_input(
         PROFESSION_MEDECIN,
         married_separation=True,
@@ -156,7 +156,7 @@ def test_clean_front_selarl_medecin_separation_de_biens_generates_statuts(
 
 
 def test_clean_front_selarl_medecin_separation_de_biens_blocks_without_conjoint() -> None:
-    dossier_type = dossier_type_by_label("SELARL creation V1")
+    dossier_type = dossier_type_by_label("SELARL")
     kwargs = _valid_selarl_kwargs(PROFESSION_MEDECIN, married_separation=True)
     kwargs.update(
         {
@@ -216,7 +216,7 @@ def test_clean_front_selarl_ui_exposes_ordre_connecteur_selector() -> None:
 def test_clean_front_selarl_slice_blocks_out_of_scope_cases() -> None:
     # La cession est desormais SUPPORTEE quand les donnees cession sont fournies
     # (cession_context). Demander la cession (flag) sans donnees reste bloque.
-    dossier_type = dossier_type_by_label("SELARL creation V1")
+    dossier_type = dossier_type_by_label("SELARL")
     data_entry = build_clean_data_entry(
         dossier_type,
         **{
@@ -234,7 +234,7 @@ def test_clean_front_selarl_slice_blocks_out_of_scope_cases() -> None:
 def test_clean_front_selarl_cession_cabinet_medical_generates_acte(tmp_path: Path) -> None:
     # Cession avec donnees (scenario fige) -> l'acte de cession cabinet medical est generable.
     data = build_selarl_scenario("selarl_medecin_cession_cabinet_medical")
-    dossier_type = dossier_type_by_label("SELARL creation V1")
+    dossier_type = dossier_type_by_label("SELARL")
 
     plan = build_clean_generation_plan(dossier_type, data)
 
@@ -254,7 +254,7 @@ def test_clean_front_selarl_cession_cabinet_medical_generates_acte(tmp_path: Pat
 def test_clean_front_selarl_cession_cabinet_dentaire_generates_full_pack(tmp_path: Path) -> None:
     # Cession dentaire : acte (DOC-011) + avenant bail (DOC-007) + appel de fonds (DOC-008).
     data = build_selarl_scenario("selarl_dentiste_cession_cabinet_dentaire")
-    dossier_type = dossier_type_by_label("SELARL creation V1")
+    dossier_type = dossier_type_by_label("SELARL")
 
     plan = build_clean_generation_plan(dossier_type, data)
 
@@ -271,7 +271,7 @@ def test_clean_front_selarl_cession_cabinet_dentaire_generates_full_pack(tmp_pat
 def test_clean_front_selarl_cession_scm_generates_scm_docs(tmp_path: Path) -> None:
     # Cession de parts de SCM : PV AGE (DOC-031) + courrier SDE (DOC-032) + acte (DOC-033).
     data = build_selarl_scenario("selarl_dentiste_cession_scm")
-    dossier_type = dossier_type_by_label("SELARL creation V1")
+    dossier_type = dossier_type_by_label("SELARL")
 
     plan = build_clean_generation_plan(dossier_type, data)
 
@@ -336,7 +336,7 @@ def test_scm_cession_context_selects_scm_docs() -> None:
 
 def test_scm_flag_without_data_is_blocked() -> None:
     # Le garde-fou reste : SCM coche sans donnees -> bloque (pas de generation muette).
-    dossier_type = dossier_type_by_label("SELARL creation V1")
+    dossier_type = dossier_type_by_label("SELARL")
     data_entry = build_clean_data_entry(
         dossier_type,
         **{**_valid_selarl_kwargs(PROFESSION_MEDECIN), "scm": True},
@@ -426,7 +426,7 @@ def test_clean_front_ui_prefill_selas_uni_medecin_generates(
     monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selas-uni")
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
     app.selectbox(key="clean_dossier_type").set_value(
-        "SELAS unipersonnelle medecin creation V1"
+        "SELAS unipersonnelle médecin"
     )
     app = app.run(timeout=180)
 
@@ -476,7 +476,7 @@ def test_clean_front_ui_prefill_selas_uni_dentiste_generates(
     monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-selas-uni-dent")
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
     app.selectbox(key="clean_dossier_type").set_value(
-        "SELAS unipersonnelle dentiste creation V1"
+        "SELAS unipersonnelle dentiste"
     )
     app = app.run(timeout=180)
 
@@ -529,7 +529,7 @@ def test_clean_front_ui_prefill_micro_holding_generates(
 
     monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-micro-holding")
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
-    app.selectbox(key="clean_dossier_type").set_value("Micro holding creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("Micro holding")
     app = app.run(timeout=180)
 
     # Le bouton n'apparait QUE si un prefill est enregistre pour la structure.
@@ -570,7 +570,7 @@ def test_clean_front_ui_prefill_sasu_holding_generates(
     monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-sasu-holding")
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
     app.selectbox(key="clean_dossier_type").set_value(
-        "SASU Holding (holding patrimoniale) creation V1"
+        "SASU Holding (holding patrimoniale)"
     )
     app = app.run(timeout=180)
 
@@ -746,7 +746,7 @@ def test_clean_front_ui_creation_only_unchanged(
 ) -> None:
     # (d) Sans cession ni SCM : la creation seule genere toujours les 6 documents,
     # inchangee par le cablage du sous-formulaire.
-    dossier_type = dossier_type_by_label("SELARL creation V1")
+    dossier_type = dossier_type_by_label("SELARL")
     data_entry = _valid_selarl_input(PROFESSION_MEDECIN)
 
     plan = build_clean_generation_plan(dossier_type, data_entry)
@@ -875,7 +875,7 @@ def test_scm_cession_cedant_cede_toutes_ses_parts_sort_de_lapres() -> None:
 
 def test_clean_front_selarl_cession_compromis_generates(tmp_path: Path) -> None:
     # Compromis de cession : médical (DOC-010) et dentaire (DOC-012), même moteur que l'acte.
-    dossier_type = dossier_type_by_label("SELARL creation V1")
+    dossier_type = dossier_type_by_label("SELARL")
     for scenario, expected_doc, filename in (
         (
             "selarl_medecin_cession_compromis_medical",
@@ -984,7 +984,7 @@ def test_clean_front_selarl_partial_second_lieu_ignored() -> None:
 
 
 def test_clean_front_selarl_accepts_french_date_strings_outside_streamlit_range() -> None:
-    dossier_type = dossier_type_by_label("SELARL creation V1")
+    dossier_type = dossier_type_by_label("SELARL")
     data_entry = build_clean_data_entry(
         dossier_type,
         **{
@@ -1129,10 +1129,10 @@ def test_clean_front_streamlit_surface_is_not_legacy() -> None:
     assert [item.value for item in app.subheader] == [
         "Type de dossier",
         "Donnees a saisir",
-        "Generation",
+        "Génération",
     ]
     assert app.selectbox(key="clean_dossier_type").label == "Type de dossier"
-    assert app.selectbox(key="clean_dossier_type").value == "SELARL creation V1"
+    assert app.selectbox(key="clean_dossier_type").value == "SELARL"
     assert app.selectbox(key="selarl_profession").label == "Profession"
     assert not any(str(widget.key) == "selarl_case_mode" for widget in app.selectbox)
     assert app.button(key="clean_generate_test_data").label == "Generer des donnees de test"
@@ -1307,7 +1307,7 @@ def _membre_bernard() -> StatutsCivilsAssocie:
 def test_clean_front_selarl_multi_associes_generates_statuts(tmp_path: Path) -> None:
     # Retours V3 2026-06-17 (SELARL multi-associes) — ADDITIF. Praticien (60 parts)
     # + 1 membre additionnel personne physique (40 parts) = 100 parts (= capital).
-    dossier_type = dossier_type_by_label("SELARL creation V1")
+    dossier_type = dossier_type_by_label("SELARL")
     membre = _membre_bernard()
     data = _valid_selarl_input(
         PROFESSION_MEDECIN,
@@ -1361,7 +1361,7 @@ def test_clean_front_selarl_multi_membre_sans_filiation_ne_bloque_pas(tmp_path: 
         praticien_apport="600",
         membres_additionnels=(membre,),
     )
-    dossier_type = dossier_type_by_label("SELARL creation V1")
+    dossier_type = dossier_type_by_label("SELARL")
     plan = build_clean_generation_plan(dossier_type, data)
     assert plan.can_generate is True, plan.blockers
     result = generate_selarl_dossier(data, tmp_path / "selarl-multi-nofil")
@@ -1396,7 +1396,7 @@ def test_clean_front_selarl_multi_membre_sans_ordre_blocks() -> None:
         praticien_apport="600",
         membres_additionnels=(membre,),
     )
-    dossier_type = dossier_type_by_label("SELARL creation V1")
+    dossier_type = dossier_type_by_label("SELARL")
     plan = build_clean_generation_plan(dossier_type, data)
     assert plan.can_generate is False
     assert any(("ordre" in b.lower() or "rpps" in b.lower()) for b in plan.blockers)
@@ -1404,7 +1404,7 @@ def test_clean_front_selarl_multi_membre_sans_ordre_blocks() -> None:
 
 def test_clean_front_selarl_multi_associes_blocks_incoherent_total(tmp_path: Path) -> None:
     # Somme des parts (praticien 60 + membre 30 = 90) != capital (100 parts) -> bloque.
-    dossier_type = dossier_type_by_label("SELARL creation V1")
+    dossier_type = dossier_type_by_label("SELARL")
     membre = StatutsCivilsAssocie(
         type_personne="personne_physique",
         civilite_affichage="Madame",
@@ -1447,7 +1447,7 @@ def _valid_selarl_input(
     married_separation: bool = False,
     **overrides: object,
 ):
-    dossier_type = dossier_type_by_label("SELARL creation V1")
+    dossier_type = dossier_type_by_label("SELARL")
     values = _valid_selarl_kwargs(
         profession,
         regime_communautaire=regime_communautaire,
@@ -1889,7 +1889,7 @@ def test_clean_front_statuts_render_new_marriage_regimes(tmp_path: Path) -> None
             married_separation=True,
             regime_matrimonial=regime,
         )
-        dossier_type = dossier_type_by_label("SELARL creation V1")
+        dossier_type = dossier_type_by_label("SELARL")
         plan = build_clean_generation_plan(dossier_type, data_entry)
         assert plan.can_generate is True
         assert "DOC-005" not in plan.document_codes
@@ -1910,7 +1910,7 @@ def test_clean_front_banque_adresse_vide_ne_bloque_pas(tmp_path: Path) -> None:
     # Ticket 3.2 : adresse de banque non renseignee -> generation NON bloquee,
     # zone vide a completer dans les statuts medecin.
     data_entry = _valid_selarl_input(PROFESSION_MEDECIN, depot_banque_adresse="")
-    dossier_type = dossier_type_by_label("SELARL creation V1")
+    dossier_type = dossier_type_by_label("SELARL")
 
     plan = build_clean_generation_plan(dossier_type, data_entry)
     assert plan.can_generate is True
@@ -1975,7 +1975,7 @@ def test_clean_front_selarl_pv_decision_reunion_signature_divergent_b1(tmp_path:
     # decision_date -> regression non protegee par le lock multi_type (qui ne couvre pas SELARL).
     from docx import Document
 
-    dossier_type = dossier_type_by_label("SELARL creation V1")
+    dossier_type = dossier_type_by_label("SELARL")
     kwargs = dict(_valid_selarl_kwargs(PROFESSION_MEDECIN))
     kwargs.update(
         {

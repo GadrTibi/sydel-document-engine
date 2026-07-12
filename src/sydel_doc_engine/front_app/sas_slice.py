@@ -364,9 +364,7 @@ def build_sas_plan(payload: dict[str, object]) -> SasSlicePlan:
     warnings = (
         # R0702-02 : le SAS accepte tout statut matrimonial (menu complet) ; regime + conjoint
         # requis pour un marie uniquement. Plus de « marie(e) » verrouille dans le message.
-        "SAS V1 = SPFPL medecins, actionnaire unique ; menu matrimonial complet (regime + conjoint "
-        "requis pour un marie uniquement). Bundle de creation : statuts + tronc commun + "
-        "attestation capital + PV remuneration president (non remunere V1).",
+        "Dossier de création SPFPL médecins (forme SAS) : actionnaire unique.",
     )
     if blockers:
         return SasSlicePlan(
@@ -380,7 +378,7 @@ def build_sas_plan(payload: dict[str, object]) -> SasSlicePlan:
     return SasSlicePlan(
         can_generate=True,
         status="ready",
-        reason="Pret pour generation SAS / SPFPL medecins V1 (bundle de creation).",
+        reason="Prêt pour la génération du dossier SAS / SPFPL médecins.",
         document_codes=SAS_BUNDLE_CODES,
         blockers=(),
         warnings=warnings,

@@ -43,7 +43,7 @@ class RegisteredType:
 REGISTERED_TYPES: Final[tuple[RegisteredType, ...]] = (
     RegisteredType(
         key="selarl_v1",
-        label="SELARL creation V1",
+        label="SELARL",
         structure="SELARL",
         slice_module=None,
         generation_enabled=True,
@@ -51,7 +51,7 @@ REGISTERED_TYPES: Final[tuple[RegisteredType, ...]] = (
     ),
     RegisteredType(
         key="scm_v1",
-        label="SCM creation V1",
+        label="SCM",
         structure="SCM",
         slice_module="sydel_doc_engine.front_app.scm_slice",
         generation_enabled=True,
@@ -59,7 +59,7 @@ REGISTERED_TYPES: Final[tuple[RegisteredType, ...]] = (
     ),
     RegisteredType(
         key="sci_v1",
-        label="SCI creation V1",
+        label="SCI",
         structure="SCI",
         slice_module="sydel_doc_engine.front_app.sci_slice",
         generation_enabled=True,
@@ -67,7 +67,7 @@ REGISTERED_TYPES: Final[tuple[RegisteredType, ...]] = (
     ),
     RegisteredType(
         key="sci_iris_v1",
-        label="SCI IRIS creation V1",
+        label="SCI IRIS",
         structure="SCI IRIS",
         slice_module="sydel_doc_engine.front_app.sci_iris_slice",
         generation_enabled=True,
@@ -75,7 +75,7 @@ REGISTERED_TYPES: Final[tuple[RegisteredType, ...]] = (
     ),
     RegisteredType(
         key="scs_v1",
-        label="SCS creation V1",
+        label="SCS",
         structure="SCS",
         slice_module="sydel_doc_engine.front_app.scs_slice",
         generation_enabled=True,
@@ -86,7 +86,7 @@ REGISTERED_TYPES: Final[tuple[RegisteredType, ...]] = (
     # variante A (generique) / B (holding), capital variable (max = 10x le minimum saisi).
     RegisteredType(
         key="micro_holding_v1",
-        label="Micro holding creation V1",
+        label="Micro holding",
         structure="MICRO_HOLDING",
         slice_module="sydel_doc_engine.front_app.micro_holding_slice",
         generation_enabled=True,
@@ -104,7 +104,7 @@ REGISTERED_TYPES: Final[tuple[RegisteredType, ...]] = (
     # tranchee ici.
     RegisteredType(
         key="sas_spfpl_medecins_v1",
-        label="SPFPL medecins (forme SAS) creation V1",
+        label="SPFPL médecins (forme SAS)",
         structure="SAS",
         slice_module="sydel_doc_engine.front_app.sas_slice",
         generation_enabled=True,
@@ -117,7 +117,7 @@ REGISTERED_TYPES: Final[tuple[RegisteredType, ...]] = (
     # procuration).
     RegisteredType(
         key="sasu_holding_v1",
-        label="SASU Holding (holding patrimoniale) creation V1",
+        label="SASU Holding (holding patrimoniale)",
         structure="SASU_HOLDING",
         slice_module="sydel_doc_engine.front_app.sasu_holding_slice",
         generation_enabled=True,
@@ -125,7 +125,7 @@ REGISTERED_TYPES: Final[tuple[RegisteredType, ...]] = (
     ),
     RegisteredType(
         key="spfpl_cession_v1",
-        label="SPFPL dentistes - cession creation V1",
+        label="SPFPL dentistes — cession",
         structure="SPFPL cession",
         slice_module="sydel_doc_engine.front_app.spfpl_cession_slice",
         generation_enabled=True,
@@ -133,7 +133,7 @@ REGISTERED_TYPES: Final[tuple[RegisteredType, ...]] = (
     ),
     RegisteredType(
         key="spfpl_apport_v1",
-        label="SPFPL dentistes - apport creation V1",
+        label="SPFPL dentistes — apport",
         structure="SPFPL apport",
         slice_module="sydel_doc_engine.front_app.spfpl_apport_slice",
         generation_enabled=True,
@@ -146,7 +146,7 @@ REGISTERED_TYPES: Final[tuple[RegisteredType, ...]] = (
     # (deja en profession libre, corpus dentiste/medecin pilote par la profession).
     RegisteredType(
         key="selas_multi_v1",
-        label="SELAS pluripersonnelle creation V1",
+        label="SELAS pluripersonnelle",
         structure="SELAS",
         slice_module="sydel_doc_engine.front_app.selas_multi_slice",
         generation_enabled=True,
@@ -159,7 +159,7 @@ REGISTERED_TYPES: Final[tuple[RegisteredType, ...]] = (
     # la SELAS multi pour ne pas detourner le chemin DOC-044 (>=2 associes).
     RegisteredType(
         key="selas_uni_medecin_v1",
-        label="SELAS unipersonnelle medecin creation V1",
+        label="SELAS unipersonnelle médecin",
         structure="SELAS uni medecin",
         slice_module="sydel_doc_engine.front_app.selas_uni_medecin_slice",
         generation_enabled=True,
@@ -172,7 +172,7 @@ REGISTERED_TYPES: Final[tuple[RegisteredType, ...]] = (
     # routage dediee, distincte de la SELAS uni medecin et de la SELAS pluri.
     RegisteredType(
         key="selas_uni_dentiste_v1",
-        label="SELAS unipersonnelle dentiste creation V1",
+        label="SELAS unipersonnelle dentiste",
         structure="SELAS uni dentiste",
         slice_module="sydel_doc_engine.front_app.selas_uni_dentiste_slice",
         generation_enabled=True,

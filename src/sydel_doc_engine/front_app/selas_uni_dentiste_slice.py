@@ -140,7 +140,7 @@ def render_selas_uni_dentiste_form() -> dict[str, object]:
     seed_exercice_dates(PREFIX)
     seed_closing_date(PREFIX, field="exercice_cloture")
     seed_siege_from_perso(PREFIX)
-    st.markdown("**Societe (SELAS unipersonnelle dentiste, vocabulaire actions)**")
+    st.markdown("**Société (SELAS unipersonnelle dentiste)**")
     col_a, col_b = st.columns(2)
     denomination = _t(col_a, "denomination", "Denomination")
     cap_key = f"{PREFIX}_capital_social"
@@ -248,7 +248,10 @@ def render_selas_uni_dentiste_form() -> dict[str, object]:
         situation_label, regime_communautaire
     )
     if regime_communautaire:
-        st.caption("Regime de la communaute : DOC-005 et DOC-006 seront generes.")
+        st.caption(
+            "Régime de la communauté : la lettre de renonciation et la "
+            "lettre d'avertissement au conjoint seront générées."
+        )
     # Champs conjoint affiches pour un associe MARIE ET desormais PACSE (Albane 6.3/7.3,
     # RATIFIE 2026-07-06 : « pacsé avec {partenaire} » a la comparution). Autres statuts -> aucun.
     situation_norm = situation_maritale.lower().replace("é", "e")
@@ -523,8 +526,7 @@ def build_selas_uni_dentiste_plan(payload: dict[str, object]) -> SelasUniDentist
                 blockers.append(f"SELAS dentiste : {name} requis pour un associe marie.")
     document_codes = selected_document_codes(payload)
     warnings_list = [
-        "SELAS unipersonnelle dentiste V1 : associe unique, vocabulaire actions. "
-        "Bundle de creation : statuts DOC-046 + tronc commun + PV nomination.",
+        "Dossier de création SELAS unipersonnelle dentiste : associé unique.",
     ]
     if _is_regime_communautaire(payload):
         warnings_list.append(
@@ -544,7 +546,7 @@ def build_selas_uni_dentiste_plan(payload: dict[str, object]) -> SelasUniDentist
     return SelasUniDentistePlan(
         can_generate=True,
         status="ready",
-        reason="Pret pour generation SELAS unipersonnelle dentiste V1 (bundle de creation).",
+        reason="Prêt pour la génération du dossier SELAS unipersonnelle dentiste.",
         document_codes=document_codes,
         blockers=(),
         warnings=warnings,

@@ -81,10 +81,10 @@ DOCX_MIME_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml
 
 
 def render_clean_front() -> None:
-    st.title("SYDEL Track B")
+    st.title("SYDEL")
     st.caption(
-        "Front clean Track B : creation multi-types (SELARL, SCM, SCI, SCI IRIS, SCS, SAS, "
-        "SPFPL, SELAS), sans ecrans legacy ni outils internes."
+        "Génération de dossiers juridiques : SELARL, SCM, SCI, SCI IRIS, SCS, SAS, "
+        "SPFPL, SELAS."
     )
     dossier_type = _render_dossier_type_selection()
     # SELARL = chemin historique EXACT (front valide client) : on ne touche a rien.
@@ -109,7 +109,7 @@ def _render_dossier_type_selection() -> DossierTypeOption:
         if st.button("Generer des donnees de test", key="clean_generate_test_data"):
             _prefill_random_selarl_data()
             st.success("Donnees de test coherentes pre-remplies.")
-        st.caption("Perimetre actif : SELARL unipersonnelle de production.")
+        st.caption("Type sélectionné : SELARL unipersonnelle.")
     else:
         # Une cle de type peut surcharger le prefill par defaut de sa structure
         # (ex. SELAS dentiste pluripersonnelle -> prefill SELAS en dentiste).
@@ -122,7 +122,7 @@ def _render_dossier_type_selection() -> DossierTypeOption:
         ):
             prefill()
             st.success("Donnees de test coherentes pre-remplies.")
-        st.caption(f"Perimetre actif : {selected.label} ({selected.structure}).")
+        st.caption(f"Type sélectionné : {selected.label}.")
     return selected
 
 
@@ -475,7 +475,10 @@ def _render_praticien(*, profession: str) -> dict[str, object]:
     # proposes mais sans logique documentaire particuliere.
     regime_communautaire = regime_communautaire_from_status(situation_maritale_label)
     if regime_communautaire:
-        col_j.caption("Regime de la communaute : DOC-005 et DOC-006 seront generes.")
+        col_j.caption(
+            "Régime de la communauté : la lettre de renonciation et la "
+            "lettre d'avertissement au conjoint seront générées."
+        )
 
     # Epoux / partenaire : a cote de la situation matrimoniale (ticket 1.3).
     situation_value = matrimonial_status_value(situation_maritale_label)
@@ -2669,8 +2672,15 @@ def _derive_scm_signataires_pv(presents: list[ScmCessionAssocie]) -> list[str]:
     return signataires
 
 
+def _row_is_included(status: str | None) -> bool:
+    # Produit fini : un document est LISTE s'il fait partie du dossier genere. Les statuts
+    # internes hors perimetre (« hors_v1 », « blocked »/« bloque ») sont exclus de l'affichage.
+    normalized = (status or "").strip().lower()
+    return "hors" not in normalized and normalized not in {"blocked", "bloque", "bloqué"}
+
+
 def _render_generation_zone(data_entry: CleanDataEntry, plan: CleanGenerationPlan) -> None:  # noqa: C901
-    st.subheader("Generation")
+    st.subheader("Génération")
     for warning in plan.warnings:
         st.info(warning)
     if plan.can_generate:
@@ -2679,16 +2689,17 @@ def _render_generation_zone(data_entry: CleanDataEntry, plan: CleanGenerationPla
         st.warning(plan.reason)
     if plan.blockers:
         for blocker in plan.blockers[:8]:
-            st.caption(f"Blocage : {blocker}")
+            st.caption(f"À compléter : {blocker}")
         if len(plan.blockers) > 8:
             st.caption(f"{len(plan.blockers) - 8} autres champs requis.")
 
-    st.markdown("Documents")
+    st.markdown("**Documents du dossier**")
     for row in plan.document_rows:
-        st.caption(f"{row.doc_code} - {row.label} - {row.status} : {row.message}")
-
-    if plan.front_data_scope:
-        st.caption("Fondations front_data utilisees : " + " | ".join(plan.front_data_scope))
+        # Produit fini : on liste les documents GENERES par leur nom, sans le code technique
+        # interne (doc_code), le statut brut ni le message de perimetre. Les documents hors
+        # perimetre du dossier ne sont pas listes.
+        if _row_is_included(row.status):
+            st.caption(f"• {row.label}")
 
     if st.button(
         "Generer le dossier",
@@ -2791,7 +2802,7 @@ def _render_typed_generation_zone(
     plan,
     generate,
 ) -> None:
-    st.subheader("Generation")
+    st.subheader("Génération")
     for warning in getattr(plan, "warnings", ()):  # type: ignore[arg-type]
         st.info(warning)
     if plan.can_generate:
@@ -2799,13 +2810,15 @@ def _render_typed_generation_zone(
     else:
         st.warning(plan.reason)
     for blocker in list(plan.blockers)[:8]:
-        st.caption(f"Blocage : {blocker}")
+        st.caption(f"À compléter : {blocker}")
     if len(plan.blockers) > 8:
         st.caption(f"{len(plan.blockers) - 8} autres champs requis.")
 
-    st.markdown("Documents")
-    for code in plan.document_codes:
-        st.caption(f"{code} - inclus dans {dossier_type.label}.")
+    # Produit fini : resume du nombre de documents, sans les codes techniques internes (DOC-XXX).
+    nb_documents = len(list(plan.document_codes))
+    if nb_documents:
+        pluriel = "s" if nb_documents > 1 else ""
+        st.markdown(f"**{nb_documents} document{pluriel}** seront générés pour ce dossier.")
 
     generation_disabled = not (plan.can_generate and dossier_type.generation_enabled)
     if not dossier_type.generation_enabled:

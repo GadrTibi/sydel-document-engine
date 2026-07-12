@@ -364,7 +364,7 @@ def render_selas_form(type_key: str = "selas_multi_v1") -> dict[str, object]:
     # « 31 décembre N+1 », modifiable. Libelle TEXTUEL (comme le gold), pas un picker.
     seed_closing_date(PREFIX)
     st.subheader("Donnees a saisir")
-    st.markdown("**Societe (SELAS d'exercice, vocabulaire actions)**")
+    st.markdown("**Société (SELAS d'exercice)**")
     # O24-03 : plus de champ « Siege (adresse affichee) » libre — le siege est saisi sur
     # UNE ligne plus bas et son affichage en est derive (anti double-saisie / une adresse
     # = un champ).
@@ -1148,11 +1148,13 @@ def build_selas_plan(payload: dict[str, object]) -> SelasSlicePlan:
     blockers = _validate(payload)
     document_codes = _selas_document_codes(payload)
     warnings = [
-        "SELAS multi V1 : 2 a 5 associes, vocabulaire actions. Bundle de creation : statuts "
-        "+ tronc commun + PV gerant + demande ordre. Le moteur exige la coherence des actions.",
+        "Dossier de création SELAS pluripersonnelle : 2 à 5 associés.",
     ]
     if _regime_communautaire_actif(payload):
-        warnings.append("Regime communautaire actif : DOC-005 et DOC-006 seront generes.")
+        warnings.append(
+            "Régime communautaire actif : la lettre de renonciation et la "
+            "lettre d'avertissement au conjoint seront générées."
+        )
     # R7 : generation PAR associe marie. Le formulaire collecte le regime par
     # associe physique ; `generate_dossier` emet desormais un couple DOC-005/006
     # PAR associe marie sous communaute, avec des fichiers de noms distincts. On
@@ -1176,7 +1178,7 @@ def build_selas_plan(payload: dict[str, object]) -> SelasSlicePlan:
     return SelasSlicePlan(
         can_generate=True,
         status="ready",
-        reason="Pret pour generation SELAS multi V1 (bundle de creation).",
+        reason="Prêt pour la génération du dossier SELAS multi-associés.",
         document_codes=document_codes,
         blockers=(),
         warnings=tuple(warnings),

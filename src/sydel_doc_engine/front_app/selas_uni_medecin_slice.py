@@ -154,7 +154,7 @@ def render_selas_uni_medecin_form() -> dict[str, object]:
     seed_closing_date(PREFIX, field="exercice_cloture")
     # Parite gold (RAF-003a) : recopie siege <- adresse perso si la case est cochee.
     seed_siege_from_perso(PREFIX)
-    st.markdown("**Societe (SELAS unipersonnelle medecin, vocabulaire actions)**")
+    st.markdown("**Société (SELAS unipersonnelle médecin)**")
     col_a, col_b = st.columns(2)
     denomination = _t(col_a, "denomination", "Denomination")
     # Capital en number_input (parite gold) : interdit « 1000 » brut et le « € ».
@@ -274,7 +274,10 @@ def render_selas_uni_medecin_form() -> dict[str, object]:
         situation_label, regime_communautaire
     )
     if regime_communautaire:
-        st.caption("Regime de la communaute : DOC-005 et DOC-006 seront generes.")
+        st.caption(
+            "Régime de la communauté : la lettre de renonciation et la "
+            "lettre d'avertissement au conjoint seront générées."
+        )
     # Retour Rafael 2026-06-25 (#2) : les champs conjoint ne s'affichent que si la comparution
     # peut porter le conjoint/partenaire. Albane 6.3/7.3 (RATIFIE 2026-07-06) : c'est le cas pour
     # un MARIE (« marié … avec … ») ET desormais un PACSE (« pacsé avec {partenaire} »). Les
@@ -584,8 +587,7 @@ def build_selas_uni_medecin_plan(payload: dict[str, object]) -> SelasUniMedecinP
                 blockers.append(f"SELAS medecin : {name} requis pour un associe marie.")
     document_codes = selected_document_codes(payload)
     warnings_list = [
-        "SELAS unipersonnelle medecin V1 : associe unique, vocabulaire actions. "
-        "Bundle de creation : statuts DOC-018 + tronc commun + PV nomination.",
+        "Dossier de création SELAS unipersonnelle médecin : associé unique.",
     ]
     if _is_regime_communautaire(payload):
         warnings_list.append(
@@ -605,7 +607,7 @@ def build_selas_uni_medecin_plan(payload: dict[str, object]) -> SelasUniMedecinP
     return SelasUniMedecinPlan(
         can_generate=True,
         status="ready",
-        reason="Pret pour generation SELAS unipersonnelle medecin V1 (bundle de creation).",
+        reason="Prêt pour la génération du dossier SELAS unipersonnelle médecin.",
         document_codes=document_codes,
         blockers=(),
         warnings=warnings,

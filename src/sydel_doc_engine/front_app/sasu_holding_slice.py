@@ -260,7 +260,7 @@ def build_sasu_holding_plan(payload: dict[str, object]) -> SasuHoldingSlicePlan:
     return SasuHoldingSlicePlan(
         can_generate=True,
         status="ready",
-        reason="Pret pour generation SASU Holding V1 (bundle de creation).",
+        reason="Prêt pour la génération du dossier SASU Holding.",
         document_codes=SASU_HOLDING_BUNDLE_CODES,
         blockers=(),
         warnings=warnings,

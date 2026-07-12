@@ -318,7 +318,7 @@ def build_selarl_plan(data: SelarlSliceInput) -> SelarlSlicePlan:
     return SelarlSlicePlan(
         can_generate=True,
         status="ready",
-        reason="Pret pour generation SELARL V1 bornee.",
+        reason="Prêt pour la génération du dossier SELARL.",
         document_codes=document_codes,
         document_rows=rows,
         blockers=(),
@@ -329,7 +329,7 @@ def build_selarl_plan(data: SelarlSliceInput) -> SelarlSlicePlan:
 def validate_selarl_input(data: SelarlSliceInput) -> tuple[str, ...]:  # noqa: C901
     blockers: list[str] = []
     if data.profession not in SELARL_V1_PROFESSIONS:
-        blockers.append("Profession hors perimetre SELARL V1.")
+        blockers.append("Profession hors périmètre SELARL.")
     if not data.dossier_unipersonnel and not data.is_multi_associes:
         # Dossier declare non-unipersonnel mais aucun membre additionnel saisi.
         blockers.append("Dossier multi-associes : ajouter au moins un membre.")
@@ -395,9 +395,9 @@ def validate_selarl_input(data: SelarlSliceInput) -> tuple[str, ...]:  # noqa: C
             _missing_for_fields(
                 data,
                 (
-                    ("conjoint_civilite", "Civilite du conjoint requise pour DOC-005."),
-                    ("conjoint_prenom", "Prenom du conjoint requis pour DOC-005."),
-                    ("conjoint_nom", "Nom du conjoint requis pour DOC-005."),
+                    ("conjoint_civilite", "Civilité du conjoint requise."),
+                    ("conjoint_prenom", "Prénom du conjoint requis."),
+                    ("conjoint_nom", "Nom du conjoint requis."),
                     (
                         "regime_matrimonial",
                         "Regime matrimonial requis quand DOC-005 est genere.",
@@ -861,7 +861,9 @@ def _document_rows(
             doc_code=code,
             label=build_document_status_for_code(code).doc_label,
             status=generated_status,
-            message="Inclus dans SELARL V1." if not blockers else "Bloque par donnees ou scope.",
+            message="Inclus dans le dossier SELARL."
+            if not blockers
+            else "À compléter : données ou périmètre incomplet.",
         )
         for code in selected_selarl_document_codes(data)
     ]
@@ -890,10 +892,13 @@ def _document_rows(
 
 def _warning_messages(data: SelarlSliceInput) -> tuple[str, ...]:
     warnings = [
-        "SELARL V1 bornee : creation medecin ou chirurgien-dentiste, associe unique uniquement.",
+        "SELARL : médecin ou chirurgien-dentiste, associé unique.",
     ]
     if data.regime_communautaire:
-        warnings.append("Regime communautaire actif : DOC-005 et DOC-006 seront generes.")
+        warnings.append(
+            "Régime communautaire actif : la lettre de renonciation et la "
+            "lettre d'avertissement au conjoint seront générées."
+        )
     return tuple(warnings)
 
 
@@ -908,8 +913,8 @@ def _missing_text_blockers(data: SelarlSliceInput) -> list[str]:
         ("ville_naissance", "Ville de naissance requise."),
         ("departement_naissance", "Departement de naissance requis."),
         ("nationalite", "Nationalite requise."),
-        ("nom_pere", "Nom du pere requis pour DOC-001."),
-        ("nom_mere", "Nom de la mere requis pour DOC-001."),
+        ("nom_pere", "Nom du père requis."),
+        ("nom_mere", "Nom de la mère requis."),
         # Numero + voie fusionnes en un seul champ (retours client 2026-06-11,
         # ticket 1.5) : la valeur complete vit dans adresse_voie.
         ("adresse_voie", "Numero et voie du praticien requis."),

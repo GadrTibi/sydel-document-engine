@@ -476,7 +476,7 @@ def test_apptest_spfpl_retrait_associe_du_milieu(tmp_path: Path, monkeypatch) ->
 
     monkeypatch.setattr(shell, "ARTIFACTS_DIR", tmp_path / "ui-spfpl-remove")
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
-    app.selectbox(key="clean_dossier_type").set_value("SPFPL dentistes - cession creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SPFPL dentistes — cession")
     app = app.run(timeout=180)
     next(b for b in app.button if "test_data" in str(b.key)).click()
     app = app.run(timeout=180)
@@ -531,7 +531,7 @@ def test_apptest_selas_retrait_associe_du_milieu() -> None:
     from streamlit.testing.v1 import AppTest
 
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
-    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SELAS pluripersonnelle")
     app = app.run(timeout=180)
 
     # L'ancien bouton global « Retirer un associe » (dernier seulement) a disparu.
@@ -578,7 +578,7 @@ def test_apptest_selarl_membres_retrait_du_milieu() -> None:
     from streamlit.testing.v1 import AppTest
 
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
-    app.selectbox(key="clean_dossier_type").set_value("SELARL creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SELARL")
     app = app.run(timeout=180)
     # Passer en mode multi-associes : decocher « Dossier unipersonnel » (defaut coche).
     next(w for w in app.checkbox if str(w.key) == "selarl_dossier_unipersonnel").set_value(False)
@@ -619,7 +619,7 @@ def test_apptest_spfpl_plage_apportee_cession_absente_apport_presente() -> None:
     from streamlit.testing.v1 import AppTest
 
     app = AppTest.from_file("src/sydel_doc_engine/front_app/app.py").run(timeout=180)
-    app.selectbox(key="clean_dossier_type").set_value("SPFPL dentistes - cession creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SPFPL dentistes — cession")
     app = app.run(timeout=180)
     next(b for b in app.button if "test_data" in str(b.key)).click()
     app = app.run(timeout=180)
@@ -633,6 +633,6 @@ def test_apptest_spfpl_plage_apportee_cession_absente_apport_presente() -> None:
     assert not any("Blocage" in item.value for item in app.caption)
 
     # APPORT : le champ reste saisi (consommé par le contrat d'apport + statuts).
-    app.selectbox(key="clean_dossier_type").set_value("SPFPL dentistes - apport creation V1")
+    app.selectbox(key="clean_dossier_type").set_value("SPFPL dentistes — apport")
     app = app.run(timeout=180)
     assert "spfpl_apport_apport_plage" in {str(w.key) for w in app.text_input}
