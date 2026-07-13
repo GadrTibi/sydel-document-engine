@@ -39,11 +39,13 @@ SUPPORTED_NOTE_OPERATIONS = {OPERATION_CESSION, OPERATION_APPORT}
 
 
 def required_text(value: str | None, field_name: str) -> str:
-    # R10 (Rafael 2026-06-24) : une donnee manquante NE bloque PAS la generation -> on ecrit un
-    # marqueur visible « (A COMPLETER : data) » SANS crochets (pour ne pas declencher le garde-fou
-    # anti-placeholder source qui interdit les [ ]) au lieu de lever.
+    # R10 (Rafael 2026-06-24) : une donnee manquante NE bloque PAS la generation -> marqueur
+    # visible « (À COMPLÉTER : …) », a completer a la main, au lieu de lever.
+    # KAN-2 M1 (Akainu 2026-07-13) : le field_name peut porter un index a crochets
+    # (« souscripteurs[0] », « associes_cible[2] ») -> on RETIRE les crochets du marqueur, sinon
+    # le livrable reintroduit des « [ ] » et viole la regle R1 anti-placeholder.
     if value is None or not value.strip():
-        return f"(À COMPLÉTER : {field_name})"
+        return f"(À COMPLÉTER : {field_name.replace('[', '').replace(']', '')})"
     return value.strip()
 
 
@@ -68,8 +70,9 @@ def spfpl_forme_sociale_complete(profession_pluriel: str) -> str:
 
 
 def format_display_date(value: date | str | None, field_name: str) -> str:
+    # KAN-2 : date manquante -> marqueur « (À COMPLÉTER : …) », non bloquant (R10).
     if value is None:
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return f"(À COMPLÉTER : {field_name})"
     if isinstance(value, date):
         return value.strftime("%d/%m/%Y")
     return required_text(value, field_name)

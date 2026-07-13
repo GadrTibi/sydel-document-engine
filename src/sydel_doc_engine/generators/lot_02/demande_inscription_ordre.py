@@ -130,8 +130,9 @@ def _required_ordre(ordre: OrdreProfessionnel | None) -> OrdreProfessionnel:
 
 
 def _required_text(value: str | None, field_name: str) -> str:
+    # KAN-2 : donnée manquante -> marqueur « (À COMPLÉTER : …) », non bloquant (R10).
     if value is None or not value.strip():
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return f"(À COMPLÉTER : {field_name})"
     return value.strip()
 
 

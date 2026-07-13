@@ -452,14 +452,16 @@ def test_plan_cession_pret_sans_plage_apportee() -> None:
     assert plan.blockers == ()
 
 
-def test_plan_apport_exige_toujours_la_plage_apportee() -> None:
-    # En APPORT la plage reste saisie ET requise (DOC-041 + statuts d'apport la
-    # rendent verbatim : [plage_parts_apportees] / [plage_parts_cedees]).
+def test_plan_apport_plage_manquante_ne_bloque_plus() -> None:
+    # KAN-2 (Rafael 2026-07-13) : la plage apportee est un champ TEXTE rendu verbatim
+    # ([plage_parts_apportees] / [plage_parts_cedees]) -> son absence ne BLOQUE plus la
+    # generation (elle sort en « (À COMPLÉTER : …) », a completer a la main) ; elle passe en
+    # AVERTISSEMENT. Seuls les manques STRUCTURELS / NUMERIQUES restent bloquants.
     payload = _spfpl_payload("SPFPL apport")
     payload.pop("apport_plage")
     plan = spfpl_slice.build_spfpl_plan(payload)
-    assert plan.can_generate is False
-    assert "Plage de parts apportees requise." in plan.blockers
+    assert plan.can_generate is True
+    assert "Plage de parts apportees requise." not in plan.blockers
 
 
 # --------------------------------------------------- session réelle (AppTest)

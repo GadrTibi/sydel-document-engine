@@ -70,8 +70,9 @@ def required_int(value: int | None, field_name: str) -> int:
 
 
 def format_display_date(value: date | str | None, field_name: str) -> str:
+    # KAN-2 : date manquante -> marqueur « (À COMPLÉTER : …) », non bloquant (R10).
     if value is None:
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return f"(À COMPLÉTER : {field_name})"
     if isinstance(value, date):
         return value.strftime("%d/%m/%Y")
     return required_text(value, field_name)

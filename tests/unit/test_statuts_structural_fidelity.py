@@ -231,7 +231,25 @@ _BODY_ALLOWLIST: dict[str, tuple[str, ...]] = {
     # cabinet Sydel, supprimees de TOUS les statuts a la demande du client.
     "SCI": ("lettre de mission", "acompte des honoraires"),
     "SCI-IRIS": ("lettre de mission", "acompte des honoraires"),
-    "SPFPL-cession": ("lettre de mission", "acompte des honoraires"),
+    # KAN-3 (Albane 2026-07-13) : le tiret solo en tete du 1er alinea de l'art. 10 (« - Le
+    # capital social peut etre augmente… », numId upperRoman dans le modele) est RETIRE a la
+    # demande d'Albane -> la ligne SOURCE avec tiret n'apparait plus verbatim (sa version sans
+    # tiret est presente). Retour ratifie qui supersede la fidelite modele (regle 68).
+    "SPFPL-cession": (
+        "lettre de mission",
+        "acompte des honoraires",
+        "Le capital social peut être augmenté ou réduit",
+    ),
+    # KAN-3 (Albane 2026-07-13) — divergences RATIFIEES vs modele apport (regle 68) :
+    #  · art. 10 : tiret solo retire (comme cession) ;
+    #  · art. 22 : typo source « l'objet <lesdites conventions » corrigee en « desdites » ;
+    #  · art. 23 : ligne modele fusionnant l'intro et le 1er item (« … suivantes : Approbation
+    #    des comptes annuels … ») SCINDEE en intro + item puce (mise en page coherente).
+    "SPFPL-apport": (
+        "Le capital social peut être augmenté ou réduit",
+        "lesdites conventions",
+        "prendre les décisions suivantes : Approbation des comptes annuels",
+    ),
     # ST7g (Albane 2026-06-26) : titres art. 16/17/22 a casse cassee RENDUS en MAJUSCULES
     # integrales (transformation sanctionnee, cf. _HEADING_TRANSFORMS) -> la ligne SOURCE a casse
     # cassee n'apparait plus verbatim (sa version MAJUSCULES est presente, verifiee par le verrou

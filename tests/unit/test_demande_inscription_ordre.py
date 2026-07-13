@@ -3,7 +3,6 @@ from __future__ import annotations
 from datetime import date
 from pathlib import Path
 
-import pytest
 from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Cm
@@ -344,15 +343,18 @@ def test_demande_inscription_ordre_renders_manual_derogation_only_when_provided(
     _assert_no_source_placeholders(text)
 
 
-def test_demande_inscription_ordre_blocks_derogation_without_manual_mention(
+def test_demande_inscription_ordre_derogation_sans_mention_genere_avec_marqueur(
     tmp_path: Path,
 ) -> None:
+    # KAN-2 (Rafael 2026-07-13) : la mention manuelle de derogation est un champ TEXTE
+    # conditionnel -> derogation demandee mais mention non saisie ne BLOQUE plus la generation :
+    # le document sort avec « (À COMPLÉTER : …) » dans le suffixe de derogation, a completer a la
+    # main (au lieu de lever une ValueError).
     ctx = _context(
         "SPFPL_APPORT",
         ordre=_spfpl_ordre(),
         mandataire=_configured_mandataire(),
         derogation=True,
     )
-
-    with pytest.raises(ValueError, match="ordre.derogation_mention_manuelle"):
-        _generate(tmp_path, ctx)
+    text = _docx_text(_generate(tmp_path, ctx))
+    assert "À COMPLÉTER" in text

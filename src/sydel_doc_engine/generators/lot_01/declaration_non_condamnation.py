@@ -124,14 +124,18 @@ class DeclarationNonCondamnationGenerator:
 
 
 def _required_text(value: str | None, field_name: str) -> str:
+    # KAN-2 (Rafael 2026-07-13) : une donnée manquante NE bloque PAS la génération -> marqueur
+    # visible « (À COMPLÉTER : … ) » sans crochets (comme required_text lot_03/04/05, R10), à
+    # compléter à la main sur le DOCX, au lieu de lever.
     if value is None or not value.strip():
-        raise ValueError(f"{field_name} est obligatoire pour DOC-001.")
+        return f"(À COMPLÉTER : {field_name})"
     return value.strip()
 
 
 def _required_date(value: date | None, field_name: str) -> str:
+    # KAN-2 : date manquante -> marqueur visible (non bloquant), à compléter à la main.
     if value is None:
-        raise ValueError(f"{field_name} est obligatoire pour DOC-001.")
+        return f"(À COMPLÉTER : {field_name})"
     return format_date_fr(value)
 
 

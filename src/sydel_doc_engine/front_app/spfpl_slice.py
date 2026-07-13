@@ -673,33 +673,73 @@ def build_spfpl_plan(payload: dict[str, object]) -> SpfplSlicePlan:
             SPFPL_CESSION_ACTE_PARTS_CODE,
             SPFPL_CESSION_ATTESTATION_CAPITAL_CODE,
         )
-    blockers = _validate(payload)
-    warnings = [
+    all_blockers = _validate(payload)
+    # KAN-2 (Rafael 2026-07-13) : un champ manquant ne BLOQUE plus la génération. Les zones
+    # non renseignées sortent en « (À COMPLÉTER : … ) » (required_text, universel) et sont à
+    # compléter à la main sur le DOCX. SEULE exception : les manques STRUCTURELS / NUMÉRIQUES
+    # (nb d'actions/parts, capital non divisible, prix, dates, répartition cible) qui cassent
+    # le calcul ou la structure du document — eux restent bloquants (`_HARD_BLOCKER_MESSAGES`).
+    hard_blockers = tuple(b for b in all_blockers if b in _HARD_BLOCKER_MESSAGES)
+    soft_gaps = tuple(b for b in all_blockers if b not in _HARD_BLOCKER_MESSAGES)
+    warnings_list = [
         f"Dossier de création {structure} : associé unique.",
     ]
     if regime_communautaire:
-        warnings.append(
+        warnings_list.append(
             "Régime communautaire actif : la lettre de renonciation et la "
             "lettre d'avertissement au conjoint seront générées."
         )
-    warnings = tuple(warnings)
-    if blockers:
+    if soft_gaps:
+        warnings_list.append(
+            f"{len(soft_gaps)} champ(s) non renseigné(s) : les zones concernées sortiront "
+            "en « (À COMPLÉTER : …) » et sont à compléter à la main dans le document."
+        )
+        warnings_list.extend(soft_gaps)
+    warnings = tuple(warnings_list)
+    if hard_blockers:
         return SpfplSlicePlan(
             can_generate=False,
             status="blocked",
-            reason=blockers[0],
+            reason=hard_blockers[0],
             document_codes=document_codes,
-            blockers=blockers,
+            blockers=hard_blockers,
             warnings=warnings,
         )
     return SpfplSlicePlan(
         can_generate=True,
-        status="ready",
-        reason=f"Prêt pour la génération du dossier {structure}.",
+        status="ready" if not soft_gaps else "ready_with_gaps",
+        reason=(
+            f"Prêt pour la génération du dossier {structure}."
+            if not soft_gaps
+            else f"Génération possible — {len(soft_gaps)} zone(s) à compléter à la main."
+        ),
         document_codes=document_codes,
         blockers=(),
         warnings=warnings,
     )
+
+
+# KAN-2 (Rafael 2026-07-13) : manques STRUCTURELS / NUMÉRIQUES qui restent BLOQUANTS (ils
+# cassent un calcul — valeur nominale = capital / nb actions, prix = prix_unitaire × nb — ou
+# une itération de répartition, ou un formatage de date). Tout autre manque = champ TEXTE ->
+# sort en « (À COMPLÉTER : …) » (required_text universel) sans bloquer. Doit rester STRICTEMENT
+# synchronisé avec les messages de `_validate` ci-dessous.
+_HARD_BLOCKER_MESSAGES: frozenset[str] = frozenset(
+    {
+        "Nombre d'actions requis et superieur a zero.",
+        "Le capital social doit etre divisible par le nombre d'actions "
+        "(la valeur nominale d'une action doit etre un nombre entier).",
+        "Nombre de parts apportees requis et superieur a zero.",
+        "Date de signature requise.",
+        "Parts totales de la cible requises (note d'information).",
+        "Parts apportees superieures aux parts totales de la societe cible (apport).",
+        "Au moins un associe de la cible requis (cession).",
+        "Nombre de parts cedees au holding requis (cession).",
+        "Prix par part cedee requis (cession).",
+        "Parts cedees au holding superieures aux parts detenues avant "
+        "cession par le cedant (l'actionnaire fondateur) (cession).",
+    }
+)
 
 
 def _validate(payload: dict[str, object]) -> tuple[str, ...]:  # noqa: C901
@@ -1386,15 +1426,15 @@ def _render_entity_inputs(prefix: str, role: str) -> dict[str, str]:
     }
 
 
-def _professional_entity(payload: dict[str, object], role: str) -> ProfessionalEntity | None:
+def _professional_entity(payload: dict[str, object], role: str) -> ProfessionalEntity:
     """Construit une entite professionnelle (commissaire / evaluateur) du payload.
 
-    Renvoie None si la denomination n'est pas saisie (le validateur apport bloque
-    alors la generation avec un message explicite).
+    KAN-2 (Rafael 2026-07-13) : l'entite est TOUJOURS construite, meme denomination vide ->
+    les champs non renseignes sortent en « (À COMPLÉTER : …) » via les generateurs (required_*),
+    a completer a la main, au lieu de renvoyer None et de faire echouer la generation apport
+    (attestations DOC-042/043, statuts). Le manque de commissaire/evaluateur ne BLOQUE plus.
     """
     denomination = str(payload.get(f"{role}_denomination") or "")
-    if not denomination:
-        return None
     return ProfessionalEntity(
         denomination=denomination,
         forme_sociale=str(payload.get(f"{role}_forme") or ""),

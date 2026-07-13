@@ -297,8 +297,9 @@ def _required_siege(address: Address | None) -> Address:
 
 
 def _required_text(value: str | None, field_name: str) -> str:
+    # KAN-2 (Rafael 2026-07-13) : donnée manquante -> marqueur « (À COMPLÉTER : …) » (non bloquant, R10).
     if value is None or not value.strip():
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return f"(À COMPLÉTER : {field_name})"
     return value.strip()
 
 

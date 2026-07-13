@@ -1607,14 +1607,72 @@ def test_sas_form_situation_menu_complet_et_conjoint_conditionnel() -> None:
     assert "sas_conjoint_nom" in conjoint_keys
 
 
-def test_spfpl_cession_missing_cible_forme_blocks() -> None:
-    # Dogfood 2026-06-22 : forme complete de la cible non validee -> crash a la generation
-    # (note d'info / acte). Doit bloquer proprement.
+def test_spfpl_cession_missing_cible_forme_generates_with_gap() -> None:
+    # KAN-2 (Rafael 2026-07-13) : la forme complete de la cible est un champ TEXTE -> son
+    # absence ne BLOQUE plus la generation. Elle sort en « (À COMPLÉTER : …) » (required_text,
+    # a completer a la main) et est surfacee en AVERTISSEMENT, jamais en blocage. Seuls les
+    # manques STRUCTURELS / NUMERIQUES (nb actions/parts, capital, prix, dates) bloquent encore.
     payload = _spfpl_payload("SPFPL cession")
     payload["cession_data"] = {**payload["cession_data"], "cible_forme_complete": ""}
     plan = spfpl_slice.build_spfpl_plan(payload)
-    assert plan.can_generate is False
-    assert any("forme" in b.lower() and "cible" in b.lower() for b in plan.blockers)
+    assert plan.can_generate is True
+    assert plan.blockers == ()
+    assert any("forme" in w.lower() and "cible" in w.lower() for w in plan.warnings)
+
+
+@pytest.mark.parametrize(
+    "flow, field",
+    [
+        ("SPFPL cession", "nom"),
+        ("SPFPL cession", "date_naissance"),
+        ("SPFPL cession", "banque_nom"),
+        ("SPFPL cession", "cible_denomination"),
+        ("SPFPL cession", "cible_numero_rcs"),
+        ("SPFPL cession", "ordre_ville"),
+        ("SPFPL cession", "numero_rpps"),
+        ("SPFPL apport", "nom"),
+        ("SPFPL apport", "date_naissance"),
+        ("SPFPL apport", "nationalite"),
+        ("SPFPL apport", "commissaire_denomination"),
+        ("SPFPL apport", "evaluateur_denomination"),
+        ("SPFPL apport", "cible_forme"),
+    ],
+)
+def test_spfpl_generates_with_single_missing_field(
+    flow: str, field: str, tmp_path: Path
+) -> None:
+    # KAN-2 (Rafael 2026-07-13), gate Akainu (B1/B2/B3/M1) : vider UN SEUL champ TEXTE — n'importe
+    # lequel, un à la fois, sur CESSION comme APPORT (y compris date de naissance, commissaire aux
+    # apports, évaluateur) — ne doit JAMAIS faire échouer la génération : la zone sort en
+    # « (À COMPLÉTER : …) » à compléter à la main, et le livrable ne contient JAMAIS de crochets
+    # « [ ] » (règle R1 anti-placeholder). Test adversarial : un champ par cas, pas un lot qui
+    # masque le champ qui casse.
+    payload = _spfpl_payload(flow)
+    payload[field] = ""
+    plan = spfpl_slice.build_spfpl_plan(payload)
+    assert plan.can_generate is True, f"{flow}/{field} ne devrait pas bloquer (champ texte)"
+    spfpl_slice.generate_dossier(payload, tmp_path)
+    docs = list(tmp_path.rglob("*.docx"))
+    assert docs, f"{flow}/{field} : le bundle doit se générer malgré le champ manquant"
+    texte = " ".join(p.text for d in docs for p in Document(d).paragraphs)
+    # Cœur KAN-2 + gate Akainu : générer sans crash ET jamais de placeholder à crochets « [ ] »
+    # (règle R1). La plupart des champs manquants sortent en « (À COMPLÉTER : …) » ; quelques-uns
+    # rendent une zone VIDE (chemin `.get() or ""`) — les deux sont non-bloquants et « à compléter
+    # à la main » (le marqueur universel est le nice-to-have m2, tracé, pas le cœur du ticket).
+    assert "[" not in texte and "]" not in texte, f"{flow}/{field} : marqueur à crochets interdit"
+
+
+def test_spfpl_missing_field_marks_zone_a_completer(tmp_path: Path) -> None:
+    # KAN-2 : le mécanisme de marqueur « (À COMPLÉTER : …) » fonctionne (date de naissance vide ->
+    # zone visible dans le PV de nomination), sans jamais de crochets.
+    payload = _spfpl_payload("SPFPL cession")
+    payload["date_naissance"] = ""
+    spfpl_slice.generate_dossier(payload, tmp_path)
+    texte = " ".join(
+        p.text for d in tmp_path.rglob("*.docx") for p in Document(d).paragraphs
+    )
+    assert "À COMPLÉTER" in texte
+    assert "[" not in texte and "]" not in texte
 
 
 def test_spfpl_nb_actions_zero_blocks() -> None:
