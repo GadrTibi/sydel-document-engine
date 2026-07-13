@@ -372,6 +372,18 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
     ordre_departement = _t(col_r, prefix, "ordre_departement", "Departement ordre")
     numero_ordre = _t(col_s, prefix, "numero_ordre", "Numero ordre")
     numero_rpps = _t(col_t, prefix, "numero_rpps", "Numero RPPS")
+    # KAN-1 (Rafael 2026-07-13) : selecteur du connecteur grammatical avant le departement
+    # (« de Paris » / « du Calvados » / « des Hauts-de-Seine »), comme la SELARL. Sans lui, le
+    # destinataire de la demande d'inscription restait bloque sur « de ».
+    connecteur_departement = str(
+        st.selectbox(
+            "Connecteur avant le département (de / du / des)",
+            ("de", "du", "des"),
+            key=f"{prefix}_ordre_connecteur",
+            help="« Conseil départemental de l'Ordre <connecteur> <département> » : "
+            "« de Paris » / « du Calvados » / « des Hauts-de-Seine ».",
+        )
+    )
     # Retour Albane 9.4 (2026-07-06) : le champ « Conseil departemental » est RETIRE.
     # Le destinataire de la demande d'inscription (DOC-034) est DERIVE de « Departement
     # ordre » (+ connecteur) via `_conseil_departemental_lines` ; ce champ libre
@@ -595,6 +607,7 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
         "conjoint_nom": conjoint_nom,
         "regime_communautaire": regime_communautaire,
         "ordre_departement": ordre_departement,
+        "connecteur_departement": connecteur_departement,
         "numero_ordre": numero_ordre,
         "numero_rpps": numero_rpps,
         "ordre_president_feminin": ordre_president_feminin,
@@ -1752,6 +1765,9 @@ def _spfpl_ordre_professionnel(payload: dict[str, object]) -> OrdreProfessionnel
         # 9.4). Le libelle destinataire est DERIVE de departement_inscription (+ connecteur)
         # par le generateur DOC-034 -> on n'alimente plus ce champ (vide, jamais rendu).
         departement_inscription=str(payload.get("ordre_departement") or ""),
+        # KAN-1 : connecteur grammatical choisi au formulaire (de/du/des), passe au generateur
+        # de la demande d'inscription (DOC-034) qui rend « <connecteur> <departement> ».
+        connecteur_departement=str(payload.get("connecteur_departement") or "de"),
         destinataire_appel=(
             "Madame la Présidente"
             if bool(payload.get("ordre_president_feminin"))
