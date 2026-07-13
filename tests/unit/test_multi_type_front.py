@@ -222,7 +222,7 @@ _TRONC_DOCS = {
     "declaration_non_condamnation.docx",
     "autorisation_domiciliation.docx",
     "procuration.docx",
-    "pv_nomination_gerant.docx",
+    "pv_nomination_dirigeant.docx",
 }
 
 
@@ -836,7 +836,7 @@ def test_sci_iris_pv_forme_is_sci_not_internal_key(tmp_path: Path) -> None:
         "SCI IRIS", "sci_iris", [_pm(40, 1, 40, 400), _pp("Alice", "Martin", 60, 41, 100, 600)]
     )
     generated = css.generate_dossier(payload, tmp_path / "iris-pv")
-    pv = next(p for p in generated.docx_paths if p.name == "pv_nomination_gerant.docx")
+    pv = next(p for p in generated.docx_paths if p.name == "pv_nomination_dirigeant.docx")
     paras = [par.text.strip() for par in Document(pv).paragraphs if par.text.strip()]
     assert "SCI" in paras
     assert "SCI IRIS" not in paras  # plus la cle interne comme ligne de forme
@@ -901,7 +901,7 @@ def test_sci_three_associes_generates_clean(tmp_path: Path) -> None:
     _assert_bundle_clean(generated, _TRONC_DOCS | {"Statuts SCI EXEMPLE.docx"})
     # Les 3 associes apparaissent dans les statuts ET sont listes au PV nomination.
     statuts_text = _names_in(generated, "Statuts SCI EXEMPLE.docx")
-    pv_text = _names_in(generated, "pv_nomination_gerant.docx")
+    pv_text = _names_in(generated, "pv_nomination_dirigeant.docx")
     for nom in ("Durand", "Martin", "Petit"):
         assert nom in statuts_text
         assert nom in pv_text
@@ -1380,7 +1380,7 @@ _SPFPL_BUNDLE_TRONC = {
     "declaration_non_condamnation.docx",
     "autorisation_domiciliation.docx",
     "procuration.docx",
-    "pv_nomination_gerant.docx",
+    "pv_nomination_dirigeant.docx",
     "demande_inscription_ordre.docx",
 }
 
@@ -2447,7 +2447,7 @@ _SELAS_BUNDLE_NAMES = {
     "declaration_non_condamnation.docx",
     "autorisation_domiciliation.docx",
     "procuration.docx",
-    "pv_nomination_gerant.docx",
+    "pv_nomination_dirigeant.docx",
     "demande_inscription_ordre.docx",
 }
 
@@ -4878,7 +4878,7 @@ def test_selas_uni_medecin_generates_doc018_bundle(tmp_path: Path) -> None:
             "declaration_non_condamnation.docx",
             "autorisation_domiciliation.docx",
             "procuration.docx",
-            "pv_nomination_gerant.docx",
+            "pv_nomination_dirigeant.docx",
             "demande_inscription_ordre.docx",
             "attestation_capital_souscripteurs_selas.docx",
         },
@@ -4932,7 +4932,7 @@ def test_selas_uni_medecin_pv_uses_actions_not_parts(tmp_path: Path) -> None:
     from sydel_doc_engine.front_app import selas_uni_medecin_slice as uni
 
     generated = uni.generate_dossier(_selas_uni_medecin_payload(), tmp_path / "selas-pv")
-    pv = next(p for p in generated.docx_paths if p.name == "pv_nomination_gerant.docx")
+    pv = next(p for p in generated.docx_paths if p.name == "pv_nomination_dirigeant.docx")
     text = _docx_text(pv)
     assert "propriétaire de toutes les actions" in text
     assert "propriétaire de toutes les parts" not in text

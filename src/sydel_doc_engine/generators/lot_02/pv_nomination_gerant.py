@@ -32,7 +32,7 @@ from sydel_doc_engine.rendering.docx_builder import (
 from sydel_doc_engine.utils.grammar import accord_fonction, euro_word, montant_avec_euros
 from sydel_doc_engine.utils.months import FRENCH_MONTHS
 
-OUTPUT_FILENAME = "pv_nomination_gerant.docx"
+OUTPUT_FILENAME = "pv_nomination_dirigeant.docx"
 DOCUMENT_CODE = "CODE-PV-001"
 
 # Retours Albane 2026-07-09 (PV micro holding). Ces trois conventions sont

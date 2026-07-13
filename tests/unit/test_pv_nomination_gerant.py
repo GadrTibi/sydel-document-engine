@@ -180,7 +180,7 @@ def _find_paragraph(document: Document, text: str):
 def test_pv_nomination_gerant_creates_docx(tmp_path: Path) -> None:
     output_path = _generate(tmp_path)
 
-    assert output_path == tmp_path / "pv_nomination_gerant.docx"
+    assert output_path == tmp_path / "pv_nomination_dirigeant.docx"
     assert output_path.is_file()
 
 

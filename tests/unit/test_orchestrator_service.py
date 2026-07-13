@@ -519,7 +519,7 @@ def test_generate_documents_creates_docx_for_selected_documents(tmp_path: Path) 
     assert len(output_paths) == 5
     assert all(path.suffix == ".docx" for path in output_paths)
     assert all(path.is_file() for path in output_paths)
-    assert tmp_path / "pv_nomination_gerant.docx" in output_paths
+    assert tmp_path / "pv_nomination_dirigeant.docx" in output_paths
     assert tmp_path / "demande_inscription_ordre.docx" in output_paths
     assert tmp_path / "lettre_renonciation_associe.docx" not in output_paths
     assert tmp_path / "lettre_avertissement_conjoint.docx" not in output_paths
@@ -534,7 +534,7 @@ def test_generate_documents_outputs_follow_catalog_order(tmp_path: Path) -> None
         "declaration_non_condamnation.docx",
         "autorisation_domiciliation.docx",
         "procuration.docx",
-        "pv_nomination_gerant.docx",
+        "pv_nomination_dirigeant.docx",
         "demande_inscription_ordre.docx",
     ]
 

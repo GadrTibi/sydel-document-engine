@@ -546,7 +546,7 @@ def test_clean_front_ui_prefill_micro_holding_generates(
     names = {Path(path).name for path in generated["docx_paths"]}
     # Statuts micro holding + tronc commun + PV gerant + lettre d'option IS (prefill IS actif).
     assert "Statuts MICRO HOLDING EXEMPLE.docx" in names  # R10 : denomination au nom
-    assert "pv_nomination_gerant.docx" in names
+    assert "pv_nomination_dirigeant.docx" in names
     assert "lettre_option_is.docx" in names
     combined_text = "\n".join(_docx_text(Path(path)) for path in generated["docx_paths"])
     assert "MICRO HOLDING EXEMPLE" in combined_text
@@ -1029,7 +1029,7 @@ def test_clean_front_selarl_generation_smoke(tmp_path: Path) -> None:
         "declaration_non_condamnation_Martin.docx",
         "autorisation_domiciliation.docx",
         "procuration.docx",
-        "pv_nomination_gerant.docx",
+        "pv_nomination_dirigeant.docx",
         "demande_inscription_ordre.docx",
         # Retour Albane 2026-06-10 : intitulé du doc = « Statuts {dénomination} ».
         "Statuts SELARL MARTIN.docx",
@@ -1062,7 +1062,7 @@ def test_clean_front_selarl_medecin_regime_communautaire_generation_smoke(
         "declaration_non_condamnation_Martin.docx",  # O24-02 : DNC nommee par le gerant
         "autorisation_domiciliation.docx",
         "procuration.docx",
-        "pv_nomination_gerant.docx",
+        "pv_nomination_dirigeant.docx",
         "demande_inscription_ordre.docx",
         "Statuts SELARL MARTIN.docx",
         "lettre_renonciation_associe.docx",
@@ -1273,7 +1273,7 @@ def test_clean_front_streamlit_generation_exposes_download_buttons(
         "Telecharger declaration_non_condamnation_Martin.docx",
         "Telecharger autorisation_domiciliation.docx",
         "Telecharger procuration.docx",
-        "Telecharger pv_nomination_gerant.docx",
+        "Telecharger pv_nomination_dirigeant.docx",
         "Telecharger demande_inscription_ordre.docx",
         "Telecharger Statuts SELARL MARTIN.docx",
     ]
