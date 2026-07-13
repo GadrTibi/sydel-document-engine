@@ -283,11 +283,22 @@ def render_statuts_docx(  # noqa: C901
                     break
                 heading_lines.append(next_text)
                 index += 1
-            # S5 (Rafael 2026-07-09) : la partie « ANNEXE » demarre sur une NOUVELLE PAGE
-            # (saut de page avant l'encadre de titre de l'annexe).
-            if heading_lines[0].startswith("ANNEXE"):
-                docx.add_page_break()
-            _add_major_heading_box(docx, heading_lines, style_profile=style_profile)
+            if heading_lines[0] in _SECTION_GROUP_BANNERS:
+                # KAN-3 (Albane 2026-07-13) : les bandeaux ENCADRES de groupe de sections
+                # etaient INCOHERENTS — presents a partir de « DECISIONS DES ACTIONNAIRES »
+                # (apres l'art. 22) mais absents en tete et avant l'art. 19. Albane : « ou on
+                # les supprime tous, peu importe mais la ce n'est pas coherent ». Ajouter les
+                # manquants exigerait d'INVENTER des intitules de section (decision metier) ;
+                # on retient donc la suppression (autorisee explicitement). L'espacement
+                # inter-articles existant (notable_space_before_pt) devient l'« espace entre
+                # chaque article » homogene qu'Albane demande a la place des cadres.
+                pass
+            else:
+                # S5 (Rafael 2026-07-09) : la partie « ANNEXE » (seul titre majeur restant)
+                # demarre sur une NOUVELLE PAGE (saut de page avant l'encadre de l'annexe).
+                if heading_lines[0].startswith("ANNEXE"):
+                    docx.add_page_break()
+                _add_major_heading_box(docx, heading_lines, style_profile=style_profile)
         elif _is_article_heading(text):
             # S4 (Rafael 2026-07-09) : detection ROBUSTE au separateur — l'art. 26 source
             # porte « ARTICLE\t26 » (tabulation, pas espace) ; l'ancienne garde
@@ -663,14 +674,23 @@ def _add_major_heading_box(
     return table
 
 
-def _is_major_heading(text: str) -> bool:
-    headings = {
+# KAN-3 (Albane 2026-07-13) : bandeaux ENCADRES de groupe de sections a SUPPRIMER (incoherents).
+# L'annexe (« ANNEXE 1 » / « ETAT DES ENGAGEMENTS… » / « LA CONSTITUTION DE LA SOCIETE ») N'EST
+# PAS un bandeau de groupe : c'est le titre d'une partie distincte (saut de page) -> conserve.
+_SECTION_GROUP_BANNERS = frozenset(
+    {
         "DECISIONS DES ACTIONNAIRES",
         "RESULTATS SOCIAUX",
         "TRANSFORMATION DE LA SOCIETE",
         "DISSOLUTION – LIQUIDATION",
         "CONTESTATIONS",
         "CONSTITUTION DE LA SOCIETE",
+    }
+)
+
+
+def _is_major_heading(text: str) -> bool:
+    headings = _SECTION_GROUP_BANNERS | {
         "ANNEXE 1",
         "ETAT DES ENGAGEMENTS PRIS AVANT",
         "LA CONSTITUTION DE LA SOCIETE",

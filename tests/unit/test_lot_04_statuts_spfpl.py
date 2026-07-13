@@ -205,7 +205,11 @@ def test_statuts_spfpl_cession_generates_source_overlay_without_signature_date(
     assert "Docteur" not in text
     assert "Le 14/05/2026" not in text
     assert "Nomination d’un commissaire aux apports" not in text
-    assert "DECISIONS DES ACTIONNAIRES" in table_text
+    # KAN-3 (Albane 2026-07-13) : les bandeaux ENCADRES de groupe de sections sont SUPPRIMES
+    # (incoherents — presents des « DECISIONS DES ACTIONNAIRES » mais absents en tete et avant
+    # l'art. 19). Seuls subsistent les cadres « STATUTS » (titre) et l'annexe.
+    assert "DECISIONS DES ACTIONNAIRES" not in table_text
+    assert "ETAT DES ENGAGEMENTS PRIS AVANT" in table_text
     assert any(run.italic for run in acceptance.runs)
     # #1 (onglet 24) : l'ANNEXE 1 ne contient plus la lettre de mission ni l'acompte Sydel
     # (supprimes de tous les statuts ; ne subsistaient que dans le template SPFPL cession).
@@ -722,17 +726,65 @@ def test_statuts_spfpl_annexe_cadre_unique(tmp_path: Path) -> None:
         assert not autres, f"annexe {operation} : cadres multiples detectes"
 
 
-def test_statuts_spfpl_annexe_titres_isolees_intacts(tmp_path: Path) -> None:
-    """Fix 5 — NON-REGRESSION : les titres majeurs ISOLES (« DECISIONS DES ACTIONNAIRES »,
-    « RESULTATS SOCIAUX »…) gardent chacun leur cadre propre (le regroupement ne touche que
-    les titres CONSECUTIFS de l'annexe)."""
+def test_statuts_spfpl_bandeaux_groupe_supprimes(tmp_path: Path) -> None:
+    """KAN-3 (Albane 2026-07-13) : les bandeaux ENCADRES de groupe de sections
+    (« DECISIONS DES ACTIONNAIRES », « RESULTATS SOCIAUX », « TRANSFORMATION DE LA SOCIETE »,
+    « DISSOLUTION – LIQUIDATION », « CONTESTATIONS », « CONSTITUTION DE LA SOCIETE ») etaient
+    INCOHERENTS (presents pour certains groupes, absents en tete et avant l'art. 19). Albane :
+    « on les supprime tous ». -> plus AUCUN de ces bandeaux en cadre ; l'espacement
+    inter-articles homogene les remplace. Seuls subsistent le cadre « STATUTS » et l'annexe."""
     ctx = _with_exercice(_base_context(operation="cession"))
     document = Document(StatutsSpfplCessionGenerator().generate(ctx, tmp_path))
     tables = _table_texts(document)
-    for titre in ("DECISIONS DES ACTIONNAIRES", "RESULTATS SOCIAUX", "CONTESTATIONS"):
-        porteurs = [t for t in tables if titre in t]
-        assert len(porteurs) == 1
-        assert "ANNEXE" not in porteurs[0]
+    # (« CONSTITUTION DE LA SOCIETE » est aussi un SOUS-texte de l'annexe « LA CONSTITUTION DE LA
+    # SOCIETE » -> on exclut les cadres de l'annexe, qui restent legitimes.)
+    hors_annexe = [t for t in tables if "ETAT DES ENGAGEMENTS PRIS AVANT" not in t]
+    for titre in (
+        "DECISIONS DES ACTIONNAIRES",
+        "RESULTATS SOCIAUX",
+        "TRANSFORMATION DE LA SOCIETE",
+        "CONTESTATIONS",
+        "CONSTITUTION DE LA SOCIETE",
+    ):
+        assert not [t for t in hors_annexe if titre in t], f"bandeau « {titre} » encore encadre"
+    # Le cadre « STATUTS » (titre) et le cadre de l'annexe restent presents.
+    assert any(t.strip() == "STATUTS" for t in tables)
+    assert any("ETAT DES ENGAGEMENTS PRIS AVANT" in t for t in tables)
+
+
+@pytest.mark.parametrize("operation", ["cession", "apport"])
+def test_statuts_spfpl_art10_sans_tiret_et_listes_pucees(
+    operation: str, tmp_path: Path
+) -> None:
+    """KAN-3 (Albane 2026-07-13), gate adversarial (Akainu B1/M1/M2) :
+    - art 10 : le 1er alinea (« Le capital social peut etre augmente… », numId
+      upperRoman dans le modele, pas une puce) ne doit PAS porter de tiret solo ;
+    - les vraies listes du modele sont pucees, y compris le 1er item des decisions
+      collectives de l'art. 23 (« Approbation des comptes annuels… », fusion intro+item
+      dans le template apport reparee) et l'engagement de l'annexe (cession comme apport)."""
+    ctx = _with_exercice(_base_context(operation=operation))
+    generator = (
+        StatutsSpfplCessionGenerator()
+        if operation == "cession"
+        else StatutsSpfplApportGenerator()
+    )
+    paragraphs = Document(generator.generate(ctx, tmp_path)).paragraphs
+    textes = [p.text for p in paragraphs]
+
+    idx_art10 = next(i for i, t in enumerate(textes) if t.strip().upper().startswith("ARTICLE 10"))
+    premier_alinea = textes[idx_art10 + 1].strip()
+    assert premier_alinea.startswith("Le capital social peut être augmenté")
+    assert not premier_alinea.startswith("-"), "art 10 : tiret solo interdit (Albane point 1)"
+
+    approbation = next(t for t in textes if "Approbation des comptes annuels" in t)
+    assert approbation.strip().startswith("- "), "art 23 : 1er item des decisions doit etre puce"
+
+    engagement = next(
+        t
+        for t in reversed(textes)
+        if t.strip() and "Bon pour acceptation" not in t
+    )
+    assert engagement.strip().startswith("- "), "annexe : engagement doit etre puce"
 
 
 def test_statuts_spfpl_apport_simplifiee_accentuee(tmp_path: Path) -> None:
