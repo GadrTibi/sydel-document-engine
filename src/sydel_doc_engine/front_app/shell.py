@@ -2191,9 +2191,12 @@ def _render_scm_cession_form(  # noqa: C901
             if not st.session_state.get(key) and value:
                 st.session_state[key] = value
         col_a, col_b, col_c = st.columns(3)
-        cedant["civilite_affichage"] = _cession_text(
-            col_a, "Civilite", section="scm_cedant", field="civilite",
-            default="",
+        # R2 (Rafael 2026-07-13) : civilite du cedant SCM en MENU Madame/Monsieur (comme le
+        # vendeur de cession et le precedent proprietaire). Le seed vivant depuis la fiche
+        # praticien pose deja « Monsieur »/« Madame » (option valide). Le genre du cedant est
+        # derive de cette civilite dans l'acte SCM (_cedant_genre).
+        cedant["civilite_affichage"] = _cession_civilite(
+            col_a, "Civilité", section="scm_cedant", field="civilite",
         )
         cedant["prenom"] = _cession_text(
             col_b, "Prenom", section="scm_cedant", field="prenom",

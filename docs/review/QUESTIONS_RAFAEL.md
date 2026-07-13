@@ -221,6 +221,13 @@ MAJEUR + MINEUR corrigés (commit `81f48c5`). Nitpicks tracés (aucun défaut de
   « LE CÉDANT », pas à la personne — défendable). **À confirmer Albane** si le label doit se féminiser.
 - **[n5] O2 corporel = total − incorporel** : déjà flagué ci-dessus (Albane l'a posé « à confirmer »).
 
+## Retours Rafael SELARL 2026-07-13 — nitpick accepté
+- **[n1 accepté]** Les menus civilité de cession (`_cession_civilite`) proposent une option VIDE en
+  plus de Madame/Monsieur (« », Monsieur, Madame), là où le praticien principal n'a que
+  Monsieur/Madame. Volontaire : l'option vide force un choix EXPLICITE pour une partie requise
+  (vendeur/cédant/précédent) — un défaut « Monsieur » silencieux risquerait de mal genrer une
+  vendeuse. Une civilité vide déclenche le blocage « civilité requise ». Divergence assumée.
+
 ## Retours Rafael SELARL 2026-07-13 — 2 points à trancher
 - **[R1 — Nom du 2e lieu d'exercice]** Le champ existe car les **statuts (Article 5)** rendent le
   2e lieu d'exercice sous la forme « **{nom}, {adresse}** » (le générateur exige nom + adresse
