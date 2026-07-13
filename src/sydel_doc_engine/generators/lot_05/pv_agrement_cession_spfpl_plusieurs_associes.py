@@ -57,7 +57,7 @@ class PvAgrementCessionSpfplPlusieursAssociesGenerator:
                 f"{required_text(societe_cible.capital_social, 'societe_cible.capital_social')} "
                 "euros, composé de "
                 f"{required_int(societe_cible.nb_parts_total, 'societe_cible.nb_parts_total')} "
-                "parts, se sont réunis sur convocation régulière de la gérance au siège "
+                "parts, se sont réunis sur convocation régulière du président au siège "
                 "de la Société."
             ),
             alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
@@ -139,7 +139,7 @@ def _add_depot_documents(docx, ctx: DocumentGenerationContext) -> None:
             f"Projet du contrat de cession des parts sociales détenues par {cedant_name} "
             f"au profit de la {societe_spfpl_name};"
         ),
-        "Le rapport de la gérance ;",
+        "Le rapport du président ;",
         "Le texte des résolutions proposées.",
     ]:
         add_hyphen_list_item(docx, item)
