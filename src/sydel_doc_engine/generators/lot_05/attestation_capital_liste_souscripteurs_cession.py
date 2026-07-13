@@ -202,6 +202,9 @@ class AttestationCapitalListeSouscripteursCessionGenerator:
         # equivalent et identique a l'apport (DOC-042).
         add_paragraph(docx, f"Fait à {ctx.signature.lieu}")
         add_paragraph(docx, f"Le {ctx.signature.date.strftime('%d/%m/%Y')}")
+        # KAN-5 (Rafael 2026-07-13) : un espace apres la date, et le nom du signataire (associe)
+        # aligne a DROITE.
+        add_spacer(docx)
         # AT1 (Rafael 2026-07-09) : la ligne de SIGNATURE porte le nom SANS profession (la
         # profession reste dans « par le Président, … » juste au-dessus — une seule mention).
         add_paragraph(
@@ -211,6 +214,7 @@ class AttestationCapitalListeSouscripteursCessionGenerator:
                 "capital_souscription.president",
                 genre=president_genre,
             ),
+            alignment=WD_ALIGN_PARAGRAPH.RIGHT,
         )
 
         output_dir.mkdir(parents=True, exist_ok=True)
