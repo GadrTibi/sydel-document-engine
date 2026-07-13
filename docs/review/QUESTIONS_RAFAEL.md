@@ -221,6 +221,19 @@ MAJEUR + MINEUR corrigés (commit `81f48c5`). Nitpicks tracés (aucun défaut de
   « LE CÉDANT », pas à la personne — défendable). **À confirmer Albane** si le label doit se féminiser.
 - **[n5] O2 corporel = total − incorporel** : déjà flagué ci-dessus (Albane l'a posé « à confirmer »).
 
+## Retours Rafael SELARL 2026-07-13 — 2 points à trancher
+- **[R1 — Nom du 2e lieu d'exercice]** Le champ existe car les **statuts (Article 5)** rendent le
+  2e lieu d'exercice sous la forme « **{nom}, {adresse}** » (le générateur exige nom + adresse
+  ENSEMBLE). **À trancher Rafael/Albane** : garder le nom du 2e lieu (rendu dans l'Art.5), ou
+  simplifier à l'adresse seule (statuts « {adresse} » sans nom) ? R4/R5/R2/R3 sont faits ; R1
+  attend cette décision avant tout changement (retirer le nom modifierait la sortie des statuts).
+- **[R3-membre]** La situation matrimoniale du **membre SELARL multi-associés** (sous-formulaire
+  associé) reste en texte libre : les statuts multi la rendent en **écho fidèle** (pas de
+  normalisation) → y injecter un preset « Marié(e) sous le régime… » introduirait « (e) ». La
+  conversion en menu (comme le vendeur) demande d'abord de normaliser au rendu des statuts multi
+  (statut court accordé + régime). Fait pour le vendeur cession (cas rapporté) ; membre multi à
+  traiter dans un lot dédié.
+
 ## Gate Akainu SELARL ronde 5 (2026-07-12) — 1 MINEUR de convention tracé (décision Albane)
 - **[M-1 conv] « soussigné(e) de seconde part » du co-contractant PERSONNE MORALE** : dans les
   actes/compromis de cession de CABINET, l'acquéreur (une SELARL, personne morale) est rendu

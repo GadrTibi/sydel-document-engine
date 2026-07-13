@@ -41,7 +41,11 @@ from sydel_doc_engine.generators.lot_05.scm_cession_common import (
 )
 from sydel_doc_engine.rendering.docx_builder import ensure_demeurant_au
 from sydel_doc_engine.utils.departements import departement_nom
-from sydel_doc_engine.utils.grammar import apply_gender_pairs, elision_de
+from sydel_doc_engine.utils.grammar import (
+    accord_terme_genre,
+    apply_gender_pairs,
+    elision_de,
+)
 from sydel_doc_engine.utils.months import FRENCH_MONTHS
 
 DOCUMENT_CODE = "CODE-CESSION-CAB-001"
@@ -618,7 +622,8 @@ def _build_paragraph_overrides(
 # "Représentée" (la societe, toujours feminin) n'est PAS accordee ici.
 _CESSION_VENDEUR_PAIRS: list[tuple[str, str]] = [
     ("né le ", "née le "),
-    ("né(e) le ", "née le "),
+    # « né(e) le » (medical, inclusif) est desormais resolu au genre EN AMONT, au niveau des
+    # tokens (put("né(e) le", ...), R5 Rafael 2026-07-13) -> plus besoin de paire ici.
     ("Inscrit au ", "Inscrite au "),
     ("inscrit au ", "inscrite au "),
     # Statut matrimonial du vendeur, CONCEPT (regle 68) : « marié » quel que soit ce qui suit
@@ -1194,6 +1199,11 @@ def _build_cession_replacements(  # noqa: C901
     put("[nom_vendeur]", vendeur.nom)
     put("[profession_vendeur]", vendeur.profession)
     put("[date_naissance_vendeur]", _french_date(vendeur.date_naissance))
+    # R5 (Rafael 2026-07-13) : le modele MEDICAL fige « né(e) le » inclusif -> resolu au genre
+    # CONNU du vendeur (« né le » homme / « née le » femme). Remplacement token-level, run-safe
+    # (ne touche que le run du fragment, preserve le gras du nom). Le dentaire fige deja « né/née »
+    # resolu (gere par _CESSION_VENDEUR_PAIRS). Genre absent -> masculin par defaut (né).
+    put("né(e) le", f"{accord_terme_genre('né', vendeur.genre)} le")
     put("[ville_naissance_vendeur]", vendeur.ville_naissance)
     put_opt("[departement_naissance_vendeur]", vendeur.departement_naissance)
     put_opt("[cp_naissance_vendeur]", vendeur.cp_naissance)

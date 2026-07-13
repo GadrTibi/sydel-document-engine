@@ -39,8 +39,8 @@ def test_o1_origine_choice_present_and_mode_drives_labels(tmp_path, monkeypatch)
 
     origine = app.selectbox(key="selarl_cession_cabinet_origine_mode")
     assert set(origine.options) == {
-        "Cabinet cree par le vendeur",
-        "Cabinet achete par le vendeur",
+        "Cabinet créé par le vendeur",
+        "Cabinet acheté par le vendeur",
     }
 
     # Le champ date est un text_input labellise (date_input_with_today).
@@ -48,14 +48,14 @@ def test_o1_origine_choice_present_and_mode_drives_labels(tmp_path, monkeypatch)
         return [str(w.label) for w in app.text_input]
 
     # Mode « cree » : libelle « creation », pas de precedent proprietaire ni de prix d'origine.
-    origine.set_value("Cabinet cree par le vendeur")
+    origine.set_value("Cabinet créé par le vendeur")
     app = app.run(timeout=180)
     assert any("Date de creation du cabinet" in lbl for lbl in text_labels())
     assert not any("precedent proprietaire" in lbl.lower() for lbl in text_labels())
 
     # Mode « achete » : libelle « acquisition » + precedent proprietaire + prix d'origine.
     app.selectbox(key="selarl_cession_cabinet_origine_mode").set_value(
-        "Cabinet achete par le vendeur"
+        "Cabinet acheté par le vendeur"
     )
     app = app.run(timeout=180)
     assert any("Date d'acquisition du cabinet" in lbl for lbl in text_labels())

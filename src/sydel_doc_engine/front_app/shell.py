@@ -347,6 +347,11 @@ def _render_one_selarl_membre(index: int) -> StatutsCivilsAssocie | None:
         )
         col_h, col_i = st.columns(2)
         nationalite = copyable_text_input(col_h, "Nationalite", key=f"{prefix}_nationalite")
+        # R3 (Rafael 2026-07-13) : la situation matrimoniale du VENDEUR de cession est passee au
+        # menu deroulant (cf. sous-formulaire cession). Le membre SELARL multi rend sa situation
+        # en ECHO FIDELE dans les statuts (pas de normalisation) : passer directement un preset
+        # (« Marié(e) sous le régime… ») y injecterait « (e) ». Conversion en menu differee au
+        # traitement du rendu statuts multi (tracee QUESTIONS_RAFAEL [R3-membre]).
         situation = copyable_text_input(col_i, "Situation matrimoniale", key=f"{prefix}_situation")
         profession = copyable_text_input(st, "Profession", key=f"{prefix}_profession")
         adresse = copyable_text_input(st, "Adresse personnelle (affichee)", key=f"{prefix}_adresse")
@@ -1108,6 +1113,24 @@ def _cession_civilite(
     return str(container.selectbox(label, options, key=key)).strip()
 
 
+def _cession_situation(
+    container: object,
+    label: str,
+    *,
+    section: str,
+    field: str,
+) -> str:
+    """R3 (Rafael 2026-07-13) : la situation matrimoniale se choisit dans le MEME menu
+    deroulant que le praticien principal (MATRIMONIAL_STATUS_PRESETS), jamais en texte libre.
+    Meme clef de session que `_cession_text` => compatible prefill et payloads. Une valeur
+    de session hors presets (ancien texte libre / prefill obsolete) retombe sur le 1er preset."""
+    key = f"{_CESSION_PREFIX}_cession_{section}_{field}"
+    _seed_default(key, MATRIMONIAL_STATUS_PRESETS[0])
+    if str(st.session_state.get(key) or "") not in MATRIMONIAL_STATUS_PRESETS:
+        st.session_state[key] = MATRIMONIAL_STATUS_PRESETS[0]
+    return str(container.selectbox(label, MATRIMONIAL_STATUS_PRESETS, key=key)).strip()
+
+
 def _accentuate_date_value(value: object) -> object:
     """Re-accentue les mois d'une date saisie en TEXTE libre (LIVE-03).
 
@@ -1289,10 +1312,14 @@ def _render_cession_form(  # noqa: C901
             }
         else:
             col_a, col_b, col_c = st.columns(3)
-            civilite = _cession_text(
-                col_a, "Civilite", section="vendeur", field="civilite",
-                default=DEFAULT_TITRE_AFFICHAGE,
+            # R2 (Rafael 2026-07-13) : civilite du vendeur en MENU Madame/Monsieur (plus de texte
+            # libre « Docteur » — SUPERSEDE la doctrine §14.2). Le genre est DERIVE de la civilite
+            # choisie -> accord genre de l'acte (« né/née », « inscrit(e) », etc.) pour un vendeur
+            # distinct du fondateur (comble aussi l'ancien trou « genre None »).
+            civilite = _cession_civilite(
+                col_a, "Civilité", section="vendeur", field="civilite",
             )
+            genre_vendeur = derive_gender_from_civilite(civilite)
             prenom = _cession_text(col_b, "Prenom", section="vendeur", field="prenom", default="")
             nom = _cession_text(col_c, "Nom", section="vendeur", field="nom", default="")
             col_d, col_e, col_f = st.columns(3)
@@ -1313,10 +1340,15 @@ def _render_cession_form(  # noqa: C901
                 col_g, "Nationalite", section="vendeur", field="nationalite",
                 default="française",
             )
-            situation_vendeur = _cession_text(
-                col_h, "Situation matrimoniale (telle qu'affichee dans l'acte)",
-                section="vendeur", field="situation", default="célibataire",
+            # R3 (Rafael 2026-07-13) : situation matrimoniale au MEME menu deroulant que le
+            # praticien principal (MATRIMONIAL_STATUS_PRESETS) ; la valeur affichee dans l'acte
+            # est le statut accorde au genre (« marié »/« célibataire »).
+            situation_label = _cession_situation(
+                col_h, "Situation matrimoniale", section="vendeur", field="situation",
             )
+            situation_value = matrimonial_status_value(situation_label)
+            situation_vendeur = _situation_display(situation_value, genre_vendeur)
+            is_married_or_pacse = situation_value in ("marie", "pacse")
             adresse = _cession_text(
                 st, "Adresse personnelle", section="vendeur", field="adresse", default="",
             )
@@ -1327,21 +1359,27 @@ def _render_cession_form(  # noqa: C901
             numero_rpps = _cession_text(
                 col_j, "Numero RPPS", section="vendeur", field="numero_rpps", default="",
             )
-            col_k, col_m, col_n = st.columns(3)
-            conjoint_civilite = _cession_civilite(
-                col_k, "Civilite conjoint (si marie)",
-                section="vendeur", field="conjoint_civilite",
-            )
-            conjoint_prenom = _cession_text(
-                col_m, "Prenom conjoint", section="vendeur", field="conjoint_prenom",
-                default="",
-            )
-            conjoint_nom = _cession_text(
-                col_n, "Nom conjoint", section="vendeur", field="conjoint_nom", default="",
-            )
+            # R3 : l'identite du conjoint n'est demandee QUE quand la situation s'y prete
+            # (marie ou pacse) — sinon les champs conjoint ne s'affichent pas.
+            conjoint_civilite = ""
+            conjoint_prenom = ""
+            conjoint_nom = ""
+            if is_married_or_pacse:
+                col_k, col_m, col_n = st.columns(3)
+                conjoint_civilite = _cession_civilite(
+                    col_k, "Civilité du conjoint",
+                    section="vendeur", field="conjoint_civilite",
+                )
+                conjoint_prenom = _cession_text(
+                    col_m, "Prénom du conjoint", section="vendeur", field="conjoint_prenom",
+                    default="",
+                )
+                conjoint_nom = _cession_text(
+                    col_n, "Nom du conjoint", section="vendeur", field="conjoint_nom", default="",
+                )
             vendeur_payload = {
                 "civilite_affichage": civilite,
-                "genre": None,
+                "genre": genre_vendeur,
                 "prenom": prenom,
                 "nom": nom,
                 "profession": profession_label,
@@ -1353,7 +1391,7 @@ def _render_cession_form(  # noqa: C901
                 "numero_rpps": numero_rpps,
                 "adresse_affichee": adresse,
                 "situation_maritale": situation_vendeur,
-                "regime_matrimonial": _vendeur_regime_label(situation_vendeur),
+                "regime_matrimonial": _vendeur_regime_label(situation_label),
                 "conjoint": {
                     "civilite_affichage": conjoint_civilite,
                     "prenom": conjoint_prenom,
@@ -1507,13 +1545,15 @@ def _render_cession_form(  # noqa: C901
         # ouvert aux deux professions. Cle de contexte consommee par l'acte :
         # `cession.cabinet.origine_propriete_mode`.
         mode_key = f"{_CESSION_PREFIX}_cession_cabinet_origine_mode"
-        _seed_default(mode_key, "Cabinet cree par le vendeur")
+        _seed_default(mode_key, "Cabinet créé par le vendeur")
         mode_label = st.selectbox(
             "Le vendeur a...",
-            ("Cabinet cree par le vendeur", "Cabinet achete par le vendeur"),
+            ("Cabinet créé par le vendeur", "Cabinet acheté par le vendeur"),
             key=mode_key,
         )
-        origine_mode = "achete" if "achete" in mode_label else "cree"
+        # R4 (Rafael 2026-07-13) : options accentuees (« créé »/« acheté ») -> le mapping teste
+        # « acheté » (l'ancien « achete » sans accent ne matchait plus la nouvelle option).
+        origine_mode = "achete" if "acheté" in mode_label else "cree"
         # Le libelle de la date suit le mode : « creation » (cree) vs « acquisition » (achete).
         date_origine_label = (
             "Date d'acquisition du cabinet par le vendeur (JJ/MM/AAAA)"
@@ -1529,9 +1569,10 @@ def _render_cession_form(  # noqa: C901
         if origine_mode == "achete":
             col_a, col_b, col_c = st.columns(3)
             precedent_payload = {
-                "civilite_affichage": _cession_text(
-                    col_a, "Civilite du precedent proprietaire",
-                    section="cabinet", field="precedent_civilite", default="",
+                # R2 (Rafael 2026-07-13) : civilite du precedent proprietaire en menu.
+                "civilite_affichage": _cession_civilite(
+                    col_a, "Civilité du précédent propriétaire",
+                    section="cabinet", field="precedent_civilite",
                 ),
                 "prenom": _cession_text(
                     col_b, "Prenom du precedent proprietaire",

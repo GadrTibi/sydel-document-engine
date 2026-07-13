@@ -978,7 +978,7 @@ def _cession_prefill_values(profession: str) -> dict[str, object]:
                 # O1 (Albane 2026-07-10) : le choix cree/acquis est desormais ouvert au dentaire
                 # (avant force en achete). Le jeu de DEMO dentaire garde l'origine « achetee »
                 # (precedent proprietaire + prix ci-dessous) -> on pose explicitement le mode.
-                "selarl_cession_cabinet_origine_mode": "Cabinet achete par le vendeur",
+                "selarl_cession_cabinet_origine_mode": "Cabinet acheté par le vendeur",
                 "selarl_cession_cabinet_precedent_civilite": "Monsieur",
                 "selarl_cession_cabinet_precedent_prenom": "Henri",
                 "selarl_cession_cabinet_precedent_nom": "Petit",
@@ -998,7 +998,7 @@ def _cession_prefill_values(profession: str) -> dict[str, object]:
     else:
         values.update(
             {
-                "selarl_cession_cabinet_origine_mode": "Cabinet cree par le vendeur",
+                "selarl_cession_cabinet_origine_mode": "Cabinet créé par le vendeur",
                 "selarl_cession_financement_credit_actif": True,
                 "selarl_cession_financement_credit_montant": "60 000",
                 "selarl_cession_financement_credit_duree": "trois",
