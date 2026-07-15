@@ -539,9 +539,12 @@ def _render_option_is_form(prefix: str, structure: str) -> dict[str, object]:
     if not actif:
         return {"option_is": False}
     st.caption("Centre des impots destinataire (lettre d'option IS)")
+    # KAN-13 (Rafael 2026-07-15) : « Ne plus demander le n° SIREN […] retirer cette ligne
+    # dans le questionnaire ». Le champ etait MORT : aucun generateur ne le lisait (le
+    # DOC-022 rend « En cours d’immatriculation », decision Albane R3 2026-06-30) — il
+    # BLOQUAIT pourtant la generation tant qu'il etait vide. Saisie + blocage supprimes.
     # R22-07 : le « Centre » est toujours « Centre des Finances Publiques » (figé dans le
     # generateur) -> plus saisi ici. Seuls le service + l'adresse identifient le destinataire.
-    siren = _text(st, prefix, "siren", "SIREN de la societe")
     impots_service = _text(st, prefix, "impots_service", "Service des impots des entreprises (SIE)")
     impots_ligne_1 = _text(st, prefix, "impots_adresse_ligne_1", "Adresse (ligne 1)")
     impots_ligne_2 = _text(st, prefix, "impots_adresse_ligne_2", "Adresse (ligne 2)")
@@ -552,7 +555,6 @@ def _render_option_is_form(prefix: str, structure: str) -> dict[str, object]:
     )
     return {
         "option_is": True,
-        "siren": siren,
         "impots_service": impots_service,
         "impots_adresse_ligne_1": impots_ligne_1,
         "impots_adresse_ligne_2": impots_ligne_2,
@@ -1070,7 +1072,6 @@ def _validate_option_is(payload: dict[str, object], structure: str) -> list[str]
         return []
     blockers: list[str] = []
     required = (
-        ("siren", "SIREN de la societe requis (option IS)."),
         ("impots_service", "Service du centre des impots requis (option IS)."),
         ("impots_adresse_ligne_1", "Adresse (ligne 1) du centre des impots requise (option IS)."),
         ("impots_adresse_ligne_2", "Adresse (ligne 2) du centre des impots requise (option IS)."),
@@ -1348,7 +1349,9 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         ville_rcs=str(payload.get("ville_rcs") or ""),
         numero_rcs=str(payload.get("societe_numero_rcs") or "") or None,
         nb_parts_total=nb_parts,
-        siren=str(payload.get("siren") or "") if option_is else None,
+        # KAN-13 (Rafael 2026-07-15) : plus jamais saisi -> le generateur DOC-022 ecrit
+        # « En cours d’immatriculation » en dur (societe en cours de constitution).
+        siren=None,
     )
 
     pv_associes = _pv_associes(associes)
