@@ -157,9 +157,11 @@ def test_derive_cession_repartition_cedant_cede_tout() -> None:
     assert plage_cedee == "41 à 100"
 
 
-def test_validate_bloque_cedees_superieures_aux_parts_du_cedant() -> None:
-    # Parts cédées > parts AVANT du cédant : la dérivation plafonnerait à 0 et la
-    # répartition serait fausse -> blocage explicite au plan (pas de crash aval).
+def test_cedees_superieures_aux_parts_du_cedant_ne_bloque_plus() -> None:
+    # KAN-2 (Rafael 2026-07-14) : plus AUCUN blocage — « tous les documents doivent pouvoir être
+    # générés, même si je ne remplis aucun champ ». Parts cédées > parts AVANT du cédant est
+    # surfacé en AVERTISSEMENT (la répartition dérivée plafonne à 0, le document sort et se
+    # corrige à la main) au lieu d'interdire la génération.
     payload = _spfpl_payload("SPFPL cession")
     cession = dict(payload["cession_data"])
     cession["associes"] = [
@@ -168,8 +170,9 @@ def test_validate_bloque_cedees_superieures_aux_parts_du_cedant() -> None:
     ]
     payload["cession_data"] = cession
     plan = spfpl_slice.build_spfpl_plan(payload)
-    assert plan.can_generate is False
-    assert any("cedant" in b.lower() and "superieures" in b.lower() for b in plan.blockers)
+    assert plan.can_generate is True
+    assert plan.blockers == ()
+    assert any("cedant" in w.lower() and "superieures" in w.lower() for w in plan.warnings)
 
 
 # ------------------------------------------------- câblage render -> cession_data

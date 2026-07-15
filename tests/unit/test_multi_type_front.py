@@ -1662,6 +1662,39 @@ def test_spfpl_generates_with_single_missing_field(
     assert "[" not in texte and "]" not in texte, f"{flow}/{field} : marqueur à crochets interdit"
 
 
+@pytest.mark.parametrize("flow", ["SPFPL cession", "SPFPL apport"])
+def test_spfpl_formulaire_entierement_vide_genere(flow: str, tmp_path: Path) -> None:
+    # KAN-2 (Rafael 2026-07-14), verbatim : « Tous les documents doivent pouvoir être générés,
+    # MÊME SI JE NE REMPLIS AUCUN CHAMP dans le générateur. » C'est LE test du ticket : on ne
+    # garde que les clés de ROUTAGE (le type de dossier, choisi dans un menu — jamais vide) et
+    # on vide tout le reste. Le bundle complet doit sortir, zones en « (À COMPLÉTER : …) »,
+    # sans aucun blocage ni crochet « [ ] ».
+    payload = _spfpl_payload(flow)
+    routage = {"structure", "operation", "is_apport"}
+    for key, value in list(payload.items()):
+        if key in routage or isinstance(value, bool):
+            continue
+        if isinstance(value, str):
+            payload[key] = ""
+        elif isinstance(value, int):
+            payload[key] = 0
+        elif isinstance(value, dict):
+            payload[key] = {"associes": []} if key == "cession_data" else {}
+        elif isinstance(value, list):
+            payload[key] = []
+
+    plan = spfpl_slice.build_spfpl_plan(payload)
+    assert plan.can_generate is True, f"{flow} : un formulaire vide doit rester générable"
+    assert plan.blockers == (), f"{flow} : aucun blocage ne doit subsister"
+
+    spfpl_slice.generate_dossier(payload, tmp_path)
+    docs = list(tmp_path.rglob("*.docx"))
+    assert len(docs) >= 10, f"{flow} : le bundle complet doit sortir ({len(docs)} docs)"
+    texte = " ".join(p.text for d in docs for p in Document(d).paragraphs)
+    assert "À COMPLÉTER" in texte
+    assert "[" not in texte and "]" not in texte
+
+
 def test_spfpl_missing_field_marks_zone_a_completer(tmp_path: Path) -> None:
     # KAN-2 : le mécanisme de marqueur « (À COMPLÉTER : …) » fonctionne (date de naissance vide ->
     # zone visible dans le PV de nomination), sans jamais de crochets.
@@ -1675,14 +1708,17 @@ def test_spfpl_missing_field_marks_zone_a_completer(tmp_path: Path) -> None:
     assert "[" not in texte and "]" not in texte
 
 
-def test_spfpl_nb_actions_zero_blocks() -> None:
-    # Dogfood 2026-06-22 : nb_actions = 0 etait silencieusement remplace par 600 (fantome).
-    # La garde teste desormais la valeur brute -> bloque.
+def test_spfpl_nb_actions_zero_ne_bloque_plus() -> None:
+    # KAN-2 (Rafael 2026-07-14) : « Tous les documents doivent pouvoir être générés, MÊME SI je
+    # ne remplis AUCUN champ. » -> nb_actions = 0 ne BLOQUE plus ; le manque est surfacé en
+    # avertissement et la zone sort en « (À COMPLÉTER : …) ». (L'ancienne garde bloquante était
+    # une limite INVENTÉE côté moteur : vérifié, un formulaire vide génère les 10 documents.)
     payload = _spfpl_payload("SPFPL cession")
     payload["nb_actions_total"] = 0
     plan = spfpl_slice.build_spfpl_plan(payload)
-    assert plan.can_generate is False
-    assert any("actions" in b.lower() and "zero" in b.lower() for b in plan.blockers)
+    assert plan.can_generate is True
+    assert plan.blockers == ()
+    assert any("actions" in w.lower() and "zero" in w.lower() for w in plan.warnings)
 
 
 def test_spfpl_apport_slice_generates_clean(tmp_path: Path) -> None:

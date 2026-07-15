@@ -673,14 +673,17 @@ def build_spfpl_plan(payload: dict[str, object]) -> SpfplSlicePlan:
             SPFPL_CESSION_ACTE_PARTS_CODE,
             SPFPL_CESSION_ATTESTATION_CAPITAL_CODE,
         )
-    all_blockers = _validate(payload)
-    # KAN-2 (Rafael 2026-07-13) : un champ manquant ne BLOQUE plus la génération. Les zones
-    # non renseignées sortent en « (À COMPLÉTER : … ) » (required_text, universel) et sont à
-    # compléter à la main sur le DOCX. SEULE exception : les manques STRUCTURELS / NUMÉRIQUES
-    # (nb d'actions/parts, capital non divisible, prix, dates, répartition cible) qui cassent
-    # le calcul ou la structure du document — eux restent bloquants (`_HARD_BLOCKER_MESSAGES`).
-    hard_blockers = tuple(b for b in all_blockers if b in _HARD_BLOCKER_MESSAGES)
-    soft_gaps = tuple(b for b in all_blockers if b not in _HARD_BLOCKER_MESSAGES)
+    gaps = _validate(payload)
+    # KAN-2 (Rafael 2026-07-14, DURCI après rejet) : « Tous les documents doivent pouvoir être
+    # générés, MÊME SI JE NE REMPLIS AUCUN CHAMP dans le générateur. » -> **AUCUN blocage** :
+    # tout manque devient un AVERTISSEMENT ; la zone sort en « (À COMPLÉTER : … ) » (required_*
+    # universel) et se complète à la main sur le DOCX.
+    #
+    # Le 1er jet gardait des blocages dits « structurels » (nb d'actions/parts, prix, dates,
+    # répartition cible) au motif qu'ils casseraient un calcul. C'était une limite INVENTÉE :
+    # vérifié empiriquement, un formulaire ENTIÈREMENT vide génère les 10 documents des deux
+    # flux (cession + apport) sans un seul crash. Ne PAS réintroduire de garde ici : une
+    # contrainte technique ne se transforme jamais en limite produit sans l'accord du client.
     warnings_list = [
         f"Dossier de création {structure} : associé unique.",
     ]
@@ -689,60 +692,33 @@ def build_spfpl_plan(payload: dict[str, object]) -> SpfplSlicePlan:
             "Régime communautaire actif : la lettre de renonciation et la "
             "lettre d'avertissement au conjoint seront générées."
         )
-    if soft_gaps:
+    if gaps:
         warnings_list.append(
-            f"{len(soft_gaps)} champ(s) non renseigné(s) : les zones concernées sortiront "
+            f"{len(gaps)} champ(s) non renseigné(s) : les zones concernées sortiront "
             "en « (À COMPLÉTER : …) » et sont à compléter à la main dans le document."
         )
-        warnings_list.extend(soft_gaps)
-    warnings = tuple(warnings_list)
-    if hard_blockers:
-        return SpfplSlicePlan(
-            can_generate=False,
-            status="blocked",
-            reason=hard_blockers[0],
-            document_codes=document_codes,
-            blockers=hard_blockers,
-            warnings=warnings,
-        )
+        warnings_list.extend(gaps)
     return SpfplSlicePlan(
         can_generate=True,
-        status="ready" if not soft_gaps else "ready_with_gaps",
+        status="ready" if not gaps else "ready_with_gaps",
         reason=(
             f"Prêt pour la génération du dossier {structure}."
-            if not soft_gaps
-            else f"Génération possible — {len(soft_gaps)} zone(s) à compléter à la main."
+            if not gaps
+            else f"Génération possible — {len(gaps)} zone(s) à compléter à la main."
         ),
         document_codes=document_codes,
         blockers=(),
-        warnings=warnings,
+        warnings=tuple(warnings_list),
     )
 
 
-# KAN-2 (Rafael 2026-07-13) : manques STRUCTURELS / NUMÉRIQUES qui restent BLOQUANTS (ils
-# cassent un calcul — valeur nominale = capital / nb actions, prix = prix_unitaire × nb — ou
-# une itération de répartition, ou un formatage de date). Tout autre manque = champ TEXTE ->
-# sort en « (À COMPLÉTER : …) » (required_text universel) sans bloquer. Doit rester STRICTEMENT
-# synchronisé avec les messages de `_validate` ci-dessous.
-_HARD_BLOCKER_MESSAGES: frozenset[str] = frozenset(
-    {
-        "Nombre d'actions requis et superieur a zero.",
-        "Le capital social doit etre divisible par le nombre d'actions "
-        "(la valeur nominale d'une action doit etre un nombre entier).",
-        "Nombre de parts apportees requis et superieur a zero.",
-        "Date de signature requise.",
-        "Parts totales de la cible requises (note d'information).",
-        "Parts apportees superieures aux parts totales de la societe cible (apport).",
-        "Au moins un associe de la cible requis (cession).",
-        "Nombre de parts cedees au holding requis (cession).",
-        "Prix par part cedee requis (cession).",
-        "Parts cedees au holding superieures aux parts detenues avant "
-        "cession par le cedant (l'actionnaire fondateur) (cession).",
-    }
-)
-
-
 def _validate(payload: dict[str, object]) -> tuple[str, ...]:  # noqa: C901
+    """Champs non renseignés du dossier — des AVERTISSEMENTS, jamais des blocages.
+
+    KAN-2 (Rafael 2026-07-14) : « tous les documents doivent pouvoir être générés, même si je ne
+    remplis aucun champ ». Ce que renvoie cette fonction ne bloque RIEN (cf. `build_spfpl_plan`) :
+    c'est la liste des zones qui sortiront en « (À COMPLÉTER : … ) », à compléter à la main.
+    """
     blockers: list[str] = []
     required = (
         ("denomination", "Denomination SPFPL requise."),
