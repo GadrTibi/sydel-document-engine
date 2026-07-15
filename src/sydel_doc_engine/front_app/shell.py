@@ -7,7 +7,6 @@ from pathlib import Path
 
 import streamlit as st
 
-from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import (
     Address,
     BailContext,
@@ -1472,7 +1471,9 @@ def _render_cession_form(  # noqa: C901
             "genre": praticien_genre,
             "prenom": praticien_prenom,
             "nom": praticien_nom,
-            "fonction": "gérante" if praticien_genre == Gender.FEMININ else "gérant",
+            # KAN-23 (Rafael 2026-07-15) : « gérant » n'est JAMAIS féminisé, même pour une
+            # femme -> forme masculine invariable (cf. `_FONCTION_INVARIANTES_MF`).
+            "fonction": "gérant",
         },
     }
 

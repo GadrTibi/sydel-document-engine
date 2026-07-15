@@ -1492,7 +1492,10 @@ def _apply_option_is_qualite_associe(
             continue
         feminin = associe.genre == Gender.FEMININ
         if structure == "MICRO_HOLDING" and index == gerant_index:
-            associe.parts.qualite_associe = "gérante" if feminin else "gérant"
+            # KAN-23 (Rafael 2026-07-15) : « le mot gérant ne doit JAMAIS être mis au féminin,
+            # on parle toujours d'un gérant même lorsqu'il s'agit d'une femme » -> invariable
+            # (cf. `_FONCTION_INVARIANTES_MF`). « associé » reste accordé : non visé par KAN-23.
+            associe.parts.qualite_associe = "gérant"
         else:
             associe.parts.qualite_associe = "associée" if feminin else "associé"
 

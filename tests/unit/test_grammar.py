@@ -14,13 +14,30 @@ from sydel_doc_engine.utils.grammar import (
 
 def test_accord_fonction_feminise_les_fonctions_connues() -> None:
     # Rafael 2026-07-09 : une fonction rendue pour une personne feminine s'accorde.
-    assert accord_fonction("gérant", Gender.FEMININ) == "gérante"
+    # KAN-23 (2026-07-15) EXCLUT « gérant » de cet accord -> test dedie ci-dessous.
     assert accord_fonction("président", Gender.FEMININ) == "présidente"
     assert accord_fonction("associé", Gender.FEMININ) == "associée"
     assert accord_fonction("administrateur", Gender.FEMININ) == "administratrice"
     assert accord_fonction("directeur", Gender.FEMININ) == "directrice"
-    assert accord_fonction("cogérant", Gender.FEMININ) == "cogérante"
-    assert accord_fonction("co-gérant", Gender.FEMININ) == "co-gérante"
+
+
+def test_accord_fonction_gerant_jamais_feminise() -> None:
+    # KAN-23 (Rafael 2026-07-15) : « Le mot "gérant" ne doit JAMAIS être mis au féminin. Ce n'est
+    # pas correct. On parle toujours d'un gérant, même lorsqu'il s'agit d'une femme. »
+    # SUPERSEDE deux demandes INVERSES anterieures, tracees au ticket : Rafael lui-meme le
+    # 2026-07-09 (« Madame Alice Martin, gerant » -> « gerante ») et Albane le 2026-06-26 §P3a
+    # (« gérante associée »). Le retour le plus recent prime (regle 68).
+    for mot in ("gérant", "cogérant", "co-gérant"):
+        assert accord_fonction(mot, Gender.FEMININ) == mot
+        assert accord_fonction(mot, Gender.MASCULIN) == mot
+    # Les DEUX formes restent des cles : un « gérante » venu du front ou d'un modele est CORRIGE.
+    assert accord_fonction("gérante", Gender.FEMININ) == "gérant"
+    assert accord_fonction("gérante", Gender.MASCULIN) == "gérant"
+    assert accord_fonction("cogérante", Gender.FEMININ) == "cogérant"
+    # Casse et pluriel preserves.
+    assert accord_fonction("Gérante", Gender.FEMININ) == "Gérant"
+    assert accord_fonction("gérantes", Gender.FEMININ) == "gérants"
+    assert accord_fonction("gérants", Gender.FEMININ) == "gérants"
 
 
 def test_accord_fonction_masculin_inchange() -> None:
@@ -30,16 +47,16 @@ def test_accord_fonction_masculin_inchange() -> None:
 
 def test_accord_fonction_idempotent_et_bidirectionnel() -> None:
     # Deja au bon genre -> intact ; feminin attribue a un homme -> re-masculinise.
-    assert accord_fonction("gérante", Gender.FEMININ) == "gérante"
-    assert accord_fonction("gérante", Gender.MASCULIN) == "gérant"
-    assert accord_fonction("gérant", Gender.FEMININ) == "gérante"
+    assert accord_fonction("présidente", Gender.FEMININ) == "présidente"
+    assert accord_fonction("présidente", Gender.MASCULIN) == "président"
+    assert accord_fonction("président", Gender.FEMININ) == "présidente"
 
 
 def test_accord_fonction_multi_mots_et_casse() -> None:
     assert accord_fonction("directeur général", Gender.FEMININ) == "directrice générale"
-    assert accord_fonction("Gérant", Gender.FEMININ) == "Gérante"
+    assert accord_fonction("Président", Gender.FEMININ) == "Présidente"
     # Pluriel regulier accorde.
-    assert accord_fonction("gérants", Gender.FEMININ) == "gérantes"
+    assert accord_fonction("associés", Gender.FEMININ) == "associées"
 
 
 def test_accord_fonction_hors_lexique_intact() -> None:

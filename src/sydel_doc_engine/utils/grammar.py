@@ -387,10 +387,20 @@ def capitalize_first(value: str) -> str:
 # (aucune regex sur « -e/-ee » qui abimerait un mot inconnu). Multi-mots accordes mot
 # a mot (« directeur general » -> « directrice generale »).
 # ---------------------------------------------------------------------------
-_FONCTION_PAIRS_MF: Final = (
+# KAN-23 (Rafael 2026-07-15) : « Le mot "gérant" ne doit JAMAIS être mis au féminin. Ce n'est pas
+# correct. On parle toujours d'un gérant, même lorsqu'il s'agit d'une femme. » -> INVARIANT : les
+# DEUX formes restent des cles (pour CORRIGER un « gérante » qui arriverait du front ou d'un
+# modele), mais rendent TOUJOURS le masculin, quel que soit le genre de la personne.
+# SUPERSEDE la demande INVERSE du meme Rafael le 2026-07-09 (reglement interieur SCM : « Madame
+# Alice Martin, gerant » -> « gerante ») : le retour le plus recent prime (regle 68). Ne PAS
+# reintroduire ces mots dans `_FONCTION_PAIRS_MF`.
+_FONCTION_INVARIANTES_MF: Final = (
     ("gérant", "gérante"),
     ("cogérant", "cogérante"),
     ("co-gérant", "co-gérante"),
+)
+
+_FONCTION_PAIRS_MF: Final = (
     ("président", "présidente"),
     ("vice-président", "vice-présidente"),
     ("associé", "associée"),
@@ -416,13 +426,30 @@ def _build_fonction_maps() -> tuple[dict[str, str], dict[str, str]]:
         for forme in (masculin, feminin):
             vers_feminin[forme] = feminin
             vers_masculin[forme] = masculin
-            # Pluriel regulier (+ s) : « gerants »/« gerantes », « associes »/« associees ».
+            # Pluriel regulier (+ s) : « presidents »/« presidentes », « associes »/« associees ».
             vers_feminin[forme + "s"] = feminin + "s"
+            vers_masculin[forme + "s"] = masculin + "s"
+    # KAN-23 : fonctions INVARIANTES (« gérant » & co) — les deux formes sont reconnues, mais
+    # rendent TOUJOURS le masculin, y compris quand on demande le feminin. Un « gérante » qui
+    # arriverait du front ou d'un modele est donc CORRIGE en « gérant ».
+    for masculin, feminin_incorrect in _FONCTION_INVARIANTES_MF:
+        for forme in (masculin, feminin_incorrect):
+            vers_feminin[forme] = masculin
+            vers_masculin[forme] = masculin
+            vers_feminin[forme + "s"] = masculin + "s"
             vers_masculin[forme + "s"] = masculin + "s"
     return vers_feminin, vers_masculin
 
 
 _FONCTION_VERS_FEMININ, _FONCTION_VERS_MASCULIN = _build_fonction_maps()
+# KAN-23 : toutes les formes (masculin, feminin fautif, pluriels) des fonctions figees au
+# masculin — sert au possessif (« son gérant », jamais « sa gérant »).
+_FONCTIONS_INVARIABLES_CASEFOLD: Final[frozenset[str]] = frozenset(
+    forme.casefold()
+    for masculin, feminin in _FONCTION_INVARIANTES_MF
+    for base in (masculin, feminin)
+    for forme in (base, base + "s")
+)
 _FONCTION_TOKEN_RE: Final = re.compile(r"(\s+)")
 
 
@@ -520,12 +547,27 @@ _VOYELLES_ELISION = "aeiouyàâäéèêëîïôöûü"
 
 
 def possessif_singulier(mot_suivant: str, genre: Gender | None) -> str:
-    """« son »/« sa » accorde au genre + a l'initiale du mot suivant (Akainu M1 2026-07-09 :
+    """« son »/« sa » accorde au MOT qu'il determine + a son initiale (Akainu M1 2026-07-09 :
     « son gérante » -> « sa gérante »). Masculin -> « son » ; feminin -> « sa » sauf devant
-    une voyelle/h muet (« son associée »)."""
+    une voyelle/h muet (« son associée »).
+
+    KAN-23 (Rafael 2026-07-15) : « gérant » est INVARIABLEMENT masculin, meme pour une femme
+    -> le possessif suit le MOT, pas la personne (« son gérant », jamais « sa gérant »). Sans
+    cette garde, une gerante femme produirait « Représentée par sa gérant ».
+    """
+    if _fonction_invariable_masculine(mot_suivant):
+        return "son"
     if genre == Gender.FEMININ and mot_suivant[:1].lower() not in _VOYELLES_ELISION:
         return "sa"
     return "son"
+
+
+def _fonction_invariable_masculine(mot: str | None) -> bool:
+    """Le mot est-il une fonction que KAN-23 fige au masculin (« gérant » & co) ?"""
+    if not mot:
+        return False
+    premier = mot.strip().split(" ")[0].casefold()
+    return premier in _FONCTIONS_INVARIABLES_CASEFOLD
 
 
 def subject_line(genre: Gender) -> str:

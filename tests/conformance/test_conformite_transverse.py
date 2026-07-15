@@ -164,23 +164,57 @@ def test_r13_accord_euro(corpus_cap1: dict[str, dict[str, str]], type_key: str) 
 def test_r15_flague_madame_fonction_masculine() -> None:
     from _conformance_rules import rule_r15_accord_fonction
 
-    assert rule_r15_accord_fonction("Représentée par Madame Alice Martin, gérant")
     assert rule_r15_accord_fonction("Madame Claire Bernard, président")
     assert rule_r15_accord_fonction("Mme Alice Martin, associé de la société")
     assert rule_r15_accord_fonction("Madame Eva Roux, directeur")
 
 
+def test_r15_flague_gerant_feminise_ou_qu_il_soit() -> None:
+    # KAN-23 (Rafael 2026-07-15) : « gérant » n'est JAMAIS mis au féminin. La règle interdit
+    # le CONCEPT (le mot au féminin), PARTOUT — pas une liste de tournures (leçon R3
+    # 2026-07-09 : une règle calée sur les phrases déjà signalées passe au vert sur la
+    # formulation suivante). Chaque tournure ci-dessous est prise par le MÊME motif.
+    from _conformance_rules import rule_r15_accord_fonction
+
+    assert rule_r15_accord_fonction("Représentée par Madame Alice Martin, gérante")
+    assert rule_r15_accord_fonction("Représentée par sa gérante, Madame Sophie Durand")
+    assert rule_r15_accord_fonction("Bon pour acceptation des fonctions de gérante")
+    assert rule_r15_accord_fonction("- Nomination de la gérante")
+    assert rule_r15_accord_fonction("agissant en qualité de gérante de la société")
+    # Y compris hors du motif « fonction accolée au nom », au pluriel et sur les composés.
+    assert rule_r15_accord_fonction("Madame Alice Martin, née le 1er janvier 1980, gérante")
+    assert rule_r15_accord_fonction("Les cogérantes de la société")
+    assert rule_r15_accord_fonction("Madame Eva Roux, co-gérante")
+
+
 def test_r15_ne_flague_pas_les_cas_legitimes() -> None:
     from _conformance_rules import rule_r15_accord_fonction
 
-    # Forme féminine correcte.
-    assert not rule_r15_accord_fonction("Représentée par Madame Alice Martin, gérante")
+    # KAN-23 : « gérant » au masculin pour une femme est DESORMAIS la forme attendue, et le
+    # possessif suit le MOT (« son gérant »), pas la personne.
+    assert not rule_r15_accord_fonction("Représentée par Madame Alice Martin, gérant")
+    assert not rule_r15_accord_fonction("Représentée par son gérant, Madame Sophie Durand")
+    # Les AUTRES fonctions continuent de s'accorder (KAN-23 ne vise que « gérant »).
     assert not rule_r15_accord_fonction("Madame Alice Martin, présidente")
     assert not rule_r15_accord_fonction("Madame Alice Martin, associée")
+    assert not rule_r15_accord_fonction("Représentée par sa présidente, Madame Sophie Durand")
     # Homme -> masculin légitime.
     assert not rule_r15_accord_fonction("Représentée par Monsieur Jean Durand, gérant")
-    # Fonction NON accolée au nom (autre segment de virgule) -> hors périmètre.
-    assert not rule_r15_accord_fonction("Madame Alice Martin, née le 1er janvier 1980, gérante")
+    # « gérance » (nom commun) n'est PAS une forme féminine de « gérant » -> jamais flaguée.
+    assert not rule_r15_accord_fonction("La gérance de la Société est assurée par le gérant.")
+    # EXCEPTION KAN-23 : « gérante » accordé a « personne morale » = adjectif sur une ENTITÉ
+    # (pas la fonction d'une femme) + verbatim des modèles client -> légitime. Signalé a Rafael.
+    assert not rule_r15_accord_fonction(
+        "La personne morale gérante doit désigner son représentant permanent auprès de la Société."
+    )
+    assert not rule_r15_accord_fonction(
+        "Lorsqu'une personne morale est nommée gérante de la Société, la décision qui la nomme "
+        "indique le nom de son représentant."
+    )
+    # ... mais l'exception ne couvre QUE ce construit : une femme reste prise dans la meme phrase.
+    assert rule_r15_accord_fonction(
+        "Lorsqu'une personne morale est nommée gérant. Madame Alice Martin, gérante, signe."
+    )
 
 
 def test_corpus_cap1_couvre_les_types(corpus_cap1: dict[str, dict[str, str]]) -> None:

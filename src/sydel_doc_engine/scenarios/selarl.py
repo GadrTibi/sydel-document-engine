@@ -134,7 +134,9 @@ def _cession_cabinet_medical_acte() -> CessionContext:
                     "genre": "feminin",
                     "prenom": "Alice",
                     "nom": "Moreau",
-                    "fonction": "gérante",
+                    # KAN-23 (Rafael 2026-07-15) : « gérant » n'est JAMAIS feminise, meme pour
+                    # une femme -> Alice Moreau est « gérant ».
+                    "fonction": "gérant",
                 },
             },
             "cabinet": {

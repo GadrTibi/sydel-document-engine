@@ -339,7 +339,11 @@ def _nomination_agenda_label(
     if "gérant" in normalized or "gerant" in normalized:
         if normalized.endswith("s"):
             return "Nomination des premiers gérants"
-        return f"Nomination {article} {'gérante' if feminin else 'gérant'}"
+        # KAN-23 (Rafael 2026-07-15) : « le mot gérant ne doit JAMAIS être mis au féminin, on
+        # parle toujours d'un gérant même lorsqu'il s'agit d'une femme » -> ni le mot ni son
+        # article ne s'accordent : « Nomination du gérant » y compris pour une femme.
+        # SUPERSEDE m-r3 (2026-07-12) qui feminisait ce libelle.
+        return "Nomination du gérant"
     if normalized.endswith("s"):
         return f"Nomination des {fonction_affichage}"
     fonction = accord_fonction(fonction_affichage, genre) if genre else fonction_affichage

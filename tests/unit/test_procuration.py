@@ -175,20 +175,21 @@ def test_procuration_uses_feminine_agreement(tmp_path: Path) -> None:
     assert "Je soussignée Madame Marie Durand" in text
 
 
-def test_procuration_accords_fonction_to_gender(tmp_path: Path) -> None:
-    # PR2 (Albane SELARL 2026-07-10) : « gérant » s'accorde au genre du mandant —
-    # « gérante » pour une femme, inchangé pour un homme. Le flux peut fournir la
-    # forme masculine ; l'accord se fait au rendu (idempotent).
+def test_procuration_gerant_jamais_feminise(tmp_path: Path) -> None:
+    # KAN-23 (Rafael 2026-07-15) : « gérant » n'est JAMAIS mis au feminin -> rendu IDENTIQUE
+    # pour un homme et pour une femme. SUPERSEDE PR2 (Albane SELARL 2026-07-10), qui demandait
+    # « gérante » pour une femme : le retour le plus recent prime (regle 68), trace au ticket.
     ctx_h = _context()
     ctx_h.personne_signataire.fonction_dirigeant = "gérant"
     text_h = _docx_text(ProcurationGenerator().generate(ctx_h, tmp_path))
     assert "agissant en qualité de gérant de la" in text_h
 
+    # Une « gérante » venue du flux (ou d'un modele) est RE-MASCULINISEE au rendu.
     ctx_f = _context(Gender.FEMININ)
-    ctx_f.personne_signataire.fonction_dirigeant = "gérant"
+    ctx_f.personne_signataire.fonction_dirigeant = "gérante"
     text_f = _docx_text(ProcurationGenerator().generate(ctx_f, tmp_path))
-    assert "agissant en qualité de gérante de la" in text_f
-    assert "gérant de la" not in text_f
+    assert "agissant en qualité de gérant de la" in text_f
+    assert "gérante" not in text_f
 
 
 def test_procuration_first_body_line_is_justified(tmp_path: Path) -> None:

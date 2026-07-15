@@ -488,11 +488,39 @@ R14_LABEL = "adresse de résidence non précédée de « au » (« Demeurant <nu
 # écrire). Les formes féminines (« gérante », « présidente », « associée ») échappent
 # au motif par la frontière de mot (« gérant\b » ne mord pas « gérante »). La fenêtre
 # ne franchit jamais la 1re virgule : seule la fonction ACCOLÉE au nom est visée.
+#
+# KAN-23 (Rafael 2026-07-15) — EXCEPTION codée par INTENTION : « Le mot "gérant" ne doit
+# JAMAIS être mis au féminin. Ce n'est pas correct. On parle toujours d'un gérant, même
+# lorsqu'il s'agit d'une femme. » La fonction est donc INVARIABLE : « Madame <Nom>, gérant »
+# devient LÉGITIME (les variantes de « gérant » sortent du motif d'accord manquant ci-dessous)
+# et TOUTE forme féminine du mot est une violation, où qu'elle soit dans le document.
+# SUPERSEDE trois demandes inverses antérieures, tracées au ticket : Rafael 2026-07-09
+# (« gérant » -> « gérante »), Albane 2026-06-26 §P3a (« gérante associée ») et Albane
+# 2026-07-10 (PR2, procuration). Le retour le plus récent prime (règle 68).
 _R15_FONCTION_MASC = (
-    r"(?:co-?g[ée]rant|vice-pr[ée]sident|cog[ée]rant|g[ée]rant|pr[ée]sident|associé"
+    r"(?:vice-pr[ée]sident|pr[ée]sident|associé"
     r"|administrateur|directeur|cofondateur|fondateur|tr[ée]sorier)"
 )
 _R15 = re.compile(r"\b(?:Madame|Mme)\b[^,\n]{0,40},\s*" + _R15_FONCTION_MASC + r"\b")
+
+# On interdit le CONCEPT (le mot au féminin), jamais une liste de tournures — leçon R3
+# 2026-07-09 : une règle qui matche les phrases déjà signalées passe au vert sur la
+# formulation suivante. « sa gérante », « la gérante », « fonctions de gérante », « gérantes »
+# tombent donc tous du même motif, sans avoir à les prévoir. « gérance » n'est pas visé.
+_R15_GERANT_FEMININ = re.compile(r"\b(?:co-?)?g[ée]rantes?\b", re.IGNORECASE)
+
+# EXCEPTION EXPLICITE et raisonnée (le SEUL mecanisme d'exception admis — leçon R3 : on
+# whiteliste ce qui est légitime, on ne liste jamais ce qu'il faut attraper) : « la personne
+# morale gérante » / « une personne morale nommée gérante » n'est PAS le cas visé par KAN-23.
+# « gérante » y est un ADJECTIF s'accordant avec le nom commun FÉMININ « personne morale »
+# (une ENTITÉ), et non la fonction d'une femme — or le motif de Rafael est explicitement le
+# genre de la personne (« même lorsqu'il s'agit d'une femme »). C'est en outre du VERBATIM des
+# modèles client (statuts SCI / SCI IRIS / SCS) : le réécrire sortirait du périmètre du ticket.
+# Signalé à Rafael sur KAN-23 -> si il tranche l'inverse, supprimer cette exception (la règle
+# reprend alors le mot partout, sans autre modification).
+_R15_GERANTE_PERSONNE_MORALE = re.compile(
+    r"personne morale\b[^.\n]{0,80}?g[ée]rante\b", re.IGNORECASE
+)
 
 # Akainu batch2+3 M1/M2 (2026-07-09) : coder l'INTENTION COMPLÈTE — dans un segment
 # « Représentée par … Madame/Mme … », TOUS les termes accordés au représentant féminin
@@ -502,8 +530,11 @@ _R15 = re.compile(r"\b(?:Madame|Mme)\b[^,\n]{0,40},\s*" + _R15_FONCTION_MASC + r
 # ligne « Représentée par … » (les représentés d'un même acte sont sur des lignes distinctes).
 _R15_REPR_FEMININ = re.compile(r"Repr[ée]sent[ée]e? par\b[^\n]*\b(?:Madame|Mme)\b[^\n]*")
 _R15_DOMICILIE_MASC = re.compile(r"\bdomicilié\b(?!e)")
+# KAN-23 : « gérante »/« cogérante » retirées d'ici — le mot n'existe plus au féminin, donc
+# « son gérant » est la forme ATTENDUE (le possessif suit le MOT, pas la personne) ; toute
+# « sa gérante » résiduelle est déjà prise par _R15_GERANT_FEMININ.
 _R15_SON_FONCTION_FEM = re.compile(
-    r"\bson\s+(?:g[ée]rante|pr[ée]sidente|directrice|tr[ée]sori[èe]re|cog[ée]rante"
+    r"\bson\s+(?:pr[ée]sidente|directrice|tr[ée]sori[èe]re"
     r"|administratrice|cofondatrice|fondatrice)\b"
 )
 
@@ -527,6 +558,14 @@ def rule_r15_accord_fonction(text: str) -> list[str]:
     personne s'accorde), pas liste de tournures — leçon Akainu 2026-07-09 + Albane
     2026-07-10. « Monsieur … né/gérant/inscrit » (masculin) reste légitime."""
     violations = _find_all(text, _R15)
+    # KAN-23 : « gérant » invariable -> toute forme féminine du mot est une violation, partout,
+    # SAUF l'adjectif accordé à « personne morale » (entité, verbatim modèle) — cf. supra.
+    entite = {m.end() for m in _R15_GERANTE_PERSONNE_MORALE.finditer(text)}
+    violations.extend(
+        _extract(text, m.start(), m.end())
+        for m in _R15_GERANT_FEMININ.finditer(text)
+        if m.end() not in entite
+    )
     for segment in _R15_REPR_FEMININ.finditer(text):
         seg = segment.group(0)
         if _R15_DOMICILIE_MASC.search(seg) or _R15_SON_FONCTION_FEM.search(seg):
@@ -538,7 +577,10 @@ def rule_r15_accord_fonction(text: str) -> list[str]:
     return violations
 
 
-R15_LABEL = "accord en genre de la fonction (« Madame <Nom>, gérant » interdit)"
+R15_LABEL = (
+    "accord en genre de la fonction (« Madame <Nom>, président » interdit) "
+    "+ « gérant » INVARIABLE, jamais au féminin (KAN-23)"
+)
 
 
 # ---------------------------------------------------------------------------

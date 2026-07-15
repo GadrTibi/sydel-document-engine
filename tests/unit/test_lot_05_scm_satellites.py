@@ -171,7 +171,7 @@ def test_scm_satellite_generators_create_clean_docx(tmp_path: Path) -> None:
     # Rafael 2026-07-09 (ITEM 2) : la fonction du representant s'accorde au genre —
     # « Madame Alice Martin, gérante » (feminin) ; « Monsieur Jean Durand, gérant » (masculin).
     assert (
-        "Représentée par Madame Alice Martin, gérante"
+        "Représentée par Madame Alice Martin, gérant"
         in texts["reglement_interieur_scm.docx"]
     )
     assert (

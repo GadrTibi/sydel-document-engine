@@ -233,7 +233,7 @@ def test_pv_nomination_gerant_repeats_two_associes(tmp_path: Path) -> None:
     assert "Madame Alice Durand préside la séance." in text
     assert "Le président rappelle l’ordre du jour :" in text
     # PV4 (Albane 2026-06-26) : ordre du jour en tirets « - » (plus de « · »).
-    assert "- Nomination de la gérante" in paragraphs
+    assert "- Nomination du gérant" in paragraphs
     assert "- Pouvoirs" in paragraphs
     assert "· Nomination de la gérante" not in text
     assert "· Pouvoirs" not in text
@@ -278,11 +278,12 @@ def test_pv_nomination_gerant_one_associe_is_associe_unique_pv(
     ) in text
     assert "À l’issue de la signature des statuts, a pris les décisions suivantes :" in text
     # Ordre du jour en tirets.
-    assert "- Nomination de la gérante" in paragraphs
+    assert "- Nomination du gérant" in paragraphs
     assert "- Pouvoir" in paragraphs
-    # Decisions de l'associe unique (femme -> gerante).
+    # Decisions de l'associe unique : la PERSONNE s'accorde (« L'associée unique », « née »,
+    # « associée unique »), la FONCTION « gérant » reste invariable (KAN-23, Rafael 2026-07-15).
     assert (
-        "L’associée unique décide de désigner en qualité de gérante Madame Alice Durand, "
+        "L’associée unique décide de désigner en qualité de gérant Madame Alice Durand, "
         "médecin de profession, née le 09/07/1986 à Lyon, de nationalité française, "
         "demeurant au 3 rue des Lilas, 69003 Lyon associée unique de la Société."
     ) in text
@@ -291,7 +292,7 @@ def test_pv_nomination_gerant_one_associe_is_associe_unique_pv(
         "au greffe du Tribunal de Commerce de la Société de Paris."
     ) in text
     assert "Cette résolution est adoptée à l’unanimité" not in text
-    assert "Bon pour acceptation des fonctions de gérante" in text
+    assert "Bon pour acceptation des fonctions de gérant" in text
 
 
 def test_pv_nomination_gerant_without_emprunt_omits_borrowing_decision(
@@ -379,8 +380,8 @@ def test_pv_nomination_gerant_restores_essential_docx_structure(tmp_path: Path) 
     vote_formula = _find_paragraph(document, VOTE_FORMULA)
     assert vote_formula.runs[0].italic is True
 
-    decision_item = _find_paragraph(document, "- Nomination de la gérante")
-    assert decision_item.text == "- Nomination de la gérante"
+    decision_item = _find_paragraph(document, "- Nomination du gérant")
+    assert decision_item.text == "- Nomination du gérant"
 
     signature_name = _find_paragraph(document, "Alice Durand")
     assert signature_name.alignment == WD_ALIGN_PARAGRAPH.CENTER
@@ -737,8 +738,8 @@ def test_pv_nomination_selarl_garde_intitule_gerant(tmp_path: Path) -> None:
     # reste correct (l'intitule « dirigeant » de PV1 ne s'impose qu'au SELAS).
     text = _docx_text(_generate(tmp_path, _context(associes=_associes(1))))
 
-    assert "Nomination de la gérante" in text
-    assert "Bon pour acceptation des fonctions de gérante" in text
+    assert "Nomination du gérant" in text
+    assert "Bon pour acceptation des fonctions de gérant" in text
 
 
 def _find_para(document: Document, needle: str):
@@ -949,7 +950,7 @@ def test_pv_associe_unique_decisions_compact_but_keep_inter_decision_space(
     assert body.paragraph_format.space_after.pt == _PV_COMPACT_SPACE_AFTER_PT
     # Ordre du jour (enonciations des decisions) compact aussi.
     assert (
-        _find_paragraph(document, "- Nomination de la gérante").paragraph_format.space_after.pt
+        _find_paragraph(document, "- Nomination du gérant").paragraph_format.space_after.pt
         == _PV_COMPACT_SPACE_AFTER_PT
     )
     # Aeration entre decisions preservee.

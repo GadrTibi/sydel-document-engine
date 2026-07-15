@@ -1025,9 +1025,13 @@ def test_p5_numero_article_surligne(tmp_path: Path) -> None:
             assert run.font.highlight_color is None
 
 
-def test_p3a_president_femme_gerante_associee(tmp_path: Path) -> None:
-    # P3a : « il faudrait pouvoir le féminiser pour que ce soit gérante associée ». Quand le
-    # president de seance (dernier present) est une femme -> « gérante associée ».
+def test_p3a_presidente_femme_reste_gerant_associe(tmp_path: Path) -> None:
+    # KAN-23 (Rafael 2026-07-15) : « Le mot "gérant" ne doit JAMAIS être mis au féminin. On parle
+    # toujours d'un gérant, même lorsqu'il s'agit d'une femme. » -> une femme qui préside reste
+    # « gérant associé ».
+    # SUPERSEDE Albane 2026-06-26 §P3a (« il faudrait pouvoir le féminiser pour que ce soit
+    # gérante associée »), qui demandait exactement l'inverse. Le retour le plus recent prime
+    # (regle 68) ; le supersede est trace au ticket pour que le client puisse objecter.
     ctx = _base_context("SELARL")
     ctx.scm_cession.associes_presents[-1] = ScmCessionAssocie(
         civilite_affichage="Madame",
@@ -1036,8 +1040,8 @@ def test_p3a_president_femme_gerante_associee(tmp_path: Path) -> None:
         parts=ScmCessionPartsAttribution(nb=100, plage="201 à 300"),
     )
     text = _docx_text(PvAgeCessionScmGenerator().generate(ctx, tmp_path))
-    assert "Sophie Leroy préside la séance en qualité de gérante associée" in text
-    assert "gérant associé." not in text
+    assert "Sophie Leroy préside la séance en qualité de gérant associé" in text
+    assert "gérante" not in text
 
 
 def test_p3a_president_homme_gerant_associe(tmp_path: Path) -> None:
@@ -1307,17 +1311,18 @@ def test_sc4_soussigne_masculin_non_regression(tmp_path: Path) -> None:
 
 
 def test_sc4_cessionnaire_representation_accordee_si_feminin(tmp_path: Path) -> None:
-    # SC4-adjacent (accord genre) : le représentant du cessionnaire EST le cedant ; pour une
-    # femme, le segment « Représentée par … » s'accorde entierement (sa gérante … domiciliée)
-    # — sinon la règle de conformité R15 (accord fonction) flague le rendu féminin.
+    # SC4-adjacent (accord genre) : le representant du cessionnaire EST le cedant ; pour une
+    # femme, le segment « Représentée par … » s'accorde (… domiciliée) SAUF la fonction
+    # « gérant », invariable depuis KAN-23 (Rafael 2026-07-15) -> « son gérant » : le possessif
+    # suit le MOT (masculin), pas la personne. SUPERSEDE l'accord « sa gérante » demande avant.
     ctx = _female_cedant_context("SELARL")
     text = _docx_text(ActeCessionPartsScmGenerator().generate(ctx, tmp_path))
     assert (
-        "Représentée par sa gérante, Madame Sophie Durand, domiciliée en cette qualité audit siège."
+        "Représentée par son gérant, Madame Sophie Durand, domiciliée en cette qualité audit siège."
         in text
     )
-    assert "son gérant" not in text
-    # SELAS : « sa présidente … domiciliée ».
+    assert "gérante" not in text
+    # SELAS : « sa présidente … domiciliée » — les AUTRES fonctions s'accordent toujours.
     text_selas = _docx_text(
         ActeCessionPartsScmGenerator().generate(_female_cedant_context("SELAS"), tmp_path)
     )

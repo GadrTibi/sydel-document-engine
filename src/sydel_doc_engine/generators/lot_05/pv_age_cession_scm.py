@@ -151,14 +151,16 @@ class PvAgeCessionScmGenerator:
             raise ValueError("scm_cession.associes_presents est obligatoire pour le PV AGE cession SCM.")
         president_index = len(scm_cession.associes_presents) - 1
         president = scm_cession.associes_presents[president_index]
-        # Albane 2026-06-26 §P3a : la qualite du president de seance s'accorde au SEXE du
-        # president (« gerante associee » si femme, « gerant associe » si homme). Le sexe est
-        # derive de la civilite d'affichage deja saisie (« Madame » -> feminin), pas d'un champ
-        # nouveau.
+        # Le sexe du president de seance reste derive de sa civilite : il pilote l'accord de
+        # « président » plus bas (`_accord_role_president`), que KAN-23 ne vise PAS.
         president_feminin = _est_feminin(president.civilite_affichage)
-        qualite_president = (
-            "gérante associée" if president_feminin else "gérant associé"
-        )
+        # KAN-23 (Rafael 2026-07-15) : « Le mot "gérant" ne doit JAMAIS être mis au féminin. On
+        # parle toujours d'un gérant, même lorsqu'il s'agit d'une femme. » -> qualite INVARIABLE
+        # (« gérant associé » y compris pour une femme) ; « associé » qualifie « gérant » et suit
+        # donc le masculin du nom.
+        # SUPERSEDE Albane 2026-06-26 §P3a, qui demandait l'accord au sexe (« gerante associee »
+        # si femme). Le retour le plus recent prime (regle 68) ; supersede trace au ticket.
+        qualite_president = "gérant associé"
         _body(
             document,
             (
