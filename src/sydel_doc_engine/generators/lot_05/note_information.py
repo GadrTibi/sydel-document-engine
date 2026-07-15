@@ -13,7 +13,7 @@ from sydel_doc_engine.generators.lot_05.spfpl_common import (
     montant_avec_euros,
     operation_party,
     person_signature,
-    required_int,
+    quantite_titres,
     required_societe_cible,
     required_societe_spfpl,
     required_text,
@@ -89,14 +89,14 @@ class NoteInformationGenerator:
                 f"{montant_avec_euros(required_text(societe_spfpl.capital_social, 'societe_spfpl.capital_social'))}"  # noqa: E501
                 ", "
                 f"prévoit {OPERATION_PHRASES[operation_type]}, dès son immatriculation, "
-                f"{nb_titres} parts de la "
+                f"{quantite_titres(nb_titres, 'nombre de parts')} parts de la "
                 f"{required_text(societe_cible.denomination, 'societe_cible.denomination')}, "
                 f"{required_text(societe_cible.forme_sociale, 'societe_cible.forme_sociale')} "
                 f"de {_profession_reglementee(societe_cible)} "
                 # M2 (idem) : unite « euros » sur le capital de la cible.
                 f"au capital de {montant_avec_euros(_capital_social_cible(societe_cible))} "
                 "divisé en "
-                f"{required_int(societe_cible.nb_parts_total, 'societe_cible.nb_parts_total')} "
+                f"{quantite_titres(societe_cible.nb_parts_total, 'nombre total de parts')} "
                 "parts, dont le siège social est situé "
                 f"{company_siege_display(societe_cible, 'societe_cible')}, immatriculée au "
                 f"RCS de {required_text(societe_cible.ville_rcs, 'societe_cible.ville_rcs')} "

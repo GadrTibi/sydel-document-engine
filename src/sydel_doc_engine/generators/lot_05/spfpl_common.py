@@ -50,9 +50,37 @@ def required_text(value: str | None, field_name: str) -> str:
 
 
 def required_int(value: int | None, field_name: str) -> int:
+    """Point de CALCUL : rend un int, pour les soustractions/comparaisons de répartition.
+
+    NE PAS s'en servir pour AFFICHER une quantité de titres -> `quantite_titres` ci-dessous.
+    C'est la confusion des deux qui a fait revenir KAN-2 deux fois : le front (`_i()` =
+    `number_input(min_value=0)`) pose TOUJOURS 0 et jamais None -> cette fonction ne levait
+    donc jamais, et imprimait le zéro tel quel dans des actes signables.
+    """
     if value is None:
         raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
     return value
+
+
+def quantite_titres(value: int | None, libelle: str) -> str:
+    """AFFICHAGE d'une quantité de titres (parts / actions). KAN-2 + Akainu B1 (2026-07-15).
+
+    Une quantité NON RENSEIGNÉE ne s'affirme JAMAIS à zéro : un acte SIGNABLE qui déclare
+    « apporte 0 parts sociales » est FAUX — et c'est PIRE que le blocage que le client a fait
+    retirer. Le front ne sait pas exprimer « vide » sur ces slots (0 = champ jamais touché) :
+    ici, à l'AFFICHAGE, 0 et None sont donc le même cas — « non rempli ».
+
+    Périmètre volontairement limité au FIL DU TEXTE. Les TABLEAUX de répartition avant/après
+    gardent leur « 0 » : c'est une valeur RÉELLE (la holding détient 0 part AVANT la cession),
+    pas un champ vide.
+
+    `libelle` = intitulé MÉTIER (« nombre de parts cédées »), jamais un nom de token ni un
+    chemin technique — Akainu M2 : « (À COMPLÉTER : CESSION_PARTS.PRIX_TOTAL_LETTRES) » ne veut
+    rien dire pour le client qui relit son acte.
+    """
+    if not value:
+        return f"(À COMPLÉTER : {libelle})"
+    return str(value)
 
 
 def spfpl_forme_sociale_complete(profession_pluriel: str) -> str:

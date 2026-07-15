@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from datetime import date
 from pathlib import Path
 
@@ -1684,6 +1685,41 @@ def test_spfpl_generates_with_single_missing_field(
 _ROUTAGE_KEYS = {"structure", "operation", "is_apport"}
 
 
+def _docx_texte_complet(path: Path) -> str:
+    """Texte INTÉGRAL d'un .docx : corps + TABLEAUX + en-têtes/pieds.
+
+    Akainu M4 (2026-07-15) : `Document(d).paragraphs` ne descend PAS dans les cellules ni dans
+    les sections -> le filet R1 (« aucun crochet livré ») était aveugle aux tableaux de
+    répartition, qui sont précisément là où vivent les quantités. Un filet troué ne prouve rien.
+    """
+    document = Document(path)
+    morceaux: list[str] = [p.text for p in document.paragraphs]
+    for table in document.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                morceaux.extend(p.text for p in cell.paragraphs)
+    for section in document.sections:
+        for part in (section.header, section.footer):
+            morceaux.extend(p.text for p in part.paragraphs)
+    return " ".join(t for t in morceaux if t)
+
+
+# Akainu B1 : une QUANTITÉ de titres affirmée à zéro dans une PHRASE. On code l'INTENTION
+# (« un compte de titres non renseigné ne s'affirme jamais »), pas les 3 tournures qu'Akainu a
+# citées — sinon la 4e formulation repasserait au vert (leçon R3 « Docteur », payée 3 fois).
+# Le lookbehind écarte la QUEUE d'un nombre plus grand (« 10 parts », « 100 actions »).
+# NB — les TABLEAUX de répartition avant/après sont hors périmètre : « 0 » y est une valeur
+# RÉELLE (la holding détient 0 part AVANT la cession). D'où le ciblage « 0 <mot> » en toutes
+# lettres dans le fil du texte, et non toute cellule valant « 0 ».
+_QUANTITE_NULLE = re.compile(
+    r"(?<![\d,.])0\s+(?:parts?|actions?|titres?)\b", re.IGNORECASE
+)
+
+
+def _quantites_nulles_affirmees(texte: str) -> list[str]:
+    return [m.group(0) for m in _QUANTITE_NULLE.finditer(texte)]
+
+
 def _vider_champ(payload: dict[str, object], key: str) -> bool:
     """Vide UN champ du payload comme le ferait un utilisateur qui ne le remplit pas.
 
@@ -1733,9 +1769,17 @@ def test_spfpl_formulaire_entierement_vide_genere(flow: str, tmp_path: Path) -> 
     spfpl_slice.generate_dossier(payload, tmp_path)
     docs = list(tmp_path.rglob("*.docx"))
     assert len(docs) >= 10, f"{flow} : le bundle complet doit sortir ({len(docs)} docs)"
-    texte = " ".join(p.text for d in docs for p in Document(d).paragraphs)
+    texte = " ".join(_docx_texte_complet(d) for d in docs)
     assert "À COMPLÉTER" in texte
     assert "[" not in texte and "]" not in texte
+    # Akainu B1 (2026-07-15) : generer sans blocage ne suffit pas — un acte SIGNABLE qui AFFIRME
+    # « 0 parts sociales » est FAUX, et pire que le blocage que le client a fait retirer. Une
+    # quantite de titres non renseignee doit sortir en marqueur, jamais en zero affirme.
+    fautes = _quantites_nulles_affirmees(texte)
+    assert not fautes, (
+        f"{flow} : quantite(s) de titres affirmee(s) a 0 sur un formulaire VIDE "
+        f"(le champ n'est pas 'zero', il est 'non rempli') -> {sorted(set(fautes))[:6]}"
+    )
 
 
 def test_spfpl_missing_field_marks_zone_a_completer(tmp_path: Path) -> None:

@@ -13,6 +13,7 @@ from sydel_doc_engine.generators.lot_05.spfpl_common import (
     euro_word,
     montant_avec_euros,
     person_short_identity,
+    quantite_titres,
     required_apport_titres,
     required_apporteur,
     required_capital_souscription,
@@ -154,7 +155,7 @@ class AttestationCapitalListeSouscripteursGenerator:
         add_paragraph(
             docx,
             f"{person_short_identity(apporteur, 'apporteur')} fait apport de "
-            f"{required_int(apport_titres.nb_parts, 'apport_titres.nb_parts')} parts de la "
+            f"{quantite_titres(apport_titres.nb_parts, 'nombre de parts apportées')} parts de la "
             f"{required_text(societe_cible.forme_sociale, 'societe_cible.forme_sociale')} "
             f"dénommée {required_text(societe_cible.denomination, 'societe_cible.denomination')} "
             f"ayant son siège {company_siege_display(societe_cible, 'societe_cible')}, "

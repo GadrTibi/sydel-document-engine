@@ -8,6 +8,7 @@ from sydel_doc_engine.generators.lot_05.spfpl_common import (
     company_siege_display,
     format_display_date,
     person_display,
+    quantite_titres,
     required_cedant,
     required_cession_parts,
     required_int,
@@ -131,7 +132,7 @@ def add_resolution_agrement(
         docx,
         (
             f"{subject} autorise la cession par {person_display(cedant, 'cedant')} de "
-            f"{required_int(cession_parts.nb_parts, 'cession_parts.nb_parts')} parts sociales "
+            f"{quantite_titres(cession_parts.nb_parts, 'nombre de parts cédées')} parts sociales "
             "qu'il détient de la "
             f"{required_text(societe_cible.denomination, 'societe_cible.denomination')}, à la "
             f"{required_text(societe_spfpl.denomination, 'societe_spfpl.denomination')}, "
@@ -175,7 +176,7 @@ def add_article_7_bis(docx, ctx: DocumentGenerationContext, *, subject: str) -> 
             f"{required_text(societe_cible.capital_social, 'societe_cible.capital_social')} euros "
             f"({_capital_social_lettres(societe_cible)}) "
             "et est divisé en "
-            f"{required_int(societe_cible.nb_parts_total, 'societe_cible.nb_parts_total')} "
+            f"{quantite_titres(societe_cible.nb_parts_total, 'nombre total de parts')} "
             "parts sociales d'un montant de "
             f"{_valeur_nominale_part(societe_cible)} "
             "euros chacune de nominal, entièrement libérées, attribuées aux Associés de "

@@ -18,6 +18,7 @@ from sydel_doc_engine.generators.lot_05.scm_cession_common import (
 )
 from sydel_doc_engine.generators.lot_05.spfpl_common import (
     company_siege_display,
+    quantite_titres,
     required_apport_titres,
     required_apporteur,
     required_commissaire_aux_apports,
@@ -305,8 +306,8 @@ class ContratApportSpfplGenerator:
             "[adresse_siege_societe_apportee]": company_siege_display(
                 societe_cible, "societe_cible"
             ),
-            "[nb_parts_apportees]": str(
-                required_int(apport_titres.nb_parts, "apport_titres.nb_parts")
+            "[nb_parts_apportees]": quantite_titres(
+                apport_titres.nb_parts, "nombre de parts apportées"
             ),
             "[plage_parts_apportees]": required_text(
                 apport_titres.plage_parts, "apport_titres.plage_parts"

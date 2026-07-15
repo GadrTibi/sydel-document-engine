@@ -19,6 +19,7 @@ from sydel_doc_engine.generators.lot_05.spfpl_common import (
     elision_de,
     euro_word,
     montant_lettres_avec_unite,
+    quantite_titres,
     required_cedant,
     required_cession_parts,
     required_int,
@@ -398,7 +399,6 @@ class ActeCessionPartsSpfplGenerator:
     def _build_replacements(
         self, ctx, cedant, cession_parts, societe_spfpl, societe_cible, representant
     ) -> dict[str, str]:
-        cible_total = required_int(societe_cible.nb_parts_total, "societe_cible.nb_parts_total")
         cible_capital = required_text(societe_cible.capital_social, "societe_cible.capital_social")
         ordre = cedant.ordre
         conjoint = cedant.conjoint
@@ -622,7 +622,9 @@ class ActeCessionPartsSpfplGenerator:
             # Albane 2026-07-07 : capital de la societe cedee en « lettres (chiffres) euros »
             # (« au capital social de dix mille (10 000) euros divisé en 100 parts… »).
             "[capital_social_societe_cedee]": capital_cedee_display,
-            "[nb_parts_total_societe_cedee]": str(cible_total),
+            "[nb_parts_total_societe_cedee]": quantite_titres(
+                societe_cible.nb_parts_total, "nombre total de parts"
+            ),
             "[ville_rcs_societe_cedee]": required_text(
                 societe_cible.ville_rcs, "societe_cible.ville_rcs"
             ),
@@ -684,8 +686,8 @@ class ActeCessionPartsSpfplGenerator:
                 representant.fonction, "representant.fonction"
             ),
             # Cession
-            "[nb_parts_cedees]": str(
-                required_int(cession_parts.nb_parts, "cession_parts.nb_parts")
+            "[nb_parts_cedees]": quantite_titres(
+                cession_parts.nb_parts, "nombre de parts cédées"
             ),
             # A4 : nombre de parts cedees en lettres en MAJUSCULES (« SOIXANTE (60) parts »).
             "[nb_parts_cedees_lettres]": _upper_nombre_lettres(

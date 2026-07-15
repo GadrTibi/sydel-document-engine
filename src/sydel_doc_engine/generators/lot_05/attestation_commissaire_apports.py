@@ -15,10 +15,10 @@ from sydel_doc_engine.generators.lot_05.spfpl_common import (
     person_address_display,
     person_short_identity,
     professional_entity_presentation,
+    quantite_titres,
     required_apport_titres,
     required_apporteur,
     required_commissaire_aux_apports,
-    required_int,
     required_societe_cible,
     required_societe_spfpl,
     required_text,
@@ -100,7 +100,7 @@ class AttestationCommissaireApportsGenerator:
         )
         add_hyphen_list_item(
             docx,
-            f"{required_int(apport_titres.nb_parts, 'apport_titres.nb_parts')} "
+            f"{quantite_titres(apport_titres.nb_parts, 'nombre de parts apportées')} "
             f"parts de la {cible_forme} "
             f"dénommée \"{cible_name}\", "
             f"ayant son siège {company_siege_display(societe_cible, 'societe_cible')}, "

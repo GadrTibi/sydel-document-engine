@@ -17,8 +17,8 @@ from sydel_doc_engine.generators.lot_05.pv_agrement_common import (
 from sydel_doc_engine.generators.lot_05.spfpl_common import (
     person_display,
     person_signature,
+    quantite_titres,
     required_cedant,
-    required_int,
     required_societe_cible,
     required_text,
     validate_associe_unique,
@@ -51,7 +51,7 @@ class PvAgrementCessionSpfplAssocieUniqueGenerator:
                 "au capital de "
                 f"{required_text(societe_cible.capital_social, 'societe_cible.capital_social')} "
                 "euros, composé de "
-                f"{required_int(societe_cible.nb_parts_total, 'societe_cible.nb_parts_total')} "
+                f"{quantite_titres(societe_cible.nb_parts_total, 'nombre total de parts')} "
                 "parts, a pris les décisions suivantes :"
             ),
             alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
