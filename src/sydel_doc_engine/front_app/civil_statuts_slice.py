@@ -425,8 +425,13 @@ def _render_common_docs_form(structure: str, prefix: str) -> dict[str, object]:
     # dedie etait mort (jamais lu) + requis + trompeur. Supprime du formulaire (#8 onglet 24).
     # SCS1 (Albane 2026-06-25) : pour la SCS, champ conseiller/mandataire retire (pas d'interet a le
     # saisir) -> vide, common_creation le defaulte sur le mandataire SYDEL standard (Jordan ELBAZ).
-    # Les autres civils (SCI/SCM) gardent la saisie editable.
-    if structure == "SCS":
+    # KAN-12 (Rafael 2026-07-15) : MEME motif pour la micro holding — « Il est actuellement demande
+    # de completer le nom du conseiller de chez sydel. Il doit etre retire puisqu'il n'a pas
+    # d'interet dans ce cas precisement. » On REUTILISE le bloc SCS deja ratifie (meme
+    # comportement, meme fallback), on ne reimplemente pas par type : champ vide -> le mandataire
+    # SYDEL standard, donc les DOCUMENTS sont inchanges. Les autres civils (SCI/SCM) gardent la
+    # saisie editable.
+    if structure in ("SCS", "MICRO_HOLDING"):
         mandataire_prenom, mandataire_nom = "", ""
     else:
         mandataire_prenom, mandataire_nom = mandataire_inputs(prefix)
