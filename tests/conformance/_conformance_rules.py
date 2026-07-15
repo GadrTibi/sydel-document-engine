@@ -509,6 +509,36 @@ _R15 = re.compile(r"\b(?:Madame|Mme)\b[^,\n]{0,40},\s*" + _R15_FONCTION_MASC + r
 # tombent donc tous du même motif, sans avoir à les prévoir. « gérance » n'est pas visé.
 _R15_GERANT_FEMININ = re.compile(r"\b(?:co-?)?g[ée]rantes?\b", re.IGNORECASE)
 
+# Akainu B1/M1 (2026-07-15) : l'interdiction du mot au feminin ne code que la MOITIE de
+# l'intention. L'invariance a une RETOMBEE : tout ce qui s'accorde AVEC LE MOT « gérant »
+# doit rester masculin, sinon la phrase se desynchronise et sort AGRAMMATICALE (« future
+# gérant » livre dans la lettre d'avertissement au conjoint, « la gérant », « sa gérant ») —
+# PIRE que l'etat d'avant le ticket. On code la CLASSE (determinant/epithete FEMININ accole a
+# « gérant »), pas les tournures deja signalees.
+# NB — hors motif VOLONTAIREMENT : les PARTICIPES (« nommée gérant », « désignée gérant »,
+# « élue gérant ») s'accordent avec le SUJET (la personne), PAS avec « gérant » : ils sont
+# LEGITIMES. De meme les determinants EPICENES (« leur/notre/votre/l'unique gérant »).
+_R15_DETERMINANT_FEM_GERANT = re.compile(
+    r"\b(?:la|une|cette|sa|ma|ta|future|nouvelle|ancienne|seule|première|dernière)\s+"
+    r"(?:co-?)?g[ée]rants?\b",
+    re.IGNORECASE,
+)
+
+# Une civilite dans la fenetre disqualifie l'exception « personne morale » : on parle alors
+# d'une PERSONNE, pas de l'entite (Akainu M2 — la fenetre large blanchissait une vraie femme).
+_R15_CIVILITE = re.compile(r"\b(?:Madame|Mme|Monsieur|M\.)\b")
+
+# DETTE TRACEE — faute de frappe du MODELE CLIENT, arbitrage Rafael demandé sur KAN-23.
+# `Statuts_SCS_modele.docx` (source tokenisée) porte « le rapport de la gérant » là où le
+# moteur écrit « le rapport de la gérANCE » partout ailleurs (2 autres sites) : c'est une
+# COQUILLE du client, pas une féminisation — VÉRIFIÉ, notre code laisse « gérance » intacte
+# dans les deux genres, ce n'est donc PAS une régression KAN-23.
+# On ne réécrit PAS le texte juridique du client sans son accord (le wording appartient au
+# sachant métier) et on ne se tait PAS non plus : l'occurrence est whitelistée ICI, NOMMÉMENT,
+# le temps qu'il tranche — pas noyée dans un motif large. Sa réponse -> soit on corrige en
+# « gérance », soit on retire ces 3 lignes.
+_R15_COQUILLE_MODELE_SCS = "le rapport de la gérant,"
+
 # EXCEPTION EXPLICITE et raisonnée (le SEUL mecanisme d'exception admis — leçon R3 : on
 # whiteliste ce qui est légitime, on ne liste jamais ce qu'il faut attraper) : « la personne
 # morale gérante » / « une personne morale nommée gérante » n'est PAS le cas visé par KAN-23.
@@ -518,8 +548,13 @@ _R15_GERANT_FEMININ = re.compile(r"\b(?:co-?)?g[ée]rantes?\b", re.IGNORECASE)
 # modèles client (statuts SCI / SCI IRIS / SCS) : le réécrire sortirait du périmètre du ticket.
 # Signalé à Rafael sur KAN-23 -> si il tranche l'inverse, supprimer cette exception (la règle
 # reprend alors le mot partout, sans autre modification).
+# Akainu M2 (2026-07-15) : la 1re version (fenetre de 80 caracteres) etait un TROU PROUVE —
+# elle blanchissait « La personne morale associée est représentée par Madame Alice Martin,
+# gérante ». Deux garde-fous : (1) fenetre RESSERREE sur le verbatim REEL des modeles (« la
+# personne morale gérante » = 0 caractere ; « une personne morale est nommée gérante » = 12) ;
+# (2) toute civilite dans la fenetre DISQUALIFIE l'exception -> on parle d'une PERSONNE.
 _R15_GERANTE_PERSONNE_MORALE = re.compile(
-    r"personne morale\b[^.\n]{0,80}?g[ée]rante\b", re.IGNORECASE
+    r"personne morale\b[^.\n]{0,30}?g[ée]rante\b", re.IGNORECASE
 )
 
 # Akainu batch2+3 M1/M2 (2026-07-09) : coder l'INTENTION COMPLÈTE — dans un segment
@@ -559,12 +594,23 @@ def rule_r15_accord_fonction(text: str) -> list[str]:
     2026-07-10. « Monsieur … né/gérant/inscrit » (masculin) reste légitime."""
     violations = _find_all(text, _R15)
     # KAN-23 : « gérant » invariable -> toute forme féminine du mot est une violation, partout,
-    # SAUF l'adjectif accordé à « personne morale » (entité, verbatim modèle) — cf. supra.
-    entite = {m.end() for m in _R15_GERANTE_PERSONNE_MORALE.finditer(text)}
+    # SAUF l'adjectif accordé à « personne morale » (entité, verbatim modèle) — cf. supra. Une
+    # civilité dans la fenêtre annule l'exception (Akainu M2) : c'est alors une PERSONNE.
+    entite = {
+        m.end()
+        for m in _R15_GERANTE_PERSONNE_MORALE.finditer(text)
+        if not _R15_CIVILITE.search(m.group(0))
+    }
     violations.extend(
         _extract(text, m.start(), m.end())
         for m in _R15_GERANT_FEMININ.finditer(text)
         if m.end() not in entite
+    )
+    # Retombée de l'invariance : « future/la/sa gérant » (Akainu B1/M1). La coquille du modèle
+    # SCS est exclue NOMMÉMENT (cf. supra) — dette tracée, arbitrage Rafael en cours.
+    violations.extend(
+        v for v in _find_all(text, _R15_DETERMINANT_FEM_GERANT)
+        if _R15_COQUILLE_MODELE_SCS not in v
     )
     for segment in _R15_REPR_FEMININ.finditer(text):
         seg = segment.group(0)

@@ -187,6 +187,60 @@ def test_r15_flague_gerant_feminise_ou_qu_il_soit() -> None:
     assert rule_r15_accord_fonction("Madame Eva Roux, co-gérante")
 
 
+def test_r15_flague_la_retombee_agrammaticale_de_l_invariance() -> None:
+    # Akainu B1/M1 (2026-07-15) : interdire le mot au feminin ne code que la MOITIE de
+    # l'intention. « gérant » etant invariable, tout ce qui s'accorde AVEC LE MOT doit rester
+    # masculin — sinon la phrase se desynchronise et sort AGRAMMATICALE, PIRE qu'avant le
+    # ticket. « future gérant » a reellement ete livre (lettre d'avertissement au conjoint).
+    from _conformance_rules import rule_r15_accord_fonction
+
+    assert rule_r15_accord_fonction("Agissant en qualité de future gérant")  # le defaut reel
+    assert rule_r15_accord_fonction("La gérant de la Société")
+    assert rule_r15_accord_fonction("une gérant")
+    assert rule_r15_accord_fonction("cette gérant")
+    assert rule_r15_accord_fonction("Représentée par sa gérant")
+    assert rule_r15_accord_fonction("la nouvelle gérant")
+    assert rule_r15_accord_fonction("les co-gérants nommés, dont la gérant Sophie")
+
+
+def test_r15_ne_flague_pas_les_participes_ni_les_epicenes() -> None:
+    # Frontiere FINE de la retombee ci-dessus : un PARTICIPE s'accorde avec le SUJET (la
+    # personne), PAS avec « gérant » -> « Madame X est nommée gérant » est CORRECT et ne doit
+    # JAMAIS etre flague (Akainu proposait de l'inclure : ce serait un faux positif). Idem pour
+    # les determinants EPICENES, qui ne portent pas de genre.
+    from _conformance_rules import rule_r15_accord_fonction
+
+    assert not rule_r15_accord_fonction("Madame Alice Martin est nommée gérant de la Société.")
+    assert not rule_r15_accord_fonction("Madame Alice Martin, désignée gérant, accepte.")
+    assert not rule_r15_accord_fonction("Elle est élue gérant à l'unanimité.")
+    assert not rule_r15_accord_fonction("leur gérant")
+    assert not rule_r15_accord_fonction("notre gérant")
+    assert not rule_r15_accord_fonction("l'unique gérant de la Société")
+    # Les epithetes correctement au masculin passent.
+    assert not rule_r15_accord_fonction("Agissant en qualité de futur gérant")
+    assert not rule_r15_accord_fonction("le nouveau gérant")
+    # ... et les autres fonctions gardent leur accord feminin normal.
+    assert not rule_r15_accord_fonction("Agissant en qualité de future présidente")
+    assert not rule_r15_accord_fonction("la présidente")
+
+
+def test_r15_exception_personne_morale_ne_blanchit_pas_une_vraie_femme() -> None:
+    # Akainu M2 (2026-07-15) : la 1re exception (fenetre de 80 caracteres apres « personne
+    # morale ») etait un TROU PROUVE — elle blanchissait de VRAIES femmes. Contre-exemples
+    # d'Akainu, tous VERTS avant le fix, tous FLAGUES maintenant.
+    from _conformance_rules import rule_r15_accord_fonction
+
+    assert rule_r15_accord_fonction(
+        "La personne morale associée est représentée par Madame Alice Martin, gérante"
+    )
+    assert rule_r15_accord_fonction(
+        "La société personne morale, Madame Marie Dupont, gérante de la SELARL"
+    )
+    assert rule_r15_accord_fonction(
+        "La personne morale X, dont Madame Sophie Durand est la gérante"
+    )
+
+
 def test_r15_ne_flague_pas_les_cas_legitimes() -> None:
     from _conformance_rules import rule_r15_accord_fonction
 

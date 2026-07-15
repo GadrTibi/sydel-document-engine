@@ -35,7 +35,7 @@ from sydel_doc_engine.rendering.docx_builder import (
 )
 from sydel_doc_engine.utils.grammar import (
     accord_fonction,
-    accord_terme_genre,
+    accord_terme_avant_fonction,
     euro_word,
     montant_avec_euros,
 )
@@ -239,10 +239,15 @@ def _add_apporteur_signature_block(document, ctx: DocumentGenerationContext) -> 
     nom = required_text(apporteur.nom, "apporteur.nom")
     fonction = required_text(apporteur.fonction_dirigeant, "apporteur.fonction_dirigeant")
     add_paragraph(document, f"{civilite} {prenom} {nom}")
-    # M2 (Akainu ronde 2, 2026-07-12) : « futur gérant » s'accorde au genre du dirigeant
-    # signataire (« future gérante »), coherent avec la procuration (PR2) et le PV nomination.
-    futur = accord_terme_genre("futur", apporteur.genre)
+    # M2 (Akainu ronde 2, 2026-07-12) : « futur <fonction> » s'accorde au genre du dirigeant
+    # signataire (« future présidente »), coherent avec la procuration et le PV nomination.
+    # KAN-23 (Rafael 2026-07-15) + Akainu B1 : SUPERSEDE pour « gérant », desormais INVARIABLE.
+    # L'epithete s'accorde avec le MOT-FONCTION, pas avec la personne -> une femme gerante est
+    # « futur gérant ». Sans cette garde, une moitie de la phrase s'accordait encore
+    # (« future ») et l'autre non (« gérant ») -> « future gérant » : agrammatical, et PIRE
+    # que l'etat d'avant le ticket (« future gérante »).
     fonction_accordee = accord_fonction(fonction, apporteur.genre)
+    futur = accord_terme_avant_fonction("futur", fonction, apporteur.genre)
     add_italic_instruction(
         document, f"Agissant en qualité de {futur} {fonction_accordee}"
     )

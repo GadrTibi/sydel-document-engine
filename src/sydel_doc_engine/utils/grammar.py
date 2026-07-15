@@ -20,7 +20,11 @@ from sydel_doc_engine.domain.enums import Gender
 # ---------------------------------------------------------------------------
 
 _SMALL_NUMBERS: Final = {
-    0: "zero",
+    # KAN-2 / Akainu M1 (2026-07-15) : « zéro » ACCENTUÉ. Ce mot n'etait jamais rendu tant que
+    # 0 etait bloque ; en levant les blocages, KAN-2 a ouvert ce chemin et livre « fait apport
+    # de zero (0) parts » dans les statuts SPFPL apport. Table PARTAGEE -> le defaut etait
+    # latent pour tous les types. Aucun parseur ne lit cette table (sortie uniquement).
+    0: "zéro",
     1: "un",
     2: "deux",
     3: "trois",
@@ -562,6 +566,28 @@ def possessif_singulier(mot_suivant: str, genre: Gender | None) -> str:
     return "son"
 
 
+def accord_terme_avant_fonction(
+    terme: str | None, fonction: str | None, genre: Gender | None
+) -> str:
+    """Accorde un terme ANTÉPOSÉ à une fonction (épithète/participe : « futur gérant »,
+    « nommée présidente ») : il s'accorde avec le MOT-FONCTION qu'il qualifie, PAS avec la
+    personne.
+
+    KAN-23 (Rafael 2026-07-15) + Akainu B1 : « gérant » étant invariablement masculin, une
+    FEMME est « futur gérant ». Sans cette garde, les deux moitiés de la phrase se
+    désynchronisent — l'épithète s'accorde (« future ») pendant que la fonction ne s'accorde
+    plus (« gérant ») — et le document livre « future gérant », AGRAMMATICAL : PIRE que l'état
+    d'avant le ticket (« future gérante »). Même principe que `possessif_singulier` : tout ce
+    qui s'accorde avec le MOT reste masculin quand le MOT est invariable.
+
+    Les fonctions qui s'accordent normalement sont inchangées : le terme suit alors le genre
+    de la personne (« future présidente »).
+    """
+    if _fonction_invariable_masculine(fonction):
+        return accord_terme_genre(terme, Gender.MASCULIN)
+    return accord_terme_genre(terme, genre)
+
+
 def _fonction_invariable_masculine(mot: str | None) -> bool:
     """Le mot est-il une fonction que KAN-23 fige au masculin (« gérant » & co) ?"""
     if not mot:
@@ -625,7 +651,36 @@ def apply_gender_pairs(
             continue
         source, target = (masculin, feminin) if genre == Gender.FEMININ else (feminin, masculin)
         rendered = _replace_to_target(rendered, source, target, index)
-    return rendered
+    return _corrige_possessif_devant_fonction_invariable(rendered)
+
+
+# KAN-23 + Akainu (2026-07-15) : une PAIRE AVEUGLE ne peut PAS accorder un possessif — elle ne
+# regarde pas le mot suivant. La paire « Représentée par son  » -> « Représentée par sa  » de la
+# cession de cabinet (pensée pour « sa présidente ») produisait « Représentée par sa gérant »,
+# AGRAMMATICAL, dès que « gérant » est devenu invariable. Défaut de CONCEPTION de la paire, pas
+# de son contenu -> on corrige au point PARTAGÉ (toute paire aveugle, présente ou future, en
+# bénéficie), et non par un rustine locale.
+#
+# Le motif est DÉRIVÉ de `_FONCTION_INVARIANTES_MF` : ajouter une fonction à cette liste met à
+# jour ce correctif automatiquement. Ce n'est donc PAS une liste de tournures écrite à la main
+# (leçon R3 « Docteur », payée 3 fois) : la donnée est la source unique.
+_POSSESSIF_SA_INVARIABLE: Final = re.compile(
+    r"\bsa(\s+)(" + "|".join(
+        re.escape(forme)
+        for pair in _FONCTION_INVARIANTES_MF
+        for forme in pair
+    ) + r")\b",
+    re.IGNORECASE,
+)
+
+
+def _corrige_possessif_devant_fonction_invariable(text: str) -> str:
+    """« sa gérant » / « sa gérante » -> « son gérant » : quand le MOT est invariablement
+    masculin, le possessif suit le MOT, pas la personne. Corrige AUSSI la fonction au passage
+    (une « sa gérante » résiduelle repart en « son gérant »). Idempotent."""
+    return _POSSESSIF_SA_INVARIABLE.sub(
+        lambda m: "son" + m.group(1) + accord_fonction(m.group(2), Gender.MASCULIN), text
+    )
 
 
 def _replace_to_target(text: str, source: str, target: str, index: int) -> str:
