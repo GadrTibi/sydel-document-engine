@@ -8,6 +8,7 @@ from sydel_doc_engine.utils.grammar import (
     euro_word,
     filiation_label,
     montant_lettres_avec_unite,
+    part_word,
     subject_line,
 )
 
@@ -64,6 +65,31 @@ def test_accord_fonction_hors_lexique_intact() -> None:
     assert accord_fonction("notaire", Gender.FEMININ) == "notaire"
     assert accord_fonction("", Gender.FEMININ) == ""
     assert accord_fonction(None, Gender.FEMININ) == ""
+
+
+def test_part_word_singulier_pour_exactement_une_part() -> None:
+    # KAN-14 (Rafael 2026-07-15) : « Article 7 des statuts : lorsqu'un associé a 1 part, cela
+    # doit être rédigé au singulier. »
+    assert part_word(1) == "part"
+    assert part_word("1") == "part"
+    assert part_word(1, sociale=True) == "part sociale"
+
+
+def test_part_word_pluriel_des_deux_et_a_zero() -> None:
+    # Une PART est denombrable : le singulier ne vaut QUE pour exactement 1. Contrairement a
+    # euro_word (un MONTANT est une quantite continue -> « 0 euro »), on rend « 0 parts ».
+    # Les deux regles sont distinctes : ne pas factoriser les helpers.
+    assert part_word(0) == "parts"
+    assert part_word(2) == "parts"
+    assert part_word(100) == "parts"
+    assert part_word("1 000") == "parts"  # separateur de milliers tolere
+    assert part_word(2, sociale=True) == "parts sociales"
+
+
+def test_part_word_illisible_defaut_pluriel() -> None:
+    # Valeur non parsable -> pluriel (cas le plus courant, le moins risque) — comme euro_word.
+    assert part_word("") == "parts"
+    assert part_word(None) == "parts"
 
 
 def test_euro_word_singulier_sous_deux() -> None:

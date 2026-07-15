@@ -577,10 +577,35 @@ def rule_r15_accord_fonction(text: str) -> list[str]:
     return violations
 
 
-R15_LABEL = (
-    "accord en genre de la fonction (« Madame <Nom>, président » interdit) "
-    "+ « gérant » INVARIABLE, jamais au féminin (KAN-23)"
-)
+# NB : le libelle affiche vit dans RULE_LABELS (bas de fichier), SEULE source. L'ancienne
+# constante R15_LABEL, morte (aucun lecteur), a ete supprimee : elle divergeait deja de
+# RULE_LABELS et faisait croire qu'on avait mis le libelle a jour alors que non (KAN-23).
+
+
+# ---------------------------------------------------------------------------
+# R16 — accord en nombre des PARTS (KAN-14, Rafael 2026-07-15)
+# ---------------------------------------------------------------------------
+#
+# Retour KAN-14 : « Article 7 des statuts : lorsqu'un associé a 1 part, cela doit être
+# rédigé au singulier. » Convention de LANGUE -> universelle (regle 68 Q4), pas une
+# specificite micro holding. On code l'INTENTION (« la figure 1 suivie du mot part au
+# PLURIEL est une faute d'accord »), jamais une liste de tournures (leçon R3 2026-07-09) :
+# « 1 parts », « 1 parts sociales », « 1 parts Numérotées », « ci<TAB>1 parts » et toute
+# formulation future tombent du MEME motif. Le lookbehind negatif empeche de mordre la
+# QUEUE d'un nombre plus grand (« 21 parts », « 101 parts » sont LEGITIMES : le « 1 » y est
+# precede d'un chiffre). Les lettres (« une parts ») sont visees par le second motif.
+_R16_FIGURE_UNE_PART = re.compile(r"(?<![\d,.])1\s+parts?\s*sociales?\b|(?<![\d,.])1\s+parts\b")
+_R16_LETTRE_UNE_PART = re.compile(r"\bune\s+parts\b", re.IGNORECASE)
+
+
+def rule_r16_accord_parts(text: str) -> list[str]:
+    """Accord en nombre du mot « part » : exactement 1 -> SINGULIER (« 1 part »), 0 et 2+ ->
+    pluriel. Regle par INTENTION (une quantite singuliere ne porte jamais « parts »), pas
+    liste de tournures. Verrou permanent de KAN-14 : le helper partage
+    ``grammar.part_word`` est le SEUL point qui produit cet accord."""
+    violations = _find_all(text, _R16_FIGURE_UNE_PART)
+    violations.extend(_find_all(text, _R16_LETTRE_UNE_PART))
+    return violations
 
 
 # ---------------------------------------------------------------------------
@@ -604,6 +629,7 @@ RULES: dict[str, Callable[[str], list[str]]] = {
     # R13 tourne sur le corpus cap1 séparé (test_r13_accord_euro), pas ici.
     "R14": rule_r14_demeurant_au,
     "R15": rule_r15_accord_fonction,
+    "R16": rule_r16_accord_parts,
 }
 
 # Règles appliquées au NOM DE FICHIER du document (les autres reçoivent le texte).

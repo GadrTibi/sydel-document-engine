@@ -40,6 +40,7 @@ from sydel_doc_engine.utils.grammar import (
     capitalize_first,
     euro_word,
     montant_avec_euros,
+    part_word,
 )
 
 
@@ -680,6 +681,10 @@ def _add_capital_block(document, data: _ResolvedStatutsCivil) -> None:
     if data.template.expected_type == "micro_holding":
         _add_capital_block_micro_holding(document, data)
         return
+    # KAN-14 (Rafael 2026-07-15) : l'accord « 1 part » au SINGULIER est une convention de langue,
+    # pas une specificite micro holding -> propagee a TOUS les statuts civils (regle 68 Q4) via le
+    # helper partage `part_word`. Sortie inchangee des que nb != 1 : la fidelite au modele source
+    # verifie (wording SCI/SCI IRIS ci-dessous) est preservee sur tous les cas existants.
     for associe in data.associes:
         parts = _required_parts(associe)
         add_paragraph(document, _signature_label(associe))
@@ -687,8 +692,9 @@ def _add_capital_block(document, data: _ResolvedStatutsCivil) -> None:
             add_paragraph(
                 document,
                 "A concurrence de "
-                f"{_required_text(parts.nb_lettres, 'associes[].parts.nb_lettres')} parts, "
-                f"ci\t{parts.nb} parts Numérotées de "
+                f"{_required_text(parts.nb_lettres, 'associes[].parts.nb_lettres')} "
+                f"{part_word(parts.nb)}, "
+                f"ci\t{parts.nb} {part_word(parts.nb)} Numérotées de "
                 f"{_required_int(parts.debut, 'associes[].parts.debut')} à "
                 f"{_required_int(parts.fin, 'associes[].parts.fin')}.",
             )
@@ -701,14 +707,12 @@ def _add_capital_block(document, data: _ResolvedStatutsCivil) -> None:
             add_paragraph(
                 document,
                 "A concurrence de "
-                f"{_required_text(parts.nb_lettres, 'associes[].parts.nb_lettres')} parts, "
-                f"ci\t{parts.nb} parts ",
+                f"{_required_text(parts.nb_lettres, 'associes[].parts.nb_lettres')} "
+                f"{part_word(parts.nb)}, "
+                f"ci\t{parts.nb} {part_word(parts.nb)} ",
             )
-    add_paragraph(
-        document,
-        "SOIT AU TOTAL "
-        f"{_required_int(data.statuts.nb_parts_total, 'statuts_civils.nb_parts_total')} parts",
-    )
+    total_parts = _required_int(data.statuts.nb_parts_total, "statuts_civils.nb_parts_total")
+    add_paragraph(document, f"SOIT AU TOTAL {total_parts} {part_word(total_parts)}")
 
 
 def _add_apport_block_micro_holding(document, data: _ResolvedStatutsCivil) -> None:
@@ -803,20 +807,29 @@ def _add_capital_block_micro_holding(document, data: _ResolvedStatutsCivil) -> N
     )
     add_paragraph(
         document,
-        f"Le capital social est divisé en {nb_parts} parts de {vnp}€ "
+        f"Le capital social est divisé en {nb_parts} {part_word(nb_parts)} de {vnp}€ "
         f"({vnp_lettres} {euro_word(vnp).upper()}) chacune.",
     )
     add_paragraph(document, f"Elles sont réparties entre les associés comme suit{_NBSP}:")
     # Art. 7 (Albane 2026-07-09, B3) : « présentation comme dans les modèles » — un TIRET
     # devant chaque associé, les nombres de parts ALIGNÉS à droite (taquet à points comme le
     # modèle source) et un peu d'AÉRATION entre les lignes.
+    # KAN-14 (Rafael 2026-07-15) : « lorsqu'un associé a 1 part, cela doit être rédigé au
+    # singulier ». L'accord passe par le helper PARTAGE `part_word` (pendant de `euro_word`) —
+    # sortie inchangee des que nb != 1, donc aucune regression sur les cas existants.
     for associe in data.associes:
         parts = _required_parts(associe)
         _add_mh_repartition_line(
-            document, _mh_short_label(associe), f"{parts.nb} parts", tiret=True
+            document,
+            _mh_short_label(associe),
+            f"{parts.nb} {part_word(parts.nb)}",
+            tiret=True,
         )
     _add_mh_repartition_line(
-        document, "Composant le capital social effectif", f"{nb_parts} parts", tiret=False
+        document,
+        "Composant le capital social effectif",
+        f"{nb_parts} {part_word(nb_parts)}",
+        tiret=False,
     )
 
 
