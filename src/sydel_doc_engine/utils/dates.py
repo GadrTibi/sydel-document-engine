@@ -33,8 +33,16 @@ def accentuate_months(text: str) -> str:
     return re.sub(rf"\b({pattern})\b", _repl, text, flags=re.IGNORECASE)
 
 
-def format_date_fr(value: date) -> str:
-    """Formate une date au format numerique francais « JJ/MM/AAAA »."""
+def format_date_fr(value: date | None) -> str:
+    """Formate une date au format numerique francais « JJ/MM/AAAA ».
+
+    KAN-2 (Rafael 2026-07-14) : une date NON RENSEIGNEE ne bloque pas la generation -> marqueur
+    visible « (À COMPLÉTER : … ) », a completer a la main sur le DOCX. On n'invente JAMAIS une
+    date de repli : ce serait la meme faute que le « prix de ZERO euro » de l'acte (Akainu B4) —
+    une valeur affirmee et fausse ne se voit pas, elle se signe.
+    """
+    if value is None:
+        return "(À COMPLÉTER : date)"
     return value.strftime("%d/%m/%Y")
 
 

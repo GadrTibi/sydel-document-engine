@@ -18,6 +18,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_paragraph,
     new_document,
 )
+from sydel_doc_engine.utils.dates import format_date_fr
 from sydel_doc_engine.utils.grammar import euro_word, montant_avec_euros, subject_line
 
 OUTPUT_FILENAME = "attestation_capital_souscripteurs_selas.docx"
@@ -237,7 +238,7 @@ class _ResolvedAttestationSelas:
             president_civilite_phrase=_addressing_civilite(ctx.personne_signataire.genre),
             president_identite=f"{president_civilite} {president_signature}",
             president_signature=president_signature,
-            date_signature=ctx.signature.date.strftime("%d/%m/%Y"),
+            date_signature=format_date_fr(ctx.signature.date),
         )
 
 

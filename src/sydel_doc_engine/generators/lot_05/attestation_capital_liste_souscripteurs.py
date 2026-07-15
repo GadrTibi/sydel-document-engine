@@ -24,6 +24,7 @@ from sydel_doc_engine.generators.lot_05.spfpl_common import (
     validate_apport_context,
 )
 from sydel_doc_engine.rendering.docx_builder import add_paragraph, add_spacer, new_document
+from sydel_doc_engine.utils.dates import format_date_fr
 
 OUTPUT_FILENAME = "attestation_capital_liste_souscripteurs.docx"
 
@@ -186,7 +187,7 @@ class AttestationCapitalListeSouscripteursGenerator:
             f"{president_identite}.",
         )
         add_paragraph(docx, f"Fait à {ctx.signature.lieu}")
-        add_paragraph(docx, f"Le {ctx.signature.date.strftime('%d/%m/%Y')}")
+        add_paragraph(docx, f"Le {format_date_fr(ctx.signature.date)}")
         # AT1 (Rafael 2026-07-09) : la ligne de SIGNATURE porte le nom SANS profession (la
         # profession reste dans « par le Président, … » juste au-dessus — une seule mention).
         add_paragraph(

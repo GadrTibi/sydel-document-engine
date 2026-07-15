@@ -1623,43 +1623,96 @@ def test_spfpl_cession_missing_cible_forme_generates_with_gap() -> None:
 @pytest.mark.parametrize(
     "flow, field",
     [
+        # Champs TEXTE.
         ("SPFPL cession", "nom"),
-        ("SPFPL cession", "date_naissance"),
         ("SPFPL cession", "banque_nom"),
         ("SPFPL cession", "cible_denomination"),
-        ("SPFPL cession", "cible_numero_rcs"),
         ("SPFPL cession", "ordre_ville"),
-        ("SPFPL cession", "numero_rpps"),
         ("SPFPL apport", "nom"),
-        ("SPFPL apport", "date_naissance"),
         ("SPFPL apport", "nationalite"),
         ("SPFPL apport", "commissaire_denomination"),
         ("SPFPL apport", "evaluateur_denomination"),
-        ("SPFPL apport", "cible_forme"),
+        # Champs DATE et NUMÉRIQUES — ceux dont ce lot RETIRE la garde, donc les seuls qui
+        # prouvent quelque chose (gate Akainu M2 : les 13 cas d'origine n'étaient que du texte,
+        # ils passaient au vert en évitant exactement le périmètre du ticket).
+        ("SPFPL cession", "date_naissance"),
+        ("SPFPL cession", "signature_date"),
+        ("SPFPL cession", "nb_actions_total"),
+        ("SPFPL cession", "cible_nb_parts"),
+        ("SPFPL cession", "capital_social"),
+        ("SPFPL cession", "cession_data.nb_cedees"),
+        ("SPFPL cession", "cession_data.prix_unitaire"),
+        ("SPFPL cession", "cession_data.associes"),
+        ("SPFPL apport", "signature_date"),
+        ("SPFPL apport", "nb_actions_total"),
+        ("SPFPL apport", "cible_nb_parts"),
+        ("SPFPL apport", "apport_nb_parts"),
     ],
 )
 def test_spfpl_generates_with_single_missing_field(
     flow: str, field: str, tmp_path: Path
 ) -> None:
-    # KAN-2 (Rafael 2026-07-13), gate Akainu (B1/B2/B3/M1) : vider UN SEUL champ TEXTE — n'importe
-    # lequel, un à la fois, sur CESSION comme APPORT (y compris date de naissance, commissaire aux
-    # apports, évaluateur) — ne doit JAMAIS faire échouer la génération : la zone sort en
-    # « (À COMPLÉTER : …) » à compléter à la main, et le livrable ne contient JAMAIS de crochets
-    # « [ ] » (règle R1 anti-placeholder). Test adversarial : un champ par cas, pas un lot qui
-    # masque le champ qui casse.
+    # KAN-2 (Rafael 2026-07-14) : « tous les documents doivent pouvoir être générés, même si je ne
+    # remplis aucun champ ». Vider UN SEUL champ — texte, date OU numérique — ne doit JAMAIS faire
+    # échouer la génération : la zone sort « (À COMPLÉTER : …) » à compléter à la main, et le
+    # livrable ne contient jamais de crochets « [ ] » (règle R1).
+    #
+    # Gate Akainu : le plan ne doit pas MENTIR. Un `can_generate=True` suivi d'un crash est le
+    # défaut exact qui a fait rejeter ce ticket -> chaque cas GÉNÈRE réellement (M3), et les
+    # champs date/numériques sont couverts (M2), pas seulement le texte.
     payload = _spfpl_payload(flow)
-    payload[field] = ""
+    if "." in field:  # champ imbriqué du sous-formulaire cession
+        parent, enfant = field.split(".", 1)
+        bloc = dict(payload[parent])  # type: ignore[arg-type]
+        bloc[enfant] = [] if enfant == "associes" else ("" if enfant == "prix_unitaire" else 0)
+        payload[parent] = bloc
+    else:
+        assert _vider_champ(payload, field), f"{field} n'est pas un champ videable"
+
     plan = spfpl_slice.build_spfpl_plan(payload)
-    assert plan.can_generate is True, f"{flow}/{field} ne devrait pas bloquer (champ texte)"
+    assert plan.can_generate is True, f"{flow}/{field} : le plan ne doit jamais bloquer"
+    assert plan.blockers == (), f"{flow}/{field} : aucun blocage attendu"
     spfpl_slice.generate_dossier(payload, tmp_path)
     docs = list(tmp_path.rglob("*.docx"))
     assert docs, f"{flow}/{field} : le bundle doit se générer malgré le champ manquant"
     texte = " ".join(p.text for d in docs for p in Document(d).paragraphs)
-    # Cœur KAN-2 + gate Akainu : générer sans crash ET jamais de placeholder à crochets « [ ] »
-    # (règle R1). La plupart des champs manquants sortent en « (À COMPLÉTER : …) » ; quelques-uns
-    # rendent une zone VIDE (chemin `.get() or ""`) — les deux sont non-bloquants et « à compléter
-    # à la main » (le marqueur universel est le nice-to-have m2, tracé, pas le cœur du ticket).
     assert "[" not in texte and "]" not in texte, f"{flow}/{field} : marqueur à crochets interdit"
+
+
+# Clés de ROUTAGE : le type de dossier / l'opération, choisis dans un menu — jamais « non
+# remplis ». Tout le reste est un champ que l'utilisateur peut laisser vide.
+_ROUTAGE_KEYS = {"structure", "operation", "is_apport"}
+
+
+def _vider_champ(payload: dict[str, object], key: str) -> bool:
+    """Vide UN champ du payload comme le ferait un utilisateur qui ne le remplit pas.
+
+    KAN-2 / gate Akainu (M1) : les objets `date` doivent être vidés EUX AUSSI. Un premier jet ne
+    vidait que str/int/dict/list -> `signature_date` restait valorisée et le test « formulaire
+    entièrement vide » esquivait précisément le champ qui faisait crasher. `0` est la valeur d'un
+    `number_input(min_value=0)` non rempli ; `None` celle d'une date effacée ou invalide.
+
+    Renvoie False pour les clés de routage et les booléens (une case cochée est toujours dans un
+    état) — rien à vider.
+    """
+    if key in _ROUTAGE_KEYS:
+        return False
+    value = payload[key]
+    if isinstance(value, bool):
+        return False
+    if isinstance(value, str):
+        payload[key] = ""
+    elif isinstance(value, date):
+        payload[key] = None
+    elif isinstance(value, int):
+        payload[key] = 0
+    elif isinstance(value, dict):
+        payload[key] = {"associes": []} if key == "cession_data" else {}
+    elif isinstance(value, list):
+        payload[key] = []
+    else:
+        payload[key] = None
+    return True
 
 
 @pytest.mark.parametrize("flow", ["SPFPL cession", "SPFPL apport"])
@@ -1670,18 +1723,8 @@ def test_spfpl_formulaire_entierement_vide_genere(flow: str, tmp_path: Path) -> 
     # on vide tout le reste. Le bundle complet doit sortir, zones en « (À COMPLÉTER : …) »,
     # sans aucun blocage ni crochet « [ ] ».
     payload = _spfpl_payload(flow)
-    routage = {"structure", "operation", "is_apport"}
-    for key, value in list(payload.items()):
-        if key in routage or isinstance(value, bool):
-            continue
-        if isinstance(value, str):
-            payload[key] = ""
-        elif isinstance(value, int):
-            payload[key] = 0
-        elif isinstance(value, dict):
-            payload[key] = {"associes": []} if key == "cession_data" else {}
-        elif isinstance(value, list):
-            payload[key] = []
+    for key in list(payload):
+        _vider_champ(payload, key)
 
     plan = spfpl_slice.build_spfpl_plan(payload)
     assert plan.can_generate is True, f"{flow} : un formulaire vide doit rester générable"
@@ -1708,17 +1751,22 @@ def test_spfpl_missing_field_marks_zone_a_completer(tmp_path: Path) -> None:
     assert "[" not in texte and "]" not in texte
 
 
-def test_spfpl_nb_actions_zero_ne_bloque_plus() -> None:
+def test_spfpl_nb_actions_zero_ne_bloque_plus(tmp_path: Path) -> None:
     # KAN-2 (Rafael 2026-07-14) : « Tous les documents doivent pouvoir être générés, MÊME SI je
-    # ne remplis AUCUN champ. » -> nb_actions = 0 ne BLOQUE plus ; le manque est surfacé en
-    # avertissement et la zone sort en « (À COMPLÉTER : …) ». (L'ancienne garde bloquante était
-    # une limite INVENTÉE côté moteur : vérifié, un formulaire vide génère les 10 documents.)
+    # ne remplis AUCUN champ. » -> nb_actions = 0 (la valeur d'un `number_input` non rempli) ne
+    # BLOQUE plus ; le manque est surfacé en avertissement.
+    #
+    # Gate Akainu (M3) : ce test n'assertait QUE le plan — or c'est précisément ce que ce ticket a
+    # cassé (le plan annonce « générable » puis la génération lève). Un test de non-blocage qui ne
+    # génère pas ne prouve rien -> on génère réellement.
     payload = _spfpl_payload("SPFPL cession")
     payload["nb_actions_total"] = 0
     plan = spfpl_slice.build_spfpl_plan(payload)
     assert plan.can_generate is True
     assert plan.blockers == ()
     assert any("actions" in w.lower() and "zero" in w.lower() for w in plan.warnings)
+    spfpl_slice.generate_dossier(payload, tmp_path)
+    assert list(tmp_path.rglob("*.docx"))
 
 
 def test_spfpl_apport_slice_generates_clean(tmp_path: Path) -> None:

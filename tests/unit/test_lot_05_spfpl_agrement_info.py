@@ -3,7 +3,6 @@ from __future__ import annotations
 from datetime import date
 from pathlib import Path
 
-import pytest
 from _accents import assert_no_unaccented_french
 from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -304,12 +303,25 @@ def test_pv_plusieurs_associes_president_qualite_elision(tmp_path: Path) -> None
     assert "en qualité de associé" not in text
 
 
-def test_pv_plusieurs_associes_blocks_missing_total_presence(tmp_path: Path) -> None:
+def test_pv_plusieurs_associes_genere_meme_si_presence_ne_couvre_pas_le_total(
+    tmp_path: Path,
+) -> None:
+    """KAN-2 (Rafael 2026-07-14) : « je veux pouvoir générer les documents même si je ne remplis
+    aucun champ ». Une répartition qui ne couvre PAS la totalité des parts ne bloque donc PLUS la
+    génération — le garde levait un ValueError APRÈS que le plan ait annoncé « générable »
+    (Akainu B2/B3). Le document sort, l'incohérence se corrige à la main. SUPERSEDE le blocage
+    historique (`presence_lines`, spfpl_common). C'est l'état PARTIELLEMENT rempli qui compte
+    ici : un formulaire tout à 0 serait cohérent (0 == 0) et ne prouverait rien."""
     ctx = _plural_context()
-    ctx.associes_cible[1].nb_parts_avant = 20
+    ctx.associes_cible[1].nb_parts_avant = 20  # somme des presences != total des parts
 
-    with pytest.raises(ValueError, match="totalite des parts"):
+    text = _docx_text(
         PvAgrementCessionSpfplPlusieursAssociesGenerator().generate(ctx, tmp_path)
+    )
+
+    # Le document est bien produit ET reste exploitable (les presents y figurent).
+    assert "Camille Martin" in text
+    assert "détenant 20 parts" in text
 
 
 # ---------------------------------------------------------------------------

@@ -7,6 +7,12 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from sydel_doc_engine.domain.enums import Gender
 
+# Alias du type `date` pour les champs qui portent EXACTEMENT ce nom (`Signature.date`) : dans le
+# corps de la classe, l'attribut masque le type, donc `date | None` s'auto-referencerait
+# (« unsupported operand type(s) for | : NoneType »). Les autres champs (`date_naissance`, …)
+# n'ont pas ce probleme et continuent d'utiliser `date`.
+_DateField = date
+
 
 class Address(BaseModel):
     num_voie: str | None = None
@@ -77,7 +83,12 @@ class Company(BaseModel):
 
 class Signature(BaseModel):
     lieu: str
-    date: date
+    # KAN-2 (Rafael 2026-07-14) : « tous les documents doivent pouvoir etre generes, meme si je
+    # ne remplis aucun champ ». La date de signature est un champ que le front rend deja
+    # `date | None` (effacee ou format invalide -> None) : la typer non-optionnelle faisait lever
+    # une ValidationError APRES que le plan ait annonce « generable » (Akainu B1). Non renseignee
+    # -> les formateurs rendent « (À COMPLÉTER : … ) » ; on n'invente jamais une date de repli.
+    date: _DateField | None = None
     image_optionnelle: Path | None = None
     nombre_exemplaires: str | None = None
     prestataire_signature_electronique: str | None = None

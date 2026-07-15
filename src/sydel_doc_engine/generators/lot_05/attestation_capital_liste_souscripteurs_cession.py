@@ -29,6 +29,7 @@ from sydel_doc_engine.generators.lot_05.spfpl_common import (
     validate_cession_context,
 )
 from sydel_doc_engine.rendering.docx_builder import add_paragraph, add_spacer, new_document
+from sydel_doc_engine.utils.dates import format_date_fr
 from sydel_doc_engine.utils.grammar import euro_word, montant_avec_euros, subject_line
 
 OUTPUT_FILENAME = "attestation_capital_liste_souscripteurs_cession.docx"
@@ -201,7 +202,7 @@ class AttestationCapitalListeSouscripteursCessionGenerator:
         # ctx.signature.lieu est FORCE a la ville du siege cote front (SU3, spfpl_slice) ->
         # equivalent et identique a l'apport (DOC-042).
         add_paragraph(docx, f"Fait à {ctx.signature.lieu}")
-        add_paragraph(docx, f"Le {ctx.signature.date.strftime('%d/%m/%Y')}")
+        add_paragraph(docx, f"Le {format_date_fr(ctx.signature.date)}")
         # KAN-5 (Rafael 2026-07-13) : un espace apres la date, et le nom du signataire (associe)
         # aligne a DROITE.
         add_spacer(docx)

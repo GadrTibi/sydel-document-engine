@@ -29,6 +29,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_paragraph,
     new_document,
 )
+from sydel_doc_engine.utils.dates import format_date_fr
 
 OUTPUT_FILENAME = "attestation_commissaire_apports.docx"
 
@@ -125,7 +126,7 @@ class AttestationCommissaireApportsGenerator:
             "conformément à l'article L. 223-9 du Code de commerce.",
         )
         add_paragraph(docx, f"Fait à {ctx.signature.lieu}")
-        add_paragraph(docx, f"Le {ctx.signature.date.strftime('%d/%m/%Y')}")
+        add_paragraph(docx, f"Le {format_date_fr(ctx.signature.date)}")
         add_paragraph(docx, person_signature_header(apporteur), space_before_pt=12)
 
         output_dir.mkdir(parents=True, exist_ok=True)

@@ -315,8 +315,9 @@ def _french_date(value: date | str | None) -> str:
     - str ISO « YYYY-MM-DD » -> parsee puis formatee JJ/MM/AAAA ;
     - autre str -> renvoyee telle quelle.
     """
+    # KAN-2 : date non renseignee -> marqueur visible (non bloquant), jamais une date inventee.
     if value is None:
-        raise ValueError(f"signature.date est obligatoire pour {DOCUMENT_CODE}.")
+        return "(À COMPLÉTER : signature.date)"
     if isinstance(value, date):
         return f"{value.day:02d}/{value.month:02d}/{value.year}"
     text = value.strip()

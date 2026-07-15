@@ -426,17 +426,31 @@ def associe_signature_name(associe: AssocieCible, field_name: str) -> str:
 
 
 def capital_after_lines(ctx: DocumentGenerationContext) -> list[str]:
-    societe_cible = required_societe_cible(ctx)
-    total = required_int(societe_cible.nb_parts_total, "societe_cible.nb_parts_total")
+    """Repartition du capital de la cible APRES l'operation, une ligne par associe.
+
+    KAN-2 (Rafael 2026-07-14) : « tous les documents doivent pouvoir etre generes, meme si je ne
+    remplis aucun champ » -> une repartition ABSENTE ou INCOHERENTE (total != parts totales) ne
+    fait plus echouer la generation : elle sort en zone « (À COMPLÉTER : … ) » / telle quelle, a
+    corriger a la main. Les anciennes gardes levaient APRES que le plan ait annonce « generable »
+    (Akainu B2/B3).
+
+    Akainu B4 : un nombre NON RENSEIGNE ne sort JAMAIS en valeur affirmee. 0 EST la valeur d'un
+    champ non rempli (`number_input(min_value=0)`) -> « 0 parts sociales » serait une affirmation
+    fausse dans un acte ; on rend un marqueur.
+    """
     if not ctx.associes_cible:
-        raise ValueError(f"associes_cible est obligatoire pour {DOCUMENT_CODE}.")
+        return ["(À COMPLÉTER : répartition du capital de la société cible après l'opération)"]
 
     lines: list[str] = []
-    total_after = 0
     for index, associe in enumerate(ctx.associes_cible):
         field_name = f"associes_cible[{index}]"
-        nb_parts = required_int(associe.nb_parts_apres, f"{field_name}.nb_parts_apres")
-        total_after += nb_parts
+        nb_parts = associe.nb_parts_apres or 0
+        if nb_parts <= 0:
+            lines.append(
+                f"{associe_display_name(associe, field_name)}, titulaire de "
+                "(À COMPLÉTER : nombre de parts sociales)"
+            )
+            continue
         part_label = "part sociale" if nb_parts == 1 else "parts sociales"
         details = (
             f"{associe_display_name(associe, field_name)}, titulaire de "
@@ -447,12 +461,6 @@ def capital_after_lines(ctx: DocumentGenerationContext) -> list[str]:
         elif associe.plage_parts:
             details += f", numérotées de {associe.plage_parts}"
         lines.append(details)
-
-    if total_after != total:
-        raise ValueError(
-            "La repartition apres operation doit correspondre a "
-            f"societe_cible.nb_parts_total pour {DOCUMENT_CODE}."
-        )
     return lines
 
 
@@ -483,16 +491,26 @@ def capital_before_lines(ctx: DocumentGenerationContext) -> list[str]:
 
 
 def presence_lines(ctx: DocumentGenerationContext) -> list[str]:
-    societe_cible = required_societe_cible(ctx)
-    total = required_int(societe_cible.nb_parts_total, "societe_cible.nb_parts_total")
+    """Associes presents ou representes a l'assemblee, une ligne chacun.
+
+    KAN-2 (Rafael 2026-07-14) : aucun blocage — une liste vide ou un total qui ne couvre pas les
+    parts totales ne fait plus echouer la generation (les gardes levaient APRES que le plan ait
+    annonce « generable », Akainu B2/B3) : la zone sort « (À COMPLÉTER : … ) » / telle quelle et se
+    corrige a la main. Akainu B4 : un nombre non renseigne (0 = valeur du champ non rempli) sort en
+    marqueur, jamais en « 0 parts » affirme.
+    """
     lines: list[str] = []
-    total_present = 0
     for index, associe in enumerate(ctx.associes_cible):
         if not associe.est_present_ou_represente:
             continue
         field_name = f"associes_cible[{index}]"
-        nb_parts = required_int(associe.nb_parts_avant, f"{field_name}.nb_parts_avant")
-        total_present += nb_parts
+        nb_parts = associe.nb_parts_avant or 0
+        if nb_parts <= 0:
+            lines.append(
+                f"{associe_display_name(associe, field_name)} détenant "
+                "(À COMPLÉTER : nombre de parts)"
+            )
+            continue
         part_label = "part" if nb_parts == 1 else "parts"
         # Orthographe (Rafael 2026-07-07) : « détenant » accentué.
         lines.append(
@@ -500,15 +518,7 @@ def presence_lines(ctx: DocumentGenerationContext) -> list[str]:
         )
 
     if not lines:
-        raise ValueError(
-            "associes_cible presents ou representes est obligatoire pour "
-            f"{DOCUMENT_CODE}."
-        )
-    if total_present != total:
-        raise ValueError(
-            "Les associes presents ou representes doivent disposer de la totalite des parts "
-            f"pour {DOCUMENT_CODE}."
-        )
+        return ["(À COMPLÉTER : associés présents ou représentés à l'assemblée)"]
     return lines
 
 

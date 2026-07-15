@@ -1030,17 +1030,35 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
             plage_parts=_normalize_plage(payload.get("apport_plage")),
         )
     else:
+        # KAN-2 / B4 (Akainu 2026-07-15) — RISQUE JURIDIQUE : un montant ou une quantité NON
+        # RENSEIGNÉ ne doit JAMAIS sortir en valeur AFFIRMÉE (« ZERO (0) parts », « prix de ZERO
+        # euro (0 €) »). L'acte fait déclarer, sous l'article 1837 du CGI, que « le prix convenu
+        # est RÉEL » : un acte à 0 € n'est pas incomplet, il est FAUX (donation déguisée / fausse
+        # déclaration) — et contrairement à un crash, il se signe sans se voir.
+        # -> source vide/0 = champ VIDE, que les générateurs rendent « (À COMPLÉTER : … ) »
+        # (required_text). On n'invente jamais un zéro à partir d'un champ non rempli.
+        prix_renseigne = bool(str(cession_data.get("prix_unitaire") or "").strip())  # type: ignore[union-attr]
         cession_parts_obj = CessionParts(
             nb_parts=nb_cedees,
-            nb_parts_lettres=number_words_from_value(nb_cedees),
+            nb_parts_lettres=number_words_from_value(nb_cedees) if nb_cedees > 0 else "",
             plage_parts=str(cession_data.get("plage_cedee") or ""),  # type: ignore[union-attr]
-            prix_unitaire=format_grouped_numeric_value(prix_unitaire_num),
+            prix_unitaire=(
+                format_grouped_numeric_value(prix_unitaire_num) if prix_renseigne else ""
+            ),
             # B1 (Akainu 2026-07-06) : lettres SANS unite figee (« un », « mille »), comme la
             # valeur nominale art.8. L'acte accorde « euro(s) » au MONTANT via `euro_word`
             # (« un euro » pour 1, « mille euros » pour 1000) -> plus de « un euros » fige.
-            prix_unitaire_lettres=prix_lettres_from_value(prix_unitaire_num),
-            prix_total=format_grouped_numeric_value(prix_total_num),
-            prix_total_lettres=prix_lettres_from_value(prix_total_num),
+            prix_unitaire_lettres=(
+                prix_lettres_from_value(prix_unitaire_num) if prix_renseigne else ""
+            ),
+            prix_total=(
+                format_grouped_numeric_value(prix_total_num)
+                if prix_renseigne and nb_cedees > 0
+                else ""
+            ),
+            prix_total_lettres=(
+                prix_lettres_from_value(prix_total_num) if prix_renseigne and nb_cedees > 0 else ""
+            ),
             nombre_exemplaires_lettres="trois",
         )
     ctx = DocumentGenerationContext(
