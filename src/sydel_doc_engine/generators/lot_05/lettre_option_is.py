@@ -163,18 +163,16 @@ def _add_place_date_and_subject(document: Any, lieu: str, signature_date: date) 
 
 
 def _add_body_intro(document: Any, company: Company) -> None:
-    # Mise en forme (Albane, retour « mise en forme » 2026-07) : le NOM DE LA
-    # SOCIETE doit figurer EN GRAS dans la PREMIERE LIGNE du courrier. La
-    # denomination ne paraissait jusqu'ici que dans la table d'identite, sans
-    # emphase -> on l'ajoute en tete du corps, en gras (choix retenu : premiere
-    # ligne du courrier avant « Madame, Monsieur, », plutot que dans la table,
-    # car Albane demande explicitement « la PREMIERE LIGNE du courrier »).
-    add_paragraph(
-        document,
-        _required_text(company.denomination, "societe.denomination"),
-        bold=True,
-        style_profile=LETTER_WIDE_STYLE_PROFILE,
-    )
+    # KAN-18 (Rafael 2026-07-15) : « Dans la lettre d'option IS, il faut retirer le nom de la
+    # societe actuellement ecrit en gras, sous l'objet. Il ne doit pas apparaitre a cet
+    # endroit. » -> le courrier ouvre directement sur « Madame, Monsieur, ».
+    #
+    # SUPERSEDE une demande INVERSE d'Albane (retour « mise en forme » 2026-07) : « le NOM DE
+    # LA SOCIETE doit figurer EN GRAS dans la PREMIERE LIGNE du courrier » — c'est ce retour
+    # qui avait ajoute ce paragraphe. Le retour le PLUS RECENT prime (regle 68) ; le supersede
+    # est trace ici et signale a Rafael sur le ticket, jamais arbitre en silence.
+    # La denomination reste presente dans la TABLE D'IDENTITE du courrier (elle n'y est pas
+    # visee par le ticket, qui ne parle que de l'emplacement « sous l'objet »).
     add_paragraph(document, "Madame, Monsieur,", style_profile=LETTER_WIDE_STYLE_PROFILE)
     add_paragraph(
         document,
