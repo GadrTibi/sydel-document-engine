@@ -786,6 +786,16 @@ def test_statuts_spfpl_art10_sans_tiret_et_listes_pucees(
     )
     assert engagement.strip().startswith("- "), "annexe : engagement doit etre puce"
 
+    # KAN-3 / gate Akainu M1 (2026-07-16) : les 11 decisions collectives de l'art. 23 doivent etre
+    # 11 puces DISTINCTES sur cession ET apport. L'apport fusionnait 11 items en 7 puces (« il
+    # manque des puces », point 4 du ticket, corrige sur la cession mais silote sur l'apport).
+    # Cette assertion garde la parite mecaniquement (le siloing passait la CI sans elle, nitpick n1).
+    idx_dec = next(i for i, t in enumerate(textes) if "décisions suivantes" in t)
+    idx_fin = next(i for i, t in enumerate(textes) if "Toutes les autres décisions" in t)
+    puces_art23 = [t for t in textes[idx_dec + 1 : idx_fin] if t.strip().startswith("- ")]
+    assert len(puces_art23) == 11, f"art 23 : 11 decisions attendues, {len(puces_art23)} trouvees"
+    assert puces_art23[-1].strip().endswith("."), "art 23 : derniere decision termine par un point"
+
 
 def test_statuts_spfpl_apport_simplifiee_accentuee(tmp_path: Path) -> None:
     """Fix 6 / R4 (Albane 2026-07-07) — « simplifiée(s) » ACCENTUE dans les statuts apport
