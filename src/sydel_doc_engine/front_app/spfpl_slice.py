@@ -1610,12 +1610,14 @@ def _render_spfpl_cession_cible(
     # Retour Albane 2026-07-07 (« je ne vois pas la possibilite de retirer la plage de
     # parts ») : le champ « Plage parts cedees » est RETIRE — la plage cedee est DERIVEE
     # (dernieres parts de la numerotation apres cession, cf. _derive_cession_repartition).
+    # KAN-35 (Rafael 2026-07-15) : les utilisateurs ne comprenaient pas ce champ -> texte d'aide
+    # explicite (verbatim client, « a » -> « à » corrige car c'est de l'aide UI, pas un livrable).
     cible_forme_complete = _t(
         st,
         prefix,
         "cible_forme_complete",
         "Forme complete de la cible",
-        hint="ex : societe d'exercice liberal a responsabilite limitee",
+        hint="Forme complète rédigée, ex : société d'exercice libéral à responsabilité limitée",
     )
     # C4 (retour Rafael 2026-07-09 soir) : n° de l'article du capital social de la SEL
     # cible dans la 2e resolution du PV d'agrement (DOC-038/039). Etait code en dur
