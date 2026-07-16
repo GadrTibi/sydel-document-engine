@@ -33,6 +33,7 @@ from sydel_doc_engine.domain.models import (
     Apport,
     CentreImpots,
     Company,
+    DirigeantNomine,
     DocumentGenerationContext,
     DossierOptions,
     FraisCommunsContext,
@@ -350,6 +351,8 @@ def render_civil_form(structure: str) -> dict[str, object]:
         )
     )
     gerant_index = _derive_gerant_index(associes, prefix)
+    # KAN-16 : TOUS les gerants coches (le PV de nomination doit les nommer tous).
+    gerant_indices = _derive_gerant_indices(associes, prefix)
 
     common = _render_common_docs_form(structure, prefix)
     # Satellites inter-SEL (opt-in) : DERIVE les personnes des associes deja saisis ;
@@ -379,6 +382,7 @@ def render_civil_form(structure: str) -> dict[str, object]:
         "signature_date": signature_date,
         "associes": associes,
         "gerant_index": gerant_index,
+        "gerant_indices": gerant_indices,
     }
     payload.update(common)
     payload.update(inter_sel)
@@ -1197,6 +1201,49 @@ def _derive_gerant_index(associes: list[StatutsCivilsAssocie], prefix: str) -> i
     )
 
 
+def _derive_gerant_indices(associes: list[StatutsCivilsAssocie], prefix: str) -> list[int]:
+    """KAN-16 (Rafael 2026-07-15) : TOUS les associes physiques coches « Dirigeant (gerant) »,
+    dans l'ordre. Le front a deja une case par associe (plusieurs cochables) ; jusqu'ici on n'en
+    prenait qu'UNE (`_derive_gerant_index`) -> le PV ne nommait qu'un gerant. Personnes morales
+    exclues (le PV nomme des personnes physiques). Vide -> l'appelant retombe sur le mode mono."""
+    return [
+        i
+        for i, associe in enumerate(associes)
+        if associe.type_personne == "personne_physique"
+        and bool(st.session_state.get(f"{prefix}_associe_{i}_is_dirigeant"))
+    ]
+
+
+def _dirigeants_nomines_civils(
+    associes: list[StatutsCivilsAssocie], indices: list[int], fonction: str
+) -> list[DirigeantNomine]:
+    """Un `DirigeantNomine` par gerant coche (KAN-16). Reutilise l'identite structuree deja
+    saisie sous chaque associe (meme donnees que la comparution) — pas de re-saisie. Le
+    generateur PV consomme `ctx.dirigeants_nomines` (mode multi) ; a defaut il garde le mono."""
+    dirigeants: list[DirigeantNomine] = []
+    for i in indices:
+        a = associes[i]
+        dirigeants.append(
+            DirigeantNomine(
+                genre=a.genre or Gender.MASCULIN,
+                civilite_affichage=a.civilite_affichage or "Monsieur",
+                prenom=a.prenom or "",
+                nom=a.nom or "",
+                date_naissance=a.date_naissance,
+                ville_naissance=a.ville_naissance,
+                departement_naissance=a.departement_naissance,
+                nationalite=a.nationalite,
+                # En prod, le repeater peuple l'Address structuree ; fallback defensif sur
+                # l'adresse affichee si seule celle-ci est presente.
+                adresse_personnelle=a.adresse_personnelle
+                or Address(adresse_affichee=a.adresse_personnelle_affichee or ""),
+                fonction_affichage=fonction,
+                ref_associe_index=i,
+            )
+        )
+    return dirigeants
+
+
 def _collect_gerant_sig(
     associes: list[StatutsCivilsAssocie], gerant_index: int, prefix: str
 ) -> dict[str, object]:
@@ -1383,6 +1430,18 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         associes=pv_associes,
         metadata={"front_slice": f"track_b_{statuts_type}_v1"},
     )
+    # KAN-16 (Rafael 2026-07-15) : si PLUSIEURS gerants sont coches, le PV de nomination les
+    # nomme TOUS (mode multi `dirigeants_nomines`). Un seul (ou aucun explicite) -> mode mono
+    # historique via `dirigeant_nomine` inchange (byte-neutre). Reutilise l'identite deja saisie
+    # sous chaque associe. Meme patron que la SELAS pluri (_build_dirigeants_nomines).
+    gerant_indices = [
+        i
+        for i in (payload.get("gerant_indices") or [])
+        if isinstance(i, int) and 0 <= i < len(associes)
+    ]
+    if len(gerant_indices) > 1:
+        fonction = str(payload.get("signataire_fonction") or "gérant")
+        ctx.dirigeants_nomines = _dirigeants_nomines_civils(associes, gerant_indices, fonction)
     if structure == "SCM":
         ctx.ordre = cc.ordre_professionnel(common)
         # Satellites SCM (Rafael 2026-06-08) : pacte + liste depenses, si 2 associes.

@@ -670,3 +670,27 @@ def test_domiciliation_micro_holding_mention_capital_variable(tmp_path: Path) ->
         in text
     )
     assert "au capital de 1.020 euros" not in text
+
+
+def test_micro_holding_pv_nomme_tous_les_gerants(tmp_path: Path) -> None:
+    # KAN-16 (Rafael 2026-07-15) : « Le PV de nomination de gerant doit nommer l'ENSEMBLE des
+    # gerants. » Plusieurs associes coches « Dirigeant (gerant) » (payload gerant_indices) ->
+    # le PV les nomme TOUS (mode multi dirigeants_nomines). Un seul -> mode mono inchange.
+    from sydel_doc_engine.generators.lot_02.pv_nomination_gerant import PvNominationGerantGenerator
+
+    payload = _payload()
+    payload["gerant_indices"] = [0, 1]  # Jean Durand ET Alice Martin gerants
+    ctx = cs.build_generation_context(payload)
+    assert [(d.prenom, d.nom) for d in ctx.dirigeants_nomines] == [
+        ("Jean", "Durand"),
+        ("Alice", "Martin"),
+    ]
+    doc = Document(PvNominationGerantGenerator().generate(ctx, tmp_path))
+    text = "\n".join(p.text for p in doc.paragraphs if p.text.strip())
+    assert "Jean Durand" in text
+    assert "Alice Martin" in text
+
+    # Un SEUL gerant coche -> liste multi vide -> mode mono historique (byte-neutre).
+    mono = _payload()
+    mono["gerant_indices"] = [0]
+    assert cs.build_generation_context(mono).dirigeants_nomines == []
