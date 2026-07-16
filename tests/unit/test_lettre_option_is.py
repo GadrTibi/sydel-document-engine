@@ -221,3 +221,27 @@ def test_lettre_option_is_rejects_non_sci_structure(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="dossier.structure"):
         LettreOptionIsGenerator().generate(ctx, tmp_path)
+
+
+def test_lettre_option_is_signature_accord_pluriel_gerants(tmp_path: Path) -> None:
+    # KAN-19 (Rafael 2026-07-15) : la signature reflète TOUS les gérants -> accord en NOMBRE.
+    # « gérant » reste au MASCULIN (KAN-23, @All : jamais « gérantes »). 1 -> « Le gérant ».
+    from sydel_doc_engine.domain.enums import Gender
+    from sydel_doc_engine.domain.models import DirigeantNomine
+
+    ctx = _base_context()
+    text_mono = "\n".join(p.text for p in Document(
+        LettreOptionIsGenerator().generate(ctx, tmp_path)
+    ).paragraphs if p.text.strip())
+    assert "Le gérant" in text_mono
+    assert "Les gérants" not in text_mono
+
+    ctx.dirigeants_nomines = [
+        DirigeantNomine(genre=Gender.MASCULIN, civilite_affichage="M.", prenom="A", nom="B"),
+        DirigeantNomine(genre=Gender.FEMININ, civilite_affichage="Mme", prenom="C", nom="D"),
+    ]
+    text_multi = "\n".join(p.text for p in Document(
+        LettreOptionIsGenerator().generate(ctx, tmp_path)
+    ).paragraphs if p.text.strip())
+    assert "Les gérants" in text_multi
+    assert "gérantes" not in text_multi  # jamais feminise (KAN-23)

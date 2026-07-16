@@ -51,7 +51,9 @@ class LettreOptionIsGenerator:
         _add_body_intro(document, company)
         _add_identification_table(document, company, statuts)
         _add_body_close(document)
-        _add_signature(document)
+        # KAN-19 : nombre de gérants nommés (multi via dirigeants_nomines, sinon 1) -> accord.
+        nb_gerants = len(ctx.dirigeants_nomines) if ctx.dirigeants_nomines else 1
+        _add_signature(document, nb_gerants)
 
         output_dir.mkdir(parents=True, exist_ok=True)
         output_path = output_dir / OUTPUT_FILENAME
@@ -337,11 +339,14 @@ def _add_body_close(document: Any) -> None:
     )
 
 
-def _add_signature(document: Any) -> None:
+def _add_signature(document: Any, nb_gerants: int) -> None:
+    # KAN-19 (Rafael 2026-07-15) : la signature reflète TOUS les gérants -> accord en NOMBRE
+    # (« Les gérants » à partir de 2). « gérant » reste au MASCULIN même au pluriel/pour une
+    # femme (KAN-23, @All : jamais de féminisation) -> jamais « gérantes ». Signalé à Rafael.
     add_spacer(document, space_after_pt=12)
     add_paragraph(
         document,
-        "Le gérant",
+        "Les gérants" if nb_gerants > 1 else "Le gérant",
         alignment=WD_ALIGN_PARAGRAPH.RIGHT,
         style_profile=LETTER_WIDE_STYLE_PROFILE,
     )
