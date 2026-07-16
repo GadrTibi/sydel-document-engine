@@ -129,21 +129,29 @@ def test_lettre_option_is_generates_clean_docx(tmp_path: Path) -> None:
     _assert_clean(text)
 
 
-def test_lettre_option_is_denomination_en_gras_premiere_ligne_du_corps(
-    tmp_path: Path,
-) -> None:
-    # Retour Albane « mise en forme » 1.7 : le NOM DE LA SOCIETE doit figurer EN GRAS
-    # dans la PREMIERE LIGNE du corps du courrier (juste avant « Madame, Monsieur, »).
+def test_lettre_option_is_pas_de_denomination_sous_l_objet(tmp_path: Path) -> None:
+    """KAN-18 (Rafael 2026-07-15) : « il faut retirer le nom de la societe actuellement ecrit
+    en gras, sous l'objet. Il ne doit pas apparaitre a cet endroit. » Le courrier ouvre donc
+    directement sur « Madame, Monsieur, ».
+
+    SUPERSEDE le retour INVERSE d'Albane (« mise en forme » 1.7 : « le NOM DE LA SOCIETE doit
+    figurer EN GRAS dans la PREMIERE LIGNE du corps »), qui avait CREE ce paragraphe. Le retour
+    le plus recent prime (regle 68) ; supersede trace au ticket, jamais arbitre en silence.
+    """
     document = Document(LettreOptionIsGenerator().generate(_base_context(), tmp_path))
     paragraphs = [p for p in document.paragraphs if p.text.strip()]
     salutation_index = next(
         index for index, p in enumerate(paragraphs) if p.text.strip() == "Madame, Monsieur,"
     )
-    # La ligne juste AVANT la salutation porte la denomination, entierement en gras.
-    denomination_line = paragraphs[salutation_index - 1]
-    assert denomination_line.text.strip() == "SCI EXEMPLE"
-    runs = [run for run in denomination_line.runs if run.text.strip()]
-    assert runs and all(run.bold for run in runs)
+    # Entre l'OBJET et la salutation : plus rien. La denomination a quitte cet endroit.
+    ligne_precedente = paragraphs[salutation_index - 1].text.strip()
+    assert ligne_precedente.startswith("Objet :"), (
+        f"la salutation doit suivre l'objet directement, or elle suit « {ligne_precedente} »"
+    )
+    # ... mais la denomination reste dans la TABLE D'IDENTITE : le ticket ne vise QUE
+    # l'emplacement « sous l'objet », pas la presence du nom dans le courrier.
+    cellules = [c.text.strip() for t in document.tables for r in t.rows for c in r.cells]
+    assert "SCI EXEMPLE" in cellules
 
 
 def test_lettre_option_is_siren_always_en_cours_immatriculation(tmp_path: Path) -> None:

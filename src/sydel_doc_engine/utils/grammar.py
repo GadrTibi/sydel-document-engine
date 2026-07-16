@@ -255,6 +255,31 @@ def euro_word(value: object) -> str:
     return "euro" if abs(int(integer_part)) < 2 else "euros"
 
 
+def part_word(value: object, *, sociale: bool = False) -> str:
+    """Accord en nombre du mot « part » (/« part sociale ») selon un NOMBRE DE PARTS.
+
+    KAN-14 (Rafael 2026-07-15) : « Article 7 des statuts : lorsqu'un associé a 1 part,
+    cela doit être rédigé au singulier. » Pendant exact de `euro_word` (né du même type
+    de retour : « 10 euro »), pour que l'accord soit fait à UN endroit et pas réécrit
+    localement dans chaque générateur (il l'était déjà ad hoc 4× côté SPFPL).
+
+    Différence assumée avec `euro_word` : une PART est un objet dénombrable, donc le
+    singulier ne vaut QUE pour exactement 1 (0 part**s**, 1 part, 2 parts) — alors qu'un
+    MONTANT est une quantité continue et rend « 0 euro »/« 1,50 euro ». Ne pas
+    factoriser les deux : ce sont deux règles françaises distinctes.
+
+    Robuste aux formats de saisie (« 1 », « 1 000 »). Valeur illisible -> pluriel (cas le
+    plus courant et le moins risqué), comme `euro_word`.
+    """
+    # « part sociale » s'accorde sur les DEUX mots (« parts sociales ») : un suffixe « s »
+    # colle a la locution donnerait « part sociales ». Attrape par le test des le 1er jet.
+    singulier, pluriel = ("part sociale", "parts sociales") if sociale else ("part", "parts")
+    digits = re.sub(r"\D", "", str(value or "").split(",")[0])
+    if not digits:
+        return pluriel
+    return singulier if abs(int(digits)) == 1 else pluriel
+
+
 _ACCORD_EUROS_FIGURE: Final = re.compile(
     # « euros » pluriel precede — apres separateurs NEUTRES (espaces, insecables, « ) »,
     # « € ») — d'une quantite SINGULIERE : figure dont la partie entiere vaut 0 ou 1
