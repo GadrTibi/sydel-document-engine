@@ -758,16 +758,17 @@ def _add_signature_split(
     signature_lines, mention_lines, next_index = _collect_signature_lines(
         blocks, replacements, start_index
     )
+    rendered_paras: list = []
     for line in signature_lines:
         if _is_fait_ou_le_line(line):
-            add_statuts_signature_block(
+            rendered_paras += add_statuts_signature_block(
                 docx,
                 [line],
                 alignment=WD_ALIGN_PARAGRAPH.LEFT,
                 style_profile=style_profile,
             )
         else:
-            add_statuts_signature_block(
+            rendered_paras += add_statuts_signature_block(
                 docx,
                 [line],
                 alignment=WD_ALIGN_PARAGRAPH.RIGHT,
@@ -775,13 +776,17 @@ def _add_signature_split(
                 style_profile=style_profile,
             )
     for line in mention_lines:
-        add_statuts_signature_block(
+        rendered_paras += add_statuts_signature_block(
             docx,
             [],
             mention_lines=[line],
             alignment=WD_ALIGN_PARAGRAPH.RIGHT,
             style_profile=style_profile,
         )
+    # KAN-36 : tout le bloc signature (« Fait a / Le » + nom + « Bon pour acceptation ») reste
+    # solidaire sur une seule page — keepNext sur chaque paragraphe sauf le dernier.
+    for paragraph in rendered_paras[:-1]:
+        paragraph.paragraph_format.keep_with_next = True
     return next_index
 
 

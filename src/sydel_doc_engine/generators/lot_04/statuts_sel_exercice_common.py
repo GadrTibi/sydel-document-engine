@@ -1054,6 +1054,7 @@ def render_statuts_sel_docx(  # noqa: C901
 
     docx = new_document()
     signature_mode = False
+    signature_paras: list = []  # KAN-36 : paragraphes du bloc signature, a garder sur une page
     for index, block in enumerate(blocks):
         if skip_personne_2_line and "[civilite_personne_2]" in block:
             continue
@@ -1192,7 +1193,7 @@ def render_statuts_sel_docx(  # noqa: C901
         elif text.startswith("Fait à ") or text.startswith("Fait a "):
             signature_mode = True
             # « Fait a » aligne a GAUCHE (retour Albane 2026-06-10).
-            add_statuts_signature_block(
+            signature_paras += add_statuts_signature_block(
                 docx, [text], alignment=WD_ALIGN_PARAGRAPH.LEFT
             )
         elif signature_mode and (
@@ -1203,14 +1204,14 @@ def render_statuts_sel_docx(  # noqa: C901
         ):
             # S5 (Rafael 2026-07-09) : la mention accompagne la signature -> alignee a DROITE
             # (meme zone que le nom du signataire).
-            add_statuts_signature_block(
+            signature_paras += add_statuts_signature_block(
                 docx, [], mention_lines=[text], alignment=WD_ALIGN_PARAGRAPH.RIGHT
             )
         elif signature_mode:
             # Nom du client (signataire) en GRAS (retour Albane 2026-06-10).
             # S5 (Rafael 2026-07-09) : signature du client alignee a DROITE (« Fait a … / Le … »
             # restent a gauche) -> zone de signature a droite.
-            add_statuts_signature_block(
+            signature_paras += add_statuts_signature_block(
                 docx, [text], bold=True, alignment=WD_ALIGN_PARAGRAPH.RIGHT
             )
         elif text.startswith("Liste des actes"):
@@ -1235,6 +1236,11 @@ def render_statuts_sel_docx(  # noqa: C901
             add_spacer(docx, space_after_pt=0)
         else:
             add_statuts_body_paragraph(docx, text)
+
+    # KAN-36 : le bloc signature (« Fait a … » + nom + « Bon pour acceptation ») reste solidaire
+    # sur une seule page — keepNext sur chaque paragraphe sauf le dernier.
+    for paragraph in signature_paras[:-1]:
+        paragraph.paragraph_format.keep_with_next = True
 
     full_text = "\n".join(paragraph.text for paragraph in docx.paragraphs)
     if "[" in full_text or "]" in full_text:
