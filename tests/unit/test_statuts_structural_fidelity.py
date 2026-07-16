@@ -249,6 +249,15 @@ _BODY_ALLOWLIST: dict[str, tuple[str, ...]] = {
         "Le capital social peut être augmenté ou réduit",
         "lesdites conventions",
         "prendre les décisions suivantes : Approbation des comptes annuels",
+        # KAN-3 / gate Akainu M1 (2026-07-16) : l'art. 23 « decisions collectives » du MODELE
+        # SOURCE apport fusionnait les decisions en 7 puces a la ponctuation cassee (« ; » colles,
+        # derniere en « ; »). Le fix les a scindees en 11 puces PROPRES, alignees sur la cession
+        # ratifiee (le ticket demandait « il manque des puces »). Le modele source est donc
+        # SUPERSEDE sur ces 4 lignes fusionnees (code = verite, cf. migration-models-stale-code).
+        "Nomination des Commissaires aux comptes;",
+        "actif; Dissolution et liquidation",
+        "actions ; Augmentation des engagements des associés;",
+        "dirigeants ; Modification des statuts, sauf transfert du siège social ;",
     ),
     # ST7g (Albane 2026-06-26) : titres art. 16/17/22 a casse cassee RENDUS en MAJUSCULES
     # integrales (transformation sanctionnee, cf. _HEADING_TRANSFORMS) -> la ligne SOURCE a casse
