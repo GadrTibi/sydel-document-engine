@@ -725,6 +725,9 @@ def render_cession_from_template(  # noqa: C901
     # (annotations de relecture). Ils sont strippes a la generation pour ne
     # jamais fuir dans le document client. No-op si le modele n'en porte pas.
     _strip_word_comments(document)
+    # KAN-33 : de-rouge les champs « a completer a la main » herites du modele (date de
+    # transfert de propriete, etc.) -> zone vierge, plus de rouge.
+    _clear_red_placeholders(document)
 
     # AC3 (Albane 2026-07-10) : neutraliser les revisions Word residuelles (track changes) AVANT
     # tout traitement de texte, pour qu'aucune marque de revision ne subsiste. No-op si aucune.
@@ -834,6 +837,21 @@ def _clear_run_highlight(run) -> None:
         return
     for highlight in rpr.findall(qn("w:highlight")):
         rpr.remove(highlight)
+
+
+def _clear_red_placeholders(document) -> None:
+    """KAN-33 (Rafael 2026-07-15) : retire la couleur ROUGE (w:color w:val=ff0000) heritee du
+    modele, qui marquait des champs « a completer a la main » (ex. la date de transfert de
+    propriete, impossible a connaitre a la redaction). Rafael veut ces zones VIERGES et NON
+    rouges (« enlever la variable et ne pas la mettre en rouge ») : le champ reste vide, on
+    supprime juste le marquage rouge — runs ET marques de paragraphe (le rouge se pose souvent
+    sur le pilcrow d'un paragraphe vide). Manipulation XML directe (python-docx n'expose pas la
+    couleur de la marque de fin). No-op si aucun rouge."""
+    for color_el in list(document.element.iter(qn("w:color"))):
+        if (color_el.get(qn("w:val")) or "").lower() == "ff0000":
+            parent = color_el.getparent()
+            if parent is not None:
+                parent.remove(color_el)
 
 
 def _strip_word_comments(document) -> None:

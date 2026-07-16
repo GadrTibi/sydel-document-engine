@@ -1725,3 +1725,17 @@ def test_ac5_acte_dentaire_pages_count_is_seven(tmp_path: Path) -> None:
     text = _ac_dentaire_acte_text(tmp_path)
     assert "Sur sept pages." in text
     assert "vingt pages" not in text
+
+
+def test_kan33_acte_dentaire_sans_texte_rouge(tmp_path: Path) -> None:
+    # KAN-33 (Rafael 2026-07-15) : plus AUCUN texte rouge (w:color ff0000) dans l'acte. Le rouge
+    # marquait des champs « a completer a la main » (date de transfert de propriete, impossible a
+    # connaitre a la redaction) -> Rafael veut ces zones VIERGES et non rouges. Le champ reste
+    # vide (« a la date du . »), seul le marquage rouge disparait.
+    ctx = _context(etape="acte", type_cabinet="dentaire")
+    acte_path = ActeCessionCabinetDentaireGenerator().generate(ctx, tmp_path)
+    xml = _docx_document_xml(acte_path).lower()
+    assert 'w:color w:val="ff0000"' not in xml
+    # La date de transfert reste bien VIERGE (a completer a la main), pas pre-remplie.
+    text = "\n".join(p.text for p in Document(acte_path).paragraphs)
+    assert "à la date du" in text
