@@ -956,13 +956,21 @@ def _add_signature_block(document, data: _ResolvedStatutsCivil) -> None:
     if data.template.expected_type == "scs":
         add_statuts_signature_grid(document, signers, mention="Lu et approuvé")
         return
-    for signer in signers:
-        add_statuts_signature_block(
-            document,
-            [signer],
-            bold=True,
-            underline=True,
-        )
+    # KAN-34 (Rafael 2026-07-15, @All) : les signataires CÔTE À CÔTE, pas empilés, avec un
+    # espace suffisant pour signer — comme la capture « état souhaité » et comme le micro
+    # holding (KAN-15). L'empilage (un bloc par signataire) ne laissait pas la place de signer.
+    # UN seul signataire -> une ligne centrée simple ; plusieurs -> tab-joints, espace au-dessus.
+    if len(signers) <= 1:
+        for signer in signers:
+            add_statuts_signature_block(document, [signer], bold=True, underline=True)
+        return
+    add_paragraph(
+        document,
+        "\t\t\t\t\t".join(signers),
+        alignment=WD_ALIGN_PARAGRAPH.CENTER,
+        bold=True,
+        space_before_pt=48,
+    )
 
 
 def _add_resultat_groupes_block(document, data: _ResolvedStatutsCivil) -> None:

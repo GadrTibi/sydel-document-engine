@@ -508,3 +508,27 @@ def test_statuts_scs_inherits_model_form(tmp_path: Path) -> None:
     assert abs(section.page_height - Cm(29.7)) < Cm(0.05)
     assert abs(section.page_width - Cm(21.59)) > Cm(0.05)  # pas Letter US
     assert {"Title", "Heading 1"} <= _named_styles_present(document)
+
+
+def test_statuts_sci_signataires_cote_a_cote(tmp_path: Path) -> None:
+    # KAN-34 (Rafael 2026-07-15, @All) : plusieurs signataires sont mis CÔTE À CÔTE (une seule
+    # ligne, tab-joints, centrés) avec un espace pour signer — plus empilés un par ligne (qui ne
+    # laissait pas la place de signer). Meme disposition que le micro holding (KAN-15).
+    ctx = _base_context(
+        structure="SCI",
+        statuts_type="sci",
+        associes=[
+            _person_associe(prenom="Jean", nom="Durand", nb_parts=40, debut=1, fin=40),
+            _person_associe(prenom="Alice", nom="Martin", nb_parts=60, debut=41, fin=100),
+        ],
+    )
+    doc = Document(StatutsSciGenerator().generate(ctx, tmp_path))
+    ligne = next(
+        p for p in doc.paragraphs
+        if "Jean Durand" in p.text and "Alice Martin" in p.text
+    )
+    assert "\t" in ligne.text  # les deux noms sur UNE ligne, tab-joints (cote a cote)
+    assert ligne.text.index("Jean Durand") < ligne.text.index("Alice Martin")
+    # espace au-dessus pour signer
+    assert ligne.paragraph_format.space_before is not None
+    assert ligne.paragraph_format.space_before.pt >= 24
