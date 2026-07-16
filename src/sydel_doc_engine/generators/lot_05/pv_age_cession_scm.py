@@ -24,6 +24,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_paragraph,
     add_signature_table,
     add_spacer,
+    keep_final_signature_block_together,
     new_document,
 )
 
@@ -266,6 +267,8 @@ class PvAgeCessionScmGenerator:
             min_row_height_cm=2.5,
         )
 
+        # KAN-36 : bloc signature final solidaire (une seule page).
+        keep_final_signature_block_together(document)
         return save_clean_document(document, output_dir, OUTPUT_FILENAME)
 
 

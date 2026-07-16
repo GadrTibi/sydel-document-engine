@@ -27,6 +27,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_signature_lines,
     add_signature_table,
     add_spacer,
+    keep_final_signature_block_together,
     new_document,
 )
 from sydel_doc_engine.utils.grammar import accord_fonction, euro_word, montant_avec_euros
@@ -175,6 +176,8 @@ class PvNominationGerantGenerator:
 
         output_dir.mkdir(parents=True, exist_ok=True)
         output_path = output_dir / OUTPUT_FILENAME
+        # KAN-36 : bloc signature final solidaire (une seule page).
+        keep_final_signature_block_together(document)
         document.save(output_path)
         return output_path
 

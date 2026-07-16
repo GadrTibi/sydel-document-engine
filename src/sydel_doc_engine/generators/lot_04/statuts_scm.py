@@ -24,6 +24,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_statuts_part_heading,
     add_statuts_signature_block,
     add_statuts_title_box,
+    keep_final_signature_block_together,
     new_document_from_model,
 )
 from sydel_doc_engine.utils.dates import format_birthdate_fr
@@ -91,6 +92,8 @@ class StatutsScmGenerator:
         # Retour Rafael 2026-07-07 : TOUS les statuts sont nommes
         # « Statuts <denomination>.docx » (helper partage, fallback historique si vide).
         output_path = output_dir / statuts_output_filename(data.denomination, OUTPUT_FILENAME)
+        # KAN-36 : bloc signature final solidaire (une seule page).
+        keep_final_signature_block_together(output_doc)
         output_doc.save(output_path)
         return output_path
 

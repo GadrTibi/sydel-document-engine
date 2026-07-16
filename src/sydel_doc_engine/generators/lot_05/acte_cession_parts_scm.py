@@ -37,6 +37,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_paragraph,
     add_signature_table,
     add_spacer,
+    keep_final_signature_block_together,
     new_document,
 )
 from sydel_doc_engine.utils.departements import departement_nom
@@ -366,6 +367,8 @@ class ActeCessionPartsScmGenerator:
             ],
             min_row_height_cm=3.0,
         )
+        # KAN-36 : bloc signature final solidaire (une seule page).
+        keep_final_signature_block_together(document)
         return save_clean_document(document, output_dir, OUTPUT_FILENAME)
 
 

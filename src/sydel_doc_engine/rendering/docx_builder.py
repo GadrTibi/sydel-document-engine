@@ -881,6 +881,35 @@ def keep_signature_block_together(
                 tr_pr.append(OxmlElement("w:cantSplit"))
 
 
+def keep_final_signature_block_together(document: Any) -> bool:
+    """KAN-36 (Rafael 2026-07-16) — variante GENERIQUE, a appeler en fin de generation sur
+    N'IMPORTE QUEL document a fin-de-doc signee (actes, PV, attestations, lettres). Repere la
+    DERNIERE ligne d'ouverture de signature (« Fait a … » / « Fait le … » / « A …, le … ») et pose
+    `keepNext` sur ce paragraphe et tous ceux qui suivent (sauf le tout dernier), pour que le bloc
+    signature reste ENTIER sur une seule page. N'ajoute pas de contenu, ne change aucun texte :
+    seule une propriete de pagination est posee (byte-neutre cote texte). Retourne True si un bloc
+    a ete trouve et solidarise, False sinon (aucun « Fait a » -> no-op). A preferer a
+    keep_signature_block_together quand le bloc est purement paragraphes (pas de table de cases)."""
+    paras = document.paragraphs
+    start = None
+    for index in range(len(paras) - 1, -1, -1):
+        stripped = paras[index].text.strip()
+        # Ouvertures de bloc signature : « Fait a/le/en/pour … » (toutes les clôtures « Fait … »,
+        # y compris « Fait en N exemplaires » / « Fait pour servir et valoir … » des lettres) et
+        # l'en-tête d'acte « A/À <lieu>, le <date> ». On prend la DERNIERE occurrence.
+        if (
+            (stripped.startswith("Fait ") and "générateur" not in stripped)
+            or (stripped.startswith(("A ", "À ")) and ", le " in stripped)
+        ):
+            start = index
+            break
+    if start is None:
+        return False
+    for paragraph in paras[start:-1]:
+        paragraph.paragraph_format.keep_with_next = True
+    return True
+
+
 def add_statuts_annex_heading(
     document: Any,
     title: str,

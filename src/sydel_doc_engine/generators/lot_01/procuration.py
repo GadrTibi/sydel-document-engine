@@ -11,6 +11,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_framed_title,
     add_paragraph,
     add_spacer,
+    keep_final_signature_block_together,
     new_document,
 )
 from sydel_doc_engine.utils.dates import format_date_fr
@@ -116,6 +117,8 @@ class ProcurationGenerator:
 
         output_dir.mkdir(parents=True, exist_ok=True)
         output_path = output_dir / OUTPUT_FILENAME
+        # KAN-36 : bloc signature final solidaire (une seule page).
+        keep_final_signature_block_together(document)
         document.save(output_path)
         return output_path
 

@@ -24,6 +24,7 @@ from sydel_doc_engine.front_app.field_derivations import group_montant
 from sydel_doc_engine.rendering.docx_builder import (
     add_bordered_data_table,
     add_paragraph,
+    keep_final_signature_block_together,
     new_document,
 )
 from sydel_doc_engine.utils.grammar import montant_avec_euros
@@ -70,6 +71,8 @@ class ListeSouscripteursSasuHoldingGenerator:
 
         output_dir.mkdir(parents=True, exist_ok=True)
         output_path = output_dir / OUTPUT_FILENAME
+        # KAN-36 : bloc signature final solidaire (une seule page).
+        keep_final_signature_block_together(document)
         document.save(output_path)
         return output_path
 

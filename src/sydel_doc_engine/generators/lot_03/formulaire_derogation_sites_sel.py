@@ -27,6 +27,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_form_section_heading,
     add_italic_instruction,
     add_paragraph,
+    keep_final_signature_block_together,
     new_document,
 )
 from sydel_doc_engine.utils.departements import departement_nom
@@ -58,6 +59,8 @@ class FormulaireDerogationSitesSelGenerator:
 
         output_dir.mkdir(parents=True, exist_ok=True)
         output_path = output_dir / OUTPUT_FILENAME
+        # KAN-36 : bloc signature final solidaire (une seule page).
+        keep_final_signature_block_together(docx)
         docx.save(output_path)
         return output_path
 

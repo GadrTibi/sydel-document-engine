@@ -23,6 +23,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_italic_instruction,
     add_notice_box,
     add_paragraph,
+    keep_final_signature_block_together,
     new_document,
 )
 
@@ -48,6 +49,8 @@ class DemandeDerogationCumulSelarlBncGenerator:
 
         output_dir.mkdir(parents=True, exist_ok=True)
         output_path = output_dir / OUTPUT_FILENAME
+        # KAN-36 : bloc signature final solidaire (une seule page).
+        keep_final_signature_block_together(docx)
         docx.save(output_path)
         return output_path
 
