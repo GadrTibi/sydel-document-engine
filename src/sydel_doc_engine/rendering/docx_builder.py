@@ -894,12 +894,18 @@ def keep_final_signature_block_together(document: Any) -> bool:
     start = None
     for index in range(len(paras) - 1, -1, -1):
         stripped = paras[index].text.strip()
-        # Ouvertures de bloc signature : « Fait a/le/en/pour … » (toutes les clôtures « Fait … »,
-        # y compris « Fait en N exemplaires » / « Fait pour servir et valoir … » des lettres) et
-        # l'en-tête d'acte « A/À <lieu>, le <date> ». On prend la DERNIERE occurrence.
+        # DEBUTS de bloc signature (block-starters, PAS les mentions internes « Bon pour … » /
+        # « Lu et approuvé » qui sont DANS le bloc) : « Fait a/le/en/pour … » (toutes les clôtures
+        # « Fait … », y compris « Fait en N exemplaires » / « Fait pour servir … » des lettres),
+        # l'en-tête d'acte « A/À <lieu>, le <date> », et les clôtures de PROCES-VERBAL (« … dressé
+        # le présent procès-verbal … signé après lecture … », suivies des lignes de noms nues).
+        # On prend la DERNIERE occurrence d'un debut de bloc.
         if (
             (stripped.startswith("Fait ") and "générateur" not in stripped)
             or (stripped.startswith(("A ", "À ")) and ", le " in stripped)
+            or "signé après lecture" in stripped
+            or "dressé le présent procès-verbal" in stripped
+            or "il a été dressé le présent" in stripped
         ):
             start = index
             break

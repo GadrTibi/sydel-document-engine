@@ -28,6 +28,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_hyphen_list_item,
     add_paragraph,
     add_signature_lines,
+    keep_final_signature_block_together,
     new_document,
 )
 from sydel_doc_engine.utils.grammar import elision_de
@@ -98,6 +99,10 @@ class PvAgrementCessionSpfplPlusieursAssociesGenerator:
             alignment=WD_ALIGN_PARAGRAPH.CENTER,
         )
 
+        # KAN-36 : la clôture du PV + toutes les lignes de signataires restent sur une seule page
+        # (vécu : 7 signataires orphelinés page 3 avec 9 associés). keepNext depuis la clôture
+        # « … présent procès-verbal … signé après lecture … » jusqu'aux noms.
+        keep_final_signature_block_together(docx)
         output_dir.mkdir(parents=True, exist_ok=True)
         output_path = output_dir / OUTPUT_FILENAME
         docx.save(output_path)
