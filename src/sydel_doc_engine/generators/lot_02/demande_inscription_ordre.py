@@ -22,6 +22,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_right_indented_block,
     add_spacer,
     add_subject_heading,
+    keep_final_signature_block_together,
     new_document,
 )
 from sydel_doc_engine.utils.dates import format_date_fr
@@ -98,6 +99,9 @@ class DemandeInscriptionOrdreGenerator:
             genre=signataire.genre,
         )
         _add_final_signature(document, signataire_name)
+
+        # KAN-36 : bloc signature final solidaire (une seule page).
+        keep_final_signature_block_together(document)
 
         output_dir.mkdir(parents=True, exist_ok=True)
         output_path = output_dir / OUTPUT_FILENAME

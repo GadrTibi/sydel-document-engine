@@ -16,6 +16,7 @@ from sydel_doc_engine.domain.models import (
 from sydel_doc_engine.generators.lot_04.statuts_sel_exercice_common import (
     statuts_output_filename,
 )
+from sydel_doc_engine.rendering.docx_builder import keep_final_signature_block_together
 from sydel_doc_engine.rendering.docx_template_fill import fill_docx_template
 from sydel_doc_engine.utils.months import FRENCH_MONTHS
 
@@ -96,6 +97,8 @@ def _postprocess_sasu_statuts(output_path: Path) -> None:
         if paragraph.text.strip().upper().startswith("ANNEXE"):
             paragraph.paragraph_format.page_break_before = True
             break
+    # KAN-36 : bloc signature final solidaire (une seule page).
+    keep_final_signature_block_together(document)
     document.save(str(output_path))
 
 

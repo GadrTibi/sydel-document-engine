@@ -892,14 +892,13 @@ def keep_final_signature_block_together(document: Any) -> bool:
     keep_signature_block_together quand le bloc est purement paragraphes (pas de table de cases)."""
     paras = document.paragraphs
     start = None
+    # 1) DEBUT DE BLOC par ancre — pour les blocs a LONGUEUR VARIABLE ou l'ancre precede des lignes
+    # nombreuses (ex. PV : cloture + N signataires). Ce sont des DEBUTS de bloc (block-starters), PAS
+    # les mentions internes « Bon pour … » / « Lu et approuvé » : « Fait a/le/en/pour … » (toutes les
+    # clôtures « Fait … »), l'en-tête d'acte « A/À <lieu>, le <date> », et la clôture de PROCES-VERBAL
+    # (« … dressé le présent procès-verbal … signé après lecture … »). DERNIERE occurrence.
     for index in range(len(paras) - 1, -1, -1):
         stripped = paras[index].text.strip()
-        # DEBUTS de bloc signature (block-starters, PAS les mentions internes « Bon pour … » /
-        # « Lu et approuvé » qui sont DANS le bloc) : « Fait a/le/en/pour … » (toutes les clôtures
-        # « Fait … », y compris « Fait en N exemplaires » / « Fait pour servir … » des lettres),
-        # l'en-tête d'acte « A/À <lieu>, le <date> », et les clôtures de PROCES-VERBAL (« … dressé
-        # le présent procès-verbal … signé après lecture … », suivies des lignes de noms nues).
-        # On prend la DERNIERE occurrence d'un debut de bloc.
         if (
             (stripped.startswith("Fait ") and "générateur" not in stripped)
             or (stripped.startswith(("A ", "À ")) and ", le " in stripped)
@@ -909,9 +908,23 @@ def keep_final_signature_block_together(document: Any) -> bool:
         ):
             start = index
             break
+    # 2) FALLBACK par INTENTION (pas une liste de tournures — règle 68 2026-07-09) : si aucune ancre
+    # n'est reconnue, le bloc signature est neanmoins la FIN du document (cloture de lettre « … prie
+    # d'agréer … » + nom, ligne « ____ » + nom/qualité…). On protege la QUEUE : les ~6 derniers
+    # paragraphes non vides. Couvre toute fin signee sans coder chaque formule de politesse.
     if start is None:
-        return False
-    for paragraph in paras[start:-1]:
+        non_empty = [i for i, p in enumerate(paras) if p.text.strip()]
+        if len(non_empty) < 2:
+            return False
+        start = non_empty[max(0, len(non_empty) - 6)]
+    # 3) BORNE au premier saut de page apres le debut : les statuts ont une ANNEXE apres le « Fait a »
+    # -> le keepNext ne doit pas traverser le saut de page (sinon il tire l'annexe dans le bloc).
+    end = len(paras)
+    for index in range(start + 1, len(paras)):
+        if paras[index].paragraph_format.page_break_before:
+            end = index
+            break
+    for paragraph in paras[start : max(start, end - 1)]:
         paragraph.paragraph_format.keep_with_next = True
     return True
 

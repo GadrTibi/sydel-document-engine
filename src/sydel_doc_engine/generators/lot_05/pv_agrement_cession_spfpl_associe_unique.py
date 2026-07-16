@@ -24,7 +24,11 @@ from sydel_doc_engine.generators.lot_05.spfpl_common import (
     validate_associe_unique,
     validate_cession_context,
 )
-from sydel_doc_engine.rendering.docx_builder import add_paragraph, new_document
+from sydel_doc_engine.rendering.docx_builder import (
+    add_paragraph,
+    keep_final_signature_block_together,
+    new_document,
+)
 
 OUTPUT_FILENAME = "pv_agrement_cession_spfpl_associe_unique.docx"
 
@@ -69,6 +73,9 @@ class PvAgrementCessionSpfplAssocieUniqueGenerator:
             alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
         )
         add_paragraph(docx, person_signature(cedant, "cedant"), space_before_pt=12)
+
+        # KAN-36 : bloc signature final solidaire (une seule page).
+        keep_final_signature_block_together(docx)
 
         output_dir.mkdir(parents=True, exist_ok=True)
         output_path = output_dir / OUTPUT_FILENAME

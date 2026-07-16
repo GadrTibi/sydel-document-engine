@@ -28,7 +28,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_party_marker,
     add_signature_table,
     add_spacer,
-    keep_final_signature_block_together,
+    keep_signature_block_together,
     new_document,
 )
 from sydel_doc_engine.utils.grammar import accord_terme_genre
@@ -91,12 +91,13 @@ class AvenantContratBailGenerator:
                 f"{format_display_date(ctx.signature.date, 'signature.date')}"
             ),
         )
-        _add_signature_table(docx)
+        signature_table = _add_signature_table(docx)
 
         output_dir.mkdir(parents=True, exist_ok=True)
         output_path = output_dir / OUTPUT_FILENAME
-        # KAN-36 : bloc signature final solidaire (une seule page).
-        keep_final_signature_block_together(docx)
+        # KAN-36 : « Fait à … » + cases de signature (table) sur une seule page (helper table :
+        # keepNext sur l'intro + cantSplit sur les cases).
+        keep_signature_block_together(docx, signature_table)
         docx.save(output_path)
         return output_path
 
@@ -360,7 +361,7 @@ def _add_article_title(docx, title: str) -> None:
     add_article_heading(docx, title, style_profile=BAIL_COMPACT_STYLE_PROFILE)
 
 
-def _add_signature_table(docx) -> None:
+def _add_signature_table(docx):
     table = add_signature_table(
         docx,
         [
@@ -375,3 +376,4 @@ def _add_signature_table(docx) -> None:
     for row in table.rows:
         row.height = Cm(2.6)
         row.height_rule = WD_ROW_HEIGHT_RULE.AT_LEAST
+    return table

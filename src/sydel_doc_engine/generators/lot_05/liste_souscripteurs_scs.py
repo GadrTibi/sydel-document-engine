@@ -12,6 +12,7 @@ from sydel_doc_engine.domain.models import (
     StatutsCivilsAssocie,
 )
 from sydel_doc_engine.front_app.field_derivations import group_montant
+from sydel_doc_engine.rendering.docx_builder import keep_final_signature_block_together
 from sydel_doc_engine.utils.grammar import montant_avec_euros
 
 OUTPUT_FILENAME = "liste_souscripteurs_scs.docx"
@@ -156,6 +157,8 @@ class ListeSouscripteursScsGenerator:
         self._render_table(document, associes, total_parts, total_montant, replacements)
 
         self._assert_no_residual(document)
+        # KAN-36 : bloc signature final solidaire (une seule page).
+        keep_final_signature_block_together(document)
         output_dir.mkdir(parents=True, exist_ok=True)
         output_path = output_dir / OUTPUT_FILENAME
         document.save(output_path)

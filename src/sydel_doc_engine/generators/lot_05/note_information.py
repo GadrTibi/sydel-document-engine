@@ -23,6 +23,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_hyphen_list_item,
     add_paragraph,
     add_spacer,
+    keep_final_signature_block_together,
     new_document,
 )
 
@@ -150,6 +151,9 @@ class NoteInformationGenerator:
         )
         add_spacer(docx)  # [17] ligne vide de fin (modèle)
         add_spacer(docx)  # [18] ligne vide de fin (modèle)
+
+        # KAN-36 : bloc signature final solidaire (une seule page).
+        keep_final_signature_block_together(docx)
 
         output_dir.mkdir(parents=True, exist_ok=True)
         output_path = output_dir / OUTPUT_FILENAME

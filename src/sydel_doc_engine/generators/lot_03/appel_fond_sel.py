@@ -31,6 +31,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_paragraph,
     add_right_aligned_lines,
     add_subject_heading,
+    keep_final_signature_block_together,
     new_document,
 )
 
@@ -134,6 +135,9 @@ class AppelFondSelGenerator:
                 )
             ],
         )
+
+        # KAN-36 : bloc signature final solidaire (une seule page).
+        keep_final_signature_block_together(docx)
 
         output_dir.mkdir(parents=True, exist_ok=True)
         output_path = output_dir / OUTPUT_FILENAME

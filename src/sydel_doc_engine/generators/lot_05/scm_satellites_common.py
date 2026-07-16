@@ -23,7 +23,11 @@ from sydel_doc_engine.domain.models import (
 from sydel_doc_engine.front_app.field_derivations import derive_gender_from_civilite
 from sydel_doc_engine.generators.lot_01.civilite import civilite_civile
 from sydel_doc_engine.generators.lot_05.scm_satellites_templates import TemplateBlock
-from sydel_doc_engine.rendering.docx_builder import add_paragraph, new_document
+from sydel_doc_engine.rendering.docx_builder import (
+    add_paragraph,
+    keep_final_signature_block_together,
+    new_document,
+)
 from sydel_doc_engine.utils.grammar import (
     accord_fonction,
     accord_participe_e,
@@ -65,6 +69,9 @@ def generate_from_template(
     if "[" in full_text or "]" in full_text:
         raise ValueError(f"placeholder source residuel dans le rendu {DOCUMENT_CODE}.")
 
+    # KAN-36 : bloc signature final solidaire (une seule page) — couvre tous les satellites SCM
+    # (pacte d'associés, règlement, contrat de frais communs, liste des dépenses).
+    keep_final_signature_block_together(document)
     output_dir.mkdir(parents=True, exist_ok=True)
     output_path = output_dir / output_filename
     document.save(output_path)

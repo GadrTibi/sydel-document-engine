@@ -39,7 +39,10 @@ from sydel_doc_engine.generators.lot_05.scm_cession_common import (
     mentions_partenaire_pacse,
     partenaire_pacse_clause,
 )
-from sydel_doc_engine.rendering.docx_builder import ensure_demeurant_au
+from sydel_doc_engine.rendering.docx_builder import (
+    ensure_demeurant_au,
+    keep_final_signature_block_together,
+)
 from sydel_doc_engine.utils.departements import departement_nom
 from sydel_doc_engine.utils.grammar import (
     accord_terme_genre,
@@ -797,6 +800,8 @@ def render_cession_from_template(  # noqa: C901
     # Rafael/Albane 2026-07-09 : « demeurant [adresse] » -> « demeurant au [adresse] »
     # (convention universelle) ; le mot est fige dans le modele source d'acte de cession.
     ensure_demeurant_au(document)
+    # KAN-36 : bloc signature final solidaire (une seule page).
+    keep_final_signature_block_together(document)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     document.save(str(output_path))
     return output_path

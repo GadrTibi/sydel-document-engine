@@ -14,6 +14,7 @@ from docx.shared import Pt
 from sydel_doc_engine.domain.models import Address, Company, DocumentGenerationContext
 from sydel_doc_engine.front_app.field_derivations import group_montant
 from sydel_doc_engine.generators.lot_01.civilite import civilite_civile
+from sydel_doc_engine.rendering.docx_builder import keep_final_signature_block_together
 from sydel_doc_engine.rendering.docx_template_fill import fill_docx_template
 from sydel_doc_engine.utils.grammar import montant_avec_euros
 
@@ -184,6 +185,8 @@ def _apply_roboto_font(output_path: Path, *, body_size_pt: int) -> None:
                 for paragraph in cell.paragraphs:
                     for run in paragraph.runs:
                         _set_run_font(run, name=ROBOTO_FONT, size_pt=body_size_pt)
+    # KAN-36 : bloc signature final solidaire (une seule page).
+    keep_final_signature_block_together(document)
     document.save(str(output_path))
 
 
