@@ -19,6 +19,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_paragraph,
     add_spacer,
     add_sydel_letter_footer,
+    keep_final_signature_block_together,
     new_document,
 )
 
@@ -123,6 +124,11 @@ class CourrierSdeCessionScmGenerator:
         )
         # §8.4b — pied de page SYDEL (coordonnees) pour contact par le SDE.
         add_sydel_letter_footer(document)
+        # KAN-36 (convergence @All 2026-07-16) : la cloture de lettre (« Je vous prie d'agreer …
+        # » + signataire « Clemence ROUSSEL ») ne portait aucun keepNext -> scindable sur deux
+        # pages. La lettre n'a pas d'ancre « Fait a » : le fallback « queue de document » du
+        # helper (les ~6 derniers paragraphes non vides) solidarise la cloture + le signataire.
+        keep_final_signature_block_together(document)
         return save_clean_document(document, output_dir, OUTPUT_FILENAME)
 
 

@@ -24,7 +24,10 @@ from sydel_doc_engine.generators.lot_05.scm_cession_common import (
     mentions_partenaire_pacse,
     partenaire_pacse_clause,
 )
-from sydel_doc_engine.rendering.docx_builder import apply_style_profile
+from sydel_doc_engine.rendering.docx_builder import (
+    apply_style_profile,
+    keep_final_signature_block_together,
+)
 from sydel_doc_engine.rendering.docx_template_fill import fill_docx_template
 from sydel_doc_engine.utils.departements import departement_nom
 
@@ -186,6 +189,11 @@ def _apply_style_footer_normalize(output_path: Path, denomination: str) -> None:
                     paragraph.text = footer_text
     for paragraph in document.paragraphs:
         _normalize_paragraph(paragraph)
+    # KAN-36 (convergence @All 2026-07-16) : le bloc signature des statuts SAS (« Fait a … » +
+    # nom du president + mention « Bon pour acceptation … ») restait scindable sur deux pages
+    # (aucun keepNext). On le solidarise ; le helper borne au 1er saut de page (l'ANNEXE des
+    # engagements, sur sa propre page, n'est pas tiree dans le bloc). Byte-neutre cote texte.
+    keep_final_signature_block_together(document)
     document.save(str(output_path))
 
 

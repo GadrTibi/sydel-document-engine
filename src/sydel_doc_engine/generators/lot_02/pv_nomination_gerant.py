@@ -28,6 +28,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_signature_table,
     add_spacer,
     keep_final_signature_block_together,
+    keep_signature_block_together,
     new_document,
 )
 from sydel_doc_engine.utils.grammar import accord_fonction, euro_word, montant_avec_euros
@@ -1080,7 +1081,12 @@ def _add_multi_dirigeant_signatures(
             for d in dirigeants
         ]
     ]
-    add_signature_table(document, labels, min_row_height_cm=2.5)
+    signature_table = add_signature_table(document, labels, min_row_height_cm=2.5)
+    # KAN-36 (convergence @All 2026-07-16) : les signataires multi-dirigeants sont dans une TABLE.
+    # keep_final (paragraphe seul, appele en fin de generate) ne la protege pas -> on solidarise la
+    # TABLE (cantSplit sur ses lignes + keepNext sur l'intro « Fait a … »). Meme classe que le PV
+    # AGE cession SCM et l'acte de cession de parts.
+    keep_signature_block_together(document, signature_table)
 
 
 # ---------------------------------------------------------------------------

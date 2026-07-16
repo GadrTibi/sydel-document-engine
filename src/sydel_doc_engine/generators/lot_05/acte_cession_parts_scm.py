@@ -38,6 +38,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_signature_table,
     add_spacer,
     keep_final_signature_block_together,
+    keep_signature_block_together,
     new_document,
 )
 from sydel_doc_engine.utils.departements import departement_nom
@@ -357,7 +358,7 @@ class ActeCessionPartsScmGenerator:
             f"{required_text(cessionnaire.representant.prenom, 'scm_cession.cessionnaire.representant.prenom')} "
             f"{required_text(cessionnaire.representant.nom, 'scm_cession.cessionnaire.representant.nom')}"
         )
-        add_signature_table(
+        signature_table = add_signature_table(
             document,
             [
                 [
@@ -367,7 +368,11 @@ class ActeCessionPartsScmGenerator:
             ],
             min_row_height_cm=3.0,
         )
-        # KAN-36 : bloc signature final solidaire (une seule page).
+        # KAN-36 : bloc signature final solidaire (une seule page). Les signataires sont dans une
+        # TABLE : keep_final (paragraphe seul) ne la protege pas (il exclut le dernier paragraphe,
+        # celui juste avant la table, et ne pose aucun cantSplit). On solidarise la TABLE (cantSplit
+        # sur ses lignes + keepNext sur l'intro « Fait a … » / « Le … ») — convergence @All.
+        keep_signature_block_together(document, signature_table)
         keep_final_signature_block_together(document)
         return save_clean_document(document, output_dir, OUTPUT_FILENAME)
 

@@ -29,7 +29,10 @@ from sydel_doc_engine.generators.lot_05.spfpl_common import (
     required_text,
     validate_apport_context,
 )
-from sydel_doc_engine.rendering.docx_builder import ensure_demeurant_au
+from sydel_doc_engine.rendering.docx_builder import (
+    ensure_demeurant_au,
+    keep_final_signature_block_together,
+)
 from sydel_doc_engine.utils.departements import departement_nom
 from sydel_doc_engine.utils.grammar import (
     _has_real_decimal,
@@ -189,6 +192,12 @@ class ContratApportSpfplGenerator:
         self._assert_no_residual(document)
         # Rafael/Albane 2026-07-09 : « Demeurant [adresse] » -> « Demeurant au [adresse] ».
         ensure_demeurant_au(document)
+        # KAN-36 (convergence @All 2026-07-16) : le bloc signature du contrat d'apport
+        # (« Fait a … en N exemplaires » / « Le … » + les signataires « <apporteur> \t <societe> »
+        # sur des paragraphes tab-joints) ne portait aucun keepNext -> scindable sur deux pages.
+        # Les signataires sont des PARAGRAPHES (pas une table) : on solidarise via le helper
+        # paragraphe (ancre « Fait a … » -> keepNext jusqu'a la fin). Byte-neutre cote texte.
+        keep_final_signature_block_together(document)
         output_dir.mkdir(parents=True, exist_ok=True)
         output_path = output_dir / OUTPUT_FILENAME
         document.save(output_path)

@@ -925,6 +925,28 @@ def _mh_signature_label(associe: StatutsCivilsAssocie) -> str:
     )
 
 
+def _keepnext_source_signature_intro(document) -> None:
+    """KAN-36 (convergence @All 2026-07-16) : solidarise l'intro signature RENDUE PAR LE MODELE
+    SOURCE (« Fait a …, le … » / « En N exemplaires ») a la grille des signataires ajoutee juste
+    apres. La SCS rend cette intro par le chemin source (append_signatures_after, signature_slice=
+    None) — sans keepNext elle se detachait de la grille (orpheline en bas de page). On pose
+    keepNext de la DERNIERE ancre d'ouverture deja rendue jusqu'au dernier paragraphe courant.
+    A appeler AVANT d'ajouter la grille (le dernier paragraphe courant = derniere ligne d'intro)."""
+    paras = document.paragraphs
+    for index in range(len(paras) - 1, -1, -1):
+        stripped = paras[index].text.strip()
+        if stripped.startswith("Fait ") or (
+            stripped.startswith(("A ", "À ")) and ", le " in stripped
+        ):
+            for paragraph in paras[index:]:
+                paragraph.paragraph_format.keep_with_next = True
+            return
+    # Fallback (aucune ancre) : solidarise les 2 derniers paragraphes non vides.
+    non_empty = [paragraph for paragraph in paras if paragraph.text.strip()]
+    for paragraph in non_empty[-2:]:
+        paragraph.paragraph_format.keep_with_next = True
+
+
 def _add_signature_block(document, data: _ResolvedStatutsCivil) -> None:
     if data.template.expected_type == "micro_holding":
         # Modele Albane P461-P464 : « Fait a <lieu> » / « Le <date longue> » sur deux lignes, puis
@@ -961,6 +983,11 @@ def _add_signature_block(document, data: _ResolvedStatutsCivil) -> None:
         )
     signers = [_signature_label(a) for a in data.associes if a.est_signataire]
     if data.template.expected_type == "scs":
+        # KAN-36 (convergence @All 2026-07-16) : la SCS rend son intro signature (« Fait a …,
+        # le … » / « En N exemplaires ») par le chemin SOURCE (append_signatures_after) AVANT cet
+        # appel -> intro_signature reste None et l'intro n'avait AUCUN keepNext (orpheline de la
+        # grille). On solidarise l'intro source deja rendue a la grille (en plus du cantSplit).
+        _keepnext_source_signature_intro(document)
         grid = add_statuts_signature_grid(document, signers, mention="Lu et approuvé")
         # KAN-36 : « A …, le … » + grille des signataires sur une seule page (cases non scindées).
         if intro_signature is not None:

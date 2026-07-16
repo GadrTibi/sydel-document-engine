@@ -642,6 +642,21 @@ def test_pv_nomination_selas_multi_signature_block_two_functions(tmp_path: Path)
     # Plus de separateur tabulation (ancienne mise en page qui decalait).
     assert "\t" not in text
 
+    # KAN-36 (convergence @All 2026-07-16) : la TABLE des signataires multi-dirigeants porte
+    # cantSplit sur TOUTES ses lignes (ne se scinde pas entre deux pages) ET l'intro « Fait à … »
+    # qui la precede porte keepNext (ne s'orpheline pas) -> bloc signature solidaire. Le
+    # helper paragraphe seul (keep_final) ne protege pas une table de signataires.
+    assert all(
+        row._tr.xpath("./w:trPr/w:cantSplit") for row in signature_table.rows
+    ), "grille signataires multi-dirigeants scindable (cantSplit manquant)"
+    paras = document.paragraphs
+    fait_index = next(
+        i for i, p in enumerate(paras) if p.text.strip().startswith("Fait à")
+    )
+    assert paras[fait_index].paragraph_format.keep_with_next, (
+        "intro « Fait à … » non solidarisee a la grille multi-dirigeants (keepNext manquant)"
+    )
+
 
 def test_pv_nomination_selas_single_president_keeps_mono_structure(tmp_path: Path) -> None:
     # Un SEUL dirigeant (President) -> pas de comma model wording, pas de DEUXIEME

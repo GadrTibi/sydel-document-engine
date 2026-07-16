@@ -1114,7 +1114,11 @@ def render_statuts_sel_docx(  # noqa: C901
                 for membre in signataires:
                     # S5 (Rafael 2026-07-09) : signatures alignees a DROITE (meme convention
                     # que le mono ; « Fait a … » reste a gauche).
-                    add_statuts_signature_block(
+                    # KAN-36 (convergence @All 2026-07-16) : capturer les paragraphes des NOMS
+                    # de signataires dans `signature_paras` (comme le mono, cf. plus bas), sinon
+                    # la boucle keepNext finale ne les couvre pas -> signataires orphelins,
+                    # scindables sur deux pages (MEME bug que le PV B1, vecu sur la SELARL multi).
+                    signature_paras += add_statuts_signature_block(
                         docx,
                         [_membre_short_label(membre)],
                         bold=True,

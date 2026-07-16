@@ -25,6 +25,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_signature_table,
     add_spacer,
     keep_final_signature_block_together,
+    keep_signature_block_together,
     new_document,
 )
 
@@ -261,13 +262,16 @@ class PvAgeCessionScmGenerator:
         add_spacer(document, space_after_pt=_BLOCK_SPACER_PT)
         # §4.2 — cadre de signature agrandi (zone manuscrite/YouSign suffisante),
         # bordures conservees. 2,5 cm de hauteur minimale par ligne de signataires.
-        add_signature_table(
+        signature_table = add_signature_table(
             document,
             _signature_rows(scm_cession.signataires_pv),
             min_row_height_cm=2.5,
         )
 
-        # KAN-36 : bloc signature final solidaire (une seule page).
+        # KAN-36 : bloc signature final solidaire (une seule page). Les signataires sont dans une
+        # TABLE : keep_final (paragraphe seul) ne la protege pas (cadre orphelin / scindable). On
+        # solidarise la TABLE (cantSplit sur ses lignes + keepNext sur l'intro « De tout ceci … »).
+        keep_signature_block_together(document, signature_table)
         keep_final_signature_block_together(document)
         return save_clean_document(document, output_dir, OUTPUT_FILENAME)
 
