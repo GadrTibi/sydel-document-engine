@@ -321,6 +321,23 @@ class ActeCessionPartsSpfplGenerator:
                     continue
             self._copy_paragraph(docx, paragraph, replacements)
 
+        # KAN-36 (Rafael 2026-07-16) : le bloc signature final (« Fait a … / Le … / En N
+        # exemplaires / signataires cote a cote / Representee par … ») doit rester ENTIER sur une
+        # seule page. keepNext sur chaque paragraphe de ce bloc sauf le dernier (le bloc est en fin
+        # d'acte). On repere la DERNIERE occurrence de « Fait a » pour ne pas capter un homonyme.
+        rendered = docx.paragraphs
+        sig_start = next(
+            (
+                i
+                for i in range(len(rendered) - 1, -1, -1)
+                if rendered[i].text.strip().startswith(("Fait à", "Fait a"))
+            ),
+            None,
+        )
+        if sig_start is not None:
+            for signature_paragraph in rendered[sig_start:-1]:
+                signature_paragraph.paragraph_format.keep_with_next = True
+
     @staticmethod
     def _copy_paragraph_format(new_paragraph, source_paragraph) -> None:
         """Reproduit l'alignement, l'espacement (avant/apres, interligne) et le retrait du
