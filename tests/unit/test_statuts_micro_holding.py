@@ -286,6 +286,14 @@ def test_micro_holding_signature_date_longue_et_civilite_abregee(tmp_path: Path)
     )
     zone_signature = "\n".join(p.text for p in document.paragraphs[fait_idx:] if p.text)
     assert "Madame Jessica GOSSET" not in zone_signature
+    # KAN-15 (Rafael 2026-07-15) : les signataires sont CÔTE À CÔTE sur UNE ligne (tabulations),
+    # comme le modele source (P464) — plus empiles chacun sur sa ligne (supersede Albane B4
+    # 2026-07-09). Une seule ligne de signataires, physiques puis morales, separes par des tabs.
+    ligne_signataires = next(
+        p.text for p in document.paragraphs[fait_idx:] if "GOSSET" in p.text and "SPFPL" in p.text
+    )
+    assert "\t" in ligne_signataires
+    assert ligne_signataires.index("Mme Jessica GOSSET") < ligne_signataires.index("SPFPL")
 
 
 # --- B1 (Albane 2026-07-09) : date de naissance en « JJ mois AAAA » dans les statuts ----------
@@ -352,28 +360,33 @@ def test_micro_holding_art7_repartition_tirets_et_alignement(tmp_path: Path) -> 
 # --- B4 (Albane 2026-07-09) : signatures centrees, une par ligne, avec espace pour signer ------
 
 
-def test_micro_holding_signatures_centrees_une_par_ligne(tmp_path: Path) -> None:
+def test_micro_holding_signatures_cote_a_cote(tmp_path: Path) -> None:
+    # KAN-15 (Rafael 2026-07-15) : les signataires reviennent CÔTE À CÔTE sur UNE ligne, séparés
+    # par des tabulations, comme le modele source P464 — plus empiles chacun sur sa ligne.
+    # SUPERSEDE Albane B4 (2026-07-09) : le retour le plus recent prime (regle 68) et retablit la
+    # disposition du modele client. « Superposés » (empiles) -> « alignés » (cote a cote), avec
+    # l'espace pour signer AU-DESSUS des noms (space_before).
     from docx.enum.text import WD_ALIGN_PARAGRAPH
 
     document = Document(StatutsMicroHoldingGenerator().generate(_ctx_berte(), tmp_path))
     paras = document.paragraphs
     fait_idx = next(i for i, p in enumerate(paras) if p.text.strip().startswith("Fait à"))
-    signataire_paras = [
-        p
-        for p in paras[fait_idx:]
+    # UNE seule ligne porte les deux signataires, tab-separes (physique puis morale).
+    ligne = next(
+        p for p in paras[fait_idx:] if "Mme Jessica GOSSET" in p.text and "SPFPL" in p.text
+    )
+    assert "\t" in ligne.text
+    assert ligne.text.index("Mme Jessica GOSSET") < ligne.text.index("SPFPL")
+    assert ligne.alignment == WD_ALIGN_PARAGRAPH.CENTER
+    # Espace pour signer AU-DESSUS des noms.
+    assert ligne.paragraph_format.space_before is not None
+    assert ligne.paragraph_format.space_before.pt >= 24
+    # Plus aucun signataire empile seul sur sa propre ligne.
+    empiles = [
+        p for p in paras[fait_idx:]
         if p.text.strip() in {"Mme Jessica GOSSET", "SPFPL DU DR JESSICA GOSSET"}
     ]
-    # Deux signataires -> deux paragraphes DISTINCTS (plus de ligne unique tab-jointe).
-    assert len(signataire_paras) == 2
-    for p in signataire_paras:
-        assert p.alignment == WD_ALIGN_PARAGRAPH.CENTER
-        # Espace pour signer sous chaque nom.
-        assert p.paragraph_format.space_after is not None
-        assert p.paragraph_format.space_after.pt >= 24
-    # L'ancien rendu cote a cote (noms separes par des tabulations) a disparu.
-    assert "Mme Jessica GOSSET\t" not in _docx_text(
-        StatutsMicroHoldingGenerator().generate(_ctx_berte(), tmp_path)
-    )
+    assert empiles == []
 
 
 # --- capital variable, max = 10x min (separateur a point), accords ------------

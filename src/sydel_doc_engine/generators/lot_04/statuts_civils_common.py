@@ -930,22 +930,25 @@ def _add_signature_block(document, data: _ResolvedStatutsCivil) -> None:
         # les signataires (physiques d'abord, morales ensuite). MH signature (Albane 2026-07-01,
         # « comme les modeles ») : date en FORME LONGUE « Le 22 mai 2026 » (et non « 22/05/2026 »)
         # + civilite ABREGEE « Mme »/« M. » dans le libelle signataire (cf. _mh_signature_label).
-        # B4 (Albane 2026-07-09) : chaque signataire CENTRE sur SA propre ligne avec un espace
-        # pour signer (l'ancien rendu cote a cote separe par des tabulations est SUPERSEDE).
+        # KAN-15 (Rafael 2026-07-15) : les signataires reviennent CÔTE À CÔTE, séparés par des
+        # tabulations, comme le MODÈLE SOURCE (P464 : « Mme … \t\t\t\t\t SPFPL … »). Verbatim :
+        # « Les noms ne doivent pas être superposés [= empilés], cela ne permet pas d'ajouter des
+        # signatures. Il faut qu'ils soient alignés. » SUPERSEDE la décision Albane du 2026-07-09
+        # (B4 : chacun sur sa propre ligne) — le retour le plus récent prime (règle 68) et
+        # RÉTABLIT la disposition du modèle client ratifié (l'empilage était la déviation). Le
+        # supersede est SIGNALÉ à Rafael sur le ticket : son choix revient sur un réglage d'Albane
+        # motivé « espace pour signer », d'où l'espace conservé AU-DESSUS des noms (space_before).
         add_paragraph(document, f"Fait à {data.signature_lieu}")
         add_paragraph(document, f"Le {data.signature_date_longue}")
         physiques = [a for a in data.associes if a.est_signataire and not _is_morale(a)]
         morales = [a for a in data.associes if a.est_signataire and _is_morale(a)]
         signers = [_mh_signature_label(a) for a in (physiques + morales)]
-        # B4 (Albane 2026-07-09) : chaque signataire CENTRÉ, sur SA propre ligne, avec un
-        # espace pour signer (au lieu des noms côte à côte séparés par des tabulations).
-        for label in signers:
-            add_paragraph(
-                document,
-                label,
-                alignment=WD_ALIGN_PARAGRAPH.CENTER,
-                space_after_pt=48,
-            )
+        add_paragraph(
+            document,
+            "\t\t\t\t\t".join(signers),
+            alignment=WD_ALIGN_PARAGRAPH.CENTER,
+            space_before_pt=48,
+        )
         return
     if data.template.signature_slice is not None:
         add_paragraph(document, f"A {data.signature_lieu}, le {data.signature_date}")
