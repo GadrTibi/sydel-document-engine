@@ -31,6 +31,7 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_statuts_signature_block,
     add_statuts_signature_grid,
     add_statuts_title_box,
+    keep_signature_block_together,
     new_document_from_model,
 )
 from sydel_doc_engine.utils.dates import format_birthdate_fr, format_date_longue_fr
@@ -938,8 +939,8 @@ def _add_signature_block(document, data: _ResolvedStatutsCivil) -> None:
         # RÉTABLIT la disposition du modèle client ratifié (l'empilage était la déviation). Le
         # supersede est SIGNALÉ à Rafael sur le ticket : son choix revient sur un réglage d'Albane
         # motivé « espace pour signer », d'où l'espace conservé AU-DESSUS des noms (space_before).
-        add_paragraph(document, f"Fait à {data.signature_lieu}")
-        add_paragraph(document, f"Le {data.signature_date_longue}")
+        p_fait = add_paragraph(document, f"Fait à {data.signature_lieu}")
+        p_le = add_paragraph(document, f"Le {data.signature_date_longue}")
         physiques = [a for a in data.associes if a.est_signataire and not _is_morale(a)]
         morales = [a for a in data.associes if a.est_signataire and _is_morale(a)]
         signers = [_mh_signature_label(a) for a in (physiques + morales)]
@@ -949,17 +950,30 @@ def _add_signature_block(document, data: _ResolvedStatutsCivil) -> None:
             alignment=WD_ALIGN_PARAGRAPH.CENTER,
             space_before_pt=48,
         )
+        # KAN-36 : « Fait a … / Le … » solidaires de la ligne des signataires (une seule page).
+        p_fait.paragraph_format.keep_with_next = True
+        p_le.paragraph_format.keep_with_next = True
         return
+    intro_signature = None
     if data.template.signature_slice is not None:
-        add_paragraph(document, f"A {data.signature_lieu}, le {data.signature_date}")
+        intro_signature = add_paragraph(
+            document, f"A {data.signature_lieu}, le {data.signature_date}"
+        )
     signers = [_signature_label(a) for a in data.associes if a.est_signataire]
     if data.template.expected_type == "scs":
-        add_statuts_signature_grid(document, signers, mention="Lu et approuvé")
+        grid = add_statuts_signature_grid(document, signers, mention="Lu et approuvé")
+        # KAN-36 : « A …, le … » + grille des signataires sur une seule page (cases non scindées).
+        if intro_signature is not None:
+            intro_signature.paragraph_format.keep_with_next = True
+        keep_signature_block_together(document, grid, intro_paragraphs=0)
         return
     # KAN-34 (Rafael 2026-07-15, @All) : les signataires CÔTE À CÔTE, pas empilés, avec un
     # espace suffisant pour signer — comme la capture « état souhaité » et comme le micro
     # holding (KAN-15). L'empilage (un bloc par signataire) ne laissait pas la place de signer.
     # UN seul signataire -> une ligne centrée simple ; plusieurs -> tab-joints, espace au-dessus.
+    # KAN-36 : « A …, le … » reste solidaire du bloc des signataires (une seule page).
+    if intro_signature is not None:
+        intro_signature.paragraph_format.keep_with_next = True
     if len(signers) <= 1:
         for signer in signers:
             add_statuts_signature_block(document, [signer], bold=True, underline=True)

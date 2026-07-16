@@ -860,6 +860,27 @@ def add_statuts_signature_grid(
     return table
 
 
+def keep_signature_block_together(
+    document: Any, table: Any | None = None, *, intro_paragraphs: int = 3
+) -> None:
+    """KAN-36 (Rafael 2026-07-16) : garde le bloc signature — les paragraphes d'intro
+    (« Fait a … / Le … ») ET la table/grille des signataires — sur une SEULE page, pour que
+    toutes les informations relatives aux signataires + la zone de signature soient visibles
+    ensemble (sinon « Fait a … » reste orphelin en bas d'une page et les signataires basculent
+    sur la suivante — vecu SELAS multi). Mecanique : `keepNext` garde un paragraphe sur la meme
+    page que l'element suivant (paragraphe OU table) ; `cantSplit` empeche une ligne (case de
+    signature) de se scinder entre deux pages. A appeler juste APRES avoir rendu la table.
+    `intro_paragraphs` = nombre de paragraphes juste avant la table a solidariser avec elle."""
+    body_paras = document.paragraphs
+    for paragraph in body_paras[-intro_paragraphs:] if intro_paragraphs > 0 else []:
+        paragraph.paragraph_format.keep_with_next = True
+    if table is not None:
+        for row in table.rows:
+            tr_pr = row._tr.get_or_add_trPr()
+            if tr_pr.find(qn("w:cantSplit")) is None:
+                tr_pr.append(OxmlElement("w:cantSplit"))
+
+
 def add_statuts_annex_heading(
     document: Any,
     title: str,

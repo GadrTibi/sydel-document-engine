@@ -32,6 +32,7 @@ from sydel_doc_engine.rendering.docx_builder import (
 )
 from sydel_doc_engine.rendering.docx_builder import (
     add_signature_table as _add_signature_table,
+    keep_signature_block_together as _keep_signature_block_together,
 )
 from sydel_doc_engine.utils.departements import departement_nom
 from sydel_doc_engine.utils.grammar import (
@@ -603,11 +604,13 @@ def _add_signature_line(document, data: _ResolvedSelasMulti) -> None:
     # sans decaler les noms -> on rend la ligne de signature dans un TABLEAU BORDE, une case par
     # signataire, hauteur de ligne ~5 cm (au lieu d'une ligne de texte tabulee qui se decalait).
     labels = [_signature_short_label(a) for a in data.associes if a.est_signataire]
-    _add_signature_table(
+    table = _add_signature_table(
         document,
         [labels],
         min_row_height_cm=_SELAS_SIGNATURE_ROW_HEIGHT_CM,
     )
+    # KAN-36 : le bloc signature (« Fait a … / Le … » + cases signataires) reste sur une seule page.
+    _keep_signature_block_together(document, table)
 
 
 # --- Blocs dynamiques DENTISTE (wording reproduit A L'IDENTIQUE du modele dentiste) ---------
@@ -758,11 +761,13 @@ def _add_signature_line_dentiste(document, data: _ResolvedSelasMulti) -> None:
     # ST7h (Albane 2026-06-26, propagation Q4 au dentiste) : cases de signature ~5 cm dans un
     # tableau borde, une case par signataire, au lieu de la ligne de noms tabulee qui decalait.
     labels = [_signature_short_label(a) for a in data.associes if a.est_signataire]
-    _add_signature_table(
+    table = _add_signature_table(
         document,
         [labels],
         min_row_height_cm=_SELAS_SIGNATURE_ROW_HEIGHT_CM,
     )
+    # KAN-36 : le bloc signature (« Fait a … / Le … » + cases signataires) reste sur une seule page.
+    _keep_signature_block_together(document, table)
 
 
 def _dentiste_boilerplate_replacements(data: _ResolvedSelasMulti) -> dict[str, str]:
