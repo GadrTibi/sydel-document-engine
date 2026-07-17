@@ -202,11 +202,20 @@ def siege_same_as_perso_checkbox(prefix: str) -> bool:
     key = f"{prefix}_siege_same_as_perso"
     if key not in st.session_state:
         st.session_state[key] = False
-    return st.checkbox(
+    checked = st.checkbox(
         "Siège social = adresse personnelle",
         key=key,
         help="Coché : recopie l'adresse personnelle dans le siège (évite la double saisie).",
     )
+    # KAN-11 (Albane) : quand la case est cochée, elle ne savait pas s'il fallait quand même
+    # saisir l'adresse -> légende VISIBLE (pas seulement le help au survol) : renseigner
+    # l'adresse personnelle UNE fois, le siège la reprend seul (aucune double saisie).
+    if checked:
+        st.caption(
+            "Le champ « Adresse du siège » est renseigné automatiquement depuis l'adresse "
+            "personnelle — inutile de la retaper ici."
+        )
+    return checked
 
 
 def mandataire_inputs(prefix: str) -> tuple[str, str]:
