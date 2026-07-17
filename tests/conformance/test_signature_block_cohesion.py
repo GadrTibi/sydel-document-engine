@@ -32,6 +32,7 @@ Exécutable en CI sans Word ni rendu PDF : on inspecte les propriétés de pagin
 from __future__ import annotations
 
 import dataclasses
+import re
 from pathlib import Path
 
 import pytest
@@ -77,6 +78,12 @@ def _full_text(path: Path) -> str:
 
 
 def _is_signed(path: Path) -> bool:
+    # Un doc est signé si (a) un paragraphe est une ANCRE de signature (même intention que
+    # ``_is_signature_anchor`` — inclut « A <lieu>, le <date> » des statuts SCI/SCI IRIS, que les
+    # marqueurs-substrings ratent) OU (b) le texte porte un marqueur de signature/clôture.
+    document = Document(str(path))
+    if any(_is_signature_anchor(p.text.strip()) for p in document.paragraphs):
+        return True
     return any(marker in _full_text(path) for marker in SIGNATURE_MARKERS)
 
 
@@ -90,7 +97,13 @@ def _is_signature_anchor(stripped: str) -> bool:
     toute clôture « Fait … », l'en-tête d'acte « A/À <lieu>, le <date> », la clôture de PV."""
     return (
         (stripped.startswith("Fait ") and "générateur" not in stripped)
-        or (stripped.startswith(("A ", "À ")) and ", le " in stripped)
+        # « A <lieu>, le <date> » : une DATE (chiffre) suit « le » — sinon on false-matche de la
+        # prose de corps (« A l'expiration du delai …, le conjoint … »). Même intention que le
+        # helper ``keep_final_signature_block_together`` (règle 68 : l'intention, pas la tournure).
+        or (
+            stripped.startswith(("A ", "À "))
+            and re.search(r",\s*le\s+\d", stripped) is not None
+        )
         or "signé après lecture" in stripped
         or "dressé le présent procès-verbal" in stripped
         or "il a été dressé le présent" in stripped
@@ -153,13 +166,43 @@ def _signature_block_start(blocks: list[tuple[str, object]]) -> int | None:
     """Index (dans ``blocks``) du DÉBUT du bloc signature : dernière ancre, sinon les ~6
     derniers paragraphes non vides (fallback lettres sans ancre)."""
     para_positions = [i for i, (kind, _) in enumerate(blocks) if kind == "P"]
+    # Une ancre n'est une SIGNATURE que dans la partie BASSE du doc (un « Fait à … » / « A …, le
+    # <date> » en HAUT = en-tête de date d'une lettre, pas la signature). Même seuil que le helper.
+    anchor_floor = len(blocks) * 0.4
     for i in reversed(para_positions):
+        if i < anchor_floor:
+            break
         if _is_signature_anchor(blocks[i][1].text.strip()):  # type: ignore[union-attr]
             return i
     non_empty = [i for i in para_positions if blocks[i][1].text.strip()]  # type: ignore[union-attr]
     if len(non_empty) < 2:
         return None
     return non_empty[max(0, len(non_empty) - 6)]
+
+
+def _signature_tables_protected(
+    blocks: list[tuple[str, object]], start: int, term: int, table_indices: list[int]
+) -> bool:
+    """Toutes les tables du bloc [start:term) sont des grilles de signataires PROTÉGÉES : cantSplit
+    sur toutes leurs lignes ET intro (paragraphe précédent) keepNext, ET les paragraphes d'intro
+    avant la 1re table forment une chaîne keepNext. Retourne False si une table n'est pas protégée
+    (elle peut être une table de DONNÉES et non de signature — l'appelant retombe alors sur le
+    chemin paragraphe)."""
+    for i in table_indices:
+        if not _all_rows_cantsplit(blocks[i][1]):
+            return False
+        prev = i - 1
+        while prev >= start and blocks[prev][0] != "P":
+            prev -= 1
+        if prev < start or not blocks[prev][1].paragraph_format.keep_with_next:  # type: ignore[union-attr]
+            return False
+    first_table = table_indices[0]
+    intro = [
+        blocks[i][1]
+        for i in range(start, first_table)
+        if blocks[i][0] == "P" and blocks[i][1].text.strip()  # type: ignore[union-attr]
+    ]
+    return all(p.paragraph_format.keep_with_next for p in intro)
 
 
 def _has_kan36_protection(path: Path) -> bool:  # noqa: C901
@@ -189,30 +232,40 @@ def _has_kan36_protection(path: Path) -> bool:  # noqa: C901
             term = i
             break
 
+    # Chemin TABLE : si le bloc contient une grille de signataires PROTÉGÉE (cantSplit sur toutes
+    # ses lignes + intro keepNext), le doc est protégé. Si la table du bloc n'est PAS une table de
+    # signature protégée (ex. table de DONNÉES « identification de la société » au milieu d'une
+    # lettre d'option IS), on NE conclut PAS à l'absence de protection : on RETOMBE sur le chemin
+    # paragraphe (la vraie signature est alors un paragraphe « Le gérant » en fin, chaîné keepNext).
     table_indices = [i for i in range(start, term) if blocks[i][0] == "T"]
-    if table_indices:
-        for i in table_indices:
-            if not _all_rows_cantsplit(blocks[i][1]):
-                return False  # grille de signataires scindable entre deux pages
-            prev = i - 1
-            while prev >= start and blocks[prev][0] != "P":
-                prev -= 1
-            # intro non solidarisée à la table -> « Fait à … » orphelin en bas de page
-            if prev < start or not blocks[prev][1].paragraph_format.keep_with_next:
-                return False
-        first_table = table_indices[0]
-        intro = [
-            blocks[i][1]
-            for i in range(start, first_table)
-            if blocks[i][0] == "P" and blocks[i][1].text.strip()  # type: ignore[union-attr]
-        ]
-        return all(p.paragraph_format.keep_with_next for p in intro)
+    if table_indices and _signature_tables_protected(blocks, start, term, table_indices):
+        return True
 
-    block_paras = [
-        obj
-        for (kind, obj) in blocks[start:term]
-        if kind == "P" and obj.text.strip()  # type: ignore[union-attr]
-    ]
+    # Bloc PUREMENT paragraphes : on reproduit EXACTEMENT la délimitation du helper en ESPACE
+    # PARAGRAPHES (document.paragraphs), pas en espace-blocs — sinon les tables situées AILLEURS
+    # dans le doc décalent le comptage du fallback « 6 derniers non vides » (le garde tombait un
+    # paragraphe trop haut sur les lettres, ex. lettre d'option IS). Ancre (partie basse) sinon
+    # fallback, bornée au 1er saut de page / ANNEXE. Même logique que keep_final_signature_block.
+    paras = document.paragraphs
+    p_start: int | None = None
+    anchor_floor = len(paras) * 0.4
+    for i in range(len(paras) - 1, -1, -1):
+        if i < anchor_floor:
+            break
+        if _is_signature_anchor(paras[i].text.strip()):
+            p_start = i
+            break
+    if p_start is None:
+        non_empty = [i for i, p in enumerate(paras) if p.text.strip()]
+        if len(non_empty) < 2:
+            return False
+        p_start = non_empty[max(0, len(non_empty) - 6)]
+    p_term = len(paras)
+    for i in range(p_start + 1, len(paras)):
+        if _has_page_break(paras[i]) or paras[i].text.strip().upper().startswith("ANNEXE"):
+            p_term = i
+            break
+    block_paras = [p for p in paras[p_start:p_term] if p.text.strip()]
     return len(block_paras) >= 2 and all(
         p.paragraph_format.keep_with_next for p in block_paras[:-1]
     )
@@ -263,6 +316,7 @@ def _generate_bundles(base: Path) -> dict[str, list[Path]]:  # noqa: C901
     """Bundle RÉEL par structure (payloads = ceux des tests unitaires, cf. _conformance_corpus)."""
     import test_multi_type_front as mtf
     import test_sasu_holding_plan as sasu_tests
+    import test_statuts_micro_holding as micro_tests
     from _conformance_corpus import _normalise_civil
 
     from sydel_doc_engine.front_app import (
@@ -379,6 +433,53 @@ def _generate_bundles(base: Path) -> dict[str, list[Path]]:  # noqa: C901
         ).docx_paths
     )
 
+    # SCI : statuts SCI (bloc signature « A <lieu>, le <date> » + signataires côte à côte) + option
+    # IS + tronc commun (DNC / procuration / autorisation).
+    sci_payload = mtf._civil_base(
+        "SCI",
+        "sci",
+        [
+            mtf._pp("Jean", "Durand", 40, 1, 40, 400),
+            mtf._pp("Alice", "Martin", 60, 41, 100, 600),
+        ],
+    )
+    sci_payload.update(mtf._OPTION_IS_INPUTS)
+    bundles["sci"] = list(
+        css.generate_dossier(_normalise_civil(sci_payload), base / "sci").docx_paths
+    )
+
+    # SCI IRIS : 1 PM + 1 PP (statuts SCI IRIS, même chemin signature « A <lieu>, le <date> »).
+    bundles["sci_iris"] = list(
+        css.generate_dossier(
+            _normalise_civil(
+                mtf._civil_base(
+                    "SCI IRIS",
+                    "sci_iris",
+                    [mtf._pm(40, 1, 40, 400), mtf._pp("Alice", "Martin", 60, 41, 100, 600)],
+                )
+            ),
+            base / "sci_iris",
+        ).docx_paths
+    )
+
+    # MICRO HOLDING : statuts micro-holding (SPFPL morale + praticien physique, signataires côte à
+    # côte) — branche de rendu distincte de SCI/SCM/SCS, jamais exercée avant la 4e passe Akainu.
+    micro_payload = micro_tests._payload()
+    micro_payload.update(
+        {
+            "signataire_nom_pere": "Pierre Durand",
+            "signataire_nom_mere": "Anne Durand",
+            "signataire_adresse_num": "1",
+            "signataire_adresse_voie": "rue Exemple",
+            "signataire_adresse_cp": "75000",
+            "signataire_adresse_ville": "Paris",
+            "signataire_fonction": "gerant",
+        }
+    )
+    bundles["micro_holding"] = list(
+        css.generate_dossier(micro_payload, base / "micro_holding").docx_paths
+    )
+
     # SELARL cession médicale : acte + compromis cession cabinet + appel de fonds + avenant bail
     # (table) + courrier SDE cession SCM (lettre signée) + demande inscription + statuts SELARL.
     scenario = dataclasses.replace(
@@ -414,12 +515,17 @@ def _generate_bundles(base: Path) -> dict[str, list[Path]]:  # noqa: C901
 
 
 # Structures NEUVES apportées par la convergence @All (doivent exercer ≥1 doc signé chacune).
+# 4e passe Akainu (2026-07-16) : SCI, SCI IRIS et MICRO_HOLDING (statuts civils à branche de rendu
+# signature distincte) ajoutés — sans eux le garde n'était pas exhaustif.
 _REQUIRED_STRUCTURES: tuple[str, ...] = (
     "sas",
     "spfpl_apport",
     "selas_uni_medecin",
     "selas_uni_dentiste",
     "selarl_multi",
+    "sci",
+    "sci_iris",
+    "micro_holding",
 )
 
 

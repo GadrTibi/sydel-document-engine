@@ -115,7 +115,11 @@ SCI_TEMPLATE = StatutsCivilTemplate(
     associate_slice=(25, 44),
     apport_slice=(97, 111),
     capital_slice=(120, 131),
-    signature_slice=(612, 623),
+    # Source para 609 = « A [lieu], le [date] » est AVANT l'ancien debut de slice (612) -> il etait
+    # rendu par le chemin source PUIS re-rendu par _add_signature_block => date en DOUBLE. On etend
+    # le debut a 609 pour que la ligne date source soit englobee (skip) et rendue une seule fois par
+    # le bloc signature. Meme correctif que SCI IRIS (slice 626) — 4e passe Akainu 2026-07-16.
+    signature_slice=(609, 623),
     # Retour Albane « mise en forme » 3.2 : le cadre « STATUTS » du SCI vit dans une zone de texte
     # FLOTTANTE du modele source (perdue par l'injection qui vide le corps) -> il etait ABSENT du
     # rendu. On le restaure (comme SCS/micro-holding) entre l'en-tete (P0-P5) et « LES SOUSSIGNES »

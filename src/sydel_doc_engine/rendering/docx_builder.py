@@ -897,11 +897,24 @@ def keep_final_signature_block_together(document: Any) -> bool:
     # les mentions internes « Bon pour … » / « Lu et approuvé » : « Fait a/le/en/pour … » (toutes les
     # clôtures « Fait … »), l'en-tête d'acte « A/À <lieu>, le <date> », et la clôture de PROCES-VERBAL
     # (« … dressé le présent procès-verbal … signé après lecture … »). DERNIERE occurrence.
+    # Une ancre n'est une SIGNATURE que dans la partie BASSE du document : « Fait à … » / « A …, le
+    # <date> » en HAUT est un en-tête de date de LETTRE (ex. lettre d'option IS), pas la signature
+    # (qui est « Le gérant » en bas). En dessous du seuil -> pas d'ancre valable, on bascule au
+    # fallback « queue de document ». (Intention, pas tournure — règle 68.)
+    anchor_floor = len(paras) * 0.4
     for index in range(len(paras) - 1, -1, -1):
+        if index < anchor_floor:
+            break
         stripped = paras[index].text.strip()
         if (
             (stripped.startswith("Fait ") and "générateur" not in stripped)
-            or (stripped.startswith(("A ", "À ")) and ", le " in stripped)
+            # En-tete d'acte « A <lieu>, le <date> » : INTENTION = une DATE (chiffre) suit « le »,
+            # sinon on false-matche de la prose de corps (« A l'expiration du delai …, le conjoint
+            # … »). Regle 68 : coder l'intention, pas la tournure.
+            or (
+                stripped.startswith(("A ", "À "))
+                and re.search(r",\s*le\s+\d", stripped) is not None
+            )
             or "signé après lecture" in stripped
             or "dressé le présent procès-verbal" in stripped
             or "il a été dressé le présent" in stripped
