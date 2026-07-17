@@ -49,9 +49,11 @@ class AttestationCommissaireApportsGenerator:
             apporteur.departement_naissance,
             "apporteur.departement_naissance",
         )
+        # KAN-2 / M1 : profession de l'INDIVIDU apporteur = champ saisissable (marqueur si vide),
+        # jamais l'attribut de TYPE profession_reglementee (« chirurgiens-dentistes » affirme a vide).
         apporteur_profession = required_text(
-            apporteur.profession_reglementee,
-            "apporteur.profession_reglementee",
+            apporteur.profession,
+            "apporteur.profession",
         )
         cible_forme = required_text(societe_cible.forme_sociale, "societe_cible.forme_sociale")
         cible_name = required_text(societe_cible.denomination, "societe_cible.denomination")

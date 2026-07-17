@@ -253,8 +253,11 @@ class ContratApportSpfplGenerator:
                 and mentions_conjoint_ou_partenaire(apporteur.situation_maritale)
                 else ""
             ),
+            # KAN-2 / M1 (4e passe Akainu) : le token « [profession_reglementee] de profession »
+            # decrit l'INDIVIDU apporteur (occurrence unique dans le modele) -> champ SAISISSABLE
+            # `apporteur.profession` (marqueur si vide), jamais l'attribut de TYPE profession_reglementee.
             "[profession_reglementee]": required_text(
-                apporteur.profession_reglementee, "apporteur.profession_reglementee"
+                apporteur.profession, "apporteur.profession"
             ),
             "[ordre_professionnel]": required_text(
                 ordre.professionnel if ordre else None, "apporteur.ordre.professionnel"

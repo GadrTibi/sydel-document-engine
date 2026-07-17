@@ -203,8 +203,10 @@ _LIBELLES: dict[str, str] = {
     "identite.prenom": "prénom du dirigeant nommé",
     "identite.nom": "nom du dirigeant nommé",
     "identite.profession": "profession du dirigeant nommé",
+    "identite.date_naissance": "date de naissance du dirigeant nommé",
     "identite.ville_naissance": "ville de naissance du dirigeant nommé",
     "identite.nationalite": "nationalité du dirigeant nommé",
+    "apporteur.profession": "profession de l'apporteur",
     # --- Société (autorisation de domiciliation) ------------------------------------------
     "societe.denomination": "dénomination de la société",
     "societe.capital": "capital de la société",
