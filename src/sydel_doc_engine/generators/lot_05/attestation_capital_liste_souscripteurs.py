@@ -11,6 +11,7 @@ from sydel_doc_engine.generators.lot_05.spfpl_common import (
     company_siege_display,
     elision_de,
     euro_word,
+    format_display_date,
     montant_avec_euros,
     person_short_identity,
     quantite_titres,
@@ -29,7 +30,6 @@ from sydel_doc_engine.rendering.docx_builder import (
     keep_final_signature_block_together,
     new_document,
 )
-from sydel_doc_engine.utils.dates import format_date_fr
 
 OUTPUT_FILENAME = "attestation_capital_liste_souscripteurs.docx"
 
@@ -197,8 +197,12 @@ class AttestationCapitalListeSouscripteursGenerator:
             "certifié exact, sincère et véritable par le Président, "
             f"{president_identite}.",
         )
-        add_paragraph(docx, f"Fait à {ctx.signature.lieu}")
-        add_paragraph(docx, f"Le {format_date_fr(ctx.signature.date)}")
+        add_paragraph(
+            docx, f"Fait à {required_text(ctx.signature.lieu, 'signature.lieu')}"
+        )
+        add_paragraph(
+            docx, f"Le {format_display_date(ctx.signature.date, 'signature.date')}"
+        )
         # AT1 (Rafael 2026-07-09) : la ligne de SIGNATURE porte le nom SANS profession (la
         # profession reste dans « par le Président, … » juste au-dessus — une seule mention).
         add_paragraph(

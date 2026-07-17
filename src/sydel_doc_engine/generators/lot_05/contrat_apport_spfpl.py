@@ -23,7 +23,6 @@ from sydel_doc_engine.generators.lot_05.spfpl_common import (
     required_apporteur,
     required_commissaire_aux_apports,
     required_evaluateur_apport,
-    required_int,
     required_societe_cible,
     required_societe_spfpl,
     required_text,
@@ -255,7 +254,7 @@ class ContratApportSpfplGenerator:
             ),
             # KAN-2 / M1 (4e passe Akainu) : le token « [profession_reglementee] de profession »
             # decrit l'INDIVIDU apporteur (occurrence unique dans le modele) -> champ SAISISSABLE
-            # `apporteur.profession` (marqueur si vide), jamais l'attribut de TYPE profession_reglementee.
+            # `apporteur.profession` (marqueur si vide), jamais l'attribut de TYPE.
             "[profession_reglementee]": required_text(
                 apporteur.profession, "apporteur.profession"
             ),
@@ -345,8 +344,8 @@ class ContratApportSpfplGenerator:
             "[valeur_apport_global_lettres]": required_text(
                 apport_titres.valeur_globale_lettres, "apport_titres.valeur_globale_lettres"
             ),
-            # KAN-2 / B1 (4e passe Akainu) : le CHIFFRE d'actions attribuees non saisi ne s'affirme
-            # JAMAIS « (0) » dans un acte signable -> marqueur via quantite_titres (comme les parts).
+            # KAN-2 / B1 (4e passe Akainu) : le CHIFFRE d'actions attribuees non saisi ne
+            # s'affirme JAMAIS « (0) » -> marqueur via quantite_titres (comme les parts).
             "[nb_actions]": quantite_titres(
                 apport_titres.nb_actions_attribuees, "nombre d'actions attribuées"
             ),
@@ -371,7 +370,9 @@ class ContratApportSpfplGenerator:
             "[lieu_signature]": required_text(
                 ctx.signature.lieu if ctx.signature else None, "signature.lieu"
             ),
-            "[date_signature]": _date_fr(ctx.signature.date if ctx.signature else None),
+            "[date_signature]": _date_fr(
+                ctx.signature.date if ctx.signature else None, "signature.date"
+            ),
             "[nombre_exemplaires_lettres]": _exemplaires(ctx),
         }
 

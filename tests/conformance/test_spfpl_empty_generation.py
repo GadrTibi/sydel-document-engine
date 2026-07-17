@@ -2,22 +2,29 @@
 
 Rafael (rejeté 2×) : « Tous les documents doivent pouvoir être générés, même si je ne remplis
 AUCUN champ. » Un champ vide sort en MARQUEUR « (À COMPLÉTER : <libellé métier>) », JAMAIS une
-valeur FAUSSE/inventée ni un chemin technique.
+valeur FAUSSE/inventée NI un BLANC silencieux (« Fait à », « Le » nus).
 
 Ce garde génère les dossiers cession ET apport avec un payload VIDE FIDÈLE (les SÉLECTEURS
 `operation`/`operation_spfpl_type`/`is_apport` restent — ce sont le TYPE de doc, pas des champs)
-et asserte, sur TOUT le texte de TOUS les docx :
+et asserte, sur TOUT le texte de TOUS les docx — **paragraphes ET cellules de tableau** —, le
+CONCEPT (règle 68 §3 : on code l'intention, pas la liste des tournures déjà signalées) :
 
-  * B1/B2/B3 : aucune valeur fausse affirmée — pas de « 600 »/« six cents » (nb d'actions inventé),
-    pas de « célibataire » (statut matrimonial inventé), pas de « (0) »/« zéro (0) » titre affirmé,
-    pas de civilité « Monsieur » inventée (les Monsieur/Madame LÉGITIMES sont whitelistés) ;
-  * M1 : aucune profession d'INDIVIDU affirmée (« … de profession » / « , chirurgien-dentiste, ») —
-    le boilerplate LÉGAL des statuts (« exercer la profession de … ») et l'Ordre sont légitimes ;
-  * M2 : aucun marqueur technique — pas de point, underscore, chiffre d'index ni casse de token
+  * S  : aucun ANCRAGE SIGNATURE NU — pas de « Fait à » / « Le » suivi de rien (lieu/date
+    manquants sortent en marqueur, jamais un blanc silencieux) ;
+  * B1 : aucune QUANTITÉ DE TITRES affirmée — ni chiffrée (« 600 actions », « (0) parts »),
+    ni en lettres (« six cents »), ni « zéro (0) » — elle sort en marqueur ;
+  * B2 : aucun STATUT MATRIMONIAL affirmé (célibataire / marié·e / divorcé·e / veuf·ve /
+    pacsé·e) — le statut manquant sort en marqueur ;
+  * B4 : aucune CIVILITÉ inventée pour un signataire (« Monsieur/Madame ») — seuls les cas
+    LÉGITIMES ancrés (destinataire de l'Ordre, mandataire SYDEL, parents définitionnels) ;
+  * M1 : aucune PROFESSION D'INDIVIDU affirmée — le boilerplate LÉGAL des statuts et l'Ordre
+    sont légitimes, mais le TYPE ne fuit pas sur une personne dont l'identité est un marqueur ;
+  * M2 : aucun MARQUEUR TECHNIQUE — pas de point, underscore, chiffre d'index ni casse de token
     dans « (À COMPLÉTER : … ) » ; que des libellés métier lisibles.
 
-Il attrape MÉCANIQUEMENT toute réintroduction d'un défaut de la classe (règle 68 §3 : convention
-neuve -> règle de conformité le jour même) — la suite nominale ne les voyait pas.
+Il attrape MÉCANIQUEMENT toute réintroduction d'un défaut de la classe (règle 68 §3) — la suite
+nominale ne les voyait pas, et coder les seuls littéraux déjà vus laissait passer les nouvelles
+formulations (leçon 2026-07-09) et les blancs silencieux (Akainu 4e passe 2026-07-17).
 """
 
 from __future__ import annotations
@@ -38,14 +45,22 @@ from sydel_doc_engine.front_app import spfpl_slice  # noqa: E402
 
 # Monsieur/Madame LÉGITIMES sur formulaire vide (pas des civilités inventées d'un signataire) :
 # destinataire de l'Ordre, mandataire SYDEL hardcodé, civilités DÉFINITIONNELLES des parents.
-_MONSIEUR_LEGITIMES = (
+# ANCRÉS (règle 68 §3 / m2) : « fils/fille de Monsieur », jamais un « de Monsieur » nu qui
+# masquerait un « représentée de Monsieur <nom inventé> ».
+_CIVILITE_LEGITIMES = (
     "Monsieur le Président",
     "Madame la Présidente",
     "Monsieur Jordan",
     "fils de Monsieur",
     "fille de Monsieur",
     "et de Madame",
-    "de Monsieur",  # « fils/fille de Monsieur … » coupé
+)
+
+# Statuts matrimoniaux — AUCUN ne doit être affirmé sur un formulaire vide (le champ
+# situation_maritale manquant sort en marqueur). Concept, pas le seul « célibataire ».
+_STATUTS_MATRIMONIAUX = re.compile(
+    r"\b(célibataire|marié|mariée|divorcé|divorcée|veuf|veuve|pacsé|pacsée)\b",
+    re.IGNORECASE,
 )
 
 
@@ -64,37 +79,74 @@ def _empty_payload(structure: str) -> dict:
     return payload
 
 
-def _all_text(structure: str, tmp_path: Path) -> str:
+def _text_units(structure: str, tmp_path: Path) -> list[tuple[str, str]]:
+    """Toutes les unités de texte (paragraphes + cellules de tableau) de tous les docx.
+
+    Le garde balaie les DEUX : une valeur régressée dans une cellule serait invisible si l'on
+    ne lisait que `Document(...).paragraphs`.
+    """
     out = tmp_path / structure.replace(" ", "_")
     out.mkdir(parents=True, exist_ok=True)
     generated = spfpl_slice.generate_dossier(_empty_payload(structure), out)
     assert generated.docx_paths, f"aucun document généré pour {structure} vide"
-    chunks: list[str] = []
+    pairs: list[tuple[str, str]] = []
     for path in generated.docx_paths:
-        chunks.extend(p.text for p in Document(str(path)).paragraphs)
-    return "\n".join(chunks)
+        doc = Document(str(path))
+        for p in doc.paragraphs:
+            pairs.append((path.name, p.text))
+        for table in doc.tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    for p in cell.paragraphs:
+                        pairs.append((path.name, p.text))
+    return pairs
 
 
 @pytest.mark.parametrize("structure", ["SPFPL cession", "SPFPL apport"])
 def test_spfpl_dossier_generates_from_empty_form(structure: str, tmp_path: Path) -> None:
-    text = _all_text(structure, tmp_path)
+    pairs = _text_units(structure, tmp_path)
+    text = "\n".join(u for _, u in pairs)
 
-    # B1 : nombre d'actions du capital inventé « 600 » / « six cents ».
-    assert "600 actions" not in text and "six cents" not in text.lower(), (
-        f"{structure} vide : nombre d'actions FANTÔME affirmé (doit être un marqueur)"
+    # S : ancrage signature NU (blanc silencieux) — étiquette « Fait à » / « Le » sans valeur.
+    # « Fait à » porte TOUJOURS un lieu inline -> un « Fait à » nu est un blanc, partout.
+    # « Le » nu est TOLÉRÉ dans les STATUTS (fidélité modèle ratifiée Rafael 2026-07-09, test
+    # ...without_signature_date : le bloc signature des statuts porte « Le » suivi du signataire,
+    # date volontairement absente) ; ailleurs (contrat / acte / attestations) la date DOIT sortir
+    # en marqueur.
+    dangling = [
+        f"{doc}: {u.strip()!r}"
+        for doc, u in pairs
+        if u.strip() in ("Fait à", "Fait à,")
+        or (u.strip() in ("Le", "le") and "statuts" not in doc.lower())
+    ]
+    assert not dangling, (
+        f"{structure} vide : ANCRAGE SIGNATURE NU (blanc silencieux, doit être un marqueur) : "
+        f"{dangling}"
     )
-    # B2 : statut matrimonial inventé.
-    assert "célibataire" not in text.lower(), (
-        f"{structure} vide : « célibataire » inventé (doit être un marqueur)"
+
+    # B1 : quantité de titres affirmée (chiffre, lettres, ou « (0) »/« zéro (0) »).
+    quantite_chiffree = re.findall(r"\b\d[\d\s]*\s+(?:actions|parts)\b", text)
+    assert not quantite_chiffree, (
+        f"{structure} vide : quantité de titres CHIFFRÉE affirmée (doit être un marqueur) : "
+        f"{quantite_chiffree[:3]}"
     )
-    # B3 : quantité de titres affirmée à zéro dans un acte signable.
+    assert "six cents" not in text.lower(), (
+        f"{structure} vide : nombre d'actions en LETTRES affirmé « six cents » (marqueur attendu)"
+    )
     assert "(0) actions" not in text and "(0) parts" not in text and "zéro (0)" not in text, (
         f"{structure} vide : quantité de titres « (0) » affirmée (doit être un marqueur)"
     )
 
-    # B4 : civilité « Monsieur/Madame » inventée pour un signataire (hors cas légitimes).
+    # B2 : statut matrimonial affirmé (concept complet, pas seulement « célibataire »).
+    matrimonial = _STATUTS_MATRIMONIAUX.findall(text)
+    assert not matrimonial, (
+        f"{structure} vide : statut matrimonial affirmé {sorted(set(matrimonial))} "
+        f"(le champ manquant doit sortir en marqueur, aucun statut par défaut)"
+    )
+
+    # B4 : civilité « Monsieur/Madame » inventée pour un signataire (hors cas légitimes ancrés).
     residual = text
-    for legit in _MONSIEUR_LEGITIMES:
+    for legit in _CIVILITE_LEGITIMES:
         residual = residual.replace(legit, "")
     assert "Monsieur" not in residual and "Madame" not in residual, (
         f"{structure} vide : civilité « Monsieur/Madame » inventée pour un signataire"

@@ -757,7 +757,7 @@ class ActeCessionPartsSpfplGenerator:
             ),
             # Signature
             "[lieu_signature]": required_text(ctx.signature.lieu, "signature.lieu"),
-            "[date_signature]": _date_fr(ctx.signature.date),
+            "[date_signature]": _date_fr(ctx.signature.date, "signature.date"),
             # A4 : nombre d'exemplaires en lettres en MAJUSCULES (« En TROIS exemplaires »).
             "[nombre_exemplaires_lettres]": _upper_nombre_lettres(
                 required_text(

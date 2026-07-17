@@ -136,10 +136,6 @@ _LIBELLES: dict[str, str] = {
     ),
     "capital_souscription.souscripteurs.prenom": "prénom du souscripteur",
     "capital_souscription.souscripteurs.nom": "nom du souscripteur",
-    # --- Associés de la cible (répartition) -----------------------------------------------
-    "associes_cible.prenom": "prénom de l'associé de la société cible",
-    "associes_cible.nom": "nom de l'associé de la société cible",
-    "associes_cible.denomination": "dénomination de la société acquéreuse",
     # --- Organes de contrôle de l'apport --------------------------------------------------
     "commissaire_aux_apports.denomination": "dénomination du commissaire aux apports",
     "commissaire_aux_apports.forme_sociale": "forme juridique du commissaire aux apports",
@@ -206,7 +202,6 @@ _LIBELLES: dict[str, str] = {
     "identite.date_naissance": "date de naissance du dirigeant nommé",
     "identite.ville_naissance": "ville de naissance du dirigeant nommé",
     "identite.nationalite": "nationalité du dirigeant nommé",
-    "apporteur.profession": "profession de l'apporteur",
     # --- Société (autorisation de domiciliation) ------------------------------------------
     "societe.denomination": "dénomination de la société",
     "societe.capital": "capital de la société",
@@ -219,14 +214,26 @@ _LIBELLES: dict[str, str] = {
     "associes_cible.civilite_affichage": "civilité de l'associé de la société cible",
     "associes_cible.prenom": "prénom de l'associé de la société cible",
     "associes_cible.nom": "nom de l'associé de la société cible",
-    "associes_cible.denomination": "dénomination de l'associé (personne morale) de la société cible",
+    "associes_cible.denomination": (
+        "dénomination de l'associé (personne morale) de la société cible"
+    ),
     # --- Capital / souscripteurs (attestations de capital) --------------------------------
     "capital_souscription.president.civilite_affichage": "civilité du président",
     "capital_souscription.president.profession": "profession du président",
     "capital_souscription.souscripteurs.civilite_affichage": "civilité du souscripteur",
-    "capital_souscription.souscripteurs.prenom": "prénom du souscripteur",
-    "capital_souscription.souscripteurs.nom": "nom du souscripteur",
     "apport_titres.nb_actions_attribuees_lettres": "nombre d'actions attribuées en toutes lettres",
+    # --- Slugs restants uniformisés en libellés métier (n1, 4e passe Akainu 2026-07-17) --------
+    "adresse.num_voie": "numéro de voie",
+    "adresse.voie": "voie de l'adresse",
+    "adresse.cp": "code postal",
+    "adresse.ville": "ville",
+    "societe.capital_social": "capital social de la société",
+    "societe.ville_rcs": "ville du RCS de la société",
+    "societe.siege_voie": "voie du siège de la société",
+    "societe.siege_cp": "code postal du siège de la société",
+    "societe.siege_ville": "ville du siège de la société",
+    "ordre.profession_signataire_affichee": "profession du signataire (Ordre)",
+    "personne_signataire.civilite_affichage": "civilité du signataire",
 }
 
 
@@ -248,7 +255,7 @@ def _fallback(field_name: str) -> str:
     """Repli sûr : un chemin non répertorié reste lisible et surtout SANS point / underscore /
     MAJUSCULES de token NI index numérique (« associes_cible0 » -> « associes cible », pas
     « associes cible0 »). Miroir de `_normalize_key` (retrait des chiffres de fin de segment) —
-    sinon l'index « cible0 »/« souscripteurs0 » fuite dans le marqueur (4e passe Akainu, 2026-07-17)."""
+    sinon l'index « cible0 »/« souscripteurs0 » fuite dans le marqueur (4e passe Akainu)."""
     raw = field_name.replace("[", "").replace("]", "").replace("_", " ").replace(".", " ")
     words = [word.rstrip("0123456789").lower() for word in raw.split()]
     return " ".join(word for word in words if word)

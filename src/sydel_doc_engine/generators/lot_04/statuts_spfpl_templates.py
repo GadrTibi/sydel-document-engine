@@ -386,6 +386,8 @@ STATUTS_SPFPL_CESSION_BLOCKS: tuple[str, ...] = (
     'ARTICLE 40 - PUBLICITE - POUVOIRS',
     'Enfin, le Président de la Société, agira au nom de la Société en formation, jusqu’à son immatriculation au Registre du Commerce et des Sociétés, notamment pour effectuer les formalités de publicité relatives à la constitution de la Société.',
     'Fait à [lieu_signature]',
+    # Fidelite modele (Rafael 2026-07-09, test ...without_signature_date) : statuts CESSION
+    # -> « Le » suivi du SIGNATAIRE, date VOLONTAIREMENT absente. Ne pas ajouter de token.
     'Le',
     '[civilite] [prenom] [nom]',
     '«\xa0Bon pour acceptation des fonctions de Président\xa0»',

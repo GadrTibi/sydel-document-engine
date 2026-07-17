@@ -22,6 +22,7 @@ from sydel_doc_engine.generators.lot_05.attestation_capital_liste_souscripteurs 
 )
 from sydel_doc_engine.generators.lot_05.spfpl_common import (
     company_siege_display,
+    format_display_date,
     quantite_titres,
     required_capital_souscription,
     required_cedant,
@@ -36,7 +37,6 @@ from sydel_doc_engine.rendering.docx_builder import (
     keep_final_signature_block_together,
     new_document,
 )
-from sydel_doc_engine.utils.dates import format_date_fr
 from sydel_doc_engine.utils.grammar import euro_word, montant_avec_euros, subject_line
 
 OUTPUT_FILENAME = "attestation_capital_liste_souscripteurs_cession.docx"
@@ -208,8 +208,12 @@ class AttestationCapitalListeSouscripteursCessionGenerator:
         # [20]-[23] Fait a / Le / signature. Le modele cession met « Fait a [ville_siege] » ;
         # ctx.signature.lieu est FORCE a la ville du siege cote front (SU3, spfpl_slice) ->
         # equivalent et identique a l'apport (DOC-042).
-        add_paragraph(docx, f"Fait à {ctx.signature.lieu}")
-        add_paragraph(docx, f"Le {format_date_fr(ctx.signature.date)}")
+        add_paragraph(
+            docx, f"Fait à {required_text(ctx.signature.lieu, 'signature.lieu')}"
+        )
+        add_paragraph(
+            docx, f"Le {format_display_date(ctx.signature.date, 'signature.date')}"
+        )
         # KAN-5 (Rafael 2026-07-13) : un espace apres la date, et le nom du signataire (associe)
         # aligne a DROITE.
         add_spacer(docx)

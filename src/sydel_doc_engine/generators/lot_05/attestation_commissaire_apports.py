@@ -30,7 +30,6 @@ from sydel_doc_engine.rendering.docx_builder import (
     keep_final_signature_block_together,
     new_document,
 )
-from sydel_doc_engine.utils.dates import format_date_fr
 
 OUTPUT_FILENAME = "attestation_commissaire_apports.docx"
 
@@ -50,7 +49,7 @@ class AttestationCommissaireApportsGenerator:
             "apporteur.departement_naissance",
         )
         # KAN-2 / M1 : profession de l'INDIVIDU apporteur = champ saisissable (marqueur si vide),
-        # jamais l'attribut de TYPE profession_reglementee (« chirurgiens-dentistes » affirme a vide).
+        # jamais l'attribut de TYPE profession_reglementee (« chirurgiens-dentistes » a vide).
         apporteur_profession = required_text(
             apporteur.profession,
             "apporteur.profession",
@@ -128,8 +127,12 @@ class AttestationCommissaireApportsGenerator:
             "dudit apport en nature, lequel sera annexé aux statuts de la société "
             "conformément à l'article L. 223-9 du Code de commerce.",
         )
-        add_paragraph(docx, f"Fait à {ctx.signature.lieu}")
-        add_paragraph(docx, f"Le {format_date_fr(ctx.signature.date)}")
+        add_paragraph(
+            docx, f"Fait à {required_text(ctx.signature.lieu, 'signature.lieu')}"
+        )
+        add_paragraph(
+            docx, f"Le {format_display_date(ctx.signature.date, 'signature.date')}"
+        )
         add_paragraph(docx, person_signature_header(apporteur), space_before_pt=12)
 
         output_dir.mkdir(parents=True, exist_ok=True)
