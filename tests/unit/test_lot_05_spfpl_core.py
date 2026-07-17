@@ -414,9 +414,11 @@ def test_contrat_apport_empty_address_renders_marker_not_blank(tmp_path: Path) -
     # Aucun blanc silencieux : pas de « Demeurant  , » ni de siège vide.
     assert "Demeurant  ," not in text
     assert "Demeurant ," not in text
-    # Le marqueur visible apparait a la place (jamais une adresse fantome).
-    assert "(À COMPLÉTER : apporteur.adresse_personnelle" in text
-    assert "(À COMPLÉTER : societe_spfpl.siege" in text
+    # Le marqueur visible apparait a la place (jamais une adresse fantome). KAN-2 / M1 : le
+    # marqueur porte le LIBELLE METIER (« voie de l'adresse de l'apporteur »), plus le chemin
+    # technique « apporteur.adresse_personnelle.* » (libelle_metier retire points/underscores).
+    assert "(À COMPLÉTER : voie de l'adresse de l'apporteur)" in text
+    assert "(À COMPLÉTER : voie du siège de la SPFPL)" in text
 
 
 def test_acte_cession_ordre_departement_numero_rendered_as_name(tmp_path: Path) -> None:

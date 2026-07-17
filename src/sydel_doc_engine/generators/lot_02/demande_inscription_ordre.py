@@ -15,6 +15,7 @@ from sydel_doc_engine.domain.models import (
     Person,
 )
 from sydel_doc_engine.generators.lot_01.civilite import civilite_civile
+from sydel_doc_engine.generators.lot_05.spfpl_libelles import libelle_metier
 from sydel_doc_engine.rendering.docx_builder import (
     add_letter_place_date,
     add_paragraph,
@@ -136,7 +137,7 @@ def _required_ordre(ordre: OrdreProfessionnel | None) -> OrdreProfessionnel:
 def _required_text(value: str | None, field_name: str) -> str:
     # KAN-2 : donnée manquante -> marqueur « (À COMPLÉTER : …) », non bloquant (R10).
     if value is None or not value.strip():
-        return f"(À COMPLÉTER : {field_name})"
+        return f"(À COMPLÉTER : {libelle_metier(field_name)})"
     return value.strip()
 
 
@@ -187,11 +188,20 @@ def _signataire_name(signataire: Person) -> str:
     # document) : le slot rend la civilite CIVILE (Monsieur/Madame accordee au
     # genre), comme tous les slots de personne. Repli sur titre_affichage si la
     # civilite est vide (appelants legacy) — civilite_civile le convertit alors.
-    civilite_source = (signataire.civilite or "").strip() or _required_text(
-        signataire.titre_affichage,
-        "personne_signataire.titre_affichage",
-    )
-    civilite = civilite_civile(civilite_source, signataire.genre)
+    civilite_saisie = (signataire.civilite or "").strip()
+    identite_vide = not (signataire.prenom or "").strip() and not (signataire.nom or "").strip()
+    if not civilite_saisie and identite_vide:
+        # B4 (KAN-2, Rafael 2026-07-13) : personne ENTIEREMENT vide (formulaire vierge) ->
+        # civilite en MARQUEUR, jamais « Monsieur » derive du titre « Docteur » (defaut de type)
+        # accorde au genre defaut MASCULIN — ce serait inventer la civilite/le genre du signataire.
+        # Le repli sur titre_affichage ne vaut QUE pour un signataire reel (nom/prenom presents).
+        civilite = _required_text("", "personne_signataire.civilite_affichage")
+    else:
+        civilite_source = civilite_saisie or _required_text(
+            signataire.titre_affichage,
+            "personne_signataire.titre_affichage",
+        )
+        civilite = civilite_civile(civilite_source, signataire.genre)
     prenom = _required_text(signataire.prenom, "personne_signataire.prenom")
     nom = _required_text(signataire.nom, "personne_signataire.nom")
     return f"{civilite} {prenom} {nom}"

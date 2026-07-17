@@ -568,7 +568,9 @@ def test_acte_blocks_incomplete_credit_vendeur(tmp_path: Path) -> None:
     # R10 (Rafael 2026-06-24) : donnee manquante (credit_vendeur.taux) ne bloque plus -> marqueur
     # « (À COMPLÉTER : ...) » visible dans l'acte (sans crochets), generation reussie.
     text = _docx_text(ActeCessionPartsScmGenerator().generate(ctx, tmp_path))
-    assert "COMPLÉTER" in text and "credit_vendeur.taux" in text
+    # KAN-2 / M1 : marqueur en LIBELLE METIER (« credit vendeur taux »), plus le chemin technique
+    # « credit_vendeur.taux » (libelle_metier retire points/underscores). Intention inchangee.
+    assert "COMPLÉTER" in text and "credit vendeur taux" in text
 
 
 def test_pv_age_renders_hyphen_bullets_on_two_lists(tmp_path: Path) -> None:

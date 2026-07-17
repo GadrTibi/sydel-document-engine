@@ -15,6 +15,7 @@ from sydel_doc_engine.generators.lot_04.statuts_spfpl_common import (
     founder_common_replacements,
     groupe_milliers,
     montant_en_lettres,
+    quantite_titres,
     render_statuts_docx,
     required_actionnaire_unique,
     required_apport_titres,
@@ -97,13 +98,10 @@ class StatutsSpfplApportGenerator:
                     founder.ordre.ville if founder.ordre else None,
                     "actionnaire_unique.ordre.ville",
                 ),
-                "[nb_parts_apportees]": str(
-                    required_text(
-                        str(apport_titres.nb_parts)
-                        if apport_titres.nb_parts is not None
-                        else None,
-                        "apport_titres.nb_parts",
-                    )
+                # KAN-2 / B3 : nb de parts apportees non saisi -> marqueur, jamais « 0 » affirme.
+                "[nb_parts_apportees]": quantite_titres(
+                    apport_titres.nb_parts,
+                    "nombre de parts apportées",
                 ),
                 "[nb_parts_apportees_lettres]": required_text(
                     apport_titres.nb_parts_lettres,
@@ -144,13 +142,10 @@ class StatutsSpfplApportGenerator:
                         ),
                     )
                 ),
-                "[nb_actions]": str(
-                    required_text(
-                        str(capital_souscription.nb_actions_total)
-                        if capital_souscription.nb_actions_total is not None
-                        else None,
-                        "capital_souscription.nb_actions_total",
-                    )
+                # KAN-2 / B1 : nb d'actions non saisi -> marqueur, jamais « 600 » ni « 0 ».
+                "[nb_actions]": quantite_titres(
+                    capital_souscription.nb_actions_total,
+                    "nombre d'actions composant le capital",
                 ),
                 "[valeur_nominale_part]": valeur_nominale_figure,
                 # 7.5 : lettres + unite composees en un seul token (anti double-euro / espace).

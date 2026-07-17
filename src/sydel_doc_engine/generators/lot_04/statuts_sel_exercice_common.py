@@ -26,6 +26,7 @@ from sydel_doc_engine.generators.lot_05.scm_cession_common import (
     mentions_partenaire_pacse,
     partenaire_pacse_clause,
 )
+from sydel_doc_engine.generators.lot_05.spfpl_libelles import libelle_metier
 from sydel_doc_engine.rendering.docx_builder import (
     add_paragraph,
     add_spacer,
@@ -59,7 +60,7 @@ def required_text(value: str | None, field_name: str) -> str:
     # marqueur visible « (A COMPLETER : data) » SANS crochets (pour ne pas declencher le garde-fou
     # anti-placeholder source qui interdit les [ ]) au lieu de lever.
     if value is None or not value.strip():
-        return f"(À COMPLÉTER : {field_name})"
+        return f"(À COMPLÉTER : {libelle_metier(field_name)})"
     return value.strip()
 
 
@@ -72,7 +73,7 @@ def required_int(value: int | None, field_name: str) -> int:
 def format_display_date(value: date | str | None, field_name: str) -> str:
     # KAN-2 : date manquante -> marqueur « (À COMPLÉTER : …) », non bloquant (R10).
     if value is None:
-        return f"(À COMPLÉTER : {field_name})"
+        return f"(À COMPLÉTER : {libelle_metier(field_name)})"
     if isinstance(value, date):
         return value.strftime("%d/%m/%Y")
     return required_text(value, field_name)

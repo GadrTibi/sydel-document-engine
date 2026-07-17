@@ -917,7 +917,13 @@ def _spfpl_situation_maritale(payload: dict[str, object], genre: object) -> str:
     if explicit:
         return explicit
     has_regime = bool(str(payload.get("regime_matrimonial") or "").strip())
-    return situation_display("marie" if has_regime else "celibataire", genre)
+    if has_regime:
+        # Appelants directs / tests legacy qui ne fournissent qu'un regime -> « marié(e) ».
+        return situation_display("marie", genre)
+    # KAN-2 / B2 (Akainu 2026-07-15) : aucune situation choisie ET aucun regime -> VIDE (marqueur
+    # « (À COMPLÉTER : situation matrimoniale) » en aval), jamais « célibataire » affirme (un statut
+    # matrimonial faux dans un acte signable). Ne change RIEN si une situation/un regime est saisi.
+    return ""
 
 
 def build_generation_context(payload: dict[str, object]) -> DocumentGenerationContext:
@@ -930,11 +936,13 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
     # derivations aval (lettres, valeur nominale) parsent les espaces.
     capital = group_montant(str(payload.get("capital_social") or ""))
     nb_parts = int(payload.get("apport_nb_parts") or 0)
-    # Nombre d'actions du capital : VARIABLE (defaut 600 = ancien codage en dur,
-    # preserve la sortie byte-identique des dossiers existants). La valeur nominale
-    # derive de capital / nb_actions ; on respecte une valeur deja calculee fournie
-    # par le slice, sinon on la (re)calcule pour les appelants directs.
-    nb_actions_total = int(payload.get("nb_actions_total") or 600)
+    # KAN-2 / B1 (Akainu 2026-07-15) : PLUS de defaut « 600 » invente. Un nombre d'actions non
+    # saisi sortait « 600 actions » dans les statuts / l'attestation / le contrat — une valeur
+    # AFFIRMEE fausse dans un acte signable (division du capital en 600 titres jamais decidee).
+    # Non saisi -> 0 ; les generateurs rendent alors un marqueur « (À COMPLÉTER : …) » via
+    # `quantite_titres` (jamais « 0 actions » ni « 600 actions »). La valeur nominale derive de
+    # capital / nb_actions ; `calculate_nominal_value` GARDE deja la division par zero (rend "").
+    nb_actions_total = int(payload.get("nb_actions_total") or 0)
     valeur_action = group_montant(
         str(
             payload.get("valeur_nominale_action")
@@ -953,18 +961,24 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
     valeur_par_titre = group_montant(str(payload.get("apport_valeur_par_titre") or ""))
     valeur_globale = group_montant(str(payload.get("apport_valeur_globale") or ""))
 
-    founder_genre = payload.get("genre") or Gender.MASCULIN
+    # KAN-2 / B4 (Akainu 2026-07-15) : PLUS de genre masculin ni de civilite « Monsieur » inventes.
+    # Sur un formulaire vide, le genre est INCONNU (None) -> les accords dependants (« né le »,
+    # « il détient ») ne sont plus forces au masculin, et la civilite non saisie sort en marqueur
+    # « (À COMPLÉTER : civilité …) » (required_text en aval), jamais « Monsieur » affirme.
+    founder_genre = payload.get("genre") or None
     founder = SpfplPerson(
         # SP2 (Rafael 2026-06-25) : civilite civile M./Mme, jamais « Docteur » (titre a part).
-        civilite_affichage=str(payload.get("civilite") or "Monsieur"),
+        civilite_affichage=str(payload.get("civilite") or ""),
         prenom=str(payload.get("prenom") or ""),
         prenoms=str(payload.get("prenoms") or payload.get("prenom") or ""),
         nom=str(payload.get("nom") or ""),
         genre=founder_genre,
-        # §6.6 (retour Albane) : profession de l'associe unique SAISIE (defaut
-        # « chirurgien-dentiste », modifiable). Repli sur le defaut pour les appelants
-        # directs / tests legacy qui ne fournissent pas le champ.
-        profession=str(payload.get("profession_associe_unique") or "chirurgien-dentiste"),
+        # §6.6 (retour Albane) : profession de l'associe unique SAISIE (defaut UI
+        # « chirurgien-dentiste » cote formulaire, modifiable). KAN-2 / M3 (Akainu 2026-07-15) :
+        # PLUS de repli hardcode ici — profession de l'INDIVIDU non saisie -> marqueur
+        # « (À COMPLÉTER : profession de l'associé unique) », jamais « chirurgien-dentiste »
+        # affirme. Les attributs de TYPE (profession_reglementee, Ordre) restent dentiste.
+        profession=str(payload.get("profession_associe_unique") or ""),
         profession_reglementee="chirurgiens-dentistes",
         profession_reglementee_pluriel="chirurgiens-dentistes",
         # LIVE-03 : date de naissance a saisie LIBRE -> re-accentue les mois avant
@@ -1026,7 +1040,9 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
     if is_apport:
         cession_parts_obj = CessionParts(
             nb_parts=nb_apportees,
-            nb_parts_lettres=number_words_from_value(nb_apportees),
+            # KAN-2 / B3 (Akainu 2026-07-15) : lettres derivees UNIQUEMENT si une quantite est
+            # saisie -> non renseigne = "" (marqueur en aval), jamais « zéro (0) parts » affirme.
+            nb_parts_lettres=number_words_from_value(nb_apportees) if nb_apportees else "",
             plage_parts=_normalize_plage(payload.get("apport_plage")),
         )
     else:
@@ -1078,8 +1094,12 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
             _regime_communautaire(payload) if regime_communautaire_actif else None
         ),
         personne_signataire=Person(
+            # B4 : civilite non saisie -> "" (marqueur en aval), jamais « Monsieur » affirme.
+            # Le genre reste le defaut du modele (Person l'exige, pas de « genre inconnu ») ; sur
+            # civilite vide il est INVISIBLE (civilite_civile("") -> ""), et les accords du tronc
+            # commun sont des litteraux de gabarit — le seul faux affichable etait la civilite.
             genre=payload.get("genre") or Gender.MASCULIN,
-            civilite=str(payload.get("civilite") or "Monsieur"),
+            civilite=str(payload.get("civilite") or ""),
             prenom=str(payload.get("prenom") or ""),
             nom=str(payload.get("nom") or ""),
             # §14.2 : titre PRO = « Docteur » automatique (et non la civilite civile
@@ -1136,8 +1156,10 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
             type_titre="actions",
         ),
         dirigeant_nomine=DirigeantNomine(
+            # B4 : civilite non saisie -> marqueur en aval (jamais « Monsieur »). Genre = defaut
+            # du modele (DirigeantNomine l'exige) ; invisible sur civilite vide.
             genre=payload.get("genre") or Gender.MASCULIN,
-            civilite_affichage=str(payload.get("civilite") or "Monsieur"),
+            civilite_affichage=str(payload.get("civilite") or ""),
             prenom=str(payload.get("prenom") or ""),
             nom=str(payload.get("nom") or ""),
             date_naissance=cc.parse_birth_date(payload.get("date_naissance")),
@@ -1159,7 +1181,7 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
             annee_lettres=_annee_lettres(payload.get("signature_date")),
             heure="10 heures",
             president=ReunionPresident(
-                civilite_affichage=str(payload.get("civilite") or "Monsieur"),
+                civilite_affichage=str(payload.get("civilite") or ""),
                 prenom=str(payload.get("prenom") or ""),
                 nom=str(payload.get("nom") or ""),
                 # M1 (Akainu doc-entier 2026-07-09) : la qualite du president de seance reflete la
@@ -1169,7 +1191,7 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
                 # derivable du front (pas de champ dedie) -> defaut generique « associé », a
                 # CONFIRMER cote metier. DOC-038 n'utilise pas ce champ (il rend le cedant).
                 qualite="associé unique" if associe_unique_cible else "associé",
-                civilite_president_seance=str(payload.get("civilite") or "Monsieur"),
+                civilite_president_seance=str(payload.get("civilite") or ""),
                 prenom_president_seance=str(payload.get("prenom") or ""),
                 nom_personne_seance=str(payload.get("nom") or ""),
             ),
@@ -1206,7 +1228,7 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
             numero_rcs="en cours",
             dirigeant=SpfplDirigeant(fonction="Président"),
             representant=SpfplRepresentant(
-                civilite_affichage=str(payload.get("civilite") or "Monsieur"),
+                civilite_affichage=str(payload.get("civilite") or ""),
                 # Civilite courte (M./Mme) : exigee par l'acte de cession (DOC-040).
                 civilite_courte=(
                     "Mme"
@@ -1239,7 +1261,9 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         ),
         apport_titres=ApportTitres(
             nb_parts=nb_parts,
-            nb_parts_lettres=number_words_from_value(nb_parts),
+            # KAN-2 / B3 : lettres d'une QUANTITE derivees seulement si saisie (>0) -> non
+            # renseigne = "" (marqueur en aval), jamais « zéro » affirme.
+            nb_parts_lettres=number_words_from_value(nb_parts) if nb_parts else "",
             nature_titres=nature_titres,
             plage_parts=_normalize_plage(payload.get("apport_plage")),
             valeur_par_titre=valeur_par_titre,
@@ -1247,7 +1271,10 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
             valeur_globale=valeur_globale,
             valeur_globale_lettres=number_words_from_value(valeur_globale),
             nb_actions_attribuees=nb_actions_total,
-            nb_actions_attribuees_lettres=number_words_from_value(nb_actions_total),
+            # KAN-2 / B1 : idem — pas de « six cents » ni « zéro » quand nb_actions non saisi.
+            nb_actions_attribuees_lettres=(
+                number_words_from_value(nb_actions_total) if nb_actions_total else ""
+            ),
             valeur_nominale_action=valeur_action,
             valeur_nominale_action_lettres=number_words_from_value(valeur_action),
         ),
@@ -1307,10 +1334,13 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
             apports_numeraire_montant="0 euro",
             souscripteurs=[
                 CapitalSouscripteur(
-                    civilite_affichage=str(payload.get("civilite") or "Monsieur"),  # SP2
+                    # B4 : civilite non saisie -> marqueur en aval, jamais « Monsieur ».
+                    civilite_affichage=str(payload.get("civilite") or ""),  # SP2
                     prenom=str(payload.get("prenom") or ""),
                     nom=str(payload.get("nom") or ""),
-                    profession="chirurgien-dentiste",
+                    # M3 : profession de l'INDIVIDU (souscripteur = associe unique) = la profession
+                    # SAISIE, jamais « chirurgien-dentiste » hardcode -> marqueur si non renseignee.
+                    profession=str(payload.get("profession_associe_unique") or ""),
                     adresse_personnelle_affichee=adresse_perso.adresse_affichee,
                     nb_actions=nb_actions_total,
                     qualite="actionnaire unique",
@@ -1733,7 +1763,9 @@ def _build_associes_cible(payload: dict[str, object]) -> list[object]:
     nb_cedees = int(cession_data.get("nb_cedees") or 0)  # type: ignore[union-attr]
     associes: list[object] = [
         AssocieCible(
-            civilite_affichage=str(a.get("civilite") or "Monsieur"),  # SP2
+            # B4 (KAN-2) : civilite d'un associe de la cible non saisie -> "" (marqueur en aval),
+            # jamais « Monsieur » affirme sur un associe dont le nom/prenom sont vides.
+            civilite_affichage=str(a.get("civilite") or ""),  # SP2
             prenom=str(a.get("prenom") or ""),
             nom=str(a.get("nom") or ""),
             nb_parts_avant=int(a.get("avant") or 0),
@@ -1774,7 +1806,8 @@ def _build_associes_cible_apport(payload: dict[str, object]) -> list[object]:
     nb_apportees = int(payload.get("apport_nb_parts") or 0)
     return [
         AssocieCible(
-            civilite_affichage=str(payload.get("civilite") or "Monsieur"),
+            # B4 : civilite non saisie -> marqueur en aval, jamais « Monsieur » affirme.
+            civilite_affichage=str(payload.get("civilite") or ""),
             prenom=str(payload.get("prenom") or ""),
             nom=str(payload.get("nom") or ""),
             nb_parts_avant=nb_total,
@@ -1826,13 +1859,18 @@ def _spfpl_pv_associe(payload: dict[str, object], nb_parts: int) -> object:
     from sydel_doc_engine.domain.models import Associe
 
     return Associe(
+        # B4 : civilite non saisie -> marqueur en aval (jamais « Monsieur »). Genre = defaut du
+        # modele (Associe l'exige) ; invisible sur civilite vide.
         genre=payload.get("genre") or Gender.MASCULIN,
-        civilite_affichage=str(payload.get("civilite") or "Monsieur"),
+        civilite_affichage=str(payload.get("civilite") or ""),
         prenom=str(payload.get("prenom") or ""),
         nom=str(payload.get("nom") or ""),
         nb_parts=nb_parts,
-        nb_parts_lettres=number_words_from_value(nb_parts),
-        profession="chirurgien-dentiste",
+        # B3 : lettres seulement si quantite saisie, jamais « zéro » affirme.
+        nb_parts_lettres=number_words_from_value(nb_parts) if nb_parts else "",
+        # M3 : profession de l'INDIVIDU (associe unique) = saisie -> marqueur si absente ;
+        # profession_reglementee reste l'attribut de TYPE (chirurgiens-dentistes).
+        profession=str(payload.get("profession_associe_unique") or ""),
         profession_reglementee="chirurgien-dentiste",
         qualite="associé unique",
     )

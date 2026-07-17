@@ -267,7 +267,10 @@ def test_renonciation_tokenizes_missing_qualite_renoncee(tmp_path: Path) -> None
     ctx = _context(qualite_renoncee=None)
 
     text = _docx_text(LettreRenonciationAssocieGenerator().generate(ctx, tmp_path))
-    assert "COMPLÉTER" in text and "qualite_renoncee" in text
+    # KAN-2 / M1 : le marqueur porte le LIBELLE METIER (« qualite renoncee »), plus le chemin
+    # technique « qualite_renoncee » (libelle_metier retire points/underscores). Intention
+    # (donnee manquante -> marqueur visible) inchangee.
+    assert "COMPLÉTER" in text and "qualite renoncee" in text
 
 
 def test_selas_avertissement_tokenizes_missing_abregee(tmp_path: Path) -> None:
@@ -275,7 +278,8 @@ def test_selas_avertissement_tokenizes_missing_abregee(tmp_path: Path) -> None:
     ctx = _context("SELAS", forme_sociale_abregee=None)
 
     text = _docx_text(LettreAvertissementConjointGenerator().generate(ctx, tmp_path))
-    assert "COMPLÉTER" in text and "forme_sociale_abregee" in text
+    # KAN-2 / M1 : marqueur en LIBELLE METIER (« forme sociale abregee »), plus le chemin technique.
+    assert "COMPLÉTER" in text and "forme sociale abregee" in text
 
 
 def test_orchestrator_generates_regime_communautaire_batch_only_when_enabled(

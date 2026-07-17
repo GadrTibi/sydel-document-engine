@@ -14,6 +14,7 @@ from sydel_doc_engine.generators.lot_04.statuts_spfpl_common import (
     founder_common_replacements,
     groupe_milliers,
     montant_euro_symbole,
+    quantite_titres,
     render_statuts_docx,
     required_actionnaire_unique,
     required_capital_souscription,
@@ -122,13 +123,11 @@ class StatutsSpfplCessionGenerator:
                     ctx.depot_fonds.banque.adresse_affichee,
                     "depot_fonds.banque.adresse_affichee",
                 ),
-                "[nb_actions]": str(
-                    required_text(
-                        str(capital_souscription.nb_actions_total)
-                        if capital_souscription.nb_actions_total is not None
-                        else None,
-                        "capital_souscription.nb_actions_total",
-                    )
+                # KAN-2 / B1 : nb d'actions non saisi -> marqueur « (À COMPLÉTER : …) »
+                # (« divisé en (À COMPLÉTER : …) actions »), jamais « 600 » ni « 0 » affirme.
+                "[nb_actions]": quantite_titres(
+                    capital_souscription.nb_actions_total,
+                    "nombre d'actions composant le capital",
                 ),
                 "[valeur_nominale_action]": valeur_nominale_figure,
                 # 7.5 : lettres + unite composees en un seul token (anti double-euro / espace).

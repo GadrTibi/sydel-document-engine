@@ -6,6 +6,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 from sydel_doc_engine.domain.models import Address, Company, DocumentGenerationContext
 from sydel_doc_engine.generators.lot_01.civilite import civilite_civile
+from sydel_doc_engine.generators.lot_05.spfpl_libelles import libelle_metier
 from sydel_doc_engine.rendering.docx_builder import (
     add_centered_block,
     add_framed_title,
@@ -132,7 +133,7 @@ def _required_company(company: Company | None) -> Company:
 def _required_text(value: str | None, field_name: str) -> str:
     # KAN-2 : donnée manquante -> marqueur « (À COMPLÉTER : …) », non bloquant (R10).
     if value is None or not value.strip():
-        return f"(À COMPLÉTER : {field_name})"
+        return f"(À COMPLÉTER : {libelle_metier(field_name)})"
     return value.strip()
 
 

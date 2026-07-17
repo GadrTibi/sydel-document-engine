@@ -1305,6 +1305,11 @@ def _spfpl_payload(structure):
         "prenoms": "Camille Andre",
         "nom": "Martin",
         "genre": Gender.MASCULIN,
+        # §6.6 : profession SAISIE de l'associe unique (defaut UI « chirurgien-dentiste »). KAN-2 /
+        # M3 : plus de repli hardcode cote moteur -> un dossier COMPLET la fournit explicitement
+        # (sinon marqueur « (À COMPLÉTER : profession de l'associé unique) », comportement teste
+        # a part). Requis pour que le bundle nominal soit propre (associe unique = cedant/president).
+        "profession_associe_unique": "chirurgien-dentiste",
         "date_naissance": "02/01/1980",
         "ville_naissance": "Paris",
         "departement_naissance": "75",

@@ -22,6 +22,7 @@ from sydel_doc_engine.generators.lot_05.scm_cession_common import (
     mentions_partenaire_pacse,
     partenaire_pacse_clause,
 )
+from sydel_doc_engine.generators.lot_05.spfpl_libelles import libelle_metier
 from sydel_doc_engine.rendering.docx_builder import (
     STATUTS_SPFPL_COMPACT_STYLE_PROFILE,
     add_paragraph,
@@ -50,11 +51,11 @@ OPERATION_APPORT = "apport"
 
 
 def required_text(value: str | None, field_name: str) -> str:
-    # R10 (Rafael 2026-06-24) : une donnee manquante NE bloque PAS la generation -> on ecrit un
-    # marqueur visible « (A COMPLETER : data) » SANS crochets (pour ne pas declencher le garde-fou
-    # anti-placeholder source qui interdit les [ ]) au lieu de lever.
+    # R10 (Rafael 2026-06-24) : une donnee manquante NE bloque PAS la generation -> marqueur.
+    # KAN-2 M1 (Rafael 2026-07-15) : le marqueur porte un LIBELLÉ MÉTIER lisible (« capital social
+    # de la SPFPL »), jamais le chemin technique. Sortie NOMINALE (valeur présente) inchangée.
     if value is None or not value.strip():
-        return f"(À COMPLÉTER : {field_name})"
+        return f"(À COMPLÉTER : {libelle_metier(field_name)})"
     return value.strip()
 
 
@@ -64,10 +65,24 @@ def required_int(value: int | None, field_name: str) -> int:
     return value
 
 
+def quantite_titres(value: int | None, libelle: str) -> str:
+    """AFFICHAGE d'une quantité de titres (actions / parts) dans le FIL DU TEXTE des statuts.
+
+    KAN-2 / B1 (Rafael 2026-07-15) : une quantité NON RENSEIGNÉE (0 = valeur d'un `number_input`
+    jamais rempli, ou None) ne s'affirme JAMAIS — « divisé en 0 actions » / « 600 actions »
+    (défaut inventé) est FAUX dans un acte signable. Elle sort en marqueur « (À COMPLÉTER : <libellé
+    métier>) ». `libelle` = intitulé métier ; jamais un token. Miroir de
+    `lot_05.spfpl_common.quantite_titres` (les statuts vivent dans lot_04 avec leur propre couche).
+    """
+    if not value:
+        return f"(À COMPLÉTER : {libelle_metier(libelle)})"
+    return str(value)
+
+
 def format_display_date(value: date | str | None, field_name: str) -> str:
-    # KAN-2 : date manquante -> marqueur « (À COMPLÉTER : …) », non bloquant (R10).
+    # KAN-2 : date manquante -> marqueur « (À COMPLÉTER : <libellé métier>) », non bloquant (R10).
     if value is None:
-        return f"(À COMPLÉTER : {field_name})"
+        return f"(À COMPLÉTER : {libelle_metier(field_name)})"
     if isinstance(value, date):
         return value.strftime("%d/%m/%Y")
     return required_text(value, field_name)
@@ -82,7 +97,9 @@ def required_societe_spfpl(ctx: DocumentGenerationContext) -> SocieteSpfpl:
 
 
 def required_capital_souscription(ctx: DocumentGenerationContext) -> CapitalSouscription:
-    return ctx.capital_souscription if ctx.capital_souscription is not None else CapitalSouscription()
+    if ctx.capital_souscription is not None:
+        return ctx.capital_souscription
+    return CapitalSouscription()
 
 
 def required_apport_titres(ctx: DocumentGenerationContext) -> ApportTitres:

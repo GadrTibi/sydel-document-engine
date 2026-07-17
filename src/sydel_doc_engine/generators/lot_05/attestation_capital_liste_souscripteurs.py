@@ -17,14 +17,18 @@ from sydel_doc_engine.generators.lot_05.spfpl_common import (
     required_apport_titres,
     required_apporteur,
     required_capital_souscription,
-    required_int,
     required_societe_cible,
     required_societe_spfpl,
     required_text,
     spfpl_forme_sociale_complete,
     validate_apport_context,
 )
-from sydel_doc_engine.rendering.docx_builder import add_paragraph, add_spacer, keep_final_signature_block_together, new_document
+from sydel_doc_engine.rendering.docx_builder import (
+    add_paragraph,
+    add_spacer,
+    keep_final_signature_block_together,
+    new_document,
+)
 from sydel_doc_engine.utils.dates import format_date_fr
 
 OUTPUT_FILENAME = "attestation_capital_liste_souscripteurs.docx"
@@ -38,6 +42,12 @@ OUTPUT_FILENAME = "attestation_capital_liste_souscripteurs.docx"
 # On aere via des paragraphes-espaceurs (add_spacer) entre les GROUPES et via un
 # space_after renforce sur les lignes visees, sans toucher au wording.
 _ATTESTATION_GROUP_SPACER_PT = 10
+
+# KAN-2 / B1 (Akainu 2026-07-15) : libellés métier des marqueurs de QUANTITÉ (constantes pour
+# éviter l'apostrophe dans une f-string). Une quantité de titres non renseignée sort en
+# « (À COMPLÉTER : <libellé>) » (`quantite_titres`), jamais « 0 actions » ni « 600 » inventé.
+_LIBELLE_NB_ACTIONS_CAPITAL = "nombre d'actions composant le capital"
+_LIBELLE_NB_ACTIONS_ATTRIBUEES = "nombre d'actions attribuées"
 
 
 class AttestationCapitalListeSouscripteursGenerator:
@@ -139,14 +149,14 @@ class AttestationCapitalListeSouscripteursGenerator:
             # « euros » fige rendait « 1 euros » pour une valeur nominale de 1) — aligne
             # sur le cousin cession DOC-051 (siloing regle 68 Q4 rattrape).
             "Nombre d’actions : "
-            f"{required_int(capital.nb_actions_total, 'capital_souscription.nb_actions_total')} "
+            f"{quantite_titres(capital.nb_actions_total, _LIBELLE_NB_ACTIONS_CAPITAL)} "
             f"actions d’un montant {elision_de(str(_valeur_nominale_action(capital)))} "
             f"{euro_word(_valeur_nominale_action(capital))} chacune",
         )
         add_paragraph(
             docx,
             "Répartition : "
-            f"{required_int(souscripteur.nb_actions, _souscripteur_field('nb_actions'))} "
+            f"{quantite_titres(souscripteur.nb_actions, _LIBELLE_NB_ACTIONS_ATTRIBUEES)} "
             f"actions attribuées à {souscripteur_civilite} "
             f"{souscripteur_prenom} {souscripteur_nom}, "
             "actionnaire unique",

@@ -7,6 +7,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 from sydel_doc_engine.domain.models import Address, DocumentGenerationContext
 from sydel_doc_engine.generators.lot_01.civilite import civilite_civile
+from sydel_doc_engine.generators.lot_05.spfpl_libelles import libelle_metier
 from sydel_doc_engine.rendering.docx_builder import (
     add_framed_title,
     add_legal_reminder,
@@ -131,14 +132,14 @@ def _required_text(value: str | None, field_name: str) -> str:
     # visible « (À COMPLÉTER : … ) » sans crochets (comme required_text lot_03/04/05, R10), à
     # compléter à la main sur le DOCX, au lieu de lever.
     if value is None or not value.strip():
-        return f"(À COMPLÉTER : {field_name})"
+        return f"(À COMPLÉTER : {libelle_metier(field_name)})"
     return value.strip()
 
 
 def _required_date(value: date | None, field_name: str) -> str:
     # KAN-2 : date manquante -> marqueur visible (non bloquant), à compléter à la main.
     if value is None:
-        return f"(À COMPLÉTER : {field_name})"
+        return f"(À COMPLÉTER : {libelle_metier(field_name)})"
     return format_date_fr(value)
 
 

@@ -20,6 +20,7 @@ from sydel_doc_engine.generators.lot_05.scm_cession_common import (
     mentions_partenaire_pacse,
     partenaire_pacse_clause,
 )
+from sydel_doc_engine.generators.lot_05.spfpl_libelles import libelle_metier
 from sydel_doc_engine.utils.departements import departement_nom
 from sydel_doc_engine.utils.grammar import (  # noqa: F401
     elision_de,
@@ -41,11 +42,12 @@ SUPPORTED_NOTE_OPERATIONS = {OPERATION_CESSION, OPERATION_APPORT}
 def required_text(value: str | None, field_name: str) -> str:
     # R10 (Rafael 2026-06-24) : une donnee manquante NE bloque PAS la generation -> marqueur
     # visible « (À COMPLÉTER : …) », a completer a la main, au lieu de lever.
-    # KAN-2 M1 (Akainu 2026-07-13) : le field_name peut porter un index a crochets
-    # (« souscripteurs[0] », « associes_cible[2] ») -> on RETIRE les crochets du marqueur, sinon
-    # le livrable reintroduit des « [ ] » et viole la regle R1 anti-placeholder.
+    # KAN-2 M1 (Rafael 2026-07-15, motif n°1 des rejets) : le marqueur porte un LIBELLÉ MÉTIER
+    # lisible (« prénom de l'associé unique »), JAMAIS le chemin technique (« actionnaire_unique.
+    # prenom ») ni des crochets d'index. `libelle_metier` traduit le field_name ; sortie NOMINALE
+    # (valeur présente) inchangée.
     if value is None or not value.strip():
-        return f"(À COMPLÉTER : {field_name.replace('[', '').replace(']', '')})"
+        return f"(À COMPLÉTER : {libelle_metier(field_name)})"
     return value.strip()
 
 
@@ -76,10 +78,11 @@ def quantite_titres(value: int | None, libelle: str) -> str:
 
     `libelle` = intitulé MÉTIER (« nombre de parts cédées »), jamais un nom de token ni un
     chemin technique — Akainu M2 : « (À COMPLÉTER : CESSION_PARTS.PRIX_TOTAL_LETTRES) » ne veut
-    rien dire pour le client qui relit son acte.
+    rien dire pour le client qui relit son acte. `libelle_metier` = filet (un libellé déjà métier
+    traverse inchangé ; un chemin technique passé par erreur est tout de même traduit).
     """
     if not value:
-        return f"(À COMPLÉTER : {libelle})"
+        return f"(À COMPLÉTER : {libelle_metier(libelle)})"
     return str(value)
 
 
@@ -98,9 +101,9 @@ def spfpl_forme_sociale_complete(profession_pluriel: str) -> str:
 
 
 def format_display_date(value: date | str | None, field_name: str) -> str:
-    # KAN-2 : date manquante -> marqueur « (À COMPLÉTER : …) », non bloquant (R10).
+    # KAN-2 : date manquante -> marqueur « (À COMPLÉTER : <libellé métier>) », non bloquant (R10).
     if value is None:
-        return f"(À COMPLÉTER : {field_name})"
+        return f"(À COMPLÉTER : {libelle_metier(field_name)})"
     if isinstance(value, date):
         return value.strftime("%d/%m/%Y")
     return required_text(value, field_name)

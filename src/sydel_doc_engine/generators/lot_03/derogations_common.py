@@ -11,6 +11,7 @@ from sydel_doc_engine.domain.models import (
     DocumentGenerationContext,
     Person,
 )
+from sydel_doc_engine.generators.lot_05.spfpl_libelles import libelle_metier
 
 DOCUMENT_CODE = "CODE-DEROG-CORE-001"
 
@@ -27,7 +28,7 @@ def required_text(value: str | None, field_name: str) -> str:
     # marqueur visible « (A COMPLETER : data) » SANS crochets (pour ne pas declencher le garde-fou
     # anti-placeholder source qui interdit les [ ]) au lieu de lever.
     if value is None or not value.strip():
-        return f"(À COMPLÉTER : {field_name})"
+        return f"(À COMPLÉTER : {libelle_metier(field_name)})"
     return value.strip()
 
 

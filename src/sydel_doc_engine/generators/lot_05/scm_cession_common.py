@@ -22,6 +22,7 @@ from sydel_doc_engine.domain.models import (
     ScmCessionSignataire,
     ScmCessionSociete,
 )
+from sydel_doc_engine.generators.lot_05.spfpl_libelles import libelle_metier
 from sydel_doc_engine.rendering.docx_builder import add_paragraph
 
 DOCUMENT_CODE = "FINAL-SCM-CESSION-WAVE-001"
@@ -400,7 +401,7 @@ def required_text(value: str | None, field_name: str) -> str:
     # R10 (Rafael 2026-06-24) : donnee manquante -> marqueur « (A COMPLETER : data) » sans crochets
     # (compatible garde-fou anti-placeholder) au lieu de lever.
     if value is None or not str(value).strip():
-        return f"(À COMPLÉTER : {field_name})"
+        return f"(À COMPLÉTER : {libelle_metier(field_name)})"
     return str(value).strip()
 
 

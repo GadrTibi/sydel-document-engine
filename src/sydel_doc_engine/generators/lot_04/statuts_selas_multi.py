@@ -32,6 +32,8 @@ from sydel_doc_engine.rendering.docx_builder import (
 )
 from sydel_doc_engine.rendering.docx_builder import (
     add_signature_table as _add_signature_table,
+)
+from sydel_doc_engine.rendering.docx_builder import (
     keep_signature_block_together as _keep_signature_block_together,
 )
 from sydel_doc_engine.utils.departements import departement_nom

@@ -29,6 +29,7 @@ from sydel_doc_engine.generators.lot_05.spfpl_common import (
     required_text,
     validate_apport_context,
 )
+from sydel_doc_engine.generators.lot_05.spfpl_libelles import libelle_metier
 from sydel_doc_engine.rendering.docx_builder import (
     ensure_demeurant_au,
     keep_final_signature_block_together,
@@ -63,10 +64,15 @@ def _txt(value: object) -> str:
     return str(value or "").strip()
 
 
-def _date_fr(value: object) -> str:
+def _date_fr(value: object, field_name: str | None = None) -> str:
     if hasattr(value, "strftime"):
         return value.strftime("%d/%m/%Y")
-    return str(value or "")
+    text = str(value or "")
+    # KAN-2 / M2 : une date manquante NE sort JAMAIS en BLANC quand un libelle est fourni ->
+    # marqueur metier lisible « (À COMPLÉTER : date de naissance …) » (comme partout ailleurs).
+    if not text.strip() and field_name is not None:
+        return f"(À COMPLÉTER : {libelle_metier(field_name)})"
+    return text
 
 
 def _valeur_nominale_apport_fragment(apport_titres: ApportTitres) -> str:
@@ -222,7 +228,7 @@ class ContratApportSpfplGenerator:
             ),
             "[prenom]": required_text(apporteur.prenom, "apporteur.prenom"),
             "[nom]": required_text(apporteur.nom, "apporteur.nom"),
-            "[date_naissance]": _date_fr(apporteur.date_naissance),
+            "[date_naissance]": _date_fr(apporteur.date_naissance, "apporteur.date_naissance"),
             "[ville_naissance]": required_text(
                 apporteur.ville_naissance, "apporteur.ville_naissance"
             ),

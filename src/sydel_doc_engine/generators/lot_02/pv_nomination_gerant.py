@@ -19,6 +19,7 @@ from sydel_doc_engine.domain.models import (
     ReunionPresident,
 )
 from sydel_doc_engine.front_app.field_derivations import group_montant
+from sydel_doc_engine.generators.lot_05.spfpl_libelles import libelle_metier
 from sydel_doc_engine.rendering.docx_builder import (
     add_centered_block,
     add_framed_title,
@@ -257,7 +258,7 @@ def _required_bien_immobilier(
 def _required_text(value: str | None, field_name: str) -> str:
     # KAN-2 : donnée manquante -> marqueur « (À COMPLÉTER : …) », non bloquant (R10).
     if value is None or not value.strip():
-        return f"(À COMPLÉTER : {field_name})"
+        return f"(À COMPLÉTER : {libelle_metier(field_name)})"
     return value.strip()
 
 
@@ -272,7 +273,7 @@ def _required_positive_int(value: int | None, field_name: str) -> int:
 def _required_display_value(value: date | str | None, field_name: str) -> str:
     # KAN-2 : date/valeur manquante -> marqueur « (À COMPLÉTER : …) », non bloquant (R10).
     if value is None:
-        return f"(À COMPLÉTER : {field_name})"
+        return f"(À COMPLÉTER : {libelle_metier(field_name)})"
     if isinstance(value, date):
         return value.strftime("%d/%m/%Y")
     return _required_text(value, field_name)

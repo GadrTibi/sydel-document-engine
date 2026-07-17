@@ -12,6 +12,8 @@ from sydel_doc_engine.generators.lot_01.civilite import (
 )
 from sydel_doc_engine.generators.lot_05.attestation_capital_liste_souscripteurs import (
     _ATTESTATION_GROUP_SPACER_PT,
+    _LIBELLE_NB_ACTIONS_ATTRIBUEES,
+    _LIBELLE_NB_ACTIONS_CAPITAL,
     _adresse,
     _souscripteur_identite,
     _souscripteur_nom_civil,
@@ -20,15 +22,20 @@ from sydel_doc_engine.generators.lot_05.attestation_capital_liste_souscripteurs 
 )
 from sydel_doc_engine.generators.lot_05.spfpl_common import (
     company_siege_display,
+    quantite_titres,
     required_capital_souscription,
     required_cedant,
-    required_int,
     required_societe_spfpl,
     required_text,
     spfpl_forme_sociale_complete,
     validate_cession_context,
 )
-from sydel_doc_engine.rendering.docx_builder import add_paragraph, add_spacer, keep_final_signature_block_together, new_document
+from sydel_doc_engine.rendering.docx_builder import (
+    add_paragraph,
+    add_spacer,
+    keep_final_signature_block_together,
+    new_document,
+)
 from sydel_doc_engine.utils.dates import format_date_fr
 from sydel_doc_engine.utils.grammar import euro_word, montant_avec_euros, subject_line
 
@@ -153,7 +160,7 @@ class AttestationCapitalListeSouscripteursCessionGenerator:
         add_paragraph(
             docx,
             "Nombre d’actions\xa0: "
-            f"{required_int(capital.nb_actions_total, 'capital_souscription.nb_actions_total')} "
+            f"{quantite_titres(capital.nb_actions_total, _LIBELLE_NB_ACTIONS_CAPITAL)} "
             f"actions d’un montant de {valeur_nominale} {euro_word(valeur_nominale)} chacune",
         )
         # [15] Repartition : X actions attribuees a <civilite civile> <prenom> <nom>,
@@ -169,7 +176,7 @@ class AttestationCapitalListeSouscripteursCessionGenerator:
         add_paragraph(
             docx,
             "Répartition\xa0: "
-            f"{required_int(souscripteur.nb_actions, _souscripteur_field('nb_actions'))} "
+            f"{quantite_titres(souscripteur.nb_actions, _LIBELLE_NB_ACTIONS_ATTRIBUEES)} "
             f"actions attribuées à {souscripteur_civilite} "
             f"{souscripteur_prenom} {souscripteur_nom}, "
             "actionnaire unique",

@@ -28,6 +28,7 @@ from sydel_doc_engine.generators.lot_05.spfpl_common import (
     required_text,
     validate_cession_context,
 )
+from sydel_doc_engine.generators.lot_05.spfpl_libelles import libelle_metier
 from sydel_doc_engine.rendering.docx_builder import ensure_demeurant_au, new_document_from_model
 from sydel_doc_engine.utils.departements import departement_nom
 
@@ -95,10 +96,15 @@ def _source_path() -> Path:
     return path
 
 
-def _date_fr(value: object) -> str:
+def _date_fr(value: object, field_name: str | None = None) -> str:
     if hasattr(value, "strftime"):
         return value.strftime("%d/%m/%Y")
-    return str(value or "")
+    text = str(value or "")
+    # KAN-2 / M2 : une date manquante NE sort JAMAIS en BLANC quand un libelle est fourni ->
+    # marqueur metier lisible « (À COMPLÉTER : date de naissance …) » (comme partout ailleurs).
+    if not text.strip() and field_name is not None:
+        return f"(À COMPLÉTER : {libelle_metier(field_name)})"
+    return text
 
 
 def _strip_euro(lettres: str) -> str:
@@ -136,6 +142,12 @@ def _upper_nombre_lettres(phrase: str) -> str:
     Les mots d'unite monetaire (« euro(s) », « centime(s) », « d'euro », « et ») restent en
     minuscules ; les chiffres et symboles ne portent pas de casse (« (60 000) », « € »
     inchanges). Idempotent (« SOIXANTE MILLE » -> « SOIXANTE MILLE »)."""
+
+    # KAN-2 / B1 : une VALEUR absente sort en marqueur « (À COMPLÉTER : … ) » -> ne JAMAIS le
+    # crier en MAJUSCULES (le libelle metier doit rester lisible ; l'A4 ne s'applique qu'aux
+    # nombres reellement ecrits en lettres, jamais au marqueur d'un champ vide).
+    if "À COMPLÉTER" in phrase:
+        return phrase
 
     def _up(token: str) -> str:
         return token if token.lower() in _MONETARY_UNIT_WORDS else token.upper()
@@ -594,7 +606,7 @@ class ActeCessionPartsSpfplGenerator:
             "[prenom_cedant]": required_text(cedant.prenom, "cedant.prenom"),
             "[nom_cedant]": required_text(cedant.nom, "cedant.nom"),
             "[profession_cedant]": required_text(cedant.profession, "cedant.profession"),
-            "[date_naissance_cedant]": _date_fr(cedant.date_naissance),
+            "[date_naissance_cedant]": _date_fr(cedant.date_naissance, "cedant.date_naissance"),
             "[ville_naissance_cedant]": required_text(
                 cedant.ville_naissance, "cedant.ville_naissance"
             ),
