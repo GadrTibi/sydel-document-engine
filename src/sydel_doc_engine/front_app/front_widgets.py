@@ -207,13 +207,15 @@ def siege_same_as_perso_checkbox(prefix: str) -> bool:
         key=key,
         help="Coché : recopie l'adresse personnelle dans le siège (évite la double saisie).",
     )
-    # KAN-11 (Albane) : quand la case est cochée, elle ne savait pas s'il fallait quand même
-    # saisir l'adresse -> légende VISIBLE (pas seulement le help au survol) : renseigner
-    # l'adresse personnelle UNE fois, le siège la reprend seul (aucune double saisie).
+    # KAN-11 (Albane) : cochée, elle ne savait pas s'il fallait quand même saisir une adresse
+    # (« je ne sais pas si c'est utile ou non », le champ associé paraissant vide) -> légende
+    # VISIBLE (pas que le help au survol) qui répond aux DEUX questions : renseigner l'adresse
+    # personnelle UNE fois (elle reste nécessaire), et NE PAS la retaper dans le siège. Wording
+    # rôle-neutre : vrai pour tous les types partageant ce widget (dirigeant, président, associé).
     if checked:
         st.caption(
-            "Le champ « Adresse du siège » est renseigné automatiquement depuis l'adresse "
-            "personnelle — inutile de la retaper ici."
+            "Renseignez l'adresse personnelle une seule fois : elle est reprise automatiquement "
+            "comme siège, inutile de la retaper ici."
         )
     return checked
 
