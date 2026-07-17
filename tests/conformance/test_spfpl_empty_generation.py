@@ -109,23 +109,27 @@ def test_spfpl_dossier_generates_from_empty_form(structure: str, tmp_path: Path)
 
     # S : ancrage signature NU (blanc silencieux) — étiquette « Fait à » / « Le » sans valeur.
     # « Fait à » porte TOUJOURS un lieu inline -> un « Fait à » nu est un blanc, partout.
-    # « Le » nu est TOLÉRÉ dans les STATUTS (fidélité modèle ratifiée Rafael 2026-07-09, test
-    # ...without_signature_date : le bloc signature des statuts porte « Le » suivi du signataire,
-    # date volontairement absente) ; ailleurs (contrat / acte / attestations) la date DOIT sortir
-    # en marqueur.
+    # « Le » nu est TOLÉRÉ pour le SEUL statuts CESSION (fidélité modèle ratifiée Rafael
+    # 2026-07-09, test ...without_signature_date : bloc signature « Le » suivi du signataire,
+    # date volontairement absente). Le statuts APPORT, lui, rend « Le (À COMPLÉTER : date de
+    # signature) » (template statuts_spfpl_templates:786) -> il reste SOUS contrôle, comme
+    # contrat / acte / attestations. Exemption cadrée sur le doc ratifié, pas « statuts » large
+    # (Akainu 5e passe m2 : sinon un « Le » nu régressé dans le statuts apport passerait vert).
     dangling = [
         f"{doc}: {u.strip()!r}"
         for doc, u in pairs
         if u.strip() in ("Fait à", "Fait à,")
-        or (u.strip() in ("Le", "le") and "statuts" not in doc.lower())
+        or (u.strip() in ("Le", "le") and "statuts_spfpl_cession" not in doc.lower())
     ]
     assert not dangling, (
         f"{structure} vide : ANCRAGE SIGNATURE NU (blanc silencieux, doit être un marqueur) : "
         f"{dangling}"
     )
 
-    # B1 : quantité de titres affirmée (chiffre, lettres, ou « (0) »/« zéro (0) »).
-    quantite_chiffree = re.findall(r"\b\d[\d\s]*\s+(?:actions|parts)\b", text)
+    # B1 : quantité de titres affirmée (chiffre, lettres, ou « (0) »/« zéro (0) »). On code le
+    # CONCEPT « titres » (actions / parts / titres — le corpus emploie les trois : « Titres
+    # Cédés », « valeur d'un titre apporté »), pas les seules tournures vues (Akainu 5e passe m1).
+    quantite_chiffree = re.findall(r"\b\d[\d\s]*\s+(?:actions|parts|titres)\b", text)
     assert not quantite_chiffree, (
         f"{structure} vide : quantité de titres CHIFFRÉE affirmée (doit être un marqueur) : "
         f"{quantite_chiffree[:3]}"
@@ -133,9 +137,12 @@ def test_spfpl_dossier_generates_from_empty_form(structure: str, tmp_path: Path)
     assert "six cents" not in text.lower(), (
         f"{structure} vide : nombre d'actions en LETTRES affirmé « six cents » (marqueur attendu)"
     )
-    assert "(0) actions" not in text and "(0) parts" not in text and "zéro (0)" not in text, (
-        f"{structure} vide : quantité de titres « (0) » affirmée (doit être un marqueur)"
-    )
+    assert (
+        "(0) actions" not in text
+        and "(0) parts" not in text
+        and "(0) titres" not in text
+        and "zéro (0)" not in text
+    ), f"{structure} vide : quantité de titres « (0) » affirmée (doit être un marqueur)"
 
     # B2 : statut matrimonial affirmé (concept complet, pas seulement « célibataire »).
     matrimonial = _STATUTS_MATRIMONIAUX.findall(text)
