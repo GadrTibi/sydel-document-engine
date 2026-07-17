@@ -342,10 +342,10 @@ class ContratApportSpfplGenerator:
             "[valeur_apport_global_lettres]": required_text(
                 apport_titres.valeur_globale_lettres, "apport_titres.valeur_globale_lettres"
             ),
-            "[nb_actions]": str(
-                required_int(
-                    apport_titres.nb_actions_attribuees, "apport_titres.nb_actions_attribuees"
-                )
+            # KAN-2 / B1 (4e passe Akainu) : le CHIFFRE d'actions attribuees non saisi ne s'affirme
+            # JAMAIS « (0) » dans un acte signable -> marqueur via quantite_titres (comme les parts).
+            "[nb_actions]": quantite_titres(
+                apport_titres.nb_actions_attribuees, "nombre d'actions attribuées"
             ),
             "[nb_actions_lettres]": required_text(
                 apport_titres.nb_actions_attribuees_lettres,

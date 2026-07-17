@@ -1137,13 +1137,15 @@ def _build_associe_unique_pv(
     birth_date = _required_display_value(identity.date_naissance, "identite.date_naissance")
     birth_city = _required_text(identity.ville_naissance, "identite.ville_naissance")
     nationality = _required_text(identity.nationalite, "identite.nationalite")
-    profession = (
-        associe.profession
-        or associe.profession_reglementee
-        or associe.qualification_principale
-        or ""
-    ).strip()
-    profession_clause = f"{profession} de profession, " if profession else ""
+    # KAN-2 / M1 (4e passe Akainu) : la profession de l'INDIVIDU nommé ne se dérive JAMAIS du TYPE
+    # de dossier (`profession_reglementee`) quand le champ perso est vide -> sinon « chirurgien-
+    # dentiste de profession » affirmé sur formulaire vide, incohérent avec les statuts qui la
+    # marquent. Non saisie -> marqueur métier (comme partout), jamais l'attribut de type.
+    profession = _required_text(
+        (associe.profession or associe.qualification_principale or "").strip(),
+        "identite.profession",
+    )
+    profession_clause = f"{profession} de profession, "
     denomination = _required_text(company.denomination, "societe.denomination")
 
     document = new_document()

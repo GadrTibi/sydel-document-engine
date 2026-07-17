@@ -185,6 +185,46 @@ _LIBELLES: dict[str, str] = {
         "date de clôture du premier exercice"
     ),
     "date": "date",
+    # --- Signataire des documents de base (DNC / procuration / domiciliation) — 4e passe Akainu -
+    "personne_signataire.civilite": "civilité du signataire",
+    "personne_signataire.prenom": "prénom du signataire",
+    "personne_signataire.nom": "nom du signataire",
+    "personne_signataire.date_naissance": "date de naissance du signataire",
+    "personne_signataire.ville_naissance": "ville de naissance du signataire",
+    "personne_signataire.nationalite": "nationalité du signataire",
+    "personne_signataire.nom_pere": "nom du père du signataire",
+    "personne_signataire.nom_mere": "nom de la mère du signataire",
+    "personne_signataire.adresse_perso.num_voie": "numéro de voie du signataire",
+    "personne_signataire.adresse_perso.voie": "voie de l'adresse du signataire",
+    "personne_signataire.adresse_perso.cp": "code postal du signataire",
+    "personne_signataire.adresse_perso.ville": "ville du signataire",
+    # --- Identité du dirigeant nommé (PV de nomination) -----------------------------------
+    "identite.civilite_affichage": "civilité du dirigeant nommé",
+    "identite.prenom": "prénom du dirigeant nommé",
+    "identite.nom": "nom du dirigeant nommé",
+    "identite.profession": "profession du dirigeant nommé",
+    "identite.ville_naissance": "ville de naissance du dirigeant nommé",
+    "identite.nationalite": "nationalité du dirigeant nommé",
+    # --- Société (autorisation de domiciliation) ------------------------------------------
+    "societe.denomination": "dénomination de la société",
+    "societe.capital": "capital de la société",
+    "societe.forme_sociale": "forme juridique de la société",
+    "societe.siege_affichee": "adresse du siège de la société",
+    "societe.adresse_affichee": "adresse de la société",
+    # --- Ordre professionnel (demande d'inscription) --------------------------------------
+    "ordre.adresse_affichee": "adresse de l'Ordre",
+    # --- Associés de la société cible (note d'information / PV agrément) -------------------
+    "associes_cible.civilite_affichage": "civilité de l'associé de la société cible",
+    "associes_cible.prenom": "prénom de l'associé de la société cible",
+    "associes_cible.nom": "nom de l'associé de la société cible",
+    "associes_cible.denomination": "dénomination de l'associé (personne morale) de la société cible",
+    # --- Capital / souscripteurs (attestations de capital) --------------------------------
+    "capital_souscription.president.civilite_affichage": "civilité du président",
+    "capital_souscription.president.profession": "profession du président",
+    "capital_souscription.souscripteurs.civilite_affichage": "civilité du souscripteur",
+    "capital_souscription.souscripteurs.prenom": "prénom du souscripteur",
+    "capital_souscription.souscripteurs.nom": "nom du souscripteur",
+    "apport_titres.nb_actions_attribuees_lettres": "nombre d'actions attribuées en toutes lettres",
 }
 
 
@@ -204,9 +244,12 @@ def _normalize_key(field_name: str) -> str:
 
 def _fallback(field_name: str) -> str:
     """Repli sûr : un chemin non répertorié reste lisible et surtout SANS point / underscore /
-    MAJUSCULES de token (garantie de la garde de conformité)."""
-    cleaned = field_name.replace("[", "").replace("]", "").replace("_", " ").replace(".", " ")
-    return " ".join(cleaned.lower().split())
+    MAJUSCULES de token NI index numérique (« associes_cible0 » -> « associes cible », pas
+    « associes cible0 »). Miroir de `_normalize_key` (retrait des chiffres de fin de segment) —
+    sinon l'index « cible0 »/« souscripteurs0 » fuite dans le marqueur (4e passe Akainu, 2026-07-17)."""
+    raw = field_name.replace("[", "").replace("]", "").replace("_", " ").replace(".", " ")
+    words = [word.rstrip("0123456789").lower() for word in raw.split()]
+    return " ".join(word for word in words if word)
 
 
 def libelle_metier(field_name: str) -> str:

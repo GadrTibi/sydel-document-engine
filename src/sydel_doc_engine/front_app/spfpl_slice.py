@@ -1114,7 +1114,10 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
             nom_pere=str(payload.get("nom_pere") or ""),
             nom_mere=str(payload.get("nom_mere") or ""),
             fonction_dirigeant="président",
-            qualification_principale="chirurgien-dentiste",
+            # KAN-2 / M1 (4e passe Akainu) : profession de l'INDIVIDU = marqueur si non saisie
+            # (comme founder.profession) — jamais « chirurgien-dentiste » affirme sur formulaire
+            # vide. Les attributs de TYPE (Ordre, profession_reglementee) restent dentiste ailleurs.
+            qualification_principale=str(payload.get("profession_associe_unique") or ""),
         ),
         signature=Signature(
             # SU3 (Albane 2026-06-25) : ville de signature = ville du siege, FORCE au moteur.
@@ -1842,7 +1845,8 @@ def _spfpl_ordre_professionnel(payload: dict[str, object]) -> OrdreProfessionnel
             if bool(payload.get("ordre_president_feminin"))
             else "Monsieur le Président"
         ),
-        profession_signataire_affichee="chirurgien-dentiste",
+        # KAN-2 / M1 : profession du SIGNATAIRE (demande d'inscription) = marqueur si non saisie.
+        profession_signataire_affichee=str(payload.get("profession_associe_unique") or ""),
         profession_ligne_destinataire="chirurgiens-dentistes",
         profession_reglementee_pluriel="chirurgiens-dentistes",
         adresse_affichee=bloc,
