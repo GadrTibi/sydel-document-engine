@@ -73,28 +73,24 @@ def format_display_date(value: date | str | None, field_name: str) -> str:
     return required_text(value, field_name)
 
 
+# KAN-2 (Rafael) : un OBJET manquant NE bloque PAS la generation. On retourne une INSTANCE VIDE
+# (tous champs None) : ses champs sortiront en marqueurs « (À COMPLÉTER : …) » via required_text /
+# quantite_titres. Le client veut generer meme sans AUCUN champ rempli — zero blocage, jamais de
+# ValueError sur une donnee absente (une contrainte technique ne devient pas une limite produit).
 def required_societe_spfpl(ctx: DocumentGenerationContext) -> SocieteSpfpl:
-    if ctx.societe_spfpl is None:
-        raise ValueError(f"societe_spfpl est obligatoire pour {DOCUMENT_CODE}.")
-    return ctx.societe_spfpl
+    return ctx.societe_spfpl if ctx.societe_spfpl is not None else SocieteSpfpl()
 
 
 def required_capital_souscription(ctx: DocumentGenerationContext) -> CapitalSouscription:
-    if ctx.capital_souscription is None:
-        raise ValueError(f"capital_souscription est obligatoire pour {DOCUMENT_CODE}.")
-    return ctx.capital_souscription
+    return ctx.capital_souscription if ctx.capital_souscription is not None else CapitalSouscription()
 
 
 def required_apport_titres(ctx: DocumentGenerationContext) -> ApportTitres:
-    if ctx.apport_titres is None:
-        raise ValueError(f"apport_titres est obligatoire pour {DOCUMENT_CODE}.")
-    return ctx.apport_titres
+    return ctx.apport_titres if ctx.apport_titres is not None else ApportTitres()
 
 
 def required_societe_cible(ctx: DocumentGenerationContext) -> SocieteCible:
-    if ctx.societe_cible is None:
-        raise ValueError(f"societe_cible est obligatoire pour {DOCUMENT_CODE}.")
-    return ctx.societe_cible
+    return ctx.societe_cible if ctx.societe_cible is not None else SocieteCible()
 
 
 def required_actionnaire_unique(ctx: DocumentGenerationContext) -> SpfplPerson:
@@ -104,7 +100,7 @@ def required_actionnaire_unique(ctx: DocumentGenerationContext) -> SpfplPerson:
         return ctx.cedant
     if ctx.operation_spfpl and ctx.operation_spfpl.type == OPERATION_APPORT and ctx.apporteur:
         return ctx.apporteur
-    raise ValueError(f"actionnaire_unique est obligatoire pour {DOCUMENT_CODE}.")
+    return SpfplPerson()
 
 
 def validate_common_statuts_context(  # noqa: C901

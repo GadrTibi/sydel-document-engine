@@ -106,34 +106,27 @@ def format_display_date(value: date | str | None, field_name: str) -> str:
     return required_text(value, field_name)
 
 
+# KAN-2 (Rafael) : un OBJET manquant NE bloque JAMAIS. Instance VIDE (champs None) -> ses champs
+# sortent en marqueurs « (À COMPLÉTER : …) » (required_text) ou « (À COMPLÉTER : <libellé>) »
+# (quantite_titres). Zero blocage : generer meme sans AUCUN champ rempli.
 def required_societe_spfpl(ctx: DocumentGenerationContext) -> SocieteSpfpl:
-    if ctx.societe_spfpl is None:
-        raise ValueError(f"societe_spfpl est obligatoire pour {DOCUMENT_CODE}.")
-    return ctx.societe_spfpl
+    return ctx.societe_spfpl if ctx.societe_spfpl is not None else SocieteSpfpl()
 
 
 def required_societe_cible(ctx: DocumentGenerationContext) -> SocieteCible:
-    if ctx.societe_cible is None:
-        raise ValueError(f"societe_cible est obligatoire pour {DOCUMENT_CODE}.")
-    return ctx.societe_cible
+    return ctx.societe_cible if ctx.societe_cible is not None else SocieteCible()
 
 
 def required_cedant(ctx: DocumentGenerationContext) -> SpfplPerson:
-    if ctx.cedant is None:
-        raise ValueError(f"cedant est obligatoire pour {DOCUMENT_CODE}.")
-    return ctx.cedant
+    return ctx.cedant if ctx.cedant is not None else SpfplPerson()
 
 
 def required_apporteur(ctx: DocumentGenerationContext) -> SpfplPerson:
-    if ctx.apporteur is None:
-        raise ValueError(f"apporteur est obligatoire pour {DOCUMENT_CODE}.")
-    return ctx.apporteur
+    return ctx.apporteur if ctx.apporteur is not None else SpfplPerson()
 
 
 def required_apport_titres(ctx: DocumentGenerationContext) -> ApportTitres:
-    if ctx.apport_titres is None:
-        raise ValueError(f"apport_titres est obligatoire pour {CORE_DOCUMENT_CODE}.")
-    return ctx.apport_titres
+    return ctx.apport_titres if ctx.apport_titres is not None else ApportTitres()
 
 
 def required_cession_parts(ctx: DocumentGenerationContext) -> CessionParts:
