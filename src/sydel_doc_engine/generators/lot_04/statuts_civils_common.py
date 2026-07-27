@@ -1,20 +1,31 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
 from docx import Document
+from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_TAB_ALIGNMENT, WD_TAB_LEADER
+from docx.shared import Cm, Pt
 
 from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import (
     Address,
     DocumentGenerationContext,
+    StatutsCivilsApport,
     StatutsCivilsAssocie,
     StatutsCivilsContext,
+    StatutsCivilsParts,
 )
+from sydel_doc_engine.generators.lot_04.annexe_filter import is_creation_fee_annexe_line
+from sydel_doc_engine.generators.lot_04.statuts_sel_exercice_common import (
+    statuts_output_filename,
+)
+from sydel_doc_engine.generators.lot_05.spfpl_libelles import libelle_metier
 from sydel_doc_engine.rendering.docx_builder import (
     add_paragraph,
+    add_spacer,
     add_statuts_article_heading,
     add_statuts_body_paragraph,
     add_statuts_hanging_list_item,
@@ -23,11 +34,52 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_statuts_signature_block,
     add_statuts_signature_grid,
     add_statuts_title_box,
-    new_document,
+    keep_signature_block_together,
+    new_document_from_model,
 )
+from sydel_doc_engine.utils.dates import format_birthdate_fr, format_date_longue_fr
+from sydel_doc_engine.utils.grammar import (
+    _has_real_decimal,
+    accord_euros_apres_montant,
+    accord_typos_modeles_source,
+    capitalize_first,
+    euro_word,
+    montant_avec_euros,
+    part_word,
+)
+
+
+def _vnp_lettres_civil(vnp_figure: str | None, vnp_lettres: str | None) -> str:
+    """Slot LETTRES de la valeur nominale pour les statuts CIVILS.
+
+    Les civils composent l'unite « euro » A PART (« <lettres> (<figure>) euros ») -> sur un
+    montant DECIMAL il ne faut JAMAIS une phrase monetaire (« un centime d'euro … euros »
+    doublerait l'unite). On garde donc la FIGURE en lettres pour un decimal (byte-fidele :
+    « 0,01 (0,01) euros ») ; l'entier garde ses mots nus. Depuis le containment 2026-07-06,
+    `number_words_from_value` rend deja la figure sur un decimal (`valeur_nominale_part_lettres`
+    n'est PLUS decimal-aware) : ce garde-fou devient redondant mais reste EXPLICITE (harmless).
+    La mise en lettres monetaire des civils n'est PAS ratifiee (7.5 = SPFPL). Akainu 2026-07-06.
+    """
+    figure = (vnp_figure or "").strip()
+    if figure and _has_real_decimal(figure):
+        return figure
+    return (vnp_lettres or "").strip()
 
 DOCUMENT_CODE = "CODE-STATUTS-CIVILS-CORE-001"
 MAX_ASSOCIES = 6
+
+# Espace insecable (U+00A0) : ponctuation fine francaise du modele Albane micro holding
+# (« Siege social<NBSP>: », « comme suit<NBSP>: »). Defini via chr() pour rester ASCII-safe.
+_NBSP = chr(0x00A0)
+
+# Marqueur editorial interne du modele source SCI (fin Art. 31, source para 547) :
+# "... jusqu'au [date]. A RETIRER SI LA SOCIETE EST A L'IR". C'est une INSTRUCTION INTERNE de
+# redaction, pas du texte juridique destine au client -> on la retire de la sortie tout en gardant
+# la clause qu'elle annote. Ancree sur "A RETIRER" jusqu'a la fin du paragraphe (tolerant a
+# l'apostrophe droite/typographique et a la casse). NB : un eventuel conditionnement IR/IS de la
+# clause elle-meme est une decision METIER, non tranchee ici
+# (cf. _PASSE2_VERIFICATION_REPORT sect.3).
+_EDITORIAL_MARKER_RE = re.compile(r"\s*A RETIRER SI LA SOCIETE EST A L.IR\s*$", re.IGNORECASE)
 
 
 @dataclass(frozen=True)
@@ -41,6 +93,7 @@ class StatutsCivilTemplate:
     capital_slice: tuple[int, int]
     signature_slice: tuple[int, int] | None = None
     append_signatures_after: int | None = None
+    statuts_title_box_before: int | None = None
 
 
 SCS_TEMPLATE = StatutsCivilTemplate(
@@ -52,6 +105,10 @@ SCS_TEMPLATE = StatutsCivilTemplate(
     apport_slice=(43, 58),
     capital_slice=(63, 76),
     append_signatures_after=253,
+    # FORME : le titre encadre "STATUTS" du modele source vit dans une TABLE (cellule T0), entre
+    # le bloc d'en-tete (paras 1-5) et "LES SOUSSIGNES" (para 12). Le moteur n'itere que les
+    # paragraphes source -> il ne le voit pas. On le restaure en l'injectant avant le para 12.
+    statuts_title_box_before=12,
 )
 
 SCI_TEMPLATE = StatutsCivilTemplate(
@@ -62,7 +119,38 @@ SCI_TEMPLATE = StatutsCivilTemplate(
     associate_slice=(25, 44),
     apport_slice=(97, 111),
     capital_slice=(120, 131),
-    signature_slice=(612, 623),
+    # Source para 609 = « A [lieu], le [date] » est AVANT l'ancien debut de slice (612) -> il etait
+    # rendu par le chemin source PUIS re-rendu par _add_signature_block => date en DOUBLE. On etend
+    # le debut a 609 pour que la ligne date source soit englobee (skip) et rendue une seule fois par
+    # le bloc signature. Meme correctif que SCI IRIS (slice 626) — 4e passe Akainu 2026-07-16.
+    signature_slice=(609, 623),
+    # Retour Albane « mise en forme » 3.2 : le cadre « STATUTS » du SCI vit dans une zone de texte
+    # FLOTTANTE du modele source (perdue par l'injection qui vide le corps) -> il etait ABSENT du
+    # rendu. On le restaure (comme SCS/micro-holding) entre l'en-tete (P0-P5) et « LES SOUSSIGNES »
+    # (P22) : injection avant le P22, avec espace avant/apres le cadre.
+    statuts_title_box_before=22,
+)
+
+# Micro holding (Albane 2026-06-29) : VRAI modele Albane « societe civile de portefeuille a
+# capital variable » (26 articles, distinct du SCI). Modele source tokenise depuis le DOCX
+# fourni par Albane (Statuts_Micro_holding.docx). Slices derivees du modele Albane :
+#   - statuts_title_box_before=9 : le titre « STATUTS » vit dans une TABLE (entre l'en-tete et
+#     « LES SOUSSIGNES ») -> non vu par l'iteration des paragraphes, on l'injecte avant le P9.
+#   - associate (17,33) : comparution SPFPL (morale) + praticien (physique), wording MH propre.
+#   - apport (86,96) : art. 6 (« X apporte la somme de … / Ci … euros » + total + depot).
+#   - capital (100,114) : art. 7 (variable min/max/effectif + division + repartition par associe).
+#   - signature (461,465) : « Fait a [lieu] / Le [date] » + signataires cote a cote.
+# L'objet social (art. 2) est desormais VERBATIM dans le modele Albane (plus de token/variante).
+MICRO_HOLDING_TEMPLATE = StatutsCivilTemplate(
+    source_name_contains=("MICRO", "HOLDING"),
+    output_filename="statuts_micro_holding.docx",
+    expected_structure="MICRO_HOLDING",
+    expected_type="micro_holding",
+    associate_slice=(17, 33),
+    apport_slice=(86, 96),
+    capital_slice=(100, 114),
+    signature_slice=(461, 465),
+    statuts_title_box_before=9,
 )
 
 SCI_IRIS_TEMPLATE = StatutsCivilTemplate(
@@ -73,11 +161,15 @@ SCI_IRIS_TEMPLATE = StatutsCivilTemplate(
     associate_slice=(24, 42),
     apport_slice=(95, 109),
     capital_slice=(120, 131),
-    signature_slice=(629, 636),
+    # Source para 626 = "A [lieu], le [date]" est AVANT l'ancien debut de slice (629) -> il etait
+    # rendu par le chemin source PUIS re-rendu par _add_signature_block => date en double. On etend
+    # le debut a 626 pour que la ligne date source soit englobee (skip) et rendue une seule fois par
+    # le bloc signature. Cf. _PASSE2_VERIFICATION_REPORT.md sect.4.
+    signature_slice=(626, 636),
 )
 
 
-def generate_statuts_civil_docx(
+def generate_statuts_civil_docx(  # noqa: C901
     ctx: DocumentGenerationContext,
     output_dir: Path,
     template: StatutsCivilTemplate,
@@ -85,16 +177,59 @@ def generate_statuts_civil_docx(
     data = _ResolvedStatutsCivil.from_context(ctx, template)
     source = _source_path(template)
     source_doc = Document(source)
-    output_doc = new_document()
-    output_doc.sections[0].footer.paragraphs[0].text = f"{data.denomination} - Statuts constitutifs"
+    # R1 (Albane 2026-06-30) : on HERITE la forme du modele (page custom 20,95x29,67 pour SCI /
+    # SCI IRIS, marges/police/styles nommes/header-footer) au lieu de recopier le texte dans un
+    # new_document() au profil SYDEL (Roboto 10, marges 2,5, Letter US, footer parasite) qui
+    # ECRASAIT la forme. Le wording valide du code est preserve a l'identique (token-replacement).
+    output_doc = new_document_from_model(source)
+    if template.expected_type == "micro_holding":
+        # Le modele micro holding porte un footer CLIENT a 3 paragraphes :
+        #   [0] = champ numero de page (« 1 »), [1] = « Statuts Societe Micro holding famille
+        #   Berte » (NOM CLIENT), [2] = vide.
+        # M1 (Akainu 2026-06-30) : ne reecrire QUE [0] laissait le nom « Berte » FUITER en [1]
+        # dans tout dossier. Le footer micro doit afficher UNIQUEMENT la denomination du dossier
+        # -> on pose la denomination en [0] et on VIDE tous les autres paragraphes du footer
+        # (aucun residu du modele). Les autres civiles (SCI / SCI IRIS / SCS) heritent du footer
+        # du modele (vide ou pagination native) et ne sont pas touchees.
+        footer_paragraphs = output_doc.sections[0].footer.paragraphs
+        footer_paragraphs[0].text = f"{data.denomination} - Statuts constitutifs"
+        for residual in footer_paragraphs[1:]:
+            residual.text = ""
 
     replacements = data.common_replacements()
     skip_until = -1
+    # Retour Albane 2026-07-02 (SCI §3.6 / §3.9) : « ajouter un espace entre le nom de la societe
+    # et le corps du texte » (art. 3 DENOMINATION) et « entre l'adresse du siege et le corps »
+    # (art. 4 SIEGE SOCIAL). Le nom (source para 73) suit l'intro « La denomination de la Societe
+    # est : » ; l'adresse (source para 82) suit « Le siege social est fixe au : ». On repere ces
+    # deux intros pour aerer APRES le paragraphe qui les suit immediatement (space_after), sans
+    # toucher au TEXTE. Scope SCI. Robuste au contenu (pas d'index en dur) et sans faux positif :
+    # le nom apparait aussi en titre (para 0) mais n'est PAS precede de l'intro art. 3.
+    _SCI_SPACE_AFTER_INTROS = {
+        "la dénomination de la société est :",
+        "le siège social est fixé au :",
+    }
+    space_after_next_body = False
     for index, paragraph in enumerate(source_doc.paragraphs):
         if index < skip_until:
             continue
+        if (
+            template.statuts_title_box_before is not None
+            and index == template.statuts_title_box_before
+        ):
+            # Retour Albane : « ajouter de l'espace entre l'en-tete et le cadre des statuts »
+            # (2026-07-02 micro-holding) / « espace avant et apres le cadre Statuts » (3.2 SCI).
+            # Espace aere avant le cadre « STATUTS » (l'espace APRES est fourni par le spacer
+            # interne d'add_statuts_title_box). Le cadre lui-meme a ete restaure pour le SCI (3.2).
+            if template.expected_type in ("micro_holding", "sci"):
+                add_spacer(output_doc, space_after_pt=6)
+            add_statuts_title_box(output_doc, "STATUTS")
         if index == template.associate_slice[0]:
             _add_associate_block(output_doc, data)
+            # Retour Albane 2026-07-02 : « ajouter de l'espace ... apres l'adresse de l'associe ».
+            # Espace aere apres le bloc de comparution des associes (micro holding, le doc teste).
+            if template.expected_type == "micro_holding":
+                add_spacer(output_doc, space_after_pt=6)
             skip_until = template.associate_slice[1]
             continue
         if index == template.apport_slice[0]:
@@ -114,7 +249,38 @@ def generate_statuts_civil_docx(
         if not text:
             continue
         rendered = _replace_placeholders(text, replacements)
-        _add_rendered_paragraph(output_doc, rendered)
+        # Accord euro/euros (Rafael 2026-07-09, « partout = partout ») : l'unite « euros »
+        # est FIGEE dans le DOCX source (« Au capital de [capital_social] euros ») — apres
+        # substitution d'une valeur singuliere (0/1) elle devient fautive « 1 euros ». On
+        # accorde sur le TEXTE rendu du modele, sans jamais toucher au pluriel.
+        rendered = accord_euros_apres_montant(rendered)
+        rendered = _strip_editorial_marker(rendered)
+        if not rendered:
+            continue
+        if is_creation_fee_annexe_line(rendered):  # O24-01 : annexe sans frais cabinet création
+            continue
+        # Retour Albane 2026-07-01 : la page d'ANNEXE (« Liste des actes accomplis pour le compte
+        # de la société en formation ») doit SYSTEMATIQUEMENT commencer sur une nouvelle page.
+        if rendered.strip().upper() == "ANNEXE":
+            output_doc.add_page_break()
+        # Retour Albane 2026-07-02 : « ajouter de l'espace ... avant l'article 1 ». Espace aere
+        # avant le PREMIER article (micro holding, le doc teste) — « ARTICLE 1 » suivi d'un espace
+        # (jamais « ARTICLE 10/15… » qui commencent par « ARTICLE 1 » sans espace juste apres le 1).
+        if template.expected_type == "micro_holding" and rendered.strip().upper().startswith(
+            "ARTICLE 1 "
+        ):
+            add_spacer(output_doc, space_after_pt=6)
+        _add_rendered_paragraph(output_doc, rendered, paragraph)
+        if template.expected_type == "sci" and space_after_next_body:
+            # Le paragraphe qui vient d'etre rendu est le nom de societe (art. 3) ou l'adresse du
+            # siege (art. 4), juste apres son intro -> on l'aere (space_after) avant le corps.
+            output_doc.paragraphs[-1].paragraph_format.space_after = Pt(10)
+            space_after_next_body = False
+        if (
+            template.expected_type == "sci"
+            and rendered.strip().casefold() in _SCI_SPACE_AFTER_INTROS
+        ):
+            space_after_next_body = True
         if template.expected_type == "sci_iris" and index == 561:
             _add_resultat_groupes_block(output_doc, data)
         if (
@@ -128,7 +294,14 @@ def generate_statuts_civil_docx(
         raise ValueError(f"placeholder source residuel dans le rendu {DOCUMENT_CODE}.")
 
     output_dir.mkdir(parents=True, exist_ok=True)
-    output_path = output_dir / template.output_filename
+    # SCS6 (Albane 2026-06-25) puis retour Rafael 2026-07-07 (propagation Q4) : TOUS les
+    # statuts portent la denomination dans le nom de fichier (« Statuts <denomination>.docx »,
+    # helper partage statuts_output_filename, convention SELARL 2026-06-10). Initialement
+    # limite a la SCS ; generalise a toutes les civiles (SCI / SCI IRIS / micro holding) —
+    # fallback = nom fixe historique du template si denomination vide/non sanitizable.
+    output_path = output_dir / statuts_output_filename(
+        data.denomination, template.output_filename
+    )
     output_doc.save(output_path)
     return output_path
 
@@ -150,9 +323,12 @@ class _ResolvedStatutsCivil:
         signature_lieu: str,
         signature_date: str,
         associes: list[StatutsCivilsAssocie],
+        objet_social: str | None = None,
+        signature_date_longue: str | None = None,
     ) -> None:
         self.template = template
         self.statuts = statuts
+        self.objet_social = objet_social
         self.denomination = denomination
         self.forme_sociale = forme_sociale
         self.adresse_siege = adresse_siege
@@ -163,6 +339,9 @@ class _ResolvedStatutsCivil:
         self.ville_rcs = ville_rcs
         self.signature_lieu = signature_lieu
         self.signature_date = signature_date
+        # MH signature (modele Albane) : date en forme longue « 22 mai 2026 ». Defaut = date
+        # courte si non fournie (types non-MH, retro-compat).
+        self.signature_date_longue = signature_date_longue or signature_date
         self.associes = associes
 
     @classmethod
@@ -195,6 +374,8 @@ class _ResolvedStatutsCivil:
             _validate_sci(associes)
         if template.expected_type == "sci_iris":
             _validate_sci_iris(ctx.statuts_civils, associes)
+        if template.expected_type == "micro_holding":
+            _validate_micro_holding(ctx.statuts_civils)
         _validate_template_fields(ctx.statuts_civils, template)
 
         return cls(
@@ -213,7 +394,11 @@ class _ResolvedStatutsCivil:
             ville_rcs=_required_text(ctx.societe.ville_rcs, "societe.ville_rcs"),
             signature_lieu=ctx.signature.lieu,
             signature_date=_format_display_date(ctx.signature.date, "signature.date"),
+            signature_date_longue=_format_display_date_longue(
+                ctx.signature.date, "signature.date"
+            ),
             associes=associes,
+            objet_social=ctx.statuts_civils.objet_social,
         )
 
     def common_replacements(self) -> dict[str, str]:
@@ -235,11 +420,11 @@ class _ResolvedStatutsCivil:
             "[capital_autorise_lettres]": _text_or_empty(statuts.capital_autorise_lettres),
             "[capital_social_maximal]": _text_or_empty(statuts.capital_maximal),
             "[capital_social_maximal_lettres]": _text_or_empty(statuts.capital_maximal_lettres),
-            "[nb_parts]": str(
-                _required_int(statuts.nb_parts_total, "statuts_civils.nb_parts_total")
+            "[nb_parts]": _display_int(
+                statuts.nb_parts_total, "statuts_civils.nb_parts_total"
             ),
-            "[nb_parts_total]": str(
-                _required_int(statuts.nb_parts_total, "statuts_civils.nb_parts_total")
+            "[nb_parts_total]": _display_int(
+                statuts.nb_parts_total, "statuts_civils.nb_parts_total"
             ),
             "[nb_parts_lettres]": _required_text(
                 statuts.nb_parts_total_lettres,
@@ -253,10 +438,20 @@ class _ResolvedStatutsCivil:
                 statuts.valeur_nominale_part,
                 "statuts_civils.valeur_nominale_part",
             ),
-            "[valeur_nominale_part_lettres]": _text_or_empty(statuts.valeur_nominale_part_lettres),
+            "[valeur_nominale_part_lettres]": _vnp_lettres_civil(
+                statuts.valeur_nominale_part, statuts.valeur_nominale_part_lettres
+            ),
             "[plage_parts_total]": _text_or_empty(statuts.plage_parts_totale),
-            "[parts_debut]": str(_first_part_number(self.associes)),
-            "[parts_fin]": str(_last_part_number(self.associes)),
+            "[parts_debut]": (
+                str(_first_part_number(self.associes))
+                if self.associes
+                else _marqueur_a_completer("statuts_civils.plage_parts_totale")
+            ),
+            "[parts_fin]": (
+                str(_last_part_number(self.associes))
+                if self.associes
+                else _marqueur_a_completer("statuts_civils.plage_parts_totale")
+            ),
             "[adresse_siege]": self.adresse_siege,
             "[num_voie_siege]": self.siege_num_voie,
             "[voie_siege]": self.siege_voie,
@@ -288,40 +483,199 @@ class _ResolvedStatutsCivil:
         }
 
 
+def _bold_paragraph(paragraph) -> None:
+    """Met tous les runs d'un paragraphe en gras (lignes d'identite de comparution)."""
+    for run in paragraph.runs:
+        run.bold = True
+
+
 def _add_associate_block(document, data: _ResolvedStatutsCivil) -> None:
+    micro_holding = data.template.expected_type == "micro_holding"
+    # Retour Albane 2026-07-02 (SCI §3.3 « espace entre chaque soussigne au debut ») : dans la
+    # source SCI, les blocs de comparution sont separes par des paragraphes vides (source paras
+    # 30-31, 37-38) que le moteur ignore (chemin `if not text: continue`) -> a la generation les
+    # soussignes sont COLLES. On restaure la separation en aerant APRES chaque bloc associe
+    # (space_after = 10 pt sur la derniere ligne du bloc), sans toucher aux lignes internes (elles
+    # gardent l'interligne 6 pt actuel) -> zero changement de TEXTE, seul l'espacement inter-bloc.
+    # Scope SCI uniquement (les autres civiles non demandees restent byte-identiques).
+    space_between_blocks = data.template.expected_type == "sci"
     for associe in data.associes:
+        start = len(document.paragraphs)
         if _is_morale(associe):
-            _add_morale_identity(document, associe)
+            if micro_holding:
+                _add_morale_identity_micro_holding(document, associe)
+            else:
+                _add_morale_identity(document, associe)
+        elif micro_holding:
+            _add_physical_identity_micro_holding(document, associe)
         else:
             _add_physical_identity(document, associe)
+        if micro_holding:
+            # Retour Albane 2026-07-01 : dans la comparution micro holding, les mentions d'UN
+            # associe sont COLLEES (interligne retire, un bloc coherent) et un ESPACE separe les
+            # blocs entre eux ET suit la description des associes. On serre les lignes du bloc
+            # (space_after = 0) et on aere apres le bloc (space_after = 10 pt).
+            block = document.paragraphs[start:]
+            for para in block[:-1]:
+                para.paragraph_format.space_after = Pt(0)
+            if block:
+                block[-1].paragraph_format.space_after = Pt(10)
+        elif space_between_blocks:
+            block = document.paragraphs[start:]
+            if block:
+                block[-1].paragraph_format.space_after = Pt(10)
+
+
+def _mh_morale_denomination(associe: StatutsCivilsAssocie) -> str:
+    return _required_text(associe.denomination, "associes[].denomination")
+
+
+def _mh_short_label(associe: StatutsCivilsAssocie) -> str:
+    """Libelle court micro holding (apport / capital / signature).
+
+    Personne morale -> « La <denomination> » (article feminin, denomination seule, SANS
+    « representee par … » contrairement au libelle generique). Personne physique ->
+    « <civilite> <prenoms> <nom> » (sans la mention « epouse … » reservee a la comparution).
+    """
+    if _is_morale(associe):
+        return f"La {_mh_morale_denomination(associe)}"
+    prenoms = associe.prenoms or associe.prenom
+    return (
+        f"{_required_text(associe.civilite_affichage, 'associes[].civilite_affichage')} "
+        f"{_required_text(prenoms, 'associes[].prenoms')} "
+        f"{_required_text(associe.nom, 'associes[].nom')}"
+    )
+
+
+def _add_morale_identity_micro_holding(document, associe: StatutsCivilsAssocie) -> None:
+    # Comparution morale micro holding (modele Albane P017-P022) : 6 lignes distinctes.
+    _bold_paragraph(add_paragraph(document, f"- {_mh_morale_denomination(associe)}"))
+    add_paragraph(document, _required_text(associe.forme_juridique, "associes[].forme_juridique"))
+    capital_morale = _required_text(associe.capital_social, "associes[].capital_social")
+    # Accord euro/euros (Rafael 2026-07-09) : « 1 euro » / « 1 000 euros », jamais
+    # « 1 euros » — montant_avec_euros idempotent (capital deja groupe cote front).
+    add_paragraph(document, f"Au capital de {montant_avec_euros(capital_morale)}")
+    add_paragraph(
+        document, f"Siège social : {_address_display(associe.siege, 'associes[].siege')}"
+    )
+    add_paragraph(
+        document,
+        f"Immatriculée au RCS de {_required_text(associe.ville_rcs, 'associes[].ville_rcs')} "
+        f"sous le numéro {_required_text(associe.numero_rcs, 'associes[].numero_rcs')}",
+    )
+    # KAN-2 : représentant absent -> ligne « Représentée par » en marqueur, jamais un crash.
+    if associe.representant is None:
+        add_paragraph(
+            document,
+            f"Représentée par {_marqueur_a_completer('associes[].representant')}",
+        )
+        return
+    add_paragraph(
+        document,
+        f"Représentée par son "
+        f"{_required_text(associe.representant.fonction, 'associes[].representant.fonction')}, "
+        f"{_required_text(associe.representant.civilite_affichage, 'representant.civilite')} "
+        f"{_required_text(associe.representant.prenom, 'associes[].representant.prenom')} "
+        f"{_required_text(associe.representant.nom, 'associes[].representant.nom')}",
+    )
+
+
+def _add_physical_identity_micro_holding(document, associe: StatutsCivilsAssocie) -> None:
+    # Comparution physique micro holding (modele Albane P025-P029). Libelle d'identite avec
+    # virgule finale ; date de naissance verbatim (« 1er decembre 1978 »).
+    gender = associe.genre or Gender.MASCULIN
+    born = "Née" if gender == Gender.FEMININ else "Né"
+    # Micro holding : nom d'usage « épouse <nom> » SANS virgule avant (modele « Madame Jessica
+    # GOSSET épouse BERTE, »). La virgule finale reste la ponctuation de ligne.
+    _bold_paragraph(
+        add_paragraph(
+            document,
+            f"{_comparution_identite(associe, comma_before_epouse=False)},",
+        )
+    )
+    add_paragraph(
+        document,
+        f"{born} le {_format_birthdate(associe.date_naissance, 'associes[].date_naissance')} "
+        f"à {_required_text(associe.ville_naissance, 'associes[].ville_naissance')} "
+        f"({_required_text(associe.departement_naissance, 'associes[].departement_naissance')})",
+    )
+    add_paragraph(
+        document,
+        f"De nationalité {_required_text(associe.nationalite, 'associes[].nationalite')}",
+    )
+    # Rafael 2026-07-09 (R12) : chaque element du bloc liste commence par une
+    # MAJUSCULE (« Célibataire »), comme les lignes voisines (7.2 Albane, SPFPL/SELAS).
+    add_paragraph(
+        document,
+        capitalize_first(
+            _required_text(associe.situation_maritale, "associes[].situation_maritale")
+        ),
+    )
+    add_paragraph(document, f"Demeurant au {_person_address(associe)}")
 
 
 def _add_apport_block(document, data: _ResolvedStatutsCivil) -> None:
     if data.template.expected_type == "scs":
-        add_paragraph(
-            document, "Le capital social est constitue par les apports en numeraires suivants :"
-        )
-        add_paragraph(document, "Associes commandites :", bold=True)
-        for associe in _associes_by_role(data.associes, "commandite"):
-            _add_apport_line(document, associe)
-        total_commandites = _required_text(
-            data.statuts.total_apports_commandites,
-            "statuts_civils.total_apports_commandites",
-        )
-        add_paragraph(
-            document,
-            f"Le montant total verse par le commandite est de {total_commandites}.",
-        )
-        add_paragraph(document, "Associes commanditaires :", bold=True)
-        for associe in _associes_by_role(data.associes, "commanditaire"):
-            _add_apport_line(document, associe, commanditaire=True)
-    else:
-        for associe in data.associes:
-            _add_apport_line(document, associe)
+        _add_apport_block_scs(document, data)
+        return
+    if data.template.expected_type == "micro_holding":
+        _add_apport_block_micro_holding(document, data)
+        return
+    for associe in data.associes:
+        _add_apport_line(document, associe, expected_type=data.template.expected_type)
     capital_social = _required_text(data.statuts.capital_social, "statuts_civils.capital_social")
+    # SCI / SCI IRIS : total fidele "SOIT AU TOTAL [capital] euros" (source SCI para 110,
+    # SCI IRIS para 108). La clause de depot est deja presente dans le modele source (SCI para 111,
+    # SCI IRIS para 110) et n'est PAS couverte par la slice apport -> elle est rendue fidelement,
+    # accents compris, par le chemin source standard. Cf. _CIVILS_FIX_SPEC_V1.md.
     add_paragraph(
         document,
-        f"SOIT AU TOTAL {capital_social} euros",
+        f"SOIT AU TOTAL {montant_avec_euros(capital_social)}",
+    )
+
+
+def _add_apport_block_scs(document, data: _ResolvedStatutsCivil) -> None:
+    # SCS (source paras 41-57 ; slice (43,58)).
+    # L'en-tete "Le capital social est constitue par les apports en numeraires suivants : /
+    # Associes commandites :" est le paragraphe source 41, HORS slice -> il est deja rendu
+    # fidelement (accents compris) par le chemin source standard. Le bloc ne le reduplique PAS.
+    for associe in _associes_by_role(data.associes, "commandite"):
+        _add_apport_line(document, associe, expected_type="scs")
+    total_commandites = _required_text(
+        data.statuts.total_apports_commandites,
+        "statuts_civils.total_apports_commandites",
+    )
+    # Source para 49 : "Le montant total verse par le commandite est de \t\t\t  [total]."
+    # Rafael 2026-07-09 (SCS art. 6, devise automatique) : montant en chiffres + « € ».
+    add_paragraph(
+        document,
+        f"Le montant total versé par le commandité est de \t\t\t  {total_commandites} €.",
+    )
+    # Source para 51 : "Associé commanditaire\xa0:" (singulier, accent, NBSP avant deux-points).
+    add_paragraph(document, "Associé commanditaire :")
+    commanditaires = _associes_by_role(data.associes, "commanditaire")
+    for associe in commanditaires:
+        _add_apport_line(document, associe, expected_type="scs", commanditaire=True)
+    # Source para 56 : "Le montant total verse par le commanditaire est de \t\t\t   [montant]."
+    # Rafael 2026-07-09 (SCS art. 6, devise automatique) : montant en chiffres + « € ».
+    total_commanditaires = _format_amount_total(commanditaires, commanditaire=True)
+    add_paragraph(
+        document,
+        f"Le montant total versé par le commanditaire est de \t\t\t   {total_commanditaires} €.",
+    )
+    capital_social = _required_text(data.statuts.capital_social, "statuts_civils.capital_social")
+    # Source para 57 : "Total des apports en numeraires\xa0: \t\t\t\t\t  [capital]" (NBSP avant
+    # les deux-points) puis depot SCS.
+    # Rafael 2026-07-09 (SCS art. 6, devise automatique) : « Total des apports en
+    # numéraires : 1 000 € ». La ligne de depot qui suit (« Cette somme de mille
+    # (1 000) a été… ») reste SANS unite ajoutee (verbatim Rafael).
+    add_paragraph(
+        document,
+        f"Total des apports en numéraires : \t\t\t\t\t  {capital_social} €",
+    )
+    capital_lettres = _required_text(
+        data.statuts.capital_social_lettres,
+        "statuts_civils.capital_social_lettres",
     )
     depot = data.statuts.capital_depot
     banque_nom = _required_text(
@@ -334,15 +688,23 @@ def _add_apport_block(document, data: _ResolvedStatutsCivil) -> None:
     )
     add_paragraph(
         document,
-        "Les associes declarent et reconnaissent que la somme liberee, d'un montant de "
-        f"{capital_social} euros, "
-        "a ete deposee integralement et avant ce jour, au credit d'un compte ouvert, "
-        "au nom de la societe en formation, a la banque "
+        f"Cette somme de {capital_lettres} ({capital_social}) a été intégralement versée dès avant "
+        "ce jour à un compte ouvert au nom de la Société en formation, à la Banque "
         f"{banque_nom}, {banque_adresse}.",
     )
 
 
 def _add_capital_block(document, data: _ResolvedStatutsCivil) -> None:
+    if data.template.expected_type == "scs":
+        _add_capital_block_scs(document, data)
+        return
+    if data.template.expected_type == "micro_holding":
+        _add_capital_block_micro_holding(document, data)
+        return
+    # KAN-14 (Rafael 2026-07-15) : l'accord « 1 part » au SINGULIER est une convention de langue,
+    # pas une specificite micro holding -> propagee a TOUS les statuts civils (regle 68 Q4) via le
+    # helper partage `part_word`. Sortie inchangee des que nb != 1 : la fidelite au modele source
+    # verifie (wording SCI/SCI IRIS ci-dessous) est preservee sur tous les cas existants.
     for associe in data.associes:
         parts = _required_parts(associe)
         add_paragraph(document, _signature_label(associe))
@@ -350,53 +712,348 @@ def _add_capital_block(document, data: _ResolvedStatutsCivil) -> None:
             add_paragraph(
                 document,
                 "A concurrence de "
-                f"{_required_text(parts.nb_lettres, 'associes[].parts.nb_lettres')} parts, "
-                f"ci {parts.nb} parts Numerotees de "
-                f"{_required_int(parts.debut, 'associes[].parts.debut')} a "
-                f"{_required_int(parts.fin, 'associes[].parts.fin')}.",
+                f"{_required_text(parts.nb_lettres, 'associes[].parts.nb_lettres')} "
+                f"{part_word(parts.nb)}, "
+                f"ci\t{_display_int(parts.nb, 'associes[].parts.nb')} {part_word(parts.nb)} "
+                "Numérotées de "
+                f"{_display_int(parts.debut, 'associes[].parts.debut')} à "
+                f"{_display_int(parts.fin, 'associes[].parts.fin')}.",
             )
         else:
-            qualite = f", {parts.qualite_associe}" if parts.qualite_associe else ""
-            add_paragraph(document, f"- {_signature_label(associe)}{qualite},")
+            # SCI plain : le modele source (Modele statuts SCI.docx, para 120-121) rend
+            # "[label]" puis "A concurrence de [lettres] parts, ci<TAB>[nb] parts " (sans
+            # numerotation). L'ancien rendu "- [label], / Proprietaire de [lettres] parts
+            # sociales [nb] parts sociales" etait un wording INVENTE (croise depuis la SCS),
+            # absent du modele SCI -> remplace par le wording source verifie.
             add_paragraph(
                 document,
-                "Proprietaire de "
-                f"{_required_text(parts.nb_lettres, 'associes[].parts.nb_lettres')} parts sociales "
-                f"{parts.nb} parts sociales",
+                "A concurrence de "
+                f"{_required_text(parts.nb_lettres, 'associes[].parts.nb_lettres')} "
+                f"{part_word(parts.nb)}, "
+                f"ci\t{_display_int(parts.nb, 'associes[].parts.nb')} {part_word(parts.nb)} ",
             )
-            if parts.plage_affichee:
-                add_paragraph(document, f"Numerotees de {parts.plage_affichee}")
+    total_parts = _required_int(data.statuts.nb_parts_total, "statuts_civils.nb_parts_total")
     add_paragraph(
         document,
-        "SOIT AU TOTAL "
-        f"{_required_int(data.statuts.nb_parts_total, 'statuts_civils.nb_parts_total')} parts",
+        f"SOIT AU TOTAL {_display_int(total_parts, 'statuts_civils.nb_parts_total')} "
+        f"{part_word(total_parts)}",
     )
 
 
+def _add_apport_block_micro_holding(document, data: _ResolvedStatutsCivil) -> None:
+    # Art. 6 APPORTS (modele Albane P086-P095). Une ligne « <label> apporte la somme de
+    # <lettres> » + « Ci\t<montant> euros » par associe, puis total + clause de depot.
+    # NB FIDELITE : le modele source utilise des points de conduite (« Ci…… 1010 euros »)
+    # comme remplissage visuel d'alignement ; on les rend par une TABULATION (convention du
+    # moteur, cf. SCI « ci\t<montant> euros ») -> seul ecart cosmetique, sans valeur juridique.
+    for associe in data.associes:
+        apport = _required_apport(associe)
+        mh_montant = _required_text(apport.montant, "associes[].apport.montant")
+        # Accord euro/euros (Rafael 2026-07-09) sur les lettres ET le chiffre.
+        add_paragraph(
+            document,
+            f"{_mh_short_label(associe)} apporte la somme de "
+            f"{_required_text(apport.montant_lettres, 'associes[].apport.montant_lettres')} "
+            f"{euro_word(mh_montant)}",
+        )
+        add_paragraph(document, f"\tCi\t{montant_avec_euros(mh_montant)}")
+    capital_social = _required_text(data.statuts.capital_social, "statuts_civils.capital_social")
+    add_paragraph(document, f"Total des apports : \t{montant_avec_euros(capital_social)}")
+    depot = data.statuts.capital_depot
+    banque_nom = _required_text(
+        depot.banque_nom if depot else None, "statuts_civils.capital_depot.banque_nom"
+    )
+    banque_adresse = _required_text(
+        depot.banque_adresse if depot else None, "statuts_civils.capital_depot.banque_adresse"
+    )
+    add_paragraph(
+        document,
+        f"Cette somme de {capital_social} € a été déposée par les associés conformément à la "
+        "loi, au crédit d’un compte ouvert au nom de la société en formation auprès de la "
+        f"banque {banque_nom}, {banque_adresse}.",
+    )
+
+
+def _add_mh_repartition_line(document, label: str, count_text: str, *, tiret: bool) -> None:
+    """Ligne de répartition des parts (art. 7 micro holding, Albane 2026-07-09 B3).
+
+    Tiret optionnel devant l'associé, nombre de parts aligné à DROITE via un taquet à points
+    (comme le modèle source qui utilise des points de conduite), aération inter-lignes.
+    Le taquet est posé sur la largeur de texte utile pour rester dans la marge quel que soit
+    le format de page hérité du modèle.
+    """
+    prefix = "- " if tiret else ""
+    paragraph = add_paragraph(document, f"{prefix}{label}\t{count_text}", space_after_pt=6)
+    section = document.sections[0]
+    page_width = section.page_width
+    left = section.left_margin
+    right = section.right_margin
+    position = (
+        page_width - left - right
+        if None not in (page_width, left, right)
+        else Cm(15.5)
+    )
+    paragraph.paragraph_format.tab_stops.add_tab_stop(
+        position, WD_TAB_ALIGNMENT.RIGHT, WD_TAB_LEADER.DOTS
+    )
+
+
+def _add_capital_block_micro_holding(document, data: _ResolvedStatutsCivil) -> None:
+    # Art. 7 CAPITAL SOCIAL variable (modele Albane P100-P113). Lettres en MAJUSCULES (verbatim
+    # modele). Repartition des parts par associe (« <label> \t<nb> parts »).
+    statuts = data.statuts
+    capital = _required_text(statuts.capital_social, "statuts_civils.capital_social")
+    capital_lettres = _required_text(
+        statuts.capital_social_lettres, "statuts_civils.capital_social_lettres"
+    ).upper()
+    capital_max = _required_text(statuts.capital_maximal, "statuts_civils.capital_maximal")
+    capital_max_lettres = _required_text(
+        statuts.capital_maximal_lettres, "statuts_civils.capital_maximal_lettres"
+    ).upper()
+    nb_parts = _required_int(statuts.nb_parts_total, "statuts_civils.nb_parts_total")
+    vnp = _required_text(statuts.valeur_nominale_part, "statuts_civils.valeur_nominale_part")
+    vnp_lettres = _vnp_lettres_civil(
+        vnp,
+        _required_text(
+            statuts.valeur_nominale_part_lettres,
+            "statuts_civils.valeur_nominale_part_lettres",
+        ),
+    ).upper()
+    add_paragraph(document, "Le capital social est variable.")
+    add_paragraph(document, f"Le capital social minimal est fixé à {capital_lettres} ({capital}€).")
+    add_paragraph(
+        document,
+        f"Le capital social maximal est fixé à {capital_max_lettres} EUROS ({capital_max}€).",
+    )
+    add_paragraph(
+        document,
+        f"Le capital social effectif est fixé à {capital_lettres} ({capital} €) euros à la "
+        "constitution de la Société.",
+    )
+    add_paragraph(
+        document,
+        f"Le capital social est divisé en "
+        f"{_display_int(nb_parts, 'statuts_civils.nb_parts_total')} {part_word(nb_parts)} "
+        f"de {vnp}€ "
+        f"({vnp_lettres} {euro_word(vnp).upper()}) chacune.",
+    )
+    add_paragraph(document, f"Elles sont réparties entre les associés comme suit{_NBSP}:")
+    # Art. 7 (Albane 2026-07-09, B3) : « présentation comme dans les modèles » — un TIRET
+    # devant chaque associé, les nombres de parts ALIGNÉS à droite (taquet à points comme le
+    # modèle source) et un peu d'AÉRATION entre les lignes.
+    # KAN-14 (Rafael 2026-07-15) : « lorsqu'un associé a 1 part, cela doit être rédigé au
+    # singulier ». L'accord passe par le helper PARTAGE `part_word` (pendant de `euro_word`) —
+    # sortie inchangee des que nb != 1, donc aucune regression sur les cas existants.
+    for associe in data.associes:
+        parts = _required_parts(associe)
+        _add_mh_repartition_line(
+            document,
+            _mh_short_label(associe),
+            f"{_display_int(parts.nb, 'associes[].parts.nb')} {part_word(parts.nb)}",
+            tiret=True,
+        )
+    _add_mh_repartition_line(
+        document,
+        "Composant le capital social effectif",
+        f"{_display_int(nb_parts, 'statuts_civils.nb_parts_total')} {part_word(nb_parts)}",
+        tiret=False,
+    )
+
+
+def _add_capital_block_scs(document, data: _ResolvedStatutsCivil) -> None:
+    # SCS (source paras 63-75 ; slice (63,76)).
+    # Preambule source para 63 (capital effectif + division + numerotation + attribution) :
+    # actuellement supprime par l'ancien rendu -> reintroduit fidelement (accents compris).
+    capital_social = _required_text(data.statuts.capital_social, "statuts_civils.capital_social")
+    capital_lettres = _required_text(
+        data.statuts.capital_social_lettres,
+        "statuts_civils.capital_social_lettres",
+    )
+    nb_parts_total = _required_int(data.statuts.nb_parts_total, "statuts_civils.nb_parts_total")
+    nb_parts_total_lettres = _required_text(
+        data.statuts.nb_parts_total_lettres,
+        "statuts_civils.nb_parts_total_lettres",
+    )
+    valeur_nominale_part = _required_text(
+        data.statuts.valeur_nominale_part,
+        "statuts_civils.valeur_nominale_part",
+    )
+    valeur_nominale_part_lettres = _vnp_lettres_civil(
+        valeur_nominale_part,
+        _required_text(
+            data.statuts.valeur_nominale_part_lettres,
+            "statuts_civils.valeur_nominale_part_lettres",
+        ),
+    )
+    plage_parts_total = _required_text(
+        data.statuts.plage_parts_totale,
+        "statuts_civils.plage_parts_totale",
+    )
+    add_paragraph(
+        document,
+        f"Le capital social effectif est fixé à {capital_lettres}({capital_social}) "
+        f"{euro_word(capital_social)}. "
+        f"Il est divisé en {nb_parts_total_lettres} "
+        f"({_display_int(nb_parts_total, 'statuts_civils.nb_parts_total')}) parts sociales de "
+        f"{valeur_nominale_part_lettres} ({valeur_nominale_part}) "
+        f"{euro_word(valeur_nominale_part)} chacune de valeur nominale, "
+        f"numérotées de {plage_parts_total}, lesquelles sont attribuées aux associés comme suit :",
+    )
+    for associe in data.associes:
+        parts = _required_parts(associe)
+        # Source paras 63 (suite) / 67 / 71 : "- [label], [qualite],".
+        qualite = f", {parts.qualite_associe}" if parts.qualite_associe else ""
+        add_paragraph(document, f"- {_signature_label(associe)}{qualite},")
+        # Source paras 64 / 68 / 72 : "Proprietaire de [lettres] parts sociales<TAB>[nb] parts
+        # sociales " (TAB entre lettres et nombre, espace final).
+        add_paragraph(
+            document,
+            "Propriétaire de "
+            f"{_required_text(parts.nb_lettres, 'associes[].parts.nb_lettres')} parts sociales\t"
+            f"{_display_int(parts.nb, 'associes[].parts.nb')} parts sociales ",
+        )
+        # Source paras 65 / 69 / 73 : "Numerotees de [plage]".
+        if parts.plage_affichee:
+            add_paragraph(document, f"Numérotées de {parts.plage_affichee}")
+    # Source para 75 : "Total des parts sociales\xa0composant le capital\xa0:\t\t\t[nb] parts
+    # sociales" (NBSP apres "sociales" et avant les deux-points).
+    _nb_disp = _display_int(nb_parts_total, "statuts_civils.nb_parts_total")
+    add_paragraph(
+        document,
+        f"Total des parts sociales composant le capital :\t\t\t{_nb_disp} parts "
+        "sociales",
+    )
+
+
+def _civilite_abregee(civilite_affichage: str) -> str:
+    """Civilite abregee pour la zone signature MH (modele Albane : « Mme »/« M. »)."""
+    civ = civilite_affichage.strip()
+    low = civ.casefold()
+    if "adame" in low or civ in {"Mme", "Mme."}:
+        return "Mme"
+    if "ademoiselle" in low or civ in {"Mlle", "Mlle."}:
+        return "Mlle"
+    if "onsieur" in low or civ in {"M.", "M"}:
+        return "M."
+    return civ
+
+
+def _mh_signature_label(associe: StatutsCivilsAssocie) -> str:
+    if _is_morale(associe):
+        return _mh_morale_denomination(associe)
+    prenoms = associe.prenoms or associe.prenom
+    # MH signature (Albane, « comme les modeles ») : civilite ABREGEE « Mme Jessica GOSSET ».
+    civilite = _civilite_abregee(
+        _required_text(associe.civilite_affichage, "associes[].civilite_affichage")
+    )
+    return (
+        f"{civilite} "
+        f"{_required_text(prenoms, 'associes[].prenoms')} "
+        f"{_required_text(associe.nom, 'associes[].nom')}"
+    )
+
+
+def _keepnext_source_signature_intro(document) -> None:
+    """KAN-36 (convergence @All 2026-07-16) : solidarise l'intro signature RENDUE PAR LE MODELE
+    SOURCE (« Fait a …, le … » / « En N exemplaires ») a la grille des signataires ajoutee juste
+    apres. La SCS rend cette intro par le chemin source (append_signatures_after, signature_slice=
+    None) — sans keepNext elle se detachait de la grille (orpheline en bas de page). On pose
+    keepNext de la DERNIERE ancre d'ouverture deja rendue jusqu'au dernier paragraphe courant.
+    A appeler AVANT d'ajouter la grille (le dernier paragraphe courant = derniere ligne d'intro)."""
+    paras = document.paragraphs
+    for index in range(len(paras) - 1, -1, -1):
+        stripped = paras[index].text.strip()
+        if stripped.startswith("Fait ") or (
+            stripped.startswith(("A ", "À ")) and ", le " in stripped
+        ):
+            for paragraph in paras[index:]:
+                paragraph.paragraph_format.keep_with_next = True
+            return
+    # Fallback (aucune ancre) : solidarise les 2 derniers paragraphes non vides.
+    non_empty = [paragraph for paragraph in paras if paragraph.text.strip()]
+    for paragraph in non_empty[-2:]:
+        paragraph.paragraph_format.keep_with_next = True
+
+
 def _add_signature_block(document, data: _ResolvedStatutsCivil) -> None:
+    if data.template.expected_type == "micro_holding":
+        # Modele Albane P461-P464 : « Fait a <lieu> » / « Le <date longue> » sur deux lignes, puis
+        # les signataires (physiques d'abord, morales ensuite). MH signature (Albane 2026-07-01,
+        # « comme les modeles ») : date en FORME LONGUE « Le 22 mai 2026 » (et non « 22/05/2026 »)
+        # + civilite ABREGEE « Mme »/« M. » dans le libelle signataire (cf. _mh_signature_label).
+        # KAN-15 (Rafael 2026-07-15) : les signataires reviennent CÔTE À CÔTE, séparés par des
+        # tabulations, comme le MODÈLE SOURCE (P464 : « Mme … \t\t\t\t\t SPFPL … »). Verbatim :
+        # « Les noms ne doivent pas être superposés [= empilés], cela ne permet pas d'ajouter des
+        # signatures. Il faut qu'ils soient alignés. » SUPERSEDE la décision Albane du 2026-07-09
+        # (B4 : chacun sur sa propre ligne) — le retour le plus récent prime (règle 68) et
+        # RÉTABLIT la disposition du modèle client ratifié (l'empilage était la déviation). Le
+        # supersede est SIGNALÉ à Rafael sur le ticket : son choix revient sur un réglage d'Albane
+        # motivé « espace pour signer », d'où l'espace conservé AU-DESSUS des noms (space_before).
+        p_fait = add_paragraph(
+            document, f"Fait à {_required_text(data.signature_lieu, 'signature.lieu')}"
+        )
+        p_le = add_paragraph(document, f"Le {data.signature_date_longue}")
+        physiques = [a for a in data.associes if a.est_signataire and not _is_morale(a)]
+        morales = [a for a in data.associes if a.est_signataire and _is_morale(a)]
+        signers = [_mh_signature_label(a) for a in (physiques + morales)]
+        add_paragraph(
+            document,
+            "\t\t\t\t\t".join(signers),
+            alignment=WD_ALIGN_PARAGRAPH.CENTER,
+            space_before_pt=48,
+        )
+        # KAN-36 : « Fait a … / Le … » solidaires de la ligne des signataires (une seule page).
+        p_fait.paragraph_format.keep_with_next = True
+        p_le.paragraph_format.keep_with_next = True
+        return
+    intro_signature = None
     if data.template.signature_slice is not None:
-        add_paragraph(document, f"A {data.signature_lieu}, le {data.signature_date}")
+        intro_signature = add_paragraph(
+            document,
+            f"A {_required_text(data.signature_lieu, 'signature.lieu')}, "
+            f"le {data.signature_date}",
+        )
     signers = [_signature_label(a) for a in data.associes if a.est_signataire]
     if data.template.expected_type == "scs":
-        add_statuts_signature_grid(document, signers, mention="Lu et approuve")
+        # KAN-36 (convergence @All 2026-07-16) : la SCS rend son intro signature (« Fait a …,
+        # le … » / « En N exemplaires ») par le chemin SOURCE (append_signatures_after) AVANT cet
+        # appel -> intro_signature reste None et l'intro n'avait AUCUN keepNext (orpheline de la
+        # grille). On solidarise l'intro source deja rendue a la grille (en plus du cantSplit).
+        _keepnext_source_signature_intro(document)
+        grid = add_statuts_signature_grid(document, signers, mention="Lu et approuvé")
+        # KAN-36 : « A …, le … » + grille des signataires sur une seule page (cases non scindées).
+        if intro_signature is not None:
+            intro_signature.paragraph_format.keep_with_next = True
+        keep_signature_block_together(document, grid, intro_paragraphs=0)
         return
-    for signer in signers:
-        add_statuts_signature_block(
-            document,
-            [signer],
-            bold=True,
-            underline=True,
-        )
+    # KAN-34 (Rafael 2026-07-15, @All) : les signataires CÔTE À CÔTE, pas empilés, avec un
+    # espace suffisant pour signer — comme la capture « état souhaité » et comme le micro
+    # holding (KAN-15). L'empilage (un bloc par signataire) ne laissait pas la place de signer.
+    # UN seul signataire -> une ligne centrée simple ; plusieurs -> tab-joints, espace au-dessus.
+    # KAN-36 : « A …, le … » reste solidaire du bloc des signataires (une seule page).
+    if intro_signature is not None:
+        intro_signature.paragraph_format.keep_with_next = True
+    if len(signers) <= 1:
+        for signer in signers:
+            add_statuts_signature_block(document, [signer], bold=True, underline=True)
+        return
+    add_paragraph(
+        document,
+        "\t\t\t\t\t".join(signers),
+        alignment=WD_ALIGN_PARAGRAPH.CENTER,
+        bold=True,
+        space_before_pt=48,
+    )
 
 
 def _add_resultat_groupes_block(document, data: _ResolvedStatutsCivil) -> None:
     rows = []
     for group in data.statuts.resultat_groupes_parts:
-        parts_debut = _required_int(
+        parts_debut = _display_int(
             group.parts_debut,
             "statuts_civils.resultat_groupes_parts[].parts_debut",
         )
-        parts_fin = _required_int(
+        parts_fin = _display_int(
             group.parts_fin,
             "statuts_civils.resultat_groupes_parts[].parts_fin",
         )
@@ -404,12 +1061,12 @@ def _add_resultat_groupes_block(document, data: _ResolvedStatutsCivil) -> None:
             group.quote_part_resultat_exceptionnel,
             "statuts_civils.resultat_groupes_parts[].quote_part_resultat_exceptionnel",
         )
-        rows.append((f"Parts {parts_debut} a {parts_fin}", quote_part))
+        rows.append((f"Parts numérotées de {parts_debut} à {parts_fin}", quote_part))
     if data.statuts.resultat_quote_part_exceptionnel_total:
         rows.append(("Total", data.statuts.resultat_quote_part_exceptionnel_total))
     add_statuts_matrix_table(
         document,
-        ("Groupe de parts", "Quote-part de résultat exceptionnel"),
+        ("Groupe de parts", "Quote-part du résultat exceptionnel"),
         rows,
     )
 
@@ -418,63 +1075,100 @@ def _add_apport_line(
     document,
     associe: StatutsCivilsAssocie,
     *,
+    expected_type: str,
     commanditaire: bool = False,
 ) -> None:
-    apport = associe.apport
-    if apport is None:
-        raise ValueError(f"associes[].apport est obligatoire pour {DOCUMENT_CODE}.")
+    # KAN-2 : apport absent -> apport vide (marqueurs aval), jamais un crash.
+    apport = _required_apport(associe)
     montant = (apport.montant_commanditaire or apport.montant) if commanditaire else apport.montant
     montant_lettres = (
         (apport.montant_commanditaire_lettres or apport.montant_lettres)
         if commanditaire
         else apport.montant_lettres
     )
-    add_paragraph(document, f"- {_signature_label(associe)} apporte,")
-    add_paragraph(
-        document,
-        f"la somme de {_required_text(montant_lettres, 'associes[].apport.montant_lettres')}, "
-        f"{_required_text(montant, 'associes[].apport.montant')}",
-    )
+    montant = _required_text(montant, "associes[].apport.montant")
+    montant_lettres = _required_text(montant_lettres, "associes[].apport.montant_lettres")
+    if expected_type in {"sci", "sci_iris"}:
+        # Modele source SCI (para 97-99) : "[label]" / "La somme de [lettres] euros," /
+        # "ci<TAB>[montant] euros". L'ancien format "- [label] apporte, / la somme de
+        # [lettres], [montant]" etait le format SCS, croise par erreur sur la SCI
+        # (ni "euros", ni "ci", "apporte" invente).
+        add_paragraph(document, _signature_label(associe))
+        # Accord euro/euros (Rafael 2026-07-09) sur les DEUX rendus (lettres + chiffre) :
+        # « un euro » / « ci 1 euro » pour 1, « mille euros » / « ci 1 000 euros » sinon.
+        add_paragraph(document, f"La somme de {montant_lettres} {euro_word(montant)},")
+        add_paragraph(document, f"ci\t{montant_avec_euros(montant)}")
+    else:
+        # Format SCS source para 43-44 : "- [label] apporte," puis
+        # "la somme de [lettres], <TAB>[montant]" (virgule + espace + TAB).
+        # Rafael 2026-07-09 (SCS art. 6, devise automatique) : lettres + « euros »
+        # (accord euro/euros au montant) et chiffres + « € », derives par le moteur.
+        add_paragraph(document, f"- {_signature_label(associe)} apporte,")
+        add_paragraph(
+            document,
+            f"la somme de {montant_lettres} {euro_word(montant)}, \t{montant} €",
+        )
 
 
 def _add_physical_identity(document, associe: StatutsCivilsAssocie) -> None:
     gender = associe.genre or Gender.MASCULIN
-    born = "Nee" if gender == Gender.FEMININ else "Ne"
-    add_paragraph(document, _signature_label(associe))
+    born = "Née" if gender == Gender.FEMININ else "Né"
+    # R22-06 : la ligne d'identite du comparant est en gras dans la source (comparution).
+    # SCS : nom d'usage « [nom_naissance], épouse [nom] » AVEC virgule avant « épouse »
+    # (modele « [prenom] [nom_naissance], épouse [nom], née le… »).
+    _bold_paragraph(
+        add_paragraph(document, _comparution_identite(associe, comma_before_epouse=True))
+    )
     add_paragraph(
         document,
-        f"{born} le {_format_display_date(associe.date_naissance, 'associes[].date_naissance')} "
-        f"a {_required_text(associe.ville_naissance, 'associes[].ville_naissance')} "
+        f"{born} le {_format_birthdate(associe.date_naissance, 'associes[].date_naissance')} "
+        f"à {_required_text(associe.ville_naissance, 'associes[].ville_naissance')} "
         f"({_required_text(associe.departement_naissance, 'associes[].departement_naissance')})",
     )
     add_paragraph(
         document,
-        f"De nationalite {_required_text(associe.nationalite, 'associes[].nationalite')}",
+        f"De nationalité {_required_text(associe.nationalite, 'associes[].nationalite')}",
     )
+    # Rafael 2026-07-09 (R12) : majuscule en tete d'element de liste (« Célibataire »).
     add_paragraph(
         document,
-        _required_text(associe.situation_maritale, "associes[].situation_maritale"),
+        capitalize_first(
+            _required_text(associe.situation_maritale, "associes[].situation_maritale")
+        ),
     )
-    add_paragraph(document, f"Demeurant {_person_address(associe)}")
+    add_paragraph(document, f"Demeurant au {_person_address(associe)}")
 
 
 def _add_morale_identity(document, associe: StatutsCivilsAssocie) -> None:
-    add_paragraph(document, _signature_label(associe))
+    # R22-06 : la ligne d'identite du comparant est en gras dans la source (comparution).
+    _bold_paragraph(add_paragraph(document, _signature_label(associe)))
+    # R4 (Albane 2026-07-07, « accents irréprochables partout ») : le bloc personne
+    # morale sortait « siege / immatriculee / numero / Representee » NUS (constat
+    # conformité, statuts SCI IRIS) — accentué comme le bloc morale micro holding.
+    # Rafael 2026-07-09 (transverse devise) : l'utilisateur ne tape plus « euros » —
+    # l'unite est DERIVEE (montant nu -> « 1 000 euros » ; saisie legacy avec unite
+    # -> intacte, idempotent).
+    capital = montant_avec_euros(
+        _required_text(associe.capital_social, "associes[].capital_social")
+    )
     add_paragraph(
         document,
         f"{_required_text(associe.forme_juridique, 'associes[].forme_juridique')} "
-        f"au capital de {_required_text(associe.capital_social, 'associes[].capital_social')}, "
-        f"ayant son siege {_address_display(associe.siege, 'associes[].siege')}, "
-        f"immatriculee au RCS de {_required_text(associe.ville_rcs, 'associes[].ville_rcs')} "
-        f"sous le numero {_required_text(associe.numero_rcs, 'associes[].numero_rcs')}.",
+        f"au capital de {capital}, "
+        f"ayant son siège {_address_display(associe.siege, 'associes[].siege')}, "
+        f"immatriculée au RCS de {_required_text(associe.ville_rcs, 'associes[].ville_rcs')} "
+        f"sous le numéro {_required_text(associe.numero_rcs, 'associes[].numero_rcs')}.",
     )
+    # KAN-2 : représentant absent -> ligne « Représentée par » en marqueur, jamais un crash.
     if associe.representant is None:
-        raise ValueError(
-            f"associes[].representant est obligatoire pour une personne morale {DOCUMENT_CODE}."
+        add_paragraph(
+            document,
+            f"Représentée par {_marqueur_a_completer('associes[].representant')}.",
         )
+        return
     add_paragraph(
         document,
-        "Representee par "
+        "Représentée par "
         f"{_required_text(associe.representant.civilite_affichage, 'representant.civilite')} "
         f"{_required_text(associe.representant.prenom, 'associes[].representant.prenom')} "
         f"{_required_text(associe.representant.nom, 'associes[].representant.nom')}, "
@@ -486,74 +1180,69 @@ def _validate_associes(
     associes: list[StatutsCivilsAssocie],
     template: StatutsCivilTemplate,
 ) -> None:
-    if not associes:
-        raise ValueError(f"au moins un associe est obligatoire pour {DOCUMENT_CODE}.")
+    # KAN-2 (Rafael 2026-07-14, rejeté 2×) : un dossier ENTIÈREMENT vide doit se générer ->
+    # « au moins un associé » n'est PLUS un blocage (0 associé = comparution/apport/capital vides,
+    # zones à compléter à la main). On garde le PLAFOND dur (6) : c'est un invariant du modèle, pas
+    # un champ vide (jamais atteint par un formulaire vide).
     if len(associes) > MAX_ASSOCIES:
         raise ValueError(f"les statuts civils sont limites a 6 associes pour {DOCUMENT_CODE}.")
     for associe in associes:
         _required_parts(associe)
-        if _is_morale(associe) and template.expected_type == "sci":
-            raise ValueError(
-                "les associes personnes morales SCI sont hors source observee V1 "
-                f"pour {DOCUMENT_CODE}."
-            )
+        # SCI standard + associe personne morale = AUTORISE (ratifie Rafael 2026-06-08) :
+        # rendu via _add_morale_identity, comme SCM / SCI IRIS. (Ancien garde « hors
+        # source observee V1 » leve : Rafael confirme le schema SCI -> holding -> SPFPL.)
 
 
 def _validate_capital_totals(
     statuts: StatutsCivilsContext,
     associes: list[StatutsCivilsAssocie],
 ) -> None:
-    total_parts = sum(_required_int(_required_parts(a).nb, "associes[].parts.nb") for a in associes)
-    expected_parts = _required_int(statuts.nb_parts_total, "statuts_civils.nb_parts_total")
-    if total_parts != expected_parts:
-        raise ValueError(
-            "la somme des parts doit correspondre a statuts_civils.nb_parts_total "
-            f"pour {DOCUMENT_CODE}."
-        )
-    total_apports = sum(_amount_to_int(_required_apport(a).montant) for a in associes)
-    expected_capital = _amount_to_int(statuts.capital_social)
-    if total_apports != expected_capital:
-        raise ValueError(
-            "la somme des apports doit correspondre a statuts_civils.capital_social "
-            f"pour {DOCUMENT_CODE}."
-        )
+    # KAN-2 : la cohérence somme parts == total / somme apports == capital ne BLOQUE PLUS la
+    # génération (elle est surfacée en amont comme AVERTISSEMENT par le front, build_civil_plan).
+    # On la calcule sans jamais lever : un dossier incomplet sort avec ses zones à compléter, le
+    # document reflète ce qui est saisi. No-op conservé (lecture defensive, aucun crash).
+    _ = (statuts, associes)
+    return None
 
 
 def _validate_scs(statuts: StatutsCivilsContext, associes: list[StatutsCivilsAssocie]) -> None:
-    if not _associes_by_role(associes, "commandite"):
-        raise ValueError(f"au moins un associe commandite est obligatoire pour {DOCUMENT_CODE}.")
-    if not _associes_by_role(associes, "commanditaire"):
-        raise ValueError(f"au moins un associe commanditaire est obligatoire pour {DOCUMENT_CODE}.")
-    _required_text(statuts.total_apports_commandites, "statuts_civils.total_apports_commandites")
-    _required_text(statuts.capital_maximal, "statuts_civils.capital_maximal")
-    _required_text(statuts.capital_maximal_lettres, "statuts_civils.capital_maximal_lettres")
+    # KAN-2 : la présence d'un commandité ET d'un commanditaire ne BLOQUE PLUS (surfacée en
+    # avertissement par le front). Les zones manquantes sortent en marqueur. No-op non bloquant.
+    _ = (statuts, associes)
+    return None
 
 
 def _validate_sci(associes: list[StatutsCivilsAssocie]) -> None:
-    for associe in associes:
-        if _is_morale(associe):
-            raise ValueError(f"les personnes morales SCI sont bloquees en V1 pour {DOCUMENT_CODE}.")
+    # SCI standard + associe personne morale = AUTORISE (ratifie Rafael 2026-06-08 :
+    # une SCI classique peut avoir une autre societe comme associee, schema frequent
+    # SCI -> micro-holding -> SPFPL). Aucune contrainte specifique ici : l'identite
+    # morale est rendue par _add_morale_identity (qui exige forme/capital/siege/RCS/
+    # representant et leve une erreur claire si un champ manque), exactement comme pour
+    # SCM et SCI IRIS. La fidelite exacte du wording reste a confirmer par Rafael/Albane.
+    _ = associes
+    return None
+
+
+def _validate_micro_holding(statuts: StatutsCivilsContext) -> None:
+    # Micro holding (VRAI modele Albane 2026-06-29) : l'objet social (art. 2 « societe civile de
+    # portefeuille ») est desormais VERBATIM dans le modele source -> plus de token/variante a
+    # valider. Le capital maximal (= 10x le minimum) et ses lettres sont requis (art. 7) :
+    _required_text(statuts.capital_maximal, "statuts_civils.capital_maximal")
+    _required_text(statuts.capital_maximal_lettres, "statuts_civils.capital_maximal_lettres")
+    _required_text(
+        statuts.valeur_nominale_part_lettres, "statuts_civils.valeur_nominale_part_lettres"
+    )
 
 
 def _validate_sci_iris(
     statuts: StatutsCivilsContext,
     associes: list[StatutsCivilsAssocie],
 ) -> None:
-    if not any(_is_morale(associe) for associe in associes):
-        raise ValueError(
-            f"SCI IRIS requiert l'associe personne morale source en V1 pour {DOCUMENT_CODE}."
-        )
-    if not statuts.resultat_groupes_parts:
-        raise ValueError(
-            f"statuts_civils.resultat_groupes_parts est obligatoire pour {DOCUMENT_CODE}."
-        )
-    for group in statuts.resultat_groupes_parts:
-        _required_int(group.parts_debut, "statuts_civils.resultat_groupes_parts[].parts_debut")
-        _required_int(group.parts_fin, "statuts_civils.resultat_groupes_parts[].parts_fin")
-        _required_text(
-            group.quote_part_resultat_exceptionnel,
-            "statuts_civils.resultat_groupes_parts[].quote_part_resultat_exceptionnel",
-        )
+    # KAN-2 : la présence d'une personne morale associée et des groupes de résultat ne BLOQUE PLUS
+    # (surfacée en avertissement par le front). Un SCI IRIS incomplet se génère : les groupes de
+    # résultat manquants -> tableau vide/à compléter, jamais un crash. No-op non bloquant.
+    _ = (statuts, associes)
+    return None
 
 
 def _validate_template_fields(
@@ -568,7 +1257,7 @@ def _validate_template_fields(
     _required_text(
         statuts.date_cloture_premier_exercice, "statuts_civils.date_cloture_premier_exercice"
     )
-    if template.expected_type in {"sci", "sci_iris"}:
+    if template.expected_type in {"sci", "sci_iris", "micro_holding"}:
         _required_text(statuts.mention_capital_variable, "statuts_civils.mention_capital_variable")
         _required_text(statuts.capital_autorise, "statuts_civils.capital_autorise")
         _required_text(statuts.capital_autorise_lettres, "statuts_civils.capital_autorise_lettres")
@@ -601,7 +1290,7 @@ def _source_path(template: StatutsCivilTemplate) -> Path:
     return candidates[0]
 
 
-def _add_rendered_paragraph(document, text: str) -> None:
+def _add_rendered_paragraph(document, text: str, source_paragraph=None) -> None:
     if text == "STATUTS":
         add_statuts_title_box(document, text)
     elif text.startswith("TITRE "):
@@ -611,19 +1300,154 @@ def _add_rendered_paragraph(document, text: str) -> None:
     elif text.startswith("- "):
         add_statuts_hanging_list_item(document, text[2:])
     else:
-        add_statuts_body_paragraph(document, text)
+        _add_source_styled_body(document, text, source_paragraph)
+
+
+# Styles nommes de titres du modele que l'on REUTILISE tels quels quand ils existent dans le
+# document de sortie (R1 : la sortie herite des styles du modele via new_document_from_model).
+# Appliquer le style nomme source plutot que de simuler gras/centrage inline preserve la
+# hierarchie visuelle (police de titre, espacements, niveau de plan) definie par Albane.
+_HERITABLE_NAMED_STYLES = ("Title", "Heading 1")
+
+
+def _source_style_name(source_paragraph) -> str:
+    if source_paragraph is None or source_paragraph.style is None:
+        return ""
+    return source_paragraph.style.name or ""
+
+
+def _apply_source_direct_emphasis(paragraph, source_paragraph) -> None:
+    """Recopie l'alignement DIRECT et le gras/souligne DIRECT du paragraphe source.
+
+    Certains titres du modele portent un alignement explicite (ex. « Au Capital... » en
+    Heading 1 avec alignement direct CENTRE alors que le style Heading 1 ne centre pas) ou
+    une emphase inline (intitules). Sans cela, ces effets directs seraient perdus quand on
+    applique le style nomme (regression 1re page R22-06).
+    """
+    if source_paragraph is None:
+        return
+    if source_paragraph.alignment is not None:
+        paragraph.alignment = source_paragraph.alignment
+    text_runs = [run for run in source_paragraph.runs if run.text.strip()]
+    if any(bool(run.bold) for run in text_runs):
+        for run in paragraph.runs:
+            run.bold = True
+    if any(bool(run.underline) for run in text_runs):
+        for run in paragraph.runs:
+            run.underline = True
+
+
+def _add_source_styled_body(document, text: str, source_paragraph) -> None:
+    """Rend un paragraphe de corps en PRESERVANT la mise en forme de la source.
+
+    R22-06 (Rafael 2026-06-22, « toute la première page ») : l'en-tête (dénomination /
+    forme / capital / siège) est CENTRÉ dans la source, « LES SOUSSIGNES » est en gras
+    souligné, les intitulés sont en gras — le moteur les aplatissait en justifié Normal.
+    On recopie l'alignement + le gras + le souligné de la source au lieu de les perdre.
+    Le corps des articles (justifié, non gras) reste inchangé.
+
+    R1 (2026-06-30) : quand le paragraphe source porte un STYLE NOMME (Title / Heading 1) ET
+    que ce style existe dans le document de sortie (cas SCI / SCI IRIS, qui heritent les styles
+    du modele), on cree le paragraphe AVEC ce style nomme plutot que de simuler gras/centrage
+    inline (puis on recopie l'emphase DIRECTE de la source par-dessus). Garde-fou : si le style
+    n'existe pas dans la sortie (SCM / SCS / micro n'ont que Normal pour ces niveaux), on
+    retombe sur le rendu inline actuel — comportement inchange.
+    """
+    src_style_name = _source_style_name(source_paragraph)
+    available_styles = {style.name for style in document.styles}
+    if src_style_name in _HERITABLE_NAMED_STYLES and src_style_name in available_styles:
+        # Style nomme du modele present dans la sortie -> on l'applique tel quel (police de
+        # titre, niveau de plan, espacements herites du style Albane) + emphase directe source.
+        paragraph = document.add_paragraph(text, style=src_style_name)
+        _apply_source_direct_emphasis(paragraph, source_paragraph)
+        return
+
+    alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+    bold = False
+    underline = False
+    title_like = False
+    if source_paragraph is not None:
+        style_name = src_style_name.lower()
+        title_like = "title" in style_name
+        src_alignment = source_paragraph.alignment
+        if src_alignment is not None:
+            alignment = src_alignment
+        elif title_like:
+            # Titre source (dénomination) : centré via le style, pas via l'alignement.
+            alignment = WD_ALIGN_PARAGRAPH.CENTER
+        text_runs = [run for run in source_paragraph.runs if run.text.strip()]
+        # Gras/souligné de la source recopiés sur la ligne (intitulés, « LES SOUSSIGNES »,
+        # noms en comparution…). Le corps des articles source n'a aucun run en gras, donc
+        # pas de sur-gras du corps.
+        bold = any(bool(run.bold) for run in text_runs)
+        underline = any(bool(run.underline) for run in text_runs)
+    paragraph = add_statuts_body_paragraph(document, text, alignment=alignment)
+    if title_like:
+        bold = True
+    if bold or underline:
+        for run in paragraph.runs:
+            if bold:
+                run.bold = True
+            if underline:
+                run.underline = True
 
 
 def _replace_placeholders(text: str, replacements: dict[str, str]) -> str:
     rendered = text
     for placeholder, value in replacements.items():
         rendered = rendered.replace(placeholder, value)
-    return rendered
+    # KAN-43 : corrige les fautes d'accord figees dans les modeles civils/micro source.
+    return accord_typos_modeles_source(rendered)
+
+
+def _strip_editorial_marker(text: str) -> str:
+    """Retire le marqueur editorial interne SCI sans toucher a la clause annotee."""
+    return _EDITORIAL_MARKER_RE.sub("", text).rstrip()
+
+
+# KAN-2 (Rafael 2026-07-14, rejeté 2×) : « Tous les documents doivent pouvoir être générés,
+# même si je ne remplis AUCUN champ. » Un champ vide NE BLOQUE PLUS et NE CRASHE PLUS : il sort
+# en marqueur visible « (À COMPLÉTER : <libellé métier> ) », jamais une valeur inventée. Même
+# contrat que le dossier SPFPL (statuts_sel_exercice_common.required_text). Libellés MÉTIER des
+# champs société-niveau les plus fréquents ; tout autre chemin retombe sur `libelle_metier`
+# (repli sûr partagé, même garantie : jamais de point/underscore/crochet/chiffre d'index).
+_CIVIL_LIBELLES: dict[str, str] = {
+    "societe.denomination": "dénomination sociale",
+    "societe.ville_rcs": "ville du RCS",
+    "statuts_civils.capital_social": "capital social",
+    "statuts_civils.capital_social_lettres": "capital social en lettres",
+    "statuts_civils.nb_parts_total": "nombre total de parts",
+    "statuts_civils.nb_parts_total_lettres": "nombre total de parts en lettres",
+    "statuts_civils.valeur_nominale_part": "valeur nominale d'une part",
+    "statuts_civils.valeur_nominale_part_lettres": "valeur nominale d'une part en lettres",
+    "statuts_civils.capital_maximal": "capital social maximal",
+    "statuts_civils.capital_maximal_lettres": "capital social maximal en lettres",
+    "statuts_civils.date_cloture_premier_exercice": "date de clôture du premier exercice",
+    "statuts_civils.capital_depot.banque_nom": "banque de dépôt des fonds",
+    "statuts_civils.capital_depot.banque_adresse": "adresse de la banque de dépôt",
+    "statuts_civils.plage_parts_totale": "plage de numérotation des parts",
+    "statuts_civils.total_apports": "total des apports",
+    "statuts_civils.total_apports_commandites": "total des apports des commandités",
+    "signature.lieu": "lieu de signature",
+    "signature.date": "date de signature",
+}
+
+
+def _libelle_civil(field_name: str) -> str:
+    return _CIVIL_LIBELLES.get(field_name, libelle_metier(field_name))
+
+
+def _marqueur_a_completer(field_name: str) -> str:
+    # Marqueur non bloquant SANS crochets/point/underscore/chiffre d'index (garde
+    # anti-placeholder source ligne ~289 + garantie _libelle_civil / libelle_metier).
+    return f"(À COMPLÉTER : {_libelle_civil(field_name)})"
 
 
 def _required_text(value: str | None, field_name: str) -> str:
+    # KAN-2 : valeur manquante -> marqueur métier « (À COMPLÉTER : …) » (à compléter à la main sur
+    # le DOCX) au lieu de lever. Sortie NOMINALE (champ rempli) byte-identique (strip inchangé).
     if value is None or not str(value).strip():
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return _marqueur_a_completer(field_name)
     return str(value).strip()
 
 
@@ -634,38 +1458,70 @@ def _text_or_empty(value: str | None) -> str:
 
 
 def _required_int(value: int | None, field_name: str) -> int:
-    if value is None:
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
-    return value
+    # KAN-2 : usage CALCUL (sommes, contrôles de cohérence) -> None-safe, jamais de crash.
+    # None -> 0 (neutre pour une somme/comparaison, JAMAIS affiché tel quel : l'affichage d'une
+    # quantité passe par `_display_int`, qui rend un marqueur au lieu d'un « 0 » inventé).
+    return int(value) if value is not None else 0
 
 
-def _required_parts(associe: StatutsCivilsAssocie):
-    if associe.parts is None:
-        raise ValueError(f"associes[].parts est obligatoire pour {DOCUMENT_CODE}.")
-    _required_int(associe.parts.nb, "associes[].parts.nb")
-    _required_text(associe.parts.nb_lettres, "associes[].parts.nb_lettres")
-    return associe.parts
+def _display_int(value: int | None, field_name: str) -> str:
+    # KAN-2 : AFFICHAGE d'une quantité (« N parts », numéro) -> marqueur si absent/nul (jamais
+    # « 0 »/« (0) »/un nombre inventé). Une quantité de statuts (parts, numérotation) n'est jamais
+    # 0 : un 0 signale un champ non renseigné. Sortie NOMINALE (n>=1) byte-identique (str(n)).
+    if value is None or int(value) == 0:
+        return _marqueur_a_completer(field_name)
+    return str(int(value))
 
 
-def _required_apport(associe: StatutsCivilsAssocie):
-    if associe.apport is None:
-        raise ValueError(f"associes[].apport est obligatoire pour {DOCUMENT_CODE}.")
-    _required_text(associe.apport.montant, "associes[].apport.montant")
-    _required_text(associe.apport.montant_lettres, "associes[].apport.montant_lettres")
-    return associe.apport
+def _required_parts(associe: StatutsCivilsAssocie) -> StatutsCivilsParts:
+    # KAN-2 : parts absentes -> objet de parts VIDE (tous champs None) ; l'affichage aval rend des
+    # marqueurs (_display_int / _required_text), jamais un crash. Sortie NOMINALE inchangée.
+    return associe.parts if associe.parts is not None else StatutsCivilsParts()
+
+
+def _required_apport(associe: StatutsCivilsAssocie) -> StatutsCivilsApport:
+    # KAN-2 : apport absent -> apport VIDE (montant/lettres None) ; l'affichage aval rend des
+    # marqueurs (_required_text), jamais un crash. Sortie NOMINALE inchangée.
+    return associe.apport if associe.apport is not None else StatutsCivilsApport()
 
 
 def _format_display_date(value: date | str | None, field_name: str) -> str:
+    # KAN-2 : date manquante -> marqueur « (À COMPLÉTER : …) », non bloquant.
     if value is None:
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return _marqueur_a_completer(field_name)
     if isinstance(value, date):
         return value.strftime("%d/%m/%Y")
     return _required_text(value, field_name)
 
 
+def _format_birthdate(value: date | str | None, field_name: str) -> str:
+    """Date de NAISSANCE des statuts en « JJ mois AAAA » (Albane 2026-07-09, B1).
+
+    Une valeur numerique saisie (« 10/03/1975 », ISO ou objet date) est reformatee en
+    francais lettre (« 10 mars 1975 ») ; une date deja lettree reste inchangee. Reservee
+    aux dates de naissance : la date de SIGNATURE garde son format propre (court / longue).
+    KAN-2 : date de naissance manquante -> marqueur, jamais un crash.
+    """
+    if value is None:
+        return _marqueur_a_completer(field_name)
+    return format_birthdate_fr(value)
+
+
+def _format_display_date_longue(value: date | str | None, field_name: str) -> str:
+    """Date en forme longue « JJ mois AAAA » (MH signature). Fallback = affichage court
+    si la date est deja une chaine (pas de reformatage aveugle d'un texte saisi).
+    KAN-2 : date manquante -> marqueur, jamais un crash."""
+    if value is None:
+        return _marqueur_a_completer(field_name)
+    if isinstance(value, date):
+        return format_date_longue_fr(value)
+    return _required_text(value, field_name)
+
+
 def _address_display(address: Address | None, field_name: str) -> str:
+    # KAN-2 : adresse absente -> marqueur, jamais un crash.
     if address is None:
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return _marqueur_a_completer(field_name)
     if address.adresse_affichee:
         return address.adresse_affichee.strip()
     return (
@@ -687,8 +1543,10 @@ def _signature_label(associe: StatutsCivilsAssocie) -> str:
         denomination = _required_text(associe.denomination, "associes[].denomination")
         if associe.representant is None:
             return denomination
+        # R4 (Albane 2026-07-07) : « representee » accentué (même famille que le
+        # bloc morale de la comparution).
         return (
-            f"{denomination}, representee par "
+            f"{denomination}, représentée par "
             f"{_required_text(associe.representant.civilite_affichage, 'representant.civilite')} "
             f"{_required_text(associe.representant.prenom, 'associes[].representant.prenom')} "
             f"{_required_text(associe.representant.nom, 'associes[].representant.nom')}"
@@ -699,6 +1557,34 @@ def _signature_label(associe: StatutsCivilsAssocie) -> str:
         f"{_required_text(prenoms, 'associes[].prenoms')} "
         f"{_required_text(associe.nom, 'associes[].nom')}"
     )
+
+
+def _comparution_identite(
+    associe: StatutsCivilsAssocie,
+    *,
+    comma_before_epouse: bool,
+) -> str:
+    """Ligne d'identite en COMPARUTION, avec le nom d'usage « épouse <nom marital> » (Q4/MH-épouse,
+    Albane 2026-07-01 « comme les modeles »).
+
+    Modeles source : SCS « [civilite] [prenom] [nom_naissance], épouse [nom], née le… » (virgule
+    avant « épouse ») et micro holding « Madame Jessica GOSSET épouse BERTE, » (sans virgule avant).
+    Convention : `associe.nom` = nom d'usage/marital affiche ; `associe.nom_naissance` = nom de
+    naissance (maiden). DECLENCHEUR LOGIQUE : la mention « épouse » n'apparait QUE si un nom de
+    naissance DISTINCT est saisi (`nom_naissance` present et != `nom`). Sinon -> rendu identique a
+    `_signature_label` (byte-identique : SCI/SCP et les cas sans nom d'usage restent inchanges).
+    Reserve a la COMPARUTION (pas aux blocs apport/capital/signature)."""
+    if _is_morale(associe):
+        return _signature_label(associe)
+    nom = _required_text(associe.nom, "associes[].nom")
+    nom_naissance = (associe.nom_naissance or "").strip()
+    if not nom_naissance or nom_naissance == nom:
+        return _signature_label(associe)
+    prenoms = associe.prenoms or associe.prenom
+    civilite = _required_text(associe.civilite_affichage, "associes[].civilite_affichage")
+    prenoms_txt = _required_text(prenoms, "associes[].prenoms")
+    sep = ", épouse " if comma_before_epouse else " épouse "
+    return f"{civilite} {prenoms_txt} {nom_naissance}{sep}{nom}"
 
 
 def _is_morale(associe: StatutsCivilsAssocie) -> bool:
@@ -724,17 +1610,40 @@ def _last_part_number(associes: list[StatutsCivilsAssocie]) -> int:
     return sum(_required_int(_required_parts(a).nb, "associes[].parts.nb") for a in associes)
 
 
+def _format_amount_total(
+    associes: list[StatutsCivilsAssocie],
+    *,
+    commanditaire: bool = False,
+) -> str:
+    # Source para 56 : "Le montant total verse par le commanditaire est de ... [montant]".
+    # Pour un commanditaire unique, c'est son montant ; pour plusieurs, leur somme (montant total).
+    # KAN-2 : aucun apport renseigné -> marqueur (jamais « 0 » inventé), jamais un crash.
+    if not associes:
+        return _marqueur_a_completer("statuts_civils.total_apports")
+    total = 0
+    for associe in associes:
+        apport = _required_apport(associe)
+        if commanditaire:
+            montant = apport.montant_commanditaire or apport.montant
+        else:
+            montant = apport.montant
+        total += _amount_to_int(montant)
+    return str(total)
+
+
 def _amount_to_int(value: str | None) -> int:
-    text = _required_text(value, "montant")
+    # KAN-2 : usage CALCUL/coh\u00e9rence (sommes de contr\u00f4le) -> None-safe. Un montant
+    # absent ou non num\u00e9rique (marqueur, vide) vaut 0 pour la somme, jamais un crash,
+    # jamais affich\u00e9 tel quel (l'affichage passe par _required_text -> marqueur).
+    text = str(value or "")
     normalized = (
         text.replace(" ", "")
         .replace("\u00a0", "")
+        .replace(".", "")  # separateur de milliers \u00ab 1.020 \u00bb (montants entiers en euros)
         .replace("euros", "")
         .replace("euro", "")
         .replace("EUR", "")
         .replace("€", "")
         .strip()
     )
-    if not normalized.isdigit():
-        raise ValueError(f"montant numerique attendu pour {DOCUMENT_CODE}: {value}")
-    return int(normalized)
+    return int(normalized) if normalized.isdigit() else 0

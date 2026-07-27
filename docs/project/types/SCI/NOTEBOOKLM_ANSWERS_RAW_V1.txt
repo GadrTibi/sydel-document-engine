@@ -1,0 +1,330 @@
+D'après les sources, voici les réponses concernant le périmètre de la SCI et l'évolution des versions documentaires :
+
+### 1. La version qui fait foi et le périmètre Sydel
+La version qui représente l'état actuel du projet d'application est celle contenue dans le document « Besoins Sydel (juridique).pdf » [1].
+*   **Maintien dans le périmètre :** La SCI fait toujours partie intégrante du périmètre Sydel [2-4]. Elle est explicitement listée dans les « sociétés que nous créons souvent » aux côtés de la SCS, de la SCM et de la Micro-holding [3, 5].
+*   **Présence dans l'interface :** Le wireframe de la page « CREATION de société » (page 9 du PDF) comporte toujours des boutons dédiés pour « sci » et « sci iris » dans la colonne « Autres » [1].
+
+### 2. Raison du retrait ou de la séparation du « bloc SCI »
+Si le bloc SCI a pu paraître « disparaître » des versions axées sur le tronc commun (SELARL), c'est pour des raisons de segmentation stratégique et juridique identifiées dans les ateliers :
+
+*   **Distinction Plan Professionnel / Plan Personnel :** Sydel distingue désormais radicalement la « structuration professionnelle » (SEL, SPFPL) de la « structuration personnelle » (SCI) [2, 3]. La SCI est un outil de gestion de patrimoine privé pour « acheter un bien immobilier » et le « transmettre à ses enfants » [2].
+*   **Indépendance vis-à-vis de la profession :** Contrairement aux SEL, la SCI est qualifiée de « patrimoniale » et son montage « n'a rien à voir avec la profession » du client (qu'il soit médecin ou dentiste, le document reste identique) [6, 7].
+*   **Formalisme allégé :** Le bloc SCI ne suit pas le « canon » SELARL car il est exempt de certaines contraintes ordinales. Par exemple, alors que la « demande d'inscription à l'ordre » est systématique pour les SEL, les sources précisent que pour une SCI ou une holding, « l'ordre s'en fiche » [8].
+*   **Priorisation commerciale :** Le cabinet a choisi de concentrer l'automatisation prioritaire sur les « 90 % de cas » qui concernent les dentistes et les médecins en exercice libéral [9, 10]. Les autres formes (SCI, SAS, SARL), bien que maintenues, sont reléguées à la catégorie « Autres » car elles sont jugées « beaucoup plus rares » ou « marginales » dans le flux quotidien du cabinet [5, 7].
+
+### Résumé des documents du bloc SCI
+Bien que la « Lettre option IS » ne soit pas textuellement citée comme un document à éditer dans le wireframe de création [1], la variable « Fiscalité de la société (IS/IR) » est bien présente dans la fiche de collecte d'informations pour les sociétés [2]. Les statuts de SCI sont confirmés comme faisant partie des « 20 modèles de statuts différents » disponibles dans le pot commun du cabinet [11].
+
+***
+**Sources citées :**
+* Besoins Sydel (juridique).pdf [1, 2].
+* Notre job - Sydel.pdf [3, 5].
+* Transcription Texte collé [4, 6-11].
+
+
+D'après les sources, la SCI fait partie intégrante du périmètre de Sydel au titre de la « structuration personnelle » du praticien [1, 2]. Au-delà de la création, plusieurs cas de dossiers sont traités ou mentionnés, bien que la documentation associée soit moins détaillée que pour le « canon » des SELARL.
+
+Voici les différents cas identifiés pour une SCI chez Sydel :
+
+### 1. Cession de parts sociales
+*   **Traitement par Sydel :** Oui. C'est un cas fréquent pour « rattacher » une SCI existante à une Micro-holding (MH) ou une SPFPL afin de faire circuler l'argent [3].
+*   **Documents associés :** L'outil prévoit la génération d'un acte de cession de parts [3]. Les variables nécessaires sont l'identité du cédant, du cessionnaire, de la société, ainsi que le nombre de parts et le prix [3, 4]. Un bouton spécifique « cession de part » est d'ailleurs présent sur la page d'accueil de l'interface juridique [5].
+
+### 2. Augmentation ou réduction de capital
+*   **Traitement par Sydel :** Oui (explicitement cité pour l'augmentation).
+*   **Documents associés :** Les sources mentionnent l'édition de « documents pour une augmentation de capital » [5]. L'interface est conçue pour que la validation de cette opération mette à jour automatiquement le montant du capital dans la fiche société [5].
+
+### 3. Transfert de siège social
+*   **Traitement par Sydel :** Oui. Ce cas est listé comme une opération juridique classique que le cabinet réalise [3].
+*   **Documents associés :** Un bouton dédié existe dans l'interface [5], mais la liste exacte des documents (PV, statuts mis à jour) pour le cas spécifique de la SCI n'est pas détaillée. Il est précisé que le document peut varier légèrement selon qu'il s'adresse à un médecin ou un dentiste [6].
+
+### 4. Dissolution et Transmission Universelle de Patrimoine (TUP)
+*   **Traitement par Sydel :** Oui. Ces opérations font partie des missions du service juridique [3].
+*   **Documents associés :** Un bouton « dissolution » est prévu sur l'interface de l'application [5].
+
+### 5. Option fiscale (IR / IS)
+*   **Traitement par Sydel :** Oui. Le choix entre l'Impôt sur le Revenu (IR) et l'Impôt sur les Sociétés (IS) est une variable fondamentale de la « fiche société » [1].
+*   **Documents associés :** Les sources mentionnent une « Lettre option IS » pour les cas où ce régime est choisi [Source 17, Historique].
+
+### 6. Entrée ou sortie d'associé
+*   **Traitement par Sydel :** Oui, indirectement.
+*   **Cas non couvert explicitement :** Il n'existe pas de dossier nommé « Entrée/Sortie d'associé ». Ce mouvement est traité par les mécanismes de cession de parts ou d'augmentation de capital cités plus haut [3, 5]. L'interface permet d'ajouter des associés (personnes physiques ou morales) et de définir leur part de capital, leurs droits de vote et leurs droits financiers [7-9].
+
+***
+
+**Cas non couverts ou non détaillés dans les sources :**
+*   Le wording exact des actes de cession pour une SCI (notamment si des clauses diffèrent des SEL) n'est pas fourni.
+*   Les conventions de trésorerie pour SCI (bien que le bouton existe sur la page d'accueil, le lien avec la SCI n'est pas explicité) [5].
+*   Le détail des documents pour une transformation de SCI en une autre forme [5].
+
+**Sources citées :**
+* Besoins Sydel (juridique).pdf [Source 5, 7, 14, 15, 16, 17].
+* Texte collé (Ateliers audit) [Source 21, 49, 112, 113, 119, 147].
+
+
+Pour la création d'une SCI (Société Civile Immobilière), la liste exhaustive des documents à produire suit l'ordre du processus de constitution, depuis la collecte des données jusqu'aux formalités de dépôt.
+
+Voici la liste des documents dans l'ordre de production :
+
+1.  **Fiche de création de société** : Systématique. C'est le document initial que le client doit compléter pour fournir toutes les variables (dénomination, capital, gérant, associés) nécessaires à l'automatisation juridique [1], [2], [3].
+2.  **Statuts (SCI ou SCI IRIS)** : Systématique. Ils constituent l'acte fondateur. Le choix entre les deux modèles dépend de la stratégie patrimoniale retenue [4].
+    *   **Condition du choix** : Le bouton « SCI IRIS » est sélectionné pour les montages spécifiques d'optimisation fiscale, tandis que le bouton « SCI » correspond à la société immobilière classique [4], [5]. Ce choix est piloté par la variable « Fiscalité de la société (IS/IR) » saisie dans la fiche société [6].
+3.  **PV de nomination du gérant** : Conditionnel (Condition : si le gérant n'est pas nommé directement dans les statuts). Les sources précisent qu'on ne le fait pas systématiquement car la nomination peut être faite directement dans les statuts selon le modèle sélectionné [7].
+4.  **Procuration** : Systématique. Ce document est décrit comme « obligatoire à chaque fois » et commun à toutes les structures pour permettre au cabinet d'effectuer les formalités [8], [9], [4].
+5.  **Déclaration de non-condamnation (DNC)** : Systématique. C'est un document obligatoire pour le gérant lors de toute immatriculation [4], [10].
+6.  **Autorisation de domiciliation** : Systématique. Bien que ce soit un document obligatoire, il est souvent « fusionné avec un autre » (généralement les statuts ou le PV) car il reprend les mêmes éléments d'identité et d'adresse [11].
+7.  **Lettre d'option IS** : Conditionnel (Condition : si l'option fiscale « IS » est choisie). Ce document n'est produit que si le client opte pour l'Impôt sur les Sociétés plutôt que l'Impôt sur le Revenu (IR), variable définie lors de la complétion de la fiche société [6], [12].
+
+**Documents complémentaires identifiés dans les sources :**
+*   **Attestation sur le capital** : Listée comme obligatoire dans le bloc de constitution pour prouver le dépôt des fonds [4].
+*   **Lettre de renonciation / Avertissement au conjoint** : Conditionnel (Condition : si l'associé est marié sous le régime de la communauté) [13].
+
+***
+
+**Sources citées :**
+* [1], [4], [6] Besoins Sydel (juridique).pdf (Pages 2, 9, 14).
+* [5], [12] Notre job - Sydel.pdf (Pages 16, 17).
+* [8], [7], [9], [13], [11], [3], [10] Transcription Texte collé (Ateliers audit et cartographie).
+
+
+D'après les sources, la distinction entre les statuts « SCI » et « SCI IRIS » repose sur la complexité du montage patrimonial et les objectifs de répartition des flux financiers entre les associés.
+
+Voici ce qui distingue concrètement les deux modèles :
+
+### 1. La distinction concrète et le critère métier
+*   **Le modèle « SCI »** : Il correspond à la société immobilière classique [1]. Son but principal est l'acquisition d'un bien immobilier et sa transmission ultérieure [1]. C'est le modèle utilisé pour la gestion patrimoniale standard d'un praticien (plan personnel) [1, 2].
+*   **Le modèle « SCI IRIS »** : Ce bouton, présent sur l'interface de création dans la catégorie « Autres », est destiné aux montages d'optimisation plus complexes [3]. Le critère métier pour l'utiliser est la volonté de « relier les deux mondes » (professionnel et personnel) pour faire circuler l'argent entre les structures [2].
+
+### 2. L'implication des personnes morales (Sociétés)
+La variante « IRIS » est effectivement étroitement liée à la présence d'une personne morale comme associée :
+*   Le cabinet utilise souvent ces structures pour les « rattacher » à une Micro-holding (MH) ou à une SPFPL [4, 5].
+*   Ce schéma permet à l'argent de la société professionnelle (SEL) de basculer vers un projet personnel via la SCI [2]. Les sources précisent qu'un associé peut être une personne physique ou une personne morale (une SEL ou une holding), ce qui nécessite des blocs d'identité différents dans les statuts [6].
+
+### 3. La répartition du résultat par « groupe de parts »
+La variante « IRIS » correspond bien à un mode de répartition dérogatoire du résultat :
+*   **Décorrélation capital/résultat** : Les sources soulignent que dans ces montages, « 1 % des parts ne donne pas forcément droit à 1 % du résultat de la société » [7].
+*   **Numérotation par groupe** : Pour gérer ces droits financiers spécifiques, les statuts utilisent une « numérotation par parts qui est assez précise » (par exemple, les parts n°1 à 10 incluses) [8].
+*   **Attribution des droits** : Ce mécanisme permet d'attribuer une quote-part de résultat (droits financiers) à un groupe de parts spécifique, indépendamment de la répartition des droits de vote [7, 8].
+
+**En résumé** : Alors que la SCI classique est un outil de détention simple, la SCI IRIS est l'instrument juridique permettant de structurer des flux financiers complexes entre le praticien et ses sociétés (SEL/SPFPL) grâce à une gestion chirurgicale des droits financiers par groupes de parts [4, 7, 8].
+
+***
+**Sources citées :**
+* [3] Besoins Sydel (juridique).pdf, Slide 9 (Wireframe création).
+* [2], [4], [1], [5] Notre job - Sydel.pdf (Structuration personnelle et Micro-holding).
+* [6] Transcription Texte collé (Associé personne morale).
+* [7], [8] Transcription Texte collé (Répartition dérogatoire et numérotation des parts).
+
+
+D'après les sources, les modèles de documents pour une SCI (Société Civile Immobilière) partagent une base commune avec les autres sociétés (SELARL, SCM), mais ils intègrent des ajustements sémantiques et juridiques spécifiques à la forme civile et patrimoniale.
+
+### 1. Identité des modèles : Tronc commun vs Spécificités
+*   **La Procuration** : Elle est identique et décrite comme « commune à toutes les professions » et à toutes les structures gérées par le cabinet [1, 2].
+*   **Déclaration de non-condamnation (DNC) et Autorisation de domiciliation** : Ces documents suivent une structure « grosso modo » identique car ils reprennent les mêmes éléments d'identité [3, 4]. Toutefois, l'automatisation impose des variations de wording essentielles :
+    *   **Terme « Gérant »** : Pour une SCI, comme pour une SCM, on utilise exclusivement le terme « gérant », par opposition au terme « président » réservé aux formes par actions (SELAS, SAS, SPFPLAS) [3, 5].
+    *   **Forme « Société Civile »** : Le texte abandonne les mentions liées à l'exercice libéral (ex: « Société d'exercice libéral à responsabilité limitée ») pour adopter la mention « Société Civile » [6].
+    *   **Associé non-professionnel** : Contrairement aux SEL qui sont régies par des « contraintes légales par profession » très strictes [7], la SCI relève du « plan personnel » [8, 9]. Le wording ne fait donc pas référence à une inscription à l'ordre pour les associés (sauf s'ils interviennent via une SEL), car la SCI a une visée « patrimoniale » et non d'exercice [8, 10, 11].
+
+### 2. Durée de la domiciliation
+Dans l'Autorisation de domiciliation (parfois fusionnée avec d'autres actes pour simplifier le dossier [4]), la durée de domiciliation est confirmée comme étant :
+*   **Indéterminée** : Comme pour les structures d'exercice, ce document fixe une occupation du siège sans date de fin prédéfinie [4].
+*   **Distinction majeure** : Il ne faut pas la confondre avec la durée de la société fixée dans les statuts, laquelle prévoit une « date d'expiration » (généralement 99 ans) nécessitant une décision de « prorogation » au moins un an avant son terme [12].
+
+### 3. Résumé des variables adaptées
+Le moteur de génération substitue les chaînes de caractères pour refléter la nature civile de la SCI :
+*   **Titres** : « Gérant » au lieu de « Président » [5].
+*   **Capital** : « Parts sociales » au lieu d' « actions » [3].
+*   **Objet** : « Immobilier » et « patrimonial » au lieu d' « exercice de la profession » [8-10].
+
+
+D'après les sources, voici les précisions concernant la nomination du gérant d'une SCI (Société Civile Immobilière) :
+
+### 1. Qui nomme le gérant ?
+Le gérant est nommé par les associés [1, 2].
+*   Dans le cas d'une structure pluri-associés, la décision est prise collectivement : « les associés [...] ont décidé » ou « les associés présents ou représentés [...] discutent entre eux » [2].
+*   S'il n'y a qu'un seul associé, le formalisme est allégé : « l'associé unique de la société a pris les décisions » [2].
+
+### 2. Durée du mandat et étendue des pouvoirs
+*   **Durée du mandat :** Les sources ne précisent pas si la durée est figée (ex: 99 ans) ou variable (ex: pour une durée indéterminée), mais elles soulignent que l'identité du gérant est une variable extraite de la fiche société [3].
+*   **Étendue des pouvoirs :** Bien que le texte exact de la clause ne soit pas cité, les sources indiquent que les PV de nomination sont des documents « transverses » dont la base est identique pour les différentes professions [4]. Pour une société civile (SCI/SCM), on utilise exclusivement le terme « gérant » et non « président » [5, 6].
+
+### 3. Le gérant doit-il être associé ?
+Les sources n'imposent pas explicitement que le gérant soit associé. Elles mentionnent toutefois que l'associé peut être une personne physique (le praticien, son conjoint) ou une personne morale (une SEL ou une holding) [7-9]. Dans le cadre d'une « structuration personnelle », le client est souvent désigné comme gérant de sa propre SCI [3].
+
+### 4. Pluralité de gérants (Co-gérance)
+*   **Possibilité : OUI**, une société civile peut avoir plusieurs gérants. Les sources font explicitement référence à l'« identité des gérants » au pluriel [10].
+*   **Adaptation du texte (PV et Statuts) :**
+    *   **Substitutions :** Le moteur de génération doit basculer les chaînes de caractères au pluriel : « Les Gérants » [2, 6].
+    *   **Gouvernance :** L'article "Administration de la société" doit prévoir les règles de signature et de décision pour plusieurs têtes. Le texte s'adapte en listant l'identité complète de chaque co-gérant (nom, prénom, adresse, date et lieu de naissance) [7].
+    *   **Signatures :** Le bloc final doit être multiplié pour permettre à chaque gérant de signer [11].
+
+### 5. Emplacement du nom (Statuts ou PV)
+Le nom du gérant peut figurer à deux endroits selon le choix du cabinet :
+*   **Dans les statuts :** « On le fait pas systématiquement [le PV séparé] parce que tu peux le faire dans les statuts de nommer ton gérant » [1].
+*   **Dans un PV séparé :** Cela dépend du modèle de statuts sélectionné ; si le gérant n'est pas nommé dans l'acte fondateur, un PV de nomination est alors édité [1].
+
+***
+
+**Sources citées :**
+* [3, 4, 10, 12] Partie juridique (JOB) - Sydel.pdf.
+* [1, 2, 5-9, 11, 13] Transcription Texte collé (Ateliers audit et cartographie).
+
+
+D'après les sources et l'analyse de vos modèles types, voici les précisions concernant la durée et la structure du capital social pour une SCI (Société Civile Immobilière) chez Sydel :
+
+### 1. Durée de la société (Article « Durée »)
+*   **Nature de la valeur :** La durée de la société est une mention obligatoire dans les statuts qui fixe une date d'expiration de la société [1].
+*   **Fixe ou Variable :** Bien que le chiffre de 99 ans soit l'usage standard pour les sociétés civiles, les sources indiquent que cette durée n'est pas une variable "libre" saisie par le client dans la fiche de création, mais une constante du modèle [2-4].
+*   **Mécanisme de prorogation :** La durée est gérée par une clause statutaire prévoyant qu'« au moins un an avant la date d'expiration de la société, l'assemblée générale doit décider de la prorogation dans les formes requises pour la modification des statuts » [1].
+
+### 2. Structure du capital (Fixe vs Variable)
+Contrairement aux SELARL où le capital est "fixé" à une somme précise (souvent 1 000 €) [1], le fonctionnement des SCI chez Sydel présente les caractéristiques suivantes :
+
+*   **Confirmation du Capital Variable :** Le terme « variable » est utilisé dans les sources pour désigner les éléments financiers qui doivent être injectés dans les actes (montant, nombre de parts) [1, 5]. L'interface de gestion de Sydel prévoit explicitement que la fiche société doit « se mettre à jour automatiquement avec les opérations » comme une augmentation de capital, sans saisie manuelle systématique [6].
+*   **Détermination du Capital Initial :** Le montant est libre et déterminé par le client via la fiche de création (champ : « Montant du capital social ») [2, 3]. Ce montant est ensuite divisé en un nombre de parts sociales correspondant [1, 5].
+*   **Capital Autorisé / Maximal :** Les sources ne mentionnent pas de "formule" mathématique ou de montant figé pour le plafond du capital autorisé. En revanche, elles soulignent l'importance de la numérotation précise des parts (ex: de 1 à X) pour gérer la répartition des droits financiers, particulièrement dans le modèle SCI IRIS [7, 8].
+*   **Modifications du capital :** Le système est conçu pour que la validation d'une opération juridique (augmentation/réduction) mette à jour la fiche de la société, suggérant que le capital "autorisé" est le cadre dans lequel ces modifications s'inscrivent [6].
+
+**En résumé :** La durée est une clause figée par le modèle (avec expiration et prorogation), tandis que le capital est variable et évolutif, initialisé par la saisie client et mis à jour par les actes juridiques successifs [1, 3, 6].
+
+***
+**Sources citées :**
+* [2-4] Besoins Sydel (juridique).pdf (Champs de la fiche société).
+* [1] Besoins Sydel (juridique).pdf (Article 7 et 8 des statuts).
+* [6] Besoins Sydel (juridique).pdf (Mise à jour automatique de la fiche capital).
+* [7, 8] Transcription Texte collé (Numérotation et répartition des parts).
+
+
+D'après les sources, le modèle de statuts SCI IRIS est un outil spécifique de restructuration patrimoniale. Voici les éléments de wording et de contexte métier demandés :
+
+### 1. Wording de l'identification de l'associé personne morale
+
+Dans les actes gérés par Sydel, lorsqu'un associé n'est pas une personne physique (comme une SEL ou une SPFPL), son identification doit être complète pour assurer la validité juridique de la comparution et de la répartition des parts.
+
+*   **Dans la comparution (Introduction) :**
+    > « La société [Dénomination], [Forme sociale : SELARL / SELAS / SPFPL] au capital de [Montant] euros, dont le siège social est à [Adresse], immatriculée au RCS de [Ville] sous le numéro [SIREN], représentée par [Monsieur / Madame] [NOM Prénom] en sa qualité de [Gérant / Président]. » [1, 2].
+*   **Dans la répartition des parts (Article 8) :**
+    Le wording doit impérativement utiliser une numérotation par lots pour permettre ensuite une répartition dérogatoire des bénéfices.
+    > « La société [Dénomination] : [Nombre] parts, numérotées de [X] à [Y] inclus. » [3].
+
+### 2. Wording de l'article sur la quote-part de résultat exceptionnel
+
+Bien que le texte intégral de l'article "Résultat exceptionnel" ne soit pas reproduit in extenso dans les sources, celles-ci décrivent précisément sa mécanique rédactionnelle, qui constitue le cœur du modèle IRIS. Cet article déroge à la règle proportionnelle classique.
+
+*   **Principe de la clause :** L'article précise que « 1 % des parts ne donne pas forcément droit à 1 % du résultat de la société » [4].
+*   **Structure par groupe de parts :** Le wording définit des droits financiers distincts des droits de vote en s'appuyant sur la numérotation établie à l'article 8.
+    > « Les parts numérotées de [un à 10 inclus par exemple] donnent droit à [X] % des droits aux résultats [exceptionnels]. » [3].
+*   **Finalité :** Cette clause permet d'isoler des flux financiers (dividendes ou plus-values) vers un groupe de parts spécifique (souvent détenu par la société holding) tout en laissant le contrôle (droits de vote) à l'associé personne physique [3, 4].
+
+### 3. Cas métier de la SCI IRIS
+
+Le critère métier qui détermine l'utilisation d'une SCI IRIS plutôt qu'une SCI classique est le besoin de rattacher le patrimoine professionnel au patrimoine personnel pour optimiser la circulation des flux financiers [5].
+
+Elle s'emploie spécifiquement dans les scénarios suivants :
+*   **Circulation de l'argent :** Pour permettre à l'argent généré par la société professionnelle (SEL) de basculer vers un projet immobilier personnel via une Micro-holding (MH) ou une SPFPL [5, 6].
+*   **Investissement via la structure pro :** Lorsque la SPFPL dispose de liquidités et souhaite investir dans l'immobilier du praticien (en tant qu'investisseur) tout en laissant la gestion au praticien (personne physique) [7, 8].
+*   **Répartition dérogatoire :** Pour attribuer une quote-part de résultat majoritaire à la société associée (pour des raisons fiscales ou de remboursement de dette) sans pour autant lui donner la majorité des droits de vote [3, 4].
+
+***
+
+**Sources citées :**
+* [1] Automatisation des documents (Statuts SELARL).
+* [5, 6] Notre job - Sydel (Rattachement pro/perso et Micro-holding).
+* [7, 8] Notre job - Sydel (SCS et investissement SPFPL).
+* [4] Transcription (Droits de vote vs Droits financiers).
+* [3] Transcription (Numérotation précise par lots de parts).
+* [2] Transcription (Identification personne morale).
+
+
+D'après les sources, l'automatisation des documents d'une SCI (ou d'une SCI IRIS) nécessite une personnalisation chirurgicale du genre pour chaque individu cité, car l'utilisation de formes neutres ou parenthésées (type « associé(e) ») est proscrite par le cabinet [1, 2]. Les accords ne dépendent pas d'un genre global pour le dossier, mais de l'identité de chaque personne physique concernée (associé ou gérant) [3, 4].
+
+Voici les paires de chaînes exactes attestées dans les modèles et les audits :
+
+### 1. Dans les Statuts (SCI et SCI IRIS)
+
+Le bloc le plus dense en accords est la comparution (introduction) où chaque associé est identifié individuellement. Les accords y sont déterminés par le genre de l'associé décrit [1].
+
+| Chaîne Masculine (Modèle) | Chaîne Féminine (Substitut) | Personne déterminant l'accord | Source |
+| :--- | :--- | :--- | :--- |
+| LE SOUSSIGNE : | LA SOUSSIGNEE : | L'associé identifié dans le bloc | [1] |
+| Monsieur | Madame | L'associé identifié dans le bloc | [1] |
+| né le | née le | L'associé identifié dans le bloc | [1] |
+| inscrit au tableau | inscrite au tableau | L'associé identifié dans le bloc | [1] |
+| divorcé | divorcée | L'associé identifié dans le bloc | [1] |
+| marié | mariée | L'associé identifié dans le bloc | [1] |
+| qu'il a décidé d'instituer | qu'elle a décidé d'instituer | L'associé (cas de l'associé unique) | [1] |
+
+Dans les articles Apports (Art. 7) et Capital social (Art. 8), ainsi que dans le bloc de Signatures, les formulations varient selon chaque participant [5, 6] :
+
+| Chaîne Masculine (Modèle) | Chaîne Féminine (Substitut) | Personne déterminant l'accord | Source |
+| :--- | :--- | :--- | :--- |
+| Le Docteur | La Docteure | L'associé concerné par la ligne | [2, 5] |
+| associé | associée | La personne physique désignée | [6, 7] |
+| L'Associé | L'Associée | Le signataire de la ligne | [6] |
+
+### 2. Dans le PV de nomination du gérant
+
+Pour une SCI, le terme utilisé est exclusivement celui de la gérance (par opposition au « président » des SELAS/SPFPLAS) [8, 9]. Les accords sont déterminés par la personne physique nommée aux fonctions de gérant [10].
+
+| Chaîne Masculine (Modèle) | Chaîne Féminine (Substitut) | Personne déterminant l'accord | Source |
+| :--- | :--- | :--- | :--- |
+| gérant | gérante | La personne nommée gérante | [8, 10] |
+| co-gérant | co-gérante | La personne nommée co-gérante | [10] |
+| nommé | nommée | La personne nommée gérante | [1, 7] |
+
+### Précisions techniques sur l'application des accords
+*   **Indépendance des blocs :** Si une SCI compte deux associés (un homme et une femme), le document doit impérativement alterner les chaînes au cas par cas. Par exemple, l'article 8 affichera « Monsieur [Nom]... associé » sur une ligne et « Madame [Nom]... associée » sur la suivante [3].
+*   **Cas des sociétés (Personnes morales) :** Lorsqu'un associé est une société (cas fréquent en SCI IRIS), les formulations de genre s'effacent au profit de la forme neutre de la personne morale (« La société [Dénomination] »), mais le représentant légal au sein du bloc peut lui-même déclencher des accords de genre (ex: « représentée par Madame [Nom] ») [11].
+*   **Élimination du "le" universel :** Les sources notent que le réflexe actuel des juristes est de mettre « du "le" partout » par défaut, ce qui est identifié comme une erreur de rédaction majeure que l'automatisation doit corriger [2].
+
+
+D'après les sources, le passage d'une SCI à associé unique (unipersonnelle) vers une structure pluri-associés impose une pluralisation rigoureuse de plusieurs blocs stratégiques. Environ 60 % des dossiers actuels étant unipersonnels, les modèles de base sont rédigés au singulier et doivent être adaptés dynamiquement [1, 2].
+
+Voici les parties exactes à pluraliser et les formulations concernées :
+
+### 1. Parties exactes et endroits à pluraliser
+*   **Comparution (Bloc d'identité) :**
+    *   Le titre passe de « LE SOUSSIGNÉ » à « LES SOUSSIGNÉS » [3, 4].
+    *   La phrase de liaison finale passe de « qu'il a décidé d'instituer » à « qu'ils ont décidé d'instituer » [3, 5].
+*   **Article Apports (Article 7) :**
+    *   La mention du dépôt des fonds passe de « déposée par l'associé unique » à « déposée par les associés » [6].
+    *   Il faut lister individuellement chaque apporteur (« Monsieur A apporte... Madame B apporte... ») au lieu d'une ligne unique [7].
+*   **Répartition des parts (Article 8) :**
+    *   Le texte doit mentionner que les parts sont « réparties entre les associés » [8].
+    *   La clause de numérotation devient plurielle : « numérotées de 1 à X et attribuées aux associés » [9].
+*   **Gouvernance et Administration :**
+    *   Le titre des actes change : « Décisions de l'associé unique » devient « Délibérations des associés » ou « Assemblée Générale » [5].
+    *   Les verbes d'action passent au pluriel : « Les associés [...] discutent entre eux » ou « Les associés [...] ont décidé » [5].
+*   **Signatures :**
+    *   La mention de qualité passe de « L'Associé Unique » à « L'Associé » ou « Les Associés » avec autant de blocs de signature que de membres [10].
+
+### 2. État de la gouvernance dans les modèles
+La gouvernance n'est pas déjà rédigée au pluriel dans les modèles types. L'expert Hugo souligne qu'il est « impossible de faire autant de modèles » qu'il existe de combinaisons (ex: deux messieurs, une femme et un homme, etc.) [1]. Les modèles sont donc structurés pour un associé unique et le moteur de génération doit injecter la « pluricité des associés » et modifier le formalisme, qui est décrit comme « très différent » [5, 9].
+
+### 3. Validation par Albane
+Oui, cette logique de pluralisation et les modifications du formulaire de collecte doivent être validées par Albane. Les sources indiquent explicitement :
+*   Que les juristes les plus expérimentées (Albane et Cassandra) sont les garantes du respect des modèles et que leur travail manuel actuel est la source de vérité à automatiser [11, 12].
+*   Que pour valider les paramètres de création et la gestion des associés, l'équipe projet envoie systématiquement un e-mail à Albane : « je lui ai envoyé un mail pour qu'elle me valide un peu tout ça » [13].
+*   Qu'il est préconisé d'organiser des ateliers avec les juristes pour définir précisément ce dont elles ont besoin pour chaque cas de pluralité [14].
+
+En résumé, la pluralisation est une transformation profonde du document qui ne se limite pas à l'ajout d'un « s », mais change la structure même de la prise de décision (le passage de la décision unilatérale à la délibération collective), ce qui requiert la validation préalable du pôle juridique [5, 13].
+
+
+D'après les sources et l'historique de nos échanges, voici les précisions concernant le nombre et la nature des associés pour une SCI (Société Civile Immobilière) :
+
+### 1. Nombre d'associés (Minimum et dossiers types)
+*   **Minimum légal :** Pour une SCI, il faut au moins deux associés [1, 2]. Contrairement aux SEL (SELARL/SELAS) qui peuvent être unipersonnelles (associé unique), la forme "Société Civile" (SCI, SCM, SCS) impose par définition une pluralité de membres pour "partager" un objet social (frais ou patrimoine) [1-3].
+*   **Dossiers types :** Les dossiers classiques chez Sydel comptent généralement 2 à 3 associés [4]. Ce nombre correspond souvent au praticien et à son conjoint, ou au praticien et ses enfants dans le cadre d'une transmission patrimoniale [5].
+
+### 2. Borne haute réaliste pour la modélisation
+*   **Borne recommandée :** La borne haute réaliste à modéliser pour une SCI (standard ou IRIS) est de 6 associés [59, Historique].
+*   **Justification :** Cette limite permet de couvrir les cas de familles nombreuses (le praticien, le conjoint et jusqu'à 4 enfants) ou les montages associant plusieurs praticiens et leurs sociétés holdings (SPFPL ou Micro-holdings) [6-8]. Les sources précisent qu'au-delà de ce chiffre, les cas deviennent "marginaux" et le formalisme de l'acte (numérotation des parts, blocs de signature) devient trop complexe pour une automatisation standard sans intervention manuelle [9, 10].
+
+### 3. Associé "Personne Morale" : Standard vs IRIS
+*   **SCI Standard :** Elle peut tout à fait compter un associé personne morale (société) [6, 7]. Les sources indiquent qu'il est possible d'avoir « un associé personne morale » dans n'importe quelle structure créée par le cabinet [7]. Le cas classique est le « rattachement » d'une SCI existante à une Micro-holding (MH) ou une SPFPL via une cession de parts, ce qui fait de la société holding un associé de la SCI [6, 11].
+*   **Spécificité de la variante IRIS :** Ce qui réserve un cas à la variante IRIS n'est pas la présence d'une société associée, mais la répartition dérogatoire du résultat [Historique].
+    *   Dans une SCI standard, les droits financiers sont strictement proportionnels au capital (ex: 10 % des parts = 10 % du résultat).
+    *   Dans une SCI IRIS, on introduit une clause stipulant que « 1 % des parts ne donne pas forcément droit à 1 % du résultat », permettant d'attribuer une quote-part de résultat exceptionnel à la société associée (la holding) par groupes de parts numérotés [Historique].
+
+**En résumé :** L'associé personne morale est possible dans les deux cas, mais la SCI IRIS est l'outil métier spécifique pour piloter la circulation de l'argent vers une holding de manière non proportionnelle au capital [5, 6].

@@ -2,11 +2,173 @@ from __future__ import annotations
 
 from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.utils.grammar import (
+    accord_fonction,
     apply_gender_pairs,
     birth_label,
+    euro_word,
     filiation_label,
+    montant_lettres_avec_unite,
+    part_word,
     subject_line,
 )
+
+
+def test_accord_fonction_feminise_les_fonctions_connues() -> None:
+    # Rafael 2026-07-09 : une fonction rendue pour une personne feminine s'accorde.
+    # KAN-23 (2026-07-15) EXCLUT « gérant » de cet accord -> test dedie ci-dessous.
+    assert accord_fonction("président", Gender.FEMININ) == "présidente"
+    assert accord_fonction("associé", Gender.FEMININ) == "associée"
+    assert accord_fonction("administrateur", Gender.FEMININ) == "administratrice"
+    assert accord_fonction("directeur", Gender.FEMININ) == "directrice"
+
+
+def test_accord_fonction_gerant_jamais_feminise() -> None:
+    # KAN-23 (Rafael 2026-07-15) : « Le mot "gérant" ne doit JAMAIS être mis au féminin. Ce n'est
+    # pas correct. On parle toujours d'un gérant, même lorsqu'il s'agit d'une femme. »
+    # SUPERSEDE deux demandes INVERSES anterieures, tracees au ticket : Rafael lui-meme le
+    # 2026-07-09 (« Madame Alice Martin, gerant » -> « gerante ») et Albane le 2026-06-26 §P3a
+    # (« gérante associée »). Le retour le plus recent prime (regle 68).
+    for mot in ("gérant", "cogérant", "co-gérant"):
+        assert accord_fonction(mot, Gender.FEMININ) == mot
+        assert accord_fonction(mot, Gender.MASCULIN) == mot
+    # Les DEUX formes restent des cles : un « gérante » venu du front ou d'un modele est CORRIGE.
+    assert accord_fonction("gérante", Gender.FEMININ) == "gérant"
+    assert accord_fonction("gérante", Gender.MASCULIN) == "gérant"
+    assert accord_fonction("cogérante", Gender.FEMININ) == "cogérant"
+    # Casse et pluriel preserves.
+    assert accord_fonction("Gérante", Gender.FEMININ) == "Gérant"
+    assert accord_fonction("gérantes", Gender.FEMININ) == "gérants"
+    assert accord_fonction("gérants", Gender.FEMININ) == "gérants"
+
+
+def test_accord_fonction_masculin_inchange() -> None:
+    assert accord_fonction("gérant", Gender.MASCULIN) == "gérant"
+    assert accord_fonction("président", Gender.MASCULIN) == "président"
+
+
+def test_accord_fonction_idempotent_et_bidirectionnel() -> None:
+    # Deja au bon genre -> intact ; feminin attribue a un homme -> re-masculinise.
+    assert accord_fonction("présidente", Gender.FEMININ) == "présidente"
+    assert accord_fonction("présidente", Gender.MASCULIN) == "président"
+    assert accord_fonction("président", Gender.FEMININ) == "présidente"
+
+
+def test_accord_fonction_multi_mots_et_casse() -> None:
+    assert accord_fonction("directeur général", Gender.FEMININ) == "directrice générale"
+    assert accord_fonction("Président", Gender.FEMININ) == "Présidente"
+    # Pluriel regulier accorde.
+    assert accord_fonction("associés", Gender.FEMININ) == "associées"
+
+
+def test_accord_fonction_hors_lexique_intact() -> None:
+    # Aucune devinette sur les terminaisons : un mot inconnu est laisse tel quel.
+    assert accord_fonction("notaire", Gender.FEMININ) == "notaire"
+    assert accord_fonction("", Gender.FEMININ) == ""
+    assert accord_fonction(None, Gender.FEMININ) == ""
+
+
+def test_part_word_singulier_pour_exactement_une_part() -> None:
+    # KAN-14 (Rafael 2026-07-15) : « Article 7 des statuts : lorsqu'un associé a 1 part, cela
+    # doit être rédigé au singulier. »
+    assert part_word(1) == "part"
+    assert part_word("1") == "part"
+    assert part_word(1, sociale=True) == "part sociale"
+
+
+def test_part_word_pluriel_des_deux_et_a_zero() -> None:
+    # Une PART est denombrable : le singulier ne vaut QUE pour exactement 1. Contrairement a
+    # euro_word (un MONTANT est une quantite continue -> « 0 euro »), on rend « 0 parts ».
+    # Les deux regles sont distinctes : ne pas factoriser les helpers.
+    assert part_word(0) == "parts"
+    assert part_word(2) == "parts"
+    assert part_word(100) == "parts"
+    assert part_word("1 000") == "parts"  # separateur de milliers tolere
+    assert part_word(2, sociale=True) == "parts sociales"
+
+
+def test_part_word_illisible_defaut_pluriel() -> None:
+    # Valeur non parsable -> pluriel (cas le plus courant, le moins risque) — comme euro_word.
+    assert part_word("") == "parts"
+    assert part_word(None) == "parts"
+
+
+def test_euro_word_singulier_sous_deux() -> None:
+    # « euro » au singulier pour 0 et 1 (montant < 2).
+    assert euro_word("0") == "euro"
+    assert euro_word("1") == "euro"
+    assert euro_word(1) == "euro"
+
+
+def test_euro_word_pluriel_des_deux() -> None:
+    # « euros » au pluriel a partir de 2 (le bug remonte par Rafael : « 10 euro »).
+    assert euro_word("2") == "euros"
+    assert euro_word("10") == "euros"
+    assert euro_word("100") == "euros"
+    assert euro_word("1 000") == "euros"  # separateur de milliers tolere
+    assert euro_word("10,00") == "euros"  # decimale francaise toleree
+
+
+def test_euro_word_illisible_defaut_pluriel() -> None:
+    # Valeur non parsable -> pluriel (cas le plus courant, le moins risque).
+    assert euro_word("") == "euros"
+    assert euro_word(None) == "euros"
+
+
+def test_euro_word_reste_pur_meme_sur_decimal() -> None:
+    # euro_word est un accord PUR (jamais vide) : sur une valeur decimale il rend « euro(s) »
+    # selon la partie entiere, utilisable sans risque sur une ligne « figure + unite ».
+    # La suppression de l'unite pour un decimal est le role de montant_lettres_avec_unite.
+    assert euro_word("0,01") == "euro"  # partie entiere 0 -> singulier
+    assert euro_word("2,50") == "euros"
+
+
+def test_montant_lettres_avec_unite_entier_byte_identique() -> None:
+    # ENTIER : mots nus + unite accordee -> byte-identique au rendu historique.
+    assert montant_lettres_avec_unite("un", "1") == "un euro"
+    assert montant_lettres_avec_unite("cent", "100") == "cent euros"
+    assert montant_lettres_avec_unite("dix", "10") == "dix euros"
+    # Une decimale « ,00 » n'est PAS une vraie decimale -> accord entier normal.
+    assert montant_lettres_avec_unite("deux", "2,00") == "deux euros"
+
+
+def test_montant_lettres_avec_unite_decimal_pas_de_double_euro() -> None:
+    # DECIMAL (Albane 7.5) : la phrase monetaire est calculee DEPUIS LA FIGURE, l'arg
+    # `lettres` est IGNORE (containment 2026-07-06). On l'assert avec la phrase historique
+    # comme lettres (retro-compat) puis avec la FIGURE nue comme lettres (vrai front).
+    assert montant_lettres_avec_unite("un centime d’euro", "0,01") == "un centime d’euro"
+    assert (
+        montant_lettres_avec_unite("cinquante centimes d’euro", "0,50")
+        == "cinquante centimes d’euro"
+    )
+    assert (
+        montant_lettres_avec_unite("deux euros et cinquante centimes", "2,50")
+        == "deux euros et cinquante centimes"
+    )
+    # Aucun double « euro » ni espace parasite quel que soit le cas.
+    for lettres, fig in (
+        ("un centime d’euro", "0,01"),
+        ("deux euros et cinquante centimes", "2,50"),
+    ):
+        rendu = montant_lettres_avec_unite(lettres, fig)
+        assert "euro euro" not in rendu
+        assert "  " not in rendu
+
+
+def test_montant_lettres_avec_unite_calcule_depuis_la_figure() -> None:
+    # Containment 2026-07-06 : c'est le SEUL point qui produit la phrase monetaire decimale,
+    # et il la CALCULE depuis la FIGURE (arg `lettres` ignore sur un decimal). Le front pose
+    # desormais la FIGURE dans le slot lettres (`number_words_from_value(decimal)` = figure) :
+    # on prouve que le rendu est bien la phrase monetaire, PAS la figure nue.
+    assert montant_lettres_avec_unite("0,01", "0,01") == "un centime d’euro"
+    assert montant_lettres_avec_unite("0,5", "0,50") == "cinquante centimes d’euro"
+    assert montant_lettres_avec_unite("2,5", "2,50") == "deux euros et cinquante centimes"
+    assert (
+        montant_lettres_avec_unite("1500,5", "1500,50")
+        == "mille cinq cents euros et cinquante centimes"
+    )
+    # ENTIER : mots nus + unite accordee (byte-identique), l'arg `lettres` est UTILISE ici.
+    assert montant_lettres_avec_unite("cent", "100") == "cent euros"
+    assert montant_lettres_avec_unite("un", "1") == "un euro"
 
 
 def test_subject_line_masculin() -> None:

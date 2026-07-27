@@ -20,7 +20,7 @@ PACTE_ASSOCIES_BLOCKS: list[TemplateBlock] = [('p', 'PACTE D’ASSOCIES'),
  ('p', '[forme_sociale]'),
  ('p', 'Au capital de [capital_social]'),
  ('p', 'Siège social : [adresse_siege]'),
- ('p', 'Immatriculée au RCS de …. [ville_rcs] sous le n°[numero_rcs]'),
+ ('p', 'Immatriculée au RCS de [ville_rcs] sous le n° en cours de constitution'),
  ('p',
   'ci-après dénommées ensemble, les «\xa0Parties\xa0» et prises individuellement, une «\xa0'
   'Partie\xa0».'),
@@ -272,7 +272,7 @@ PACTE_ASSOCIES_BLOCKS: list[TemplateBlock] = [('p', 'PACTE D’ASSOCIES'),
   "l’exécution forcée de la Promesse de Vente ou de la Promesse d’Achat afin d'obtenir la "
   'réalisation du Transfert des Parts objet de la Promesse de Vente et/ou d’Achat, dans les '
   'conditions prévues aux présentes.'),
- ('p', 'Date de Départ d’un Associe'),
+ ('p', 'Date de Départ d’un Associé'),
  ('p',
   "Pour l'application de l’Article 6 du Pacte, la date de départ de l’Associé partant (la «\xa0"
   'Date de Départ\xa0») sera\xa0:'),
@@ -559,16 +559,17 @@ CONTRAT_FRAIS_COMMUNS_BLOCKS: list[TemplateBlock] = [('p', "CONTRAT D'EXERCICE P
  ('p', 'Immatriculée au RCS de [ville_rcs_societe_1] sous le numéro [numero_rcs_societe_1]'),
  ('p',
   'Représentée par [civilite_representant_societe_1] [prenom_representant_societe_1] '
-  '[nom_representant_societe_1] en qualité de [fonction_representant_societe_1], domicilié en '
-  'cette qualité audit siège.'),
+  '[nom_representant_societe_1] en qualité de [fonction_representant_societe_1], '
+  '[domicilie_representant_societe_1] en cette qualité audit siège.'),
  ('p', 'ET'),
  ('p', '[denomination_societe_2]'),
  ('p', '[forme_sociale_societe_2] au capital de [capital_social_societe_2]'),
  ('p', 'Ayant son siège au [adresse_locaux]'),
  ('p', 'Immatriculée au RCS de [ville_rcs_societe_2] sous le numéro [numero_rcs_societe_2]'),
  ('p',
-  'Représentée par son [fonction_representant_societe_2], [civilite_representant_societe_2] '
-  '[prenom_representant_societe_2] [nom_representant_societe_2], domicilié en cette qualité audit '
+  'Représentée par [possessif_representant_societe_2] [fonction_representant_societe_2], '
+  '[civilite_representant_societe_2] [prenom_representant_societe_2] '
+  '[nom_representant_societe_2], [domicilie_representant_societe_2] en cette qualité audit '
   'siège.'),
  ('p', 'IL A ETE CONVENU ET ARRETE CE QUI SUIT :'),
  ('p',
@@ -671,7 +672,7 @@ REGLEMENT_INTERIEUR_SCM_BLOCKS: list[TemplateBlock] = [('table', [['REGLEMENT IN
  ('p', 'Sise [adresse_siege_societe_1]'),
  ('p', 'Immatriculée au RCS de [ville_rcs_societe_1] sous le numéro [numero_rcs_societe_1]'),
  ('p',
-  'Représentée par le [titre_representant_societe_1] [identite_representant_societe_1], '
+  'Représentée par [titre_representant_societe_1] [identite_representant_societe_1], '
   '[fonction_representant_societe_1]'),
  ('p', 'D’UNE PART'),
  ('p', '[denomination_societe_2]'),
@@ -680,7 +681,7 @@ REGLEMENT_INTERIEUR_SCM_BLOCKS: list[TemplateBlock] = [('table', [['REGLEMENT IN
  ('p', 'Sise [adresse_siege_societe_2]'),
  ('p', 'Immatriculée au RCS de [ville_rcs_societe_2] sous le numéro [numero_rcs_societe_2]'),
  ('p',
-  'Représentée par le [titre_representant_societe_2] [identite_representant_societe_2], '
+  'Représentée par [titre_representant_societe_2] [identite_representant_societe_2], '
   '[fonction_representant_societe_2]'),
  ('p', 'D’UNE AUTRE PART'),
  ('p', 'IL A ETE CONVENU ET ARRETE CE QUI SUIT\xa0:'),
@@ -739,7 +740,7 @@ REGLEMENT_INTERIEUR_SCM_BLOCKS: list[TemplateBlock] = [('table', [['REGLEMENT IN
   'patients.'),
  ('p',
   'Les patients n’ayant pas fait la demande expresse d’être reçu par un des praticiens seront '
-  'repartis égalitairement sur les plages de rendez-vous du planning de chaque praticien, en '
+  'répartis égalitairement sur les plages de rendez-vous du planning de chaque praticien, en '
   'favorisant une prise de rendez-vous / prorata du nombre de jours travaillés.'),
  ('p',
   'Chaque année, un état des lieux sera tenu afin d’aménager la clé de répartition le cas échéant '
@@ -1149,9 +1150,9 @@ REGLEMENT_INTERIEUR_SCM_BLOCKS: list[TemplateBlock] = [('table', [['REGLEMENT IN
  ('p', 'Le [date_signature]'),
  ('p', 'En quatre exemplaires'),
  ('p', 'Pour la [denomination_societe_1]'),
- ('p', 'Le [titre_representant_societe_1] [identite_representant_societe_1]'),
+ ('p', '[titre_representant_societe_1] [identite_representant_societe_1]'),
  ('p', 'Pour la [denomination_societe_2]'),
- ('p', 'Le [titre_representant_societe_2] [identite_representant_societe_2]')]
+ ('p', '[titre_representant_societe_2] [identite_representant_societe_2]')]
 
 LISTE_DEPENSES_COMMUNES_SCM_BLOCKS: list[TemplateBlock] = [
     ("p", "[denomination_societe]"),

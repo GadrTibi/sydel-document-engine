@@ -89,20 +89,38 @@ def test_declaration_non_condamnation_creates_docx(tmp_path: Path) -> None:
     assert output_path.is_file()
 
 
+def test_declaration_non_condamnation_docteur_civilite_civile(tmp_path: Path) -> None:
+    # R3 (Albane 2026-07-07) : « Docteur » n'est pas une civilité — le flux SAS
+    # posait « Je soussigné Docteur Camille Martin ». Le slot rend la civilité
+    # CIVILE accordée au genre du signataire (M./Mme), partout où la DNC est émise.
+    ctx = _context()
+    ctx.personne_signataire.civilite = "Docteur"
+    text = _docx_text(DeclarationNonCondamnationGenerator().generate(ctx, tmp_path))
+    assert "Je soussigné Monsieur Jean Durand" in text
+    assert "Docteur" not in text
+
+    ctx_f = _context(Gender.FEMININ)
+    ctx_f.personne_signataire.civilite = "Docteur"
+    text_f = _docx_text(DeclarationNonCondamnationGenerator().generate(ctx_f, tmp_path))
+    assert "Je soussignée Madame Marie Durand" in text_f
+    assert "Docteur" not in text_f
+
+
 def test_declaration_non_condamnation_contains_essential_texts(tmp_path: Path) -> None:
     text = _docx_text(_generate(tmp_path))
 
     assert "DECLARATION DE NON CONDAMNATION" in text
     assert "EN APPLICATION DE L’ARTICLE A.123-51 du Code de Commerce" in text
     assert "Je soussigné Monsieur Jean Durand" in text
-    assert "Né le 03/02/1990 à Paris." in text
+    assert "Né le 03/02/1990 à Paris" in text  # Albane 2026-06-10 : plus de point
     assert "de nationalité française" in text
     assert "fils de Monsieur Pierre Durand" in text
     assert "et de Madame Anne Martin" in text
     assert "Déclare sur l’honneur, conformément aux dispositions de l’article A.123-51" in text
     assert "Fait à Paris" in text
     assert "Le 12/05/2026" in text
-    assert "Rappel : Article L123-5 du code de commerce" in text
+    # NBSP (U+00A0) avant les deux-points (typographie modele source).
+    assert "Rappel" + chr(0x00A0) + ": Article L123-5 du code de commerce" in text
     assert "Les dispositions des deuxième et troisième alinéas de l’article L.123-4" in text
 
 
@@ -110,7 +128,7 @@ def test_declaration_non_condamnation_uses_feminine_agreements(tmp_path: Path) -
     text = _docx_text(_generate(tmp_path, Gender.FEMININ))
 
     assert "Je soussignée Madame Marie Durand" in text
-    assert "Née le 03/02/1990 à Paris." in text
+    assert "Née le 03/02/1990 à Paris" in text
     assert "fille de Monsieur Pierre Durand" in text
 
 
@@ -121,7 +139,7 @@ def test_declaration_non_condamnation_can_use_au_before_birth_city(tmp_path: Pat
 
     text = _docx_text(DeclarationNonCondamnationGenerator().generate(ctx, tmp_path))
 
-    assert "Né le 03/02/1990 au Bourget." in text
+    assert "Né le 03/02/1990 au Bourget" in text
     assert "Né le 03/02/1990 à Bourget." not in text
 
 
@@ -167,3 +185,38 @@ def test_declaration_non_condamnation_matches_source_visual_formatting(tmp_path:
     second_reminder_paragraph = _find_paragraph(document, "Les dispositions des deuxième")
     assert second_reminder_paragraph.alignment == WD_ALIGN_PARAGRAPH.JUSTIFY
     assert all(run.italic for run in second_reminder_paragraph.runs if run.text.strip())
+
+
+def test_declaration_non_condamnation_espace_avant_filiation_seulement(
+    tmp_path: Path,
+) -> None:
+    # Retour Albane « mise en forme » 1.2 : un espace (6 pt) est menage APRES la ligne
+    # « de nationalité » (derniere ligne de designation, ciblee par ROLE/POSITION et non
+    # par egalite de contenu), juste avant la filiation. Le reste du bloc identite ET les
+    # lignes de filiation restent COMPACTS (space_after = 0).
+    document = Document(_generate(tmp_path))
+
+    subject = _find_paragraph(document, "Je soussigné Monsieur Jean Durand")
+    birth = _find_paragraph(document, "Né le 03/02/1990")
+    address = _find_paragraph(document, "demeurant au 12 rue des Lilas")
+    nationality = _find_paragraph(document, "de nationalité française")
+    filiation_father = _find_paragraph(document, "fils de Monsieur Pierre Durand")
+    filiation_mother = _find_paragraph(document, "et de Madame Anne Martin")
+
+    # Seule la ligne « nationalité » (derniere designation) porte l'espace de 6 pt.
+    assert nationality.paragraph_format.space_after == Pt(6)
+    # Tout le reste du bloc reste compact.
+    for compact in (subject, birth, address, filiation_father, filiation_mother):
+        assert compact.paragraph_format.space_after == Pt(0)
+
+
+def test_declaration_non_condamnation_birth_department_in_parentheses(tmp_path: Path) -> None:
+    # Retour Albane 2026-06-10 : « né le {date} à {ville} ({département}) » —
+    # plus de point après la ville, département entre parenthèses s'il est renseigné.
+    ctx = _context()
+    ctx.personne_signataire.departement_naissance = "Seine-Saint-Denis"
+
+    text = _docx_text(DeclarationNonCondamnationGenerator().generate(ctx, tmp_path))
+
+    assert "Né le 03/02/1990 à Paris (Seine-Saint-Denis)" in text
+    assert "à Paris." not in text

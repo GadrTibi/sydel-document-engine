@@ -7,6 +7,12 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from sydel_doc_engine.domain.enums import Gender
 
+# Alias du type `date` pour les champs qui portent EXACTEMENT ce nom (`Signature.date`) : dans le
+# corps de la classe, l'attribut masque le type, donc `date | None` s'auto-referencerait
+# (« unsupported operand type(s) for | : NoneType »). Les autres champs (`date_naissance`, …)
+# n'ont pas ce probleme et continuent d'utiliser `date`.
+_DateField = date
+
 
 class Address(BaseModel):
     num_voie: str | None = None
@@ -33,6 +39,9 @@ class Person(BaseModel):
     date_naissance: date | None = None
     ville_naissance: str | None = None
     ville_naissance_article_au: bool = False
+    # Departement de naissance (retour Albane 2026-06-10 : « ne a {ville}
+    # ({departement}) » dans la DNC). Optionnel.
+    departement_naissance: str | None = None
     nationalite: str | None = None
     nom_pere: str | None = None
     nom_mere: str | None = None
@@ -74,7 +83,12 @@ class Company(BaseModel):
 
 class Signature(BaseModel):
     lieu: str
-    date: date
+    # KAN-2 (Rafael 2026-07-14) : « tous les documents doivent pouvoir etre generes, meme si je
+    # ne remplis aucun champ ». La date de signature est un champ que le front rend deja
+    # `date | None` (effacee ou format invalide -> None) : la typer non-optionnelle faisait lever
+    # une ValidationError APRES que le plan ait annonce « generable » (Akainu B1). Non renseignee
+    # -> les formateurs rendent « (À COMPLÉTER : … ) » ; on n'invente jamais une date de repli.
+    date: _DateField | None = None
     image_optionnelle: Path | None = None
     nombre_exemplaires: str | None = None
     prestataire_signature_electronique: str | None = None
@@ -167,6 +181,10 @@ class DerogationContext(BaseModel):
 class BailParty(BaseModel):
     civilite_affichage: str | None = None
     civilite_courte: str | None = None
+    # R3 « supprimer PARTOUT » (Rafael 2026-07-09) : genre pour accorder la civilite CIVILE
+    # (Monsieur/Madame) quand la saisie porte un titre professionnel « Docteur »/« Dr ».
+    # Optionnel/additif ; absent -> masculin par defaut (cf. civilite_civile).
+    genre: Gender | None = None
     prenom: str | None = None
     nom: str | None = None
     profession: str | None = None
@@ -244,6 +262,11 @@ class CessionBailProfessionnel(BaseModel):
     date_reconduction_2: date | str | None = None
     loyer_mensuel: str | None = None
     activite_autorisee_affichee: str | None = None
+    # Descriptif libre du local (retours client 2026-06-11, ticket 2.5) :
+    # texte libre du redacteur. Rempli -> remplace la phrase figee « Les locaux
+    # sont composes... » du modele ; vide -> la phrase est supprimee (jamais de
+    # phrase incomplete, jamais bloquant).
+    descriptif_local: str | None = None
 
 
 class CessionExercice(BaseModel):
@@ -264,6 +287,10 @@ class CessionPrix(BaseModel):
 class CessionScm(BaseModel):
     actif: bool = False
     nb_parts_a_ceder: str | None = None
+    # CE8 (Albane 2026-06-26) : le point 8 de l'acte medical cede « l'integralite
+    # des parts qu'il detient de la SCM <denomination> ». La denomination de la SCM
+    # est portee ici ; vide -> zone a completer a la main (jamais bloquant).
+    denomination: str | None = None
 
 
 class CessionSalarie(BaseModel):
@@ -385,6 +412,10 @@ class SpfplOrdre(BaseModel):
     ville: str | None = None
     numero: str | None = None
     numero_rpps: str | None = None
+    # ST6 (Albane 2026-07-10) : preposition grammaticale « de / du / des » placee avant le
+    # departement de l'Ordre dans la ligne d'identite des statuts SEL. Defaut None -> « de »
+    # (comportement historique byte-identique pour tout caller qui ne la renseigne pas).
+    connecteur_departement: str | None = None
 
 
 class SpfplDirigeant(BaseModel):
@@ -451,6 +482,13 @@ class StatutsSas(BaseModel):
 class StatutsSel(BaseModel):
     overlay: str | None = None
     profession: str | None = None
+    # Retours V3 2026-06-17 (SELARL multi-associes) : liste OPTIONNELLE de membres
+    # (personne physique OU morale) reutilisant le modele riche `StatutsCivilsAssocie`
+    # (deja employe par la SELAS multi et le repeater). ADDITIF : vide ou a un seul
+    # element -> le rendu SELARL reste le parcours mono historique, byte-identique.
+    # >= 2 membres -> comparution / art. 7 (apports) / art. 8 (repartition capital) /
+    # signature iterent sur la liste (cf. statuts_sel_exercice_common.render_statuts_sel_docx).
+    membres: list[StatutsCivilsAssocie] = Field(default_factory=list)
 
 
 class StatutsPresident(BaseModel):
@@ -575,6 +613,11 @@ class ProfessionalEntity(BaseModel):
 
 class CapitalSouscripteur(BaseModel):
     civilite_affichage: str | None = None
+    # R3 durci (Rafael 2026-07-07) : genre du souscripteur pour ACCORDER la civilite
+    # civile (Monsieur/Madame) quand un titre (« Docteur ») est pose en civilite.
+    # Optionnel (appelants legacy) : absent -> masculin par defaut, comme
+    # derive_gender_from_civilite cote front.
+    genre: Gender | None = None
     prenom: str | None = None
     nom: str | None = None
     profession: str | None = None
@@ -633,6 +676,20 @@ class StatutsCivilsRepresentant(BaseModel):
     fonction: str | None = None
 
 
+class RegimeCommunautaireAssocie(BaseModel):
+    """Regime communautaire d'UN associe personne physique (SELAS multi, R7).
+
+    Reprend la STRUCTURE SELARL (regime matrimonial + conjoint) validee, portee
+    au niveau de chaque associe au lieu d'un toggle global unique."""
+
+    actif: bool = False
+    regime_matrimonial: str | None = None
+    conjoint_civilite: str | None = None
+    conjoint_genre: Gender | None = None
+    conjoint_prenom: str | None = None
+    conjoint_nom: str | None = None
+
+
 class StatutsCivilsAssocie(BaseModel):
     type_personne: str = "personne_physique"
     role_statutaire: str | None = None
@@ -660,6 +717,28 @@ class StatutsCivilsAssocie(BaseModel):
     apport: StatutsCivilsApport | None = None
     parts: StatutsCivilsParts | None = None
     est_signataire: bool = True
+    # Champs OPTIONNELS additifs pour les SEL d'exercice multi (SELAS). Non utilises par
+    # les statuts civils (SCS/SCI/SCI IRIS/SCM) -> aucun impact sur ces generateurs.
+    qualification_principale: str | None = None
+    ordre_departemental: str | None = None
+    numero_ordre: str | None = None
+    numero_rpps: str | None = None
+    qualite_capital: str | None = None
+    nb_actions: int | None = None
+    nb_actions_lettres: str | None = None
+    # R7 (retours Rafael 2026-06-18) : regime matrimonial communautaire PAR
+    # associe personne physique (SELAS multi). Additif et optionnel ; None ->
+    # associe non concerne. Le conjoint + le regime sont portes ici pour que la
+    # renonciation (DOC-005) + l'avertissement (DOC-006) puissent, a terme, etre
+    # generes UNE FOIS PAR personne concernee. Tant que le moteur n'emet pas par
+    # personne, ce bloc alimente le formulaire et l'agregation (cf. slice SELAS).
+    regime_communautaire_associe: RegimeCommunautaireAssocie | None = None
+    # DNC par ASSOCIE (Rafael 2026-07-09) : filiation propre a CHAQUE associe
+    # personne physique — une declaration de non-condamnation (DOC-001) PAR associe
+    # dans tous les types multi-associes, plus seulement celle du dirigeant.
+    # Champs additifs et optionnels (None pour une personne morale).
+    nom_pere: str | None = None
+    nom_mere: str | None = None
 
 
 class StatutsCivilsCapitalDepot(BaseModel):
@@ -676,6 +755,10 @@ class StatutsCivilsGroupeParts(BaseModel):
 class StatutsCivilsContext(BaseModel):
     type: str | None = None
     forme_sociale: str | None = None
+    # Micro holding (Albane 2026-06-26) : objet social pilote par une variante (A generique
+    # civil / B holding), texte deja resolu en amont. Injecte au token [objet_social] du
+    # modele micro holding. None pour les autres civiles (objet fige dans leur modele source).
+    objet_social: str | None = None
     mention_capital_variable: str | None = None
     capital_social: str | None = None
     capital_social_lettres: str | None = None
@@ -697,6 +780,52 @@ class StatutsCivilsContext(BaseModel):
     date_cloture_premier_exercice: str | None = None
     nombre_exemplaires_lettres: str | None = None
     denomination_cabinet_mandataire: str | None = None
+
+
+class StatutsSelasMultiPresident(BaseModel):
+    # Le president SELAS multi est une personne physique associee exercante. On le rattache
+    # par index dans la liste des associes (defaut 0), ou par nom/prenom explicites.
+    ref_associe_index: int | None = None
+    civilite_affichage: str | None = None
+    prenoms: str | None = None
+    nom: str | None = None
+    adresse_personnelle_affichee: str | None = None
+
+
+class StatutsSelasMultiContext(BaseModel):
+    # Contexte dedie SELAS multi (statuts de creation). Self-contained : il ne reutilise
+    # PAS la validation des statuts civils pour ne pas risquer de casser SCS/SCI/SCM.
+    profession_reglementee: str | None = None
+    profession_reglementee_pluriel: str | None = None
+    capital_social: str | None = None
+    capital_social_lettres: str | None = None
+    nb_actions_total: int | None = None
+    nb_actions_total_lettres: str | None = None
+    valeur_nominale_action: str | None = None
+    valeur_nominale_action_lettres: str | None = None
+    adresse_lieu_exercice: str | None = None
+    banque_nom: str | None = None
+    banque_adresse: str | None = None
+    date_cloture_premier_exercice: str | None = None
+    associes: list[StatutsCivilsAssocie] = Field(default_factory=list)
+    president: StatutsSelasMultiPresident | None = None
+
+
+class StatutsSasuHoldingContext(BaseModel):
+    # Contexte dedie SASU Holding (nouveau type, modele officiel Albane 2026-06-29).
+    # SAS unipersonnelle (actionnaire/associe unique = president), holding patrimoniale
+    # GENERALISTE (objet participations, pas de profession reglementee). Self-contained :
+    # ne reutilise pas la validation SPFPL medecins. Token-replacement sur le modele
+    # « statuts SASU Holding.docx » (27 tokens). Identite de l'associe unique + societe +
+    # signature + exercice viennent du DocumentGenerationContext standard ; les champs
+    # specifiques SAS sont portes ici.
+    forme_sociale: str | None = None  # ex. « Société par actions simplifiée unipersonnelle »
+    capital_social: str | None = None
+    capital_social_lettres: str | None = None
+    nb_actions: int | None = None
+    nom_banque: str | None = None
+    qualite_associe: str | None = None  # ex. « Associé unique et Président »
+    fonction_dirigeant: str | None = None  # ex. « Président »
 
 
 class RegimeCommunautaireAvertissement(BaseModel):
@@ -726,6 +855,17 @@ class OrdreAddress(BaseModel):
 class OrdreProfessionnel(BaseModel):
     conseil_departemental_libelle: str | None = None
     departement_inscription: str | None = None
+    # Connecteur grammatical place AVANT le departement de l'ordre dans le
+    # libelle derive (« de l'Ordre des ... DE Gironde » / « ... DU Jura »).
+    # Defaut « de » = comportement historique byte-identique pour tous les
+    # callers qui ne le renseignent pas (SELARL inchangee). Retours Rafael R6.
+    connecteur_departement: str | None = None
+    # SU2 (Albane 2026-06-25) : SELAS unipersonnelle — le destinataire de la
+    # demande d'inscription OMET « de l'Ordre des <profession> » et ne garde que
+    # « Conseil départemental <connecteur> <departement> » (ex. « Conseil
+    # départemental des Hauts de Seine »). Défaut False = SELARL / SELAS multi
+    # byte-identiques (« Conseil départemental de l'Ordre des médecins de X »).
+    destinataire_sans_mention_ordre: bool = False
     destinataire_appel: str | None = None
     profession_signataire_affichee: str | None = None
     profession_ligne_destinataire: str | None = None
@@ -786,6 +926,11 @@ class DirigeantNomine(BaseModel):
     fonction_affichage: str = "gérant"
     ref_associe_index: int | None = None
     duree_mandat: str | None = None
+    # Phrase d'identite verbatim du modele PV nominations dirigeants (SELAS),
+    # ex. « ..., marie sous le regime de la separation des biens ..., demeurant ... ».
+    # Optionnel : si fourni, il prime sur la reconstruction par champs dans la
+    # decision multi-dirigeants (fidelite au modele). Aucun impact sur le mono.
+    identite_phrase: str | None = None
 
 
 class DecisionContext(BaseModel):
@@ -1000,6 +1145,9 @@ class ScmRepresentant(BaseModel):
     nom: str | None = None
     identite_affichee: str | None = None
     titre_affichage: str | None = None
+    # R3 « supprimer PARTOUT » (Rafael 2026-07-09) : genre pour accorder la civilite CIVILE
+    # (Monsieur/Madame) quand titre_affichage/civilite portent « Docteur »/« Dr ».
+    genre: Gender | None = None
     fonction: str | None = None
 
 
@@ -1011,6 +1159,10 @@ class PartieFraisCommuns(BaseModel):
 class PraticienScm(BaseModel):
     identite_affichee: str | None = None
     telephone: str | None = None
+    # R3 « supprimer PARTOUT » (Rafael 2026-07-09) : le reglement interieur SCM nomme le
+    # praticien « le Docteur <identite> » (annuaire + rotation du message) ; on rend desormais
+    # sa civilite CIVILE (Monsieur/Madame accorde au genre ; absent -> masculin par defaut).
+    genre: Gender | None = None
 
 
 class LocauxContext(BaseModel):
@@ -1039,6 +1191,11 @@ class DocumentGenerationContext(BaseModel):
     mandataire: Mandataire | None = None
     associes: list[Associe] = Field(default_factory=list)
     dirigeant_nomine: DirigeantNomine | None = None
+    # Extension ADDITIVE (modele PV nominations dirigeants, SELAS) : permet de
+    # nommer PLUSIEURS dirigeants (President, Directeur General, eventuel DG
+    # delegue), chacun = une decision (PREMIERE / DEUXIEME / ...). Vide = mode
+    # mono historique inchange (un seul gerant porte par `dirigeant_nomine`).
+    dirigeants_nomines: list[DirigeantNomine] = Field(default_factory=list)
     decision: DecisionContext | None = None
     reunion: ReunionContext | None = None
     capital: CapitalContext | None = None
@@ -1062,6 +1219,7 @@ class DocumentGenerationContext(BaseModel):
     sites_existants: list[SiteExistant] = Field(default_factory=list)
     operation_spfpl: OperationSpfpl | None = None
     statuts_sas: StatutsSas | None = None
+    statuts_sasu_holding: StatutsSasuHoldingContext | None = None
     statuts_sel: StatutsSel | None = None
     societe_spfpl: SocieteSpfpl | None = None
     actionnaire_unique: SpfplPerson | None = None
@@ -1082,4 +1240,5 @@ class DocumentGenerationContext(BaseModel):
     commissaire_aux_apports: ProfessionalEntity | None = None
     document: DocumentContext | None = None
     statuts_civils: StatutsCivilsContext | None = None
+    statuts_selas_multi: StatutsSelasMultiContext | None = None
     metadata: dict[str, str] = Field(default_factory=dict)

@@ -1,0 +1,425 @@
+D'après les sources de ce NotebookLM, voici les réponses concernant la structuration et la documentation des SPFPL (Société de Participations Financières de Profession Libérale) :
+
+### 1. Validité et complétude de la cartographie SPFPL
+La cartographie que vous décrivez est **correcte et cohérente** avec les processus détaillés dans les sources, même si certaines versions de tableaux ont pu l'alléger. La création d'une holding est une mission centrale du cabinet pour la restructuration patrimoniale [1, 2].
+
+*   **Parcours « Cession » vs « Apport »** : Les sources confirment cette distinction majeure. L'apport nécessite un **« contrat d’apport »** et l'identification des titres numérotés, tandis que la cession est une vente de titres contre du numéraire [3-5].
+*   **Documents identifiés dans les sources** :
+    *   **Documents communs** : La déclaration de non-condamnation (DNC), la procuration et les statuts sont les pièces de base [6-8].
+    *   **Inscription à l'Ordre** : Une demande spécifique est nécessaire pour la holding, bien que plus simple que pour une SEL car l'Ordre « s'en fiche » de l'exercice [9].
+    *   **PV d'agrément (au niveau de la SEL)** : Pour intégrer la holding au capital de la SEL, il faut un PV d'agrément ou d'autorisation. Les sources distinguent bien le formalisme pour un **« associé unique »** (plus court) de celui pour **« plusieurs associés »** (plus complexe) [10, 11].
+    *   **Commissaire aux apports** : Sa nomination est confirmée comme obligatoire pour l'opération de holding par voie d'apport [5, 12].
+    *   **Régime communautaire** : La lettre de renonciation est prévue pour les associés mariés sous le régime de la communauté [13].
+
+### 2. Forme juridique de la SPFPL : SAS ou SARL ?
+La SPFPL peut théoriquement adopter les deux formes, mais le cabinet a une pratique exclusive :
+
+*   **Formes possibles** : Comme la SEL, la holding peut être une **SPFPLAS** (forme SAS) ou une **SPFPLARL** (forme SARL) [2].
+*   **Choix du cabinet** : Les sources stipulent explicitement : **« Nous ne créons que des SPFPLAS »** [2].
+*   **Conséquence terminologique** : Puisque le cabinet ne crée que des SPFPLAS, le dirigeant est un **« Président »** et le capital est divisé en **« actions »** [14, 15].
+
+### 3. Nature des titres sous-jacents (SEL)
+L'opération (cession ou apport) porte sur les titres de la société fille (la SEL). La terminologie de l'acte dépend exclusivement de la forme de cette SEL :
+
+*   **SELARL** : Si la société dont les titres sont transférés à la holding est une SELARL, on parle de **« parts sociales »** et d'un **« acte de cession de parts »** [3, 14].
+*   **SELAS** : Si la société est une SELAS, on parle d' **« actions »** et d'un **« acte de cession d'actions »** [14, 15].
+*   **Justification source** : Les sources notent que le mot « actions » est celui qui revient le plus lors du passage en SELAS [14]. Le fait que l'acte de cession d'actions soit souvent laissé sans modèle s'explique par la prédominance historique de la SELARL dans les dossiers du cabinet, bien que la transition vers la SELAS soit en cours [15, 16].
+
+**En résumé** : Votre section SPFPL fait toujours foi car elle reflète la réalité opérationnelle décrite dans les audits, même si elle est complexe à automatiser. La règle d'or des sources est la **substitution systématique** : SARL/SELARL = Gérant/Parts ; SAS/SELAS/SPFPLAS = Président/Actions [2, 14, 15].
+
+
+D'après les sources de ce carnet de notes, le modèle exact d'un « acte de cession d'actions » pour une SELAS est **non trouvé**. Toutefois, les sources fournissent une méthode précise pour adapter votre modèle de « cession de parts » existant afin de couvrir les opérations sur actions.
+
+### 1. Existence d'un modèle de référence
+*   **Modèle exact : Non trouvé.** Les sources mentionnent l'existence d'actes de cession (cession de fonds, cession de parts de SCM ou de SEL), mais le texte intégral d'un acte spécifique aux **actions** de SELAS n'est pas reproduit [1-3].
+*   **Indice de gestion :** Dans l'interface projetée, le bouton « Cession SEL » est présent, mais les experts précisent que les documents pour SELAS et SELARL « pourraient être **identiques dans la base** » moyennant des remplacements de termes [4, 5].
+
+### 2. Différences de wording (Actions vs Parts sociales)
+Le passage d'une cession de parts (SELARL) à une cession d'actions (SELAS) repose sur une règle de **substitution terminologique systématique** :
+
+*   **Terminologie des titres :** Le terme « parts sociales » ou « parts » doit être impérativement remplacé par « **actions** ». C'est identifié comme « le mot qui revient le plus dans tous les documents » [4, 6].
+*   **Désignation du dirigeant :** Dans les clauses identifiant les signataires ou les représentants de la société, « Gérant » doit devenir « **Président** » [5, 6].
+*   **Forme sociale :** La mention « Société d'exercice libéral à responsabilité limitée » doit être remplacée par « **Société d’exercice libéral par actions simplifiée** » [7].
+*   **Complexité rédactionnelle :** Les sources indiquent que pour les SELAS, les documents sont parfois « rédigés un peu différemment » car il y a souvent « **plus de mots** », sans toutefois détailler ces phrases supplémentaires [5, 6].
+
+### 3. Mentions spécifiques aux actions (Registres et Ordres de mouvement)
+*   **Registre de mouvements de titres et Ordres de mouvement : Non trouvé.** Les sources ne mentionnent pas explicitement ces documents ou ces mentions dans le cadre de la cession d'actions. Elles se concentrent sur l'acte de cession lui-même (ou le contrat d'apport) [3, 8].
+*   **Agrément :** Pour les opérations de holding (SPFPL), un « **PV d'autorisation** » ou d'agrément est nécessaire au niveau de la SEL pour accepter l'entrée de la société holding au capital [9, 10]. Le wording de ce PV varie selon que la SEL est à associé unique (« associé unique... a pris les décisions ») ou à plusieurs associés (« les associés présents... discutent entre eux ») [10].
+
+### 4. Adaptation du modèle de cession de parts
+Si vous adaptez votre acte de cession de parts sociales, les sources suggèrent de modifier les sections suivantes :
+1.  **L'objet de la cession :** Remplacer « parts sociales » par « actions ».
+2.  **Le prix :** Bien que le calcul soit similaire, l'unité cédée doit être l'action.
+3.  **L'identification de la société :** Mettre à jour la forme juridique (SELAS) et l'organe de direction (Président) [7].
+4.  **Décorrélation des droits :** Pour les SELAS, le moteur documentaire doit permettre de distinguer les « **droits de vote** » des « **droits financiers** », car 1 % des actions ne donne pas forcément droit à 1 % du résultat [11].
+
+**Indice source :** Les experts du cabinet considèrent que la création d'une base de modèles unique pour les deux formes (SELARL/SELAS) est possible en utilisant des **champs variables** pour la forme sociale et le titre du dirigeant, ce qui permet de réduire la maintenance des modèles [7, 12].
+
+
+D'après les sources de ce NotebookLM, voici les précisions concernant le Procès-Verbal (PV) d'agrément dans le cadre d'une opération de holding (SPFPL) :
+
+### **1. Variante pour une SELAS (Société par actions)**
+
+*   **Existence d'une variante spécifique :** Les sources n'indiquent pas l'existence d'un modèle de PV structurellement différent pour une SELAS. Au contraire, elles précisent que les documents de base pour SELARL et SELAS « **pourraient être identiques dans la base** » [1].
+*   **Changements de vocabulaire :** L'adaptation repose sur une substitution terminologique systématique. Dans le PV d'agrément d'une SELAS :
+    *   Le terme « **parts sociales** » (propre à la SELARL) doit impérativement être remplacé par « **actions** » [2, 3].
+    *   Le terme « **Gérant** » doit être remplacé par « **Président** » [1, 2].
+*   **Organe compétent :** Les sources ne mentionnent pas d'agrément par un « Conseil d'administration » ou par le « Président » seul pour la SELAS. Elles conservent la distinction basée sur le nombre d'associés :
+    *   **Associé unique** : Le document est une « **décision de l'associé unique** » (formalisme court) [4].
+    *   **Plusieurs associés** : Le document est un PV d'**assemblée générale** où « **les associés présents... discutent entre eux** » [4].
+*   **Clause d'agrément des statuts : Non trouvé.** Le wording exact d'une clause d'agrément spécifique aux statuts de SAS/SELAS n'est pas présent dans les sources [Turn 7].
+
+### **2. PV d'agrément : Cession ou Apport ?**
+
+*   **Application aux deux cas : OUI.** Le PV d'agrément (ou « PV d'autorisation ») est requis quelle que soit la modalité de transfert des titres vers la holding [5, 6].
+*   **Justification pour l'apport :** Une source précise explicitement : « **je vais devoir faire un [PV] au niveau de la SEL pour dire OK j'accepte l'opération d'apport** » [6].
+*   **Règle générale :** Les sources stipulent que pour intégrer une holding au capital d'une SEL existante, « **dans les 2 cas [apport ou cession], il faut modifier les documents et la situation de la SEL pour y intégrer notre holding** » [5]. À l'issue de l'opération (apport ou cession), il est confirmé qu'il faut obtenir un « **PV d'agrément et des statuts nouveaux** » pour la société cible [7].
+
+**En résumé :** Le moteur documentaire doit utiliser la même structure de PV pour une SELAS que pour une SELARL, en veillant à la **bascule terminologique (Actions/Président)** et en maintenant le formalisme de l'**assemblée générale** (ou décision d'associé unique) pour valider l'entrée de la SPFPL, qu'il s'agisse d'un apport ou d'une cession [1, 6].
+
+
+D'après les sources et les transcriptions d'ateliers fournies, voici le wording identifié pour la **note d'information** destinée au Conseil de l'Ordre dans le cadre d'une opération de SPFPL.
+
+Il est important de noter que les sources ne contiennent pas le modèle complet sous forme de texte continu, mais détaillent les segments de phrases obligatoires et les variables à intégrer pour chaque parcours.
+
+### **1. Présentation des entités (Commun aux deux variantes)**
+
+*   **Présentation de la SPFPL :** Elle doit être désignée sous sa forme de **Société de Participations Financière des Professions Libérale par Actions Simplifiée (SPFPLAS)**, car le cabinet ne crée que cette forme [1, 2]. Son capital initial est généralement présenté ainsi : « capital de la SPFPL... On va avoir toujours les **1 000 €** [divisés en] **actions** » [2, 3].
+*   **Présentation de la société cible :** La société d'exercice libéral (SEL) est identifiée par sa dénomination et sa forme (SELARL ou SELAS) [3]. Les sources précisent qu'il faut « identifier la société » cible dans la note [4].
+
+### **2. Variante « Cession » (Acquisition de titres)**
+
+Dans ce parcours, la SPFPL achète les titres du praticien avec du numéraire.
+*   **Phrase d'objet :** « L'opération qu'on veut projeter... l'ASPFP [SPFPL] qu'on est en train de faire **prévoit d'acquérir** les titres de la société [Dénomination de la SEL] » [3, 5].
+*   **Wording complémentaire :** La note doit préciser qu'il s'agit d'une acquisition de titres contre paiement d'un prix [6].
+
+### **3. Variante « Apport » (Apport en nature de titres)**
+
+Dans ce parcours, le praticien apporte ses titres à la holding en échange d'actions de la holding.
+*   **Phrase d'objet :** « L'opération qu'on veut projeter... l'ASPFP [SPFPL] qu'on est en train de faire **prévoit de recevoir en apport** les titres de la société [Dénomination de la SEL] » [3, 5, 7].
+*   **Wording complémentaire :** Il est mentionné que l'apporteur fait un « **apport de titres numérotés** » de la société cible à la SPFPL [4].
+
+### **4. Décomposition du capital APRÈS opération**
+
+Le wording doit décrire la structure finale du capital de la SEL après l'entrée de la holding.
+*   **Phrase d'introduction :** « Une fois le capital, à la fin, sera décomposé comme ça : » [3].
+*   **Wording de répartition (SELAS) :**
+    > « [Nombre] **actions** [détenues par] **le Docteur [Nom]** et [Nombre] **actions** [détenues par] **la SFP [Dénomination SPFPL]** » [5].
+*   **Logique de répartition :** Dans la majorité des cas, la SPFPL détient la quasi-totalité du capital pour optimiser la fiscalité, tandis que le praticien conserve une part/action résiduelle.
+    *   *Exemple type cité :* « **2 actions** [pour le Docteur] et **998 actions** [pour la SPFPL] » (sur un total de 1 000) [8].
+    *   *Cas de cession/apport mixte :* Le praticien peut détenir des titres en direct et via la holding : « [Le cédant/apporteur] en avoir quelques-unes [en direct]... et la holding elle détienne **990 actions** » [7].
+
+### **Informations non trouvées**
+*   **Wording exact du bloc de clôture :** Les sources ne fournissent pas la phrase de conclusion type ou la formule de politesse spécifique à l'Ordre [Non trouvé].
+*   **Détail des droits de vote dérogatoires :** Bien que les sources mentionnent que « 1 % des parts ne donne pas forcément droit à 1 % du résultat » [9], le wording exact pour intégrer cette distinction dans la note d'information (droits de vote vs droits financiers) n'est pas reproduit.
+*   **Adresse du Conseil de l'Ordre :** Le wording pour l'en-tête (destinataire exact selon le département) est mentionné comme un choix de menu déroulant mais n'est pas cité textuellement [2].
+
+
+D'après les sources, le vocabulaire utilisé dans les actes doit être **impérativement adapté** au type d'opération juridique (Cession ou Apport), car bien que les résolutions soient structurellement identiques, la nature juridique du transfert de titres diffère [1, 2].
+
+### **1. Si l'opération est une CESSION de parts**
+Dans ce cas, le vocabulaire d'apport est **juridiquement erroné** et doit être remplacé par celui de la vente [1].
+
+*   **Vocabulaire à utiliser :** Il faut substituer « apport » par « **cession de parts** » et utiliser les termes « **cédant** » (le praticien) et « **cessionnaire** » (la SPFPL) [1, 3].
+*   **Wording de l'Ordre du jour :**
+    1.  « **Agrément d’un nouvel associé** » ;
+    2.  « **Modification des statuts** » ;
+    3.  « **Pouvoirs pour l’accomplissement des formalités** » [4].
+*   **Wording des Résolutions :** Les sources indiquent que les résolutions sont les mêmes sur le fond que pour un apport (« je dis exactement la même chose »), mais elles doivent viser l'agrément de la société holding en tant que **cessionnaire** des parts [4].
+*   **Article de répartition du capital (Article 8) :** Après la cession, le capital doit être présenté ainsi :
+    > « **Le capital social est divisé en [Nombre] parts sociales... attribuées de la façon suivante :**
+    > *   **[Civilité Nom Prénom du Docteur] : [Nombre] parts**
+    > *   **La société [Dénomination de la SPFPL] : [Nombre] parts** » [3, 5, 6].
+    > *(Note : Le Docteur conserve généralement une part résiduelle, ex: 2 parts pour le Docteur et 998 parts pour la SPFPL [6]).*
+
+### **2. Si l'opération est un APPORT en nature**
+Dans ce cas, le vocabulaire d'apport présent dans votre modèle est **correct** [1, 7].
+
+*   **Vocabulaire spécifique :** Il faut mentionner l'existence d'un « **contrat d’apport** » [1].
+*   **Wording de l'opération :** Le texte doit préciser que l'associé effectue un « **apport de titres numérotés** » de la société cible à la SPFPL [7].
+*   **Organe compétent :** Le PV doit mentionner que la société « **accepte l'opération d'apport** » [8].
+
+### **3. Erreur de modèle ou PV unique ?**
+Les sources révèlent que l'utilisation du vocabulaire d'apport dans un document nommé « cession » est une **erreur de rédaction** ou un manque d'adaptation du modèle [2].
+
+*   **Différenciation nécessaire :** Les sources affirment explicitement qu'il y a des « **rédactions vraiment qui sont différentes entre l'apport et la cession, c'est pas juste trois champs à remplir** » [2].
+*   **Usage du modèle :** Bien que la liste des documents soit similaire, vous devez disposer de deux versions distinctes ou d'un moteur capable de basculer l'intégralité du bloc lexical selon le choix de l'opération [9, 10].
+
+**En résumé :** Le PV nommé « cession » contenant du vocabulaire « apport » est un document incohérent. Pour une **cession**, vous devez corriger le texte pour supprimer toute référence à l'apport et au contrat d'apport, en les remplaçant par les termes de la vente [1, 2].
+
+
+D'après les sources de ce carnet de notes, voici les réponses concernant la rédaction de l'acte de cession de parts sociales pour une SPFPL :
+
+### 1. Origine de propriété
+L'origine de propriété décrit comment le **CÉDANT** est devenu propriétaire des parts qu'il s'apprête à vendre [1]. Elle ne décrit pas l'acquéreur (la SPFPL).
+*   **Wording type (Cas de la création) :** Si le praticien a lui-même créé sa société, le document doit mentionner qu'il a **souscrit** ces parts lors de la constitution [1].
+*   **Wording type (Cas de l'achat) :** Si le cédant avait lui-même acheté ces parts, le wording doit mentionner l'**acte d'achat initial** (vendeur, date, prix) [1].
+*   **Indice source :** Les sources précisent que si le cédant a « régulièrement créé » sa société, on peut mettre un wording par défaut avec la date de création, mais s'il l'a achetée, il faut impérativement se référer à l'acte d'achat précédent [1].
+
+### 2. Répartition actuelle du capital (Structure dynamique)
+D'après le modèle d'organisation des associés [2-4], la structure doit suivre ce formalisme :
+*   **Associé personne physique :** « [Civilité] [Nom Prénom] : [Nombre] parts » [2].
+*   **Associé personne morale :** « La société [Dénomination] : [Nombre] parts » [3, 4].
+*   **Total :** « Soit au total : [Total] ([TOTAL EN LETTRES]) parts » [2].
+*   **Précision technique :** Pour les structures pluri-associés, il est conseillé d'ajouter la numérotation des parts pour plus de précision (ex: « parts n°1 à X ») [5].
+
+### 3. Prix et modalités de paiement
+Le wording **EXACT** du bloc contractuel n'est **non trouvé** dans les sources sous forme de paragraphe rédigé. Cependant, les variables obligatoires identifiées sont :
+*   **Éléments requis :** « combien de parts et à quel prix » [6].
+*   **Format des montants :** En suivant la nomenclature des actes du cabinet, le prix doit être exprimé en chiffres et en lettres : « [Montant] ([MONTANT EN LETTRES]) euros » [2].
+*   **Prix unitaire :** Bien que non cité textuellement, il est déduit de la division du capital : « [Nombre] parts de [Montant] chacune » [2].
+
+### 4. Coquille « cession d'action » vs « cession de parts »
+**Oui, il s'agit d'une coquille à remplacer.**
+*   **Règle de gestion :** Dans une SELARL (ou une SARL), on parle exclusivement de **« parts sociales »** [2, 7, 8].
+*   **Justification :** Le terme « actions » est réservé aux SELAS ou aux SPFPLAS [8, 9]. Les sources soulignent que la confusion entre « parts » et « actions » est l'une des erreurs les plus fréquentes à corriger lors de l'automatisation, car « c'est le mot qui revient le plus dans tous les documents » [8, 10].
+
+***
+
+**Informations non trouvées :**
+*   Le wording précis des modalités de paiement (comptant, délai, virement) : **non trouvé** [11].
+*   Le texte intégral de la clause de garantie de passif souvent associée à la cession : **non trouvé**.
+
+
+D'après les sources de ce carnet de notes, voici les éléments identifiés concernant le **contrat d'apport** de titres à une SPFPL. Il est important de noter que les sources ne fournissent pas le contrat intégral en un seul bloc, mais détaillent les règles de gestion et des segments de clauses à intégrer.
+
+### 1. Biens apportés
+La description des titres doit être précise et s'adapter à la forme de la société dont les titres sont apportés (la société cible).
+*   **Wording de l'apport :** L'apporteur fait un « **apport de titres numérotés** » de la société [Dénomination de la SEL] [1].
+*   **Identification de la nature des titres :**
+    *   Si la SEL cible est une SELARL, le terme à utiliser est « **parts sociales** » [2, 3].
+    *   Si la SEL cible est une SELAS, le terme à utiliser est « **actions** » [2, 4].
+*   **Plage de numéros : Non trouvé.** Les sources mentionnent l'obligation d'identifier les numéros (ex: « n°1 à X »), mais ne donnent pas la phrase type du contrat d'apport pour cette plage [5, 6].
+
+### 2. Évaluation de l'apport
+*   **Processus :** L'opération nécessite la nomination d'un « **commissaire aux apports** » qui doit établir un rapport [7].
+*   **Wording exact de la phrase d'évaluation : Non trouvé.** Les sources confirment que le commissaire aux apports est une pièce obligatoire du dossier « apport », mais le texte contractuel de renvoi à son rapport n'est pas cité.
+
+### 3. Rémunération de l'apport
+L'apporteur reçoit des titres de la SPFPL en échange de son apport.
+*   **Forme des titres remis :** Comme le cabinet ne crée que des **SPFPLAS** (sociétés par actions), la rémunération se fait exclusivement en « **actions** » [8, 9].
+*   **Wording de la contrepartie : Non trouvé.** Les sources indiquent que la SPFPL aura généralement un capital de 1 000 euros divisé en actions, mais la clause précise détaillant le nombre d'actions nouvelles émises en échange de l'apport de la SEL n'est pas reproduite.
+
+### 4. Option pour le report d'imposition
+*   **Wording exact de l'option (Art. 150-0 B ter) : Non trouvé.**
+*   Les sources mentionnent que l'opération est motivée par des « **raisons fiscales d'opérations** » et s'inscrit dans une « restructuration de patrimoine » [10, 11]. Cependant, le texte juridique de l'option fiscale à insérer dans le contrat est absent des sources.
+
+### 5. Conditions suspensives
+L'opération d'apport est liée à des autorisations externes.
+*   **Agrément de la société cible :** Il faut un « **PV d'autorisation** » ou d'agrément au niveau de la SEL pour « **dire OK j'accepte l'opération d'apport** » [12].
+*   **Ordre professionnel :** La note d'information prévient le Conseil de l'Ordre que la SPFPL « **prévoit de recevoir en apport** » les titres de la société [9].
+*   **Immatriculation :** L'immatriculation de la SPFPL est une étape clé citée pour la validité des actes [13].
+*   **Wording exact des clauses de conditions suspensives : Non trouvé.** Les sources listent ces étapes comme des obligations de processus, mais ne donnent pas la rédaction contractuelle de la condition suspensive.
+
+***
+
+**Synthèse des jetons et substitutions [2-4] :**
+Le moteur documentaire doit impérativement basculer les termes selon le diagnostic de la SEL cible :
+*   **Si SELARL :** Utiliser « **Gérant** » et « **parts sociales** ».
+*   **Si SELAS :** Utiliser « **Président** » et « **actions** ».
+*   **Pour la SPFPL :** Toujours utiliser « **Président** » et « **actions** » (car forme SPFPLAS imposée par le cabinet).
+
+**Ce qui n'est pas trouvé (Sources insuffisantes) :**
+*   Le texte intégral des sections « Évaluation », « Rémunération », « Report d'imposition » et « Conditions suspensives » [Non trouvé dans les sources 1 à 7].
+*   L'identité ou le wording concernant l'évaluateur/commissaire aux apports dans le corps du contrat [Non trouvé].
+
+
+D'après les sources de ce carnet de notes, les statuts d'une **SPFPLAS** (Société de Participations Financière de Profession Libérale par Actions Simplifiée) s'appuient sur une structure de SAS adaptée aux contraintes des professions de santé.
+
+Il est important de noter qu'il n'existe pas de modèle complet de statuts SPFPL dans les sources ; les textes ci-dessous sont extraits des modèles de SEL (sociétés d'exercice) et adaptés selon les **règles de substitution systématiques** édictées par les experts du cabinet pour les holdings [1, 2].
+
+### 1. Article 1 — Forme
+*   **Wording exact :** « La Société est une **Société de Participations Financière de Profession Libérale par Actions Simplifiée (SPFPLAS)**, régie par les dispositions du Code de commerce relatives aux sociétés commerciales et les lois en vigueur, notamment : **l’ordonnance n°2023-77 du 8 février 2023** relative à l’exercice en société des professions libérales réglementées. » [1-3].
+*   **Variante :** Le cabinet précise qu'ils ne créent « que des SPFPLAS » (forme SAS) et jamais de forme SARL pour les holdings [1].
+
+### 2. Article 2 — Objet
+*   **Wording exact : Non trouvé.**
+*   Les sources décrivent la fonction de la société mais ne reproduisent pas le texte contractuel de l'article 2. Sur le plan opérationnel, la SPFPL est définie comme la « **holding spécifique** » permettant la « **prise de participation** » et la détention des titres de la société d'exercice (SEL) [1, 4].
+
+### 3. Article 6 — Apports
+Dans une SAS (ou SPFPLAS), les apports figurent généralement à l'article 6 (alors qu'ils sont à l'article 7 dans le modèle SELARL source).
+
+*   **Variante « Cession » (Apport en numéraire) :**
+    *   « Le Docteur [Nom Prénom], apporte à la société la somme de **[Montant]** euros. Cette somme a été déposée par l’associé **[unique / les associés]** sur un compte ouvert au nom de la société dans les livres de la banque **[Nom et adresse de la banque]**. Elle ne pourra être retirée que sur présentation d’un certificat du greffier attestant l’immatriculation de la société au registre du commerce et des sociétés. » [5, 6].
+*   **Variante « Apport » (Apport en nature) :**
+    *   **Wording exact : Non trouvé.**
+    *   Les sources indiquent que le texte doit mentionner un « **apport de titres numérotés** » de la société cible (SEL) et qu'il nécessite l'intervention d'un « **commissaire aux apports** » [4, 7].
+
+### 4. Article 8 — Capital social
+Le vocabulaire doit impérativement utiliser le terme « actions » et non « parts » [2, 8].
+
+*   **Variante « Cession » :**
+    *   « Le capital social est fixé à la somme de **[Montant]** euros. Il est divisé en **[Nombre] actions** de **[Valeur nominale]** chacune, intégralement libérées, souscrites et attribuées de la façon suivante : [Identité de l'associé] : [Nombre] actions. Soit au total : [Total] actions. » [2, 5, 8].
+*   **Variante « Apport » :**
+    *   **Wording exact : Non trouvé.**
+    *   Les sources précisent que dans ce cas, le montant du capital est « **très élevé** » (souvent calculé sur la valeur réelle des titres de la SEL apportés, et non sur un forfait de 1 000 €) [9].
+
+### Synthèse des éléments non trouvés
+*   Le texte intégral de la clause d'objet social spécifique à la SPFPL (Article 2) [Non trouvé].
+*   Le wording juridique précis pour l'évaluation des apports en nature et le renvoi au rapport du commissaire aux apports (Article 6) [Non trouvé].
+*   La clause de capital social spécifique au parcours "Apport" détaillant la rémunération de l'apport en nature (Article 8) [Non trouvé].
+
+***
+**Sources citées :**
+* Besoins Sydel (juridique).pdf, Slides 4, 5. [3, 5]
+* Transcription Atelier audit 1 - part 3. [1, 2, 4, 6-9]
+
+
+D'après les sources de ce NotebookLM, voici les éléments identifiés pour les documents du parcours « apport » d'une SPFPL :
+
+### 1. Wording de l'Attestation sur le capital / Liste des souscripteurs
+Le texte intégral et continu de ce document en tant que pièce isolée est **non trouvé**. Toutefois, son contenu est défini par les variables de l'Article 8 des statuts et les règles de gestion des apports décrites dans les ateliers :
+
+*   **En-tête :** Doit mentionner la **SPFPLAS [Dénomination]** (puisque le cabinet ne crée que des formes par actions pour les holdings) [1].
+*   **Corps de l'attestation :** « **Le capital social est fixé à la somme de [Montant] ([MONTANT EN LETTRES]) euros. Il est divisé en [Nombre] ([NOMBRE EN LETTRES]) actions de [Valeur] ([VALEUR EN LETTRES]) chacune, intégralement libérées, souscrites et attribuées de la façon suivante :** » [2, 3].
+*   **Lignes de répartition :**
+    *   « **Apports en nature : [Montant correspondant à la valeur des titres de la SEL apportés]** » [4].
+    *   « **Apports en numéraire : [Montant, souvent néant ou 1 000 € selon le montage]** » [4, 5].
+    *   « **Total des apports : [Somme des deux]** » [4].
+*   **Certification finale :** Le texte exact de la phrase de certification n'est **non trouvé**, mais les sources précisent que le document doit identifier précisément les « **titres numérotés** » (ex: de 1 à X) de la société cible [4].
+*   **Signature :** Le document est signé par le **Président** [6, 7].
+
+### 2. Acte de désignation du commissaire aux apports
+Le wording **EXACT** de cet acte (corps du texte) est **non trouvé** dans les sources. Les documents fournis listent la « **Nomination du commissaire d’Apport** » comme une pièce obligatoire du dossier [8, 9], mais le modèle n'est pas reproduit.
+
+Voici les fragments de clauses identifiés :
+*   **Identification du soussigné :** Suit le modèle de comparution des statuts : « **LE SOUSSIGNE : [Civilité, Nom, Prénom, Profession, Nationalité, Domicile]** » [10].
+*   **Rappel de la constitution :** Le document doit faire référence à la création de la **SPFPLAS** [1].
+*   **Description de l'apport :** L'acte doit préciser que l'opération consiste en un « **apport de titres numérotés** » de la société [Nom de la SEL] [4].
+*   **Rôle correct :** Le rôle est bien **Commissaire aux apports**.
+    *   **Justification :** Les sources utilisent systématiquement l'abréviation « **Com. apport** » [8] ou le terme complet « **commissaire aux apports** » [9]. Le commissaire aux comptes est une fonction différente non requise pour cette étape de constitution par apport en nature dans les sources citées.
+*   **Mission :** Les sources indiquent que sa mission est liée aux « **raisons fiscales d'opérations** » et à la valorisation des titres, car dans un apport, le montant du capital est « **très élevé** » par rapport à une cession [11, 12].
+
+### Résumé des éléments non trouvés
+*   Le **wording exact** de la clause de nomination (« Désigne en qualité de... ») [Non trouvé].
+*   La **description type de la mission** du commissaire dans l'acte de désignation [Non trouvé].
+*   La **phrase de certification finale** de la liste des souscripteurs [Non trouvé].
+
+***
+**Sources citées :**
+* Besoins Sydel (juridique).pdf [2, 8].
+* Notre job - Sydel.pdf [1].
+* Transcription Texte collé [3-7, 9, 11, 12].
+
+
+D’après les sources et l’historique de notre conversation, l’automatisation du genre est une priorité pour le cabinet afin d’éviter les ratures manuelles et les formes parenthésées comme « (e) » [1, 2]. Le système doit pouvoir « féminiser » l'intégralité du document en fonction de la civilité [1, 3].
+
+Voici la table d'accord de genre pour les documents d'une SPFPL :
+
+### Table d'accord de genre (Civilité Monsieur / Madame)
+
+| Terme | Forme Masculine | Forme Féminine | Source / Justification |
+| :--- | :--- | :--- | :--- |
+| **Soussigné** | **Soussigné** | **Soussignée** | Statuts type [4], Besoin de personnaliser le « ée » [1]. |
+| **Né le** | **né le** | **née le** | Statuts type [4], Règle de féminisation [1]. |
+| **Associé** | **associé** | **associée** | Transcription « Texte collé » [5, 6], Règle du « ée » [1]. |
+| **Associé unique** | **associé unique** | **associée unique** | Statuts type [4], Transcription [6]. |
+| **Président** | **Président** | **Présidente** | Substitution du terme « Gérant » [7, 8], Règle de genre [3]. |
+| **Apporteur** | **apporteur** | **apporteuse** | Parcours apport [9, 10], Accord de genre requis [3]. |
+| **Cédant** | **cédant** | **cédante** | Parcours cession [4, 11], Accord de genre requis [3]. |
+| **Cessionnaire** | **cessionnaire** | **cessionnaire** | Terme épicène (identique) [4, 7]. |
+| **Souscripteur** | **souscripteur** | **souscriptrice** | Attestation capital [12, 13], Accord de genre requis [3]. |
+| **Représentant** | **représentant** | **représentante** | Mentions légales [14, 15], Accord de genre requis [3]. |
+
+### Précisions sur les titres et civilités
+
+*   **Le Docteur au féminin : Non trouvé.**
+    Les modèles de statuts fournis utilisent exclusivement la forme « **Le Docteur [Nom Prénom]** » au masculin [4]. Les sources n'indiquent pas si le cabinet a tranché pour « La Docteur », « La Docteure » ou « Doctoresse » pour les praticiennes.
+*   **Formule de civilité dans la comparution :**
+    *   **Dans le texte (Bloc d'identité) :** On écrit « **Monsieur** » ou « **Madame** » directement avant le nom, **sans article** (ex: « Monsieur Patrick LELLOUCHE ») [4].
+    *   **En titre de section :** L'article est utilisé et doit s'accorder : « **LE SOUSSIGNE :** » ou « **LA SOUSSIGNEE :** » [4].
+*   **Autres accords identifiés :** Les sources mentionnent également la nécessité d'accorder la situation matrimoniale, par exemple « **divorcé** » [4] qui doit devenir « **divorcée** » au féminin selon la règle de personnalisation du « ée » [1].
+
+***
+
+**Sources citées :**
+* Besoins Sydel (juridique).pdf [Source 4, 5, 12, 13].
+* Transcription Atelier audit 1 - part 3 [Source 45, 48, 49].
+* Transcription Texte collé [Source 36, 122, 124, 140, 143, 151, 155, 160].
+
+
+D'après les sources de ce NotebookLM, le passage d'une **SPFPLAS** (forme par actions) à associé unique vers une structure à plusieurs associés (2 à 6) nécessite une adaptation structurelle et terminologique profonde du "tronc" commun. Les sources soulignent que le formalisme légal est « **très différent** » entre ces deux cas [1].
+
+Voici le wording exact et les modifications identifiées pour les blocs demandés :
+
+### 1. Comparution
+Le bloc d'introduction change de nombre et de verbe pour refléter la pluralité :
+*   **Titre :** « **LES SOUSSIGNÉS :** » (au lieu de « LE SOUSSIGNE : ») [2, 3].
+*   **Bloc d'identité :** Il faut répéter pour chaque associé (jusqu'à 6) le bloc complet : « **Monsieur/Madame [Prénom NOM], [Profession], né(e) le [Date] à [Lieu], de nationalité [Nationalité], demeurant [Adresse], inscrit(e) au tableau du Conseil départemental de [Lieu] sous le numéro [Numéro]...** » [4, 5].
+*   **Phrase de liaison :** « ...ont établi ainsi qu’il suit les statuts de la Société [...] qu’**ils ont décidé d’instituer :** » [3].
+
+### 2. Article Apports (Article 7 ou 6)
+Le texte doit détailler l'origine des fonds pour chaque membre :
+*   **Détail individuel :** « **Le Docteur [Nom], apporte à la société la somme de [Montant] euros.** » (à répéter pour chaque associé) [6].
+*   **Dépôt des fonds :** « Cette somme a été déposée par **les associés** [ou "les soussignés"] sur un compte ouvert au nom de la société dans les livres de la banque [NOM]... » [3].
+*   **Total :** Bien que le wording exact de la ligne "Total des apports" ne soit pas cité, les sources précisent que le système doit calculer la somme pour constituer le capital social global [6].
+
+### 3. Article Capital / Répartition des actions (Article 8)
+Ce bloc remplace l'attribution unique par un tableau ou une liste numérotée précise :
+*   **Phrase d'introduction :** « Il est divisé en [Nombre] actions de [Valeur] chacune, intégralement libérées, souscrites et **attribuées de la façon suivante :** » [6].
+*   **Répartition numérotée :** Pour les structures pluri-associés, le cabinet utilise des « **numérotations par [actions] qui sont assez précises** » [7].
+    *   *Exemple de wording :* « **- Monsieur [Nom] : [Nombre] actions, numérotées de 1 à [X]** » [6, 7].
+*   **Clause de protection (spécifique au pluriel) :** « En aucun cas la répartition du capital ne pourra être modifiée dans des conditions qui retireraient la **majorité des droits de vote aux associés exerçant** dans la société » [6].
+
+### 4. Bloc de signatures
+*   **Structure :** Une signature par associé [8].
+*   **Mention manuscrite : Non trouvé.** Les sources mentionnent que les actes sont signés, mais le wording exact de la mention manuscrite à porter (ex: "Bon pour souscription de tant d'actions") n'est pas précisé.
+*   **Ordre :** L'ordre suit généralement celui de la comparution. Les sources mentionnent également la signature spécifique de la **SFP** (SPFPL) lors des modifications ultérieures [9].
+
+### Pluralisation vs Modèle distinct
+La pluralisation est **partiellement dérivable**, mais le formalisme change de nature juridique :
+*   **Différence de formalisme :** Les sources indiquent que pour un associé unique, on parle de « **décisions de l'associé unique** » (formalisme court), alors que pour plusieurs associés, il faut un PV d'**assemblée générale** où « **les associés présents... discutent entre eux** » [10].
+*   **Clauses propres :** Le modèle pour plusieurs associés doit impérativement intégrer des règles de « **décisions collectives** » et de gestion des quorum, ce qui n'est pas nécessaire en unipersonnel [10].
+*   **Difficulté d'automatisation :** Hugo (expert du cabinet) note que si le modèle unipersonnel "monsieur" fonctionne bien, il est « **impossible à faire** » de créer autant de modèles que de combinaisons d'associés (monsieur/madame, 2 à N associés) sans un moteur documentaire dynamique capable de gérer la « **pluricité des associés** » [11, 12].
+
+***
+**Sources citées :**
+* Besoins Sydel (juridique).pdf [4-6].
+* Transcription Atelier audit 1 - part 3 [1, 2, 9, 10].
+* Transcription Texte collé (Atelier audit) [3, 7].
+* Transcription Texte collé (Détails techniques) [11, 12].
+
+
+D'après les sources de ce carnet de notes, voici le wording identifié pour un procès-verbal d'assemblée générale extraordinaire (AGE) d'une SELARL à plusieurs associés agréant l'entrée d'une SPFPL :
+
+### **1. Liste des associés présents ou représentés**
+Le wording doit être décliné sous forme de blocs individuels pour chaque associé composant le capital.
+
+*   **Pour une personne physique :**
+    > « **[Monsieur / Madame] [NOM Prénom], [Profession], né(e) le [Date] à [Lieu], demeurant [Adresse], propriétaire de [Nombre] parts sociales.** » [1], [2], [3].
+*   **Pour une personne morale (ex: une autre Holding ou SPFPL) :**
+    > « **La société [Dénomination], [Forme sociale] au capital de [Montant] euros, dont le siège social est à [Adresse], immatriculée au RCS de [Ville] sous le numéro [SIREN], représentée par [Monsieur / Madame] [NOM Prénom] en sa qualité de [Gérant / Président], propriétaire de [Nombre] parts sociales.** » [4], [5], [3].
+
+### **2. Phrase de quorum et de totalité**
+Pour les structures pluri-personnelles (2 à 6 associés), les sources précisent que le formalisme doit acter que les associés « forment le capital » et « discutent entre eux » [6]. Le wording type est le suivant :
+
+> « **Les associés présents ou représentés possèdent la totalité des [Nombre] parts sociales composant le capital social et formant la totalité des droits de vote.** » [6], [7].
+
+### **3. Bloc de signatures**
+Les sources indiquent qu'une signature est requise pour chaque personne mentionnée dans la comparution [8], [9].
+
+> « **Signatures de tous les associés présents ou représentés :**
+> **- [Signature de l'associé 1]**
+> **- [Signature de l'associé 2]**
+> **- ...** » [6], [9].
+
+### **4. Règles d'accords grammaticaux**
+Les experts du cabinet soulignent que le passage du singulier au pluriel est une étape critique de l'automatisation pour éviter les erreurs de rédaction [10], [11].
+
+*   **Accords de nombre :**
+    *   On passe de « **L’associé unique** » (singulier) à « **Les associés** » (pluriel) [6].
+    *   Le participe passé s'accorde : « **Les associés présents ou représentés** » [6].
+    *   Le verbe de décision change : « **Les associés [...] ont décidé** » (au lieu de « l'associé unique [...] a pris les décisions ») [6], [2].
+*   **Accords de genre :**
+    *   Le système doit « féminiser » la pluralité selon la civilité des membres (ex: « **Les associées présentes** » s'il s'agit uniquement de femmes) [1], [10].
+    *   Les termes comme « **Soussigné(e)s** », « **Né(e)s** » et « **Associé(e)s** » doivent porter la marque du pluriel (« **s** ») et, si nécessaire, du féminin (« **es** ») [1], [10], [11].
+
+***
+**Sources citées :**
+* [1] Besoins Sydel (juridique).pdf, Slide 4 (Modèle comparution).
+* [4] Notre job - Sydel.pdf (Liste éléments société).
+* [12], [6] Transcription Texte collé (Formalisme associé unique vs plusieurs associés).
+* [5] Transcription Texte collé (Personne morale).
+* [2] Transcription Texte collé (Accords pluriels).
+* [7] Transcription Texte collé (Droits de vote).
+* [10], [9], [11] Transcription Texte collé (Difficultés de pluralisation et genre).

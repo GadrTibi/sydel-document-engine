@@ -8,6 +8,7 @@ from sydel_doc_engine.domain.models import (
     CapitalSouscripteur,
     DocumentGenerationContext,
 )
+from sydel_doc_engine.generators.lot_01.civilite import civilite_civile
 from sydel_doc_engine.generators.lot_05.sas_satellites_common import (
     DOCUMENT_CODE,
     address_display,
@@ -23,13 +24,26 @@ from sydel_doc_engine.generators.lot_05.sas_satellites_common import (
     validate_capital_consistency,
     validate_sas_satellite_scope,
 )
+from sydel_doc_engine.generators.lot_05.spfpl_common import elision_de
 from sydel_doc_engine.rendering.docx_builder import (
     add_company_identity_block,
     add_paragraph,
+    add_spacer,
+    keep_final_signature_block_together,
     new_document,
 )
+from sydel_doc_engine.utils.grammar import euro_word, montant_avec_euros
 
 OUTPUT_FILENAME = "attestation_capital_liste_souscripteurs_sas.docx"
+
+# Mise en forme (Albane, retour « mise en forme » 1.6) : « ajouter des espaces » sur
+# l'attestation capital / liste des souscripteurs. MEME aeration que la variante SPFPL
+# (attestation_capital_liste_souscripteurs.py) : (a) espace APRES la phrase d'apport et
+# APRES la ligne « Total des apports » ; (b) espace entre la DESIGNATION de la societe, le
+# bloc TITRE (« ATTESTATION » / « Liste des souscripteurs ») et le CORPS. On aere via des
+# paragraphes-espaceurs (add_spacer) entre les GROUPES et un space_after renforce sur les
+# lignes visees, sans toucher au wording.
+_ATTESTATION_GROUP_SPACER_PT = 10
 
 
 class AttestationCapitalListeSouscripteursSasGenerator:
@@ -43,12 +57,14 @@ class AttestationCapitalListeSouscripteursSasGenerator:
             document,
             [
                 data.denomination,
-                f"Société par actions simplifiée au capital de {data.capital_social} euros",
+                f"Société par actions simplifiée au capital de {montant_avec_euros(data.capital_social)}",  # noqa: E501
                 "Société de Participations Financières de Profession Libérale de "
                 f"{data.profession_societe}",
                 f"Siège social : {data.adresse_siege}",
             ],
         )
+        # (b) Aeration entre la DESIGNATION de la societe et le bloc TITRE.
+        add_spacer(document, space_after_pt=_ATTESTATION_GROUP_SPACER_PT)
         add_paragraph(document, "ATTESTATION", alignment=WD_ALIGN_PARAGRAPH.CENTER, bold=True)
         add_paragraph(
             document,
@@ -56,9 +72,15 @@ class AttestationCapitalListeSouscripteursSasGenerator:
             alignment=WD_ALIGN_PARAGRAPH.CENTER,
             bold=True,
         )
+        # (b) Aeration entre le bloc TITRE (« ATTESTATION » / « Liste des
+        # souscripteurs ») et le CORPS du texte.
+        add_spacer(document, space_after_pt=_ATTESTATION_GROUP_SPACER_PT)
+        # R3 durci (Rafael 2026-07-07, supersede A26-45/49) : « Docteur »/« Dr » ne
+        # sort JAMAIS — tous les slots nommant une personne (désignation, répartition,
+        # phrase d'apport, « par le Président, __ », signature) sont CIVILS.
         add_paragraph(
             document,
-            f"{data.president_nom} {data.profession_actionnaire}, demeurant "
+            f"{data.president_identite_civile} {data.profession_actionnaire}, demeurant au "
             f"{data.adresse_actionnaire}, atteste que le capital de la société "
             f"{data.denomination} est réparti de la manière suivante :",
         )
@@ -66,12 +88,13 @@ class AttestationCapitalListeSouscripteursSasGenerator:
         add_paragraph(
             document,
             f"Nombre d'actions : {data.nb_actions_total} actions d'un montant "
-            f"d'{data.valeur_nominale_action} euro chacune",
+            f"{elision_de(str(data.valeur_nominale_action))} "
+            f"{euro_word(data.valeur_nominale_action)} chacune",
         )
         add_paragraph(
             document,
-            f"Répartition : {data.nb_actions_souscripteur} actions attribuées au Dr "
-            f"{data.actionnaire_signature}, actionnaire unique",
+            f"Répartition : {data.nb_actions_souscripteur} actions attribuées à "
+            f"{data.actionnaire_identite_civile}, actionnaire unique",
         )
         add_paragraph(document, "Apports en nature :", bold=True)
         add_paragraph(
@@ -81,30 +104,36 @@ class AttestationCapitalListeSouscripteursSasGenerator:
             f"ayant son siège {data.societe_cible_siege}, immatriculée au RCS de "
             f"{data.societe_cible_ville_rcs} sous le numéro {data.societe_cible_numero_rcs} "
             f"pour une valeur de {data.apports_nature_montant} €",
+            # (a) Espace APRES la phrase d'apport.
+            space_after_pt=_ATTESTATION_GROUP_SPACER_PT,
         )
         add_paragraph(
             document,
             f"Total des apports en nature {data.apports_nature_montant} €",
+            # (a) Espace APRES la ligne « Total des apports ».
+            space_after_pt=_ATTESTATION_GROUP_SPACER_PT,
         )
         add_paragraph(document, f"Apports en numéraire : {data.apports_numeraire_montant}")
         add_paragraph(
             document,
-            f"Le Docteur {data.president_nom} a fait la totalité des apports en nature.",
+            f"{data.president_identite_civile} a fait la totalité des apports en nature.",
         )
         add_paragraph(
             document,
             "Le présent état qui constate la souscription d'actions de la société "
             f"{data.denomination}, ainsi que l'apport de la somme de "
-            f"{data.apports_nature_montant} euros correspondant à la totalité du nominal "
+            f"{montant_avec_euros(data.apports_nature_montant)} correspondant à la totalité du nominal "  # noqa: E501
             "desdites actions, est certifié exact, sincère et véritable par le Président, "
-            f"{data.president_nom}.",
+            f"{data.president_identite_civile}.",
         )
         add_paragraph(document, f"Fait à {data.lieu_signature}")
         add_paragraph(document, f"Le {data.date_signature}")
-        add_paragraph(document, data.president_nom)
+        add_paragraph(document, data.president_identite_civile)
 
         output_dir.mkdir(parents=True, exist_ok=True)
         output_path = output_dir / OUTPUT_FILENAME
+        # KAN-36 : bloc signature final solidaire (une seule page).
+        keep_final_signature_block_together(document)
         document.save(output_path)
         return output_path
 
@@ -118,7 +147,9 @@ class _ResolvedAttestationCapitalSas:
         profession_societe: str,
         adresse_siege: str,
         president_nom: str,
+        president_identite_civile: str,
         actionnaire_nom: str,
+        actionnaire_identite_civile: str,
         actionnaire_signature: str,
         profession_actionnaire: str,
         adresse_actionnaire: str,
@@ -141,7 +172,9 @@ class _ResolvedAttestationCapitalSas:
         self.profession_societe = profession_societe
         self.adresse_siege = adresse_siege
         self.president_nom = president_nom
+        self.president_identite_civile = president_identite_civile
         self.actionnaire_nom = actionnaire_nom
+        self.actionnaire_identite_civile = actionnaire_identite_civile
         self.actionnaire_signature = actionnaire_signature
         self.profession_actionnaire = profession_actionnaire
         self.adresse_actionnaire = adresse_actionnaire
@@ -176,13 +209,40 @@ class _ResolvedAttestationCapitalSas:
         validate_capital_consistency(societe, capital)
         _validate_souscripteur_matches_context(souscripteur, actionnaire, capital)
 
+        # R3 (Albane 2026-07-07) : forme CIVILE du président pour les slots de
+        # civilité — « Docteur » (titre) -> Monsieur/Madame, accordé au genre de
+        # l'actionnaire unique (= le président en SAS V1 ; fallback signataire).
+        president_civilite = civilite_civile(
+            required_text(president.civilite_affichage, "president.civilite_affichage"),
+            actionnaire.genre or ctx.personne_signataire.genre,
+        )
+        president_identite_civile = (
+            f"{president_civilite} "
+            f"{required_text(president.prenom, 'president.prenom')} "
+            f"{required_text(president.nom, 'president.nom')}"
+        )
+
         return cls(
             denomination=required_text(societe.denomination, "societe_spfpl.denomination"),
             capital_social=required_text(societe.capital_social, "societe_spfpl.capital_social"),
             profession_societe=required_text(societe.profession, "societe_spfpl.profession"),
             adresse_siege=address_display(societe.siege, "societe_spfpl.siege"),
             president_nom=person_name(president, "president"),
+            president_identite_civile=president_identite_civile,
             actionnaire_nom=person_name(actionnaire, "actionnaire_unique"),
+            # R3 (Rafael 2026-07-07, 2e insistance) : la repartition rend l'identite
+            # CIVILE de l'actionnaire (« Monsieur X »), plus jamais « au Dr X ».
+            actionnaire_identite_civile=(
+                civilite_civile(
+                    required_text(
+                        actionnaire.civilite_affichage,
+                        "actionnaire_unique.civilite_affichage",
+                    ),
+                    actionnaire.genre or ctx.personne_signataire.genre,
+                )
+                + f" {required_text(actionnaire.prenom, 'actionnaire_unique.prenom')}"
+                + f" {required_text(actionnaire.nom, 'actionnaire_unique.nom')}"
+            ),
             actionnaire_signature=(
                 f"{required_text(actionnaire.prenom, 'actionnaire_unique.prenom')} "
                 f"{required_text(actionnaire.nom, 'actionnaire_unique.nom')}"

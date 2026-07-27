@@ -22,6 +22,11 @@ dev = [
   "mypy>=1.10,<2",
   "pre-commit>=3.7,<4",
   "pytest>=8.2,<9",
+  # re-Akainu T9 : randomise l'ordre de collecte par defaut -> la suite PROUVE
+  # l'ordre-independance a chaque run (fini le faux-vert « N runs a ordre constant »).
+  # Borne <5 : la preuve d'ordre-independance a tourne sur 4.1.0 (re-Akainu T10 [m1]) ;
+  # un install propre doit pouvoir reproduire cet environnement, pas une 3.x divergente.
+  "pytest-randomly>=3.15,<5",
   "ruff>=0.5,<1",
 ]
 
@@ -39,7 +44,14 @@ line-length = 100
 target-version = "py311"
 
 [tool.ruff.lint]
-select = ["B", "E", "F", "I", "UP"]
+# C901 (mccabe) activé pour GATER la croissance de complexité (décision PM 2026-06-26, bilan code).
+# Les 21 fonctions complexes existantes sont grandfatherées via `# noqa: C901` (baseline figée) ;
+# toute NOUVELLE fonction > 10 échouera désormais le CI. Refacto du rendu existant = session
+# supervisée avec filet byte-neutre (non fait : risque sur la sortie métier).
+select = ["B", "C901", "E", "F", "I", "UP"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
 
 [tool.mypy]
 python_version = "3.11"

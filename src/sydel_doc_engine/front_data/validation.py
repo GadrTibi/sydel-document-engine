@@ -112,7 +112,7 @@ def validate_unresolved_ambiguities(
     return tuple(issues)
 
 
-def validate_reuse_rules(dossier: DossierRecord) -> tuple[ValidationIssue, ...]:
+def validate_reuse_rules(dossier: DossierRecord) -> tuple[ValidationIssue, ...]:  # noqa: C901
     issues: list[ValidationIssue] = []
     active_by_target: dict[str, list[ReuseRuleState]] = defaultdict(list)
 

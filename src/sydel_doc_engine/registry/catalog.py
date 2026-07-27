@@ -12,7 +12,13 @@ ALL_STRUCTURES: list[str] = [
     "SCI",
     "SCI IRIS",
     "SCM",
+    # Micro holding (Albane 2026-06-26) : societe civile a capital variable, ajoutee a la
+    # liste des societes. Tronc commun civil (DOC-001/002/003) eligible via ALL_STRUCTURES.
+    "MICRO_HOLDING",
     "SAS",
+    # SASU Holding (Albane 2026-06-29) : SAS unipersonnelle, holding patrimoniale
+    # generaliste. Tronc commun civil (DOC-001/002/003) eligible via ALL_STRUCTURES.
+    "SASU_HOLDING",
 ]
 
 PV_NOMINATION_GERANT_STRUCTURES: list[str] = [
@@ -22,7 +28,10 @@ PV_NOMINATION_GERANT_STRUCTURES: list[str] = [
     "SPFPL apport",
     "SCS",
     "SCI",
+    "SCI IRIS",
     "SCM",
+    # Micro holding : PV de nomination du gerant, comme les autres civiles.
+    "MICRO_HOLDING",
 ]
 
 DEMANDE_INSCRIPTION_ORDRE_STRUCTURES: list[str] = [
@@ -38,6 +47,9 @@ REGIME_COMMUNAUTAIRE_STRUCTURES: list[str] = [
     "SELAS",
     "SPFPL cession",
     "SPFPL apport",
+    # SCS4 (Albane 2026-06-25) : la SCS reprend le bloc regime matrimonial de la
+    # SELAS pluri -> un associe SCS marie sous communaute genere DOC-005/006.
+    "SCS",
 ]
 
 BAIL_AVENANT_STRUCTURES: list[str] = [
@@ -64,6 +76,10 @@ STATUTS_SAS_STRUCTURES: list[str] = [
     "SAS",
 ]
 
+STATUTS_SASU_HOLDING_STRUCTURES: list[str] = [
+    "SASU_HOLDING",
+]
+
 STATUTS_SPFPL_CESSION_STRUCTURES: list[str] = [
     "SPFPL cession",
 ]
@@ -88,9 +104,15 @@ STATUTS_CIVILS_SCM_STRUCTURES: list[str] = [
     "SCM",
 ]
 
+STATUTS_CIVILS_MICRO_HOLDING_STRUCTURES: list[str] = [
+    "MICRO_HOLDING",
+]
+
 OPTION_IS_STRUCTURES: list[str] = [
     "SCI",
     "SCI IRIS",
+    # Micro holding (Albane 2026-06-29) : lettre d'option IS dans le bundle de creation.
+    "MICRO_HOLDING",
 ]
 
 SCM_SATELLITES_STRUCTURES: list[str] = [
@@ -115,13 +137,13 @@ def build_seed_catalog() -> list[DocumentDefinition]:
             general_condition="tous les dossiers",
             dynamic_associates=False,
             grammar_variants=True,
-            workflow_status=WorkflowStatus.SPECIFIE,
+            workflow_status=WorkflowStatus.TESTE,
             source_path=(
                 "project/source_documents/lot_01/"
                 "declaration_non_condamnation_transforme.docx"
             ),
             specification_path="docs/delivery/lot_01_analysis_and_specs_v1.md",
-            notes="Implémentation différée tant que les arbitrages de démarrage ne sont pas clos.",
+            notes="Implémenté et testé (générateur declaration_non_condamnation, suite verte).",
         ),
         DocumentDefinition(
             doc_id="DOC-002",
@@ -133,15 +155,15 @@ def build_seed_catalog() -> list[DocumentDefinition]:
             general_condition="tous les dossiers",
             dynamic_associates=False,
             grammar_variants=True,
-            workflow_status=WorkflowStatus.SPECIFIE,
+            workflow_status=WorkflowStatus.TESTE,
             source_path=(
                 "project/source_documents/lot_01/"
                 "autorisation_domiciliation_transforme.docx"
             ),
             specification_path="docs/delivery/lot_01_analysis_and_specs_v1.md",
             notes=(
-                "Arbitrage métier encore requis sur la règle de rendu de l'adresse "
-                "de domiciliation."
+                "Implémenté et testé (générateur autorisation_domiciliation, suite verte ; "
+                "règle d'adresse « pour 99 ans » résolue retours 006)."
             ),
         ),
         DocumentDefinition(
@@ -154,14 +176,15 @@ def build_seed_catalog() -> list[DocumentDefinition]:
             general_condition="tous les dossiers",
             dynamic_associates=False,
             grammar_variants=True,
-            workflow_status=WorkflowStatus.SPECIFIE,
+            workflow_status=WorkflowStatus.TESTE,
             source_path="project/source_documents/lot_01/procuration_transforme.docx",
             specification_path="docs/delivery/lot_01_analysis_and_specs_v1.md",
-            notes="Constantes SYDEL à externaliser avant implémentation.",
+            notes="Implémenté et testé (générateur procuration, suite verte).",
         ),
         DocumentDefinition(
             doc_id="DOC-004",
-            canonical_name="PV nomination gérant",
+            # A26-label (Albane 2026-06-26) : « dirigeant » (generique). Cle/generateur inchanges.
+            canonical_name="PV nomination dirigeant",
             generator_name="generate_pv_nomination_gerant",
             lot=2,
             category=DocumentCategory.MUTUALISABLE,
@@ -461,6 +484,76 @@ def build_seed_catalog() -> list[DocumentDefinition]:
             notes="Statuts SAS V1 limites a la source SPFPL medecins actionnaire unique.",
         ),
         DocumentDefinition(
+            doc_id="DOC-048",
+            canonical_name="Statuts SASU Holding",
+            generator_name="generate_statuts_sasu_holding",
+            lot=4,
+            category=DocumentCategory.SPECIFIQUE,
+            structures=STATUTS_SASU_HOLDING_STRUCTURES,
+            general_condition="dossier.structure == SASU_HOLDING",
+            specific_conditions=[
+                "SAS unipersonnelle, holding patrimoniale generaliste",
+                "associe unique = president (acte unipersonnel, aucun bloc repetitif)",
+                "objet participations, pas de profession reglementee",
+            ],
+            dynamic_associates=False,
+            grammar_variants=True,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path="project/source_documents/lot_04/statuts SASU Holding.docx",
+            notes=(
+                "Nouveau type SASU Holding (modele officiel Albane 2026-06-29), DISTINCT de "
+                "la « SAS / SPFPL medecins » (DOC-015, conservee). Token-replacement pur sur "
+                "le modele officiel ; accord de genre de l'associe(e) unique."
+            ),
+        ),
+        DocumentDefinition(
+            doc_id="DOC-049",
+            canonical_name="PV remuneration president SASU Holding",
+            generator_name="generate_pv_remuneration_president_sasu_holding",
+            lot=5,
+            category=DocumentCategory.SPECIFIQUE,
+            structures=STATUTS_SASU_HOLDING_STRUCTURES,
+            general_condition="dossier.structure == SASU_HOLDING",
+            specific_conditions=[
+                "SAS unipersonnelle, holding patrimoniale generaliste",
+                "associe unique = president (acte unipersonnel)",
+                "absence de remuneration jusqu'a la cloture du premier exercice",
+            ],
+            dynamic_associates=False,
+            grammar_variants=True,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path="docs/review/albane_sas_2026-06-29/PV_remuneration_president.docx",
+            notes=(
+                "Satellite SASU Holding GENERALISTE (modele officiel Albane 2026-06-29), "
+                "DISTINCT du PV remuneration president SPFPL medecins (DOC-023, conserve, "
+                "verrouille SPFPL medecins). Generateur from-scratch byte-fidele, genre libre."
+            ),
+        ),
+        DocumentDefinition(
+            doc_id="DOC-050",
+            canonical_name="Liste des souscripteurs SASU Holding",
+            generator_name="generate_liste_souscripteurs_sasu_holding",
+            lot=5,
+            category=DocumentCategory.SPECIFIQUE,
+            structures=STATUTS_SASU_HOLDING_STRUCTURES,
+            general_condition="dossier.structure == SASU_HOLDING",
+            specific_conditions=[
+                "SAS unipersonnelle, holding patrimoniale generaliste",
+                "souscripteur unique = associe / president",
+                "etat des souscriptions (table + ligne TOTAL), sans apport en nature",
+            ],
+            dynamic_associates=False,
+            grammar_variants=True,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path="docs/review/albane_sas_2026-06-29/Liste_des_souscripteurs.docx",
+            notes=(
+                "Satellite SASU Holding GENERALISTE (modele officiel Albane 2026-06-29), "
+                "DISTINCT de l'attestation capital / liste souscripteurs SAS SPFPL medecins "
+                "(DOC-024, conserve). Etat des souscriptions simple (pas d'apport en nature), "
+                "genre libre."
+            ),
+        ),
+        DocumentDefinition(
             doc_id="DOC-035",
             canonical_name="Statuts SPFPL cession",
             generator_name="generate_statuts_spfpl_cession",
@@ -570,6 +663,58 @@ def build_seed_catalog() -> list[DocumentDefinition]:
             notes="Statuts SEL d'exercice V1, overlay SELAS medecin associe unique.",
         ),
         DocumentDefinition(
+            doc_id="DOC-046",
+            canonical_name="Statuts SELAS dentiste",
+            generator_name="generate_statuts_selas_dentiste",
+            lot=4,
+            category=DocumentCategory.SPECIFIQUE,
+            structures=["SELAS"],
+            general_condition="dossier.structure == SELAS",
+            specific_conditions=[
+                "statuts_sel.overlay == selas_dentiste",
+                "associe unique uniquement en V1",
+            ],
+            dynamic_associates=False,
+            grammar_variants=True,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path=(
+                "project/source_documents/lot_04/Statuts_SELAS_dentiste_pluri_modele.docx"
+            ),
+            specification_path=(
+                "docs/delivery/lot_04_statuts_sel_exercice_spec_texte_v1.md"
+            ),
+            notes=(
+                "Statuts SELAS unipersonnelle chirurgien-dentiste V1, overlay "
+                "selas_dentiste associe unique. Wording verbatim du modele dentiste "
+                "pluri uni-fie (retour Rafael #5)."
+            ),
+        ),
+        DocumentDefinition(
+            doc_id="DOC-044",
+            canonical_name="Statuts SELAS multi",
+            generator_name="generate_statuts_selas_multi",
+            lot=4,
+            category=DocumentCategory.SPECIFIQUE,
+            structures=["SELAS"],
+            general_condition="dossier.structure == SELAS",
+            specific_conditions=[
+                "statuts_selas_multi fourni explicitement",
+                "2 a 5 associes dont au moins une personne physique exercante",
+                "associe personne morale et Directeur General optionnels",
+                "vocabulaire actions / President (jamais parts / gerant)",
+            ],
+            dynamic_associates=True,
+            grammar_variants=False,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path="project/source_documents/lot_04/Statuts_SELAS_multi_modele.docx",
+            specification_path="docs/project/types/SELAS/REYNAUD_TOKENISATION_NOTES.md",
+            notes=(
+                "SELAS multi V1 (statuts de creation) lue depuis le modele tokenise Reynaud ; "
+                "wording feminin source conserve, divergences (Art.15 DG nominatif, genre) "
+                "documentees."
+            ),
+        ),
+        DocumentDefinition(
             doc_id="DOC-019",
             canonical_name="Statuts SCS",
             generator_name="generate_statuts_scs",
@@ -628,6 +773,33 @@ def build_seed_catalog() -> list[DocumentDefinition]:
             source_path="project/source_documents/lot_04/Modèle statuts SCI IRIS.docx",
             specification_path="docs/delivery/lot_04_statuts_civils_arbitrages_v1.md",
             notes="Lettre option IS separee hors generateur statuts civils.",
+        ),
+        DocumentDefinition(
+            doc_id="DOC-047",
+            canonical_name="Statuts micro holding",
+            generator_name="generate_statuts_micro_holding",
+            lot=4,
+            category=DocumentCategory.SPECIFIQUE,
+            structures=STATUTS_CIVILS_MICRO_HOLDING_STRUCTURES,
+            general_condition="dossier.structure == MICRO_HOLDING",
+            specific_conditions=[
+                "statuts_civils.type == micro_holding",
+                "societe civile de portefeuille a capital variable (max = 10x le minimum saisi)",
+                "objet social (art. 2) VERBATIM du modele Albane (plus de variante)",
+            ],
+            dynamic_associates=True,
+            grammar_variants=False,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path="project/source_documents/lot_04/Modele statuts micro holding.docx",
+            specification_path="docs/delivery/lot_04_statuts_civils_arbitrages_v1.md",
+            notes=(
+                "VRAI modele Albane 2026-06-29 (mail « creation micro holding ») : societe "
+                "civile de portefeuille a capital variable, 26 articles, modele DISTINCT du "
+                "SCI. Tokenise depuis le DOCX fourni (objet, gerance avec gerant suppleant, "
+                "capital variable art. 7/8/9, signature electronique YouSign). Block builders "
+                "micro holding dans statuts_civils_common (comparution / apport / capital / "
+                "signature)."
+            ),
         ),
         DocumentDefinition(
             doc_id="DOC-022",
@@ -704,6 +876,32 @@ def build_seed_catalog() -> list[DocumentDefinition]:
             notes=(
                 "Satellite SAS V1 ; la duplication attestation/liste des souscripteurs "
                 "est rendue comme un seul document."
+            ),
+        ),
+        DocumentDefinition(
+            doc_id="DOC-045",
+            canonical_name="Attestation capital / liste des souscripteurs SELAS",
+            generator_name="generate_attestation_capital_souscripteurs_selas",
+            lot=5,
+            category=DocumentCategory.SPECIFIQUE,
+            structures=["SELAS"],
+            general_condition="dossier.structure == SELAS",
+            specific_conditions=[
+                "capital_souscription.souscripteurs[] entre 1 et 6",
+                "apports en numeraire (capital SELAS)",
+                "montant numeraire par souscripteur = nb_actions x valeur_nominale",
+            ],
+            dynamic_associates=True,
+            grammar_variants=True,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path=(
+                "docs/review/albane_returns_2026-06-17/"
+                "MODELE_Attestation_capital_liste_souscripteurs.docx"
+            ),
+            notes=(
+                "SELAS multi-souscripteurs (numeraire) ; wording verbatim du modele "
+                "Albane 2026-06-17, une ligne de repartition + une ligne d'apport par "
+                "souscripteur."
             ),
         ),
         DocumentDefinition(
@@ -796,6 +994,33 @@ def build_seed_catalog() -> list[DocumentDefinition]:
             source_path="project/source_documents/lot_05/Acte_cession_SPFPL_tiers_part_modele.docx",
             specification_path="docs/delivery/lot_05_spfpl_spec_texte_v1.md",
             notes="Document parts distinct de l'acte actions DOC-029.",
+        ),
+        DocumentDefinition(
+            doc_id="DOC-051",
+            canonical_name="Attestation capital / liste des souscripteurs SPFPL (cession)",
+            generator_name="generate_attestation_capital_liste_souscripteurs_cession",
+            lot=5,
+            category=DocumentCategory.SPECIFIQUE,
+            structures=STATUTS_SPFPL_CESSION_STRUCTURES,
+            general_condition=(
+                "dossier.structure == SPFPL cession et dossier.options.cession == true"
+            ),
+            specific_conditions=[
+                "operation_spfpl.type == cession",
+                "un seul souscripteur",
+            ],
+            dynamic_associates=False,
+            grammar_variants=False,
+            workflow_status=WorkflowStatus.TESTE,
+            source_path=(
+                "project/source_documents/spfpl/"
+                "Attestation sur le capital - cession - liste des souscripteurs.docx"
+            ),
+            specification_path="docs/delivery/lot_05_spfpl_spec_texte_v1.md",
+            notes=(
+                "Retour Albane 11 : variante cession de DOC-042 (capital en numeraire). "
+                "Bundle cession n'en produisait aucune ; modele source cession existant."
+            ),
         ),
         DocumentDefinition(
             doc_id="DOC-041",

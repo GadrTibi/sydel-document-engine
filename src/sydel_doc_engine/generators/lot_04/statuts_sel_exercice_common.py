@@ -1,10 +1,16 @@
 from __future__ import annotations
 
+import re
+from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
+from typing import Any
 from unicodedata import normalize
 
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
+from docx.shared import Pt
 
 from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import (
@@ -12,9 +18,18 @@ from sydel_doc_engine.domain.models import (
     Associe,
     Company,
     DocumentGenerationContext,
+    StatutsCivilsAssocie,
 )
+from sydel_doc_engine.generators.lot_01.civilite import civilite_civile
+from sydel_doc_engine.generators.lot_05.scm_cession_common import (
+    mentions_conjoint,
+    mentions_partenaire_pacse,
+    partenaire_pacse_clause,
+)
+from sydel_doc_engine.generators.lot_05.spfpl_libelles import libelle_metier
 from sydel_doc_engine.rendering.docx_builder import (
     add_paragraph,
+    add_spacer,
     add_statuts_annex_heading,
     add_statuts_article_heading,
     add_statuts_body_paragraph,
@@ -23,7 +38,14 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_statuts_title_box,
     new_document,
 )
-from sydel_doc_engine.utils.grammar import apply_gender_pairs
+from sydel_doc_engine.utils.departements import departement_nom
+from sydel_doc_engine.utils.grammar import (
+    accord_euros_apres_montant,
+    accord_terme_genre,
+    accord_typos_modeles_source,
+    apply_gender_pairs,
+    euro_word,
+)
 
 DOCUMENT_CODE = "CODE-STATUTS-SEL-001"
 STRUCTURE_SELARL = "SELARL"
@@ -31,11 +53,15 @@ STRUCTURE_SELAS = "SELAS"
 OVERLAY_SELARL_DENTISTE = "selarl_dentiste"
 OVERLAY_SELARL_MEDECIN = "selarl_medecin"
 OVERLAY_SELAS_MEDECIN = "selas_medecin"
+OVERLAY_SELAS_DENTISTE = "selas_dentiste"
 
 
 def required_text(value: str | None, field_name: str) -> str:
+    # R10 (Rafael 2026-06-24) : une donnee manquante NE bloque PAS la generation -> on ecrit un
+    # marqueur visible « (A COMPLETER : data) » SANS crochets (pour ne pas declencher le garde-fou
+    # anti-placeholder source qui interdit les [ ]) au lieu de lever.
     if value is None or not value.strip():
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return f"(À COMPLÉTER : {libelle_metier(field_name)})"
     return value.strip()
 
 
@@ -46,11 +72,27 @@ def required_int(value: int | None, field_name: str) -> int:
 
 
 def format_display_date(value: date | str | None, field_name: str) -> str:
+    # KAN-2 : date manquante -> marqueur « (À COMPLÉTER : …) », non bloquant (R10).
     if value is None:
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return f"(À COMPLÉTER : {libelle_metier(field_name)})"
     if isinstance(value, date):
         return value.strftime("%d/%m/%Y")
     return required_text(value, field_name)
+
+
+def is_sel_multi(ctx: DocumentGenerationContext) -> bool:
+    """Le dossier SELARL est multi-associes ssi `statuts_sel.membres` porte >= 2 membres.
+
+    Retours V3 2026-06-17 : sous-cas ADDITIF active explicitement par le PM (contredit
+    SELARL-SCOPE-1 / Albane 05/06). Sans cette liste -> parcours mono historique."""
+    return ctx.statuts_sel is not None and len(ctx.statuts_sel.membres) >= 2
+
+
+def sel_membres(ctx: DocumentGenerationContext) -> list[StatutsCivilsAssocie]:
+    """Liste des membres SELARL si multi (>= 2), sinon liste vide (mono)."""
+    if not is_sel_multi(ctx) or ctx.statuts_sel is None:
+        return []
+    return list(ctx.statuts_sel.membres)
 
 
 def validate_sel_context(
@@ -63,18 +105,51 @@ def validate_sel_context(
         raise ValueError(f"dossier.structure doit etre {expected_structure} pour {DOCUMENT_CODE}.")
     if ctx.statuts_sel is not None and ctx.statuts_sel.overlay != expected_overlay:
         raise ValueError(f"statuts_sel.overlay doit etre {expected_overlay} pour {DOCUMENT_CODE}.")
+    if is_sel_multi(ctx):
+        # Mode multi-associes V3 : la coherence est portee par `statuts_sel.membres`.
+        # `ctx.associes` reste l'associe representatif (entete/articles statiques).
+        _validate_sel_membres(ctx)
+        return
     if len(ctx.associes) != 1:
         raise ValueError(
-            f"les statuts SEL multi-associes sont bloques en V1 pour {DOCUMENT_CODE}."
+            f"les statuts SEL multi-associes requierent statuts_sel.membres pour "
+            f"{DOCUMENT_CODE}."
         )
     if ctx.capital_souscription and len(ctx.capital_souscription.souscripteurs) > 1:
         raise ValueError(
-            f"les statuts SEL multi-associes sont bloques en V1 pour {DOCUMENT_CODE}."
+            f"les statuts SEL multi-associes requierent statuts_sel.membres pour "
+            f"{DOCUMENT_CODE}."
         )
     if ctx.dirigeant_nomine is not None and not _dirigeant_is_unique_associe(ctx):
         raise ValueError(
             "la signature du dirigeant non associe reste manuelle en V1 "
             f"pour {DOCUMENT_CODE}."
+        )
+
+
+def _validate_sel_membres(ctx: DocumentGenerationContext) -> None:
+    """Coherence des membres SELARL multi : au moins un signataire physique, et la
+    somme des parts des membres = nombre de parts du capital (calcul auto du nombre
+    d'associes = tous les signataires, retours V3 2026-06-17)."""
+    if ctx.statuts_sel is None:
+        return
+    membres = ctx.statuts_sel.membres
+    physiques = [m for m in membres if m.type_personne != _MORALE]
+    if not physiques:
+        raise ValueError(
+            "au moins un associe personne physique (praticien) est obligatoire pour "
+            f"les statuts SELARL multi {DOCUMENT_CODE}."
+        )
+    if not any(m.est_signataire for m in membres):
+        raise ValueError(
+            f"au moins un membre signataire est obligatoire pour {DOCUMENT_CODE}."
+        )
+    total_parts = sum(_membre_nb_parts(m) for m in membres)
+    expected = capital_titles_total(ctx)
+    if total_parts != expected:
+        raise ValueError(
+            "la somme des parts des membres doit correspondre a "
+            f"capital.nombre_titres_total pour {DOCUMENT_CODE}."
         )
 
 
@@ -108,10 +183,18 @@ def common_replacements(
             company.forme_sociale_complete or company.forme_sociale_libelle_long,
             "societe.forme_sociale_complete",
         ),
+        # R3 « supprimer PARTOUT » (Rafael 2026-07-09) : « Docteur »/« Dr » n'est jamais une
+        # civilite. La comparution ([civilite]) ET les phrases d'apport/repartition SELARL
+        # (« Dr … apporte » art. 7, « au Docteur … » art. 8 — literals des templates, remplaces
+        # par [civilite_apport]) rendent la civilite CIVILE (Monsieur/Madame accorde au genre).
         "[civilite]": required_text(
-            associate.civilite_affichage,
+            civilite_civile(associate.civilite_affichage, associate.genre),
             "associes[0].civilite_affichage",
         ),
+        # SELARL art. 7 : « [civilite_apport] Prenom Nom apporte » (le literal « Dr » est retire) ;
+        # art. 8 : « attribuées en totalité à [civilite_apport] Prenom Nom » (le literal « au
+        # Docteur » -> preposition « à » + civilite civile, cf. template).
+        "[civilite_apport]": civilite_civile(associate.civilite_affichage, associate.genre),
         "[prenom]": required_text(associate.prenom, "associes[0].prenom"),
         "[nom]": required_text(associate.nom, "associes[0].nom"),
         "[PRENOM]": required_text(associate.prenom, "associes[0].prenom"),
@@ -143,11 +226,13 @@ def common_replacements(
         "[situation_matrimoniale_statuts]": statuts_sel_matrimonial_clause(associate),
         "[regime_matrimonial]": matrimonial_regime_display(associate),
         "[qualite_associe_article_8]": article_8_associate_label(ctx, associate),
-        "[nb_parts_total]": str(capital_titles_total(ctx)),
+        "[nb_parts_total]": capital_titles_total_display(ctx),
         "[nb_parts_total_lettres]": capital_titles_total_letters(ctx),
-        "[nb_actions]": str(capital_titles_total(ctx)),
+        "[nb_actions]": capital_titles_total_display(ctx),
         "[valeur_nominale_part]": capital_title_value(ctx, title_type),
         "[valeur_nominale_action]": capital_title_value(ctx, title_type),
+        # Accord « euro »/« euros » de la valeur nominale (1 euro vs 10 euros).
+        "[euro_nominal_word]": euro_word(capital_title_value(ctx, title_type)),
         "[montant_apport]": apport_amount(ctx, associate),
         "[montant_apport_lettres]": apport_amount_letters(ctx, associate),
         "[apport_personne_1]": apport_amount(ctx, associate),
@@ -163,8 +248,21 @@ def add_conjoint_replacements(
     replacements: dict[str, str],
     associate: Associe,
 ) -> None:
+    # Retour Rafael 2026-06-25 (#2) : le conjoint n'est requis QUE pour un associé MARIÉ.
+    # Le bloc identité actif utilise le token combiné `[situation_matrimoniale_statuts]`
+    # (clause matrimoniale qui, pour un non-marié, rend juste « célibataire » SANS conjoint) ;
+    # les tokens bruts `[*_conjoint]` ne figurent pas dans les blocs actifs (no-op). On ne lève
+    # donc que pour un marié sans conjoint (vraie donnée manquante) ; un célibataire/pacsé/
+    # divorcé/veuf passe sans conjoint — meme logique que la SELAS pluri.
     if associate.conjoint is None:
-        raise ValueError(f"associes[0].conjoint est obligatoire pour {DOCUMENT_CODE}.")
+        status = _normalized_text(
+            required_text(associate.situation_maritale, "associes[0].situation_maritale")
+        )
+        if status in {"marie", "mariee"}:
+            raise ValueError(
+                f"associes[0].conjoint est obligatoire pour un associé marié ({DOCUMENT_CODE})."
+            )
+        return
     replacements.update(
         {
             "[civilite_conjoint]": required_text(
@@ -188,9 +286,31 @@ def marital_status_display(associate: Associe) -> str:
         associate.situation_maritale,
         "associes[0].situation_maritale",
     )
+    return situation_maritale_accentuee(value, feminine=associate.genre == Gender.FEMININ)
+
+
+def situation_maritale_accentuee(value: str, *, feminine: bool) -> str:
+    """Situation matrimoniale ACCENTUEE et accordee au genre, depuis la valeur brute.
+
+    Albane 6.3/7.3 (RATIFIE 2026-07-06) : le statut PACSE sort ACCENTUE et accorde au genre,
+    meme quand le flux front passe la valeur BRUTE (« pacse ») — la SELARL principale la pose
+    non accentuee. R4 (Albane 2026-07-07, « accents irréprochables partout ») : meme regle
+    generalisee au reste du menu (« celibataire » -> « célibataire », « divorce(e) » ->
+    « divorcé(e) », « veuf » accorde), la comparution SELARL/SELAS sortant sinon
+    « celibataire. » nu. Une valeur deja accentuee est renvoyee accentuee a l'identique ;
+    une valeur hors menu (libelle libre) passe inchangee.
+    """
     normalized = _normalized_text(value)
     if normalized in {"marie", "mariee"}:
-        return "mariée" if associate.genre == Gender.FEMININ else "marié"
+        return "mariée" if feminine else "marié"
+    if normalized in {"pacse", "pacsee"}:
+        return "pacsée" if feminine else "pacsé"
+    if normalized == "celibataire":
+        return "célibataire"
+    if normalized in {"divorce", "divorcee"}:
+        return "divorcée" if feminine else "divorcé"
+    if normalized in {"veuf", "veuve"}:
+        return "veuve" if feminine else "veuf"
     return value
 
 
@@ -202,8 +322,12 @@ def matrimonial_regime_display(associate: Associe) -> str:
     normalized = _normalized_text(value)
     if "communaute" in normalized and "legale" in normalized:
         return "la communauté légale"
+    if "communaute" in normalized and "universelle" in normalized:
+        return "la communauté universelle"
     if "communaute" in normalized:
         return "la communauté"
+    if "participation" in normalized and "acquet" in normalized:
+        return "la participation aux acquêts"
     for prefix in ("sous le régime de ", "sous le regime de ", "régime de ", "regime de "):
         if value.lower().startswith(prefix):
             return value[len(prefix) :].strip()
@@ -212,8 +336,14 @@ def matrimonial_regime_display(associate: Associe) -> str:
 
 def statuts_sel_matrimonial_clause(associate: Associe) -> str:
     status = marital_status_display(associate)
-    normalized_status = _normalized_text(status)
-    if normalized_status not in {"marie", "mariee"}:
+    # Garde PARTAGEE (mentions_conjoint) : plus de test local divergent (DRY, R22-02).
+    if not mentions_conjoint(associate.situation_maritale):
+        # Albane 6.3/7.3 (RATIFIE 2026-07-06) : un PACSE affiche son PARTENAIRE (« pacsé(e)
+        # avec {Civilite Prenom Nom} »), SANS « sous le régime de … » (le PACS n'a pas de
+        # sous-regime capture par le menu). « Pas de mention sans nom » : partenaire_pacse_clause
+        # -> "" si non renseigne -> statut nu.
+        if mentions_partenaire_pacse(associate.situation_maritale):
+            return f"{status}{partenaire_pacse_clause(associate.conjoint)}"
         return status
     conjoint = associate.conjoint
     if conjoint is None:
@@ -242,8 +372,12 @@ def statuts_sel_matrimonial_regime(associate: Associe) -> str:
     normalized = _normalized_text(value)
     if "separation" in normalized and "bien" in normalized:
         return "la séparation de biens"
+    if "communaute" in normalized and "universelle" in normalized:
+        return "la communauté universelle"
     if "communaute" in normalized:
         return "la communauté"
+    if "participation" in normalized and "acquet" in normalized:
+        return "la participation aux acquêts"
     return matrimonial_regime_display(associate)
 
 
@@ -256,6 +390,20 @@ def article_8_associate_label(
     if all(other.genre == Gender.FEMININ for other in ctx.associes):
         return "associées"
     return "associés"
+
+
+def qualite_associe_display(associate: Associe) -> str:
+    """Qualite d'associe ACCENTUEE pour le token nu `[qualite_associe]`.
+
+    R4 (Albane 2026-07-07) : le flux SELARL/SELAS uni pose la valeur BRUTE
+    « associe unique » (non accentuee) -> la designation sortait « L'associe
+    unique, ... ». On accentue et accorde au genre la valeur du menu ; toute autre
+    qualite (libelle libre deja propre) passe inchangee.
+    """
+    value = required_text(associate.qualite, "associes[0].qualite")
+    if _normalized_text(value) in {"associe unique", "associee unique"}:
+        return "associée unique" if associate.genre == Gender.FEMININ else "associé unique"
+    return value
 
 
 def _normalized_text(value: str) -> str:
@@ -279,9 +427,22 @@ def add_ordre_replacements(
                 associate.ordre.numero_rpps,
                 "associes[0].ordre.numero_rpps",
             ),
-            "[ordre_departemental]": required_text(
-                associate.ordre.departement,
-                "associes[0].ordre.departement",
+            # Albane 7.4/9.2 (2026-07-06) : le departement de l'Ordre s'affiche par le NOM
+            # (« Seine-et-Marne »), plus par le numero (« 77 »). Ne PAS toucher [ville_ordre]
+            # ci-dessous : c'est la VILLE (fallback departement) pour le template medecin.
+            "[ordre_departemental]": departement_nom(
+                required_text(
+                    associate.ordre.departement,
+                    "associes[0].ordre.departement",
+                )
+            ),
+            # ST6 (Albane 2026-07-10) : preposition grammaticale « de / du / des » choisie
+            # au formulaire, placee AVANT le departement de l'Ordre dans la ligne d'identite
+            # des statuts (« ... de l'Ordre des ... DU Jura »). Le rendu figeait « de » ; on
+            # respecte desormais la preposition saisie. Defaut « de » = byte-identique pour
+            # tout flux qui ne la renseigne pas.
+            "[connecteur_ordre]": (
+                (associate.ordre.connecteur_departement or "de").strip() or "de"
             ),
             "[ville_ordre]": required_text(
                 associate.ordre.ville or associate.ordre.departement,
@@ -293,6 +454,20 @@ def add_ordre_replacements(
             ),
         }
     )
+    # Mention d'inscription a l'ordre (retour Albane 2026-06-10, statuts DENTISTE) :
+    # le numero d'inscription a l'ordre est ajoute AVANT le RPPS, mais SEULEMENT
+    # si le champ est renseigne (sinon on garde le seul RPPS). Le bloc medecin
+    # porte deja le numero national dans son texte source ; cette mention sert le
+    # template dentiste via [mention_inscription_ordre_rpps].
+    numero_inscription = (associate.ordre.numero or "").strip()
+    numero_rpps = required_text(associate.ordre.numero_rpps, "associes[0].ordre.numero_rpps")
+    if numero_inscription:
+        replacements["[mention_inscription_ordre_rpps]"] = (
+            f"sous le numéro d’inscription {numero_inscription} "
+            f"et sous le numéro RPPS {numero_rpps}"
+        )
+    else:
+        replacements["[mention_inscription_ordre_rpps]"] = f"sous le numéro RPPS {numero_rpps}"
 
 
 def add_depot_replacements(
@@ -308,6 +483,10 @@ def add_depot_replacements(
         "depot_fonds.banque.nom",
     )
     if require_address:
+        # Retours client 2026-06-11 (ticket 3.2) : l'adresse de la banque ne bloque
+        # plus la generation. KAN-42 (Akainu m1) : vide, elle rend un MARQUEUR visible
+        # « (À COMPLÉTER : adresse de la banque) » — pas une chaine vide qui laissait un
+        # espace orphelin « banque X . » et ne materialisait aucune zone a completer.
         replacements["[adresse_banque]"] = required_text(
             ctx.depot_fonds.banque.adresse_affichee,
             "depot_fonds.banque.adresse_affichee",
@@ -323,6 +502,11 @@ def add_exercice_replacements(
 ) -> None:
     if ctx.exercice_social is None:
         raise ValueError(f"exercice_social est obligatoire pour {DOCUMENT_CODE}.")
+    # LIVE-03 : la re-accentuation des mois saisis librement se fait EN AMONT (a la saisie
+    # front, cf. front_app accentuate_french_months) — PAS ici. Le generateur reste un echo
+    # FIDELE du contexte (le test de parite ligne-a-ligne avec le modele source l'exige : le
+    # modele de reference SELARL contient « 31 decembre » sans accent — typo source a faire
+    # trancher par Albane, cf. QUESTIONS_RAFAEL.md ; on ne modifie pas le gold ici).
     if require_debut_fin:
         replacements.update(
             {
@@ -344,7 +528,516 @@ def add_exercice_replacements(
         replacements["[adresse_lieu_exercice]"] = first_lieu_exercice(ctx)
 
 
-def render_statuts_sel_docx(
+# Police du pied de page des modeles SEL : Roboto 8 pt (= sz 16 demi-points dans
+# le XML source footer1/footer3.xml du modele SELARL medecin).
+_FOOTER_FONT_NAME = "Roboto"
+_FOOTER_FONT_SIZE_PT = 8
+
+
+def _add_page_number_field(paragraph: Any) -> None:
+    """Insere un champ Word `PAGE` (numerotation dynamique) dans un paragraphe.
+
+    Reproduit la sequence de runs `fldChar begin / instrText PAGE /
+    fldChar separate / fldChar end` du footer source du modele SELARL medecin.
+    Le champ s'evalue a l'ouverture/impression Word (et au passage LibreOffice
+    -> PDF), exactement comme dans le .docx d'origine.
+    """
+    run = paragraph.add_run()
+    run.font.name = _FOOTER_FONT_NAME
+    run.font.size = Pt(_FOOTER_FONT_SIZE_PT)
+
+    begin = OxmlElement("w:fldChar")
+    begin.set(qn("w:fldCharType"), "begin")
+    instr = OxmlElement("w:instrText")
+    instr.set(qn("xml:space"), "preserve")
+    instr.text = "PAGE"
+    separate = OxmlElement("w:fldChar")
+    separate.set(qn("w:fldCharType"), "separate")
+    end = OxmlElement("w:fldChar")
+    end.set(qn("w:fldCharType"), "end")
+    for element in (begin, instr, separate, end):
+        run._r.append(element)
+
+
+def _add_selarl_medecin_footer(docx: Any, denomination: str) -> None:
+    """Restaure le pied de page du modele source SELARL medecin.
+
+    Le modele source (`footer1.xml` / `footer3.xml`) porte DEUX paragraphes,
+    Roboto 8 pt :
+      1. un champ `PAGE` (pagination) aligne a droite ;
+      2. la ligne « Statuts <denomination> » alignee a gauche.
+    Le generateur from-scratch repartait d'un document vierge -> footer vide
+    (perte de fidelite, audit _SELARL_FIDELITY_RECHECK_V1.md). On le repose ici.
+    Pose uniquement pour le medecin : le modele dentiste a un footer source vide.
+    """
+    footer = docx.sections[0].footer
+    footer.is_linked_to_previous = False
+
+    page_paragraph = footer.paragraphs[0] if footer.paragraphs else footer.add_paragraph()
+    page_paragraph.text = ""
+    page_paragraph.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    _add_page_number_field(page_paragraph)
+
+    label_paragraph = footer.add_paragraph()
+    label_paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    label_run = label_paragraph.add_run(f"Statuts {denomination}")
+    label_run.font.name = _FOOTER_FONT_NAME
+    label_run.font.size = Pt(_FOOTER_FONT_SIZE_PT)
+
+
+# ---------------------------------------------------------------------------
+# Multi-associes SELARL (retours V3 2026-06-17) — STRICTEMENT ADDITIF.
+#
+# Decision de gouvernance : ce sous-cas contredit SELARL-SCOPE-1 (SELARL =
+# unipersonnelle) et l'arbitrage Albane du 05/06 ; il est construit sur demande
+# EXPLICITE du PM. Garde-fou DUR : a 0 ou 1 membre, RIEN de ce code ne s'active
+# -> le parcours mono historique reste byte-identique (verrou ligne-par-ligne
+# `test_statuts_selarl_medecin_matches_source_docx_line_by_line`).
+#
+# A >= 2 membres, on intercepte par CONTENU (chaines source exactes, jamais par
+# index fragile) quatre fenetres dynamiques :
+#   - la comparution (« LE SOUSSIGNE : » + ligne(s) d'identite) ;
+#   - l'article 7 (apports) : une ligne par membre + ligne « Total des apports » ;
+#   - l'article 8 (repartition du capital) : liste numerotee « 1° ... ; / 2° ... . » ;
+#   - la ligne de signature (un libelle par signataire).
+# Membre personne morale OU physique (reutilise le modele riche
+# `StatutsCivilsAssocie`, deja employe par la SELAS multi et le repeater).
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class SelMultiZones:
+    """Chaines source EXACTES des blocs dynamiques d'un template SELARL.
+
+    Chaque champ est la string telle qu'elle figure dans le tuple `*_BLOCKS`
+    (prouvee par extraction). A >= 2 membres, le bloc correspondant est
+    intercepte et remplace par la version iteree ; tout le reste du template
+    est rendu a l'identique. None = le template ne porte pas ce bloc separe."""
+
+    soussigne_header: str
+    identite_lines: tuple[str, ...]
+    apport_line: str
+    apport_total_line: str
+    capital_attribution_line: str
+    capital_total_line: str
+    signature_line: str
+
+
+# Ancres des blocs dynamiques — chaines EXACTES des tuples *_BLOCKS
+# (statuts_sel_exercice_templates.py). Si l'une diverge du template, le mode multi
+# n'intercepte plus ce bloc (rendu mono) ; les tests multi le detectent.
+SELARL_MEDECIN_MULTI_ZONES = SelMultiZones(
+    soussigne_header="LE SOUSSIGNE\xa0:",
+    identite_lines=(
+        "[civilite] [prenom] [nom], [profession], né le [date_naissance] à "
+        "[ville_naissance] ([departement_naissance]), de nationalité [nationalite], "
+        "demeurant au [adresse_personnelle], inscrit au tableau du Conseil départemental "
+        "[connecteur_ordre] [ville_ordre] sous le numéro national [numero_ordre] "
+        "et sous le numéro RPPS "
+        "[numero_rpps], [situation_matrimoniale_statuts]. ",
+    ),
+    # R3 « supprimer PARTOUT » (Rafael 2026-07-09) : ancres alignees sur le template modifie
+    # (« [civilite_apport] … apporte », « attribuées en totalité à [civilite_apport] … »). Sans
+    # cet alignement, le mode multi n'intercepte plus le bloc mono et le laisse fuiter.
+    apport_line=(
+        "[civilite_apport] [prenom] [nom] apporte à la Société la somme de [capital_lettres] euros "
+        "([capital_social] €)"
+    ),
+    apport_total_line="ci- [capital_social] €.",
+    capital_attribution_line=(
+        "Il est divisé en [nb_parts_total] parts de [valeur_nominale_part] "
+        "[euro_nominal_word] chacune, entièrement souscrites et libérées dans les "
+        "conditions exposées ci-dessus et attribuées en totalité à [civilite_apport] [prenom] "
+        "[nom], [qualite_associe_article_8]."
+    ),
+    capital_total_line=(
+        "Total du nombre de parts composant le capital social\xa0: "
+        "……………………………………….[nb_parts_total] parts"
+    ),
+    signature_line="    [prenom_signataire] [nom_signataire]",
+)
+
+SELARL_DENTISTE_MULTI_ZONES = SelMultiZones(
+    soussigne_header="LE SOUSSIGNE\xa0:",
+    identite_lines=(
+        "[civilite] [prenom] [nom], [profession], né le [date_naissance] à "
+        "[ville_naissance] ([departement_naissance]), de nationalité [nationalite], "
+        "demeurant au [adresse_personnelle], [situation_matrimoniale_statuts]",
+        "Inscrit au Tableau de l’ordre départemental des [profession_reglementee_pluriel] "
+        "[connecteur_ordre] [ordre_departemental] [mention_inscription_ordre_rpps]. ",
+    ),
+    apport_line=(
+        "[civilite] [prenom] [nom] apporte à la Société la somme de [montant_apport] euros.   "
+    ),
+    apport_total_line="Total des apports en numéraire : ci- [montant_apport] euros.",
+    capital_attribution_line=(
+        "à [civilite] [prenom] [nom], [nb_parts_total_lettres] parts sociales en pleine "
+        "propriété, ci \t[nb_parts_total] parts  "
+    ),
+    capital_total_line=(
+        "Total du nombre de parts composant le capital social : "
+        "………………………………………. [nb_parts_total] parts"
+    ),
+    signature_line="[prenom] [nom]",
+)
+
+
+_MORALE = "personne_morale"
+
+
+def _membre_is_morale(membre: StatutsCivilsAssocie) -> bool:
+    return membre.type_personne == _MORALE
+
+
+def _membre_est_feminin(membre: StatutsCivilsAssocie) -> bool:
+    if membre.genre is not None:
+        return membre.genre == Gender.FEMININ
+    civilite = (membre.civilite_affichage or "").strip().casefold().replace(".", "")
+    return civilite in {"madame", "mme", "mademoiselle", "mlle"}
+
+
+def _membre_person_label(membre: StatutsCivilsAssocie) -> str:
+    # R3 « supprimer PARTOUT » (Rafael 2026-07-09) : comparution + apport d'un membre SELARL multi
+    # -> civilite CIVILE (Monsieur/Madame accorde au genre), jamais « Docteur »/« Dr ».
+    prenoms = membre.prenoms or membre.prenom
+    civilite = civilite_civile(
+        required_text(membre.civilite_affichage, "membres[].civilite_affichage"),
+        membre.genre,
+    )
+    return (
+        f"{civilite} "
+        f"{required_text(prenoms, 'membres[].prenom')} "
+        f"{required_text(membre.nom, 'membres[].nom')}"
+    )
+
+
+def _membre_person_address(membre: StatutsCivilsAssocie) -> str:
+    if _has_content(membre.adresse_personnelle_affichee):
+        return membre.adresse_personnelle_affichee.strip()
+    return address_display(membre.adresse_personnelle, "membres[].adresse_personnelle")
+
+
+def _membre_nb_parts(membre: StatutsCivilsAssocie) -> int:
+    # KAN-2 @All : quantite absente -> 0 pour les CALCULS (somme des parts), jamais lever.
+    # L'AFFICHAGE passe par `_membre_nb_parts_display` (marqueur, jamais « 0 parts »).
+    if membre.parts is not None and membre.parts.nb is not None:
+        return membre.parts.nb
+    if membre.nb_actions is not None:
+        return membre.nb_actions
+    return 0
+
+
+def _membre_nb_parts_display(membre: StatutsCivilsAssocie) -> str:
+    # KAN-2 @All : quantite de parts du membre pour l'AFFICHAGE -> MARQUEUR si absente/nulle
+    # (jamais « 0 parts »), sinon le nombre tel quel (sortie nominale byte-identique).
+    if membre.parts is not None and membre.parts.nb and membre.parts.nb >= 1:
+        return str(membre.parts.nb)
+    if membre.nb_actions and membre.nb_actions >= 1:
+        return str(membre.nb_actions)
+    return f"(À COMPLÉTER : {libelle_metier('nombre de parts détenues')})"
+
+
+def _membre_nb_parts_lettres(membre: StatutsCivilsAssocie) -> str:
+    if membre.parts is not None and membre.parts.nb_lettres:
+        return membre.parts.nb_lettres.strip()
+    if membre.nb_actions_lettres:
+        return membre.nb_actions_lettres.strip()
+    # KAN-2 @All : lettres absentes -> marqueur, jamais lever.
+    return f"(À COMPLÉTER : {libelle_metier('nombre de parts en toutes lettres')})"
+
+
+def _membre_apport_montant(membre: StatutsCivilsAssocie) -> str:
+    # KAN-2 @All (B1) : apport absent -> marqueur metier, jamais lever (generation a vide).
+    if membre.apport is None or not (membre.apport.montant or "").strip():
+        return f"(À COMPLÉTER : {libelle_metier('membres[].apport.montant')})"
+    return membre.apport.montant.strip()
+
+
+def _membre_apport_lettres(membre: StatutsCivilsAssocie) -> str:
+    # KAN-2 @All (B1) : apport en lettres absent -> marqueur metier, jamais lever.
+    if membre.apport is None or not (membre.apport.montant_lettres or "").strip():
+        return f"(À COMPLÉTER : {libelle_metier('membres[].apport.montant_lettres')})"
+    return membre.apport.montant_lettres.strip()
+
+
+def _membre_short_label(membre: StatutsCivilsAssocie) -> str:
+    """Libelle court pour la repartition / la signature : denomination (PM) ou
+    « prenom nom » (PP), repris de la mecanique SELAS multi."""
+    if _membre_is_morale(membre):
+        return required_text(membre.denomination, "membres[].denomination")
+    prenoms = membre.prenoms or membre.prenom
+    return (
+        f"{required_text(prenoms, 'membres[].prenom')} "
+        f"{required_text(membre.nom, 'membres[].nom')}"
+    )
+
+
+def _add_multi_comparution(
+    docx: Any,
+    membres: list[StatutsCivilsAssocie],
+    replacements: dict[str, str],
+) -> None:
+    """Comparution multi : « LES SOUSSIGNÉS : » (pluriel) puis une ligne par membre.
+
+    Personne physique : reprend la ligne d'identite source (civilite, profession,
+    naissance, nationalite, domicile, situation matrimoniale, inscription a l'ordre).
+    Personne morale : ligne d'identification societe (denomination, forme, capital,
+    siege, RCS, representant) reprise de la mecanique SELAS multi.
+    """
+    feminin_all = all(_membre_est_feminin(m) for m in membres if not _membre_is_morale(m))
+    header = "LES SOUSSIGNÉES\xa0:" if feminin_all else "LES SOUSSIGNÉS\xa0:"
+    add_paragraph(docx, header)
+    profession_pluriel = replacements.get("[profession_reglementee_pluriel]", "")
+    for membre in membres:
+        if _membre_is_morale(membre):
+            add_statuts_body_paragraph(docx, _multi_morale_identite(membre))
+        else:
+            for line in _multi_physique_identite(membre, profession_pluriel):
+                add_statuts_body_paragraph(docx, line)
+
+
+def _multi_physique_identite(
+    membre: StatutsCivilsAssocie,
+    profession_pluriel: str,
+) -> tuple[str, ...]:
+    feminin = _membre_est_feminin(membre)
+    ne = "née" if feminin else "né"
+    inscrit = "Inscrite" if feminin else "Inscrit"
+    profession = required_text(membre.profession, "membres[].profession")
+    # Albane 7.4/9.2 (2026-07-06) : departement de l'Ordre rendu par le NOM, plus le numero.
+    ordre_dep = departement_nom(
+        required_text(membre.ordre_departemental, "membres[].ordre_departemental")
+    )
+    # R4 (Albane 2026-07-07) : situation matrimoniale ACCENTUEE aussi sur la
+    # surface membre multi (dette tracee), au lieu de l'echo brut du front.
+    situation = situation_maritale_accentuee(
+        required_text(membre.situation_maritale, "membres[].situation_maritale"),
+        feminine=feminin,
+    )
+    identite = (
+        f"{_membre_person_label(membre)}, {profession}, "
+        f"{ne} le {format_display_date(membre.date_naissance, 'membres[].date_naissance')} "
+        f"à {required_text(membre.ville_naissance, 'membres[].ville_naissance')} "
+        f"({required_text(membre.departement_naissance, 'membres[].departement_naissance')}), "
+        f"de nationalité {required_text(membre.nationalite, 'membres[].nationalite')}, "
+        f"demeurant au {_membre_person_address(membre)}, "
+        f"{situation}."
+    )
+    inscription = (
+        f"{inscrit} au tableau de l’ordre des {profession_pluriel} de {ordre_dep} "
+        f"sous le numéro national "
+        f"{required_text(membre.numero_ordre, 'membres[].numero_ordre')} "
+        f"et sous le numéro RPPS "
+        f"{required_text(membre.numero_rpps, 'membres[].numero_rpps')}."
+    )
+    return (identite, inscription)
+
+
+def _multi_morale_identite(membre: StatutsCivilsAssocie) -> str:
+    representant = membre.representant
+    if representant is None:
+        raise ValueError(
+            f"membres[].representant est obligatoire pour une personne morale {DOCUMENT_CODE}."
+        )
+    return (
+        f"La {required_text(membre.denomination, 'membres[].denomination')}, "
+        f"{required_text(membre.forme_juridique, 'membres[].forme_juridique')}, "
+        f"au capital de {required_text(membre.capital_social, 'membres[].capital_social')} euros "
+        f"dont le siège social est situé au {address_display(membre.siege, 'membres[].siege')}, "
+        f"immatriculée au RCS de {required_text(membre.ville_rcs, 'membres[].ville_rcs')} "
+        f"sous le numéro {required_text(membre.numero_rcs, 'membres[].numero_rcs')}, "
+        "représentée par son représentant légal, "
+        f"{required_text(representant.civilite_affichage, 'membres[].representant.civilite')} "
+        f"{required_text(representant.prenom, 'membres[].representant.prenom')} "
+        f"{required_text(representant.nom, 'membres[].representant.nom')}."
+    )
+
+
+def _add_multi_apports(
+    docx: Any,
+    membres: list[StatutsCivilsAssocie],
+    zones: SelMultiZones,
+    replacements: dict[str, str],
+) -> None:
+    """Article 7 : une ligne d'apport par membre, puis « Total des apports »."""
+    for membre in membres:
+        label = (
+            f"La {required_text(membre.denomination, 'membres[].denomination')}"
+            if _membre_is_morale(membre)
+            else _membre_person_label(membre)
+        )
+        add_statuts_body_paragraph(
+            docx,
+            f"{label} apporte à la Société la somme de "
+            f"{_membre_apport_montant(membre)} euros.",
+        )
+    total = replacements.get("[capital_social]", replacements.get("[capital_lettres]", ""))
+    add_statuts_body_paragraph(
+        docx,
+        f"Total des apports en numéraire : ci- {total} euros.",
+    )
+
+
+def _add_multi_capital_attribution(
+    docx: Any,
+    membres: list[StatutsCivilsAssocie],
+) -> None:
+    """Article 8 : liste numerotee de la repartition du capital (wording ticket V3).
+
+    Personne morale : « N° [denomination], détenant [nb] parts ».
+    Personne physique : « N° [prenom] [nom], détenant [nb] parts ».
+    Separateur « ; » entre membres, « . » sur le dernier (retours V3 2026-06-17).
+    """
+    dernier = len(membres) - 1
+    for ordinal, membre in enumerate(membres, start=1):
+        nb_parts = _membre_nb_parts_display(membre)
+        ponctuation = "." if ordinal - 1 == dernier else " ;"
+        add_statuts_body_paragraph(
+            docx,
+            f"{ordinal}° {_membre_short_label(membre)}, "
+            f"détenant {nb_parts} parts{ponctuation}",
+        )
+
+
+# --- Article 5 SELARL : 2e lieu d'exercice (ticket 2.2, ADDITIF) --------------
+# Blocs source figes de l'article 5 SELARL (corps), interceptes par CONTENU au
+# rendu — meme technique que les `multi_zones`. A UN seul lieu, ces blocs sont
+# rendus tels quels (sortie byte-identique a l'existant). A DEUX lieux, ils sont
+# remplaces par le patron SELAS valide (en-tete + lieu #1 + nom2, adresse2).
+SELARL_DENTISTE_ARTICLE_5_BODY = (
+    "Le lieu d’exercice de la société est situé au [adresse_lieu_exercice]. "
+    "Il constitue le lieu d’exercice unique de la société."
+)
+SELARL_MEDECIN_ARTICLE_5_BODY = (
+    "Le lieu d’exercice de la société est situé au [adresse_siege]. "
+    "Il constitue le lieu d’exercice unique de la société."
+)
+# Patron SELAS valide repris pour le corps de l'article 5 SELARL a 2 lieux.
+# wording art.5 SELARL a 2 lieux repris du patron SELAS valide.
+# VALIDE Albane 2026-06-18 (via Rafael).
+SELARL_ARTICLE_5_TWO_LIEUX_HEADER = "Le lieu d’exercice de la société est situé : "
+SELARL_ARTICLE_5_TWO_LIEUX_LINE_1 = "[adresse_lieu_exercice]"
+SELARL_ARTICLE_5_TWO_LIEUX_LINE_2 = "[nom_lieu_exercice_2], [adresse_lieu_exercice_2]"
+
+
+def _render_selarl_two_lieux_article_5(
+    docx: Any, replacements: dict[str, str], associate: Associe
+) -> None:
+    """Rend le corps de l'article 5 SELARL avec DEUX lieux (patron SELAS).
+
+    Reproduit la structure validee cote SELAS (en-tete + lieu #1 sur sa propre
+    ligne + « nom2, adresse2 »). Appele uniquement quand un 2e lieu reel est
+    saisi ; le cas 1-lieu garde le bloc source d'origine inchange.
+    """
+    for raw in (
+        SELARL_ARTICLE_5_TWO_LIEUX_HEADER,
+        SELARL_ARTICLE_5_TWO_LIEUX_LINE_1,
+        SELARL_ARTICLE_5_TWO_LIEUX_LINE_2,
+    ):
+        text = replace_placeholders(raw, replacements)
+        text = apply_gender_variants(text, associate)
+        add_statuts_body_paragraph(docx, text)
+
+
+# ---------------------------------------------------------------------------
+# Mise en forme SELAS (retours Albane « mise en forme » 2.6 / 2.7 / 2.8).
+#
+# Interception au RENDU par detection de motif (mecanisme le plus coherent avec
+# l'existant, qui intercepte deja par contenu : ANNEXE, siege multi, comparution
+# multi...). Actif UNIQUEMENT quand `selas_formatting=True` (les deux generateurs
+# SELAS uni) -> la SELARL (test ligne-a-ligne byte-identique) reste inchangee.
+#
+#  - 2.6 : l'ADRESSE du siege (art. 4) rendue en gras (le libelle reste normal).
+#  - 2.7 : la designation nominative du President (art. 15 medecin) en gras.
+#  - 2.8 : les en-tetes de sous-articles « 15.1- », « 16-1 - », « 14.1 – »... soulignes.
+# ---------------------------------------------------------------------------
+
+# Ancres de contenu (source, apostrophe typographique) des lignes du siege — art. 4.
+# Le libelle precede l'adresse ; on met en gras UNIQUEMENT l'adresse (apres « fixé au »).
+_SELAS_SIEGE_PREFIXES: tuple[str, ...] = (
+    "Le siège social est fixé au ",
+    "Le siège de la société est fixé au ",
+)
+
+# Lignes SOURCE (avant substitution) de la designation du President — art. 15 SELAS
+# medecin. On ancre sur le BLOC brut (chaines EXACTES du template), pas sur le texte
+# rendu, pour eviter tout faux positif (« L’associé unique... » du corps commence
+# aussi par « L’ »). Ces 3 lignes sont rendues en gras (2.7).
+_SELAS_PRESIDENT_DESIGNATION_BLOCKS: frozenset[str] = frozenset(
+    {
+        "L’[qualite_associe], [civilite] [prenom] [nom], ",
+        "Demeurant au [adresse_personnelle]",
+        "est nommé [fonction_dirigeant] de la Société et ce pour [duree_mandat_dirigeant].",
+    }
+)
+
+# En-tete de sous-article a souligner (2.8) : « 15.1- », « 15.4 - », « 16-1 - »,
+# « 14.1 – », « 7.3. – », « 12.1 Modalités... », « 22.1 – »... Motif ancre en DEBUT de
+# ligne : deux niveaux numeriques separes par « . » ou « - » (le tiret/point de fin est
+# facultatif pour couvrir aussi « 12.1 Modalités »). Verifie EXHAUSTIVEMENT sans faux
+# positif sur le corps SELAS medecin+dentiste (seuls les en-tetes de sous-articles
+# matchent ; aucun paragraphe de corps ne commence par « N.M »).
+_SELAS_SUBARTICLE_HEADING = re.compile(r"^\s*\d{1,2}\s*[.\-]\s*\d{1,2}\b")
+
+
+def _selas_siege_split(text: str) -> tuple[str, str] | None:
+    """Si `text` est la ligne du siege (art. 4), renvoie (libelle+prefixe, adresse).
+
+    L'adresse (partie apres « fixé au ») est destinee au gras ; le point final
+    eventuel reste avec l'adresse pour une sortie fidele. None si non concerne.
+    """
+    for prefix in _SELAS_SIEGE_PREFIXES:
+        if text.startswith(prefix):
+            return prefix, text[len(prefix) :]
+    return None
+
+
+def _add_selas_siege_paragraph(docx: Any, label: str, adresse: str) -> None:
+    """Article 4 : libelle normal + adresse du siege en GRAS (2.6)."""
+    paragraph = add_statuts_body_paragraph(docx, "")
+    # add_statuts_body_paragraph a deja pose un run vide ; on le remplace par
+    # deux runs (libelle non gras, adresse en gras) pour un rendu inline fidele.
+    for run in list(paragraph.runs):
+        run._r.getparent().remove(run._r)
+    paragraph.add_run(label)
+    adresse_run = paragraph.add_run(adresse)
+    adresse_run.bold = True
+
+
+def _accord_inscription(text: str, genre: Gender | None) -> str:
+    """ST4 (Albane 2026-07-10) : accorde le participe « inscrit(e) » referant a l'associe
+    (« inscrit au tableau » -> « inscrite au tableau » pour une femme), via
+    ``accord_terme_genre`` (INTENTION, pas regex de terminaison).
+
+    Ancre sur « inscrit au »/« Inscrit au » (le participe SUIVI de « au ») : cette forme
+    n'apparait QUE dans les lignes d'identite/inscription de l'associe. Les autres « inscrit »
+    du corps referent a des choses (« la resolution ... inscrite au Registre », « mouvement
+    inscrit sur le registre », « la Societe est inscrite. ») et ne matchent pas ce motif —
+    aucune de ces surfaces n'est touchee, dans les deux sens. No-op au masculin
+    (``accord_terme_genre`` renvoie la forme masculine inchangee)."""
+    for participle in ("Inscrit", "inscrit"):
+        accorded = accord_terme_genre(participle, genre)
+        if accorded != participle:
+            text = text.replace(f"{participle} au ", f"{accorded} au ")
+    return text
+
+
+def _add_mono_identite_bold_name(docx: Any, text: str) -> Any:
+    """ST2 (Albane 2026-07-10) : la ligne d'identite du SOUSSIGNE rend « Civilite Prenom Nom »
+    (jusqu'a la 1re virgule) en GRAS, le reste en normal. Meme mecanique de double-run que
+    l'adresse du siege SELAS (``_add_selas_siege_paragraph``)."""
+    paragraph = add_statuts_body_paragraph(docx, "")
+    for run in list(paragraph.runs):
+        run._r.getparent().remove(run._r)
+    name, separator, rest = text.partition(",")
+    name_run = paragraph.add_run(name)
+    name_run.bold = True
+    if separator:
+        paragraph.add_run(separator + rest)
+    return paragraph
+
+
+def render_statuts_sel_docx(  # noqa: C901
     blocks: tuple[str, ...],
     replacements: dict[str, str],
     output_path: Path,
@@ -354,18 +1047,146 @@ def render_statuts_sel_docx(
     render_selas_second_lieu: bool = False,
     title_box_bordered: bool = True,
     annex_page_break: bool = False,
+    selas_formatting: bool = False,
+    footer_medecin_denomination: str | None = None,
+    membres: list[StatutsCivilsAssocie] | None = None,
+    multi_zones: SelMultiZones | None = None,
+    selarl_second_lieu_block: str | None = None,
 ) -> Path:
+    # Mode multi-associes : actif UNIQUEMENT a partir de 2 membres et si le template
+    # fournit ses ancres (`multi_zones`). A 0/1 membre -> parcours mono inchange.
+    multi = (
+        membres is not None and len(membres) >= 2 and multi_zones is not None
+    )
+    multi_membres: list[StatutsCivilsAssocie] = list(membres) if multi else []
+    # Lignes d'identite source a SAUTER en multi (remplacees par la comparution iteree).
+    skip_identite = set(multi_zones.identite_lines) if multi and multi_zones else set()
+    # Comparution SELARL mono (retours Albane 2026-07-10, ST2/ST3/ST4/ST5) : les ancres de
+    # `multi_zones` reperent les lignes d'identite du soussigné. Ce traitement de mise en forme
+    # n'est arme QUE pour la SELARL uni (medecin/dentiste, seuls a fournir `multi_zones`) ; la
+    # SELAS (multi_zones=None) garde sa comparution actuelle.
+    selarl_comparution = not multi and multi_zones is not None
+    mono_identite = (
+        set(multi_zones.identite_lines) if selarl_comparution and multi_zones else set()
+    )
+
     docx = new_document()
     signature_mode = False
+    signature_paras: list = []  # KAN-36 : paragraphes du bloc signature, a garder sur une page
     for index, block in enumerate(blocks):
         if skip_personne_2_line and "[civilite_personne_2]" in block:
             continue
         if "[nom_lieu_exercice_2]" in block and not render_selas_second_lieu:
             continue
+        # Article 5 SELARL a 2 lieux (ticket 2.2, ADDITIF) : si un 2e lieu est
+        # saisi, le bloc source « ...lieu d'exercice unique... » est remplace par
+        # le patron SELAS valide (en-tete + lieu #1 + nom2, adresse2). Sinon, le
+        # bloc source est rendu tel quel (sortie 1-lieu byte-identique).
+        if (
+            selarl_second_lieu_block is not None
+            and render_selas_second_lieu
+            and block == selarl_second_lieu_block
+        ):
+            _render_selarl_two_lieux_article_5(docx, replacements, associate)
+            continue
         if index == 4:
-            add_statuts_title_box(docx, "STATUTS", bordered=title_box_bordered)
+            # Aere la 1re page entre l'en-tete (denomination/forme/capital/siege,
+            # index 0-3, tres compact) et l'encadre STATUTS (retour Albane §2.1 :
+            # « trop proche de l'en-tete »). ADDITIF, purement visuel.
+            # ST1 (Albane 2026-07-10) : DESCENDRE l'encadre (« plus centre verticalement »)
+            # -> espaceur avant l'encadre nettement plus grand ; et AGRANDIR le cadre (« espace
+            # avant/apres le mot STATUTS dans le cadre ») -> marges de cellule + espaces internes
+            # plus grands passes au helper partage (les autres types de statuts gardent le defaut).
+            add_spacer(docx, space_after_pt=90)
+            add_statuts_title_box(
+                docx,
+                "STATUTS",
+                bordered=title_box_bordered,
+                cell_margin_vertical_dxa=240,
+                inner_space_pt=12,
+            )
+            # S2 (Rafael 2026-07-09) : SAUT DE PAGE apres l'encadre « STATUTS » -> le deroule
+            # de l'acte (comparution + articles) commence sur une nouvelle page. Convention de
+            # presentation propagee depuis les statuts SPFPL (meme rendu de premiere page).
+            docx.add_page_break()
+
+        if multi and multi_zones is not None:
+            # Interception par CONTENU (chaines source exactes) des 4 fenetres dynamiques.
+            if block == multi_zones.soussigne_header:
+                _add_multi_comparution(docx, multi_membres, replacements)
+                continue
+            if block in skip_identite:
+                # Deja rendue dans la comparution iteree ci-dessus.
+                continue
+            if block == multi_zones.apport_line:
+                _add_multi_apports(docx, multi_membres, multi_zones, replacements)
+                continue
+            if block == multi_zones.apport_total_line:
+                # Total deja emis par _add_multi_apports.
+                continue
+            if block == multi_zones.capital_attribution_line:
+                _add_multi_capital_attribution(docx, multi_membres)
+                continue
+            if block == multi_zones.signature_line:
+                signataires = [m for m in multi_membres if m.est_signataire]
+                for membre in signataires:
+                    # S5 (Rafael 2026-07-09) : signatures alignees a DROITE (meme convention
+                    # que le mono ; « Fait a … » reste a gauche).
+                    # KAN-36 (convergence @All 2026-07-16) : capturer les paragraphes des NOMS
+                    # de signataires dans `signature_paras` (comme le mono, cf. plus bas), sinon
+                    # la boucle keepNext finale ne les couvre pas -> signataires orphelins,
+                    # scindables sur deux pages (MEME bug que le PV B1, vecu sur la SELARL multi).
+                    signature_paras += add_statuts_signature_block(
+                        docx,
+                        [_membre_short_label(membre)],
+                        bold=True,
+                        alignment=WD_ALIGN_PARAGRAPH.RIGHT,
+                    )
+                signature_mode = True
+                continue
+
+        if block in mono_identite:
+            # Comparution SELARL uni (retours Albane 2026-07-10) : ST2 (nom du soussigne en
+            # gras), ST4 (« inscrit » -> « inscrite »), ST5 (point apres le regime matrimonial),
+            # ST3 (respiration apres les infos RPPS).
+            text = replace_placeholders(block, replacements)
+            text = apply_gender_variants(text, associate)
+            text = _accord_inscription(text, associate.genre)  # ST4
+            # ST5 : la ligne d'identite dentiste finit par le token matrimonial NU (sans point)
+            # -> on garantit un point final ; la variante medecin porte deja « . » (elle finit
+            # par « ]. ») et n'est donc pas retouchee (double point evite).
+            ends_on_matrimonial = block.rstrip().endswith("[situation_matrimoniale_statuts]")
+            if ends_on_matrimonial and not text.rstrip().endswith("."):
+                text = text.rstrip() + "."
+            # ST2 : la ligne qui PORTE le nom (commence par [civilite]) rend « Civilite Prenom
+            # Nom » en gras ; l'eventuelle 2e ligne d'identite (« Inscrit … ») reste normale.
+            if block.startswith("[civilite]"):
+                _add_mono_identite_bold_name(docx, text)
+            else:
+                add_statuts_body_paragraph(docx, text)
+            # ST3 : respiration apres la ligne qui porte le RPPS, avant « A etabli … ».
+            if "[numero_rpps]" in block or "[mention_inscription_ordre_rpps]" in block:
+                add_spacer(docx, space_after_pt=0)
+            continue
+
         text = replace_placeholders(block, replacements)
         text = apply_gender_variants(text, associate)
+        # ST4 (Albane 2026-07-10) : « inscrit » -> « inscrite » accorde a l'associe, propage a
+        # toutes les surfaces SEL (SELAS comprise) ; sur-mesure et sans effet sur les « inscrit(e) »
+        # referant a une chose (cf. _accord_inscription). No-op au masculin.
+        text = _accord_inscription(text, associate.genre)
+        # Entete (denomination / forme sociale / capital / siege) centree et
+        # compacte (retour Albane 2026-06-10 : centrer l'entete, reduire les
+        # interlignes). Denomination (index 0) en gras.
+        if index < 4:
+            add_paragraph(
+                docx,
+                text,
+                alignment=WD_ALIGN_PARAGRAPH.CENTER,
+                bold=index == 0,
+                space_after_pt=0,
+            )
+            continue
         if _is_heading(text):
             if text.startswith("ANNEXE"):
                 signature_mode = False
@@ -376,27 +1197,78 @@ def render_statuts_sel_docx(
             else:
                 add_paragraph(docx, text, alignment=WD_ALIGN_PARAGRAPH.CENTER, bold=True)
         elif text.startswith("ARTICLE "):
-            add_statuts_article_heading(docx, text)
+            # ST7 (Albane 2026-07-10) : « un petit espace entre chaque article » -> espace avant
+            # l'en-tete d'article un peu plus grand que le defaut (10 pt), sur tous les statuts SEL.
+            add_statuts_article_heading(docx, text, space_before_pt=16)
+        elif block == "[denomination_societe]":
+            # Article 3 : nom de la societe en gras et centre (retour Albane 2026-06-10).
+            add_paragraph(docx, text, alignment=WD_ALIGN_PARAGRAPH.CENTER, bold=True)
+        elif _is_soussigne_header(text):
+            # S3 (Rafael 2026-07-09) : comparution compacte (space_after=0). ST3 (Albane
+            # 2026-07-10) SUPERSEDE pour la SELARL uni : une respiration APRES « LE SOUSSIGNE »
+            # (« espace apres le soussigne »). La SELAS garde le rendu compact.
+            add_paragraph(
+                docx, text, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY, space_after_pt=0
+            )
+            if selarl_comparution:
+                add_spacer(docx, space_after_pt=0)
         elif text.startswith("Fait à ") or text.startswith("Fait a "):
             signature_mode = True
-            add_statuts_signature_block(docx, [text])
+            # « Fait a » aligne a GAUCHE (retour Albane 2026-06-10).
+            signature_paras += add_statuts_signature_block(
+                docx, [text], alignment=WD_ALIGN_PARAGRAPH.LEFT
+            )
         elif signature_mode and (
             "Faire précéder" in text
             or "Faire prÃ©cÃ©der" in text
             or text.startswith("«")
             or text.startswith("Â«")
         ):
-            add_statuts_signature_block(docx, [], mention_lines=[text])
+            # S5 (Rafael 2026-07-09) : la mention accompagne la signature -> alignee a DROITE
+            # (meme zone que le nom du signataire).
+            signature_paras += add_statuts_signature_block(
+                docx, [], mention_lines=[text], alignment=WD_ALIGN_PARAGRAPH.RIGHT
+            )
         elif signature_mode:
-            add_statuts_signature_block(docx, [text])
+            # Nom du client (signataire) en GRAS (retour Albane 2026-06-10).
+            # S5 (Rafael 2026-07-09) : signature du client alignee a DROITE (« Fait a … / Le … »
+            # restent a gauche) -> zone de signature a droite.
+            signature_paras += add_statuts_signature_block(
+                docx, [text], bold=True, alignment=WD_ALIGN_PARAGRAPH.RIGHT
+            )
+        elif text.startswith("Liste des actes"):
+            # Derniere page : ligne « Liste des actes accomplis... » centree (Albane).
+            add_paragraph(docx, text, alignment=WD_ALIGN_PARAGRAPH.CENTER)
         elif text.startswith("-") or text.startswith("-\t"):
             add_statuts_hanging_list_item(docx, text.lstrip("-\t "))
+        elif selas_formatting and _SELAS_SUBARTICLE_HEADING.match(text):
+            # 2.8 : en-tete de sous-article (« 15.1- », « 16-1 - »...) souligne.
+            add_paragraph(docx, text, underline=True)
+        elif selas_formatting and (siege := _selas_siege_split(text)) is not None:
+            # 2.6 : adresse du siege (art. 4) en gras.
+            _add_selas_siege_paragraph(docx, siege[0], siege[1])
+        elif selas_formatting and block in _SELAS_PRESIDENT_DESIGNATION_BLOCKS:
+            # 2.7 : designation nominative du President (art. 15 medecin) en gras.
+            paragraph = add_statuts_body_paragraph(docx, text)
+            for run in paragraph.runs:
+                run.bold = True
+        elif selarl_comparution and "tabli ainsi qu" in block:
+            # ST3 (Albane 2026-07-10) : respiration entre « A etabli … » et la suite (article 1).
+            add_statuts_body_paragraph(docx, text)
+            add_spacer(docx, space_after_pt=0)
         else:
             add_statuts_body_paragraph(docx, text)
+
+    # KAN-36 : le bloc signature (« Fait a … » + nom + « Bon pour acceptation ») reste solidaire
+    # sur une seule page — keepNext sur chaque paragraphe sauf le dernier.
+    for paragraph in signature_paras[:-1]:
+        paragraph.paragraph_format.keep_with_next = True
 
     full_text = "\n".join(paragraph.text for paragraph in docx.paragraphs)
     if "[" in full_text or "]" in full_text:
         raise ValueError(f"placeholder source residuel dans le rendu {DOCUMENT_CODE}.")
+    if footer_medecin_denomination is not None:
+        _add_selarl_medecin_footer(docx, footer_medecin_denomination)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     docx.save(output_path)
     return output_path
@@ -404,9 +1276,18 @@ def render_statuts_sel_docx(
 
 def replace_placeholders(text: str, replacements: dict[str, str]) -> str:
     rendered = text
-    for placeholder, value in replacements.items():
-        rendered = rendered.replace(placeholder, value)
-    return rendered
+    # Tokens les plus LONGS d'abord : une cle combinee « d’[valeur…] » (gestion de l'elision,
+    # Akainu B1 regle 68) doit etre traitee AVANT le token nu « [valeur…] » qu'elle contient.
+    for placeholder in sorted(replacements, key=len, reverse=True):
+        rendered = rendered.replace(placeholder, replacements[placeholder])
+    # Accord euro/euros (Rafael 2026-07-09, « partout = partout ») : l'unite « euros »
+    # est FIGEE dans les blocs sources SEL (« Au capital de [capital_social] euros »,
+    # « la somme de [montant_apport] euros ») — apres substitution d'une valeur
+    # singuliere (0/1) elle devient fautive « 1 euros » -> accordee « 1 euro ». Le
+    # pluriel n'est jamais touche (« 600 euros », « 21 euros » intacts).
+    # KAN-43 : + correction des fautes d'accord figees dans les modeles source
+    # (« montant total ... fixee » -> fixe, en-tetes « CONVENTIONS ...ES » masculin).
+    return accord_typos_modeles_source(accord_euros_apres_montant(rendered))
 
 
 # Paires d'accord en genre des statuts SEL, pilotees par le genre de l'associe.
@@ -423,6 +1304,16 @@ _STATUTS_GENDER_PAIRS: list[tuple[str, str]] = [
     ("né le ", "née le "),
     (", nÃ© le ", ", nÃ©e le "),
     ("nÃ© le ", "nÃ©e le "),
+    # Retour Albane « mise en forme » 2.2 : « qu'il a décidé d'instituer » doit
+    # s'accorder au feminin (« qu'elle a décidé d'instituer ») pour une associee.
+    # La chaine source des blocs SEL utilise l'apostrophe typographique « ’ ». Pour
+    # un homme, `apply_gender_pairs` laisse la forme masculine inchangee.
+    ("qu’il a décidé", "qu’elle a décidé"),
+    ("qu'il a décidé", "qu'elle a décidé"),
+    # m1 (Akainu 2026-07-12) : ARTICLE 1 « Il est formé par le soussigné » -> « par la
+    # soussignée » pour une fondatrice (coherent avec « LA SOUSSIGNÉE »/« qu'elle a décidé »
+    # de la meme page). Le « Il est formé » impersonnel reste inchange (seul le sujet accorde).
+    ("par le soussigné", "par la soussignée"),
 ]
 
 
@@ -447,16 +1338,48 @@ def required_company(ctx: DocumentGenerationContext) -> Company:
 def required_associe_unique(ctx: DocumentGenerationContext) -> Associe:
     if len(ctx.associes) != 1:
         raise ValueError(
-            f"les statuts SEL multi-associes sont bloques en V1 pour {DOCUMENT_CODE}."
+            f"les statuts SEL multi-associes requierent statuts_sel.membres pour "
+            f"{DOCUMENT_CODE}."
         )
     return ctx.associes[0]
 
 
+def representative_associe(ctx: DocumentGenerationContext) -> Associe:
+    """Associe representatif pour l'entete et les articles statiques du template.
+
+    En mode multi, `ctx.associes` porte le praticien representatif (longueur 1) et
+    `statuts_sel.membres` porte la liste complete. En mono, c'est l'associe unique.
+    Dans les deux cas on attend exactement un associe representatif dans `ctx.associes`."""
+    return required_associe_unique(ctx)
+
+
+def statuts_output_filename(denomination: str | None, fallback: str) -> str:
+    """Nom de fichier des statuts = « Statuts {denomination}.docx » (retour Albane
+    2026-06-10 : mettre d'office le nom dans l'intitule du doc pour eviter le
+    renommage manuel). Denomination vide ou non sanitizable -> fallback historique.
+    """
+    name = (denomination or "").strip()
+    if not name:
+        return fallback
+    safe = re.sub(r"[^\w .\-]+", " ", name, flags=re.UNICODE)
+    safe = re.sub(r"\s+", " ", safe).strip(" .")
+    return f"Statuts {safe}.docx" if safe else fallback
+
+
+def _has_content(value: str | None) -> bool:
+    # KAN-2 @All : une adresse en une ligne composee de sous-champs vides (« , » / « ,, »)
+    # n'a AUCUN caractere alphanumerique -> elle est « vide » (le front la pre-assemble a partir
+    # de champs jamais saisis). On ne se fie donc pas a `if affichee:` (qui laisse passer « , »).
+    return bool(value) and any(char.isalnum() for char in value)
+
+
 def address_display(address: Address | None, field_name: str) -> str:
+    # KAN-2 @All (B1) : une adresse absente NE FAIT PLUS CRASHER -> marqueur metier (jamais lever).
     if address is None:
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
-    if address.adresse_affichee:
+        return f"(À COMPLÉTER : {libelle_metier(field_name)})"
+    if _has_content(address.adresse_affichee):
         return address.adresse_affichee.strip()
+    # KAN-2 @All (M2) : sous-champs vides -> marqueurs metier, JAMAIS des virgules nues (« ,, »).
     return (
         f"{required_text(address.num_voie, f'{field_name}.num_voie')} "
         f"{required_text(address.voie, f'{field_name}.voie')}, "
@@ -466,7 +1389,7 @@ def address_display(address: Address | None, field_name: str) -> str:
 
 
 def person_address_display(associate: Associe) -> str:
-    if associate.adresse_personnelle_affichee:
+    if _has_content(associate.adresse_personnelle_affichee):
         return associate.adresse_personnelle_affichee.strip()
     return address_display(associate.adresse_personnelle, "associes[0].adresse_personnelle")
 
@@ -503,9 +1426,27 @@ def capital_titles_total(ctx: DocumentGenerationContext) -> int:
     )
 
 
+def capital_titles_total_display(ctx: DocumentGenerationContext) -> str:
+    # KAN-2 @All : quantite de titres du capital pour l'AFFICHAGE -> MARQUEUR metier si absente/
+    # nulle (jamais « 0 », qui affirmerait un capital sans titres) ; sinon le nombre tel quel
+    # (sortie nominale byte-identique). capital_titles_total (int) reste pour les calculs.
+    raw = None
+    if ctx.capital is not None:
+        raw = ctx.capital.nombre_titres_total or ctx.capital.nb_parts_total
+    if not raw or raw < 1:
+        return f"(À COMPLÉTER : {libelle_metier('capital.nombre_titres_total')})"
+    return str(raw)
+
+
 def capital_titles_total_letters(ctx: DocumentGenerationContext) -> str:
     if ctx.capital is None:
         raise ValueError(f"capital est obligatoire pour {DOCUMENT_CODE}.")
+    # KAN-2 @All : la quantite de titres EN LETTRES suit la meme regle 0-safe que la FIGURE
+    # (capital_titles_total_display). Le front pose 0 -> le slice derive « zero » : sans ce
+    # garde, l'art.8 affirmait « Il est divise en zero (…) actions ». 0/None -> marqueur.
+    raw = ctx.capital.nombre_titres_total or ctx.capital.nb_parts_total
+    if not raw or raw < 1:
+        return f"(À COMPLÉTER : {libelle_metier('capital.nombre_titres_total_lettres')})"
     return required_text(
         ctx.capital.nombre_titres_total_lettres,
         "capital.nombre_titres_total_lettres",
@@ -545,6 +1486,10 @@ def _validate_unique_associate_capital(
     ctx: DocumentGenerationContext,
     associate: Associe,
 ) -> None:
+    # En multi-associes, le praticien representatif ne detient qu'une fraction du
+    # capital : la coherence totale est verifiee par `_validate_sel_membres`.
+    if is_sel_multi(ctx):
+        return
     total = capital_titles_total(ctx)
     if associate.nb_parts != total:
         raise ValueError(
@@ -562,6 +1507,17 @@ def _dirigeant_is_unique_associe(ctx: DocumentGenerationContext) -> bool:
     return (
         ctx.dirigeant_nomine.prenom == associate.prenom
         and ctx.dirigeant_nomine.nom == associate.nom
+    )
+
+
+def _is_soussigne_header(text: str) -> bool:
+    """Ligne d'ouverture de la comparution : « LE SOUSSIGNE : » / « LA SOUSSIGNEE : » /
+    « LES SOUSSIGNES : » (accord de genre/nombre applique en amont). S3 (Rafael 2026-07-09)."""
+    normalized = text.strip().upper().replace("\xa0", " ")
+    return (
+        normalized.startswith("LE SOUSSIGN")
+        or normalized.startswith("LA SOUSSIGN")
+        or normalized.startswith("LES SOUSSIGN")
     )
 
 

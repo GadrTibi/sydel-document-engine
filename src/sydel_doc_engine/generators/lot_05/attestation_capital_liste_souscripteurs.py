@@ -4,22 +4,50 @@ from pathlib import Path
 
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
+from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import CapitalSouscripteur, DocumentGenerationContext
+from sydel_doc_engine.generators.lot_01.civilite import civilite_civile
 from sydel_doc_engine.generators.lot_05.spfpl_common import (
     company_siege_display,
+    elision_de,
+    euro_word,
+    format_display_date,
+    montant_avec_euros,
     person_short_identity,
+    quantite_titres,
     required_apport_titres,
     required_apporteur,
     required_capital_souscription,
-    required_int,
     required_societe_cible,
     required_societe_spfpl,
     required_text,
+    spfpl_forme_sociale_complete,
     validate_apport_context,
 )
-from sydel_doc_engine.rendering.docx_builder import add_paragraph, new_document
+from sydel_doc_engine.rendering.docx_builder import (
+    add_paragraph,
+    add_spacer,
+    keep_final_signature_block_together,
+    new_document,
+)
 
 OUTPUT_FILENAME = "attestation_capital_liste_souscripteurs.docx"
+
+# Mise en forme (Albane, retour « mise en forme » 2026-07) : « ajouter des espaces »
+# sur l'attestation capital / liste des souscripteurs. Deux aerations demandees :
+# (a) espace APRES la phrase d'apport (« ... a fait un apport de ... euros ») et
+#     APRES la ligne « Total des apports » ;
+# (b) espace entre le TITRE (denomination), la DESIGNATION de la societe (forme /
+#     activite / siege) et le CORPS du texte.
+# On aere via des paragraphes-espaceurs (add_spacer) entre les GROUPES et via un
+# space_after renforce sur les lignes visees, sans toucher au wording.
+_ATTESTATION_GROUP_SPACER_PT = 10
+
+# KAN-2 / B1 (Akainu 2026-07-15) : libellés métier des marqueurs de QUANTITÉ (constantes pour
+# éviter l'apostrophe dans une f-string). Une quantité de titres non renseignée sort en
+# « (À COMPLÉTER : <libellé>) » (`quantite_titres`), jamais « 0 actions » ni « 600 » inventé.
+_LIBELLE_NB_ACTIONS_CAPITAL = "nombre d'actions composant le capital"
+_LIBELLE_NB_ACTIONS_ATTRIBUEES = "nombre d'actions attribuées"
 
 
 class AttestationCapitalListeSouscripteursGenerator:
@@ -56,20 +84,31 @@ class AttestationCapitalListeSouscripteursGenerator:
         )
         add_paragraph(
             docx,
-            f"Societe par actions simplifiee au capital de {spfpl_capital} euros",
+            f"Société par actions simplifiée au capital de {montant_avec_euros(spfpl_capital)}",
+            alignment=WD_ALIGN_PARAGRAPH.CENTER,
+        )
+        # m1 (Akainu doc-entier 2026-07-09, propage depuis la variante cession) : designation
+        # legale COMPLETE (convention P2) — profession au PLURIEL capitalisee + « par actions
+        # simplifiée », comme l'acte et le titre des statuts (plus « … de chirurgien-dentiste »
+        # au singulier minuscule, sans forme legale).
+        add_paragraph(
+            docx,
+            spfpl_forme_sociale_complete(
+                required_text(
+                    apporteur.profession_reglementee_pluriel,
+                    "apporteur.profession_reglementee_pluriel",
+                )
+            ),
             alignment=WD_ALIGN_PARAGRAPH.CENTER,
         )
         add_paragraph(
             docx,
-            "Societe de Participations Financieres de Profession Liberale de "
-            f"{required_text(societe_spfpl.profession, 'societe_spfpl.profession')}",
+            f"Siège social : {company_siege_display(societe_spfpl, 'societe_spfpl')}",
             alignment=WD_ALIGN_PARAGRAPH.CENTER,
         )
-        add_paragraph(
-            docx,
-            f"Siege social : {company_siege_display(societe_spfpl, 'societe_spfpl')}",
-            alignment=WD_ALIGN_PARAGRAPH.CENTER,
-        )
+        # (b) Aeration entre la DESIGNATION de la societe (denomination / forme /
+        # activite / siege) et le titre « ATTESTATION » + le corps.
+        add_spacer(docx, space_after_pt=_ATTESTATION_GROUP_SPACER_PT)
         add_paragraph(docx, "ATTESTATION", alignment=WD_ALIGN_PARAGRAPH.CENTER, bold=True)
         add_paragraph(
             docx,
@@ -77,62 +116,108 @@ class AttestationCapitalListeSouscripteursGenerator:
             alignment=WD_ALIGN_PARAGRAPH.CENTER,
             bold=True,
         )
-        add_paragraph(
-            docx,
-            f"{_souscripteur_identite(president, 'capital_souscription.president')}, "
-            f"demeurant {_adresse(president, 'capital_souscription.president')}, "
-            f"atteste que le capital de la societe {spfpl_name} "
-            "est reparti de la maniere suivante :",
+        # (b) Aeration entre le bloc TITRE (« ATTESTATION » / « Liste des
+        # souscripteurs ») et le CORPS du texte.
+        add_spacer(docx, space_after_pt=_ATTESTATION_GROUP_SPACER_PT)
+        # R3 durci (Rafael 2026-07-07, supersede A26-45/49) : « Docteur »/« Dr » ne sort
+        # JAMAIS — tous les slots nommant une personne (désignation, répartition,
+        # phrase d'apport, « par le Président, __ », signature) sont CIVILS
+        # (Monsieur/Madame, genre du signataire).
+        souscripteur_civilite = civilite_civile(
+            required_text(
+                souscripteur.civilite_affichage,
+                _souscripteur_field("civilite_affichage"),
+            ),
+            ctx.personne_signataire.genre,
         )
-        add_paragraph(docx, f"Capital social : {spfpl_capital} euros")
-        add_paragraph(
-            docx,
-            "Nombre d'actions : "
-            f"{required_int(capital.nb_actions_total, 'capital_souscription.nb_actions_total')} "
-            f"actions d'un montant d'{_valeur_nominale_action(capital)} "
-            "euro chacune",
+        president_identite = _souscripteur_identite(
+            president,
+            "capital_souscription.president",
+            genre=ctx.personne_signataire.genre,
         )
         add_paragraph(
             docx,
-            "Repartition : "
-            f"{required_int(souscripteur.nb_actions, _souscripteur_field('nb_actions'))} "
-            f"actions attribuees au Dr {souscripteur_prenom} {souscripteur_nom}, "
+            f"{president_identite}, "
+            f"demeurant au {_adresse(president, 'capital_souscription.president')}, "
+            f"atteste que le capital de la société {spfpl_name} "
+            "est réparti de la manière suivante :",
+        )
+        add_paragraph(docx, f"Capital social : {montant_avec_euros(spfpl_capital)}")
+        add_paragraph(
+            docx,
+            # M1 (Akainu doc-entier 2026-07-07) : accord euro/euros via euro_word (le
+            # « euros » fige rendait « 1 euros » pour une valeur nominale de 1) — aligne
+            # sur le cousin cession DOC-051 (siloing regle 68 Q4 rattrape).
+            "Nombre d’actions : "
+            f"{quantite_titres(capital.nb_actions_total, _LIBELLE_NB_ACTIONS_CAPITAL)} "
+            f"actions d’un montant {elision_de(str(_valeur_nominale_action(capital)))} "
+            f"{euro_word(_valeur_nominale_action(capital))} chacune",
+        )
+        add_paragraph(
+            docx,
+            "Répartition : "
+            f"{quantite_titres(souscripteur.nb_actions, _LIBELLE_NB_ACTIONS_ATTRIBUEES)} "
+            f"actions attribuées à {souscripteur_civilite} "
+            f"{souscripteur_prenom} {souscripteur_nom}, "
             "actionnaire unique",
         )
         add_paragraph(docx, "Apports en nature :", bold=True)
         add_paragraph(
             docx,
             f"{person_short_identity(apporteur, 'apporteur')} fait apport de "
-            f"{required_int(apport_titres.nb_parts, 'apport_titres.nb_parts')} parts de la "
+            f"{quantite_titres(apport_titres.nb_parts, 'nombre de parts apportées')} parts de la "
             f"{required_text(societe_cible.forme_sociale, 'societe_cible.forme_sociale')} "
-            f"denommee {required_text(societe_cible.denomination, 'societe_cible.denomination')} "
-            f"ayant son siege {company_siege_display(societe_cible, 'societe_cible')}, "
-            "immatriculee au RCS de "
+            f"dénommée {required_text(societe_cible.denomination, 'societe_cible.denomination')} "
+            f"ayant son siège {company_siege_display(societe_cible, 'societe_cible')}, "
+            "immatriculée au RCS de "
             f"{required_text(societe_cible.ville_rcs, 'societe_cible.ville_rcs')} "
-            f"sous le numero {required_text(societe_cible.numero_rcs, 'societe_cible.numero_rcs')} "
-            f"pour une valeur de {apport_nature} euros.",
-        )
-        add_paragraph(docx, f"Total des apports en nature {apport_nature} euros")
-        add_paragraph(docx, f"Apports en numeraire : {apports_numeraire}")
-        add_paragraph(
-            docx,
-            "Le Docteur "
-            f"{_souscripteur_nom(souscripteur)} a fait la totalite des apports en nature.",
+            f"sous le numéro {required_text(societe_cible.numero_rcs, 'societe_cible.numero_rcs')} "
+            f"pour une valeur de {montant_avec_euros(apport_nature)}.",
+            # (a) Espace APRES la phrase d'apport (« ... fait apport de ... pour une
+            # valeur de ... euros. »).
+            space_after_pt=_ATTESTATION_GROUP_SPACER_PT,
         )
         add_paragraph(
             docx,
-            f"Le present etat qui constate la souscription d'actions de la societe {spfpl_name}, "
-            "ainsi que l'apport de la somme de "
-            f"{apport_nature} euros correspondant a la totalite du nominal desdites actions, est "
-            "certifie exact, sincere et veritable par le President, "
-            f"{_souscripteur_identite(president, 'capital_souscription.president')}.",
+            f"Total des apports en nature {montant_avec_euros(apport_nature)}",
+            # (a) Espace APRES la ligne « Total des apports ».
+            space_after_pt=_ATTESTATION_GROUP_SPACER_PT,
         )
-        add_paragraph(docx, f"Fait a {ctx.signature.lieu}")
-        add_paragraph(docx, f"Le {ctx.signature.date.strftime('%d/%m/%Y')}")
-        add_paragraph(docx, _souscripteur_identite(president, "capital_souscription.president"))
+        add_paragraph(docx, f"Apports en numéraire : {apports_numeraire}")
+        add_paragraph(
+            docx,
+            f"{souscripteur_civilite} {souscripteur_prenom} {souscripteur_nom} "
+            "a fait la totalité des apports en nature.",
+        )
+        add_paragraph(
+            docx,
+            f"Le présent état qui constate la souscription d’actions de la société {spfpl_name}, "
+            "ainsi que l’apport de la somme de "
+            f"{montant_avec_euros(apport_nature)} correspondant à la totalité du nominal desdites actions, est "  # noqa: E501
+            "certifié exact, sincère et véritable par le Président, "
+            f"{president_identite}.",
+        )
+        add_paragraph(
+            docx, f"Fait à {required_text(ctx.signature.lieu, 'signature.lieu')}"
+        )
+        add_paragraph(
+            docx, f"Le {format_display_date(ctx.signature.date, 'signature.date')}"
+        )
+        # AT1 (Rafael 2026-07-09) : la ligne de SIGNATURE porte le nom SANS profession (la
+        # profession reste dans « par le Président, … » juste au-dessus — une seule mention).
+        add_paragraph(
+            docx,
+            _souscripteur_nom_civil(
+                president,
+                "capital_souscription.president",
+                genre=ctx.personne_signataire.genre,
+            ),
+        )
 
         output_dir.mkdir(parents=True, exist_ok=True)
         output_path = output_dir / OUTPUT_FILENAME
+        # KAN-36 : bloc signature final solidaire (une seule page).
+        keep_final_signature_block_together(docx)
         docx.save(output_path)
         return output_path
 
@@ -146,24 +231,46 @@ def _unique_souscripteur(souscripteurs: list[CapitalSouscripteur]) -> CapitalSou
     return souscripteurs[0]
 
 
-def _souscripteur_identite(souscripteur: CapitalSouscripteur, field_name: str) -> str:
+def _souscripteur_identite(
+    souscripteur: CapitalSouscripteur,
+    field_name: str,
+    *,
+    genre: Gender | None,
+) -> str:
+    # R3 (Albane 2026-07-07) : identité de SLOT de civilité — un titre professionnel
+    # (« Docteur »/« Dr ») posé en civilite_affichage est substitué par la civilité
+    # CIVILE accordée au genre ; une civilité déjà civile passe inchangée.
+    civilite = civilite_civile(
+        required_text(souscripteur.civilite_affichage, f"{field_name}.civilite_affichage"),
+        genre,
+    )
     return (
-        f"{required_text(souscripteur.civilite_affichage, f'{field_name}.civilite_affichage')} "
+        f"{civilite} "
         f"{required_text(souscripteur.prenom, f'{field_name}.prenom')} "
         f"{required_text(souscripteur.nom, f'{field_name}.nom')} "
         f"{required_text(souscripteur.profession, f'{field_name}.profession')}"
     )
 
 
-def _souscripteur_nom(souscripteur: CapitalSouscripteur) -> str:
-    civilite = required_text(
-        souscripteur.civilite_affichage,
-        _souscripteur_field("civilite_affichage"),
+def _souscripteur_nom_civil(
+    souscripteur: CapitalSouscripteur,
+    field_name: str,
+    *,
+    genre: Gender | None,
+) -> str:
+    """AT1 (Rafael 2026-07-09) : identite de SIGNATURE = « <civilite civile> <prenom> <nom> »,
+    SANS la profession. Le bloc signature affichait la profession DEUX FOIS pres du nom (« par le
+    Président, <nom> <profession> » puis la ligne de signature « <nom> <profession> ») ; on retire
+    la profession de la ligne de signature (le modele source la porte SANS profession) — une seule
+    mention subsiste, dans la phrase « par le Président, … »."""
+    civilite = civilite_civile(
+        required_text(souscripteur.civilite_affichage, f"{field_name}.civilite_affichage"),
+        genre,
     )
     return (
         f"{civilite} "
-        f"{required_text(souscripteur.prenom, _souscripteur_field('prenom'))} "
-        f"{required_text(souscripteur.nom, _souscripteur_field('nom'))}"
+        f"{required_text(souscripteur.prenom, f'{field_name}.prenom')} "
+        f"{required_text(souscripteur.nom, f'{field_name}.nom')}"
     )
 
 

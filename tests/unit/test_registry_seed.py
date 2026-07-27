@@ -3,9 +3,13 @@ from __future__ import annotations
 from sydel_doc_engine.registry.catalog import build_seed_catalog
 
 
-def test_seed_catalog_contains_forty_three_documents() -> None:
+def test_seed_catalog_contains_fifty_documents() -> None:
+    # DOC-046 (statuts SELAS uni dentiste) -> 46 ; DOC-047 (micro holding) -> 47 ;
+    # DOC-048/049/050 (SASU Holding : statuts + PV remuneration president + liste
+    # souscripteurs, modele officiel Albane 2026-06-29) -> 50. DOC-051 (attestation
+    # capital cession - liste des souscripteurs, retour Albane 11 du 2026-07-06) -> 51.
     catalog = build_seed_catalog()
-    assert len(catalog) == 43
+    assert len(catalog) == 51
 
 
 def test_seed_catalog_contains_lot_one_to_lot_five_entries() -> None:
@@ -25,7 +29,10 @@ def test_seed_catalog_pv_nomination_gerant_scope_excludes_sas() -> None:
         "SPFPL apport",
         "SCS",
         "SCI",
+        "SCI IRIS",
         "SCM",
+        # Micro holding (Albane 2026-06-26) : PV gerant comme les autres civiles.
+        "MICRO_HOLDING",
     }
     assert "SAS" not in pv_document.structures
 
@@ -37,11 +44,14 @@ def test_seed_catalog_regime_communautaire_scope_is_limited_to_batch_structures(
 
     assert len(rc_documents) == 2
     for document in rc_documents:
+        # SCS4 (Albane 2026-06-25) : la SCS reprend le bloc regime matrimonial de la
+        # SELAS pluri -> DOC-005/006 desormais dans le scope SCS aussi.
         assert set(document.structures) == {
             "SELARL",
             "SELAS",
             "SPFPL cession",
             "SPFPL apport",
+            "SCS",
         }
         assert document.general_condition == "dossier.options.regime_communautaire == true"
 
@@ -139,7 +149,9 @@ def test_seed_catalog_option_is_scope_is_limited_to_sci_structures() -> None:
 
     option_is = next(document for document in catalog if document.doc_id == "DOC-022")
 
-    assert set(option_is.structures) == {"SCI", "SCI IRIS"}
+    # Micro holding (Albane 2026-06-29) : la lettre d'option IS fait desormais partie du bundle
+    # de creation de la micro holding (societe civile), en plus de la SCI / SCI IRIS.
+    assert set(option_is.structures) == {"SCI", "SCI IRIS", "MICRO_HOLDING"}
     assert option_is.general_condition == "dossier.options.option_is == true"
     assert option_is.source_path == "project/source_documents/lot_05/lettre option IS.docx"
 

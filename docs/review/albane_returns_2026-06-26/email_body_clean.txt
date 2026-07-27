@@ -1,0 +1,138 @@
+
+
+Bonjour Rafael, 
+
+J'ai repris la SELAS pluripersonnelle en cochant cette fois ci toutes les options pour te faire le retour le plus complet : 
+
+Sur le formulaire : 
+
+- en cas de cession sur la partie financement le destinataire n'est pas utile (si c'est pour l'appel de fonds, c'est un doc que l'on doit compléter nous), il faut que seule le nom de la société et les éléments comme le nom du client soient préremplis
+- montant de déblocage mini si c'est pour l'appel de fonds il faut aussi que cela reste vierge, 
+- montant du prêt (compromis) = prix de cession
+- taux du prêt : toujours mettre 5,5 %
+- durée du prêt : toujours mettre 10 ans
+- crédit vendeur - majoration intérêts de retard : pareil c'est fixe, il n'y a pas de variable à mettre, il faut reprendre ce qu'il y avait dans le modèle
+- date limite de la réalisation : c'est possible d'avoir par défaut à + 6 mois de la date des actes ? 
+- avenant au bail - bailleur : tout est pour une personne physique, mais il arrive que le bailleur soit une personne morale, il faudrait donc mettre la forme sociale, le nom, le siège social, le numéro SIREN avec le lieu d'immatriculation et le représentant. 
+- SCM / Parts cédees & prix : en mettant le prix global est ce qu'il peut se mettre d'office en lettre ? 
+- SCM / Parts cédees & prix : pour les plages cédées est ce qu'on peut prendre la main ? En pratique il peut arriver que le mec détienne 10 parts, numérotées de 1 à 5 et 21 à 25 par ex. 
+- SCM/ Associés présents à l'ass : les plages de parts pour les associés présents je pense qu'il n'est pas nécessaire de le mettre car ce n'est reporté nul part et cela risque de créé des erreurs car ce n'est pas toujours aussi linéaire et dans les associés par défaut le premier peut être le cédant aussi car s'il cède il est nécessairement associé. 
+
+J'ai vu qu'il y avait des champs sur le côté pour copier le texte, est ce qu'il serait possible de les retirer ? J'aime bien l'idée, mais en réalité, lors de la saisie c'est plus facile de faire "tab" pour changer de case et avec le copier, le tab passe dessus, ca rend la saisie moins fluide. 
+
+Il y a toujours pas mal d'infos requises avant de pouvoir générer les docs, pourquoi pas faire une liste des choses non complétées, mais il ne faudrait pas que ca bloque la génération des docs pour aucune info (désolé des redites si c'est déjà en cours de modif de ton côté).
+
+A l'inverse le fait de relever les incohérences sur la somme des actions c'est topissime !!
+
+Sur les docs (je te les joins si jamais ca peut t'aider) : 
+- tu pourrais stp remettre le nom de la société dans l'intitulé du doc des statuts pour avoir "Status nom" ?
+
+Statuts
+- je suis désolée de t'embêter avec la présentation mais il faudrait centrer l'entête, même le nom en gras, de l'espace avant et après le cadre des statuts, de l'espace entre chaque soussigné au début
+- j'ai "Monsieur Jean Durant, Docteur Médecin généraliste", je pense qu'il y a un "Docteur" en trop dans le modèle car je n'ai rien ajouté dans le formulaire
+- pour la date de naissance, si le chiffre est de 1 à 9, est ce qu'au lieu de 1 janvier il peut y avoir un 0 devant pour mettre 01 ? Le risque c'est de croire qu'il manque un chiffre, ce qui peut arriver. 
+- j'ai mis un associé marié sous un régime spécifique et dans les statuts il n'apparait que "marié" sans plus de précision, ni le nom de l'époux, tu pourrais stp ajouter le régime et le nom du conjoint ? 
+- article 2 : le nom est à moitié en majuscule et minuscule, est ce qu'on peut harmoniser pour mettre en majuscule partout ? 
+-le nom peut il être au milieu en gras ? (arti 3), idem pour le siège social (art 4) ?
+- article 14.1 désignation le nom du dirigeant et son adresse peut-il aussi être en gras ? Et là j'ai mis un homme mais c'est écrit "est nommée présidente", c'est possible de genrer aussi ?
+- art 16 et 17, 22: pareil le titre n'est pas en majuscule partout 
+- les mentions de signature à la fin décalent pas mal les noms, je ne sais pas comment on pourrait adapter, peut être refaire des cases, mais il faut qu'elles soient assez grandes pour que l'encadré de signature passe (je dirais environ 5 cm)
+
+PV de nomination de gérant : 
+- est qu'on peut changer l'intitulé en dirigeant (car ici ce ne sont justement pas des gérants)
+- dans l'entête il y a Société d'exercice libéral par actions simplifiées de "Docteur" or il faudrait mettre la profession soit de chirurgien dentiste soit de médecin
+- mettre de l'espace entre les paragraphes 
+- mettre des tirets pour les points de l'ordre du jour
+-on a déjà nommé le président dans les statuts et on a une nouvelle décision qui le nomme président, il faudrait soit retirer la partie des statuts (ce qui me va), soit juste nommer les autres dirigeants dans le PV, mais il ne faudrait pas de doublon - et il faudrait alors supprimer dans les statuts le paragraphe suivant sur sa rémunération -
+- dans les dirigeants nommés, dans les résolutions il faudrait après le nom de l'associé, ajouter sa profession et à la fin mettre son régime matrimonial
+- "en quatre exemplaires" après la ville peut être supprimé
+- pareil les mentions à la fins ne s'intercalent pas bien
+
+Procuration:
+- C'est juste de la présentation pour descendre le cadre, l'agrandir, mettre de l'espace après et que "fait à le" soit à gauche
+
+Lettre de renonciation associé : 
+- c'est sensé être un courrier, en haut à droite au dessus de "à ville" il faut mettre le destinataire et son adresse et que le texte avec objet soit bien plus bas
+- on peut retirer le "en quatre exemplaires" qui n'a pas de sens pour un courrier
+- le montant de l'apport dans la phrase "en apportant X euros" correspond au montant du capital et non au montant de l'apport fait par l'associé
+
+Lettre d'avertissement : 
+- comme pour le PV dans l'entête et au milieu, sous le nom, il y a société d'exercice libérale de "Docteur", alors qu'il faudrait qu'il soit écrit de chirurgien dentiste ou médecin
+- dans les 2 même entêtes, l'adresse est scindée en 2 il faudrait que tout soit sur la même ligne, on pourrait même écrire "siège social" devant. Exactement comme dans le PV en retirant en cours d'immatriculation
+- dans le nom du destinataire c'est civilité et nom mais il  manque le prénom (c'est dans le destinataire, dans le début de courrier et à la fin)
+- il faudrait si possible pouvoir féminisé le "j'atteste avoir été informé(e)". 
+- le montant de l'apport correspond au montant du capital et non au montant de l'apport fait par l'associé, il faudrait adapter (dans l'ex la personne a fait un apport de 500 €, non de 1020 €)
+
+Demande d'inscription à l'Ordre : 
+C'est juste parfait :)
+
+Déclaration de non condamnation
+Tout est nickel !
+
+Compromis de cession de cabinet médical :
+- sur l'identité du vendeur, seul son nom soit être en gras, pas tout le reste et après sa ville de naissance, il y a entre parenthèse "France" alors qu'il faudrait le département "75" par ex. 
+- sur l'origine de propriété tout à disparu, le paragraphe est totalement vide, j'avais noté créé et j'ai mis une date 
+- sur le 4. chiffre d'affaires : il faudrait pour les exercices mettre 01/01/2023 au 31/12/2023 etc. comme dans le modèle et non que 2023 et ajouter le sigle € après les montants mis en résultat
+- III promesse : lorsqu'il y a "docteur" il faudrait ajouter aux 2 endroits "le" pour mettre "le docteur"
+- Date prévue de réalisation : la date est mise avec une barre en plus "01/01//2027". Je ne sais pas si c'est possible selon le format que ce soit moi qui me soit trompée dans le formulaire (je suis désolée si c'est le cas, j'ai coupé mon ordi quand j'ai fait le formulaire hier donc je n'y ait plus accès pour vérifier) - pour rappel cette date est à 4 endroits dans l'acte si jamais il faut faire la modif
+- pour le nombre de page tout à la fin, est ce que c'est possible que ca s'adapte automatiquement selon le nombre de page mis ? Sinon c'est possible par défaut de mettre sept plutot que huit ? 
+
+Avenant au bail : 
+- l'identité du Locataire devrait être en non gras (sauf son nom), peut être que c'est pareil pour le bailleur mais dans mon exemple je n'ai mis qu'un nom. Et pour la date de naissance également que le chiffre ne soit pas 1 janvier mais 01 janvier
+- Art 1 : devant Docteur, mettre "le docteur" (pareil à l'art 2 sur la seconde phrase)
+- d'ajouter un espace entre chaque article
+- on peut retirer "en quatre exemplaires"
+
+Acte de cession de cabinet médical:
+- j'ai les mêmes remarques sur le compromis pour les mentions communes
+- paiement du prix : j'ai coché "crédit vendeur", si on le coche il faut que dans le texte soit retiré 'ajouter en cas de CV" et je ne sais pas si c'est faisable, mais dans la rédaction lorsqu'il y a un crédit vendeur, j'adapte légèrement, soit il n'y a qu'un crédit vendeur pour 100% du prix et j'enlève la part "au moyen d'un prêt bancaire" et je mets seulement le prix est payé en intégralité au moyen d'un crédit vendeur que les parties ont etc... et si c'est les 2 je précise que le prix est payé au moyen d'un crédit bancaire à hauteur de XX € et pour partie d'un crédit vendeur à hauteur etc. / Autrement est ce que le texte peut être surligné de couleur pour que l'on oublie pas d'adapter si ce n'est pas possible que ce soit rédigé comme cela 
+- page 6 3.. sur les contrats de travail :c'est possible que ce soit surligné pour penser à le compléter si nécessaire ? 
+- il y a des espaces en trop entre les paragraphes affirmation de sincérité et le suivant. 
+- en page 6 au point 8 ce n'est pas ce texte dans le modèle, c'est un texte concernant la SCM 
+Il devrait y avoir cela, s'il y a une SCM et complété avec une variable. Ici pour simplifier, au lieu de mettre les 24 parts, on peut mettre juste en rédaction pure "De céder l'intégralité des parts qu'il détient de la SCM" et juste mettre le nom de la SCM après et mettre le reste de la phrase. Il faut retirer le texte "maintenir le cabinet médical dans son état actuel..."
+
+Acte de cession de parts scm:
+- Mettre des espaces dans le cadre au début, avant et après
+- mettre dans le cadre sur une 3e ligne le nom de la SCM qui fait l'objet de la cession
+- espacer les soussignés, mettre les phrases soussignés de première part et soussigné de seconde part à droite en gras, idem pour "ci après dénommé " La Société"
+- pour le soussigné 1 que monsieur soit avec un majuscule au début, pareil sur la date de naissance (01 non 1)
+- le soussigné 2 : la SELAS il y a écrit sur la 2e ligne SELARL au lieu de SELAS et représentée par son gérance au lieu de son président
+- Mettre des espaces après chaque titre
+- dans le paragraphe "il est préalable exposé ce qui suit" : il y a une adresse mais elle n'est pas demandée dans le formulaire, et souvent c'est la même adresse que le siège de la SEL, il faudrait que ce soit proposé par défaut ou en cochant une case, le nom des cogérants qui suit est mis aussi aux hasard, il faudrait que dans la liste des associés sur le formulaire on puisse cocher si la personne est gérante pour que ces noms là apparaissent. 
+- Origine de propriété : après liste des associés, la civilité il faudrait une majuscule en début de phrase. Il est indiqué qu'il est propriétaire des parts pour les avoir souscrites à la constitution, mais ce n'est pas toujours le cas, comme pour le compromis de cession il faudrait pouvoir adapter
+- cession les numéros de parts ne correspondent pas à la somme de mes parts (ici 20 parts cédées, numérotées de 151 à 200)
+- prix : j'ai mis dans le formulaire un prix global (ici 20 €) mais le prix moyen par part n'est pas ajusté il faudrait si j'ai cédé 20 parts pour 20 € mettre que la part cédée vaut un (1) euro et non 100 €. 
+- le nombre d'exemplaires c'est quatre et non trois pour cet acte
+- pour les signatures il faudrait soit les mettre cote à cote soit avec plus d'espace et ca ne va pas ensemble  si c'est plus simple on peut retirer les mots cédants et cessionnaires ca ne me dérange pas. 
+
+Courrier SDE : 
+- les 5 premières lignes doivent être sur la droite, c'est un formalisme obligatoire de la poste pour l'envoi des courriers, il faut plus précisément que le texte soit aligné à gauche mais qu'il démarre vers le cm 12 de la règle
+- il y a une répétition de la SCM peut être que l'on peut mettre de la Société "variable dénomination" pour éviter de faire doublon si la forme est dans la dénomination. 
+-on peut mettre de l'espace pour que l'objet et le début du courrier commence plus bas 
+
+PV age cession SCM : 
+- pareil l'adresse du siège devrait correspondre à une adresse d'un formulaire
+-il faudrait mettre de l'espace entre les parapraphes et entre les résolutions
+- Mme XX présente la séance en qualité de "gérant associé', il faudrait pouvoir le féminiser pour que ce soit gérante associée et par défaut, il est préférable ici de mettre comme associé celui qui vend les parts de la SCM
+- dans la première résolution, il faudrait ajouter à la suite du texte (je suis désolée c'est une nouveauté du greffe que l'on intègre depuis peu) : " et par conséquent, autorise la cession de XX parts sociales de Monsieur XXX à la SEL XX". Il n'est plus non plus nécessaire de mettre "dans un délai de 3 mois à compter de ce jour soit jusqu'au", mais de le remplacer par "à compter de ce jour". 
+- ainsi dans la résolution suivante la formulation doit être "L'ag , compte tenu de la résolution qui précède [ on supprime et sous réserve de la réalisation ..], décide pour tenir compte de la nouvelle répartition du capital de modifier l'article [mettre le chiffre en surlignage car c'est variable] des statuts qui sera rédigé ainsi [ajouter : à compter de ce jour]
+- il faudrait juste que dans la liste de la 2e résolution retirer la mise à la ligne de à associé 1, "à concurrence de " ne soit pas mis sur la ligne du dessous, mais à la suite de la l'associé. 
+- A la fin mettre que c'est signé par tous les associés (enlever la gérance), ca évite des erreurs et c'est correct.
+
+Autres points : 
+
+Par ailleurs j'ai totalement omis d'évoquer la possibilité d'avoir un capital social variable (c'est surtout le cas dans les sociétés civiles et particulièrement la micro holding). 
+Il faudrait donc ajouter partout où le capital est suggéré, une case pour cocher s'il est variable et si mettre le montant minimum (en plus de celui effectif qui est mis dans la case initiale) et dans les statuts le montant du capital maximum apparaît également et je pense qu'il peut y avoir ce champs sans qu'il ne soit nécessaire de le calcul car la règle c'est que le maximum est de 10 fois le capital minimum
+Ce qui ferait : capital : 1 000 € (minimum : 1 000 € et max : 10 000 €)
+Pour éviter d'ajouter des variables dans tous les actes, il n'y a que dans la société micro holding qu'il faut en mettre et du coup, quand on crée une société et qu'on choisit un associé personne morale, il faut qu'on puisse indiquer que le capital est variable. 
+
+D'ailleurs j'avais noté qu'il n'y avait pas la micro holding dans la liste des sociétés, si tu peux l'ajouter. Normalement tu as tous les docs, mais n'hésite pas à me contacter si besoin. Merci beaucoup. 
+
+Albane LALLEMAND
+Direction Juridique
++33(0)9 72 13 78 21 / a.lallemand@sydeloffice.com
+www.sydeloffice.com / 80 avenue Marceau - 75008 Paris 
+
+Les informations contenues dans ce message et les pièces jointes sont confidentielles et peuvent être couvertes par le secret professionnel. Si vous n'êtes pas le destinataire de ce message, il vous est interdit de le copier, de le faire suivre, de le divulguer ou d'en utiliser tout ou partie. Si vous avez reçu ce message par erreur, nous vous remercions de le supprimer de votre système, ainsi que toutes ses copies, et d'en avertir immédiatement SYDEL par message de retour. Il est impossible de garantir que les communications par messagerie électronique arrivent en temps utile, sont sécurisées ou dénuées de toute erreur, altération, falsification ou virus. En conséquence, SYDEL décline toute responsabilité du fait des erreurs, altérations, falsifications ou omissions qui pourraient en résulter.
+
+Immatriculée au Registre unique des intermédiaires en Assurances, Banques et Finances (ORIAS) sous le N°120 69 007, en qualité de : Conseiller en Investissement Financier - Membre de l'ANACOFI-CIF n°E003434 (association agréée par l'AMF) - Courtier en opération de banque et en services de paiement - Courtier d'assurance - Titulaire de la carte professionnelle de transaction sur Immeubles et fonds de commerce n° CPI 7501 2018 000 038 570 délivrée par la préfecture de Paris.

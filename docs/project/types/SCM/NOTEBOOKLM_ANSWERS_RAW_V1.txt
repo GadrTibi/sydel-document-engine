@@ -1,0 +1,379 @@
+D'après les sources analysées, il n'existe pas de document "canon" unique intitulé « Documents à générer par cas » spécifique à la SCM (Société Civile de Moyens) équivalent au guide SELARL. Cependant, les sources fournissent des éléments fragmentaires sur les cas et les volumes de documents associés.
+
+Voici l'état des informations identifiées :
+
+### 1. Disponibilité d'une liste officielle SCM
+*   **Non trouvé** : Il n'existe pas de document source présentant une cartographie exhaustive (Cas -> Documents) pour la SCM.
+*   **Volume documentaire** : Une source mentionne que pour la SCM, le nombre de documents est réduit par rapport à la SEL : « j'ai pas grand-chose entre guillemets, j'ai que 15 documents. Parce que j'ai moins d'alternative » [1].
+
+### 2. Liste des CAS de SCM identifiés
+Les sources citent les opérations suivantes pour les SCM, sans toutefois lister systématiquement les documents pour chaque étape :
+
+*   **Création** : Opération classique de mise en place pour « partager les frais » (loyer, secrétaire, matériel) [2, 3].
+*   **Cession de parts de SCM** : Cas très fréquent lorsqu'un praticien passe en SEL. Il doit « céder les parts de cette société à la SEL » [4]. L'opération nécessite de connaître la composition des associés, l'identité des gérants, le siège et le capital [4].
+*   **Modifications générales** : Bien que citées de manière transverse pour toutes les sociétés, les opérations de transfert de siège social, dissolution et transmission universelle de patrimoine (TUP) sont applicables aux SCM dans le cadre des restructurations [5].
+
+### 3. Documents mentionnés pour le dossier SCM
+Bien que vous disposiez de 11 modèles, les sources évoquent les pièces suivantes :
+
+*   **Documents communs (Tronc commun)** : La procuration est considérée comme un document « commun à toutes les professions » et toutes les formes [6, 7].
+*   **Statuts SCM** : Spécifiques à la SCM mais moins complexes que ceux des SEL car il n'y a pas de contraintes ordinales liées à l'exercice libéral proprement dit (la SCM ne pratique pas, elle gère des moyens) [8, 9].
+*   **Formulaires spécifiques** : Mention du « formulaire de l'ordre du 94 » ou d'autres formulaires de demande de dérogation selon le cas de figure [10, 11].
+*   **Bloc simplifié** : Pour certaines étapes simplifiées, il est fait mention d'un bloc de « cinq documents » dont trois seraient presque identiques en la forme quel que soit le dossier [12].
+
+### Résumé des éléments manquants
+*   **Liste exacte par cas (Entrée/Sortie d'associé, Dissolution, etc.)** : **Non trouvé**. Les sources se concentrent massivement sur le flux SELARL/SELAS/SPFPL [1, 13].
+*   **Wording des actes de cession d'actions/parts SCM** : Seul le principe de l'acte est cité, mais le wording spécifique n'est pas détaillé [5, 14].
+
+En conclusion, l'outil projeté prévoit d'intégrer la SCM comme une « option » de création au même titre que les SCI ou SAS [15], mais la documentation de référence reste à construire sur la base du « pot commun » juridique du cabinet [9].
+
+
+D'après les sources, les différents cas de dossier possibles pour une Société Civile de Moyens (SCM) sont les suivants :
+
+*   **Création** : Ce cas est fréquent pour permettre à des praticiens (médecins ou dentistes) ayant un cabinet commun de partager les frais d'exploitation, tels que le loyer, une secrétaire, le ménage ou le matériel [1, 2].
+*   **Cession de parts** : C'est un cas très classique lors d'une restructuration. Lorsqu'un praticien exerçant en nom propre décide de passer en société (SEL), il doit céder ses parts de SCM à sa nouvelle SEL [3-5]. Cette opération nécessite d'identifier la composition des associés, les gérants, le siège et le capital de la SCM existante [3].
+*   **Transfert de siège social** : Ce cas est listé comme une opération juridique standard que le cabinet peut être amené à réaliser pour ses clients [6].
+*   **Dissolution** : Ce cas fait également partie des opérations de restructuration possibles mentionnées dans les missions juridiques [6].
+*   **Transmission Universelle de Patrimoine (TUP)** : Ce cas est cité parmi les opérations juridiques de restructuration pouvant être traitées par le cabinet [6].
+
+**Note sur les informations non trouvées :**
+Le cas spécifique de l'« entrée ou sortie d'associé » n'est pas nommé ainsi dans les sources pour la SCM, bien que l'opération de « cession de parts » soit le mécanisme juridique décrit pour transférer la qualité d'associé d'une personne physique à une personne morale (la SEL) [3, 4]. Les sources ne mentionnent pas non plus de dossier spécifique pour le changement de gérant ou l'augmentation de capital pour la SCM, bien que ces variables soient collectées lors d'une cession [3].
+
+
+D'après les sources, il n'existe pas de tableau « canon » unique pour la SCM comme pour la SELARL, mais les documents de création d'une SCM sont décrits comme un lot « allégé » d'environ 15 documents au total [1].
+
+Voici la liste des documents de création d'une SCM identifiés, classés par ordre de production (de la collecte de données à l'acte juridique) :
+
+### 1. Liste des documents de constitution
+
+*   **Fiche de création** : **Systématique**. C'est le point de départ indispensable pour collecter les informations (dénomination, capital, gérant, associés) [2-4].
+*   **Procuration** : **Systématique**. Ce document est décrit comme « commun à toutes les professions » et « toujours obligatoire » pour effectuer les formalités [5, 6].
+*   **Statuts** : **Systématique**. Ils constituent la base juridique de la société [2, 6]. Pour une SCM, ils sont spécifiques mais moins complexes que pour une SEL [1, 7].
+*   **Déclaration de non-condamnation (DNC)** : **Systématique**. Listée comme un document obligatoire dans l'interface de création et confirmée comme systématique [2, 3].
+*   **Autorisation de domiciliation** : **Systématique** (souvent fusionnée). Source [8] précise : « C'est un document obligatoire, mais en fait je l'ai fusionné avec un autre parce que ça reprend globalement les mêmes éléments ».
+*   **PV de nomination du gérant** : **Optionnel (Condition : si le gérant n'est pas nommé directement dans les statuts)**. Les sources indiquent : « on le fait pas systématiquement parce que tu peux le faire dans les statuts » [9, 10].
+*   **Lettre de renonciation / Avertissement au conjoint** : **Optionnel (Condition : si l'associé est marié sous le régime de la communauté)**. Ce cas est identifié comme le « cas numéro deux » de création [11].
+
+### 2. Statut des autres documents demandés
+
+*   **Pacte d'associés** : **Ne fait PAS partie de la création d'une SCM** (au sens du bloc de constitution). Dans l'outil, le pacte d'associé est traité comme une « opération juridique » distincte de la création, avec son propre bouton et sa propre fiche [5 (Slide 7), 7].
+*   **Règlement intérieur** : **Non trouvé + source**. Ce terme n'apparaît pas dans les listes de documents obligatoires ou facultatifs de création citées dans les sources [1, 2, 6].
+*   **Contrat de frais communs / Liste des dépenses communes** : **Ne fait PAS partie de la création d'une SCM**. Bien que la SCM ait pour but de « partager les frais » (loyer, secrétaire, etc.), ces documents ne sont jamais listés comme des actes juridiques à *générer* lors de la phase de constitution [3, 12].
+
+### Synthèse de l'ordre de production
+D'après le « Mapping du processus » [13] et les ateliers [6, 14], l'ordre est le suivant :
+1.  **Fiche de création** (Envoi et complétion par le client).
+2.  **Génération du bloc de constitution** (Statuts, Procuration, DNC, Autorisation).
+3.  **PV de nomination** (uniquement si nomination non-statutaire).
+4.  **Documents de mariage** (si applicable).
+
+
+D'après les sources, voici l'application de ces éléments pour le parcours de création d'une SCM (Société Civile de Moyens) :
+
+*   **(a) Une "demande d'inscription à l'Ordre"** :
+    **fait partie de la création de SCM (condition : systématique pour les dossiers de professionnels de santé gérés par le cabinet)**.
+    Les sources listent la « demande d'inscription à l'ordre » comme un document à produire « toujours » [1]. Même pour les structures qui ne pratiquent pas l'exercice libéral direct (comme les holdings/SPFPL ou les SCM), l'Ordre doit être informé de la constitution de la société, même s'il s'en « fiche » davantage que pour une SEL [2].
+
+*   **(b) Des documents liés au régime matrimonial ou au conjoint d'un associé** (lettre de renonciation, avertissement au conjoint) :
+    **fait partie de la création de SCM (condition : si l'associé est marié sous le régime de la communauté)**.
+    L'édition de ces documents dépend directement des informations saisies dans la fiche client concernant le mariage [3]. Les sources précisent que si l'associé est sous le régime de la communauté, la production de la lettre de renonciation et de l'avertissement « bascule en obligatoire » [3]. Ce scénario est identifié dans le moteur documentaire comme le « cas numéro deux » de constitution [4].
+
+***
+
+**Sources citées :**
+* [3] Transcription Texte collé (Conditions d'affichage des documents).
+* [1] Transcription Texte collé (Liste des documents de création).
+* [4] Transcription Texte collé (Cas liés au régime matrimonial).
+* [2] Transcription Texte collé (Inscription à l'Ordre pour les structures de détention).
+
+
+D'après les sources, il existe effectivement des cas de cession de parts de SCM en dehors du transfert vers une SEL, notamment les cessions à des tiers (personnes physiques ou morales tierces).
+
+### 1. Cas de cession identifiés hors contexte SEL
+Les sources distinguent deux types de cessions de parts de SCM basées sur l'identité de l'acquéreur :
+*   **Cession à soi-même (vers sa propre SEL) :** C'est le cas le plus fréquent où le praticien transfère ses parts à sa nouvelle société [1-3].
+*   **Cession à des tiers :** Les sources confirment l'existence de modèles pour les cessions à des tiers (par exemple entre deux professionnels de santé physiques) [3].
+*   **Rattachement patrimonial :** Il est également mentionné que des cessions de parts peuvent avoir lieu pour « rattacher » des structures entre elles (ex: vers une Micro-holding ou une SPFPL) afin de faire circuler l'argent [4].
+
+### 2. Documents à produire
+Pour une cession de SCM, le dossier est plus « allégé » que pour une SEL (environ 15 documents au total) [5]. Les pièces identifiées sont :
+*   **L'acte de cession de parts de SCM :** Document central dont le cabinet possède des modèles [6].
+*   **L'avenant au bail :** Mentionné comme un document nécessaire lié à la cession, car la SCM gère souvent le local commun [7].
+*   **Documents de formalités :** Bien que non détaillés pour la SCM, ils suivent le tronc commun (procuration, PV d'agrément si prévu par les statuts) [8, 9].
+
+### 3. Wording et spécificités juridiques
+Le wording varie selon que l'acquéreur est un tiers ou la propre structure du cédant :
+*   **Différence de rédaction :** Si la cession est faite à un tiers (quelqu'un que le praticien ne connaît pas), les sources précisent que les modèles utilisés sont « beaucoup plus longs et complets » que pour une cession à soi-même, afin d'inclure des garanties supplémentaires [3].
+*   **Vocabulaire des titres :** Comme pour la SELARL, on utilise exclusivement le terme « parts sociales » (et non actions) [10].
+*   **Variables clés :** L'acte doit impérativement définir « qui cèdera, combien de parts et à quel prix » [4].
+*   **Informations SCM :** Le wording doit reprendre les éléments fixes de la société : composition des associés, identité des gérants, adresse du siège et montant du capital [1].
+
+### Ce qui n'est pas trouvé (Info manquante)
+*   **Le texte intégral du modèle "Cession à un tiers" :** Les sources mentionnent qu'il est plus long, mais n'en reproduisent pas les clauses spécifiques (ex: garantie de passif) [Non trouvé, Source 63].
+*   **La liste exhaustive des 15 documents :** Seuls les principaux (acte, avenant bail) sont cités nommément [Non trouvé, Source 58].
+*   **Le formalisme d'agrément spécifique SCM :** Les sources traitent l'agrément pour les SEL, mais le wording exact du PV d'agrément pour une SCM entre personnes physiques n'est pas fourni [Non trouvé].
+
+Pour approfondir ces aspects techniques, je peux créer un rapport détaillé sur les spécificités documentaires des SCM ou un quiz pour tester vos connaissances sur les différences entre cessions SCM et SEL. Souhaitez-vous que je génère l'un de ces outils ?
+
+
+D'après les sources, l'avenant au contrat de bail n'est pas un document rattaché à la création « pure » de la SCM, mais un acte lié aux opérations de cession (transfert d'activité) qui accompagnent souvent sa mise en place [1].
+
+Voici les précisions sur sa nature et sa condition d'émission :
+
+*   **Rattachement juridique :** Les sources classent l'avenant au bail parmi les documents « liés à une session » (cession) [1]. Il est précisé que cet acte « sert quand même session » et qu'il est produit pour que, dès que la société est créée, on puisse « mettre en place la session » de manière effective [1].
+*   **Condition d'émission :** Le document est déclenché spécifiquement par une opération de cession de fonds libéral ou de transfert d'activité [1].
+*   **Logique opérationnelle :** Puisque la SCM a pour objet de permettre aux praticiens de « partager les frais, comme le loyer », l'avenant intervient lorsque la SCM doit devenir le locataire officiel à la place du praticien qui exerçait jusqu'alors en nom propre (BNC) [2, 3].
+
+En résumé, si la création de la SCM n'implique pas la reprise d'un bail existant (ex. : nouveau local sans antécédent), ce document n'est pas généré. Il est déclenché par le cas de la cession concomitante à la restructuration du praticien [1].
+
+
+D'après les sources, voici le wording exact à utiliser pour les statuts d'une SCM (Société Civile de Moyens) composée d'un associé personne physique et d'un associé personne morale (SEL). Bien qu'un modèle unique de SCM ne soit pas reproduit intégralement, les sources fournissent les briques contractuelles standard et les règles de substitution pour ces cas mixtes :
+
+### (a) Comparution des associés
+Le document doit commencer par l'identification précise des deux parties. Le titre passe au pluriel (« LES SOUSSIGNÉS ») [1].
+
+*   **Pour l'associé personne physique :**
+    > « [Monsieur / Madame] [Prénom NOM], [Profession], né(e) le [Date] à [Lieu], de nationalité [Nationalité], demeurant [Adresse], [Situation matrimoniale]. » [2, 3].
+*   **Pour l'associé personne morale (la SEL) :**
+    > « La société [Dénomination], [Forme sociale : SELARL / SELAS] au capital de [Montant] euros, dont le siège social est à [Adresse], immatriculée au RCS de [Ville] sous le numéro [SIREN], représentée par [Monsieur / Madame] [NOM Prénom] en sa qualité de [Gérant / Président]. » [3].
+
+**Phrase de liaison :**
+> « ...ont établi ainsi qu'il suit les statuts de la Société [Dénomination SCM] qu'ils ont décidé d'instituer : » [2].
+
+### (b) Article Apports (Article 7)
+Dans une SCM, l'apport est généralement en numéraire pour couvrir les frais communs [4]. Le wording doit détailler l'apport de chaque associé.
+
+*   **Ligne 1 (Personne physique) :**
+    > « Le Docteur [Nom Prénom], apporte à la société la somme de [Montant] euros. » [5].
+*   **Ligne 2 (Personne morale) :**
+    > « La société [Dénomination de la SEL], apporte à la société la somme de [Montant] euros. » [3, 5].
+*   **Clause de dépôt :**
+    > « Cette somme a été déposée par les associés sur un compte ouvert au nom de la société dans les livres de la banque [Nom et adresse de la banque]. » [5].
+*   **Apport en industrie :** Les sources indiquent que pour les apports autres que le numéraire (nature ou industrie), le montant est généralement indiqué comme « néant » dans les modèles standards, sauf cas spécifique de transfert de titres [6, 7].
+
+### (c) Article Capital et répartition des parts (Article 8)
+Le capital d'une SCM est divisé en parts sociales [8, 9]. Le wording doit refléter la détention de chaque entité.
+
+> « Le capital social est fixé à la somme de [Montant total] euros. Il est divisé en [Nombre total] parts sociales de [Valeur nominale] chacune, intégralement libérées, souscrites et attribuées de la façon suivante :
+> *   [Monsieur / Madame] [Nom Prénom] : [Nombre] parts
+> *   La société [Dénomination de la SEL] : [Nombre] parts
+> Soit au total : [Total] parts. » [5].
+
+**Point d'attention sur les droits :** Les sources soulignent que l'outil doit permettre de distinguer les droits de vote des droits financiers dans la répartition, car « 1 % des parts ne donne pas forcément droit à 1 % du résultat » [9]. Il est conseillé d'utiliser des numérotations précises pour chaque lot de parts (ex: « parts n°1 à X ») [10].
+
+
+D'après les sources de ce carnet de notes, voici les informations disponibles concernant la nomination du gérant d'une SCM (Société Civile de Moyens) :
+
+### **1. Modalités de nomination et auteur de la décision**
+*   **Qui le nomme ?** Le gérant est nommé par les associés. Dans une structure pluri-associée (cas fréquent des SCM pour le partage de frais), la décision est prise lors d'une assemblée générale où « les associés présents ou représentés [...] discutent entre eux » [1]. S'il n'y a qu'un seul associé, il s'agit d'une « décision de l'associé unique » [1].
+*   **Support de nomination :** La nomination du gérant n'est pas systématiquement faite par un PV séparé. Les sources précisent : « Le PV de nomination de gérant, on le fait pas systématiquement parce que tu peux le faire dans les statuts » [2].
+
+### **2. Durée du mandat et étendue des pouvoirs**
+*   **Wording exact (Durée et Pouvoirs) : Non trouvé.** Les sources mentionnent que l'identité du gérant et ses pouvoirs sont des variables essentielles à collecter (via la « fiche société »), mais elles ne reproduisent pas le texte intégral des clauses relatives à la durée du mandat ou à la liste précise des pouvoirs pour une SCM [3, 4].
+
+### **3. Pluralité de gérants (Co-gérance)**
+*   **Possibilité de plusieurs gérants : OUI.** Les sources utilisent explicitement le pluriel en listant les informations nécessaires pour une SCM : « Il faut connaître beaucoup d'éléments de la SCM... composition des associés, identité des gérants » [3].
+*   **Adaptation du texte :** Pour passer d'un gérant unique à plusieurs gérants, le moteur documentaire applique des règles de substitution et de pluralisation :
+    *   **Terminologie :** On utilise exclusivement les termes « Gérant » et « parts sociales » (contrairement aux SELAS/SPFPLAS qui utilisent « Président » et « actions ») [5, 6].
+    *   **Accords :** Le texte doit basculer au pluriel (« Les Gérants ») et identifier chaque personne nommée avec son bloc d'identité complet (nom, prénom, adresse, date et lieu de naissance) [7-9].
+    *   **Signature :** En cas de co-gérance, le bloc de signature doit prévoir un espace pour chaque gérant nommé [10].
+
+**En résumé :** Bien que le PV de nomination soit un document identifié dans la liste des pièces de création [11], son wording précis (durée, pouvoirs) n'est pas cité textuellement. Les sources confirment cependant que la SCM peut être gérée par un ou plusieurs gérants, nommés soit dans les statuts, soit par un acte séparé découlant d'une décision collective des associés [1-3].
+
+
+D'après les sources disponibles, voici les informations concernant l'articulation documentaire et juridique d'une SCM (Société Civile de Moyens) dans le cadre des restructurations gérées par le cabinet :
+
+### **1. Articulation des documents : Pacte, Règlement et Contrat de frais**
+Les sources ne fournissent pas de schéma d'arborescence figé présentant ces documents comme des annexes obligatoires les uns des autres, mais elles les distinguent par leur finalité opérationnelle :
+
+*   **Les Statuts SCM :** Ils constituent le socle juridique "systématique" pour définir la société (dénomination, siège, capital) [1-3].
+*   **Le Pacte d'associés :** Dans l'interface de l'application, il est traité comme une opération juridique distincte (bouton spécifique) et non comme un simple document de création [4]. Il sert à gérer les relations entre associés sur le long terme.
+*   **Le Règlement Intérieur / Contrat de frais :** Bien que le terme "règlement intérieur" ne soit pas cité textuellement dans les listes de documents à générer, la SCM a pour objet intrinsèque de « partager les frais » (loyer, secrétaire, matériel, etc.) [5, 6].
+*   **La Liste des dépenses communes :** Elle est mentionnée indirectement comme une nécessité pour identifier « ce que l'on met en moyenne » (matériel, personnel) [6].
+
+### **2. Les Parties au contrat de frais : Personnes physiques ou SEL ?**
+L'identité des parties au partage des frais dépend du stade d'avancement de la restructuration du praticien :
+
+*   **Avant la restructuration (BNC) :** Ce sont les personnes physiques (les praticiens en nom propre) qui détiennent les parts de la SCM et sont donc parties aux contrats [6].
+*   **Après la restructuration (SEL) :** Lorsque le praticien passe en société (SEL), les sources précisent qu'il doit réaliser une « cession de parts de SCM » [1, 7].
+*   **Conséquence juridique :** Une fois la cession effectuée, c'est la personne morale (la SEL) qui détient les parts et devient l'associée de la SCM à la place du praticien [6, 7]. Les contrats de frais communs doivent donc être établis (ou faire l'objet d'un avenant) entre les SEL des praticiens.
+
+### **3. Clé de répartition et clauses essentielles**
+**Note importante :** Les sources fournies ne contiennent pas le wording exact des clauses relatives au « seuil de dépense commune » ou à l'« année de référence des charges ». Ces éléments de précision comptable et fiscale ne sont pas reproduits dans les extraits d'ateliers ou les guides juridiques.
+
+Cependant, les sources identifient les variables indispensables pour rédiger l'acte de cession de parts de SCM qui lie les parties [1] :
+*   **Identification de la SCM :** Dénomination, siège, montant du capital [1].
+*   **Objet de la SCM :** « Mettre en moyenne du matériel » et partager les frais comme le « loyer, une secrétaire, une femme de ménage » [5, 6].
+*   **Modalités de cession :** « Qui cèdera, combien de parts et à quel prix » [8].
+
+### **Synthèse des informations non trouvées**
+Bien que vous les ayez mentionnés dans votre contexte, les éléments suivants sont absents des sources :
+*   Le wording de la clause de seuil de dépense ;
+*   La définition de l'année de référence pour les charges ;
+*   Le texte intégral du Règlement Intérieur ou du Contrat de frais communs.
+
+Pour ces éléments manquants, les sources renvoient à l'utilisation de modèles existants (environ 15 documents pour le lot SCM) que les juristes adaptent manuellement en attendant leur automatisation complète [2, 9].
+
+
+D'après les sources de ce carnet de notes, les durées relatives à une SCM (Société Civile de Moyens) sont encadrées par des documents juridiques distincts, suivant une logique similaire à celle des SEL (Sociétés d'Exercice Libéral).
+
+### **a) Durée de la société dans les statuts**
+*   **Où elle est fixée :** Dans les Statuts de la SCM [1, 2].
+*   **Wording et nature :** La durée est une mention obligatoire qui fixe une « date d'expiration de la société » [3].
+*   **Caractère (Figé ou Variable) :** Elle est figée dans le texte initial, mais elle est renouvelable. Les sources précisent qu'« au moins un an avant la date d'expiration de la société, l'assemblée générale doit décider de la prorogation dans les formes requises pour la modification des statuts » [3].
+*   *Note :* Bien que le chiffre standard de « 99 ans » soit une pratique courante, les extraits fournis mentionnent simplement l'existence d'une date d'expiration sans citer textuellement le nombre d'années [3, 4].
+
+### **b) Durée de la domiciliation du siège**
+*   **Où elle est fixée :** Dans l'« Autorisation de domiciliation » (parfois appelée « document dom ») [5-7].
+*   **Wording et nature :** Cette durée est effectivement indéterminée, par analogie avec le modèle de la SEL. Les sources soulignent que l'autorisation de domiciliation pour une SCM est un document obligatoire qui « reprend globalement les mêmes éléments » que pour les autres sociétés d'exercice [6].
+*   **Spécificité :** Ce document est souvent fusionné avec d'autres pièces du dossier de création car il partage des variables communes (adresse du siège, identité du gérant) [6].
+
+**En résumé :** La société a une durée de vie limitée définie par ses Statuts (nécessitant une prorogation), tandis que l'occupation de son siège social est régie par une Autorisation de domiciliation à durée indéterminée, dont le modèle est identique à celui utilisé pour les SEL [3, 6].
+
+
+D'après les sources de ce carnet de notes, le wording exact (le texte intégral des clauses) de l'avenant au contrat de bail d'une SCM n'est pas mentionné.
+
+Cependant, les sources fournissent des informations précises sur la nature de ce document et son rôle dans le processus :
+
+### 1. Nature et Objet de l'avenant
+*   **Fonction :** L'avenant au bail est un document qui permet à la SCM de devenir officiellement la locataire du local professionnel en remplacement du praticien qui exerçait jusqu'alors en nom propre [1].
+*   **Contexte :** La SCM est créée spécifiquement pour que les praticiens puissent « partager les frais, comme le loyer » [2]. L'avenant matérialise ce transfert de responsabilité financière du praticien vers la société.
+*   **Rattachement :** Bien que figurant dans le lot des documents de création (souvent classé en "facultatif" ou lié à un cas spécifique), il est juridiquement rattaché aux opérations de cession (transfert de l'activité du BNC vers la structure de groupe) [1, 3].
+
+### 2. Parties et Conditions d'émission
+Bien que le texte contractuel ne soit pas cité, les sources permettent d'identifier les intervenants nécessaires à sa rédaction :
+*   **Les Parties :** L'acte implique le Bailleur (propriétaire des murs), l'ancien locataire (le praticien en nom propre) et la SCM (nouvelle locataire) [1].
+*   **Variables requises :** Pour générer ce type de document, le cabinet doit identifier l'adresse du siège social (qui est généralement le lieu d'exercice) et l'identité du gérant de la SCM qui signera l'acte [4, 5].
+
+### 3. Date d'effet
+*   **Timing :** Les sources précisent que l'avenant doit être mis en place « dès que [la société] est créée » pour que l'opération de restructuration (la "session") soit effective immédiatement [1].
+
+***
+**Source citée :**
+* [3] Besoins Sydel (juridique).pdf (Wireframe "Avenant bail").
+* [4] Notre job - Sydel.pdf (Cession de parts de SCM).
+* [2] Notre job - Sydel.pdf (Définition de la SCM).
+* [1] Transcription "Texte collé" (Lien entre création SCM, session et avenant au bail).
+
+
+D'après les sources, la « Fiche de création » (qu'elle concerne une SEL ou une SCM) n'est pas un livrable final, mais un formulaire de collecte d'informations envoyé au client en début de processus [1], [2], [3].
+
+Voici les précisions sur son rôle et sa nature :
+
+*   **Outil de collecte de données :** Il s'agit d'un document que le cabinet fait compléter par le client pour recueillir toutes les variables nécessaires (dénomination, capital, banque, identité de l'associé) [1], [4].
+*   **Source de variables pour l'automatisation :** Une fois complétée, cette fiche sert de base au juriste pour extraire les informations et remplir les actes juridiques définitifs (statuts, PV de nomination, etc.) [1], [5], [4].
+*   **Position dans le processus :** L'envoi de cette fiche par mail au client constitue l'une des premières étapes de la mission juridique et déclenche souvent la facturation de l'acompte [6], [3].
+*   **Statut final :** Les sources confirment que ce document « ne fait pas partie des trucs après qu'on a besoin de faire remplir » une fois que les actes juridiques sont lancés ; elle reste dans le dossier comme source d'information mais ne constitue pas un acte juridique final [7].
+
+Dans l'interface de l'application projetée, la fiche est d'ailleurs présentée comme un élément à importer (PDF ou Word) pour alimenter le moteur de génération, tandis que les documents à éditer (le livrable final) sont les Statuts, les PV ou les procurations [8].
+
+
+D'après les sources, l'automatisation des documents d'une SCM (ou d'une SELARL, car elles partagent le même tronc lexical de "gérance") nécessite une gestion précise du genre pour éviter les formes parenthésées comme « (e) » [1]. Les experts du cabinet soulignent que la personnalisation du « ée » est un problème majeur de rédaction actuelle [1, 2].
+
+Voici les paires de chaînes exactes identifiées dans les statuts et actes types devant varier selon le genre :
+
+### 1. Bloc de comparution (Identité)
+| Forme Masculine | Forme Féminine | Source |
+| :--- | :--- | :--- |
+| **LE SOUSSIGNE :** | **LA SOUSSIGNEE :** | [1] |
+| **Monsieur** | **Madame** | [1] |
+| **né le** | **née le** | [1, 2] |
+| **de nationalité française** | **de nationalité française** | (épicène) [1] |
+| **inscrit au tableau** | **inscrite au tableau** | [1] |
+| **divorcé** | **divorcée** | [1] |
+| **marié** | **mariée** | [3] |
+
+### 2. Qualité des parties et mandats
+Pour une SCM, le vocabulaire impose l'usage de « gérant » et non de président (réservé aux SELAS/SPFPLAS) [4, 5].
+
+| Forme Masculine | Forme Féminine | Source |
+| :--- | :--- | :--- |
+| **associé** | **associée** | [2, 6] |
+| **associé unique** | **associée unique** | [2] |
+| **gérant** | **gérante** | [4, 5] |
+| **co-gérant** | **co-gérante** | [4, 7] |
+| **apporteur** | **apporteuse** | [8] |
+
+### 3. Titres professionnels (Médecins / Dentistes)
+Le wording des titres est particulièrement sensible dans les statuts :
+*   **Wording actuel (Masculin) :** « Le Docteur [Prénom NOM] » [9].
+*   **Wording au féminin :** Bien que la source précise le besoin de « personnaliser le ée » [1], le terme exact au féminin pour le titre de Docteur n'est pas explicitement cité (ex: "La Docteure" ou "Le Docteur" maintenu). Cependant, la profession doit s'accorder : « chirurgien-dentiste » (épicène) ou « médecin » (épicène) [1].
+
+### 4. Formulations de liaison et signatures
+*   **Décision :** « il a décidé d'instituer » devient « elle a décidé d'instituer » (pour un associé unique) [1, 10].
+*   **Signature :** La mention « Lu et approuvé » est épicène, mais la signature doit être précédée de la mention de la qualité : « L'Associé » / « L'Associée » [2].
+
+### Remarque technique sur la SCM
+Les sources précisent que pour une SCM, il faut impérativement utiliser le vocabulaire de la gérance et des parts sociales [4]. Le système doit donc être capable de basculer du singulier (« Le Gérant ») au pluriel (« Les Gérants ») et d'accorder le genre en conséquence pour chaque membre du collège de gérance [2, 11].
+
+
+D'après les sources et notre historique de conversation, le passage d'un associé unique à plusieurs associés dans une SCM nécessite une pluralisation systématique pour éviter les ratures ou les mentions parenthésées [1, 2]. Voici les formulations exactes et les endroits à pluraliser :
+
+### 1. Bloc de Comparution (Introduction)
+Le changement commence dès l'en-tête pour refléter la pluralité des membres fondateurs :
+*   **Titre :** « LES SOUSSIGNÉS : » remplace « LE SOUSSIGNE : » [3].
+*   **Bloc d'identité :** Chaque associé doit être décrit individuellement avec son identité complète (Nom, Prénom, adresse, date et lieu de naissance) [1, 3].
+*   **Verbe de liaison :** La phrase finale du bloc devient « ...ont établi ainsi qu'il suit les statuts de la Société [...] qu'ils ont décidé d'instituer » [1, 4].
+
+### 2. Article Apports (Article 7)
+Dans une structure pluri-associés, le texte doit détailler la provenance des fonds pour chaque personne :
+*   **Détail par associé :** Chaque apporteur doit être listé avec sa somme (ex: « Le Docteur A apporte la somme de X euros ; La Société B apporte la somme de Y euros ») [3, 5].
+*   **Clause de dépôt :** « Cette somme a été déposée par les associés [ou "les soussignés"] sur un compte ouvert au nom de la société... » [3, 5].
+
+### 3. Article Capital et Répartition des parts (Article 8)
+La section d'attribution des titres doit être entièrement pluralisée :
+*   **Phrase d'attribution :** « Les parts sociales sont réparties entre les associés comme suit : » [5].
+*   **Liste numérotée :** On utilise une numérotation précise par lots (ex: « Monsieur [Nom] : [Nombre] parts, numérotées de 1 à [X] ») [6, 7].
+*   **Clause de protection :** « En aucun cas la répartition du capital ne pourra être modifiée dans des conditions qui retireraient la majorité des droits de vote aux associés exerçant dans la société » [5].
+
+### 4. Gouvernance et Décisions collectives
+Contrairement au modèle à associé unique où le gérant peut agir seul, le modèle pluri-associés introduit le formalisme de l'assemblée [4].
+*   **Dénomination de l'organe :** On passe de « Décisions de l'associé unique » à « Délibérations des associés » ou « Assemblée Générale » [4].
+*   **Accord de verbe :** Les résolutions sont introduites par « Les associés [...] ont décidé » [4].
+*   **Pluralisation de la gérance :** Si plusieurs gérants sont nommés, on utilise « Les Gérants » (co-gérance) [4, 8].
+
+### 5. Signatures
+Le bloc final doit être multiplié pour accueillir chaque membre :
+*   **Identification :** Une ligne de signature par associé présent ou représenté [4].
+*   **Mention de qualité :** L'étiquette de signature passe de « L'Associé unique » à « L'Associé » ou « Les Associés » au-dessus des paraphes [5].
+
+### État de la gouvernance dans les modèles
+La gouvernance n'est pas déjà rédigée au pluriel par défaut dans les modèles de base du cabinet. Les sources précisent que :
+*   Les modèles de statuts (SELARL/SELAS/SCM) sont majoritairement configurés pour un associé unique (60 % des cas) [9].
+*   Le passage au pluriel nécessite une substitution manuelle ou programmée car le formalisme est « très différent » (notamment les règles de quorum et de majorité qui n'existent pas en unipersonnel) [2, 4].
+*   L'expert Hugo note qu'il est « impossible de faire autant de modèles » pré-rédigés qu'il existe de combinaisons d'associés ; la pluralisation doit donc être pilotée de manière dynamique par le moteur documentaire [2].
+
+
+D'après les sources, la gestion du genre et des titres comme « le Docteur » ou « la Docteure » doit impérativement s'effectuer par associé (au cas par cas) et non par une règle universelle.
+
+Voici les raisons et les modalités identifiées dans les documents :
+
+*   **Gestion de la mixité :** Les sources précisent qu'un document peut comporter des associés de genres différents (ex: « monsieur et madame », ou « un monsieur et une madame ») [1]. Puisque chaque associé est spécifique, il est jugé « impossible » de créer des modèles figés pour chaque combinaison ; le système doit donc adapter le texte à l'identité de chaque personne présente dans l'acte [1].
+*   **Personnalisation individuelle :** Le cabinet souligne le besoin de « personnaliser le "ée" en féminin » pour chaque profil afin d'éviter les formes neutres ou parenthésées [2]. Cela implique que si l'associé n°1 est un homme et l'associé n°2 une femme, le document doit pouvoir écrire « Le Docteur [Nom]... né le... » pour l'un et « La Docteure [Nom]... née le... » pour l'autre dans le même bloc de comparution [2, 3].
+*   **Moteur de génération dynamique :** La solution préconisée est un algorithme capable d'injecter des variables de genre (« monsieur » ou « madame ») et de décliner les accords (le/la, né/née, associé/associée) en fonction des informations saisies dans la fiche client pour chaque individu [4-6].
+*   **Élimination du "le" universel :** L'expert Hugo mentionne que dans les modèles actuels (Word), le réflexe est souvent de mettre « du "le" partout » par défaut, ce qui constitue une source d'erreurs et de ratures que l'automatisation doit corriger en traitant la « pluricité des associés » de manière chirurgicale [3, 7].
+
+En résumé, pour une SCM pluri-associée, le document final est un assemblage de blocs d'identités et de qualités (gérant/gérante) personnalisés pour chaque associé, garantissant que le titre et les accords correspondent à la civilité de chacun [1, 6].
+
+
+D'après les sources et l'historique de nos échanges, voici les éléments concernant le nombre d'associés pour une SCM (Société Civile de Moyens) :
+
+### 1. Nombre d'associés (Minimum et dossiers types)
+*   **Nombre minimum :** Bien que les sources mentionnent un « minimum de un » pour les structures de la catégorie « S » (SELARL, SELAS ou SPFPL unipersonnelles) [1], la SCM nécessite par définition au moins deux associés. Son objet social est en effet de permettre à des praticiens de « partager les frais » (loyer, secrétaire, matériel) entre « confrères » [2, 3].
+*   **Dossiers types :** Les exemples de dossiers pluri-associés cités dans les ateliers mentionnent fréquemment des structures de 2 à 3 associés (ex: « trois associés par exemple ») [3].
+
+### 2. Borne haute réaliste pour la modélisation
+*   **Associés personnes physiques :** Pour la création d'une SCM et son contrat de frais communs, la borne haute réaliste à modéliser est de 6 associés. Ce chiffre correspond au périmètre de gestion des structures de groupe (cabinets de dentistes ou de médecins) traitées par le cabinet, comme indiqué dans l'historique de notre conversation pour les structures pluri-associées.
+*   **Nombre de sociétés (SEL) :** Vous notez que les variables prévoient jusqu'à 3 sociétés. Les sources confirment que dans un montage de restructuration, ce sont souvent les personnes morales (SEL) qui deviennent associées de la SCM suite à une cession de parts [4, 5]. Modéliser jusqu'à 3 ou 4 SEL associées couvre la majorité des cas de cabinets de groupe où chaque praticien a sa propre structure d'exercice.
+
+### 3. Contraintes de modélisation identifiées
+Les sources soulignent plusieurs points critiques pour gérer cette pluralité (de 2 à 6) dans les actes :
+*   **Complexité rédactionnelle :** Hugo (expert du cabinet) précise qu'il est « impossible de faire autant de modèles » qu'il existe de combinaisons (2 monsieur, 1 monsieur et 1 madame, etc.) [6].
+*   **Répartition financière :** Le modèle doit être capable de gérer une répartition du capital où « 1 % des parts ne donne pas forcément droit à 1 % du résultat » [7]. Il faut donc distinguer les droits de vote des droits financiers pour chaque associé [7].
+*   **Numérotation des parts :** Pour les dossiers à plusieurs associés, les statuts doivent intégrer des « numérotations par parts qui sont assez précises » (ex: parts 1 à X) pour assurer la validité juridique des répartitions dérogatoires [8].
+
+***
+**Sources citées :**
+* Besoins Sydel (juridique).pdf [Source 59].
+* Notre job - Sydel.pdf [Source 16].
+* Transcription Texte collé [Sources 51, 69, 70, 113, 121, 155].

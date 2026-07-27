@@ -4,6 +4,7 @@ from datetime import date
 from pathlib import Path
 
 import pytest
+from _accents import assert_no_unaccented_french
 from docx import Document
 
 from sydel_doc_engine.domain.enums import Gender
@@ -65,14 +66,14 @@ def _base_context() -> DocumentGenerationContext:
                 civilite_courte="M.",
                 prenom="Camille",
                 nom="Martin",
-                fonction="President",
+                fonction="Président",
             ),
         ),
         cedant=_cedant(),
         societe_cible=SocieteCible(
             denomination="SELAS CABINET MARTIN",
             forme_sociale="SELAS",
-            forme_sociale_complete="societe d'exercice liberal par actions simplifiee",
+            forme_sociale_complete="société d'exercice libéral par actions simplifiée",
             profession_reglementee="chirurgien-dentiste",
             profession_reglementee_pluriel="chirurgiens-dentistes",
             capital_social="10 000",
@@ -188,8 +189,55 @@ def test_acte_cession_actions_generates_source_vocabulary_and_clean_docx(
     assert "service Yousign" in text
     assert "Cession de parts" not in text
     assert "parts sociales" not in text
+    # Akainu M3 propagation (regle 68) : valeur nominale « cent euros » avec elision correcte
+    # « de cent euros » (consonne), jamais « d'cent » (droite) ni « d’cent » (courbe).
+    assert "de cent euros de valeur nominale" in text
+    assert "d'cent" not in text
+    assert "d’cent" not in text
+    # R2 (Albane 2026-07-07, propage de l'acte de PARTS — meme bloc identite) : la SPFPL
+    # acquereuse n'est pas immatriculee (numero_rcs="en cours" cote front) -> identite
+    # « en cours de constitution » + « En cours d'immatriculation au RCS de <ville> »,
+    # plus jamais « sous le numéro en cours ».
+    assert "en cours de constitution, inscrite au tableau de l'Ordre" in text
+    assert "En cours d'immatriculation au RCS de Paris" in text
+    assert "sous le numéro en cours" not in text
     assert "[" not in text
     assert "]" not in text
+    assert_no_unaccented_french(text)
+
+
+def test_acte_cession_actions_ordre_departement_numero_rendered_as_name(
+    tmp_path: Path,
+) -> None:
+    # Convention Albane 7.4/9.2 propagee aux surfaces SOCIETE de l'acte d'actions (Akainu
+    # DEPT M2) : dept de l'Ordre de la SPFPL ET de la cible en NUMERO « 77 » ->
+    # « Seine-et-Marne », jamais « de/du 77 ». Sans `departement_nom` cable sur ces 2
+    # surfaces, ce test echouerait (garde de regression sur le silo exact du tour 1).
+    ctx = _base_context()
+    ctx.societe_spfpl.departement_inscription_ordre = "77"
+    ctx.societe_cible.departement_inscription_ordre = "77"
+    text = _docx_text(ActeCessionActionsSpfplGenerator().generate(ctx, tmp_path))
+    assert "Seine-et-Marne" in text
+    assert "de 77" not in text
+    assert "du 77" not in text
+
+
+def test_acte_cession_actions_forme_simplifiee_accentuee_et_vrai_rcs(tmp_path: Path) -> None:
+    # R4 (Albane 2026-07-07, propagation) : la forme abregee NON accentuee posee par le
+    # front (« par actions simplifiee ») ressort accentuee (« par actions simplifiée »).
+    ctx = _base_context()
+    ctx.societe_spfpl.forme_sociale = "par actions simplifiee"  # valeur reelle du front
+    text = _docx_text(ActeCessionActionsSpfplGenerator().generate(ctx, tmp_path))
+    assert "par actions simplifiée" in text
+    assert "simplifiee" not in text
+
+    # R2 — garde-fou inverse : un VRAI numero RCS conserve la ligne « Immatriculée … sous
+    # le numéro … » sans « en cours de constitution » parasite.
+    ctx2 = _base_context()
+    ctx2.societe_spfpl.numero_rcs = "912 345 678"
+    text2 = _docx_text(ActeCessionActionsSpfplGenerator().generate(ctx2, tmp_path / "rcs"))
+    assert "Immatriculée au RCS de Paris sous le numéro 912 345 678" in text2
+    assert "en cours de constitution" not in text2
 
 
 def test_acte_cession_actions_blocks_non_actions_context(tmp_path: Path) -> None:

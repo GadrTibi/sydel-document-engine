@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from datetime import date
 from pathlib import Path
 
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
+from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import (
     Company,
     DocumentGenerationContext,
@@ -14,6 +14,8 @@ from sydel_doc_engine.domain.models import (
     OrdreProfessionnel,
     Person,
 )
+from sydel_doc_engine.generators.lot_01.civilite import civilite_civile
+from sydel_doc_engine.generators.lot_05.spfpl_libelles import libelle_metier
 from sydel_doc_engine.rendering.docx_builder import (
     add_letter_place_date,
     add_paragraph,
@@ -21,8 +23,12 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_right_indented_block,
     add_spacer,
     add_subject_heading,
+    keep_final_signature_block_together,
     new_document,
 )
+from sydel_doc_engine.utils.dates import format_date_fr
+from sydel_doc_engine.utils.departements import departement_nom
+from sydel_doc_engine.utils.grammar import accord_terme_genre
 
 OUTPUT_FILENAME = "demande_inscription_ordre.docx"
 DOCUMENT_CODE = "CODE-ORDRE-001"
@@ -51,10 +57,10 @@ class DemandeInscriptionOrdreGenerator:
             ordre.profession_signataire_affichee,
             "ordre.profession_signataire_affichee",
         )
-        adresse_personnelle = _required_text(
-            signataire.adresse_personnelle_affichee,
-            "personne_signataire.adresse_personnelle_affichee",
-        )
+        # D1 (Rafael 2026-07-09) : l'en-tete (haut a gauche) porte l'adresse du SIEGE de la
+        # societe, PAS l'adresse personnelle du signataire (tous les fronts SEL/SPFPL/SCM/SAS
+        # posent `societe.siege`). Propage a tous les overlays (convention d'en-tete universelle).
+        siege_lines = _siege_address_lines(company)
         profession_ligne_destinataire = _profession_ligne_destinataire(ordre)
         conseil_lines = _conseil_departemental_lines(
             ordre,
@@ -79,7 +85,7 @@ class DemandeInscriptionOrdreGenerator:
             document,
             signataire_name=signataire_name,
             profession_signataire=profession_signataire,
-            adresse_personnelle=adresse_personnelle,
+            siege_lines=siege_lines,
             conseil_lines=conseil_lines,
             adresse_ordre_lines=adresse_ordre_lines,
         )
@@ -91,8 +97,12 @@ class DemandeInscriptionOrdreGenerator:
             profession_reglementee=profession_reglementee,
             mandataire_libelle=mandataire_libelle,
             derogation_suffixe=derogation_suffixe,
+            genre=signataire.genre,
         )
         _add_final_signature(document, signataire_name)
+
+        # KAN-36 : bloc signature final solidaire (une seule page).
+        keep_final_signature_block_together(document)
 
         output_dir.mkdir(parents=True, exist_ok=True)
         output_path = output_dir / OUTPUT_FILENAME
@@ -125,13 +135,10 @@ def _required_ordre(ordre: OrdreProfessionnel | None) -> OrdreProfessionnel:
 
 
 def _required_text(value: str | None, field_name: str) -> str:
+    # KAN-2 : donnée manquante -> marqueur « (À COMPLÉTER : …) », non bloquant (R10).
     if value is None or not value.strip():
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return f"(À COMPLÉTER : {libelle_metier(field_name)})"
     return value.strip()
-
-
-def _format_date(value: date) -> str:
-    return value.strftime("%d/%m/%Y")
 
 
 def _split_display_lines(value: str | None, field_name: str) -> list[str]:
@@ -142,14 +149,62 @@ def _split_display_lines(value: str | None, field_name: str) -> list[str]:
     return lines
 
 
+def _personal_address_lines(adresse_personnelle: str) -> list[str]:
+    """Adresse sur deux lignes : « rue » puis « CP ville » (retour Albane 2026-06-10).
+    On coupe sur la PREMIERE virgule (format « num voie, cp ville ») ; sans virgule,
+    l'adresse reste sur une seule ligne.
+    """
+    text = _required_text(adresse_personnelle, "adresse")
+    street, separator, rest = text.partition(",")
+    if separator and rest.strip():
+        return [street.strip(), rest.strip()]
+    return [text]
+
+
+def _siege_address_lines(company: Company) -> list[str]:
+    """D1 (Rafael 2026-07-09) : lignes d'adresse du SIEGE de la societe pour l'en-tete (haut a
+    gauche), en remplacement de l'adresse personnelle du signataire. Deux lignes : voie, puis
+    « CP Ville » — a partir de `siege.adresse_affichee` (retour a la ligne OU premiere virgule)
+    ou des sous-champs structures."""
+    siege = company.siege
+    if siege is None:
+        raise ValueError(f"societe.siege est obligatoire pour {DOCUMENT_CODE}.")
+    affichee = (siege.adresse_affichee or "").strip()
+    if affichee:
+        if "\n" in affichee:
+            return [line.strip() for line in affichee.splitlines() if line.strip()]
+        return _personal_address_lines(affichee)
+    num_voie = (siege.num_voie or "").strip()
+    voie = _required_text(siege.voie, "societe.siege.voie")
+    cp = _required_text(siege.cp, "societe.siege.cp")
+    ville = _required_text(siege.ville, "societe.siege.ville")
+    return [f"{num_voie} {voie}".strip(), f"{cp} {ville}"]
+
+
 def _signataire_name(signataire: Person) -> str:
-    titre = _required_text(
-        signataire.titre_affichage,
-        "personne_signataire.titre_affichage",
-    )
+    # R3 durci (Rafael 2026-07-07, « partout ») : la demande d'inscription rendait
+    # encore le TITRE (« Docteur X ») en en-tete + signature via titre_affichage.
+    # SUPERSEDE §14.2 (qui posait volontairement « Docteur » automatique sur ce
+    # document) : le slot rend la civilite CIVILE (Monsieur/Madame accordee au
+    # genre), comme tous les slots de personne. Repli sur titre_affichage si la
+    # civilite est vide (appelants legacy) — civilite_civile le convertit alors.
+    civilite_saisie = (signataire.civilite or "").strip()
+    identite_vide = not (signataire.prenom or "").strip() and not (signataire.nom or "").strip()
+    if not civilite_saisie and identite_vide:
+        # B4 (KAN-2, Rafael 2026-07-13) : personne ENTIEREMENT vide (formulaire vierge) ->
+        # civilite en MARQUEUR, jamais « Monsieur » derive du titre « Docteur » (defaut de type)
+        # accorde au genre defaut MASCULIN — ce serait inventer la civilite/le genre du signataire.
+        # Le repli sur titre_affichage ne vaut QUE pour un signataire reel (nom/prenom presents).
+        civilite = _required_text("", "personne_signataire.civilite_affichage")
+    else:
+        civilite_source = civilite_saisie or _required_text(
+            signataire.titre_affichage,
+            "personne_signataire.titre_affichage",
+        )
+        civilite = civilite_civile(civilite_source, signataire.genre)
     prenom = _required_text(signataire.prenom, "personne_signataire.prenom")
     nom = _required_text(signataire.nom, "personne_signataire.nom")
-    return f"{titre} {prenom} {nom}"
+    return f"{civilite} {prenom} {nom}"
 
 
 def _profession_ligne_destinataire(ordre: OrdreProfessionnel) -> str:
@@ -165,22 +220,48 @@ def _conseil_departemental_lines(
     overlay: str,
     profession_ligne_destinataire: str,
 ) -> list[str]:
-    if overlay == OVERLAY_SEL and ordre.departement_inscription:
-        departement = _required_text(
-            ordre.departement_inscription,
-            "ordre.departement_inscription",
-        )
-        return [
-            (
-                "Conseil départemental de l'Ordre des "
-                f"{profession_ligne_destinataire} de {departement}"
+    # R5 (Albane, AUTORITE METIER) : le destinataire est la FORME LONGUE
+    # « Conseil départemental de l’Ordre des <profession_pluriel> <connecteur> <departement> »
+    # (ex. « Conseil départemental de l’Ordre des médecins du Rhône »). Cette decision
+    # SUPERSEDE la forme courte SU2 (Albane 2026-06-25) qui avait retire « de l’Ordre des
+    # <profession> » — Albane (autorite metier) revient a la forme longue et exige (1) « de
+    # l’Ordre » present, (2) la profession au pluriel.
+    # ORDRE DES MOTS = profession PUIS departement (« ... de l’Ordre des médecins du Rhône »).
+    # Confirme Rafael/Albane 2026-07-01 (« comme les modeles ») : c'est la forme du MODELE
+    # source d'Albane (doc_08 26/06 « des médecins du Rhône ») + son instruction ferme du
+    # 02/06 + le gold historique. Le « du Calvados des médecins » du 30/06 etait un exemple
+    # (« par ex »), pas une inversion de l'ordre.
+    # M1 (Akainu, 2026-06-30, regle 68 Q4 anti-siloing) : cette forme s'applique a TOUT overlay
+    # qui ecrit a l'Ordre (SEL + SPFPL + SCM), pas seulement SEL. SPFPL et SCM portent eux aussi
+    # un departement d'inscription (`ordre_departement` requis cote front pour les deux), donc la
+    # forme longue identique s'applique. La condition pivote sur la PRESENCE du departement, plus
+    # sur l'overlay.
+    # `profession_ligne_destinataire` porte deja la profession AU PLURIEL (cf. prefill
+    # front : `profession_pluriel`), comme « médecins » / « chirurgiens-dentistes ».
+    if ordre.departement_inscription and ordre.departement_inscription.strip():
+        # 9.2 (Albane 2026-07-06) : le destinataire s'affiche par le NOM du departement
+        # (« du Rhône », « de Seine-et-Marne »), plus par le numero (« de 77 »). Le champ
+        # porte parfois le numero -> `departement_nom` le convertit (passthrough si deja
+        # un nom, ex. « Rhône »). Le connecteur grammatical (R6) reste geré separement.
+        departement = departement_nom(
+            _required_text(
+                ordre.departement_inscription,
+                "ordre.departement_inscription",
             )
+        )
+        # R6 (retours Rafael 2026-06-18) : connecteur grammatical configurable
+        # (« de » / « du » / « des ») avant le departement, pour gerer l'accord. Defaut
+        # « de » = comportement historique.
+        connecteur = (ordre.connecteur_departement or "de").strip() or "de"
+        return [
+            f"Conseil départemental de l’Ordre des {profession_ligne_destinataire} "
+            f"{connecteur} {departement}"
         ]
-    conseil_libelle = _required_text(
-        ordre.conseil_departemental_libelle,
-        "ordre.conseil_departemental_libelle",
-    )
-    return [conseil_libelle, f"Des {profession_ligne_destinataire}"]
+    # FALLBACK sans departement (cas degrade : aucun overlay front ne devrait l'atteindre,
+    # SEL/SPFPL/SCM fournissant tous un departement). On garde une forme COHERENTE avec R5 :
+    # « Conseil départemental de l’Ordre des <profession_pluriel> » (« de l’Ordre » present,
+    # « des » minuscule — plus l'ancienne 2e ligne « Des <profession> » capitalisee).
+    return [f"Conseil départemental de l’Ordre des {profession_ligne_destinataire}"]
 
 
 def _ordre_address_lines(ordre: OrdreProfessionnel, overlay: str) -> list[str]:
@@ -256,18 +337,21 @@ def _add_header(
     *,
     signataire_name: str,
     profession_signataire: str,
-    adresse_personnelle: str,
+    siege_lines: list[str],
     conseil_lines: list[str],
     adresse_ordre_lines: list[str],
 ) -> None:
     _add_lines(document, [signataire_name, profession_signataire])
-    _add_lines(document, _split_display_lines(adresse_personnelle, "adresse_personnelle"))
+    # D1 (Rafael 2026-07-09) : l'en-tete porte l'adresse du SIEGE de la societe (deux lignes :
+    # rue, puis CP + ville), plus l'adresse personnelle du signataire.
+    _add_lines(document, siege_lines)
     add_spacer(document, space_after_pt=10)
+    # Retour Albane 2026-06-10 : nom de l'ordre ALIGNE avec son adresse (meme
+    # retrait, plus de decalage de premiere ligne).
     add_right_indented_block(
         document,
         conseil_lines,
-        left_indent_cm=8.7,
-        first_line_indent_cm=1.2,
+        left_indent_cm=9.7,
         space_after_pt=2,
     )
     add_right_indented_block(
@@ -276,14 +360,14 @@ def _add_header(
         left_indent_cm=9.7,
         space_after_pt=2,
     )
-    add_spacer(document, space_after_pt=12)
+    add_spacer(document, space_after_pt=14)
 
 
 def _add_signature_place_and_subject(document, ctx: DocumentGenerationContext) -> None:
     lieu_signature = _required_text(ctx.signature.lieu, "signature.lieu")
     add_letter_place_date(
         document,
-        f"{lieu_signature}, le {_format_date(ctx.signature.date)}",
+        f"{lieu_signature}, le {format_date_fr(ctx.signature.date)}",
         space_after_pt=12,
     )
     add_subject_heading(
@@ -301,6 +385,7 @@ def _add_body(
     profession_reglementee: str,
     mandataire_libelle: str,
     derogation_suffixe: str,
+    genre: Gender,
 ) -> None:
     add_paragraph(document, f"{destinataire_appel},")
     document.add_paragraph()
@@ -311,18 +396,27 @@ def _add_body(
             f"{denomination_societe}."
         ),
     )
+    # M3 (Akainu 2026-07-12) : comparution de la fondatrice -> les 3 termes de qualite
+    # s'accordent au genre du signataire (« associé et praticien et exerçant » -> « associée
+    # et praticienne et exerçante »). Theme transversal du carnet (« tout terme accorde a une
+    # personne genree »). No-op au masculin. accord_terme_genre = INTENTION, pas regex.
+    associe = accord_terme_genre("associé", genre)
+    praticien = accord_terme_genre("praticien", genre)
+    exercant = accord_terme_genre("exerçant", genre)
     _add_body_paragraph(
         document,
         (
             "Je sollicite l’inscription de ma société au tableau de l’Ordre des "
-            f"{profession_reglementee}. Je précise que je ne serai associé et praticien et "
-            f"exerçant que dans une seule structure.{derogation_suffixe}"
+            f"{profession_reglementee}. Je précise que je ne serai {associe} et {praticien} et "
+            f"{exercant} que dans une seule structure.{derogation_suffixe}"
         ),
     )
     _add_body_paragraph(
         document,
         f"Je donne pouvoir à {mandataire_libelle} pour effectuer les formalités.",
     )
+    # Aération avant la formule de politesse (retour Albane 2026-06-10).
+    add_spacer(document, space_after_pt=8)
     _add_body_paragraph(
         document,
         (

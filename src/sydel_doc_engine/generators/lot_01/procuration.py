@@ -1,25 +1,32 @@
 from __future__ import annotations
 
-from datetime import date
 from pathlib import Path
 
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 from sydel_doc_engine.domain.models import Address, Company, DocumentGenerationContext
+from sydel_doc_engine.generators.lot_01.civilite import civilite_civile
+from sydel_doc_engine.generators.lot_05.spfpl_libelles import libelle_metier
 from sydel_doc_engine.rendering.docx_builder import (
     add_centered_block,
     add_framed_title,
     add_paragraph,
-    add_signature_block,
     add_spacer,
+    keep_final_signature_block_together,
     new_document,
 )
-from sydel_doc_engine.utils.grammar import subject_line
+from sydel_doc_engine.utils.dates import format_date_fr
+from sydel_doc_engine.utils.grammar import accord_fonction, subject_line
 
 OUTPUT_FILENAME = "procuration.docx"
 
 MANDATAIRE_NOM = "SYDEL"
 MANDATAIRE_ADRESSE = "80 avenue Marceau, 75008 PARIS"
+# Modele procuration mis a jour (Albane 2026-06-10) : sous l'adresse SYDEL,
+# ajout du RCS/SIREN et du telephone. Constantes SYDEL (RCS = SIREN 788 531 432,
+# tel verifie depuis la signature de David Elgrably « 01 53 81 43 03 »).
+MANDATAIRE_RCS = "RCS PARIS 788 531 432"
+MANDATAIRE_TEL = "0153814303"
 
 MANDATE_PARAGRAPH_1 = (
     "De pour moi et en mon nom faire tous dépôts, immatriculations, modifications, radiations "
@@ -49,12 +56,26 @@ class ProcurationGenerator:
         )
         company_address = _required_address(company.siege, "societe.siege")
 
-        civilite = _required_text(person.civilite, "personne_signataire.civilite")
+        # R3 (Albane 2026-07-07) : « Docteur » n'est pas une civilité — le slot
+        # « Je soussigné __ » rend la civilité CIVILE (Monsieur/Madame), jamais le
+        # titre professionnel posé par le flux (SAS et partout).
+        civilite = civilite_civile(
+            _required_text(person.civilite, "personne_signataire.civilite"),
+            person.genre,
+        )
         prenom = _required_text(person.prenom, "personne_signataire.prenom")
         nom = _required_text(person.nom, "personne_signataire.nom")
-        fonction_dirigeant = _required_text(
-            person.fonction_dirigeant,
-            "personne_signataire.fonction_dirigeant",
+        # PR2 (Albane SELARL 2026-07-10) : la FONCTION du mandant s'accorde au genre
+        # (« présidente » pour une femme en SELAS). NB KAN-23 (Rafael 2026-07-15) :
+        # « gérant » est INVARIANT (jamais « gérante »), accord_fonction le laisse au
+        # masculin ; ce sont les fonctions genrables (président…) qu'il accorde.
+        # Idempotent si la fonction est deja au bon genre.
+        fonction_dirigeant = accord_fonction(
+            _required_text(
+                person.fonction_dirigeant,
+                "personne_signataire.fonction_dirigeant",
+            ),
+            person.genre,
         )
         forme_sociale = _required_text(company.forme_sociale, "societe.forme_sociale")
         denomination_societe = _required_text(company.denomination, "societe.denomination")
@@ -63,6 +84,8 @@ class ProcurationGenerator:
 
         document = new_document()
         _add_title(document)
+        # PR1 (Albane SELARL 2026-07-10) : justifier la premiere ligne du corps de la
+        # procuration (1er paragraphe de corps).
         _add_paragraph(
             document,
             (
@@ -71,22 +94,34 @@ class ProcurationGenerator:
                 f"{company_designation}, dont le siège est situé "
                 f"{company_address}"
             ),
+            alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
         )
         _add_paragraph(document, "Donne par les présentes pouvoir à :")
+        # Aération (Albane 2026-06-17, §5) : espace avant le bloc mandataire.
+        add_spacer(document, space_after_pt=6)
         _add_mandataire_block(document)
+        # Aération demandée par Albane (2026-06-10) : un espace après le bloc
+        # mandataire avant le corps du mandat.
+        add_spacer(document, space_after_pt=6)
         for text in (MANDATE_PARAGRAPH_1, MANDATE_PARAGRAPH_2, MANDATE_PARAGRAPH_3):
             _add_paragraph(document, text, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY)
-        _add_paragraph(document, LEGAL_EFFECT_PARAGRAPH)
+        # « Fait pour servir et valoir ce que de droit. » : present dans le modele micro holding
+        # d'Albane mais ABSENT du modele Procuration_SAS.docx (et du modele source tronc commun) ->
+        # on l'OMET pour la SASU Holding (gate Akainu ; source = modele SAS Albane 2026-06-29).
+        if ctx.structure != "SASU_HOLDING":
+            _add_paragraph(document, LEGAL_EFFECT_PARAGRAPH)
         add_spacer(document, space_after_pt=6)
         _add_final_block(
             document,
             lieu_signature=lieu_signature,
-            date_signature=_format_date(ctx.signature.date),
+            date_signature=format_date_fr(ctx.signature.date),
             signatory_name=f"{prenom} {nom}",
         )
 
         output_dir.mkdir(parents=True, exist_ok=True)
         output_path = output_dir / OUTPUT_FILENAME
+        # KAN-36 : bloc signature final solidaire (une seule page).
+        keep_final_signature_block_together(document)
         document.save(output_path)
         return output_path
 
@@ -98,19 +133,22 @@ def _required_company(company: Company | None) -> Company:
 
 
 def _required_text(value: str | None, field_name: str) -> str:
+    # KAN-2 : donnée manquante -> marqueur « (À COMPLÉTER : …) », non bloquant (R10).
     if value is None or not value.strip():
-        raise ValueError(f"{field_name} est obligatoire pour DOC-003.")
+        return f"(À COMPLÉTER : {libelle_metier(field_name)})"
     return value.strip()
 
 
 def _required_address(address: Address | None, field_name: str) -> str:
     if address is None:
         raise ValueError(f"{field_name} est obligatoire pour DOC-003.")
-    num_voie = _required_text(address.num_voie, f"{field_name}.num_voie")
+    # Numero de voie optionnel (champ fusionne « Numero et voie », retours
+    # client 2026-06-11) : une adresse sans numero (lieu-dit) reste valide.
+    num_voie = (address.num_voie or "").strip()
     voie = _required_text(address.voie, f"{field_name}.voie")
     ville = _required_text(address.ville, f"{field_name}.ville")
     cp = _required_text(address.cp, f"{field_name}.cp")
-    return f"{num_voie} {voie}, {cp} {ville}"
+    return f"{num_voie} {voie}, {cp} {ville}".strip()
 
 
 def _company_designation(company: Company, forme: str, denomination: str) -> str:
@@ -143,12 +181,13 @@ def _normalize_for_prefix(value: str) -> str:
     return " ".join(value.casefold().replace("’", "'").split())
 
 
-def _format_date(value: date) -> str:
-    return value.strftime("%d/%m/%Y")
-
-
 def _add_title(document) -> None:
-    add_framed_title(document, ["Procuration"])
+    # PR1 (Albane 2026-06-26) : « descendre le cadre, l'agrandir, mettre de l'espace
+    # apres ». (a) espace AVANT le cadre (le descend), (b) `inner_spacing=True`
+    # l'agrandit (espace interieur autour du titre), (c) espace APRES le cadre.
+    add_spacer(document, space_after_pt=18)
+    add_framed_title(document, ["Procuration"], inner_spacing=True)
+    add_spacer(document, space_after_pt=12)
 
 
 def _add_paragraph(
@@ -161,13 +200,18 @@ def _add_paragraph(
 
 
 def _add_mandataire_block(document) -> None:
+    # Mise en forme (Albane 2026-06-17, §5) : TOUTE la partie sous « SYDEL »
+    # passe en italique (adresse + RCS + telephone) ; « SYDEL » reste le titre
+    # en gras non italique. Bloc legerement aere (space_after_pt > 0).
     add_centered_block(
         document,
         [
             (MANDATAIRE_NOM, True, False),
             (MANDATAIRE_ADRESSE, False, True),
+            (MANDATAIRE_RCS, False, True),
+            (MANDATAIRE_TEL, False, True),
         ],
-        space_after_pt=0,
+        space_after_pt=2,
     )
 
 
@@ -178,7 +222,15 @@ def _add_final_block(
     date_signature: str,
     signatory_name: str,
 ) -> None:
-    add_signature_block(
-        document,
-        [f"Fait à {lieu_signature}", f"Le {date_signature}", signatory_name],
-    )
+    # PR1 (Albane 2026-06-26) : « que "fait a le" soit a gauche » -> « Fait à … » et
+    # « Le … » restent alignes a GAUCHE.
+    add_spacer(document)
+    for line in (f"Fait à {lieu_signature}", f"Le {date_signature}"):
+        _add_paragraph(document, line, alignment=WD_ALIGN_PARAGRAPH.LEFT)
+    # C5 (Albane 2026-07-09) : le NOM du mandant (associe) est aligne a DROITE,
+    # comme la signature client a droite deja adoptee ailleurs. La zone manuscrite
+    # de signature suit sous le nom, egalement a droite.
+    _add_paragraph(document, signatory_name, alignment=WD_ALIGN_PARAGRAPH.RIGHT)
+    signature_zone = document.add_paragraph()
+    signature_zone.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    signature_zone.add_run("\n\n\n")

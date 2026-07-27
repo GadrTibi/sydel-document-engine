@@ -111,13 +111,104 @@ def test_lettre_option_is_generates_clean_docx(tmp_path: Path) -> None:
 
     assert output_path.name == "lettre_option_is.docx"
     assert "Service des impots des entreprises" in text
+    # R22-07 : le centre est fige (« Centre des Finances Publiques »), plus la valeur saisie
+    # (« SIE Paris Centre » fournie au contexte est ignoree).
+    assert "Centre des Finances Publiques" in text
+    assert "SIE Paris Centre" not in text
     assert "Demande d'option pour le régime de l'impôt sur les sociétés" in text
     assert "SCI EXEMPLE" in text
-    assert "123 456 789" in text
-    assert "Monsieur Jean Durand, demeurant 1 rue Exemple, 75000 Paris" in text
+    # R3 (Albane 2026-06-30) : la societe est EN COURS DE CONSTITUTION -> le SIREN affiche
+    # TOUJOURS la constante « En cours d'immatriculation » (apostrophe courbe U+2019),
+    # JAMAIS le numero saisi (« 123 456 789 » fourni au contexte est volontairement ignore).
+    assert "En cours d’immatriculation" in text
+    assert "123 456 789" not in text
+    # Rafael/Albane 2026-07-09 : « Demeurant [adresse] » -> « Demeurant au [adresse] ».
+    assert "Monsieur Jean Durand, demeurant au 1 rue Exemple, 75000 Paris" in text
     assert "La société SEL IRIS, ayant son siège social au 2 rue Pro, 75000 Paris" in text
     assert "Le gérant" in text
     _assert_clean(text)
+
+
+def test_lettre_option_is_pas_de_denomination_sous_l_objet(tmp_path: Path) -> None:
+    """KAN-18 (Rafael 2026-07-15) : « il faut retirer le nom de la societe actuellement ecrit
+    en gras, sous l'objet. Il ne doit pas apparaitre a cet endroit. » Le courrier ouvre donc
+    directement sur « Madame, Monsieur, ».
+
+    SUPERSEDE le retour INVERSE d'Albane (« mise en forme » 1.7 : « le NOM DE LA SOCIETE doit
+    figurer EN GRAS dans la PREMIERE LIGNE du corps »), qui avait CREE ce paragraphe. Le retour
+    le plus recent prime (regle 68) ; supersede trace au ticket, jamais arbitre en silence.
+    """
+    document = Document(LettreOptionIsGenerator().generate(_base_context(), tmp_path))
+    paragraphs = [p for p in document.paragraphs if p.text.strip()]
+    salutation_index = next(
+        index for index, p in enumerate(paragraphs) if p.text.strip() == "Madame, Monsieur,"
+    )
+    # Entre l'OBJET et la salutation : plus rien. La denomination a quitte cet endroit.
+    ligne_precedente = paragraphs[salutation_index - 1].text.strip()
+    assert ligne_precedente.startswith("Objet :"), (
+        f"la salutation doit suivre l'objet directement, or elle suit « {ligne_precedente} »"
+    )
+    # ... mais la denomination reste dans la TABLE D'IDENTITE : le ticket ne vise QUE
+    # l'emplacement « sous l'objet », pas la presence du nom dans le courrier.
+    cellules = [c.text.strip() for t in document.tables for r in t.rows for c in r.cells]
+    assert "SCI EXEMPLE" in cellules
+
+
+def test_lettre_option_is_siren_always_en_cours_immatriculation(tmp_path: Path) -> None:
+    """R3 (Albane 2026-06-30) : meme avec un SIREN saisi, la ligne SIREN doit afficher la
+    constante « En cours d'immatriculation » (societe en cours de constitution)."""
+    ctx = _base_context()
+    ctx.societe.siren = "987 654 321"
+    output_path = LettreOptionIsGenerator().generate(ctx, tmp_path)
+    document = Document(output_path)
+
+    siren_values = [
+        row.cells[1].text
+        for table in document.tables
+        for row in table.rows
+        if row.cells[0].text.strip() == "SIREN"
+    ]
+    assert siren_values == ["En cours d’immatriculation"]
+    assert "987 654 321" not in _docx_text(output_path)
+
+
+def test_lettre_option_is_siren_not_required(tmp_path: Path) -> None:
+    """R3 : la lettre se genere meme SANS SIREN (societe pas encore immatriculee)."""
+    ctx = _base_context()
+    ctx.societe.siren = None
+    output_path = LettreOptionIsGenerator().generate(ctx, tmp_path)
+    assert "En cours d’immatriculation" in _docx_text(output_path)
+
+
+def test_lettre_option_is_recipient_block_is_boxed_and_lowered(tmp_path: Path) -> None:
+    """R2 (Albane 2026-06-30) : le bloc destinataire est ENCADRE (boite bordee), cale a
+    DROITE, et DESCENDU (spacer en tete) pour une enveloppe a fenetre."""
+    from docx.enum.table import WD_TABLE_ALIGNMENT
+    from docx.oxml.ns import qn
+
+    output_path = LettreOptionIsGenerator().generate(_base_context(), tmp_path)
+    document = Document(output_path)
+
+    # 1re table = boite destinataire : 1x1, bordee, calee a droite.
+    box = document.tables[0]
+    assert (len(box.rows), len(box.columns)) == (1, 1)
+    assert box.alignment == WD_TABLE_ALIGNMENT.RIGHT
+    borders = box._tbl.tblPr.find(qn("w:tblBorders"))
+    assert borders is not None
+    assert borders.find(qn("w:top")).get(qn("w:val")) == "single"
+    box_text = box.cell(0, 0).text
+    assert "Service des impots des entreprises" in box_text
+    assert "Centre des Finances Publiques" in box_text
+
+    # Un spacer (paragraphe vide a space_before non nul) precede la boite -> descente.
+    body = document.element.body
+    first_paragraph = next(
+        child for child in body.iterchildren() if child.tag.endswith("}p")
+    )
+    p_pr = first_paragraph.find(qn("w:pPr"))
+    spacing = p_pr.find(qn("w:spacing")) if p_pr is not None else None
+    assert spacing is not None
+    assert int(spacing.get(qn("w:before"))) > 0
 
 
 def test_lettre_option_is_requires_option_flag(tmp_path: Path) -> None:
@@ -130,3 +221,27 @@ def test_lettre_option_is_rejects_non_sci_structure(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="dossier.structure"):
         LettreOptionIsGenerator().generate(ctx, tmp_path)
+
+
+def test_lettre_option_is_signature_accord_pluriel_gerants(tmp_path: Path) -> None:
+    # KAN-19 (Rafael 2026-07-15) : la signature reflète TOUS les gérants -> accord en NOMBRE.
+    # « gérant » reste au MASCULIN (KAN-23, @All : jamais « gérantes »). 1 -> « Le gérant ».
+    from sydel_doc_engine.domain.enums import Gender
+    from sydel_doc_engine.domain.models import DirigeantNomine
+
+    ctx = _base_context()
+    text_mono = "\n".join(p.text for p in Document(
+        LettreOptionIsGenerator().generate(ctx, tmp_path)
+    ).paragraphs if p.text.strip())
+    assert "Le gérant" in text_mono
+    assert "Les gérants" not in text_mono
+
+    ctx.dirigeants_nomines = [
+        DirigeantNomine(genre=Gender.MASCULIN, civilite_affichage="M.", prenom="A", nom="B"),
+        DirigeantNomine(genre=Gender.FEMININ, civilite_affichage="Mme", prenom="C", nom="D"),
+    ]
+    text_multi = "\n".join(p.text for p in Document(
+        LettreOptionIsGenerator().generate(ctx, tmp_path)
+    ).paragraphs if p.text.strip())
+    assert "Les gérants" in text_multi
+    assert "gérantes" not in text_multi  # jamais feminise (KAN-23)

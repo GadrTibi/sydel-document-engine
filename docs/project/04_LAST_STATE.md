@@ -1,4 +1,28 @@
+> ⚠️ **ARCHIVE FIGÉE 2026-06-03 — NE PAS s'y fier pour l'état courant. État vivant = [`docs/returns/DASHBOARD.md`](../returns/DASHBOARD.md).**
+
+---
+
+### ÉTAT RÉEL au HEAD a6a2119 (2026-06-26)
+
+- **11 types `generation_enabled`** (source : `front_app/type_registry.py`) : SELARL, SCM, SCI, SCI IRIS, SCS, SAS/SPFPL médecins, SPFPL cession, SPFPL apport, SELAS pluripersonnelle, SELAS unipersonnelle médecin.
+- **43 documents catalogués ↔ 43 générateurs** (0 orphelin, 0 stub, DOC-045 résolu).
+- **630 tests verts**, `ruff` quasi-propre.
+- **`business_wizard.py` SUPPRIMÉ** — le gating des types a déménagé vers `front_app/type_registry.py`.
+- Branche de travail : `sprint/engine-completion`.
+- Pour le détail vivant (retours client du jour) : [`docs/returns/DASHBOARD.md`](../returns/DASHBOARD.md) + [`docs/returns/CARNET.md`](../returns/CARNET.md).
+
+> Tout le corps ci-dessous est une **archive historique figée au 2026-06-03** (« SELARL = seul generable » et `business_wizard.py` y sont FAUX aujourd'hui). Conservé tel quel pour la traçabilité.
+
+---
+
 # Dernier état projet
+
+> ⚠️ **CE FICHIER EST FIGÉ AU 2026-06-03 — il NE reflète PAS l'état courant.** Depuis, ~3 semaines
+> de travail (SELAS dentiste pluri, SELARL multi-associés, ~27 retours Albane/Rafael traités et
+> Akainu-gatés, ~607 tests verts, branche `sprint/engine-completion` déployée en staging). **Pour
+> l'état réel, lire en priorité [`../returns/DASHBOARD.md`](../returns/DASHBOARD.md) et
+> [`../returns/CARNET.md`](../returns/CARNET.md).** Le contenu ci-dessous est conservé comme archive
+> historique. (Bandeau ajouté 2026-06-24 — chantier fraîcheur docs du Bilan de Santé.)
 
 ## Date de mise à jour
 2026-06-03

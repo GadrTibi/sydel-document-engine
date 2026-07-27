@@ -4,6 +4,7 @@ from datetime import date
 from pathlib import Path
 
 from docx import Document
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml.ns import qn
 
 from sydel_doc_engine.domain.enums import Gender
@@ -101,6 +102,24 @@ def test_procuration_creates_docx(tmp_path: Path) -> None:
     assert output_path.is_file()
 
 
+def test_procuration_docteur_civilite_civile(tmp_path: Path) -> None:
+    # R3 (Albane 2026-07-07) : « Docteur » n'est pas une civilité — le flux SAS
+    # posait « Je soussigné Docteur Camille Martin ». Le slot rend la civilité
+    # CIVILE accordée au genre du signataire (M./Mme).
+    ctx = _context()
+    ctx.personne_signataire.civilite = "Docteur"
+    text = _docx_text(ProcurationGenerator().generate(ctx, tmp_path))
+    assert "Je soussigné Monsieur Jean Durand" in text
+    assert "Docteur" not in text
+
+    ctx_f = _context(Gender.FEMININ)
+    ctx_f.personne_signataire.civilite = "Docteur"
+    ctx_f.personne_signataire.fonction_dirigeant = "Présidente"
+    text_f = _docx_text(ProcurationGenerator().generate(ctx_f, tmp_path))
+    assert "Je soussignée Madame Marie Durand" in text_f
+    assert "Docteur" not in text_f
+
+
 def test_procuration_contains_essential_texts(tmp_path: Path) -> None:
     text = _docx_text(_generate(tmp_path))
 
@@ -126,8 +145,9 @@ def test_procuration_contains_essential_texts(tmp_path: Path) -> None:
     ) in text
     assert "L’exécution de ce mandat vaudra décharge au mandataire." in text
     assert "Fait pour servir et valoir ce que de droit." in text
-    assert "RCS PARIS 788 531 432" not in text
-    assert "0153814303" not in text
+    # Modele procuration MAJ (Albane 2026-06-10) : RCS/SIREN + tel sous SYDEL.
+    assert "RCS PARIS 788 531 432" in text
+    assert "0153814303" in text
     assert "Fait à Paris" in text
     assert "Le 12/05/2026" in text
     assert "Jean Durand" in text
@@ -155,6 +175,33 @@ def test_procuration_uses_feminine_agreement(tmp_path: Path) -> None:
     assert "Je soussignée Madame Marie Durand" in text
 
 
+def test_procuration_gerant_jamais_feminise(tmp_path: Path) -> None:
+    # KAN-23 (Rafael 2026-07-15) : « gérant » n'est JAMAIS mis au feminin -> rendu IDENTIQUE
+    # pour un homme et pour une femme. SUPERSEDE PR2 (Albane SELARL 2026-07-10), qui demandait
+    # « gérante » pour une femme : le retour le plus recent prime (regle 68), trace au ticket.
+    ctx_h = _context()
+    ctx_h.personne_signataire.fonction_dirigeant = "gérant"
+    text_h = _docx_text(ProcurationGenerator().generate(ctx_h, tmp_path))
+    assert "agissant en qualité de gérant de la" in text_h
+
+    # Une « gérante » venue du flux (ou d'un modele) est RE-MASCULINISEE au rendu.
+    ctx_f = _context(Gender.FEMININ)
+    ctx_f.personne_signataire.fonction_dirigeant = "gérante"
+    text_f = _docx_text(ProcurationGenerator().generate(ctx_f, tmp_path))
+    assert "agissant en qualité de gérant de la" in text_f
+    assert "gérante" not in text_f
+
+
+def test_procuration_first_body_line_is_justified(tmp_path: Path) -> None:
+    # PR1 (Albane SELARL 2026-07-10) : la 1re ligne du corps (« Je soussigné … »)
+    # est justifiée.
+    document = Document(_generate(tmp_path))
+    body = next(
+        p for p in document.paragraphs if p.text.startswith("Je soussigné Monsieur Jean Durand")
+    )
+    assert body.alignment == WD_ALIGN_PARAGRAPH.JUSTIFY
+
+
 def test_procuration_composes_personal_address_with_postal_code_before_city(
     tmp_path: Path,
 ) -> None:
@@ -178,9 +225,13 @@ def test_procuration_contains_exact_sydel_block(tmp_path: Path) -> None:
     paragraphs = _document_paragraphs(_generate(tmp_path))
 
     start = paragraphs.index("SYDEL")
-    assert paragraphs[start : start + 2] == [
+    # Bloc mandataire MAJ (Albane 2026-06-10) : RCS/SIREN + telephone ajoutes
+    # sous l'adresse SYDEL (modele d'avril fourni par Albane).
+    assert paragraphs[start : start + 4] == [
         "SYDEL",
         "80 avenue Marceau, 75008 PARIS",
+        "RCS PARIS 788 531 432",
+        "0153814303",
     ]
 
 
@@ -200,3 +251,17 @@ def test_procuration_uses_signature_paragraphs_without_table(tmp_path: Path) -> 
     assert "Fait à Paris" in paragraphs
     assert "Le 12/05/2026" in paragraphs
     assert "Jean Durand" in paragraphs
+
+
+def test_procuration_final_block_alignment(tmp_path: Path) -> None:
+    # PR1 (Albane 2026-06-26) : « Fait à … » / « Le … » restent alignes a GAUCHE.
+    # C5 (Albane 2026-07-09) : le NOM du mandant est desormais aligne a DROITE
+    # (comme la signature client a droite adoptee ailleurs).
+    document = Document(_generate(tmp_path))
+
+    fait_a = next(p for p in document.paragraphs if p.text == "Fait à Paris")
+    le_date = next(p for p in document.paragraphs if p.text == "Le 12/05/2026")
+    nom = next(p for p in document.paragraphs if p.text == "Jean Durand")
+    assert fait_a.alignment == WD_ALIGN_PARAGRAPH.LEFT
+    assert le_date.alignment == WD_ALIGN_PARAGRAPH.LEFT
+    assert nom.alignment == WD_ALIGN_PARAGRAPH.RIGHT

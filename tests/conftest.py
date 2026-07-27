@@ -1,1 +1,39 @@
 from __future__ import annotations
+
+import random
+
+import pytest
+
+
+@pytest.fixture(autouse=True)
+def _deterministic_test_env(tmp_path, monkeypatch):
+    """Rend l'environnement de test DETERMINISTE par test (re-Akainu tours 7-9, flakiness).
+
+    Deux sources de fragilite cross-test, neutralisees par CONSTRUCTION (pas par incantation) :
+    1. `shell.ARTIFACTS_DIR` est un chemin RELATIF REEL (« artifacts/track_b_selarl_v1 ») ou de
+       nombreux AppTest ecrivent leurs DOCX SANS isolation. CAUSE CERTAINE de collision cross-test
+       (chemin partage, ecritures reelles) : on le redirige vers `tmp_path` (unique par test). Lu
+       comme global au call-time (shell.py) -> le monkeypatch mord.
+    2. `_prefill_random_selarl_data` (shell.py) tire des donnees via le module `random` GLOBAL
+       NON seede. CAUSE PLAUSIBLE (non formellement isolee : la flakiness ~1/16 observee n'a PAS
+       ete reproduite en controle negatif sans seed) d'une dependance a l'ORDRE / au nombre
+       d'appels amont. On RESEED `random` a 0 AVANT chaque test : neutralisation robuste par
+       construction, quel que soit l'ordre de collecte.
+
+    PREUVE d'ordre-independance (T9-T10) : la suite reste verte sur PLUSIEURS ORDRES de collecte
+    DISTINCTS (pytest-randomly). Decompte courant = 594 ; les premiers ordres seeds 1/2/3
+    tournaient a 593 AVANT l'ajout du test SELARL symetrique (tour 9), puis l'ordre par defaut
+    et les seeds 7/99 du gate de convergence (tour 10) ont reconfirme 594. C'est ce qui prouve
+    l'independance a l'ordre, contrairement aux runs « N fois a ordre constant » (qui ne
+    prouvaient que la stabilite, pas l'ordre-independance). pytest-randomly est en dep dev :
+    l'ordre est randomise par defaut a chaque run.
+
+    (Le monkeypatch de `ui_runtime.DEFAULT_ARTIFACTS_DIR` a ete retire : inerte -- la constante
+    est liee en valeur par defaut d'argument de `build_output_dir`, sans appelant dans src/.)"""
+    random.seed(0)
+
+    import sydel_doc_engine.front_app.shell as shell
+
+    base = tmp_path / "artifacts"
+    base.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setattr(shell, "ARTIFACTS_DIR", base / "track_b_selarl_v1", raising=False)

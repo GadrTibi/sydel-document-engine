@@ -9,10 +9,17 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import CessionActions, DocumentGenerationContext
+from sydel_doc_engine.generators.lot_05.acte_cession_parts_spfpl import rcs_en_cours
+from sydel_doc_engine.generators.lot_05.scm_cession_common import (
+    mentions_conjoint,
+    mentions_partenaire_pacse,
+    partenaire_pacse_clause,
+)
 from sydel_doc_engine.generators.lot_05.spfpl_common import (
     SPFPL_CESSION_STRUCTURE,
     associe_display_name,
     company_siege_display,
+    elision_de,
     format_display_date,
     person_address_display,
     person_display,
@@ -26,8 +33,10 @@ from sydel_doc_engine.generators.lot_05.spfpl_common import (
 from sydel_doc_engine.rendering.docx_builder import (
     add_paragraph,
     add_signature_lines,
+    keep_final_signature_block_together,
     new_document,
 )
+from sydel_doc_engine.utils.departements import departement_nom
 
 OUTPUT_FILENAME = "acte_cession_actions_spfpl.docx"
 DOCUMENT_CODE = "CODE-ACTE-ACTIONS-001"
@@ -48,7 +57,11 @@ class ActeCessionActionsSpfplGenerator:
             raise ValueError("societe_spfpl.representant est obligatoire.")
 
         spfpl_name = required_text(societe_spfpl.denomination, "societe_spfpl.denomination")
-        spfpl_forme = required_text(societe_spfpl.forme_sociale, "societe_spfpl.forme_sociale")
+        # R4 (Albane 2026-07-07, propagation) : le front pose la forme abregee NON accentuee
+        # (« par actions simplifiee ») -> accent restaure a la sortie (« simplifiée »).
+        spfpl_forme = required_text(
+            societe_spfpl.forme_sociale, "societe_spfpl.forme_sociale"
+        ).replace("simplifiee", "simplifiée")
         spfpl_capital = required_text(
             societe_spfpl.capital_social,
             "societe_spfpl.capital_social",
@@ -58,9 +71,11 @@ class ActeCessionActionsSpfplGenerator:
             societe_spfpl.numero_rcs,
             "societe_spfpl.numero_rcs",
         )
-        spfpl_ordre_departement = required_text(
-            societe_spfpl.departement_inscription_ordre,
-            "societe_spfpl.departement_inscription_ordre",
+        spfpl_ordre_departement = departement_nom(
+            required_text(
+                societe_spfpl.departement_inscription_ordre,
+                "societe_spfpl.departement_inscription_ordre",
+            )
         )
         rep_civilite = required_text(
             representant.civilite_affichage,
@@ -95,9 +110,11 @@ class ActeCessionActionsSpfplGenerator:
         )
         cible_rcs = required_text(societe_cible.ville_rcs, "societe_cible.ville_rcs")
         cible_numero_rcs = required_text(societe_cible.numero_rcs, "societe_cible.numero_rcs")
-        cible_ordre_departement = required_text(
-            societe_cible.departement_inscription_ordre,
-            "societe_cible.departement_inscription_ordre",
+        cible_ordre_departement = departement_nom(
+            required_text(
+                societe_cible.departement_inscription_ordre,
+                "societe_cible.departement_inscription_ordre",
+            )
         )
         cible_profession = required_text(
             societe_cible.profession_reglementee,
@@ -129,6 +146,25 @@ class ActeCessionActionsSpfplGenerator:
         )
 
         add_paragraph(docx, "ENTRE LES SOUSSIGNES :", bold=True, space_before_pt=10)
+        # R22-02 : conjoint + regime affiches seulement si le cedant est marie (regle
+        # partagee mentions_conjoint ; sinon « divorce avec Madame X » fantome).
+        # Albane 6.3/7.3 (RATIFIE 2026-07-06) : le PARTENAIRE PACSE s'affiche aussi. Le PACS
+        # n'a PAS de « sous le régime de … » (le menu « Pacsé(e) » ne capture aucun sous-regime)
+        # -> clause = « pacse(e) avec {partenaire} », jamais un regime marie force. « Pas de
+        # mention sans nom » : partenaire_pacse_clause -> "" si partenaire non renseigne.
+        cedant_maritale = required_text(cedant.situation_maritale, "cedant.situation_maritale")
+        if mentions_conjoint(cedant.situation_maritale):
+            cedant_maritale_clause = (
+                f"{cedant_maritale} sous le régime de "
+                f"{required_text(cedant.regime_matrimonial, 'cedant.regime_matrimonial')} "
+                f"avec {_conjoint_display(ctx)}"
+            )
+        elif mentions_partenaire_pacse(cedant.situation_maritale):
+            cedant_maritale_clause = (
+                f"{cedant_maritale}{partenaire_pacse_clause(cedant.conjoint)}"
+            )
+        else:
+            cedant_maritale_clause = cedant_maritale
         add_paragraph(
             docx,
             (
@@ -138,13 +174,10 @@ class ActeCessionActionsSpfplGenerator:
                 f"à {required_text(cedant.ville_naissance, 'cedant.ville_naissance')} "
                 f"({required_text(cedant.departement_naissance, 'cedant.departement_naissance')}), "
                 f"de nationalité {required_text(cedant.nationalite, 'cedant.nationalite')}, "
-                f"demeurant {person_address_display(cedant, 'cedant')}, "
-                f"{required_text(cedant.situation_maritale, 'cedant.situation_maritale')} "
-                "sous le régime de "
-                f"{required_text(cedant.regime_matrimonial, 'cedant.regime_matrimonial')} "
-                f"avec {_conjoint_display(ctx)}, inscrit au tableau de l'Ordre des "
+                f"demeurant au {person_address_display(cedant, 'cedant')}, "
+                f"{cedant_maritale_clause}, inscrit au tableau de l'Ordre des "
                 f"{required_text(cedant.profession_reglementee_pluriel, 'cedant.profession_reglementee_pluriel')} "
-                f"du {required_text(cedant.ordre.departement if cedant.ordre else None, 'cedant.ordre.departement')}, "
+                f"du {departement_nom(required_text(cedant.ordre.departement if cedant.ordre else None, 'cedant.ordre.departement'))}, "
                 "et sous le numéro RPPS "
                 f"{required_text(cedant.ordre.numero_rpps if cedant.ordre else None, 'cedant.ordre.numero_rpps')}."
             ),
@@ -153,17 +186,29 @@ class ActeCessionActionsSpfplGenerator:
         add_paragraph(docx, "D'une part,")
         add_paragraph(docx, "ET", alignment=WD_ALIGN_PARAGRAPH.CENTER, bold=True)
         add_paragraph(docx, f"- La Société {spfpl_name}")
+        # R2 (Albane 2026-07-07, propage de l'acte de PARTS — meme bloc identite) : la SPFPL
+        # acquereuse n'est pas immatriculee (le front pose numero_rcs="en cours") -> identite
+        # « en cours de constitution » + ligne RCS « En cours d'immatriculation au RCS de
+        # <ville> » (formulation du corpus), plus jamais « sous le numéro en cours ». Un vrai
+        # numero RCS conserve le rendu d'origine.
+        spfpl_en_constitution = rcs_en_cours(societe_spfpl.numero_rcs)
         add_paragraph(
             docx,
             (
-                f"{spfpl_forme} inscrite au tableau de l'Ordre des "
+                f"{spfpl_forme}"
+                f"{' en cours de constitution,' if spfpl_en_constitution else ''}"
+                " inscrite au tableau de l'Ordre des "
                 f"{cible_profession_pluriel} du {spfpl_ordre_departement}."
             ),
         )
         add_paragraph(docx, f"Au capital de {spfpl_capital}")
         add_paragraph(
             docx,
-            f"Immatriculée au RCS de {spfpl_rcs} sous le numéro {spfpl_numero_rcs}",
+            (
+                f"En cours d'immatriculation au RCS de {spfpl_rcs}"
+                if spfpl_en_constitution
+                else f"Immatriculée au RCS de {spfpl_rcs} sous le numéro {spfpl_numero_rcs}"
+            ),
         )
         add_paragraph(docx, f"Siège social : {company_siege_display(societe_spfpl, 'societe_spfpl')}")
         add_paragraph(
@@ -188,7 +233,7 @@ class ActeCessionActionsSpfplGenerator:
             (
                 f"La Société {cible_name} est une {cible_forme_complete}, au capital social "
                 f"de {cible_capital} divisé en {cible_actions_total} actions "
-                f"d'{cible_valeur_action_lettres} de valeur nominale, entièrement libérées "
+                f"{elision_de(cible_valeur_action_lettres)} de valeur nominale, entièrement libérées "
                 f"dont le siège est situé au {company_siege_display(societe_cible, 'societe_cible')}."
             ),
         )
@@ -267,11 +312,13 @@ class ActeCessionActionsSpfplGenerator:
 
         output_dir.mkdir(parents=True, exist_ok=True)
         output_path = output_dir / OUTPUT_FILENAME
+        # KAN-36 : bloc signature final solidaire (une seule page).
+        keep_final_signature_block_together(docx)
         docx.save(output_path)
         return output_path
 
 
-def _validate_actions_context(ctx: DocumentGenerationContext) -> None:
+def _validate_actions_context(ctx: DocumentGenerationContext) -> None:  # noqa: C901
     validate_cession_context(ctx)
     if ctx.structure != SPFPL_CESSION_STRUCTURE:
         raise ValueError(f"dossier.structure doit etre SPFPL cession pour {DOCUMENT_CODE}.")

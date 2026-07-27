@@ -26,6 +26,7 @@ from sydel_doc_engine.domain.models import (
     DocumentGenerationContext,
     DocumentSignataire,
     DossierOptions,
+    Mandataire,
     Person,
     Signature,
 )
@@ -113,6 +114,16 @@ def _context(
             nombre_exemplaires_lettres="quatre",
             signataire=DocumentSignataire(prenom="Camille", nom="Martin"),
         ),
+        # §12.3 — l'appel de fonds est signe par le CONSEILLER SYDEL (mandataire),
+        # pas par le client (« Camille Martin »). document.signataire reste le
+        # praticien (consomme par les statuts).
+        mandataire=Mandataire(
+            civilite_affichage="Monsieur",
+            prenom="Jordan",
+            nom="ELBAZ",
+            fonction="conseiller",
+            cabinet="SYDEL",
+        ),
     )
 
 
@@ -146,8 +157,12 @@ def test_avenant_contrat_bail_generates_source_wording_and_signature_table(
 
     assert output_path == tmp_path / "avenant_contrat_bail.docx"
     text = _docx_text(output_path)
-    assert "Avenant n°1 au bail du 14/05/2026" in text
+    # §10.1 : la date de l'encadre = date du bail d'origine (date_signature_origine
+    # 2021-09-01), pas la date de signature de l'avenant (14/05/2026).
+    assert "Avenant n°1 au bail du 01/09/2021" in text
     assert "ARTICLE 1 : changement de locataire" in text
+    # §10.3 : « de » apres RCS.
+    assert "au RCS de" in text
     assert "les démarches seront finies" in text
     assert "Le Bailleur" in text
     assert "L’ancien locataire" in text
@@ -165,6 +180,88 @@ def test_avenant_contrat_bail_generates_source_wording_and_signature_table(
     _assert_no_source_placeholders(text)
 
 
+def test_avenant_av1_identity_non_bold_except_name(tmp_path: Path) -> None:
+    # AV1 (Albane 2026-06-26) : « l'identite du Locataire devrait etre en non gras
+    # (sauf son nom), peut-etre pareil pour le bailleur ». Seul le NOM (prenom + nom)
+    # reste en gras ; civilite + reste de l'identite en NON gras. Locataire ET bailleur.
+    document = Document(AvenantContratBailGenerator().generate(_context(), tmp_path))
+
+    for nom in ("Paul Leroy", "Camille Martin"):
+        ligne = next(
+            p for p in document.paragraphs if nom in p.text and "désigné" not in p.text
+        )
+        bold_runs = [r.text for r in ligne.runs if r.bold and r.text.strip()]
+        non_bold = [r.text for r in ligne.runs if not r.bold and r.text.strip()]
+        # le nom est en gras ...
+        assert bold_runs == [nom]
+        # ... et au moins un fragment d'identite (civilite/adresse...) est NON gras.
+        assert non_bold, f"identite de {nom} entierement en gras"
+        # la civilite ne doit PAS etre en gras
+        assert not any(r.bold for r in ligne.runs if "Monsieur" in r.text)
+
+
+def test_avenant_av2_birthdate_zero_padded_day_with_month_name(tmp_path: Path) -> None:
+    # AV2 : « que le chiffre ne soit pas 1 janvier mais 01 janvier » -> jour sur 2
+    # chiffres + mois en toutes lettres accentue.
+    text = _docx_text(AvenantContratBailGenerator().generate(_context(), tmp_path))
+
+    assert "né le 20 juin 1984" in text  # locataire
+    assert "né le 05 janvier 1970" in text  # bailleur, jour zero-pade
+    assert "né le 5 janvier" not in text
+
+
+def test_avenant_date_iso_string_rendue_en_francais() -> None:
+    # Rafael 2026-07-09 : une date arrivant en CHAINE ISO (« 1975-03-10 ») sortait brute
+    # au lieu du format francais -> parse + formatage (plus jamais « 1975-03-10 »).
+    from sydel_doc_engine.generators.lot_03.avenant_contrat_bail import (
+        _display_birthdate,
+        _display_date_or_empty,
+    )
+
+    assert _display_birthdate("1975-03-10") == "10 mars 1975"
+    assert _display_date_or_empty("2021-09-01") == "01/09/2021"
+    assert "1975-03-10" not in _display_birthdate("1975-03-10")
+
+
+def test_avenant_av3_le_docteur_in_articles(tmp_path: Path) -> None:
+    # Rafael 2026-07-09 « supprimer partout » : « Docteur »/« Dr » n'est plus une civilite.
+    # L'ancien wording « le Docteur … » (AV3) est SUPERSEDE -> le locataire personne physique
+    # est nomme par sa civilite CIVILE (Monsieur/Madame), SANS article (« le » disparait avec
+    # « Docteur »). Le titre professionnel ne doit plus apparaitre nulle part.
+    text = _docx_text(AvenantContratBailGenerator().generate(_context(), tmp_path))
+
+    # Article 1 (milieu de phrase) : civilite civile, sans article
+    assert "a pour locataire Monsieur Camille Martin" in text
+    # Article 2, 2e phrase (debut de phrase) : civilite civile, sans article
+    assert "Monsieur Camille Martin s’engage à fournir au Bailleur" in text
+    # « Docteur » eradique et pas d'article parasite « le Monsieur »
+    assert "Docteur" not in text
+    assert "le Monsieur Camille Martin" not in text
+    assert "le Docteur" not in text
+
+
+def test_avenant_av3_no_article_before_plain_civility(tmp_path: Path) -> None:
+    # M1 (Akainu 2026-06-26) : locataire SANS titre professionnel (civilite_courte vide)
+    # -> l'article « le/Le » ne doit PAS se coller sur « Monsieur » (« le Monsieur ... »).
+    ctx = _context()
+    ctx.bail.locataire.civilite_courte = None
+    text = _docx_text(AvenantContratBailGenerator().generate(ctx, tmp_path))
+
+    assert "le Monsieur" not in text
+    assert "Le Monsieur" not in text
+    assert "a pour locataire Monsieur Camille Martin" in text
+    assert "Monsieur Camille Martin s’engage à fournir au Bailleur" in text
+
+
+def test_avenant_av5_no_number_of_copies(tmp_path: Path) -> None:
+    # AV5 : « on peut retirer "en quatre exemplaires" ».
+    text = _docx_text(AvenantContratBailGenerator().generate(_context(), tmp_path))
+
+    assert "exemplaires" not in text
+    assert "quatre exemplaires" not in text
+    assert "Fait à Paris, le" in text
+
+
 def test_appel_fond_sel_generates_dentaire_request(tmp_path: Path) -> None:
     output_path = AppelFondSelGenerator().generate(_context(), tmp_path)
 
@@ -179,10 +276,15 @@ def test_appel_fond_sel_generates_dentaire_request(tmp_path: Path) -> None:
     subject = next(p for p in document.paragraphs if p.text.startswith("Objet"))
     assert subject.runs[0].bold is True
     assert subject.runs[0].underline is True
-    amount = next(p for p in document.paragraphs if p.text == "150 000")
+    # §12.2 : montant et euros sur la MEME ligne.
+    amount = next(p for p in document.paragraphs if p.text == "150 000 €")
     assert amount.alignment == WD_ALIGN_PARAGRAPH.CENTER
-    signature = next(p for p in document.paragraphs if p.text == "Camille Martin")
+    # §12.3 — signataire = le conseiller SYDEL (mandataire « Jordan ELBAZ »),
+    # PAS le client « Camille Martin » (le client n'apparait plus comme signataire
+    # en bas a droite ; il peut figurer ailleurs dans le corps comme vendeur).
+    signature = next(p for p in document.paragraphs if p.text == "Jordan ELBAZ")
     assert signature.alignment == WD_ALIGN_PARAGRAPH.RIGHT
+    assert not any(p.text == "Camille Martin" for p in document.paragraphs)
     # Retour UAT Rafael (DOC-008) : bloc banque + lieu/date aligne a DROITE.
     banque = next(p for p in document.paragraphs if p.text == "BANQUE EXEMPLE")
     assert banque.alignment == WD_ALIGN_PARAGRAPH.RIGHT

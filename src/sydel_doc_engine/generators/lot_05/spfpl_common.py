@@ -14,6 +14,20 @@ from sydel_doc_engine.domain.models import (
     SpfplPerson,
     SpfplRepresentant,
 )
+from sydel_doc_engine.generators.lot_01.civilite import civilite_civile
+from sydel_doc_engine.generators.lot_05.scm_cession_common import (
+    mentions_conjoint,
+    mentions_partenaire_pacse,
+    partenaire_pacse_clause,
+)
+from sydel_doc_engine.generators.lot_05.spfpl_libelles import libelle_metier
+from sydel_doc_engine.utils.departements import departement_nom
+from sydel_doc_engine.utils.grammar import (  # noqa: F401
+    elision_de,
+    euro_word,
+    montant_avec_euros,
+    montant_lettres_avec_unite,
+)
 
 DOCUMENT_CODE = "CODE-SPFPL-AGR-INFO-001"
 CORE_DOCUMENT_CODE = "CODE-SPFPL-CORE-001"
@@ -26,53 +40,96 @@ SUPPORTED_NOTE_OPERATIONS = {OPERATION_CESSION, OPERATION_APPORT}
 
 
 def required_text(value: str | None, field_name: str) -> str:
+    # R10 (Rafael 2026-06-24) : une donnee manquante NE bloque PAS la generation -> marqueur
+    # visible « (À COMPLÉTER : …) », a completer a la main, au lieu de lever.
+    # KAN-2 M1 (Rafael 2026-07-15, motif n°1 des rejets) : le marqueur porte un LIBELLÉ MÉTIER
+    # lisible (« prénom de l'associé unique »), JAMAIS le chemin technique (« actionnaire_unique.
+    # prenom ») ni des crochets d'index. `libelle_metier` traduit le field_name ; sortie NOMINALE
+    # (valeur présente) inchangée.
     if value is None or not value.strip():
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return f"(À COMPLÉTER : {libelle_metier(field_name)})"
     return value.strip()
 
 
 def required_int(value: int | None, field_name: str) -> int:
+    """Point de CALCUL : rend un int, pour les soustractions/comparaisons de répartition.
+
+    NE PAS s'en servir pour AFFICHER une quantité de titres -> `quantite_titres` ci-dessous.
+    C'est la confusion des deux qui a fait revenir KAN-2 deux fois : le front (`_i()` =
+    `number_input(min_value=0)`) pose TOUJOURS 0 et jamais None -> cette fonction ne levait
+    donc jamais, et imprimait le zéro tel quel dans des actes signables.
+    """
     if value is None:
         raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
     return value
 
 
+def quantite_titres(value: int | None, libelle: str) -> str:
+    """AFFICHAGE d'une quantité de titres (parts / actions). KAN-2 + Akainu B1 (2026-07-15).
+
+    Une quantité NON RENSEIGNÉE ne s'affirme JAMAIS à zéro : un acte SIGNABLE qui déclare
+    « apporte 0 parts sociales » est FAUX — et c'est PIRE que le blocage que le client a fait
+    retirer. Le front ne sait pas exprimer « vide » sur ces slots (0 = champ jamais touché) :
+    ici, à l'AFFICHAGE, 0 et None sont donc le même cas — « non rempli ».
+
+    Périmètre volontairement limité au FIL DU TEXTE. Les TABLEAUX de répartition avant/après
+    gardent leur « 0 » : c'est une valeur RÉELLE (la holding détient 0 part AVANT la cession),
+    pas un champ vide.
+
+    `libelle` = intitulé MÉTIER (« nombre de parts cédées »), jamais un nom de token ni un
+    chemin technique — Akainu M2 : « (À COMPLÉTER : CESSION_PARTS.PRIX_TOTAL_LETTRES) » ne veut
+    rien dire pour le client qui relit son acte. `libelle_metier` = filet (un libellé déjà métier
+    traverse inchangé ; un chemin technique passé par erreur est tout de même traduit).
+    """
+    if not value:
+        return f"(À COMPLÉTER : {libelle_metier(libelle)})"
+    return str(value)
+
+
+def spfpl_forme_sociale_complete(profession_pluriel: str) -> str:
+    """Designation legale COMPLETE de la SPFPL (convention P2, Albane 2026-07-06/07) :
+    « Société de Participations Financières de Profession Libérale de <Profession-Plurielle>
+    par actions simplifiée ». MEME construction que l'acte de cession
+    (acte_cession_parts_spfpl) et que le titre des statuts (statuts_spfpl_templates) :
+    profession au PLURIEL, titre-casee (« Chirurgiens-Dentistes »), forme legale complete
+    ACCENTUEE — jamais le singulier ni l'abrege « par actions simplifiee ».
+    """
+    return (
+        "Société de Participations Financières de Profession Libérale de "
+        f"{profession_pluriel.title()} par actions simplifiée"
+    )
+
+
 def format_display_date(value: date | str | None, field_name: str) -> str:
+    # KAN-2 : date manquante -> marqueur « (À COMPLÉTER : <libellé métier>) », non bloquant (R10).
     if value is None:
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return f"(À COMPLÉTER : {libelle_metier(field_name)})"
     if isinstance(value, date):
         return value.strftime("%d/%m/%Y")
     return required_text(value, field_name)
 
 
+# KAN-2 (Rafael) : un OBJET manquant NE bloque JAMAIS. Instance VIDE (champs None) -> ses champs
+# sortent en marqueurs « (À COMPLÉTER : …) » (required_text) ou « (À COMPLÉTER : <libellé>) »
+# (quantite_titres). Zero blocage : generer meme sans AUCUN champ rempli.
 def required_societe_spfpl(ctx: DocumentGenerationContext) -> SocieteSpfpl:
-    if ctx.societe_spfpl is None:
-        raise ValueError(f"societe_spfpl est obligatoire pour {DOCUMENT_CODE}.")
-    return ctx.societe_spfpl
+    return ctx.societe_spfpl if ctx.societe_spfpl is not None else SocieteSpfpl()
 
 
 def required_societe_cible(ctx: DocumentGenerationContext) -> SocieteCible:
-    if ctx.societe_cible is None:
-        raise ValueError(f"societe_cible est obligatoire pour {DOCUMENT_CODE}.")
-    return ctx.societe_cible
+    return ctx.societe_cible if ctx.societe_cible is not None else SocieteCible()
 
 
 def required_cedant(ctx: DocumentGenerationContext) -> SpfplPerson:
-    if ctx.cedant is None:
-        raise ValueError(f"cedant est obligatoire pour {DOCUMENT_CODE}.")
-    return ctx.cedant
+    return ctx.cedant if ctx.cedant is not None else SpfplPerson()
 
 
 def required_apporteur(ctx: DocumentGenerationContext) -> SpfplPerson:
-    if ctx.apporteur is None:
-        raise ValueError(f"apporteur est obligatoire pour {DOCUMENT_CODE}.")
-    return ctx.apporteur
+    return ctx.apporteur if ctx.apporteur is not None else SpfplPerson()
 
 
 def required_apport_titres(ctx: DocumentGenerationContext) -> ApportTitres:
-    if ctx.apport_titres is None:
-        raise ValueError(f"apport_titres est obligatoire pour {CORE_DOCUMENT_CODE}.")
-    return ctx.apport_titres
+    return ctx.apport_titres if ctx.apport_titres is not None else ApportTitres()
 
 
 def required_cession_parts(ctx: DocumentGenerationContext) -> CessionParts:
@@ -181,8 +238,19 @@ def validate_note_context(ctx: DocumentGenerationContext) -> str:
 
 
 def person_display(person: SpfplPerson, field_name: str) -> str:
+    # R3 durci (Rafael 2026-07-07, defense en profondeur) : cette soeur rendait la
+    # civilite BRUTE alors que person_short_identity / representant_display /
+    # associe_display_name etaient deja routees -> tout slot de personne passe par
+    # civilite_civile (sortie byte-identique quand la donnee est deja civile, cas
+    # nominal §14.2 ; un « Docteur »/« Dr » pose en civilite devient Monsieur/Madame).
+    # getattr : certains appelants passent des modeles SANS genre (ex. ReunionPresident
+    # du PV d'agrement) -> None (masculin par defaut si titre), comme associe_display_name.
+    civilite = civilite_civile(
+        required_text(person.civilite_affichage, f"{field_name}.civilite_affichage"),
+        getattr(person, "genre", None),
+    )
     return (
-        f"{required_text(person.civilite_affichage, f'{field_name}.civilite_affichage')} "
+        f"{civilite} "
         f"{required_text(person.prenom, f'{field_name}.prenom')} "
         f"{required_text(person.nom, f'{field_name}.nom')}"
     )
@@ -196,12 +264,23 @@ def person_signature(person: SpfplPerson, field_name: str) -> str:
 
 
 def person_identity_sentence(person: SpfplPerson, field_name: str) -> str:
+    # Akainu M1 round 2 (2026-07-02) : le SPFPL n'est PLUS marie-only (R0702-02 : menu
+    # matrimonial complet). L'ancienne garde « affiche le conjoint si conjoint present » rendait
+    # « avec (À COMPLÉTER) » pour un non-marie (le front pose toujours un conjoint vide). On gate
+    # desormais sur le STATUT via `mentions_conjoint` (garde PARTAGE unique, R22-02), comme les
+    # actes de cession/apport. Marie -> « avec <conjoint> » BYTE-IDENTIQUE ; sinon -> statut seul.
     conjoint = person.conjoint
     conjoint_display = ""
-    if conjoint is not None:
-        conjoint_civilite = required_text(
-            conjoint.civilite_affichage,
-            f"{field_name}.conjoint.civilite_affichage",
+    if conjoint is not None and mentions_conjoint(person.situation_maritale):
+        # R3 durci (Rafael 2026-07-07, defense en profondeur) : civilite du conjoint
+        # routee aussi (SpfplConjoint ne porte pas de genre -> masculin par defaut si
+        # un titre y etait pose ; M./Mme/Monsieur/Madame passent inchanges).
+        conjoint_civilite = civilite_civile(
+            required_text(
+                conjoint.civilite_affichage,
+                f"{field_name}.conjoint.civilite_affichage",
+            ),
+            None,
         )
         conjoint_display = (
             " avec "
@@ -209,6 +288,11 @@ def person_identity_sentence(person: SpfplPerson, field_name: str) -> str:
             f"{required_text(conjoint.prenom, f'{field_name}.conjoint.prenom')} "
             f"{required_text(conjoint.nom, f'{field_name}.conjoint.nom')}"
         )
+    elif mentions_partenaire_pacse(person.situation_maritale):
+        # Albane 6.3/7.3 (RATIFIE 2026-07-06) : le PARTENAIRE PACSE s'affiche aussi (« avec
+        # {Civilite Prenom Nom} », pas de « sous le régime de … »). « Pas de mention sans
+        # nom » : partenaire_pacse_clause -> "" si le partenaire n'est pas renseigne.
+        conjoint_display = partenaire_pacse_clause(conjoint)
     return (
         f"{person_display(person, field_name)}, "
         f"{required_text(person.profession, f'{field_name}.profession')}, "
@@ -216,7 +300,7 @@ def person_identity_sentence(person: SpfplPerson, field_name: str) -> str:
         f"a {required_text(person.ville_naissance, f'{field_name}.ville_naissance')} "
         f"({required_text(person.departement_naissance, f'{field_name}.departement_naissance')}) "
         f"de nationalite {required_text(person.nationalite, f'{field_name}.nationalite')}, "
-        f"demeurant {person_address_display(person, field_name)}, "
+        f"demeurant au {person_address_display(person, field_name)}, "
         f"{required_text(person.situation_maritale, f'{field_name}.situation_maritale')}"
         f"{conjoint_display}."
     )
@@ -239,8 +323,14 @@ def person_address_display(person: SpfplPerson, field_name: str) -> str:
 
 
 def person_short_identity(person: SpfplPerson, field_name: str) -> str:
+    # R3 durci (Rafael 2026-07-07, supersede A26-45/49) : jamais « Docteur »/« Dr »
+    # en sortie — civilité CIVILE accordée au genre porté par la personne.
+    civilite = civilite_civile(
+        required_text(person.civilite_affichage, f"{field_name}.civilite_affichage"),
+        person.genre,
+    )
     return (
-        f"{required_text(person.civilite_affichage, f'{field_name}.civilite_affichage')} "
+        f"{civilite} "
         f"{required_text(person.prenom, f'{field_name}.prenom')} "
         f"{required_text(person.nom, f'{field_name}.nom')}"
     )
@@ -253,11 +343,14 @@ def ordre_sentence(person: SpfplPerson, field_name: str) -> str:
         person.profession_reglementee_pluriel,
         f"{field_name}.profession_reglementee_pluriel",
     )
+    ordre_departement = departement_nom(
+        required_text(person.ordre.departement, f"{field_name}.ordre.departement")
+    )
     return (
-        "Inscrit au Tableau de l'ordre departemental des "
+        "Inscrit au Tableau de l'ordre départemental des "
         f"{profession_pluriel} "
-        f"du {required_text(person.ordre.departement, f'{field_name}.ordre.departement')} "
-        "sous le numero RPPS "
+        f"du {ordre_departement} "
+        "sous le numéro RPPS "
         f"{required_text(person.ordre.numero_rpps, f'{field_name}.ordre.numero_rpps')}."
     )
 
@@ -280,15 +373,19 @@ def professional_entity_presentation(entity: ProfessionalEntity, field_name: str
     if entity.siege is None:
         raise ValueError(f"{field_name}.siege est obligatoire pour {CORE_DOCUMENT_CODE}.")
     representant = required_representant(entity.representant, f"{field_name}.representant")
+    # Rafael 2026-07-09 (transverse devise) : unite derivee si montant nu (idempotent).
+    capital = montant_avec_euros(
+        required_text(entity.capital_social, f"{field_name}.capital_social")
+    )
     return (
         f"{required_text(entity.denomination, f'{field_name}.denomination')}, "
         f"{required_text(entity.forme_sociale, f'{field_name}.forme_sociale')} "
-        f"au capital de {required_text(entity.capital_social, f'{field_name}.capital_social')}, "
-        f"dont le siege est situe {address_display(entity.siege, f'{field_name}.siege')}, "
-        "immatriculee au Registre du Commerce et des Societes de "
+        f"au capital de {capital}, "
+        f"dont le siège est situé {address_display(entity.siege, f'{field_name}.siege')}, "
+        "immatriculée au Registre du Commerce et des Sociétés de "
         f"{required_text(entity.ville_rcs, f'{field_name}.ville_rcs')} "
-        f"sous le numero {required_text(entity.numero_rcs, f'{field_name}.numero_rcs')}, "
-        f"representee par {representant_display(representant, f'{field_name}.representant')}"
+        f"sous le numéro {required_text(entity.numero_rcs, f'{field_name}.numero_rcs')}, "
+        f"représentée par {representant_display(representant, f'{field_name}.representant')}"
     )
 
 
@@ -313,8 +410,15 @@ def required_representant(
 
 
 def representant_display(representant: SpfplRepresentant, field_name: str) -> str:
+    # R3 durci (Rafael 2026-07-07) : un titre (« Docteur »/« Dr ») posé en civilité de
+    # représentant est rendu civil (le modèle SpfplRepresentant ne porte pas de genre
+    # -> masculin par défaut, comme derive_gender_from_civilite côté front).
+    civilite = civilite_civile(
+        required_text(representant.civilite_affichage, f"{field_name}.civilite_affichage"),
+        None,
+    )
     return (
-        f"{required_text(representant.civilite_affichage, f'{field_name}.civilite_affichage')} "
+        f"{civilite} "
         f"{required_text(representant.prenom, f'{field_name}.prenom')} "
         f"{required_text(representant.nom, f'{field_name}.nom')}"
     )
@@ -323,8 +427,14 @@ def representant_display(representant: SpfplRepresentant, field_name: str) -> st
 def associe_display_name(associe: AssocieCible, field_name: str) -> str:
     if associe.type == "personne_morale":
         return required_text(associe.denomination, f"{field_name}.denomination")
+    # R3 durci (Rafael 2026-07-07) : « Docteur » (option historique du sélecteur des
+    # associés cible) est rendu civil ; Monsieur/Madame passent inchangés.
+    civilite = civilite_civile(
+        required_text(associe.civilite_affichage, f"{field_name}.civilite_affichage"),
+        getattr(associe, "genre", None),
+    )
     return (
-        f"{required_text(associe.civilite_affichage, f'{field_name}.civilite_affichage')} "
+        f"{civilite} "
         f"{required_text(associe.prenom, f'{field_name}.prenom')} "
         f"{required_text(associe.nom, f'{field_name}.nom')}"
     )
@@ -340,33 +450,41 @@ def associe_signature_name(associe: AssocieCible, field_name: str) -> str:
 
 
 def capital_after_lines(ctx: DocumentGenerationContext) -> list[str]:
-    societe_cible = required_societe_cible(ctx)
-    total = required_int(societe_cible.nb_parts_total, "societe_cible.nb_parts_total")
+    """Repartition du capital de la cible APRES l'operation, une ligne par associe.
+
+    KAN-2 (Rafael 2026-07-14) : « tous les documents doivent pouvoir etre generes, meme si je ne
+    remplis aucun champ » -> une repartition ABSENTE ou INCOHERENTE (total != parts totales) ne
+    fait plus echouer la generation : elle sort en zone « (À COMPLÉTER : … ) » / telle quelle, a
+    corriger a la main. Les anciennes gardes levaient APRES que le plan ait annonce « generable »
+    (Akainu B2/B3).
+
+    Akainu B4 : un nombre NON RENSEIGNE ne sort JAMAIS en valeur affirmee. 0 EST la valeur d'un
+    champ non rempli (`number_input(min_value=0)`) -> « 0 parts sociales » serait une affirmation
+    fausse dans un acte ; on rend un marqueur.
+    """
     if not ctx.associes_cible:
-        raise ValueError(f"associes_cible est obligatoire pour {DOCUMENT_CODE}.")
+        return ["(À COMPLÉTER : répartition du capital de la société cible après l'opération)"]
 
     lines: list[str] = []
-    total_after = 0
     for index, associe in enumerate(ctx.associes_cible):
         field_name = f"associes_cible[{index}]"
-        nb_parts = required_int(associe.nb_parts_apres, f"{field_name}.nb_parts_apres")
-        total_after += nb_parts
+        nb_parts = associe.nb_parts_apres or 0
+        if nb_parts <= 0:
+            lines.append(
+                f"{associe_display_name(associe, field_name)}, titulaire de "
+                "(À COMPLÉTER : nombre de parts sociales)"
+            )
+            continue
         part_label = "part sociale" if nb_parts == 1 else "parts sociales"
         details = (
             f"{associe_display_name(associe, field_name)}, titulaire de "
             f"{nb_parts} {part_label}"
         )
         if associe.numero_part_unique:
-            details += f", numerotee {associe.numero_part_unique}"
+            details += f", numérotée {associe.numero_part_unique}"
         elif associe.plage_parts:
-            details += f", numerotees de {associe.plage_parts}"
+            details += f", numérotées de {associe.plage_parts}"
         lines.append(details)
-
-    if total_after != total:
-        raise ValueError(
-            "La repartition apres operation doit correspondre a "
-            f"societe_cible.nb_parts_total pour {DOCUMENT_CODE}."
-        )
     return lines
 
 
@@ -383,8 +501,9 @@ def capital_before_lines(ctx: DocumentGenerationContext) -> list[str]:
         nb_parts = required_int(associe.nb_parts_avant, f"{field_name}.nb_parts_avant")
         total_before += nb_parts
         part_label = "part" if nb_parts == 1 else "parts"
+        # Orthographe (Rafael 2026-07-07) : « détenant » accentué.
         lines.append(
-            f"{associe_display_name(associe, field_name)} detenant {nb_parts} {part_label}"
+            f"{associe_display_name(associe, field_name)} détenant {nb_parts} {part_label}"
         )
 
     if total_before != total:
@@ -396,29 +515,34 @@ def capital_before_lines(ctx: DocumentGenerationContext) -> list[str]:
 
 
 def presence_lines(ctx: DocumentGenerationContext) -> list[str]:
-    societe_cible = required_societe_cible(ctx)
-    total = required_int(societe_cible.nb_parts_total, "societe_cible.nb_parts_total")
+    """Associes presents ou representes a l'assemblee, une ligne chacun.
+
+    KAN-2 (Rafael 2026-07-14) : aucun blocage — une liste vide ou un total qui ne couvre pas les
+    parts totales ne fait plus echouer la generation (les gardes levaient APRES que le plan ait
+    annonce « generable », Akainu B2/B3) : la zone sort « (À COMPLÉTER : … ) » / telle quelle et se
+    corrige a la main. Akainu B4 : un nombre non renseigne (0 = valeur du champ non rempli) sort en
+    marqueur, jamais en « 0 parts » affirme.
+    """
     lines: list[str] = []
-    total_present = 0
     for index, associe in enumerate(ctx.associes_cible):
         if not associe.est_present_ou_represente:
             continue
         field_name = f"associes_cible[{index}]"
-        nb_parts = required_int(associe.nb_parts_avant, f"{field_name}.nb_parts_avant")
-        total_present += nb_parts
+        nb_parts = associe.nb_parts_avant or 0
+        if nb_parts <= 0:
+            lines.append(
+                f"{associe_display_name(associe, field_name)} détenant "
+                "(À COMPLÉTER : nombre de parts)"
+            )
+            continue
         part_label = "part" if nb_parts == 1 else "parts"
+        # Orthographe (Rafael 2026-07-07) : « détenant » accentué.
         lines.append(
-            f"{associe_display_name(associe, field_name)} detenant {nb_parts} {part_label}"
+            f"{associe_display_name(associe, field_name)} détenant {nb_parts} {part_label}"
         )
 
     if not lines:
-        raise ValueError(
-            "associes_cible presents ou representes est obligatoire pour "
-            f"{DOCUMENT_CODE}."
-        )
-    if total_present != total:
-        raise ValueError(
-            "Les associes presents ou representes doivent disposer de la totalite des parts "
-            f"pour {DOCUMENT_CODE}."
-        )
+        return ["(À COMPLÉTER : associés présents ou représentés à l'assemblée)"]
     return lines
+
+

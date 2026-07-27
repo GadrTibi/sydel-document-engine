@@ -4,7 +4,11 @@ from pathlib import Path
 
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
-from sydel_doc_engine.domain.models import DocumentGenerationContext
+from sydel_doc_engine.domain.models import (
+    DocumentGenerationContext,
+    ExerciceSocial,
+    RemunerationPresident,
+)
 from sydel_doc_engine.generators.lot_05.sas_satellites_common import (
     DOCUMENT_CODE,
     address_display,
@@ -22,8 +26,10 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_company_identity_block,
     add_framed_title,
     add_paragraph,
+    keep_final_signature_block_together,
     new_document,
 )
+from sydel_doc_engine.utils.grammar import capitalize_first, montant_avec_euros
 
 OUTPUT_FILENAME = "pv_remuneration_president.docx"
 REMUNERATION_TYPE_ABSENCE = "absence_remuneration"
@@ -41,7 +47,7 @@ class PvRemunerationPresidentGenerator:
             [
                 data.denomination,
                 data.forme_sociale,
-                f"Au capital de {data.capital_social} euros",
+                f"Au capital de {montant_avec_euros(data.capital_social)}",
                 f"Siège social : {data.adresse_siege}",
                 f"En cours d'immatriculation au RCS de {data.ville_rcs}",
             ],
@@ -55,13 +61,15 @@ class PvRemunerationPresidentGenerator:
             ],
         )
         add_paragraph(document, data.actionnaire_nom)
-        add_paragraph(document, f"Demeurant {data.adresse_actionnaire}.")
+        add_paragraph(document, f"Demeurant au {data.adresse_actionnaire}.")
+        # Rafael 2026-07-09 (R12) : majuscule en debut de phrase — ces deux lignes
+        # suivent un point (« … Paris. » / « … en cours de formation. »).
         add_paragraph(
             document,
-            f"{data.qualite_associe} et {data.fonction_president} de la Société "
-            f"{data.denomination} en cours de formation.",
+            f"{capitalize_first(data.qualite_associe)} et {data.fonction_president} "
+            f"de la Société {data.denomination} en cours de formation.",
         )
-        add_paragraph(document, "a pris la décision suivante :")
+        add_paragraph(document, "A pris la décision suivante :")
         add_paragraph(document, f"Fixation de la rémunération du {data.fonction_president}")
         add_paragraph(document, "DECISION UNIQUE", bold=True)
         add_paragraph(
@@ -88,6 +96,8 @@ class PvRemunerationPresidentGenerator:
 
         output_dir.mkdir(parents=True, exist_ok=True)
         output_path = output_dir / OUTPUT_FILENAME
+        # KAN-36 : bloc signature final solidaire (une seule page).
+        keep_final_signature_block_together(document)
         document.save(output_path)
         return output_path
 
@@ -133,31 +143,28 @@ class _ResolvedPvRemunerationPresident:
         societe = required_societe_spfpl(ctx)
         actionnaire = required_actionnaire_unique(ctx)
         president = required_president(ctx)
-        if ctx.exercice_social is None:
-            raise ValueError(f"exercice_social est obligatoire pour {DOCUMENT_CODE}.")
-        if ctx.remuneration_president is None:
-            raise ValueError(
-                f"remuneration_president est obligatoire pour {DOCUMENT_CODE}."
-            )
+        # KAN-2 @All : objets exercice / remuneration absents -> instances VIDES (leurs champs
+        # sortent en marqueurs), jamais lever. Le document se genere meme sans aucun champ.
+        exercice_social = ctx.exercice_social or ExerciceSocial()
+        remuneration = ctx.remuneration_president or RemunerationPresident()
 
-        remuneration_type = required_text(
-            ctx.remuneration_president.type,
-            "remuneration_president.type",
-        )
-        if remuneration_type != REMUNERATION_TYPE_ABSENCE:
+        # Invariant de ROUTAGE (ce PV ne couvre que l'absence de remuneration) : on ne l'exige que
+        # si un type REEL est saisi. Un champ vide ne bloque pas la generation (KAN-2).
+        remuneration_type_raw = (remuneration.type or "").strip()
+        if remuneration_type_raw and remuneration_type_raw != REMUNERATION_TYPE_ABSENCE:
             raise ValueError(
                 "remuneration_president.type doit valoir absence_remuneration pour "
                 f"{DOCUMENT_CODE}."
             )
         date_cloture = required_text(
-            ctx.exercice_social.date_cloture_premier_exercice,
+            exercice_social.date_cloture_premier_exercice,
             "exercice_social.date_cloture_premier_exercice",
         )
-        date_fin_non_remuneree = required_text(
-            ctx.remuneration_president.date_fin_non_remuneree,
-            "remuneration_president.date_fin_non_remuneree",
-        )
-        if date_fin_non_remuneree != date_cloture:
+        # Coherence sur les valeurs REELLES (pas les marqueurs) : un champ vide ne cree pas de
+        # divergence (deux marqueurs de field_name distincts different toujours et levaient a tort).
+        date_cloture_raw = (exercice_social.date_cloture_premier_exercice or "").strip()
+        date_fin_raw = (remuneration.date_fin_non_remuneree or "").strip()
+        if date_cloture_raw and date_fin_raw and date_cloture_raw != date_fin_raw:
             raise ValueError(
                 "remuneration_president.date_fin_non_remuneree doit correspondre a "
                 "exercice_social.date_cloture_premier_exercice pour "
@@ -179,6 +186,8 @@ class _ResolvedPvRemunerationPresident:
             ),
             fonction_president=required_text(president.fonction, "president.fonction"),
             date_cloture_premier_exercice=date_cloture,
-            lieu_signature=ctx.signature.lieu,
+            # KAN-2 @All (M3) : lieu de signature absent -> marqueur, jamais « Fait à » nu
+            # (jumeau de la SASU holding, deja marque).
+            lieu_signature=required_text(ctx.signature.lieu, "signature.lieu"),
             signature_nom=person_signature(actionnaire, "actionnaire_unique"),
         )

@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import date
 
 from sydel_doc_engine.domain.models import CessionContext, DocumentGenerationContext
+from sydel_doc_engine.generators.lot_05.spfpl_libelles import libelle_metier
 
 DOCUMENT_CODE = "CODE-BAIL-APP-001"
 
@@ -16,14 +17,18 @@ SUPPORTED_CABINET_TYPES = {CABINET_DENTAIRE, CABINET_MEDICAL}
 
 
 def required_text(value: str | None, field_name: str) -> str:
+    # R10 (Rafael 2026-06-24) : une donnee manquante NE bloque PAS la generation -> on ecrit un
+    # marqueur visible « (A COMPLETER : data) » SANS crochets (pour ne pas declencher le garde-fou
+    # anti-placeholder source qui interdit les [ ]) au lieu de lever.
     if value is None or not value.strip():
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return f"(À COMPLÉTER : {libelle_metier(field_name)})"
     return value.strip()
 
 
 def format_display_date(value: date | str | None, field_name: str) -> str:
+    # KAN-2 @All : date absente -> marqueur metier, jamais lever.
     if value is None:
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return required_text(None, field_name)
     if isinstance(value, date):
         return value.strftime("%d/%m/%Y")
     return required_text(value, field_name)

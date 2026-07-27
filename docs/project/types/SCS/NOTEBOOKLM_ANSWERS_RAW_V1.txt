@@ -1,0 +1,132 @@
+> NOTE : passe NotebookLM partielle — prompts 1 à 10 obtenus. Prompts 11, 12, 13 NON posés
+> (limite journalière NotebookLM atteinte). À redemander à la réinitialisation.
+
+D'après les sources, la SCS (Société en Commandite Simple) fait toujours partie du périmètre d'intervention de SYDEL, bien qu'elle soit classée dans une catégorie secondaire par rapport aux structures d'exercice (SEL).
+
+### 1. Maintien dans le périmètre SYDEL
+*   **Présence dans l'interface :** Le wireframe de l'application (page « CREATION de société ») comporte toujours un bouton « SCS » dans la colonne « Autres », au même titre que la SCI ou la SAS [1].
+*   **Fréquence de création :** Les sources indiquent explicitement : « Nous créons souvent ces sociétés : [...] SCS » [2]. Elle est mentionnée comme une structure classique du « plan personnel » au côté de la SCI [2].
+
+### 2. Nature du montage : Forme à part entière ou sous-cas ?
+La SCS est une forme sociale à part entière, mais elle est presque systématiquement utilisée comme un outil de restructuration spécifique reliant le patrimoine professionnel et personnel [2].
+*   **Structure du montage :** « société civile avec 2 catégories d'associés » [2] :
+    *   **Un investisseur :** « souvent de la SPFPL [la holding professionnelle] puisqu'elle a l'argent » [2] → rôle d'associé commanditaire (apporteur de capitaux).
+    *   **Un gestionnaire :** le praticien (le client) → rôle d'associé commandité [2].
+*   **Finalité métier :** permettre au praticien d'acheter un bien immobilier dans des conditions différentes de la SCI classique, en utilisant les liquidités de sa holding (SPFPL) tout en conservant la gestion [2].
+
+### 3. Pourquoi semble-t-elle « disparaître » ?
+*   **Priorité aux SEL :** dossiers dentistes/médecins (SELARL/SELAS) = priorité ; SCS/SAS/SARL « beaucoup plus rares » / « marginales » [3, 4].
+*   **Complexité documentaire :** ~15 documents types pour la SCS contre plus de 60 pour les SEL [5].
+[Sources : 1 Besoins Sydel ; 2 Notre job - Sydel ; 3,4,5 Transcription Texte collé]
+
+---
+
+[Prompt 2 — Liste des documents SCS]
+La création d'une SCS repose sur un "tronc commun" complété par des statuts spécifiques (~15 documents au total) [1].
+
+### 1. Documents Systématiques
+*   **Fiche de création de société** [4, 5].
+*   **Statuts de la SCS** : définissant les deux catégories d'associés (commandité/gestionnaire et commanditaire/investisseur) [6, 7].
+*   **Procuration** : « commun à toutes les professions » [2, 7, 8].
+*   **Déclaration de non-condamnation (DNC)** : pour le gérant [2, 3].
+*   **Autorisation de domiciliation (Document dom)** : parfois fusionnée [3, 9].
+*   **Attestation sur le capital** : prouve le dépôt des fonds / l'apport [3, 10].
+
+### 2. Documents Conditionnels
+*   **PV de nomination du gérant** : si le gérant n'est pas nommé directement dans les statuts [11].
+*   **Lettre d'option IS** : si le client choisit l'IS [12-14].
+*   **Lettre de renonciation / Information au conjoint** : si associé marié sous communauté [14].
+*   **Contrat d'apport** : si la SCS est créée via apport de titres (ex. parts de SEL) plutôt qu'un apport numéraire [15, 16].
+
+### Précisions
+Montage type = investisseur (souvent la SPFPL, capitaux) + gestionnaire (praticien PP) [6]. La SCS ne nécessite PAS de demande d'inscription à l'ordre (« plan personnel » / patrimoniale, « l'ordre s'en fiche ») [17, 18].
+
+---
+
+[Prompt 3 — Rapport de mission SCS]
+Le document « rapport de mission » (appelé « compte rendu ») NE fait PAS partie des documents générés automatiquement. C'est un document de conseil rédigé manuellement au cas par cas [1].
+*   **Nature :** synthétise la stratégie (ex. créer une SCS pour séparer investisseur/gestionnaire) ; intervient après l'appel de découverte [2, 3].
+*   **Méthode :** deux types [1] — (1) modèle PowerPoint à adapter (~1h) ; (2) mail spécifique entièrement rédigé (1 à 3h).
+*   **Exclusion automatisation :** dans les wireframes « Documents à éditer », seuls les actes formels (Statuts, PV, Procuration, DNC, Attestation capital) sont automatisables [4]. Le compte rendu reste un livrable de conseil artisanal [3, 5, 6].
+
+---
+
+[Prompt 4 — Liste des souscripteurs]
+Une « liste des souscripteurs » NE doit PAS être produite pour une SCS. Ce document est spécifique aux sociétés par actions (SELAS, SPFPLAS) [1, 2].
+*   **Société Civile (SCS, SCM, SCI) :** capital divisé en parts sociales ; associés identifiés directement dans les statuts ; répartition actée par l'acte fondateur [3-7].
+*   **Société par Actions :** « actions » ; la liste des souscripteurs est liée à l'émission d'actions [2, 8].
+*   Pour une SCS, la preuve de souscription et l'identité des associés sont portées par les Statuts + l'Attestation de dépôt du capital [2, 3, 10].
+
+---
+
+[Prompt 5 — Montages d'associés à couvrir]
+SYDEL doit générer les trois montages (« pluricité des associés » / « multiplicité des sociétés ») [1, 2].
+*   **(b) Commandité PP + commanditaire Société (cœur de métier) :** le plus fréquent ; argent de la SPFPL (commanditaire/investisseuse) → projet immobilier perso géré par le client (PP, commandité/gestionnaire) [3, 4].
+*   **(a) Commandité PP + commanditaire PP :** structures familiales (conjoint, enfants) sans holding [3, 5].
+*   **(c) Mixte (plusieurs commanditaires PP et PM) :** SPFPL + praticien + famille/Micro-holding [6, 7].
+*   **Minimum légal : 2 associés** (≥ 1 commandité + ≥ 1 commanditaire) [3]. **Borne haute réaliste : 6** [Historique].
+*   Identification : PP (nom, prénom, naissance, adresse, nationalité, régime matrimonial) ; PM (dénomination, forme souvent SPFPLAS, capital, siège, SIREN, représentant) [9-12].
+*   Distinguer droits de vote (souvent majoritaires pour le commandité gestionnaire) des droits financiers (souvent majoritaires pour la SPFPL investisseuse), numérotation des parts par lots [1, 13].
+
+---
+
+[Prompt 6 — Capital fixe ou variable]
+Les statuts d'une SCS sont conçus pour être à CAPITAL VARIABLE, comme les autres sociétés civiles (SCI, SCM) [1-3].
+*   SCS = « société civile » [2] ; base documents identique aux formes civiles [3] ; structuré avec montant initial + capital autorisé/maximal [Historique].
+*   Capital variable répond au besoin que la « fiche société se mette à jour automatiquement avec les opérations » [1].
+*   Un seul bouton « SCS » (pas de variante type SCI/SCI IRIS) → modèle systématiquement variable [1, 2, 4, 5].
+
+---
+
+[Prompt 7 — Passages de wording sensibles]
+### 1. Objet Social
+« acheter un bien immobilier aussi dans des conditions différentes » de la SCI [1] ; « structuration personnelle » + « relier les deux mondes » pour que « l'argent de la société professionnelle bascule sur un projet personnel » [2].
+### 2. Responsabilité et Pouvoirs de Gestion
+Identifier le « gestionnaire » (commandité) et l'« investisseur » (commanditaire = SPFPL) [1] ; légalement seul le commandité gère, le commanditaire n'est qu'apporteur de capitaux.
+### 3. Clause de Capital et Répartition (Décorrélation)
+« 1 % des parts ne donne pas forcément droit à 1 % du résultat de la société » [3] ; distinguer droits de vote / droits financiers.
+### 4. Clause de Protection de l'Associé Exerçant
+« En aucun cas la répartition du capital ne pourra être modifiée dans des conditions qui retireraient la majorité des droits de vote aux associés exerçant dans la société. » [4].
+### 5. Numérotation des Parts
+Capital divisé en parts « numérotées de [X] à [Y] inclus » [5] — indispensable pour des droits financiers différenciés.
+
+---
+
+[Prompt 8 — Rôles commandité / commanditaire]
+### 1. Identification et Qualité
+*   **Associé Commandité (Gestionnaire) :** « Monsieur [NOM Prénom], associé commandité ». « gestionnaire » [1], seul habilité à diriger (gérance).
+*   **Associé Commanditaire (Investisseur) :** « La société [Dénomination], associée commanditaire ». « souvent la SPFPL puisque c'est elle qui a l'argent » [1] ; apporte les capitaux, ne s'immisce pas dans la gestion.
+### 2. Responsabilité
+*   **Commandité :** responsabilité indéfinie et solidaire sur ses biens propres [1] (contrepartie du contrôle de la gestion).
+*   **Commanditaire :** responsabilité limitée au montant de son apport [1].
+### 3. Genre / Pluralité
+« associée commanditée » / « associée commanditaire » [4, 5] ; pluriel « Les associés commanditaires » [5, 6].
+
+---
+
+[Prompt 9 — Vérification artefact rapport de mission]
+Le rapport de mission SCS ne doit PAS désigner la société créée comme « Société Civile Immobilière » (formes distinctes), mais peut citer la SCI : (a) en comparaison de stratégie (la SCS achète « dans des conditions différentes » de la SCI [1]) ; (b) en montage combiné (SCI rattachée à une SPFPL/Micro-holding [2]).
+*   **Wording correct SCS :** « Société en Commandite Simple » [1] ; distinguer commanditaire (investisseur, SPFPL) / commandité (gestionnaire, PP) [1] ; but = « relier les deux mondes » [1, 3].
+*   Document non automatisé (PowerPoint adapté ~1h ou mail 1-3h) [4] ; « source de vérité » validée par le client avant rédaction des actes [5].
+
+---
+
+[Prompt 10 — Accords selon le nombre et le genre]
+### 1. Variantes de Genre
+*   **Associé / Associée** (« Associé exerçant » / « Associée exerçante ») [4, 5].
+*   **Gérant / Gérante** (terme exclusif sociétés civiles, pas « président ») [6, 7].
+*   **Commandité / Commanditée** (le gestionnaire) [8].
+*   **Commanditaire / Commanditaire** (invariant ; articles et participes s'accordent : « l'associée commanditaire »).
+*   Monsieur / Madame [9] ; Né le / Née le [10] ; Marié / Mariée, divorcé / divorcée [3, 11, 9] ; Inscrit / Inscrite [3, 10] ; Soussigné / Soussignée [3].
+### 2. Variantes de Nombre
+*   Le Soussigné / Les Soussignés [3] ; L'Associé / Les Associés [13, 1] ; Le Gérant / Les Gérants (co-gérants) [14, 7] ; Le Commanditaire / Les Commanditaires [8].
+*   A décidé / Ont décidé (« qu'ils ont décidé d'instituer ») [3, 1] ; Apporte / Apportent [15] ; « L'associé unique » → « Les associés » (titre des délibérations) [1].
+*   Part sociale / Parts sociales [10, 16] ; Numérotée / Numérotées [5].
+### 3. Personne Morale
+Associé commanditaire souvent une société (SPFPL) [8] → « La société [Dénomination] » + genre du représentant (« représentée par Madame X ») [17].
+
+---
+
+[Prompts 11, 12, 13 — NON POSÉS : limite NotebookLM journalière atteinte. À redemander :
+ 11 = wording PP vs société commanditaire ; 12 = plusieurs commanditaires (énumération/apports/plage de parts) ;
+ 13 = répartition apports et parts commandités vs commanditaires (règles spécifiques).]

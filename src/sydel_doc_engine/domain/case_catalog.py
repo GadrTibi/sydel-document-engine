@@ -14,7 +14,9 @@ class CaseType(StrEnum):
     SCS = "SCS"
     SCI = "SCI"
     SCM = "SCM"
+    MICRO_HOLDING = "MICRO_HOLDING"
     SAS = "SAS"
+    SASU_HOLDING = "SASU_HOLDING"
 
 
 class DocumentAvailability(StrEnum):
@@ -103,7 +105,10 @@ CATALOG_DOCUMENTS: tuple[CatalogDocument, ...] = (
     ),
     CatalogDocument(
         "pv_nomination_gerant",
-        "PV nomination gerant",
+        # A26-label (Albane 2026-06-26) : libelle affiche « PV nomination dirigeant » (terme
+        # generique — le gerant d'une societe civile EST un dirigeant, le president d'une SEL
+        # aussi). La CLE et le nom de fichier restent inchanges (compat).
+        "PV nomination dirigeant",
         "PV nomination gerant.docx",
         "DOC-004",
         DocumentAvailability.GENERATABLE,
@@ -254,6 +259,23 @@ CATALOG_DOCUMENTS: tuple[CatalogDocument, ...] = (
         DocumentAvailability.GENERATABLE,
     ),
     CatalogDocument(
+        "statuts_selas_dentiste",
+        "Statuts SELAS dentiste",
+        "Statuts_SELAS_dentiste_pluri_modele.docx",
+        "DOC-046",
+        DocumentAvailability.GENERATABLE,
+        "Statuts SELAS unipersonnelle chirurgien-dentiste (modele dentiste pluri uni-fie, "
+        "retour Rafael #5).",
+    ),
+    CatalogDocument(
+        "statuts_selas_multi",
+        "Statuts SELAS multi",
+        "Statuts_SELAS_multi_modele.docx",
+        "DOC-044",
+        DocumentAvailability.GENERATABLE,
+        "Statuts SELAS 2 a 5 associes (dont personne morale) lus depuis le modele Reynaud.",
+    ),
+    CatalogDocument(
         "derogation_cumul_selarl_salariee",
         "Demande de derogation cumul SELARL salariee",
         "Demande_derogation_cumul_SELARL_salariee.doc",
@@ -326,6 +348,14 @@ CATALOG_DOCUMENTS: tuple[CatalogDocument, ...] = (
         DocumentAvailability.GENERATABLE,
     ),
     CatalogDocument(
+        "attestation_capital_spfpl_cession",
+        "Attestation sur le capital / liste des souscripteurs SPFPL (cession)",
+        "Attestation sur le capital - cession - liste des souscripteurs.docx",
+        "DOC-051",
+        DocumentAvailability.GENERATABLE,
+        "Retour Albane 11 : variante cession de DOC-042 (capital en numeraire).",
+    ),
+    CatalogDocument(
         "attestation_commissaire_apports",
         "Attestation nomination commissaire aux apports",
         "attestation nomination commissaire aux apports - transforme.docx",
@@ -352,6 +382,13 @@ CATALOG_DOCUMENTS: tuple[CatalogDocument, ...] = (
         "Statuts SCI IRIS",
         "Modele statuts SCI IRIS.docx",
         "DOC-021",
+        DocumentAvailability.GENERATABLE,
+    ),
+    CatalogDocument(
+        "statuts_micro_holding",
+        "Statuts micro holding",
+        "Modele statuts micro holding.docx",
+        "DOC-047",
         DocumentAvailability.GENERATABLE,
     ),
     CatalogDocument(
@@ -413,11 +450,46 @@ CATALOG_DOCUMENTS: tuple[CatalogDocument, ...] = (
         "Meme source nominale que SPFPL apport, mais DOC canonique distinct.",
     ),
     CatalogDocument(
+        "attestation_capital_souscripteurs_selas",
+        "Attestation sur le capital / liste des souscripteurs SELAS",
+        "MODELE_Attestation_capital_liste_souscripteurs.docx",
+        "DOC-045",
+        DocumentAvailability.GENERATABLE,
+        "SELAS multi-souscripteurs, apports en numeraire (modele Albane 2026-06-17).",
+    ),
+    CatalogDocument(
         "pv_remuneration_president",
         "PV remuneration president",
         "PV remuneration president - transforme.docx",
         "DOC-023",
         DocumentAvailability.GENERATABLE,
+    ),
+    CatalogDocument(
+        "statuts_sasu_holding",
+        "Statuts SASU Holding",
+        "statuts SASU Holding.docx",
+        "DOC-048",
+        DocumentAvailability.GENERATABLE,
+        "SASU Holding generaliste (SAS unipersonnelle, holding patrimoniale), "
+        "modele officiel Albane 2026-06-29.",
+    ),
+    CatalogDocument(
+        "pv_remuneration_president_sasu_holding",
+        "PV remuneration president SASU Holding",
+        "PV_remuneration_president.docx",
+        "DOC-049",
+        DocumentAvailability.GENERATABLE,
+        "Modele Albane SAS generaliste (docs/review/albane_sas_2026-06-29/) ; generateur "
+        "generaliste dedie (byte-fidele), DISTINCT du DOC-023 SPFPL medecins (conserve).",
+    ),
+    CatalogDocument(
+        "liste_souscripteurs_sasu_holding",
+        "Liste des souscripteurs SASU Holding",
+        "Liste_des_souscripteurs.docx",
+        "DOC-050",
+        DocumentAvailability.GENERATABLE,
+        "Modele Albane SAS generaliste (docs/review/albane_sas_2026-06-29/) ; generateur "
+        "generaliste dedie (byte-fidele), DISTINCT du DOC-024 SPFPL medecins (conserve).",
     ),
 )
 
@@ -545,6 +617,17 @@ CATALOG_OCCURRENCES: tuple[DocumentOccurrence, ...] = (
     ),
     DocumentOccurrence(
         CaseType.SELAS,
+        "statuts_selas_multi",
+        "Si plusieurs associes",
+        (condition("multi_associes"),),
+    ),
+    DocumentOccurrence(
+        CaseType.SELAS,
+        "attestation_capital_souscripteurs_selas",
+        "Liste des souscripteurs (SPFPL / SELAS / SCS)",
+    ),
+    DocumentOccurrence(
+        CaseType.SELAS,
         "lettre_renonciation_associe",
         "Si regime communautaire",
         (condition("regime_communautaire"),),
@@ -615,6 +698,11 @@ CATALOG_OCCURRENCES: tuple[DocumentOccurrence, ...] = (
         CaseType.SPFPL_CESSION, "autorisation_domiciliation", "Rappel source SPFPL cession"
     ),
     DocumentOccurrence(CaseType.SPFPL_CESSION, "note_information_spfpl", "SPFPL cession"),
+    DocumentOccurrence(
+        CaseType.SPFPL_CESSION,
+        "attestation_capital_spfpl_cession",
+        "SPFPL cession (retour Albane 11 : attestation capital en numeraire)",
+    ),
     DocumentOccurrence(
         CaseType.SPFPL_CESSION,
         "lettre_renonciation_associe",
@@ -698,6 +786,23 @@ CATALOG_OCCURRENCES: tuple[DocumentOccurrence, ...] = (
     DocumentOccurrence(CaseType.SCI, "procuration", "SCI"),
     DocumentOccurrence(CaseType.SCI, "autorisation_domiciliation", "SCI"),
     DocumentOccurrence(CaseType.SCI, "pv_nomination_gerant", "SCI"),
+    # MICRO HOLDING (societe civile de portefeuille a capital variable, modele Albane 2026-06-29).
+    # Bundle de creation = statuts + lettre option IS + tronc commun civil
+    # DNC/domiciliation/procuration + PV nomination gerant (les 6 pieces du mail Albane).
+    DocumentOccurrence(CaseType.MICRO_HOLDING, "statuts_micro_holding", "MICRO_HOLDING"),
+    # Lettre d'option IS (DOC-022), conditionnee a l'option IS (meme modele que la SCI :
+    # « la societe civile … opte pour le regime de l'IS »).
+    DocumentOccurrence(
+        CaseType.MICRO_HOLDING, "lettre_option_is", "Si IS", (condition("option_is"),)
+    ),
+    DocumentOccurrence(
+        CaseType.MICRO_HOLDING, "declaration_non_condamnation", "MICRO_HOLDING"
+    ),
+    DocumentOccurrence(CaseType.MICRO_HOLDING, "procuration", "MICRO_HOLDING"),
+    DocumentOccurrence(
+        CaseType.MICRO_HOLDING, "autorisation_domiciliation", "MICRO_HOLDING"
+    ),
+    DocumentOccurrence(CaseType.MICRO_HOLDING, "pv_nomination_gerant", "MICRO_HOLDING"),
     # SCM
     DocumentOccurrence(CaseType.SCM, "statuts_scm", "SCM"),
     DocumentOccurrence(CaseType.SCM, "declaration_non_condamnation", "SCM"),
@@ -719,6 +824,26 @@ CATALOG_OCCURRENCES: tuple[DocumentOccurrence, ...] = (
     DocumentOccurrence(CaseType.SAS, "attestation_capital_sas", "SAS"),
     DocumentOccurrence(CaseType.SAS, "pv_remuneration_president", "SAS"),
     DocumentOccurrence(CaseType.SAS, "attestation_capital_sas", "Liste des souscripteurs"),
+    # SASU Holding (modele officiel Albane 2026-06-29) : SAS unipersonnelle, holding
+    # patrimoniale GENERALISTE, DISTINCTE de la « SAS / SPFPL medecins » (conservee).
+    # Bundle de creation = 6 pieces : statuts (DOC-048) + tronc commun (DNC / domiciliation /
+    # procuration) + PV remuneration president (DOC-049) + liste des souscripteurs (DOC-050).
+    # Les 2 satellites ont leurs PROPRES generateurs GENERALISTES (byte-fideles aux modeles
+    # Albane), DISTINCTS des generateurs DOC-023 / DOC-024 SPFPL medecins (conserves).
+    DocumentOccurrence(CaseType.SASU_HOLDING, "statuts_sasu_holding", "SASU_HOLDING"),
+    DocumentOccurrence(CaseType.SASU_HOLDING, "declaration_non_condamnation", "SASU_HOLDING"),
+    DocumentOccurrence(CaseType.SASU_HOLDING, "autorisation_domiciliation", "SASU_HOLDING"),
+    DocumentOccurrence(CaseType.SASU_HOLDING, "procuration", "SASU_HOLDING"),
+    DocumentOccurrence(
+        CaseType.SASU_HOLDING,
+        "pv_remuneration_president_sasu_holding",
+        "SASU_HOLDING (satellite generaliste)",
+    ),
+    DocumentOccurrence(
+        CaseType.SASU_HOLDING,
+        "liste_souscripteurs_sasu_holding",
+        "SASU_HOLDING (satellite generaliste)",
+    ),
 )
 
 

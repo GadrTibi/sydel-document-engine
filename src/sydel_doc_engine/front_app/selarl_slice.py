@@ -9,6 +9,7 @@ from sydel_doc_engine.app.ui_runtime import (
     GeneratedDossier,
     generate_docx_files_for_document_codes,
     generate_zip_file,
+    rename_dnc_with_signataire,
 )
 from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import (
@@ -46,7 +47,13 @@ from sydel_doc_engine.domain.models import (
     Signature,
     SpfplConjoint,
     SpfplOrdre,
+    StatutsCivilsApport,
+    StatutsCivilsAssocie,
+    StatutsCivilsParts,
     StatutsSel,
+)
+from sydel_doc_engine.front_app.address_oneline import (
+    parse_address_full as _parse_address_full,
 )
 from sydel_doc_engine.front_app.field_derivations import (
     DEFAULT_MANDATAIRE_CABINET,
@@ -58,10 +65,16 @@ from sydel_doc_engine.front_app.field_derivations import (
     DEFAULT_SEUIL_ACHAT_MATERIEL,
     DEFAULT_SEUIL_EMPRUNT,
     DEFAULT_TITRE_AFFICHAGE,
+    accentuate_french_months,
     calculate_nominal_value,
     date_to_french_words,
     format_grouped_numeric_value,
+    group_montant,
+    groupe_montants_associe,
+    is_capital_divisible,
     number_words_from_value,
+    parse_associe_birthdate,
+    split_numero_voie,
 )
 from sydel_doc_engine.front_data import AddressUsage, BusinessRole, build_document_status_for_code
 from sydel_doc_engine.orchestrator.service import (
@@ -148,6 +161,11 @@ class SelarlSliceInput:
     numero_ordre: str = ""
     numero_rpps: str = ""
     departement_ordre: str = ""
+    # M2 (Akainu, 2026-06-30, parite avec les slices SELAS) : connecteur grammatical
+    # (« de » / « du » / « des ») place avant le departement dans le destinataire de la
+    # demande d'inscription a l'Ordre (R5). Sans ce champ, le SELARL retombait sur « de »
+    # et ne pouvait pas produire « du Calvados » / « des Hauts de Seine ». Defaut « de ».
+    connecteur_departement: str = "de"
     denomination: str = ""
     capital_social: str = ""
     capital_social_lettres: str = ""
@@ -165,6 +183,9 @@ class SelarlSliceInput:
     ordre_adresse_ligne_1: str = ""
     ordre_cp: str = ""
     ordre_ville: str = ""
+    # Retour Albane 2026-06-10 : « Madame la Présidente » si le president de
+    # l'ordre est une femme (verifie a chaque fois) ; defaut « Monsieur le President ».
+    ordre_president_feminin: bool = False
     mandataire_civilite: str = DEFAULT_MANDATAIRE_CIVILITE
     mandataire_prenom: str = DEFAULT_MANDATAIRE_PRENOM
     mandataire_nom: str = DEFAULT_MANDATAIRE_NOM
@@ -174,6 +195,11 @@ class SelarlSliceInput:
     signature_date: date | None = None
     signature_nombre_exemplaires: str = "quatre"
     prestataire_signature_electronique: str = DEFAULT_PRESTATAIRE_SIGNATURE_ELECTRONIQUE
+    # SU4/SCS2 (Albane) : la date du PV de decision = la date de signature dans TOUS les cas
+    # (DecisionContext la derive de signature_date). Ce champ n'est JAMAIS lu pour la sortie ;
+    # il est conserve car les adaptateurs SELAS uni (_to_selarl_input) le passent encore
+    # (= signature_date) et un test de non-regression injecte une valeur divergente pour
+    # prouver qu'elle est ignoree. Le formulaire SELARL ne le collecte plus (champ mort retire).
     decision_date: date | None = None
     reunion_date_lettres: str = ""
     depot_banque_nom: str = ""
@@ -182,6 +208,11 @@ class SelarlSliceInput:
     exercice_fin: str = ""
     exercice_cloture_premier: str = ""
     lieu_exercice_adresse: str = ""
+    # 2e lieu d'exercice (ADDITIF, ticket 2.2) : le siege reste TOUJOURS le lieu
+    # #1 ; ces deux champs n'alimentent un lieux[1] que s'ils sont fournis
+    # ENSEMBLE (contrat aligne sur la SELAS, cf. validate_selas_second_lieu).
+    second_lieu_exercice_nom: str = ""
+    second_lieu_exercice_adresse: str = ""
     seuil_achat_materiel: str = DEFAULT_SEUIL_ACHAT_MATERIEL
     seuil_emprunt: str = DEFAULT_SEUIL_EMPRUNT
     conjoint_civilite: str = ""
@@ -193,6 +224,18 @@ class SelarlSliceInput:
     cession_context: CessionContext | None = None
     bail_context: BailContext | None = None
     scm_cession_context: ScmCessionContext | None = None
+    # Retours V3 2026-06-17 (SELARL multi-associes) — ADDITIF. `membres_additionnels`
+    # = associes (personne physique OU morale) AJOUTES au praticien principal (lui
+    # toujours membre #1 et signataire). Vide -> parcours unipersonnel historique
+    # inchange. `praticien_nb_parts` = part du praticien quand multi (defaut : tout
+    # le capital, comportement mono).
+    membres_additionnels: tuple[StatutsCivilsAssocie, ...] = ()
+    praticien_nb_parts: int = 0
+    # Apport en euros du praticien quand multi. Vide -> derive du capital total
+    # (cas mono / praticien seul detenteur). TODO V3 : wording exact de la ligne
+    # d'apport par membre a confirmer (le ticket fige la repartition art. 8, pas
+    # le libelle d'apport art. 7) -> parque, non invente.
+    praticien_apport: str = ""
 
     @property
     def has_any_value(self) -> bool:
@@ -207,6 +250,11 @@ class SelarlSliceInput:
                 self.numero_ordre,
             )
         )
+
+    @property
+    def is_multi_associes(self) -> bool:
+        """Dossier multi-associes ssi au moins un membre additionnel au praticien."""
+        return len(self.membres_additionnels) >= 1
 
 
 @dataclass(frozen=True)
@@ -231,10 +279,14 @@ def selected_selarl_document_codes(data: SelarlSliceInput) -> tuple[str, ...]:
             )
         )
     if data.cession_context is not None:
-        etape = (data.cession_context.etape or "").strip().lower()
         type_cabinet = (data.cession_context.type_cabinet or "").strip().lower()
-        for doc_id, (expected_etape, expected_type) in CESSION_CABINET_DOCUMENT_IDS.items():
-            if etape == expected_etape and type_cabinet == expected_type:
+        # MD1 (Albane 2026-07-10) : le COMPROMIS de cession doit etre edite AU MEME TITRE que
+        # l'acte. On genere DESORMAIS l'acte ET le compromis ENSEMBLE pour le type de cabinet
+        # (comme la SELAS depuis O24-14) — l'etape n'est plus filtrante (le gate orchestrateur
+        # `_cession_cabinet_enabled` autorise les deux pour une SEL). Avant : seul le document
+        # correspondant a l'etape saisie sortait -> le compromis manquait au bundle acte.
+        for doc_id, (_expected_etape, expected_type) in CESSION_CABINET_DOCUMENT_IDS.items():
+            if type_cabinet == expected_type:
                 codes.append(doc_id)
         # Appel de fonds = document commun « Si cession » : present pour toute cession
         # (medical comme dentaire), des que le type de cabinet est renseigne.
@@ -248,54 +300,90 @@ def selected_selarl_document_codes(data: SelarlSliceInput) -> tuple[str, ...]:
 
 
 def build_selarl_plan(data: SelarlSliceInput) -> SelarlSlicePlan:
-    blockers = validate_selarl_input(data)
-    warnings = _warning_messages(data)
+    gaps = validate_selarl_input(data)
+    warnings = list(_warning_messages(data))
     document_codes = selected_selarl_document_codes(data)
-    rows = _document_rows(data, blockers)
-
-    if blockers:
-        return SelarlSlicePlan(
-            can_generate=False,
-            status="blocked",
-            reason=blockers[0],
-            document_codes=document_codes,
-            document_rows=rows,
-            blockers=blockers,
-            warnings=warnings,
+    # KAN-2 (Rafael, rejete 2x) : « Tous les documents doivent pouvoir etre generes, MEME SI je ne
+    # remplis AUCUN champ. » -> AUCUN blocage : tout manque devient un AVERTISSEMENT ; les zones
+    # concernees sortent en « (À COMPLÉTER : … ) » (required_* -> marqueur cote generateur) et se
+    # completent a la main sur le DOCX. Une contrainte technique (calcul, division) ne se transforme
+    # jamais en limite produit : elle est rendue None-safe cote generateur, jamais un garde-fou ici.
+    # Miroir EXACT de spfpl_slice.build_spfpl_plan / selas_multi_slice.build_selas_plan.
+    rows = _document_rows(data, ())
+    if gaps:
+        warnings.append(
+            f"{len(gaps)} champ(s) non renseigné(s) : les zones concernées sortiront "
+            "en « (À COMPLÉTER : …) » et sont à compléter à la main dans le document."
         )
+        warnings.extend(gaps)
     return SelarlSlicePlan(
         can_generate=True,
-        status="ready",
-        reason="Pret pour generation SELARL V1 bornee.",
+        status="ready" if not gaps else "ready_with_gaps",
+        reason=(
+            "Prêt pour la génération du dossier SELARL."
+            if not gaps
+            else f"Génération possible — {len(gaps)} zone(s) à compléter à la main."
+        ),
         document_codes=document_codes,
         document_rows=rows,
         blockers=(),
-        warnings=warnings,
+        warnings=tuple(warnings),
     )
 
 
-def validate_selarl_input(data: SelarlSliceInput) -> tuple[str, ...]:
+def validate_selarl_input(data: SelarlSliceInput) -> tuple[str, ...]:  # noqa: C901
     blockers: list[str] = []
     if data.profession not in SELARL_V1_PROFESSIONS:
-        blockers.append("Profession hors perimetre SELARL V1.")
-    if not data.dossier_unipersonnel:
-        blockers.append("La V1 ne couvre que le dossier unipersonnel.")
+        blockers.append("Profession hors périmètre SELARL.")
+    if not data.dossier_unipersonnel and not data.is_multi_associes:
+        # Dossier declare non-unipersonnel mais aucun membre additionnel saisi.
+        blockers.append("Dossier multi-associes : ajouter au moins un membre.")
+    blockers.extend(_multi_membres_blockers(data))
     # Derogation / site distinct : hors outil. Les formulaires sont a remplir a la main
     # (retour associe Rafael) et ne sont plus exposes dans l'interface ; rien a valider ici.
     if data.cession and data.cession_context is None:
         blockers.append("Cession demandee mais donnees cession manquantes.")
     if data.scm and data.scm_cession_context is None:
         blockers.append("Cession de parts SCM demandee mais donnees SCM manquantes.")
+    # F1 (Albane 2026-07-10) : les champs SCM ne sont plus PRE-REMPLIS par la fixture ->
+    # ils demarrent vides. Les champs REQUIS par les generateurs SCM (DOC-031/032/033) sont
+    # bloques ICI avec un message clair, plutot que de laisser crasher la generation.
+    blockers.extend(_scm_cession_blockers(data.scm_cession_context))
+    # O24-05 (re-Akainu tour 3, MAJEUR) : la valeur nominale de la SCM cedee est auto-calculee
+    # (capital / nb parts). Sans garde de divisibilite, un capital non divisible produit une
+    # valeur fractionnaire a precision infinie imprimee CRUMENT dans le DOCX. Meme garde que
+    # les 6 types principaux (is_capital_divisible). Couvre le chemin SCM cession (SELARL + SELAS).
+    _scm_cedee = (
+        data.scm_cession_context.scm_cedee if data.scm_cession_context is not None else None
+    )
+    if _scm_cedee is not None and not is_capital_divisible(
+        _scm_cedee.capital_social, _scm_cedee.nb_parts_total
+    ):
+        blockers.append(
+            "Le capital de la SCM cedee doit etre divisible par le nombre de parts "
+            "(la valeur nominale d'une part doit etre un nombre entier)."
+        )
 
     blockers.extend(_missing_text_blockers(data))
     if data.date_naissance is None:
         blockers.append("Date de naissance du praticien requise.")
     if data.signature_date is None:
         blockers.append("Date de signature requise.")
-    if data.decision_date is None:
-        blockers.append("Date de decision requise.")
+    # SU4/SCS2 (Albane) : plus de blocker « Date de decision » — le champ dedie est supprime
+    # du formulaire (la date du PV = la date de signature dans tous les cas, derivee par
+    # DecisionContext). Le champ dataclass `decision_date` est CONSERVE : il reste alimente
+    # par les adaptateurs SELAS uni (_to_selarl_input -> signature_date) et sert de garde de
+    # non-regression (test : un decision_date divergent ne doit JAMAIS apparaitre en sortie).
     if data.nb_parts_total < 1:
         blockers.append("Nombre de parts requis et superieur a zero.")
+    # Dogfood 2026-06-22 : capital non divisible par le nb de parts -> valeur nominale a
+    # 28 chiffres + lettres cassees. Garde de divisibilite (couche partagee ; vaut aussi
+    # pour la SELAS uni medecin qui derive de ce chemin).
+    if not is_capital_divisible(data.capital_social, data.nb_parts_total):
+        blockers.append(
+            "Le capital social doit etre divisible par le nombre de parts "
+            "(la valeur nominale d'une part doit etre un nombre entier)."
+        )
     if data.profession == PROFESSION_DENTISTE or _is_married(data):
         blockers.extend(
             _missing_for_fields(
@@ -312,17 +400,218 @@ def validate_selarl_input(data: SelarlSliceInput) -> tuple[str, ...]:
             _missing_for_fields(
                 data,
                 (
-                    ("conjoint_civilite", "Civilite du conjoint requise pour DOC-005."),
-                    ("conjoint_prenom", "Prenom du conjoint requis pour DOC-005."),
-                    ("conjoint_nom", "Nom du conjoint requis pour DOC-005."),
+                    ("conjoint_civilite", "Civilité du conjoint requise."),
+                    ("conjoint_prenom", "Prénom du conjoint requis."),
+                    ("conjoint_nom", "Nom du conjoint requis."),
                     (
                         "regime_matrimonial",
-                        "Regime matrimonial requis quand DOC-005 est genere.",
+                        "Régime matrimonial requis.",
                     ),
                 ),
             )
         )
+    blockers.extend(_cession_blockers(data))
     return tuple(dict.fromkeys(blockers))
+
+
+def _multi_membres_blockers(data: SelarlSliceInput) -> list[str]:  # noqa: C901
+    """Bloqueurs UTILES du multi-associes (retours V3 2026-06-17).
+
+    Le moteur revalide la coherence du capital ; ici on remonte tot, avant
+    generation, les saisies incompletes (identite minimale + parts > 0) et la
+    coherence du total (praticien + membres = capital)."""
+    if not data.is_multi_associes:
+        return []
+    blockers: list[str] = []
+    if data.praticien_nb_parts < 1:
+        blockers.append("Multi-associes : nombre de parts du praticien requis (> 0).")
+    total = data.praticien_nb_parts
+    for index, membre in enumerate(data.membres_additionnels, start=2):
+        nb = (membre.parts.nb if membre.parts else None) or 0
+        total += nb
+        if nb < 1:
+            blockers.append(f"Multi-associes : parts du membre {index} requises (> 0).")
+        if membre.type_personne == "personne_morale":
+            if not (membre.denomination or "").strip():
+                blockers.append(f"Multi-associes : denomination du membre {index} requise.")
+        else:
+            if not all(
+                (value or "").strip()
+                for value in (membre.civilite_affichage, membre.prenom, membre.nom)
+            ):
+                blockers.append(
+                    f"Multi-associes : identite du membre {index} requise "
+                    "(civilite, prenom, nom)."
+                )
+            # Dogfood 2026-06-22 : le generateur exige l'inscription a l'ordre du membre
+            # (departement + numero + RPPS) ; sans eux, crash a la generation.
+            for field, name in (
+                ("ordre_departemental", "departement de l'ordre"),
+                ("numero_ordre", "numero d'inscription a l'ordre"),
+                ("numero_rpps", "numero RPPS"),
+            ):
+                if not str(getattr(membre, field, "") or "").strip():
+                    blockers.append(
+                        f"Multi-associes : {name} du membre {index} requis."
+                    )
+            # Identite du membre requise pour les STATUTS (chaque associe y est decrit
+            # « ne le ... a ..., de nationalite ..., demeurant ... »). La FILIATION
+            # (noms des parents) n'est PLUS requise : elle ne servait qu'a la DNC du
+            # membre, et un membre NON gerant n'a plus de DNC (Albane 2026-07-09,
+            # DNC = gerant uniquement — supersede Rafael matin + verrou R11).
+            blockers.extend(_membre_statuts_identity_blockers(membre, index))
+    if data.nb_parts_total and total != data.nb_parts_total:
+        blockers.append(
+            "Multi-associes : la somme des parts (praticien + membres) doit egaler "
+            f"le nombre total de parts ({data.nb_parts_total})."
+        )
+    return blockers
+
+
+def _membre_statuts_identity_blockers(
+    membre: StatutsCivilsAssocie, index: int
+) -> list[str]:
+    """Identite du membre requise pour les STATUTS (chaque associe y est decrit
+    « ne le ... a ..., de nationalite ..., demeurant ... » — champs `_required_text`
+    du generateur, crash sinon). La FILIATION (nom_pere / nom_mere) n'est PLUS exigee :
+    elle ne servait qu'a la DNC du membre, et un membre NON gerant n'a plus de DNC
+    (Albane 2026-07-09, DNC = gerant uniquement)."""
+    blockers: list[str] = []
+    if parse_associe_birthdate(membre.date_naissance) is None:
+        blockers.append(
+            f"Multi-associes : date de naissance du membre {index} requise "
+            "(JJ/MM/AAAA ou « 1 janvier 1980 »)."
+        )
+    for field, name in (
+        ("ville_naissance", "ville de naissance"),
+        ("nationalite", "nationalite"),
+    ):
+        if not str(getattr(membre, field, "") or "").strip():
+            blockers.append(
+                f"Multi-associes : {name} du membre {index} requise."
+            )
+    adresse_structuree = membre.adresse_personnelle or _parse_address_full(
+        str(membre.adresse_personnelle_affichee or "")
+    )
+    if adresse_structuree is None:
+        blockers.append(
+            f"Multi-associes : adresse personnelle du membre {index} requise "
+            "(N° et voie, CP Ville)."
+        )
+    return blockers
+
+
+def _cession_blockers(data: SelarlSliceInput) -> list[str]:  # noqa: C901
+    """Bloqueurs UTILES de la cession, montres dans le plan avant generation.
+
+    Retours client 2026-06-11 : seuls les champs reellement indispensables
+    bloquent (identite du vendeur, prix total). Tout le reste est facultatif et
+    laisse une zone a completer a la main dans les documents.
+    """
+    cession = data.cession_context
+    if cession is None:
+        return []
+    blockers: list[str] = []
+    vendeur = cession.vendeur
+    if vendeur is None:
+        blockers.append("Cession : identite du vendeur requise.")
+    else:
+        vendor_fields = (
+            (vendeur.civilite_affichage, "civilite du vendeur"),
+            (vendeur.prenom, "prenom du vendeur"),
+            (vendeur.nom, "nom du vendeur"),
+            (vendeur.date_naissance, "date de naissance du vendeur"),
+            (vendeur.ville_naissance, "ville de naissance du vendeur"),
+            (vendeur.nationalite, "nationalite du vendeur"),
+            (vendeur.adresse_affichee, "adresse du vendeur"),
+            (vendeur.situation_maritale, "situation matrimoniale du vendeur"),
+        )
+        for value, label in vendor_fields:
+            if value is None or (isinstance(value, str) and not value.strip()):
+                blockers.append(f"Cession : {label} requis(e).")
+    prix = cession.prix
+    if prix is None or not (prix.total or "").strip():
+        blockers.append("Cession : prix total requis.")
+    elif not (prix.total_lettres or "").strip():
+        blockers.append(
+            "Cession : prix total en lettres requis (montant non entier : saisir a la main)."
+        )
+    for index, salarie in enumerate(cession.salaries):
+        if not all(
+            (value or "").strip()
+            for value in (salarie.civilite_affichage, salarie.prenom, salarie.nom)
+        ):
+            blockers.append(
+                f"Cession : identite complete du salarie {index + 1} requise "
+                "(civilite, prenom, nom)."
+            )
+    etape = (cession.etape or "").strip().lower()
+    type_cabinet = (cession.type_cabinet or "").strip().lower()
+    if etape == "acte" and type_cabinet == "medical":
+        credit = cession.financement.credit_vendeur if cession.financement else None
+        if credit is None or not credit.actif:
+            blockers.append(
+                "Acte medical : la clause credit-vendeur du modele est figee — "
+                "renseigner le credit-vendeur (montant, duree, taux)."
+            )
+        elif not all(
+            (value or "").strip()
+            for value in (
+                credit.montant,
+                credit.duree,
+                credit.taux,
+                credit.majoration_interet_retard,
+            )
+        ):
+            blockers.append(
+                "Credit-vendeur : montant, duree, taux et majoration requis."
+            )
+        scm = cession.scm
+        if scm is not None and scm.actif and not (scm.nb_parts_a_ceder or "").strip():
+            blockers.append("Cession de parts SCM : nombre de parts a ceder requis.")
+    return blockers
+
+
+def _scm_cession_blockers(scm_cession: ScmCessionContext | None) -> list[str]:
+    """Bloqueurs des champs SCM REQUIS par les generateurs (DOC-031/032/033).
+
+    F1 (Albane 2026-07-10) : les champs SCM ne sont plus pre-remplis par la fixture ;
+    on remonte donc TOT, avant generation, les champs indispensables laisses vides
+    (identite / capital / RCS de la SCM cedee, nombre de parts cedees, prix global) —
+    sinon les generateurs levent (« ... est obligatoire ») en pleine generation.
+    """
+    if scm_cession is None:
+        return []
+    blockers: list[str] = []
+    cedee = scm_cession.scm_cedee
+    if cedee is None:
+        blockers.append("Cession de parts SCM : identite de la SCM cedee requise.")
+    else:
+        siege_ok = cedee.siege is not None and bool(
+            (cedee.siege.adresse_affichee or "").strip()
+        )
+        text_fields = (
+            ((cedee.denomination or "").strip(), "denomination de la SCM cedee"),
+            ((cedee.capital_social or "").strip(), "capital social de la SCM cedee"),
+            ((cedee.ville_rcs or "").strip(), "ville du RCS de la SCM cedee"),
+            ((cedee.numero_rcs or "").strip(), "numero RCS de la SCM cedee"),
+        )
+        for value, label in text_fields:
+            if not value:
+                blockers.append(f"Cession de parts SCM : {label} requise.")
+        if not siege_ok:
+            blockers.append("Cession de parts SCM : siege de la SCM cedee requis.")
+        if not (cedee.nb_parts_total or 0) > 0:
+            blockers.append(
+                "Cession de parts SCM : nombre total de parts de la SCM cedee requis (> 0)."
+            )
+    parts_cedees = scm_cession.parts_cedees
+    if parts_cedees is None or not (parts_cedees.nb or 0) > 0:
+        blockers.append("Cession de parts SCM : nombre de parts cedees requis (> 0).")
+    prix = scm_cession.prix
+    if prix is None or not (prix.global_ or "").strip():
+        blockers.append("Cession de parts SCM : prix global requis.")
+    return blockers
 
 
 def build_generation_context(data: SelarlSliceInput) -> DocumentGenerationContext:
@@ -352,13 +641,19 @@ def build_generation_context(data: SelarlSliceInput) -> DocumentGenerationContex
     valeur_nominale_part_lettres = (
         data.valeur_nominale_part_lettres or number_words_from_value(valeur_nominale_part)
     )
-    reunion_date_lettres = data.reunion_date_lettres or date_to_french_words(data.decision_date)
+    # B1/SCS2 (Albane 2026-06-25) : date de reunion (PV) = date de signature, comme la decision.
+    reunion_date_lettres = data.reunion_date_lettres or date_to_french_words(data.signature_date)
     signature_prestataire = (
         data.prestataire_signature_electronique
         or DEFAULT_PRESTATAIRE_SIGNATURE_ELECTRONIQUE
     )
-    seuil_achat_materiel = data.seuil_achat_materiel or DEFAULT_SEUIL_ACHAT_MATERIEL
-    seuil_emprunt = data.seuil_emprunt or DEFAULT_SEUIL_EMPRUNT
+    # R5 (Albane 2026-07-07) : seuils de gerance groupes par 3 (« 5 000 € », « 10 000 € »)
+    # a la construction du contexte — les defauts (« 5000 »/« 10000 ») et une saisie brute
+    # partaient non groupes dans l'article 17 des statuts.
+    seuil_achat_materiel = group_montant(
+        data.seuil_achat_materiel or DEFAULT_SEUIL_ACHAT_MATERIEL
+    )
+    seuil_emprunt = group_montant(data.seuil_emprunt or DEFAULT_SEUIL_EMPRUNT)
     profession_label = _profession_label(data.profession)
     profession_plural = _profession_plural(data.profession)
     associes = _context_associes(data, person_address, profession_label, profession_plural)
@@ -374,6 +669,7 @@ def build_generation_context(data: SelarlSliceInput) -> DocumentGenerationContex
         date_naissance=data.date_naissance,
         ville_naissance=data.ville_naissance,
         ville_naissance_article_au=data.ville_naissance_article_au,
+        departement_naissance=data.departement_naissance,
         nationalite=data.nationalite,
         nom_pere=data.nom_pere,
         nom_mere=data.nom_mere,
@@ -408,7 +704,7 @@ def build_generation_context(data: SelarlSliceInput) -> DocumentGenerationContex
         structure="SELARL",
         dossier_options=DossierOptions(
             regime_communautaire=data.regime_communautaire,
-            associe_unique=True,
+            associe_unique=not data.is_multi_associes,
             derogation=False,
             site_distinct=False,
             cession=data.cession_context is not None,
@@ -420,8 +716,11 @@ def build_generation_context(data: SelarlSliceInput) -> DocumentGenerationContex
         personne_signataire=person,
         conjoint=conjoint,
         signature=Signature(
-            lieu=data.signature_lieu,
-            date=_required_date(data.signature_date, "signature_date"),
+            # SU3 (Albane 2026-06-25) : ville de signature = ville du siege DANS TOUS LES CAS.
+            lieu=(data.siege_ville or data.signature_lieu),
+            # KAN-2 : la date de signature non renseignee NE bloque PLUS -> None traverse
+            # (Signature.date est `date | None`) et les formateurs rendent « (À COMPLÉTER : … ) ».
+            date=data.signature_date,
             nombre_exemplaires=data.signature_nombre_exemplaires,
             prestataire_signature_electronique=signature_prestataire,
         ),
@@ -451,7 +750,8 @@ def build_generation_context(data: SelarlSliceInput) -> DocumentGenerationContex
             fonction_affichage="gérant",
             ref_associe_index=0,
         ),
-        decision=DecisionContext(date=_display_date(data.decision_date)),
+        # SCS2/SU4 (Albane 2026-06-25, propag. Q4) : date de decision (PV) = date de signature.
+        decision=DecisionContext(date=_display_date(data.signature_date)),
         reunion=ReunionContext(
             date_lettres=reunion_date_lettres,
             president=reunion_president,
@@ -472,14 +772,19 @@ def build_generation_context(data: SelarlSliceInput) -> DocumentGenerationContex
             seuil_achat_materiel=seuil_achat_materiel,
             seuil_emprunt=seuil_emprunt,
         ),
+        # R3/A5 (Albane 2026-06-26) : l'apport porte ici alimente les lettres de regime
+        # communautaire (« en apportant X euros » / « somme en numeraire de X »). Ce doit
+        # etre l'apport INDIVIDUEL de l'associe renoncant, PAS le capital social total.
+        # `_praticien_apport_montant` rend l'apport saisi (repli capital si seul detenteur).
         apport=Apport(
-            montant=capital_social_display,
-            montant_lettres=capital_social_lettres,
+            montant=_praticien_apport_montant(data),
+            montant_lettres=number_words_from_value(_praticien_apport_montant(data)),
         ),
         regime_communautaire=_regime_communautaire(data),
         statuts_sel=StatutsSel(
             overlay=_statuts_overlay(data.profession),
             profession=profession_label,
+            membres=_statuts_membres(data, person_address, profession_label),
         ),
         depot_fonds=DepotFonds(
             banque=CessionBanque(
@@ -489,15 +794,20 @@ def build_generation_context(data: SelarlSliceInput) -> DocumentGenerationContex
             montant=capital_social_display,
         ),
         exercice_social=ExerciceSocial(
-            debut=data.exercice_debut,
-            fin=data.exercice_fin,
-            date_cloture_premier_exercice=data.exercice_cloture_premier,
-            lieux=(
-                ExerciceLieu(
-                    adresse_affichee=data.lieu_exercice_adresse
-                    or company_address.adresse_affichee
-                ),
+            # LIVE-03 : re-accentue les mois saisis librement (« 1er aout » -> « 1er août »)
+            # EN AMONT du generateur, qui reste un echo fidele du modele de reference.
+            # debut accentue comme fin/cloture (oubli releve par re-Akainu T4).
+            debut=accentuate_french_months(data.exercice_debut),
+            fin=accentuate_french_months(data.exercice_fin),
+            date_cloture_premier_exercice=accentuate_french_months(
+                data.exercice_cloture_premier
             ),
+            # lieux[0] = lieu d'exercice #1 (le siege par defaut ; un
+            # `lieu_exercice_adresse` legacy reste lu en fallback pour
+            # retro-compat -> rendu 1-lieu byte-identique). lieux[1] = 2e lieu
+            # ADDITIF (ticket 2.2), append UNIQUEMENT si nom ET adresse fournis
+            # ensemble (contrat SELAS, cf. validate_selas_second_lieu).
+            lieux=_selarl_lieux_exercice(data, company_address),
         ),
         document=DocumentContext(
             nombre_exemplaires_lettres=data.signature_nombre_exemplaires,
@@ -526,6 +836,12 @@ def generate_selarl_dossier(data: SelarlSliceInput, output_dir: Path) -> Generat
         output_dir,
         plan.document_codes,
     )
+    # DNC = GERANT UNIQUEMENT (Albane, Direction Juridique, 2026-07-09 — supersede le
+    # retour Rafael du matin « 1 DNC par associe » + verrou R11 ; Rafael a confirme
+    # « Albane a raison »). En SELARL le gerant est le praticien (signataire du tronc
+    # commun) : sa DNC — la seule — vient de l'orchestrateur, renommee ci-dessous
+    # (O24-02). Les membres additionnels NON gerants ne recoivent PAS de DNC.
+    docx_paths = rename_dnc_with_signataire(docx_paths, ctx)
     zip_path = generate_zip_file(output_dir, docx_paths)
     return GeneratedDossier(
         output_dir=output_dir,
@@ -552,7 +868,9 @@ def _document_rows(
             doc_code=code,
             label=build_document_status_for_code(code).doc_label,
             status=generated_status,
-            message="Inclus dans SELARL V1." if not blockers else "Bloque par donnees ou scope.",
+            message="Inclus dans le dossier SELARL."
+            if not blockers
+            else "À compléter : données ou périmètre incomplet.",
         )
         for code in selected_selarl_document_codes(data)
     ]
@@ -581,16 +899,20 @@ def _document_rows(
 
 def _warning_messages(data: SelarlSliceInput) -> tuple[str, ...]:
     warnings = [
-        "SELARL V1 bornee : creation medecin ou chirurgien-dentiste, associe unique uniquement.",
+        "SELARL : médecin ou chirurgien-dentiste, associé unique.",
     ]
     if data.regime_communautaire:
-        warnings.append("Regime communautaire actif : DOC-005 et DOC-006 seront generes.")
+        warnings.append(
+            "Régime communautaire actif : la lettre de renonciation et la "
+            "lettre d'avertissement au conjoint seront générées."
+        )
     return tuple(warnings)
 
 
 def _missing_text_blockers(data: SelarlSliceInput) -> list[str]:
     base_fields = (
-        ("dossier_reference", "Reference dossier requise."),
+        # F2 (Albane 2026-07-10) : la reference dossier ne BLOQUE plus l'edition (inutile,
+        # on ne telecharge pas le formulaire). Le champ reste saisi (metadata) mais optionnel.
         ("civilite", "Civilite du praticien requise."),
         ("prenom", "Prenom du praticien requis."),
         ("nom", "Nom du praticien requis."),
@@ -598,10 +920,11 @@ def _missing_text_blockers(data: SelarlSliceInput) -> list[str]:
         ("ville_naissance", "Ville de naissance requise."),
         ("departement_naissance", "Departement de naissance requis."),
         ("nationalite", "Nationalite requise."),
-        ("nom_pere", "Nom du pere requis pour DOC-001."),
-        ("nom_mere", "Nom de la mere requis pour DOC-001."),
-        ("adresse_num_voie", "Numero de voie du praticien requis."),
-        ("adresse_voie", "Voie du praticien requise."),
+        ("nom_pere", "Nom du père requis."),
+        ("nom_mere", "Nom de la mère requis."),
+        # Numero + voie fusionnes en un seul champ (retours client 2026-06-11,
+        # ticket 1.5) : la valeur complete vit dans adresse_voie.
+        ("adresse_voie", "Numero et voie du praticien requis."),
         ("adresse_cp", "Code postal du praticien requis."),
         ("adresse_ville", "Ville du praticien requise."),
         ("situation_maritale", "Situation matrimoniale requise pour les statuts."),
@@ -611,8 +934,7 @@ def _missing_text_blockers(data: SelarlSliceInput) -> list[str]:
         ("departement_ordre", "Departement d'inscription a l'ordre requis."),
         ("denomination", "Denomination sociale requise."),
         ("capital_social", "Capital social requis."),
-        ("siege_num_voie", "Numero de voie du siege requis."),
-        ("siege_voie", "Voie du siege requise."),
+        ("siege_voie", "Numero et voie du siege requis."),
         ("siege_cp", "Code postal du siege requis."),
         ("siege_ville", "Ville du siege requise."),
         ("ville_rcs", "Ville RCS requise."),
@@ -620,8 +942,10 @@ def _missing_text_blockers(data: SelarlSliceInput) -> list[str]:
         ("ordre_cp", "Code postal de l'ordre requis."),
         ("ordre_ville", "Ville de l'ordre requise."),
         ("signature_lieu", "Lieu de signature requis."),
-        ("depot_banque_nom", "Banque du depot des fonds requise."),
-        ("depot_banque_adresse", "Adresse de la banque requise."),
+        # F3 (Albane 2026-07-10) : la BANQUE du depot des fonds ne BLOQUE plus l'edition
+        # (rarement connue au debut — coherent avec l'assouplissement micro-holding A8
+        # 2026-07-09). Vide, les statuts / l'attestation laissent une zone a completer.
+        # Adresse de la banque : deja FACULTATIVE (retours client 2026-06-11, ticket 3.2).
         ("exercice_debut", "Debut d'exercice social requis."),
         ("exercice_fin", "Fin d'exercice social requise."),
         ("exercice_cloture_premier", "Date de cloture du premier exercice requise."),
@@ -641,19 +965,42 @@ def _missing_for_fields(
     return blockers
 
 
-def _required_date(value: date | None, field_name: str) -> date:
-    if value is None:
-        raise ValueError(f"{field_name} est obligatoire.")
-    return value
-
-
 def _display_date(value: date | None) -> str | None:
     if value is None:
         return None
     return value.strftime("%d/%m/%Y")
 
 
+def _selarl_lieux_exercice(
+    data: SelarlSliceInput, company_address: Address
+) -> tuple[ExerciceLieu, ...]:
+    """Construit les lieux d'exercice SELARL (1 ou 2), ticket 2.2 ADDITIF.
+
+    - lieux[0] = lieu d'exercice #1 : le siege par defaut. Le champ legacy
+      `lieu_exercice_adresse`, s'il est renseigne seul, reste lu en fallback
+      (retro-compat) -> le rendu 1-lieu reste byte-identique a l'existant.
+    - lieux[1] = 2e lieu d'exercice : ajoute UNIQUEMENT si `second_lieu_exercice_nom`
+      ET `second_lieu_exercice_adresse` sont fournis ENSEMBLE (contrat aligne sur
+      la SELAS, cf. validate_selas_second_lieu). Si un seul des deux est saisi,
+      le 2e lieu est ignore cote front (la validation moteur leve si le contexte
+      le porte malgre tout, comme pour la SELAS).
+    """
+    lieu_1 = ExerciceLieu(
+        adresse_affichee=data.lieu_exercice_adresse or company_address.adresse_affichee
+    )
+    nom_2 = (data.second_lieu_exercice_nom or "").strip()
+    adresse_2 = (data.second_lieu_exercice_adresse or "").strip()
+    if nom_2 and adresse_2:
+        return (lieu_1, ExerciceLieu(nom=nom_2, adresse_affichee=adresse_2))
+    return (lieu_1,)
+
+
 def _address(num_voie: str, voie: str, cp: str, ville: str) -> Address:
+    # Champ unique « Numero et voie » (ticket 1.5) : si le numero n'est pas
+    # fourni separement, il est extrait de la tete de la voie pour alimenter
+    # les generateurs qui consomment numero et voie separement.
+    if not (num_voie or "").strip():
+        num_voie, voie = split_numero_voie(voie)
     display = f"{num_voie} {voie}, {cp} {ville}".strip()
     return Address(
         num_voie=num_voie,
@@ -696,7 +1043,14 @@ def _ordre(
     return OrdreProfessionnel(
         conseil_departemental_libelle=data.ordre_conseil,
         departement_inscription=data.departement_ordre,
-        destinataire_appel="Monsieur le Président",
+        # M2 (Akainu, 2026-06-30) : connecteur grammatical du destinataire R5, cable depuis
+        # le formulaire SELARL (parite SELAS). Defaut « de » si non renseigne.
+        connecteur_departement=data.connecteur_departement or "de",
+        destinataire_appel=(
+            "Madame la Présidente"
+            if data.ordre_president_feminin
+            else "Monsieur le Président"
+        ),
         profession_signataire_affichee=profession_label,
         profession_ligne_destinataire=profession_plural,
         profession_reglementee_pluriel=profession_plural,
@@ -718,15 +1072,72 @@ def _context_associes(
     profession_label: str,
     profession_plural: str,
 ) -> list[Associe]:
+    # `ctx.associes` reste l'associe REPRESENTATIF (praticien) — longueur 1 dans tous
+    # les cas. En multi, la liste complete des membres vit dans `statuts_sel.membres`.
+    nb_parts = (
+        data.praticien_nb_parts if data.is_multi_associes else data.nb_parts_total
+    )
     return [
         _associe(
             data,
             address,
             profession_label,
             profession_plural,
-            nb_parts=data.nb_parts_total,
+            nb_parts=nb_parts or data.nb_parts_total,
         )
     ]
+
+
+def _statuts_membres(
+    data: SelarlSliceInput,
+    address: Address,
+    profession_label: str,
+) -> list[StatutsCivilsAssocie]:
+    """Liste complete des membres SELARL (retours V3 2026-06-17). Vide en mono.
+
+    Membre #1 = le praticien principal (toujours signataire), construit depuis la
+    fiche praticien ; suivent les membres additionnels saisis. Le calcul du nombre
+    d'associes decoule de la longueur de cette liste (tous signataires = associes)."""
+    if not data.is_multi_associes:
+        return []
+    praticien = StatutsCivilsAssocie(
+        type_personne="personne_physique",
+        genre=data.genre,
+        civilite_affichage=data.civilite,
+        prenom=data.prenom,
+        nom=data.nom,
+        profession=profession_label,
+        date_naissance=data.date_naissance,
+        ville_naissance=data.ville_naissance or None,
+        departement_naissance=data.departement_naissance or None,
+        nationalite=data.nationalite or None,
+        situation_maritale=data.situation_maritale or None,
+        adresse_personnelle_affichee=address.adresse_affichee,
+        ordre_departemental=data.departement_ordre or None,
+        numero_ordre=data.numero_ordre or None,
+        numero_rpps=data.numero_rpps or None,
+        apport=StatutsCivilsApport(
+            montant=_praticien_apport_montant(data),
+            montant_lettres=number_words_from_value(_praticien_apport_montant(data)),
+        ),
+        parts=StatutsCivilsParts(
+            nb=data.praticien_nb_parts,
+            nb_lettres=number_words_from_value(data.praticien_nb_parts),
+        ),
+        est_signataire=True,
+    )
+    # R5 (Albane 2026-07-07) : montants des membres additionnels (apport individuel,
+    # capital d'une personne morale) groupes par 3 a la construction du contexte —
+    # copies pydantic, les objets saisis au shell / scenarios ne sont jamais mutes.
+    return [praticien, *(groupe_montants_associe(m) for m in data.membres_additionnels)]
+
+
+def _praticien_apport_montant(data: SelarlSliceInput) -> str:
+    """Apport en euros du praticien. Saisi explicitement, sinon repli sur le capital
+    total (cas praticien seul detenteur). Pas d'invention de calcul parts -> euros."""
+    if (data.praticien_apport or "").strip():
+        return format_grouped_numeric_value(data.praticien_apport)
+    return format_grouped_numeric_value(data.capital_social)
 
 
 def _reunion_president(
@@ -753,7 +1164,10 @@ def _associe(
     *,
     nb_parts: int,
 ) -> Associe:
-    apport_montant = format_grouped_numeric_value(data.capital_social)
+    # R3/A5 (Albane 2026-06-26) : l'apport numeraire de l'associe est son apport
+    # INDIVIDUEL (repli capital si seul detenteur), pas systematiquement le capital
+    # social total. Coherent avec `_statuts_membres` (meme helper).
+    apport_montant = _praticien_apport_montant(data)
     return Associe(
         genre=data.genre,
         civilite_affichage=data.civilite,
@@ -781,6 +1195,9 @@ def _associe(
             ville=data.ordre_ville,
             numero=data.numero_ordre,
             numero_rpps=data.numero_rpps,
+            # ST6 (Albane 2026-07-10) : preposition « de / du » choisie au formulaire, cablee
+            # jusqu'a la ligne d'identite des statuts SEL. Defaut « de » si non renseignee.
+            connecteur_departement=data.connecteur_departement or "de",
         ),
         apport_numeraire=apport_montant,
         apport_numeraire_lettres=number_words_from_value(apport_montant),
@@ -789,11 +1206,22 @@ def _associe(
 
 
 def _needs_conjoint(data: SelarlSliceInput) -> bool:
-    return data.profession == PROFESSION_DENTISTE or data.regime_communautaire or _is_married(data)
+    # Albane 6.3/7.3 (RATIFIE 2026-07-06) : le PARTENAIRE PACSE figure aussi a la comparution
+    # -> le conjoint doit etre transmis au generateur pour un pacse (pas seulement marie/dentiste).
+    return (
+        data.profession == PROFESSION_DENTISTE
+        or data.regime_communautaire
+        or _is_married(data)
+        or _is_pacse(data)
+    )
 
 
 def _is_married(data: SelarlSliceInput) -> bool:
     return "mari" in data.situation_maritale.casefold()
+
+
+def _is_pacse(data: SelarlSliceInput) -> bool:
+    return "pacs" in data.situation_maritale.casefold()
 
 
 def _spfpl_conjoint(data: SelarlSliceInput) -> SpfplConjoint:
@@ -826,7 +1254,7 @@ def _regime_communautaire(data: SelarlSliceInput) -> RegimeCommunautaire | None:
             date_signature=data.date_courrier_avertissement,
         ),
         renonciation=RegimeCommunautaireRenonciation(
-            lieu_signature=data.signature_lieu,
+            lieu_signature=(data.siege_ville or data.signature_lieu),  # SU3 : = ville du siege
             date_signature=data.signature_date,
             nombre_exemplaires_lettres=data.signature_nombre_exemplaires,
         ),

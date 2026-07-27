@@ -110,12 +110,12 @@ def test_autorisation_domiciliation_contains_essential_texts(tmp_path: Path) -> 
     # complete du cabinet/siege « du cabinet au [num_voie] [voie], [cp] [ville] » ;
     # terme juridique « pour une durée indéterminée » conserve (et non « pour 99 ans »).
     assert (
-        "autorise la domiciliation de DURAND CONSEIL au capital de 1 000 € "
+        "autorise la domiciliation de la DURAND CONSEIL au capital de 1 000 euros "
         "en cours de formation, dans les locaux du cabinet au 80 avenue Marceau, "
-        "75008 Paris, pour une durée indéterminée."
+        "75008 Paris pour une durée indéterminée."
     ) in text
     assert "Fait à Paris" in text
-    assert "Le 12 mai 2026" in text
+    assert "Le 12/05/2026" in text
     assert "Monsieur Jean Durand" in text
 
 
@@ -145,6 +145,23 @@ def test_autorisation_domiciliation_opening_agrees_feminine(tmp_path: Path) -> N
     assert "Je soussignée Madame Marie Durand autorise la domiciliation" in text
 
 
+def test_autorisation_domiciliation_docteur_civilite_civile(tmp_path: Path) -> None:
+    # R3 (Albane 2026-07-07) : « Docteur » n'est pas une civilité — le flux SAS
+    # posait « Je soussigné Docteur Camille Martin ». Le token [civilite] rend la
+    # civilité CIVILE accordée au genre du signataire (M./Mme).
+    ctx = _context()
+    ctx.personne_signataire.civilite = "Docteur"
+    text = _docx_text(AutorisationDomiciliationGenerator().generate(ctx, tmp_path))
+    assert "Je soussigné Monsieur Jean Durand autorise la domiciliation" in text
+    assert "Docteur" not in text
+
+    ctx_f = _context(Gender.FEMININ)
+    ctx_f.personne_signataire.civilite = "Docteur"
+    text_f = _docx_text(AutorisationDomiciliationGenerator().generate(ctx_f, tmp_path))
+    assert "Je soussignée Madame Marie Durand autorise la domiciliation" in text_f
+    assert "Docteur" not in text_f
+
+
 def test_autorisation_domiciliation_ignores_free_address_for_wording(
     tmp_path: Path,
 ) -> None:
@@ -155,7 +172,10 @@ def test_autorisation_domiciliation_ignores_free_address_for_wording(
     # L'adresse libre de domiciliation n'est pas injectee : le modele s'appuie
     # sur l'adresse complete du siege/cabinet de la societe.
     assert adresse not in text
-    assert "dans les locaux du cabinet au 80 avenue Marceau, 75008 Paris," in text
+    assert (
+        "dans les locaux du cabinet au 80 avenue Marceau, 75008 Paris "
+        "pour une durée indéterminée."
+    ) in text
 
 
 def test_autorisation_domiciliation_uses_company_seat_city(
@@ -167,6 +187,20 @@ def test_autorisation_domiciliation_uses_company_seat_city(
     # [cp_siege] [ville_siege]), pas l'adresse de domiciliation libre.
     assert "15 rue du Libre, Lyon 69002" not in text
     assert "80 avenue Marceau, 75008 Paris" in text
+
+
+def test_autorisation_domiciliation_has_no_red_runs(tmp_path: Path) -> None:
+    # Regression (bug remonte 2026-06-08) : l'ancien modele coloriait des variables
+    # en rouge ; le modele a jour (reference Drive) est propre -> aucune variable
+    # generee ne doit ressortir en rouge dans le document.
+    document = Document(_generate(tmp_path))
+    for paragraph in document.paragraphs:
+        for run in paragraph.runs:
+            color = run.font.color
+            rgb = None if color is None else color.rgb
+            assert rgb is None or str(rgb) == "000000", (
+                f"variable rendue en rouge : {run.text!r} ({rgb})"
+            )
 
 
 def test_autorisation_domiciliation_does_not_use_signature_image(tmp_path: Path) -> None:
@@ -185,6 +219,34 @@ def test_autorisation_domiciliation_uses_signature_paragraphs_without_table(
     # Le modele source porte un unique tableau (l'en-tete de titre encadre).
     assert len(document.tables) == 1
     paragraphs = [paragraph.text for paragraph in document.paragraphs if paragraph.text]
-    assert "Fait à Paris" in paragraphs
-    assert "Le 12 mai 2026" in paragraphs
-    assert "Monsieur Jean Durand" in paragraphs
+    assert "Fait à Paris, " in paragraphs
+    assert "Le 12/05/2026" in paragraphs
+    # Modele a jour (Drive) : la ligne de signature est « [prenom] [nom] » (sans civilite).
+    assert "Jean Durand" in paragraphs
+
+
+def test_autorisation_domiciliation_civil_omits_du_cabinet(tmp_path: Path) -> None:
+    # B6 (Albane 2026-07-09) : pour TOUTES les societes CIVILES, la domiciliation dit
+    # « dans les locaux au <adresse> » (retrait de « du cabinet »).
+    for structure in ("SCI", "SCI IRIS", "SCM", "SCS", "MICRO_HOLDING"):
+        ctx = _context()
+        ctx.structure = structure
+        out = AutorisationDomiciliationGenerator().generate(
+            ctx, tmp_path / structure.replace(" ", "_")
+        )
+        text = _docx_text(out)
+        assert "dans les locaux au 80 avenue Marceau, 75008 Paris" in text, structure
+        assert "du cabinet" not in text, structure
+
+
+def test_autorisation_domiciliation_sel_keeps_du_cabinet(tmp_path: Path) -> None:
+    # B6 : SEL / SPFPL conservent « du cabinet » (OK dans leur modele). SAS aussi
+    # (hors perimetre civil ; non touche).
+    for structure in ("SELARL", "SELAS", "SPFPL", "SAS"):
+        ctx = _context()
+        ctx.structure = structure
+        out = AutorisationDomiciliationGenerator().generate(ctx, tmp_path / structure)
+        text = _docx_text(out)
+        assert (
+            "dans les locaux du cabinet au 80 avenue Marceau, 75008 Paris"
+        ) in text, structure

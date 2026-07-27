@@ -6,13 +6,18 @@ from pathlib import Path
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 from sydel_doc_engine.domain.models import Address, DocumentGenerationContext
+from sydel_doc_engine.generators.lot_01.civilite import civilite_civile
+from sydel_doc_engine.generators.lot_05.spfpl_libelles import libelle_metier
 from sydel_doc_engine.rendering.docx_builder import (
     add_framed_title,
     add_legal_reminder,
     add_paragraph,
     add_signature_block,
+    add_spacer,
+    keep_final_signature_block_together,
     new_document,
 )
+from sydel_doc_engine.utils.dates import format_date_fr
 from sydel_doc_engine.utils.grammar import birth_label, filiation_label, subject_line
 
 OUTPUT_FILENAME = "declaration_non_condamnation.docx"
@@ -24,11 +29,16 @@ DECLARATION_TEXT = (
     "gérer, d’administrer ou de diriger une personne morale."
 )
 
-RAPPEL_TITLE_SUFFIX = " : Article L123-5 du code de commerce"
+# Espace insecable (U+00A0) avant les deux-points : typographie francaise du modele source
+# tokenise (« Rappel\xa0: »), perdue jusqu'ici par le generateur. Corrige globalement (tous types).
+RAPPEL_TITLE_SUFFIX = chr(0x00A0) + ": Article L123-5 du code de commerce"
 RAPPEL_PARAGRAPH_1 = (
     "Le fait de donner, de mauvaise foi, des indications inexactes ou incomplètes en vue d’une "
     "immatriculation, d’une radiation ou d’une mention complémentaire ou rectificative au registre "
-    "du commerce et des sociétés est puni d’une amende de 4500 euros et d’un emprisonnement de "
+    # Rafael 2026-07-09 (R5, groupement des milliers dès 4 chiffres, « partout ») : le
+    # montant de l'amende légale (art. L123-5) est groupé « 4 500 euros » comme tout
+    # montant ≥ 4 chiffres. Sens juridique inchangé (typographie française standard).
+    "du commerce et des sociétés est puni d’une amende de 4 500 euros et d’un emprisonnement de "
     "six mois."
 )
 RAPPEL_PARAGRAPH_2 = (
@@ -46,7 +56,13 @@ class DeclarationNonCondamnationGenerator:
         if address is None:
             raise ValueError("personne_signataire.adresse_perso est obligatoire pour DOC-001.")
 
-        civilite = _required_text(person.civilite, "personne_signataire.civilite")
+        # R3 (Albane 2026-07-07) : « Docteur » n'est pas une civilité — le slot
+        # « Je soussigné __ » rend la civilité CIVILE (Monsieur/Madame, accordée
+        # au genre du signataire), jamais le titre professionnel posé par le flux.
+        civilite = civilite_civile(
+            _required_text(person.civilite, "personne_signataire.civilite"),
+            person.genre,
+        )
         prenom = _required_text(person.prenom, "personne_signataire.prenom")
         nom = _required_text(person.nom, "personne_signataire.nom")
         date_naissance = _required_date(
@@ -65,11 +81,19 @@ class DeclarationNonCondamnationGenerator:
 
         document = new_document()
         _add_title(document)
+        # Aération sous le cadre du titre (retour Albane 2026-06-10).
+        add_spacer(document, space_after_pt=10)
         _add_identity_block(
             document,
             subject=f"{subject_line(person.genre)} {civilite} {prenom} {nom}",
-            birth=f"{birth_label(person.genre)} {date_naissance} "
-            f"{_birth_city_prefix(person)} {ville_naissance}.",
+            # Retour Albane 2026-06-10 : « ne le {date} a {ville} ({departement}) »
+            # — plus de point apres la ville, departement entre parentheses (si
+            # renseigne).
+            birth=(
+                f"{birth_label(person.genre)} {date_naissance} "
+                f"{_birth_city_prefix(person)} {ville_naissance}"
+                f"{_birth_department_suffix(person)}"
+            ),
             address=f"demeurant au {adresse_perso}",
             nationality=f"de nationalité {nationalite}",
             filiation_father=f"{filiation_label(person.genre)} {nom_pere}",
@@ -85,43 +109,57 @@ class DeclarationNonCondamnationGenerator:
         _add_signature_block(
             document,
             lieu_signature=lieu_signature,
-            date_signature=_format_date(ctx.signature.date),
+            date_signature=format_date_fr(ctx.signature.date),
             image_path=ctx.signature.image_optionnelle,
         )
+        # Mise en forme (Albane 2026-06-17, §7) : « descendre legerement » le
+        # rappel legal en italique en menageant un espace avant le bloc.
+        # add_legal_reminder est partage (autres docs) -> on aere ici seulement,
+        # sans toucher le helper.
+        add_spacer(document, space_after_pt=12)
         _add_legal_reminder(document)
 
         output_dir.mkdir(parents=True, exist_ok=True)
         output_path = output_dir / OUTPUT_FILENAME
+        # KAN-36 : bloc signature final solidaire (une seule page).
+        keep_final_signature_block_together(document)
         document.save(output_path)
         return output_path
 
 
 def _required_text(value: str | None, field_name: str) -> str:
+    # KAN-2 (Rafael 2026-07-13) : une donnée manquante NE bloque PAS la génération -> marqueur
+    # visible « (À COMPLÉTER : … ) » sans crochets (comme required_text lot_03/04/05, R10), à
+    # compléter à la main sur le DOCX, au lieu de lever.
     if value is None or not value.strip():
-        raise ValueError(f"{field_name} est obligatoire pour DOC-001.")
+        return f"(À COMPLÉTER : {libelle_metier(field_name)})"
     return value.strip()
 
 
 def _required_date(value: date | None, field_name: str) -> str:
+    # KAN-2 : date manquante -> marqueur visible (non bloquant), à compléter à la main.
     if value is None:
-        raise ValueError(f"{field_name} est obligatoire pour DOC-001.")
-    return _format_date(value)
+        return f"(À COMPLÉTER : {libelle_metier(field_name)})"
+    return format_date_fr(value)
 
 
 def _compose_required_address(address: Address) -> str:
-    num_voie = _required_text(address.num_voie, "personne_signataire.adresse_perso.num_voie")
+    # Numero de voie optionnel (champ fusionne « Numero et voie », retours
+    # client 2026-06-11) : une adresse sans numero (lieu-dit) reste valide.
+    num_voie = (address.num_voie or "").strip()
     voie = _required_text(address.voie, "personne_signataire.adresse_perso.voie")
     cp = _required_text(address.cp, "personne_signataire.adresse_perso.cp")
     ville = _required_text(address.ville, "personne_signataire.adresse_perso.ville")
-    return f"{num_voie} {voie}, {cp} {ville}"
+    return f"{num_voie} {voie}, {cp} {ville}".strip()
 
 
 def _birth_city_prefix(person) -> str:
     return "au" if person.ville_naissance_article_au else "\u00e0"
 
 
-def _format_date(value: date) -> str:
-    return value.strftime("%d/%m/%Y")
+def _birth_department_suffix(person) -> str:
+    departement = (getattr(person, "departement_naissance", None) or "").strip()
+    return f" ({departement})" if departement else ""
 
 
 def _add_title(document) -> None:
@@ -144,15 +182,40 @@ def _add_identity_block(
     filiation_father: str,
     filiation_mother: str,
 ) -> None:
-    for line, bold in (
+    # Bloc identite compact (retour Albane 2026-06-10 : retirer les interlignes
+    # de « je soussigne » jusqu'a « de nationalite » et entre les noms des parents).
+    # Mise en forme (Albane, retour « mise en forme » 2026-07) : AERER entre la
+    # designation de l'associe/dirigeant (sujet -> naissance -> adresse ->
+    # nationalite) et l'affiliation des parents (pere/mere). On garde la compacite
+    # du bloc identite mais on menage un espace (6 pt) APRES la ligne « nationalite »,
+    # juste AVANT la 1re ligne de filiation. Les lignes de filiation restent
+    # compactes entre elles (pere -> mere, sa=0).
+    _IDENTITY_STANDARD_SPACE_AFTER_PT = 6
+    # Ordre FIGE du bloc identite. La ligne « nationalite » est la DERNIERE avant la
+    # filiation : on la cible par son ROLE/POSITION (derniere ligne de designation),
+    # pas par egalite de contenu (m3 : « line == nationality » etait fragile — une
+    # valeur coincidente/vide aurait pu declencher l'espace au mauvais endroit).
+    designation_lines = (
         (subject, True),
         (birth, False),
         (address, False),
         (nationality, False),
+    )
+    filiation_lines = (
         (filiation_father, False),
         (filiation_mother, False),
-    ):
-        _add_paragraph(document, line, bold=bold)
+    )
+    last_designation_index = len(designation_lines) - 1
+    for index, (line, bold) in enumerate(designation_lines):
+        # Espace uniquement APRES la DERNIERE ligne de designation (« de nationalite »),
+        # juste avant la filiation ; le reste du bloc reste compact (sa=0).
+        space_after = (
+            _IDENTITY_STANDARD_SPACE_AFTER_PT if index == last_designation_index else 0
+        )
+        add_paragraph(document, line, bold=bold, space_after_pt=space_after)
+    # Lignes de filiation compactes entre elles (pere -> mere, sa=0).
+    for line, bold in filiation_lines:
+        add_paragraph(document, line, bold=bold, space_after_pt=0)
 
 
 def _add_paragraph(

@@ -10,6 +10,8 @@ from pathlib import Path
 from typing import Literal
 
 from docx import Document
+from docx.enum.text import WD_COLOR_INDEX
+from docx.oxml.ns import qn
 
 from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import (
@@ -31,7 +33,24 @@ from sydel_doc_engine.domain.models import (
     DocumentContext,
     DocumentGenerationContext,
 )
-from sydel_doc_engine.utils.grammar import apply_gender_pairs
+from sydel_doc_engine.generators.lot_01.civilite import civilite_civile
+from sydel_doc_engine.generators.lot_05.scm_cession_common import (
+    mentions_conjoint,
+    mentions_partenaire_pacse,
+    partenaire_pacse_clause,
+)
+from sydel_doc_engine.generators.lot_05.spfpl_libelles import libelle_metier
+from sydel_doc_engine.rendering.docx_builder import (
+    ensure_demeurant_au,
+    keep_final_signature_block_together,
+)
+from sydel_doc_engine.utils.departements import departement_nom
+from sydel_doc_engine.utils.grammar import (
+    accord_terme_genre,
+    apply_gender_pairs,
+    elision_de,
+)
+from sydel_doc_engine.utils.months import FRENCH_MONTHS
 
 DOCUMENT_CODE = "CODE-CESSION-CAB-001"
 
@@ -51,9 +70,45 @@ ORIGINE_MODE_CREE = "cree"
 ORIGINE_MODE_ACHETE = "achete"
 SUPPORTED_ORIGINE_MODES = {ORIGINE_MODE_CREE, ORIGINE_MODE_ACHETE}
 
+# AC2 (Albane 2026-07-10) : sur l'acte DENTAIRE, l'origine de propriete doit gerer le cabinet
+# CREE (pas seulement acquis). Le modele dentaire fige la clause « acquis » (tokens en place) ;
+# quand le front indique le mode « cree » (cle attendue : cession.cabinet.origine_propriete_mode
+# == "cree"), on remplace ce paragraphe par la formulation « ... créés le <date>. » (verbatim O1).
+# Ancre = literal STABLE de la clause « acquis » du modele (present avant remplissage des tokens).
+# Defaut (mode absent / "achete" / autre) = clause du modele INCHANGEE (byte-fidele au gold).
+_ORIGINE_ACQUIS_ANCHOR_DENTAIRE = "pour les avoir régulièrement acquis auprès de"
+# B1 (Akainu ronde 2, 2026-07-12) : le modele du COMPROMIS dentaire fige la clause « créés »
+# (contrairement a l'acte qui fige « acquis ») -> ancre pour piloter le compromis par le mode
+# d'origine, symetriquement a l'acte. Sans ca, un cabinet « acheté » rend un compromis « créés »
+# alors que l'acte co-genere rend « acquis » = origines contradictoires dans le meme bundle.
+_ORIGINE_CREES_ANCHOR_DENTAIRE = "pour les avoir régulièrement créés le"
+
 # Convention systeme : une liste vide (0 element) se rend "Néant", a l'image des
 # apports en nature inexistants. Utilisee pour la reprise des salaries (0/1/N).
 NEANT = "Néant."
+
+# Nombre de pages (en lettres) du modele, par variante (retours 9.9 puis CE4).
+# Le front fournissait une constante unique « vingt » pour TOUS les docs de
+# cession, fausse pour le compromis. python-docx n'ayant pas de moteur de
+# pagination, on ne peut PAS compter les pages a l'execution : on fige donc la
+# longueur connue de chaque modele, source deterministe et fidele. Une variante
+# non mappee retombe sur la valeur fournie par le contexte.
+# CE4 (Albane 2026-06-26) : le compromis fait en pratique SEPT pages (et non huit) ;
+# le defaut est donc « sept » (l'auto-comptage reel est impossible sans moteur de
+# pagination -> flag, cf. retour). Supersede la valeur « huit » du retour 9.9.
+# AC5 (Albane 2026-07-10) : l'acte DENTAIRE affichait « vingt » pages (constante unique du
+# front) alors qu'il en fait SEPT -> on fige « sept » pour cette variante (meme raison :
+# python-docx ne pagine pas).
+# AC5 PROPAGE (Akainu 2026-07-12, regle 68 Q4) : l'acte MEDICAL retombait sur le placeholder
+# « vingt » du front -> factuellement FAUX (238 paragraphes, quasi-parite avec le dentaire a
+# 227 = sept pages). L'intention d'AC5 (pas de nombre placeholder faux) s'applique PARTOUT ->
+# on fige « sept » aussi pour l'acte medical. Nombre exact a confirmer Albane (flag QUESTIONS).
+_PAGES_LETTRES_BY_VARIANT: dict[tuple[str, str], str] = {
+    (ACTE, DENTAIRE): "sept",
+    (ACTE, MEDICAL): "sept",
+    (COMPROMIS, DENTAIRE): "sept",
+    (COMPROMIS, MEDICAL): "sept",
+}
 
 # Dossier des modeles Word tokenises, resolu independamment du cwd.
 # parents[4] depuis src/sydel_doc_engine/generators/lot_03/ = racine du repo.
@@ -69,25 +124,12 @@ _MODEL_GLOB_BY_VARIANT: dict[tuple[str, str], str] = {
     (COMPROMIS, DENTAIRE): "Compromis*cession*dentaire*.docx",
 }
 
-# Mois francais accentues pour un rendu fidele "10 mars 1975".
-_MONTHS_FR = (
-    "",
-    "janvier",
-    "février",
-    "mars",
-    "avril",
-    "mai",
-    "juin",
-    "juillet",
-    "août",
-    "septembre",
-    "octobre",
-    "novembre",
-    "décembre",
-)
 
 _ISO_DATE_RE = re.compile(r"^(\d{4})-(\d{2})-(\d{2})$")
 _TOKEN_RE = re.compile(r"\[[^\]\[]+\]")
+# CE2 (Albane 2026-06-26) : une periode d'exercice saisie en ANNEE SEULE (« 2023 »)
+# est rendue en PLAGE de dates « Du 01/01/2023 au 31/12/2023 » (format du modele).
+_YEAR_ONLY_RE = re.compile(r"^\s*(\d{4})\s*$")
 
 
 @dataclass(frozen=True)
@@ -105,7 +147,7 @@ def generate_cession_cabinet_docx(
     # Validation metier conservee (regles credit-vendeur / SCM = acte medical uniquement, etc.).
     _validate_context(ctx, variant)
     model_path = _resolve_model_path(variant)
-    replacements = _build_cession_replacements(ctx)
+    replacements = _build_cession_replacements(ctx, variant)
     gender_pairs = _build_cession_gender_pairs(ctx)
     output_path = output_dir / variant.output_filename
     return render_cession_from_template(
@@ -113,26 +155,503 @@ def generate_cession_cabinet_docx(
         replacements,
         output_path,
         gender_pairs=gender_pairs,
+        paragraph_overrides=_build_paragraph_overrides(ctx, variant),
+        segment_overrides=_build_segment_overrides(ctx),
+        line_fixes=_build_line_fixes(ctx, variant),
+        highlight_anchors=_build_highlight_anchors(variant),
+        clause_removals=_build_clause_removals(ctx, variant),
+        clause_insertions=_build_clause_insertions(ctx, variant),
+        # AC3 (Albane 2026-07-10) : le modele dentaire acte porte une revision Word residuelle
+        # (« Sur le droit au bail ») a neutraliser. On resout les revisions (accept-all, neutre
+        # pour le texte) sur les ACTES ; le medical acte n'en porte aucune (no-op). Compromis
+        # HORS PERIMETRE de ce ticket -> non touche (leurs marques residuelles = flag separe).
+        resolve_revisions=(variant.etape == ACTE),
+        # AC1 (Albane 2026-07-10) : sur l'ACTE, la tete de la designation du cedant passe en gras.
+        bold_designation_prefix=_build_cedant_designation_prefix(ctx, variant),
     )
 
 
+def _build_cedant_designation_prefix(
+    ctx: DocumentGenerationContext,
+    variant: CessionCabinetVariant,
+) -> str | None:
+    """Tete de la designation du cedant a mettre en GRAS sur l'ACTE (AC1, Albane 2026-07-10).
+
+    « <civilite civile> <prenom> <nom> » (ex. « Monsieur Jean Durand ») — meme patron que
+    l'acte de cession de parts SPFPL (A2, 2026-07-09) : le prefixe en gras, le RESTE de la ligne
+    en maigre. SUPERSEDE CE1 (2026-06-26, nom SEUL en gras) pour l'acte. Le compromis reste hors
+    perimetre de ce ticket (flag de propagation). None hors ACTE ou identite vendeur incomplete.
+    """
+    if variant.etape != ACTE:
+        return None
+    cession = ctx.cession
+    if cession is None:
+        return None
+    vendeur = cession.vendeur or CessionVendeur()
+    return _person_label(
+        civilite_civile(vendeur.civilite_affichage or "", vendeur.genre),
+        vendeur.prenom,
+        vendeur.nom,
+    )
+
+
+# CE6 (Albane 2026-06-26) : passages a SURLIGNER (jaune) pour signaler une zone a
+# completer a la main. Ces passages sont STATIQUES (sans token), donc le nettoyage
+# anti-surlignage du modele les de-surlignerait ; on RE-POSE donc le surlignage en
+# CODE, APRES le nettoyage. La cle = sous-chaine litterale d'un run cible.
+_CONTRATS_TRAVAIL_ANCHOR = "contrats de travail"
+
+# R5-contrats (Rafael 2026-06-29) : la clause de reprise des contrats de travail est
+# desormais GENEREE (wording exact ci-dessous) et placee JUSTE AVANT le point « De payer
+# tous frais... » du point n°3 (obligations du soussigne de seconde part / acquereur), sur
+# l'acte MEDICAL ET DENTAIRE. Elle est CONDITIONNELLE : presente seulement si au moins un
+# salarie est repris (sinon ABSENTE). Cela supersede l'etat CE6 (medical = zone surlignee a
+# completer a la main) et deplace la clause dentaire (auparavant APRES « De payer tous frais »).
+#
+# Ancre d'insertion = debut litteral du paragraphe « De payer tous frais... » (point n°3).
+_PAYER_FRAIS_ANCHOR = "De payer tous frais"
+# Anciens emplacements a SUPPRIMER (remplaces par l'insertion ci-dessus) :
+#  - dentaire : le paragraphe-token [clause_reprise_salaries] (apres « De payer tous frais ») ;
+#  - medical  : le paragraphe statique incomplet « De reprendre les contrats de travail de »
+#               (zone CE6 a completer a la main), idem apres « De payer tous frais ».
+_CLAUSE_SALARIES_TOKEN = "[clause_reprise_salaries]"
+_CONTRATS_TRAVAIL_STATIQUE_MEDICAL = "De reprendre les contrats de travail de"
+
+
+def _build_highlight_anchors(variant: CessionCabinetVariant) -> list[str]:
+    """Sous-chaines de runs a re-surligner apres remplissage (CE6, superseded).
+
+    R5-contrats (Rafael 2026-06-29) : la clause medicale de reprise des contrats de
+    travail n'est plus une zone a completer a la main (surlignee) mais une clause
+    GENEREE (cf. _build_clause_insertions). Plus aucun variant n'est re-surligne ici.
+    """
+    return []
+
+
+def _build_clause_removals(
+    ctx: DocumentGenerationContext,
+    variant: CessionCabinetVariant,
+) -> list[str]:
+    """R5-contrats (CORRIGE 2026-06-29) : plus de suppression/deplacement de la clause.
+
+    La clause de reprise des contrats de travail est rendue EN PLACE (a sa position du
+    modele = point 3, APRES « De payer tous frais ») via _build_paragraph_overrides :
+    le token dentaire [clause_reprise_salaries] (P168) et la ligne statique medicale
+    « De reprendre les contrats de travail de » (P187) sont remplis sur place, ou retires
+    (override None) si 0 salarie. Verbatim Albane IMG_7837 : la clause est le « point 3 »,
+    apres « De payer tous frais » -> on NE la deplace plus.
+    """
+    return []
+
+
+def _build_clause_insertions(
+    ctx: DocumentGenerationContext,
+    variant: CessionCabinetVariant,
+) -> list[tuple[str, str]]:
+    """R5-contrats (CORRIGE 2026-06-29) : plus d'insertion deplacee.
+
+    La clause est desormais rendue EN PLACE par _build_paragraph_overrides (cf.
+    _build_clause_removals). Conserve pour compatibilite de signature -> liste vide.
+    """
+    return []
+
+
+# Titre civil (M./Mme) derive du genre, pour les emplacements ou un titre
+# professionnel « Docteur » n'a pas sa place (retours 9.2 : la societe est
+# representee par « M./Mme », jamais « Dr »).
+_CIVIL_TITLE_BY_GENDER = {
+    Gender.MASCULIN: "M.",
+    Gender.FEMININ: "Mme",
+}
+
+
+def _civil_title(genre: Gender | None) -> str | None:
+    if genre is None:
+        return None
+    return _CIVIL_TITLE_BY_GENDER.get(genre)
+
+
+@dataclass(frozen=True)
+class _LineFix:
+    """Correctif de PARAGRAPHE ancre, applique APRES le remplissage des tokens.
+
+    `anchor` : sous-chaine litterale identifiant le paragraphe cible.
+    `pattern` : regex appliquee au texte du paragraphe (apres tokens + genre).
+    `replacement` : remplacement (groupes regex autorises).
+    """
+
+    anchor: str
+    pattern: re.Pattern[str]
+    replacement: str
+
+
+def _build_line_fixes(
+    ctx: DocumentGenerationContext,
+    variant: CessionCabinetVariant,
+) -> list[_LineFix]:
+    """Correctifs post-remplissage des modeles de cession (retours 9.2).
+
+    9.2 — « Représentée par son <fonction>, ... » : le modele COMPROMIS dentaire
+    pointe le VENDEUR (mauvaise personne) et le compromis affiche « Docteur ». On
+    reecrit l'identite du representant de la societe avec un titre CIVIL (M./Mme).
+
+    M-2 (Akainu SELARL ronde 5, 2026-07-12) : la reecriture s'applique desormais a TOUTES les
+    variantes (acte + compromis). L'acte MEDICAL et les compromis pointent deja le representant
+    par tokens -> la reecriture est byte-identique (meme identite). L'acte DENTAIRE, lui, rendait
+    la ligne « Représentée par son <fonction>, … » depuis les tokens du VENDEUR : avec un vendeur
+    DISTINCT du fondateur (case decochee), le cedant apparaissait a tort comme gerant de la SELARL
+    acquereuse (mauvaise personne + genre incoherent). La reecriture depuis acquereur.representant
+    (le fondateur, dont le genre est capture) corrige la personne ET l'accord partout.
+
+    (Le bloc signature 9.8 est traite en amont, au niveau des tokens
+    [signature_acquereur]/[signature_vendeur] dans _build_cession_replacements.)
+    """
+    fixes: list[_LineFix] = []
+    cession = ctx.cession
+    if cession is None:
+        return fixes
+
+    acquereur = cession.acquereur or CessionAcquereur()
+    representant = acquereur.representant or CessionRepresentant()
+
+    # --- 9.2 : identite du representant dans « Représentée par son/sa ... » ---
+    civil = _civil_title(representant.genre)
+    rep_identity = _person_label(civil, representant.prenom, representant.nom)
+    if rep_identity:
+        # Reecrit ce qui suit « Représentée par sa/son <fonction>, » jusqu'a la
+        # virgule precedant « domicilié(e) en cette qualité ». Insensible a la
+        # personne erronee (vendeur) ou au titre (Docteur) du modele source.
+        fixes.append(
+            _LineFix(
+                anchor="Représentée par s",
+                pattern=re.compile(r"(Représentée par s(?:on|a) [^,]+, ).+?(, domicilié)"),
+                replacement=rf"\g<1>{rep_identity.replace(chr(92), chr(92) * 2)}\g<2>",
+            )
+        )
+
+    # CE3 (Albane 2026-06-26) « le Docteur … » SUPPRIME : Rafael 2026-07-09 « supprimer partout »
+    # -> le token [civilite_vendeur] rend desormais la civilite CIVILE (Monsieur/Madame), qui ne
+    # prend pas d'article. L'insertion de « le » devant « Docteur » n'a donc plus lieu d'etre (elle
+    # ne matcherait plus « Docteur » de toute facon). Le bloc signature 9.8 reste porte par les
+    # tokens [signature_*].
+    return fixes
+
+
+# Formes sociales connues susceptibles de prefixer une denomination saisie
+# (ordre indifferent : on strip le premier prefixe matche). Sert a dedupliquer
+# l'entete de signature « Pour la <forme> <denomination> » quand la denomination
+# porte deja une forme en tete — y compris une forme DIFFERENTE de celle posee
+# par le moteur apres post-correction (ex. forme='SELAS' apres SELAS-only sur une
+# denomination prefixee « SELARL »), qui sinon doublerait en « SELAS SELARL ... ».
+_FORMES_SOCIALES_CONNUES: tuple[str, ...] = (
+    "SELARL",
+    "SELAS",
+    "SELAFA",
+    "SELCA",
+    "SPFPL",
+    "SCP",
+    "SCM",
+    "SCI",
+    "SCS",
+    "SAS",
+    "SARL",
+    "SA",
+)
+
+
+def _strip_forme_prefix(denomination: str) -> str:
+    """Retire un prefixe de forme sociale connu en tete de la denomination.
+
+    Insensible a la casse, sur la limite de mot (« SCM Centre » -> « Centre »
+    mais « SCMédecins » reste intact). Aucun prefixe connu -> chaine inchangee.
+    """
+    for forme in _FORMES_SOCIALES_CONNUES:
+        match = re.match(rf"(?i)^{re.escape(forme)}\b\s*", denomination)
+        if match:
+            return denomination[match.end():].strip()
+    return denomination
+
+
+def _societe_signature_label(
+    acquereur: CessionAcquereur,
+    representant: CessionRepresentant,
+) -> str | None:
+    """Libelle de signature de la SOCIETE acquereur (retours 9.8).
+
+    Forme : « Pour la <forme> <denomination>, <fonction> <M./Mme Prenom Nom> ».
+    La societe signe via son representant ; titre CIVIL (M./Mme), pas « Docteur ».
+    """
+    denomination = (acquereur.denomination_societe or "").strip()
+    if not denomination:
+        return None
+    forme = (acquereur.forme_sociale or "").strip()
+    # Eviter « Pour la SELARL SELARL CABINET ... » et « Pour la SELAS SELARL ... » :
+    # la denomination saisie contient souvent deja une forme sociale en prefixe (la
+    # meme OU une autre, ex. forme post-corrigee 'SELAS' sur une denomination encore
+    # prefixee 'SELARL'). On strip defensivement TOUT prefixe de forme connu avant de
+    # re-prefixer avec la forme du moteur, source de verite. Sans forme et sans
+    # prefixe a retirer, la denomination ressort telle quelle (cas normal inchange).
+    if forme:
+        base = _strip_forme_prefix(denomination)
+        entete = f"Pour la {forme} {base}" if base else f"Pour la {forme}"
+    else:
+        entete = f"Pour la {denomination}"
+    entete = re.sub(r"\s+", " ", entete).strip()
+
+    civil = _civil_title(representant.genre)
+    rep_identity = _person_label(civil, representant.prenom, representant.nom)
+    fonction = (representant.fonction or "").strip()
+    if rep_identity and fonction:
+        return f"{entete}, {fonction} {rep_identity}"
+    if rep_identity:
+        return f"{entete}, {rep_identity}"
+    return entete
+
+
+# Segments matrimoniaux EXACTS des modeles (chaines figees relevees dans
+# project/source_documents/lot_03/). Quand le vendeur n'est PAS marie, le
+# segment complet « ... sous le regime de ... avec ... » est remplace par la
+# seule situation maritale : aucune phrase incomplete (retours client
+# 2026-06-11). Vendeur marie -> tokens remplis normalement.
+_VENDEUR_MARITAL_SEGMENTS: tuple[str, ...] = (
+    (
+        "[situation_maritale_vendeur] sous le régime de [regime_matrimonial_vendeur] "
+        "avec [civilite_conjoint_vendeur] [prenom_conjoint_vendeur] [nom_conjoint_vendeur]."
+    ),
+    (
+        "[situation_maritale_vendeur] à [prenom_conjoint_vendeur] [nom_conjoint_vendeur], "
+        "sous le régime de [regime_matrimonial_vendeur]."
+    ),
+    (
+        "[situation_maritale_vendeur] avec [civilite_conjoint_vendeur] "
+        "[prenom_conjoint_vendeur] [nom_conjoint_vendeur], sous le régime de "
+        "[regime_matrimonial_vendeur], sans contrat de mariage."
+    ),
+)
+
+
+def _build_segment_overrides(ctx: DocumentGenerationContext) -> dict[str, str]:
+    cession = ctx.cession
+    if cession is None:
+        return {}
+    overrides: dict[str, str] = {}
+    # R3 « supprimer PARTOUT » (Rafael 2026-07-09) : deux LITERALS des modeles echappent au
+    # token [civilite_vendeur] (deja civil : Monsieur/Madame) —
+    #   (a) acte MEDICAL P46 « Le [civilite_vendeur] … vend » : l'article « Le » est correct
+    #       devant « Docteur » mais fautif devant « Monsieur » -> on retire « Le » (segment override
+    #       AVANT le remplissage) ; le token se remplit ensuite normalement (« Monsieur X vend ») ;
+    #   (b) acte DENTAIRE signature (cellule de tableau) « Dr [prenom_vendeur] [nom_vendeur] » :
+    #       le « Dr » fige -> remplace par le token [civilite_vendeur] (civil).
+    # Segments propres a un seul modele -> inoffensifs pour les autres (chaine absente).
+    overrides["Le [civilite_vendeur] [prenom_vendeur] [nom_vendeur] vend"] = (
+        "[civilite_vendeur] [prenom_vendeur] [nom_vendeur] vend"
+    )
+    overrides["Dr [prenom_vendeur] [nom_vendeur]"] = (
+        "[civilite_vendeur] [prenom_vendeur] [nom_vendeur]"
+    )
+    # Fidelite forme acquereur : SEUL le modele de l'acte medical fige « SELARL »
+    # en DUR sur la ligne « SELARL au capital de [capital_social_acquereur] » (les 3
+    # autres modeles — acte dentaire, compromis medical/dentaire — utilisent deja le
+    # token [forme_sociale_acquereur]). On normalise le modele medical en restaurant
+    # le token AVANT le remplissage, pour que la VRAIE forme de l'acquereur ressorte
+    # (ex. « SELAS » sur un dossier SELAS, ou la forme post-corrigee par le slice).
+    # Pour un acquereur SELARL (cas SELARL nominal), le token se remplit en « SELARL »
+    # -> sortie byte-identique (gold *_matches_source_docx_line_by_line intact).
+    overrides["SELARL au capital de"] = "[forme_sociale_acquereur] au capital de"
+    # O24-fidelite-SELARL #2 (Albane/Rafael 2026-07-01, « comme les modeles ») : le TITRE de
+    # clause « Inscription de la SELARL au Tableau de l'Ordre… » est fige « SELARL » dans les 2
+    # compromis (medical + dentaire). Ses PROPRES modeles « transforme » (Drive Cession/Compromis)
+    # tokenisent ce titre en « Inscription de la [forme_sociale_acquereur] au Tableau ». On restaure
+    # donc le token pour refleter la VRAIE forme de l'acquereur (SELAS -> « SELAS », SELARL ->
+    # « SELARL » = byte-identique au gold, aucune regression). Meme logique que « au capital de »
+    # ci-dessus. Segment distinct (ne chevauche pas « SELARL au capital de »).
+    overrides["Inscription de la SELARL au Tableau"] = (
+        "Inscription de la [forme_sociale_acquereur] au Tableau"
+    )
+    vendeur = cession.vendeur or CessionVendeur()
+    situation = (vendeur.situation_maritale or "").strip()
+    # Garde PARTAGEE (mentions_conjoint) : remplace le test local `startswith("mari")`
+    # (divergent : NFKD absent) par la regle unique. Un MARIE laisse les segments source
+    # se remplir normalement (regime + conjoint) -> byte-identique au gold.
+    if situation and not mentions_conjoint(vendeur.situation_maritale):
+        # Albane 6.3/7.3 (RATIFIE 2026-07-06) : un PACSE affiche son PARTENAIRE (« pacsé(e)
+        # avec {Civilite Prenom Nom}. »), SANS « sous le régime de … » (le PACS n'a pas de
+        # sous-regime capture). « Pas de mention sans nom » : partenaire_pacse_clause -> "" si
+        # non renseigne -> on retombe sur le statut nu (comme un celibataire/divorce/veuf).
+        if mentions_partenaire_pacse(vendeur.situation_maritale):
+            clause = f"{situation}{partenaire_pacse_clause(vendeur.conjoint)}."
+        else:
+            clause = f"{situation}."
+        overrides.update(
+            {segment: clause for segment in _VENDEUR_MARITAL_SEGMENTS}
+        )
+    # CE5 (Albane 2026-06-26) : la clause credit-vendeur de l'acte medical est
+    # prefixee par l'instruction de redaction « Ajouter en cas de CV : ». Quand le
+    # credit-vendeur est ACTIF (clause conservee et remplie), cette mention parasite
+    # est retiree du texte. Le segment n'existe QUE dans l'acte medical -> inoffensif
+    # pour les autres modeles. Credit-vendeur inactif -> on ne touche pas (la clause
+    # reste, mention comprise, comme zone de redaction a la main).
+    financement = cession.financement or CessionFinancement()
+    credit_vendeur = financement.credit_vendeur or CessionCreditVendeur()
+    if credit_vendeur.actif:
+        overrides["Ajouter en cas de CV : "] = ""
+    # R9 (Albane 2026-07-07) : la clause « communiqué au Conseil départemental de l’Ordre »
+    # nomme le departement de l'Ordre du VENDEUR, en NOM avec la preposition correcte
+    # (« au Conseil départemental de l’Ordre de Seine-et-Marne »), via la meme convention
+    # `elision_de(departement_nom(…))` que la 12.4 SPFPL ratifiee. Le segment est present
+    # dans les 4 modeles (actes ET compromis, medical + dentaire) -> propagation a toutes
+    # les variantes qui portent la clause (regle 68 Q4). Departement absent -> clause du
+    # modele inchangee (pas de « de  » orphelin).
+    ordre_departement = (vendeur.ordre_departemental or "").strip()
+    if ordre_departement:
+        overrides["communiqué au Conseil départemental de l’Ordre en vue"] = (
+            "communiqué au Conseil départemental de l’Ordre "
+            f"{elision_de(departement_nom(ordre_departement))} en vue"
+        )
+    return overrides
+
+
+def _build_origine_overrides(
+    variant: CessionCabinetVariant,
+    cabinet: CessionCabinet,
+) -> dict[str, str | None]:
+    """Surcharges de la clause d'origine de propriete des modeles DENTAIRES, pilotees par
+    `origine_propriete_mode` (le medical branche via [origine_propriete_phrase]).
+
+    - AC2 (Albane 2026-07-10, verbatim O1) : ACTE dentaire, mode "cree" -> la clause « acquis »
+      figee du modele devient « ... pour les avoir régulièrement créés le <date>. ».
+    - B1 (Akainu ronde 2, 2026-07-12) : COMPROMIS dentaire, mode "achete" -> la clause « créés »
+      figee devient la clause « acquis » VERBATIM de l'acte (identite vendeur + precedent + date
+      + prix), pour que l'acte ET le compromis co-generes portent la MEME origine.
+    Mode absent / autre -> clause du modele inchangee (byte-fidele au gold). Tokens remplis ensuite.
+    """
+    overrides: dict[str, str | None] = {}
+    if variant.type_cabinet != DENTAIRE:
+        return overrides
+    mode = (cabinet.origine_propriete_mode or "").strip().lower()
+    if variant.etape == ACTE and mode == ORIGINE_MODE_CREE:
+        overrides[_ORIGINE_ACQUIS_ANCHOR_DENTAIRE] = (
+            "[civilite_vendeur] [prenom_vendeur] [nom_vendeur] est propriétaire des "
+            "éléments constitutifs du cabinet pour les avoir régulièrement créés "
+            "le [date_origine_propriete]."
+        )
+    elif variant.etape == COMPROMIS and mode == ORIGINE_MODE_ACHETE:
+        overrides[_ORIGINE_CREES_ANCHOR_DENTAIRE] = (
+            "[civilite_vendeur] [prenom_vendeur] [nom_vendeur] est propriétaire des "
+            "éléments constitutifs du cabinet pour les avoir régulièrement acquis auprès de "
+            "[civilite_precedent_proprietaire] [prenom_precedent_proprietaire] "
+            "[nom_precedent_proprietaire], le [date_origine_propriete] au prix de "
+            "[prix_origine_propriete] euros."
+        )
+    return overrides
+
+
+def _build_paragraph_overrides(
+    ctx: DocumentGenerationContext,
+    variant: CessionCabinetVariant,
+) -> dict[str, str | None]:
+    """Surcharges PARAGRAPHE entier, pilotees par token ancre (retours client 2026-06-11).
+
+    token -> texte : le paragraphe contenant le token est remplace par ce texte ;
+    token -> None : le paragraphe est supprime (aucune phrase incomplete).
+    - « Les locaux sont composes d'une piece de [superficie_local]... » : la phrase
+      figee est remplacee par le descriptif libre du local s'il est saisi, sinon
+      supprimee (ticket 2.5 : jamais de phrase automatique imposee).
+    - [clause_reprise_salaries] (acte dentaire) : 0 salarie -> la phrase relative
+      aux salaries est supprimee du document (ticket 2.12/3.3 ; remplace la
+      convention « Neant » anterieure).
+    """
+    overrides: dict[str, str | None] = {}
+    cession = ctx.cession
+    if cession is None:
+        return overrides
+    bail = cession.bail_professionnel or CessionBailProfessionnel()
+    cabinet = cession.cabinet or CessionCabinet()
+    descriptif = (bail.descriptif_local or "").strip()
+    superficie = (cabinet.superficie_local or "").strip()
+    if descriptif:
+        overrides["[superficie_local]"] = descriptif
+    elif not superficie:
+        # Ni descriptif libre ni superficie : la phrase figee est supprimee.
+        # Une superficie renseignee (scenarios existants) conserve la phrase du
+        # modele avec le token remplace.
+        overrides["[superficie_local]"] = None
+    overrides.update(_build_origine_overrides(variant, cabinet))
+    # R5-contrats (verbatim Albane IMG_7837, 2026-06-29) : la clause de reprise des contrats
+    # de travail (point 3, APRES « De payer tous frais ») est remplie EN PLACE, a sa position
+    # du modele : token [clause_reprise_salaries] (dentaire) / ligne statique « De reprendre les
+    # contrats de travail de » (medical). >= 1 salarie -> clause filled ; 0 salarie -> override
+    # None (le paragraphe est retire). On ne deplace plus la clause.
+    if variant.etape == ACTE and variant.type_cabinet in (DENTAIRE, MEDICAL):
+        clause = (
+            _build_clause_reprise_salaries(cession.salaries) if cession.salaries else None
+        )
+        anchor = (
+            _CLAUSE_SALARIES_TOKEN
+            if variant.type_cabinet == DENTAIRE
+            else _CONTRATS_TRAVAIL_STATIQUE_MEDICAL
+        )
+        overrides[anchor] = clause
+    if variant.etape == ACTE and variant.type_cabinet == MEDICAL:
+        scm_actif = cession.scm is not None and cession.scm.actif
+        if not scm_actif:
+            # Pas de reprise de parts SCM -> la clause « De ceder l'integralite des
+            # parts ... SCM [denomination_scm] » (point 8, paragraphe ancre par
+            # token) est supprimee.
+            overrides["[denomination_scm]"] = None
+        else:
+            # CE8 (Albane 2026-06-26) : quand il y a une SCM, le point 8 porte la
+            # clause SCM (cf. modele) et le « De maintenir le cabinet medical dans
+            # son etat actuel... » (point 9) est RETIRE. Ancre = fragment litteral
+            # du paragraphe (statique, present avant remplissage des tokens).
+            overrides["De maintenir le cabinet médical dans son état actuel"] = None
+    return overrides
+
+
 # Paires d'accord en genre des modeles de cession, pilotees par la BONNE personne.
-# Chaines EXACTES figees relevees dans project/source_documents/lot_03/ :
-#  - Acte dentaire : fige au FEMININ ("née le", "Inscrite au tableau",
-#    "domiciliée en cette qualité").
-#  - Compromis dentaire / medical : fige au MASCULIN ("né le", "inscrit au tableau",
-#    "domicilié en cette qualité").
-#  - Acte medical : "né(e) le" inclusif (non touche : aucune paire ne le matche).
-# JAMAIS de regex de terminaison : uniquement ces chaines litterales ancrees.
-# "désigné" (role/invariant) et "Représentée" (la societe, toujours feminin) ne
-# sont PAS dans les paires : on n'y touche pas.
+# Chaines EXACTES figees relevees dans project/source_documents/lot_03/.
+#
+# Akainu SELARL ronde 2 (2026-07-12) — leçon regle 68 (« coder l'INTENTION, jamais une liste
+# de tournures ») : l'ancienne version ne couvrait que « né le »/« inscrit au tableau » -> une
+# VENDEUSE fuyait au masculin sur « inscrit au répertoire SIREN », « marié à/sous », « Ci-après
+# désigné », « le soussigné de première part » (fuites confirmees sur rendu reel H+F). On accorde
+# donc CHAQUE terme referant a la vendeuse, ancre au CONCEPT (pas a la phrase signalee) :
+#  - inscription : « inscrit au » couvre TOUS les registres du modele (Ordre + répertoire SIREN) ;
+#  - statut matrimonial : « marié » suivi de à/sous/avec ;
+#  - designation & qualite de PARTIE : « Ci-après désigné », « le/Le soussigné de première part »
+#    (la SECONDE part = l'acquereur, accordee par _CESSION_REPRESENTANT_PAIRS, jamais ici).
+# Bidirectionnel (apply_gender_pairs) : un modele fige au feminin (acte dentaire) redevient
+# masculin pour un homme. Le « né(e) le » inclusif du modele medical reste inclusif pour un
+# HOMME (pre-existant, non signale) et devient « née le » pour une femme (genre connu).
+# "Représentée" (la societe, toujours feminin) n'est PAS accordee ici.
 _CESSION_VENDEUR_PAIRS: list[tuple[str, str]] = [
     ("né le ", "née le "),
-    ("Inscrit au tableau", "Inscrite au tableau"),
-    ("inscrit au tableau", "inscrite au tableau"),
+    # « né(e) le » (medical, inclusif) est desormais resolu au genre EN AMONT, au niveau des
+    # tokens (put("né(e) le", ...), R5 Rafael 2026-07-13) -> plus besoin de paire ici.
+    ("Inscrit au ", "Inscrite au "),
+    ("inscrit au ", "inscrite au "),
+    # Statut matrimonial du vendeur, CONCEPT (regle 68) : « marié » quel que soit ce qui suit
+    # (« marié à/sous/avec … », « marié. » nu du compromis). apply_gender_pairs est prefix-safe
+    # (« marié » ⊂ « mariée » protege), donc pas de double accord.
+    ("marié", "mariée"),
+    ("Marié", "Mariée"),
+    ("Ci-après désigné ", "Ci-après désignée "),
+    # « soussigné de première part » = la vendeuse, CONCEPT accorde quelle que soit l'article /
+    # preposition contractee qui le precede (Akainu ronde 3 : « du soussigné de première part »
+    # dans « sous la garde et la surveillance du … » fuyait). SC4 « partout ailleurs ».
+    ("le soussigné de première part", "la soussignée de première part"),
+    ("Le soussigné de première part", "La soussignée de première part"),
+    ("du soussigné de première part", "de la soussignée de première part"),
+    ("au soussigné de première part", "à la soussignée de première part"),
 ]
 _CESSION_REPRESENTANT_PAIRS: list[tuple[str, str]] = [
     ("domicilié en cette qualité", "domiciliée en cette qualité"),
+    # Akainu R15 batch2+3 (2026-07-09) : possessif « son » -> « sa » devant la fonction
+    # feminine de la representante (« Représentée par son gérante » -> « sa gérante »).
+    # Pilote par le genre du representant (jamais applique a un homme). La fonction
+    # usuelle du representant est a initiale consonne (gérante/présidente/directrice) ;
+    # le cas rare « son associée » (voyelle -> « son ») n'apparait pas dans ces modeles.
+    ("Représentée par son ", "Représentée par sa "),
 ]
 
 
@@ -160,14 +679,34 @@ def _build_cession_gender_pairs(
     return pairs
 
 
-def render_cession_from_template(
+def render_cession_from_template(  # noqa: C901
     model_path: Path,
     replacements: dict[str, str],
     output_path: Path,
     *,
     gender_pairs: list[tuple[Gender, list[tuple[str, str]]]] | None = None,
+    paragraph_overrides: dict[str, str | None] | None = None,
+    segment_overrides: dict[str, str] | None = None,
+    line_fixes: list[_LineFix] | None = None,
+    highlight_anchors: list[str] | None = None,
+    clause_removals: list[str] | None = None,
+    clause_insertions: list[tuple[str, str]] | None = None,
+    resolve_revisions: bool = False,
+    bold_designation_prefix: str | None = None,
 ) -> Path:
     """Charge le modele tokenise et remplace chaque token [xxx] run par run.
+
+    `segment_overrides` (optionnel) : remplacement de SEGMENTS exacts du modele
+    (chaines litterales pouvant contenir plusieurs tokens) AVANT le remplacement
+    token par token. Le paragraphe touche est reecrit sur son premier run.
+    Utilise pour les clauses matrimoniales du vendeur non marie.
+
+    `paragraph_overrides` (optionnel) : surcharges PARAGRAPHE entier appliquees
+    AVANT le remplacement des tokens. Pour chaque token ancre present dans un
+    paragraphe : valeur texte -> le paragraphe est reecrit avec ce texte (mise en
+    forme du premier run conservee) ; valeur None -> le paragraphe est supprime.
+    Permet les clauses « tout ou rien » (descriptif libre du local, phrase
+    salaries) sans jamais laisser de phrase incomplete.
 
     `gender_pairs` (optionnel) : liste de couples `(genre, paires)` appliques
     APRES le remplacement des tokens et AVANT la securite anti-token-residuel,
@@ -176,25 +715,81 @@ def render_cession_from_template(
     le `genre` de la BONNE personne (vendeur, representant...). C'est le
     generateur qui pilote les paires : aucune normalisation magique globale.
 
+    `line_fixes` (optionnel) : correctifs regex de PARAGRAPHE appliques APRES le
+    remplissage des tokens ET l'accord en genre (donc sur le texte final). Sert
+    aux corrections qui ne peuvent pas etre portees par le modele source (lecture
+    seule) — ex. 9.2 : l'identite du representant dans « Représentée par son... ».
+
     Securite anti-trou : si un token [...] subsiste apres remplacement, leve
     ValueError en listant les tokens residuels (un token oublie = un test rouge).
     """
     document = Document(str(model_path))
 
+    # Retours Albane 9.3 : les modeles source embarquent des commentaires Word
+    # (annotations de relecture). Ils sont strippes a la generation pour ne
+    # jamais fuir dans le document client. No-op si le modele n'en porte pas.
+    _strip_word_comments(document)
+    # KAN-33 : de-rouge les champs « a completer a la main » herites du modele (date de
+    # transfert de propriete, etc.) -> zone vierge, plus de rouge.
+    _clear_red_placeholders(document)
+
+    # AC3 (Albane 2026-07-10) : neutraliser les revisions Word residuelles (track changes) AVANT
+    # tout traitement de texte, pour qu'aucune marque de revision ne subsiste. No-op si aucune.
+    if resolve_revisions:
+        _resolve_tracked_changes(document)
+
+    if paragraph_overrides:
+        _apply_paragraph_overrides(document, paragraph_overrides)
+    if segment_overrides:
+        _apply_segment_overrides(document, segment_overrides)
+    # R5-contrats : retirer l'ancien emplacement de la clause salaries (apres « De
+    # payer tous frais ») AVANT de re-inserer la clause a sa nouvelle place. La
+    # suppression precede l'insertion pour ne jamais dupliquer la clause.
+    if clause_removals:
+        _apply_clause_removals(document, clause_removals)
+    if clause_insertions:
+        _apply_clause_insertions(document, clause_insertions)
+
     for paragraph in _iter_all_paragraphs(document):
         for run in paragraph.runs:
             text = run.text
-            if "[" not in text:
-                continue
-            for token, value in replacements.items():
-                if token in text:
-                    text = text.replace(token, value)
-            if text != run.text:
-                run.text = text
+            had_token = "[" in text
+            if had_token:
+                for token, value in replacements.items():
+                    if token in text:
+                        text = text.replace(token, value)
+                if text != run.text:
+                    run.text = text
+            # 9.1 : retirer le surlignage du modele d'un run REMPLI, sans jamais
+            # toucher une zone encore a completer. Cas, par run :
+            #  - run-token rempli par une vraie valeur (plus de token, texte non
+            #    vide) -> de-surligne (champ complete) ;
+            #  - run-token rendu VIDE (option non saisie) -> GARDE le jaune
+            #    (zone a completer a la main, retours 9.1) ;
+            #  - run statique surligne du modele (jamais de token : ponctuation,
+            #    espace, texte fige) -> de-surligne (ce n'est pas un champ).
+            still_has_token = "[" in run.text
+            if not still_has_token and (run.text.strip() or not had_token):
+                _clear_run_highlight(run)
 
     if gender_pairs:
         for paragraph in _iter_all_paragraphs(document):
             _apply_gender_pairs_to_paragraph(paragraph, gender_pairs)
+
+    if line_fixes:
+        for paragraph in _iter_all_paragraphs(document):
+            _apply_line_fixes_to_paragraph(paragraph, line_fixes)
+
+    if highlight_anchors:
+        # CE6 : re-poser le surlignage APRES le nettoyage anti-surlignage, sur les
+        # runs statiques cibles (zones a completer a la main).
+        for paragraph in _iter_all_paragraphs(document):
+            _apply_highlight_anchors_to_paragraph(paragraph, highlight_anchors)
+
+    # AC1 (Albane 2026-07-10) : mettre en gras la tete de la designation du cedant (texte final,
+    # apres remplissage + accord en genre). Applique en dernier pour operer sur le texte definitif.
+    if bold_designation_prefix:
+        _apply_bold_designation(document, bold_designation_prefix)
 
     residual = _collect_residual_tokens(document)
     if residual:
@@ -203,6 +798,11 @@ def render_cession_from_template(
             f"Tokens non remplaces dans {model_path.name} pour {DOCUMENT_CODE} : {joined}."
         )
 
+    # Rafael/Albane 2026-07-09 : « demeurant [adresse] » -> « demeurant au [adresse] »
+    # (convention universelle) ; le mot est fige dans le modele source d'acte de cession.
+    ensure_demeurant_au(document)
+    # KAN-36 : bloc signature final solidaire (une seule page).
+    keep_final_signature_block_together(document)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     document.save(str(output_path))
     return output_path
@@ -214,6 +814,310 @@ def _iter_all_paragraphs(document):
         for row in table.rows:
             for cell in row.cells:
                 yield from cell.paragraphs
+
+
+# Parts de commentaires Word a retirer du package une fois les references nettoyees.
+_COMMENT_PART_SUFFIXES = (
+    "comments.xml",
+    "commentsExtended.xml",
+    "commentsIds.xml",
+    "commentsExtensible.xml",
+)
+# Elements de commentaire references DANS document.xml (corps + tableaux).
+_COMMENT_BODY_TAGS = (
+    "w:commentRangeStart",
+    "w:commentRangeEnd",
+    "w:commentReference",
+)
+
+
+def _clear_run_highlight(run) -> None:
+    """Retire le surlignage (w:highlight) d'un run rempli (retours 9.1).
+
+    Supprime l'element w:highlight de rPr s'il existe. No-op si le run n'est pas
+    surligne. Manipulation XML directe : python-docx n'expose pas la suppression
+    propre du highlight (poser AUTO laisserait un w:highlight w:val=\"none\").
+    """
+    rpr = run._element.find(qn("w:rPr"))
+    if rpr is None:
+        return
+    for highlight in rpr.findall(qn("w:highlight")):
+        rpr.remove(highlight)
+
+
+def _clear_red_placeholders(document) -> None:
+    """KAN-33 (Rafael 2026-07-15) : retire la couleur ROUGE (w:color w:val=ff0000) heritee du
+    modele, qui marquait des champs « a completer a la main » (ex. la date de transfert de
+    propriete, impossible a connaitre a la redaction). Rafael veut ces zones VIERGES et NON
+    rouges (« enlever la variable et ne pas la mettre en rouge ») : le champ reste vide, on
+    supprime juste le marquage rouge — runs ET marques de paragraphe (le rouge se pose souvent
+    sur le pilcrow d'un paragraphe vide). Manipulation XML directe (python-docx n'expose pas la
+    couleur de la marque de fin). No-op si aucun rouge."""
+    for color_el in list(document.element.iter(qn("w:color"))):
+        if (color_el.get(qn("w:val")) or "").lower() == "ff0000":
+            parent = color_el.getparent()
+            if parent is not None:
+                parent.remove(color_el)
+
+
+def _strip_word_comments(document) -> None:
+    """Supprime tout commentaire Word herite du modele source (retours 9.3).
+
+    Deux passes complementaires, sinon le DOCX serait corrompu dans Word :
+      1. retirer les elements de reference (commentRangeStart/End +
+         le run d'ancrage portant commentReference) du document.xml ;
+      2. supprimer les parts word/comments*.xml + leurs relations.
+    Entierement no-op si le modele ne porte aucun commentaire.
+    """
+    body = document.element.body
+
+    # 1) Marqueurs de plage : commentRangeStart / commentRangeEnd.
+    for tag in ("w:commentRangeStart", "w:commentRangeEnd"):
+        for node in body.findall(".//" + qn(tag)):
+            parent = node.getparent()
+            if parent is not None:
+                parent.remove(node)
+
+    # 1bis) Le run d'ancrage (w:r contenant w:commentReference) est retire en
+    # entier : c'est un run technique sans texte visible (rPr + commentReference).
+    for ref in body.findall(".//" + qn("w:commentReference")):
+        run = ref.getparent()
+        if run is None or run.tag != qn("w:r"):
+            # Reference hors run attendu : retirer au moins l'element lui-meme.
+            if run is not None:
+                run.remove(ref)
+            continue
+        run_parent = run.getparent()
+        if run_parent is not None:
+            run_parent.remove(run)
+
+    # 2) Relations vers les parts de commentaires. Drop la relation suffit :
+    # une part orpheline (plus referencee) n'est pas re-serialisee a la sauvegarde.
+    main_part = document.part
+    for rel_id, related in list(main_part.related_parts.items()):
+        partname = str(getattr(related, "partname", ""))
+        if partname.endswith(_COMMENT_PART_SUFFIXES):
+            main_part.drop_rel(rel_id)
+
+
+def _resolve_tracked_changes(document) -> None:
+    """AC3 (Albane 2026-07-10) : neutralise les revisions Word residuelles (track changes) du
+    modele en les RESOLVANT (accept-all), pour qu'aucune marque de revision ne subsiste dans le
+    document client.
+
+    Resolution deterministe et NEUTRE POUR LE TEXTE VISIBLE. Les modeles Google-Docs exportent la
+    revision enveloppee dans des controles de contenu w:sdt (« goog_rdk_… ») : le texte insere est
+    « Sur le droit <ins>au bail</ins> » et le texte supprime « <del>d'exercer dans les lieux</del> »
+    (revision d'Albane, coherente avec le corps « Le droit au bail des locaux… »). On resout ainsi :
+      - w:ins / w:moveTo  -> deballes (les enfants remontent a la place du wrapper) ;
+      - w:del / w:moveFrom -> supprimes en entier (texte supprime abandonne) ;
+      - w:rPrChange / w:pPrChange -> supprimes (on garde le formatage courant) ;
+      - w:sdt -> APLATIS (remplaces par le contenu de leur w:sdtContent) : sinon le run insere
+        « au bail », une fois sorti du w:ins, resterait piege dans un w:sdtContent que python-docx
+        (et le remplissage de tokens) ne parcourent pas -> texte perdu. Aplatir rend le run visible
+        et normal, identique sous Word. Resultat : « Sur le droit au bail », sans marque.
+    No-op complet si le modele ne porte ni revision ni w:sdt. GATE ACTE UNIQUEMENT (le compromis,
+    hors perimetre, embarque des w:sdt PORTEURS DE TOKENS et des suppressions de tokens : a ne pas
+    aplatir ici).
+    """
+    body = document.element.body
+    # Deballer insertions et deplacements-vers : remonter les enfants a la place du wrapper.
+    for tag in ("w:ins", "w:moveTo"):
+        for node in body.findall(".//" + qn(tag)):
+            _unwrap_xml_element(node)
+    # Supprimer suppressions/deplacements-depuis (texte abandonne) et enregistrements de format.
+    for tag in ("w:del", "w:moveFrom", "w:rPrChange", "w:pPrChange"):
+        for node in body.findall(".//" + qn(tag)):
+            _remove_xml_element(node)
+    # Aplatir les controles de contenu w:sdt (les runs de leur w:sdtContent remontent a la place
+    # du sdt). Traitement du PLUS PROFOND au PLUS externe (findall en ordre document = parent avant
+    # enfant -> reversed = enfant avant parent) pour gerer les sdt imbriques (« goog_rdk » niche).
+    for sdt in reversed(body.findall(".//" + qn("w:sdt"))):
+        _flatten_sdt(sdt)
+
+
+def _unwrap_xml_element(node) -> None:
+    """Remplace un element par ses enfants, a la position qu'il occupait chez son parent."""
+    parent = node.getparent()
+    if parent is None:
+        return
+    index = parent.index(node)
+    for child in reversed(list(node)):
+        parent.insert(index, child)
+    parent.remove(node)
+
+
+def _remove_xml_element(node) -> None:
+    """Retire un element de son parent (no-op s'il est deja detache)."""
+    parent = node.getparent()
+    if parent is not None:
+        parent.remove(node)
+
+
+def _flatten_sdt(sdt) -> None:
+    """Aplatit un controle de contenu w:sdt : les enfants de son w:sdtContent remontent a la
+    place du sdt chez le parent (le wrapper sdt + sdtPr disparaissent, les runs restent)."""
+    parent = sdt.getparent()
+    if parent is None:
+        return
+    content = sdt.find(qn("w:sdtContent"))
+    index = parent.index(sdt)
+    if content is not None:
+        for child in reversed(list(content)):
+            parent.insert(index, child)
+    parent.remove(sdt)
+
+
+def _apply_bold_designation(document, prefix: str) -> None:
+    """AC1 (Albane 2026-07-10) : met en GRAS la tete de la designation du cedant
+    (« <civilite> <prenom> <nom> ») et laisse le RESTE de la ligne en maigre (acte).
+
+    La designation est le paragraphe dont le texte rempli commence par « <prefix>, » : la ligne
+    « <prefix>, <profession>, né(e) le … » (« de premiere part »). Les AUTRES occurrences du nom
+    ne commencent PAS par « <prefix>, » et sont donc epargnees : origine de propriete
+    (« <prefix> est propriétaire… »), bloc signature (« <prefix> » seul / avec tabulation),
+    « Représentée par… ». Le paragraphe est reecrit en DEUX runs — prefixe gras + reste maigre —
+    meme patron que l'acte SPFPL (A2) et l'avenant de bail (AV1). Une seule designation par acte.
+    """
+    needle = prefix + ","
+    for paragraph in _iter_all_paragraphs(document):
+        text = paragraph.text
+        if not paragraph.runs or not text.startswith(needle):
+            continue
+        rest = text[len(prefix):]
+        runs = paragraph.runs
+        runs[0].text = prefix
+        runs[0].bold = True
+        if len(runs) > 1:
+            runs[1].text = rest
+            runs[1].bold = False
+            for run in runs[2:]:
+                run.text = ""
+        elif rest:
+            paragraph.add_run(rest).bold = False
+        return
+
+
+def _apply_line_fixes_to_paragraph(paragraph, line_fixes: list[_LineFix]) -> None:
+    """Applique les correctifs regex de paragraphe (texte final, post-tokens).
+
+    Pour chaque fix dont l'ancre est presente, la regex est appliquee au TEXTE
+    FUSIONNE du paragraphe ; si le texte change, il est reecrit sur le premier
+    run (mise en forme du premier run conservee, comme les autres surcharges).
+    """
+    if not paragraph.runs:
+        return
+    text = paragraph.text
+    new_text = text
+    for fix in line_fixes:
+        if fix.anchor in new_text:
+            new_text = fix.pattern.sub(fix.replacement, new_text)
+    if new_text != text:
+        paragraph.runs[0].text = new_text
+        for run in paragraph.runs[1:]:
+            run.text = ""
+
+
+def _apply_highlight_anchors_to_paragraph(paragraph, anchors: list[str]) -> None:
+    """Surligne (jaune) les runs d'un paragraphe contenant une ancre (CE6).
+
+    Pour chaque run dont le texte contient l'une des sous-chaines, on pose le
+    surlignage jaune. Applique APRES le nettoyage anti-surlignage, pour les zones
+    statiques a completer a la main.
+    """
+    for run in paragraph.runs:
+        text = run.text
+        if not text.strip():
+            continue
+        if any(anchor in text for anchor in anchors):
+            run.font.highlight_color = WD_COLOR_INDEX.YELLOW
+
+
+def _apply_segment_overrides(
+    document,
+    segment_overrides: dict[str, str],
+) -> None:
+    """Remplace des segments litteraux multi-tokens dans les paragraphes.
+
+    Le texte fusionne du paragraphe est reecrit sur le premier run (meme
+    strategie de repli que l'accord en genre quand une forme est eclatee).
+    """
+    for paragraph in _iter_all_paragraphs(document):
+        text = paragraph.text
+        if not any(segment in text for segment in segment_overrides):
+            continue
+        for segment, value in segment_overrides.items():
+            text = text.replace(segment, value)
+        if paragraph.runs:
+            paragraph.runs[0].text = text
+            for run in paragraph.runs[1:]:
+                run.text = ""
+        else:
+            paragraph.text = text
+
+
+def _apply_paragraph_overrides(
+    document,
+    paragraph_overrides: dict[str, str | None],
+) -> None:
+    """Reecrit ou supprime les paragraphes contenant un token ancre.
+
+    La suppression retire l'element XML du paragraphe (corps comme cellules) ;
+    la reecriture conserve la mise en forme du premier run.
+    """
+    for paragraph in list(_iter_all_paragraphs(document)):
+        text = paragraph.text
+        for token, override in paragraph_overrides.items():
+            if token not in text:
+                continue
+            if override is None:
+                element = paragraph._element
+                parent = element.getparent()
+                if parent is not None:
+                    parent.remove(element)
+            elif paragraph.runs:
+                paragraph.runs[0].text = override
+                for run in paragraph.runs[1:]:
+                    run.text = ""
+            else:
+                paragraph.text = override
+            break
+
+
+def _apply_clause_removals(document, removals: list[str]) -> None:
+    """Supprime les paragraphes dont le texte contient une sous-chaine donnee (R5-contrats).
+
+    Sert a retirer l'ancien emplacement de la clause salaries (token dentaire,
+    texte statique medical) avant de la re-inserer ailleurs. Chaque sous-chaine
+    est cherchee dans le texte du paragraphe AVANT remplissage des tokens (donc le
+    token litteral et le texte statique sont encore presents). No-op si absente.
+    """
+    for paragraph in list(_iter_all_paragraphs(document)):
+        text = paragraph.text
+        if any(needle in text for needle in removals):
+            element = paragraph._element
+            parent = element.getparent()
+            if parent is not None:
+                parent.remove(element)
+
+
+def _apply_clause_insertions(
+    document,
+    insertions: list[tuple[str, str]],
+) -> None:
+    """Insere un NOUVEAU paragraphe juste AVANT une ancre litterale (R5-contrats).
+
+    Pour chaque couple (ancre, texte) : le paragraphe-ancre est le premier dont le
+    texte contient `ancre` ; un nouveau paragraphe portant `texte` est insere
+    immediatement avant lui, en reprenant son style (meme format de liste du
+    point n°3). No-op si l'ancre est absente. Le texte insere est statique (sans
+    token) -> sans impact sur l'anti-token-residuel.
+    """
+    for anchor, text in insertions:
+        for paragraph in _iter_all_paragraphs(document):
+            if anchor in paragraph.text:
+                paragraph.insert_paragraph_before(text, style=paragraph.style)
+                break
 
 
 def _apply_gender_pairs_to_paragraph(
@@ -273,7 +1177,10 @@ def _resolve_model_path(variant: CessionCabinetVariant) -> Path:
 # ---------------------------------------------------------------------------
 
 
-def _build_cession_replacements(ctx: DocumentGenerationContext) -> dict[str, str]:
+def _build_cession_replacements(  # noqa: C901
+    ctx: DocumentGenerationContext,
+    variant: CessionCabinetVariant,
+) -> dict[str, str]:
     cession = ctx.cession
     if cession is None:
         raise ValueError(f"cession est obligatoire pour {DOCUMENT_CODE}.")
@@ -294,33 +1201,67 @@ def _build_cession_replacements(ctx: DocumentGenerationContext) -> dict[str, str
     replacements: dict[str, str] = {}
 
     def put(token: str, value: object | None) -> None:
-        # Les valeurs None ne sont PAS injectees -> token preserve -> anti-trou (etape 1.3).
-        if value is None:
-            return
-        replacements[token] = str(value)
+        # KAN-2 (Rafael, rejete 2x) : « Tous les documents doivent pouvoir etre generes, meme si je
+        # ne remplis AUCUN champ. » Un champ OBLIGATOIRE non renseigne NE laisse PLUS de token
+        # residuel (plus d'anti-trou bloquant) : il sort en marqueur metier « (À COMPLÉTER : … ) »
+        # (libelle derive du token, sans crochet/point/underscore). Valeur presente -> injectee
+        # TELLE QUELLE (sortie NOMINALE byte-identique). Les champs FACULTATIFS passent par
+        # `put_opt` (zone vide a completer a la main) — semantique inchangee.
+        text = "" if value is None else str(value)
+        if not text.strip():
+            replacements[token] = f"(À COMPLÉTER : {libelle_metier(token)})"
+        else:
+            replacements[token] = text
+
+    def put_opt(token: str, value: object | None) -> None:
+        # Champ FACULTATIF (retours client 2026-06-11) : une valeur absente est
+        # rendue comme zone vide a completer a la main, sans bloquer la
+        # generation ni laisser de token residuel.
+        replacements[token] = "" if value is None else str(value)
 
     # --- Vendeur ---
-    put("[civilite_vendeur]", vendeur.civilite_affichage)
+    # R3 « supprimer PARTOUT » (Rafael 2026-07-09) : le vendeur (soussigne, « Le Docteur X vend »,
+    # origine de propriete, « Représentée par sa gérant, Docteur X », signature) porte la civilite
+    # CIVILE (Monsieur/Madame accorde au genre), jamais le titre professionnel. Le token
+    # [civilite_vendeur] est donc rempli avec la civilite civile, ce qui purge TOUTES ses
+    # occurrences dans le corps ET le bloc signature (SUPERSEDE CE3, cf. _build_line_fixes).
+    put("[civilite_vendeur]", civilite_civile(vendeur.civilite_affichage or "", vendeur.genre))
     put("[prenom_vendeur]", vendeur.prenom)
     put("[nom_vendeur]", vendeur.nom)
     put("[profession_vendeur]", vendeur.profession)
     put("[date_naissance_vendeur]", _french_date(vendeur.date_naissance))
+    # R5 (Rafael 2026-07-13) : le modele MEDICAL fige « né(e) le » inclusif -> resolu au genre
+    # CONNU du vendeur (« né le » homme / « née le » femme). Remplacement token-level, run-safe
+    # (ne touche que le run du fragment, preserve le gras du nom). Le dentaire fige deja « né/née »
+    # resolu (gere par _CESSION_VENDEUR_PAIRS). Genre absent -> masculin par defaut (né).
+    put("né(e) le", f"{accord_terme_genre('né', vendeur.genre)} le")
     put("[ville_naissance_vendeur]", vendeur.ville_naissance)
-    put("[departement_naissance_vendeur]", vendeur.departement_naissance)
-    put("[cp_naissance_vendeur]", vendeur.cp_naissance)
-    put("[pays_naissance_vendeur]", vendeur.pays_naissance)
+    put_opt("[departement_naissance_vendeur]", vendeur.departement_naissance)
+    put_opt("[cp_naissance_vendeur]", vendeur.cp_naissance)
+    put_opt("[pays_naissance_vendeur]", vendeur.pays_naissance)
     put("[nationalite_vendeur]", vendeur.nationalite)
     put("[adresse_vendeur]", vendeur.adresse_affichee)
-    put("[adresse_exercice_vendeur]", vendeur.adresse_exercice_affichee)
-    put("[numero_siren_vendeur]", vendeur.numero_siren)
-    put("[numero_ordre_vendeur]", vendeur.numero_ordre)
-    put("[numero_rpps_vendeur]", vendeur.numero_rpps)
-    put("[ordre_departemental_vendeur]", vendeur.ordre_departemental)
+    put_opt("[adresse_exercice_vendeur]", vendeur.adresse_exercice_affichee)
+    put_opt("[numero_siren_vendeur]", vendeur.numero_siren)
+    put_opt("[numero_ordre_vendeur]", vendeur.numero_ordre)
+    put_opt("[numero_rpps_vendeur]", vendeur.numero_rpps)
+    # m1 (Akainu ronde 2, 2026-07-12) : SEUL le modele du compromis dentaire fige « Conseil
+    # départemental du [ordre_departemental_vendeur] » -> « du Paris » (faute). Le groupe
+    # « du [token] » est CONTIGU dans un seul run (run-safe) : on le remplace par la preposition
+    # ELIDEE correcte (« de Paris » / « d'Ardèche » / « du Rhône »), insere AVANT le token nu ->
+    # remplace en premier dans la boucle. Les autres modeles (« de [token] », « [token] » nu) ne
+    # portent pas ce groupe -> inchanges. Departement absent -> pas de cle (ligne modele figee).
+    ordre_dep_vendeur = (vendeur.ordre_departemental or "").strip()
+    if ordre_dep_vendeur:
+        replacements["du [ordre_departemental_vendeur]"] = elision_de(
+            departement_nom(ordre_dep_vendeur)
+        )
+    put_opt("[ordre_departemental_vendeur]", departement_nom(vendeur.ordre_departemental))
     put("[situation_maritale_vendeur]", vendeur.situation_maritale)
-    put("[regime_matrimonial_vendeur]", vendeur.regime_matrimonial)
-    put("[civilite_conjoint_vendeur]", conjoint.civilite_affichage)
-    put("[prenom_conjoint_vendeur]", conjoint.prenom)
-    put("[nom_conjoint_vendeur]", conjoint.nom)
+    put_opt("[regime_matrimonial_vendeur]", vendeur.regime_matrimonial)
+    put_opt("[civilite_conjoint_vendeur]", conjoint.civilite_affichage)
+    put_opt("[prenom_conjoint_vendeur]", conjoint.prenom)
+    put_opt("[nom_conjoint_vendeur]", conjoint.nom)
 
     # --- Acquereur ---
     put("[denomination_societe_acquereur]", acquereur.denomination_societe)
@@ -328,93 +1269,189 @@ def _build_cession_replacements(ctx: DocumentGenerationContext) -> dict[str, str
     put("[capital_social_acquereur]", acquereur.capital_social)
     put("[adresse_siege_acquereur]", _address_label(acquereur.siege))
     put("[ville_rcs_acquereur]", acquereur.rcs_ville)
-    put("[numero_rcs_acquereur]", acquereur.numero_rcs)
-    put("[numero_siret_acquereur]", acquereur.numero_siret)
-    put("[date_immatriculation_acquereur]", _french_date(acquereur.date_immatriculation))
-    put("[date_inscription_ordre_acquereur]", _french_date(acquereur.date_inscription_ordre))
-    put("[civilite_acquereur_representant]", representant.civilite_affichage)
+    put_opt("[numero_rcs_acquereur]", acquereur.numero_rcs)
+    put_opt("[numero_siret_acquereur]", acquereur.numero_siret)
+    put_opt("[date_immatriculation_acquereur]", _french_date(acquereur.date_immatriculation))
+    put_opt(
+        "[date_inscription_ordre_acquereur]",
+        _french_date(acquereur.date_inscription_ordre),
+    )
+    # R3 (Rafael 2026-07-09) : le representant de l'acquereur (« Représentée par son gérant,
+    # <civilite> X ») porte la civilite CIVILE (« Madame Alice Moreau », plus « Docteur »).
+    put(
+        "[civilite_acquereur_representant]",
+        civilite_civile(representant.civilite_affichage or "", representant.genre),
+    )
     put("[prenom_acquereur_representant]", representant.prenom)
     put("[nom_acquereur_representant]", representant.nom)
     put("[fonction_acquereur_representant]", representant.fonction)
 
     # --- Cabinet ---
     put("[adresse_cabinet]", cabinet.adresse_affichee)
-    put("[adresse_locaux]", cabinet.adresse_locaux_affichee)
-    put("[telephone_cabinet]", cabinet.telephone)
+    put_opt("[adresse_locaux]", cabinet.adresse_locaux_affichee or cabinet.adresse_affichee)
+    put_opt("[telephone_cabinet]", cabinet.telephone)
     put("[superficie_local]", cabinet.superficie_local)
     put("[nature_fonds_liberal]", cabinet.nature_fonds_liberal)
     put("[description_origine_propriete]", cabinet.description_origine_propriete)
-    put("[date_origine_propriete]", _french_date(cabinet.date_origine_propriete))
-    put("[annees_acquisition_patientele]", cabinet.annees_acquisition_patientele)
-    put("[prix_origine_propriete]", cabinet.prix_origine_propriete)
-    if precedent is not None:
-        put("[civilite_precedent_proprietaire]", precedent.civilite_affichage)
-        put("[prenom_precedent_proprietaire]", precedent.prenom)
-        put("[nom_precedent_proprietaire]", precedent.nom)
+    put_opt("[date_origine_propriete]", _french_date(cabinet.date_origine_propriete))
+    put_opt("[annees_acquisition_patientele]", cabinet.annees_acquisition_patientele)
+    put_opt("[prix_origine_propriete]", cabinet.prix_origine_propriete)
+    # R3 (Rafael 2026-07-09) : civilite CIVILE du precedent proprietaire (pas de genre
+    # capture -> masculin par defaut). KAN-2 : le modele DENTAIRE porte ces tokens
+    # inconditionnellement -> ils sont TOUJOURS emis (put_opt = zone vide a completer a la
+    # main si aucun precedent proprietaire n'est saisi), jamais laisses residuels.
+    put_opt(
+        "[civilite_precedent_proprietaire]",
+        civilite_civile(precedent.civilite_affichage or "", None) if precedent is not None else None,
+    )
+    put_opt(
+        "[prenom_precedent_proprietaire]",
+        precedent.prenom if precedent is not None else None,
+    )
+    put_opt(
+        "[nom_precedent_proprietaire]",
+        precedent.nom if precedent is not None else None,
+    )
     # Origine de propriete (modeles MEDICAUX) : phrase decrivant le VENDEUR,
     # variante creee/achetee (defaut "cree"), ou texte libre pour un cas complexe.
-    put("[origine_propriete_phrase]", _build_origine_propriete_phrase(cession))
+    # Donnees incompletes -> zone vide a completer a la main (jamais bloquant).
+    put_opt("[origine_propriete_phrase]", _build_origine_propriete_phrase(cession))
 
     # --- Bail professionnel ---
-    put("[date_bail]", _french_date(bail.date_bail))
+    put_opt("[date_bail]", _french_date(bail.date_bail))
     put("[duree_bail]", bail.duree)
-    put("[date_debut_bail]", _french_date(bail.date_debut))
-    put("[date_fin_bail]", _french_date(bail.date_fin))
-    put("[date_reconduction_bail_1]", _french_date(bail.date_reconduction_1))
-    put("[date_reconduction_bail_2]", _french_date(bail.date_reconduction_2))
-    put("[loyer_mensuel]", bail.loyer_mensuel)
+    put_opt("[date_debut_bail]", _french_date(bail.date_debut))
+    put_opt("[date_fin_bail]", _french_date(bail.date_fin))
+    put_opt("[date_reconduction_bail_1]", _french_date(bail.date_reconduction_1))
+    put_opt("[date_reconduction_bail_2]", _french_date(bail.date_reconduction_2))
+    put_opt("[loyer_mensuel]", bail.loyer_mensuel)
 
     # --- Prix ---
     put("[prix_cession]", prix.total)
     put("[prix_cession_lettres]", prix.total_lettres)
-    put("[prix_elements_corporels]", prix.elements_corporels)
-    put("[prix_elements_corporels_lettres]", prix.elements_corporels_lettres)
-    put("[prix_elements_incorporels]", prix.elements_incorporels)
-    put("[prix_elements_incorporels_lettres]", prix.elements_incorporels_lettres)
+    put_opt("[prix_elements_corporels]", prix.elements_corporels)
+    put_opt("[prix_elements_corporels_lettres]", prix.elements_corporels_lettres)
+    put_opt("[prix_elements_incorporels]", prix.elements_incorporels)
+    put_opt("[prix_elements_incorporels_lettres]", prix.elements_incorporels_lettres)
 
     # --- Financement : credit-vendeur (acte medical) et pret (compromis) ---
     put("[montant_credit_vendeur]", credit_vendeur.montant)
     put("[duree_credit_vendeur]", credit_vendeur.duree)
     put("[taux_credit_vendeur]", credit_vendeur.taux)
     put("[majoration_interet_retard]", credit_vendeur.majoration_interet_retard)
-    put("[montant_pret]", pret.montant)
-    put("[taux_pret]", pret.taux)
-    put("[duree_pret]", pret.duree)
+    put_opt("[montant_pret]", pret.montant)
+    put_opt("[taux_pret]", pret.taux)
+    put_opt("[duree_pret]", pret.duree)
 
     # --- SCM (acte medical) ---
+    # CE8 (Albane 2026-06-26) : le point 8 cede « l'integralite des parts qu'il
+    # detient de la SCM <denomination> » (le nombre de parts n'est plus rendu). La
+    # denomination vide laisse une zone a completer a la main (put_opt), jamais
+    # bloquant. La clause entiere est supprimee si la SCM est inactive
+    # (cf. _build_paragraph_overrides).
     if cession.scm is not None:
-        put("[nb_parts_scm_a_ceder]", cession.scm.nb_parts_a_ceder)
+        put_opt("[denomination_scm]", cession.scm.denomination)
 
     # --- Conditions suspensives (compromis) ---
-    put("[date_realisation_limite]", _french_date(cession.date_limite_realisation))
+    put_opt("[date_realisation_limite]", _french_date(cession.date_limite_realisation))
 
-    # --- Salaries (acte dentaire) : reprise 0 / 1 / N (regle NotebookLM) ---
-    # 0 salarie -> "Néant" (convention systeme) ; 1..N -> liste nom/prenom/poste.
-    put("[clause_reprise_salaries]", _build_clause_reprise_salaries(cession.salaries))
+    # --- Salaries (acte medical + dentaire) : reprise 0 / 1 / N (regle NotebookLM) ---
+    # R5-contrats (Rafael 2026-06-29) : la clause « De reprendre les contrats de travail de
+    # <liste>. » n'est plus rendue VIA UN TOKEN a son ancien emplacement. Elle est desormais
+    # INSEREE JUSTE AVANT « De payer tous frais... » (cf. _build_clause_insertions), pour l'acte
+    # MEDICAL ET DENTAIRE, et conditionnee a >= 1 salarie repris (0 -> absente). L'ancien
+    # emplacement (paragraphe-token dentaire / paragraphe statique medical, apres « De payer tous
+    # frais ») est SUPPRIME via _build_clause_removals. On ne remplit donc plus de token ici : le
+    # paragraphe-token dentaire est retire en entier avant l'anti-token-residuel.
+    #
+    # PRINCIPE GENERAL « champs propres a l'acte, contexte partage » (re-Akainu tour 5, O24-14) :
+    # en SELAS l'ACTE et le COMPROMIS sont generes ENSEMBLE depuis UN SEUL contexte. Le compromis
+    # (qui ne porte pas la clause salaries) recoit ce contexte et l'IGNORE : aucune insertion ni
+    # suppression n'est construite pour lui (_build_clause_* retournent [] hors acte).
+    #
     # [date_entree_jouissance] (dentaire) : source choisie = date de debut du bail
     # professionnel (entree en jouissance des locaux). A confirmer cote metier.
-    put("[date_entree_jouissance]", _french_date(bail.date_debut))
+    # AC4 (Albane 2026-07-10) : sur l'acte DENTAIRE, la DATE DU TRANSFERT DE PROPRIETE (page 6,
+    # « ... à la date du [date_entree_jouissance]. » — SEULE occurrence du token, propre au
+    # modele dentaire) etait FAUSSE. Verbatim : « ne pas mettre de variable, laisser vierge ».
+    # -> zone VIDE a completer a la main (put_opt None). Les autres variants (ou le token n'existe
+    # pas dans leur modele) gardent le comportement anterieur, inoffensif.
+    if variant.etape == ACTE and variant.type_cabinet == DENTAIRE:
+        put_opt("[date_entree_jouissance]", None)
+    else:
+        put("[date_entree_jouissance]", _french_date(bail.date_debut))
 
     # --- Exercices ---
+    # KAN-2 : les 3 lignes d'exercice du modele sont TOUJOURS emises (put_opt = zone vide a
+    # completer a la main si l'exercice n'est pas fourni) -> jamais de token residuel meme si
+    # moins de 3 exercices sont saisis. Champs facultatifs (retours 2026-06-11, tickets 2.8/3.1).
     for index in (0, 1, 2):
-        if index < len(cession.exercices):
-            exercice = cession.exercices[index]
-            put(f"[exercice_{index + 1}]", exercice.periode)
-            put(f"[chiffre_affaires_{index + 1}]", exercice.chiffre_affaires)
-            put(f"[resultat_{index + 1}]", exercice.resultat)
+        exercice = cession.exercices[index] if index < len(cession.exercices) else None
+        put_opt(
+            f"[exercice_{index + 1}]",
+            _exercice_periode(exercice.periode) if exercice is not None else None,
+        )
+        put_opt(
+            f"[chiffre_affaires_{index + 1}]",
+            exercice.chiffre_affaires if exercice is not None else None,
+        )
+        put_opt(
+            f"[resultat_{index + 1}]",
+            exercice.resultat if exercice is not None else None,
+        )
 
     # --- Document / signature ---
     put("[lieu_signature]", signature.lieu)
     put("[date_signature]", _french_date(signature.date))
     put("[nombre_exemplaires_lettres]", document.nombre_exemplaires_lettres)
-    put("[nombre_pages_lettres]", document.nombre_pages_lettres)
-    put("[signature_vendeur]", _person_label(vendeur.civilite_affichage, vendeur.prenom, vendeur.nom))
-    put(
-        "[signature_acquereur]",
-        _person_label(representant.civilite_affichage, representant.prenom, representant.nom),
-    )
+    put("[nombre_pages_lettres]", _nombre_pages_lettres(variant, document))
+    _put_signature_tokens(put, variant, vendeur, acquereur, representant)
 
     return replacements
+
+
+def _put_signature_tokens(
+    put,
+    variant: CessionCabinetVariant,
+    vendeur: CessionVendeur,
+    acquereur: CessionAcquereur,
+    representant: CessionRepresentant,
+) -> None:
+    """Remplit les deux tokens du bloc signature.
+
+    9.8 (COMPROMIS) : le modele rend « [signature_acquereur] <TAB> [signature_vendeur] »
+    avec, des deux cotes, une PERSONNE physique « Docteur » (cedant duplique).
+    Correctif : 1er signataire (gauche, [signature_acquereur]) = le CEDANT
+    (vendeur) ; 2e signataire (droite, [signature_vendeur]) = la SEL acquereur
+    (denomination + representant). Les noms de tokens, herites du modele, sont
+    donc volontairement « inverses » par rapport a leur intitule.
+
+    ACTE et autres etapes : comportement d'origine conserve (vendeur a gauche du
+    token vendeur, representant a droite du token acquereur) — hors perimetre 9.8.
+    """
+    # R3 (Rafael 2026-07-09) : le cedant signe sous sa civilite CIVILE (« Monsieur X »),
+    # jamais « Dr X » / « Docteur X ». Le representant de la societe garde son propre titre
+    # (M./Mme via le token courte ailleurs) : ici on route seulement le vendeur.
+    vendeur_label = _person_label(
+        civilite_civile(vendeur.civilite_affichage or "", vendeur.genre),
+        vendeur.prenom,
+        vendeur.nom,
+    )
+    # Le representant de la societe signe aussi sous civilite CIVILE (acte : « Madame Alice
+    # Moreau », plus « Docteur Alice Moreau »). `representant.genre` accorde M./Mme.
+    representant_label = _person_label(
+        civilite_civile(representant.civilite_affichage or "", representant.genre),
+        representant.prenom,
+        representant.nom,
+    )
+    if variant.etape == COMPROMIS:
+        societe_label = _societe_signature_label(acquereur, representant)
+        # Gauche (token acquereur) = cedant ; droite (token vendeur) = societe.
+        put("[signature_acquereur]", vendeur_label)
+        put("[signature_vendeur]", societe_label or representant_label)
+        return
+    put("[signature_vendeur]", vendeur_label)
+    put("[signature_acquereur]", representant_label)
 
 
 # ---------------------------------------------------------------------------
@@ -432,8 +1469,11 @@ def _french_date(value: date | str | None) -> str | None:
     """
     if value is None:
         return None
+    # A26-33/A26-69 (Albane 2026-06-26) : jour sur 2 chiffres (« 01 janvier » et non
+    # « 1 janvier ») pour ne pas laisser croire qu'un chiffre manque. Le mois reste en
+    # toutes lettres.
     if isinstance(value, date):
-        return f"{value.day} {_MONTHS_FR[value.month]} {value.year}"
+        return f"{value.day:02d} {FRENCH_MONTHS[value.month]} {value.year}"
     text = value.strip()
     match = _ISO_DATE_RE.match(text)
     if match is not None:
@@ -442,8 +1482,40 @@ def _french_date(value: date | str | None) -> str | None:
             parsed = date(year, month, day)
         except ValueError:
             return text
-        return f"{parsed.day} {_MONTHS_FR[parsed.month]} {parsed.year}"
+        return f"{parsed.day:02d} {FRENCH_MONTHS[parsed.month]} {parsed.year}"
     return text
+
+
+def _exercice_periode(periode: str | None) -> str | None:
+    """Periode d'un exercice comptable (CE2).
+
+    Une ANNEE SEULE (« 2023 ») est rendue en PLAGE « Du 01/01/2023 au 31/12/2023 »,
+    comme le modele dentaire source. Toute autre saisie (deja une plage, libelle
+    libre) ressort telle quelle. None -> None (zone a completer a la main).
+    """
+    if periode is None:
+        return None
+    match = _YEAR_ONLY_RE.match(periode)
+    if match is None:
+        return periode
+    annee = match.group(1)
+    return f"Du 01/01/{annee} au 31/12/{annee}"
+
+
+def _nombre_pages_lettres(
+    variant: CessionCabinetVariant,
+    document: DocumentContext,
+) -> str | None:
+    """Nombre de pages en lettres du document (retours 9.9).
+
+    Priorite a la longueur connue du modele (deterministe, fidele). A defaut de
+    mapping, on retombe sur la valeur du contexte (front) pour ne pas regresser
+    les variantes non visees par le ticket.
+    """
+    fixed = _PAGES_LETTRES_BY_VARIANT.get((variant.etape, variant.type_cabinet))
+    if fixed is not None:
+        return fixed
+    return document.nombre_pages_lettres
 
 
 def _person_label(
@@ -474,7 +1546,13 @@ def _build_origine_propriete_phrase(cession: CessionContext) -> str | None:
     vendeur = cession.vendeur or CessionVendeur()
 
     mode = (cabinet.origine_propriete_mode or ORIGINE_MODE_CREE).strip().lower()
-    sujet = _person_label(vendeur.civilite_affichage, vendeur.prenom, vendeur.nom)
+    # R3 (Rafael 2026-07-09) : « <vendeur> est propriétaire … » nomme le cedant sous sa civilite
+    # CIVILE (« Monsieur Jean Durand est propriétaire … », plus « Docteur »).
+    sujet = _person_label(
+        civilite_civile(vendeur.civilite_affichage or "", vendeur.genre),
+        vendeur.prenom,
+        vendeur.nom,
+    )
     description = (cabinet.description_origine_propriete or "").strip()
 
     # Cas COMPLEXE / non standard -> texte libre saisi a la main (relecture humaine).
@@ -489,7 +1567,7 @@ def _build_origine_propriete_phrase(cession: CessionContext) -> str | None:
     date_origine = _french_date(cabinet.date_origine_propriete)
 
     if mode == ORIGINE_MODE_CREE:
-        if date_origine is None:
+        if not date_origine:
             return description or None
         phrase = (
             f"{sujet} est propriétaire des éléments constitutifs du cabinet "
@@ -497,13 +1575,19 @@ def _build_origine_propriete_phrase(cession: CessionContext) -> str | None:
         )
     else:  # ORIGINE_MODE_ACHETE
         precedent = cabinet.precedent_proprietaire
+        # R3 (Rafael 2026-07-09) : le precedent proprietaire (« acquis auprès de <precedent> »)
+        # porte la civilite CIVILE. Pas de genre capture sur ce champ -> masculin par defaut.
         precedent_label = (
-            _person_label(precedent.civilite_affichage, precedent.prenom, precedent.nom)
+            _person_label(
+                civilite_civile(precedent.civilite_affichage or "", None),
+                precedent.prenom,
+                precedent.nom,
+            )
             if precedent is not None
             else None
         )
         prix = (cabinet.prix_origine_propriete or "").strip()
-        if date_origine is None or precedent_label is None or not prix:
+        if not date_origine or not precedent_label or not prix:
             return description or None
         phrase = (
             f"{sujet} est propriétaire des éléments constitutifs du cabinet "
@@ -518,13 +1602,16 @@ def _build_origine_propriete_phrase(cession: CessionContext) -> str | None:
 
 
 def _build_clause_reprise_salaries(salaries: list[CessionSalarie]) -> str:
-    """Construit la clause de reprise des contrats de travail (acte dentaire).
+    """Construit la clause de reprise des contrats de travail (acte medical + dentaire).
 
-    Regle NotebookLM : 0 salarie -> "Néant" (convention systeme) ; 1..N salaries
-    -> "De reprendre les contrats de travail de <liste>." ou chaque salarie est
-    "Civilite Prenom Nom" (+ ", en qualite de <poste>" si le poste est saisi).
-    Reutilise le wording de clause existant du modele ; "Néant" applique la
-    convention systeme (aucune clause "néant" dediee dans le modele source).
+    Verbatim Albane (IMG_7837, 2026-06-29) : « à la suite de la phrase on mets le nom,
+    prenom et la profession du ou des salaries SANS AUCUN MOT DE PLUS. Ca donne "3. De
+    reprendre LE CONTRAT de travail de Mme Albane LALLEMAND, juriste". » Donc :
+      - 1 salarie  -> « De reprendre le contrat de travail de <identite>, <profession>. »
+      - N salaries -> « De reprendre les contrats de travail de <id1>, <prof1>, ... et de
+        <idN>, <profN>. » (accord singulier/pluriel sur « contrat »).
+    Profession rendue par « , <profession> » (PAS « en qualite de » : mot interdit).
+    0 salarie -> clause ABSENTE (retiree par override None, cf. _build_paragraph_overrides).
     """
     if not salaries:
         return NEANT
@@ -532,16 +1619,24 @@ def _build_clause_reprise_salaries(salaries: list[CessionSalarie]) -> str:
     labels: list[str] = []
     for index, salarie in enumerate(salaries):
         label = _salarie_label(salarie, index)
-        poste = (salarie.poste or "").strip()
-        if poste:
-            label = f"{label}, en qualité de {poste}"
+        profession = (salarie.poste or "").strip()
+        if profession:
+            label = f"{label}, {profession}"
         labels.append(label)
 
     if len(labels) == 1:
         liste = labels[0]
+        contrat = "le contrat de travail"
     else:
-        liste = ", ".join(labels[:-1]) + f" et de {labels[-1]}"
-    return f"De reprendre les contrats de travail de {liste}."
+        # INTERIM (Akainu m1, 2026-06-29) : separateur « ; » entre salaries (et non « , »)
+        # car chaque salarie porte deja une virgule interne « <identite>, <profession> » ;
+        # un « , » de separation serait AMBIGU a N>=3 (impossible de distinguer la profession
+        # du salarie suivant). « ; » = ponctuation francaise standard pour des items a virgule
+        # interne, sans rien inventer du fond. Albane n'a donne qu'un exemple A 1 SALARIE -> le
+        # FORMAT EXACT d'enumeration multi-salaries reste A CONFIRMER (cf. QUESTIONS_RAFAEL, R5).
+        liste = " ; ".join(labels[:-1]) + f" et de {labels[-1]}"
+        contrat = "les contrats de travail"
+    return f"De reprendre {contrat} de {liste}."
 
 
 def _address_label(address: Address | None) -> str | None:
@@ -629,12 +1724,23 @@ def _validate_selection(cession: CessionContext, variant: CessionCabinetVariant)
             f"cession.type_cabinet doit etre {variant.type_cabinet} pour {variant.output_filename}."
         )
 
+    # cession.etape reste un champ REQUIS et borne a SUPPORTED_ETAPES, MAIS il n'est plus
+    # PILOTANT (re-Akainu 2026-06-23, NITPICK O24-14 : couplage vestigial documente). Il sert
+    # encore de garde de presence/validite de saisie ; un appelant qui le laisse vide/None
+    # leve donc ici via _required_text. C'est volontaire : en SELAS le formulaire force
+    # toujours etape='acte', et on prefere une garde de presence explicite a un champ optionnel.
     etape = _required_text(cession.etape, "cession.etape").lower()
     if etape not in SUPPORTED_ETAPES:
         supported = ", ".join(sorted(SUPPORTED_ETAPES))
         raise ValueError(f"cession.etape doit etre dans [{supported}] pour {DOCUMENT_CODE}.")
-    if etape != variant.etape:
-        raise ValueError(f"cession.etape doit etre {variant.etape} pour {variant.output_filename}.")
+    # O24-14 (onglet 24) : en SELAS, l'acte ET le compromis sont produits ENSEMBLE depuis UN
+    # SEUL contexte (etape forcee a 'acte'). Le document genere est determine par le VARIANT
+    # (variant.etape pilote modele + contenu), jamais par cession.etape. La SELECTION cote
+    # orchestrateur (_cession_cabinet_enabled) a deja choisi les bons documents -> on ne leve
+    # plus sur un mismatch cession.etape/variant.etape (sinon le compromis crashe a etape='acte').
+    # Corollaire (re-Akainu tour 2) : ce MEME contexte d'acte peut porter des champs propres a
+    # l'acte (ex. salaries repris) ; chaque variant qui ne les rend pas doit les IGNORER, pas
+    # lever -> cf. _validate_salaries (le compromis tolere les salaries de l'acte partage).
 
 
 def _validate_arbitrage_blocks(
@@ -661,15 +1767,10 @@ def _validate_arbitrage_blocks(
             "cession.validations.date_realisation_compromis_validee doit etre vrai pour "
             f"{DOCUMENT_CODE}."
         )
-    if (
-        variant.etape == ACTE
-        and variant.type_cabinet == MEDICAL
-        and not validations.ligne_contrats_travail_medical_supprimee
-    ):
-        raise ValueError(
-            "cession.validations.ligne_contrats_travail_medical_supprimee doit etre vrai "
-            f"pour {DOCUMENT_CODE}."
-        )
+    # R5-contrats (CORRIGE 2026-06-29) : la ligne medicale « De reprendre les contrats de
+    # travail de » n'est plus une zone a supprimer/completer a la main mais une clause remplie
+    # EN PLACE (cf. _build_paragraph_overrides). L'ancienne garde
+    # `ligne_contrats_travail_medical_supprimee` est donc retiree.
 
 
 def _validate_financement(
@@ -677,13 +1778,16 @@ def _validate_financement(
     variant: CessionCabinetVariant,
     financement: CessionFinancement,
 ) -> None:
+    # credit_vendeur / scm sont des clauses PROPRES a l'ACTE MEDICAL (seul modele les portant).
+    # re-Akainu tour 5 (BLOQUANT O24-14, RE-SCOPE regle 12) : en SELAS l'acte ET le compromis
+    # partagent UN SEUL contexte (generes ENSEMBLE). Le compromis (qui n'a PAS ces clauses) recoit
+    # le meme contexte porteur de credit_vendeur/scm -> il doit les IGNORER, pas lever (meme
+    # principe que _validate_salaries). On ne VALIDE (et n'exige) ces champs QUE pour le variant
+    # qui les rend : l'acte medical. Tout autre variant (compromis, acte dentaire) les tolere.
+    if not (variant.etape == ACTE and variant.type_cabinet == MEDICAL):
+        return
     credit_vendeur = financement.credit_vendeur
     if credit_vendeur is not None and credit_vendeur.actif:
-        if not (variant.etape == ACTE and variant.type_cabinet == MEDICAL):
-            raise ValueError(
-                "cession.financement.credit_vendeur.actif est autorise uniquement pour "
-                f"l'acte medical {DOCUMENT_CODE}."
-            )
         _required_text(credit_vendeur.montant, "cession.financement.credit_vendeur.montant")
         _required_text(credit_vendeur.duree, "cession.financement.credit_vendeur.duree")
         _required_text(credit_vendeur.taux, "cession.financement.credit_vendeur.taux")
@@ -693,8 +1797,6 @@ def _validate_financement(
         )
 
     if cession.scm is not None and cession.scm.actif:
-        if not (variant.etape == ACTE and variant.type_cabinet == MEDICAL):
-            raise ValueError("cession.scm.actif est autorise uniquement pour l'acte medical.")
         _required_text(cession.scm.nb_parts_a_ceder, "cession.scm.nb_parts_a_ceder")
 
 
@@ -711,10 +1813,11 @@ def _validate_salaries(
         for index, salarie in enumerate(cession.salaries):
             _salarie_label(salarie, index)
         return
-    if cession.salaries:
-        raise ValueError(
-            f"cession.salaries est rendu uniquement pour l'acte dentaire {DOCUMENT_CODE}."
-        )
+    # re-Akainu 2026-06-23 (MAJEUR O24-14) : en SELAS, l'acte ET le compromis partagent
+    # UN SEUL contexte (generes ENSEMBLE). Si l'acte dentaire porte des salaries repris,
+    # le compromis (qui n'a PAS la clause salaries) recoit le meme contexte -> il doit les
+    # IGNORER, pas lever. Sans ca, le bundle « acte + compromis ensemble » crashe des qu'un
+    # salarie est saisi. La clause salaries reste rendue par le SEUL acte dentaire (ci-dessus).
 
 
 def _validate_origine_propriete(
@@ -757,113 +1860,44 @@ def _required_cession(ctx: DocumentGenerationContext) -> CessionContext:
     return ctx.cession
 
 
+# KAN-2 (Rafael, rejete 2x) : les sous-objets d'une cession absents NE bloquent PLUS la
+# generation. Presence structurelle tolerante (objet vide -> chaque champ sort en marqueur au
+# rendu), coherente avec `_build_cession_replacements` (`cession.x or X()`). L'ancienne
+# validation champ-par-champ ne servait qu'a lever ; elle est desormais portee par le marqueur
+# (required_*), jamais par un blocage ici.
 def _required_vendeur(vendeur: CessionVendeur | None) -> CessionVendeur:
-    if vendeur is None:
-        raise ValueError(f"cession.vendeur est obligatoire pour {DOCUMENT_CODE}.")
-    for field_name, value in [
-        ("cession.vendeur.civilite_affichage", vendeur.civilite_affichage),
-        ("cession.vendeur.prenom", vendeur.prenom),
-        ("cession.vendeur.nom", vendeur.nom),
-        ("cession.vendeur.profession", vendeur.profession),
-        ("cession.vendeur.date_naissance", vendeur.date_naissance),
-        ("cession.vendeur.ville_naissance", vendeur.ville_naissance),
-        ("cession.vendeur.nationalite", vendeur.nationalite),
-        ("cession.vendeur.adresse_affichee", vendeur.adresse_affichee),
-        ("cession.vendeur.situation_maritale", vendeur.situation_maritale),
-    ]:
-        _required_value(value, field_name)
-    return vendeur
+    return vendeur if vendeur is not None else CessionVendeur()
 
 
 def _required_acquereur(acquereur: CessionAcquereur | None) -> CessionAcquereur:
-    if acquereur is None:
-        raise ValueError(f"cession.acquereur est obligatoire pour {DOCUMENT_CODE}.")
-    for field_name, value in [
-        ("cession.acquereur.denomination_societe", acquereur.denomination_societe),
-        ("cession.acquereur.forme_sociale", acquereur.forme_sociale),
-        ("cession.acquereur.capital_social", acquereur.capital_social),
-        ("cession.acquereur.rcs_ville", acquereur.rcs_ville),
-    ]:
-        _required_text(value, field_name)
-    _required_text(_address_label(acquereur.siege), "cession.acquereur.siege.adresse_affichee")
-    return acquereur
+    return acquereur if acquereur is not None else CessionAcquereur()
 
 
 def _required_representant(representant: CessionRepresentant | None) -> CessionRepresentant:
-    if representant is None:
-        raise ValueError(f"cession.acquereur.representant est obligatoire pour {DOCUMENT_CODE}.")
-    for field_name, value in [
-        ("cession.acquereur.representant.civilite_affichage", representant.civilite_affichage),
-        ("cession.acquereur.representant.prenom", representant.prenom),
-        ("cession.acquereur.representant.nom", representant.nom),
-        ("cession.acquereur.representant.fonction", representant.fonction),
-    ]:
-        _required_text(value, field_name)
-    return representant
+    return representant if representant is not None else CessionRepresentant()
 
 
 def _required_cabinet(cabinet: CessionCabinet | None) -> CessionCabinet:
-    if cabinet is None:
-        raise ValueError(f"cession.cabinet est obligatoire pour {DOCUMENT_CODE}.")
-    for field_name, value in [
-        ("cession.cabinet.adresse_affichee", cabinet.adresse_affichee),
-        ("cession.cabinet.adresse_locaux_affichee", cabinet.adresse_locaux_affichee),
-        ("cession.cabinet.telephone", cabinet.telephone),
-    ]:
-        _required_value(value, field_name)
-    # description_origine_propriete n'est plus un token autonome : la clause
-    # d'origine medicale est construite a partir des donnees vendeur (mode
-    # cree/achete). Le texte libre n'est exige que pour un cas COMPLEXE
-    # (cf. _validate_origine_propriete).
-    return cabinet
+    return cabinet if cabinet is not None else CessionCabinet()
 
 
 def _required_bail(bail: CessionBailProfessionnel | None) -> CessionBailProfessionnel:
-    if bail is None:
-        raise ValueError(f"cession.bail_professionnel est obligatoire pour {DOCUMENT_CODE}.")
-    for field_name, value in [
-        ("cession.bail_professionnel.date_bail", bail.date_bail),
-        ("cession.bail_professionnel.duree", bail.duree),
-        (
-            "cession.bail_professionnel.activite_autorisee_affichee",
-            bail.activite_autorisee_affichee,
-        ),
-    ]:
-        _required_value(value, field_name)
-    return bail
+    return bail if bail is not None else CessionBailProfessionnel()
 
 
 def _required_prix(prix: CessionPrix | None) -> CessionPrix:
-    if prix is None:
-        raise ValueError(f"cession.prix est obligatoire pour {DOCUMENT_CODE}.")
-    for field_name, value in [
-        ("cession.prix.total", prix.total),
-        ("cession.prix.total_lettres", prix.total_lettres),
-        ("cession.prix.elements_corporels", prix.elements_corporels),
-        ("cession.prix.elements_corporels_lettres", prix.elements_corporels_lettres),
-        ("cession.prix.elements_incorporels", prix.elements_incorporels),
-        ("cession.prix.elements_incorporels_lettres", prix.elements_incorporels_lettres),
-    ]:
-        _required_text(value, field_name)
-    return prix
+    return prix if prix is not None else CessionPrix()
 
 
 def _required_document(document: DocumentContext | None) -> DocumentContext:
-    if document is None:
-        raise ValueError(f"document est obligatoire pour {DOCUMENT_CODE}.")
-    _required_text(document.nombre_pages_lettres, "document.nombre_pages_lettres")
-    _required_text(document.nombre_exemplaires_lettres, "document.nombre_exemplaires_lettres")
-    return document
+    return document if document is not None else DocumentContext()
 
 
 def _required_exercices(exercices: list[CessionExercice]) -> list[CessionExercice]:
-    if len(exercices) != 3:
-        raise ValueError("cession.exercices doit contenir exactement trois lignes.")
-    for index, exercice in enumerate(exercices):
-        prefix = f"cession.exercices[{index}]"
-        _required_text(exercice.periode, f"{prefix}.periode")
-        _required_text(exercice.chiffre_affaires, f"{prefix}.chiffre_affaires")
-        _required_text(exercice.resultat, f"{prefix}.resultat")
+    # KAN-2 : le nombre d'exercices ne bloque PLUS la generation. Les 3 lignes du modele sont
+    # toujours emises (blanc si l'exercice n'est pas fourni, cf. _build_cession_replacements) ->
+    # une liste vide ou incomplete genere sans crash. CA et resultat vides -> zones a completer
+    # a la main (retours client 2026-06-11, tickets 2.8 / 3.1).
     return exercices
 
 
@@ -877,14 +1911,19 @@ def _salarie_label(salarie: CessionSalarie, index: int) -> str:
 
 
 def _required_value(value: date | str | None, field_name: str) -> date | str:
+    # KAN-2 : une valeur manquante NE bloque PLUS -> marqueur metier lisible (jamais une valeur
+    # inventee, y compris pour une DATE : on ne fabrique aucune date de repli). Presente
+    # (date OU texte non vide) -> renvoyee TELLE QUELLE (sortie NOMINALE byte-identique).
     if value is None:
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return f"(À COMPLÉTER : {libelle_metier(field_name)})"
     if isinstance(value, str) and not value.strip():
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return f"(À COMPLÉTER : {libelle_metier(field_name)})"
     return value
 
 
 def _required_text(value: str | None, field_name: str) -> str:
+    # KAN-2 : donnee manquante -> marqueur metier « (À COMPLÉTER : <libelle>) » (sans
+    # crochet/point/underscore) au lieu de lever. Sortie NOMINALE (valeur presente) BYTE-IDENTIQUE.
     if value is None or not value.strip():
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return f"(À COMPLÉTER : {libelle_metier(field_name)})"
     return value.strip()

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import time
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -88,7 +89,15 @@ def _build_entries(
 
 def _validate_source_path(source_path: Path, allowed_suffixes: tuple[str, ...]) -> None:
     if not source_path.is_file():
-        raise ZipBundleError(f"Fichier genere introuvable : {source_path}")
+        # Course FS generation -> mise en ZIP (re-Akainu tour 7) : sous forte pression disque,
+        # le fichier vient d'etre ecrit (document.save) mais n'est pas encore visible par is_file().
+        # Petit retry borne (<= 0,2 s) avant de conclure a l'absence, pour fiabiliser le bundle.
+        for _ in range(10):
+            time.sleep(0.02)
+            if source_path.is_file():
+                break
+        else:
+            raise ZipBundleError(f"Fichier genere introuvable : {source_path}")
     name_lower = source_path.name.lower()
     if source_path.name.startswith(TEMPORARY_FILE_PREFIXES) or name_lower.endswith(
         TEMPORARY_FILE_SUFFIXES

@@ -1,0 +1,387 @@
+variable,description
+[civilite],civilite de la personne
+[prenom],prenom de la personne
+[nom],nom de la personne
+[date_naissance],date de naissance
+[ville_naissance],ville de naissance
+[nationalite],nationalite de la personne
+[num_voie_perso],numero de voie personnelle
+[voie_perso],nom de voie personnelle
+[cp_perso],code postal personnel
+[ville_perso],ville personnelle
+[nom_pere],nom complet du pere
+[nom_mere],nom complet de la mere
+[situation_maritale],situation maritale
+[nom_conjoint],nom complet du conjoint
+[telephone],telephone de la personne
+[email],email de la personne
+[statut_residence],statut de residence principale
+[denomination_societe],nom de la societe
+[forme_sociale],forme sociale de la societe
+[capital_social],montant du capital social
+[capital_lettres],capital social en lettres
+[nb_actions],nombre total actions
+[montant_sous],montant de la souscription
+[num_voie_siege],numero de voie du siege
+[voie_siege],nom de voie du siege
+[cp_siege],code postal du siege
+[ville_siege],ville du siege social
+[ville_rcs],ville du RCS
+[nom_banque],nom de la banque
+[adresse_banque],adresse de la banque
+[date_signature],date de signature
+[lieu_signature],lieu de signature
+[date_cloture_exercice_1],date de cloture du premier exercice
+[debut_exercice],date de debut exercice social
+[fin_exercice],date de fin exercice social
+[fonction_dirigeant],fonction du dirigeant
+[qualite_associe],qualite de l associe
+[signature],signature de la personne
+[adresse_personne_1],adresse de la personne 1
+[adresse_personne_2],adresse de la personne 2
+[adresse_personne_3],adresse de la personne 3
+[adresse_personne_4],adresse de la personne 4
+[adresse_personne_5],adresse de la personne 5
+[apport_lettres_personne_1],apport en lettres de la personne 1
+[apport_lettres_personne_2],apport en lettres de la personne 2
+[apport_personne_1],apport de la personne 1
+[apport_personne_2],apport de la personne 2
+[civilite_personne_1],civilite de la personne 1
+[civilite_personne_2],civilite de la personne 2
+[cp_bien],code postal du bien
+[date_cloture_exercice],date de cloture de l exercice
+[date_naissance_personne_1],date de naissance de la personne 1
+[date_naissance_personne_2],date de naissance de la personne 2
+[date_naissance_personne_3],date de naissance de la personne 3
+[date_naissance_personne_4],date de naissance de la personne 4
+[date_naissance_personne_5],date de naissance de la personne 5
+[date_pv],date du proces-verbal
+[date_reunion_lettres],date de reunion en lettres
+[departement_naissance_personne_2],departement de naissance de la personne 2
+[duree_societe],duree de la societe
+[email_personne_1],email de la personne 1
+[email_personne_2],email de la personne 2
+[email_personne_3],email de la personne 3
+[email_personne_4],email de la personne 4
+[email_personne_5],email de la personne 5
+[heure_reunion],heure de la reunion
+[montant_emprunt],montant de l emprunt
+[nationalite_personne_1],nationalite de la personne 1
+[nationalite_personne_2],nationalite de la personne 2
+[nationalite_personne_3],nationalite de la personne 3
+[nationalite_personne_4],nationalite de la personne 4
+[nationalite_personne_5],nationalite de la personne 5
+[nb_parts_lettres_personne_1],nombre de parts en lettres de la personne 1
+[nb_parts_lettres_personne_2],nombre de parts en lettres de la personne 2
+[nb_parts_personne_1],nombre de parts de la personne 1
+[nb_parts_personne_2],nombre de parts de la personne 2
+[nb_parts_total],nombre total de parts
+[nom_gerant_1],nom du gerant 1
+[nom_gerant_2],nom du gerant 2
+[nom_mere_personne_1],nom de la mere de la personne 1
+[nom_mere_personne_2],nom de la mere de la personne 2
+[nom_mere_personne_3],nom de la mere de la personne 3
+[nom_mere_personne_4],nom de la mere de la personne 4
+[nom_mere_personne_5],nom de la mere de la personne 5
+[nom_naissance_personne_1],nom de naissance de la personne 1
+[nom_pere_personne_1],nom du pere de la personne 1
+[nom_pere_personne_2],nom du pere de la personne 2
+[nom_pere_personne_3],nom du pere de la personne 3
+[nom_pere_personne_4],nom du pere de la personne 4
+[nom_pere_personne_5],nom du pere de la personne 5
+[nom_personne_1],nom de la personne 1
+[nom_personne_2],nom de la personne 2
+[nom_personne_3],nom de la personne 3
+[nom_personne_4],nom de la personne 4
+[nom_personne_5],nom de la personne 5
+[nom_signataire_1],nom du signataire 1
+[num_voie_bien],numero de voie du bien
+[numero_part_debut_personne_1],numero de debut des parts de la personne 1
+[numero_part_debut_personne_2],numero de debut des parts de la personne 2
+[numero_part_fin_personne_1],numero de fin des parts de la personne 1
+[numero_part_fin_personne_2],numero de fin des parts de la personne 2
+[parts_personne_1],nombre de parts de la personne 1
+[parts_personne_2],nombre de parts de la personne 2
+[parts_personne_3],nombre de parts de la personne 3
+[parts_personne_4],nombre de parts de la personne 4
+[parts_personne_5],nombre de parts de la personne 5
+[pays_naissance_personne_1],pays de naissance de la personne 1
+[prenom_gerant_1],prenom du gerant 1
+[prenom_gerant_2],prenom du gerant 2
+[prenom_personne_1],prenom de la personne 1
+[prenom_personne_2],prenom de la personne 2
+[prenom_personne_3],prenom de la personne 3
+[prenom_personne_4],prenom de la personne 4
+[prenom_personne_5],prenom de la personne 5
+[prenom_signataire_1],prenom du signataire 1
+[repartition_capital],repartition du capital
+[situation_maritale_personne_1],situation maritale de la personne 1
+[situation_maritale_personne_2],situation maritale de la personne 2
+[situation_maritale_personne_3],situation maritale de la personne 3
+[situation_maritale_personne_4],situation maritale de la personne 4
+[situation_maritale_personne_5],situation maritale de la personne 5
+[statut_residence_personne_1],statut residence personne 1
+[telephone_personne_1],telephone de la personne 1
+[telephone_personne_2],telephone de la personne 2
+[telephone_personne_3],telephone de la personne 3
+[telephone_personne_4],telephone de la personne 4
+[telephone_personne_5],telephone de la personne 5
+[valeur_nominale_part],valeur nominale de la part
+[ville_bien],ville du bien
+[ville_naissance_personne_1],ville de naissance de la personne 1
+[ville_naissance_personne_2],ville de naissance de la personne 2
+[ville_naissance_personne_3],ville de naissance de la personne 3
+[ville_naissance_personne_4],ville de naissance de la personne 4
+[ville_naissance_personne_5],ville de naissance de la personne 5
+[voie_bien],nom de voie du bien
+[apport_commanditaire_lettres_personne_2],apport commanditaire en lettres personne 2
+[apport_commanditaire_personne_2],apport commanditaire personne 2
+[capital_social_maximal],capital social maximal
+[capital_social_maximal_lettres],capital social maximal en lettres
+[civilite_courte_personne_1],civilite courte personne 1
+[civilite_courte_personne_2],civilite courte personne 2
+[civilite_courte_personne_3],civilite courte personne 3
+[civilite_personne_3],civilite de la personne 3
+[denomination_societe_associe_1],nom de la societe associee 1
+[departement_naissance_personne_1],departement naissance personne 1
+[fonction_dirigeant_pluriel],fonction des dirigeants
+[forme_sociale_abregee],forme sociale abregee
+[nb_parts_lettres_societe_associe_1],parts en lettres societe associee 1
+[nb_parts_total_lettres],nombre total de parts en lettres
+[nom_naissance_personne_2],nom de naissance personne 2
+[nom_naissance_personne_3],nom de naissance personne 3
+[nombre_exemplaires_lettres],nombre exemplaires en lettres
+[parts_societe_associe_1],nombre de parts societe associee 1
+[pays_naissance_personne_2],pays naissance personne 2
+[pays_naissance_personne_3],pays naissance personne 3
+[plage_parts_societe_associe_1],plage de parts societe associee 1
+[plage_parts_total],plage totale des parts
+[qualite_associe_personne_1],qualite associe personne 1
+[qualite_associe_personne_2],qualite associe personne 2
+[qualite_associe_societe_1],qualite societe associee 1
+[regime_matrimonial],regime matrimonial
+[repartition_associes_commanditaires],repartition des commanditaires
+[repartition_associes_commandites],repartition des commandites
+[total_apports_commandites],total apports commandites
+[valeur_nominale_part_lettres],valeur nominale en lettres
+[adresse_activite_individuelle],adresse activite individuelle
+[adresse_bailleur],adresse du bailleur
+[adresse_cabinet],adresse du cabinet
+[adresse_cedant],adresse du cedant
+[adresse_correspondance],adresse de correspondance
+[adresse_exercice_vendeur],adresse d exercice du vendeur
+[adresse_lieu_exercice],adresse du lieu d exercice
+[adresse_locataire],adresse du locataire
+[adresse_locaux],adresse des locaux
+[adresse_personnelle],adresse personnelle
+[adresse_service_enregistrement],adresse du service enregistrement
+[adresse_siege],adresse du siege social
+[adresse_siege_acquereur],adresse du siege acquereur
+[adresse_siege_cessionnaire],adresse siege cessionnaire
+[adresse_vendeur],adresse du vendeur
+[annee_cession_patientele],annee cession patientele
+[annees_acquisition_patientele],annees acquisition patientele
+[capital_social_acquereur],capital social de l acquereur
+[capital_social_cessionnaire],capital social cessionnaire
+[capital_social_societe_cedee],capital social societe cedee
+[centre_finances_publiques],centre des finances publiques
+[chiffre_affaires_1],chiffre affaires exercice 1
+[chiffre_affaires_2],chiffre affaires exercice 2
+[chiffre_affaires_3],chiffre affaires exercice 3
+[choix_activite_salariee],choix activite salariee
+[choix_aucun_site],choix aucun site
+[choix_oui],choix oui
+[civilite_acquereur_representant],civilite du representant acquereur
+[civilite_associe_societe_cedee_1],civilite associe societe cedee 1
+[civilite_associe_societe_cedee_3],civilite associe societe cedee 3
+[civilite_bailleur],civilite du bailleur
+[civilite_cedant],civilite du cedant
+[civilite_cessionnaire_patientele_1],civilite cessionnaire patientele 1
+[civilite_cessionnaire_patientele_2],civilite cessionnaire patientele 2
+[civilite_conjoint_cedant],civilite conjoint cedant
+[civilite_conjoint_vendeur],civilite du conjoint vendeur
+[civilite_courte_locataire],civilite courte du locataire
+[civilite_courte_vendeur],civilite courte vendeur
+[civilite_destinataire],civilite du destinataire
+[civilite_locataire],civilite du locataire
+[civilite_personne_4],civilite personne 4
+[civilite_precedent_proprietaire],civilite precedent proprietaire
+[civilite_representant_cessionnaire_courte],civilite representant cessionnaire courte
+[civilite_salarie_1],civilite salarie 1
+[civilite_salarie_2],civilite salarie 2
+[civilite_vendeur],civilite du vendeur
+[cp_correspondance],code postal correspondance
+[cp_naissance_vendeur],code postal naissance vendeur
+[cp_ville_service_enregistrement],code postal et ville du service
+[date_bail],date du bail
+[date_debut_activite_site_1],date debut activite site 1
+[date_debut_bail],date de debut du bail
+[date_entree_jouissance],date entree en jouissance
+[date_fin_bail],date de fin du bail
+[date_immatriculation_acquereur],date immatriculation acquereur
+[date_inscription_ordre_acquereur],date inscription ordre acquereur
+[date_limite_agrement],date limite agrement
+[date_naissance_bailleur],date de naissance du bailleur
+[date_naissance_cedant],date de naissance du cedant
+[date_naissance_locataire],date de naissance du locataire
+[date_naissance_vendeur],date de naissance du vendeur
+[date_origine_propriete],date origine de propriete
+[date_pv_lettres],date pv lettres
+[date_realisation_limite],date limite de realisation
+[date_reconduction_bail_1],date de reconduction 1 du bail
+[date_reconduction_bail_2],date de reconduction 2 du bail
+[delai_agrement],delai agrement
+[denomination_societe_acquereur],denomination de la societe acquereur
+[denomination_societe_cedee],denomination societe cedee
+[denomination_societe_cessionnaire],denomination societe cessionnaire
+[denomination_societe_nouvel_associe],denomination nouvel associe
+[departement_inscription_societe],departement inscription societe
+[departement_naissance],departement de naissance
+[departement_naissance_cedant],departement naissance cedant
+[departement_naissance_vendeur],departement de naissance du vendeur
+[description_local],description du local
+[description_origine_propriete],description origine de propriete
+[duree_bail],duree du bail
+[duree_credit_vendeur],duree du credit vendeur
+[duree_pret],duree du pret
+[exercice_1],periode exercice 1
+[exercice_2],periode exercice 2
+[exercice_3],periode exercice 3
+[fonction_acquereur_representant],fonction du representant acquereur
+[forme_sociale_acquereur],forme sociale de l acquereur
+[forme_sociale_complete],forme sociale complete
+[loyer_mensuel],montant du loyer mensuel
+[majoration_interet_retard],majoration interet retard
+[montant_credit_vendeur],montant du credit vendeur
+[montant_droits_enregistrement],montant des droits enregistrement
+[montant_fonds],montant des fonds
+[montant_fonds_lettres],montant des fonds en lettres
+[montant_pret],montant du pret
+[nationalite_bailleur],nationalite du bailleur
+[nationalite_cedant],nationalite du cedant
+[nationalite_locataire],nationalite du locataire
+[nationalite_vendeur],nationalite du vendeur
+[nature_fonds_liberal],nature du fonds liberal
+[nb_parts_cedees],nombre de parts cedees
+[nb_parts_scm_a_ceder],nombre parts SCM a ceder
+[nb_parts_total_societe_cedee],nombre parts societe cedee
+[nom_acquereur_representant],nom du representant acquereur
+[nom_associe_societe_cedee_1],nom associe societe cedee 1
+[nom_associe_societe_cedee_3],nom associe societe cedee 3
+[nom_bailleur],nom du bailleur
+[nom_cedant],nom du cedant
+[nom_cessionnaire_patientele_1],nom cessionnaire patientele 1
+[nom_cessionnaire_patientele_2],nom cessionnaire patientele 2
+[nom_conjoint_cedant],nom conjoint cedant
+[nom_conjoint_vendeur],nom du conjoint vendeur
+[nom_destinataire],nom du destinataire
+[nom_locataire],nom du locataire
+[nom_precedent_proprietaire],nom precedent proprietaire
+[nom_representant_cessionnaire],nom representant cessionnaire
+[nom_salarie_1],nom salarie 1
+[nom_salarie_2],nom salarie 2
+[nom_signataire],nom du signataire
+[nom_vendeur],nom du vendeur
+[nombre_exemplaires],nombre d exemplaires
+[nombre_pages_lettres],nombre de pages en lettres
+[numero_inscription_ordre],numero inscription ordre
+[numero_inscription_societe],numero inscription societe
+[numero_ordre],numero ordinal
+[numero_ordre_cedant],numero ordinal cedant
+[numero_ordre_vendeur],numero ordinal du vendeur
+[numero_rcs],numero RCS
+[numero_rcs_acquereur],numero RCS de l acquereur
+[numero_rcs_societe_cedee],numero RCS societe cedee
+[numero_rpps],numero RPPS
+[numero_rpps_cedant],numero RPPS cedant
+[numero_rpps_vendeur],numero RPPS du vendeur
+[numero_siren_vendeur],numero SIREN du vendeur
+[numero_siret_acquereur],numero SIRET de l acquereur
+[ordre_departemental_cedant],ordre departemental cedant
+[ordre_departemental_vendeur],ordre departemental du vendeur
+[pays_naissance_vendeur],pays de naissance du vendeur
+[plage_parts_cedees],plage des parts cedees
+[plage_parts_personne_1],plage parts personne 1
+[plage_parts_personne_2],plage parts personne 2
+[plage_parts_personne_4],plage parts personne 4
+[plage_parts_societe_nouvel_associe],plage parts nouvel associe
+[prenom_acquereur_representant],prenom du representant acquereur
+[prenom_associe_societe_cedee_1],prenom associe societe cedee 1
+[prenom_associe_societe_cedee_3],prenom associe societe cedee 3
+[prenom_bailleur],prenom du bailleur
+[prenom_cedant],prenom du cedant
+[prenom_cessionnaire_patientele_1],prenom cessionnaire patientele 1
+[prenom_cessionnaire_patientele_2],prenom cessionnaire patientele 2
+[prenom_conjoint_cedant],prenom conjoint cedant
+[prenom_conjoint_vendeur],prenom du conjoint vendeur
+[prenom_destinataire],prenom du destinataire
+[prenom_locataire],prenom du locataire
+[prenom_precedent_proprietaire],prenom precedent proprietaire
+[prenom_representant_cessionnaire],prenom representant cessionnaire
+[prenom_salarie_1],prenom salarie 1
+[prenom_salarie_2],prenom salarie 2
+[prenom_signataire],prenom du signataire
+[prenom_vendeur],prenom du vendeur
+[prix_cession],prix de cession
+[prix_cession_lettres],prix de cession en lettres
+[prix_elements_corporels],prix des elements corporels
+[prix_elements_corporels_lettres],prix des elements corporels en lettres
+[prix_elements_incorporels],prix des elements incorporels
+[prix_elements_incorporels_lettres],prix des elements incorporels en lettres
+[prix_global_parts],prix global des parts
+[prix_global_parts_lettres],prix global en lettres
+[prix_origine_propriete],prix origine de propriete
+[prix_patientele_partielle],prix patientele partielle
+[prix_unitaire_part],prix unitaire de la part
+[prix_unitaire_part_lettres],prix unitaire en lettres
+[profession],profession de la personne
+[profession_bailleur],profession du bailleur
+[profession_cedant],profession du cedant
+[profession_locataire],profession du locataire
+[profession_reglementee],profession reglementee
+[profession_vendeur],profession du vendeur
+[qualification_principale],qualification principale
+[regime_matrimonial_vendeur],regime matrimonial du vendeur
+[resultat_1],resultat exercice 1
+[resultat_2],resultat exercice 2
+[resultat_3],resultat exercice 3
+[service_enregistrement],service enregistrement
+[seuil_achat_materiel],seuil achat materiel
+[seuil_emprunt_gerance],seuil emprunt gerance
+[signature_acquereur],signature de l acquereur
+[signature_ancien_locataire],signature ancien locataire
+[signature_bailleur],signature du bailleur
+[signature_nouveau_locataire],signature nouveau locataire
+[signature_vendeur],signature du vendeur
+[situation_maritale_cedant],situation maritale cedant
+[situation_maritale_vendeur],situation maritale du vendeur
+[superficie_local],superficie du local
+[taux_credit_vendeur],taux du credit vendeur
+[taux_pret],taux du pret
+[telephone_cabinet],telephone du cabinet
+[temps_hebdomadaire_individuel],temps hebdomadaire individuel
+[ville_correspondance],ville de correspondance
+[ville_naissance_bailleur],ville de naissance du bailleur
+[ville_naissance_cedant],ville naissance cedant
+[ville_naissance_locataire],ville de naissance du locataire
+[ville_naissance_vendeur],ville de naissance du vendeur
+[ville_ordre],ville du conseil de l ordre
+[ville_ordre_sel],ville ordre de la SEL
+[ville_rcs_acquereur],ville RCS de l acquereur
+[ville_rcs_cessionnaire],ville RCS cessionnaire
+[ville_rcs_societe_cedee],ville RCS societe cedee
+[adresse_ordre],adresse du conseil de l ordre
+[adresse_siege_societe_cedee],adresse siege societe cedee
+[charges_annuelles],charges annuelles
+[forme_sociale_societe_cedee],forme sociale societe cedee
+[montant_apports_nature],montant apports en nature
+[montant_apports_numeraire],montant apports en numeraire
+[montant_ifi],montant IFI
+[montant_ir],montant impot sur le revenu
+[nb_enfants_charge],nombre enfants a charge
+[nb_parts_apportees],nombre de parts apportees
+[nb_parts_apportees_lettres],nombre parts apportees en lettres
+[objectifs_client],objectifs du client
+[patrimoine_global],patrimoine global estime
+[residence_fiscale],residence fiscale
+[revenus_annuels],revenus annuels nets

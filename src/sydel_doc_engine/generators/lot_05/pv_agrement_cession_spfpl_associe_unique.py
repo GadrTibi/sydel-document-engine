@@ -17,14 +17,18 @@ from sydel_doc_engine.generators.lot_05.pv_agrement_common import (
 from sydel_doc_engine.generators.lot_05.spfpl_common import (
     person_display,
     person_signature,
+    quantite_titres,
     required_cedant,
-    required_int,
     required_societe_cible,
     required_text,
     validate_associe_unique,
     validate_cession_context,
 )
-from sydel_doc_engine.rendering.docx_builder import add_paragraph, new_document
+from sydel_doc_engine.rendering.docx_builder import (
+    add_paragraph,
+    keep_final_signature_block_together,
+    new_document,
+)
 
 OUTPUT_FILENAME = "pv_agrement_cession_spfpl_associe_unique.docx"
 
@@ -40,35 +44,38 @@ class PvAgrementCessionSpfplAssocieUniqueGenerator:
 
         docx = new_document()
         add_societe_cible_header(docx, ctx)
-        add_pv_title(docx, "L'ASSOCIE UNIQUE", ctx)
+        add_pv_title(docx, "L'ASSOCIÉ UNIQUE", ctx)
         for line in reunion_intro_lines(ctx):
             add_paragraph(docx, line)
         add_paragraph(
             docx,
             (
-                f"{person_display(cedant, 'cedant')}, associe unique de la Societe "
+                f"{person_display(cedant, 'cedant')}, associé unique de la Société "
                 f"{required_text(societe_cible.denomination, 'societe_cible.denomination')}, "
                 "au capital de "
                 f"{required_text(societe_cible.capital_social, 'societe_cible.capital_social')} "
-                "euros, compose de "
-                f"{required_int(societe_cible.nb_parts_total, 'societe_cible.nb_parts_total')} "
-                "parts, a pris les decisions suivantes :"
+                "euros, composé de "
+                f"{quantite_titres(societe_cible.nb_parts_total, 'nombre total de parts')} "
+                "parts, a pris les décisions suivantes :"
             ),
             alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
         )
-        add_ordre_du_jour(docx)
-        add_resolution_agrement(docx, ctx, subject="L'associe unique")
-        add_article_7_bis(docx, ctx, subject="L'associe unique")
-        add_pouvoirs_resolution(docx, subject="L'associe unique")
+        add_ordre_du_jour(docx, ctx)
+        add_resolution_agrement(docx, ctx, subject="L'associé unique")
+        add_article_7_bis(docx, ctx, subject="L'associé unique")
+        add_pouvoirs_resolution(docx, subject="L'associé unique")
         add_paragraph(
             docx,
             (
-                "De tout ce que dessus, il a ete dresse le present proces-verbal qui a "
-                "ete signe apres lecture par l'associe unique."
+                "De tout ce que dessus, il a été dressé le présent procès-verbal qui a "
+                "été signé après lecture par l'associé unique."
             ),
             alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
         )
         add_paragraph(docx, person_signature(cedant, "cedant"), space_before_pt=12)
+
+        # KAN-36 : bloc signature final solidaire (une seule page).
+        keep_final_signature_block_together(docx)
 
         output_dir.mkdir(parents=True, exist_ok=True)
         output_path = output_dir / OUTPUT_FILENAME

@@ -3,7 +3,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_COLOR_INDEX
+from docx.shared import Pt
 
 from sydel_doc_engine.domain.models import DocumentGenerationContext, ScmCessionAssocie
 from sydel_doc_engine.generators.lot_05.scm_cession_common import (
@@ -11,6 +12,7 @@ from sydel_doc_engine.generators.lot_05.scm_cession_common import (
     add_heading,
     address_display,
     associe_display,
+    cedant_display,
     format_display_date,
     required_text,
     save_clean_document,
@@ -21,10 +23,41 @@ from sydel_doc_engine.rendering.docx_builder import (
     add_hyphen_list_item,
     add_paragraph,
     add_signature_table,
+    add_spacer,
+    keep_final_signature_block_together,
+    keep_signature_block_together,
     new_document,
 )
 
 OUTPUT_FILENAME = "pv_age_cession_parts_scm.docx"
+
+# Mise en forme (Albane 2026-06-17, §1) : aerer le PV SCM, juge trop serre.
+# Espace avant chaque grande resolution (meme valeur que l'acte SCM §13.1 pour
+# rester coherent) + spacers entre les grands blocs (entete<->corps, avant la
+# signature). Local au PV : n'affecte ni l'acte ni le courrier SCM.
+_RESOLUTION_SPACE_BEFORE_PT = 12
+_BLOCK_SPACER_PT = 10
+
+# Albane 2026-06-26 §P5 : numero de l'article des statuts modifie par la nouvelle repartition
+# du capital. Reste « 7 » (gold V1) ; il est SURLIGNE dans la 2e resolution pour signaler un
+# champ variable a adapter selon les statuts.
+_ARTICLE_REPARTITION = "7"
+
+# Albane 2026-06-26 §P2 : « mettre de l'espace entre les paragraphes ». On aere le corps du PV
+# (espace apres chaque paragraphe superieur au standard 6 pt). Local au PV : n'affecte ni
+# l'acte ni le courrier SCM (ils ne passent pas ce parametre).
+_PARAGRAPH_SPACE_AFTER_PT = 8
+
+
+def _body(document, text: str, *, bold: bool = False, italic: bool = False) -> None:
+    # §P2 — wrapper local : chaque paragraphe de corps du PV est aere (space_after dedie).
+    add_body_paragraph(
+        document,
+        text,
+        bold=bold,
+        italic=italic,
+        space_after_pt=_PARAGRAPH_SPACE_AFTER_PT,
+    )
 
 
 class PvAgeCessionScmGenerator:
@@ -81,11 +114,13 @@ class PvAgeCessionScmGenerator:
             ],
         )
 
-        add_body_paragraph(
+        # §1 — aeration : espace entre le cadre de titre et le corps du PV.
+        add_spacer(document, space_after_pt=_BLOCK_SPACER_PT)
+        _body(
             document,
             f"L'an {required_text(agrement.date_pv_lettres, 'scm_cession.agrement.date_pv_lettres')}",
         )
-        add_body_paragraph(
+        _body(
             document,
             (
                 f"Les associés de la {required_text(scm_cedee.denomination, 'scm_cession.scm_cedee.denomination')}, "
@@ -95,30 +130,52 @@ class PvAgeCessionScmGenerator:
                 "se sont réunis sur convocation régulière de la gérance au siège de la Société."
             ),
         )
-        add_body_paragraph(document, "Sont présents ou représentés :")
+        _body(document, "Sont présents ou représentés :")
         for index, associe in enumerate(scm_cession.associes_presents, start=1):
             parts = associe.parts
             if parts is None:
                 raise ValueError("associe present sans parts.")
-            add_body_paragraph(
+            _body(
                 document,
                 f"{index}° {associe_display(associe, f'scm_cession.associes_presents[{index - 1}]')}, détenant {parts.nb} parts sociales",
             )
-        add_body_paragraph(
+        _body(
             document,
             "Les associés présents ou représentés disposent ensemble la totalité des parts formant le capital de la société. L'assemblée est habilitée à prendre les décisions extraordinaires.",
         )
-        president = scm_cession.associes_presents[2]
-        add_body_paragraph(
+        # §4.1 — le president de seance (gerant associe) est le DERNIER associe
+        # present, derive du nombre reel d'associes saisis et non d'un index fixe
+        # (l'ancien code codait associes_presents[2], qui levait IndexError des
+        # qu'il y avait moins de 3 associes presents). Conventionnellement, le
+        # gerant associe figure en derniere position de la liste des presents
+        # (rendu byte-identique pour la fixture de demo a 3 associes : [-1] == [2]).
+        if not scm_cession.associes_presents:
+            raise ValueError("scm_cession.associes_presents est obligatoire pour le PV AGE cession SCM.")
+        president_index = len(scm_cession.associes_presents) - 1
+        president = scm_cession.associes_presents[president_index]
+        # Le sexe du president de seance reste derive de sa civilite : il pilote l'accord de
+        # « président » plus bas (`_accord_role_president`), que KAN-23 ne vise PAS.
+        president_feminin = _est_feminin(president.civilite_affichage)
+        # KAN-23 (Rafael 2026-07-15) : « Le mot "gérant" ne doit JAMAIS être mis au féminin. On
+        # parle toujours d'un gérant, même lorsqu'il s'agit d'une femme. » -> qualite INVARIABLE
+        # (« gérant associé » y compris pour une femme) ; « associé » qualifie « gérant » et suit
+        # donc le masculin du nom.
+        # SUPERSEDE Albane 2026-06-26 §P3a, qui demandait l'accord au sexe (« gerante associee »
+        # si femme). Le retour le plus recent prime (regle 68) ; supersede trace au ticket.
+        qualite_president = "gérant associé"
+        _body(
             document,
             (
-                f"{associe_display(president, 'scm_cession.associes_presents[2]')} "
-                "préside la séance en qualité de gérant associé."
+                f"{associe_display(president, f'scm_cession.associes_presents[{president_index}]')} "
+                f"préside la séance en qualité de {qualite_president}."
             ),
         )
-        add_body_paragraph(
+        _body(
             document,
-            "Le Président dépose et met à la disposition des associés les documents suivants :",
+            _accord_role_president(
+                "Le Président dépose et met à la disposition des associés les documents suivants :",
+                president_feminin,
+            ),
         )
         # Liste A (puces tiret) : documents deposes par le President (retour UAT Rafael).
         for item in [
@@ -134,7 +191,7 @@ class PvAgeCessionScmGenerator:
             "L'assemblée lui donne acte de ses déclarations et reconnaît la validité de la convocation.",
             "Puis le Président rappelle l'ordre du jour :",
         ]:
-            add_body_paragraph(document, text)
+            _body(document, _accord_role_president(text, president_feminin))
         # Liste B (puces tiret) : ordre du jour (retour UAT Rafael).
         for item in [
             "Lecture du rapport de la gérance ;",
@@ -147,18 +204,25 @@ class PvAgeCessionScmGenerator:
             "Une discussion sans débat s'engage entre les associés.",
             "Plus personne ne demandant la parole, le Président met successivement aux voix les résolutions inscrites à l'ordre du jour.",
         ]:
-            add_body_paragraph(document, text)
+            _body(document, _accord_role_president(text, president_feminin))
 
-        add_heading(document, "PREMIERE RESOLUTION")
-        add_body_paragraph(document, _agrement_resolution(ctx, cessionnaire.denomination or ""))
-        add_body_paragraph(document, "Cette résolution est adoptée à l'unanimité")
-
-        add_heading(document, "DEUXIEME RESOLUTION")
-        add_body_paragraph(
-            document,
-            "L'assemblée générale, compte tenu de la résolution qui précède, et sous réserve de la réalisation définitive de la cession, décide, pour tenir compte de la nouvelle répartition du capital, de modifier l'article 7 des statuts qui sera rédigé ainsi :",
+        add_heading(
+            document, "PREMIERE RESOLUTION", space_before_pt=_RESOLUTION_SPACE_BEFORE_PT
         )
-        add_body_paragraph(
+        _body(document, _agrement_resolution(ctx, cessionnaire.denomination or ""))
+        _body(
+            document, "Cette résolution est adoptée à l'unanimité.", italic=True
+        )
+
+        add_heading(
+            document, "DEUXIEME RESOLUTION", space_before_pt=_RESOLUTION_SPACE_BEFORE_PT
+        )
+        # Albane 2026-06-26 §P5 : (a) suppression de « et sous reserve de la realisation
+        # definitive de la cession, » ; (b) le numero d'article modifie est SURLIGNE (champ
+        # variable a adapter) ; (c) la formule d'entree en vigueur ajoute « a compter de ce
+        # jour ».
+        _add_resolution2_paragraph(document, _ARTICLE_REPARTITION)
+        _body(
             document,
             (
                 f"« A la suite de son évolution depuis la constitution de la Société, le capital social est fixé à "
@@ -169,39 +233,115 @@ class PvAgeCessionScmGenerator:
             ),
         )
         _add_repartition_apres_cession(document, scm_cession.associes_apres_cession)
-        add_body_paragraph(
+        _body(
             document,
             f"Total égal au nombre de parts composant le capital social : {scm_cedee.nb_parts_total} parts ».",
         )
-        add_body_paragraph(document, "Cette résolution est adoptée à l'unanimité.")
+        _body(
+            document, "Cette résolution est adoptée à l'unanimité.", italic=True
+        )
 
-        add_heading(document, "TROISIEME RESOLUTION")
-        add_body_paragraph(
+        add_heading(
+            document, "TROISIEME RESOLUTION", space_before_pt=_RESOLUTION_SPACE_BEFORE_PT
+        )
+        _body(
             document,
             "L'assemblée générale confère tous pouvoirs au porteur d'une copie ou d'un extrait du présent procès-verbal afin d'accomplir toutes les formalités consécutives aux décisions prises.",
         )
-        add_body_paragraph(document, "Cette résolution est adoptée à l'unanimité.")
-        add_body_paragraph(
-            document,
-            "De tout ceci, il a été dressé le présent procès-verbal qui, après lecture, a été signé par la gérance, les associés présents.",
+        _body(
+            document, "Cette résolution est adoptée à l'unanimité.", italic=True
         )
-        add_signature_table(document, _signature_rows(scm_cession.signataires_pv))
+        # Albane 2026-06-26 §P7 : le PV est signe par TOUS les associes presents (on enleve « la
+        # gerance » de la formule finale ; le cadre de signature liste les associes, plus la
+        # gerance).
+        _body(
+            document,
+            "De tout ceci, il a été dressé le présent procès-verbal qui, après lecture, a été signé par tous les associés présents.",
+        )
+        # §1 — aeration : espace avant le cadre de signature.
+        add_spacer(document, space_after_pt=_BLOCK_SPACER_PT)
+        # §4.2 — cadre de signature agrandi (zone manuscrite/YouSign suffisante),
+        # bordures conservees. 2,5 cm de hauteur minimale par ligne de signataires.
+        signature_table = add_signature_table(
+            document,
+            _signature_rows(scm_cession.signataires_pv),
+            min_row_height_cm=2.5,
+        )
 
+        # KAN-36 : bloc signature final solidaire (une seule page). Les signataires sont dans une
+        # TABLE : keep_final (paragraphe seul) ne la protege pas (cadre orphelin / scindable). On
+        # solidarise la TABLE (cantSplit sur ses lignes + keepNext sur l'intro « De tout ceci … »).
+        keep_signature_block_together(document, signature_table)
+        keep_final_signature_block_together(document)
         return save_clean_document(document, output_dir, OUTPUT_FILENAME)
 
 
 def _agrement_resolution(ctx: DocumentGenerationContext, cessionnaire_name: str) -> str:
+    # Albane 2026-06-26 §P4 : la 1re resolution agree le nouvel associe PUIS autorise la
+    # cession. (a) « dans un delai de 3 mois ... soit jusqu'au {date} » remplace par « a
+    # compter de ce jour » (plus de delai, plus de date limite) — pour TOUTES structures.
+    # (b) clause ajoutee « et par consequent, autorise la cession de {nb} parts sociales de
+    # {cedant} a la {SEL cessionnaire} » avec les variables reelles (parts cedees, cedant,
+    # denomination cessionnaire).
     scm_cession = ctx.scm_cession
     if scm_cession is None or scm_cession.agrement is None:
         raise ValueError("scm_cession.agrement est obligatoire.")
-    if ctx.structure == "SELAS":
-        return (
-            "L'assemblée générale, après avoir entendu lecture du rapport de la gérance et pris connaissance du projet de cession qui a été notifié à la société, décide d'agréer, comme nouvel associé la "
-            f"{cessionnaire_name}, dans un délai de {required_text(scm_cession.agrement.delai_mois, 'scm_cession.agrement.delai_mois')} mois à compter de ce jour, soit jusqu'au {required_text(scm_cession.agrement.date_limite, 'scm_cession.agrement.date_limite')}."
+    cedant = scm_cession.cedant
+    if cedant is None:
+        raise ValueError("scm_cession.cedant est obligatoire pour le PV AGE cession SCM.")
+    parts_cedees = scm_cession.parts_cedees
+    if parts_cedees is None:
+        raise ValueError(
+            "scm_cession.parts_cedees est obligatoire pour le PV AGE cession SCM."
         )
+    cedant_nom = cedant_display(cedant)
+    nb_cedees = required_text(parts_cedees.nb, "scm_cession.parts_cedees.nb")
     return (
         "L'assemblée générale, après avoir entendu lecture du rapport de la gérance et pris connaissance du projet de cession qui a été notifié à la société, décide d'agréer, comme nouvel associé la "
-        f"{cessionnaire_name}, à compter de ce jour."
+        f"{cessionnaire_name}, à compter de ce jour, et par conséquent, autorise la cession de "
+        f"{nb_cedees} parts sociales de {cedant_nom} à la {cessionnaire_name}."
+    )
+
+
+def _est_feminin(civilite_affichage: str | None) -> bool:
+    # Albane 2026-06-26 §P3a : feminisation de la qualite du president. Le sexe est lu sur la
+    # civilite d'affichage deja saisie ; « Madame » (insensible casse/accents) -> feminin.
+    if not civilite_affichage:
+        return False
+    return civilite_affichage.strip().casefold().startswith("madame")
+
+
+def _accord_role_president(text: str, feminin: bool) -> str:
+    # M3 (Akainu SELARL ronde 4, 2026-07-12) : les references de ROLE du president de seance
+    # (« Le Président » / « le président ») s'accordent au genre, comme la qualite deja
+    # feminisee (§P3a). No-op au masculin. Casse (article + nom) preservee.
+    if not feminin:
+        return text
+    for masc, fem in (
+        ("Le Président", "La Présidente"),
+        ("le Président", "la Présidente"),
+        ("Le président", "La présidente"),
+        ("le président", "la présidente"),
+    ):
+        text = text.replace(masc, fem)
+    return text
+
+
+def _add_resolution2_paragraph(document, numero_article: str) -> None:
+    # Albane 2026-06-26 §P5 : 2e resolution sans « et sous reserve de la realisation
+    # definitive de la cession, » ; le numero d'article est SURLIGNE (champ variable) ;
+    # la formule d'entree en vigueur ajoute « a compter de ce jour ».
+    paragraph = document.add_paragraph()
+    paragraph.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+    paragraph.paragraph_format.space_after = Pt(_PARAGRAPH_SPACE_AFTER_PT)
+    paragraph.add_run(
+        "L'assemblée générale, compte tenu de la résolution qui précède, décide, pour tenir "
+        "compte de la nouvelle répartition du capital, de modifier l'article "
+    )
+    article_run = paragraph.add_run(numero_article)
+    article_run.font.highlight_color = WD_COLOR_INDEX.YELLOW
+    paragraph.add_run(
+        " des statuts qui sera rédigé ainsi, à compter de ce jour :"
     )
 
 
@@ -214,13 +354,17 @@ def _add_repartition_apres_cession(
         parts = associe.parts
         if parts is None:
             raise ValueError(f"{prefix}.parts est obligatoire.")
-        add_body_paragraph(document, f"à {associe_display(associe, prefix)},")
-        add_body_paragraph(document, f"à concurrence de {parts.nb} parts,")
-        add_body_paragraph(
+        # Albane 2026-06-26 §P6 : « a concurrence de {nb} parts » sur la MEME ligne que
+        # l'associe (plus de retour a la ligne). On fusionne les deux fragments.
+        _body(
+            document,
+            f"à {associe_display(associe, prefix)}, à concurrence de {parts.nb} parts,",
+        )
+        _body(
             document,
             f"numérotées de {required_text(parts.plage, f'{prefix}.parts.plage')},",
         )
-        add_body_paragraph(document, f"ci                                    {parts.nb} parts")
+        _body(document, f"ci                                    {parts.nb} parts")
 
 
 def _signature_rows(signataires: list[str]) -> list[list[str]]:

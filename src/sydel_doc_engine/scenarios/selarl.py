@@ -19,7 +19,7 @@ from sydel_doc_engine.front_app.selarl_slice import (
     SelarlSliceInput,
 )
 
-SELARL_DOSSIER_LABEL = "SELARL creation V1"
+SELARL_DOSSIER_LABEL = "SELARL"
 
 
 def _base_kwargs(
@@ -134,7 +134,9 @@ def _cession_cabinet_medical_acte() -> CessionContext:
                     "genre": "feminin",
                     "prenom": "Alice",
                     "nom": "Moreau",
-                    "fonction": "gérante",
+                    # KAN-23 (Rafael 2026-07-15) : « gérant » n'est JAMAIS feminise, meme pour
+                    # une femme -> Alice Moreau est « gérant ».
+                    "fonction": "gérant",
                 },
             },
             "cabinet": {
@@ -232,6 +234,7 @@ def _bail_avenant_medecin() -> BailContext:
             "locataire": {
                 "civilite_affichage": "Docteur",
                 "civilite_courte": "Docteur",
+                "genre": "masculin",
                 "prenom": "Jean",
                 "nom": "Durand",
                 "profession": "médecin",
@@ -296,6 +299,12 @@ def _cession_cabinet_dentaire_acte() -> CessionContext:
                 "telephone": "01 45 00 00 00",
                 "superficie_local": "90",
                 "description_origine_propriete": "Origine de propriété validée manuellement.",
+                # m2 (Akainu 2026-07-12) : mode d'origine EXPLICITE pour que l'acte ET le
+                # compromis dentaires s'accordent (le compromis derive de l'acte). Ce scenario
+                # porte les donnees « acquis » (precedent proprietaire + prix) -> mode "achete"
+                # (le medical demontre "cree" -> les deux branches sont couvertes). Aligne sur
+                # le front, qui fixe TOUJOURS le mode (plus de defaut divergent entre generateurs).
+                "origine_propriete_mode": "achete",
                 "date_origine_propriete": "2019-01-01",
                 "annees_acquisition_patientele": "2019",
                 "prix_origine_propriete": "150 000",
@@ -376,6 +385,7 @@ def _bail_avenant_dentaire() -> BailContext:
             "locataire": {
                 "civilite_affichage": "Docteur",
                 "civilite_courte": "Docteur",
+                "genre": "masculin",
                 "prenom": "Camille",
                 "nom": "Martin",
                 "profession": "chirurgien-dentiste",
@@ -432,9 +442,12 @@ def _scm_cession_selarl() -> ScmCessionContext:
                 "date_naissance": "1er janvier 1980",
                 "ville_naissance": "Paris",
                 "departement_naissance": "75",
-                "nationalite": "francaise",
+                # R4 (rapport conformite 2026-07-07) : fixture accentuee comme le chemin
+                # UI reel (deroulant « française », derivation O24-11 « marié ») — la
+                # forme nue court-circuitait la derivation et fuyait dans l'acte SCM.
+                "nationalite": "française",
                 "adresse_affichee": "1 rue du Cedant, 75008 Paris",
-                "situation_maritale": "marie",
+                "situation_maritale": "marié",
                 "ordre": {"departemental": "Paris", "numero": "12345"},
                 "numero_rpps": "10000000001",
                 "conjoint": {"civilite_affichage": "Madame", "prenom": "Claire", "nom": "Dupont"},
@@ -443,7 +456,7 @@ def _scm_cession_selarl() -> ScmCessionContext:
                 "date_pv": "15 mai 2026",
                 "date_pv_lettres": "deux mille vingt-six, le quinze mai",
                 "delai_mois": "3",
-                "date_limite": "15 aout 2026",
+                "date_limite": "15 août 2026",
             },
             "associes_presents": [
                 {"civilite_affichage": "Monsieur", "prenom": "Paul", "nom": "Bernard",
@@ -499,19 +512,20 @@ def _scm_cession_selarl() -> ScmCessionContext:
 
 
 def _cession_cabinet_medical_compromis() -> CessionContext:
-    """Compromis de cession médical (DOC-010) : étape compromis, sans crédit-vendeur ni SCM
-    (réservés à l'acte médical par les règles métier des générateurs)."""
-    base = _cession_cabinet_medical_acte()
-    financement = base.financement.model_copy(update={"credit_vendeur": None})
-    return base.model_copy(
-        update={"etape": "compromis", "financement": financement, "scm": None}
-    )
+    """Compromis de cession médical (DOC-010), étape compromis.
+
+    MD1 (Albane 2026-07-10) : la SELARL produit DÉSORMAIS l'acte ET le compromis ENSEMBLE
+    (comme la SELAS). Le contexte doit donc rester valide pour l'ACTE médical co-généré, qui
+    exige le crédit-vendeur (clause figée du modèle) -> on ne le retire plus. Le compromis
+    lui-même ignore le crédit-vendeur / la clause SCM ; on part de l'acte et on ne change
+    que l'étape."""
+    return _cession_cabinet_medical_acte().model_copy(update={"etape": "compromis"})
 
 
 def _cession_cabinet_dentaire_compromis() -> CessionContext:
     """Compromis de cession dentaire (DOC-012) — mêmes données que l'acte, étape compromis,
-    sans les salariés (la reprise des contrats de travail est réservée à l'acte dentaire
-    par les règles métier des générateurs)."""
+    sans les salariés (la reprise des contrats de travail est réservée à l'ACTE — médical
+    comme dentaire, R5-contrats Rafael 2026-06-29 — jamais au compromis)."""
     return _cession_cabinet_dentaire_acte().model_copy(
         update={"etape": "compromis", "salaries": []}
     )

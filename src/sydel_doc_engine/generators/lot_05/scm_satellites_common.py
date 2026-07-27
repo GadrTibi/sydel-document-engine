@@ -20,8 +20,21 @@ from sydel_doc_engine.domain.models import (
     ScmRepresentant,
     ScmSocietePartie,
 )
+from sydel_doc_engine.front_app.field_derivations import derive_gender_from_civilite
+from sydel_doc_engine.generators.lot_01.civilite import civilite_civile
 from sydel_doc_engine.generators.lot_05.scm_satellites_templates import TemplateBlock
-from sydel_doc_engine.rendering.docx_builder import add_paragraph, new_document
+from sydel_doc_engine.generators.lot_05.spfpl_libelles import libelle_metier
+from sydel_doc_engine.rendering.docx_builder import (
+    add_paragraph,
+    keep_final_signature_block_together,
+    new_document,
+)
+from sydel_doc_engine.utils.grammar import (
+    accord_fonction,
+    accord_participe_e,
+    montant_avec_euros,
+    possessif_singulier,
+)
 
 DOCUMENT_CODE = "CODE-SCM-SAT-DOCX-001"
 SCM_STRUCTURE = "SCM"
@@ -57,6 +70,9 @@ def generate_from_template(
     if "[" in full_text or "]" in full_text:
         raise ValueError(f"placeholder source residuel dans le rendu {DOCUMENT_CODE}.")
 
+    # KAN-36 : bloc signature final solidaire (une seule page) — couvre tous les satellites SCM
+    # (pacte d'associés, règlement, contrat de frais communs, liste des dépenses).
+    keep_final_signature_block_together(document)
     output_dir.mkdir(parents=True, exist_ok=True)
     output_path = output_dir / output_filename
     document.save(output_path)
@@ -77,15 +93,27 @@ def societe_replacements(ctx: DocumentGenerationContext) -> dict[str, str]:
     return {
         "[denomination_societe]": _required_text(company.denomination, "societe.denomination"),
         "[forme_sociale]": _company_forme_juridique(company),
-        "[capital_social]": _required_text(
-            company.capital_social or company.capital,
-            "societe.capital_social",
+        # Rafael 2026-07-09 (transverse devise) : « Au capital de [capital_social] »
+        # du modele n'a pas d'unite -> derivee ici (montant nu -> « 1 000 euros »).
+        "[capital_social]": montant_avec_euros(
+            _required_text(
+                company.capital_social or company.capital,
+                "societe.capital_social",
+            )
         ),
         "[adresse_siege]": _address_display(company.siege, "societe.siege"),
         "[ville_rcs]": _required_text(company.ville_rcs, "societe.ville_rcs"),
-        "[numero_rcs]": _required_text(company.numero_rcs, "societe.numero_rcs"),
-        "[nb_parts_sociales]": str(
-            _required_value(company.nb_parts_total, "societe.nb_parts_total")
+        # Rafael 2026-07-09 : la SCM du pacte est la societe EN CREATION (non
+        # immatriculee) -> le numero RCS est du TEXTE FIGE « en cours de constitution »
+        # dans le modele (cf. scm_satellites_templates), plus un token [numero_rcs].
+        # On ne requiert donc plus societe.numero_rcs pour le pacte (aucune autre
+        # surface de societe_replacements ne l'utilise).
+        # KAN-2 @All (B3) : le pacte ne declare JAMAIS un capital « compose de 0 parts sociales ».
+        # Le front pose 0 (jamais None) -> _required_value ne le voit pas vide ; on gate sur < 1.
+        "[nb_parts_sociales]": (
+            str(company.nb_parts_total)
+            if company.nb_parts_total
+            else f"(À COMPLÉTER : {libelle_metier('societe.nb_parts_total')})"
         ),
     }
 
@@ -120,9 +148,12 @@ def liste_depenses_communes_replacements(ctx: DocumentGenerationContext) -> dict
     return {
         "[denomination_societe]": _required_text(company.denomination, "societe.denomination"),
         "[forme_sociale]": _company_forme_juridique(company),
-        "[capital_social]": _required_text(
-            company.capital_social or company.capital,
-            "societe.capital_social",
+        # Rafael 2026-07-09 (transverse devise) : unite derivee (cf. societe_replacements).
+        "[capital_social]": montant_avec_euros(
+            _required_text(
+                company.capital_social or company.capital,
+                "societe.capital_social",
+            )
         ),
         "[adresse_siege]": _address_display(company.siege, "societe.siege"),
         "[ville_rcs]": _required_text(company.ville_rcs, "societe.ville_rcs"),
@@ -182,9 +213,13 @@ def reglement_interieur_replacements(ctx: DocumentGenerationContext) -> dict[str
                 locals_context.adresse_affichee,
                 "locaux.adresse_affichee",
             ),
-            "[seuil_depense_commune]": _required_text(
-                ctx.reglement_interieur.seuil_depense_commune,
-                "reglement_interieur.seuil_depense_commune",
+            # Rafael 2026-07-09 (transverse devise) : « excède la somme de [seuil] »
+            # -> unite derivee si montant nu (l'utilisateur ne tape plus « euros »).
+            "[seuil_depense_commune]": montant_avec_euros(
+                _required_text(
+                    ctx.reglement_interieur.seuil_depense_commune,
+                    "reglement_interieur.seuil_depense_commune",
+                )
             ),
             "[annee_reference_charges]": _required_text(
                 ctx.reglement_interieur.annee_reference_charges,
@@ -206,6 +241,11 @@ def reglement_interieur_replacements(ctx: DocumentGenerationContext) -> dict[str
                 practitioners[1].identite_affichee,
                 "praticiens[1].identite_affichee",
             ),
+            # Annuaire telephonique SCM : « le Docteur <identite> » RESTAURE en dur au
+            # verbatim du modele source (Rafael 2026-07-09 : « garde Docteur UNIQUEMENT
+            # pour ca »). Ici « Docteur » est un TITRE PRO EN PROSE (message repondeur),
+            # PAS une civilite -> seule exception a l'eradication ; whitelistee dans R3
+            # (marqueurs « joindre » / « en charge du message »). Plus de token civilite ici.
             "[telephone_praticien_1]": _required_text(
                 practitioners[0].telephone,
                 "praticiens[0].telephone",
@@ -297,6 +337,15 @@ def _party_replacements(
     representant = partie.representant
     if societe is None or representant is None:
         raise ValueError(f"{prefix} est incomplet pour {DOCUMENT_CODE}.")
+    # Genre du representant (fiche, sinon derive de la civilite) calcule UNE fois : sert a
+    # accorder la fonction, le possessif « son/sa » et le participe « domicilie(e) ».
+    _rep_genre = representant.genre or derive_gender_from_civilite(
+        representant.civilite_affichage or ""
+    )
+    _rep_fonction = accord_fonction(
+        _required_text(representant.fonction, f"{prefix}.representant.fonction"),
+        _rep_genre,
+    )
     replacements = {
         f"[denomination_societe_{source_index}]": _required_text(
             societe.denomination,
@@ -306,9 +355,13 @@ def _party_replacements(
             societe.forme_juridique,
             f"{prefix}.societe.forme_juridique",
         ),
-        f"[capital_social_societe_{source_index}]": _required_text(
-            societe.capital_social,
-            f"{prefix}.societe.capital_social",
+        # Rafael 2026-07-09 (transverse devise) : « au capital de [capital_social_societe_N] »
+        # du modele n'a pas d'unite -> derivee ici (idempotent sur « 1 000 euros »).
+        f"[capital_social_societe_{source_index}]": montant_avec_euros(
+            _required_text(
+                societe.capital_social,
+                f"{prefix}.societe.capital_social",
+            )
         ),
         f"[adresse_siege_societe_{source_index}]": _address_display(
             societe.siege,
@@ -334,17 +387,36 @@ def _party_replacements(
             representant.nom,
             f"{prefix}.representant.nom",
         ),
-        f"[fonction_representant_societe_{source_index}]": _required_text(
-            representant.fonction,
-            f"{prefix}.representant.fonction",
+        # Rafael 2026-07-09 (reglement interieur SCM : « Madame Alice Martin, gerant »
+        # -> « gerante ») : la FONCTION d'un representant est ACCORDEE au genre de la
+        # personne (meme classe que ne/nee), par INTENTION. Genre pris sur la fiche
+        # representant ; a defaut derive de la civilite (Madame -> feminin). Applique
+        # a TOUT rendu de fonction pour une personne genree (reglement + contrat frais
+        # communs) ; les fonctions d'entites neutres ne passent pas par ce token.
+        f"[fonction_representant_societe_{source_index}]": _rep_fonction,
+        # Akainu batch2+3 M1/M2 (2026-07-09) : accord du SEGMENT ENTIER referant au
+        # representant (pas seulement la fonction) — « son gerante » -> « sa gerante »
+        # (possessif) et « domicilie » -> « domiciliee » (participe) pour une femme.
+        f"[possessif_representant_societe_{source_index}]": possessif_singulier(
+            _rep_fonction, _rep_genre
+        ),
+        f"[domicilie_representant_societe_{source_index}]": accord_participe_e(
+            "domicilié", _rep_genre
         ),
     }
     if reglement:
         replacements.update(
             {
-                f"[titre_representant_societe_{source_index}]": _required_text(
-                    representant.titre_affichage,
-                    f"{prefix}.representant.titre_affichage",
+                # R3 « supprimer PARTOUT » (Rafael 2026-07-09) : « Représentée par le Docteur X »
+                # / signature « Le Docteur X » -> civilite CIVILE (Monsieur/Madame accorde au
+                # genre du representant). L'article « le/Le » du modele est retire en meme temps
+                # que « Docteur » (Monsieur ne prend pas d'article, cf. templates reglement).
+                f"[titre_representant_societe_{source_index}]": civilite_civile(
+                    _required_text(
+                        representant.titre_affichage,
+                        f"{prefix}.representant.titre_affichage",
+                    ),
+                    representant.genre,
                 ),
                 f"[identite_representant_societe_{source_index}]": _representant_identity(
                     representant,
@@ -461,20 +533,29 @@ def _replace_placeholders(text: str, replacements: Mapping[str, str]) -> str:
 
 
 def _required_text(value: str | None, field_name: str) -> str:
+    # KAN-2 (Rafael, rejete 2x) : « Tous les documents doivent pouvoir etre generes, meme si je ne
+    # remplis AUCUN champ. » Une donnee manquante NE bloque PLUS -> marqueur visible
+    # « (À COMPLÉTER : <libelle metier>) » (SANS crochet/point/underscore, pour ne pas declencher
+    # le garde-fou source anti-placeholder) au lieu de lever. Miroir EXACT de required_text
+    # (statuts_sel_exercice). Sortie NOMINALE (valeur presente) BYTE-IDENTIQUE (value.strip()).
     if value is None or not str(value).strip():
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return f"(À COMPLÉTER : {libelle_metier(field_name)})"
     return str(value).strip()
 
 
 def _required_value(value: int | str | None, field_name: str) -> int | str:
+    # KAN-2 : idem, pour une valeur (quantite / montant texte). Absente -> marqueur metier
+    # (str) ; presente -> renvoyee TELLE QUELLE (byte-identique au nominal).
     if value is None or not str(value).strip():
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return f"(À COMPLÉTER : {libelle_metier(field_name)})"
     return value
 
 
 def _format_display_date(value: date | str | None, field_name: str) -> str:
+    # KAN-2 : une date manquante NE bloque PLUS -> marqueur metier lisible, JAMAIS une date
+    # inventee. Presente -> format nominal inchange (JJ/MM/AAAA).
     if value is None:
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return f"(À COMPLÉTER : {libelle_metier(field_name)})"
     if isinstance(value, date):
         return value.strftime("%d/%m/%Y")
     return _required_text(value, field_name)

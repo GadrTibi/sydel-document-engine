@@ -143,7 +143,7 @@ def test_regime_communautaire_selas_generates_both_documents(tmp_path: Path) -> 
     assert "Fait pour servir et valoir ce que de droit." in renonciation_text
     assert "RCS" not in renonciation_text
     assert "à la SELAS RC SANTE" in avertissement_text
-    assert "Le  14/05/2026" in avertissement_text
+    assert "Le 14/05/2026" in avertissement_text
     renonciation_section = Document(renonciation).sections[0]
     assert abs(renonciation_section.left_margin - Cm(3.17)) < 300
     assert abs(renonciation_section.right_margin - Cm(3.17)) < 300
@@ -151,9 +151,11 @@ def test_regime_communautaire_selas_generates_both_documents(tmp_path: Path) -> 
         WD_ALIGN_PARAGRAPH.RIGHT
     )
     assert "Le 15/05/2026" not in renonciation_text
+    # m3 (Akainu SELARL ronde 2, 2026-07-12) : la conjointe signataire (Claire Durand, Madame)
+    # renonce a la qualite « d'associée » (accord au genre du conjoint). Supersede « d'associé ».
     renonciation_subject = _matching_paragraphs(
         renonciation,
-        "Objet : Lettre de renonciation à revendiquer la qualité d'associé",
+        "Objet : Lettre de renonciation à revendiquer la qualité d'associée",
     )[0]
     assert renonciation_subject.runs[0].bold is True
     assert renonciation_subject.runs[0].underline is True
@@ -166,10 +168,12 @@ def test_regime_communautaire_selas_generates_both_documents(tmp_path: Path) -> 
     company_header = _matching_paragraphs(avertissement, "RC SANTE")[0]
     assert company_header.alignment == WD_ALIGN_PARAGRAPH.CENTER
     assert company_header.runs[0].bold is True
-    assert _matching_paragraphs(avertissement, "Madame Durand")[0].alignment == (
+    # A3 (Albane 2026-06-26) : le destinataire conjoint porte desormais son PRENOM.
+    assert _matching_paragraphs(avertissement, "Madame Claire Durand")[0].alignment == (
         WD_ALIGN_PARAGRAPH.RIGHT
     )
-    assert _matching_paragraphs(avertissement, "Le  14/05/2026")[0].alignment == (
+    assert not _matching_paragraphs(avertissement, "Madame Durand")
+    assert _matching_paragraphs(avertissement, "Le 14/05/2026")[0].alignment == (
         WD_ALIGN_PARAGRAPH.RIGHT
     )
     avertissement_subject = _matching_paragraphs(
@@ -257,18 +261,25 @@ def test_regime_communautaire_blocks_when_batch_option_is_false(tmp_path: Path) 
         LettreAvertissementConjointGenerator().generate(ctx, tmp_path)
 
 
-def test_renonciation_blocks_when_qualite_renoncee_is_missing(tmp_path: Path) -> None:
+def test_renonciation_tokenizes_missing_qualite_renoncee(tmp_path: Path) -> None:
+    # R10 (Rafael 2026-06-24) : une donnee manquante ne bloque plus -> marqueur (A COMPLETER)
+    # visible (SANS crochets -> compatible garde-fou anti-placeholder), generation reussie.
     ctx = _context(qualite_renoncee=None)
 
-    with pytest.raises(ValueError, match="qualite_renoncee"):
-        LettreRenonciationAssocieGenerator().generate(ctx, tmp_path)
+    text = _docx_text(LettreRenonciationAssocieGenerator().generate(ctx, tmp_path))
+    # KAN-2 / M1 : le marqueur porte le LIBELLE METIER (« qualite renoncee »), plus le chemin
+    # technique « qualite_renoncee » (libelle_metier retire points/underscores). Intention
+    # (donnee manquante -> marqueur visible) inchangee.
+    assert "COMPLÉTER" in text and "qualite renoncee" in text
 
 
-def test_selas_avertissement_blocks_when_abregee_is_missing(tmp_path: Path) -> None:
+def test_selas_avertissement_tokenizes_missing_abregee(tmp_path: Path) -> None:
+    # R10 : donnee manquante (forme_sociale_abregee) ne bloque plus -> marqueur visible.
     ctx = _context("SELAS", forme_sociale_abregee=None)
 
-    with pytest.raises(ValueError, match="forme_sociale_abregee"):
-        LettreAvertissementConjointGenerator().generate(ctx, tmp_path)
+    text = _docx_text(LettreAvertissementConjointGenerator().generate(ctx, tmp_path))
+    # KAN-2 / M1 : marqueur en LIBELLE METIER (« forme sociale abregee »), plus le chemin technique.
+    assert "COMPLÉTER" in text and "forme sociale abregee" in text
 
 
 def test_orchestrator_generates_regime_communautaire_batch_only_when_enabled(
@@ -289,3 +300,131 @@ def test_orchestrator_generates_regime_communautaire_batch_only_when_enabled(
     assert {"DOC-005", "DOC-006"}.issubset(enabled_ids)
     assert "DOC-005" not in disabled_ids
     assert "DOC-006" not in disabled_ids
+
+
+# ---------------------------------------------------------------------------
+# Retours Albane 2026-06-26 (lot lettres regime communautaire) : R1, R2, R3,
+# A1, A2, A3, A4, A5. Tests adversariaux (defauts cibles, pas seulement presence).
+# ---------------------------------------------------------------------------
+
+
+def test_renonciation_R2_no_exemplaires_mention(tmp_path: Path) -> None:
+    # R2 : « en N exemplaires » retire de la lettre de RENONCIATION.
+    ctx = _context("SELAS")
+    text = _docx_text(LettreRenonciationAssocieGenerator().generate(ctx, tmp_path))
+    assert "exemplaires" not in text
+    assert "En deux exemplaires" not in text
+
+
+def test_renonciation_R3_uses_individual_apport_not_capital(tmp_path: Path) -> None:
+    # R3 : « en apportant X euros » = apport INDIVIDUEL (500), pas le capital (1 000).
+    ctx = _context("SELAS")  # apport.montant=500, capital_social=1 000
+    text = _docx_text(LettreRenonciationAssocieGenerator().generate(ctx, tmp_path))
+    assert "en apportant 500 (cinq cents) euros" in text
+    assert "1 000" not in text
+    assert "en apportant 1 000" not in text
+
+
+def test_renonciation_R1_destinataire_block_at_top(tmp_path: Path) -> None:
+    # R1 : bloc destinataire (apporteur nom + adresse) en haut a droite, AVANT l'objet.
+    ctx = _context("SELAS")
+    renonciation = LettreRenonciationAssocieGenerator().generate(ctx, tmp_path)
+    paragraphs = [p.text for p in Document(renonciation).paragraphs if p.text]
+    # Destinataire = l'apporteur (personne_signataire) : nom + adresse perso.
+    assert "Monsieur Jean Durand" in paragraphs
+    dest_idx = paragraphs.index("Monsieur Jean Durand")
+    assert "12 rue de l'Associe" in paragraphs
+    assert "75001 Paris" in paragraphs
+    # Le bloc destinataire est aligne a droite.
+    assert _matching_paragraphs(renonciation, "Monsieur Jean Durand")[0].alignment == (
+        WD_ALIGN_PARAGRAPH.RIGHT
+    )
+    # Il est au-dessus de la ligne « À Paris » et de l'objet (corps descendu).
+    ville_idx = paragraphs.index("À Paris")
+    # m3 (Akainu ronde 2) : conjointe signataire -> objet « d'associée » (accord au genre).
+    objet_idx = paragraphs.index(
+        "Objet : Lettre de renonciation à revendiquer la qualité d'associée"
+    )
+    assert dest_idx < ville_idx < objet_idx
+
+
+def test_avertissement_A1_header_shows_profession_not_docteur(tmp_path: Path) -> None:
+    # A1 : l'entete societe affiche la PROFESSION (« medecin »), pas le titre « Docteur ».
+    ctx = _context("SELAS", forme_sociale_abregee="SELAS")
+    ctx.associes = [
+        Associe(
+            genre=Gender.MASCULIN,
+            civilite_affichage="Monsieur",
+            prenom="Jean",
+            nom="Durand",
+            nb_parts=100,
+            profession="Docteur",  # titre derive (cas SELAS multi)
+            profession_reglementee="médecin",  # vraie profession (apres fix source)
+            qualification_principale="médecin",
+        )
+    ]
+    text = _docx_text(LettreAvertissementConjointGenerator().generate(ctx, tmp_path))
+    assert "de médecin" in text
+    assert "de Docteur" not in text
+
+
+def test_avertissement_A2_siege_on_one_line_no_immatriculation(tmp_path: Path) -> None:
+    # A2 : adresse du siege sur UNE ligne, prefixee « Siège social : », sans
+    # « en cours d'immatriculation ».
+    ctx = _context("SELAS", forme_sociale_abregee="SELAS")
+    avertissement = LettreAvertissementConjointGenerator().generate(ctx, tmp_path)
+    paragraphs = [p.text for p in Document(avertissement).paragraphs if p.text]
+    assert "Siège social : 80 avenue Marceau 75008 Paris" in paragraphs
+    # L'adresse n'est plus scindee en 2 lignes pour le SIEGE (entete societe).
+    assert "80 avenue Marceau" not in paragraphs  # ligne rue seule = absente
+    text = "\n".join(paragraphs)
+    assert "en cours d'immatriculation" not in text.lower()
+
+
+def test_avertissement_A3_conjoint_prenom_three_places(tmp_path: Path) -> None:
+    # A3 : prenom du conjoint au destinataire, a l'appel, et a la ligne finale.
+    ctx = _context("SELAS")
+    avertissement = LettreAvertissementConjointGenerator().generate(ctx, tmp_path)
+    paragraphs = [p.text for p in Document(avertissement).paragraphs if p.text]
+    # destinataire + ligne finale : « Madame Claire Durand » exact.
+    occurrences = [p for p in paragraphs if p == "Madame Claire Durand"]
+    assert len(occurrences) >= 2
+    # appel d'ouverture : « Madame Claire Durand, »
+    assert "Madame Claire Durand," in paragraphs
+    # jamais la version sans prenom.
+    assert "Madame Durand" not in paragraphs
+    assert "Madame Durand," not in paragraphs
+
+
+def test_avertissement_A4_feminise_informee_for_female_conjoint(tmp_path: Path) -> None:
+    # A4 : mention manuscrite accordee au genre du conjoint (feminin -> « informée »).
+    ctx = _context("SELAS")  # conjoint = Madame Claire Durand (feminin)
+    text = _docx_text(LettreAvertissementConjointGenerator().generate(ctx, tmp_path))
+    assert "j’atteste avoir été informée de l’apport" in text
+    assert "informé de l’apport" not in text
+
+
+def test_avertissement_A4_masculin_informe_for_male_conjoint(tmp_path: Path) -> None:
+    ctx = _context("SELAS")
+    ctx.conjoint = Person(
+        genre=Gender.MASCULIN,
+        civilite="Monsieur",
+        prenom="Paul",
+        nom="Durand",
+        adresse_perso=Address(num_voie="24", voie="rue de la Paix", cp="75002", ville="Paris"),
+    )
+    text = _docx_text(LettreAvertissementConjointGenerator().generate(ctx, tmp_path))
+    assert "j’atteste avoir été informé de l’apport" in text
+    assert "informée de l’apport" not in text
+
+
+def test_avertissement_A5_mention_uses_individual_apport_not_capital(tmp_path: Path) -> None:
+    # A5 : montant de la mention manuscrite + somme en numeraire = apport INDIVIDUEL (500),
+    # pas le capital (1 000).
+    ctx = _context("SELAS")  # apport.montant=500, capital_social=1 000
+    text = _docx_text(LettreAvertissementConjointGenerator().generate(ctx, tmp_path))
+    assert "été informée de l’apport de 500 euros" in text
+    assert "de l’apport de 1 000 euros" not in text
+    # somme en numeraire dans le corps : « cinq cents (500) euros ».
+    assert "somme en numéraire de cinq cents (500) euros" in text
+    assert "(1 000) euros" not in text

@@ -4,6 +4,7 @@ import re
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
+from unicodedata import combining, normalize
 
 import yaml
 from pydantic import ValidationError
@@ -141,6 +142,54 @@ def generate_docx_files_for_document_codes(
     if not selected_documents:
         raise RuntimeError("Aucun document pret selectionne par l'assistant metier.")
     return orchestrator.generate_documents(ctx, output_dir)
+
+
+_DNC_GENERIC_NAME = "declaration_non_condamnation.docx"
+
+
+def _dirigeant_name_slug(name: str) -> str:
+    """Slug ASCII du nom du dirigeant pour nommer un fichier (O24-02)."""
+    normalized = "".join(c for c in normalize("NFKD", name) if not combining(c))
+    cleaned = re.sub(r"[^A-Za-z0-9]+", "_", normalized).strip("_")
+    return cleaned or "dirigeant"
+
+
+def rename_dnc_with_signataire(
+    docx_paths: list[Path], ctx: DocumentGenerationContext
+) -> list[Path]:
+    """O24-02 (onglet 24) : « dans tous les cas ou il y a une declaration de non
+    condamnation, le nom du document doit integrer le nom du dirigeant ». Renomme la
+    DNC (DOC-001) generee sous son nom generique en y inserant le nom du signataire
+    (le dirigeant). No-op s'il n'y a pas de DNC dans le lot ou pas de signataire nomme.
+    Le cas MULTI-dirigeants (SELAS pluripersonnelle) garde sa logique propre (une DNC
+    par dirigeant) ; ce helper couvre les types a dirigeant unique."""
+    sig = getattr(ctx, "personne_signataire", None)
+    base = (sig.nom or sig.prenom or "").strip() if sig else ""
+    if not base:
+        return docx_paths
+    slug = _dirigeant_name_slug(base)
+    out: list[Path] = []
+    for path in docx_paths:
+        if path.name == _DNC_GENERIC_NAME:
+            target = path.with_name(f"declaration_non_condamnation_{slug}.docx")
+            # O24-05 (NITPICK, re-Akainu T5) : rendre le renommage IDEMPOTENT / robuste.
+            # `path.replace` levait FileNotFoundError si la source etait deja renommee
+            # (2e appel sur la meme liste) ou absente (basetemp reutilise dans les tests
+            # -> faux « 4 failed »). On ne renomme que si la source EXISTE ; si la cible
+            # existe deja (renommage deja fait), on la retient telle quelle. Dans les deux
+            # cas on ne leve jamais.
+            if path.exists() and not target.exists():
+                path.replace(target)
+                out.append(target)
+            elif target.exists():
+                out.append(target)
+            else:
+                # Source absente ET cible absente : on garde le chemin tel quel
+                # (ni renommage possible ni resultat anterieur a refleter).
+                out.append(path)
+        else:
+            out.append(path)
+    return out
 
 
 def generate_pdf_files(docx_paths: list[Path], output_dir: Path) -> GeneratedPdfBatch:
