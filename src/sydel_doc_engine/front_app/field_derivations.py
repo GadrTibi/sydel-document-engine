@@ -167,6 +167,23 @@ def situation_display(value: str, genre: object) -> str:
     }.get(value, value)
 
 
+def matrimonial_display_gendered(preset: str, genre: object) -> str:
+    """KAN-37 : statut matrimonial d'un PRESET du menu, resolu au genre EN GARDANT le régime.
+
+    Pour les surfaces qui ECHOENT la situation telle quelle dans le document (membre SELARL
+    multi) : le preset « Marié(e) sous le régime X » sort « Marié sous le régime X » / « Mariée
+    sous le régime X », jamais le « (e) » litteral. Se distingue de `situation_display` (qui
+    attend une valeur collapsee « marie » et DROP le régime) : ici on garde le libellé complet du
+    menu, seul le genre est resolu."""
+    feminine = genre == Gender.FEMININ
+    out = preset
+    out = out.replace("Marié(e)", "Mariée" if feminine else "Marié")
+    out = out.replace("Pacsé(e)", "Pacsée" if feminine else "Pacsé")
+    out = out.replace("Divorcé(e)", "Divorcée" if feminine else "Divorcé")
+    out = out.replace("Veuf / veuve", "Veuve" if feminine else "Veuf")
+    return out
+
+
 # format_numeric_value a ete DEPLACE vers utils.grammar (containment 2026-07-06) et
 # re-importe en tete de module.
 

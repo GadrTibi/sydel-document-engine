@@ -1332,7 +1332,7 @@ def _spfpl_payload(structure):
         # §6.6 : profession SAISIE de l'associe unique (defaut UI « chirurgien-dentiste »). KAN-2 /
         # M3 : plus de repli hardcode cote moteur -> un dossier COMPLET la fournit explicitement
         # (sinon marqueur « (À COMPLÉTER : profession de l'associé unique) », comportement teste
-        # a part). Requis pour que le bundle nominal soit propre (associe unique = cedant/president).
+        # a part). Requis pour un bundle nominal propre (associe unique = cedant/president).
         "profession_associe_unique": "chirurgien-dentiste",
         "date_naissance": "02/01/1980",
         "ville_naissance": "Paris",
@@ -3070,7 +3070,6 @@ def test_front_routes_to_sci_slice_and_generates(tmp_path: Path, monkeypatch) ->
         "sci_associe_0_date_naissance": "1 janvier 1980",
         "sci_associe_0_ville_naissance": "Paris",
         "sci_associe_0_departement_naissance": "75",
-        "sci_associe_0_situation_maritale": "celibataire",
         # O24-03 : adresse personnelle sur UNE ligne.
         "sci_associe_0_adresse": "1 rue Exemple, 75000 Paris",
         "sci_associe_0_apport_montant": "400",
@@ -3082,7 +3081,6 @@ def test_front_routes_to_sci_slice_and_generates(tmp_path: Path, monkeypatch) ->
         "sci_associe_1_date_naissance": "2 fevrier 1982",
         "sci_associe_1_ville_naissance": "Lyon",
         "sci_associe_1_departement_naissance": "69",
-        "sci_associe_1_situation_maritale": "celibataire",
         # O24-03 : adresse personnelle sur UNE ligne.
         "sci_associe_1_adresse": "2 rue Exemple, 69000 Lyon",
         # DNC par associe (Rafael 2026-07-09) : filiation de CHAQUE associe.
@@ -3092,6 +3090,10 @@ def test_front_routes_to_sci_slice_and_generates(tmp_path: Path, monkeypatch) ->
     }
     for key, value in associes_text.items():
         set_text(key, value)
+    # KAN-37 (Rafael 2026-07-27) : la situation matrimoniale est un MENU DÉROULANT (plus un champ
+    # texte) — on selectionne le preset « Célibataire » sur chaque associe.
+    _set_selectbox(app, "sci_associe_0_situation", "Célibataire")
+    _set_selectbox(app, "sci_associe_1_situation", "Célibataire")
     associes_numbers = {
         "sci_associe_0_nb_titres": 40,
         "sci_associe_1_nb_titres": 60,
@@ -3232,6 +3234,15 @@ def _set_text_widget(app, key: str, value: str) -> None:
     raise KeyError(key)
 
 
+def _set_selectbox(app, key: str, value: str) -> None:
+    # KAN-37 : la situation matrimoniale (entre autres) est un menu déroulant, plus un champ texte.
+    for widget in app.selectbox:
+        if str(widget.key) == key:
+            widget.set_value(value)
+            return
+    raise KeyError(key)
+
+
 def test_sci_repeater_live03_accentuates_date_naissance(tmp_path: Path, monkeypatch) -> None:
     """LIVE-03 (date_naissance via le REPEATER, SCI) : une date de naissance saisie sans
     accent (« 1er aout 1980 ») dans le repeater d'associes ressort accentuee dans les
@@ -3339,7 +3350,7 @@ def test_selarl_membre_additionnel_live03_accentuates_date_naissance(
     _set_text_widget(app, "selarl_membre_0_ville_naissance", "Lyon")
     _set_text_widget(app, "selarl_membre_0_dep_naissance", "69")
     _set_text_widget(app, "selarl_membre_0_nationalite", "française")
-    _set_text_widget(app, "selarl_membre_0_situation", "celibataire")
+    _set_selectbox(app, "selarl_membre_0_situation", "Célibataire")
     _set_text_widget(app, "selarl_membre_0_profession", "medecin")
     _set_text_widget(app, "selarl_membre_0_adresse", "8 rue Centrale, 69001 Lyon")
     # DNC par associe (Rafael 2026-07-09) : filiation du membre requise (sa DNC).

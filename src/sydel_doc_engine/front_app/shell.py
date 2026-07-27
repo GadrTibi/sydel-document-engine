@@ -49,6 +49,7 @@ from sydel_doc_engine.front_app.field_derivations import (
     format_french_date,
     format_grouped_numeric_value,
     format_numeric_value,
+    matrimonial_display_gendered,
     matrimonial_status_value,
     number_words_from_value,
     parse_french_date,
@@ -346,12 +347,16 @@ def _render_one_selarl_membre(index: int) -> StatutsCivilsAssocie | None:
         )
         col_h, col_i = st.columns(2)
         nationalite = copyable_text_input(col_h, "Nationalite", key=f"{prefix}_nationalite")
-        # R3 (Rafael 2026-07-13) : la situation matrimoniale du VENDEUR de cession est passee au
-        # menu deroulant (cf. sous-formulaire cession). Le membre SELARL multi rend sa situation
-        # en ECHO FIDELE dans les statuts (pas de normalisation) : passer directement un preset
-        # (« Marié(e) sous le régime… ») y injecterait « (e) ». Conversion en menu differee au
-        # traitement du rendu statuts multi (tracee QUESTIONS_RAFAEL [R3-membre]).
-        situation = copyable_text_input(col_i, "Situation matrimoniale", key=f"{prefix}_situation")
+        # KAN-37 (Rafael 2026-07-27) : la situation matrimoniale est un MENU DÉROULANT PARTOUT.
+        # Le membre SELARL multi echoant sa situation dans les statuts, on NORMALISE le preset via
+        # `situation_display` (genre resolu -> mot d'etat civil accorde et accentue, « marié »/
+        # « mariée »), donc plus de « (e) » injecte : c'est la conversion differee de [R3-membre].
+        situation_label = col_i.selectbox(
+            "Situation matrimoniale", MATRIMONIAL_STATUS_PRESETS, key=f"{prefix}_situation"
+        )
+        situation = matrimonial_display_gendered(
+            situation_label, derive_gender_from_civilite(civilite)
+        )
         profession = copyable_text_input(st, "Profession", key=f"{prefix}_profession")
         adresse = copyable_text_input(st, "Adresse personnelle (affichee)", key=f"{prefix}_adresse")
         # DNC par associe (Rafael 2026-07-09) : chaque associe personne physique a sa

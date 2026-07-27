@@ -452,7 +452,16 @@ def _render_personne_physique(
         )
         regime_associe = _render_conjoint_si_communaute_civil(prefix, situation_label)
     else:
-        situation = _text(prefix, "situation_maritale", "Situation matrimoniale", container=col_h)
+        # KAN-37 (Rafael 2026-07-27) : la situation matrimoniale est un MENU DÉROULANT PARTOUT
+        # (plus de champ texte libre). Pour les types sans bloc matrimonial riche (SCI/SCM…) :
+        # selectbox du statut seul (les options canoniques `MATRIMONIAL_STATUS_PRESETS`), sans la
+        # logique conjoint/régime qui reste propre aux types `rich_matrimonial`.
+        situation_label = col_h.selectbox(
+            "Situation matrimoniale", MATRIMONIAL_STATUS_PRESETS, key=f"{prefix}_situation"
+        )
+        situation = _situation_display_civil(
+            situation_label, derive_gender_from_civilite(civilite)
+        )
     # Profession : SCM uniquement (§18.6). Hors SCM, aucun champ ni valeur.
     profession = _text(prefix, "profession", "Profession") if config.collect_profession else ""
 
