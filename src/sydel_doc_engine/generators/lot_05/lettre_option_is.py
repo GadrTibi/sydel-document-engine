@@ -247,14 +247,43 @@ def _add_identification_table(
     # R3 (Albane 2026-06-30) : societe EN COURS DE CONSTITUTION -> jamais de numero SIREN,
     # toujours la constante (le numero saisi, s'il existe, est volontairement ignore ici).
     _add_table_row(table, "SIREN", SIREN_EN_COURS_IMMATRICULATION)
+    # KAN-40 (Rafael 2026-07-27) : accord singulier/pluriel selon le nombre d'associes
+    # (« l'associé » pour un seul, « les différents associés » a partir de deux).
+    nb_associes = len(statuts.associes)
+    # Elision correcte : « de l'associé » (1) / « des différents associés » (N) — jamais « de les ».
+    associes_phrase = "de l'associé" if nb_associes == 1 else "des différents associés"
     label = (
-        "Nom, prénom et adresse des différents associés de la société, "
+        f"Nom, prénom et adresse {associes_phrase} de la société, "
         f"et répartition du capital de {capital} €"
     )
+    # KAN-40 : le label ne se REPETE plus a chaque ligne associe (« fusionner les 2 cases en bas
+    # a gauche pour eviter une repetition ») -> cellules gauche des lignes associes FUSIONNEES, le
+    # label apparait une seule fois. Le NOM de l'associe est en GRAS (cellule valeur).
+    left_cells: list[Any] = []
     for index, associe in enumerate(statuts.associes):
-        _add_table_row(table, label, _associe_table_text(associe, index))
+        row_cells = table.add_row().cells
+        _fill_associe_value_cell(row_cells[1], _associe_table_text(associe, index))
+        left_cells.append(row_cells[0])
+        for cell in row_cells:
+            for paragraph in cell.paragraphs:
+                paragraph.paragraph_format.space_after = Pt(2)
+    merged = left_cells[0]
+    for cell in left_cells[1:]:
+        merged = merged.merge(cell)
+    merged.text = label
+    merged.paragraphs[0].paragraph_format.space_after = Pt(2)
 
     add_spacer(document, space_after_pt=12)
+
+
+def _fill_associe_value_cell(cell: Any, text: str) -> None:
+    # KAN-40 : le NOM de l'associe (jusqu'a la 1re virgule : « Monsieur Jean Durand » / « La
+    # société X ») en GRAS, le reste (adresse, qualite, parts) en normal.
+    name, sep, rest = text.partition(", ")
+    paragraph = cell.paragraphs[0]
+    paragraph.add_run(name).bold = True
+    if sep:
+        paragraph.add_run(sep + rest)
 
 
 def _add_table_row(table: Any, label: str, value: str) -> None:
