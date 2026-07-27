@@ -1402,3 +1402,19 @@ def test_kan43_denomination_selarl_au_pluriel_coherente(tmp_path: Path) -> None:
     text_dent = _docx_text(StatutsSelarlDentisteGenerator().generate(ctx_dent, tmp_path))
     assert "à responsabilité limitée de chirurgiens-dentistes" in text_dent
     assert not re.search(r"responsabilité limitée de chirurgien-dentiste(?!s)", text_dent)
+
+
+def test_kan42_adresse_banque_reportee_selarl(tmp_path: Path) -> None:
+    # KAN-42 (Rafael) : « L'adresse de la banque n'a pas ete reportee dans les
+    # statuts. » Verrou d'INTENTION (regle 68 §3) : l'art. 7 reporte le NOM ET
+    # l'ADRESSE de la banque — un revert (require_address=False) le casserait en
+    # silence, _assert_clean ne l'attraperait pas.
+    text_dent = _docx_text(
+        StatutsSelarlDentisteGenerator().generate(_context(overlay="selarl_dentiste"), tmp_path)
+    )
+    assert "banque BANQUE EXEMPLE 1 boulevard Haussmann, 75009 Paris" in text_dent
+
+    text_med = _docx_text(
+        StatutsSelarlMedecinGenerator().generate(_context(overlay="selarl_medecin"), tmp_path)
+    )
+    assert "banque BANQUE EXEMPLE 1 boulevard Haussmann, 75009 Paris" in text_med

@@ -483,11 +483,14 @@ def add_depot_replacements(
         "depot_fonds.banque.nom",
     )
     if require_address:
-        # Retours client 2026-06-11 (ticket 3.2) : l'adresse de la banque ne
-        # bloque plus la generation — vide, elle laisse une zone a completer.
-        replacements["[adresse_banque]"] = (
-            ctx.depot_fonds.banque.adresse_affichee or ""
-        ).strip()
+        # Retours client 2026-06-11 (ticket 3.2) : l'adresse de la banque ne bloque
+        # plus la generation. KAN-42 (Akainu m1) : vide, elle rend un MARQUEUR visible
+        # « (À COMPLÉTER : adresse de la banque) » — pas une chaine vide qui laissait un
+        # espace orphelin « banque X . » et ne materialisait aucune zone a completer.
+        replacements["[adresse_banque]"] = required_text(
+            ctx.depot_fonds.banque.adresse_affichee,
+            "depot_fonds.banque.adresse_affichee",
+        )
 
 
 def add_exercice_replacements(

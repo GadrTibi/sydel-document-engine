@@ -65,9 +65,11 @@ class ProcurationGenerator:
         )
         prenom = _required_text(person.prenom, "personne_signataire.prenom")
         nom = _required_text(person.nom, "personne_signataire.nom")
-        # PR2 (Albane SELARL 2026-07-10) : « gérant » s'accorde au genre du mandant
-        # (« gérante » pour une femme). Meme lexique par INTENTION que le reglement
-        # interieur SCM ; idempotent si la fonction est deja au bon genre.
+        # PR2 (Albane SELARL 2026-07-10) : la FONCTION du mandant s'accorde au genre
+        # (« présidente » pour une femme en SELAS). NB KAN-23 (Rafael 2026-07-15) :
+        # « gérant » est INVARIANT (jamais « gérante »), accord_fonction le laisse au
+        # masculin ; ce sont les fonctions genrables (président…) qu'il accorde.
+        # Idempotent si la fonction est deja au bon genre.
         fonction_dirigeant = accord_fonction(
             _required_text(
                 person.fonction_dirigeant,

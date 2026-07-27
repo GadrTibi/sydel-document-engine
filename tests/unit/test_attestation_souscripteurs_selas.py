@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 from _accents import assert_no_unaccented_french
 from docx import Document
+from docx.shared import Pt
 
 from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import (
@@ -198,3 +199,39 @@ def test_attestation_selas_rejects_wrong_structure(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="SELAS"):
         AttestationCapitalSouscripteursSelasGenerator().generate(ctx, tmp_path)
+
+
+def test_kan46_aeration_spacers_verrouillee(tmp_path: Path) -> None:
+    # KAN-46 (Rafael) : « mettre de l'espace (reprendre la mise en forme globale) ».
+    # Verrou d'INTENTION : les paragraphes-espaceurs (space_after) aux frontieres de
+    # groupes ne doivent pas pouvoir disparaitre en silence (regle 68 leçon 07-07).
+    output_path = AttestationCapitalSouscripteursSelasGenerator().generate(
+        _base_context(), tmp_path
+    )
+    document = Document(output_path)
+    spacers = [
+        p
+        for p in document.paragraphs
+        if not p.text.strip()
+        and p.paragraph_format.space_after is not None
+        and p.paragraph_format.space_after >= Pt(10)
+    ]
+    assert len(spacers) >= 4
+
+
+def test_kan45_president_feminin_accorde(tmp_path: Path) -> None:
+    # KAN-45 (Rafael, « au feminin : presidente ») : la FONCTION du president s'accorde
+    # au genre dans l'attestation, comme dans la procuration/PV du meme dossier.
+    ctx = _base_context()
+    ctx.personne_signataire.genre = Gender.FEMININ
+    ctx.personne_signataire.civilite = "Madame"
+    ctx.personne_signataire.prenom = "Alice"
+    ctx.personne_signataire.nom = "Martin"
+    ctx.capital_souscription.president.genre = Gender.FEMININ
+    ctx.capital_souscription.president.prenom = "Alice"
+    ctx.capital_souscription.president.nom = "Martin"
+    output_path = AttestationCapitalSouscripteursSelasGenerator().generate(ctx, tmp_path)
+    text = "\n".join(p.text for p in Document(output_path).paragraphs)
+    assert "Présidente de la Société" in text
+    assert "par la Présidente, Madame Alice Martin." in text
+    assert "par le Président," not in text

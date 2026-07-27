@@ -21,7 +21,12 @@ from sydel_doc_engine.rendering.docx_builder import (
     new_document,
 )
 from sydel_doc_engine.utils.dates import format_date_fr
-from sydel_doc_engine.utils.grammar import euro_word, montant_avec_euros, subject_line
+from sydel_doc_engine.utils.grammar import (
+    accord_fonction,
+    euro_word,
+    montant_avec_euros,
+    subject_line,
+)
 
 OUTPUT_FILENAME = "attestation_capital_souscripteurs_selas.docx"
 DOCUMENT_CODE = "CODE-SELAS-ATTESTATION-CAPITAL-001"
@@ -100,8 +105,8 @@ class AttestationCapitalSouscripteursSelasGenerator:
         add_paragraph(
             document,
             f"{data.soussigne} {data.president_civilite_phrase} {data.president_signature}, "
-            f"Président de la Société {data.denomination}, atteste que le capital de ladite "
-            "société est réparti de la manière suivante :",
+            f"{data.president_fonction} de la Société {data.denomination}, atteste que le "
+            "capital de ladite société est réparti de la manière suivante :",
             alignment=WD_ALIGN_PARAGRAPH.JUSTIFY,
         )
         add_paragraph(document, f"Capital social : {data.capital_social} € en numéraire")
@@ -130,8 +135,10 @@ class AttestationCapitalSouscripteursSelasGenerator:
             "Le présent état qui constate la souscription d'actions de la société "
             f"{data.denomination}, ainsi que le versement de la somme de "
             f"{montant_avec_euros(data.capital_social)} correspondant à la totalité du nominal "
-            "desdites actions, est certifié exact, sincère et véritable par le Président, "
-            # KAN-46 : point final apres le nom (« ... par le President, <Nom>. »).
+            "desdites actions, est certifié exact, sincère et véritable "
+            # KAN-45 : « par le Président »/« par la Présidente » selon le genre.
+            f"par {data.president_avec_article}, "
+            # KAN-46 : point final apres le nom (« ... <Nom>. »).
             f"{data.president_identite}.",
         )
         # KAN-46 : aeration avant le bloc de signature.
@@ -165,6 +172,8 @@ class _ResolvedAttestationSelas:
         apport_lignes: list[str],
         soussigne: str,
         president_civilite_phrase: str,
+        president_fonction: str,
+        president_avec_article: str,
         president_identite: str,
         president_signature: str,
         date_signature: str,
@@ -182,6 +191,8 @@ class _ResolvedAttestationSelas:
         self.apport_lignes = apport_lignes
         self.soussigne = soussigne
         self.president_civilite_phrase = president_civilite_phrase
+        self.president_fonction = president_fonction
+        self.president_avec_article = president_avec_article
         self.president_identite = president_identite
         self.president_signature = president_signature
         self.date_signature = date_signature
@@ -264,13 +275,20 @@ class _ResolvedAttestationSelas:
         # jamais le titre d'affichage. R3 durci (Rafael 2026-07-07) : accord au
         # genre DU PRESIDENT quand le modele le porte ; repli sur le genre du
         # signataire (appelants legacy sans genre — comportement historique).
+        president_genre = president.genre or ctx.personne_signataire.genre
         president_civilite = civilite_civile(
             _required_text(
                 president.civilite_affichage,
                 "capital_souscription.president.civilite_affichage",
             ),
-            president.genre or ctx.personne_signataire.genre,
+            president_genre,
         )
+        # KAN-45 (Rafael) : la FONCTION du president s'accorde au genre (« Présidente »
+        # pour une femme) — coherence avec la procuration + le PV du meme dossier, qui
+        # feminisent deja. Le masculin hardcode contredisait « soussignée »/« Madame ».
+        president_fonction = accord_fonction("président", president_genre).capitalize()
+        _article = "la" if president_genre == Gender.FEMININ else "le"
+        president_avec_article = f"{_article} {president_fonction}"
         president_signature = _souscripteur_signature(
             president,
             "capital_souscription.president",
@@ -293,6 +311,8 @@ class _ResolvedAttestationSelas:
             apport_lignes=apport_lignes,
             soussigne=subject_line(ctx.personne_signataire.genre),
             president_civilite_phrase=_addressing_civilite(ctx.personne_signataire.genre),
+            president_fonction=president_fonction,
+            president_avec_article=president_avec_article,
             president_identite=f"{president_civilite} {president_signature}",
             president_signature=president_signature,
             date_signature=format_date_fr(ctx.signature.date),
