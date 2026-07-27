@@ -902,7 +902,7 @@ def _add_multi_capital_attribution(
 # remplaces par le patron SELAS valide (en-tete + lieu #1 + nom2, adresse2).
 SELARL_DENTISTE_ARTICLE_5_BODY = (
     "Le lieu d’exercice de la société est situé au [adresse_lieu_exercice]. "
-    "Il constitue le lieu d’exercice unique de la société"
+    "Il constitue le lieu d’exercice unique de la société."
 )
 SELARL_MEDECIN_ARTICLE_5_BODY = (
     "Le lieu d’exercice de la société est situé au [adresse_siege]. "
