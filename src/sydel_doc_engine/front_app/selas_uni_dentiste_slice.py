@@ -489,6 +489,12 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         ctx.dirigeant_nomine.fonction_affichage = "président"
         ctx.dirigeant_nomine.duree_mandat = _DUREE_MANDAT_PRESIDENT
 
+    # KAN-45 (Rafael) : la SELAS uni reutilise le contexte SELARL (gerant) ; la
+    # procuration lit personne_signataire.fonction_dirigeant -> on le passe a
+    # « president » (feminise en « presidente » par accord_fonction au rendu).
+    if ctx.personne_signataire is not None:
+        ctx.personne_signataire.fonction_dirigeant = "président"
+
     ctx.metadata = {
         **(ctx.metadata or {}),
         "front_slice": "track_b_selas_uni_dentiste_v1",
