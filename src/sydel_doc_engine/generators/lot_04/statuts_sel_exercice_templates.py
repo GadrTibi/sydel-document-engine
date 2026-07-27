@@ -37,7 +37,7 @@ STATUTS_SELARL_DENTISTE_BLOCKS: tuple[str, ...] = (
     'ARTICLE 7 – APPORTS ',
     '[civilite] [prenom] [nom] apporte à la Société la somme de [montant_apport] euros.   ',
     'Total des apports en numéraire : ci- [montant_apport] euros.',
-    'Cette somme de [montant_apport_lettres] euros a été déposée par l’[qualite_associe_article_8] conformément à la loi, au crédit d’un compte ouvert au nom de la société en formation dans les livres de la banque [nom_banque].',
+    'Cette somme de [montant_apport_lettres] euros a été déposée par l’[qualite_associe_article_8] conformément à la loi, au crédit d’un compte ouvert au nom de la société en formation dans les livres de la banque [nom_banque] [adresse_banque].',
     'ARTICLE 8 - CAPITAL SOCIAL ',
     'Le capital social est fixé à la somme de [capital_lettres] euros.',
     'Il est divisé en [nb_parts_total] parts de [valeur_nominale_part] [euro_nominal_word] chacune, entièrement souscrites et libérées dans les conditions exposées ci-dessus et attribuées comme suit\xa0: ',

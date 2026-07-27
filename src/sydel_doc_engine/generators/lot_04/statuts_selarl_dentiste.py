@@ -44,7 +44,10 @@ class StatutsSelarlDentisteGenerator:
             title_type="parts_sociales",
         )
         add_ordre_replacements(replacements, associate)
-        add_depot_replacements(replacements, ctx, require_address=False)
+        # KAN-42 (Rafael) : l'adresse de la banque doit etre reportee dans les
+        # statuts SELARL dentiste (alignement sur le sibling medecin, qui l'a
+        # deja). Supersede le modele source dentiste qui l'omettait.
+        add_depot_replacements(replacements, ctx, require_address=True)
         add_exercice_replacements(
             replacements,
             ctx,
