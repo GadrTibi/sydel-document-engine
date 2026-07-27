@@ -416,6 +416,14 @@ def _render_common_docs_form(structure: str, prefix: str) -> dict[str, object]:
         # SCS3 (Albane 2026-06-25) : pour la SCS, champ « Fonction » retire -> toujours « gérant ».
         fonction = "gérant"
         titre = _text(st, prefix, "signataire_titre", _titre_label) or "Docteur"
+    elif structure == "MICRO_HOLDING":
+        # KAN-39 (Rafael 2026-07-27) : champs « Fonction (ex : gérant) » ET « Titre professionnel
+        # affiché (ex : Docteur) » RETIRES du formulaire micro-holding — inutiles : la fonction est
+        # deja definie par la case « Dirigeant (gérant) » de l'associe, le titre affiche n'a pas
+        # d'interet ici. Fonction TOUJOURS « gérant » (avec accent : plus de « gerant » saisi
+        # sans accent) ; titre au defaut (converti en civilite civile en aval).
+        fonction = "gérant"
+        titre = "Docteur"
     else:
         col_g, col_h = st.columns(2)
         # A5 (Albane 2026-07-09) : en societe civile le gerant a TOUJOURS la meme fonction ->

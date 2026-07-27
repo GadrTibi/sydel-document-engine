@@ -122,11 +122,17 @@ def test_a4_departement_label_mentions_pays_etranger() -> None:
 # --- A5 : fonction pré-remplie « gérant » + libellé titre clarifié ------------
 
 
-def test_a5_fonction_prefilled_gerant_and_titre_label_clarified() -> None:
+def test_kan39_fonction_and_titre_fields_removed_from_micro() -> None:
+    # KAN-39 (Rafael 2026-07-27) SUPERSEDE A5 : les champs « Fonction (ex : gérant) » et « Titre
+    # professionnel affiché (ex : Docteur) » sont RETIRES du formulaire micro-holding (inutiles :
+    # la fonction est definie par la case « Dirigeant », le titre affiche n'a pas d'interet ici).
+    # La fonction reste « gérant » (avec accent) par defaut cote generation, sans champ de saisie.
     app = _load_micro()
-    assert _ti(app)["micro_holding_signataire_fonction"].value == "gérant"
+    keys = [str(w.key) for w in app.text_input]
+    assert "micro_holding_signataire_fonction" not in keys, keys
     labels = [str(w.label) for w in app.text_input]
-    assert any("Titre professionnel affiché" in label for label in labels), labels
+    assert not any("Titre professionnel affiché" in label for label in labels), labels
+    assert not any(label.startswith("Fonction") for label in labels), labels
 
 
 # --- A6 : lettre d'option IS toujours présente (case retirée) pour la micro ----
