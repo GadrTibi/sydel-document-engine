@@ -1058,6 +1058,22 @@ def _render_source_medecin_paragraph(
         "attribuées en totalité au Docteur [prenom] [nom]",
         f"attribuées en totalité à {civilite_civile_associe} [prenom] [nom]",
     )
+    # KAN-43 (Rafael 2026-07-27) : le DOCX source medecin porte encore des fautes
+    # d'accord/typo que le generateur corrige desormais (« @All - accord en genre et
+    # nombre ») ; on aligne le rendu SOURCE (attendu) pour la comparaison ligne-a-ligne.
+    paragraph = (
+        paragraph.replace(
+            "d'exercer la profession, perd, dès ce moment",
+            "d'exercer la profession, perdent, dès ce moment",
+        )
+        .replace(
+            "montant total de cette rémunération pourra être fixée",
+            "montant total de cette rémunération pourra être fixé",
+        )
+        .replace("CONVENTIONS PASSES", "CONVENTIONS PASSEES")
+        .replace("DISSOLUTION – LIQUIDATON", "DISSOLUTION – LIQUIDATION")
+        .replace("DROIT DE COMMUNTCATTON", "DROIT DE COMMUNICATION")
+    )
     replacements = {
         "[denomination_societe]": ctx.societe.denomination,
         "[capital_social]": ctx.capital.montant,
@@ -1366,3 +1382,23 @@ def test_sel_exercice_valeur_nominale_entiere_byte_fidele(tmp_path: Path) -> Non
     text_med = _docx_text(StatutsSelarlMedecinGenerator().generate(ctx_med, tmp_path))
     assert "parts de 1 euro chacune" in text_med
     assert "somme de mille euros" in text_med
+
+
+def test_kan43_denomination_selarl_au_pluriel_coherente(tmp_path: Path) -> None:
+    # KAN-43 (Rafael) : la denomination doit employer le MEME nombre partout (en-tete,
+    # « A etabli », art.1, art.3) — au PLURIEL (« de medecins », « de chirurgiens-
+    # dentistes »), jamais le singulier « de medecin » qui contredisait l'art.3 du
+    # document lui-meme. Verrou mecanique de la classe M4 (le motif texte generique
+    # cote conformite mordait le pluriel a tiret « chirurgiens-dentistes »).
+    ctx_med = _context(overlay="selarl_medecin")
+    text_med = _docx_text(StatutsSelarlMedecinGenerator().generate(ctx_med, tmp_path))
+    assert "à responsabilité limitée de médecins" in text_med
+    assert not re.search(r"responsabilité limitée de médecin(?!s)", text_med)
+
+    ctx_dent = _context(overlay="selarl_dentiste")
+    ctx_dent.associes[0].profession = "chirurgien-dentiste"
+    ctx_dent.associes[0].profession_reglementee = "chirurgien-dentiste"
+    ctx_dent.associes[0].profession_reglementee_pluriel = "chirurgiens-dentistes"
+    text_dent = _docx_text(StatutsSelarlDentisteGenerator().generate(ctx_dent, tmp_path))
+    assert "à responsabilité limitée de chirurgiens-dentistes" in text_dent
+    assert not re.search(r"responsabilité limitée de chirurgien-dentiste(?!s)", text_dent)

@@ -41,6 +41,7 @@ from sydel_doc_engine.utils.dates import format_birthdate_fr, format_date_longue
 from sydel_doc_engine.utils.grammar import (
     _has_real_decimal,
     accord_euros_apres_montant,
+    accord_typos_modeles_source,
     capitalize_first,
     euro_word,
     montant_avec_euros,
@@ -1395,7 +1396,8 @@ def _replace_placeholders(text: str, replacements: dict[str, str]) -> str:
     rendered = text
     for placeholder, value in replacements.items():
         rendered = rendered.replace(placeholder, value)
-    return rendered
+    # KAN-43 : corrige les fautes d'accord figees dans les modeles civils/micro source.
+    return accord_typos_modeles_source(rendered)
 
 
 def _strip_editorial_marker(text: str) -> str:

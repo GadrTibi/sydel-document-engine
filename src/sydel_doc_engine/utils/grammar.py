@@ -311,6 +311,35 @@ def accord_euros_apres_montant(text: str) -> str:
     return _ACCORD_EUROS_LETTRES.sub(lambda m: f"{m.group(1)}{m.group(2)}euro", text)
 
 
+# KAN-43 (Rafael 2026-07-27, « @All - accord en genre et nombre ») : fautes d'ACCORD
+# FIGEES dans les modeles .docx source, rendues verbatim par les generateurs
+# token-replacement (SELAS multi, SAS-SPFPL, micro holding). Le retour client supersede
+# la fidelite au modele (regle 68). Cles ANCREES sur le sujet pour ne jamais toucher une
+# forme legitime (ex. « La remuneration ... pourra etre fixee » — feminin — reste intact).
+_SOURCE_ACCORD_TYPOS: tuple[tuple[str, str], ...] = (
+    # « Le montant total de cette remuneration pourra etre fixee » : sujet « montant
+    # total » (masculin) -> « fixe ».
+    (
+        "montant total de cette rémunération pourra être fixée",
+        "montant total de cette rémunération pourra être fixé",
+    ),
+    # En-tetes d'articles : « conventions » est feminin pluriel -> REGLEMENTEES / PASSEES.
+    ("CONVENTIONS REGLEMENTES", "CONVENTIONS REGLEMENTEES"),
+    ("CONVENTIONS PASSES", "CONVENTIONS PASSEES"),
+)
+
+
+def accord_typos_modeles_source(text: str) -> str:
+    """Corrige a la generation les fautes d'ACCORD figees dans les modeles .docx source
+    (rendues verbatim par les generateurs token-replacement). Meme principe que
+    ``accord_euros_apres_montant`` : un post-pass sur le texte DEJA rendu. Idempotent ;
+    cles ancrees pour ne jamais toucher une forme correcte (KAN-43, « @All - accord »)."""
+    rendered = text
+    for wrong, right in _SOURCE_ACCORD_TYPOS:
+        rendered = rendered.replace(wrong, right)
+    return rendered
+
+
 def montant_lettres_avec_unite(lettres: str, figure: object) -> str:
     """Compose « <lettres> <unité euro> » sans espace parasite — anti double-euro.
 

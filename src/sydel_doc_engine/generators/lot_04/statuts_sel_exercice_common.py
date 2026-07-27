@@ -42,6 +42,7 @@ from sydel_doc_engine.utils.departements import departement_nom
 from sydel_doc_engine.utils.grammar import (
     accord_euros_apres_montant,
     accord_terme_genre,
+    accord_typos_modeles_source,
     apply_gender_pairs,
     euro_word,
 )
@@ -1281,7 +1282,9 @@ def replace_placeholders(text: str, replacements: dict[str, str]) -> str:
     # « la somme de [montant_apport] euros ») — apres substitution d'une valeur
     # singuliere (0/1) elle devient fautive « 1 euros » -> accordee « 1 euro ». Le
     # pluriel n'est jamais touche (« 600 euros », « 21 euros » intacts).
-    return accord_euros_apres_montant(rendered)
+    # KAN-43 : + correction des fautes d'accord figees dans les modeles source
+    # (« montant total ... fixee » -> fixe, en-tetes « CONVENTIONS ...ES » masculin).
+    return accord_typos_modeles_source(accord_euros_apres_montant(rendered))
 
 
 # Paires d'accord en genre des statuts SEL, pilotees par le genre de l'associe.

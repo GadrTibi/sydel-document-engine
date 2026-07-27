@@ -38,6 +38,7 @@ from sydel_doc_engine.rendering.docx_builder import (
 )
 from sydel_doc_engine.utils.departements import departement_nom
 from sydel_doc_engine.utils.grammar import (
+    accord_typos_modeles_source,
     elision_de,
     euro_word,
     montant_avec_euros,
@@ -1052,7 +1053,8 @@ def _replace_placeholders(text: str, replacements: dict[str, str]) -> str:
     # doit etre traitee AVANT le token nu « [valeur…] » qu'elle contient.
     for placeholder in sorted(replacements, key=len, reverse=True):
         rendered = rendered.replace(placeholder, replacements[placeholder])
-    return rendered
+    # KAN-43 : corrige les fautes d'accord figees dans le modele source SELAS multi.
+    return accord_typos_modeles_source(rendered)
 
 
 def _person_label(associe: StatutsCivilsAssocie) -> str:

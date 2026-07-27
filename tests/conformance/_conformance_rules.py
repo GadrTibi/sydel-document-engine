@@ -655,6 +655,38 @@ def rule_r16_accord_parts(text: str) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
+# R17 — accord en genre/nombre dans les STATUTS SEL (KAN-43, Rafael 2026-07-27)
+# ---------------------------------------------------------------------------
+#
+# Retour Rafael : « voir l'INTEGRALITE des règles d'accord, en genre et en nombre,
+# spécialement dans les statuts de la SELARL ». On code le CONCEPT des classes
+# trouvées (jamais la liste des tournures — leçon R3 2026-07-09) :
+#  (a) « Le montant total … fixée » : le sujet « montant » est MASCULIN -> « fixé » ;
+#  (b) en-tête « CONVENTIONS <participe> » : « conventions » est FEMININ pluriel -> le
+#      participe s'accorde « …EES » (REGLEMENTEES / PASSEES), jamais « …ES » masculin
+#      (REGLEMENTES / PASSES). Le motif ne mord QUE la forme masculine fautive : la
+#      forme correcte « …EES » a un « E » avant le « S » final et échappe.
+# NB : la cohérence de NOMBRE de la dénomination (« de médecins » partout, jamais « de
+# médecin ») est vérifiée par un test unitaire dédié (test_lot_04), PAS ici : un motif
+# texte générique mordait le pluriel correct « chirurgiens-dentistes » (tiret) — piège
+# classique du « code une liste au lieu du concept ».
+_R17_MONTANT_FIXEE = re.compile(r"montant total[^.]{0,60}\bfixée\b")
+_R17_CONVENTIONS_MASC = re.compile(r"\bCONVENTIONS\s+(?:REGLEMENTE|PASSE)S\b")
+
+
+def rule_r17_accord_statuts_sel(text: str) -> list[str]:
+    """Accords fautifs récurrents des statuts SEL : « montant total … fixée » (-> fixé)
+    et en-tête « CONVENTIONS …ES » masculin (-> …EES). Code l'INTENTION, pas la liste
+    de tournures (KAN-43, Rafael 2026-07-27)."""
+    violations = _find_all(text, _R17_MONTANT_FIXEE)
+    violations.extend(_find_all(text, _R17_CONVENTIONS_MASC))
+    return violations
+
+
+R17_LABEL = "accord statuts SEL (« montant … fixée », « CONVENTIONS …ES » masculin)"
+
+
+# ---------------------------------------------------------------------------
 # Registre des règles
 # ---------------------------------------------------------------------------
 
@@ -676,6 +708,7 @@ RULES: dict[str, Callable[[str], list[str]]] = {
     "R14": rule_r14_demeurant_au,
     "R15": rule_r15_accord_fonction,
     "R16": rule_r16_accord_parts,
+    "R17": rule_r17_accord_statuts_sel,
 }
 
 # Règles appliquées au NOM DE FICHIER du document (les autres reçoivent le texte).
@@ -695,4 +728,6 @@ RULE_LABELS: dict[str, str] = {
     "R12": "paragraphe commençant par une minuscule",
     "R14": "adresse de résidence non précédée de « au »",
     "R15": "accord en genre de la fonction (« Madame <Nom>, gérant »)",
+    "R16": "accord en nombre du mot « part » (« 1 parts » interdit)",
+    "R17": "accord statuts SEL (« montant … fixée », « CONVENTIONS …ES » masculin)",
 }

@@ -31,6 +31,7 @@ from sydel_doc_engine.rendering.docx_builder import (
 )
 from sydel_doc_engine.rendering.docx_template_fill import fill_docx_template
 from sydel_doc_engine.utils.departements import departement_nom
+from sydel_doc_engine.utils.grammar import accord_typos_modeles_source
 
 DOCUMENT_CODE = "CODE-STATUTS-SAS-001"
 OUTPUT_FILENAME = "statuts_sas_spfpl_medecins.docx"
@@ -267,6 +268,10 @@ def _normalize_paragraph(paragraph) -> None:
             text = text.replace("\xa0", " ")
         if "\t" in text:
             text = _TAB_RE.sub(" ", text)
+        # KAN-43 : corrige la faute d'accord figee du modele (« montant total ...
+        # fixee » -> fixe). Cle ancree : le « fixee » feminin legitime (« La duree
+        # ... est fixee ») est dans un AUTRE run et n'est jamais touche.
+        text = accord_typos_modeles_source(text)
         if text != run.text:
             run.text = text
     runs = paragraph.runs
