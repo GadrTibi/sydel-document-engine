@@ -12,6 +12,7 @@ from sydel_doc_engine.generators.lot_04.statuts_sel_exercice_common import (
     add_depot_replacements,
     add_exercice_replacements,
     add_ordre_replacements,
+    capital_titles_total_letters,
     common_replacements,
     qualite_associe_display,
     render_statuts_sel_docx,
@@ -131,10 +132,8 @@ class StatutsSelasMedecinGenerator:
                     "societe.forme_sociale_abregee",
                 ),
                 "[duree_societe]": _duree_en_annees(company.duree),
-                "[nb_actions_lettres]": required_text(
-                    ctx.capital.nombre_titres_total_lettres,
-                    "capital.nombre_titres_total_lettres",
-                ),
+                # KAN-2 @All (B2) : 0-safe (marqueur si total < 1), jamais « zero actions ».
+                "[nb_actions_lettres]": capital_titles_total_letters(ctx),
                 # Akainu B1 (regle 68) : le modele art.8 colle « d’[valeur…] » -> elision via
                 # le helper partage (« de cent euros », « d’un euro »). Cle combinee traitee en
                 # premier (replace_placeholders trie par longueur desc). 7.5 (Albane 2026-07-06) :

@@ -108,8 +108,12 @@ def societe_replacements(ctx: DocumentGenerationContext) -> dict[str, str]:
         # dans le modele (cf. scm_satellites_templates), plus un token [numero_rcs].
         # On ne requiert donc plus societe.numero_rcs pour le pacte (aucune autre
         # surface de societe_replacements ne l'utilise).
-        "[nb_parts_sociales]": str(
-            _required_value(company.nb_parts_total, "societe.nb_parts_total")
+        # KAN-2 @All (B3) : le pacte ne declare JAMAIS un capital « compose de 0 parts sociales ».
+        # Le front pose 0 (jamais None) -> _required_value ne le voit pas vide ; on gate sur < 1.
+        "[nb_parts_sociales]": (
+            str(company.nb_parts_total)
+            if company.nb_parts_total
+            else f"(À COMPLÉTER : {libelle_metier('societe.nb_parts_total')})"
         ),
     }
 

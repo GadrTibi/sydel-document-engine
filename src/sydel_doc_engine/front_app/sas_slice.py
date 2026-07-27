@@ -577,7 +577,9 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
     # attestation capital) ; « 100 » reste inchange (byte-fidele).
     valeur_nominale = group_montant(str(payload.get("valeur_nominale_action") or ""))
     actionnaire = SpfplPerson(
-        civilite_affichage=str(payload.get("civilite") or "Docteur"),
+        # KAN-2 @All (M1) : civilite non saisie -> VIDE (marqueur en aval, statuts_sas), jamais un
+        # « Docteur » de repli que civilite_civile convertirait en « Monsieur » via le genre.
+        civilite_affichage=str(payload.get("civilite") or ""),
         prenom=str(payload.get("prenom") or ""),
         nom=str(payload.get("nom") or ""),
         genre=payload.get("genre") or Gender.MASCULIN,
@@ -632,7 +634,9 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         dossier_options=DossierOptions(associe_unique=True, apport=True),
         personne_signataire=Person(
             genre=payload.get("genre") or Gender.MASCULIN,
-            civilite=str(payload.get("civilite") or "Monsieur"),
+            # KAN-2 @All (M1) : civilite non saisie -> VIDE (le generateur marque « (À COMPLÉTER :
+            # civilité …) »), JAMAIS « Monsieur » invente. Le GENRE garde son defaut masculin.
+            civilite=str(payload.get("civilite") or ""),
             prenom=str(payload.get("prenom") or ""),
             nom=str(payload.get("nom") or ""),
             titre_affichage=str(payload.get("civilite") or "Docteur"),

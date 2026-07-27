@@ -377,7 +377,9 @@ def _to_selarl_input(payload: dict[str, object]) -> SelarlSliceInput:
     contexte produit est ensuite transforme en SELAS dentiste par
     `build_generation_context`.
     """
-    civilite = str(payload.get("civilite") or "Monsieur")
+    # KAN-2 @All (M1) : civilite non saisie -> VIDE (marqueur en aval), JAMAIS « Monsieur » invente.
+    # Le genre garde son defaut masculin (derive_gender_from_civilite("") -> MASCULIN).
+    civilite = str(payload.get("civilite") or "")
     denomination = str(payload.get("denomination") or "")
     conjoint_civilite = str(payload.get("conjoint_civilite") or "")
     return SelarlSliceInput(

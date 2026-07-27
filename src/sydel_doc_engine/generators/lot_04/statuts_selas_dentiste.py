@@ -25,6 +25,7 @@ from sydel_doc_engine.generators.lot_04.statuts_sel_exercice_common import (
     add_depot_replacements,
     add_exercice_replacements,
     add_ordre_replacements,
+    capital_titles_total_letters,
     common_replacements,
     render_statuts_sel_docx,
     required_associe_unique,
@@ -71,10 +72,8 @@ class StatutsSelasDentisteGenerator:
         # signature electronique (article 32).
         replacements.update(
             {
-                "[nb_actions_lettres]": required_text(
-                    ctx.capital.nombre_titres_total_lettres,
-                    "capital.nombre_titres_total_lettres",
-                ),
+                # KAN-2 @All (B2) : 0-safe (marqueur si total < 1), jamais « zero actions ».
+                "[nb_actions_lettres]": capital_titles_total_letters(ctx),
                 # 7.5 (Albane 2026-07-06) : token unique lettres+unite (anti double-euro / espace).
                 # ENTIER -> « un euro » (byte-identique) ; DECIMAL -> « un centime d’euro ».
                 "[valeur_nominale_action_avec_unite]": montant_lettres_avec_unite(

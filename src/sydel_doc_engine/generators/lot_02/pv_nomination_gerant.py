@@ -790,6 +790,10 @@ def _add_associes_block(
         _add_list_item(
             document,
             (
+                # KAN-2 @All (M1) : la civilite INVENTEE (« Monsieur ») est neutralisee A LA SOURCE
+                # (le slice ne defaulte plus a « Monsieur » -> civilite vide). On garde ici le rendu
+                # d'ORIGINE (byte-identique) : une personne MORALE porte legitimement civilite et
+                # prenom VIDES (sa denomination est dans `nom`) — la marquer serait un faux defaut.
                 f"{associe.civilite_affichage} {associe.prenom} {associe.nom}, "
                 f"détenant {_quantite_parts(associe.nb_parts, 'nombre de parts détenues')} "
                 f"{_parts_label(associe.nb_parts or 0, titre_word)},"

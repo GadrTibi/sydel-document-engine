@@ -18,7 +18,7 @@ from sydel_doc_engine.generators.lot_05.spfpl_common import (
     associe_signature_name,
     person_display,
     presence_lines,
-    required_int,
+    quantite_titres,
     required_societe_cible,
     required_text,
     validate_associe_unique,
@@ -49,6 +49,10 @@ class PvAgrementCessionSpfplPlusieursAssociesGenerator:
         add_pv_title(docx, "L'ASSEMBLÉE GÉNÉRALE EXTRAORDINAIRE", ctx)
         for line in reunion_intro_lines(ctx):
             add_paragraph(docx, line)
+        # KAN-2 @All : parts de la cible 0-safe (marqueur si 0/None), jamais « 0 parts ».
+        nb_parts_cible = quantite_titres(
+            societe_cible.nb_parts_total, "nombre de parts de la société cible"
+        )
         add_paragraph(
             docx,
             (
@@ -56,8 +60,7 @@ class PvAgrementCessionSpfplPlusieursAssociesGenerator:
                 f"{required_text(societe_cible.denomination, 'societe_cible.denomination')}, "
                 "au capital de "
                 f"{required_text(societe_cible.capital_social, 'societe_cible.capital_social')} "
-                "euros, composé de "
-                f"{required_int(societe_cible.nb_parts_total, 'societe_cible.nb_parts_total')} "
+                f"euros, composé de {nb_parts_cible} "
                 "parts, se sont réunis sur convocation régulière du président au siège "
                 "de la Société."
             ),

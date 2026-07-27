@@ -109,7 +109,14 @@ def _build_replacements(data: _ResolvedStatutsSas) -> dict[str, str]:
     # Le token [civilite] (comparution) ET les phrases d'apport/repartition du modele
     # (« Par le Docteur … » art. 6, « Le Docteur … » art. 8, cf. cles litterales ci-dessous)
     # rendent la civilite CIVILE (Monsieur/Madame accorde au genre de l'actionnaire), sans article.
-    civilite = civilite_civile(actionnaire.civilite_affichage, actionnaire.genre)
+    # KAN-2 @All (M1) : civilite CIVILE de l'actionnaire ; ABSENTE -> marqueur (jamais « Monsieur »
+    # invente : sans ce garde, une civilite vide defaultait a « Docteur » cote slice puis
+    # civilite_civile la convertissait en « Monsieur » par le genre). Nominal (Docteur/Monsieur/
+    # Madame saisi) inchange.
+    civilite = _required_text(
+        civilite_civile(actionnaire.civilite_affichage, actionnaire.genre),
+        "actionnaire_unique.civilite_affichage",
+    )
     return {
         # Cles LITTERALES du modele (P93 « Par le Docteur … », P103 « Le Docteur … ») : la civilite
         # civile ne prend pas d'article -> l'article « le »/« Le » disparait avec « Docteur », mais
@@ -118,6 +125,12 @@ def _build_replacements(data: _ResolvedStatutsSas) -> dict[str, str]:
         # par le tri longest-first ; « le Docteur » (minuscule) ne chevauche pas « Le Docteur ».
         "Par le Docteur": f"Par {civilite}",
         "Le Docteur": civilite,
+        # KAN-2 @All (M1) : le modele FIGE « Monsieur » (non tokenise) devant le nom de l'associe
+        # unique au bloc signature (« L'Associé Unique, Monsieur [prenom] [nom] »). Cle intra-run
+        # « Monsieur [prenom] » (le « Monsieur » est colle a [prenom] dans le meme run) -> civilite
+        # CIVILE accordee (Madame en feminin ; marqueur si non saisie), JAMAIS un « Monsieur »
+        # invente. Traitee AVANT le token [prenom] (ordre du dict). Nominal -> byte-identique.
+        "Monsieur [prenom]": f"{civilite} [prenom]",
         "[denomination_societe]": data.denomination,
         "[capital_social]": data.capital_social,
         "[capital_lettres]": data.capital_social_lettres,

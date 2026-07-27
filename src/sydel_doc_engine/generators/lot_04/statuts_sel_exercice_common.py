@@ -708,7 +708,7 @@ def _membre_person_label(membre: StatutsCivilsAssocie) -> str:
 
 
 def _membre_person_address(membre: StatutsCivilsAssocie) -> str:
-    if membre.adresse_personnelle_affichee:
+    if _has_content(membre.adresse_personnelle_affichee):
         return membre.adresse_personnelle_affichee.strip()
     return address_display(membre.adresse_personnelle, "membres[].adresse_personnelle")
 
@@ -743,16 +743,16 @@ def _membre_nb_parts_lettres(membre: StatutsCivilsAssocie) -> str:
 
 
 def _membre_apport_montant(membre: StatutsCivilsAssocie) -> str:
+    # KAN-2 @All (B1) : apport absent -> marqueur metier, jamais lever (generation a vide).
     if membre.apport is None or not (membre.apport.montant or "").strip():
-        raise ValueError(f"membres[].apport.montant est obligatoire pour {DOCUMENT_CODE}.")
+        return f"(À COMPLÉTER : {libelle_metier('membres[].apport.montant')})"
     return membre.apport.montant.strip()
 
 
 def _membre_apport_lettres(membre: StatutsCivilsAssocie) -> str:
+    # KAN-2 @All (B1) : apport en lettres absent -> marqueur metier, jamais lever.
     if membre.apport is None or not (membre.apport.montant_lettres or "").strip():
-        raise ValueError(
-            f"membres[].apport.montant_lettres est obligatoire pour {DOCUMENT_CODE}."
-        )
+        return f"(À COMPLÉTER : {libelle_metier('membres[].apport.montant_lettres')})"
     return membre.apport.montant_lettres.strip()
 
 
@@ -1360,11 +1360,20 @@ def statuts_output_filename(denomination: str | None, fallback: str) -> str:
     return f"Statuts {safe}.docx" if safe else fallback
 
 
+def _has_content(value: str | None) -> bool:
+    # KAN-2 @All : une adresse en une ligne composee de sous-champs vides (« , » / « ,, »)
+    # n'a AUCUN caractere alphanumerique -> elle est « vide » (le front la pre-assemble a partir
+    # de champs jamais saisis). On ne se fie donc pas a `if affichee:` (qui laisse passer « , »).
+    return bool(value) and any(char.isalnum() for char in value)
+
+
 def address_display(address: Address | None, field_name: str) -> str:
+    # KAN-2 @All (B1) : une adresse absente NE FAIT PLUS CRASHER -> marqueur metier (jamais lever).
     if address is None:
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
-    if address.adresse_affichee:
+        return f"(À COMPLÉTER : {libelle_metier(field_name)})"
+    if _has_content(address.adresse_affichee):
         return address.adresse_affichee.strip()
+    # KAN-2 @All (M2) : sous-champs vides -> marqueurs metier, JAMAIS des virgules nues (« ,, »).
     return (
         f"{required_text(address.num_voie, f'{field_name}.num_voie')} "
         f"{required_text(address.voie, f'{field_name}.voie')}, "
@@ -1374,7 +1383,7 @@ def address_display(address: Address | None, field_name: str) -> str:
 
 
 def person_address_display(associate: Associe) -> str:
-    if associate.adresse_personnelle_affichee:
+    if _has_content(associate.adresse_personnelle_affichee):
         return associate.adresse_personnelle_affichee.strip()
     return address_display(associate.adresse_personnelle, "associes[0].adresse_personnelle")
 
@@ -1426,6 +1435,12 @@ def capital_titles_total_display(ctx: DocumentGenerationContext) -> str:
 def capital_titles_total_letters(ctx: DocumentGenerationContext) -> str:
     if ctx.capital is None:
         raise ValueError(f"capital est obligatoire pour {DOCUMENT_CODE}.")
+    # KAN-2 @All : la quantite de titres EN LETTRES suit la meme regle 0-safe que la FIGURE
+    # (capital_titles_total_display). Le front pose 0 -> le slice derive « zero » : sans ce
+    # garde, l'art.8 affirmait « Il est divise en zero (…) actions ». 0/None -> marqueur.
+    raw = ctx.capital.nombre_titres_total or ctx.capital.nb_parts_total
+    if not raw or raw < 1:
+        return f"(À COMPLÉTER : {libelle_metier('capital.nombre_titres_total_lettres')})"
     return required_text(
         ctx.capital.nombre_titres_total_lettres,
         "capital.nombre_titres_total_lettres",

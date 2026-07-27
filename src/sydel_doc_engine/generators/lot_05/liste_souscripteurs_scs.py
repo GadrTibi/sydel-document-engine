@@ -151,7 +151,7 @@ class ListeSouscripteursScsGenerator:
             # du corps (P13 « la somme de [montant_sous] euros ») sortaient NON GROUPES
             # (« 1000 euros ») car total_montant est une somme entiere brute -> groupee
             # des 4 chiffres (« 1 000 »). L'unite « euros » est portee par le modele.
-            "[montant_sous]": group_montant(str(total_montant)),
+            "[montant_sous]": _montant_total_display(total_montant),
             # KAN-2 @All : lieu manquant -> marqueur, jamais « Fait à » nu.
             "[lieu_signature]": (
                 _txt(signature.lieu if signature else None)
@@ -232,7 +232,7 @@ class ListeSouscripteursScsGenerator:
         # Ligne TOTAL : total parts + total montant (groupe des 4 chiffres, Rafael 2026-07-09).
         total_repl = {
             "[nb_actions]": _quantite_parts_display(total_parts),
-            "[montant_sous]": group_montant(str(total_montant)),
+            "[montant_sous]": _montant_total_display(total_montant),
         }
         for cell in total_row.cells:
             for paragraph in cell.paragraphs:
@@ -255,6 +255,14 @@ class ListeSouscripteursScsGenerator:
 
 def _txt(value: object) -> str:
     return str(value or "").strip()
+
+
+def _montant_total_display(total_montant: int) -> str:
+    # KAN-2 @All (B4) : la SOMME certifiee (corps « la somme de X euros » + ligne TOTAL) ne
+    # s'affirme JAMAIS a 0 -> marqueur si aucun apport saisi. Somme reelle -> groupee (nominal).
+    if not total_montant or total_montant < 1:
+        return f"(À COMPLÉTER : {libelle_metier('montant total souscrit')})"
+    return group_montant(str(total_montant))
 
 
 def _siege(company) -> str:

@@ -2181,7 +2181,9 @@ def _selas_pv_associes(
         mapped.append(
             Associe(
                 genre=associe.genre or Gender.MASCULIN,
-                civilite_affichage=associe.civilite_affichage or "Monsieur",
+                # KAN-2 @All (M1) : civilite non saisie -> VIDE (marquee au generateur PV), jamais
+                # « Monsieur » invente. Le genre garde son defaut masculin (accord).
+                civilite_affichage=associe.civilite_affichage or "",
                 prenom=associe.prenom or associe.prenoms or "",
                 nom=associe.nom or "",
                 nb_parts=nb,

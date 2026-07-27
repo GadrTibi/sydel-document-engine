@@ -186,6 +186,8 @@ class _ResolvedPvRemunerationPresident:
             ),
             fonction_president=required_text(president.fonction, "president.fonction"),
             date_cloture_premier_exercice=date_cloture,
-            lieu_signature=ctx.signature.lieu,
+            # KAN-2 @All (M3) : lieu de signature absent -> marqueur, jamais « Fait à » nu
+            # (jumeau de la SASU holding, deja marque).
+            lieu_signature=required_text(ctx.signature.lieu, "signature.lieu"),
             signature_nom=person_signature(actionnaire, "actionnaire_unique"),
         )

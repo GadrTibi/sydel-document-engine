@@ -71,6 +71,24 @@ def _libelle(field_name: str) -> str:
 def _marqueur(field_name: str) -> str:
     return f"(À COMPLÉTER : {_libelle(field_name)})"
 
+
+def _quantite_display(value: int | None, field_name: str) -> str:
+    # KAN-2 @All (B2) : AFFICHAGE d'une quantite d'actions. Le front pose TOUJOURS 0 (jamais None)
+    # sur un `number_input` jamais touche -> 0 ET None sont le meme cas « non rempli ». Un acte
+    # signable qui affirme « 0 actions » / « divise en zero (0) actions » est FAUX -> marqueur.
+    # Valeur reelle (>= 1) -> chiffre tel quel (sortie NOMINALE byte-identique).
+    if not value:
+        return _marqueur(field_name)
+    return str(value)
+
+
+def _quantite_lettres_display(numeric: int | None, lettres: str | None, field_name: str) -> str:
+    # KAN-2 @All (B2) : la quantite EN LETTRES suit la meme regle 0-safe que la figure. Le slice
+    # derive « zero » d'un total 0 -> _required_text ne le voit pas vide ; on gate sur le NUMERIQUE.
+    if not numeric:
+        return _marqueur(field_name)
+    return _required_text(lettres, field_name)
+
 # --- Profils par profession reglementee --------------------------------------------------
 #
 # Le moteur lit un modele DOCX tokenise et reinjecte, selon le nombre reel d'associes, les
@@ -395,10 +413,11 @@ class _ResolvedSelasMulti:
                 selas.capital_social_lettres,
                 "statuts_selas_multi.capital_social_lettres",
             ),
-            "[nb_actions]": str(
-                _required_int(selas.nb_actions_total, "statuts_selas_multi.nb_actions_total")
+            "[nb_actions]": _quantite_display(
+                selas.nb_actions_total, "statuts_selas_multi.nb_actions_total"
             ),
-            "[nb_actions_lettres]": _required_text(
+            "[nb_actions_lettres]": _quantite_lettres_display(
+                selas.nb_actions_total,
                 selas.nb_actions_total_lettres,
                 "statuts_selas_multi.nb_actions_total_lettres",
             ),
@@ -573,10 +592,12 @@ def _add_apports_block(document, data: _ResolvedSelasMulti) -> None:
 
 
 def _add_capital_block(document, data: _ResolvedSelasMulti) -> None:
+    # KAN-2 @All (B2) : quantite d'actions par associe 0-safe (marqueur si 0/None), jamais
+    # « 0 actions » ni « zero actions » affirme. Sortie NOMINALE inchangee.
     for associe in data.associes:
-        nb_actions = _required_int(associe.nb_actions, "associes[].nb_actions")
-        nb_actions_lettres = _required_text(
-            associe.nb_actions_lettres, "associes[].nb_actions_lettres"
+        nb_actions = _quantite_display(associe.nb_actions, "associes[].nb_actions")
+        nb_actions_lettres = _quantite_lettres_display(
+            associe.nb_actions, associe.nb_actions_lettres, "associes[].nb_actions_lettres"
         )
         qualite = _required_text(associe.qualite_capital, "associes[].qualite_capital")
         if _is_morale(associe):
@@ -748,13 +769,15 @@ def _add_apports_block_dentiste(document, data: _ResolvedSelasMulti) -> None:
 
 
 def _add_capital_block_dentiste(document, data: _ResolvedSelasMulti) -> None:
-    nb_actions_total = _required_int(
+    # KAN-2 @All (B2) : total ET quantite par associe passent par le display 0-safe (marqueur si
+    # 0/None), jamais « 0 actions » affirme. Sortie NOMINALE (quantites reelles) inchangee.
+    nb_actions_total = _quantite_display(
         data.selas.nb_actions_total, "statuts_selas_multi.nb_actions_total"
     )
     for associe in data.associes:
-        nb_actions = _required_int(associe.nb_actions, "associes[].nb_actions")
-        nb_actions_lettres = _required_text(
-            associe.nb_actions_lettres, "associes[].nb_actions_lettres"
+        nb_actions = _quantite_display(associe.nb_actions, "associes[].nb_actions")
+        nb_actions_lettres = _quantite_lettres_display(
+            associe.nb_actions, associe.nb_actions_lettres, "associes[].nb_actions_lettres"
         )
         if _is_morale(associe):
             # Variante personne morale : "- La [denomination], [LETTRES] actions".
@@ -804,8 +827,8 @@ def _dentiste_boilerplate_replacements(data: _ResolvedSelasMulti) -> dict[str, s
     capital_lettres = _required_text(
         selas.capital_social_lettres, "statuts_selas_multi.capital_social_lettres"
     )
-    nb_actions = str(
-        _required_int(selas.nb_actions_total, "statuts_selas_multi.nb_actions_total")
+    nb_actions = _quantite_display(
+        selas.nb_actions_total, "statuts_selas_multi.nb_actions_total"
     )
     valeur_nominale = _required_text(
         selas.valeur_nominale_action, "statuts_selas_multi.valeur_nominale_action"
@@ -851,9 +874,12 @@ def _apporteur_label_dentiste(associe: StatutsCivilsAssocie) -> str:
     # R3 « supprimer PARTOUT » (Rafael 2026-07-09) : le corpus dentiste designait l'apporteur
     # « Le Docteur [prenoms] [nom] » ; « Docteur » n'est jamais une civilite -> civilite CIVILE
     # (Monsieur/Madame accorde au genre), SANS article (« Monsieur X apporte », plus « le »).
+    # KAN-2 @All (M1) : civilite CIVILE derivee de la saisie ; ABSENTE -> marqueur (via
+    # _required_text), JAMAIS « Monsieur »/« Madame » invente. Meme regle que _person_label.
     prenoms = associe.prenoms or associe.prenom
-    civilite = civilite_civile(associe.civilite_affichage or "", associe.genre) or (
-        "Madame" if associe.genre == Gender.FEMININ else "Monsieur"
+    civilite = civilite_civile(
+        _required_text(associe.civilite_affichage, "associes[].civilite_affichage"),
+        associe.genre,
     )
     return (
         f"{civilite} {_required_text(prenoms, 'associes[].prenoms')} "
