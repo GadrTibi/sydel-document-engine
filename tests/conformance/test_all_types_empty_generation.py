@@ -218,16 +218,17 @@ def _all_text(paths) -> str:
     return "\n".join(lines)
 
 
-# Quantité de titres AFFIRMÉE en chiffres (« 600 actions », « 0 parts », « 102 000 titres »).
-_QUANTITE_CHIFFREE = re.compile(r"\b\d[\d\s]*\s+(?:actions|parts|titres)\b")
-# « (0) actions » / « 0 parts » explicitement nuls.
-_ZERO_QUANTITE = re.compile(
-    r"\(0\)\s*(?:actions|parts|titres)|(?<!\d)0\s+(?:actions|parts|titres)\b"
-)
+# Quantité de titres AFFIRMÉE en chiffres — on code le CONCEPT « quantité de titres », au
+# SINGULIER comme au pluriel (« 600 actions », « 0 part », « 1 titre », « 102 000 titres »).
+_TITRES = r"(?:actions?|parts?(?:\s+sociales?)?|titres?)"
+_QUANTITE_CHIFFREE = re.compile(rf"\b\d[\d\s]*\s+{_TITRES}\b")
+# « (0) actions » / « 0 part » explicitement nuls (singulier + pluriel).
+_ZERO_QUANTITE = re.compile(rf"\(0\)\s*{_TITRES}|(?<!\d)0\s+{_TITRES}\b")
 # « zéro » (mise en lettres d'une quantité nulle) — aucun acte à vide ne doit l'affirmer.
 _ZERO_LETTRES = re.compile(r"\bz[ée]ro\b", re.IGNORECASE)
-# « 0 euros » / « 0 euro » (un « 10 euros » n'est pas touché grâce au lookbehind).
-_ZERO_EUROS = re.compile(r"(?<!\d)0\s+euros?\b")
+# Montant NUL affirmé — on code l'UNITÉ monétaire (« euro(s) », symbole « € », code « EUR »),
+# pas la seule tournure « euros » (un « 10 euros » n'est pas touché grâce au lookbehind).
+_ZERO_EUROS = re.compile(r"(?<!\d)0\s*(?:€|EUR\b|euros?\b)")
 # Boilerplate LÉGITIME : dans un APPORT SPFPL, le numéraire est structurellement nul (le capital
 # est constitué par l'apport EN NATURE des titres) -> « Apports en numéraire : 0 euro » est correct.
 _APPORT_NUMERAIRE_NUL = "Apports en numéraire : 0 euro"
@@ -264,9 +265,14 @@ def _civilites_inventees(text: str) -> list[str]:
     prenom = re.escape(DEFAULT_MANDATAIRE_PRENOM)
     nom = re.escape(DEFAULT_MANDATAIRE_NOM)
     suspects: list[str] = []
-    for match in re.finditer(r"\b(?:Monsieur|Madame|Mesdames|Messieurs)\b", text):
+    # Pas de \b de FIN : une civilité collée à un token (« Monsieur0000 », « Madame_____ ») est
+    # justement le cas qui fuyait — on veut l'attraper (règle 68 §3 : coder le concept, pas la
+    # tournure « bien espacée »).
+    for match in re.finditer(r"\b(?:Monsieur|Madame|Mesdames|Messieurs)", text):
         before = text[max(0, match.start() - 4) : match.start()]
         after = text[match.end() : match.end() + 60]
+        if after.startswith(("_", "/")):  # blanc de formulaire (« Monsieur____ ») / alternative
+            continue  # « Madame/Monsieur____ » de l'Acte d'Adhésion = modèle blanc à remplir main
         if before.endswith(("de ", "De ")):  # filiation père/mère
             continue
         if re.match(r"\s+(?:le Président|la Présidente)", after):  # salutation courrier Ordre
@@ -275,6 +281,36 @@ def _civilites_inventees(text: str) -> list[str]:
             continue
         suspects.append(text[max(0, match.start() - 20) : match.end() + 25].strip())
     return suspects
+
+
+def _signature_blancs(paths) -> list[str]:
+    """Blanc silencieux : ancre de signature NUE (« Fait à » / « Le » suivi de RIEN) ou adresse
+    aux sous-champs vides (« demeurant au ,, »). Un champ absent doit sortir en MARQUEUR, jamais
+    laisser une étiquette pendante. « Le » nu est TOLÉRÉ dans les STATUTS (fidélité modèle
+    ratifiée : « Le » suivi du signataire, date volontairement absente). Couvre la classe qui a
+    récidivé et qu'aucun autre test mécanique ne verrouille (KAN-36 = pagination seule)."""
+    problems: list[str] = []
+    for path in paths:
+        name = path.name.lower()
+        is_statuts = "statuts" in name  # « Le » nu ratifié (suivi du signataire)
+        # L'Acte d'Adhésion (annexe du pacte SCM) est un FORMULAIRE blanc à remplir à la main :
+        # « Fait à » / « Le » nus y sont fidèles au modèle source (non-défaut, confirmé Akainu).
+        is_pacte_annexe = "pacte" in name
+        document = Document(str(path))
+        units = [p.text for p in document.paragraphs]
+        for table in document.tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    units.extend(p.text for p in cell.paragraphs)
+        for unit in units:
+            stripped = unit.strip()
+            if stripped in ("Fait à", "Fait à,") and not is_pacte_annexe:
+                problems.append(f"{path.name}: « Fait à » nu")
+            elif stripped in ("Le", "le") and not is_statuts and not is_pacte_annexe:
+                problems.append(f"{path.name}: « Le » nu")
+            if re.search(r",\s*,", unit):  # adresse aux sous-champs vides
+                problems.append(f"{path.name}: adresse nue {stripped[:40]!r}")
+    return problems
 
 
 @pytest.mark.parametrize("label,generate", _CAS, ids=[label for label, _ in _CAS])
@@ -319,4 +355,12 @@ def test_type_generates_from_empty_form(label: str, generate, tmp_path: Path) ->
     assert not techniques, (
         f"{label} à vide : marqueur(s) TECHNIQUE(S) (libellé métier attendu) : "
         f"{sorted(set(techniques))[:4]}"
+    )
+
+    # (7) aucun BLANC de signature (« Fait à »/« Le » nu) ni adresse « ,, » — le champ absent sort
+    # en marqueur ; « Le » nu reste toléré dans les statuts (fidélité ratifiée).
+    blancs = _signature_blancs(paths)
+    assert not blancs, (
+        f"{label} à vide : blanc silencieux de signature (marqueur attendu) : "
+        f"{sorted(set(blancs))[:4]}"
     )
