@@ -291,8 +291,8 @@ def render_selas_uni_medecin_form() -> dict[str, object]:
 
     st.caption("Filiation + ordre professionnel (declaration / demande inscription)")
     col_y, col_z = st.columns(2)
-    nom_pere = _t(col_y, "nom_pere", "Nom du pere")
-    nom_mere = _t(col_z, "nom_mere", "Nom de la mere")
+    nom_pere = _t(col_y, "nom_pere", "Prénom et nom du père")
+    nom_mere = _t(col_z, "nom_mere", "Prénom et nom de la mère")
     # Retour Rafael 2026-06-25 (#3) : le champ « Conseil departemental (ordre) » est RETIRE.
     # Depuis SU2, le destinataire de la demande d'inscription est DERIVE de « Departement ordre »
     # (+ connecteur), ce champ libre `ordre_conseil` ne pilotait plus rien (vestigial) -> retire.

@@ -980,8 +980,8 @@ def _physique(prefix: str, nb_actions: int, montant: str) -> StatutsCivilsAssoci
     # (le president alimente toujours le tronc commun via _collect_dirigeant_sig).
     st.caption("Declaration de non-condamnation (noms des parents)")
     col_n, col_o = st.columns(2)
-    nom_pere = _ts(col_n, f"{prefix}_sig_nom_pere", "Nom du pere")
-    nom_mere = _ts(col_o, f"{prefix}_sig_nom_mere", "Nom de la mere")
+    nom_pere = _ts(col_n, f"{prefix}_sig_nom_pere", "Prénom et nom du père")
+    nom_mere = _ts(col_o, f"{prefix}_sig_nom_mere", "Prénom et nom de la mère")
     regime_associe = _render_conjoint_si_communaute(prefix, situation_label)
     # ST4 (Albane 2026-06-26) : la comparution d'un associe MARIE doit porter le REGIME
     # (« marie(e) sous le regime de ... ») ET le nom du conjoint, pas un « marie » nu.

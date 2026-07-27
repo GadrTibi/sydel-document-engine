@@ -174,8 +174,8 @@ def render_sasu_holding_form() -> dict[str, object]:
     # verbatim (parse_associe_birthdate) — plus de picker `date_naissance_iso` redondant.
     # La filiation ne porte donc QUE le nom du pere et de la mere (2 colonnes).
     col_k, col_l = st.columns(2)
-    nom_pere = _t(col_k, "nom_pere", "Nom du pere")
-    nom_mere = _t(col_l, "nom_mere", "Nom de la mere")
+    nom_pere = _t(col_k, "nom_pere", "Prénom et nom du père")
+    nom_mere = _t(col_l, "nom_mere", "Prénom et nom de la mère")
 
     # Conseiller / mandataire SYDEL editable (parite gold).
     mandataire_prenom, mandataire_nom = mandataire_inputs(PREFIX)

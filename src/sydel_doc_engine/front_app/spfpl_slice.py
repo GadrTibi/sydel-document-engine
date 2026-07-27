@@ -346,8 +346,8 @@ def render_spfpl_form(structure: str) -> dict[str, object]:
     # dedie etait mort (jamais lu) + requis + trompeur. Supprime ; la filiation ne porte plus que
     # le nom du pere et de la mere (2 colonnes au lieu de 3) (#8 onglet 24).
     col_ae, col_af = st.columns(2)
-    nom_pere = _t(col_ae, prefix, "nom_pere", "Nom du pere")
-    nom_mere = _t(col_af, prefix, "nom_mere", "Nom de la mere")
+    nom_pere = _t(col_ae, prefix, "nom_pere", "Prénom et nom du père")
+    nom_mere = _t(col_af, prefix, "nom_mere", "Prénom et nom de la mère")
 
     # Retour Rafael 2026-07-02 + Albane 6.3/7.3 (RATIFIE 2026-07-06) : les champs conjoint
     # s'affichent pour un associe MARIE ou PACSE (la comparution porte le conjoint/partenaire

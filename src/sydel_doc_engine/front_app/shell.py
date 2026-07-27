@@ -363,8 +363,12 @@ def _render_one_selarl_membre(index: int) -> StatutsCivilsAssocie | None:
         # propre declaration de non-condamnation -> filiation saisie PAR membre.
         st.caption("Declaration de non-condamnation (noms des parents)")
         col_pere, col_mere = st.columns(2)
-        nom_pere = copyable_text_input(col_pere, "Nom du pere", key=f"{prefix}_sig_nom_pere")
-        nom_mere = copyable_text_input(col_mere, "Nom de la mere", key=f"{prefix}_sig_nom_mere")
+        nom_pere = copyable_text_input(
+            col_pere, "Prénom et nom du père", key=f"{prefix}_sig_nom_pere"
+        )
+        nom_mere = copyable_text_input(
+            col_mere, "Prénom et nom de la mère", key=f"{prefix}_sig_nom_mere"
+        )
         col_j, col_k, col_l = st.columns(3)
         ordre_dep = copyable_text_input(col_j, "Departement ordre", key=f"{prefix}_ordre_dep")
         numero_ordre = copyable_text_input(col_k, "Numero ordre", key=f"{prefix}_numero_ordre")

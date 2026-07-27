@@ -389,8 +389,8 @@ def _render_filiation_dnc(prefix: str) -> tuple[str, str]:
     par ``_collect_gerant_sig`` pour le tronc commun de l'orchestrateur)."""
     st.caption("Declaration de non-condamnation (noms des parents)")
     col_a, col_b = st.columns(2)
-    nom_pere = _text(prefix, "sig_nom_pere", "Nom du pere", container=col_a)
-    nom_mere = _text(prefix, "sig_nom_mere", "Nom de la mere", container=col_b)
+    nom_pere = _text(prefix, "sig_nom_pere", "Prénom et nom du père", container=col_a)
+    nom_mere = _text(prefix, "sig_nom_mere", "Prénom et nom de la mère", container=col_b)
     return nom_pere, nom_mere
 
 

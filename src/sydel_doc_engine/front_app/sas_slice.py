@@ -238,8 +238,8 @@ def render_sas_form() -> dict[str, object]:
     # verbatim (parse_associe_birthdate) — plus de picker `date_naissance_iso` redondant.
     # La filiation ne porte donc QUE le nom du pere et de la mere (2 colonnes).
     col_ae, col_af = st.columns(2)
-    nom_pere = _t(col_ae, "nom_pere", "Nom du pere")
-    nom_mere = _t(col_af, "nom_mere", "Nom de la mere")
+    nom_pere = _t(col_ae, "nom_pere", "Prénom et nom du père")
+    nom_mere = _t(col_af, "nom_mere", "Prénom et nom de la mère")
 
     # R0702-02 + Albane 6.3/7.3 (RATIFIE 2026-07-06) : champs conjoint affiches pour un
     # actionnaire MARIE ou PACSE (comparution « avec <conjoint/partenaire> » dans les deux cas).

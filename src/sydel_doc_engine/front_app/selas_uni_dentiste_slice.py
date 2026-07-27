@@ -263,8 +263,8 @@ def render_selas_uni_dentiste_form() -> dict[str, object]:
 
     st.caption("Filiation + ordre professionnel (declaration / demande inscription)")
     col_y, col_z = st.columns(2)
-    nom_pere = _t(col_y, "nom_pere", "Nom du pere")
-    nom_mere = _t(col_z, "nom_mere", "Nom de la mere")
+    nom_pere = _t(col_y, "nom_pere", "Prénom et nom du père")
+    nom_mere = _t(col_z, "nom_mere", "Prénom et nom de la mère")
     col_ab, col_ac = st.columns(2)
     departement_ordre = _t(col_ab, "departement_ordre", "Departement ordre")
     numero_ordre = _t(col_ac, "numero_ordre", "Numero d'inscription")
