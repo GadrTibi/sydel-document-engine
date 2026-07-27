@@ -16,6 +16,7 @@ from sydel_doc_engine.generators.lot_01.civilite import civilite_civile
 from sydel_doc_engine.rendering.docx_builder import (
     add_company_identity_block,
     add_paragraph,
+    add_spacer,
     keep_final_signature_block_together,
     new_document,
 )
@@ -25,6 +26,11 @@ from sydel_doc_engine.utils.grammar import euro_word, montant_avec_euros, subjec
 OUTPUT_FILENAME = "attestation_capital_souscripteurs_selas.docx"
 DOCUMENT_CODE = "CODE-SELAS-ATTESTATION-CAPITAL-001"
 SELAS_STRUCTURE = "SELAS"
+
+# KAN-46 (Rafael) : « reprendre la mise en forme globale » — meme aeration que les
+# attestations soeurs SAS/SPFPL : un espaceur entre les GROUPES (designation societe,
+# bloc titre, corps, certification, signature).
+_ATTESTATION_GROUP_SPACER_PT = 10
 
 # KAN-2 (Rafael, rejeté 2×) : « Tous les documents doivent pouvoir être générés, MÊME SANS AUCUN
 # champ. » Un champ manquant -> marqueur métier « (À COMPLÉTER : libellé) », jamais un raise ni une
@@ -80,6 +86,8 @@ class AttestationCapitalSouscripteursSelasGenerator:
                 "En cours d'immatriculation",
             ],
         )
+        # KAN-46 : aeration entre la designation de la societe et le bloc titre.
+        add_spacer(document, space_after_pt=_ATTESTATION_GROUP_SPACER_PT)
         add_paragraph(document, "ATTESTATION", alignment=WD_ALIGN_PARAGRAPH.CENTER, bold=True)
         add_paragraph(
             document,
@@ -87,6 +95,8 @@ class AttestationCapitalSouscripteursSelasGenerator:
             alignment=WD_ALIGN_PARAGRAPH.CENTER,
             bold=True,
         )
+        # KAN-46 : aeration entre le bloc titre et le corps.
+        add_spacer(document, space_after_pt=_ATTESTATION_GROUP_SPACER_PT)
         add_paragraph(
             document,
             f"{data.soussigne} {data.president_civilite_phrase} {data.president_signature}, "
@@ -105,21 +115,27 @@ class AttestationCapitalSouscripteursSelasGenerator:
         add_paragraph(document, "Répartition : ")
         for repartition in data.repartition_lignes:
             add_paragraph(document, repartition)
+        # KAN-46 (Rafael) : reporter l'ADRESSE de la banque, pas juste son nom.
         add_paragraph(
             document,
             f"Capital social de {data.capital_social} € entièrement libéré et déposé "
-            f"dans les livres de la banque {data.banque}",
+            f"dans les livres de la banque {data.banque}, {data.banque_adresse}",
         )
         for apport in data.apport_lignes:
             add_paragraph(document, apport)
+        # KAN-46 : aeration avant la clause de certification.
+        add_spacer(document, space_after_pt=_ATTESTATION_GROUP_SPACER_PT)
         add_paragraph(
             document,
             "Le présent état qui constate la souscription d'actions de la société "
             f"{data.denomination}, ainsi que le versement de la somme de "
             f"{montant_avec_euros(data.capital_social)} correspondant à la totalité du nominal "
             "desdites actions, est certifié exact, sincère et véritable par le Président, "
-            f"{data.president_identite}",
+            # KAN-46 : point final apres le nom (« ... par le President, <Nom>. »).
+            f"{data.president_identite}.",
         )
+        # KAN-46 : aeration avant le bloc de signature.
+        add_spacer(document, space_after_pt=_ATTESTATION_GROUP_SPACER_PT)
         add_paragraph(document, f"Fait à {data.ville_siege}")
         add_paragraph(document, f"Le {data.date_signature}")
         add_paragraph(document, data.president_signature)
@@ -142,6 +158,7 @@ class _ResolvedAttestationSelas:
         adresse_siege: str,
         ville_siege: str,
         banque: str,
+        banque_adresse: str,
         nb_actions_total: int | str,
         valeur_nominale_action: str,
         repartition_lignes: list[str],
@@ -158,6 +175,7 @@ class _ResolvedAttestationSelas:
         self.adresse_siege = adresse_siege
         self.ville_siege = ville_siege
         self.banque = banque
+        self.banque_adresse = banque_adresse
         self.nb_actions_total = nb_actions_total
         self.valeur_nominale_action = valeur_nominale_action
         self.repartition_lignes = repartition_lignes
@@ -268,6 +286,7 @@ class _ResolvedAttestationSelas:
             adresse_siege=_company_siege_display(societe, "societe_spfpl"),
             ville_siege=_company_ville(societe, "societe_spfpl"),
             banque=_required_banque(ctx),
+            banque_adresse=_required_banque_adresse(ctx),
             nb_actions_total=nb_actions_total_display,
             valeur_nominale_action=valeur_nominale_action,
             repartition_lignes=repartition_lignes,
@@ -316,6 +335,17 @@ def _required_banque(ctx: DocumentGenerationContext) -> str:
     if ctx.depot_fonds is None or ctx.depot_fonds.banque is None:
         raise ValueError(f"depot_fonds.banque est obligatoire pour {DOCUMENT_CODE}.")
     return _required_text(ctx.depot_fonds.banque.nom, "depot_fonds.banque.nom")
+
+
+def _required_banque_adresse(ctx: DocumentGenerationContext) -> str:
+    # KAN-46 : l'adresse de la banque, en marqueur « (À COMPLÉTER : adresse de la
+    # banque) » si absente (KAN-2), jamais une valeur inventée.
+    if ctx.depot_fonds is None or ctx.depot_fonds.banque is None:
+        raise ValueError(f"depot_fonds.banque est obligatoire pour {DOCUMENT_CODE}.")
+    return _required_text(
+        ctx.depot_fonds.banque.adresse_affichee,
+        "depot_fonds.banque.adresse_affichee",
+    )
 
 
 def _required_text(value: str | None, field_name: str) -> str:

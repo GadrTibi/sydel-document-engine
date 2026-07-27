@@ -1872,11 +1872,16 @@ def _build_depot_fonds_selas(payload: dict[str, object]) -> DepotFonds | None:
     """DepotFonds (banque) requis par l'attestation souscripteurs (ANO-045).
 
     None si le dossier n'est pas attestable. Reutilise la banque deja saisie
-    (`banque_nom`)."""
+    (`banque_nom` + `banque_adresse`)."""
     if not _selas_attestable(payload):
         return None
     return DepotFonds(
-        banque=CessionBanque(nom=str(payload.get("banque_nom") or "")),
+        # KAN-46 (Rafael) : porter l'ADRESSE de la banque en plus du nom (l'attestation
+        # SELAS la reporte) — meme fix que le chemin unipersonnel.
+        banque=CessionBanque(
+            nom=str(payload.get("banque_nom") or ""),
+            adresse_affichee=str(payload.get("banque_adresse") or ""),
+        ),
     )
 
 

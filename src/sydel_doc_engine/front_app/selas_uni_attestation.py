@@ -138,7 +138,12 @@ def attach_attestation_to_ctx(
         siege=_siege_address(ctx, payload),
     )
     ctx.depot_fonds = DepotFonds(
-        banque=CessionBanque(nom=str(payload.get("banque_nom") or "")),
+        # KAN-46 (Rafael) : porter l'ADRESSE de la banque en plus du nom (l'attestation
+        # SELAS uni la reporte). Sans ca, ce cablage ecrasait l'adresse a None.
+        banque=CessionBanque(
+            nom=str(payload.get("banque_nom") or ""),
+            adresse_affichee=str(payload.get("banque_adresse") or ""),
+        ),
     )
     souscripteur = CapitalSouscripteur(
         civilite_affichage=civilite,

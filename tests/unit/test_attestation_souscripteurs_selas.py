@@ -51,7 +51,12 @@ def _base_context() -> DocumentGenerationContext:
                 adresse_affichee="31B Boulevard de Sévigné, 35700 Rennes",
             ),
         ),
-        depot_fonds=DepotFonds(banque=CessionBanque(nom="Crédit Agricole")),
+        depot_fonds=DepotFonds(
+            banque=CessionBanque(
+                nom="Crédit Agricole",
+                adresse_affichee="2 rue de la Monnaie, 35000 Rennes",
+            )
+        ),
         capital_souscription=CapitalSouscription(
             nb_actions_total=1000,
             valeur_nominale_action="1",
@@ -125,17 +130,19 @@ def test_attestation_selas_generates_multi_subscriber_wording(tmp_path: Path) ->
     # anciens verrous « au Dr X » / « Le Docteur X a fait un apport » (A26-45/49).
     assert "510 actions attribuées à Monsieur Alain Fedorowsky," in text
     assert "490 actions attribuées à Madame Claire Martin," in text
+    # KAN-46 (Rafael) : l'ADRESSE de la banque est reportee, pas juste le nom.
     assert (
         "Capital social de 1.000 € entièrement libéré et déposé dans les livres de la "
-        "banque Crédit Agricole"
+        "banque Crédit Agricole, 2 rue de la Monnaie, 35000 Rennes"
     ) in text
     assert "Monsieur Alain Fedorowsky a fait un apport de 510 euros en numéraire." in text
     assert "Madame Claire Martin a fait un apport de 490 euros en numéraire." in text
     # R3 (Albane 2026-07-07) : « Docteur » n'est pas une civilité — le slot
     # « par le Président, __ » rend la civilité CIVILE (accord au genre du
     # president, repli signataire).
+    # KAN-46 (Rafael) : point final apres le nom dans la derniere phrase.
     assert (
-        "certifié exact, sincère et véritable par le Président, Monsieur Alain Fedorowsky"
+        "certifié exact, sincère et véritable par le Président, Monsieur Alain Fedorowsky."
     ) in text
     assert "Docteur" not in text
     assert "au Dr " not in text
