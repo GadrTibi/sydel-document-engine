@@ -305,20 +305,28 @@ def _address_display(address: Address, field_name: str) -> str:
     )
 
 
+def _parts_label(nb: int | None) -> str:
+    # KAN-19 (Rafael) : accord singulier/pluriel selon le NOMBRE DE PARTS (« détenant 1 part »
+    # / « détenant 2 parts »). Quantite absente/inconnue (marqueur) -> pluriel par defaut.
+    return "part" if nb == 1 else "parts"
+
+
 def _associe_table_text(associe: StatutsCivilsAssocie, index: int) -> str:
     field_name = f"statuts_civils.associes[{index}]"
     # KAN-2 : parts non renseignees -> marqueur (jamais « 0 parts » affirme), jamais de crash.
     nb_brut = associe.parts.nb if associe.parts is not None else None
     nb_parts = _quantite_parts(nb_brut, "nombre de parts détenues")
+    parts_word = _parts_label(nb_brut)  # KAN-19 : accord singulier/pluriel
     if associe.type_personne == "personne_morale":
-        return _associe_morale_table_text(associe, field_name, nb_parts)
-    return _associe_physique_table_text(associe, field_name, nb_parts)
+        return _associe_morale_table_text(associe, field_name, nb_parts, parts_word)
+    return _associe_physique_table_text(associe, field_name, nb_parts, parts_word)
 
 
 def _associe_physique_table_text(
     associe: StatutsCivilsAssocie,
     field_name: str,
     nb_parts: str,
+    parts_word: str,
 ) -> str:
     address = associe.adresse_personnelle
     if associe.adresse_personnelle_affichee:
@@ -336,7 +344,7 @@ def _associe_physique_table_text(
         f"{_required_text(associe.civilite_affichage, f'{field_name}.civilite_affichage')} "
         f"{_required_text(associe.prenom, f'{field_name}.prenom')} "
         f"{_required_text(associe.nom, f'{field_name}.nom')}, demeurant au {address_display}, "
-        f"{qualite}, détenant {nb_parts} parts."
+        f"{qualite}, détenant {nb_parts} {parts_word}."
     )
 
 
@@ -344,6 +352,7 @@ def _associe_morale_table_text(
     associe: StatutsCivilsAssocie,
     field_name: str,
     nb_parts: str,
+    parts_word: str,
 ) -> str:
     # KAN-2 : siege non renseigne -> marqueur metier, jamais de crash.
     siege_display = (
@@ -354,7 +363,7 @@ def _associe_morale_table_text(
     return (
         f"La société {_required_text(associe.denomination, f'{field_name}.denomination')}, "
         f"ayant son siège social au {siege_display}, "
-        f"détenant {nb_parts} parts."
+        f"détenant {nb_parts} {parts_word}."
     )
 
 
