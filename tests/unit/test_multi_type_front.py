@@ -2770,10 +2770,11 @@ def test_selas_multi_all_physical_generates_attestation_souscripteurs(
     assert "40 actions attribuées à Monsieur Paul Martin," in text
     assert "Madame Claire Durand a fait un apport de 600 euros en numéraire." in text
     assert "Monsieur Paul Martin a fait un apport de 400 euros en numéraire." in text
-    # R3 (Albane 2026-07-07) + R3 durci : le slot « par le Président, __ » rend la
-    # civilite CIVILE accordee au genre du PRESIDENT (ici Claire, feminine).
+    # R3 (Albane 2026-07-07) + R3 durci : civilite CIVILE accordee au genre. KAN-45
+    # (Rafael 2026-07-27) : la FONCTION s'accorde aussi -> « par la Présidente » pour
+    # une femme (Claire), plus « par le Président » (masculin hardcode = le bug).
     assert (
-        "certifié exact, sincère et véritable par le Président, Madame Claire Durand"
+        "certifié exact, sincère et véritable par la Présidente, Madame Claire Durand."
         in text
     )
     assert "Docteur" not in text

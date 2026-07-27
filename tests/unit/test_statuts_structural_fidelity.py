@@ -231,6 +231,11 @@ _BODY_ALLOWLIST: dict[str, tuple[str, ...]] = {
     # cabinet Sydel, supprimees de TOUS les statuts a la demande du client.
     "SCI": ("lettre de mission", "acompte des honoraires"),
     "SCI-IRIS": ("lettre de mission", "acompte des honoraires"),
+    # KAN-43 (Rafael 2026-07-27, « @All - accord genre/nombre ») : la ligne « Le montant total
+    # de cette remuneration pourra etre FIXEE » du modele source est un accord fautif (sujet
+    # « montant total » masculin) corrige en « fixe » au rendu -> la ligne source ne parait plus
+    # verbatim. Retour client qui supersede la fidelite modele (regle 68).
+    "SAS": ("pourra être fixée",),
     # KAN-3 (Albane 2026-07-13) : le tiret solo en tete du 1er alinea de l'art. 10 (« - Le
     # capital social peut etre augmente… », numId upperRoman dans le modele) est RETIRE a la
     # demande d'Albane -> la ligne SOURCE avec tiret n'apparait plus verbatim (sa version sans
@@ -239,6 +244,8 @@ _BODY_ALLOWLIST: dict[str, tuple[str, ...]] = {
         "lettre de mission",
         "acompte des honoraires",
         "Le capital social peut être augmenté ou réduit",
+        # KAN-43 : accord « montant total … fixée » -> « fixé » (cf. note SAS ci-dessus).
+        "pourra être fixée",
     ),
     # KAN-3 (Albane 2026-07-13) — divergences RATIFIEES vs modele apport (regle 68) :
     #  · art. 10 : tiret solo retire (comme cession) ;
@@ -258,6 +265,8 @@ _BODY_ALLOWLIST: dict[str, tuple[str, ...]] = {
         "actif; Dissolution et liquidation",
         "actions ; Augmentation des engagements des associés;",
         "dirigeants ; Modification des statuts, sauf transfert du siège social ;",
+        # KAN-43 : accord « montant total … fixée » -> « fixé » (cf. note SAS ci-dessus).
+        "pourra être fixée",
     ),
     # ST7g (Albane 2026-06-26) : titres art. 16/17/22 a casse cassee RENDUS en MAJUSCULES
     # integrales (transformation sanctionnee, cf. _HEADING_TRANSFORMS) -> la ligne SOURCE a casse
@@ -275,6 +284,8 @@ _BODY_ALLOWLIST: dict[str, tuple[str, ...]] = {
         "variation du capital",
         "est nommée présidente de la Société et ce pour une durée illimitée",
         "Sa rémunération sera fixée ultérieurement",
+        # KAN-43 : accord « montant total … fixée » -> « fixé » (cf. note SAS ci-dessus).
+        "pourra être fixée",
     ),
     # SCM : O24-01 + « ci- 510 € » = valeur d'EXEMPLE du modele (montant reinjecte dynamiquement) ;
     # « Faire preceder » / « Lu et approuve » = artefact du modele source SCM (texte de la mention
