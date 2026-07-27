@@ -317,8 +317,11 @@ def test_sci_option_is_on_requires_centre_des_impots() -> None:
     )
     payload["option_is"] = True  # toggle ON mais aucune saisie centre des impots
     plan = css.build_civil_plan(payload)
-    assert plan.can_generate is False
-    assert any("option IS" in b for b in plan.blockers)
+    # KAN-2 (Rafael 2026-07-14, rejeté 2×) : un centre des impôts non renseigné ne BLOQUE PLUS ->
+    # génération possible, le manque devient un AVERTISSEMENT (zone « (À COMPLÉTER : …) »).
+    assert plan.can_generate is True
+    assert plan.blockers == ()
+    assert any("option IS" in w for w in plan.warnings)
 
 
 def test_scm_slice_generates_clean(tmp_path: Path) -> None:
@@ -456,8 +459,11 @@ def test_scm_inter_sel_blocks_with_personne_morale(tmp_path: Path) -> None:
     )
     payload.update(_SCM_INTER_SEL_INPUTS)
     plan = css.build_civil_plan(payload)
-    assert plan.can_generate is False
-    assert any("personnes physiques" in b for b in plan.blockers)
+    # KAN-2 : plus de blocage — l'avertissement signale que les 2 associés doivent être des
+    # personnes physiques pour les documents inter-SEL ; la génération reste possible.
+    assert plan.can_generate is True
+    assert plan.blockers == ()
+    assert any("personnes physiques" in w for w in plan.warnings)
 
 
 def test_civil_capital_not_divisible_by_parts_now_generates(tmp_path: Path) -> None:
@@ -645,8 +651,10 @@ def test_civil_capital_zero_blocks() -> None:
     )
     payload["capital_social"] = "0"
     plan = css.build_civil_plan(payload)
-    assert plan.can_generate is False
-    assert any("apital" in b and "superieur a zero" in b for b in plan.blockers)
+    # KAN-2 : un capital à 0 ne BLOQUE PLUS -> avertissement (zone à compléter à la main).
+    assert plan.can_generate is True
+    assert plan.blockers == ()
+    assert any("apital" in w and "superieur a zero" in w for w in plan.warnings)
 
 
 def test_civil_missing_banque_adresse_blocks() -> None:
@@ -654,8 +662,10 @@ def test_civil_missing_banque_adresse_blocks() -> None:
     payload = _civil_base("SCI", "sci", [_pp("Jean", "Durand", 100, 1, 100, 1000)])
     payload["banque_adresse"] = ""
     plan = css.build_civil_plan(payload)
-    assert plan.can_generate is False
-    assert any("anque" in b and "dresse" in b for b in plan.blockers)
+    # KAN-2 : adresse de banque manquante -> avertissement (marqueur), plus de blocage.
+    assert plan.can_generate is True
+    assert plan.blockers == ()
+    assert any("anque" in w and "dresse" in w for w in plan.warnings)
 
 
 def test_civil_morale_associe_without_representant_blocks() -> None:
@@ -665,8 +675,10 @@ def test_civil_morale_associe_without_representant_blocks() -> None:
     pm.representant = None
     payload = _civil_base("SCM", "scm", [pm, _pp("Alice", "Martin", 50, 51, 100, 500)])
     plan = css.build_civil_plan(payload)
-    assert plan.can_generate is False
-    assert any("representant" in b.lower() for b in plan.blockers)
+    # KAN-2 : un représentant manquant ne BLOQUE PLUS -> avertissement (marqueur au générateur).
+    assert plan.can_generate is True
+    assert plan.blockers == ()
+    assert any("representant" in w.lower() for w in plan.warnings)
 
 
 def test_scs_commanditaire_gerant_blocks() -> None:
@@ -681,8 +693,11 @@ def test_scs_commanditaire_gerant_blocks() -> None:
     )
     payload["gerant_index"] = 1  # le commanditaire designe gerant
     plan = css.build_civil_plan(payload)
-    assert plan.can_generate is False
-    assert any("commandite" in b.lower() and "gerant" in b.lower() for b in plan.blockers)
+    # KAN-2 : le choix « commanditaire gérant » ne BLOQUE PLUS la génération -> avertissement métier
+    # (la règle « seul le commandité gère » est rappelée, mais le document reste générable).
+    assert plan.can_generate is True
+    assert plan.blockers == ()
+    assert any("commandite" in w.lower() and "gerant" in w.lower() for w in plan.warnings)
 
 
 def test_scs_slice_generates_clean(tmp_path: Path) -> None:
@@ -871,8 +886,11 @@ def test_civil_blocks_incoherent_parts_sum() -> None:
         [_pp("Jean", "Durand", 40, 1, 40, 400), _pp("Alice", "Martin", 50, 41, 90, 500)],
     )
     plan = css.build_civil_plan(payload)
-    assert plan.can_generate is False
-    assert any("Somme des parts" in b for b in plan.blockers)
+    # KAN-2 : une somme de parts incohérente ne BLOQUE PLUS -> avertissement (le document reflète
+    # la saisie ; la cohérence est signalée mais n'empêche pas la génération).
+    assert plan.can_generate is True
+    assert plan.blockers == ()
+    assert any("Somme des parts" in w for w in plan.warnings)
 
 
 # --- A2 : preuve multi-associes N (3 et 5) ------------------------------------
@@ -1246,24 +1264,30 @@ def test_scm_inter_sel_live03_accentuates_three_free_dates(tmp_path: Path) -> No
     assert "decembre" not in reglement
 
 
-def test_sas_apports_sum_must_equal_capital() -> None:
-    # Dogfood 2026-06-22 : la somme nature + numeraire doit egaler le capital -> bloque sinon.
+def test_sas_apports_sum_mismatch_warns_not_blocks() -> None:
+    # KAN-2 (Rafael, rejeté 2×) : « tous les documents doivent pouvoir être générés, même sans
+    # aucun champ ». La génération n'est PLUS JAMAIS bloquée -> l'incohérence somme apports !=
+    # capital devient un AVERTISSEMENT (à corriger à la main), plus un blocage. Miroir du contrat
+    # spfpl (build_spfpl_plan : can_generate=True, blockers=(), tout écart -> warnings).
     payload = dict(_sas_payload())
     payload["apports_numeraire_montant"] = "999999"  # 10000 + 999999 != 12000
     plan = sas_slice.build_sas_plan(payload)
-    assert plan.can_generate is False
-    assert any("apports" in b.lower() and "capital" in b.lower() for b in plan.blockers)
+    assert plan.can_generate is True
+    assert plan.blockers == ()
+    assert any("apports" in w.lower() and "capital" in w.lower() for w in plan.warnings)
 
 
-def test_sas_civilite_genre_incoherent_blocks() -> None:
-    # Dogfood 2026-06-22 : civilite genree (« Madame ») incoherente avec le genre (masculin)
-    # -> doc contradictoire (« Madame ... il »). Doit bloquer. « Docteur » reste neutre.
+def test_sas_civilite_genre_incoherent_warns_not_blocks() -> None:
+    # KAN-2 (Rafael, rejeté 2×) : plus AUCUN blocage. Une civilité genrée incohérente avec le genre
+    # (« Madame » + masculin) reste SIGNALÉE en avertissement (à corriger à la main), mais ne bloque
+    # plus la génération. « Docteur » reste neutre.
     payload = dict(_sas_payload())
     payload["civilite"] = "Madame"
     payload["genre"] = Gender.MASCULIN
     plan = sas_slice.build_sas_plan(payload)
-    assert plan.can_generate is False
-    assert any("incoherent" in b.lower() for b in plan.blockers)
+    assert plan.can_generate is True
+    assert plan.blockers == ()
+    assert any("incoherent" in w.lower() for w in plan.warnings)
 
 
 def _spfpl_payload(structure):
@@ -2273,14 +2297,17 @@ def test_selas_ordre_connecteur_du(tmp_path: Path) -> None:
     assert "Conseil départemental de Rhône" not in text
 
 
-def test_selas_blocks_incoherent_actions_sum() -> None:
+def test_selas_incoherent_actions_sum_warns_but_generates() -> None:
+    # KAN-2 (Rafael, rejeté 2×) : « Tous les documents doivent pouvoir être générés. » Une somme
+    # d'actions incohérente NE BLOQUE PLUS la génération ; elle est signalée en AVERTISSEMENT.
     payload = _selas_payload()
     payload["associes"][1].nb_actions = 10  # 75 + 10 != 100
     plan = selas_multi_slice.build_selas_plan(payload)
-    assert plan.can_generate is False
-    # R3 (2026-06-18) : message reformule façon Rafael (explicite, sans jargon).
-    assert any("Problème de calcul" in b for b in plan.blockers)
-    assert any("ne correspond pas au nombre total d'actions" in b for b in plan.blockers)
+    assert plan.can_generate is True
+    assert plan.blockers == ()
+    # R3 (2026-06-18) : message reformule façon Rafael (explicite, sans jargon) -> avertissement.
+    assert any("Problème de calcul" in w for w in plan.warnings)
+    assert any("ne correspond pas au nombre total d'actions" in w for w in plan.warnings)
 
 
 # Saisies conjoint requises par DOC-005 / DOC-006 (regime communautaire).
@@ -2358,15 +2385,17 @@ def test_selas_regime_par_associe_active_les_docs(tmp_path: Path) -> None:
 
 
 def test_selas_regime_par_associe_valide_le_conjoint(tmp_path: Path) -> None:
-    # R7 : un associe marie sous communaute sans conjoint complet -> blocage.
+    # R7 : un associe marie sous communaute sans conjoint complet.
+    # KAN-2 (Rafael, rejeté 2×) : ce manque NE BLOQUE PLUS -> avertissement, génération possible.
     payload = _selas_payload()
     payload["regime_communautaire"] = False
     payload["associes"][0].regime_communautaire_associe = RegimeCommunautaireAssocie(
         actif=True
     )  # conjoint + regime manquants
     plan = selas_multi_slice.build_selas_plan(payload)
-    assert plan.can_generate is False
-    assert any("conjoint" in b.lower() for b in plan.blockers)
+    assert plan.can_generate is True
+    assert plan.blockers == ()
+    assert any("conjoint" in w.lower() for w in plan.warnings)
 
 
 def _selas_payload_deux_maries():
@@ -2576,12 +2605,14 @@ def test_selas_zero_marie_aucun_doc_regime(tmp_path: Path) -> None:
     assert not any(n.startswith("lettre_avertissement_conjoint") for n in names)
 
 
-def test_selas_regime_on_requires_conjoint() -> None:
+def test_selas_regime_on_warns_for_conjoint() -> None:
+    # KAN-2 (Rafael, rejeté 2×) : régime ON sans saisies conjoint NE BLOQUE PLUS -> avertissement.
     payload = _selas_payload()
     payload["regime_communautaire"] = True  # toggle ON sans saisies conjoint
     plan = selas_multi_slice.build_selas_plan(payload)
-    assert plan.can_generate is False
-    assert any("regime communautaire" in b.casefold() for b in plan.blockers)
+    assert plan.can_generate is True
+    assert plan.blockers == ()
+    assert any("regime communautaire" in w.casefold() for w in plan.warnings)
 
 
 # --- A2 SELAS : preuve multi-associes N (3 et 5, borne moteur 5) --------------
@@ -3423,9 +3454,10 @@ def test_selas_cession_masque_le_bloc_acquereur(tmp_path: Path, monkeypatch) -> 
     )
 
 
-def test_selas_cession_exige_ca_et_resultat_des_exercices() -> None:
-    # #13 (onglet 24) : en cession SELAS, le CA et le resultat des exercices ne sont
-    # plus facultatifs -> un exercice au CA/resultat vide bloque la generation.
+def test_selas_cession_warns_ca_et_resultat_des_exercices() -> None:
+    # #13 (onglet 24) : en cession SELAS, le CA et le resultat des exercices sont attendus.
+    # KAN-2 (Rafael, rejeté 2×) : un exercice au CA/resultat vide NE BLOQUE PLUS la génération ->
+    # il est signalé en AVERTISSEMENT (zone à compléter à la main).
     from sydel_doc_engine.domain.models import CessionContext, CessionExercice
     from sydel_doc_engine.front_app import selas_multi_slice as sms
 
@@ -3435,9 +3467,11 @@ def test_selas_cession_exige_ca_et_resultat_des_exercices() -> None:
             exercices=[CessionExercice(periode="2024", chiffre_affaires="", resultat="")]
         ),
     }
-    blockers = sms.build_selas_plan(payload).blockers
-    assert any("chiffre d'affaires de l'exercice" in b for b in blockers)
-    assert any("resultat de l'exercice" in b for b in blockers)
+    plan = sms.build_selas_plan(payload)
+    assert plan.can_generate is True
+    assert plan.blockers == ()
+    assert any("chiffre d'affaires de l'exercice" in w for w in plan.warnings)
+    assert any("resultat de l'exercice" in w for w in plan.warnings)
 
     payload_ok = {
         **_selas_payload(),
@@ -3447,7 +3481,7 @@ def test_selas_cession_exige_ca_et_resultat_des_exercices() -> None:
             ]
         ),
     }
-    assert not any("exercice" in b for b in sms.build_selas_plan(payload_ok).blockers)
+    assert not any("exercice" in w for w in sms.build_selas_plan(payload_ok).warnings)
 
 
 def test_selas_cession_genere_acte_et_compromis_ensemble() -> None:
@@ -4537,9 +4571,10 @@ def test_selas_parse_associe_birthdate_handles_french_long_form() -> None:
     assert parse_associe_birthdate("pas une date") is None
 
 
-def test_selas_deux_directeurs_generaux_bloque(tmp_path: Path, monkeypatch) -> None:
-    # #7 (onglet 24) : fonctions de direction non cumulatives -> un seul Directeur
-    # General admis. Deux associes « Directeur General » doivent bloquer la generation.
+def test_selas_deux_directeurs_generaux_avertit(tmp_path: Path, monkeypatch) -> None:
+    # #7 (onglet 24) : fonctions de direction non cumulatives -> un seul Directeur General admis.
+    # KAN-2 (Rafael, rejeté 2×) : ce conflit de rôle NE BLOQUE PLUS la génération ; l'avertissement
+    # « Un seul Directeur Général est admis » reste affiché, mais le bouton reste actif.
     from streamlit.testing.v1 import AppTest
 
     from sydel_doc_engine.front_app import shell
@@ -4558,12 +4593,14 @@ def test_selas_deux_directeurs_generaux_bloque(tmp_path: Path, monkeypatch) -> N
     app.selectbox(key="selas_associe_1_role_dirigeant").set_value("Directeur Général")
     app = app.run(timeout=180)
 
-    captions = " ".join(item.value for item in app.caption)
-    assert "Un seul Directeur Général est admis" in captions
+    # KAN-2 : le message de conflit de rôle passe de BLOCAGE (caption « À compléter ») à
+    # AVERTISSEMENT (st.info), le bouton restant actif.
+    infos = " ".join(item.value for item in app.info)
+    assert "Un seul Directeur Général est admis" in infos
     generate_button = next(
         b for b in app.button if str(b.key) == "clean_typed_generate_dossier"
     )
-    assert generate_button.disabled is True
+    assert generate_button.disabled is False
 
 
 def test_selas_role_directeur_general_associe(tmp_path: Path, monkeypatch) -> None:
@@ -4606,10 +4643,12 @@ def test_selas_role_directeur_general_associe(tmp_path: Path, monkeypatch) -> No
     assert generate_button.disabled is False
 
 
-def test_selas_zero_president_bloque(tmp_path: Path, monkeypatch) -> None:
-    # O24-07 (onglet 24) : un Président est OBLIGATOIRE (« soit président (un seul) »). Si
-    # aucun Président n'est désigné (que des DG/DGA), la génération doit BLOQUER — sinon un
-    # associé désigné DG serait requalifié Président par fallback, écrasant le rôle choisi.
+def test_selas_zero_president_ne_bloque_plus(tmp_path: Path, monkeypatch) -> None:
+    # O24-07 (onglet 24) : un Président est attendu (« soit président (un seul) »).
+    # KAN-2 (Rafael, rejeté 2×) : « Tous les documents doivent pouvoir être générés. » L'absence
+    # de Président désigné NE BLOQUE PLUS la génération (le moteur retombe sur le 1er associé
+    # physique). ⚠️ FLAG produit : ce repli silencieux peut requalifier un DG en Président —
+    # à confirmer avec le sachant métier (tension KAN-2 « tout générer » vs O24-07).
     from streamlit.testing.v1 import AppTest
 
     from sydel_doc_engine.front_app import shell
@@ -4628,7 +4667,7 @@ def test_selas_zero_president_bloque(tmp_path: Path, monkeypatch) -> None:
     generate_button = next(
         b for b in app.button if str(b.key) == "clean_typed_generate_dossier"
     )
-    assert generate_button.disabled is True  # plus aucun Président -> bloqué
+    assert generate_button.disabled is False  # KAN-2 : non bloquant (repli 1er associé physique)
 
 
 def _fake_st_session(monkeypatch, state: dict) -> None:
@@ -5080,17 +5119,19 @@ def test_selas_uni_medecin_generates_doc018_bundle(tmp_path: Path) -> None:
     assert "SELAS MARTIN" in statuts_text
 
 
-def test_selas_uni_medecin_empty_conjoint_blocks() -> None:
-    # Retour Rafael 2026-06-25 (#2) : un associe MARIE sans conjoint reste bloque proprement
-    # (vraie donnee manquante). Le payload de base est marie.
+def test_selas_uni_medecin_empty_conjoint_warns() -> None:
+    # Retour Rafael 2026-06-25 (#2) : un associe MARIE sans conjoint (vraie donnee manquante).
+    # KAN-2 (Rafael, rejeté 2×) : ce manque NE BLOQUE PLUS -> avertissement, génération possible
+    # (la zone conjoint sort en « (À COMPLÉTER : … ) »). Le payload de base est marie.
     from sydel_doc_engine.front_app import selas_uni_medecin_slice as uni
 
     payload = _selas_uni_medecin_payload()
     payload["conjoint_prenom"] = ""
     payload["conjoint_nom"] = ""
     plan = uni.build_selas_uni_medecin_plan(payload)
-    assert plan.can_generate is False
-    assert any("conjoint" in b.lower() for b in plan.blockers)
+    assert plan.can_generate is True
+    assert plan.blockers == ()
+    assert any("conjoint" in w.lower() for w in plan.warnings)
 
 
 def test_selas_uni_medecin_celibataire_can_generate(tmp_path: Path) -> None:

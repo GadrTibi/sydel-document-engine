@@ -17,7 +17,6 @@ from sydel_doc_engine.generators.lot_01.civilite import civilite_civile
 from sydel_doc_engine.generators.lot_03.bail_appel_common import (
     CABINET_DENTAIRE,
     CABINET_MEDICAL,
-    DOCUMENT_CODE,
     cabinet_type,
     format_display_date,
     required_cession,
@@ -145,35 +144,29 @@ class AppelFondSelGenerator:
         return output_path
 
 
+# KAN-2 : un SOUS-OBJET absent NE bloque JAMAIS la generation -> instance vide (ses champs
+# sortent en marqueurs « (À COMPLÉTER : … ) » via `required_text`), au lieu de lever. Le flux
+# shell fournit toujours ces objets (pas de crash en prod) ; ce durcissement garantit le contrat
+# « generable a champs vides » meme si un sous-objet manque.
 def _required_financement(financement: CessionFinancement | None) -> CessionFinancement:
-    if financement is None:
-        raise ValueError(f"cession.financement est obligatoire pour {DOCUMENT_CODE}.")
-    return financement
+    return financement if financement is not None else CessionFinancement()
 
 
 def _required_cabinet(cabinet: CessionCabinet | None) -> CessionCabinet:
-    if cabinet is None:
-        raise ValueError(f"cession.cabinet est obligatoire pour {DOCUMENT_CODE}.")
-    return cabinet
+    return cabinet if cabinet is not None else CessionCabinet()
 
 
 def _required_vendeur(vendeur: CessionVendeur | None) -> CessionVendeur:
-    if vendeur is None:
-        raise ValueError(f"cession.vendeur est obligatoire pour {DOCUMENT_CODE}.")
-    return vendeur
+    return vendeur if vendeur is not None else CessionVendeur()
 
 
 def _required_acquereur(acquereur: CessionAcquereur | None) -> CessionAcquereur:
-    if acquereur is None:
-        raise ValueError(f"cession.acquereur est obligatoire pour {DOCUMENT_CODE}.")
-    return acquereur
+    return acquereur if acquereur is not None else CessionAcquereur()
 
 
 def _required_mandataire(mandataire: Mandataire | None) -> Mandataire:
     # §12.3 — signataire de l'appel de fonds = le conseiller SYDEL (mandataire).
-    if mandataire is None:
-        raise ValueError(f"mandataire est obligatoire pour {DOCUMENT_CODE}.")
-    return mandataire
+    return mandataire if mandataire is not None else Mandataire()
 
 
 def _destinataire_label(destinataire: CessionDestinataire | None) -> str:

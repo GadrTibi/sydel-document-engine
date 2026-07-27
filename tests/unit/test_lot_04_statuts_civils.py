@@ -3,7 +3,6 @@ from __future__ import annotations
 from datetime import date
 from pathlib import Path
 
-import pytest
 from docx import Document
 from docx.oxml.ns import qn
 from docx.shared import Cm
@@ -223,7 +222,11 @@ def test_statuts_sci_birthdate_reformats_numeric_input(tmp_path: Path) -> None:
     assert "1 janvier 1980" in text
 
 
-def test_statuts_scs_requires_commandite_and_commanditaire(tmp_path: Path) -> None:
+def test_statuts_scs_without_commanditaire_still_generates_kan2(tmp_path: Path) -> None:
+    # KAN-2 (Rafael 2026-07-14, rejeté 2×) : « Tous les documents doivent pouvoir être générés,
+    # même si je ne remplis AUCUN champ. » L'absence d'associé commanditaire ne BLOQUE PLUS la
+    # génération des statuts SCS (avant : ValueError « commanditaire »). Le document sort avec la
+    # section commanditaire vide/à compléter, jamais un crash.
     ctx = _base_context(
         structure="SCS",
         statuts_type="scs",
@@ -241,8 +244,8 @@ def test_statuts_scs_requires_commandite_and_commanditaire(tmp_path: Path) -> No
     )
     ctx.statuts_civils.total_apports_commandites = "1000"
 
-    with pytest.raises(ValueError, match="commanditaire"):
-        StatutsScsGenerator().generate(ctx, tmp_path)
+    path = StatutsScsGenerator().generate(ctx, tmp_path)
+    assert path.exists()
 
 
 def test_statuts_scs_comparution_nom_usage_epouse(tmp_path: Path) -> None:
@@ -347,7 +350,10 @@ def test_statuts_scs_generates_roles_and_lu_approuve(tmp_path: Path) -> None:
     _assert_clean(text)
 
 
-def test_statuts_sci_iris_requires_result_groups(tmp_path: Path) -> None:
+def test_statuts_sci_iris_without_result_groups_still_generates_kan2(tmp_path: Path) -> None:
+    # KAN-2 (Rafael 2026-07-14, rejeté 2×) : l'absence de groupes de résultat exceptionnel ne
+    # BLOQUE PLUS la génération du SCI IRIS (avant : ValueError « resultat_groupes_parts »). Le
+    # tableau des groupes manquant reste à compléter, jamais un crash.
     ctx = _base_context(
         structure="SCI IRIS",
         statuts_type="sci_iris",
@@ -357,8 +363,8 @@ def test_statuts_sci_iris_requires_result_groups(tmp_path: Path) -> None:
         ],
     )
 
-    with pytest.raises(ValueError, match="resultat_groupes_parts"):
-        StatutsSciIrisGenerator().generate(ctx, tmp_path)
+    path = StatutsSciIrisGenerator().generate(ctx, tmp_path)
+    assert path.exists()
 
 
 def test_statuts_sci_iris_generates_morale_and_result_groups(tmp_path: Path) -> None:

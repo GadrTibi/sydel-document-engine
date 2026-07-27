@@ -23,6 +23,7 @@ from sydel_doc_engine.domain.models import (
 from sydel_doc_engine.front_app.field_derivations import derive_gender_from_civilite
 from sydel_doc_engine.generators.lot_01.civilite import civilite_civile
 from sydel_doc_engine.generators.lot_05.scm_satellites_templates import TemplateBlock
+from sydel_doc_engine.generators.lot_05.spfpl_libelles import libelle_metier
 from sydel_doc_engine.rendering.docx_builder import (
     add_paragraph,
     keep_final_signature_block_together,
@@ -528,20 +529,29 @@ def _replace_placeholders(text: str, replacements: Mapping[str, str]) -> str:
 
 
 def _required_text(value: str | None, field_name: str) -> str:
+    # KAN-2 (Rafael, rejete 2x) : « Tous les documents doivent pouvoir etre generes, meme si je ne
+    # remplis AUCUN champ. » Une donnee manquante NE bloque PLUS -> marqueur visible
+    # « (À COMPLÉTER : <libelle metier>) » (SANS crochet/point/underscore, pour ne pas declencher
+    # le garde-fou source anti-placeholder) au lieu de lever. Miroir EXACT de required_text
+    # (statuts_sel_exercice). Sortie NOMINALE (valeur presente) BYTE-IDENTIQUE (value.strip()).
     if value is None or not str(value).strip():
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return f"(À COMPLÉTER : {libelle_metier(field_name)})"
     return str(value).strip()
 
 
 def _required_value(value: int | str | None, field_name: str) -> int | str:
+    # KAN-2 : idem, pour une valeur (quantite / montant texte). Absente -> marqueur metier
+    # (str) ; presente -> renvoyee TELLE QUELLE (byte-identique au nominal).
     if value is None or not str(value).strip():
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return f"(À COMPLÉTER : {libelle_metier(field_name)})"
     return value
 
 
 def _format_display_date(value: date | str | None, field_name: str) -> str:
+    # KAN-2 : une date manquante NE bloque PLUS -> marqueur metier lisible, JAMAIS une date
+    # inventee. Presente -> format nominal inchange (JJ/MM/AAAA).
     if value is None:
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return f"(À COMPLÉTER : {libelle_metier(field_name)})"
     if isinstance(value, date):
         return value.strftime("%d/%m/%Y")
     return _required_text(value, field_name)

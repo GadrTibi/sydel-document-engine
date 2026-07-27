@@ -9,14 +9,19 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import (
     Address,
+    Company,
     DocumentGenerationContext,
+    StatutsCivilsApport,
     StatutsCivilsAssocie,
     StatutsCivilsContext,
+    StatutsCivilsParts,
+    StatutsCivilsRepresentant,
 )
 from sydel_doc_engine.generators.lot_04.annexe_filter import is_creation_fee_annexe_line
 from sydel_doc_engine.generators.lot_04.statuts_sel_exercice_common import (
     statuts_output_filename,
 )
+from sydel_doc_engine.generators.lot_05.spfpl_libelles import libelle_metier
 from sydel_doc_engine.rendering.docx_builder import (
     add_paragraph,
     add_statuts_article_heading,
@@ -128,40 +133,43 @@ class _ResolvedStatutsScm:
 
     @classmethod
     def from_context(cls, ctx: DocumentGenerationContext) -> _ResolvedStatutsScm:
+        # INVARIANT DE ROUTAGE conserve : le SELECTEUR de structure reste une garde fiable
+        # (c'est le TYPE de dossier, pas un champ saisi) meme a formulaire vide.
         if ctx.structure != "SCM":
             raise ValueError(f"dossier.structure doit etre SCM pour {DOCUMENT_CODE}.")
-        if ctx.societe is None:
-            raise ValueError(f"societe est obligatoire pour {DOCUMENT_CODE}.")
-        if ctx.societe.siege is None:
-            raise ValueError(f"societe.siege est obligatoire pour {DOCUMENT_CODE}.")
-        if ctx.statuts_civils is None:
-            raise ValueError(f"statuts_civils est obligatoire pour {DOCUMENT_CODE}.")
-        statuts_type = _required_text(ctx.statuts_civils.type, "statuts_civils.type").lower()
-        if statuts_type != "scm":
+        # KAN-2 : un OBJET requis absent NE bloque JAMAIS -> instance vide (ses champs sortent en
+        # marqueurs « (À COMPLÉTER : … ) » via les helpers), au lieu de lever.
+        societe = ctx.societe if ctx.societe is not None else Company()
+        siege = societe.siege if societe.siege is not None else Address()
+        statuts = ctx.statuts_civils if ctx.statuts_civils is not None else StatutsCivilsContext()
+        # KAN-2 : le type n'est verifie que s'il est REELLEMENT saisi (sinon champ vide -> pas de
+        # blocage). A vide, le routage a deja garanti la structure SCM ci-dessus.
+        statuts_type = (statuts.type or "").strip().lower()
+        if statuts_type and statuts_type != "scm":
             raise ValueError(f"statuts_civils.type doit etre scm pour {DOCUMENT_CODE}.")
 
-        associes = list(ctx.statuts_civils.associes)
+        associes = list(statuts.associes)
         _validate_associes(associes)
-        _validate_capital_totals(ctx.statuts_civils, associes)
-        _validate_statuts_fields(ctx.statuts_civils)
+        _validate_capital_totals(statuts, associes)
+        _validate_statuts_fields(statuts)
         _validate_signatures(associes)
 
         return cls(
-            statuts=ctx.statuts_civils,
-            denomination=_required_text(ctx.societe.denomination, "societe.denomination"),
+            statuts=statuts,
+            denomination=_required_text(societe.denomination, "societe.denomination"),
             denomination_courte=_required_text(
-                ctx.societe.denomination_courte,
+                societe.denomination_courte,
                 "societe.denomination_courte",
             ),
             forme_sociale=_required_text(
-                ctx.statuts_civils.forme_sociale or ctx.societe.forme_sociale,
+                statuts.forme_sociale or societe.forme_sociale,
                 "statuts_civils.forme_sociale",
             ),
-            siege_num_voie=_required_text(ctx.societe.siege.num_voie, "societe.siege.num_voie"),
-            siege_voie=_required_text(ctx.societe.siege.voie, "societe.siege.voie"),
-            siege_cp=_required_text(ctx.societe.siege.cp, "societe.siege.cp"),
-            siege_ville=_required_text(ctx.societe.siege.ville, "societe.siege.ville"),
-            signature_lieu=ctx.signature.lieu,
+            siege_num_voie=_required_text(siege.num_voie, "societe.siege.num_voie"),
+            siege_voie=_required_text(siege.voie, "societe.siege.voie"),
+            siege_cp=_required_text(siege.cp, "societe.siege.cp"),
+            siege_ville=_required_text(siege.ville, "societe.siege.ville"),
+            signature_lieu=_required_text(ctx.signature.lieu, "signature.lieu"),
             signature_date=_format_display_date(ctx.signature.date, "signature.date"),
             associes=associes,
         )
@@ -187,8 +195,8 @@ class _ResolvedStatutsScm:
                 self.statuts.capital_social_lettres,
                 "statuts_civils.capital_social_lettres",
             ),
-            "[nb_parts]": str(
-                _required_int(self.statuts.nb_parts_total, "statuts_civils.nb_parts_total")
+            "[nb_parts]": _quantite_parts(
+                self.statuts.nb_parts_total, "statuts_civils.nb_parts_total"
             ),
             "[valeur_nominale_part]": _required_text(
                 self.statuts.valeur_nominale_part,
@@ -270,11 +278,15 @@ def _add_apport_block(document, data: _ResolvedStatutsScm) -> None:
 def _add_capital_block(document, data: _ResolvedStatutsScm) -> None:
     for associe in data.associes:
         parts = _required_parts(associe)
-        add_paragraph(document, f"{_entity_label(associe)} {parts.nb} parts")
+        # KAN-2 : quantite de parts a l'AFFICHAGE -> marqueur si vide, jamais « None »/« 0 parts ».
+        add_paragraph(
+            document,
+            f"{_entity_label(associe)} {_quantite_parts(parts.nb, 'associes[].parts.nb')} parts",
+        )
     add_paragraph(
         document,
         "Total du nombre de parts composant le capital social : "
-        f"{_required_int(data.statuts.nb_parts_total, 'statuts_civils.nb_parts_total')} parts",
+        f"{_quantite_parts(data.statuts.nb_parts_total, 'statuts_civils.nb_parts_total')} parts",
     )
 
 
@@ -386,21 +398,33 @@ def _validate_capital_totals(
     statuts: StatutsCivilsContext,
     associes: list[StatutsCivilsAssocie],
 ) -> None:
-    total_parts = sum(_required_int(_required_parts(a).nb, "associes[].parts.nb") for a in associes)
-    expected_parts = _required_int(statuts.nb_parts_total, "statuts_civils.nb_parts_total")
-    if total_parts != expected_parts:
-        raise ValueError(
-            "la somme des parts doit correspondre a statuts_civils.nb_parts_total "
-            f"pour {DOCUMENT_CODE}."
-        )
+    # KAN-2 : les coherences ne se controlent que sur des valeurs REELLES. A formulaire vide
+    # (aucun total saisi, montants non numeriques), il n'y a rien a comparer -> on ne bloque
+    # jamais (le document se genere, les zones vides sortent en marqueurs). Les controles
+    # complets restent exerces des que TOUTES les valeurs concernees sont renseignees.
+    if (
+        statuts.nb_parts_total
+        and associes
+        and all(a.parts is not None and a.parts.nb for a in associes)
+    ):
+        total_parts = sum((a.parts.nb or 0) for a in associes)
+        if total_parts != statuts.nb_parts_total:
+            raise ValueError(
+                "la somme des parts doit correspondre a statuts_civils.nb_parts_total "
+                f"pour {DOCUMENT_CODE}."
+            )
 
-    total_apports = sum(_amount_to_int(_required_apport(a).montant) for a in associes)
-    expected_capital = _amount_to_int(statuts.capital_social)
-    if total_apports != expected_capital:
-        raise ValueError(
-            "la somme des apports doit correspondre a statuts_civils.capital_social "
-            f"pour {DOCUMENT_CODE}."
-        )
+    if (
+        _is_numeric_amount(statuts.capital_social)
+        and associes
+        and all(a.apport is not None and _is_numeric_amount(a.apport.montant) for a in associes)
+    ):
+        total_apports = sum(_amount_to_int(a.apport.montant) for a in associes)
+        if total_apports != _amount_to_int(statuts.capital_social):
+            raise ValueError(
+                "la somme des apports doit correspondre a statuts_civils.capital_social "
+                f"pour {DOCUMENT_CODE}."
+            )
 
 
 def _validate_statuts_fields(statuts: StatutsCivilsContext) -> None:
@@ -427,31 +451,24 @@ def _validate_signatures(associes: list[StatutsCivilsAssocie]) -> None:
         _signature_label(associe)
 
 
-def _required_apport(associe: StatutsCivilsAssocie):
-    if associe.apport is None:
-        raise ValueError(f"associes[].apport est obligatoire pour {DOCUMENT_CODE}.")
-    _required_text(associe.apport.montant, "associes[].apport.montant")
-    _required_text(associe.apport.montant_lettres, "associes[].apport.montant_lettres")
-    return associe.apport
+def _required_apport(associe: StatutsCivilsAssocie) -> StatutsCivilsApport:
+    # KAN-2 : apport absent -> instance vide (montant/lettres sortent en marqueurs au site
+    # d'affichage), jamais lever.
+    return associe.apport if associe.apport is not None else StatutsCivilsApport()
 
 
-def _required_parts(associe: StatutsCivilsAssocie):
-    if associe.parts is None:
-        raise ValueError(f"associes[].parts est obligatoire pour {DOCUMENT_CODE}.")
-    _required_int(associe.parts.nb, "associes[].parts.nb")
-    return associe.parts
+def _required_parts(associe: StatutsCivilsAssocie) -> StatutsCivilsParts:
+    # KAN-2 : parts absentes -> instance vide (quantite rendue par _quantite_parts), jamais lever.
+    return associe.parts if associe.parts is not None else StatutsCivilsParts()
 
 
-def _required_representant(associe: StatutsCivilsAssocie):
-    if associe.representant is None:
-        raise ValueError(
-            f"associes[].representant est obligatoire pour une personne morale {DOCUMENT_CODE}."
-        )
-    _required_text(associe.representant.civilite_affichage, "associes[].representant.civilite")
-    _required_text(associe.representant.prenom, "associes[].representant.prenom")
-    _required_text(associe.representant.nom, "associes[].representant.nom")
-    _required_text(associe.representant.fonction, "associes[].representant.fonction")
-    return associe.representant
+def _required_representant(associe: StatutsCivilsAssocie) -> StatutsCivilsRepresentant:
+    # KAN-2 : representant absent -> instance vide (ses champs sortent en marqueurs), jamais lever.
+    return (
+        associe.representant
+        if associe.representant is not None
+        else StatutsCivilsRepresentant()
+    )
 
 
 def _signature_label(associe: StatutsCivilsAssocie) -> str:
@@ -514,8 +531,9 @@ def _person_address(associe: StatutsCivilsAssocie) -> str:
 
 
 def _address_display(address: Address | None, field_name: str) -> str:
+    # KAN-2 : adresse absente -> marqueur metier, jamais lever.
     if address is None:
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return _required_text(None, field_name)
     if address.adresse_affichee:
         return address.adresse_affichee.strip()
     return (
@@ -527,8 +545,9 @@ def _address_display(address: Address | None, field_name: str) -> str:
 
 
 def _format_display_date(value: date | str | None, field_name: str) -> str:
+    # KAN-2 : date absente -> marqueur metier, jamais lever.
     if value is None:
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return _required_text(None, field_name)
     if isinstance(value, date):
         return value.strftime("%d/%m/%Y")
     return _required_text(value, field_name)
@@ -541,21 +560,55 @@ def _format_birthdate(value: date | str | None, field_name: str) -> str:
     francais lettre ; une date deja lettree reste inchangee. La date de SIGNATURE conserve
     son format court (``_format_display_date``).
     """
-    if value is None:
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+    # KAN-2 : date de naissance absente -> marqueur metier, jamais lever.
+    if value is None or (isinstance(value, str) and not value.strip()):
+        return _required_text(None, field_name)
     return format_birthdate_fr(value)
 
 
 def _required_text(value: str | None, field_name: str) -> str:
+    # KAN-2 (R10) : une donnee manquante NE bloque PAS -> marqueur METIER lisible SANS crochets
+    # (« (À COMPLÉTER : … ) », pour ne pas declencher le garde-fou anti-placeholder source) au lieu
+    # de lever. Sortie NOMINALE (valeur presente) inchangee : byte-identique au modele.
     if value is None or not str(value).strip():
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return f"(À COMPLÉTER : {libelle_metier(field_name)})"
     return str(value).strip()
 
 
 def _required_int(value: int | None, field_name: str) -> int:
-    if value is None:
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
-    return value
+    # KAN-2 : point de CALCUL / coherence -> None-safe (0), jamais lever. NE PAS s'en servir pour
+    # AFFICHER une quantite de parts (« 0 parts » dans un acte signable serait FAUX) : passer par
+    # _quantite_parts a l'affichage.
+    return value if value is not None else 0
+
+
+def _quantite_parts(value: int | None, field_name: str) -> str:
+    # KAN-2 : AFFICHAGE d'une quantite de parts. Non renseignee (None ou < 1) -> marqueur METIER,
+    # jamais « 0 parts »/« None parts ». Une quantite reelle (>= 1) est rendue inchangee -> sortie
+    # NOMINALE byte-identique.
+    if value is None or value < 1:
+        return f"(À COMPLÉTER : {libelle_metier(field_name)})"
+    return str(value)
+
+
+def _is_numeric_amount(value: str | None) -> bool:
+    # KAN-2 : True seulement si `value` porte un montant NUMERIQUE reel (ni vide, ni marqueur
+    # « (À COMPLÉTER : … ) »). Sert a n'exercer les coherences capital que sur du saisi.
+    if value is None or not str(value).strip():
+        return False
+    return _normalize_amount(str(value)).isdigit()
+
+
+def _normalize_amount(text: str) -> str:
+    return (
+        text.replace(" ", "")
+        .replace("\xa0", "")
+        .replace("euros", "")
+        .replace("euro", "")
+        .replace("EUR", "")
+        .replace("€", "")
+        .strip()
+    )
 
 
 def _amount_to_int(value: str | None) -> int:

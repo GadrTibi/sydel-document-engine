@@ -169,8 +169,12 @@ def test_clean_front_selarl_medecin_separation_de_biens_blocks_without_conjoint(
 
     plan = build_clean_generation_plan(dossier_type, data_entry)
 
-    assert plan.can_generate is False
-    assert any("conjoint" in blocker.casefold() for blocker in plan.blockers)
+    # KAN-2 (Rafael, rejete 2x) : « generer meme sans aucun champ ». Le conjoint manquant (statuts
+    # de separation de biens) NE bloque PLUS : besoin signale en AVERTISSEMENT ; les zones sortent
+    # en « (À COMPLÉTER : … ) » sur le DOCX, a completer a la main.
+    assert plan.can_generate is True
+    assert plan.blockers == ()
+    assert any("conjoint" in warning.casefold() for warning in plan.warnings)
 
 
 def test_clean_front_selarl_regime_ui_never_exposes_conjoint_address_fields() -> None:
@@ -213,9 +217,11 @@ def test_clean_front_selarl_ui_exposes_ordre_connecteur_selector() -> None:
     assert [str(o) for o in connecteur_box.options] == ["de", "du", "des"]
 
 
-def test_clean_front_selarl_slice_blocks_out_of_scope_cases() -> None:
-    # La cession est desormais SUPPORTEE quand les donnees cession sont fournies
-    # (cession_context). Demander la cession (flag) sans donnees reste bloque.
+def test_clean_front_selarl_slice_cession_flag_without_data_warns_not_blocks() -> None:
+    # KAN-2 (Rafael, rejete 2x) : « generer meme sans aucun champ ». Demander la cession (flag)
+    # sans donnees (cession_context absent) NE bloque PLUS la generation : le dossier de creation
+    # se genere (base + statuts), et le manque de donnees cession est signale en AVERTISSEMENT
+    # (aucun document de cession n'est ajoute tant que cession_context est absent).
     dossier_type = dossier_type_by_label("SELARL")
     data_entry = build_clean_data_entry(
         dossier_type,
@@ -227,8 +233,9 @@ def test_clean_front_selarl_slice_blocks_out_of_scope_cases() -> None:
 
     plan = build_clean_generation_plan(dossier_type, data_entry)
 
-    assert plan.can_generate is False
-    assert "Cession demandee mais donnees cession manquantes." in plan.blockers
+    assert plan.can_generate is True
+    assert plan.blockers == ()
+    assert "Cession demandee mais donnees cession manquantes." in plan.warnings
 
 
 def test_clean_front_selarl_cession_cabinet_medical_generates_acte(tmp_path: Path) -> None:
@@ -334,8 +341,10 @@ def test_scm_cession_context_selects_scm_docs() -> None:
     assert {"DOC-031", "DOC-032", "DOC-033"}.issubset(set(codes))
 
 
-def test_scm_flag_without_data_is_blocked() -> None:
-    # Le garde-fou reste : SCM coche sans donnees -> bloque (pas de generation muette).
+def test_scm_flag_without_data_now_generates_with_warning() -> None:
+    # KAN-2 (Rafael, rejeté 2×) : cocher la cession SCM sans saisir les données SCM ne BLOQUE
+    # PLUS la génération -> les zones concernées sortent en « (À COMPLÉTER : …) » et le manque
+    # devient un AVERTISSEMENT (plus de génération muette : le gap reste visible).
     dossier_type = dossier_type_by_label("SELARL")
     data_entry = build_clean_data_entry(
         dossier_type,
@@ -344,8 +353,9 @@ def test_scm_flag_without_data_is_blocked() -> None:
 
     plan = build_clean_generation_plan(dossier_type, data_entry)
 
-    assert plan.can_generate is False
-    assert any("SCM" in blocker for blocker in plan.blockers)
+    assert plan.can_generate is True
+    assert plan.blockers == ()
+    assert any("SCM" in warning for warning in plan.warnings)
 
 
 def test_clean_front_ui_prefill_generates_cession_medical_without_residual_tokens(
@@ -1136,7 +1146,10 @@ def test_clean_front_streamlit_surface_is_not_legacy() -> None:
     assert app.selectbox(key="selarl_profession").label == "Profession"
     assert not any(str(widget.key) == "selarl_case_mode" for widget in app.selectbox)
     assert app.button(key="clean_generate_test_data").label == "Generer des donnees de test"
-    assert app.button(key="clean_generate_dossier").disabled is True
+    # KAN-2 @All (Rafael, rejete 2x) : « generer meme si je ne remplis AUCUN champ ». Le plan est
+    # desormais NON-BLOQUANT (can_generate=True) -> le bouton « Generer le dossier » est ACTIVE des
+    # le formulaire vide (les zones manquantes sortent en marqueurs a completer, plus de blocage).
+    assert app.button(key="clean_generate_dossier").disabled is False
     assert app.button(key="selarl_signature_date_today").label == "Aujourd'hui"
     assert len(app.radio) == 0
     assert len(app.table) == 0
@@ -1371,9 +1384,11 @@ def test_clean_front_selarl_multi_membre_sans_filiation_ne_bloque_pas(tmp_path: 
     assert sum(1 for n in names if n.startswith("declaration_non_condamnation")) == 1
 
 
-def test_clean_front_selarl_multi_membre_sans_ordre_blocks() -> None:
-    # Dogfood 2026-06-22 : membre additionnel sans inscription a l'ordre (departement /
-    # numero / RPPS) passait la validation puis crashait a la generation. Doit bloquer.
+def test_clean_front_selarl_multi_membre_sans_ordre_warns() -> None:
+    # Dogfood 2026-06-22 : membre additionnel sans inscription a l'ordre (departement / numero /
+    # RPPS). KAN-2 (Rafael, rejete 2x) : ce manque NE bloque PLUS la generation (le generateur
+    # rend un marqueur « (À COMPLÉTER : … ) » a la place, plus de crash) ; le besoin reste signale
+    # en AVERTISSEMENT du plan.
     membre = StatutsCivilsAssocie(
         type_personne="personne_physique",
         civilite_affichage="Madame",
@@ -1398,12 +1413,15 @@ def test_clean_front_selarl_multi_membre_sans_ordre_blocks() -> None:
     )
     dossier_type = dossier_type_by_label("SELARL")
     plan = build_clean_generation_plan(dossier_type, data)
-    assert plan.can_generate is False
-    assert any(("ordre" in b.lower() or "rpps" in b.lower()) for b in plan.blockers)
+    assert plan.can_generate is True
+    assert plan.blockers == ()
+    assert any(("ordre" in w.lower() or "rpps" in w.lower()) for w in plan.warnings)
 
 
-def test_clean_front_selarl_multi_associes_blocks_incoherent_total(tmp_path: Path) -> None:
-    # Somme des parts (praticien 60 + membre 30 = 90) != capital (100 parts) -> bloque.
+def test_clean_front_selarl_multi_associes_incoherent_total_warns(tmp_path: Path) -> None:
+    # Somme des parts (praticien 60 + membre 30 = 90) != capital (100 parts). KAN-2 (Rafael,
+    # rejete 2x) : l'incoherence NE bloque PLUS la generation ; elle est signalee en AVERTISSEMENT
+    # (a corriger a la main sur le DOCX), plus jamais un blocage du plan.
     dossier_type = dossier_type_by_label("SELARL")
     membre = StatutsCivilsAssocie(
         type_personne="personne_physique",
@@ -1421,8 +1439,9 @@ def test_clean_front_selarl_multi_associes_blocks_incoherent_total(tmp_path: Pat
 
     plan = build_clean_generation_plan(dossier_type, data)
 
-    assert plan.can_generate is False
-    assert any("somme des parts" in blocker for blocker in plan.blockers)
+    assert plan.can_generate is True
+    assert plan.blockers == ()
+    assert any("somme des parts" in warning for warning in plan.warnings)
 
 
 def test_clean_front_selarl_unipersonnel_unchanged_without_membres(tmp_path: Path) -> None:

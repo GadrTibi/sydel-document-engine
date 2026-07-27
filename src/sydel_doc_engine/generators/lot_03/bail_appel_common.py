@@ -26,8 +26,9 @@ def required_text(value: str | None, field_name: str) -> str:
 
 
 def format_display_date(value: date | str | None, field_name: str) -> str:
+    # KAN-2 @All : date absente -> marqueur metier, jamais lever.
     if value is None:
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return required_text(None, field_name)
     if isinstance(value, date):
         return value.strftime("%d/%m/%Y")
     return required_text(value, field_name)

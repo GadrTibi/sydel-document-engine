@@ -570,12 +570,14 @@ def build_selas_uni_medecin_plan(payload: dict[str, object]) -> SelasUniMedecinP
     # On delegue la validation a la couche SELARL uni (memes champs requis pour le
     # contexte SEL d'exercice), via une entree derivee.
     data = _to_selarl_input(payload)
-    blockers = list(selarl_slice.validate_selarl_input(data))
-    # Retour Rafael 2026-06-25 (#2 — Akainu B1) : le conjoint n'est requis QUE pour un associe
+    # KAN-2 (Rafael, rejeté 2×) : « Tous les documents doivent pouvoir être générés, MÊME SI je ne
+    # remplis AUCUN champ. » La validation SELARL héritée n'est PLUS bloquante : ses retours
+    # deviennent des AVERTISSEMENTS (« gaps ») — les zones vides sortent en « (À COMPLÉTER : … ) »
+    # (required_* -> marqueur) à compléter à la main sur le DOCX.
+    gaps = list(selarl_slice.validate_selarl_input(data))
+    # Retour Rafael 2026-06-25 (#2 — Akainu B1) : le conjoint n'est signalé QUE pour un associe
     # MARIE (meme gate que le formulaire `is_marie`). Le generateur rend « celibataire » sans
-    # conjoint (add_conjoint_replacements ne leve plus pour un non-marie) : un celibataire/pacse/
-    # divorce/veuf doit pouvoir generer. Un MARIE sans conjoint reste bloque (vraie donnee
-    # manquante). Avant : 3 blockers inconditionnels -> celibataire bloque (can_generate=False).
+    # conjoint (add_conjoint_replacements ne leve plus pour un non-marie).
     is_marie = "marie" in str(payload.get("situation_maritale") or "").lower().replace("é", "e")
     if is_marie:
         for field, name in (
@@ -584,7 +586,7 @@ def build_selas_uni_medecin_plan(payload: dict[str, object]) -> SelasUniMedecinP
             ("conjoint_nom", "nom du conjoint"),
         ):
             if not str(payload.get(field) or "").strip():
-                blockers.append(f"SELAS medecin : {name} requis pour un associe marie.")
+                gaps.append(f"SELAS medecin : {name} requis pour un associe marie.")
     document_codes = selected_document_codes(payload)
     warnings_list = [
         "Dossier de création SELAS unipersonnelle médecin : associé unique.",
@@ -594,20 +596,21 @@ def build_selas_uni_medecin_plan(payload: dict[str, object]) -> SelasUniMedecinP
             "Régime communautaire actif : la lettre de renonciation et la "
             "lettre d'avertissement au conjoint seront générées."
         )
-    warnings = tuple(warnings_list)
-    if blockers:
-        return SelasUniMedecinPlan(
-            can_generate=False,
-            status="blocked",
-            reason=blockers[0],
-            document_codes=document_codes,
-            blockers=tuple(blockers),
-            warnings=warnings,
+    if gaps:
+        warnings_list.append(
+            f"{len(gaps)} champ(s) non renseigné(s) : les zones concernées sortiront "
+            "en « (À COMPLÉTER : …) » et sont à compléter à la main dans le document."
         )
+        warnings_list.extend(gaps)
+    warnings = tuple(warnings_list)
     return SelasUniMedecinPlan(
         can_generate=True,
-        status="ready",
-        reason="Prêt pour la génération du dossier SELAS unipersonnelle médecin.",
+        status="ready" if not gaps else "ready_with_gaps",
+        reason=(
+            "Prêt pour la génération du dossier SELAS unipersonnelle médecin."
+            if not gaps
+            else f"Génération possible — {len(gaps)} zone(s) à compléter à la main."
+        ),
         document_codes=document_codes,
         blockers=(),
         warnings=warnings,

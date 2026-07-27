@@ -1145,7 +1145,7 @@ def _apport(montant: str):
 
 
 def build_selas_plan(payload: dict[str, object]) -> SelasSlicePlan:
-    blockers = _validate(payload)
+    gaps = _validate(payload)
     document_codes = _selas_document_codes(payload)
     warnings = [
         "Dossier de création SELAS pluripersonnelle : 2 à 5 associés.",
@@ -1172,19 +1172,25 @@ def build_selas_plan(payload: dict[str, object]) -> SelasSlicePlan:
             "une lettre de renonciation et une lettre d'avertissement au conjoint "
             "seront générées pour chacun."
         )
-    if blockers:
-        return SelasSlicePlan(
-            can_generate=False,
-            status="blocked",
-            reason=blockers[0],
-            document_codes=document_codes,
-            blockers=blockers,
-            warnings=tuple(warnings),
+    # KAN-2 (Rafael, rejeté 2×) : « Tous les documents doivent pouvoir être générés, MÊME SI je ne
+    # remplis AUCUN champ. » -> AUCUN blocage : tout manque devient un AVERTISSEMENT ; les zones
+    # concernées sortent en « (À COMPLÉTER : … ) » (required_* -> marqueur) et se complètent à la
+    # main sur le DOCX. Une contrainte technique (calcul, division) ne se transforme jamais en
+    # limite produit : elle est rendue None-safe côté générateur, jamais un garde-fou ici.
+    if gaps:
+        warnings.append(
+            f"{len(gaps)} champ(s) non renseigné(s) : les zones concernées sortiront "
+            "en « (À COMPLÉTER : …) » et sont à compléter à la main dans le document."
         )
+        warnings.extend(gaps)
     return SelasSlicePlan(
         can_generate=True,
-        status="ready",
-        reason="Prêt pour la génération du dossier SELAS multi-associés.",
+        status="ready" if not gaps else "ready_with_gaps",
+        reason=(
+            "Prêt pour la génération du dossier SELAS multi-associés."
+            if not gaps
+            else f"Génération possible — {len(gaps)} zone(s) à compléter à la main."
+        ),
         document_codes=document_codes,
         blockers=(),
         warnings=tuple(warnings),
@@ -1551,6 +1557,14 @@ def _render_selas_cession(
     return cession_ctx, bail_ctx, scm_ctx
 
 
+def _opt_int(value: object) -> int | None:
+    # KAN-2 : parse un entier en préservant l'ABSENCE (None / "" -> None), au lieu de la coercer
+    # en 0. Une quantité absente doit sortir en marqueur, jamais en « 0 » inventé.
+    if value is None or (isinstance(value, str) and not value.strip()):
+        return None
+    return int(value)
+
+
 def build_generation_context(payload: dict[str, object]) -> DocumentGenerationContext:
     # R5 (Albane 2026-07-07) : montants des associes (apport, capital d'une personne
     # morale) groupes par 3 a la construction du contexte (copies pydantic, payload
@@ -1558,12 +1572,26 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
     associes: list[StatutsCivilsAssocie] = [
         groupe_montants_associe(a) for a in (payload.get("associes") or [])
     ]
+    # KAN-2 (Rafael, rejeté 2×) : « générer MÊME SANS AUCUN champ ». Un formulaire SELAS multi
+    # entièrement vide ne porte AUCUN associé -> on matérialise le SQUELETTE minimal de la
+    # structure (SELAS_NB_MIN associés, minimum légal SELAS multi) afin que chaque document rende
+    # ses zones « associé » en marqueurs « (À COMPLÉTER : …) » (jamais un crash ni une valeur
+    # inventée). Squelette actif UNIQUEMENT quand la liste est vide -> le nominal (associés saisis)
+    # reste byte-identique.
+    if not associes:
+        associes = [
+            StatutsCivilsAssocie(type_personne="personne_physique", apport=_apport(""))
+            for _ in range(SELAS_NB_MIN)
+        ]
     president_index = _resolve_president_index(payload, associes)
     signataire_associe = associes[president_index] if associes else None
     genre = (signataire_associe.genre if signataire_associe else None) or Gender.FEMININ
-    civilite = signataire_associe.civilite_affichage if signataire_associe else "Madame"
-    prenom = signataire_associe.prenom if signataire_associe else ""
-    nom = signataire_associe.nom if signataire_associe else ""
+    # KAN-2 : un associé-squelette porte des champs None -> on les ramène à "" (Person exige des
+    # str) ; chaque générateur en aval rendra alors son marqueur « (À COMPLÉTER : …) ». Nominal
+    # (champs saisis) inchangé.
+    civilite = (signataire_associe.civilite_affichage if signataire_associe else "Madame") or ""
+    prenom = (signataire_associe.prenom if signataire_associe else "") or ""
+    nom = (signataire_associe.nom if signataire_associe else "") or ""
     profession = (
         (signataire_associe.qualification_principale or signataire_associe.profession)
         if signataire_associe
@@ -1586,7 +1614,9 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
     # R5 : capital groupe par 3 (« 60 000 ») a la construction du contexte — societe,
     # apport, capital, statuts, attestation souscripteurs (une seule source `capital`).
     capital = group_montant(str(payload.get("capital_social") or ""))
-    nb_actions_total = int(payload.get("nb_actions_total") or 0)
+    # KAN-2 : nb d'actions ABSENT -> None (jamais 0 inventé) ; les documents affichent alors un
+    # marqueur au lieu d'une quantité fausse. Valeur fournie -> int inchangé (nominal byte-fidèle).
+    nb_actions_total = _opt_int(payload.get("nb_actions_total"))
     # Valeur nominale d'une action : calculee (capital / nb actions) si non fournie
     # explicitement (SCREEN-2). Le chemin de test direct peut fournir une valeur.
     # R5 : groupee par 3 des 4 chiffres.

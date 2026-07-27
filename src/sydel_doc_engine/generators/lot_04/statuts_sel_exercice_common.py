@@ -225,9 +225,9 @@ def common_replacements(
         "[situation_matrimoniale_statuts]": statuts_sel_matrimonial_clause(associate),
         "[regime_matrimonial]": matrimonial_regime_display(associate),
         "[qualite_associe_article_8]": article_8_associate_label(ctx, associate),
-        "[nb_parts_total]": str(capital_titles_total(ctx)),
+        "[nb_parts_total]": capital_titles_total_display(ctx),
         "[nb_parts_total_lettres]": capital_titles_total_letters(ctx),
-        "[nb_actions]": str(capital_titles_total(ctx)),
+        "[nb_actions]": capital_titles_total_display(ctx),
         "[valeur_nominale_part]": capital_title_value(ctx, title_type),
         "[valeur_nominale_action]": capital_title_value(ctx, title_type),
         # Accord « euro »/« euros » de la valeur nominale (1 euro vs 10 euros).
@@ -714,11 +714,23 @@ def _membre_person_address(membre: StatutsCivilsAssocie) -> str:
 
 
 def _membre_nb_parts(membre: StatutsCivilsAssocie) -> int:
+    # KAN-2 @All : quantite absente -> 0 pour les CALCULS (somme des parts), jamais lever.
+    # L'AFFICHAGE passe par `_membre_nb_parts_display` (marqueur, jamais « 0 parts »).
     if membre.parts is not None and membre.parts.nb is not None:
         return membre.parts.nb
     if membre.nb_actions is not None:
         return membre.nb_actions
-    raise ValueError(f"membres[].parts.nb est obligatoire pour {DOCUMENT_CODE}.")
+    return 0
+
+
+def _membre_nb_parts_display(membre: StatutsCivilsAssocie) -> str:
+    # KAN-2 @All : quantite de parts du membre pour l'AFFICHAGE -> MARQUEUR si absente/nulle
+    # (jamais « 0 parts »), sinon le nombre tel quel (sortie nominale byte-identique).
+    if membre.parts is not None and membre.parts.nb and membre.parts.nb >= 1:
+        return str(membre.parts.nb)
+    if membre.nb_actions and membre.nb_actions >= 1:
+        return str(membre.nb_actions)
+    return f"(À COMPLÉTER : {libelle_metier('nombre de parts détenues')})"
 
 
 def _membre_nb_parts_lettres(membre: StatutsCivilsAssocie) -> str:
@@ -726,7 +738,8 @@ def _membre_nb_parts_lettres(membre: StatutsCivilsAssocie) -> str:
         return membre.parts.nb_lettres.strip()
     if membre.nb_actions_lettres:
         return membre.nb_actions_lettres.strip()
-    raise ValueError(f"membres[].parts.nb_lettres est obligatoire pour {DOCUMENT_CODE}.")
+    # KAN-2 @All : lettres absentes -> marqueur, jamais lever.
+    return f"(À COMPLÉTER : {libelle_metier('nombre de parts en toutes lettres')})"
 
 
 def _membre_apport_montant(membre: StatutsCivilsAssocie) -> str:
@@ -873,7 +886,7 @@ def _add_multi_capital_attribution(
     """
     dernier = len(membres) - 1
     for ordinal, membre in enumerate(membres, start=1):
-        nb_parts = _membre_nb_parts(membre)
+        nb_parts = _membre_nb_parts_display(membre)
         ponctuation = "." if ordinal - 1 == dernier else " ;"
         add_statuts_body_paragraph(
             docx,
@@ -1396,6 +1409,18 @@ def capital_titles_total(ctx: DocumentGenerationContext) -> int:
         ctx.capital.nombre_titres_total or ctx.capital.nb_parts_total,
         "capital.nombre_titres_total",
     )
+
+
+def capital_titles_total_display(ctx: DocumentGenerationContext) -> str:
+    # KAN-2 @All : quantite de titres du capital pour l'AFFICHAGE -> MARQUEUR metier si absente/
+    # nulle (jamais « 0 », qui affirmerait un capital sans titres) ; sinon le nombre tel quel
+    # (sortie nominale byte-identique). capital_titles_total (int) reste pour les calculs.
+    raw = None
+    if ctx.capital is not None:
+        raw = ctx.capital.nombre_titres_total or ctx.capital.nb_parts_total
+    if not raw or raw < 1:
+        return f"(À COMPLÉTER : {libelle_metier('capital.nombre_titres_total')})"
+    return str(raw)
 
 
 def capital_titles_total_letters(ctx: DocumentGenerationContext) -> str:

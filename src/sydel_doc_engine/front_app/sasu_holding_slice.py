@@ -242,32 +242,45 @@ def render_sasu_holding_form() -> dict[str, object]:
 
 
 def build_sasu_holding_plan(payload: dict[str, object]) -> SasuHoldingSlicePlan:
-    blockers = _validate(payload)
-    warnings = (
+    # KAN-2 (Rafael 2026-07-14, rejeté 2×) : « Tous les documents doivent pouvoir être générés,
+    # MÊME SI je ne remplis AUCUN champ. » -> AUCUN blocage : tout manque devient un
+    # AVERTISSEMENT ; la zone concernée sort en « (À COMPLÉTER : … ) » (générateurs) et se
+    # complète à la main sur le DOCX, jamais un crash. Aligne le comportement SASU Holding sur le
+    # pattern SPFPL (`spfpl_slice.build_spfpl_plan`) : `can_generate=True` / `blockers=()` TOUJOURS.
+    gaps = _validate(payload)
+    warnings_list = [
         "SASU Holding = SAS unipersonnelle generaliste (associe unique = president). "
         "Bundle (6 pieces) : statuts + tronc commun (DNC / domiciliation / procuration) + "
         "PV remuneration president + liste des souscripteurs (modeles Albane generalistes).",
-    )
-    if blockers:
-        return SasuHoldingSlicePlan(
-            can_generate=False,
-            status="blocked",
-            reason=blockers[0],
-            document_codes=SASU_HOLDING_BUNDLE_CODES,
-            blockers=blockers,
-            warnings=warnings,
+    ]
+    if gaps:
+        warnings_list.append(
+            f"{len(gaps)} champ(s) non renseigné(s) : les zones concernées sortiront "
+            "en « (À COMPLÉTER : …) » et sont à compléter à la main dans le document."
         )
+        warnings_list.extend(gaps)
     return SasuHoldingSlicePlan(
         can_generate=True,
-        status="ready",
-        reason="Prêt pour la génération du dossier SASU Holding.",
+        status="ready" if not gaps else "ready_with_gaps",
+        reason=(
+            "Prêt pour la génération du dossier SASU Holding."
+            if not gaps
+            else f"Génération possible — {len(gaps)} zone(s) à compléter à la main."
+        ),
         document_codes=SASU_HOLDING_BUNDLE_CODES,
         blockers=(),
-        warnings=warnings,
+        warnings=tuple(warnings_list),
     )
 
 
 def _validate(payload: dict[str, object]) -> tuple[str, ...]:
+    """Champs non renseignés du dossier — des AVERTISSEMENTS, jamais des blocages.
+
+    KAN-2 (Rafael 2026-07-14) : « tous les documents doivent pouvoir être générés, même si je ne
+    remplis aucun champ ». Ce que renvoie cette fonction ne bloque RIEN (cf.
+    `build_sasu_holding_plan`) : c'est la liste des zones qui sortiront en « (À COMPLÉTER : … ) »,
+    à compléter à la main.
+    """
     blockers: list[str] = []
     required = (
         ("denomination", "Denomination requise."),
@@ -338,12 +351,18 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
     # date — une seule source, pas de double saisie. (La saisie verbatim « 1er janvier 1990 »
     # reste affichee au front mais n'est pas reinjectee : le rendu francais est derive de la
     # date ISO, donc identique.)
+    # KAN-2 (Rafael 2026-07-14) : « même si je ne remplis AUCUN champ ». La civilité NON
+    # renseignée NE devient PAS « Monsieur » (civilité inventée pour un signataire — interdit,
+    # gate SPFPL B4) : elle reste vide et ressort en « (À COMPLÉTER : … ) » dans chaque pièce. Le
+    # GENRE, lui, garde un défaut masculin neutre (l'accord grammatical exige un genre ; il n'a pas
+    # de marqueur possible). Sortie NOMINALE inchangée : civilité toujours saisie au front.
+    civilite = str(payload.get("civilite") or "")
     associe = Person(
         genre=genre,
-        civilite=str(payload.get("civilite") or "Monsieur"),
+        civilite=civilite,
         prenom=str(payload.get("prenom") or ""),
         nom=str(payload.get("nom") or ""),
-        titre_affichage=str(payload.get("civilite") or "Monsieur"),
+        titre_affichage=civilite or None,
         adresse_perso=adresse_perso,
         adresse_personnelle_affichee=adresse_perso.adresse_affichee,
         date_naissance=payload.get("date_naissance_iso"),

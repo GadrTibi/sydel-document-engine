@@ -17,7 +17,14 @@ from __future__ import annotations
 from datetime import date
 from pathlib import Path
 
-from sydel_doc_engine.domain.models import DocumentGenerationContext, Person
+from sydel_doc_engine.domain.enums import Gender
+from sydel_doc_engine.domain.models import (
+    DocumentGenerationContext,
+    ExerciceSocial,
+    Person,
+    StatutsSasuHoldingContext,
+)
+from sydel_doc_engine.generators.lot_05.spfpl_libelles import libelle_metier
 from sydel_doc_engine.rendering.docx_builder import (
     add_framed_title,
     add_paragraph,
@@ -119,32 +126,27 @@ class _ResolvedPvSasuHolding:
     def from_context(cls, ctx: DocumentGenerationContext) -> _ResolvedPvSasuHolding:
         if ctx.structure != "SASU_HOLDING":
             raise ValueError(f"dossier.structure doit etre SASU_HOLDING pour {DOCUMENT_CODE}.")
+        # KAN-2 (Rafael 2026-07-14) : « tous les documents doivent pouvoir être générés, MÊME SI
+        # aucun champ n'est rempli. » -> aucun `raise` sur donnée manquante : un objet absent tombe
+        # sur une instance VIDE dont chaque champ ressort en « (À COMPLÉTER : … ) »
+        # (`_required_text`), jamais un crash. La sortie NOMINALE reste byte-identique.
         person = _required_person(ctx)
-        statuts = ctx.statuts_sasu_holding
-        if statuts is None:
-            raise ValueError(f"statuts_sasu_holding est obligatoire pour {DOCUMENT_CODE}.")
-        if ctx.exercice_social is None:
-            raise ValueError(f"exercice_social est obligatoire pour {DOCUMENT_CODE}.")
+        statuts = ctx.statuts_sasu_holding or StatutsSasuHoldingContext()
+        exercice = ctx.exercice_social or ExerciceSocial()
 
-        civilite = _required_text(person.civilite, "personne_signataire.civilite")
-        prenom = _required_text(person.prenom, "personne_signataire.prenom")
-        nom = _required_text(person.nom, "personne_signataire.nom")
-        fonction_president = _required_text(
-            statuts.fonction_dirigeant,
-            "statuts_sasu_holding.fonction_dirigeant",
-        )
-        qualite_associe = _required_text(
-            statuts.qualite_associe,
-            "statuts_sasu_holding.qualite_associe",
-        )
+        civilite = _required_text(person.civilite, "civilité de l'associé")
+        prenom = _required_text(person.prenom, "prénom de l'associé")
+        nom = _required_text(person.nom, "nom de l'associé")
+        fonction_president = _required_text(statuts.fonction_dirigeant, "fonction du dirigeant")
+        qualite_associe = _required_text(statuts.qualite_associe, "qualité de l'associé")
 
         return cls(
-            date_signature=_long_french_date(ctx.signature.date, "signature.date"),
+            date_signature=_long_french_date(ctx.signature.date, "date de signature"),
             associe_nom=f"{civilite} {prenom} {nom}",
             associe_civilite_nom=f"{civilite} {nom}",
             adresse_associe=_required_text(
                 person.adresse_personnelle_affichee,
-                "personne_signataire.adresse_personnelle_affichee",
+                "adresse personnelle de l'associé",
             ),
             qualite_associe=qualite_associe,
             fonction_president=fonction_president,
@@ -153,11 +155,11 @@ class _ResolvedPvSasuHolding:
             # pour eviter « jusqu'au le 31 decembre » (gate Akainu B1).
             date_cloture=_strip_leading_article(
                 _required_text(
-                    ctx.exercice_social.date_cloture_premier_exercice,
-                    "exercice_social.date_cloture_premier_exercice",
+                    exercice.date_cloture_premier_exercice,
+                    "date de clôture du premier exercice",
                 )
             ),
-            lieu_signature=_required_text(ctx.signature.lieu, "signature.lieu"),
+            lieu_signature=_required_text(ctx.signature.lieu, "lieu de signature"),
             signature_nom=f"{prenom} {nom}",
         )
 
@@ -171,22 +173,32 @@ def _strip_leading_article(value: str) -> str:
     return stripped
 
 
+# KAN-2 (Rafael 2026-07-14) — champ absent -> marqueur métier visible « (À COMPLÉTER : <libellé> ) »
+# (via `libelle_metier`, aligné sur le pattern SPFPL / `statuts_sel_exercice_common.required_text`).
+# Le libellé passé est déjà métier -> `libelle_metier` le laisse traverser et garantit qu'il reste
+# SANS point / underscore / crochet / chiffre.
+def _marqueur(field_name: str) -> str:
+    return f"(À COMPLÉTER : {libelle_metier(field_name)})"
+
+
 def _required_person(ctx: DocumentGenerationContext) -> Person:
+    # KAN-2 : associé absent -> instance vide (genre masculin neutre, identité vide) dont chaque
+    # champ ressort en marqueur ; `Person` exige genre/civilite/prenom/nom, on les fournit vides.
     if ctx.personne_signataire is None:
-        raise ValueError(f"personne_signataire est obligatoire pour {DOCUMENT_CODE}.")
+        return Person(genre=Gender.MASCULIN, civilite="", prenom="", nom="")
     return ctx.personne_signataire
 
 
 def _required_text(value: str | None, field_name: str) -> str:
     if value is None or not value.strip():
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return _marqueur(field_name)
     return value.strip()
 
 
 def _long_french_date(value: date | str | None, field_name: str) -> str:
     """Date en francais long (« 30 septembre 2020 ») pour le titre du PV (verbatim modele)."""
     if value is None:
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return _marqueur(field_name)
     if isinstance(value, date):
         jour = "1er" if value.day == 1 else str(value.day)  # convention francaise du 1er
         return f"{jour} {FRENCH_MONTHS[value.month]} {value.year}"

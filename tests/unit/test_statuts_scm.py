@@ -199,12 +199,21 @@ def test_statuts_scm_inherits_model_form_single_logo(tmp_path: Path) -> None:
     assert document.paragraphs[0].text.strip() != ""
 
 
-def test_statuts_scm_blocks_when_parts_total_is_ambiguous(tmp_path: Path) -> None:
+def test_statuts_scm_missing_parts_renders_marker_not_block(tmp_path: Path) -> None:
+    # KAN-2 (Rafael, rejeté 2×) : une quantité de parts NON RENSEIGNÉE ne BLOQUE PLUS la
+    # génération -> elle sort en marqueur « (À COMPLÉTER : …) », JAMAIS « 0 parts » ni un crash.
+    # La quantité RÉELLE des autres associés reste affichée telle quelle.
     ctx = _context()
     ctx.statuts_civils.associes[1].parts.nb = None
 
-    with pytest.raises(ValueError, match="associes\\[\\]\\.parts\\.nb"):
-        StatutsScmGenerator().generate(ctx, tmp_path)
+    path = StatutsScmGenerator().generate(ctx, tmp_path)
+    text = _docx_text(path)
+    assert "À COMPLÉTER" in text  # la part manquante sort en marqueur
+    # L'associé sans quantité rend un marqueur, JAMAIS « 0 parts » ni « None parts ».
+    assert "Martin (À COMPLÉTER" in text
+    assert "Martin 0 parts" not in text and "Martin None parts" not in text
+    assert "70 parts" in text  # la part réelle de l'autre associé reste affichée
+    _assert_clean(text)
 
 
 def test_statuts_scm_blocks_when_capital_total_is_inconsistent(tmp_path: Path) -> None:
@@ -215,9 +224,13 @@ def test_statuts_scm_blocks_when_capital_total_is_inconsistent(tmp_path: Path) -
         StatutsScmGenerator().generate(ctx, tmp_path)
 
 
-def test_statuts_scm_requires_morale_representant_for_signature(tmp_path: Path) -> None:
+def test_statuts_scm_missing_morale_representant_renders_marker(tmp_path: Path) -> None:
+    # KAN-2 : un représentant de personne morale manquant ne BLOQUE PLUS -> ses champs sortent
+    # en marqueurs « (À COMPLÉTER : …) » et la génération aboutit (plus de crash).
     ctx = _context()
     ctx.statuts_civils.associes[0].representant = None
 
-    with pytest.raises(ValueError, match="representant"):
-        StatutsScmGenerator().generate(ctx, tmp_path)
+    path = StatutsScmGenerator().generate(ctx, tmp_path)
+    text = _docx_text(path)
+    assert "À COMPLÉTER" in text
+    _assert_clean(text)

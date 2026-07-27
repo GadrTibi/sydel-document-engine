@@ -24,6 +24,7 @@ from sydel_doc_engine.generators.lot_05.scm_cession_common import (
     mentions_partenaire_pacse,
     partenaire_pacse_clause,
 )
+from sydel_doc_engine.generators.lot_05.spfpl_libelles import libelle_metier
 from sydel_doc_engine.rendering.docx_builder import (
     apply_style_profile,
     keep_final_signature_block_together,
@@ -121,7 +122,13 @@ def _build_replacements(data: _ResolvedStatutsSas) -> dict[str, str]:
         "[capital_social]": data.capital_social,
         "[capital_lettres]": data.capital_social_lettres,
         "[adresse_siege]": data.adresse_siege,
-        "[nb_actions]": str(data.nb_actions_total),
+        # KAN-2 / B1 : nb d'actions non saisi -> marqueur « (À COMPLÉTER : …) » (« divisé en
+        # (À COMPLÉTER : …) actions »), jamais « 0 » ni une quantite fantome affirmee. AFFICHAGE via
+        # `_quantite_actions` (miroir spfpl_common.quantite_titres). Nominal (>0) byte-identique
+        # a `str(data.nb_actions_total)`. Le slot « _lettres » sort deja en "" (slice) -> marqueur.
+        "[nb_actions]": _quantite_actions(
+            data.nb_actions_total, "nombre d'actions composant le capital"
+        ),
         "[nb_actions_lettres]": data.nb_actions_total_lettres,
         "[valeur_nominale_action]": data.valeur_nominale_action,
         "[valeur_nominale_action_lettres]": data.valeur_nominale_action_lettres,
@@ -165,7 +172,8 @@ def _build_replacements(data: _ResolvedStatutsSas) -> dict[str, str]:
         "[debut_exercice]": data.exercice_debut,
         "[fin_exercice]": data.exercice_fin,
         "[date_cloture_exercice_1]": data.exercice_cloture_1,
-        "[lieu_signature]": data.signature_lieu,
+        # KAN-2 @All : lieu de signature manquant -> marqueur, jamais « Fait à » nu.
+        "[lieu_signature]": _required_text(data.signature_lieu, "signature.lieu"),
     }
 
 
@@ -313,7 +321,12 @@ class _ResolvedStatutsSas:
 
         depot_montant = ctx.depot_fonds.montant
         capital_social = _required_text(societe.capital_social, "societe_spfpl.capital_social")
-        if depot_montant is not None and depot_montant.strip() != capital_social:
+        # KAN-2 : coherence depot<->capital verifiee seulement quand les DEUX sont renseignes. A
+        # vide, le capital sort en marqueur et le depot est "" -> pas de blocage. Compare les
+        # valeurs BRUTES (le marqueur du capital n'est pas une valeur a confronter au depot).
+        _capital_brut = (societe.capital_social or "").strip()
+        _depot_brut = (depot_montant or "").strip()
+        if _depot_brut and _capital_brut and _depot_brut != _capital_brut:
             raise ValueError(
                 "depot_fonds.montant doit etre coherent avec "
                 f"societe_spfpl.capital_social pour {DOCUMENT_CODE}."
@@ -330,13 +343,16 @@ class _ResolvedStatutsSas:
                 societe.nb_actions_total,
                 "societe_spfpl.nb_actions_total",
             ),
+            # KAN-2 / M1 : libelles MÉTIER lisibles (jamais le chemin technique « societe_spfpl.… »
+            # qui retomberait en fallback « societe spfpl nb actions … »). Nominal (valeur présente)
+            # byte-identique — le libelle ne sert QUE quand le champ est absent (marqueur).
             nb_actions_total_lettres=_required_text(
                 societe.nb_actions_total_lettres,
-                "societe_spfpl.nb_actions_total_lettres",
+                "nombre d'actions composant le capital en toutes lettres",
             ),
             valeur_nominale_action=_required_text(
                 societe.valeur_nominale_action,
-                "societe_spfpl.valeur_nominale_action",
+                "valeur nominale d'une action",
             ),
             valeur_nominale_action_lettres=_required_text(
                 societe.valeur_nominale_action_lettres,
@@ -424,15 +440,13 @@ def _validate_capital(
             "capital_souscription doivent etre coherents pour "
             f"{DOCUMENT_CODE}."
         )
-    valeur_societe = _required_text(
-        societe.valeur_nominale_action,
-        "societe_spfpl.valeur_nominale_action",
-    )
-    valeur_capital = _required_text(
-        capital.valeur_nominale_action,
-        "capital_souscription.valeur_nominale_action",
-    )
-    if valeur_societe != valeur_capital:
+    # KAN-2 : la coherence valeur-nominale societe<->capital n'est verifiee que si les DEUX valeurs
+    # sont RENSEIGNEES. A vide, chacune sort en marqueur (chacun son libelle) — ce n'est pas une
+    # incoherence mais un champ non rempli -> AUCUN blocage. Compare les valeurs BRUTES, jamais les
+    # marqueurs (deux marqueurs de libelles differents ne sont pas une divergence de donnee).
+    valeur_societe = (societe.valeur_nominale_action or "").strip()
+    valeur_capital = (capital.valeur_nominale_action or "").strip()
+    if valeur_societe and valeur_capital and valeur_societe != valeur_capital:
         raise ValueError(
             "societe_spfpl.valeur_nominale_action doit correspondre a "
             "capital_souscription.valeur_nominale_action pour "
@@ -500,15 +514,35 @@ def _required_ordre(person: SpfplPerson) -> SpfplOrdre:
 
 
 def _required_text(value: str | None, field_name: str) -> str:
+    # KAN-2 (Rafael, rejete 2x) : « Tous les documents doivent pouvoir etre generes, meme si je ne
+    # remplis AUCUN champ. » Une donnee manquante NE bloque PLUS -> marqueur visible
+    # « (À COMPLÉTER : <libelle metier>) » (SANS crochet/point/underscore, pour ne pas declencher le
+    # garde-fou source anti-placeholder) au lieu de lever. Miroir EXACT de required_text
+    # (statuts_sel_exercice_common / spfpl_common). Sortie NOMINALE (valeur presente) inchangee.
     if value is None or not value.strip():
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return f"(À COMPLÉTER : {libelle_metier(field_name)})"
     return value.strip()
 
 
 def _required_int(value: int | None, field_name: str) -> int:
+    # KAN-2 : une quantite absente NE bloque PLUS le CALCUL / les controles de coherence (None-safe
+    # -> 0, jamais de crash). L'AFFICHAGE d'une quantite passe par `_quantite_actions` (marqueur si
+    # 0/None) — ce helper ne sert qu'aux comparaisons de coherence, pas au rendu.
     if value is None:
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return 0
     return value
+
+
+def _quantite_actions(value: int | None, libelle: str) -> str:
+    """AFFICHAGE d'une quantite d'actions dans le fil du texte des statuts (KAN-2 / B1).
+
+    Une quantite NON RENSEIGNEE (0 = number_input jamais rempli, ou None) ne s'affirme JAMAIS
+    (« 0 actions » / « zéro » est FAUX dans un acte signable) : elle sort en marqueur
+    « (À COMPLÉTER : <libelle metier>) ». `libelle` = intitule metier (traverse `libelle_metier`
+    inchange s'il est deja humain). Miroir de spfpl_common.quantite_titres."""
+    if not value:
+        return f"(À COMPLÉTER : {libelle_metier(libelle)})"
+    return str(value)
 
 
 def _address_display(societe: SocieteSpfpl) -> str:
@@ -528,7 +562,10 @@ def _person_address(person: SpfplPerson, field_name: str) -> str:
     if person.adresse_personnelle_affichee:
         return person.adresse_personnelle_affichee.strip()
     if person.adresse_personnelle is None:
-        raise ValueError(f"{field_name}.adresse_personnelle est obligatoire pour {DOCUMENT_CODE}.")
+        # KAN-2 : adresse absente -> marqueur unique « (À COMPLÉTER : …) », jamais un crash.
+        # (En SAS l'adresse est TOUJOURS saisie en une ligne -> `adresse_personnelle_affichee` ;
+        # ce chemin ne sert qu'a un dossier a vide.)
+        return _required_text(None, f"{field_name}.adresse_personnelle_affichee")
     if person.adresse_personnelle.adresse_affichee:
         return person.adresse_personnelle.adresse_affichee.strip()
     return (

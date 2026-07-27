@@ -262,12 +262,12 @@ def _required_text(value: str | None, field_name: str) -> str:
     return value.strip()
 
 
-def _required_positive_int(value: int | None, field_name: str) -> int:
-    if value is None:
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
-    if value < 1:
-        raise ValueError(f"{field_name} doit être supérieur ou égal à 1 pour {DOCUMENT_CODE}.")
-    return value
+def _quantite_parts(value: int | None, field_name: str) -> str:
+    # KAN-2 @All : quantite de titres absente/nulle -> MARQUEUR metier a l'affichage (jamais « 0 »
+    # ni quantite inventee) ; sinon le nombre tel quel (sortie nominale byte-identique).
+    if value is None or value < 1:
+        return f"(À COMPLÉTER : {libelle_metier(field_name)})"
+    return str(value)
 
 
 def _required_display_value(value: date | str | None, field_name: str) -> str:
@@ -310,8 +310,15 @@ def _validated_represented_parts(
     capital: CapitalContext,
     represented_associes: list[Associe],
 ) -> int:
-    nb_parts_total = _required_positive_int(capital.nb_parts_total, "capital.nb_parts_total")
-    represented_parts = sum(associe.nb_parts for associe in represented_associes)
+    # KAN-2 @All : sans nb_parts total REEL, aucune coherence a exiger (le doc se genere ; les
+    # quantites vides sortent en marqueurs a l'affichage). La coherence reste exigee des que le
+    # total est saisi.
+    nb_parts_total = (
+        capital.nb_parts_total
+        if (capital.nb_parts_total and capital.nb_parts_total >= 1)
+        else None
+    )
+    represented_parts = sum((associe.nb_parts or 0) for associe in represented_associes)
     if (
         capital.nb_parts_representees is not None
         and capital.nb_parts_representees != represented_parts
@@ -320,7 +327,7 @@ def _validated_represented_parts(
             "capital.nb_parts_representees doit correspondre à la somme des parts des associés "
             f"présents ou représentés pour {DOCUMENT_CODE}."
         )
-    if represented_parts != nb_parts_total:
+    if nb_parts_total is not None and represented_parts != nb_parts_total:
         raise ValueError(
             "Les parts présentes ou représentées doivent correspondre à la totalité du capital "
             f"pour {DOCUMENT_CODE}."
@@ -688,7 +695,7 @@ def _add_introduction(
     company_designation = _company_designation_for_intro(
         company, denomination, is_micro=is_micro
     )
-    nb_parts_total = _required_positive_int(capital.nb_parts_total, "capital.nb_parts_total")
+    nb_parts_total = _quantite_parts(capital.nb_parts_total, "capital.nb_parts_total")
     titre_word = _titre_word(capital)
     if titre_word == "action":
         # Phrase verbatim du modele PV nominations dirigeants (SELAS) : pas de
@@ -784,7 +791,8 @@ def _add_associes_block(
             document,
             (
                 f"{associe.civilite_affichage} {associe.prenom} {associe.nom}, "
-                f"détenant {associe.nb_parts} {_parts_label(associe.nb_parts, titre_word)},"
+                f"détenant {_quantite_parts(associe.nb_parts, 'nombre de parts détenues')} "
+                f"{_parts_label(associe.nb_parts or 0, titre_word)},"
             ),
             # Mise en forme Albane 1.4 : interligne simple sur la designation des
             # clients (enumeration des associes presents/representes en AG multi).

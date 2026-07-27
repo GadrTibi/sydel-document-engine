@@ -39,6 +39,7 @@ from sydel_doc_engine.generators.lot_05.scm_cession_common import (
     mentions_partenaire_pacse,
     partenaire_pacse_clause,
 )
+from sydel_doc_engine.generators.lot_05.spfpl_libelles import libelle_metier
 from sydel_doc_engine.rendering.docx_builder import (
     ensure_demeurant_au,
     keep_final_signature_block_together,
@@ -188,7 +189,7 @@ def _build_cedant_designation_prefix(
         return None
     vendeur = cession.vendeur or CessionVendeur()
     return _person_label(
-        civilite_civile(vendeur.civilite_affichage, vendeur.genre),
+        civilite_civile(vendeur.civilite_affichage or "", vendeur.genre),
         vendeur.prenom,
         vendeur.nom,
     )
@@ -1200,10 +1201,17 @@ def _build_cession_replacements(  # noqa: C901
     replacements: dict[str, str] = {}
 
     def put(token: str, value: object | None) -> None:
-        # Les valeurs None ne sont PAS injectees -> token preserve -> anti-trou (etape 1.3).
-        if value is None:
-            return
-        replacements[token] = str(value)
+        # KAN-2 (Rafael, rejete 2x) : « Tous les documents doivent pouvoir etre generes, meme si je
+        # ne remplis AUCUN champ. » Un champ OBLIGATOIRE non renseigne NE laisse PLUS de token
+        # residuel (plus d'anti-trou bloquant) : il sort en marqueur metier « (À COMPLÉTER : … ) »
+        # (libelle derive du token, sans crochet/point/underscore). Valeur presente -> injectee
+        # TELLE QUELLE (sortie NOMINALE byte-identique). Les champs FACULTATIFS passent par
+        # `put_opt` (zone vide a completer a la main) — semantique inchangee.
+        text = "" if value is None else str(value)
+        if not text.strip():
+            replacements[token] = f"(À COMPLÉTER : {libelle_metier(token)})"
+        else:
+            replacements[token] = text
 
     def put_opt(token: str, value: object | None) -> None:
         # Champ FACULTATIF (retours client 2026-06-11) : une valeur absente est
@@ -1217,7 +1225,7 @@ def _build_cession_replacements(  # noqa: C901
     # CIVILE (Monsieur/Madame accorde au genre), jamais le titre professionnel. Le token
     # [civilite_vendeur] est donc rempli avec la civilite civile, ce qui purge TOUTES ses
     # occurrences dans le corps ET le bloc signature (SUPERSEDE CE3, cf. _build_line_fixes).
-    put("[civilite_vendeur]", civilite_civile(vendeur.civilite_affichage, vendeur.genre))
+    put("[civilite_vendeur]", civilite_civile(vendeur.civilite_affichage or "", vendeur.genre))
     put("[prenom_vendeur]", vendeur.prenom)
     put("[nom_vendeur]", vendeur.nom)
     put("[profession_vendeur]", vendeur.profession)
@@ -1272,7 +1280,7 @@ def _build_cession_replacements(  # noqa: C901
     # <civilite> X ») porte la civilite CIVILE (« Madame Alice Moreau », plus « Docteur »).
     put(
         "[civilite_acquereur_representant]",
-        civilite_civile(representant.civilite_affichage, representant.genre),
+        civilite_civile(representant.civilite_affichage or "", representant.genre),
     )
     put("[prenom_acquereur_representant]", representant.prenom)
     put("[nom_acquereur_representant]", representant.nom)
@@ -1288,15 +1296,22 @@ def _build_cession_replacements(  # noqa: C901
     put_opt("[date_origine_propriete]", _french_date(cabinet.date_origine_propriete))
     put_opt("[annees_acquisition_patientele]", cabinet.annees_acquisition_patientele)
     put_opt("[prix_origine_propriete]", cabinet.prix_origine_propriete)
-    if precedent is not None:
-        # R3 (Rafael 2026-07-09) : civilite CIVILE du precedent proprietaire (pas de genre
-        # capture -> masculin par defaut).
-        put_opt(
-            "[civilite_precedent_proprietaire]",
-            civilite_civile(precedent.civilite_affichage, None),
-        )
-        put_opt("[prenom_precedent_proprietaire]", precedent.prenom)
-        put_opt("[nom_precedent_proprietaire]", precedent.nom)
+    # R3 (Rafael 2026-07-09) : civilite CIVILE du precedent proprietaire (pas de genre
+    # capture -> masculin par defaut). KAN-2 : le modele DENTAIRE porte ces tokens
+    # inconditionnellement -> ils sont TOUJOURS emis (put_opt = zone vide a completer a la
+    # main si aucun precedent proprietaire n'est saisi), jamais laisses residuels.
+    put_opt(
+        "[civilite_precedent_proprietaire]",
+        civilite_civile(precedent.civilite_affichage or "", None) if precedent is not None else None,
+    )
+    put_opt(
+        "[prenom_precedent_proprietaire]",
+        precedent.prenom if precedent is not None else None,
+    )
+    put_opt(
+        "[nom_precedent_proprietaire]",
+        precedent.nom if precedent is not None else None,
+    )
     # Origine de propriete (modeles MEDICAUX) : phrase decrivant le VENDEUR,
     # variante creee/achetee (defaut "cree"), ou texte libre pour un cas complexe.
     # Donnees incompletes -> zone vide a completer a la main (jamais bloquant).
@@ -1367,12 +1382,23 @@ def _build_cession_replacements(  # noqa: C901
         put("[date_entree_jouissance]", _french_date(bail.date_debut))
 
     # --- Exercices ---
+    # KAN-2 : les 3 lignes d'exercice du modele sont TOUJOURS emises (put_opt = zone vide a
+    # completer a la main si l'exercice n'est pas fourni) -> jamais de token residuel meme si
+    # moins de 3 exercices sont saisis. Champs facultatifs (retours 2026-06-11, tickets 2.8/3.1).
     for index in (0, 1, 2):
-        if index < len(cession.exercices):
-            exercice = cession.exercices[index]
-            put_opt(f"[exercice_{index + 1}]", _exercice_periode(exercice.periode))
-            put_opt(f"[chiffre_affaires_{index + 1}]", exercice.chiffre_affaires)
-            put_opt(f"[resultat_{index + 1}]", exercice.resultat)
+        exercice = cession.exercices[index] if index < len(cession.exercices) else None
+        put_opt(
+            f"[exercice_{index + 1}]",
+            _exercice_periode(exercice.periode) if exercice is not None else None,
+        )
+        put_opt(
+            f"[chiffre_affaires_{index + 1}]",
+            exercice.chiffre_affaires if exercice is not None else None,
+        )
+        put_opt(
+            f"[resultat_{index + 1}]",
+            exercice.resultat if exercice is not None else None,
+        )
 
     # --- Document / signature ---
     put("[lieu_signature]", signature.lieu)
@@ -1407,14 +1433,14 @@ def _put_signature_tokens(
     # jamais « Dr X » / « Docteur X ». Le representant de la societe garde son propre titre
     # (M./Mme via le token courte ailleurs) : ici on route seulement le vendeur.
     vendeur_label = _person_label(
-        civilite_civile(vendeur.civilite_affichage, vendeur.genre),
+        civilite_civile(vendeur.civilite_affichage or "", vendeur.genre),
         vendeur.prenom,
         vendeur.nom,
     )
     # Le representant de la societe signe aussi sous civilite CIVILE (acte : « Madame Alice
     # Moreau », plus « Docteur Alice Moreau »). `representant.genre` accorde M./Mme.
     representant_label = _person_label(
-        civilite_civile(representant.civilite_affichage, representant.genre),
+        civilite_civile(representant.civilite_affichage or "", representant.genre),
         representant.prenom,
         representant.nom,
     )
@@ -1523,7 +1549,7 @@ def _build_origine_propriete_phrase(cession: CessionContext) -> str | None:
     # R3 (Rafael 2026-07-09) : « <vendeur> est propriétaire … » nomme le cedant sous sa civilite
     # CIVILE (« Monsieur Jean Durand est propriétaire … », plus « Docteur »).
     sujet = _person_label(
-        civilite_civile(vendeur.civilite_affichage, vendeur.genre),
+        civilite_civile(vendeur.civilite_affichage or "", vendeur.genre),
         vendeur.prenom,
         vendeur.nom,
     )
@@ -1553,7 +1579,7 @@ def _build_origine_propriete_phrase(cession: CessionContext) -> str | None:
         # porte la civilite CIVILE. Pas de genre capture sur ce champ -> masculin par defaut.
         precedent_label = (
             _person_label(
-                civilite_civile(precedent.civilite_affichage, None),
+                civilite_civile(precedent.civilite_affichage or "", None),
                 precedent.prenom,
                 precedent.nom,
             )
@@ -1834,102 +1860,44 @@ def _required_cession(ctx: DocumentGenerationContext) -> CessionContext:
     return ctx.cession
 
 
+# KAN-2 (Rafael, rejete 2x) : les sous-objets d'une cession absents NE bloquent PLUS la
+# generation. Presence structurelle tolerante (objet vide -> chaque champ sort en marqueur au
+# rendu), coherente avec `_build_cession_replacements` (`cession.x or X()`). L'ancienne
+# validation champ-par-champ ne servait qu'a lever ; elle est desormais portee par le marqueur
+# (required_*), jamais par un blocage ici.
 def _required_vendeur(vendeur: CessionVendeur | None) -> CessionVendeur:
-    if vendeur is None:
-        raise ValueError(f"cession.vendeur est obligatoire pour {DOCUMENT_CODE}.")
-    for field_name, value in [
-        ("cession.vendeur.civilite_affichage", vendeur.civilite_affichage),
-        ("cession.vendeur.prenom", vendeur.prenom),
-        ("cession.vendeur.nom", vendeur.nom),
-        ("cession.vendeur.profession", vendeur.profession),
-        ("cession.vendeur.date_naissance", vendeur.date_naissance),
-        ("cession.vendeur.ville_naissance", vendeur.ville_naissance),
-        ("cession.vendeur.nationalite", vendeur.nationalite),
-        ("cession.vendeur.adresse_affichee", vendeur.adresse_affichee),
-        ("cession.vendeur.situation_maritale", vendeur.situation_maritale),
-    ]:
-        _required_value(value, field_name)
-    return vendeur
+    return vendeur if vendeur is not None else CessionVendeur()
 
 
 def _required_acquereur(acquereur: CessionAcquereur | None) -> CessionAcquereur:
-    if acquereur is None:
-        raise ValueError(f"cession.acquereur est obligatoire pour {DOCUMENT_CODE}.")
-    for field_name, value in [
-        ("cession.acquereur.denomination_societe", acquereur.denomination_societe),
-        ("cession.acquereur.forme_sociale", acquereur.forme_sociale),
-        ("cession.acquereur.capital_social", acquereur.capital_social),
-        ("cession.acquereur.rcs_ville", acquereur.rcs_ville),
-    ]:
-        _required_text(value, field_name)
-    _required_text(_address_label(acquereur.siege), "cession.acquereur.siege.adresse_affichee")
-    return acquereur
+    return acquereur if acquereur is not None else CessionAcquereur()
 
 
 def _required_representant(representant: CessionRepresentant | None) -> CessionRepresentant:
-    if representant is None:
-        raise ValueError(f"cession.acquereur.representant est obligatoire pour {DOCUMENT_CODE}.")
-    for field_name, value in [
-        ("cession.acquereur.representant.civilite_affichage", representant.civilite_affichage),
-        ("cession.acquereur.representant.prenom", representant.prenom),
-        ("cession.acquereur.representant.nom", representant.nom),
-        ("cession.acquereur.representant.fonction", representant.fonction),
-    ]:
-        _required_text(value, field_name)
-    return representant
+    return representant if representant is not None else CessionRepresentant()
 
 
 def _required_cabinet(cabinet: CessionCabinet | None) -> CessionCabinet:
-    if cabinet is None:
-        raise ValueError(f"cession.cabinet est obligatoire pour {DOCUMENT_CODE}.")
-    _required_value(cabinet.adresse_affichee, "cession.cabinet.adresse_affichee")
-    # Telephone et adresse des locaux : champs FACULTATIFS (retours client
-    # 2026-06-11, ticket 3.1) — vides, ils laissent une zone a completer a la
-    # main sans bloquer la generation.
-    # description_origine_propriete n'est plus un token autonome : la clause
-    # d'origine medicale est construite a partir des donnees vendeur (mode
-    # cree/achete). Le texte libre n'est exige que pour un cas COMPLEXE
-    # (cf. _validate_origine_propriete).
-    return cabinet
+    return cabinet if cabinet is not None else CessionCabinet()
 
 
 def _required_bail(bail: CessionBailProfessionnel | None) -> CessionBailProfessionnel:
-    if bail is None:
-        raise ValueError(f"cession.bail_professionnel est obligatoire pour {DOCUMENT_CODE}.")
-    # Retours client 2026-06-11 (ticket 3.1) : seule la duree reste obligatoire
-    # (preremplie « six annees »). Dates et activite vides -> zones a completer
-    # a la main, jamais bloquantes.
-    _required_value(bail.duree, "cession.bail_professionnel.duree")
-    return bail
+    return bail if bail is not None else CessionBailProfessionnel()
 
 
 def _required_prix(prix: CessionPrix | None) -> CessionPrix:
-    if prix is None:
-        raise ValueError(f"cession.prix est obligatoire pour {DOCUMENT_CODE}.")
-    # Retours client 2026-06-11 (ticket 3.1) : le prix TOTAL (chiffres + lettres)
-    # reste le strict necessaire d'un acte de cession ; la ventilation
-    # corporels / incorporels vide laisse une zone a completer a la main.
-    for field_name, value in [
-        ("cession.prix.total", prix.total),
-        ("cession.prix.total_lettres", prix.total_lettres),
-    ]:
-        _required_text(value, field_name)
-    return prix
+    return prix if prix is not None else CessionPrix()
 
 
 def _required_document(document: DocumentContext | None) -> DocumentContext:
-    if document is None:
-        raise ValueError(f"document est obligatoire pour {DOCUMENT_CODE}.")
-    _required_text(document.nombre_pages_lettres, "document.nombre_pages_lettres")
-    _required_text(document.nombre_exemplaires_lettres, "document.nombre_exemplaires_lettres")
-    return document
+    return document if document is not None else DocumentContext()
 
 
 def _required_exercices(exercices: list[CessionExercice]) -> list[CessionExercice]:
-    if len(exercices) != 3:
-        raise ValueError("cession.exercices doit contenir exactement trois lignes.")
-    # Retours client 2026-06-11 (tickets 2.8 / 3.1) : CA et resultat vides par
-    # defaut et jamais bloquants -> zones a completer a la main dans l'acte.
+    # KAN-2 : le nombre d'exercices ne bloque PLUS la generation. Les 3 lignes du modele sont
+    # toujours emises (blanc si l'exercice n'est pas fourni, cf. _build_cession_replacements) ->
+    # une liste vide ou incomplete genere sans crash. CA et resultat vides -> zones a completer
+    # a la main (retours client 2026-06-11, tickets 2.8 / 3.1).
     return exercices
 
 
@@ -1943,14 +1911,19 @@ def _salarie_label(salarie: CessionSalarie, index: int) -> str:
 
 
 def _required_value(value: date | str | None, field_name: str) -> date | str:
+    # KAN-2 : une valeur manquante NE bloque PLUS -> marqueur metier lisible (jamais une valeur
+    # inventee, y compris pour une DATE : on ne fabrique aucune date de repli). Presente
+    # (date OU texte non vide) -> renvoyee TELLE QUELLE (sortie NOMINALE byte-identique).
     if value is None:
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return f"(À COMPLÉTER : {libelle_metier(field_name)})"
     if isinstance(value, str) and not value.strip():
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return f"(À COMPLÉTER : {libelle_metier(field_name)})"
     return value
 
 
 def _required_text(value: str | None, field_name: str) -> str:
+    # KAN-2 : donnee manquante -> marqueur metier « (À COMPLÉTER : <libelle>) » (sans
+    # crochet/point/underscore) au lieu de lever. Sortie NOMINALE (valeur presente) BYTE-IDENTIQUE.
     if value is None or not value.strip():
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return f"(À COMPLÉTER : {libelle_metier(field_name)})"
     return value.strip()

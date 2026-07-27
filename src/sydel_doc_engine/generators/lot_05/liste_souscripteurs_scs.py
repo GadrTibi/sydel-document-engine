@@ -12,6 +12,7 @@ from sydel_doc_engine.domain.models import (
     StatutsCivilsAssocie,
 )
 from sydel_doc_engine.front_app.field_derivations import group_montant
+from sydel_doc_engine.generators.lot_05.spfpl_libelles import libelle_metier
 from sydel_doc_engine.rendering.docx_builder import keep_final_signature_block_together
 from sydel_doc_engine.utils.grammar import montant_avec_euros
 
@@ -92,6 +93,13 @@ def _siege_of_associe(associe: StatutsCivilsAssocie) -> str:
     return ""
 
 
+def _quantite_parts_display(value: int) -> str:
+    # KAN-2 @All : quantite de parts absente/nulle -> MARQUEUR (jamais « 0 »), sinon le nombre.
+    if value < 1:
+        return f"(À COMPLÉTER : {libelle_metier('nombre de parts souscrites')})"
+    return str(value)
+
+
 def _associe_nb_parts(associe: StatutsCivilsAssocie) -> int:
     if associe.parts and associe.parts.nb:
         return int(associe.parts.nb)
@@ -144,7 +152,11 @@ class ListeSouscripteursScsGenerator:
             # (« 1000 euros ») car total_montant est une somme entiere brute -> groupee
             # des 4 chiffres (« 1 000 »). L'unite « euros » est portee par le modele.
             "[montant_sous]": group_montant(str(total_montant)),
-            "[lieu_signature]": _txt(signature.lieu if signature else None),
+            # KAN-2 @All : lieu manquant -> marqueur, jamais « Fait à » nu.
+            "[lieu_signature]": (
+                _txt(signature.lieu if signature else None)
+                or f"(À COMPLÉTER : {libelle_metier('signature.lieu')})"
+            ),
             "[date_signature]": _date(signature),
             "[prenom]": _txt(certificateur.prenom),
             "[nom]": _txt(certificateur.nom),
@@ -191,28 +203,35 @@ class ListeSouscripteursScsGenerator:
                 nom_ligne = _txt(associe.denomination)
                 adresse = _siege_of_associe(associe)
             else:
-                civilite = _txt(associe.civilite_affichage) or "Monsieur"
+                # KAN-2 @All : ne JAMAIS inventer « Monsieur » — civilite absente = non affichee.
+                civilite = _txt(associe.civilite_affichage)
                 nom_ligne = " ".join(
                     x for x in (civilite, _txt(associe.prenom), _txt(associe.nom)) if x
                 )
                 adresse = _txt(associe.adresse_personnelle_affichee)
+            _montant = _associe_montant(associe)
             per = {
                 "[civilite] [prenom] [nom]": nom_ligne,
                 "[civilite]": "",
                 "[prenom]": nom_ligne,
                 "[nom]": "",
                 "[adresse_personnelle]": adresse,
-                "[nb_actions]": str(_associe_nb_parts(associe)),
+                # KAN-2 @All : quantite / montant absents -> marqueur, jamais « 0 ».
+                "[nb_actions]": _quantite_parts_display(_associe_nb_parts(associe)),
                 # Montant de souscription par associe groupe des 4 chiffres (Rafael
                 # 2026-07-09) — « 1 200 » et non « 1200 » si un apport atteint le millier.
-                "[montant_sous]": group_montant(_associe_montant(associe) or "0"),
+                "[montant_sous]": (
+                    group_montant(_montant)
+                    if _montant
+                    else f"(À COMPLÉTER : {libelle_metier('montant de souscription')})"
+                ),
             }
             for cell in row.cells:
                 for paragraph in cell.paragraphs:
                     _apply_to_paragraph(paragraph, per)
         # Ligne TOTAL : total parts + total montant (groupe des 4 chiffres, Rafael 2026-07-09).
         total_repl = {
-            "[nb_actions]": str(total_parts),
+            "[nb_actions]": _quantite_parts_display(total_parts),
             "[montant_sous]": group_montant(str(total_montant)),
         }
         for cell in total_row.cells:
@@ -249,8 +268,9 @@ def _siege(company) -> str:
 
 
 def _date(signature) -> str:
+    # KAN-2 @All : date de signature absente -> marqueur, jamais « Le » nu.
     if signature is None or signature.date is None:
-        return ""
+        return f"(À COMPLÉTER : {libelle_metier('signature.date')})"
     value = signature.date
     if hasattr(value, "strftime"):
         return value.strftime("%d/%m/%Y")

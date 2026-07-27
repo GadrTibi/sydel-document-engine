@@ -360,28 +360,35 @@ def render_sas_form() -> dict[str, object]:
 
 
 def build_sas_plan(payload: dict[str, object]) -> SasSlicePlan:
-    blockers = _validate(payload)
-    warnings = (
+    # KAN-2 (Rafael, rejeté 2×) : « Tous les documents doivent pouvoir être générés, MÊME SI JE NE
+    # REMPLIS AUCUN CHAMP. » -> **AUCUN blocage** : tout manque devient un AVERTISSEMENT ; la zone
+    # sort en « (À COMPLÉTER : … ) » (required_* universel côté générateur) et se complète à la main
+    # sur le DOCX. Miroir EXACT de `spfpl_slice.build_spfpl_plan`. Vérifié empiriquement : un
+    # formulaire ENTIÈREMENT vide génère tout le bundle SAS sans un seul crash — ne PAS réintroduire
+    # de garde ici (une contrainte technique ne devient jamais une limite produit sans accord).
+    gaps = _validate(payload)
+    warnings_list = [
         # R0702-02 : le SAS accepte tout statut matrimonial (menu complet) ; regime + conjoint
         # requis pour un marie uniquement. Plus de « marie(e) » verrouille dans le message.
         "Dossier de création SPFPL médecins (forme SAS) : actionnaire unique.",
-    )
-    if blockers:
-        return SasSlicePlan(
-            can_generate=False,
-            status="blocked",
-            reason=blockers[0],
-            document_codes=SAS_BUNDLE_CODES,
-            blockers=blockers,
-            warnings=warnings,
+    ]
+    if gaps:
+        warnings_list.append(
+            f"{len(gaps)} champ(s) non renseigné(s) : les zones concernées sortiront "
+            "en « (À COMPLÉTER : …) » et sont à compléter à la main dans le document."
         )
+        warnings_list.extend(gaps)
     return SasSlicePlan(
         can_generate=True,
-        status="ready",
-        reason="Prêt pour la génération du dossier SAS / SPFPL médecins.",
+        status="ready" if not gaps else "ready_with_gaps",
+        reason=(
+            "Prêt pour la génération du dossier SAS / SPFPL médecins."
+            if not gaps
+            else f"Génération possible — {len(gaps)} zone(s) à compléter à la main."
+        ),
         document_codes=SAS_BUNDLE_CODES,
         blockers=(),
-        warnings=warnings,
+        warnings=tuple(warnings_list),
     )
 
 
@@ -445,6 +452,12 @@ def _sas_situation_maritale(payload: dict[str, object]) -> str:
 
 
 def _validate(payload: dict[str, object]) -> tuple[str, ...]:  # noqa: C901
+    """Champs non renseignés du dossier — des AVERTISSEMENTS, jamais des blocages.
+
+    KAN-2 (Rafael, rejeté 2×) : « tous les documents doivent pouvoir être générés, même si je ne
+    remplis aucun champ ». Ce que renvoie cette fonction ne bloque RIEN (cf. `build_sas_plan`) :
+    c'est la liste des zones qui sortiront en « (À COMPLÉTER : … ) », à compléter à la main.
+    """
     blockers: list[str] = []
     required = (
         ("denomination", "Denomination requise."),
@@ -664,7 +677,10 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
             capital_social=capital,
             capital_social_lettres=number_words_from_value(capital),
             nb_actions_total=nb_actions,
-            nb_actions_total_lettres=number_words_from_value(nb_actions),
+            # KAN-2 / B1 : une quantite ABSENTE (0 = number_input jamais rempli) ne se met JAMAIS
+            # en lettres (« zéro actions » est FAUX dans un acte signable) -> "" -> marqueur cote
+            # generateur (required_text). Miroir spfpl_slice. Nominal (nb_actions > 0) inchange.
+            nb_actions_total_lettres=number_words_from_value(nb_actions) if nb_actions else "",
             valeur_nominale_action=valeur_nominale,
             valeur_nominale_action_lettres=_sas_valeur_nominale_lettres(
                 payload.get("valeur_nominale_action")

@@ -501,7 +501,11 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
 
 def build_selas_uni_dentiste_plan(payload: dict[str, object]) -> SelasUniDentistePlan:
     data = _to_selarl_input(payload)
-    blockers = list(selarl_slice.validate_selarl_input(data))
+    # KAN-2 (Rafael, rejeté 2×) : « Tous les documents doivent pouvoir être générés, MÊME SI je ne
+    # remplis AUCUN champ. » La validation SELARL héritée n'est PLUS bloquante : ses retours
+    # deviennent des AVERTISSEMENTS (« gaps ») — les zones vides sortent en « (À COMPLÉTER : … ) »
+    # (required_* -> marqueur) à compléter à la main sur le DOCX.
+    gaps = list(selarl_slice.validate_selarl_input(data))
     is_marie = "marie" in str(payload.get("situation_maritale") or "").lower().replace("é", "e")
     # La validation SELARL FORCE le conjoint pour la profession dentiste (regle native
     # SELARL : `data.profession == PROFESSION_DENTISTE`). En SELAS uni, le conjoint n'est
@@ -515,7 +519,7 @@ def build_selas_uni_dentiste_plan(payload: dict[str, object]) -> SelasUniDentist
             "Prenom du conjoint requis pour les statuts.",
             "Nom du conjoint requis pour les statuts.",
         }
-        blockers = [b for b in blockers if b not in _conjoint_statuts_blockers]
+        gaps = [b for b in gaps if b not in _conjoint_statuts_blockers]
     if is_marie:
         for field, name in (
             ("conjoint_civilite", "civilite du conjoint"),
@@ -523,7 +527,7 @@ def build_selas_uni_dentiste_plan(payload: dict[str, object]) -> SelasUniDentist
             ("conjoint_nom", "nom du conjoint"),
         ):
             if not str(payload.get(field) or "").strip():
-                blockers.append(f"SELAS dentiste : {name} requis pour un associe marie.")
+                gaps.append(f"SELAS dentiste : {name} requis pour un associe marie.")
     document_codes = selected_document_codes(payload)
     warnings_list = [
         "Dossier de création SELAS unipersonnelle dentiste : associé unique.",
@@ -533,20 +537,21 @@ def build_selas_uni_dentiste_plan(payload: dict[str, object]) -> SelasUniDentist
             "Régime communautaire actif : la lettre de renonciation et la "
             "lettre d'avertissement au conjoint seront générées."
         )
-    warnings = tuple(warnings_list)
-    if blockers:
-        return SelasUniDentistePlan(
-            can_generate=False,
-            status="blocked",
-            reason=blockers[0],
-            document_codes=document_codes,
-            blockers=tuple(blockers),
-            warnings=warnings,
+    if gaps:
+        warnings_list.append(
+            f"{len(gaps)} champ(s) non renseigné(s) : les zones concernées sortiront "
+            "en « (À COMPLÉTER : …) » et sont à compléter à la main dans le document."
         )
+        warnings_list.extend(gaps)
+    warnings = tuple(warnings_list)
     return SelasUniDentistePlan(
         can_generate=True,
-        status="ready",
-        reason="Prêt pour la génération du dossier SELAS unipersonnelle dentiste.",
+        status="ready" if not gaps else "ready_with_gaps",
+        reason=(
+            "Prêt pour la génération du dossier SELAS unipersonnelle dentiste."
+            if not gaps
+            else f"Génération possible — {len(gaps)} zone(s) à compléter à la main."
+        ),
         document_codes=document_codes,
         blockers=(),
         warnings=warnings,

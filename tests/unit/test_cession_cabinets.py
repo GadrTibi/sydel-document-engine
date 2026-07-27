@@ -579,15 +579,21 @@ def test_acte_dentaire_salaries_three_renders_full_list(tmp_path: Path) -> None:
     _assert_no_residual_tokens(text)
 
 
-def test_acte_dentaire_salary_requires_complete_identity(tmp_path: Path) -> None:
-    # Garde-fou : un salarie liste doit avoir civilite/prenom/nom (identite complete).
+def test_acte_dentaire_salary_incomplete_identity_renders_marker(tmp_path: Path) -> None:
+    # KAN-2 (Rafael, rejete 2x) : « Tous les documents doivent pouvoir etre generes, meme si je ne
+    # remplis AUCUN champ. » Un salarie a l'identite incomplete NE bloque PLUS la generation : le
+    # champ manquant (ici le nom) sort en marqueur « (À COMPLÉTER : … ) » a completer a la main,
+    # jamais un crash (ex-garde-fou "salaries" retire).
     ctx = _context(
         type_cabinet="dentaire",
         salaries=[CessionSalarie(civilite_affichage="Madame", prenom="Lea")],
     )
 
-    with pytest.raises(ValueError, match="salaries"):
-        ActeCessionCabinetDentaireGenerator().generate(ctx, tmp_path)
+    out = ActeCessionCabinetDentaireGenerator().generate(ctx, tmp_path)
+    text = _docx_text(out)
+    assert "Lea" in text
+    assert "(À COMPLÉTER" in text
+    _assert_no_residual_tokens(text)
 
 
 # ---------------------------------------------------------------------------

@@ -26,6 +26,27 @@ OUTPUT_FILENAME = "attestation_capital_souscripteurs_selas.docx"
 DOCUMENT_CODE = "CODE-SELAS-ATTESTATION-CAPITAL-001"
 SELAS_STRUCTURE = "SELAS"
 
+# KAN-2 (Rafael, rejeté 2×) : « Tous les documents doivent pouvoir être générés, MÊME SANS AUCUN
+# champ. » Un champ manquant -> marqueur métier « (À COMPLÉTER : libellé) », jamais un raise ni une
+# valeur inventée. Libellé MÉTIER via spfpl_libelles.libelle_metier ; repli LOCAL si l'import échoue
+# -> marqueur toujours sans point / underscore / crochet / chiffre.
+try:  # pragma: no cover - import trivial
+    from sydel_doc_engine.generators.lot_05.spfpl_libelles import libelle_metier as _libelle_metier
+except Exception:  # pragma: no cover - repli défensif
+    _libelle_metier = None
+
+
+def _libelle(field_name: str) -> str:
+    if _libelle_metier is not None:
+        return _libelle_metier(field_name)
+    raw = field_name.replace("[", "").replace("]", "").replace("_", " ").replace(".", " ")
+    words = [w.rstrip("0123456789").lower() for w in raw.split()]
+    return " ".join(w for w in words if w)
+
+
+def _marqueur(field_name: str) -> str:
+    return f"(À COMPLÉTER : {_libelle(field_name)})"
+
 
 class AttestationCapitalSouscripteursSelasGenerator:
     """Generateur from-scratch de l'attestation capital / liste des souscripteurs SELAS.
@@ -121,7 +142,7 @@ class _ResolvedAttestationSelas:
         adresse_siege: str,
         ville_siege: str,
         banque: str,
-        nb_actions_total: int,
+        nb_actions_total: int | str,
         valeur_nominale_action: str,
         repartition_lignes: list[str],
         apport_lignes: list[str],
@@ -158,7 +179,10 @@ class _ResolvedAttestationSelas:
         souscripteurs = _required_souscripteurs(capital.souscripteurs)
         president = capital.president or souscripteurs[0]
 
-        nb_actions_total = _required_int(
+        # KAN-2 : AFFICHAGE des quantités -> marqueur si manquant ; le CALCUL (montant en numéraire
+        # = nb_actions × valeur nominale, cohérence de répartition) lit les valeurs BRUTES et se
+        # neutralise si incomplet. Dossier complet -> sortie byte-identique.
+        nb_actions_total_display = _required_int(
             capital.nb_actions_total,
             "capital_souscription.nb_actions_total",
         )
@@ -166,18 +190,20 @@ class _ResolvedAttestationSelas:
             capital.valeur_nominale_action,
             "capital_souscription.valeur_nominale_action",
         )
-        valeur_nominale = _euro_amount(
-            valeur_nominale_action,
-            "capital_souscription.valeur_nominale_action",
-        )
+        valeur_nominale = _euro_amount_or_none(valeur_nominale_action)
 
         repartition_lignes: list[str] = []
         apport_lignes: list[str] = []
         total_actions = 0
+        toutes_actions_connues = True
         for index, souscripteur in enumerate(souscripteurs):
             field = f"capital_souscription.souscripteurs[{index}]"
-            nb_actions = _required_int(souscripteur.nb_actions, f"{field}.nb_actions")
-            total_actions += nb_actions
+            nb_actions_display = _required_int(souscripteur.nb_actions, f"{field}.nb_actions")
+            nb_actions_brut = souscripteur.nb_actions
+            if nb_actions_brut is None:
+                toutes_actions_connues = False
+            else:
+                total_actions += nb_actions_brut
             # R3 durci (Rafael 2026-07-07, siloing) : « au Dr X » / « Le Docteur X a
             # fait un apport » etaient RESTES dans cette variante pluripersonnelle
             # alors que l'unipersonnelle etait deja civile -> les DEUX slots rendent
@@ -192,15 +218,24 @@ class _ResolvedAttestationSelas:
                 souscripteur.genre,
             )
             repartition_lignes.append(
-                f"{nb_actions} actions attribuées à {civilite} {nom_complet},"
+                f"{nb_actions_display} actions attribuées à {civilite} {nom_complet},"
             )
-            montant_numeraire = _format_amount(valeur_nominale * Decimal(nb_actions))
+            if valeur_nominale is not None and nb_actions_brut is not None:
+                montant_numeraire = montant_avec_euros(
+                    _format_amount(valeur_nominale * Decimal(nb_actions_brut))
+                )
+            else:
+                montant_numeraire = _marqueur("apport en numeraire du souscripteur")
             apport_lignes.append(
                 f"{civilite} {nom_complet} a fait un apport de "
-                f"{montant_avec_euros(montant_numeraire)} en numéraire."
+                f"{montant_numeraire} en numéraire."
             )
 
-        if total_actions != nb_actions_total:
+        if (
+            capital.nb_actions_total is not None
+            and toutes_actions_connues
+            and total_actions != capital.nb_actions_total
+        ):
             raise ValueError(
                 "La répartition des souscripteurs doit correspondre à "
                 f"capital_souscription.nb_actions_total pour {DOCUMENT_CODE}."
@@ -233,7 +268,7 @@ class _ResolvedAttestationSelas:
             adresse_siege=_company_siege_display(societe, "societe_spfpl"),
             ville_siege=_company_ville(societe, "societe_spfpl"),
             banque=_required_banque(ctx),
-            nb_actions_total=nb_actions_total,
+            nb_actions_total=nb_actions_total_display,
             valeur_nominale_action=valeur_nominale_action,
             repartition_lignes=repartition_lignes,
             apport_lignes=apport_lignes,
@@ -284,20 +319,26 @@ def _required_banque(ctx: DocumentGenerationContext) -> str:
 
 
 def _required_text(value: str | None, field_name: str) -> str:
+    # KAN-2 : champ vide -> marqueur, jamais un raise. Champ rempli -> byte-identique.
     if value is None or not value.strip():
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return _marqueur(field_name)
     return value.strip()
 
 
-def _required_int(value: int | None, field_name: str) -> int:
+def _required_int(value: int | None, field_name: str) -> int | str:
+    # KAN-2 : entier manquant en AFFICHAGE -> marqueur (le CALCUL lit la valeur brute, cf.
+    # from_context). Valeur présente -> int inchangé.
     if value is None:
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return _marqueur(field_name)
     return value
 
 
-def _euro_amount(value: str, field_name: str) -> Decimal:
+def _euro_amount_or_none(value: str) -> Decimal | None:
+    # KAN-2 : montant non numérique / manquant (y compris un marqueur « (À COMPLÉTER : …) »)
+    # -> None, jamais un raise. Le calcul en numéraire est alors neutralisé (marqueur affiché).
     normalized = (
-        value.lower()
+        (value or "")
+        .lower()
         .replace("euros", "")
         .replace("euro", "")
         .replace("€", "")
@@ -308,10 +349,8 @@ def _euro_amount(value: str, field_name: str) -> Decimal:
     )
     try:
         return Decimal(normalized)
-    except InvalidOperation as exc:
-        raise ValueError(
-            f"{field_name} doit etre un montant numerique pour {DOCUMENT_CODE}."
-        ) from exc
+    except InvalidOperation:
+        return None
 
 
 def _format_amount(amount: Decimal) -> str:
@@ -341,8 +380,9 @@ def _addressing_civilite(genre: Gender) -> str:
 
 
 def _company_siege_display(societe: SocieteSpfpl, field_name: str) -> str:
+    # KAN-2 : siège absent -> marqueur, jamais un raise.
     if societe.siege is None:
-        raise ValueError(f"{field_name}.siege est obligatoire pour {DOCUMENT_CODE}.")
+        return _marqueur(f"{field_name}.siege")
     if societe.siege.adresse_affichee:
         return societe.siege.adresse_affichee.strip()
     return (
@@ -354,6 +394,7 @@ def _company_siege_display(societe: SocieteSpfpl, field_name: str) -> str:
 
 
 def _company_ville(societe: SocieteSpfpl, field_name: str) -> str:
+    # KAN-2 : siège absent -> marqueur, jamais un raise.
     if societe.siege is None:
-        raise ValueError(f"{field_name}.siege est obligatoire pour {DOCUMENT_CODE}.")
+        return _marqueur(f"{field_name}.siege.ville")
     return _required_text(societe.siege.ville, f"{field_name}.siege.ville")

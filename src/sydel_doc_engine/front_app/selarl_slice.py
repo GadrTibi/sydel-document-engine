@@ -300,29 +300,34 @@ def selected_selarl_document_codes(data: SelarlSliceInput) -> tuple[str, ...]:
 
 
 def build_selarl_plan(data: SelarlSliceInput) -> SelarlSlicePlan:
-    blockers = validate_selarl_input(data)
-    warnings = _warning_messages(data)
+    gaps = validate_selarl_input(data)
+    warnings = list(_warning_messages(data))
     document_codes = selected_selarl_document_codes(data)
-    rows = _document_rows(data, blockers)
-
-    if blockers:
-        return SelarlSlicePlan(
-            can_generate=False,
-            status="blocked",
-            reason=blockers[0],
-            document_codes=document_codes,
-            document_rows=rows,
-            blockers=blockers,
-            warnings=warnings,
+    # KAN-2 (Rafael, rejete 2x) : « Tous les documents doivent pouvoir etre generes, MEME SI je ne
+    # remplis AUCUN champ. » -> AUCUN blocage : tout manque devient un AVERTISSEMENT ; les zones
+    # concernees sortent en « (À COMPLÉTER : … ) » (required_* -> marqueur cote generateur) et se
+    # completent a la main sur le DOCX. Une contrainte technique (calcul, division) ne se transforme
+    # jamais en limite produit : elle est rendue None-safe cote generateur, jamais un garde-fou ici.
+    # Miroir EXACT de spfpl_slice.build_spfpl_plan / selas_multi_slice.build_selas_plan.
+    rows = _document_rows(data, ())
+    if gaps:
+        warnings.append(
+            f"{len(gaps)} champ(s) non renseigné(s) : les zones concernées sortiront "
+            "en « (À COMPLÉTER : …) » et sont à compléter à la main dans le document."
         )
+        warnings.extend(gaps)
     return SelarlSlicePlan(
         can_generate=True,
-        status="ready",
-        reason="Prêt pour la génération du dossier SELARL.",
+        status="ready" if not gaps else "ready_with_gaps",
+        reason=(
+            "Prêt pour la génération du dossier SELARL."
+            if not gaps
+            else f"Génération possible — {len(gaps)} zone(s) à compléter à la main."
+        ),
         document_codes=document_codes,
         document_rows=rows,
         blockers=(),
-        warnings=warnings,
+        warnings=tuple(warnings),
     )
 
 
@@ -713,7 +718,9 @@ def build_generation_context(data: SelarlSliceInput) -> DocumentGenerationContex
         signature=Signature(
             # SU3 (Albane 2026-06-25) : ville de signature = ville du siege DANS TOUS LES CAS.
             lieu=(data.siege_ville or data.signature_lieu),
-            date=_required_date(data.signature_date, "signature_date"),
+            # KAN-2 : la date de signature non renseignee NE bloque PLUS -> None traverse
+            # (Signature.date est `date | None`) et les formateurs rendent « (À COMPLÉTER : … ) ».
+            date=data.signature_date,
             nombre_exemplaires=data.signature_nombre_exemplaires,
             prestataire_signature_electronique=signature_prestataire,
         ),
@@ -956,12 +963,6 @@ def _missing_for_fields(
         if isinstance(value, str) and not value.strip():
             blockers.append(message)
     return blockers
-
-
-def _required_date(value: date | None, field_name: str) -> date:
-    if value is None:
-        raise ValueError(f"{field_name} est obligatoire.")
-    return value
 
 
 def _display_date(value: date | None) -> str | None:

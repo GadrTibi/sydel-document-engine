@@ -49,6 +49,28 @@ STRUCTURE_SELAS = "SELAS"
 MAX_ASSOCIES = 6  # retours 2026-06-17 : SELAS multi 2 a 6 associes
 MIN_ASSOCIES = 2
 
+# KAN-2 (Rafael, rejeté 2×) : « Tous les documents doivent pouvoir être générés, MÊME SANS AUCUN
+# champ. » Un champ manquant NE bloque PLUS -> marqueur métier « (À COMPLÉTER : libellé) », JAMAIS
+# un raise ni une valeur inventée. Le libellé est MÉTIER (via spfpl_libelles.libelle_metier) ;
+# repli LOCAL si l'import échoue -> marqueur toujours sans point / underscore / crochet / chiffre
+# (la garantie que la garde de conformité vérifie).
+try:  # pragma: no cover - import trivial
+    from sydel_doc_engine.generators.lot_05.spfpl_libelles import libelle_metier as _libelle_metier
+except Exception:  # pragma: no cover - repli défensif
+    _libelle_metier = None
+
+
+def _libelle(field_name: str) -> str:
+    if _libelle_metier is not None:
+        return _libelle_metier(field_name)
+    raw = field_name.replace("[", "").replace("]", "").replace("_", " ").replace(".", " ")
+    words = [w.rstrip("0123456789").lower() for w in raw.split()]
+    return " ".join(w for w in words if w)
+
+
+def _marqueur(field_name: str) -> str:
+    return f"(À COMPLÉTER : {_libelle(field_name)})"
+
 # --- Profils par profession reglementee --------------------------------------------------
 #
 # Le moteur lit un modele DOCX tokenise et reinjecte, selon le nombre reel d'associes, les
@@ -902,13 +924,18 @@ def _validate_associes(
             "au moins un associe personne physique exercant est obligatoire "
             f"pour {DOCUMENT_CODE}."
         )
-    total_actions = sum(_required_int(a.nb_actions, "associes[].nb_actions") for a in associes)
-    expected_actions = _required_int(selas.nb_actions_total, "statuts_selas_multi.nb_actions_total")
-    if total_actions != expected_actions:
-        raise ValueError(
-            "la somme des actions des associes doit correspondre a "
-            f"statuts_selas_multi.nb_actions_total pour {DOCUMENT_CODE}."
-        )
+    # KAN-2 : contrôle de cohérence sur les valeurs BRUTES, neutralisé si incomplet (une donnée
+    # manquante sort en marqueur, elle ne peut pas être sommée ni comparée). Dossier complet ->
+    # comportement inchangé (même assertion qu'avant).
+    nb_actions_values = [a.nb_actions for a in associes]
+    expected_actions = selas.nb_actions_total
+    if expected_actions is not None and all(n is not None for n in nb_actions_values):
+        total_actions = sum(nb_actions_values)
+        if total_actions != expected_actions:
+            raise ValueError(
+                "la somme des actions des associes doit correspondre a "
+                f"statuts_selas_multi.nb_actions_total pour {DOCUMENT_CODE}."
+            )
 
 
 def _resolve_president(
@@ -1059,14 +1086,18 @@ def _is_morale(associe: StatutsCivilsAssocie) -> bool:
 
 
 def _required_text(value: str | None, field_name: str) -> str:
+    # KAN-2 : champ vide -> marqueur « (À COMPLÉTER : … ) », jamais un raise. Sortie NOMINALE
+    # (champ rempli) byte-identique : la branche `else` est l'ancien comportement exact.
     if value is None or not str(value).strip():
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return _marqueur(field_name)
     return str(value).strip()
 
 
-def _required_int(value: int | None, field_name: str) -> int:
+def _required_int(value: int | None, field_name: str) -> int | str:
+    # KAN-2 : entier manquant en AFFICHAGE -> marqueur (le CALCUL de cohérence lit la valeur BRUTE
+    # et se neutralise si incomplète, cf. `_validate_associes`). Valeur présente -> int inchangé.
     if value is None:
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return _marqueur(field_name)
     return value
 
 
@@ -1090,16 +1121,18 @@ def _valeur_nominale_lettres_euro(selas: StatutsSelasMultiContext) -> str:
 
 
 def _format_display_date(value: date | str | None, field_name: str) -> str:
+    # KAN-2 : date manquante -> marqueur, jamais un raise (cf. format_display_date du socle).
     if value is None:
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return _marqueur(field_name)
     if isinstance(value, date):
         return value.strftime("%d/%m/%Y")
     return _required_text(value, field_name)
 
 
 def _address_display(address: Address | None, field_name: str) -> str:
+    # KAN-2 : adresse manquante -> marqueur, jamais un raise.
     if address is None:
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return _marqueur(field_name)
     if address.adresse_affichee:
         return address.adresse_affichee.strip()
     return (

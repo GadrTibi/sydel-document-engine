@@ -816,7 +816,14 @@ def build_civil_plan(payload: dict[str, object]) -> CivilSlicePlan:
         scm_inter_sel=_scm_inter_sel_active(payload),
         regime_communautaire=regime_actif,
     )
-    blockers = _validate(payload)
+    # KAN-2 (Rafael 2026-07-14, rejeté 2×) : « Tous les documents doivent pouvoir être générés,
+    # MÊME SI JE NE REMPLIS AUCUN CHAMP. » -> **AUCUN blocage** : tout champ manquant devient un
+    # AVERTISSEMENT ; la zone concernée sort en « (À COMPLÉTER : … ) » (marqueurs des générateurs
+    # civils) et se complète à la main sur le DOCX. Même contrat que le dossier SPFPL
+    # (build_spfpl_plan) : can_generate=True et blockers=() TOUJOURS. Ne PAS réintroduire de garde
+    # ici — une contrainte technique ne se transforme jamais en limite produit sans l'accord du
+    # client (vérifié : un formulaire ENTIÈREMENT vide génère le bundle civil sans crash).
+    gaps = _validate(payload)
     satellites = (
         " avec ses satellites (pacte d'associés et liste des dépenses communes)"
         if structure == "SCM"
@@ -827,24 +834,23 @@ def build_civil_plan(payload: dict[str, object]) -> CivilSlicePlan:
     ]
     if option_is:
         warnings_list.append("Option IS active : la lettre d'option IS sera générée.")
-    warnings = tuple(warnings_list)
-    if blockers:
-        return CivilSlicePlan(
-            can_generate=False,
-            status="blocked",
-            reason=blockers[0],
-            document_codes=document_codes,
-            blockers=blockers,
-            warnings=warnings,
-            target_engine_adapter="front_app.civil_statuts_slice",
+    if gaps:
+        warnings_list.append(
+            f"{len(gaps)} champ(s) non renseigné(s) : les zones concernées sortiront "
+            "en « (À COMPLÉTER : …) » et sont à compléter à la main dans le document."
         )
+        warnings_list.extend(gaps)
     return CivilSlicePlan(
         can_generate=True,
-        status="ready",
-        reason=f"Prêt pour la génération du dossier {structure}.",
+        status="ready" if not gaps else "ready_with_gaps",
+        reason=(
+            f"Prêt pour la génération du dossier {structure}."
+            if not gaps
+            else f"Génération possible — {len(gaps)} zone(s) à compléter à la main."
+        ),
         document_codes=document_codes,
         blockers=(),
-        warnings=warnings,
+        warnings=tuple(warnings_list),
         target_engine_adapter="front_app.civil_statuts_slice",
     )
 
@@ -1226,7 +1232,8 @@ def _dirigeants_nomines_civils(
         dirigeants.append(
             DirigeantNomine(
                 genre=a.genre or Gender.MASCULIN,
-                civilite_affichage=a.civilite_affichage or "Monsieur",
+                # KAN-2 @All : civilite absente reste vide (marqueur en aval), jamais « Monsieur ».
+                civilite_affichage=a.civilite_affichage or "",
                 prenom=a.prenom or "",
                 nom=a.nom or "",
                 date_naissance=a.date_naissance,
@@ -1342,7 +1349,9 @@ def build_generation_context(payload: dict[str, object]) -> DocumentGenerationCo
         capital_maximal=capital_maximal_value,
         capital_maximal_lettres=capital_maximal_lettres,
         nb_parts_total=nb_parts,
-        nb_parts_total_lettres=number_words_from_value(nb_parts),
+        # KAN-2 : nb de parts non renseigné (0) -> None (marqueur « (À COMPLÉTER : …) » côté
+        # générateur), jamais « zéro » inventé. number_words_from_value(0) rendrait « zéro ».
+        nb_parts_total_lettres=number_words_from_value(nb_parts) if nb_parts else None,
         valeur_nominale_part=valeur_nominale_part,
         valeur_nominale_part_lettres=number_words_from_value(valeur_nominale_part)
         or valeur_nominale_part,
@@ -1495,7 +1504,8 @@ def _pv_associes(associes: list[StatutsCivilsAssocie]) -> list:
         mapped.append(
             Associe(
                 genre=associe.genre or Gender.MASCULIN,
-                civilite_affichage=associe.civilite_affichage or "Monsieur",
+                # KAN-2 @All : civilite absente reste vide (marqueur en aval), jamais « Monsieur ».
+                civilite_affichage=associe.civilite_affichage or "",
                 prenom=associe.prenom or associe.prenoms or "",
                 nom=associe.nom or "",
                 nb_parts=nb_parts,
@@ -1578,7 +1588,9 @@ def _common_docs_input(
     profession = ""
     profession_pluriel = ""
     genre = Gender.MASCULIN
-    civilite = "Monsieur"
+    # KAN-2 @All : ne JAMAIS inventer « Monsieur » — civilite absente reste vide -> les generateurs
+    # la rendent en marqueur « (À COMPLÉTER : … ) ». Le GENRE garde son defaut masculin (accord).
+    civilite = ""
     prenom = ""
     nom = ""
     date_naissance = None
@@ -1587,7 +1599,7 @@ def _common_docs_input(
     nationalite = ""
     if signataire is not None:
         genre = signataire.genre or Gender.MASCULIN
-        civilite = signataire.civilite_affichage or "Monsieur"
+        civilite = signataire.civilite_affichage or ""
         prenom = signataire.prenom or signataire.prenoms or ""
         nom = signataire.nom or ""
         profession = signataire.profession or signataire.qualification_principale or ""
@@ -1777,11 +1789,13 @@ def _siege_display(payload: dict[str, object]) -> str:
 
 
 def _first_physique_or_default(associes: list[StatutsCivilsAssocie]) -> Person:
+    # KAN-2 @All : ne jamais inventer « Monsieur » — civilite absente reste vide (rendue en
+    # marqueur par les generateurs). Le genre garde son defaut masculin (accord).
     for associe in associes:
         if associe.type_personne == "personne_physique" and (associe.nom or "").strip():
             return Person(
                 genre=associe.genre or Gender.MASCULIN,
-                civilite=associe.civilite_affichage or "Monsieur",
+                civilite=associe.civilite_affichage or "",
                 prenom=associe.prenom or "",
                 nom=associe.nom or "",
             )
@@ -1791,11 +1805,11 @@ def _first_physique_or_default(associes: list[StatutsCivilsAssocie]) -> Person:
             rep = associe.representant
             return Person(
                 genre=Gender.MASCULIN,
-                civilite=rep.civilite_affichage or "Monsieur",
+                civilite=rep.civilite_affichage or "",
                 prenom=rep.prenom or "",
                 nom=rep.nom or "",
             )
-    return Person(genre=Gender.MASCULIN, civilite="Monsieur", prenom="", nom="")
+    return Person(genre=Gender.MASCULIN, civilite="", prenom="", nom="")
 
 
 def _safe_int(value: object) -> int:

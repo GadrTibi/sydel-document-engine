@@ -4,7 +4,11 @@ from pathlib import Path
 
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
-from sydel_doc_engine.domain.models import DocumentGenerationContext
+from sydel_doc_engine.domain.models import (
+    DocumentGenerationContext,
+    ExerciceSocial,
+    RemunerationPresident,
+)
 from sydel_doc_engine.generators.lot_05.sas_satellites_common import (
     DOCUMENT_CODE,
     address_display,
@@ -139,31 +143,28 @@ class _ResolvedPvRemunerationPresident:
         societe = required_societe_spfpl(ctx)
         actionnaire = required_actionnaire_unique(ctx)
         president = required_president(ctx)
-        if ctx.exercice_social is None:
-            raise ValueError(f"exercice_social est obligatoire pour {DOCUMENT_CODE}.")
-        if ctx.remuneration_president is None:
-            raise ValueError(
-                f"remuneration_president est obligatoire pour {DOCUMENT_CODE}."
-            )
+        # KAN-2 @All : objets exercice / remuneration absents -> instances VIDES (leurs champs
+        # sortent en marqueurs), jamais lever. Le document se genere meme sans aucun champ.
+        exercice_social = ctx.exercice_social or ExerciceSocial()
+        remuneration = ctx.remuneration_president or RemunerationPresident()
 
-        remuneration_type = required_text(
-            ctx.remuneration_president.type,
-            "remuneration_president.type",
-        )
-        if remuneration_type != REMUNERATION_TYPE_ABSENCE:
+        # Invariant de ROUTAGE (ce PV ne couvre que l'absence de remuneration) : on ne l'exige que
+        # si un type REEL est saisi. Un champ vide ne bloque pas la generation (KAN-2).
+        remuneration_type_raw = (remuneration.type or "").strip()
+        if remuneration_type_raw and remuneration_type_raw != REMUNERATION_TYPE_ABSENCE:
             raise ValueError(
                 "remuneration_president.type doit valoir absence_remuneration pour "
                 f"{DOCUMENT_CODE}."
             )
         date_cloture = required_text(
-            ctx.exercice_social.date_cloture_premier_exercice,
+            exercice_social.date_cloture_premier_exercice,
             "exercice_social.date_cloture_premier_exercice",
         )
-        date_fin_non_remuneree = required_text(
-            ctx.remuneration_president.date_fin_non_remuneree,
-            "remuneration_president.date_fin_non_remuneree",
-        )
-        if date_fin_non_remuneree != date_cloture:
+        # Coherence sur les valeurs REELLES (pas les marqueurs) : un champ vide ne cree pas de
+        # divergence (deux marqueurs de field_name distincts different toujours et levaient a tort).
+        date_cloture_raw = (exercice_social.date_cloture_premier_exercice or "").strip()
+        date_fin_raw = (remuneration.date_fin_non_remuneree or "").strip()
+        if date_cloture_raw and date_fin_raw and date_cloture_raw != date_fin_raw:
             raise ValueError(
                 "remuneration_president.date_fin_non_remuneree doit correspondre a "
                 "exercice_social.date_cloture_premier_exercice pour "

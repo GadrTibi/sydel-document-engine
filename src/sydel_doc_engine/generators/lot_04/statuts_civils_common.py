@@ -13,13 +13,16 @@ from sydel_doc_engine.domain.enums import Gender
 from sydel_doc_engine.domain.models import (
     Address,
     DocumentGenerationContext,
+    StatutsCivilsApport,
     StatutsCivilsAssocie,
     StatutsCivilsContext,
+    StatutsCivilsParts,
 )
 from sydel_doc_engine.generators.lot_04.annexe_filter import is_creation_fee_annexe_line
 from sydel_doc_engine.generators.lot_04.statuts_sel_exercice_common import (
     statuts_output_filename,
 )
+from sydel_doc_engine.generators.lot_05.spfpl_libelles import libelle_metier
 from sydel_doc_engine.rendering.docx_builder import (
     add_paragraph,
     add_spacer,
@@ -416,11 +419,11 @@ class _ResolvedStatutsCivil:
             "[capital_autorise_lettres]": _text_or_empty(statuts.capital_autorise_lettres),
             "[capital_social_maximal]": _text_or_empty(statuts.capital_maximal),
             "[capital_social_maximal_lettres]": _text_or_empty(statuts.capital_maximal_lettres),
-            "[nb_parts]": str(
-                _required_int(statuts.nb_parts_total, "statuts_civils.nb_parts_total")
+            "[nb_parts]": _display_int(
+                statuts.nb_parts_total, "statuts_civils.nb_parts_total"
             ),
-            "[nb_parts_total]": str(
-                _required_int(statuts.nb_parts_total, "statuts_civils.nb_parts_total")
+            "[nb_parts_total]": _display_int(
+                statuts.nb_parts_total, "statuts_civils.nb_parts_total"
             ),
             "[nb_parts_lettres]": _required_text(
                 statuts.nb_parts_total_lettres,
@@ -438,8 +441,16 @@ class _ResolvedStatutsCivil:
                 statuts.valeur_nominale_part, statuts.valeur_nominale_part_lettres
             ),
             "[plage_parts_total]": _text_or_empty(statuts.plage_parts_totale),
-            "[parts_debut]": str(_first_part_number(self.associes)),
-            "[parts_fin]": str(_last_part_number(self.associes)),
+            "[parts_debut]": (
+                str(_first_part_number(self.associes))
+                if self.associes
+                else _marqueur_a_completer("statuts_civils.plage_parts_totale")
+            ),
+            "[parts_fin]": (
+                str(_last_part_number(self.associes))
+                if self.associes
+                else _marqueur_a_completer("statuts_civils.plage_parts_totale")
+            ),
             "[adresse_siege]": self.adresse_siege,
             "[num_voie_siege]": self.siege_num_voie,
             "[voie_siege]": self.siege_voie,
@@ -551,10 +562,13 @@ def _add_morale_identity_micro_holding(document, associe: StatutsCivilsAssocie) 
         f"Immatriculée au RCS de {_required_text(associe.ville_rcs, 'associes[].ville_rcs')} "
         f"sous le numéro {_required_text(associe.numero_rcs, 'associes[].numero_rcs')}",
     )
+    # KAN-2 : représentant absent -> ligne « Représentée par » en marqueur, jamais un crash.
     if associe.representant is None:
-        raise ValueError(
-            f"associes[].representant est obligatoire pour une personne morale {DOCUMENT_CODE}."
+        add_paragraph(
+            document,
+            f"Représentée par {_marqueur_a_completer('associes[].representant')}",
         )
+        return
     add_paragraph(
         document,
         f"Représentée par son "
@@ -699,9 +713,10 @@ def _add_capital_block(document, data: _ResolvedStatutsCivil) -> None:
                 "A concurrence de "
                 f"{_required_text(parts.nb_lettres, 'associes[].parts.nb_lettres')} "
                 f"{part_word(parts.nb)}, "
-                f"ci\t{parts.nb} {part_word(parts.nb)} Numérotées de "
-                f"{_required_int(parts.debut, 'associes[].parts.debut')} à "
-                f"{_required_int(parts.fin, 'associes[].parts.fin')}.",
+                f"ci\t{_display_int(parts.nb, 'associes[].parts.nb')} {part_word(parts.nb)} "
+                "Numérotées de "
+                f"{_display_int(parts.debut, 'associes[].parts.debut')} à "
+                f"{_display_int(parts.fin, 'associes[].parts.fin')}.",
             )
         else:
             # SCI plain : le modele source (Modele statuts SCI.docx, para 120-121) rend
@@ -714,10 +729,14 @@ def _add_capital_block(document, data: _ResolvedStatutsCivil) -> None:
                 "A concurrence de "
                 f"{_required_text(parts.nb_lettres, 'associes[].parts.nb_lettres')} "
                 f"{part_word(parts.nb)}, "
-                f"ci\t{parts.nb} {part_word(parts.nb)} ",
+                f"ci\t{_display_int(parts.nb, 'associes[].parts.nb')} {part_word(parts.nb)} ",
             )
     total_parts = _required_int(data.statuts.nb_parts_total, "statuts_civils.nb_parts_total")
-    add_paragraph(document, f"SOIT AU TOTAL {total_parts} {part_word(total_parts)}")
+    add_paragraph(
+        document,
+        f"SOIT AU TOTAL {_display_int(total_parts, 'statuts_civils.nb_parts_total')} "
+        f"{part_word(total_parts)}",
+    )
 
 
 def _add_apport_block_micro_holding(document, data: _ResolvedStatutsCivil) -> None:
@@ -812,7 +831,9 @@ def _add_capital_block_micro_holding(document, data: _ResolvedStatutsCivil) -> N
     )
     add_paragraph(
         document,
-        f"Le capital social est divisé en {nb_parts} {part_word(nb_parts)} de {vnp}€ "
+        f"Le capital social est divisé en "
+        f"{_display_int(nb_parts, 'statuts_civils.nb_parts_total')} {part_word(nb_parts)} "
+        f"de {vnp}€ "
         f"({vnp_lettres} {euro_word(vnp).upper()}) chacune.",
     )
     add_paragraph(document, f"Elles sont réparties entre les associés comme suit{_NBSP}:")
@@ -827,13 +848,13 @@ def _add_capital_block_micro_holding(document, data: _ResolvedStatutsCivil) -> N
         _add_mh_repartition_line(
             document,
             _mh_short_label(associe),
-            f"{parts.nb} {part_word(parts.nb)}",
+            f"{_display_int(parts.nb, 'associes[].parts.nb')} {part_word(parts.nb)}",
             tiret=True,
         )
     _add_mh_repartition_line(
         document,
         "Composant le capital social effectif",
-        f"{nb_parts} {part_word(nb_parts)}",
+        f"{_display_int(nb_parts, 'statuts_civils.nb_parts_total')} {part_word(nb_parts)}",
         tiret=False,
     )
 
@@ -871,7 +892,8 @@ def _add_capital_block_scs(document, data: _ResolvedStatutsCivil) -> None:
         document,
         f"Le capital social effectif est fixé à {capital_lettres}({capital_social}) "
         f"{euro_word(capital_social)}. "
-        f"Il est divisé en {nb_parts_total_lettres} ({nb_parts_total}) parts sociales de "
+        f"Il est divisé en {nb_parts_total_lettres} "
+        f"({_display_int(nb_parts_total, 'statuts_civils.nb_parts_total')}) parts sociales de "
         f"{valeur_nominale_part_lettres} ({valeur_nominale_part}) "
         f"{euro_word(valeur_nominale_part)} chacune de valeur nominale, "
         f"numérotées de {plage_parts_total}, lesquelles sont attribuées aux associés comme suit :",
@@ -887,16 +909,17 @@ def _add_capital_block_scs(document, data: _ResolvedStatutsCivil) -> None:
             document,
             "Propriétaire de "
             f"{_required_text(parts.nb_lettres, 'associes[].parts.nb_lettres')} parts sociales\t"
-            f"{parts.nb} parts sociales ",
+            f"{_display_int(parts.nb, 'associes[].parts.nb')} parts sociales ",
         )
         # Source paras 65 / 69 / 73 : "Numerotees de [plage]".
         if parts.plage_affichee:
             add_paragraph(document, f"Numérotées de {parts.plage_affichee}")
     # Source para 75 : "Total des parts sociales\xa0composant le capital\xa0:\t\t\t[nb] parts
     # sociales" (NBSP apres "sociales" et avant les deux-points).
+    _nb_disp = _display_int(nb_parts_total, "statuts_civils.nb_parts_total")
     add_paragraph(
         document,
-        f"Total des parts sociales composant le capital :\t\t\t{nb_parts_total} parts "
+        f"Total des parts sociales composant le capital :\t\t\t{_nb_disp} parts "
         "sociales",
     )
 
@@ -965,7 +988,9 @@ def _add_signature_block(document, data: _ResolvedStatutsCivil) -> None:
         # RÉTABLIT la disposition du modèle client ratifié (l'empilage était la déviation). Le
         # supersede est SIGNALÉ à Rafael sur le ticket : son choix revient sur un réglage d'Albane
         # motivé « espace pour signer », d'où l'espace conservé AU-DESSUS des noms (space_before).
-        p_fait = add_paragraph(document, f"Fait à {data.signature_lieu}")
+        p_fait = add_paragraph(
+            document, f"Fait à {_required_text(data.signature_lieu, 'signature.lieu')}"
+        )
         p_le = add_paragraph(document, f"Le {data.signature_date_longue}")
         physiques = [a for a in data.associes if a.est_signataire and not _is_morale(a)]
         morales = [a for a in data.associes if a.est_signataire and _is_morale(a)]
@@ -983,7 +1008,9 @@ def _add_signature_block(document, data: _ResolvedStatutsCivil) -> None:
     intro_signature = None
     if data.template.signature_slice is not None:
         intro_signature = add_paragraph(
-            document, f"A {data.signature_lieu}, le {data.signature_date}"
+            document,
+            f"A {_required_text(data.signature_lieu, 'signature.lieu')}, "
+            f"le {data.signature_date}",
         )
     signers = [_signature_label(a) for a in data.associes if a.est_signataire]
     if data.template.expected_type == "scs":
@@ -1021,11 +1048,11 @@ def _add_signature_block(document, data: _ResolvedStatutsCivil) -> None:
 def _add_resultat_groupes_block(document, data: _ResolvedStatutsCivil) -> None:
     rows = []
     for group in data.statuts.resultat_groupes_parts:
-        parts_debut = _required_int(
+        parts_debut = _display_int(
             group.parts_debut,
             "statuts_civils.resultat_groupes_parts[].parts_debut",
         )
-        parts_fin = _required_int(
+        parts_fin = _display_int(
             group.parts_fin,
             "statuts_civils.resultat_groupes_parts[].parts_fin",
         )
@@ -1050,9 +1077,8 @@ def _add_apport_line(
     expected_type: str,
     commanditaire: bool = False,
 ) -> None:
-    apport = associe.apport
-    if apport is None:
-        raise ValueError(f"associes[].apport est obligatoire pour {DOCUMENT_CODE}.")
+    # KAN-2 : apport absent -> apport vide (marqueurs aval), jamais un crash.
+    apport = _required_apport(associe)
     montant = (apport.montant_commanditaire or apport.montant) if commanditaire else apport.montant
     montant_lettres = (
         (apport.montant_commanditaire_lettres or apport.montant_lettres)
@@ -1132,10 +1158,13 @@ def _add_morale_identity(document, associe: StatutsCivilsAssocie) -> None:
         f"immatriculée au RCS de {_required_text(associe.ville_rcs, 'associes[].ville_rcs')} "
         f"sous le numéro {_required_text(associe.numero_rcs, 'associes[].numero_rcs')}.",
     )
+    # KAN-2 : représentant absent -> ligne « Représentée par » en marqueur, jamais un crash.
     if associe.representant is None:
-        raise ValueError(
-            f"associes[].representant est obligatoire pour une personne morale {DOCUMENT_CODE}."
+        add_paragraph(
+            document,
+            f"Représentée par {_marqueur_a_completer('associes[].representant')}.",
         )
+        return
     add_paragraph(
         document,
         "Représentée par "
@@ -1150,8 +1179,10 @@ def _validate_associes(
     associes: list[StatutsCivilsAssocie],
     template: StatutsCivilTemplate,
 ) -> None:
-    if not associes:
-        raise ValueError(f"au moins un associe est obligatoire pour {DOCUMENT_CODE}.")
+    # KAN-2 (Rafael 2026-07-14, rejeté 2×) : un dossier ENTIÈREMENT vide doit se générer ->
+    # « au moins un associé » n'est PLUS un blocage (0 associé = comparution/apport/capital vides,
+    # zones à compléter à la main). On garde le PLAFOND dur (6) : c'est un invariant du modèle, pas
+    # un champ vide (jamais atteint par un formulaire vide).
     if len(associes) > MAX_ASSOCIES:
         raise ValueError(f"les statuts civils sont limites a 6 associes pour {DOCUMENT_CODE}.")
     for associe in associes:
@@ -1165,30 +1196,19 @@ def _validate_capital_totals(
     statuts: StatutsCivilsContext,
     associes: list[StatutsCivilsAssocie],
 ) -> None:
-    total_parts = sum(_required_int(_required_parts(a).nb, "associes[].parts.nb") for a in associes)
-    expected_parts = _required_int(statuts.nb_parts_total, "statuts_civils.nb_parts_total")
-    if total_parts != expected_parts:
-        raise ValueError(
-            "la somme des parts doit correspondre a statuts_civils.nb_parts_total "
-            f"pour {DOCUMENT_CODE}."
-        )
-    total_apports = sum(_amount_to_int(_required_apport(a).montant) for a in associes)
-    expected_capital = _amount_to_int(statuts.capital_social)
-    if total_apports != expected_capital:
-        raise ValueError(
-            "la somme des apports doit correspondre a statuts_civils.capital_social "
-            f"pour {DOCUMENT_CODE}."
-        )
+    # KAN-2 : la cohérence somme parts == total / somme apports == capital ne BLOQUE PLUS la
+    # génération (elle est surfacée en amont comme AVERTISSEMENT par le front, build_civil_plan).
+    # On la calcule sans jamais lever : un dossier incomplet sort avec ses zones à compléter, le
+    # document reflète ce qui est saisi. No-op conservé (lecture defensive, aucun crash).
+    _ = (statuts, associes)
+    return None
 
 
 def _validate_scs(statuts: StatutsCivilsContext, associes: list[StatutsCivilsAssocie]) -> None:
-    if not _associes_by_role(associes, "commandite"):
-        raise ValueError(f"au moins un associe commandite est obligatoire pour {DOCUMENT_CODE}.")
-    if not _associes_by_role(associes, "commanditaire"):
-        raise ValueError(f"au moins un associe commanditaire est obligatoire pour {DOCUMENT_CODE}.")
-    _required_text(statuts.total_apports_commandites, "statuts_civils.total_apports_commandites")
-    _required_text(statuts.capital_maximal, "statuts_civils.capital_maximal")
-    _required_text(statuts.capital_maximal_lettres, "statuts_civils.capital_maximal_lettres")
+    # KAN-2 : la présence d'un commandité ET d'un commanditaire ne BLOQUE PLUS (surfacée en
+    # avertissement par le front). Les zones manquantes sortent en marqueur. No-op non bloquant.
+    _ = (statuts, associes)
+    return None
 
 
 def _validate_sci(associes: list[StatutsCivilsAssocie]) -> None:
@@ -1217,21 +1237,11 @@ def _validate_sci_iris(
     statuts: StatutsCivilsContext,
     associes: list[StatutsCivilsAssocie],
 ) -> None:
-    if not any(_is_morale(associe) for associe in associes):
-        raise ValueError(
-            f"SCI IRIS requiert l'associe personne morale source en V1 pour {DOCUMENT_CODE}."
-        )
-    if not statuts.resultat_groupes_parts:
-        raise ValueError(
-            f"statuts_civils.resultat_groupes_parts est obligatoire pour {DOCUMENT_CODE}."
-        )
-    for group in statuts.resultat_groupes_parts:
-        _required_int(group.parts_debut, "statuts_civils.resultat_groupes_parts[].parts_debut")
-        _required_int(group.parts_fin, "statuts_civils.resultat_groupes_parts[].parts_fin")
-        _required_text(
-            group.quote_part_resultat_exceptionnel,
-            "statuts_civils.resultat_groupes_parts[].quote_part_resultat_exceptionnel",
-        )
+    # KAN-2 : la présence d'une personne morale associée et des groupes de résultat ne BLOQUE PLUS
+    # (surfacée en avertissement par le front). Un SCI IRIS incomplet se génère : les groupes de
+    # résultat manquants -> tableau vide/à compléter, jamais un crash. No-op non bloquant.
+    _ = (statuts, associes)
+    return None
 
 
 def _validate_template_fields(
@@ -1393,9 +1403,49 @@ def _strip_editorial_marker(text: str) -> str:
     return _EDITORIAL_MARKER_RE.sub("", text).rstrip()
 
 
+# KAN-2 (Rafael 2026-07-14, rejeté 2×) : « Tous les documents doivent pouvoir être générés,
+# même si je ne remplis AUCUN champ. » Un champ vide NE BLOQUE PLUS et NE CRASHE PLUS : il sort
+# en marqueur visible « (À COMPLÉTER : <libellé métier> ) », jamais une valeur inventée. Même
+# contrat que le dossier SPFPL (statuts_sel_exercice_common.required_text). Libellés MÉTIER des
+# champs société-niveau les plus fréquents ; tout autre chemin retombe sur `libelle_metier`
+# (repli sûr partagé, même garantie : jamais de point/underscore/crochet/chiffre d'index).
+_CIVIL_LIBELLES: dict[str, str] = {
+    "societe.denomination": "dénomination sociale",
+    "societe.ville_rcs": "ville du RCS",
+    "statuts_civils.capital_social": "capital social",
+    "statuts_civils.capital_social_lettres": "capital social en lettres",
+    "statuts_civils.nb_parts_total": "nombre total de parts",
+    "statuts_civils.nb_parts_total_lettres": "nombre total de parts en lettres",
+    "statuts_civils.valeur_nominale_part": "valeur nominale d'une part",
+    "statuts_civils.valeur_nominale_part_lettres": "valeur nominale d'une part en lettres",
+    "statuts_civils.capital_maximal": "capital social maximal",
+    "statuts_civils.capital_maximal_lettres": "capital social maximal en lettres",
+    "statuts_civils.date_cloture_premier_exercice": "date de clôture du premier exercice",
+    "statuts_civils.capital_depot.banque_nom": "banque de dépôt des fonds",
+    "statuts_civils.capital_depot.banque_adresse": "adresse de la banque de dépôt",
+    "statuts_civils.plage_parts_totale": "plage de numérotation des parts",
+    "statuts_civils.total_apports": "total des apports",
+    "statuts_civils.total_apports_commandites": "total des apports des commandités",
+    "signature.lieu": "lieu de signature",
+    "signature.date": "date de signature",
+}
+
+
+def _libelle_civil(field_name: str) -> str:
+    return _CIVIL_LIBELLES.get(field_name, libelle_metier(field_name))
+
+
+def _marqueur_a_completer(field_name: str) -> str:
+    # Marqueur non bloquant SANS crochets/point/underscore/chiffre d'index (garde
+    # anti-placeholder source ligne ~289 + garantie _libelle_civil / libelle_metier).
+    return f"(À COMPLÉTER : {_libelle_civil(field_name)})"
+
+
 def _required_text(value: str | None, field_name: str) -> str:
+    # KAN-2 : valeur manquante -> marqueur métier « (À COMPLÉTER : …) » (à compléter à la main sur
+    # le DOCX) au lieu de lever. Sortie NOMINALE (champ rempli) byte-identique (strip inchangé).
     if value is None or not str(value).strip():
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return _marqueur_a_completer(field_name)
     return str(value).strip()
 
 
@@ -1406,30 +1456,37 @@ def _text_or_empty(value: str | None) -> str:
 
 
 def _required_int(value: int | None, field_name: str) -> int:
-    if value is None:
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
-    return value
+    # KAN-2 : usage CALCUL (sommes, contrôles de cohérence) -> None-safe, jamais de crash.
+    # None -> 0 (neutre pour une somme/comparaison, JAMAIS affiché tel quel : l'affichage d'une
+    # quantité passe par `_display_int`, qui rend un marqueur au lieu d'un « 0 » inventé).
+    return int(value) if value is not None else 0
 
 
-def _required_parts(associe: StatutsCivilsAssocie):
-    if associe.parts is None:
-        raise ValueError(f"associes[].parts est obligatoire pour {DOCUMENT_CODE}.")
-    _required_int(associe.parts.nb, "associes[].parts.nb")
-    _required_text(associe.parts.nb_lettres, "associes[].parts.nb_lettres")
-    return associe.parts
+def _display_int(value: int | None, field_name: str) -> str:
+    # KAN-2 : AFFICHAGE d'une quantité (« N parts », numéro) -> marqueur si absent/nul (jamais
+    # « 0 »/« (0) »/un nombre inventé). Une quantité de statuts (parts, numérotation) n'est jamais
+    # 0 : un 0 signale un champ non renseigné. Sortie NOMINALE (n>=1) byte-identique (str(n)).
+    if value is None or int(value) == 0:
+        return _marqueur_a_completer(field_name)
+    return str(int(value))
 
 
-def _required_apport(associe: StatutsCivilsAssocie):
-    if associe.apport is None:
-        raise ValueError(f"associes[].apport est obligatoire pour {DOCUMENT_CODE}.")
-    _required_text(associe.apport.montant, "associes[].apport.montant")
-    _required_text(associe.apport.montant_lettres, "associes[].apport.montant_lettres")
-    return associe.apport
+def _required_parts(associe: StatutsCivilsAssocie) -> StatutsCivilsParts:
+    # KAN-2 : parts absentes -> objet de parts VIDE (tous champs None) ; l'affichage aval rend des
+    # marqueurs (_display_int / _required_text), jamais un crash. Sortie NOMINALE inchangée.
+    return associe.parts if associe.parts is not None else StatutsCivilsParts()
+
+
+def _required_apport(associe: StatutsCivilsAssocie) -> StatutsCivilsApport:
+    # KAN-2 : apport absent -> apport VIDE (montant/lettres None) ; l'affichage aval rend des
+    # marqueurs (_required_text), jamais un crash. Sortie NOMINALE inchangée.
+    return associe.apport if associe.apport is not None else StatutsCivilsApport()
 
 
 def _format_display_date(value: date | str | None, field_name: str) -> str:
+    # KAN-2 : date manquante -> marqueur « (À COMPLÉTER : …) », non bloquant.
     if value is None:
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return _marqueur_a_completer(field_name)
     if isinstance(value, date):
         return value.strftime("%d/%m/%Y")
     return _required_text(value, field_name)
@@ -1441,25 +1498,28 @@ def _format_birthdate(value: date | str | None, field_name: str) -> str:
     Une valeur numerique saisie (« 10/03/1975 », ISO ou objet date) est reformatee en
     francais lettre (« 10 mars 1975 ») ; une date deja lettree reste inchangee. Reservee
     aux dates de naissance : la date de SIGNATURE garde son format propre (court / longue).
+    KAN-2 : date de naissance manquante -> marqueur, jamais un crash.
     """
     if value is None:
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return _marqueur_a_completer(field_name)
     return format_birthdate_fr(value)
 
 
 def _format_display_date_longue(value: date | str | None, field_name: str) -> str:
     """Date en forme longue « JJ mois AAAA » (MH signature). Fallback = affichage court
-    si la date est deja une chaine (pas de reformatage aveugle d'un texte saisi)."""
+    si la date est deja une chaine (pas de reformatage aveugle d'un texte saisi).
+    KAN-2 : date manquante -> marqueur, jamais un crash."""
     if value is None:
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return _marqueur_a_completer(field_name)
     if isinstance(value, date):
         return format_date_longue_fr(value)
     return _required_text(value, field_name)
 
 
 def _address_display(address: Address | None, field_name: str) -> str:
+    # KAN-2 : adresse absente -> marqueur, jamais un crash.
     if address is None:
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return _marqueur_a_completer(field_name)
     if address.adresse_affichee:
         return address.adresse_affichee.strip()
     return (
@@ -1555,6 +1615,9 @@ def _format_amount_total(
 ) -> str:
     # Source para 56 : "Le montant total verse par le commanditaire est de ... [montant]".
     # Pour un commanditaire unique, c'est son montant ; pour plusieurs, leur somme (montant total).
+    # KAN-2 : aucun apport renseigné -> marqueur (jamais « 0 » inventé), jamais un crash.
+    if not associes:
+        return _marqueur_a_completer("statuts_civils.total_apports")
     total = 0
     for associe in associes:
         apport = _required_apport(associe)
@@ -1567,7 +1630,10 @@ def _format_amount_total(
 
 
 def _amount_to_int(value: str | None) -> int:
-    text = _required_text(value, "montant")
+    # KAN-2 : usage CALCUL/coh\u00e9rence (sommes de contr\u00f4le) -> None-safe. Un montant
+    # absent ou non num\u00e9rique (marqueur, vide) vaut 0 pour la somme, jamais un crash,
+    # jamais affich\u00e9 tel quel (l'affichage passe par _required_text -> marqueur).
+    text = str(value or "")
     normalized = (
         text.replace(" ", "")
         .replace("\u00a0", "")
@@ -1578,6 +1644,4 @@ def _amount_to_int(value: str | None) -> int:
         .replace("€", "")
         .strip()
     )
-    if not normalized.isdigit():
-        raise ValueError(f"montant numerique attendu pour {DOCUMENT_CODE}: {value}")
-    return int(normalized)
+    return int(normalized) if normalized.isdigit() else 0

@@ -1,0 +1,7 @@
+{
+  "required_any": [
+    "docs/project/PRODUCT_VISION_SYDEL_V1.md",
+    "docs/INDEX.md",
+    "docs/project/00_MASTER_PLAN.md"
+  ]
+}

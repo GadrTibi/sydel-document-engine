@@ -16,6 +16,7 @@ from sydel_doc_engine.domain.models import (
     StatutsCivilsAssocie,
     StatutsCivilsContext,
 )
+from sydel_doc_engine.generators.lot_05.spfpl_libelles import libelle_metier
 from sydel_doc_engine.rendering.docx_builder import (
     LETTER_WIDE_STYLE_PROFILE,
     add_framed_address_block,
@@ -97,15 +98,33 @@ def _required_statuts_civils(statuts: StatutsCivilsContext | None) -> StatutsCiv
 
 
 def _required_text(value: str | None, field_name: str) -> str:
+    # KAN-2 (Rafael, rejete 2x) : « Tous les documents doivent pouvoir etre generes, meme si je ne
+    # remplis AUCUN champ. » Une donnee manquante NE bloque PLUS -> marqueur metier visible
+    # « (À COMPLÉTER : <libelle>) » (SANS crochet/point/underscore) au lieu de lever. Sortie
+    # NOMINALE (valeur presente) BYTE-IDENTIQUE. Miroir de required_text (statuts_sel_exercice).
     if value is None or not value.strip():
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return f"(À COMPLÉTER : {libelle_metier(field_name)})"
     return value.strip()
 
 
 def _required_int(value: int | None, field_name: str) -> int:
+    # KAN-2 : ce helper ne sert QU'AUX controles de coherence (CALCUL) -> None-safe (-> 0), jamais
+    # de crash. L'AFFICHAGE d'une quantite passe par `_quantite_parts` (marqueur si 0/None) pour ne
+    # JAMAIS affirmer « 0 parts » dans un acte signable.
     if value is None:
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return 0
     return value
+
+
+def _quantite_parts(value: int | None, libelle: str) -> str:
+    """AFFICHAGE d'une quantite de parts dans le fil du texte (KAN-2).
+
+    Une quantite NON RENSEIGNEE (None ou 0 = number_input jamais rempli) ne s'affirme JAMAIS
+    (« 0 parts » est FAUX dans un acte signable) -> marqueur metier « (À COMPLÉTER : <libelle>) ».
+    `libelle` = intitule metier deja humain (traverse `libelle_metier` inchange)."""
+    if not value:
+        return f"(À COMPLÉTER : {libelle_metier(libelle)})"
+    return str(value)
 
 
 # Retour Rafael R22-07 (2026-06-22) : le centre est TOUJOURS « Centre des Finances
@@ -248,16 +267,20 @@ def _add_table_row(table: Any, label: str, value: str) -> None:
 
 
 def _validate_capital_distribution(statuts: StatutsCivilsContext) -> None:
+    # KAN-2 : coherence de la repartition verifiee UNIQUEMENT quand les donnees sont renseignees.
+    # A vide (total non saisi / parts absentes), aucun blocage : chaque quantite sortira en
+    # marqueur cote AFFICHAGE. `_required_int` est None-safe (-> 0) ; on ne confronte que des
+    # quantites reellement saisies (total > 0 et somme > 0).
     total = _required_int(statuts.nb_parts_total, "statuts_civils.nb_parts_total")
     associes_total = 0
     for index, associe in enumerate(statuts.associes):
         if associe.parts is None:
-            raise ValueError(f"statuts_civils.associes[{index}].parts est obligatoire.")
+            continue
         associes_total += _required_int(
             associe.parts.nb,
             f"statuts_civils.associes[{index}].parts.nb",
         )
-    if associes_total != total:
+    if total and associes_total and associes_total != total:
         raise ValueError(
             "La repartition des parts doit correspondre a statuts_civils.nb_parts_total "
             f"pour {DOCUMENT_CODE}."
@@ -265,8 +288,9 @@ def _validate_capital_distribution(statuts: StatutsCivilsContext) -> None:
 
 
 def _company_address(company: Company) -> str:
+    # KAN-2 : siege non renseigne -> marqueur metier, jamais de crash.
     if company.siege is None:
-        raise ValueError(f"societe.siege est obligatoire pour {DOCUMENT_CODE}.")
+        return f"(À COMPLÉTER : {libelle_metier('societe.siege')})"
     return _address_display(company.siege, "societe.siege")
 
 
@@ -283,9 +307,9 @@ def _address_display(address: Address, field_name: str) -> str:
 
 def _associe_table_text(associe: StatutsCivilsAssocie, index: int) -> str:
     field_name = f"statuts_civils.associes[{index}]"
-    if associe.parts is None:
-        raise ValueError(f"{field_name}.parts est obligatoire pour {DOCUMENT_CODE}.")
-    nb_parts = _required_int(associe.parts.nb, f"{field_name}.parts.nb")
+    # KAN-2 : parts non renseignees -> marqueur (jamais « 0 parts » affirme), jamais de crash.
+    nb_brut = associe.parts.nb if associe.parts is not None else None
+    nb_parts = _quantite_parts(nb_brut, "nombre de parts détenues")
     if associe.type_personne == "personne_morale":
         return _associe_morale_table_text(associe, field_name, nb_parts)
     return _associe_physique_table_text(associe, field_name, nb_parts)
@@ -294,7 +318,7 @@ def _associe_table_text(associe: StatutsCivilsAssocie, index: int) -> str:
 def _associe_physique_table_text(
     associe: StatutsCivilsAssocie,
     field_name: str,
-    nb_parts: int,
+    nb_parts: str,
 ) -> str:
     address = associe.adresse_personnelle
     if associe.adresse_personnelle_affichee:
@@ -302,7 +326,8 @@ def _associe_physique_table_text(
     elif address is not None:
         address_display = _address_display(address, f"{field_name}.adresse_personnelle")
     else:
-        raise ValueError(f"{field_name}.adresse_personnelle est obligatoire pour {DOCUMENT_CODE}.")
+        # KAN-2 : adresse non renseignee -> marqueur metier, jamais de crash.
+        address_display = f"(À COMPLÉTER : {libelle_metier(f'{field_name}.adresse_personnelle')})"
     qualite = _required_text(
         associe.parts.qualite_associe or associe.role_statutaire,
         f"{field_name}.parts.qualite_associe",
@@ -318,13 +343,17 @@ def _associe_physique_table_text(
 def _associe_morale_table_text(
     associe: StatutsCivilsAssocie,
     field_name: str,
-    nb_parts: int,
+    nb_parts: str,
 ) -> str:
-    if associe.siege is None:
-        raise ValueError(f"{field_name}.siege est obligatoire pour {DOCUMENT_CODE}.")
+    # KAN-2 : siege non renseigne -> marqueur metier, jamais de crash.
+    siege_display = (
+        _address_display(associe.siege, f"{field_name}.siege")
+        if associe.siege is not None
+        else f"(À COMPLÉTER : {libelle_metier(f'{field_name}.siege')})"
+    )
     return (
         f"La société {_required_text(associe.denomination, f'{field_name}.denomination')}, "
-        f"ayant son siège social au {_address_display(associe.siege, f'{field_name}.siege')}, "
+        f"ayant son siège social au {siege_display}, "
         f"détenant {nb_parts} parts."
     )
 

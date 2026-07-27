@@ -19,8 +19,15 @@ from __future__ import annotations
 from datetime import date
 from pathlib import Path
 
-from sydel_doc_engine.domain.models import DocumentGenerationContext, Person
+from sydel_doc_engine.domain.enums import Gender
+from sydel_doc_engine.domain.models import (
+    Company,
+    DocumentGenerationContext,
+    Person,
+    StatutsSasuHoldingContext,
+)
 from sydel_doc_engine.front_app.field_derivations import group_montant
+from sydel_doc_engine.generators.lot_05.spfpl_libelles import libelle_metier
 from sydel_doc_engine.rendering.docx_builder import (
     add_bordered_data_table,
     add_paragraph,
@@ -101,42 +108,57 @@ class _ResolvedListeSasuHolding:
     def from_context(cls, ctx: DocumentGenerationContext) -> _ResolvedListeSasuHolding:
         if ctx.structure != "SASU_HOLDING":
             raise ValueError(f"dossier.structure doit etre SASU_HOLDING pour {DOCUMENT_CODE}.")
+        # KAN-2 (Rafael 2026-07-14) : « tous les documents doivent pouvoir être générés, MÊME SI
+        # aucun champ n'est rempli. » -> aucun `raise` sur donnée manquante : un objet absent tombe
+        # sur une instance VIDE dont chaque champ ressort en « (À COMPLÉTER : … ) »
+        # (`_required_text`), jamais un crash. La sortie NOMINALE reste byte-identique.
         person = _required_person(ctx)
-        statuts = ctx.statuts_sasu_holding
-        if statuts is None:
-            raise ValueError(f"statuts_sasu_holding est obligatoire pour {DOCUMENT_CODE}.")
-        if ctx.societe is None:
-            raise ValueError(f"societe est obligatoire pour {DOCUMENT_CODE}.")
+        statuts = ctx.statuts_sasu_holding or StatutsSasuHoldingContext()
+        societe = ctx.societe or Company()
 
+        # AFFICHAGE d'une quantité : non renseignée (None) OU nulle -> marqueur, JAMAIS un « 0 »
+        # affirmé (un état des souscriptions qui annonce « 0 action » est faux). Renseignée ->
+        # format à point du modèle Albane (« 10.000 »), byte-identique au gold.
         nb_actions = statuts.nb_actions
-        if nb_actions is None or nb_actions < 1:
-            raise ValueError(
-                f"statuts_sasu_holding.nb_actions doit etre superieur a zero pour {DOCUMENT_CODE}."
-            )
-        civilite = _required_text(person.civilite, "personne_signataire.civilite")
-        prenom = _required_text(person.prenom, "personne_signataire.prenom")
-        nom = _required_text(person.nom, "personne_signataire.nom")
+        nb_actions_dot = (
+            _fmt_dot_thousands(nb_actions)
+            if nb_actions is not None and nb_actions >= 1
+            else _marqueur("nombre d'actions souscrites")
+        )
+        civilite = _required_text(person.civilite, "civilité de l'associé")
+        prenom = _required_text(person.prenom, "prénom de l'associé")
+        nom = _required_text(person.nom, "nom de l'associé")
 
         return cls(
-            denomination=_required_text(ctx.societe.denomination, "societe.denomination"),
+            denomination=_required_text(societe.denomination, "dénomination de la société"),
             souscripteur_nom=f"{civilite} {prenom} {nom}",
-            nb_actions_dot=_fmt_dot_thousands(nb_actions),
-            montant=_required_text(ctx.societe.capital_social, "societe.capital_social"),
-            lieu_signature=_required_text(ctx.signature.lieu, "signature.lieu"),
-            date_signature=_display_date(ctx.signature.date, "signature.date"),
+            nb_actions_dot=nb_actions_dot,
+            montant=_required_text(societe.capital_social, "capital social"),
+            lieu_signature=_required_text(ctx.signature.lieu, "lieu de signature"),
+            date_signature=_display_date(ctx.signature.date, "date de signature"),
             signature_nom=f"{prenom} {nom}",
         )
 
 
+# KAN-2 (Rafael 2026-07-14) — champ absent -> marqueur métier visible « (À COMPLÉTER : <libellé> ) »
+# (via `libelle_metier`, aligné sur le pattern SPFPL / `statuts_sel_exercice_common.required_text`).
+# Le libellé passé est déjà métier -> `libelle_metier` le laisse traverser et garantit qu'il reste
+# SANS point / underscore / crochet / chiffre.
+def _marqueur(field_name: str) -> str:
+    return f"(À COMPLÉTER : {libelle_metier(field_name)})"
+
+
 def _required_person(ctx: DocumentGenerationContext) -> Person:
+    # KAN-2 : associé absent -> instance vide (genre masculin neutre, identité vide) dont chaque
+    # champ ressort en marqueur ; `Person` exige genre/civilite/prenom/nom, on les fournit vides.
     if ctx.personne_signataire is None:
-        raise ValueError(f"personne_signataire est obligatoire pour {DOCUMENT_CODE}.")
+        return Person(genre=Gender.MASCULIN, civilite="", prenom="", nom="")
     return ctx.personne_signataire
 
 
 def _required_text(value: str | None, field_name: str) -> str:
     if value is None or not value.strip():
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return _marqueur(field_name)
     return value.strip()
 
 
@@ -147,7 +169,7 @@ def _fmt_dot_thousands(value: int) -> str:
 
 def _display_date(value: date | str | None, field_name: str) -> str:
     if value is None:
-        raise ValueError(f"{field_name} est obligatoire pour {DOCUMENT_CODE}.")
+        return _marqueur(field_name)
     if isinstance(value, date):
         return value.strftime("%d/%m/%Y")
     return _required_text(value, field_name)
