@@ -1013,6 +1013,12 @@ def _add_closing_and_signatures(
     is_micro: bool = False,
 ) -> None:
     lieu_signature = _required_text(ctx.signature.lieu, "signature.lieu")
+    # KAN-31 (Rafael, SELARL) : separer NETTEMENT le corps du document du bloc signature -> deux
+    # lignes vides avant « Fait a ». Hors micro-holding (PV deja valides KAN-14/15/16). Placees
+    # AVANT l'ancre signature -> hors du bloc solidaire KAN-36, cohesion preservee.
+    if not is_micro:
+        add_spacer(document)
+        add_spacer(document)
     # Retour Albane 2026-06-26 (PV6) : supprimer la mention « en quatre
     # exemplaires » apres le lieu. Seul « Fait à {lieu} » subsiste.
     _add_paragraph(
@@ -1280,6 +1286,11 @@ def _build_associe_unique_pv(
     # Cloture + signature de l'associe (« Bon pour acceptation des fonctions de gerant »).
     # Retour Albane 2026-06-26 (PV6) : supprimer « en X exemplaires » apres le lieu.
     lieu_signature = _required_text(ctx.signature.lieu, "signature.lieu")
+    # KAN-31 (Rafael, SELARL) : 2 lignes vides avant « Fait a » (separation corps/signature).
+    # Hors micro-holding (PV valides). Avant l'ancre KAN-36 -> cohesion preservee.
+    if not is_micro:
+        add_spacer(document)
+        add_spacer(document)
     _add_paragraph(
         document,
         f"Fait à {lieu_signature}",
